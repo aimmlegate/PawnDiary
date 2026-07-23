@@ -32,6 +32,7 @@ namespace PawnDiary
             DiaryIdeologyMutationPatches.TryRegister(harmony);
             OdysseyLandingEndedPatch.TryRegister(harmony);
             OdysseyLandingOutcomePatch.TryRegister(harmony);
+            OdysseyMechhiveOutcomePatch.TryRegister(harmony);
             SpeakUpReplySchedulingGuardPatch.TryRegister(harmony);
             DiaryLogReportPatch.TryRegister(harmony);
         }

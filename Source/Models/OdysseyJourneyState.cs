@@ -349,6 +349,64 @@ namespace PawnDiary
         }
     }
 
+    /// <summary>
+    /// Additive saved replay barrier for O3's exact Mechhive ending. This row contains no live
+    /// quest, pawn, core, map, or DLC object; malformed partial rows collapse during normalization.
+    /// </summary>
+    internal sealed class OdysseyMechhiveOutcomeState : IExposable
+    {
+        public int schemaVersion = 1;
+        public string outcomeToken = string.Empty;
+        public string actorPawnId = string.Empty;
+        public int questId;
+        public int committedTick = -1;
+        public string eventId = string.Empty;
+
+        public void ExposeData()
+        {
+            Scribe_Values.Look(ref schemaVersion, "schemaVersion", 1);
+            Scribe_Values.Look(ref outcomeToken, "outcomeToken");
+            Scribe_Values.Look(ref actorPawnId, "actorPawnId");
+            Scribe_Values.Look(ref questId, "questId", 0);
+            Scribe_Values.Look(ref committedTick, "committedTick", -1);
+            Scribe_Values.Look(ref eventId, "eventId");
+            if (Scribe.mode == LoadSaveMode.PostLoadInit)
+            {
+                outcomeToken = outcomeToken ?? string.Empty;
+                actorPawnId = actorPawnId ?? string.Empty;
+                eventId = eventId ?? string.Empty;
+            }
+        }
+
+        internal OdysseyMechhiveOutcomeSnapshot ToSnapshot()
+        {
+            return new OdysseyMechhiveOutcomeSnapshot
+            {
+                schemaVersion = schemaVersion,
+                outcomeToken = outcomeToken ?? string.Empty,
+                actorPawnId = actorPawnId ?? string.Empty,
+                questId = questId,
+                committedTick = committedTick,
+                eventId = eventId ?? string.Empty
+            };
+        }
+
+        internal static OdysseyMechhiveOutcomeState FromSnapshot(
+            OdysseyMechhiveOutcomeSnapshot source)
+        {
+            if (source == null) return null;
+            return new OdysseyMechhiveOutcomeState
+            {
+                schemaVersion = source.schemaVersion,
+                outcomeToken = source.outcomeToken ?? string.Empty,
+                actorPawnId = source.actorPawnId ?? string.Empty,
+                questId = source.questId,
+                committedTick = source.committedTick,
+                eventId = source.eventId ?? string.Empty
+            };
+        }
+    }
+
     /// <summary>Defensive conversion and normalization shared by the component and RimTests.</summary>
     internal static class OdysseyStatePersistence
     {
@@ -394,6 +452,17 @@ namespace PawnDiary
             TrimNewest(input.emittedJourneyIds, HardMaximumRows);
             OdysseyTravelHistorySnapshot normalized = OdysseyHistoryPolicy.Normalize(input, effective);
             return OdysseyTravelHistoryState.FromSnapshot(normalized);
+        }
+
+        /// <summary>
+        /// Applies the same pure normalization at load and in-session commit time. Invalid required
+        /// identities collapse the whole row so no corrupt save can become a replay barrier.
+        /// </summary>
+        internal static OdysseyMechhiveOutcomeState NormalizeMechhiveOutcome(
+            OdysseyMechhiveOutcomeState source)
+        {
+            return OdysseyMechhiveOutcomeState.FromSnapshot(
+                OdysseyMechhivePersistencePolicy.Normalize(source?.ToSnapshot()));
         }
 
         internal static OdysseyLocationSnapshot NormalizeLocation(

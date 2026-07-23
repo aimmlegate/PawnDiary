@@ -768,6 +768,20 @@ namespace PawnDiary
         // a package gate is inactive or a future source supplies an unknown synthetic name.
         public static DiaryInteractionGroupDef ClassifyAnomalyEvent(string eventDefName)
         {
+            return ClassifyExactInteractionEvent(eventDefName);
+        }
+
+        /// <summary>
+        /// Resolves one available exact-name Odyssey source row without using broad Interaction
+        /// matchers. O3's package-gated Mechhive ending is the first caller.
+        /// </summary>
+        public static DiaryInteractionGroupDef ClassifyOdysseyEvent(string eventDefName)
+        {
+            return ClassifyExactInteractionEvent(eventDefName);
+        }
+
+        private static DiaryInteractionGroupDef ClassifyExactInteractionEvent(string eventDefName)
+        {
             if (string.IsNullOrEmpty(eventDefName))
             {
                 return null;

@@ -63,6 +63,9 @@ namespace PawnDiary.Capture
         // Odyssey's canonical successful-landing chapter. Takeoff and travel remain state-only;
         // one landing payload chooses a solo page or one pair-shaped event with at most two POVs.
         GravshipJourney,
+        // Verified Odyssey source-owned events beyond landing. O3 uses this for the exact operator's
+        // destroy-versus-scavenge Mechhive resolution; generic Quest remains the fail-open fallback.
+        OdysseyEvent,
         // Royalty persona-weapon formation, meaningful separation/recovery, and standalone ending.
         // Combat/death enrichment remains a later Royalty phase and does not use this source yet.
         PersonaWeapon,

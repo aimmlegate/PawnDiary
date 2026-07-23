@@ -205,6 +205,11 @@
   <odysseyGravshipLanding.tone>with arrival relief, crew focus, and the weight of a mobile home coming down</odysseyGravshipLanding.tone>
   <odysseyGravshipLanding.tones.0>grounded and sensory, centered on descent, touchdown, and what this destination means</odysseyGravshipLanding.tones.0>
   <odysseyGravshipLanding.tones.1>crew-minded and reflective, weighing the completed passage without inventing what follows</odysseyGravshipLanding.tones.1>
+  <odysseyMechhiveOutcome.label>Fate of the Mechhive</odysseyMechhiveOutcome.label>
+  <odysseyMechhiveOutcome.instruction>the exact operator committed the visible Mechhive ending; preserve whether the Cerebrex core was destroyed or scavenged, use only the supplied actor and setting, and never invent control of the Mechhive, dialogue, hidden combat participation, motives, or consequences beyond the verified branch</odysseyMechhiveOutcome.instruction>
+  <odysseyMechhiveOutcome.tone>with terminal resolve, mechanical enormity, and the weight of a choice made at the core</odysseyMechhiveOutcome.tone>
+  <odysseyMechhiveOutcome.tones.0>final and grounded, centered on the operator&apos;s exact destroy-or-scavenge choice</odysseyMechhiveOutcome.tones.0>
+  <odysseyMechhiveOutcome.tones.1>vast but personal, refusing to turn visible machinery into unsupported control or conquest</odysseyMechhiveOutcome.tones.1>
   <ritualAnomalyInvitation.label>Anomaly invitations</ritualAnomalyInvitation.label>
   <ritualAnomalyInvitation.instruction>a psychic ritual meant to call something toward the colony completed—center the pawn&apos;s captured perspective, deliberate invitation, and uncertainty; do not claim what arrived or what happened afterward</ritualAnomalyInvitation.instruction>
   <ritualAnomalyInvitation.tone>with deliberate invitation and uncertain dread</ritualAnomalyInvitation.tone>

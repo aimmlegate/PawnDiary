@@ -15,6 +15,7 @@ namespace DiaryOdysseyPolicyTests
             TestFrozenSchemaAndArcKeys();
             TestExactLocationClassification();
             TestExactQuestRootClassification();
+            TestMechhiveOutcomePolicyAndPersistence();
             TestDeterministicWriterSelection();
             TestQualitativeBands();
             TestLaunchCooldownPolicy();
@@ -38,10 +39,18 @@ namespace DiaryOdysseyPolicyTests
             AssertEqual("landing group key", "odysseyGravshipLanding", OdysseyGroupDefNames.Landing);
             AssertEqual("active journey save key", "odysseyActiveJourney", OdysseySaveKeys.ActiveJourney);
             AssertEqual("history save key", "odysseyTravelHistory", OdysseySaveKeys.TravelHistory);
+            AssertEqual("Mechhive save key", "odysseyMechhiveOutcome", OdysseySaveKeys.MechhiveOutcome);
+            AssertEqual("Mechhive group key", "odysseyMechhiveOutcome", OdysseyGroupDefNames.MechhiveOutcome);
+            AssertEqual("Mechhive event Def", "PawnDiary_OdysseyMechhiveOutcome",
+                OdysseyMechhiveEventDefNames.Outcome);
             AssertEqual("journey id", "odyssey-journey|Ship_7|0", OdysseyArcKeys.Journey(" Ship_7 ", 0));
             AssertEqual("landing dedup", "odyssey-landing|Ship_7|42", OdysseyArcKeys.Landing("Ship_7", 42));
             AssertEqual("separator rejected", string.Empty, OdysseyArcKeys.Journey("bad|ship", 42));
             AssertEqual("negative tick rejected", string.Empty, OdysseyArcKeys.Landing("Ship_7", -1));
+            AssertEqual("Mechhive arc key", "odyssey-mechhive|42",
+                OdysseyArcKeys.MechhiveOutcome(42));
+            AssertEqual("invalid Mechhive arc key", string.Empty,
+                OdysseyArcKeys.MechhiveOutcome(0));
             AssertTrue("known landing reason", OdysseyLandingReasonTokens.IsKnown("homecoming"));
             AssertTrue("unknown landing reason rejected", !OdysseyLandingReasonTokens.IsKnown("first_fish"));
             OdysseyPolicySnapshot fallback = OdysseyPolicySnapshot.CreateDefault();
@@ -53,6 +62,116 @@ namespace DiaryOdysseyPolicyTests
             AssertEqual("unknown role rank", int.MaxValue, OdysseyJourneyRoleTokens.Rank("passenger"));
             AssertEqual("layer normalization", "orbit", OdysseyLocationLayerTokens.Normalize("ORBIT"));
             AssertEqual("unknown layer normalization", "unknown", OdysseyLocationLayerTokens.Normalize("deep_space"));
+        }
+
+        private static void TestMechhiveOutcomePolicyAndPersistence()
+        {
+            OdysseyPolicySnapshot policy = Policy();
+            policy.mechhiveOutcomePageEnabled = true;
+            OdysseyMechhiveOutcomeFacts facts = MechhiveFacts(
+                OdysseyMechhiveOutcomeTokens.Destroyed);
+            OdysseyMechhiveOutcomePlan plan =
+                OdysseyMechhiveOutcomePolicy.Plan(facts, policy);
+            AssertTrue("destroy outcome verifies", plan.valid && plan.commitOutcome && plan.writePage);
+            AssertEqual("destroy token canonical", "destroyed", plan.outcomeToken);
+            AssertEqual("Mechhive source key", "odyssey-mechhive|701", plan.sourceKey);
+            AssertTrue("verified plan owns quest success",
+                OdysseyMechhiveOutcomePolicy.OwnsQuestSuccess(plan));
+
+            facts.outcomeToken = "SCAVENGED";
+            plan = OdysseyMechhiveOutcomePolicy.Plan(facts, policy);
+            AssertEqual("scavenge token canonical", "scavenged", plan.outcomeToken);
+            AssertTrue("scavenge outcome writes", plan.writePage);
+
+            AssertTrue("prefix prediction requires every page gate",
+                OdysseyMechhiveOutcomePolicy.PredictsDedicatedPage(true, true, true, true));
+            AssertTrue("ineligible actor never claims quest",
+                !OdysseyMechhiveOutcomePolicy.PredictsDedicatedPage(false, true, true, true));
+            AssertTrue("disabled policy never claims quest",
+                !OdysseyMechhiveOutcomePolicy.PredictsDedicatedPage(true, false, true, true));
+            AssertTrue("disabled outcome page never claims quest",
+                !OdysseyMechhiveOutcomePolicy.PredictsDedicatedPage(true, true, false, true));
+            AssertTrue("disabled group never claims quest",
+                !OdysseyMechhiveOutcomePolicy.PredictsDedicatedPage(true, true, true, false));
+
+            facts.questSuccessObserved = false;
+            plan = OdysseyMechhiveOutcomePolicy.Plan(facts, policy);
+            AssertTrue("missing exact Quest success fails closed", !plan.valid && !plan.writePage);
+            facts.questSuccessObserved = true;
+            facts.questRootDefName = "Gravcore_Mechhive_Almost";
+            AssertTrue("nearby quest root fails closed",
+                !OdysseyMechhiveOutcomePolicy.Plan(facts, policy).valid);
+            facts.questRootDefName = OdysseyMechhiveSourceTokens.QuestRootDefName;
+            facts.outcomeToken = "controlled";
+            AssertTrue("guessed control outcome rejected",
+                !OdysseyMechhiveOutcomePolicy.Plan(facts, policy).valid);
+
+            facts = MechhiveFacts(OdysseyMechhiveOutcomeTokens.Scavenged);
+            policy.mechhiveOutcomePageEnabled = false;
+            plan = OdysseyMechhiveOutcomePolicy.Plan(facts, policy);
+            AssertTrue("disabled page still commits source state",
+                plan.valid && plan.commitOutcome && !plan.writePage);
+
+            OdysseyMechhiveOutcomeSnapshot normalized =
+                OdysseyMechhivePersistencePolicy.Normalize(
+                    new OdysseyMechhiveOutcomeSnapshot
+                    {
+                        outcomeToken = " SCAVENGED ",
+                        actorPawnId = " Pawn_7 ",
+                        questId = 701,
+                        committedTick = 900,
+                        eventId = " event-7 "
+                    });
+            AssertNotNull("valid Mechhive save row normalizes", normalized);
+            AssertEqual("saved outcome canonical", "scavenged", normalized.outcomeToken);
+            AssertEqual("saved actor cleaned", "Pawn_7", normalized.actorPawnId);
+            AssertEqual("saved event cleaned", "event-7", normalized.eventId);
+            AssertTrue("corrupt outcome row collapses",
+                OdysseyMechhivePersistencePolicy.Normalize(
+                    new OdysseyMechhiveOutcomeSnapshot
+                    {
+                        outcomeToken = "controlled",
+                        actorPawnId = "Pawn_7",
+                        questId = 701,
+                        committedTick = 900
+                    }) == null);
+            AssertTrue("partial identity row collapses",
+                OdysseyMechhivePersistencePolicy.Normalize(
+                    new OdysseyMechhiveOutcomeSnapshot
+                    {
+                        outcomeToken = "destroyed",
+                        actorPawnId = "bad|actor",
+                        questId = 701,
+                        committedTick = 900
+                    }) == null);
+
+            facts = MechhiveFacts(OdysseyMechhiveOutcomeTokens.Destroyed);
+            plan = OdysseyMechhiveOutcomePolicy.Plan(facts, Policy());
+            string context = OdysseyMechhiveContextFormatter.Format(facts, plan, Policy());
+            AssertContains("Mechhive context outcome", context, "mechhive_outcome=destroyed");
+            AssertContains("Mechhive context actor", context, "actor=Operator");
+            AssertContains("Mechhive context terminal", context, "terminal=true");
+            AssertTrue("Mechhive context omits quest id",
+                context.IndexOf("701", StringComparison.Ordinal) < 0);
+        }
+
+        private static OdysseyMechhiveOutcomeFacts MechhiveFacts(string outcome)
+        {
+            return new OdysseyMechhiveOutcomeFacts
+            {
+                actorPawnId = "Pawn_Operator",
+                actorLabel = "Operator",
+                actorSummary = "operator summary",
+                setting = "orbital core chamber",
+                outcomeToken = outcome,
+                questRootDefName = OdysseyMechhiveSourceTokens.QuestRootDefName,
+                questId = 701,
+                tick = 900,
+                methodReturnedNormally = true,
+                questSuccessObserved = true,
+                playerVisible = true,
+                actorEligible = true
+            };
         }
 
         private static void TestExactLocationClassification()

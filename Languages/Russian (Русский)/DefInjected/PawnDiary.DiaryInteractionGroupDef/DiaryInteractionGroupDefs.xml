@@ -274,6 +274,11 @@
   <odysseyGravshipLanding.tone>с облегчением прибытия, вниманием к экипажу и весом опускающегося мобильного дома</odysseyGravshipLanding.tone>
   <odysseyGravshipLanding.tones.0>приземлённо и чувственно, с упором на снижение, касание земли и значение этого места</odysseyGravshipLanding.tones.0>
   <odysseyGravshipLanding.tones.1>по-экипажному и задумчиво, осмысляя завершённый путь и не выдумывая продолжение</odysseyGravshipLanding.tones.1>
+  <odysseyMechhiveOutcome.label>Судьба мех-улья</odysseyMechhiveOutcome.label>
+  <odysseyMechhiveOutcome.instruction>точный оператор совершил видимый финальный выбор в мех-улье; сохрани, было ли ядро Cerebrex уничтожено или разобрано ради добычи, используй только переданные сведения об участнике и месте и не выдумывай контроль над мех-ульем, диалоги, скрытое участие в бою, мотивы или последствия сверх подтверждённой ветви</odysseyMechhiveOutcome.instruction>
+  <odysseyMechhiveOutcome.tone>с окончательной решимостью, величием механизма и тяжестью выбора у самого ядра</odysseyMechhiveOutcome.tone>
+  <odysseyMechhiveOutcome.tones.0>окончательно и приземлённо, вокруг точного выбора оператора — уничтожить или разобрать ядро</odysseyMechhiveOutcome.tones.0>
+  <odysseyMechhiveOutcome.tones.1>масштабно, но лично, не превращая видимый механизм в неподтверждённый контроль или завоевание</odysseyMechhiveOutcome.tones.1>
   <ritualAnomalyInvitation.label>Призывающие псионические ритуалы</ritualAnomalyInvitation.label>
   <ritualAnomalyInvitation.instruction>завершён псионический ритуал, призывающий нечто к поселению; держись переданной точки зрения, намеренного призыва и неизвестности, не утверждай, что именно явилось и что случилось потом</ritualAnomalyInvitation.instruction>
   <ritualAnomalyInvitation.tone>с намеренным призывом и тревогой неизвестности</ritualAnomalyInvitation.tone>

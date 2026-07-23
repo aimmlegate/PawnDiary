@@ -86,6 +86,7 @@ namespace DiaryCapturePolicyTests
             TestArcReflectionBuildGameContextFormat();
             TestBiotechCatalogDecisions();
             TestGravshipJourneyCatalogDecisions();
+            TestOdysseyCatalogDecisions();
             TestPersonaWeaponCatalogDecisions();
             TestRoyalPermitCatalogDecisions();
             TestAnomalyCatalogDecisions();
@@ -1783,6 +1784,45 @@ namespace DiaryCapturePolicyTests
                 GravshipJourneyEventData.Decide(landing, Ctx()));
         }
 
+        private static void TestOdysseyCatalogDecisions()
+        {
+            OdysseyEventData outcome = new OdysseyEventData
+            {
+                DefName = "PawnDiary_OdysseyMechhiveOutcome",
+                SourceKey = "odyssey-mechhive|701",
+                HasVerifiedSource = true,
+                PlayerVisible = true,
+                WriterId = "Pawn_Operator",
+                WriterEligible = true
+            };
+            AssertEqual("verified Odyssey source generates solo", CaptureDecision.GenerateSolo,
+                OdysseyEventData.Decide(outcome, Ctx()));
+            AssertEqual("Odyssey dedup is source-owned",
+                "odyssey|PawnDiary_OdysseyMechhiveOutcome|odyssey-mechhive|701",
+                outcome.DedupKey());
+
+            outcome.HasVerifiedSource = false;
+            AssertEqual("unverified Odyssey source drops", CaptureDecision.Drop,
+                OdysseyEventData.Decide(outcome, Ctx()));
+            outcome.HasVerifiedSource = true;
+            outcome.PlayerVisible = false;
+            AssertEqual("hidden Odyssey source drops", CaptureDecision.Drop,
+                OdysseyEventData.Decide(outcome, Ctx()));
+            outcome.PlayerVisible = true;
+            outcome.WriterEligible = false;
+            AssertEqual("ineligible Odyssey operator drops", CaptureDecision.Drop,
+                OdysseyEventData.Decide(outcome, Ctx()));
+            outcome.WriterEligible = true;
+            outcome.AlreadyRecorded = true;
+            AssertEqual("recorded Odyssey source drops", CaptureDecision.Drop,
+                OdysseyEventData.Decide(outcome, Ctx()));
+            outcome.AlreadyRecorded = false;
+            AssertEqual("disabled Odyssey group drops", CaptureDecision.Drop,
+                OdysseyEventData.Decide(outcome, Ctx(user: false)));
+            AssertEqual("disabled Odyssey policy drops", CaptureDecision.Drop,
+                OdysseyEventData.Decide(outcome, Ctx(signal: false)));
+        }
+
         private static void TestPersonaWeaponCatalogDecisions()
         {
             PersonaWeaponEventData formed = new PersonaWeaponEventData
@@ -2117,6 +2157,19 @@ namespace DiaryCapturePolicyTests
                     WritePage = true,
                     FirstWriterId = "Pilot_1",
                     FirstWriterEligible = true
+                }, Ctx()));
+
+            DiaryEventSpec odysseySpec = DiaryEventCatalog.Get(DiaryEventType.OdysseyEvent);
+            AssertTrue("catalog has OdysseyEvent spec", odysseySpec is OdysseyEventSpec);
+            AssertEqual("catalog dispatches OdysseyEvent decision", CaptureDecision.GenerateSolo,
+                odysseySpec.Decide(new OdysseyEventData
+                {
+                    DefName = "PawnDiary_OdysseyMechhiveOutcome",
+                    SourceKey = "odyssey-mechhive|701",
+                    HasVerifiedSource = true,
+                    PlayerVisible = true,
+                    WriterId = "Pawn_Operator",
+                    WriterEligible = true
                 }, Ctx()));
 
             // Unregistered spec returns null — callers must treat as Drop.

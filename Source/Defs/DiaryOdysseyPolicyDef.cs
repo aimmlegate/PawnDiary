@@ -33,9 +33,11 @@ namespace PawnDiary
     {
         public bool enabled = true;
         public bool landingPageEnabled;
+        public bool mechhiveOutcomePageEnabled;
         public string packageId = "Ludeon.RimWorld.Odyssey";
         public string launchGroupKey = "ritualGravship";
         public string landingGroupKey = "odysseyGravshipLanding";
+        public string mechhiveOutcomeGroupKey = "odysseyMechhiveOutcome";
         // N2-O provider prose. {0} is the visible ship name and {1} the visible location label.
         public string mobileHomeNarrativeFormat;
         // N3-O pressure prose uses the same two event-time values after the existing seasonal-flood
@@ -43,6 +45,7 @@ namespace PawnDiary
         public string seasonalFloodNarrativeFormat;
         public int takeoffCorrelationTicks = 2500;
         public int landingCorrelationTicks = 2500;
+        public int mechhiveOutcomeMaximumDepth = 8;
         public int staleJourneyRetentionTicks = 3600000;
         public int launchCooldownTicks = 60000;
         public int landingCooldownTicks = 60000;
@@ -75,12 +78,16 @@ namespace PawnDiary
             if (string.IsNullOrWhiteSpace(packageId)) yield return "packageId must be non-blank.";
             if (string.IsNullOrWhiteSpace(launchGroupKey)) yield return "launchGroupKey must be non-blank.";
             if (string.IsNullOrWhiteSpace(landingGroupKey)) yield return "landingGroupKey must be non-blank.";
+            if (string.IsNullOrWhiteSpace(mechhiveOutcomeGroupKey))
+                yield return "mechhiveOutcomeGroupKey must be non-blank.";
             if (string.IsNullOrWhiteSpace(mobileHomeNarrativeFormat))
                 yield return "mobileHomeNarrativeFormat must contain DefInjected prompt prose.";
             if (string.IsNullOrWhiteSpace(seasonalFloodNarrativeFormat))
                 yield return "seasonalFloodNarrativeFormat must contain DefInjected prompt prose.";
             if (takeoffCorrelationTicks <= 0) yield return "takeoffCorrelationTicks must be positive.";
             if (landingCorrelationTicks <= 0) yield return "landingCorrelationTicks must be positive.";
+            if (mechhiveOutcomeMaximumDepth < 1 || mechhiveOutcomeMaximumDepth > 32)
+                yield return "mechhiveOutcomeMaximumDepth must be between 1 and 32.";
             if (staleJourneyRetentionTicks <= 0) yield return "staleJourneyRetentionTicks must be positive.";
             if (launchCooldownTicks < 0 || landingCooldownTicks < 0)
                 yield return "launch/landing cooldown ticks cannot be negative.";
@@ -176,6 +183,11 @@ namespace PawnDiary
             // DefInjected can replace prompt prose on a runtime language switch while retaining the
             // same Def object. Include both localized fields in the cache key so event-time text follows it.
             if (source != null && ReferenceEquals(source, cachedSource) && cachedSnapshot != null
+                && source.enabled == cachedSnapshot.enabled
+                && source.landingPageEnabled == cachedSnapshot.landingPageEnabled
+                && source.mechhiveOutcomePageEnabled == cachedSnapshot.mechhiveOutcomePageEnabled
+                && source.mechhiveOutcomeMaximumDepth
+                    == cachedSnapshot.mechhiveOutcomeMaximumDepth
                 && string.Equals(
                     source.mobileHomeNarrativeFormat ?? string.Empty,
                     cachedSnapshot.mobileHomeNarrativeFormat,
@@ -193,13 +205,20 @@ namespace PawnDiary
 
             result.enabled = source.enabled;
             result.landingPageEnabled = source.landingPageEnabled;
+            result.mechhiveOutcomePageEnabled = source.mechhiveOutcomePageEnabled;
             result.packageId = Clean(source.packageId, result.packageId);
             result.launchGroupKey = Clean(source.launchGroupKey, result.launchGroupKey);
             result.landingGroupKey = Clean(source.landingGroupKey, result.landingGroupKey);
+            result.mechhiveOutcomeGroupKey = Clean(
+                source.mechhiveOutcomeGroupKey, result.mechhiveOutcomeGroupKey);
             result.mobileHomeNarrativeFormat = source.mobileHomeNarrativeFormat ?? string.Empty;
             result.seasonalFloodNarrativeFormat = source.seasonalFloodNarrativeFormat ?? string.Empty;
             result.takeoffCorrelationTicks = Positive(source.takeoffCorrelationTicks, result.takeoffCorrelationTicks);
             result.landingCorrelationTicks = Positive(source.landingCorrelationTicks, result.landingCorrelationTicks);
+            result.mechhiveOutcomeMaximumDepth = source.mechhiveOutcomeMaximumDepth >= 1
+                && source.mechhiveOutcomeMaximumDepth <= 32
+                ? source.mechhiveOutcomeMaximumDepth
+                : result.mechhiveOutcomeMaximumDepth;
             result.staleJourneyRetentionTicks = Positive(source.staleJourneyRetentionTicks, result.staleJourneyRetentionTicks);
             result.launchCooldownTicks = Math.Max(0, source.launchCooldownTicks);
             result.landingCooldownTicks = Math.Max(0, source.landingCooldownTicks);

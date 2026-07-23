@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using PawnDiary.Capture;
 using PawnDiary.Ingestion;
 using RimWorld;
 using RimWorld.Planet;
@@ -17,8 +18,9 @@ namespace PawnDiary
         private OdysseyTravelHistoryState odysseyTravelHistory = new OdysseyTravelHistoryState();
         private OdysseyTakeoffIntent odysseyTakeoffIntent;
         private OdysseyPendingLanding odysseyPendingLanding;
+        private OdysseyMechhiveOutcomeState odysseyMechhiveOutcome;
 
-        /// <summary>Scribes the two additive O1 keys and normalizes every loaded detached row.</summary>
+        /// <summary>Scribes additive Odyssey keys and normalizes every loaded detached row.</summary>
         private void ExposeOdysseyData()
         {
             Scribe_Deep.Look(
@@ -27,6 +29,9 @@ namespace PawnDiary
             Scribe_Deep.Look(
                 ref odysseyTravelHistory,
                 OdysseySaveKeys.TravelHistory);
+            Scribe_Deep.Look(
+                ref odysseyMechhiveOutcome,
+                OdysseySaveKeys.MechhiveOutcome);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -37,6 +42,8 @@ namespace PawnDiary
                 odysseyTravelHistory = OdysseyStatePersistence.NormalizeHistory(
                     odysseyTravelHistory,
                     policy);
+                odysseyMechhiveOutcome = OdysseyStatePersistence.NormalizeMechhiveOutcome(
+                    odysseyMechhiveOutcome);
             }
         }
 
@@ -49,6 +56,8 @@ namespace PawnDiary
             odysseyActiveJourney = null;
             odysseyTakeoffIntent = null;
             odysseyPendingLanding = null;
+            odysseyMechhiveOutcome = null;
+            OdysseyTransientState.Reset();
             int now = Find.TickManager?.TicksGame ?? 0;
             OdysseyPolicySnapshot policy = DiaryOdysseyPolicy.Snapshot();
             OdysseyTravelHistorySnapshot history = new OdysseyTravelHistorySnapshot
@@ -83,10 +92,13 @@ namespace PawnDiary
             // Intent/landing rows are cutscene-local only and never survive a save/load boundary.
             odysseyTakeoffIntent = null;
             odysseyPendingLanding = null;
+            OdysseyTransientState.Reset();
             OdysseyPolicySnapshot policy = DiaryOdysseyPolicy.Snapshot();
             odysseyTravelHistory = OdysseyStatePersistence.NormalizeHistory(
                 odysseyTravelHistory,
                 policy);
+            odysseyMechhiveOutcome = OdysseyStatePersistence.NormalizeMechhiveOutcome(
+                odysseyMechhiveOutcome);
             if (odysseyTravelHistory.historyInitialized)
             {
                 return;
@@ -124,6 +136,97 @@ namespace PawnDiary
         internal bool HasOdysseyDiary(Pawn pawn)
         {
             return pawn != null && FindDiary(pawn, false) != null;
+        }
+
+        /// <summary>True once an exact destroy/scavenge Mechhive outcome is normalized and committed.</summary>
+        internal bool HasCommittedOdysseyMechhiveOutcome => odysseyMechhiveOutcome != null;
+
+        /// <summary>Returns a detached normalized O3 terminal snapshot for focused loaded tests.</summary>
+        internal OdysseyMechhiveOutcomeSnapshot OdysseyMechhiveOutcomeSnapshotForTests()
+        {
+            return OdysseyMechhivePersistencePolicy.Normalize(
+                odysseyMechhiveOutcome?.ToSnapshot());
+        }
+
+        /// <summary>
+        /// Verifies one normally-returned exact owner, commits its replay barrier, and dispatches at
+        /// most one operator-authored ending page. The generic Quest signal remains deferred until the
+        /// caller proves this method actually created that dedicated page.
+        /// </summary>
+        internal OdysseyMechhiveOutcomePlan CompleteOdysseyMechhiveOutcome(
+            object coreComp,
+            OdysseyMechhiveOutcomeCapture capture,
+            bool questSuccessObserved,
+            out bool dedicatedEventCreated)
+        {
+            dedicatedEventCreated = false;
+            OdysseyMechhiveOutcomeFacts facts;
+            if (!DlcContext.TryCompleteOdysseyMechhiveOutcome(
+                coreComp, capture, questSuccessObserved, out facts) || facts == null)
+            {
+                return null;
+            }
+
+            OdysseyPolicySnapshot policy = DiaryOdysseyPolicy.Snapshot();
+            OdysseyMechhiveOutcomePlan plan = OdysseyMechhiveOutcomePolicy.Plan(facts, policy);
+            if (!plan.valid || !plan.commitOutcome) return plan;
+
+            if (!HasCommittedOdysseyMechhiveOutcome)
+            {
+                OdysseyMechhiveOutcomeSnapshot committed =
+                    new OdysseyMechhiveOutcomeSnapshot
+                    {
+                        outcomeToken = plan.outcomeToken,
+                        actorPawnId = plan.actorPawnId,
+                        questId = facts.questId,
+                        committedTick = facts.tick,
+                        eventId = string.Empty
+                    };
+                // The load path calls this exact normalization too. In-session and reloaded replay
+                // barriers therefore cannot disagree about a malformed or partial terminal row.
+                odysseyMechhiveOutcome = OdysseyMechhiveOutcomeState.FromSnapshot(
+                    OdysseyMechhivePersistencePolicy.Normalize(committed));
+            }
+
+            if (!plan.writePage || capture?.actor == null) return plan;
+            Pawn actor = capture.ResolveActor(plan.actorPawnId);
+            if (actor == null) return plan;
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyOdysseyEvent(
+                OdysseyMechhiveEventDefNames.Outcome);
+            OdysseyMechhiveOutcomeSignal signal = new OdysseyMechhiveOutcomeSignal(
+                facts, plan, policy, group, actor);
+            Dispatch(signal);
+            if (signal.CreatedEvent == null) return plan;
+            dedicatedEventCreated = true;
+
+            try
+            {
+                // The page is already durable. Attach its identity only if the normalized committed
+                // branch/actor/quest still matches this exact source.
+                OdysseyMechhiveOutcomeSnapshot afterEvent =
+                    OdysseyMechhiveOutcomeSnapshotForTests();
+                if (afterEvent != null
+                    && afterEvent.questId == facts.questId
+                    && string.Equals(
+                        afterEvent.outcomeToken, plan.outcomeToken, StringComparison.Ordinal)
+                    && string.Equals(
+                        afterEvent.actorPawnId, plan.actorPawnId, StringComparison.Ordinal))
+                {
+                    afterEvent.eventId = signal.CreatedEvent.eventId ?? string.Empty;
+                    odysseyMechhiveOutcome = OdysseyMechhiveOutcomeState.FromSnapshot(
+                        OdysseyMechhivePersistencePolicy.Normalize(afterEvent));
+                }
+            }
+            catch (Exception exception)
+            {
+                // The dedicated page already exists, so bookkeeping must never escape and make the
+                // postfix release the deferred generic Quest completion as a second ending.
+                Log.ErrorOnce(
+                    "[Pawn Diary] Odyssey Mechhive bookkeeping after the ending page failed; the "
+                        + "dedicated page remains the sole ending: " + exception,
+                    "PawnDiary.Odyssey.Mechhive.PostPage".GetHashCode());
+            }
+            return plan;
         }
 
         /// <summary>

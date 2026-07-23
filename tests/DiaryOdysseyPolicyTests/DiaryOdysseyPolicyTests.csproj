@@ -15,5 +15,7 @@
     <Compile Include="..\..\Source\Pipeline\OdysseyLandingPolicy.cs" Link="OdysseyLandingPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\OdysseyLifecyclePolicy.cs" Link="OdysseyLifecyclePolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\OdysseyContextFormatter.cs" Link="OdysseyContextFormatter.cs" />
+    <Compile Include="..\..\Source\Capture\Policies\OdysseyMechhiveOutcomePolicy.cs" Link="OdysseyMechhiveOutcomePolicy.cs" />
+    <Compile Include="..\..\Source\Capture\Policies\OdysseyMechhiveContextFormatter.cs" Link="OdysseyMechhiveContextFormatter.cs" />
   </ItemGroup>
 </Project>

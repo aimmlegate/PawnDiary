@@ -1519,6 +1519,9 @@
   <PawnDiary.Event.Odyssey.Landing.Label>Gravship landing</PawnDiary.Event.Odyssey.Landing.Label>
   <PawnDiary.Event.Odyssey.Landing.Fallback>{0} helped bring {1} down at {2} as {3}.</PawnDiary.Event.Odyssey.Landing.Fallback>
   <PawnDiary.Event.Odyssey.Landing.PairFallback>{0} helped bring {1} down at {2} as {3}, alongside {4} as {5}.</PawnDiary.Event.Odyssey.Landing.PairFallback>
+  <PawnDiary.Event.Odyssey.Mechhive.Label>Fate of the Mechhive</PawnDiary.Event.Odyssey.Mechhive.Label>
+  <PawnDiary.Event.Odyssey.Mechhive.DestroyedFallback>{0} destroyed the Cerebrex core and ended the Mechhive.</PawnDiary.Event.Odyssey.Mechhive.DestroyedFallback>
+  <PawnDiary.Event.Odyssey.Mechhive.ScavengedFallback>{0} scavenged the Cerebrex core and recovered its node.</PawnDiary.Event.Odyssey.Mechhive.ScavengedFallback>
   <PawnDiary.Event.Odyssey.Role.Pilot>pilot</PawnDiary.Event.Odyssey.Role.Pilot>
   <PawnDiary.Event.Odyssey.Role.Copilot>copilot</PawnDiary.Event.Odyssey.Role.Copilot>
   <PawnDiary.Event.Odyssey.Role.Crew>crew</PawnDiary.Event.Odyssey.Role.Crew>

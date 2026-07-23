@@ -58,7 +58,18 @@ namespace PawnDiary
             string textKey = signal == QuestEventData.SignalCompleted
                 ? "PawnDiary.Event.QuestCompleted"
                 : "PawnDiary.Event.QuestFailed";
-            DiaryEvents.Submit(new QuestFanoutSignal(quest, signal, textKey));
+            QuestFanoutSignal fanout = new QuestFanoutSignal(quest, signal, textKey);
+            // Odyssey O3's exact core owner fires this success before its postfix can verify the final
+            // branch. Park the already-built generic signal transactionally; the postfix releases it
+            // unchanged unless a dedicated Mechhive ending page verifiably exists.
+            if (outcome == QuestEndOutcome.Success
+                && OdysseyMechhiveOutcomePatch.HookReady
+                && quest != null
+                && OdysseyMechhiveOutcomeScope.TryDeferQuestSuccess(quest.id, fanout))
+            {
+                return;
+            }
+            DiaryEvents.Submit(fanout);
         }
 
         /// <summary>

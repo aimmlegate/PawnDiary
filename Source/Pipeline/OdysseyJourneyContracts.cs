@@ -17,6 +17,7 @@ namespace PawnDiary
     {
         public const string Launch = "ritualGravship";
         public const string Landing = "odysseyGravshipLanding";
+        public const string MechhiveOutcome = "odysseyMechhiveOutcome";
     }
 
     /// <summary>Additive component save keys frozen before Odyssey persistence is introduced.</summary>
@@ -24,6 +25,7 @@ namespace PawnDiary
     {
         public const string ActiveJourney = "odysseyActiveJourney";
         public const string TravelHistory = "odysseyTravelHistory";
+        public const string MechhiveOutcome = "odysseyMechhiveOutcome";
     }
 
     /// <summary>Stable IDs shared by save ownership, deduplication, and Narrative Continuity.</summary>
@@ -31,6 +33,7 @@ namespace PawnDiary
     {
         private const string JourneyPrefix = "odyssey-journey|";
         private const string LandingPrefix = "odyssey-landing|";
+        private const string MechhivePrefix = "odyssey-mechhive|";
 
         /// <summary>Builds the one committed journey ID; the same value is its narrative arc key.</summary>
         public static string Journey(string shipStableId, int departureTick)
@@ -48,6 +51,12 @@ namespace PawnDiary
             return ship.Length == 0 || departureTick < 0
                 ? string.Empty
                 : LandingPrefix + ship + "|" + departureTick;
+        }
+
+        /// <summary>Builds the exact terminal Mechhive arc/source key from its vanilla quest id.</summary>
+        public static string MechhiveOutcome(int questId)
+        {
+            return questId > 0 ? MechhivePrefix + questId : string.Empty;
         }
 
         private static string CleanId(string value)
@@ -170,15 +179,18 @@ namespace PawnDiary
     {
         public bool enabled = true;
         public bool landingPageEnabled;
+        public bool mechhiveOutcomePageEnabled;
         public string packageId = "Ludeon.RimWorld.Odyssey";
         public string launchGroupKey = OdysseyGroupDefNames.Launch;
         public string landingGroupKey = OdysseyGroupDefNames.Landing;
+        public string mechhiveOutcomeGroupKey = OdysseyGroupDefNames.MechhiveOutcome;
         // Provider prose is DefInjected at runtime. Empty is the safe no-Def fallback: omit only
         // that optional lens while keeping the source-owned event and its evidence/reference.
         public string mobileHomeNarrativeFormat = string.Empty;
         public string seasonalFloodNarrativeFormat = string.Empty;
         public int takeoffCorrelationTicks = 2500;
         public int landingCorrelationTicks = 2500;
+        public int mechhiveOutcomeMaximumDepth = 8;
         public int staleJourneyRetentionTicks = 3600000;
         public int launchCooldownTicks = 60000;
         public int landingCooldownTicks = 60000;

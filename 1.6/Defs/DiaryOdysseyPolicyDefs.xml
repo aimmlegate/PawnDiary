@@ -8,13 +8,17 @@
     <enabled>true</enabled>
     <!-- O1.3 observes lifecycle/history only. O1.4 enables the concrete landing event route. -->
     <landingPageEnabled>true</landingPageEnabled>
+    <!-- O3's specialized page is gated separately; source state still commits when this is false. -->
+    <mechhiveOutcomePageEnabled>true</mechhiveOutcomePageEnabled>
     <packageId>Ludeon.RimWorld.Odyssey</packageId>
     <launchGroupKey>ritualGravship</launchGroupKey>
     <landingGroupKey>odysseyGravshipLanding</landingGroupKey>
+    <mechhiveOutcomeGroupKey>odysseyMechhiveOutcome</mechhiveOutcomeGroupKey>
     <mobileHomeNarrativeFormat>At this event, the writer was aboard {0}, their exact gravship home at {1}.</mobileHomeNarrativeFormat>
     <seasonalFloodNarrativeFormat>At this event, seasonal floodwater remained present on the map where the writer was aboard {0} at {1}.</seasonalFloodNarrativeFormat>
     <takeoffCorrelationTicks>2500</takeoffCorrelationTicks>
     <landingCorrelationTicks>2500</landingCorrelationTicks>
+    <mechhiveOutcomeMaximumDepth>8</mechhiveOutcomeMaximumDepth>
     <staleJourneyRetentionTicks>3600000</staleJourneyRetentionTicks>
     <launchCooldownTicks>60000</launchCooldownTicks>
     <landingCooldownTicks>60000</landingCooldownTicks>

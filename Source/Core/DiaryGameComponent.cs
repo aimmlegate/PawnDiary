@@ -530,6 +530,16 @@ namespace PawnDiary
             }
             try
             {
+                OdysseyTransientState.Reset();
+            }
+            catch (Exception exception)
+            {
+                Log.ErrorOnce(
+                    "[Pawn Diary] Odyssey transient-state reset failed: " + exception,
+                    "PawnDiary.Odyssey.Reset".GetHashCode());
+            }
+            try
+            {
                 BeliefHistoryCorrelationCache.Reset();
                 BeliefMutationCache.Reset();
                 DlcContext.ResetBeliefProjectionCaches();

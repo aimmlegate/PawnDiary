@@ -2758,6 +2758,30 @@
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
+  <!-- Odyssey O3 exact Cerebrex-core owner. The private vanilla method is fail-soft registered;
+       this row cannot claim the generic Quest completion unless actor, policy, and group gates pass. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>odysseyMechhiveOutcome</defName>
+    <label>Fate of the Mechhive</label>
+    <order>66</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Odyssey</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>the exact operator committed the visible Mechhive ending; preserve whether the Cerebrex core was destroyed or scavenged, use only the supplied actor and setting, and never invent control of the Mechhive, dialogue, hidden combat participation, motives, or consequences beyond the verified branch</instruction>
+    <tone>with terminal resolve, mechanical enormity, and the weight of a choice made at the core</tone>
+    <tones>
+      <li>final and grounded, centered on the operator&apos;s exact destroy-or-scavenge choice</li>
+      <li>vast but personal, refusing to turn visible machinery into unsupported control or conquest</li>
+    </tones>
+    <colorCue>eventful</colorCue>
+    <matchDefNames>
+      <li>PawnDiary_OdysseyMechhiveOutcome</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
   <!-- Anomaly A1.1 exact synthetic routes. These rows intentionally reuse the Interaction domain,
        with orders 61-65 placing them before the broad order-70 Anomaly interaction matcher. Runtime
        code uses required-match classification, so the ordinary Interaction catch-all cannot authorize
