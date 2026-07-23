@@ -50,6 +50,7 @@ namespace PawnMemoryTests
             TestLoreSeedNarrativeOffsetClamp();
             TestCoreLoreCooldownGate();
             TestEvictionLoreSuppression();
+            TestAuthoredKeywordNormalization();
             Console.WriteLine("PawnMemoryTests passed " + assertions + " assertions.");
             return 0;
         }
@@ -1479,6 +1480,31 @@ namespace PawnMemoryTests
             AssertEqual("suppressed lore does not count toward the global cap", 0, globalSuppressed.Count);
             List<string> globalActive = MemoryEvictionPlanner.PlanGlobalCap(fragments, now, policy);
             AssertEqual("enabled lore counts toward the global cap", 1, globalActive.Count);
+        }
+
+        /// <summary>
+        /// LORE_MEMORY_SEED_PLAN §5/§10: authored seed keywords normalize through the exact
+        /// identity tokenizer used for deposit/query values — short tokens and stopword-lookalike
+        /// Def names survive, prose noise rules do not apply, duplicates drop, the cap holds.
+        /// </summary>
+        private static void TestAuthoredKeywordNormalization()
+        {
+            List<string> normalized = MemoryExtraction.NormalizeAuthoredKeywords(
+                new List<string> { "MechanoidCluster", "Mechanoid", "mechanoid", "The", "Ur" }, 8);
+            AssertSequence("identity tokenization keeps short and stopword-like tokens",
+                new[] { "mechanoidcluster", "mechanoid", "the", "ur" }, normalized);
+
+            List<string> capped = MemoryExtraction.NormalizeAuthoredKeywords(
+                new List<string> { "Alpha", "Beta", "Gamma" }, 2);
+            AssertEqual("keyword cap holds", 2, capped.Count);
+
+            List<string> split = MemoryExtraction.NormalizeAuthoredKeywords(
+                new List<string> { "Psychic-Drone" }, 8);
+            AssertSequence("non-alphanumerics split into stable tokens",
+                new[] { "psychic", "drone" }, split);
+
+            AssertEqual("null input yields an empty list", 0,
+                MemoryExtraction.NormalizeAuthoredKeywords(null, 8).Count);
         }
 
         private static LoreSeedCandidate LoreSeed(string name, string usage = "initial",

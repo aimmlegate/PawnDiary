@@ -194,7 +194,214 @@ namespace PawnDiary.RimTests
                 "The roster must keep the removed Def name as history (no resampling).");
         }
 
+        // ── Test 3b: partial-deposit retry ───────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// A roster target whose fragment row was later removed (eviction, save surgery) while the
+        /// Def still exists re-deposits under the SAME sentinel on the next eligible event — the
+        /// retry path deposits missing targets only and never resamples the roster (§6/§7.1).
+        /// </summary>
+        [Test]
+        public static void EvictedTargetRedepositsWithoutResampling()
+        {
+            string pawnAId = pawnA.GetUniqueLoadID();
+
+            AddPairwiseLoreEvent(pawnA, pawnB, "DeepTalk");
+            MemoryFragment seed = FindLoreFragment(pawnAId);
+            Require(seed != null, "Setup: the lore seed must deposit first.");
+            List<string> rosterBefore = new List<string>(
+                LoreStateFor(pawnAId).initialTargetDefNames);
+
+            GetMemories().RemoveByIds(new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                seed.memoryId
+            });
+            Require(CountLoreFragments(pawnAId) == 0, "Setup: the lore row must be removed.");
+
+            AddPairwiseLoreEvent(pawnA, pawnB, "DeepTalk");
+            MemoryFragment redeposited = FindLoreFragment(pawnAId);
+            Require(redeposited != null,
+                "A missing roster target with a live Def must re-deposit on the next event.");
+            Require(redeposited.sourceEventId == seed.sourceEventId,
+                "The retry must reuse the stable per-Def sentinel identity.");
+            List<string> rosterAfter = LoreStateFor(pawnAId).initialTargetDefNames;
+            Require(rosterAfter.Count == rosterBefore.Count
+                && rosterAfter.Contains(TestSeedDefName),
+                "The retry must never resample or grow the persisted roster.");
+        }
+
         // ── Test 4: Scribe round-trip ────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// The additive MemoryFragment lore keys survive a real Scribe save/load, and PostLoadInit
+        /// repairs hand-edited rows: whitespace provenance trims to empty (a lived memory) and a
+        /// negative narrative offset clamps to zero (§16 G1/G2).
+        /// </summary>
+        [Test]
+        public static void FragmentLoreFieldsScribeRoundTripAndRepair()
+        {
+            MemoryFragment fragment = new MemoryFragment
+            {
+                memoryId = "lore-rt-1",
+                pawnId = "Thing_Human99999",
+                sourceEventId = "loreseed:LoreSeed_RoundTrip",
+                text = "A remembered story.",
+                tags = new List<string> { "lore", "dread" },
+                keywords = new List<string> { "mechanoid" },
+                importance = 0.35f,
+                createdTick = 1000,
+                lastRecalledTick = 1000,
+                loreSeedDefName = "LoreSeed_RoundTrip",
+                narrativeAgeOffsetTicks = 7200000
+            };
+
+            MemoryFragment loaded = ScribeRoundTrip(fragment);
+            Require(loaded.loreSeedDefName == "LoreSeed_RoundTrip",
+                "loreSeedDefName must round-trip, got '" + loaded.loreSeedDefName + "'.");
+            Require(loaded.narrativeAgeOffsetTicks == 7200000,
+                "narrativeAgeOffsetTicks must round-trip, got " + loaded.narrativeAgeOffsetTicks + ".");
+
+            MemoryFragment dirty = new MemoryFragment
+            {
+                memoryId = "lore-rt-2",
+                pawnId = "Thing_Human99999",
+                sourceEventId = "evt-lived",
+                text = "A lived memory.",
+                importance = 0.5f,
+                createdTick = 1000,
+                lastRecalledTick = 1000,
+                loreSeedDefName = "   ",
+                narrativeAgeOffsetTicks = -500000
+            };
+
+            MemoryFragment repaired = ScribeRoundTrip(dirty);
+            Require(repaired.loreSeedDefName == string.Empty,
+                "Whitespace lore provenance must repair to empty (a lived memory).");
+            Require(repaired.narrativeAgeOffsetTicks == 0,
+                "A negative narrative offset must clamp to zero on load.");
+        }
+
+        // ── Test 5: Def validation + candidate normalization ────────────────────────────────────────
+
+        /// <summary>
+        /// The §5 authoring contract fails loudly: empty/oversized prose, unknown closed tokens,
+        /// non-positive weight, unknown tags, keyword overflow, progression usage without event
+        /// tokens, and a core tier without exact high-confidence evidence all yield config errors,
+        /// while a well-formed seed yields none.
+        /// </summary>
+        [Test]
+        public static void LoreSeedDefValidationCatchesAuthoringErrors()
+        {
+            // Baseline-relative: base Def.ConfigErrors may emit unrelated noise for a
+            // hand-constructed Def, so every bad case must add errors ON TOP of the valid seed.
+            int baseline = ErrorCount(ValidSeed());
+
+            DiaryLoreSeedDef blank = ValidSeed();
+            blank.text = "  ";
+            Require(ErrorCount(blank) > baseline, "Empty text must be a config error.");
+
+            DiaryLoreSeedDef oversized = ValidSeed();
+            oversized.text = new string('x', DiaryLoreSeedDef.MaxTextChars + 1);
+            Require(ErrorCount(oversized) > baseline, "Oversized text must be a config error.");
+
+            DiaryLoreSeedDef badUsage = ValidSeed();
+            badUsage.usage = "Initial";
+            Require(ErrorCount(badUsage) > baseline, "Usage tokens are closed and case-sensitive.");
+
+            DiaryLoreSeedDef badTier = ValidSeed();
+            badTier.retentionTier = "legendary";
+            Require(ErrorCount(badTier) > baseline, "Retention tier tokens are closed.");
+
+            DiaryLoreSeedDef badWeight = ValidSeed();
+            badWeight.weight = 0f;
+            Require(ErrorCount(badWeight) > baseline, "Weight must be positive and finite.");
+
+            DiaryLoreSeedDef badTag = ValidSeed();
+            badTag.tags = new List<string> { "dread", "spooky" };
+            Require(ErrorCount(badTag) > baseline, "Unknown memory tags must be reported.");
+
+            DiaryLoreSeedDef tooManyKeywords = ValidSeed();
+            tooManyKeywords.keywords = new List<string>
+            {
+                "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9"
+            };
+            Require(ErrorCount(tooManyKeywords) > baseline, "More than eight keywords must be reported.");
+
+            DiaryLoreSeedDef progressionless = ValidSeed();
+            progressionless.usage = LoreSeedTokens.UsageProgression;
+            Require(ErrorCount(progressionless) > baseline,
+                "Progression usage without progressionEventDefNames must be a config error.");
+
+            DiaryLoreSeedDef vagueCore = ValidSeed();
+            vagueCore.retentionTier = LoreSeedTokens.TierCore;
+            vagueCore.backstoryCategories = new List<string> { "Tribal" };
+            Require(ErrorCount(vagueCore) > baseline,
+                "A core seed with only broad category matchers must be a config error (§16 G5).");
+
+            DiaryLoreSeedDef exactCore = ValidSeed();
+            exactCore.retentionTier = LoreSeedTokens.TierCore;
+            exactCore.xenotypeDefNames = new List<string> { "Hussar" };
+            Require(ErrorCount(exactCore) == baseline,
+                "A core seed with exact xenotype evidence must add no config errors.");
+        }
+
+        /// <summary>
+        /// ToCandidate copies a Def into the plain planner contract: unknown tags are dropped,
+        /// authored keywords normalize through the exact deposit/query identity tokenizer, and
+        /// matcher lists are trimmed copies.
+        /// </summary>
+        [Test]
+        public static void ToCandidateNormalizesTagsAndKeywords()
+        {
+            DiaryLoreSeedDef def = ValidSeed();
+            def.tags = new List<string> { "dread", "spooky", " combat " };
+            def.keywords = new List<string> { "MechanoidCluster", "Psychic-Drone", "MechanoidCluster" };
+            def.backstoryCategories = new List<string> { " Tribal ", "  " };
+
+            LoreSeedCandidate candidate = def.ToCandidate(null);
+            Require(candidate.tags.Count == 2
+                && candidate.tags.Contains("dread") && candidate.tags.Contains("combat"),
+                "Unknown tags must be dropped and known ones trimmed, got "
+                + string.Join(",", candidate.tags) + ".");
+            Require(candidate.keywords.Count == 3
+                && candidate.keywords[0] == "mechanoidcluster"
+                && candidate.keywords[1] == "psychic"
+                && candidate.keywords[2] == "drone",
+                "Keywords must normalize through the identity tokenizer, got "
+                + string.Join(",", candidate.keywords) + ".");
+            Require(candidate.backstoryCategories.Count == 1
+                && candidate.backstoryCategories[0] == "Tribal",
+                "Matcher lists must be trimmed, blank-free copies.");
+        }
+
+        private static DiaryLoreSeedDef ValidSeed()
+        {
+            return new DiaryLoreSeedDef
+            {
+                defName = "PDTest_LoreSeed_Validation",
+                label = "validation seed",
+                text = "The elders said the old machines sleep under the mountains.",
+                usage = LoreSeedTokens.UsageInitial,
+                retentionTier = LoreSeedTokens.TierOrdinary,
+                weight = 1f,
+                tags = new List<string> { "dread" },
+                keywords = new List<string> { "Mechanoid" }
+            };
+        }
+
+        private static int ErrorCount(DiaryLoreSeedDef def)
+        {
+            int count = 0;
+            foreach (string error in def.ConfigErrors())
+            {
+                if (!string.IsNullOrWhiteSpace(error))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
 
         /// <summary>
         /// PawnLoreSeedState survives a real Scribe save/load and PostLoadInit trims blanks and
