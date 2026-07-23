@@ -56,6 +56,8 @@ namespace PawnMemoryTests
             TestLoreCatalogReachabilityAndReservation();
             TestLoreCatalogRussianParity();
             TestLoreCatalogRecallSmoke();
+            TestLorePrimerClauseContract();
+            TestLoreKeywordVocabularyRoundTrip();
             Console.WriteLine("PawnMemoryTests passed " + assertions + " assertions.");
             return 0;
         }
@@ -1947,6 +1949,120 @@ namespace PawnMemoryTests
             AssertEqual(family + " smoke picks the seed row", seed.memoryId, result.picks[0].memoryId);
             AssertTrue(family + " smoke renders the authored prose",
                 result.memoryContext.Contains(row.text));
+        }
+
+        /// <summary>
+        /// LORE_MEMORY_SEED_PLAN §12: the shipped lore-primer tiers must literally carry
+        /// 3 / 4 / 5 semicolon-separated clauses (Compact / Balanced / Full), each opening with the
+        /// explicit-facts override. DiaryPipelineTests.TestLorePrimerComposition proves placement with
+        /// placeholder prose; this locks the real shipped EN + RU text so the Full tier can never
+        /// silently regress to the merged four-clause form (no-FTL travel and no-FTL communication
+        /// must stay two distinct clauses).
+        /// </summary>
+        private static void TestLorePrimerClauseContract()
+        {
+            string[] languages = { "English", "Russian (Русский)" };
+            for (int l = 0; l < languages.Length; l++)
+            {
+                string path = FindRepositoryFile(Path.Combine(
+                    "Languages", languages[l], "Keyed", "PawnDiary.xml"));
+                XElement root = XDocument.Load(path).Root;
+                AssertTrue(languages[l] + " keyed root is LanguageData",
+                    root != null && root.Name.LocalName == "LanguageData");
+
+                AssertPrimerClauses(languages[l], root, "PawnDiary.Prompt.LorePrimer.Compact", 3);
+                AssertPrimerClauses(languages[l], root, "PawnDiary.Prompt.LorePrimer.Balanced", 4);
+                AssertPrimerClauses(languages[l], root, "PawnDiary.Prompt.LorePrimer.Full", 5);
+            }
+        }
+
+        private static void AssertPrimerClauses(string language, XElement root, string key, int expectedClauses)
+        {
+            string value = root?.Element(key)?.Value;
+            AssertTrue(language + " primer authored: " + key, !string.IsNullOrWhiteSpace(value));
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return;
+            }
+
+            string trimmed = value.Trim();
+            // Every tier opens with the explicit-facts override, introduced by a colon that sits
+            // before the first clause separator.
+            int colon = trimmed.IndexOf(':');
+            int firstSemicolon = trimmed.IndexOf(';');
+            AssertTrue(language + " " + key + " opens with the explicit-facts override",
+                colon > 0 && (firstSemicolon < 0 || colon < firstSemicolon));
+
+            // Clauses are the semicolon-separated segments (the override rides on the first clause).
+            AssertEqual(language + " " + key + " clause count", expectedClauses, trimmed.Split(';').Length);
+        }
+
+        /// <summary>
+        /// Grounds the frozen keyword vocabulary in the ACTUAL extraction path instead of comparing it
+        /// against itself (the gap both reviews flagged). For every audited keyword, the authored
+        /// deposit tokenizer (NormalizeAuthoredKeywords) and the live recall query path
+        /// (MemoryExtraction.Extract reading contextKeywordKeys off a "field=Value" gameContext) must
+        /// yield the SAME token, so a deposited seed keyword genuinely matches the event that carries
+        /// that value. This proves tokenization reachability only; it does NOT assert emission — whether
+        /// a field is ever produced at runtime is impure and is covered in-game by PawnDiary.RimTest.
+        /// (That impure gap is exactly why the unreachable MechCluster keyword survived static audits.)
+        /// </summary>
+        private static void TestLoreKeywordVocabularyRoundTrip()
+        {
+            // Maps every audited keyword to the gameContext field the query path reads it from
+            // (the §10/§11 vocabulary header); row[0] is the field, the rest are its values. Kept in
+            // lockstep with AuditedKeywordVocabulary by the coverage assertion at the end.
+            string[][] mapping =
+            {
+                new[] { "raid", "RaidEnemy", "Infestation" },
+                new[] { "faction", "Mechanoid", "Insect", "Empire", "Pirate" },
+                new[] { "hediff", "Plague", "Flu", "Malaria", "LuciferiumHigh", "PsychicAmplifier", "MechlinkImplant" },
+                new[] { "mood_event", "PsychicDrone", "PsychicSoothe", "ToxicFallout", "SolarFlare", "Eclipse" },
+                new[] { "observed_condition", "ToxicFalloutActive", "SolarFlareActive", "ThrumboVisit" }
+            };
+
+            MemoryPolicySnapshot policy = MemoryPolicySnapshot.CreateDefault();
+            List<string> covered = new List<string>();
+            for (int m = 0; m < mapping.Length; m++)
+            {
+                string field = mapping[m][0];
+                AssertTrue("query path reads the '" + field + "' field",
+                    policy.contextKeywordKeys != null && policy.contextKeywordKeys.Contains(field));
+
+                for (int v = 1; v < mapping[m].Length; v++)
+                {
+                    string value = mapping[m][v];
+                    covered.Add(value);
+
+                    // Authored (deposit) side: the token a seed keyword actually stores.
+                    List<string> authored = MemoryExtraction.NormalizeAuthoredKeywords(
+                        new List<string> { value }, policy.maxKeywordsPerFragment);
+                    AssertTrue(value + " authored keyword is not dropped", authored.Count > 0);
+
+                    // Query (recall) side: the tokens a live "field=value" event contributes.
+                    List<string> query = MemoryExtraction.Extract(new MemoryExtractionInput
+                    {
+                        povName = "Someone",
+                        solo = true,
+                        gameContext = field + "=" + value
+                    }, policy).keywords;
+
+                    for (int t = 0; t < authored.Count; t++)
+                    {
+                        AssertTrue(value + " round-trips through the query path as '" + authored[t] + "'",
+                            query.Contains(authored[t]));
+                    }
+                }
+            }
+
+            // The mapping must cover exactly the frozen vocabulary, so neither side can drift silently.
+            AssertEqual("round-trip mapping covers the whole audited vocabulary",
+                AuditedKeywordVocabulary.Length, covered.Count);
+            for (int i = 0; i < AuditedKeywordVocabulary.Length; i++)
+            {
+                AssertTrue("vocabulary entry is round-trip-checked: " + AuditedKeywordVocabulary[i],
+                    covered.Contains(AuditedKeywordVocabulary[i]));
+            }
         }
 
         private static List<CatalogRow> LoadCatalog()
