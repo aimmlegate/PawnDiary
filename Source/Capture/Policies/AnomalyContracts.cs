@@ -31,6 +31,13 @@ namespace PawnDiary.Capture
         public const string LastMonolithKnowledgeSnapshot =
             "anomalyLastMonolithKnowledgeSnapshot";
         public const string CreepJoinerArcs = "anomalyCreepJoinerArcs";
+
+        // A3 terminal-void keys. They are additive within the current schema: an older save simply
+        // omits them and loads as "no terminal outcome yet", and a finished terminal game never keeps
+        // playing, so no legacy catch-up scan is needed.
+        public const string TerminalOutcome = "anomalyTerminalOutcome";
+        public const string TerminalActorPawnId = "anomalyTerminalActorPawnId";
+        public const string TerminalEventId = "anomalyTerminalEventId";
     }
 
     /// <summary>Stable structured context keys; these schema labels deliberately remain English.</summary>
@@ -75,6 +82,9 @@ namespace PawnDiary.Capture
         public const string Transformation = "transformation";
         public const string VoidOutcome = "void_outcome";
         public const string Terminal = "terminal";
+        public const string Actor = "actor";
+        public const string ActorSummary = "actor_summary";
+        public const string MonolithLevel = "monolith_level";
     }
 
     /// <summary>Stable values for <c>anomaly_kind</c>.</summary>
@@ -104,6 +114,8 @@ namespace PawnDiary.Capture
         public const string Speaker = "speaker";
         public const string Subject = "subject";
         public const string Surgeon = "surgeon";
+        // The single choosing pawn behind a terminal void answer.
+        public const string Actor = "actor";
     }
 
     /// <summary>Stable future-facing visible outcome tokens frozen with the A1 schema.</summary>
@@ -263,6 +275,11 @@ namespace PawnDiary.Capture
         public string monolithBaselineLevelDefName = string.Empty;
         public AnomalyMonolithKnowledgeSnapshot lastMonolithKnowledgeSnapshot;
         public List<CreepJoinerArcSnapshot> creepJoinerArcs = new List<CreepJoinerArcSnapshot>();
+        // A3 terminal-void state. Empty means "no terminal outcome yet"; a committed outcome is one of
+        // "embraced"/"disrupted" with the actor's stable ID and (once the page exists) its event ID.
+        public string terminalOutcome = string.Empty;
+        public string terminalActorPawnId = string.Empty;
+        public string terminalEventId = string.Empty;
     }
 
     /// <summary>
@@ -430,6 +447,66 @@ namespace PawnDiary.Capture
         public string sourceKey = string.Empty;
         public readonly List<AnomalyWriterSelection> selectedWriters =
             new List<AnomalyWriterSelection>();
+    }
+
+    /// <summary>
+    /// Detached pre/post facts for one exact terminal-void method (embrace or disrupt). Only the actor
+    /// identity, visible label, chosen branch, the level actually reached, event-time surroundings/actor
+    /// summary, and correlation identities cross into the pure policy. No off-map fate, quest text,
+    /// hediff, or hidden mechanic can be represented here.
+    /// </summary>
+    internal sealed class VoidOutcomeFacts
+    {
+        public string actorPawnId = string.Empty;
+        public string actorLabel = string.Empty;
+        // "embraced" or "disrupted" — the exact public method that ran.
+        public string outcome = string.Empty;
+        // The terminal MonolithLevelDef.defName the method should reach ("Embraced" / "Disrupted").
+        public string expectedLevelDefName = string.Empty;
+        // The MonolithLevelDef.defName actually observed after vanilla returned. Verification requires
+        // it to equal expectedLevelDefName; a contradictory pair fails open.
+        public string reachedLevelDefName = string.Empty;
+        public int tick = -1;
+        public bool methodReturnedNormally;
+        // A terminal void choice is always a player-issued node interaction, so it is inherently
+        // player-visible. The pure policy still rejects false as a defensive adapter seam.
+        public bool playerVisible;
+        public bool actorEligible;
+        // Bounded event-time enrichment captured before vanilla mutated the actor/map.
+        public string setting = string.Empty;
+        public string actorSummary = string.Empty;
+    }
+
+    /// <summary>Pure terminal-commit decision plus the single choosing-pawn writer (if eligible).</summary>
+    internal sealed class VoidOutcomePlan
+    {
+        public bool valid;
+        // True only when the terminal outcome should be committed to saved state (verification passed).
+        public bool commitOutcome;
+        public bool writePage;
+        public string outcomeToken = string.Empty;
+        public string reachedLevelDefName = string.Empty;
+        public string sourceKey = string.Empty;
+        // The choosing pawn is the sole canonical author; pocket-map companions are never co-choosers.
+        public AnomalyWriterSelection selectedWriter;
+    }
+
+    /// <summary>Accepted single-pawn terminal-void Tale ownership awaiting the exact vanilla Tale.</summary>
+    internal sealed class AnomalyVoidTaleClaim
+    {
+        public string actorPawnId = string.Empty;
+        // "EmbracedTheVoid" or "ClosedTheVoid" — the exact single-pawn Tale the terminal method records.
+        public string expectedTaleDefName = string.Empty;
+        public int openedTick = -1;
+        public bool active;
+    }
+
+    /// <summary>Detached identity copied from one single-pawn terminal-void Tale callback.</summary>
+    internal sealed class AnomalyVoidTaleFacts
+    {
+        public string taleDefName = string.Empty;
+        public string actorPawnId = string.Empty;
+        public int tick = -1;
     }
 
     /// <summary>One XML-owned exact study promotion expressed without an optional Def reference.</summary>

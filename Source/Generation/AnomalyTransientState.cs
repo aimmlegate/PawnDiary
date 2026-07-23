@@ -13,6 +13,7 @@ namespace PawnDiary
             CreepJoinerOutcomeScope.Clear();
             CreepJoinerSurgicalInspectionScope.Clear();
             GhoulInfusionScope.Clear();
+            VoidOutcomeScope.Clear();
         }
     }
 }

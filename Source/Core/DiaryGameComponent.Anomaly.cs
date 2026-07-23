@@ -19,6 +19,11 @@ namespace PawnDiary
         private AnomalyMonolithKnowledgeState anomalyLastMonolithKnowledgeSnapshot;
         private List<CreepJoinerArcState> anomalyCreepJoinerArcs =
             new List<CreepJoinerArcState>();
+        // A3 terminal-void state. Empty means "no terminal outcome yet"; a committed answer is one of
+        // "embraced"/"disrupted" with the actor's stable ID and (once the page exists) its event ID.
+        private string anomalyTerminalOutcome = string.Empty;
+        private string anomalyTerminalActorPawnId = string.Empty;
+        private string anomalyTerminalEventId = string.Empty;
 
         /// <summary>Scribes additive keys and normalizes every loaded primitive collection/row.</summary>
         private void ExposeAnomalyData()
@@ -49,6 +54,18 @@ namespace PawnDiary
                 ref anomalyCreepJoinerArcs,
                 AnomalySaveKeys.CreepJoinerArcs,
                 LookMode.Deep);
+            Scribe_Values.Look(
+                ref anomalyTerminalOutcome,
+                AnomalySaveKeys.TerminalOutcome,
+                string.Empty);
+            Scribe_Values.Look(
+                ref anomalyTerminalActorPawnId,
+                AnomalySaveKeys.TerminalActorPawnId,
+                string.Empty);
+            Scribe_Values.Look(
+                ref anomalyTerminalEventId,
+                AnomalySaveKeys.TerminalEventId,
+                string.Empty);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -104,7 +121,10 @@ namespace PawnDiary
                     ? new List<string>() : new List<string>(anomalyPromotedStudyMilestoneKeys),
                 monolithBaselineLevelDefName = anomalyMonolithBaselineLevelDefName ?? string.Empty,
                 lastMonolithKnowledgeSnapshot = anomalyLastMonolithKnowledgeSnapshot?.ToSnapshot(),
-                creepJoinerArcs = CreepJoinerArcSnapshots(anomalyCreepJoinerArcs)
+                creepJoinerArcs = CreepJoinerArcSnapshots(anomalyCreepJoinerArcs),
+                terminalOutcome = anomalyTerminalOutcome ?? string.Empty,
+                terminalActorPawnId = anomalyTerminalActorPawnId ?? string.Empty,
+                terminalEventId = anomalyTerminalEventId ?? string.Empty
             };
         }
 
@@ -119,6 +139,9 @@ namespace PawnDiary
             anomalyLastMonolithKnowledgeSnapshot = AnomalyMonolithKnowledgeState.FromSnapshot(
                 normalized.lastMonolithKnowledgeSnapshot);
             anomalyCreepJoinerArcs = CreepJoinerArcStates(normalized.creepJoinerArcs);
+            anomalyTerminalOutcome = normalized.terminalOutcome ?? string.Empty;
+            anomalyTerminalActorPawnId = normalized.terminalActorPawnId ?? string.Empty;
+            anomalyTerminalEventId = normalized.terminalEventId ?? string.Empty;
         }
 
         private static void ResetAnomalyTransientState()
@@ -384,6 +407,75 @@ namespace PawnDiary
                 facts, plan, policy, group, writers, subject, surgeon);
             Dispatch(signal);
             dedicatedEventCreated = signal.CreatedEvent != null;
+            return plan;
+        }
+
+        /// <summary>True once a terminal void answer has been committed to saved Pawn Diary state.</summary>
+        internal bool HasCommittedVoidOutcome =>
+            !string.IsNullOrWhiteSpace(anomalyTerminalOutcome);
+
+        /// <summary>
+        /// Verifies one exact terminal void method reached its expected level, commits the saved
+        /// terminal token first, then optionally writes the single choosing pawn's ending page and
+        /// reports whether that dedicated page exists so the patch can suppress or release the Tale.
+        /// A contradictory method/level, an already-committed terminal, or a missing author never
+        /// creates a page, and the terminal token is written before the page so a transport failure
+        /// still bars replay.
+        /// </summary>
+        internal VoidOutcomePlan CompleteVoidOutcome(
+            Pawn actor,
+            VoidOutcomeCapture capture,
+            out bool dedicatedEventCreated)
+        {
+            dedicatedEventCreated = false;
+            VoidOutcomeFacts facts;
+            if (!DlcContext.TryCompleteVoidOutcome(actor, capture, out facts) || facts == null)
+                return null;
+
+            AnomalyPolicySnapshot policy = DiaryAnomalyPolicy.Snapshot();
+            VoidOutcomePlan plan = AnomalyVoidOutcomePolicy.Plan(facts, policy);
+            if (!plan.valid || !plan.commitOutcome) return plan;
+
+            // Commit the saved terminal outcome first. It is the replay barrier and remains committed
+            // even when output is disabled, the group/transport is unavailable, or the sole author
+            // cannot write; the event ID is attached only after the canonical page actually exists.
+            if (!HasCommittedVoidOutcome)
+            {
+                AnomalyPersistentStateSnapshot committed = AnomalyStateSnapshot();
+                committed.terminalOutcome = plan.outcomeToken;
+                committed.terminalActorPawnId = facts.actorPawnId;
+                committed.terminalEventId = string.Empty;
+                ApplyAnomalyState(committed);
+            }
+
+            if (!plan.writePage || plan.selectedWriter == null) return plan;
+            Pawn writer = capture.ResolveWriter(plan.selectedWriter.pawnId);
+            if (writer == null) return plan;
+
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyAnomalyEvent(
+                AnomalyEventDefNames.VoidOutcome);
+            VoidOutcomeSignal signal = new VoidOutcomeSignal(facts, plan, policy, group, writer);
+            Dispatch(signal);
+            if (signal.CreatedEvent == null) return plan;
+            dedicatedEventCreated = true;
+
+            // Attach the canonical event ID to the already-committed terminal outcome. A defensive
+            // re-read guards against an unexpected concurrent change to the committed identity.
+            AnomalyPersistentStateSnapshot afterEvent = AnomalyStateSnapshot();
+            if (string.Equals(
+                    afterEvent.terminalOutcome, plan.outcomeToken, StringComparison.Ordinal)
+                && string.Equals(
+                    afterEvent.terminalActorPawnId, facts.actorPawnId, StringComparison.Ordinal))
+            {
+                afterEvent.terminalEventId = signal.CreatedEvent.eventId ?? string.Empty;
+                ApplyAnomalyState(afterEvent);
+            }
+
+            // Reason anomaly_void_outcome: after the ending page records, optionally request the
+            // existing rare arc-reflection scheduler pointed at this canonical event so the reflection
+            // does not merely recap the terminal page (avoid_related_event_recap). The scheduler still
+            // obeys its own rate limits/settings and no-ops when the actor cannot write.
+            ConsiderArcReflectionAfterMajorEvent(writer, signal.CreatedEvent.eventId);
             return plan;
         }
 

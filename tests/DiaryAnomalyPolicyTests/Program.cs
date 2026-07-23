@@ -49,6 +49,10 @@ namespace DiaryAnomalyPolicyTests
             TestGhoulTransformationPolicy();
             TestGhoulWriterOrderAndContextFirewall();
             TestGhoulTaleOwnershipBoundaries();
+            TestVoidOutcomePolicy();
+            TestVoidOutcomeContextFirewall();
+            TestVoidTaleOwnershipBoundaries();
+            TestVoidOutcomePersistence();
             Console.WriteLine("DiaryAnomalyPolicyTests passed " + assertions + " assertions.");
             return 0;
         }
@@ -1883,6 +1887,232 @@ namespace DiaryAnomalyPolicyTests
                     GhoulTransformationPolicy.OwnsDidSurgery(noOutput), false, true));
         }
 
+        private static void TestVoidOutcomePolicy()
+        {
+            foreach (string outcome in new[] { AnomalyOutcomeTokens.Embraced, AnomalyOutcomeTokens.Disrupted })
+            {
+                VoidOutcomeFacts facts = VoidOutcome(outcome);
+                VoidOutcomePlan plan = AnomalyVoidOutcomePolicy.Plan(facts, null);
+                string expectedLevel = outcome == AnomalyOutcomeTokens.Embraced
+                    ? AnomalyVoidOutcomePolicy.EmbracedLevelDefName
+                    : AnomalyVoidOutcomePolicy.DisruptedLevelDefName;
+                AssertTrue("verified terminal " + outcome + " is valid and commits",
+                    plan.valid && plan.commitOutcome && plan.writePage);
+                AssertEqual("terminal " + outcome + " keeps its exact branch token",
+                    outcome, plan.outcomeToken);
+                AssertEqual("terminal " + outcome + " reached its exact expected level",
+                    expectedLevel, plan.reachedLevelDefName);
+                AssertEqual("terminal " + outcome + " source key is actor/kind/branch/tick",
+                    "Pawn_Actor|void_outcome|" + outcome + "|500", plan.sourceKey);
+                AssertTrue("terminal " + outcome + " author is the sole choosing actor",
+                    plan.selectedWriter != null
+                        && plan.selectedWriter.pawnId == "Pawn_Actor"
+                        && plan.selectedWriter.roleToken == AnomalyWitnessRoleTokens.Actor);
+                AssertTrue("verified terminal " + outcome + " owns its Tale",
+                    AnomalyVoidOutcomePolicy.OwnsTerminalTale(plan));
+            }
+
+            // Exact method/level pairing.
+            AssertEqual("embraced expects the Embraced level",
+                AnomalyVoidOutcomePolicy.EmbracedLevelDefName,
+                AnomalyVoidOutcomePolicy.ExpectedLevelDefName(AnomalyOutcomeTokens.Embraced));
+            AssertEqual("disrupted expects the Disrupted level",
+                AnomalyVoidOutcomePolicy.DisruptedLevelDefName,
+                AnomalyVoidOutcomePolicy.ExpectedLevelDefName(AnomalyOutcomeTokens.Disrupted));
+            AssertEqual("embraced expects the EmbracedTheVoid Tale",
+                AnomalyVoidTaleOwnershipPolicy.EmbracedTheVoidDefName,
+                AnomalyVoidOutcomePolicy.ExpectedTaleDefName(AnomalyOutcomeTokens.Embraced));
+            AssertEqual("disrupted expects the ClosedTheVoid Tale",
+                AnomalyVoidTaleOwnershipPolicy.ClosedTheVoidDefName,
+                AnomalyVoidOutcomePolicy.ExpectedTaleDefName(AnomalyOutcomeTokens.Disrupted));
+            AssertEqual("unknown branch expects no level", string.Empty,
+                AnomalyVoidOutcomePolicy.ExpectedLevelDefName("ascended"));
+
+            AssertTrue("null void facts drop", !AnomalyVoidOutcomePolicy.Plan(null, null).valid);
+            foreach (Action<VoidOutcomeFacts> corrupt in new Action<VoidOutcomeFacts>[]
+            {
+                value => value.actorPawnId = " ",
+                value => value.actorPawnId = "bad|actor",
+                value => value.tick = -1,
+                value => value.methodReturnedNormally = false,
+                value => value.playerVisible = false,
+                value => value.outcome = "ascended"
+            })
+            {
+                VoidOutcomeFacts malformed = VoidOutcome(AnomalyOutcomeTokens.Embraced);
+                corrupt(malformed);
+                AssertTrue("malformed/failed/unverified void facts drop",
+                    !AnomalyVoidOutcomePolicy.Plan(malformed, null).valid);
+            }
+
+            // Contradictory method/level pair drops and fails open.
+            VoidOutcomeFacts contradictory = VoidOutcome(AnomalyOutcomeTokens.Embraced);
+            contradictory.reachedLevelDefName = AnomalyVoidOutcomePolicy.DisruptedLevelDefName;
+            VoidOutcomePlan contradictoryPlan = AnomalyVoidOutcomePolicy.Plan(contradictory, null);
+            AssertTrue("embrace that reached the Disrupted level drops and fails open",
+                !contradictoryPlan.valid && !contradictoryPlan.commitOutcome
+                    && !AnomalyVoidOutcomePolicy.OwnsTerminalTale(contradictoryPlan));
+            VoidOutcomeFacts staleExpectation = VoidOutcome(AnomalyOutcomeTokens.Disrupted);
+            staleExpectation.expectedLevelDefName = AnomalyVoidOutcomePolicy.EmbracedLevelDefName;
+            AssertTrue("mismatched expected-vs-reached level drops",
+                !AnomalyVoidOutcomePolicy.Plan(staleExpectation, null).valid);
+
+            // Ineligible actor still verifies and commits, but writes no page.
+            VoidOutcomeFacts ineligible = VoidOutcome(AnomalyOutcomeTokens.Embraced);
+            ineligible.actorEligible = false;
+            VoidOutcomePlan ineligiblePlan = AnomalyVoidOutcomePolicy.Plan(ineligible, null);
+            AssertTrue("ineligible actor commits the outcome without a page",
+                ineligiblePlan.valid && ineligiblePlan.commitOutcome
+                    && !ineligiblePlan.writePage && ineligiblePlan.selectedWriter == null
+                    && AnomalyVoidOutcomePolicy.OwnsTerminalTale(ineligiblePlan));
+
+            // Disabled output preserves committed truth without a page.
+            AnomalyPolicySnapshot disabled = AnomalyPolicySnapshot.CreateDefault();
+            disabled.voidOutcomeEnabled = false;
+            VoidOutcomePlan disabledPlan = AnomalyVoidOutcomePolicy.Plan(
+                VoidOutcome(AnomalyOutcomeTokens.Embraced), disabled);
+            AssertTrue("disabled void output still commits but writes no page",
+                disabledPlan.valid && disabledPlan.commitOutcome && !disabledPlan.writePage);
+        }
+
+        private static void TestVoidOutcomeContextFirewall()
+        {
+            VoidOutcomeFacts facts = VoidOutcome(AnomalyOutcomeTokens.Embraced);
+            facts.actorLabel = "Rin; hidden=blocked";
+            facts.setting = "in the throne room; secret=blocked";
+            facts.actorSummary = "brave, kind";
+            VoidOutcomePlan plan = AnomalyVoidOutcomePolicy.Plan(facts, null);
+            string context = VoidOutcomeContextFormatter.Format(facts, plan);
+            AssertTrue("void context contains only the verified terminal facts",
+                context.Contains("anomaly_kind=void_outcome")
+                    && context.Contains("void_outcome=embraced")
+                    && context.Contains("monolith_level=Embraced")
+                    && context.Contains("terminal=true")
+                    && context.Contains("actor=Rin")
+                    && context.Contains("actor_summary=brave, kind")
+                    && context.Contains("setting=in the throne room"));
+            AssertTrue("void context sanitizes field injection",
+                !context.Contains("; hidden=") && !context.Contains("; secret="));
+            AssertTrue("void context excludes hidden mechanics and off-map fates",
+                context.IndexOf("quest", StringComparison.OrdinalIgnoreCase) < 0
+                    && context.IndexOf("hediff", StringComparison.OrdinalIgnoreCase) < 0
+                    && context.IndexOf("enemy", StringComparison.OrdinalIgnoreCase) < 0);
+
+            facts.actorSummary = new string('S', 300);
+            plan = AnomalyVoidOutcomePolicy.Plan(facts, null);
+            context = VoidOutcomeContextFormatter.Format(facts, plan);
+            AssertTrue("void context truncates each visible value to its defensive cap",
+                context.Contains("actor_summary=" + new string('S', 240) + ";")
+                    && !context.Contains(new string('S', 241)));
+            AssertEqual("invalid void plan has no context", string.Empty,
+                VoidOutcomeContextFormatter.Format(facts, new VoidOutcomePlan()));
+        }
+
+        private static void TestVoidTaleOwnershipBoundaries()
+        {
+            AnomalyVoidTaleClaim claim = VoidClaim(AnomalyOutcomeTokens.Embraced);
+            AnomalyVoidTaleFacts tale = VoidTale(
+                AnomalyVoidTaleOwnershipPolicy.EmbracedTheVoidDefName);
+            AssertTrue("exact active single-pawn void Tale is deferred",
+                AnomalyVoidTaleOwnershipPolicy.CanDefer(claim, tale, 10));
+
+            tale.actorPawnId = "Pawn_Other";
+            AssertTrue("actor mismatch fails open",
+                !AnomalyVoidTaleOwnershipPolicy.CanDefer(claim, tale, 10));
+            tale = VoidTale(AnomalyVoidTaleOwnershipPolicy.ClosedTheVoidDefName);
+            AssertTrue("wrong terminal Tale for this branch fails open",
+                !AnomalyVoidTaleOwnershipPolicy.CanDefer(claim, tale, 10));
+            tale = VoidTale("EmbracedTheVoid");
+            tale.tick = 510;
+            AssertTrue("void Tale ownership includes the exact expiry boundary",
+                AnomalyVoidTaleOwnershipPolicy.CanDefer(claim, tale, 10));
+            tale.tick = 511;
+            AssertTrue("expired void Tale ownership fails open",
+                !AnomalyVoidTaleOwnershipPolicy.CanDefer(claim, tale, 10));
+            tale.tick = 499;
+            AssertTrue("pre-scope void Tale fails open",
+                !AnomalyVoidTaleOwnershipPolicy.CanDefer(claim, tale, 10));
+            claim.active = false;
+            AssertTrue("closed void ownership cannot defer",
+                !AnomalyVoidTaleOwnershipPolicy.CanDefer(
+                    claim, VoidTale("EmbracedTheVoid"), 10));
+
+            AssertTrue("EmbracedTheVoid is a terminal void Tale",
+                AnomalyVoidTaleOwnershipPolicy.IsTerminalVoidTale("EmbracedTheVoid"));
+            AssertTrue("ClosedTheVoid is a terminal void Tale",
+                AnomalyVoidTaleOwnershipPolicy.IsTerminalVoidTale("ClosedTheVoid"));
+            AssertTrue("a shared word is not a terminal void Tale",
+                !AnomalyVoidTaleOwnershipPolicy.IsTerminalVoidTale("VoidTouched"));
+
+            VoidOutcomePlan success = AnomalyVoidOutcomePolicy.Plan(
+                VoidOutcome(AnomalyOutcomeTokens.Embraced), null);
+            AssertTrue("terminal event success suppresses one deferred void Tale",
+                AnomalySurgeryTaleOwnershipPolicy.ShouldSuppress(
+                    AnomalyVoidOutcomePolicy.OwnsTerminalTale(success), true, true));
+            AssertTrue("failed terminal event releases the void Tale",
+                !AnomalySurgeryTaleOwnershipPolicy.ShouldSuppress(
+                    AnomalyVoidOutcomePolicy.OwnsTerminalTale(success), false, true));
+            AssertTrue("missing void Tale ownership cannot suppress",
+                !AnomalySurgeryTaleOwnershipPolicy.ShouldSuppress(
+                    AnomalyVoidOutcomePolicy.OwnsTerminalTale(success), true, false));
+            AssertTrue("unverified terminal outcome releases the void Tale",
+                !AnomalySurgeryTaleOwnershipPolicy.ShouldSuppress(
+                    AnomalyVoidOutcomePolicy.OwnsTerminalTale(new VoidOutcomePlan()), true, true));
+        }
+
+        private static void TestVoidOutcomePersistence()
+        {
+            AnomalyPersistentStateSnapshot committed = new AnomalyPersistentStateSnapshot
+            {
+                schemaVersion = AnomalyPersistencePolicy.CurrentSchemaVersion,
+                terminalOutcome = AnomalyOutcomeTokens.Disrupted,
+                terminalActorPawnId = "Pawn_Actor",
+                terminalEventId = "evt-1"
+            };
+            AnomalyPersistentStateSnapshot normalized =
+                AnomalyPersistencePolicy.Normalize(committed);
+            AssertTrue("a complete terminal outcome round-trips",
+                normalized.terminalOutcome == AnomalyOutcomeTokens.Disrupted
+                    && normalized.terminalActorPawnId == "Pawn_Actor"
+                    && normalized.terminalEventId == "evt-1");
+
+            // A partial or corrupt terminal collapses back to "no terminal yet".
+            foreach (Action<AnomalyPersistentStateSnapshot> corrupt in
+                new Action<AnomalyPersistentStateSnapshot>[]
+                {
+                    value => value.terminalOutcome = "ascended",
+                    value => value.terminalActorPawnId = " ",
+                    value => value.terminalActorPawnId = "bad|actor"
+                })
+            {
+                AnomalyPersistentStateSnapshot partial = new AnomalyPersistentStateSnapshot
+                {
+                    schemaVersion = AnomalyPersistencePolicy.CurrentSchemaVersion,
+                    terminalOutcome = AnomalyOutcomeTokens.Embraced,
+                    terminalActorPawnId = "Pawn_Actor",
+                    terminalEventId = "evt-1"
+                };
+                corrupt(partial);
+                AnomalyPersistentStateSnapshot cleared =
+                    AnomalyPersistencePolicy.Normalize(partial);
+                AssertTrue("a partial terminal outcome clears every terminal field",
+                    cleared.terminalOutcome.Length == 0
+                        && cleared.terminalActorPawnId.Length == 0
+                        && cleared.terminalEventId.Length == 0);
+            }
+
+            // A new game and a pre-A3 baseline both start with no terminal outcome.
+            AnomalyPersistentStateSnapshot fresh = AnomalyPersistencePolicy.NewGame("Waking");
+            AssertTrue("a new game has no terminal outcome",
+                fresh.terminalOutcome.Length == 0 && fresh.terminalActorPawnId.Length == 0
+                    && fresh.terminalEventId.Length == 0);
+            AssertEqual("embraced normalizes as a supported terminal token",
+                AnomalyOutcomeTokens.Embraced,
+                AnomalyPersistencePolicy.NormalizeVoidOutcomeToken(" embraced "));
+            AssertEqual("an unsupported terminal token normalizes to empty", string.Empty,
+                AnomalyPersistencePolicy.NormalizeVoidOutcomeToken("ascended"));
+        }
+
         private static AnomalyStudyFacts Study()
         {
             return new AnomalyStudyFacts
@@ -1911,6 +2141,45 @@ namespace DiaryAnomalyPolicyTests
                 transitioned = true,
                 transitionVerified = true,
                 playerVisible = true
+            };
+        }
+
+        private static VoidOutcomeFacts VoidOutcome(string outcome)
+        {
+            return new VoidOutcomeFacts
+            {
+                actorPawnId = "Pawn_Actor",
+                actorLabel = "Rin",
+                outcome = outcome,
+                expectedLevelDefName = AnomalyVoidOutcomePolicy.ExpectedLevelDefName(outcome),
+                reachedLevelDefName = AnomalyVoidOutcomePolicy.ExpectedLevelDefName(outcome),
+                tick = 500,
+                methodReturnedNormally = true,
+                playerVisible = true,
+                actorEligible = true,
+                setting = "in the monolith chamber",
+                actorSummary = "resolute"
+            };
+        }
+
+        private static AnomalyVoidTaleClaim VoidClaim(string outcome)
+        {
+            return new AnomalyVoidTaleClaim
+            {
+                actorPawnId = "Pawn_Actor",
+                expectedTaleDefName = AnomalyVoidOutcomePolicy.ExpectedTaleDefName(outcome),
+                openedTick = 500,
+                active = true
+            };
+        }
+
+        private static AnomalyVoidTaleFacts VoidTale(string taleDefName)
+        {
+            return new AnomalyVoidTaleFacts
+            {
+                taleDefName = taleDefName,
+                actorPawnId = "Pawn_Actor",
+                tick = 501
             };
         }
 

@@ -26,6 +26,8 @@ namespace PawnDiary
             "RimWorld.Recipe_SurgicalInspection";
         private const string GhoulInfusionRecipeTypeName =
             "RimWorld.Recipe_GhoulInfusion";
+        private const string VoidAwakeningUtilityTypeName =
+            "RimWorld.Utility.VoidAwakeningUtility";
 
         /// <summary>True only when the exact A1.2 study method was found and patched.</summary>
         public static bool StudyHookReady { get; private set; }
@@ -49,6 +51,13 @@ namespace PawnDiary
         public static bool GhoulTransformationHookReady { get; private set; }
 
         /// <summary>
+        /// True only when both exact public terminal void methods (EmbraceTheVoid / DisruptTheLink)
+        /// were patched. When false, no correlation opens and vanilla keeps recording the terminal
+        /// EmbracedTheVoid / ClosedTheVoid Tale on its ordinary diary route.
+        /// </summary>
+        public static bool VoidOutcomeHookReady { get; private set; }
+
+        /// <summary>
         /// Registers the exact signature defensively. A changed/missing target disables only study
         /// milestones and leaves vanilla study and the generic StudiedEntity Tale untouched.
         /// </summary>
@@ -61,6 +70,7 @@ namespace PawnDiary
             CreepJoinerDepartureHookReady = false;
             CreepJoinerSurgicalHookReady = false;
             GhoulTransformationHookReady = false;
+            VoidOutcomeHookReady = false;
             if (harmony == null || !ModsConfig.AnomalyActive) return;
 
             TryRegisterStudy(harmony);
@@ -68,6 +78,7 @@ namespace PawnDiary
             TryRegisterCreepJoinerOutcomes(harmony);
             TryRegisterCreepJoinerSurgicalInspection(harmony);
             TryRegisterGhoulTransformation(harmony);
+            TryRegisterVoidOutcome(harmony);
         }
 
         private static void TryRegisterStudy(Harmony harmony)
@@ -318,6 +329,62 @@ namespace PawnDiary
                 WarnMissingGhoul("registration failed: " + exception.GetType().Name + ": "
                     + Limit(exception.Message));
             }
+        }
+
+        private static void TryRegisterVoidOutcome(Harmony harmony)
+        {
+            try
+            {
+                Type utilityType = AccessTools.TypeByName(VoidAwakeningUtilityTypeName);
+                MethodInfo embrace = ResolveTerminalVoidMethod(utilityType, "EmbraceTheVoid");
+                MethodInfo disrupt = ResolveTerminalVoidMethod(utilityType, "DisruptTheLink");
+                if (embrace == null || disrupt == null)
+                {
+                    WarnMissingVoid(
+                        "the exact public VoidAwakeningUtility.EmbraceTheVoid(Pawn) and "
+                            + "DisruptTheLink(Pawn) targets were not found");
+                    return;
+                }
+
+                harmony.Patch(
+                    embrace,
+                    prefix: new HarmonyMethod(
+                        typeof(DiaryAnomalyPatches), nameof(VoidEmbracePrefix)),
+                    postfix: new HarmonyMethod(
+                        typeof(DiaryAnomalyPatches), nameof(VoidOutcomePostfix)),
+                    finalizer: new HarmonyMethod(
+                        typeof(DiaryAnomalyPatches), nameof(VoidOutcomeFinalizer)));
+                harmony.Patch(
+                    disrupt,
+                    prefix: new HarmonyMethod(
+                        typeof(DiaryAnomalyPatches), nameof(VoidDisruptPrefix)),
+                    postfix: new HarmonyMethod(
+                        typeof(DiaryAnomalyPatches), nameof(VoidOutcomePostfix)),
+                    finalizer: new HarmonyMethod(
+                        typeof(DiaryAnomalyPatches), nameof(VoidOutcomeFinalizer)));
+                VoidOutcomeHookReady = true;
+            }
+            catch (Exception exception)
+            {
+                // A partial registration stays inert because every callback checks the health flag,
+                // leaving the ordinary EmbracedTheVoid/ClosedTheVoid Tale route untouched.
+                VoidOutcomeHookReady = false;
+                WarnMissingVoid("registration failed: " + exception.GetType().Name + ": "
+                    + Limit(exception.Message));
+            }
+        }
+
+        private static MethodInfo ResolveTerminalVoidMethod(Type utilityType, string name)
+        {
+            MethodInfo target = utilityType == null
+                ? null
+                : AccessTools.DeclaredMethod(utilityType, name, new[] { typeof(Pawn) }) as MethodInfo;
+            if (target == null || !target.IsStatic || !target.IsPublic
+                || target.ReturnType != typeof(void) || !ParametersNamed(target, "pawn"))
+            {
+                return null;
+            }
+            return target;
         }
 
         /// <summary>Captures exact progress, completion, identity, and activation state before vanilla.</summary>
@@ -626,6 +693,97 @@ namespace PawnDiary
             return __exception;
         }
 
+        /// <summary>Freezes actor pre-state and opens Tale ownership before an embrace mutates it.</summary>
+        private static void VoidEmbracePrefix(Pawn pawn, ref VoidOutcomeCapture __state)
+        {
+            CaptureVoidOutcomePrefix(pawn, AnomalyOutcomeTokens.Embraced, ref __state);
+        }
+
+        /// <summary>Freezes actor pre-state and opens Tale ownership before a disruption mutates it.</summary>
+        private static void VoidDisruptPrefix(Pawn pawn, ref VoidOutcomeCapture __state)
+        {
+            CaptureVoidOutcomePrefix(pawn, AnomalyOutcomeTokens.Disrupted, ref __state);
+        }
+
+        private static void CaptureVoidOutcomePrefix(
+            Pawn pawn,
+            string outcome,
+            ref VoidOutcomeCapture state)
+        {
+            state = null;
+            if (!VoidOutcomeHookReady || !RuntimeReady()) return;
+            VoidOutcomeCapture captured = null;
+            DiaryPatchSafety.Run("DiaryAnomalyPatches.VoidOutcomePrefix." + outcome, () =>
+            {
+                DiaryGameComponent component = DiaryGameComponent.Instance;
+                // No correlation opens when a terminal answer is already committed in Pawn Diary
+                // state, so a repeat call leaves vanilla's terminal Tale on its ordinary route and
+                // never produces a second ending page.
+                if (component == null || component.HasCommittedVoidOutcome) return;
+                AnomalyPolicySnapshot policy = DiaryAnomalyPolicy.Snapshot();
+                if (!DlcContext.TryCaptureVoidOutcomeBefore(pawn, outcome, out captured)
+                    || !VoidOutcomeScope.Begin(captured, policy.taleOwnershipMaxDepth))
+                {
+                    captured = null;
+                    return;
+                }
+                // The dedicated terminal event owns the monolith quest-success page only when it will
+                // actually author one; a disabled group or an ineligible actor leaves that fan-out.
+                captured.suppressesQuestSuccess =
+                    captured.facts.actorEligible && policy.voidOutcomeEnabled;
+            });
+            state = captured;
+        }
+
+        /// <summary>Verifies the terminal level, commits the outcome, and owns the Tale on page success.</summary>
+        private static void VoidOutcomePostfix(Pawn pawn, VoidOutcomeCapture __state)
+        {
+            if (__state == null) return;
+            VoidOutcomeClose close = null;
+            DiaryPatchSafety.Run("DiaryAnomalyPatches.VoidOutcomePostfix.Close", () =>
+            {
+                close = VoidOutcomeScope.Complete(__state);
+            });
+            if (close == null) return;
+            ReleaseSurgicalTales(close.releaseTales);
+            if (!close.matched) return;
+
+            VoidOutcomePlan plan = null;
+            bool dedicatedEventCreated = false;
+            DiaryPatchSafety.Run("DiaryAnomalyPatches.VoidOutcomePostfix.Complete", () =>
+            {
+                DiaryGameComponent component = DiaryGameComponent.Instance;
+                if (component != null)
+                {
+                    plan = component.CompleteVoidOutcome(
+                        pawn, close.capture, out dedicatedEventCreated);
+                }
+            });
+            // Suppress the deferred terminal Tale only after the dedicated page verifiably exists;
+            // every other result (verification failure, disabled output, missing author, exception)
+            // releases the vanilla Tale so the only ending is never lost.
+            bool suppress = AnomalySurgeryTaleOwnershipPolicy.ShouldSuppress(
+                AnomalyVoidOutcomePolicy.OwnsTerminalTale(plan),
+                dedicatedEventCreated,
+                close.deferredTale != null);
+            if (!suppress) ReleaseSurgicalTale(close.deferredTale);
+        }
+
+        /// <summary>Always aborts an unfinished terminal-void scope and preserves vanilla's exception.</summary>
+        private static Exception VoidOutcomeFinalizer(
+            Exception __exception,
+            VoidOutcomeCapture __state)
+        {
+            if (__state == null || __state.scopeClosed) return __exception;
+            VoidOutcomeClose close = null;
+            DiaryPatchSafety.Run("DiaryAnomalyPatches.VoidOutcomeFinalizer", () =>
+            {
+                close = VoidOutcomeScope.Abort(__state);
+            });
+            if (close != null) ReleaseSurgicalTales(close.releaseTales);
+            return __exception;
+        }
+
         private static void ReleaseSurgicalTales(List<TaleSignal> signals)
         {
             if (signals == null) return;
@@ -826,6 +984,15 @@ namespace PawnDiary
                 "[Pawn Diary] Anomaly ghoul transformation capture is disabled because " + detail
                     + "; vanilla infusion, Tales, and the generic diary Tale route remain unchanged.",
                 "PawnDiary.Anomaly.MissingHook.GhoulTransformation".GetHashCode());
+        }
+
+        private static void WarnMissingVoid(string detail)
+        {
+            Log.WarningOnce(
+                "[Pawn Diary] Anomaly terminal void outcome capture is disabled because " + detail
+                    + "; vanilla void embrace/disrupt, Tales, quest completion, and other diary "
+                    + "routes remain unchanged.",
+                "PawnDiary.Anomaly.MissingHook.VoidOutcome".GetHashCode());
         }
     }
 }

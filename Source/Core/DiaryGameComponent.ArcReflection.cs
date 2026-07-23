@@ -17,20 +17,25 @@ namespace PawnDiary
         /// Major progression moments call this after their normal diary page records. Cadence policy
         /// decides whether the moment warrants a rare extra arc reflection.
         /// </summary>
-        private void ConsiderArcReflectionAfterMajorEvent(Pawn pawn)
+        private void ConsiderArcReflectionAfterMajorEvent(Pawn pawn, string avoidRelatedEventId = null)
         {
             if (pawn == null || !IsDiaryEligible(pawn))
             {
                 return;
             }
 
-            TryFlushArcReflectionForPawn(pawn, pawn.GetUniqueLoadID(), CurrentDayIndex, majorEventTrigger: true);
+            TryFlushArcReflectionForPawn(
+                pawn, pawn.GetUniqueLoadID(), CurrentDayIndex, majorEventTrigger: true,
+                avoidRelatedEventId);
         }
 
         /// <summary>
         /// Attempts to emit a yearly/major arc reflection. Returns true only when an entry was created.
+        /// An optional <paramref name="avoidRelatedEventId"/> lets a caller point the request at its
+        /// just-created canonical event so the reflection does not merely recap that same page.
         /// </summary>
-        private bool TryFlushArcReflectionForPawn(Pawn pawn, string pawnId, int day, bool majorEventTrigger)
+        private bool TryFlushArcReflectionForPawn(Pawn pawn, string pawnId, int day,
+            bool majorEventTrigger, string avoidRelatedEventId = null)
         {
             if (pawn == null
                 || string.IsNullOrWhiteSpace(pawnId)
@@ -79,10 +84,21 @@ namespace PawnDiary
             }
 
             List<ArcMemoryCandidate> candidates = CollectArcMemoryCandidates(diary, pawnId, currentYear, day);
+            // A caller may ask this reflection to avoid recapping one just-created related event (for
+            // example the terminal void ending). That id is excluded only for this selection; the
+            // durable recently-used history is unchanged.
+            List<string> excludedEventIds = schedule.recentlyUsedEventIds;
+            if (!string.IsNullOrWhiteSpace(avoidRelatedEventId))
+            {
+                excludedEventIds = new List<string>(schedule.recentlyUsedEventIds ?? new List<string>())
+                {
+                    avoidRelatedEventId
+                };
+            }
             ArcMemorySelectionResult selection = ArcReflectionMemorySelector.Select(new ArcMemorySelectionRequest
             {
                 candidates = candidates,
-                recentlyUsedEventIds = schedule.recentlyUsedEventIds,
+                recentlyUsedEventIds = excludedEventIds,
                 currentYear = currentYear,
                 maxMemories = Math.Max(1, DiaryTuning.Current.arcReflectionMaxMemories),
                 minMemories = scheduleDecision.forced

@@ -8,6 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-07-23
 
+- **Master Wave 11 / Anomaly Phase A3.0.** Added the DLC-safe terminal void answer: defensively patches both public `VoidAwakeningUtility.EmbraceTheVoid`/`DisruptTheLink` methods, verifies the reached monolith level, defers and owns the single-pawn `EmbracedTheVoid`/`ClosedTheVoid` Tale, commits a saved terminal token, writes exactly one actor-authored ending page (with an optional non-recap arc reflection), suppresses the duplicate monolith quest-success page, and fails open (never zero, never two) on patch/verification failure, old saves, or repeat calls — EN/RU prose already shipped.
 - **Master Wave 11 / Biotech Phase 8.** Added DLC-safe psychic-bond lifecycle pages and XML-tuned severe interrupted-deathrest capture with exact nested-signal ownership and EN/RU parity.
 - **Master Wave 11 / Biotech Phase 7.** Added DLC-safe pollution thresholds, strongest-band bounded transitions, reload-safe reclamation/decay, qualitative ambient-pressure context, and EN/RU parity.
 - **Lore memory L5 — progression lore seeds.** Identity-changing events (psylink, xenotype, gene

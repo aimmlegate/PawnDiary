@@ -43,6 +43,18 @@ namespace PawnDiary
                 return;
             }
 
+            // A3.0 terminal void ownership: when a terminal void answer is actively being authored, its
+            // dedicated ending page owns the monolith quest's success restatement, so the generic
+            // completed fan-out is suppressed for that one quest only. Any other quest, a failure, an
+            // inactive scope, or an actor who cannot author the ending is unaffected (the fan-out runs).
+            if (outcome == QuestEndOutcome.Success
+                && DiaryAnomalyPatches.VoidOutcomeHookReady
+                && quest != null
+                && VoidOutcomeScope.OwnsQuestId(quest.id))
+            {
+                return;
+            }
+
             string textKey = signal == QuestEventData.SignalCompleted
                 ? "PawnDiary.Event.QuestCompleted"
                 : "PawnDiary.Event.QuestFailed";

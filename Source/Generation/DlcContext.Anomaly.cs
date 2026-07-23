@@ -125,6 +125,29 @@ namespace PawnDiary
         }
     }
 
+    /// <summary>
+    /// Live references retained only across one synchronous terminal-void method. The detached facts
+    /// freeze the actor identity, chosen branch, expected level, event-time surroundings/summary, and
+    /// the monolith quest identity before vanilla ends the quest and mutates the actor/map.
+    /// </summary>
+    internal sealed class VoidOutcomeCapture
+    {
+        internal Pawn actor;
+        internal VoidOutcomeFacts facts;
+        internal int monolithQuestId;
+        // True only when this correlation actually expects to author an ending page (the actor can
+        // write and void output is enabled). The dedicated terminal event owns the monolith quest's
+        // success restatement only then; otherwise the generic completed fan-out is left alone.
+        internal bool suppressesQuestSuccess;
+        internal bool scopeClosed;
+
+        internal Pawn ResolveWriter(string pawnId)
+        {
+            return string.Equals(
+                actor?.GetUniqueLoadID(), pawnId, StringComparison.Ordinal) ? actor : null;
+        }
+    }
+
     /// <summary>Guarded Anomaly accessors for save baselines and exact study callbacks.</summary>
     internal static partial class DlcContext
     {
@@ -204,6 +227,132 @@ namespace PawnDiary
                 subjectEligible = source.subjectEligible
             };
             return true;
+        }
+
+        /// <summary>
+        /// Freezes the actor identity, chosen branch, expected terminal level, event-time surroundings
+        /// and actor summary, and the monolith quest identity before vanilla runs a terminal method.
+        /// The setting/summary are read here, while the actor is still a normal spawned colonist.
+        /// </summary>
+        internal static bool TryCaptureVoidOutcomeBefore(
+            Pawn actor,
+            string outcomeToken,
+            out VoidOutcomeCapture capture)
+        {
+            capture = null;
+            string outcome = AnomalyVoidOutcomePolicy.NormalizeOutcome(outcomeToken);
+            if (!ModsConfig.AnomalyActive || actor == null || outcome.Length == 0) return false;
+            string actorId = actor.GetUniqueLoadID();
+            string expectedLevel = AnomalyVoidOutcomePolicy.ExpectedLevelDefName(outcome);
+            if (string.IsNullOrWhiteSpace(actorId) || expectedLevel.Length == 0) return false;
+
+            capture = new VoidOutcomeCapture
+            {
+                actor = actor,
+                monolithQuestId = CurrentMonolithQuestId(),
+                facts = new VoidOutcomeFacts
+                {
+                    actorPawnId = actorId,
+                    actorLabel = DiaryLineCleaner.CleanLine(actor.LabelShortCap),
+                    outcome = outcome,
+                    expectedLevelDefName = expectedLevel,
+                    tick = Find.TickManager?.TicksGame ?? 0,
+                    // A terminal void answer is always a player-issued node interaction, so it is
+                    // inherently player-visible. The pure policy still rejects false defensively.
+                    playerVisible = true,
+                    actorEligible = DiaryGameComponent.IsDiaryEligible(actor),
+                    setting = BuildOptionalVoidText(
+                        () => DiaryContextBuilder.BuildSurroundingsSummary(actor)),
+                    actorSummary = BuildOptionalVoidText(
+                        () => DiaryContextBuilder.BuildPawnSummary(actor))
+                }
+            };
+            return true;
+        }
+
+        /// <summary>Clones detached facts and reads the level actually reached after a normal return.</summary>
+        internal static bool TryCompleteVoidOutcome(
+            Pawn actor,
+            VoidOutcomeCapture capture,
+            out VoidOutcomeFacts facts)
+        {
+            facts = null;
+            if (!ModsConfig.AnomalyActive || capture?.facts == null
+                || !ReferenceEquals(actor, capture.actor)) return false;
+            VoidOutcomeFacts source = capture.facts;
+            facts = new VoidOutcomeFacts
+            {
+                actorPawnId = source.actorPawnId,
+                actorLabel = source.actorLabel,
+                outcome = source.outcome,
+                expectedLevelDefName = source.expectedLevelDefName,
+                reachedLevelDefName = CurrentAnomalyMonolithLevelDefName(),
+                tick = source.tick,
+                methodReturnedNormally = true,
+                playerVisible = source.playerVisible,
+                actorEligible = source.actorEligible,
+                setting = source.setting,
+                actorSummary = source.actorSummary
+            };
+            return true;
+        }
+
+        /// <summary>Copies the exact single-pawn identity from a terminal-void Tale callback.</summary>
+        internal static bool TryCaptureVoidTale(
+            TaleDef def,
+            object[] args,
+            int tick,
+            out AnomalyVoidTaleFacts facts)
+        {
+            facts = null;
+            if (!ModsConfig.AnomalyActive || def == null || args == null || args.Length != 1)
+                return false;
+            Pawn actor = args[0] as Pawn;
+            if (actor == null) return false;
+            facts = new AnomalyVoidTaleFacts
+            {
+                taleDefName = def.defName ?? string.Empty,
+                actorPawnId = actor.GetUniqueLoadID(),
+                tick = tick
+            };
+            return !string.IsNullOrWhiteSpace(facts.actorPawnId);
+        }
+
+        private static int CurrentMonolithQuestId()
+        {
+            if (!ModsConfig.AnomalyActive) return 0;
+            try
+            {
+                return Find.Anomaly?.monolith?.quest?.id ?? 0;
+            }
+            catch (Exception exception)
+            {
+                // A modded/absent monolith just leaves the generic quest page alone (fail open).
+                Log.WarningOnce(
+                    "[Pawn Diary] Could not read the monolith quest identity for terminal void "
+                        + "ownership; the generic quest page is left unchanged: "
+                        + exception.GetType().Name + ": " + exception.Message,
+                    "PawnDiary.Anomaly.Void.MonolithQuest".GetHashCode());
+                return 0;
+            }
+        }
+
+        private static string BuildOptionalVoidText(Func<string> reader)
+        {
+            try
+            {
+                return reader() ?? string.Empty;
+            }
+            catch (Exception exception)
+            {
+                // Surroundings/summary are optional enrichment. A broken modded getter must not erase
+                // a verified terminal answer; the page simply continues without that line.
+                Log.WarningOnce(
+                    "[Pawn Diary] Terminal void context text could not be read and was omitted: "
+                        + exception.GetType().Name + ": " + exception.Message,
+                    "PawnDiary.Anomaly.Void.OptionalText".GetHashCode());
+                return string.Empty;
+            }
         }
 
         /// <summary>
@@ -1063,9 +1212,23 @@ namespace PawnDiary
             return facts;
         }
 
+        // Loaded-test seam. The live monolith level is only readable through a spawned monolith, and
+        // the real terminal methods are colony-ending, so a RimTest can substitute the reached level
+        // here to exercise the exact ownership transaction without mutating the player's Anomaly state.
+        // It is null in production and cleared by each fixture; nothing else sets it.
+        private static System.Func<string> monolithLevelOverrideForTests;
+
+        /// <summary>Installs or clears the loaded-test monolith-level override.</summary>
+        internal static void SetMonolithLevelOverrideForTests(System.Func<string> reader)
+        {
+            monolithLevelOverrideForTests = reader;
+        }
+
         /// <summary>Returns the guarded current monolith level, or empty without usable Anomaly state.</summary>
         internal static string CurrentAnomalyMonolithLevelDefName()
         {
+            System.Func<string> testReader = monolithLevelOverrideForTests;
+            if (testReader != null) return testReader() ?? string.Empty;
             if (!ModsConfig.AnomalyActive) return string.Empty;
             try
             {

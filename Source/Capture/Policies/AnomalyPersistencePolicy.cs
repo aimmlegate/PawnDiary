@@ -21,6 +21,14 @@ namespace PawnDiary.Capture
         public static AnomalyPersistentStateSnapshot Normalize(AnomalyPersistentStateSnapshot source)
         {
             AnomalyPersistentStateSnapshot input = source ?? new AnomalyPersistentStateSnapshot();
+            // A terminal outcome is only trustworthy as a whole: it needs a supported branch token and
+            // a stable actor identity. A partial or corrupt row collapses back to "no terminal yet" so
+            // a stray actor ID or event ID can never resurrect a fake ending after load.
+            string terminalOutcome = NormalizeVoidOutcomeToken(input.terminalOutcome);
+            string terminalActor = terminalOutcome.Length == 0
+                ? string.Empty
+                : CleanStablePart(input.terminalActorPawnId);
+            bool terminalCommitted = terminalOutcome.Length > 0 && terminalActor.Length > 0;
             return new AnomalyPersistentStateSnapshot
             {
                 // Preserve a future positive version instead of downgrading it and accidentally
@@ -35,8 +43,23 @@ namespace PawnDiary.Capture
                     input.monolithBaselineLevelDefName),
                 lastMonolithKnowledgeSnapshot = NormalizeMonolithKnowledge(
                     input.lastMonolithKnowledgeSnapshot),
-                creepJoinerArcs = NormalizeCreepJoinerArcs(input.creepJoinerArcs)
+                creepJoinerArcs = NormalizeCreepJoinerArcs(input.creepJoinerArcs),
+                terminalOutcome = terminalCommitted ? terminalOutcome : string.Empty,
+                terminalActorPawnId = terminalCommitted ? terminalActor : string.Empty,
+                terminalEventId = terminalCommitted
+                    ? CleanStablePart(input.terminalEventId)
+                    : string.Empty
             };
+        }
+
+        /// <summary>Returns "embraced"/"disrupted" for a supported terminal branch token, or empty.</summary>
+        public static string NormalizeVoidOutcomeToken(string value)
+        {
+            string cleaned = (value ?? string.Empty).Trim();
+            return cleaned == AnomalyOutcomeTokens.Embraced
+                    || cleaned == AnomalyOutcomeTokens.Disrupted
+                ? cleaned
+                : string.Empty;
         }
 
         /// <summary>Creates trustworthy empty history for a new game; it never emits a page.</summary>
