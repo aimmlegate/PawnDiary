@@ -69,9 +69,14 @@ namespace PawnDiary
         /// </summary>
         private void NormalizeBeliefStatesForLoadedSave()
         {
+            // Loaded games normally always have a TickManager. If an unusual fixture calls this
+            // earlier, preserve pending evidence until a real tick exists instead of repairing it
+            // against a made-up zero timestamp.
+            if (Find.TickManager == null) return;
+
             BeliefPolicySnapshot policy = DiaryBeliefPolicy.Snapshot();
             Dictionary<string, Pawn> livePawns = SnapshotLivePawnsByLoadId();
-            int now = Find.TickManager?.TicksGame ?? 0;
+            int now = Find.TickManager.TicksGame;
             for (int i = 0; i < diaries.Count; i++)
             {
                 PawnDiaryRecord diary = diaries[i];
@@ -122,7 +127,6 @@ namespace PawnDiary
             BeliefPolicySnapshot policy = DiaryBeliefPolicy.Snapshot();
             PawnBeliefState state = diary.EnsureBeliefState();
             int now = Find.TickManager?.TicksGame ?? 0;
-            state.Normalize(now, policy);
 
             string trend = BeliefCertaintyTrendTokens.Unknown;
             string magnitude = BeliefCertaintyMagnitudeTokens.Unknown;

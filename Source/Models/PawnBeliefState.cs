@@ -71,8 +71,11 @@ namespace PawnDiary
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
-                int now = Find.TickManager?.TicksGame ?? int.MaxValue;
-                Normalize(now, DiaryBeliefPolicy.Snapshot());
+                // A real loaded game has a TickManager here. A detached Scribe fixture may not; in
+                // that case, defer tick-sensitive expiry/repair instead of treating every saved tick
+                // as stale through an artificial int.MaxValue timestamp.
+                if (Find.TickManager != null)
+                    Normalize(Find.TickManager.TicksGame, DiaryBeliefPolicy.Snapshot());
             }
         }
 
@@ -115,7 +118,11 @@ namespace PawnDiary
                     > effective.pendingBeliefEvidenceMaxAgeTicks)
                 ClearPendingCertainty();
             if (!pendingIdeologyChange || pendingPreviousIdeologyId.Length == 0
-                || pendingCurrentIdeologyId.Length == 0)
+                || pendingCurrentIdeologyId.Length == 0
+                || string.Equals(
+                    pendingPreviousIdeologyId,
+                    pendingCurrentIdeologyId,
+                    StringComparison.OrdinalIgnoreCase))
                 ClearPendingIdeologyChange();
 
             int currentDay = now / GenDate.TicksPerDay;
@@ -126,6 +133,13 @@ namespace PawnDiary
                 lastReflectionTick = -1;
                 lastReflectionDay = -1;
                 lastReflectionQuadrum = -1;
+                reflectionsThisQuadrum = 0;
+            }
+            else if (lastReflectionQuadrum >= 0 && lastReflectionQuadrum < currentQuadrum)
+            {
+                // The counter belongs only to the quadrum containing the last reflection. Phase 4
+                // will increment it; normalize the rollover here so a loaded save cannot inherit a
+                // stale cap from an earlier quadrum.
                 reflectionsThisQuadrum = 0;
             }
             lastReflectionTick = Math.Max(-1, lastReflectionTick);

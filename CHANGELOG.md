@@ -8,6 +8,8 @@ pre-release version ladder for project history.
 
 ## 2026-07-23
 
+- **Ideology Phase 3 review hardening.** Cancelled net-zero belief changes, made diagnostics read-only,
+  skipped no-DLC scans, and repaired load-time tick and quadrum normalization.
 - **Documentation restructured into a repository wiki.** Migrated human docs into a browsable
   `repowiki/`, split oversized architecture/event/API files into focused wiki pages plus committed
   agent `skills/`, made the README a wiki landing page, and moved development-only plans and tooling

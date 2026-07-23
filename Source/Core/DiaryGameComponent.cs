@@ -749,7 +749,7 @@ namespace PawnDiary
                 ScanPawnProgressionsForDiaryEvents();
             }
 
-            if (!initialArrivalScanPending && now >= nextBeliefScanTick)
+            if (!initialArrivalScanPending && ModsConfig.IdeologyActive && now >= nextBeliefScanTick)
             {
                 BeliefPolicySnapshot beliefPolicy = DiaryBeliefPolicy.Snapshot();
                 nextBeliefScanTick = now + beliefPolicy.beliefScanIntervalTicks;

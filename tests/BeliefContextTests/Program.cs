@@ -2388,6 +2388,22 @@ namespace PawnDiary
             AssertTrue("ideology changes clear incomparable certainty drift",
                 !changedTwice.state.hasPendingCertainty);
 
+            BeliefObservationTransition changedBack = BeliefReflectionPolicy.Advance(
+                changedOnce.state, Tracker("IdeoA", "First", 0.50f), true, 600, policy);
+            AssertTrue("returning to the pending ideology origin cancels net-zero change debt",
+                !changedBack.state.pendingIdeologyChange
+                    && !changedBack.decision.createReflectionDebt
+                    && changedBack.decision.trigger == BeliefReflectionTriggerTokens.None);
+
+            BeliefScanState persistedNetZero = changedOnce.state;
+            persistedNetZero.pendingCurrentIdeologyId = persistedNetZero.pendingPreviousIdeologyId;
+            persistedNetZero.pendingCurrentIdeologyName = persistedNetZero.pendingPreviousIdeologyName;
+            BeliefObservationTransition normalizedNetZero = BeliefReflectionPolicy.Advance(
+                persistedNetZero, Tracker("IdeoB", "Second", 0.80f), true, 600, policy);
+            AssertTrue("normalization clears net-zero ideology debt saved by an older build",
+                !normalizedNetZero.state.pendingIdeologyChange
+                    && !normalizedNetZero.decision.createReflectionDebt);
+
             BeliefObservationTransition unavailable = BeliefReflectionPolicy.Advance(
                 changedTwice.state, null, false, 700, policy);
             AssertEqual("missing tracker resets accumulated state", BeliefObservationActionTokens.ResetPending,

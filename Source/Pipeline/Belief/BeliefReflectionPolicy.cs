@@ -256,11 +256,21 @@ namespace PawnDiary
                 next.pendingIdeologyChange = true;
                 next.pendingCurrentIdeologyId = currentId;
                 next.pendingCurrentIdeologyName = currentName;
+                // A pawn can change A -> B -> A before Phase 4 consumes the pending reflection.
+                // That is a real latest transition, but the accumulated story debt is net-zero:
+                // retaining it would later fabricate an "A to A" ideology-change reflection.
+                if (string.Equals(
+                        next.pendingPreviousIdeologyId,
+                        next.pendingCurrentIdeologyId,
+                        StringComparison.OrdinalIgnoreCase))
+                    ClearPendingIdeology(next);
                 ClearPendingCertainty(next);
                 RecordLast(next, currentId, currentName, currentCertainty, now);
                 decision.action = BeliefObservationActionTokens.IdeologyChanged;
-                decision.createReflectionDebt = true;
-                decision.trigger = BeliefReflectionTriggerTokens.IdeologyChange;
+                decision.createReflectionDebt = next.pendingIdeologyChange;
+                decision.trigger = next.pendingIdeologyChange
+                    ? BeliefReflectionTriggerTokens.IdeologyChange
+                    : BeliefReflectionTriggerTokens.None;
                 return transition;
             }
 
@@ -453,7 +463,11 @@ namespace PawnDiary
                     > policy.pendingBeliefEvidenceMaxAgeTicks)
                 ClearPendingCertainty(result);
             if (!result.pendingIdeologyChange || result.pendingPreviousIdeologyId.Length == 0
-                || result.pendingCurrentIdeologyId.Length == 0)
+                || result.pendingCurrentIdeologyId.Length == 0
+                || string.Equals(
+                    result.pendingPreviousIdeologyId,
+                    result.pendingCurrentIdeologyId,
+                    StringComparison.OrdinalIgnoreCase))
                 ClearPendingIdeology(result);
             return result;
         }
