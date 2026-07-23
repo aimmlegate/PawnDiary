@@ -803,6 +803,8 @@ namespace PawnDiary.RimTests
         [Test]
         public static void PawnDiaryRecordRoundTrips()
         {
+            int now = Find.TickManager?.TicksGame ?? 0;
+            int observedTick = Math.Max(0, now - 20);
             PawnProgressionState progression = new PawnProgressionState
             {
                 highestPsylinkLevelRecorded = 3,
@@ -854,6 +856,29 @@ namespace PawnDiary.RimTests
                 recentlyUsedEventIds = new List<string> { "e1", "e2", "e3" },
             };
 
+            PawnBeliefState belief = new PawnBeliefState
+            {
+                baselineOnNextScan = false,
+                hasLastObservation = true,
+                lastIdeologyId = "Ideo_QuietFlame",
+                lastIdeologyName = "The Quiet Flame",
+                lastCertainty = 0.43f,
+                lastScanTick = observedTick,
+                hasPendingCertainty = true,
+                pendingCertaintyBefore = 0.51f,
+                pendingCertaintyAfter = 0.43f,
+                pendingCertaintyFirstTick = observedTick,
+                pendingCertaintyLastTick = observedTick,
+                pendingIdeologyChange = true,
+                pendingPreviousIdeologyId = "Ideo_Old",
+                pendingPreviousIdeologyName = "Old Path",
+                pendingCurrentIdeologyId = "Ideo_QuietFlame",
+                pendingCurrentIdeologyName = "The Quiet Flame",
+                lastReflectedSourceIds = new List<string> { "evt_belief_1", "evt_belief_2" },
+                recentSelectedPreceptDefNames = new List<string> { "SyntheticPrecept" },
+                recentSelectedMemeDefNames = new List<string> { "SyntheticMeme" },
+            };
+
             PawnDiaryRecord original = new PawnDiaryRecord
             {
                 pawnId = "Thing_Human_Record",
@@ -865,6 +890,7 @@ namespace PawnDiary.RimTests
                 customWritingStyleRule = "Terse and grim.",
                 progressionState = progression,
                 arcSchedule = arc,
+                beliefState = belief,
             };
 
             PawnDiaryRecord loaded = ScribeRoundTrip(original);
@@ -944,6 +970,30 @@ namespace PawnDiary.RimTests
                 loaded.arcSchedule.recentlyUsedEventIds,
                 "record arc recentlyUsedEventIds");
 
+            Require(loaded.beliefState != null, "record beliefState should be non-null after load.");
+            Require(!loaded.beliefState.baselineOnNextScan && loaded.beliefState.hasLastObservation,
+                "record belief observation baseline flags should survive load.");
+            AssertStr("Ideo_QuietFlame", loaded.beliefState.lastIdeologyId,
+                "record belief last ideology id");
+            Require(Math.Abs(loaded.beliefState.lastCertainty - 0.43f) < 0.0001f,
+                "record belief last certainty did not survive load.");
+            Require(loaded.beliefState.hasPendingCertainty
+                    && Math.Abs(loaded.beliefState.pendingCertaintyBefore - 0.51f) < 0.0001f
+                    && Math.Abs(loaded.beliefState.pendingCertaintyAfter - 0.43f) < 0.0001f,
+                "record pending certainty evidence did not survive load.");
+            Require(loaded.beliefState.pendingIdeologyChange,
+                "record pending ideology-change evidence did not survive load.");
+            AssertStr("Ideo_Old", loaded.beliefState.pendingPreviousIdeologyId,
+                "record belief previous ideology id");
+            AssertStrList(belief.lastReflectedSourceIds, loaded.beliefState.lastReflectedSourceIds,
+                "record belief reflected source ids");
+            AssertStrList(belief.recentSelectedPreceptDefNames,
+                loaded.beliefState.recentSelectedPreceptDefNames,
+                "record belief recent precepts");
+            AssertStrList(belief.recentSelectedMemeDefNames,
+                loaded.beliefState.recentSelectedMemeDefNames,
+                "record belief recent memes");
+
             // Null list + null nested state normalize to non-null on load.
             PawnDiaryRecord nullOriginal = new PawnDiaryRecord
             {
@@ -953,6 +1003,7 @@ namespace PawnDiary.RimTests
                 favoriteEntryKeys = null,
                 progressionState = null,
                 arcSchedule = null,
+                beliefState = null,
             };
             PawnDiaryRecord nullLoaded = ScribeRoundTrip(nullOriginal);
             Require(
@@ -991,6 +1042,10 @@ namespace PawnDiary.RimTests
                 "record favorite normalization last in-bound key");
             Require(nullLoaded.progressionState != null, "record null progressionState should load as non-null.");
             Require(nullLoaded.arcSchedule != null, "record null arcSchedule should load as non-null.");
+            Require(nullLoaded.beliefState != null && nullLoaded.beliefState.baselineOnNextScan
+                    && !nullLoaded.beliefState.hasPendingCertainty
+                    && !nullLoaded.beliefState.pendingIdeologyChange,
+                "an old save with no belief state should load a silent baseline-pending row.");
             GeneIdentityObservationState oldSaveGeneObservation = nullLoaded.progressionState
                 .EnsureBiotechState().EnsureGeneIdentityObservation();
             Require(oldSaveGeneObservation.geneObservationVersion == 0

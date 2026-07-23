@@ -87,6 +87,10 @@ namespace PawnDiary
         // not a separate pawn-history store; existing diary pages remain the history layer.
         public PawnArcScheduleState arcSchedule;
 
+        // Passive Ideology observation and future reflection bookkeeping. The deep object's default
+        // requests a silent baseline, so old saves never receive catch-up belief pages.
+        public PawnBeliefState beliefState;
+
         /// <summary>
         /// Serialises/deserialises this record into the RimWorld save file.
         /// PostLoadInit keeps list fields non-null and recovers gracefully if a style Def was
@@ -116,6 +120,7 @@ namespace PawnDiary
             Scribe_Collections.Look(ref favoriteEntryKeys, "favoriteEntryKeys", LookMode.Value);
             Scribe_Deep.Look(ref progressionState, "progressionState");
             Scribe_Deep.Look(ref arcSchedule, "arcSchedule");
+            Scribe_Deep.Look(ref beliefState, "beliefState");
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -174,6 +179,7 @@ namespace PawnDiary
 
                 EnsureProgressionState();
                 EnsureArcSchedule();
+                EnsureBeliefState();
             }
         }
 
@@ -197,6 +203,19 @@ namespace PawnDiary
 
             arcSchedule.Normalize(PawnArcScheduleState.DefaultRecentMemoryCap);
             return arcSchedule;
+        }
+
+        /// <summary>Returns normalized passive belief state, creating old-save defaults as needed.</summary>
+        public PawnBeliefState EnsureBeliefState()
+        {
+            if (beliefState == null)
+            {
+                beliefState = new PawnBeliefState();
+            }
+
+            int now = Find.TickManager?.TicksGame ?? int.MaxValue;
+            beliefState.Normalize(now, DiaryBeliefPolicy.Snapshot());
+            return beliefState;
         }
     }
 }

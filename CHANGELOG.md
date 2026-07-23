@@ -1,5 +1,7 @@
 # Changelog
 
+- **2026-07-23 — Added normalized, deep-scribed Phase 3 pawn belief state and pure accumulated-drift policy.**
+
 - **2026-07-23 — Completed XML-gated Phase 2 belief evidence across raid, captivity, aid, work, ritual, tale, thought, and observed-condition pages.**
 
 - **2026-07-23 — Completed exact XML-gated food evidence for animal meat, fungus, and nutrient paste.**

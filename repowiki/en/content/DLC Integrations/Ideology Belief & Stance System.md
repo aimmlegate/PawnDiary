@@ -35,6 +35,22 @@ charity or slavery, `PlantCutting` does not prove that a tree was cut, and an un
 become a belief event. Ideology inactivity, missing labels, unsafe fields, and unmatched policy all
 return no evidence.
 
+### Persistent passive belief state
+
+`PawnDiaryRecord.beliefState` is an additive deep-scribed object. Old saves begin with
+`baselineOnNextScan=true`, so their first valid observation records ideology identity and certainty
+without creating reflection debt. The assembly-free reducer merges small certainty movements from
+their earliest pending value, preserves the earliest and latest identities across successive ideology
+changes, expires stale certainty evidence, and resets to a fresh baseline when Ideology or the pawn's
+tracker is unavailable. Saved reflection source IDs and recent doctrine selections are deduplicated
+and capped by XML policy. Phase 3 tracks this state only; standalone belief pages remain Phase 4 work.
+
+**Section sources**
+- [PawnBeliefState.cs](../../../../Source/Models/PawnBeliefState.cs)
+- [PawnDiaryRecord.cs](../../../../Source/Models/PawnDiaryRecord.cs)
+- [BeliefReflectionPolicy.cs](../../../../Source/Pipeline/Belief/BeliefReflectionPolicy.cs)
+- [DiaryBeliefPolicyDef.xml](../../../../1.6/Defs/DiaryBeliefPolicyDef.xml)
+
 ## Project Structure
 The ideology subsystem is primarily defined through:
 - A policy definition type for beliefs
@@ -57,6 +73,8 @@ DBPD --> PLAN
 **Diagram sources**
 - [DiaryBeliefPolicyDef.cs](../../../../Source/Defs/DiaryBeliefPolicyDef.cs)
 - [DiaryBeliefPolicyDef.xml](../../../../1.6/Defs/DiaryBeliefPolicyDef.xml)
+- [PawnBeliefState.cs](../../../../Source/Models/PawnBeliefState.cs)
+- [BeliefReflectionPolicy.cs](../../../../Source/Pipeline/Belief/BeliefReflectionPolicy.cs)
 
 **Section sources**
 - [DiaryBeliefPolicyDef.cs](../../../../Source/Defs/DiaryBeliefPolicyDef.cs)
@@ -179,8 +197,13 @@ Policy --> Prompt["Prompt Assembly"]
 - Minimize repeated lookups of belief policies by caching resolved instances where appropriate.
 - Defer heavy computations until necessary stages (e.g., prompt assembly) to avoid overhead during frequent event emission.
 - Use efficient filtering and matching when selecting applicable belief contexts for a given event.
+- Passive state reduction operates on one detached identity/name/certainty row. XML owns the elapsed
+  scan interval, maximum pawns per pass, pending-evidence age, and saved-list caps; no precept or meme
+  enumeration is required merely to observe certainty drift.
 
-[No sources needed since this section provides general guidance]
+**Section sources**
+- [BeliefReflectionPolicy.cs](../../../../Source/Pipeline/Belief/BeliefReflectionPolicy.cs)
+- [DiaryBeliefPolicyDef.xml](../../../../1.6/Defs/DiaryBeliefPolicyDef.xml)
 
 ## Troubleshooting Guide
 Common issues and resolutions:

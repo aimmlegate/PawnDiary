@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Master Wave 10 / Ideology Phase 1 plus Phase 2 mutation infrastructure and exact interaction
-  enrichment. This Def remains DLC-neutral: the exact event strings below are source ownership and
-  mechanical correlation, never a hard Def reference or doctrine inference. No belief-reflection
-  scheduler is enabled.
+  Master Wave 10 / Ideology Phases 1-3. This Def remains DLC-neutral: the exact event strings below
+  are source ownership and mechanical correlation, never a hard Def reference or doctrine inference.
+  Phase 3 tracks passive belief state but deliberately creates no standalone reflection pages.
 -->
 <Defs>
   <PawnDiary.DiaryBeliefPolicyDef>
@@ -18,6 +17,10 @@
     <defaultSelectedStances>1</defaultSelectedStances>
     <maximumSupportingMemes>2</maximumSupportingMemes>
     <maximumRecentSelections>16</maximumRecentSelections>
+    <maximumReflectedBeliefSourceIds>16</maximumReflectedBeliefSourceIds>
+    <beliefScanIntervalTicks>250</beliefScanIntervalTicks>
+    <maximumBeliefPawnsPerScan>4</maximumBeliefPawnsPerScan>
+    <pendingBeliefEvidenceMaxAgeTicks>3600000</pendingBeliefEvidenceMaxAgeTicks>
     <maximumHistoryCorrelationEntries>256</maximumHistoryCorrelationEntries>
     <historyCorrelationWindowTicks>120</historyCorrelationWindowTicks>
     <maximumMutationCorrelationEntries>256</maximumMutationCorrelationEntries>

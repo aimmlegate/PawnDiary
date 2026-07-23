@@ -91,6 +91,12 @@ namespace PawnDiary
             AssertTrue("missing Compact budget retains the shipped deity policy", compactFallback.includeDeity);
             AssertEqual("mutation entry fallback is bounded", 256, safe.maximumMutationCorrelationEntries);
             AssertEqual("mutation window fallback is bounded", 120, safe.mutationCorrelationWindowTicks);
+            AssertEqual("belief scan interval fallback is bounded", 250, safe.beliefScanIntervalTicks);
+            AssertEqual("belief scan work fallback is bounded", 4, safe.maximumBeliefPawnsPerScan);
+            AssertEqual("pending belief age fallback is bounded", 3600000,
+                safe.pendingBeliefEvidenceMaxAgeTicks);
+            AssertEqual("reflected belief source fallback is bounded", 16,
+                safe.maximumReflectedBeliefSourceIds);
             AssertEqual("code fallback suppresses no generic event routes", 0,
                 BeliefPolicySnapshot.CreateDefault().canonicalEventOwnershipRules.Count);
             AssertEqual("code fallback enriches no mutation event routes", 0,
@@ -2332,6 +2338,83 @@ namespace PawnDiary
             AssertEqual("ideology change precedes scalar comparison", BeliefObservationActionTokens.IdeologyChanged,
                 changed.action);
 
+            BeliefObservationTransition first = BeliefReflectionPolicy.Advance(
+                null, Tracker("IdeoA", "First", 0.50f), true, 100, policy);
+            AssertEqual("state reducer first scan baselines", BeliefObservationActionTokens.Baseline,
+                first.decision.action);
+            AssertTrue("state reducer baseline stores current without debt",
+                first.state.hasLastObservation && !first.state.hasPendingCertainty
+                    && !first.decision.createReflectionDebt);
+
+            BeliefObservationTransition minor = BeliefReflectionPolicy.Advance(
+                first.state, Tracker("IdeoA", "First", 0.47f), true, 200, policy);
+            AssertEqual("sub-threshold certainty stays non-emitting", BeliefObservationActionTokens.NoChange,
+                minor.decision.action);
+            AssertTrue("sub-threshold certainty remains accumulated", minor.state.hasPendingCertainty);
+            AssertNear("pending certainty preserves earliest baseline", 0.50f,
+                minor.state.pendingCertaintyBefore);
+            AssertNear("pending certainty records latest value", 0.47f,
+                minor.state.pendingCertaintyAfter);
+
+            BeliefObservationTransition accumulated = BeliefReflectionPolicy.Advance(
+                minor.state, Tracker("IdeoA", "First", 0.43f), true, 300, policy);
+            AssertEqual("several small moves cross the configured threshold",
+                BeliefObservationActionTokens.CertaintyChanged, accumulated.decision.action);
+            AssertEqual("accumulated certainty reports falling", BeliefCertaintyTrendTokens.Falling,
+                accumulated.decision.certaintyTrend);
+            AssertNear("accumulation keeps its original before value", 0.50f,
+                accumulated.state.pendingCertaintyBefore);
+            AssertNear("accumulation merges its latest after value", 0.43f,
+                accumulated.state.pendingCertaintyAfter);
+            AssertEqual("accumulation keeps first detection tick", 200,
+                accumulated.state.pendingCertaintyFirstTick);
+            AssertEqual("accumulation advances last detection tick", 300,
+                accumulated.state.pendingCertaintyLastTick);
+
+            BeliefObservationTransition returned = BeliefReflectionPolicy.Advance(
+                accumulated.state, Tracker("IdeoA", "First", 0.50f), true, 400, policy);
+            AssertTrue("returning to the pending anchor cancels certainty debt",
+                !returned.state.hasPendingCertainty && !returned.decision.createReflectionDebt);
+
+            BeliefObservationTransition changedOnce = BeliefReflectionPolicy.Advance(
+                returned.state, Tracker("IdeoB", "Second", 0.80f), true, 500, policy);
+            BeliefObservationTransition changedTwice = BeliefReflectionPolicy.Advance(
+                changedOnce.state, Tracker("IdeoC", "Third", 0.60f), true, 600, policy);
+            AssertTrue("ideology changes remain pending", changedTwice.state.pendingIdeologyChange);
+            AssertEqual("merged ideology change preserves earliest identity", "IdeoA",
+                changedTwice.state.pendingPreviousIdeologyId);
+            AssertEqual("merged ideology change preserves latest identity", "IdeoC",
+                changedTwice.state.pendingCurrentIdeologyId);
+            AssertTrue("ideology changes clear incomparable certainty drift",
+                !changedTwice.state.hasPendingCertainty);
+
+            BeliefObservationTransition unavailable = BeliefReflectionPolicy.Advance(
+                changedTwice.state, null, false, 700, policy);
+            AssertEqual("missing tracker resets accumulated state", BeliefObservationActionTokens.ResetPending,
+                unavailable.decision.action);
+            AssertTrue("missing tracker requires a later baseline and clears all debt",
+                unavailable.state.baselineOnNextScan && !unavailable.state.hasLastObservation
+                    && !unavailable.state.hasPendingCertainty
+                    && !unavailable.state.pendingIdeologyChange);
+            BeliefObservationTransition restored = BeliefReflectionPolicy.Advance(
+                unavailable.state, Tracker("IdeoC", "Third", 0.20f), true, 800, policy);
+            AssertTrue("restored tracker baselines instead of catching up",
+                restored.decision.recordBaseline && !restored.decision.createReflectionDebt);
+
+            BeliefPolicyBuilder shortAgeBuilder = BeliefPolicyBuilder.CreateDefault();
+            shortAgeBuilder.pendingBeliefEvidenceMaxAgeTicks = 60000;
+            BeliefPolicySnapshot shortAge = shortAgeBuilder.Build();
+            BeliefObservationTransition agedBaseline = BeliefReflectionPolicy.Advance(
+                null, Tracker("IdeoA", "First", 0.50f), true, 100, shortAge);
+            BeliefObservationTransition agedMinor = BeliefReflectionPolicy.Advance(
+                agedBaseline.state, Tracker("IdeoA", "First", 0.47f), true, 200, shortAge);
+            BeliefObservationTransition afterAge = BeliefReflectionPolicy.Advance(
+                agedMinor.state, Tracker("IdeoA", "First", 0.43f), true, 60301, shortAge);
+            AssertNear("stale pending evidence reanchors at the latest observation", 0.47f,
+                afterAge.state.pendingCertaintyBefore);
+            AssertEqual("stale reanchored movement remains minor", BeliefObservationActionTokens.NoChange,
+                afterAge.decision.action);
+
             BeliefReflectionRequest request = ReflectionRequest();
             request.pendingIdeologyChange = true;
             request.pendingMajorCertaintyShift = true;
@@ -3041,6 +3124,18 @@ namespace PawnDiary
                 previousIdeologyId = beforeIdeology,
                 previousCertainty = before
             }, policy);
+        }
+
+        private static BeliefTrackerObservation Tracker(
+            string ideologyId, string ideologyName, float certainty)
+        {
+            return new BeliefTrackerObservation
+            {
+                hasCurrent = true,
+                ideologyId = ideologyId,
+                ideologyName = ideologyName,
+                certainty = certainty
+            };
         }
 
         private static BeliefReflectionRequest ReflectionRequest()

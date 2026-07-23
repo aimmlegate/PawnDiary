@@ -1,5 +1,5 @@
-// Assembly-free certainty and future reflection decisions. Phase 0 exposes only pure policy shells:
-// no ticking, save fields, event creation, or RimWorld scheduling is wired here.
+// Assembly-free certainty and reflection decisions. Phase 3 adds the pure saved-state reducer used
+// by the elapsed main-thread scanner; event creation remains deliberately reserved for Phase 4.
 using System;
 
 namespace PawnDiary
@@ -48,6 +48,46 @@ namespace PawnDiary
         public string trigger = BeliefReflectionTriggerTokens.None;
         public string certaintyTrend = BeliefCertaintyTrendTokens.Unknown;
         public string certaintyMagnitude = BeliefCertaintyMagnitudeTokens.Unknown;
+    }
+
+    /// <summary>Detached minimal tracker reading supplied by the DLC-safe game adapter.</summary>
+    internal sealed class BeliefTrackerObservation
+    {
+        public bool hasCurrent;
+        public string ideologyId = string.Empty;
+        public string ideologyName = string.Empty;
+        public float certainty;
+    }
+
+    /// <summary>
+    /// Plain persisted observation fields. The RimWorld-facing PawnBeliefState maps to this DTO so
+    /// accumulation and threshold behavior stay testable without Verse or a running game.
+    /// </summary>
+    internal sealed class BeliefScanState
+    {
+        public bool baselineOnNextScan = true;
+        public bool hasLastObservation;
+        public string lastIdeologyId = string.Empty;
+        public string lastIdeologyName = string.Empty;
+        public float lastCertainty;
+        public int lastScanTick = -1;
+        public bool hasPendingCertainty;
+        public float pendingCertaintyBefore;
+        public float pendingCertaintyAfter;
+        public int pendingCertaintyFirstTick = -1;
+        public int pendingCertaintyLastTick = -1;
+        public bool pendingIdeologyChange;
+        public string pendingPreviousIdeologyId = string.Empty;
+        public string pendingPreviousIdeologyName = string.Empty;
+        public string pendingCurrentIdeologyId = string.Empty;
+        public string pendingCurrentIdeologyName = string.Empty;
+    }
+
+    /// <summary>One pure transition containing the next saved fields and diagnostic decision.</summary>
+    internal sealed class BeliefObservationTransition
+    {
+        public BeliefScanState state = new BeliefScanState();
+        public BeliefObservationDecision decision = new BeliefObservationDecision();
     }
 
     /// <summary>Pure input for the future belief-reflection opportunity shell.</summary>
@@ -147,6 +187,121 @@ namespace PawnDiary
     /// <summary>Pure baseline, passive-delta, and reflection-trigger policy reserved for later adapters.</summary>
     internal static class BeliefReflectionPolicy
     {
+        /// <summary>
+        /// Advances detached state by one observation. Small same-ideology movements accumulate from
+        /// the first pending certainty, so several sub-threshold scans can become meaningful without
+        /// creating per-scan debt. Missing/disabled doctrine clears debt and requires a fresh baseline.
+        /// </summary>
+        public static BeliefObservationTransition Advance(
+            BeliefScanState saved,
+            BeliefTrackerObservation observation,
+            bool featureAvailable,
+            int nowTick,
+            BeliefPolicySnapshot policy)
+        {
+            BeliefPolicySnapshot effective = policy ?? BeliefPolicySnapshot.CreateDefault();
+            int now = Math.Max(0, nowTick);
+            BeliefScanState next = Normalize(saved, now, effective);
+            BeliefObservationDecision decision = new BeliefObservationDecision();
+            BeliefObservationTransition transition = new BeliefObservationTransition
+            {
+                state = next,
+                decision = decision
+            };
+
+            if (!effective.enabled || !featureAvailable || observation == null
+                || !observation.hasCurrent || string.IsNullOrWhiteSpace(observation.ideologyId))
+            {
+                next.baselineOnNextScan = true;
+                next.hasLastObservation = false;
+                next.lastScanTick = now;
+                ClearPending(next);
+                decision.action = BeliefObservationActionTokens.ResetPending;
+                decision.clearPending = true;
+                return transition;
+            }
+
+            string currentId = Bounded(observation.ideologyId, effective.maximumIdentifierCharacters);
+            if (currentId.Length == 0)
+            {
+                next.baselineOnNextScan = true;
+                next.hasLastObservation = false;
+                next.lastScanTick = now;
+                ClearPending(next);
+                decision.action = BeliefObservationActionTokens.ResetPending;
+                decision.clearPending = true;
+                return transition;
+            }
+            string currentName = Bounded(observation.ideologyName, effective.maximumFieldCharacters);
+            float currentCertainty = Clamp01(observation.certainty);
+
+            if (next.baselineOnNextScan || !next.hasLastObservation || next.lastIdeologyId.Length == 0)
+            {
+                RecordLast(next, currentId, currentName, currentCertainty, now);
+                next.baselineOnNextScan = false;
+                ClearPending(next);
+                decision.action = BeliefObservationActionTokens.Baseline;
+                decision.recordBaseline = true;
+                decision.clearPending = true;
+                return transition;
+            }
+
+            if (!string.Equals(next.lastIdeologyId, currentId, StringComparison.OrdinalIgnoreCase))
+            {
+                if (!next.pendingIdeologyChange)
+                {
+                    next.pendingPreviousIdeologyId = next.lastIdeologyId;
+                    next.pendingPreviousIdeologyName = next.lastIdeologyName;
+                }
+                next.pendingIdeologyChange = true;
+                next.pendingCurrentIdeologyId = currentId;
+                next.pendingCurrentIdeologyName = currentName;
+                ClearPendingCertainty(next);
+                RecordLast(next, currentId, currentName, currentCertainty, now);
+                decision.action = BeliefObservationActionTokens.IdeologyChanged;
+                decision.createReflectionDebt = true;
+                decision.trigger = BeliefReflectionTriggerTokens.IdeologyChange;
+                return transition;
+            }
+
+            if (next.hasPendingCertainty && next.pendingCertaintyLastTick >= 0
+                && (long)now - next.pendingCertaintyLastTick > effective.pendingBeliefEvidenceMaxAgeTicks)
+                ClearPendingCertainty(next);
+
+            float before = next.hasPendingCertainty
+                ? next.pendingCertaintyBefore
+                : next.lastCertainty;
+            float delta = currentCertainty - before;
+            if (Math.Abs(delta) < 0.000001f)
+            {
+                ClearPendingCertainty(next);
+                RecordLast(next, currentId, currentName, currentCertainty, now);
+                decision.certaintyTrend = BeliefCertaintyTrendTokens.Stable;
+                decision.certaintyMagnitude = BeliefCertaintyMagnitudeTokens.Minor;
+                return transition;
+            }
+
+            if (!next.hasPendingCertainty)
+            {
+                next.hasPendingCertainty = true;
+                next.pendingCertaintyBefore = next.lastCertainty;
+                next.pendingCertaintyFirstTick = now;
+            }
+            next.pendingCertaintyAfter = currentCertainty;
+            next.pendingCertaintyLastTick = now;
+            BeliefCertaintyPolicy.Trend(next.pendingCertaintyBefore, currentCertainty, effective,
+                out decision.certaintyTrend, out decision.certaintyMagnitude);
+            if (decision.certaintyMagnitude == BeliefCertaintyMagnitudeTokens.Meaningful
+                || decision.certaintyMagnitude == BeliefCertaintyMagnitudeTokens.Major)
+            {
+                decision.action = BeliefObservationActionTokens.CertaintyChanged;
+                decision.createReflectionDebt = true;
+                decision.trigger = BeliefReflectionTriggerTokens.CertaintyShift;
+            }
+            RecordLast(next, currentId, currentName, currentCertainty, now);
+            return transition;
+        }
+
         /// <summary>
         /// First observation always baselines and emits nothing. Missing/inactive doctrine clears debt
         /// and requests another baseline when the tracker later becomes available.
@@ -249,6 +404,100 @@ namespace PawnDiary
         private static float SafeRoll(float value)
         {
             if (float.IsNaN(value) || float.IsInfinity(value)) return 1f;
+            return Math.Max(0f, Math.Min(1f, value));
+        }
+
+        private static BeliefScanState Normalize(
+            BeliefScanState source, int now, BeliefPolicySnapshot policy)
+        {
+            BeliefScanState value = source ?? new BeliefScanState();
+            BeliefScanState result = new BeliefScanState
+            {
+                baselineOnNextScan = value.baselineOnNextScan,
+                hasLastObservation = value.hasLastObservation,
+                lastIdeologyId = Bounded(value.lastIdeologyId, policy.maximumIdentifierCharacters),
+                lastIdeologyName = Bounded(value.lastIdeologyName, policy.maximumFieldCharacters),
+                lastCertainty = Clamp01(value.lastCertainty),
+                lastScanTick = value.lastScanTick,
+                hasPendingCertainty = value.hasPendingCertainty,
+                pendingCertaintyBefore = Clamp01(value.pendingCertaintyBefore),
+                pendingCertaintyAfter = Clamp01(value.pendingCertaintyAfter),
+                pendingCertaintyFirstTick = value.pendingCertaintyFirstTick,
+                pendingCertaintyLastTick = value.pendingCertaintyLastTick,
+                pendingIdeologyChange = value.pendingIdeologyChange,
+                pendingPreviousIdeologyId = Bounded(
+                    value.pendingPreviousIdeologyId, policy.maximumIdentifierCharacters),
+                pendingPreviousIdeologyName = Bounded(
+                    value.pendingPreviousIdeologyName, policy.maximumFieldCharacters),
+                pendingCurrentIdeologyId = Bounded(
+                    value.pendingCurrentIdeologyId, policy.maximumIdentifierCharacters),
+                pendingCurrentIdeologyName = Bounded(
+                    value.pendingCurrentIdeologyName, policy.maximumFieldCharacters)
+            };
+            if (result.lastScanTick > now)
+            {
+                result.lastScanTick = -1;
+                result.hasLastObservation = false;
+                result.baselineOnNextScan = true;
+            }
+            if (!result.hasLastObservation || result.lastIdeologyId.Length == 0)
+            {
+                result.hasLastObservation = false;
+                result.baselineOnNextScan = true;
+            }
+            if (!result.hasPendingCertainty || result.pendingCertaintyFirstTick < 0
+                || result.pendingCertaintyLastTick < result.pendingCertaintyFirstTick
+                || result.pendingCertaintyFirstTick > now || result.pendingCertaintyLastTick > now)
+                ClearPendingCertainty(result);
+            if (!result.pendingIdeologyChange || result.pendingPreviousIdeologyId.Length == 0
+                || result.pendingCurrentIdeologyId.Length == 0)
+                ClearPendingIdeology(result);
+            return result;
+        }
+
+        private static void RecordLast(
+            BeliefScanState state, string id, string name, float certainty, int tick)
+        {
+            state.hasLastObservation = true;
+            state.lastIdeologyId = id;
+            state.lastIdeologyName = name;
+            state.lastCertainty = certainty;
+            state.lastScanTick = tick;
+        }
+
+        private static void ClearPending(BeliefScanState state)
+        {
+            ClearPendingCertainty(state);
+            ClearPendingIdeology(state);
+        }
+
+        private static void ClearPendingCertainty(BeliefScanState state)
+        {
+            state.hasPendingCertainty = false;
+            state.pendingCertaintyBefore = 0f;
+            state.pendingCertaintyAfter = 0f;
+            state.pendingCertaintyFirstTick = -1;
+            state.pendingCertaintyLastTick = -1;
+        }
+
+        private static void ClearPendingIdeology(BeliefScanState state)
+        {
+            state.pendingIdeologyChange = false;
+            state.pendingPreviousIdeologyId = string.Empty;
+            state.pendingPreviousIdeologyName = string.Empty;
+            state.pendingCurrentIdeologyId = string.Empty;
+            state.pendingCurrentIdeologyName = string.Empty;
+        }
+
+        private static string Bounded(string value, int maximum)
+        {
+            string cleaned = (value ?? string.Empty).Trim();
+            return cleaned.Length <= maximum ? cleaned : cleaned.Substring(0, maximum);
+        }
+
+        private static float Clamp01(float value)
+        {
+            if (float.IsNaN(value) || float.IsInfinity(value)) return 0f;
             return Math.Max(0f, Math.Min(1f, value));
         }
     }
