@@ -78,6 +78,55 @@ namespace PawnDiary.RimTests
                 "insect_meal");
         }
 
+        /// <summary>Ordinary animal meat uses the same exact, XML-gated food evidence path.</summary>
+        [Test]
+        public static void ExactAnimalMeatEnrichesOneExistingFrozenThoughtPage()
+        {
+            if (!ModsConfig.IdeologyActive)
+            {
+                Log.Message(LogPrefix + "exact animal-meat enrichment: not applicable (Ideology inactive). ");
+                return;
+            }
+
+            AssertExactFoodEnrichment(
+                FoodFact(AnimalMeatDef(), FoodIngestionEvidenceKindTokens.AnimalMeat),
+                "MeatEating_Disapproved",
+                "animal_meat_meal");
+        }
+
+        /// <summary>Raw fungus is classified from vanilla's exact ingestible metadata.</summary>
+        [Test]
+        public static void ExactFungusEnrichesOneExistingFrozenThoughtPage()
+        {
+            if (!ModsConfig.IdeologyActive)
+            {
+                Log.Message(LogPrefix + "exact fungus enrichment: not applicable (Ideology inactive). ");
+                return;
+            }
+
+            AssertExactFoodEnrichment(
+                FoodFact(RequiredThingDef("RawFungus"), FoodIngestionEvidenceKindTokens.Fungus),
+                "FungusEating_Preferred",
+                "fungus_meal");
+        }
+
+        /// <summary>Nutrient paste is proven by the live ingestible Def's vanilla ateEvent.</summary>
+        [Test]
+        public static void ExactNutrientPasteEnrichesOneExistingFrozenThoughtPage()
+        {
+            if (!ModsConfig.IdeologyActive)
+            {
+                Log.Message(LogPrefix + "exact nutrient-paste enrichment: not applicable (Ideology inactive). ");
+                return;
+            }
+
+            AssertExactFoodEnrichment(
+                FoodFact(RequiredThingDef("MealNutrientPaste"),
+                    FoodIngestionEvidenceKindTokens.NutrientPaste),
+                "NutrientPasteEating_DontMind",
+                "nutrient_paste_meal");
+        }
+
         /// <summary>An optional adapter exception must preserve one ordinary thought page.</summary>
         [Test]
         public static void FoodAdapterFailureKeepsTheOrdinaryThoughtPage()
@@ -199,6 +248,12 @@ namespace PawnDiary.RimTests
             Thing insectCorpse = ThingMaker.MakeThing(megaspider.race.corpseDef);
             Thing ordinaryMeal = CreateFineMeal();
             Thing mixedMeal = CreateFineMeal();
+            ThingDef animalMeat = AnimalMeatDef();
+            ThingDef fungus = RequiredThingDef("RawFungus");
+            ThingDef pasteDef = RequiredThingDef("MealNutrientPaste");
+            Thing animalMeal = CreateMealWithIngredient(animalMeat);
+            Thing fungusMeal = CreateMealWithIngredient(fungus);
+            Thing paste = ThingMaker.MakeThing(pasteDef);
             CompIngredients mixedIngredients = mixedMeal.TryGetComp<CompIngredients>();
             // Register insect first to prove policy order, rather than CompIngredients order, preserves
             // the already-shipped humanlike classification for mixed modded meals.
@@ -212,6 +267,9 @@ namespace PawnDiary.RimTests
             TrackThing(insectCorpse);
             TrackThing(ordinaryMeal);
             TrackThing(mixedMeal);
+            TrackThing(animalMeal);
+            TrackThing(fungusMeal);
+            TrackThing(paste);
 
             FoodIngestionEvidenceFact mealFact =
                 FoodIngestionEvidencePatch.ExactHumanlikeMeatFact(meal);
@@ -243,6 +301,26 @@ namespace PawnDiary.RimTests
                 mixedFact?.ingredientKind == FoodIngestionEvidenceKindTokens.HumanlikeMeat
                     && mixedFact.ingredientDefName == humanMeat.defName,
                 "Adding insect support changed humanlike-meat precedence in a mixed meal.");
+            IList<FoodIngestionEvidenceFact> animalFacts =
+                FoodIngestionEvidencePatch.ExactSupportedFoodFacts(animalMeal);
+            IList<FoodIngestionEvidenceFact> fungusFacts =
+                FoodIngestionEvidencePatch.ExactSupportedFoodFacts(fungusMeal);
+            IList<FoodIngestionEvidenceFact> pasteFacts =
+                FoodIngestionEvidencePatch.ExactSupportedFoodFacts(paste);
+            PawnDiaryRimTestScope.Require(
+                animalFacts.Any(fact => fact?.ingredientKind
+                    == FoodIngestionEvidenceKindTokens.AnimalMeat)
+                && fungusFacts.Any(fact => fact?.ingredientKind
+                    == FoodIngestionEvidenceKindTokens.Fungus)
+                && pasteFacts.Any(fact => fact?.ingredientKind
+                    == FoodIngestionEvidenceKindTokens.NutrientPaste),
+                "The exact classifier missed animal meat, fungus, or nutrient paste metadata.");
+            FoodIngestionEvidenceFact selected = FoodBeliefEvidencePolicy.SelectFact(
+                FoodIngestionEvidencePatch.ExactSupportedFoodFacts(mixedMeal),
+                DiaryBeliefPolicy.Snapshot());
+            PawnDiaryRimTestScope.Require(
+                selected?.ingredientKind == FoodIngestionEvidenceKindTokens.HumanlikeMeat,
+                "Loaded XML policy order did not preserve humanlike precedence in a mixed meal.");
         }
 
         /// <summary>A real fine meal proves both registered Harmony boundaries and evidence handoff.</summary>
@@ -470,6 +548,34 @@ namespace PawnDiary.RimTests
                 ingredientDefName = insectMeat.defName,
                 ingredientLabel = DiaryLineCleaner.CleanLine(insectMeat.LabelCap.Resolve())
             };
+        }
+
+        private static FoodIngestionEvidenceFact FoodFact(ThingDef def, string kind)
+        {
+            return new FoodIngestionEvidenceFact
+            {
+                ingredientKind = kind,
+                ingredientDefName = def.defName,
+                ingredientLabel = DiaryLineCleaner.CleanLine(def.LabelCap.Resolve())
+            };
+        }
+
+        private static ThingDef AnimalMeatDef()
+        {
+            ThingDef muffalo = RequiredThingDef("Muffalo");
+            ThingDef meat = muffalo.race?.meatDef;
+            PawnDiaryRimTestScope.Require(meat != null && meat.IsMeat
+                    && meat.ingestible?.sourceDef?.race?.Animal == true,
+                "The food fixture needs the base-game muffalo's animal meat Def.");
+            return meat;
+        }
+
+        private static ThingDef RequiredThingDef(string defName)
+        {
+            ThingDef result = DefDatabase<ThingDef>.GetNamedSilentFail(defName);
+            PawnDiaryRimTestScope.Require(result != null,
+                "The food fixture needs vanilla ThingDef " + defName + ".");
+            return result;
         }
 
         private static Thing CreateHumanMeatMeal(out ThingDef humanMeat)

@@ -255,11 +255,30 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
+            // Batch routes returned above: detached doctrine work can decorate only a page-producing
+            // pair/solo route and therefore cannot qualify or promote an ordinary Tale.
+            BeliefEventEvidence beliefEvidence = personaMilestone == null
+                ? ConfiguredBeliefEventPolicy.Capture(
+                    new ConfiguredBeliefEventRequest
+                    {
+                        pawnId = payload.PawnId,
+                        tick = payload.Tick,
+                        sourceDomain = "tale",
+                        sourceDefName = taleDef.defName,
+                        povRole = DiaryEvent.InitiatorRole,
+                        visibleLabel = sourceLabel,
+                        visibleField = "event_label",
+                        phase = "tale_recorded"
+                    },
+                    ModsConfig.IdeologyActive,
+                    DiaryBeliefPolicy.Snapshot())
+                : null;
+
             if (plan.Shape == TaleEventData.TaleEmitShape.Pair)
             {
                 string text = BuildTalePairText(firstPawn, secondPawn, label, attachedDef);
                 DiaryEvent pairEvent = CreatePairwiseEvent(sink, firstPawn, secondPawn, payload.DefName, label,
-                    text, text, instruction, gameContext);
+                    text, text, instruction, gameContext, beliefEvidence);
                 if (plan.DeathDescription)
                 {
                     sink.AddDeathEventRef(deathVictim, pairEvent.eventId);
@@ -283,7 +302,8 @@ namespace PawnDiary.Ingestion
                     personaVictim.LabelShortCap).Resolve()
                 : DiaryGameComponent.BuildTaleSoloText(povPawn, label, otherPawn, attachedDef);
             DiaryEvent soloEvent = CreateSoloEvent(
-                sink, povPawn, otherPawn, payload.DefName, label, soloText, instruction, gameContext);
+                sink, povPawn, otherPawn, payload.DefName, label, soloText, instruction, gameContext,
+                beliefEvidence);
             if (plan.DeathDescription)
             {
                 sink.AddDeathEventRef(deathVictim, soloEvent.eventId);

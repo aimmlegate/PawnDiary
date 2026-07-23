@@ -1,5 +1,13 @@
 # Changelog
 
+- **2026-07-23 — Completed the bounded, DLC-safe, page-silent Phase 3 passive belief scanner and preserved exact ritual evidence ownership.**
+
+- **2026-07-23 — Added normalized, deep-scribed Phase 3 pawn belief state and pure accumulated-drift policy.**
+
+- **2026-07-23 — Completed XML-gated Phase 2 belief evidence across raid, captivity, aid, work, ritual, tale, thought, and observed-condition pages.**
+
+- **2026-07-23 — Completed exact XML-gated food evidence for animal meat, fungus, and nutrient paste.**
+
 - **2026-07-23 — Consolidated human documentation under `repowiki/` and moved development-only plans and tooling to ignored local folders.**
 
 - **2026-07-23 — Added exact insect-meat belief evidence and loaded coverage.**

@@ -10,7 +10,7 @@ using Verse;
 
 namespace PawnDiary
 {
-    /// <summary>Captures exact supported-meat facts for existing thought pages without scanning pawns.</summary>
+    /// <summary>Captures exact supported-food facts for existing thought pages without scanning pawns.</summary>
     internal static class FoodIngestionEvidencePatch
     {
         // Vanilla currently limits this list to three. The defensive cap also keeps an unexpectedly
@@ -90,7 +90,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Opens a scope only for active-Ideology, diary-eligible pawns eating an exact supported-meat
+        /// Opens a scope only for active-Ideology, diary-eligible pawns eating an exact supported-food
         /// food or ingredient. Generic meal identity, quality, and broad eating labels are ignored.
         /// </summary>
         private static void IngestedPrefix(
@@ -161,7 +161,9 @@ namespace PawnDiary
 
         private static FoodIngestionEvidenceScope BeginExactScope(Thing food, Pawn pawn)
         {
-            FoodIngestionEvidenceFact fact = ExactSupportedMeatFact(food);
+            List<FoodIngestionEvidenceFact> facts = ExactSupportedFoodFacts(food);
+            FoodIngestionEvidenceFact fact = FoodBeliefEvidencePolicy.SelectFact(
+                facts, DiaryBeliefPolicy.Snapshot());
             return fact == null ? null : FoodIngestionEvidenceContext.Begin(
                 pawn.GetUniqueLoadID(), food.GetUniqueLoadID(), fact);
         }
@@ -173,6 +175,53 @@ namespace PawnDiary
         internal static FoodIngestionEvidenceFact ExactSupportedMeatFact(Thing food)
         {
             return ExactHumanlikeMeatFact(food) ?? ExactInsectMeatFact(food);
+        }
+
+        /// <summary>
+        /// Projects every bounded mechanical category vanilla can prove from this exact food. This does
+        /// not choose prompt policy: <see cref="FoodBeliefEvidencePolicy.SelectFact"/> applies XML order.
+        /// </summary>
+        internal static List<FoodIngestionEvidenceFact> ExactSupportedFoodFacts(Thing food)
+        {
+            List<FoodIngestionEvidenceFact> result = new List<FoodIngestionEvidenceFact>();
+            if (food == null || food.def == null || food.def.IsCorpse) return result;
+
+            CompIngredients ingredients = food.TryGetComp<CompIngredients>();
+            if (ingredients?.ingredients != null)
+            {
+                int count = Math.Min(ingredients.ingredients.Count, MaximumIngredientsInspected);
+                for (int i = 0; i < count; i++)
+                    AddExactIngredientFacts(result, ingredients.ingredients[i]);
+            }
+            else
+            {
+                AddExactIngredientFacts(result, food.def);
+            }
+
+            // Nutrient paste is exact because the live ingestible Def itself declares the stable
+            // AteNutrientPaste HistoryEvent used by vanilla's PreceptComp correlation path.
+            if (string.Equals(food.def.ingestible?.ateEvent?.defName, "AteNutrientPaste",
+                    StringComparison.Ordinal))
+                AddUniqueFact(result, FactFor(food.def, FoodIngestionEvidenceKindTokens.NutrientPaste));
+            return result;
+        }
+
+        /// <summary>Exact ordinary animal meat, excluding the already-owned humanlike/insect families.</summary>
+        internal static FoodIngestionEvidenceFact ExactAnimalMeatFact(Thing food)
+        {
+            return FirstFact(ExactSupportedFoodFacts(food), FoodIngestionEvidenceKindTokens.AnimalMeat);
+        }
+
+        /// <summary>Exact raw or ingredient fungus using vanilla's PlantFoodRaw plus IsFungus test.</summary>
+        internal static FoodIngestionEvidenceFact ExactFungusFact(Thing food)
+        {
+            return FirstFact(ExactSupportedFoodFacts(food), FoodIngestionEvidenceKindTokens.Fungus);
+        }
+
+        /// <summary>Exact nutrient paste identified by its live ingestible HistoryEvent.</summary>
+        internal static FoodIngestionEvidenceFact ExactNutrientPasteFact(Thing food)
+        {
+            return FirstFact(ExactSupportedFoodFacts(food), FoodIngestionEvidenceKindTokens.NutrientPaste);
         }
 
         /// <summary>Classifies exact humanlike meat through vanilla's mechanical meat category.</summary>
@@ -222,6 +271,46 @@ namespace PawnDiary
                 && FoodUtility.GetMeatSourceCategory(food.def) == category
                     ? FactFor(food.def, ingredientKind)
                     : null;
+        }
+
+        private static void AddExactIngredientFacts(
+            List<FoodIngestionEvidenceFact> result,
+            ThingDef ingredient)
+        {
+            if (ingredient?.ingestible == null) return;
+            MeatSourceCategory meat = FoodUtility.GetMeatSourceCategory(ingredient);
+            if (meat == MeatSourceCategory.Humanlike)
+                AddUniqueFact(result, FactFor(ingredient, FoodIngestionEvidenceKindTokens.HumanlikeMeat));
+            else if (meat == MeatSourceCategory.Insect)
+                AddUniqueFact(result, FactFor(ingredient, FoodIngestionEvidenceKindTokens.InsectMeat));
+            else if (ingredient.IsMeat && ingredient.ingestible.sourceDef?.race?.Animal == true)
+                AddUniqueFact(result, FactFor(ingredient, FoodIngestionEvidenceKindTokens.AnimalMeat));
+
+            if (ingredient.IsFungus && ingredient.thingCategories != null
+                && ingredient.thingCategories.Contains(ThingCategoryDefOf.PlantFoodRaw))
+                AddUniqueFact(result, FactFor(ingredient, FoodIngestionEvidenceKindTokens.Fungus));
+        }
+
+        private static void AddUniqueFact(
+            List<FoodIngestionEvidenceFact> target,
+            FoodIngestionEvidenceFact fact)
+        {
+            if (target == null || fact == null) return;
+            for (int i = 0; i < target.Count; i++)
+                if (string.Equals(target[i]?.ingredientKind, fact.ingredientKind, StringComparison.Ordinal))
+                    return;
+            target.Add(fact);
+        }
+
+        private static FoodIngestionEvidenceFact FirstFact(
+            List<FoodIngestionEvidenceFact> facts,
+            string kind)
+        {
+            if (facts == null) return null;
+            for (int i = 0; i < facts.Count; i++)
+                if (string.Equals(facts[i]?.ingredientKind, kind, StringComparison.Ordinal))
+                    return facts[i];
+            return null;
         }
 
         private static FoodIngestionEvidenceFact FactFor(ThingDef ingredient, string ingredientKind)

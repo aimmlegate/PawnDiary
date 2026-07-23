@@ -225,6 +225,9 @@ namespace PawnDiary
     {
         public const string HumanlikeMeat = "humanlike_meat";
         public const string InsectMeat = "insect_meat";
+        public const string AnimalMeat = "animal_meat";
+        public const string Fungus = "fungus";
+        public const string NutrientPaste = "nutrient_paste";
     }
 
     /// <summary>
@@ -809,6 +812,10 @@ namespace PawnDiary
         public int defaultSelectedStances = 1;
         public int maximumSupportingMemes = 2;
         public int maximumRecentSelections = 16;
+        public int maximumReflectedBeliefSourceIds = 16;
+        public int beliefScanIntervalTicks = 250;
+        public int maximumBeliefPawnsPerScan = 4;
+        public int pendingBeliefEvidenceMaxAgeTicks = 3600000;
         public int maximumHistoryCorrelationEntries = 256;
         public int historyCorrelationWindowTicks = 120;
         public int maximumMutationCorrelationEntries = 256;
@@ -959,6 +966,10 @@ namespace PawnDiary
         public readonly int defaultSelectedStances;
         public readonly int maximumSupportingMemes;
         public readonly int maximumRecentSelections;
+        public readonly int maximumReflectedBeliefSourceIds;
+        public readonly int beliefScanIntervalTicks;
+        public readonly int maximumBeliefPawnsPerScan;
+        public readonly int pendingBeliefEvidenceMaxAgeTicks;
         public readonly int maximumHistoryCorrelationEntries;
         public readonly int historyCorrelationWindowTicks;
         public readonly int maximumMutationCorrelationEntries;
@@ -1031,6 +1042,11 @@ namespace PawnDiary
             defaultSelectedStances = Clamp(value.defaultSelectedStances, 1, maximumSelectedStances, 1);
             maximumSupportingMemes = Clamp(value.maximumSupportingMemes, 0, 4, 2);
             maximumRecentSelections = Clamp(value.maximumRecentSelections, 0, 64, 16);
+            maximumReflectedBeliefSourceIds = Clamp(value.maximumReflectedBeliefSourceIds, 0, 64, 16);
+            beliefScanIntervalTicks = Clamp(value.beliefScanIntervalTicks, 60, 60000, 250);
+            maximumBeliefPawnsPerScan = Clamp(value.maximumBeliefPawnsPerScan, 1, 64, 4);
+            pendingBeliefEvidenceMaxAgeTicks = Clamp(
+                value.pendingBeliefEvidenceMaxAgeTicks, 60000, 60000000, 3600000);
             maximumHistoryCorrelationEntries = Clamp(value.maximumHistoryCorrelationEntries, 1, 2048, 256);
             historyCorrelationWindowTicks = Clamp(value.historyCorrelationWindowTicks, 0, 600, 120);
             maximumMutationCorrelationEntries = Clamp(value.maximumMutationCorrelationEntries, 1, 2048, 256);

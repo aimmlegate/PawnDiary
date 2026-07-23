@@ -15,6 +15,50 @@
 ## Introduction
 This document describes the Ideology Belief & Stance System as implemented within the project. It explains how beliefs and stances are modeled, captured, and integrated into the diary pipeline to influence narrative generation and UI presentation. The system is designed to be extensible via definitions and policies, enabling modders to tailor belief-related behavior without modifying core logic.
 
+### Exact food evidence
+
+Food belief context enriches an existing ingestion thought page; it never creates a page. The
+ingestion bridge reads vanilla metadata synchronously and recognizes humanlike meat, insect meat,
+ordinary animal meat, fungus, and nutrient paste. If a meal contains several recognized kinds,
+`foodEvidenceRules` order in `DiaryBeliefPolicyDef.xml` selects one deterministic fact. Missing,
+disabled, malformed, or duplicate policy rows leave the ordinary thought page unchanged. The
+bridge names no DLC Def in C# and remains inert when Ideology is inactive.
+
+### Existing-page evidence clients
+
+The shared configured client accepts primitive source domain, exact Def identity, visible label,
+role, phase, and group facts only after an existing listener has authorized a solo or pair page. XML
+rules currently cover raids; completed rituals; enslavement attempts; prisoner execution and sale;
+mining work and tales; rescue, captivity, darkness, and connected-tree thoughts; and configured
+unnatural-darkness transition pages. Broad neighboring events remain unchanged: a raid does not imply
+charity or slavery, `PlantCutting` does not prove that a tree was cut, and an unconfigured Tale cannot
+become a belief event. Ideology inactivity, missing labels, unsafe fields, and unmatched policy all
+return no evidence. Exact conversion-ritual and authority-speech policies own every perspective,
+including explicit `none` modes and adapter-failure silence; generic ritual evidence cannot bypass
+those contracts.
+
+### Persistent passive belief state
+
+`PawnDiaryRecord.beliefState` is an additive deep-scribed object. Old saves begin with
+`baselineOnNextScan=true`, so their first valid observation records ideology identity and certainty
+without creating reflection debt. The assembly-free reducer merges small certainty movements from
+their earliest pending value, preserves the earliest and latest identities across successive ideology
+changes, expires stale certainty evidence, and resets to a fresh baseline when Ideology or the pawn's
+tracker is unavailable. Saved reflection source IDs and recent doctrine selections are deduplicated
+and capped by XML policy. An elapsed rotating scanner reads only identity, name, and certainty through
+the guarded `DlcContext` adapter, processing at most the XML work cap per pass; it does not enumerate
+precepts or memes. The dev action logs mechanical IDs, bands, trends, cooldown decisions, and counts,
+but no authored ideology name or description. Phase 3 tracks this state only; standalone belief pages
+remain Phase 4 work.
+
+**Section sources**
+- [PawnBeliefState.cs](../../../../Source/Models/PawnBeliefState.cs)
+- [PawnDiaryRecord.cs](../../../../Source/Models/PawnDiaryRecord.cs)
+- [BeliefReflectionPolicy.cs](../../../../Source/Pipeline/Belief/BeliefReflectionPolicy.cs)
+- [DiaryGameComponent.Belief.cs](../../../../Source/Core/DiaryGameComponent.Belief.cs)
+- [DlcContext.Ideology.cs](../../../../Source/Generation/DlcContext.Ideology.cs)
+- [DiaryBeliefPolicyDef.xml](../../../../1.6/Defs/DiaryBeliefPolicyDef.xml)
+
 ## Project Structure
 The ideology subsystem is primarily defined through:
 - A policy definition type for beliefs
@@ -37,6 +81,8 @@ DBPD --> PLAN
 **Diagram sources**
 - [DiaryBeliefPolicyDef.cs](../../../../Source/Defs/DiaryBeliefPolicyDef.cs)
 - [DiaryBeliefPolicyDef.xml](../../../../1.6/Defs/DiaryBeliefPolicyDef.xml)
+- [PawnBeliefState.cs](../../../../Source/Models/PawnBeliefState.cs)
+- [BeliefReflectionPolicy.cs](../../../../Source/Pipeline/Belief/BeliefReflectionPolicy.cs)
 
 **Section sources**
 - [DiaryBeliefPolicyDef.cs](../../../../Source/Defs/DiaryBeliefPolicyDef.cs)
@@ -159,8 +205,13 @@ Policy --> Prompt["Prompt Assembly"]
 - Minimize repeated lookups of belief policies by caching resolved instances where appropriate.
 - Defer heavy computations until necessary stages (e.g., prompt assembly) to avoid overhead during frequent event emission.
 - Use efficient filtering and matching when selecting applicable belief contexts for a given event.
+- Passive state reduction operates on one detached identity/name/certainty row. XML owns the elapsed
+  scan interval, maximum pawns per pass, pending-evidence age, and saved-list caps; no precept or meme
+  enumeration is required merely to observe certainty drift.
 
-[No sources needed since this section provides general guidance]
+**Section sources**
+- [BeliefReflectionPolicy.cs](../../../../Source/Pipeline/Belief/BeliefReflectionPolicy.cs)
+- [DiaryBeliefPolicyDef.xml](../../../../1.6/Defs/DiaryBeliefPolicyDef.xml)
 
 ## Troubleshooting Guide
 Common issues and resolutions:

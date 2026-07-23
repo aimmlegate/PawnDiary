@@ -1172,6 +1172,7 @@ namespace PawnDiary
 
             diary.EnsureProgressionState();
             diary.EnsureArcSchedule();
+            diary.EnsureBeliefState();
         }
 
         /// <summary>

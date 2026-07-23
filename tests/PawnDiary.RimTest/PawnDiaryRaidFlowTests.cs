@@ -28,6 +28,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Linq;
 using PawnDiary.Capture;
 using PawnDiary.Ingestion;
 using RimTestRedux;
@@ -134,6 +135,30 @@ namespace PawnDiary.RimTests
             RequireContextContains(diaryEvent, "raid=RaidEnemy");
             RequireContextContains(diaryEvent, "faction=" + RaidEventData.FactionUnknown);
             RequireContextContains(diaryEvent, "points=240");
+        }
+
+        /// <summary>An existing raid page may gain exact raid doctrine but remains the sole owner.</summary>
+        [Test]
+        public static void RaidPageSelectsOnlyRelevantLiveDoctrine()
+        {
+            if (!ModsConfig.IdeologyActive)
+            {
+                Log.Message("[PawnDiary RimTest Raid] belief enrichment: not applicable (Ideology inactive). ");
+                return;
+            }
+
+            InstallOnlyIssueStance(raidPawn, "Raiding_Respected");
+            Map map = RequireCurrentMap();
+            RaidFanoutSignal fanout = BuildRaidFanout(RequireIncident("RaidEnemy"), map, 240f);
+            RaidPawnSignal perPawn = new RaidPawnSignal(
+                fanout, raidPawn, raidPawn.GetUniqueLoadID());
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => DiaryEvents.Submit(perPawn), "RaidEnemy", raidPawn, null);
+            PawnDiaryRimTestScope.Require(
+                !string.IsNullOrWhiteSpace(
+                    diaryEvent.BeliefContextForRole(DiaryEvent.InitiatorRole)),
+                "The existing raid page did not select the installed live raiding stance.");
+            scope.RequireSoloRef(diaryEvent, raidPawn);
         }
 
         /// <summary>
@@ -268,6 +293,28 @@ namespace PawnDiary.RimTests
         {
             IncidentParms parms = new IncidentParms { target = map, points = points };
             return new RaidFanoutSignal(parms, incidentDef);
+        }
+
+        private static void InstallOnlyIssueStance(Pawn pawn, string preceptDefName)
+        {
+            PreceptDef target = DefDatabase<PreceptDef>.GetNamedSilentFail(preceptDefName);
+            PawnDiaryRimTestScope.Require(pawn?.ideo != null && target?.issue != null,
+                "The raid belief fixture needs vanilla precept " + preceptDefName + ".");
+            Ideo ideology = IdeoGenerator.GenerateIdeo(new IdeoGenerationParms
+            {
+                forFaction = Faction.OfPlayer.def,
+                fixedIdeo = true
+            });
+            PawnDiaryRimTestScope.Require(ideology != null,
+                "RimWorld did not generate the disposable raid ideoligion.");
+            foreach (Precept stance in ideology.PreceptsListForReading
+                .Where(precept => precept?.def?.issue != null).ToList())
+                ideology.RemovePrecept(stance, true);
+            ideology.AddPrecept(PreceptMaker.MakePrecept(target), false, Faction.OfPlayer.def, null);
+            pawn.ideo.SetIdeo(ideology);
+            PawnDiaryRimTestScope.Require(
+                ideology.PreceptsListForReading.Count(precept => precept?.def?.issue != null) == 1,
+                "The disposable raid ideoligion retained an unrelated issue stance.");
         }
 
         /// <summary>

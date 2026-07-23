@@ -127,6 +127,10 @@ namespace PawnDiary
         public int defaultSelectedStances = 1;
         public int maximumSupportingMemes = 2;
         public int maximumRecentSelections = 16;
+        public int maximumReflectedBeliefSourceIds = 16;
+        public int beliefScanIntervalTicks = 250;
+        public int maximumBeliefPawnsPerScan = 4;
+        public int pendingBeliefEvidenceMaxAgeTicks = 3600000;
         public int maximumHistoryCorrelationEntries = 256;
         public int historyCorrelationWindowTicks = 120;
         public int maximumMutationCorrelationEntries = 256;
@@ -261,6 +265,10 @@ namespace PawnDiary
             builder.defaultSelectedStances = source.defaultSelectedStances;
             builder.maximumSupportingMemes = source.maximumSupportingMemes;
             builder.maximumRecentSelections = source.maximumRecentSelections;
+            builder.maximumReflectedBeliefSourceIds = source.maximumReflectedBeliefSourceIds;
+            builder.beliefScanIntervalTicks = source.beliefScanIntervalTicks;
+            builder.maximumBeliefPawnsPerScan = source.maximumBeliefPawnsPerScan;
+            builder.pendingBeliefEvidenceMaxAgeTicks = source.pendingBeliefEvidenceMaxAgeTicks;
             builder.maximumHistoryCorrelationEntries = source.maximumHistoryCorrelationEntries;
             builder.historyCorrelationWindowTicks = source.historyCorrelationWindowTicks;
             builder.maximumMutationCorrelationEntries = source.maximumMutationCorrelationEntries;

@@ -154,6 +154,8 @@
   <PawnDiary.Dev.EventPanel.NoGame>Загрузите карту и включите режим разработчика, прежде чем открывать тесты событий Pawn Diary.</PawnDiary.Dev.EventPanel.NoGame>
   <PawnDiary.Dev.EventPanel.NoPawn>Нет подходящего поселенца для тестов событий дневника.</PawnDiary.Dev.EventPanel.NoPawn>
   <PawnDiary.Dev.NoActiveEventWindows>Нет активных окон событий для закрытия.</PawnDiary.Dev.NoActiveEventWindows>
+  <PawnDiary.Dev.BeliefState.NoPawn>Выберите поселенца перед записью состояния веры.</PawnDiary.Dev.BeliefState.NoPawn>
+  <PawnDiary.Dev.BeliefState.Logged>Диагностика состояния веры записана в журнал разработчика.</PawnDiary.Dev.BeliefState.Logged>
   <PawnDiary.Dev.EventWindowForceClosed>Принудительно закрыто «{0}».</PawnDiary.Dev.EventWindowForceClosed>
   <PawnDiary.Dev.ForceCloseEventWindow.Tooltip>defName: {0}\nзапуск: {1}</PawnDiary.Dev.ForceCloseEventWindow.Tooltip>
   <PawnDiary.Dev.ExternalTestSummary>{0} замечает странное — тестовый сигнал пришёл через API для интеграций.</PawnDiary.Dev.ExternalTestSummary>

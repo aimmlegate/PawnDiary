@@ -34,6 +34,7 @@ namespace PawnDiary
             TestFormatterBudgetsSanitationAndWorldviewFacts();
             TestMutationOnlyContextAndFormatting();
             TestEvidenceRulesAndOptionalCorrections();
+            TestConfiguredExistingPageEvidenceClients();
             TestObservationBaselineAndReflectionShell();
             TestMalformedUnsafeAndOversizedInputs();
             TestPhase1EvidencePersistenceAndCorrelation();
@@ -90,6 +91,12 @@ namespace PawnDiary
             AssertTrue("missing Compact budget retains the shipped deity policy", compactFallback.includeDeity);
             AssertEqual("mutation entry fallback is bounded", 256, safe.maximumMutationCorrelationEntries);
             AssertEqual("mutation window fallback is bounded", 120, safe.mutationCorrelationWindowTicks);
+            AssertEqual("belief scan interval fallback is bounded", 250, safe.beliefScanIntervalTicks);
+            AssertEqual("belief scan work fallback is bounded", 4, safe.maximumBeliefPawnsPerScan);
+            AssertEqual("pending belief age fallback is bounded", 3600000,
+                safe.pendingBeliefEvidenceMaxAgeTicks);
+            AssertEqual("reflected belief source fallback is bounded", 16,
+                safe.maximumReflectedBeliefSourceIds);
             AssertEqual("code fallback suppresses no generic event routes", 0,
                 BeliefPolicySnapshot.CreateDefault().canonicalEventOwnershipRules.Count);
             AssertEqual("code fallback enriches no mutation event routes", 0,
@@ -2181,6 +2188,124 @@ namespace PawnDiary
                 Resolve(Snapshot(target), forceEvidence, excludeBuilder.Build()));
         }
 
+        private static void TestConfiguredExistingPageEvidenceClients()
+        {
+            BeliefPolicyBuilder builder = BeliefPolicyBuilder.CreateDefault();
+            builder.eventEvidenceRules.Add(Rule(
+                "raid_visible", "combat", "raid", new[] { "raids", "violence" }, new string[0]));
+            builder.eventEvidenceRules.Add(new BeliefEventEvidenceRule(
+                "enslave_attempt", "interaction", "EnslaveAttempt", "recruit",
+                string.Empty, string.Empty, string.Empty, string.Empty,
+                new[] { "slavery", "captivity" }, new[] { "slavery" }));
+            builder.eventEvidenceRules.Add(new BeliefEventEvidenceRule(
+                "mining_work", "work", "Mining", string.Empty,
+                string.Empty, string.Empty, string.Empty, string.Empty,
+                new[] { "mining" }, new[] { "mining" }));
+            builder.eventEvidenceRules.Add(Rule(
+                "ritual_visible", "ritual", "ritual", new[] { "rituals" },
+                new[] { "rituals" }));
+            builder.eventEvidenceRules.Add(new BeliefEventEvidenceRule(
+                "dark_condition", "condition", "UnnaturalDarknessActive", "condition",
+                string.Empty, string.Empty, string.Empty, string.Empty,
+                new[] { "darkness" }, new[] { "darkness" }));
+            builder.eventEvidenceRules.Add(new BeliefEventEvidenceRule(
+                "rescue_thought", "thought", "RescuedMe", string.Empty,
+                string.Empty, string.Empty, string.Empty, string.Empty,
+                new[] { "charity" }, new[] { "charity" }));
+            BeliefPolicySnapshot policy = builder.Build();
+
+            BeliefEventEvidence raid = ConfiguredBeliefEventPolicy.Capture(
+                ConfiguredRequest("combat", "RaidEnemy", "raid", "enemy raid"), true, policy);
+            AssertTrue("configured raid client admits an XML-owned existing page", raid != null);
+            ExpandedBeliefEvidence raidExpanded = BeliefEventEvidencePolicy.Expand(raid, policy);
+            AssertTrue("configured raid client adds only its visible combat topics",
+                Contains(raidExpanded.topics, "raids") && Contains(raidExpanded.topics, "violence")
+                    && !Contains(raidExpanded.topics, "charity"));
+
+            BeliefEventEvidence slavery = ConfiguredBeliefEventPolicy.Capture(
+                ConfiguredRequest("interaction", "EnslaveAttempt", "recruit", "enslave attempt"),
+                true, policy);
+            AssertTrue("exact slavery interaction route is admitted", slavery != null);
+            AssertTrue("exact slavery route retains bounded visible event text",
+                slavery.matchFields.Count == 1 && slavery.matchFields[0].field == "event_label");
+            AssertTrue("same group with a different interaction stays unchanged",
+                ConfiguredBeliefEventPolicy.Capture(
+                    ConfiguredRequest("interaction", "RecruitAttempt", "recruit", "recruit attempt"),
+                    true, policy) == null);
+
+            BeliefEventEvidence mining = ConfiguredBeliefEventPolicy.Capture(
+                ConfiguredRequest("work", "Mining", "workPositive", "mining steel"), true, policy);
+            AssertTrue("exact mining work is admitted independently of its diary mood group",
+                mining != null);
+            BeliefEventEvidence ritual = ConfiguredBeliefEventPolicy.Capture(
+                new ConfiguredBeliefEventRequest
+                {
+                    pawnId = "SyntheticPawn",
+                    tick = 500,
+                    sourceDomain = "ritual",
+                    sourceDefName = "SyntheticRitual",
+                    groupKey = "ritual",
+                    povRole = "initiator",
+                    visibleLabel = "synthetic ceremony",
+                    visibleField = "ritual_label",
+                    detailLabel = "participant",
+                    detailField = "subject_label",
+                    phase = "finished"
+                }, true, policy);
+            AssertTrue("generic completed ritual supplies exact family and visible label evidence",
+                ritual != null && ritual.matchFields[0].field == "ritual_label"
+                    && ritual.matchFields[1].field == "subject_label"
+                    && ritual.matchFields[1].value == "participant");
+            BeliefEventEvidence condition = ConfiguredBeliefEventPolicy.Capture(
+                ConfiguredRequest("condition", "UnnaturalDarknessActive", "condition",
+                    "unnatural darkness began", "condition_label"), true, policy);
+            AssertTrue("configured observed condition enriches only its existing transition page",
+                condition != null && condition.matchFields[0].field == "condition_label");
+
+            BeliefEventEvidence rescue = BeliefEventEvidenceFactory.ForThought(
+                "SyntheticPawn", 500, "RescuedMe", "rescued me", new BeliefSourcePreceptFact());
+            AssertTrue("existing thought evidence gains exact aid vocabulary without another hook",
+                Contains(BeliefEventEvidencePolicy.Expand(rescue, policy).topics, "charity"));
+
+            AssertTrue("inactive Ideology leaves configured clients inert",
+                ConfiguredBeliefEventPolicy.Capture(
+                    ConfiguredRequest("combat", "RaidEnemy", "raid", "enemy raid"), false, policy)
+                    == null);
+            AssertTrue("unconfigured events cannot become belief clients",
+                ConfiguredBeliefEventPolicy.Capture(
+                    ConfiguredRequest("tale", "BuiltFurniture", string.Empty, "built furniture"),
+                    true, policy) == null);
+            AssertTrue("missing visible facts fail closed",
+                ConfiguredBeliefEventPolicy.Capture(
+                    ConfiguredRequest("work", "Mining", string.Empty, string.Empty), true, policy)
+                    == null);
+            AssertTrue("unsafe field names fail closed",
+                ConfiguredBeliefEventPolicy.Capture(
+                    ConfiguredRequest("work", "Mining", string.Empty, "mining", "arbitrary_field"),
+                    true, policy) == null);
+        }
+
+        private static ConfiguredBeliefEventRequest ConfiguredRequest(
+            string domain,
+            string defName,
+            string group,
+            string label,
+            string field = "event_label")
+        {
+            return new ConfiguredBeliefEventRequest
+            {
+                pawnId = "SyntheticPawn",
+                tick = 500,
+                sourceDomain = domain,
+                sourceDefName = defName,
+                groupKey = group,
+                povRole = "initiator",
+                visibleLabel = label,
+                visibleField = field,
+                phase = "fixture"
+            };
+        }
+
         private static void TestObservationBaselineAndReflectionShell()
         {
             BeliefPolicySnapshot policy = BeliefPolicySnapshot.CreateDefault();
@@ -2212,6 +2337,111 @@ namespace PawnDiary
             BeliefObservationDecision changed = ObserveDelta(0.50f, 0.50f, "Old", "New", policy);
             AssertEqual("ideology change precedes scalar comparison", BeliefObservationActionTokens.IdeologyChanged,
                 changed.action);
+
+            BeliefObservationTransition first = BeliefReflectionPolicy.Advance(
+                null, Tracker("IdeoA", "First", 0.50f), true, 100, policy);
+            AssertEqual("state reducer first scan baselines", BeliefObservationActionTokens.Baseline,
+                first.decision.action);
+            AssertTrue("state reducer baseline stores current without debt",
+                first.state.hasLastObservation && !first.state.hasPendingCertainty
+                    && !first.decision.createReflectionDebt);
+
+            BeliefObservationTransition minor = BeliefReflectionPolicy.Advance(
+                first.state, Tracker("IdeoA", "First", 0.47f), true, 200, policy);
+            AssertEqual("sub-threshold certainty stays non-emitting", BeliefObservationActionTokens.NoChange,
+                minor.decision.action);
+            AssertTrue("sub-threshold certainty remains accumulated", minor.state.hasPendingCertainty);
+            AssertNear("pending certainty preserves earliest baseline", 0.50f,
+                minor.state.pendingCertaintyBefore);
+            AssertNear("pending certainty records latest value", 0.47f,
+                minor.state.pendingCertaintyAfter);
+
+            BeliefObservationTransition accumulated = BeliefReflectionPolicy.Advance(
+                minor.state, Tracker("IdeoA", "First", 0.43f), true, 300, policy);
+            AssertEqual("several small moves cross the configured threshold",
+                BeliefObservationActionTokens.CertaintyChanged, accumulated.decision.action);
+            AssertEqual("accumulated certainty reports falling", BeliefCertaintyTrendTokens.Falling,
+                accumulated.decision.certaintyTrend);
+            AssertNear("accumulation keeps its original before value", 0.50f,
+                accumulated.state.pendingCertaintyBefore);
+            AssertNear("accumulation merges its latest after value", 0.43f,
+                accumulated.state.pendingCertaintyAfter);
+            AssertEqual("accumulation keeps first detection tick", 200,
+                accumulated.state.pendingCertaintyFirstTick);
+            AssertEqual("accumulation advances last detection tick", 300,
+                accumulated.state.pendingCertaintyLastTick);
+
+            BeliefObservationTransition returned = BeliefReflectionPolicy.Advance(
+                accumulated.state, Tracker("IdeoA", "First", 0.50f), true, 400, policy);
+            AssertTrue("returning to the pending anchor cancels certainty debt",
+                !returned.state.hasPendingCertainty && !returned.decision.createReflectionDebt);
+
+            BeliefObservationTransition changedOnce = BeliefReflectionPolicy.Advance(
+                returned.state, Tracker("IdeoB", "Second", 0.80f), true, 500, policy);
+            BeliefObservationTransition changedTwice = BeliefReflectionPolicy.Advance(
+                changedOnce.state, Tracker("IdeoC", "Third", 0.60f), true, 600, policy);
+            AssertTrue("ideology changes remain pending", changedTwice.state.pendingIdeologyChange);
+            AssertEqual("merged ideology change preserves earliest identity", "IdeoA",
+                changedTwice.state.pendingPreviousIdeologyId);
+            AssertEqual("merged ideology change preserves latest identity", "IdeoC",
+                changedTwice.state.pendingCurrentIdeologyId);
+            AssertTrue("ideology changes clear incomparable certainty drift",
+                !changedTwice.state.hasPendingCertainty);
+
+            BeliefObservationTransition unavailable = BeliefReflectionPolicy.Advance(
+                changedTwice.state, null, false, 700, policy);
+            AssertEqual("missing tracker resets accumulated state", BeliefObservationActionTokens.ResetPending,
+                unavailable.decision.action);
+            AssertTrue("missing tracker requires a later baseline and clears all debt",
+                unavailable.state.baselineOnNextScan && !unavailable.state.hasLastObservation
+                    && !unavailable.state.hasPendingCertainty
+                    && !unavailable.state.pendingIdeologyChange);
+            BeliefObservationTransition restored = BeliefReflectionPolicy.Advance(
+                unavailable.state, Tracker("IdeoC", "Third", 0.20f), true, 800, policy);
+            AssertTrue("restored tracker baselines instead of catching up",
+                restored.decision.recordBaseline && !restored.decision.createReflectionDebt);
+
+            BeliefPolicyBuilder disabledBuilder = BeliefPolicyBuilder.CreateDefault();
+            disabledBuilder.enabled = false;
+            BeliefObservationTransition disabled = BeliefReflectionPolicy.Advance(
+                accumulated.state, Tracker("IdeoA", "First", 0.40f), true, 900,
+                disabledBuilder.Build());
+            AssertTrue("disabled policy clears debt and requires a later baseline",
+                disabled.state.baselineOnNextScan && !disabled.state.hasPendingCertainty
+                    && !disabled.state.pendingIdeologyChange);
+
+            BeliefPolicyBuilder shortAgeBuilder = BeliefPolicyBuilder.CreateDefault();
+            shortAgeBuilder.pendingBeliefEvidenceMaxAgeTicks = 60000;
+            BeliefPolicySnapshot shortAge = shortAgeBuilder.Build();
+            BeliefObservationTransition agedBaseline = BeliefReflectionPolicy.Advance(
+                null, Tracker("IdeoA", "First", 0.50f), true, 100, shortAge);
+            BeliefObservationTransition agedMinor = BeliefReflectionPolicy.Advance(
+                agedBaseline.state, Tracker("IdeoA", "First", 0.47f), true, 200, shortAge);
+            BeliefObservationTransition afterAge = BeliefReflectionPolicy.Advance(
+                agedMinor.state, Tracker("IdeoA", "First", 0.43f), true, 60301, shortAge);
+            AssertNear("stale pending evidence reanchors at the latest observation", 0.47f,
+                afterAge.state.pendingCertaintyBefore);
+            AssertEqual("stale reanchored movement remains minor", BeliefObservationActionTokens.NoChange,
+                afterAge.decision.action);
+
+            BeliefScanState future = new BeliefScanState
+            {
+                baselineOnNextScan = false,
+                hasLastObservation = true,
+                lastIdeologyId = "IdeoA",
+                lastCertainty = 0.50f,
+                lastScanTick = 2000,
+                hasPendingCertainty = true,
+                pendingCertaintyBefore = 0.50f,
+                pendingCertaintyAfter = 0.30f,
+                pendingCertaintyFirstTick = 100,
+                pendingCertaintyLastTick = 200
+            };
+            BeliefObservationTransition repairedFuture = BeliefReflectionPolicy.Advance(
+                future, Tracker("IdeoA", "First", 0.20f), true, 1000, policy);
+            AssertTrue("future scan ticks discard debt and force a silent baseline",
+                repairedFuture.decision.recordBaseline && !repairedFuture.decision.createReflectionDebt
+                    && !repairedFuture.state.hasPendingCertainty);
 
             BeliefReflectionRequest request = ReflectionRequest();
             request.pendingIdeologyChange = true;
@@ -2530,18 +2760,42 @@ namespace PawnDiary
                 new List<string> { "meal", "food", "ingredient" }));
             builder.semanticAliases.Add(new BeliefSemanticAlias("insect_meat",
                 new List<string> { "insect meat", "insect flesh" }));
+            builder.semanticAliases.Add(new BeliefSemanticAlias("animal_meat",
+                new List<string> { "animal meat", "meat eating" }));
+            builder.semanticAliases.Add(new BeliefSemanticAlias("fungus",
+                new List<string> { "fungus food", "fungus eating" }));
+            builder.semanticAliases.Add(new BeliefSemanticAlias("nutrient_paste",
+                new List<string> { "nutrient paste", "synthetic meal" }));
             builder.eventEvidenceRules.Add(Rule("cannibal_meal", string.Empty,
                 "cannibal_meal", new[] { "cannibalism", "meals" },
                 new[] { "cannibalism" }));
             builder.eventEvidenceRules.Add(Rule("insect_meal", string.Empty,
                 "insect_meal", new[] { "insect_meat", "meals" },
                 new[] { "insect_meat" }));
+            builder.eventEvidenceRules.Add(Rule("animal_meat_meal", string.Empty,
+                "animal_meat_meal", new[] { "animal_meat", "meals" },
+                new[] { "animal_meat" }));
+            builder.eventEvidenceRules.Add(Rule("fungus_meal", string.Empty,
+                "fungus_meal", new[] { "fungus", "meals" },
+                new[] { "fungus" }));
+            builder.eventEvidenceRules.Add(Rule("nutrient_paste_meal", string.Empty,
+                "nutrient_paste_meal", new[] { "nutrient_paste", "meals" },
+                new[] { "nutrient_paste" }));
             builder.foodEvidenceRules.Add(new BeliefFoodEvidenceRule(
                 "humanlike_meat", FoodIngestionEvidenceKindTokens.HumanlikeMeat,
                 "cannibal_meal", "ingredient_label"));
             builder.foodEvidenceRules.Add(new BeliefFoodEvidenceRule(
                 "insect_meat", FoodIngestionEvidenceKindTokens.InsectMeat,
                 "insect_meal", "ingredient_label"));
+            builder.foodEvidenceRules.Add(new BeliefFoodEvidenceRule(
+                "animal_meat", FoodIngestionEvidenceKindTokens.AnimalMeat,
+                "animal_meat_meal", "ingredient_label"));
+            builder.foodEvidenceRules.Add(new BeliefFoodEvidenceRule(
+                "fungus", FoodIngestionEvidenceKindTokens.Fungus,
+                "fungus_meal", "ingredient_label"));
+            builder.foodEvidenceRules.Add(new BeliefFoodEvidenceRule(
+                "nutrient_paste", FoodIngestionEvidenceKindTokens.NutrientPaste,
+                "nutrient_paste_meal", "ingredient_label"));
             BeliefPolicySnapshot policy = builder.Build();
             FoodIngestionEvidenceFact exactHumanMeat = new FoodIngestionEvidenceFact
             {
@@ -2635,6 +2889,40 @@ namespace PawnDiary
             AssertEmpty("exact insect-meat evidence leaves unrelated doctrine silent",
                 Resolve(Snapshot(unrelated), exactInsect, policy));
 
+            FoodIngestionEvidenceFact exactAnimalMeat = FoodFact(
+                FoodIngestionEvidenceKindTokens.AnimalMeat, "Meat_Muffalo", "muffalo meat");
+            FoodIngestionEvidenceFact exactFungus = FoodFact(
+                FoodIngestionEvidenceKindTokens.Fungus, "RawFungus", "raw fungus");
+            FoodIngestionEvidenceFact exactPaste = FoodFact(
+                FoodIngestionEvidenceKindTokens.NutrientPaste,
+                "MealNutrientPaste", "nutrient paste meal");
+            FoodIngestionEvidenceFact[] remainingFacts =
+                { exactAnimalMeat, exactFungus, exactPaste };
+            string[] remainingGroups =
+                { "animal_meat_meal", "fungus_meal", "nutrient_paste_meal" };
+            for (int i = 0; i < remainingFacts.Length; i++)
+            {
+                BeliefEventEvidence remaining = BeliefEventEvidenceFactory.ForThought(
+                    "SyntheticPawn", 12400 + i, "AteFineMeal", "fine meal",
+                    new BeliefSourcePreceptFact());
+                AssertTrue("remaining exact food kind activates XML mapping " + remainingGroups[i],
+                    FoodBeliefEvidencePolicy.TryEnrich(
+                        remaining, remainingFacts[i], true, policy));
+                AssertEqual("remaining exact food kind supplies its configured group",
+                    remainingGroups[i], remaining.groupKey);
+            }
+
+            // A meal can contain several exact categories. Selection follows XML policy order,
+            // never ingredient registration order, so modded mixed meals remain deterministic.
+            FoodIngestionEvidenceFact selected = FoodBeliefEvidencePolicy.SelectFact(
+                new List<FoodIngestionEvidenceFact>
+                {
+                    exactPaste, exactFungus, exactAnimalMeat, exactInsectMeat, exactHumanMeat
+                },
+                policy);
+            AssertEqual("XML food policy order chooses humanlike meat from a mixed meal",
+                FoodIngestionEvidenceKindTokens.HumanlikeMeat, selected?.ingredientKind);
+
             BeliefEventEvidence generic = Evidence(true);
             AssertTrue("generic meal without an exact ingredient stays unchanged",
                 !FoodBeliefEvidencePolicy.TryEnrich(generic, null, true, policy));
@@ -2707,6 +2995,10 @@ namespace PawnDiary
                 duplicateEvidence.groupKey);
             AssertEqual("duplicate food policy leaves no partial field", 0,
                 duplicateEvidence.matchFields.Count);
+            AssertTrue("duplicate food policy also rejects scope selection",
+                FoodBeliefEvidencePolicy.SelectFact(
+                    new List<FoodIngestionEvidenceFact> { exactHumanMeat },
+                    duplicateBuilder.Build()) == null);
 
             BeliefEventEvidence inactive = Evidence(true);
             AssertTrue("Ideology-inactive food enrichment remains inert",
@@ -2721,6 +3013,19 @@ namespace PawnDiary
                     inactive, exactHumanMeat, true, disabledBuilder.Build()));
             AssertEqual("inactive/disabled food enrichment adds no field", 0,
                 inactive.matchFields.Count);
+        }
+
+        private static FoodIngestionEvidenceFact FoodFact(
+            string kind,
+            string defName,
+            string label)
+        {
+            return new FoodIngestionEvidenceFact
+            {
+                ingredientKind = kind,
+                ingredientDefName = defName,
+                ingredientLabel = label
+            };
         }
 
         private static AuthoritySpeechPolicyBuilder AuthoritySpeechPolicyBuilderForTests()
@@ -2847,6 +3152,18 @@ namespace PawnDiary
                 previousIdeologyId = beforeIdeology,
                 previousCertainty = before
             }, policy);
+        }
+
+        private static BeliefTrackerObservation Tracker(
+            string ideologyId, string ideologyName, float certainty)
+        {
+            return new BeliefTrackerObservation
+            {
+                hasCurrent = true,
+                ideologyId = ideologyId,
+                ideologyName = ideologyName,
+                certainty = certainty
+            };
         }
 
         private static BeliefReflectionRequest ReflectionRequest()

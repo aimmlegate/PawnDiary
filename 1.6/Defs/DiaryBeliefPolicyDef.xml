@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Master Wave 10 / Ideology Phase 1 plus Phase 2 mutation infrastructure and exact interaction
-  enrichment. This Def remains DLC-neutral: the exact event strings below are source ownership and
-  mechanical correlation, never a hard Def reference or doctrine inference. No belief-reflection
-  scheduler is enabled.
+  Master Wave 10 / Ideology Phases 1-3. This Def remains DLC-neutral: the exact event strings below
+  are source ownership and mechanical correlation, never a hard Def reference or doctrine inference.
+  Phase 3 tracks passive belief state but deliberately creates no standalone reflection pages.
 -->
 <Defs>
   <PawnDiary.DiaryBeliefPolicyDef>
@@ -18,6 +17,10 @@
     <defaultSelectedStances>1</defaultSelectedStances>
     <maximumSupportingMemes>2</maximumSupportingMemes>
     <maximumRecentSelections>16</maximumRecentSelections>
+    <maximumReflectedBeliefSourceIds>16</maximumReflectedBeliefSourceIds>
+    <beliefScanIntervalTicks>250</beliefScanIntervalTicks>
+    <maximumBeliefPawnsPerScan>4</maximumBeliefPawnsPerScan>
+    <pendingBeliefEvidenceMaxAgeTicks>3600000</pendingBeliefEvidenceMaxAgeTicks>
     <maximumHistoryCorrelationEntries>256</maximumHistoryCorrelationEntries>
     <historyCorrelationWindowTicks>120</historyCorrelationWindowTicks>
     <maximumMutationCorrelationEntries>256</maximumMutationCorrelationEntries>
@@ -134,6 +137,15 @@
       <li><topicToken>charity</topicToken><aliases><li>charity</li><li>aid</li><li>refugee</li></aliases></li>
       <li><topicToken>authority_speech</topicToken><aliases><li>authority leadership</li><li>leader social role</li><li>slavery social structure</li><li>social hierarchy</li><li>ranked authority</li><li>slavery normal part life</li></aliases></li>
       <li><topicToken>insect_meat</topicToken><aliases><li>insect meat</li><li>insect flesh</li></aliases></li>
+      <li><topicToken>animal_meat</topicToken><aliases><li>animal meat</li><li>meat eating</li><li>carnivore diet</li></aliases></li>
+      <li><topicToken>fungus</topicToken><aliases><li>fungus food</li><li>fungus eating</li><li>dark-grown fungus</li></aliases></li>
+      <li><topicToken>nutrient_paste</topicToken><aliases><li>nutrient paste</li><li>synthetic meal</li><li>efficient healthy paste</li></aliases></li>
+      <li><topicToken>slavery</topicToken><aliases><li>slavery</li><li>enslavement</li><li>forced bondage</li></aliases></li>
+      <li><topicToken>execution</topicToken><aliases><li>prisoner execution</li><li>executing prisoners</li></aliases></li>
+      <li><topicToken>captivity</topicToken><aliases><li>prisoner captivity</li><li>imprisonment</li></aliases></li>
+      <li><topicToken>mining</topicToken><aliases><li>mining</li><li>mining valuable stone</li><li>underground mining</li></aliases></li>
+      <li><topicToken>darkness</topicToken><aliases><li>darkness</li><li>living in darkness</li><li>absence of light</li></aliases></li>
+      <li><topicToken>tree_cutting</topicToken><aliases><li>tree cutting</li><li>cutting down trees</li><li>destroying trees</li></aliases></li>
     </semanticAliases>
 
     <!-- Exact adapter groups. A broad raid adds violence, never charity without an aid fact. -->
@@ -144,16 +156,37 @@
            exact food policy sets groupKey=cannibal_meal before this rule expands its topics. -->
       <li><key>cannibal_meal</key><groupKey>cannibal_meal</groupKey><addTopics><li>cannibalism</li><li>meals</li></addTopics><addSemanticAliases><li>cannibalism</li></addSemanticAliases></li>
       <li><key>insect_meal</key><groupKey>insect_meal</groupKey><addTopics><li>insect_meat</li><li>meals</li></addTopics><addSemanticAliases><li>insect_meat</li></addSemanticAliases></li>
+      <li><key>animal_meat_meal</key><groupKey>animal_meat_meal</groupKey><addTopics><li>animal_meat</li><li>meals</li></addTopics><addSemanticAliases><li>animal_meat</li></addSemanticAliases></li>
+      <li><key>fungus_meal</key><groupKey>fungus_meal</groupKey><addTopics><li>fungus</li><li>meals</li></addTopics><addSemanticAliases><li>fungus</li></addSemanticAliases></li>
+      <li><key>nutrient_paste_meal</key><groupKey>nutrient_paste_meal</groupKey><addTopics><li>nutrient_paste</li><li>meals</li></addTopics><addSemanticAliases><li>nutrient_paste</li></addSemanticAliases></li>
       <li><key>known_meal</key><sourceDomain>food</sourceDomain><groupKey>meal</groupKey><addTopics><li>meals</li></addTopics></li>
       <li><key>raid_visible</key><sourceDomain>combat</sourceDomain><groupKey>raid</groupKey><addTopics><li>raids</li><li>violence</li></addTopics></li>
       <li><key>aid_visible</key><sourceDomain>social</sourceDomain><groupKey>aid</groupKey><addTopics><li>charity</li></addTopics><addSemanticAliases><li>charity</li></addSemanticAliases></li>
       <li><key>ritual_visible</key><sourceDomain>ritual</sourceDomain><groupKey>ritual</groupKey><addTopics><li>rituals</li></addTopics><addSemanticAliases><li>rituals</li></addSemanticAliases></li>
+      <li><key>enslave_attempt</key><sourceDomain>interaction</sourceDomain><sourceDefName>EnslaveAttempt</sourceDefName><groupKey>recruit</groupKey><addTopics><li>slavery</li><li>captivity</li></addTopics><addSemanticAliases><li>slavery</li><li>captivity</li></addSemanticAliases></li>
+      <li><key>executed_prisoner_tale</key><sourceDomain>tale</sourceDomain><sourceDefName>ExecutedPrisoner</sourceDefName><addTopics><li>execution</li><li>captivity</li><li>violence</li></addTopics><addSemanticAliases><li>execution</li><li>captivity</li></addSemanticAliases></li>
+      <li><key>sold_prisoner_tale</key><sourceDomain>tale</sourceDomain><sourceDefName>SoldPrisoner</sourceDefName><addTopics><li>slavery</li><li>captivity</li></addTopics><addSemanticAliases><li>slavery</li><li>captivity</li></addSemanticAliases></li>
+      <li><key>mined_valuable_tale</key><sourceDomain>tale</sourceDomain><sourceDefName>MinedValuable</sourceDefName><addTopics><li>mining</li></addTopics><addSemanticAliases><li>mining</li></addSemanticAliases></li>
+      <li><key>struck_mineable_tale</key><sourceDomain>tale</sourceDomain><sourceDefName>StruckMineable</sourceDefName><addTopics><li>mining</li></addTopics><addSemanticAliases><li>mining</li></addSemanticAliases></li>
+      <li><key>mining_work</key><sourceDomain>work</sourceDomain><sourceDefName>Mining</sourceDefName><addTopics><li>mining</li></addTopics><addSemanticAliases><li>mining</li></addSemanticAliases></li>
+      <li><key>rescue_thought</key><sourceDomain>thought</sourceDomain><sourceDefName>RescuedMe</sourceDefName><addTopics><li>charity</li></addTopics><addSemanticAliases><li>charity</li></addSemanticAliases></li>
+      <li><key>offered_rescue_thought</key><sourceDomain>thought</sourceDomain><sourceDefName>RescuedMeByOfferingHelp</sourceDefName><addTopics><li>charity</li></addTopics><addSemanticAliases><li>charity</li></addSemanticAliases></li>
+      <li><key>rescued_relative_thought</key><sourceDomain>thought</sourceDomain><sourceDefName>RescuedRelative</sourceDefName><addTopics><li>charity</li></addTopics><addSemanticAliases><li>charity</li></addSemanticAliases></li>
+      <li><key>rescued_thought</key><sourceDomain>thought</sourceDomain><sourceDefName>Rescued</sourceDefName><addTopics><li>charity</li></addTopics><addSemanticAliases><li>charity</li></addSemanticAliases></li>
+      <li><key>sold_prisoner_thought</key><sourceDomain>thought</sourceDomain><sourceDefName>SoldPrisoner</sourceDefName><addTopics><li>slavery</li><li>captivity</li></addTopics><addSemanticAliases><li>slavery</li><li>captivity</li></addSemanticAliases></li>
+      <li><key>executed_prisoner_thought</key><sourceDomain>thought</sourceDomain><sourceDefName>ExecutedPrisoner</sourceDefName><addTopics><li>execution</li><li>captivity</li></addTopics><addSemanticAliases><li>execution</li><li>captivity</li></addSemanticAliases></li>
+      <li><key>environment_dark_thought</key><sourceDomain>thought</sourceDomain><sourceDefName>EnvironmentDark</sourceDefName><addTopics><li>darkness</li></addTopics><addSemanticAliases><li>darkness</li></addSemanticAliases></li>
+      <li><key>connected_tree_died_thought</key><sourceDomain>thought</sourceDomain><sourceDefName>ConnectedTreeDied</sourceDefName><addTopics><li>tree_cutting</li></addTopics><addSemanticAliases><li>tree_cutting</li></addSemanticAliases></li>
+      <li><key>unnatural_darkness_condition</key><sourceDomain>condition</sourceDomain><sourceDefName>UnnaturalDarknessActive</sourceDefName><groupKey>condition</groupKey><addTopics><li>darkness</li></addTopics><addSemanticAliases><li>darkness</li></addSemanticAliases></li>
     </eventEvidenceRules>
 
     <!-- Mechanical ingredient categories only: no required precept, issue, meme, meal, or meat Def IDs. -->
     <foodEvidenceRules>
       <li><key>humanlike_meat</key><ingredientKind>humanlike_meat</ingredientKind><groupKey>cannibal_meal</groupKey><matchField>ingredient_label</matchField></li>
       <li><key>insect_meat</key><ingredientKind>insect_meat</ingredientKind><groupKey>insect_meal</groupKey><matchField>ingredient_label</matchField></li>
+      <li><key>animal_meat</key><ingredientKind>animal_meat</ingredientKind><groupKey>animal_meat_meal</groupKey><matchField>ingredient_label</matchField></li>
+      <li><key>fungus</key><ingredientKind>fungus</ingredientKind><groupKey>fungus_meal</groupKey><matchField>ingredient_label</matchField></li>
+      <li><key>nutrient_paste</key><ingredientKind>nutrient_paste</ingredientKind><groupKey>nutrient_paste_meal</groupKey><matchField>ingredient_label</matchField></li>
     </foodEvidenceRules>
 
     <!-- Schema/prompt labels only; language-specific common words are suppressed per live snapshot. -->

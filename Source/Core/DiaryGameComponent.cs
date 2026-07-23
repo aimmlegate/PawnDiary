@@ -280,6 +280,8 @@ namespace PawnDiary
             nextWorkScanTick = 0;
             nextHediffProgressionScanTick = 0;
             nextProgressionScanTick = 0;
+            nextBeliefScanTick = 0;
+            beliefScanCursor = 0;
             nextRoyaltyPersonaReconciliationTick = 0;
             baselineQuestAcceptancesOnNextScan = false;
             initialArrivalScanPending = true;
@@ -313,6 +315,7 @@ namespace PawnDiary
             nextBiotechBirthNamingPollTick = 0;
             BootstrapBiotechFamilyArcsForLoadedSave();
             InvalidateBiotechGeneObservationsWithoutDlc();
+            NormalizeBeliefStatesForLoadedSave();
             // Do this synchronously at load, not only on the periodic scanner: a paused game may be
             // saved again before any tick runs, and must not persist stale "available" DLC state.
             MarkRoyaltyObservationUnavailable();
@@ -332,6 +335,8 @@ namespace PawnDiary
             nextWorkScanTick = 0;
             nextHediffProgressionScanTick = 0;
             nextProgressionScanTick = 0;
+            nextBeliefScanTick = 0;
+            beliefScanCursor = 0;
             nextRoyaltyPersonaReconciliationTick = 0;
             baselineQuestAcceptancesOnNextScan = !BaselineAcceptedQuests();
             // Loaded saves normally have their arrival pages already, so the founding-arrival
@@ -742,6 +747,13 @@ namespace PawnDiary
             {
                 nextProgressionScanTick = now + Math.Max(250, DiarySignalPolicies.ProgressionScanIntervalTicks);
                 ScanPawnProgressionsForDiaryEvents();
+            }
+
+            if (!initialArrivalScanPending && now >= nextBeliefScanTick)
+            {
+                BeliefPolicySnapshot beliefPolicy = DiaryBeliefPolicy.Snapshot();
+                nextBeliefScanTick = now + beliefPolicy.beliefScanIntervalTicks;
+                ScanPawnBeliefs(now);
             }
 
             RunRoyaltyPersonaReconciliationIfDue(now);

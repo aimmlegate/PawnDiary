@@ -383,8 +383,24 @@ namespace PawnDiary.Ingestion
 
             string text = "PawnDiary.Event.Raid".Translate(pawn.LabelShortCap).Resolve();
 
+            BeliefEventEvidence beliefEvidence = ConfiguredBeliefEventPolicy.Capture(
+                new ConfiguredBeliefEventRequest
+                {
+                    pawnId = payload.PawnId,
+                    tick = payload.Tick,
+                    sourceDomain = "combat",
+                    sourceDefName = raid.IncidentDefName,
+                    groupKey = "raid",
+                    povRole = DiaryEvent.InitiatorRole,
+                    visibleLabel = raid.CleanedLabel,
+                    visibleField = "event_label",
+                    phase = "raid_started"
+                },
+                ModsConfig.IdeologyActive,
+                DiaryBeliefPolicy.Snapshot());
+
             DiaryEvent raidEvent = sink.AddSoloEvent(pawn, null, raid.IncidentDefName, raid.CleanedLabel,
-                text, raid.Instruction, perPawnContext);
+                text, raid.Instruction, perPawnContext, beliefEvidence);
             if (raidEvent == null)
             {
                 return;

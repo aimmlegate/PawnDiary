@@ -195,6 +195,24 @@ namespace PawnDiary
             Find.WindowStack.Add(new FloatMenu(options));
         }
 
+        /// <summary>Logs bounded Phase 3 state tokens for the currently selected pawn.</summary>
+        [DebugAction("Pawn Diary", "Log selected pawn belief state...", allowedGameStates = AllowedGameStates.PlayingOnMap, actionType = DebugActionType.Action)]
+        public static void LogSelectedPawnBeliefState()
+        {
+            DiaryGameComponent component = DiaryGameComponent.Instance;
+            Pawn pawn = Find.Selector.SingleSelectedThing as Pawn;
+            if (!Prefs.DevMode || component == null || pawn == null)
+            {
+                Messages.Message("PawnDiary.Dev.BeliefState.NoPawn".Translate(),
+                    MessageTypeDefOf.NeutralEvent, false);
+                return;
+            }
+
+            Log.Message("[Pawn Diary] belief_state " + component.BeliefStateDiagnosticsForDev(pawn));
+            Messages.Message("PawnDiary.Dev.BeliefState.Logged".Translate(),
+                MessageTypeDefOf.NeutralEvent, false);
+        }
+
         private static void HandleExportAllDiariesForDev()
         {
             DiaryGameComponent component = DiaryGameComponent.Instance;

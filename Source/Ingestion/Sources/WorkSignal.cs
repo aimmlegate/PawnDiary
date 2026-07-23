@@ -122,7 +122,24 @@ namespace PawnDiary.Ingestion
                 payload.WorkTypeDefName, payload.WorkGiverDefName, payload.MoodImpact,
                 payload.HasPassion, payload.HasLowSkill, payload.IsNegativeChore, payload.IsDarkStudy);
 
-            DiaryEvent diaryEvent = sink.AddSoloEvent(pawn, null, eventDefName, label, text, instruction, gameContext);
+            BeliefEventEvidence beliefEvidence = ConfiguredBeliefEventPolicy.Capture(
+                new ConfiguredBeliefEventRequest
+                {
+                    pawnId = payload.PawnId,
+                    tick = payload.Tick,
+                    sourceDomain = "work",
+                    sourceDefName = payload.WorkTypeDefName,
+                    groupKey = group?.defName,
+                    povRole = DiaryEvent.InitiatorRole,
+                    visibleLabel = label,
+                    visibleField = "event_label",
+                    phase = "work"
+                },
+                ModsConfig.IdeologyActive,
+                DiaryBeliefPolicy.Snapshot());
+
+            DiaryEvent diaryEvent = sink.AddSoloEvent(
+                pawn, null, eventDefName, label, text, instruction, gameContext, beliefEvidence);
             diaryEvent.moodImpact = moodImpact;
             sink.QueueSolo(diaryEvent, DiaryEvent.InitiatorRole);
         }
