@@ -152,21 +152,36 @@ namespace PawnDiary
         /// <summary>
         /// Composes the system prompt: the base prompt plus the writing-style block appended as a
         /// trailing paragraph, unless the template opts out of style or no block was supplied.
+        /// The optional lore primer (LORE_MEMORY_SEED_PLAN §12) is ALWAYS the final paragraph —
+        /// template/base first, persona/style second, world-model policy last — and is system
+        /// policy, never a user-message field (§16 G10). An empty primer changes nothing.
         /// </summary>
-        public static string ComposeSystem(string baseSystemPrompt, string personaVoiceBlock, bool includePersona)
+        public static string ComposeSystem(string baseSystemPrompt, string personaVoiceBlock,
+            bool includePersona, string lorePrimer = null)
         {
             string baseText = baseSystemPrompt ?? string.Empty;
+            string composed;
             if (!includePersona || string.IsNullOrWhiteSpace(personaVoiceBlock))
             {
-                return baseText;
+                composed = baseText;
             }
-
-            if (string.IsNullOrWhiteSpace(baseText))
+            else if (string.IsNullOrWhiteSpace(baseText))
             {
-                return personaVoiceBlock;
+                composed = personaVoiceBlock;
+            }
+            else
+            {
+                composed = baseText.TrimEnd() + "\n\n" + personaVoiceBlock;
             }
 
-            return baseText.TrimEnd() + "\n\n" + personaVoiceBlock;
+            if (string.IsNullOrWhiteSpace(lorePrimer))
+            {
+                return composed;
+            }
+
+            return string.IsNullOrWhiteSpace(composed)
+                ? lorePrimer.Trim()
+                : composed.TrimEnd() + "\n\n" + lorePrimer.Trim();
         }
 
         /// <summary>

@@ -2,6 +2,12 @@
 
 ## Update Summary
 **Changes Made**
+- Lore L4 (design/LORE_MEMORY_SEED_PLAN.md §12): independent `enableLorePrimer` setting appends a
+  Keyed-localized world-model paragraph as the final system-prompt paragraph of the 11
+  first-person templates (`PromptAssembler.ComposeSystem` fourth argument,
+  `DiaryPromptPlanner.TemplateReceivesLorePrimer`), tier chosen by the effective context-detail
+  level; neutral death/arrival/title never receive it, and supplied facts override default canon
+  via the primer's own preamble
 - Lore L2 (design/LORE_MEMORY_SEED_PLAN.md): `DiaryLoreSeedDef` + pure deterministic
   `LoreSeedPlanner.PlanInitial` (Source/Pipeline/Memory/LoreSeedPlanner.cs) build a one-time
   per-pawn roster persisted in `PawnLoreSeedState` beside the repository; the EventFactory

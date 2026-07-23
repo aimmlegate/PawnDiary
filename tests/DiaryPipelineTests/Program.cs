@@ -21,6 +21,7 @@ namespace DiaryPipelineTests
             TestBeliefContextPromptField();
             TestMemoryContextProjectabilityAndTemplates();
             TestMemoryContextRequiredInEveryPreset();
+            TestLorePrimerComposition();
             TestPromptContextDetailSelection();
             TestPromptContextDetailOverrideResolution();
             TestOwnedPromptTextIsNotSentenceCapped();
@@ -958,6 +959,102 @@ namespace DiaryPipelineTests
             });
             AssertTrue("empty recall costs no prompt field",
                 !silentPlan.userPrompt.Contains("memory:"));
+        }
+
+        /// <summary>
+        /// LORE_MEMORY_SEED_PLAN §12: the lore primer is the LAST system-prompt paragraph, after
+        /// template text and the persona/style block; the effective detail level picks the tier;
+        /// neutral death/arrival and title templates never receive it; empty prose (the disabled
+        /// state) appends nothing.
+        /// </summary>
+        private static void TestLorePrimerComposition()
+        {
+            string[] templateKeys =
+            {
+                DiaryPipelineTemplates.PairDefault, DiaryPipelineTemplates.PairImportant,
+                DiaryPipelineTemplates.PairCombat, DiaryPipelineTemplates.PairBatched,
+                DiaryPipelineTemplates.SoloDefault, DiaryPipelineTemplates.SoloImportant,
+                DiaryPipelineTemplates.SoloInternalState, DiaryPipelineTemplates.SoloBatched,
+                DiaryPipelineTemplates.SoloDayReflection, DiaryPipelineTemplates.SoloQuadrumReflection,
+                DiaryPipelineTemplates.SoloArcReflection
+            };
+            for (int i = 0; i < templateKeys.Length; i++)
+            {
+                AssertTrue("first-person template receives the primer: " + templateKeys[i],
+                    DiaryPromptPlanner.TemplateReceivesLorePrimer(templateKeys[i]));
+            }
+
+            AssertTrue("death template never receives the primer",
+                !DiaryPromptPlanner.TemplateReceivesLorePrimer(DiaryPipelineTemplates.DeathDescription));
+            AssertTrue("arrival template never receives the primer",
+                !DiaryPromptPlanner.TemplateReceivesLorePrimer(DiaryPipelineTemplates.ArrivalDescription));
+            AssertTrue("title template never receives the primer",
+                !DiaryPromptPlanner.TemplateReceivesLorePrimer(DiaryPipelineTemplates.Title));
+
+            DiaryPolicySnapshot policy = Policy(combat: false, important: true);
+            policy.lorePrimerCompact = "PRIMER-COMPACT";
+            policy.lorePrimerBalanced = "PRIMER-BALANCED";
+            policy.lorePrimerFull = "PRIMER-FULL";
+
+            PromptContextDetailLevel[] levels =
+            {
+                PromptContextDetailLevel.Full,
+                PromptContextDetailLevel.Balanced,
+                PromptContextDetailLevel.Compact
+            };
+            string[] expected = { "PRIMER-FULL", "PRIMER-BALANCED", "PRIMER-COMPACT" };
+            for (int i = 0; i < levels.Length; i++)
+            {
+                DiaryPromptPlan plan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+                {
+                    payload = SoloPayload("e-primer-" + levels[i], "quiet work",
+                        "Alice repaired the generator alone."),
+                    policy = policy,
+                    povRole = DiaryPipelineRoles.Initiator,
+                    personaVoiceBlock = "Voice block.",
+                    contextDetailLevel = levels[i]
+                });
+                AssertTrue(levels[i] + " primer tier is the final system paragraph",
+                    plan.systemPrompt.EndsWith("\n\n" + expected[i], StringComparison.Ordinal));
+                int voiceIndex = plan.systemPrompt.IndexOf("Voice block.", StringComparison.Ordinal);
+                int primerIndex = plan.systemPrompt.IndexOf(expected[i], StringComparison.Ordinal);
+                AssertTrue(levels[i] + " primer composes after the persona/style block",
+                    voiceIndex >= 0 && primerIndex > voiceIndex);
+            }
+
+            DiaryPromptPlan deathPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = DeathPayload(),
+                policy = policy,
+                povRole = DiaryPipelineRoles.Neutral,
+                contextDetailLevel = PromptContextDetailLevel.Full
+            });
+            AssertTrue("the neutral death page carries no primer",
+                !deathPlan.systemPrompt.Contains("PRIMER-"));
+
+            DiaryPromptPlan titlePlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = SoloPayload("e-primer-title", "quiet work", "Alice repaired the generator alone."),
+                policy = policy,
+                povRole = DiaryPipelineRoles.Initiator,
+                titleRequest = true,
+                entryText = "A finished entry.",
+                contextDetailLevel = PromptContextDetailLevel.Full
+            });
+            AssertTrue("the title request carries no primer",
+                !titlePlan.systemPrompt.Contains("PRIMER-"));
+
+            DiaryPolicySnapshot disabled = Policy(combat: false, important: true);
+            DiaryPromptPlan silent = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = SoloPayload("e-primer-off", "quiet work", "Alice repaired the generator alone."),
+                policy = disabled,
+                povRole = DiaryPipelineRoles.Initiator,
+                personaVoiceBlock = "Voice block.",
+                contextDetailLevel = PromptContextDetailLevel.Full
+            });
+            AssertTrue("empty primer prose appends nothing",
+                silent.systemPrompt.EndsWith("Voice block.", StringComparison.Ordinal));
         }
 
         private static int BeliefContextScore(string domain, string gameContext)

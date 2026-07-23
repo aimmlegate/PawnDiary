@@ -8,6 +8,12 @@ pre-release version ladder for project history.
 
 ## 2026-07-23
 
+- **Lore memory L4 — context-detail lore primer.** New independent default-true `enableLorePrimer`
+  setting (EN/RU) appends a localized world-model paragraph — no FTL, no aliens, mixed tech,
+  political isolation, each tier opening with the explicit-facts override — as the LAST
+  system-prompt paragraph of all 11 first-person templates, chosen by the effective (lane-resolved)
+  context-detail level (Compact 3 / Balanced 4 / Full 5 clauses); neutral death/arrival and title
+  requests never receive it.
 - **Lore memory L2 — initial planner, persistence, settings, and wiring.** Added `DiaryLoreSeedDef`
   (closed usage/tier tokens, config-error validation, core-requires-exact-evidence), the pure
   deterministic `LoreSeedPlanner.PlanInitial` (eligibility matrices, one reserved pawn-specific

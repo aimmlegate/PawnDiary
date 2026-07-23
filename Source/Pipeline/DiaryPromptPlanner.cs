@@ -41,10 +41,19 @@ namespace PawnDiary
                 values,
                 finalInstruction);
 
+            // Lore primer (LORE_MEMORY_SEED_PLAN §12): deterministic world-model policy appended
+            // LAST in system composition, only for first-person templates, chosen by the request's
+            // effective (lane-resolved) context-detail level. Empty prose — primer disabled or no
+            // localization — appends nothing.
+            string lorePrimer = TemplateReceivesLorePrimer(templateKey)
+                ? policy.LorePrimerFor(PromptContextSelector.Normalize(request.contextDetailLevel))
+                : string.Empty;
+
             string systemPrompt = PromptAssembler.ComposeSystem(
                 template.systemPrompt,
                 request.personaVoiceBlock,
-                template.includePersona);
+                template.includePersona,
+                lorePrimer);
 
             int responseMaxTokens = request.maxTokens > 0 ? request.maxTokens : template.maxTokens;
             return new DiaryPromptPlan
@@ -141,6 +150,17 @@ namespace PawnDiary
             }
 
             return important ? DiaryPipelineTemplates.SoloImportant : DiaryPipelineTemplates.SoloDefault;
+        }
+
+        /// <summary>
+        /// Primer eligibility (LORE_MEMORY_SEED_PLAN §12): all 11 first-person templates receive
+        /// the lore primer; the neutral death/arrival chronicles and the title request never do.
+        /// </summary>
+        public static bool TemplateReceivesLorePrimer(string templateKey)
+        {
+            return !string.Equals(templateKey, DiaryPipelineTemplates.DeathDescription, StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(templateKey, DiaryPipelineTemplates.ArrivalDescription, StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(templateKey, DiaryPipelineTemplates.Title, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
