@@ -92,12 +92,18 @@ namespace PawnDiary
     }
 
     /// <summary>
-    /// Maps a saved DiaryEvent color cue key to an accent color in the Diary tab.
+    /// Maps a saved DiaryEvent color cue key to its Diary tab colors: the card accent stripe plus the
+    /// optional page tint (the wash behind the whole card) and header rule (the line under its title).
+    ///
+    /// A null <see cref="pageTint"/>/<see cref="headerRule"/> means "inherit", so a cue that only wants
+    /// a distinct accent stays on the shared parchment tint and rule without repeating them.
     /// </summary>
     public class DiaryUiCueColor
     {
         public string cue;
         public DiaryUiColorSpec color = new DiaryUiColorSpec();
+        public DiaryUiColorSpec pageTint;
+        public DiaryUiColorSpec headerRule;
     }
 
     /// <summary>
@@ -222,6 +228,10 @@ namespace PawnDiary
         public float speechBlockAccentAlpha = 0.72f;
         public DiaryUiColorSpec pageTintColor = Color(0.91f, 0.83f, 0.66f, 0.07f);
         public DiaryUiColorSpec headerRuleColor = Color(0.62f, 0.58f, 0.50f, 0.35f);
+        // Legacy per-cue tint/rule fields. Page tints and header rules are now declared per cue in the
+        // cueColors list below, so these are no longer consulted by PageTintForCue/HeaderRuleForCue —
+        // they stay only so an older hand-edited DiaryUiStyleDef.xml keeps parsing without an error.
+        // Their values are the seed for the combat/socialFight/mentalBreak rows in that list.
         public DiaryUiColorSpec combatPageTintColor = Color(0.70f, 0.10f, 0.07f, 0.18f);
         public DiaryUiColorSpec combatHeaderRuleColor = Color(0.95f, 0.18f, 0.12f, 0.65f);
         public DiaryUiColorSpec socialFightPageTintColor = Color(0.90f, 0.34f, 0.05f, 0.16f);
@@ -282,29 +292,65 @@ namespace PawnDiary
             Color(0.86f, 0.50f, 0.66f, 1f),
             Color(0.62f, 0.68f, 0.76f, 1f)
         };
+        // Every cue's accent, page tint, and header rule in one place. Rows without a tint/rule inherit
+        // the shared parchment pageTintColor/headerRuleColor. Mirrors 1.6/Defs/DiaryUiStyleDef.xml row
+        // for row: XML replaces this whole list wholesale, so the two must not drift.
+        //
+        // Tint alphas stay in the 0.05-0.12 band and rule alphas in 0.35-0.65, so a page reads as
+        // "tinted parchment" rather than a colored panel. The combat/socialFight/mentalBreak values are
+        // the three that shipped before per-cue tints existed and are preserved exactly, including the
+        // combat pair that deliberately exceeds those bands.
         public List<DiaryUiCueColor> cueColors = new List<DiaryUiCueColor>
         {
-            Cue(DiaryEvent.CombatColorCue, Preset("hostile")),
-            Cue(DiaryEvent.DangerColorCue, Color(0.94f, 0.28f, 0.12f, 1f)),
-            Cue(DiaryEvent.SocialFightColorCue, Color(1f, 0.52f, 0.16f, 1f)),
-            Cue(DiaryEvent.MentalBreakColorCue, Color(0.48f, 0.64f, 0.48f, 1f)),
-            Cue(DiaryEvent.DazeColorCue, Preset("gene")),
-            Cue(DiaryEvent.ExtremeDarkColorCue, Color(0.58f, 0.05f, 0.08f, 1f)),
-            Cue(DiaryEvent.StrangeChatColorCue, Color(0.42f, 0.96f, 0.50f, 1f)),
-            Cue(DiaryEvent.WhiteColorCue, Color(0.92f, 0.92f, 0.86f, 1f)),
+            Cue(DiaryEvent.CombatColorCue, Preset("hostile"),
+                Color(0.70f, 0.10f, 0.07f, 0.18f), Color(0.95f, 0.18f, 0.12f, 0.65f)),
+            Cue(DiaryEvent.DangerColorCue, Color(0.94f, 0.28f, 0.12f, 1f),
+                Color(0.55f, 0.08f, 0.05f, 0.12f), Color(0.80f, 0.15f, 0.10f, 0.55f)),
+            Cue(DiaryEvent.SocialFightColorCue, Color(1f, 0.52f, 0.16f, 1f),
+                Color(0.90f, 0.34f, 0.05f, 0.16f), Color(1f, 0.52f, 0.16f, 0.68f)),
+            Cue(DiaryEvent.MentalBreakColorCue, Color(0.48f, 0.64f, 0.48f, 1f),
+                Color(0.18f, 0.34f, 0.22f, 0.09f), Color(0.40f, 0.58f, 0.40f, 0.42f)),
+            // Daze and strange chat keep the shared rule: they are "something is off" moods, not the
+            // loud events that earn a colored header line.
+            Cue(DiaryEvent.DazeColorCue, Preset("gene"), Color(0.10f, 0.30f, 0.28f, 0.08f), null),
+            Cue(DiaryEvent.ExtremeDarkColorCue, Color(0.58f, 0.05f, 0.08f, 1f),
+                Color(0.25f, 0.02f, 0.05f, 0.12f), Color(0.45f, 0.05f, 0.10f, 0.60f)),
+            Cue(DiaryEvent.StrangeChatColorCue, Color(0.42f, 0.96f, 0.50f, 1f),
+                Color(0.05f, 0.25f, 0.10f, 0.10f), null),
+            // The warm-white cue carries romance, heartfelt moments, birthdays, and skill passions, so
+            // its page reads as warm rose paper rather than a colored alert.
+            Cue(DiaryEvent.WhiteColorCue, Color(0.92f, 0.92f, 0.86f, 1f),
+                Color(0.45f, 0.25f, 0.20f, 0.07f), Color(0.70f, 0.45f, 0.38f, 0.40f)),
             // Body-part events get their own accents so prosthetics, living changes, and loss do
-            // not all read as generic important entries.
-            Cue(DiaryEvent.BodyPartAnomalousColorCue, Color(0.80f, 0.22f, 0.45f, 1f)),
-            Cue(DiaryEvent.BodyPartArtificialColorCue, Color(0.36f, 0.78f, 0.84f, 1f)),
-            Cue(DiaryEvent.BodyPartLostColorCue, Color(0.95f, 0.40f, 0.30f, 1f)),
+            // not all read as generic important entries. Their tints reuse each accent at low alpha.
+            Cue(DiaryEvent.BodyPartAnomalousColorCue, Color(0.80f, 0.22f, 0.45f, 1f),
+                Color(0.80f, 0.22f, 0.45f, 0.08f), null),
+            Cue(DiaryEvent.BodyPartArtificialColorCue, Color(0.36f, 0.78f, 0.84f, 1f),
+                Color(0.36f, 0.78f, 0.84f, 0.08f), null),
+            Cue(DiaryEvent.BodyPartLostColorCue, Color(0.95f, 0.40f, 0.30f, 1f),
+                Color(0.95f, 0.40f, 0.30f, 0.08f), null),
             // Psychic events (psylink gains, psycast abilities) get a bright violet, distinct from the
             // dark blood-red extremeDark cue used by Anomaly dread content.
-            Cue(DiaryEvent.PsychicColorCue, Color(0.78f, 0.42f, 1f, 1f)),
+            Cue(DiaryEvent.PsychicColorCue, Color(0.78f, 0.42f, 1f, 1f),
+                Color(0.25f, 0.10f, 0.40f, 0.08f), Color(0.55f, 0.30f, 0.80f, 0.45f)),
             // Royal-title gains and royal rituals get a gold, distinct from the warm-white cue shared
             // by heartfelt moments, birthdays, and skill passions.
-            Cue(DiaryEvent.RoyaltyColorCue, Color(0.96f, 0.80f, 0.32f, 1f)),
-            Cue(DiaryEvent.QuietColorCue, Color(0.74f, 0.74f, 0.70f, 1f))
+            Cue(DiaryEvent.RoyaltyColorCue, Color(0.96f, 0.80f, 0.32f, 1f),
+                Color(0.40f, 0.30f, 0.08f, 0.08f), Color(0.75f, 0.60f, 0.20f, 0.45f)),
+            // Busy incident days ("eventful") had no row at all and fell back to the default accent.
+            Cue(EventfulColorCue, Color(0.90f, 0.65f, 0.25f, 1f),
+                Color(0.35f, 0.25f, 0.08f, 0.06f), null),
+            // The end-of-quadrum look-back reads as a calm blue page rather than an incident.
+            Cue(QuadrumReflectionColorCue, Color(0.66f, 0.86f, 0.95f, 1f),
+                Color(0.15f, 0.20f, 0.35f, 0.07f), null),
+            Cue(DiaryEvent.QuietColorCue, Color(0.74f, 0.74f, 0.70f, 1f),
+                Color(0.30f, 0.30f, 0.28f, 0.05f), null)
         };
+
+        // Cue keys owned by XML group rows rather than DiaryEvent constants. They are plain saved
+        // strings, so they live here only to keep this list and the XML spelling in sync.
+        private const string EventfulColorCue = "eventful";
+        private const string QuadrumReflectionColorCue = "quadrumReflection";
 
         public float CollapsedEntryHeight => entryTitleHeight + collapsedEntryChromePadding;
         public float VirtualizedEntryOverscanHeight => virtualizedEntryOverscanHeight > 0f && !float.IsNaN(virtualizedEntryOverscanHeight) ? virtualizedEntryOverscanHeight : 0f;
@@ -355,35 +401,24 @@ namespace PawnDiary
 
         public Color ColorForCue(string cue, bool important)
         {
-            if (!string.IsNullOrWhiteSpace(cue) && cueColors != null)
+            Color fallback = important ? DefaultCueColor : QuietCueColor;
+            DiaryUiCueColor entry = FindCue(cue);
+            if (entry == null || entry.color == null)
             {
-                string key = cue.Trim();
-                for (int i = 0; i < cueColors.Count; i++)
-                {
-                    DiaryUiCueColor entry = cueColors[i];
-                    if (entry != null && string.Equals(entry.cue, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return entry.color == null ? (important ? DefaultCueColor : QuietCueColor) : entry.color.ToColor(important ? DefaultCueColor : QuietCueColor);
-                    }
-                }
+                return fallback;
             }
 
-            return important ? DefaultCueColor : QuietCueColor;
+            return entry.color.ToColor(fallback);
         }
 
+        /// <summary>
+        /// The page wash behind a card. Cues declare their own tint in <see cref="cueColors"/>; an
+        /// unknown/modded cue, or one that declares no tint, keeps the shared parchment tint.
+        /// </summary>
         public Color PageTintForCue(string cue)
         {
-            if (CueEquals(cue, DiaryEvent.CombatColorCue))
-            {
-                return CombatPageTintColor;
-            }
-
-            if (CueEquals(cue, DiaryEvent.SocialFightColorCue))
-            {
-                return SocialFightPageTintColor;
-            }
-
-            return CueEquals(cue, DiaryEvent.MentalBreakColorCue) ? MentalBreakPageTintColor : PageTintColor;
+            DiaryUiCueColor entry = FindCue(cue);
+            return entry?.pageTint == null ? PageTintColor : entry.pageTint.ToColor(PageTintColor);
         }
 
         /// <summary>
@@ -409,19 +444,36 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// The line under a card's title. Same inheritance rule as <see cref="PageTintForCue"/>: most
+        /// cues stay on the shared rule, and only the loud ones declare their own.
+        /// </summary>
         public Color HeaderRuleForCue(string cue)
         {
-            if (CueEquals(cue, DiaryEvent.CombatColorCue))
+            DiaryUiCueColor entry = FindCue(cue);
+            return entry?.headerRule == null ? HeaderRuleColor : entry.headerRule.ToColor(HeaderRuleColor);
+        }
+
+        // One case-insensitive lookup shared by the accent, tint, and rule accessors, so the three can
+        // never disagree about which row a cue resolves to. Null means "no row" (blank or modded cue).
+        private DiaryUiCueColor FindCue(string cue)
+        {
+            if (string.IsNullOrWhiteSpace(cue) || cueColors == null)
             {
-                return CombatHeaderRuleColor;
+                return null;
             }
 
-            if (CueEquals(cue, DiaryEvent.SocialFightColorCue))
+            string key = cue.Trim();
+            for (int i = 0; i < cueColors.Count; i++)
             {
-                return SocialFightHeaderRuleColor;
+                DiaryUiCueColor entry = cueColors[i];
+                if (entry != null && string.Equals(entry.cue, key, StringComparison.OrdinalIgnoreCase))
+                {
+                    return entry;
+                }
             }
 
-            return CueEquals(cue, DiaryEvent.MentalBreakColorCue) ? MentalBreakHeaderRuleColor : HeaderRuleColor;
+            return null;
         }
 
         public Color PaletteColor(int index, Color fallback)
@@ -444,14 +496,17 @@ namespace PawnDiary
             return new DiaryUiColorSpec { preset = preset };
         }
 
-        private static DiaryUiCueColor Cue(string cue, DiaryUiColorSpec color)
+        // A null pageTint/headerRule means the cue inherits the shared parchment tint and rule.
+        private static DiaryUiCueColor Cue(string cue, DiaryUiColorSpec color,
+            DiaryUiColorSpec pageTint = null, DiaryUiColorSpec headerRule = null)
         {
-            return new DiaryUiCueColor { cue = cue, color = color };
-        }
-
-        private static bool CueEquals(string left, string right)
-        {
-            return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+            return new DiaryUiCueColor
+            {
+                cue = cue,
+                color = color,
+                pageTint = pageTint,
+                headerRule = headerRule
+            };
         }
     }
 

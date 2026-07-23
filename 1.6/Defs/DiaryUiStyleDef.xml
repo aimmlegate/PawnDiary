@@ -187,29 +187,118 @@
       <li><r>0.62</r><g>0.68</g><b>0.76</b><a>1</a></li>
     </entryAccentPalette>
 
-    <!-- Saved DiaryEvent.colorCue -> card accent color. Cue names come from DiaryInteractionGroupDefs.xml. -->
+    <!-- Saved DiaryEvent.colorCue -> that cue's card colors. Cue names come from
+         DiaryInteractionGroupDefs.xml. Each row owns three things:
+           color      the accent stripe down the left of the card (required)
+           pageTint   the wash behind the whole card   (optional; omit to inherit pageTintColor)
+           headerRule the line under the card's title  (optional; omit to inherit headerRuleColor)
+         Keep new tint alphas in 0.05-0.12 and new rule alphas in 0.35-0.65 so a page still reads as
+         tinted parchment rather than a colored panel; combat deliberately exceeds that, because those
+         two values shipped before per-cue tints existed and are preserved exactly.
+         This list REPLACES the C# fallback in DiaryUiStyleDef.cs wholesale — keep the two in sync.
+         A cue with no row here (including a modded one) simply uses the shared accent/tint/rule. -->
     <cueColors>
-      <li><cue>combat</cue><color><preset>hostile</preset></color></li>
-      <li><cue>danger</cue><color><r>0.94</r><g>0.28</g><b>0.12</b><a>1</a></color></li>
-      <li><cue>socialFight</cue><color><r>1</r><g>0.52</g><b>0.16</b><a>1</a></color></li>
-      <li><cue>mentalBreak</cue><color><r>0.48</r><g>0.64</g><b>0.48</b><a>1</a></color></li>
-      <li><cue>daze</cue><color><preset>gene</preset></color></li>
-      <li><cue>extremeDark</cue><color><r>0.58</r><g>0.05</g><b>0.08</b><a>1</a></color></li>
-      <li><cue>strangeChat</cue><color><r>0.42</r><g>0.96</g><b>0.50</b><a>1</a></color></li>
-      <li><cue>white</cue><color><r>0.92</r><g>0.92</g><b>0.86</b><a>1</a></color></li>
+      <li>
+        <cue>combat</cue>
+        <color><preset>hostile</preset></color>
+        <pageTint><r>0.70</r><g>0.10</g><b>0.07</b><a>0.18</a></pageTint>
+        <headerRule><r>0.95</r><g>0.18</g><b>0.12</b><a>0.65</a></headerRule>
+      </li>
+      <li>
+        <cue>danger</cue>
+        <color><r>0.94</r><g>0.28</g><b>0.12</b><a>1</a></color>
+        <pageTint><r>0.55</r><g>0.08</g><b>0.05</b><a>0.12</a></pageTint>
+        <headerRule><r>0.80</r><g>0.15</g><b>0.10</b><a>0.55</a></headerRule>
+      </li>
+      <li>
+        <cue>socialFight</cue>
+        <color><r>1</r><g>0.52</g><b>0.16</b><a>1</a></color>
+        <pageTint><r>0.90</r><g>0.34</g><b>0.05</b><a>0.16</a></pageTint>
+        <headerRule><r>1</r><g>0.52</g><b>0.16</b><a>0.68</a></headerRule>
+      </li>
+      <li>
+        <cue>mentalBreak</cue>
+        <color><r>0.48</r><g>0.64</g><b>0.48</b><a>1</a></color>
+        <pageTint><r>0.18</r><g>0.34</g><b>0.22</b><a>0.09</a></pageTint>
+        <headerRule><r>0.40</r><g>0.58</g><b>0.40</b><a>0.42</a></headerRule>
+      </li>
+      <!-- Daze and strange chat keep the shared header rule: they are "something is off" moods, not
+           the loud events that earn a colored header line. -->
+      <li>
+        <cue>daze</cue>
+        <color><preset>gene</preset></color>
+        <pageTint><r>0.10</r><g>0.30</g><b>0.28</b><a>0.08</a></pageTint>
+      </li>
+      <li>
+        <cue>extremeDark</cue>
+        <color><r>0.58</r><g>0.05</g><b>0.08</b><a>1</a></color>
+        <pageTint><r>0.25</r><g>0.02</g><b>0.05</b><a>0.12</a></pageTint>
+        <headerRule><r>0.45</r><g>0.05</g><b>0.10</b><a>0.60</a></headerRule>
+      </li>
+      <li>
+        <cue>strangeChat</cue>
+        <color><r>0.42</r><g>0.96</g><b>0.50</b><a>1</a></color>
+        <pageTint><r>0.05</r><g>0.25</g><b>0.10</b><a>0.10</a></pageTint>
+      </li>
+      <!-- The warm-white cue carries romance, heartfelt moments, birthdays, and skill passions, so its
+           page reads as warm rose paper rather than a colored alert. -->
+      <li>
+        <cue>white</cue>
+        <color><r>0.92</r><g>0.92</g><b>0.86</b><a>1</a></color>
+        <pageTint><r>0.45</r><g>0.25</g><b>0.20</b><a>0.07</a></pageTint>
+        <headerRule><r>0.70</r><g>0.45</g><b>0.38</b><a>0.40</a></headerRule>
+      </li>
       <!-- Body-part events: anomalous living changes, artificial replacements, and natural loss
-           should remain visually distinct from generic important entries. -->
-      <li><cue>bodyPartAnomalous</cue><color><r>0.80</r><g>0.22</g><b>0.45</b><a>1</a></color></li>
-      <li><cue>bodyPartArtificial</cue><color><r>0.36</r><g>0.78</g><b>0.84</b><a>1</a></color></li>
-      <li><cue>bodyPartLost</cue><color><r>0.95</r><g>0.40</g><b>0.30</b><a>1</a></color></li>
+           should remain visually distinct from generic important entries. Each tint reuses that
+           row's own accent at low alpha. -->
+      <li>
+        <cue>bodyPartAnomalous</cue>
+        <color><r>0.80</r><g>0.22</g><b>0.45</b><a>1</a></color>
+        <pageTint><r>0.80</r><g>0.22</g><b>0.45</b><a>0.08</a></pageTint>
+      </li>
+      <li>
+        <cue>bodyPartArtificial</cue>
+        <color><r>0.36</r><g>0.78</g><b>0.84</b><a>1</a></color>
+        <pageTint><r>0.36</r><g>0.78</g><b>0.84</b><a>0.08</a></pageTint>
+      </li>
+      <li>
+        <cue>bodyPartLost</cue>
+        <color><r>0.95</r><g>0.40</g><b>0.30</b><a>1</a></color>
+        <pageTint><r>0.95</r><g>0.40</g><b>0.30</b><a>0.08</a></pageTint>
+      </li>
       <!-- Psychic events (psylink gains, psycast abilities): bright violet, distinct from the dark
            blood-red extremeDark cue used by Anomaly dread content. -->
-      <li><cue>psychic</cue><color><r>0.78</r><g>0.42</g><b>1</b><a>1</a></color></li>
+      <li>
+        <cue>psychic</cue>
+        <color><r>0.78</r><g>0.42</g><b>1</b><a>1</a></color>
+        <pageTint><r>0.25</r><g>0.10</g><b>0.40</b><a>0.08</a></pageTint>
+        <headerRule><r>0.55</r><g>0.30</g><b>0.80</b><a>0.45</a></headerRule>
+      </li>
       <!-- Royal-title gains and royal rituals: gold, distinct from the warm-white cue shared by
            heartfelt moments, birthdays, and skill passions. -->
-      <li><cue>royalty</cue><color><r>0.96</r><g>0.80</g><b>0.32</b><a>1</a></color></li>
-      <li><cue>quadrumReflection</cue><color><r>0.66</r><g>0.86</g><b>0.95</b><a>1</a></color></li>
-      <li><cue>quiet</cue><color><r>0.74</r><g>0.74</g><b>0.70</b><a>1</a></color></li>
+      <li>
+        <cue>royalty</cue>
+        <color><r>0.96</r><g>0.80</g><b>0.32</b><a>1</a></color>
+        <pageTint><r>0.40</r><g>0.30</g><b>0.08</b><a>0.08</a></pageTint>
+        <headerRule><r>0.75</r><g>0.60</g><b>0.20</b><a>0.45</a></headerRule>
+      </li>
+      <!-- Busy incident days ("eventful") had no row at all and fell back to the default accent. -->
+      <li>
+        <cue>eventful</cue>
+        <color><r>0.90</r><g>0.65</g><b>0.25</b><a>1</a></color>
+        <pageTint><r>0.35</r><g>0.25</g><b>0.08</b><a>0.06</a></pageTint>
+      </li>
+      <!-- The end-of-quadrum look-back reads as a calm blue page rather than an incident. -->
+      <li>
+        <cue>quadrumReflection</cue>
+        <color><r>0.66</r><g>0.86</g><b>0.95</b><a>1</a></color>
+        <pageTint><r>0.15</r><g>0.20</g><b>0.35</b><a>0.07</a></pageTint>
+      </li>
+      <li>
+        <cue>quiet</cue>
+        <color><r>0.74</r><g>0.74</g><b>0.70</b><a>1</a></color>
+        <pageTint><r>0.30</r><g>0.30</g><b>0.28</b><a>0.05</a></pageTint>
+      </li>
     </cueColors>
   </PawnDiary.DiaryUiStyleDef>
 

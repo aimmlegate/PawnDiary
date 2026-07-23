@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -2784,6 +2785,104 @@ namespace DiaryPipelineTests
                 AssertTrue("UI style defines color cue " + expectedCues[i],
                     HasCueColor(style, expectedCues[i]));
             }
+
+            TestCueTintXmlPolicy(groups, style);
+        }
+
+        // C4 (Quality Wave): page tints and header rules are declared per cue in cueColors instead of a
+        // hardcoded three-cue if-chain, so this pins the resulting XML contract — every live cue has a
+        // row, the three cues that had tints before C4 keep their exact values, and every newly added
+        // tint/rule stays inside the "tinted parchment" alpha bands rather than becoming a colored panel.
+        private static void TestCueTintXmlPolicy(XDocument groups, XDocument style)
+        {
+            // Every cue a shipped group can actually save must resolve to a row; a cue with no row falls
+            // back to the shared parchment look, which is how "eventful" silently lost its identity.
+            HashSet<string> declaredCues = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (XElement row in style.Descendants("cueColors").Elements("li"))
+            {
+                string cue = ChildValue(row, "cue");
+                AssertTrue("every cueColors row names a cue", !string.IsNullOrWhiteSpace(cue));
+                AssertTrue("cue '" + cue + "' is declared exactly once", declaredCues.Add(cue));
+                AssertTrue("cue '" + cue + "' declares an accent color", row.Element("color") != null);
+            }
+
+            foreach (XElement group in groups.Descendants("PawnDiary.DiaryInteractionGroupDef"))
+            {
+                string cue = ChildValue(group, "colorCue");
+                if (string.IsNullOrWhiteSpace(cue))
+                {
+                    continue;
+                }
+
+                AssertTrue("group cue '" + cue + "' has a UI style row", declaredCues.Contains(cue));
+            }
+
+            // The three cues that had page tints before C4 keep them byte-for-byte: combat's pair
+            // deliberately exceeds the alpha bands below and must not be "corrected".
+            AssertCueColorSpec(style, "combat", "pageTint", 0.70f, 0.10f, 0.07f, 0.18f);
+            AssertCueColorSpec(style, "combat", "headerRule", 0.95f, 0.18f, 0.12f, 0.65f);
+            AssertCueColorSpec(style, "socialFight", "pageTint", 0.90f, 0.34f, 0.05f, 0.16f);
+            AssertCueColorSpec(style, "socialFight", "headerRule", 1f, 0.52f, 0.16f, 0.68f);
+            AssertCueColorSpec(style, "mentalBreak", "pageTint", 0.18f, 0.34f, 0.22f, 0.09f);
+            AssertCueColorSpec(style, "mentalBreak", "headerRule", 0.40f, 0.58f, 0.40f, 0.42f);
+
+            // Newly tinted cues stay subtle: a page must still read as tinted parchment.
+            HashSet<string> legacyTintedCues = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "combat", "socialFight", "mentalBreak"
+            };
+            foreach (XElement row in style.Descendants("cueColors").Elements("li"))
+            {
+                string cue = ChildValue(row, "cue");
+                if (legacyTintedCues.Contains(cue))
+                {
+                    continue;
+                }
+
+                AssertAlphaWithin("page tint for cue '" + cue + "'", row.Element("pageTint"), 0.05f, 0.12f);
+                AssertAlphaWithin("header rule for cue '" + cue + "'", row.Element("headerRule"), 0.35f, 0.65f);
+            }
+        }
+
+        private static void AssertCueColorSpec(XDocument style, string cue, string specName,
+            float r, float g, float b, float a)
+        {
+            XElement spec = null;
+            foreach (XElement row in style.Descendants("cueColors").Elements("li"))
+            {
+                if (string.Equals(ChildValue(row, "cue"), cue, StringComparison.OrdinalIgnoreCase))
+                {
+                    spec = row.Element(specName);
+                    break;
+                }
+            }
+
+            AssertTrue("cue '" + cue + "' declares a " + specName, spec != null);
+            AssertNear(cue + " " + specName + " r", r, ParseFloat(ChildValue(spec, "r")));
+            AssertNear(cue + " " + specName + " g", g, ParseFloat(ChildValue(spec, "g")));
+            AssertNear(cue + " " + specName + " b", b, ParseFloat(ChildValue(spec, "b")));
+            AssertNear(cue + " " + specName + " a", a, ParseFloat(ChildValue(spec, "a")));
+        }
+
+        // An omitted spec means "inherit the shared tint/rule", which is always in range.
+        private static void AssertAlphaWithin(string name, XElement spec, float min, float max)
+        {
+            if (spec == null)
+            {
+                return;
+            }
+
+            float alpha = ParseFloat(ChildValue(spec, "a"));
+            AssertTrue(name + " alpha " + alpha.ToString(CultureInfo.InvariantCulture)
+                + " is within " + min + "-" + max, alpha >= min - 0.0001f && alpha <= max + 0.0001f);
+        }
+
+        private static float ParseFloat(string value)
+        {
+            float parsed;
+            return float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out parsed)
+                ? parsed
+                : float.NaN;
         }
 
         private static void TestPromptTextSanitizer()
