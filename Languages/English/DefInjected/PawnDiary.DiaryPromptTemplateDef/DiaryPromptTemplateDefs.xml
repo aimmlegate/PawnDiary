@@ -574,4 +574,9 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
   <DiaryPromptTemplate_SoloImportant.fields.132.label>verified rupture cause</DiaryPromptTemplate_SoloImportant.fields.132.label>
   <DiaryPromptTemplate_SoloImportant.fields.133.label>deathrest</DiaryPromptTemplate_SoloImportant.fields.133.label>
   <DiaryPromptTemplate_SoloImportant.fields.134.label>deathrest severity</DiaryPromptTemplate_SoloImportant.fields.134.label>
+  <!-- Odyssey O3 exact Quest-root enrichment; append-only field indexes. -->
+  <DiaryPromptTemplate_SoloDefault.fields.55.label>odyssey site category</DiaryPromptTemplate_SoloDefault.fields.55.label>
+  <DiaryPromptTemplate_SoloDefault.fields.56.label>major odyssey destination</DiaryPromptTemplate_SoloDefault.fields.56.label>
+  <DiaryPromptTemplate_SoloImportant.fields.135.label>odyssey site category</DiaryPromptTemplate_SoloImportant.fields.135.label>
+  <DiaryPromptTemplate_SoloImportant.fields.136.label>major odyssey destination</DiaryPromptTemplate_SoloImportant.fields.136.label>
 </LanguageData>

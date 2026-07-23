@@ -14,6 +14,7 @@ namespace DiaryOdysseyPolicyTests
         {
             TestFrozenSchemaAndArcKeys();
             TestExactLocationClassification();
+            TestExactQuestRootClassification();
             TestDeterministicWriterSelection();
             TestQualitativeBands();
             TestLaunchCooldownPolicy();
@@ -77,6 +78,40 @@ namespace DiaryOdysseyPolicyTests
             source.visible = false;
             classified = OdysseyLocationPolicy.Classify(source, policy);
             AssertEqual("invisible location authorizes nothing", string.Empty, classified.categoryToken);
+        }
+
+        private static void TestExactQuestRootClassification()
+        {
+            OdysseyPolicySnapshot policy = Policy();
+            policy.questCategories.Add(new OdysseyLocationCategoryRule
+            {
+                defName = "Gravcore_MechanoidRelay",
+                categoryToken = "gravcore_site",
+                majorDestination = true
+            });
+            policy.questCategories.Add(new OdysseyLocationCategoryRule
+            {
+                defName = "Gravcore_Mechhive",
+                categoryToken = "mechhive",
+                majorDestination = true
+            });
+
+            OdysseyQuestRootClassification classified =
+                OdysseyLocationPolicy.ClassifyQuestRoot("Gravcore_MechanoidRelay", policy);
+            AssertTrue("exact gravcore quest root recognized", classified.recognized);
+            AssertEqual("exact gravcore quest category", "gravcore_site", classified.categoryToken);
+            AssertTrue("exact gravcore quest is major", classified.majorDestination);
+
+            classified = OdysseyLocationPolicy.ClassifyQuestRoot("gravcore_mechhive", policy);
+            AssertTrue("exact Mechhive quest root is case insensitive", classified.recognized);
+            AssertEqual("exact Mechhive quest category", "mechhive", classified.categoryToken);
+
+            classified = OdysseyLocationPolicy.ClassifyQuestRoot("Gravcore_Mechhive_Almost", policy);
+            AssertTrue("quest root substrings never classify", !classified.recognized);
+            AssertEqual("unmapped quest root has no category", string.Empty, classified.categoryToken);
+
+            classified = OdysseyLocationPolicy.ClassifyQuestRoot("Gravcore_Mechhive", null);
+            AssertTrue("missing Odyssey policy fails closed", !classified.recognized);
         }
 
         private static void TestDeterministicWriterSelection()

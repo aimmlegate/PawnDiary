@@ -8,6 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-07-23
 
+- **Odyssey Phase O3 exploration.** Extended exact visible asteroid/station/Mechhive destination categories and enriched the existing Quest route for all nine installed gravcore roots without guessing recovery or the terminal choice.
 - **Lore memory — post-review fixes.** Retargeted the `LoreSeed_Prog_Xenotype` progression seed onto
   the `GeneIdentityChanged` token the runtime actually emits (Biotech Phase 5 consolidated xenotype
   transitions into it); it was keyed only on the retired `XenotypeChanged` token and could never fire

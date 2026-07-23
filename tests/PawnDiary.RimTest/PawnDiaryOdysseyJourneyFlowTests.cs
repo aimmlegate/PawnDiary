@@ -603,8 +603,10 @@ namespace PawnDiary.RimTests
             Require(policy.maximumLaunchWriters >= 1 && policy.maximumLaunchWriters <= 2
                     && policy.maximumLandingWriters >= 1 && policy.maximumLandingWriters <= 2,
                 "Odyssey writer caps escaped the one/two-writer boundary.");
-            Require(policy.biomeCategories.Count >= 19 && policy.siteCategories.Count >= 20,
+            Require(policy.biomeCategories.Count >= 19 && policy.siteCategories.Count >= 25,
                 "The loaded Odyssey policy lost its exact biome/site mapping catalog.");
+            Require(policy.questCategories.Count == 9,
+                "The loaded Odyssey policy must project all nine exact gravcore Quest roots.");
             Require(policy.reasonRules.Count == 6,
                 "The loaded Odyssey policy must project all six frozen landing reasons.");
 
@@ -620,6 +622,26 @@ namespace PawnDiary.RimTests
             AssertStr("mechhive", classified.categoryToken, "exact Mechhive category");
             Require(classified.majorDestination,
                 "OrbitalMechhive must remain an XML-authored major destination.");
+
+            classified = OdysseyLocationPolicy.Classify(
+                new OdysseyLocationSnapshot
+                {
+                    visible = true,
+                    layerToken = OdysseyLocationLayerTokens.Orbit,
+                    siteDefName = "AsteroidMiningSite"
+                },
+                policy);
+            AssertStr("asteroid", classified.categoryToken, "exact non-Site asteroid category");
+
+            OdysseyQuestRootClassification questClassification =
+                OdysseyLocationPolicy.ClassifyQuestRoot("Gravcore_MechanoidRelay", policy);
+            Require(questClassification.recognized,
+                "The exact gravcore Quest root was not recognized.");
+            AssertStr("gravcore_site", questClassification.categoryToken,
+                "exact gravcore Quest category");
+            questClassification = OdysseyLocationPolicy.ClassifyQuestRoot("Gravcore_Mechhive", policy);
+            AssertStr("mechhive", questClassification.categoryToken,
+                "exact Mechhive Quest category");
         }
 
         /// <summary>

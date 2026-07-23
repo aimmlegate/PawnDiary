@@ -176,6 +176,42 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Odyssey O3. An exact gravcore root enriches the existing canonical Quest page with only its
+        /// XML-owned visible site family; it must not invent recovery or a Mechhive ending choice.
+        /// </summary>
+        [Test]
+        public static void ExactOdysseyQuestRootAddsCategoryWithoutInventingOutcome()
+        {
+            if (!ModsConfig.OdysseyActive)
+            {
+                Log.Message("[Pawn Diary RimTest] Odyssey inactive: exact Quest-root fixture skipped cleanly.");
+                return;
+            }
+
+            Quest quest = BuildQuest(
+                name: "Mechhive",
+                rootDefName: "Gravcore_Mechhive",
+                rootLabel: "mechhive",
+                description: "The colony resolved the objective at the center of the mechanoid network.");
+            QuestFanoutSignal fanout = new QuestFanoutSignal(
+                quest, QuestEventData.SignalCompleted, "PawnDiary.Event.QuestCompleted");
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => DiaryEvents.Submit(new QuestPawnSignal(fanout, questPawn, questPawn.GetUniqueLoadID())),
+                fanout.QuestDefName,
+                questPawn,
+                null);
+
+            RequireContextContains(diaryEvent, "odyssey_quest=true");
+            RequireContextContains(diaryEvent, "odyssey_site_category=mechhive");
+            RequireContextContains(diaryEvent, "odyssey_major_destination=true");
+            PawnDiaryRimTestScope.Require(
+                diaryEvent.gameContext.IndexOf("destroy", StringComparison.OrdinalIgnoreCase) < 0
+                    && diaryEvent.gameContext.IndexOf("scavenge", StringComparison.OrdinalIgnoreCase) < 0
+                    && diaryEvent.gameContext.IndexOf("recovered", StringComparison.OrdinalIgnoreCase) < 0,
+                "Exact Odyssey Quest-root enrichment invented a terminal choice or gravcore recovery.");
+        }
+
+        /// <summary>
         /// EVT-16. A failed quest fans out to a solo page carrying the "failed" signal in its game context,
         /// confirming the outcome-to-signal mapping reaches the per-colonist entry.
         /// </summary>

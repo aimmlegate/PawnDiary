@@ -44,6 +44,26 @@ namespace PawnDiary
             return result;
         }
 
+        /// <summary>
+        /// Classifies one exact QuestScriptDef root without inferring a reward, recovery, or ending
+        /// choice. The returned object is detached so mutable XML-backed policy cannot leak outward.
+        /// </summary>
+        public static OdysseyQuestRootClassification ClassifyQuestRoot(
+            string questRootDefName,
+            OdysseyPolicySnapshot policy)
+        {
+            OdysseyLocationCategoryRule rule = FindExact(
+                questRootDefName,
+                policy == null ? null : policy.questCategories);
+            string token = rule == null ? string.Empty : CleanToken(rule.categoryToken);
+            return new OdysseyQuestRootClassification
+            {
+                recognized = token.Length > 0,
+                categoryToken = token,
+                majorDestination = token.Length > 0 && rule.majorDestination
+            };
+        }
+
         /// <summary>Returns true only for an exact case-insensitive Def-name rule.</summary>
         private static OdysseyLocationCategoryRule FindExact(
             string defName,

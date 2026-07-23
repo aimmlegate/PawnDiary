@@ -4376,6 +4376,25 @@ namespace DiaryPipelineTests
             AssertTrue("Odyssey site categories include major mechhive",
                 HasStructuredListRow(policy, "siteCategories", "defName", "OrbitalMechhive",
                     "categoryToken", "mechhive"));
+            AssertTrue("Odyssey site categories include the non-Site asteroid parent",
+                HasStructuredListRow(policy, "siteCategories", "defName", "AsteroidMiningSite",
+                    "categoryToken", "asteroid"));
+            AssertTrue("Odyssey site categories include the orbital settlement parent",
+                HasStructuredListRow(policy, "siteCategories", "defName", "SpaceSettlement",
+                    "categoryToken", "orbital_station"));
+            AssertTrue("Odyssey site categories include the Mechhive world-object fallback",
+                HasStructuredListRow(policy, "siteCategories", "defName", "Mechhive",
+                    "categoryToken", "mechhive"));
+            List<XElement> odysseyQuestCategories = new List<XElement>(
+                policy.Element("questCategories").Elements("li"));
+            AssertEqual("Odyssey policy maps the nine installed gravcore Quest roots",
+                9, odysseyQuestCategories.Count);
+            AssertTrue("Odyssey quest categories include an exact gravcore root",
+                HasStructuredListRow(policy, "questCategories", "defName", "Gravcore_MechanoidRelay",
+                    "categoryToken", "gravcore_site"));
+            AssertTrue("Odyssey quest categories include the exact Mechhive root",
+                HasStructuredListRow(policy, "questCategories", "defName", "Gravcore_Mechhive",
+                    "categoryToken", "mechhive"));
             AssertTrue("Odyssey policy contains no DLC XML dependency references",
                 policyDocument.ToString().IndexOf("MayRequire", StringComparison.OrdinalIgnoreCase) < 0);
             string about = File.ReadAllText(RepoPath("About", "About.xml"));
@@ -4396,6 +4415,8 @@ namespace DiaryPipelineTests
                 promptTemplates, "PawnDiary.DiaryPromptTemplateDef", "DiaryPromptTemplate_PairImportant");
             XElement soloImportant = FindDef(
                 promptTemplates, "PawnDiary.DiaryPromptTemplateDef", "DiaryPromptTemplate_SoloImportant");
+            XElement soloDefault = FindDef(
+                promptTemplates, "PawnDiary.DiaryPromptTemplateDef", "DiaryPromptTemplate_SoloDefault");
             string[] requiredPromptKeys =
             {
                 "journey_phase",
@@ -4416,6 +4437,19 @@ namespace DiaryPipelineTests
                 AssertTrue("Odyssey solo-important prompt field exists: " + key,
                     HasPromptContextField(soloImportant, key));
             }
+            string[] odysseyQuestPromptKeys =
+            {
+                "odyssey_site_category",
+                "odyssey_major_destination"
+            };
+            for (int i = 0; i < odysseyQuestPromptKeys.Length; i++)
+            {
+                string key = odysseyQuestPromptKeys[i];
+                AssertTrue("Odyssey quest SoloDefault prompt field exists: " + key,
+                    HasPromptContextField(soloDefault, key));
+                AssertTrue("Odyssey quest SoloImportant prompt field exists: " + key,
+                    HasPromptContextField(soloImportant, key));
+            }
             XDocument englishPromptLabels = XDocument.Load(RepoPath(
                 "Languages", "English", "DefInjected", "PawnDiary.DiaryPromptTemplateDef",
                 "DiaryPromptTemplateDefs.xml"));
@@ -4433,6 +4467,21 @@ namespace DiaryPipelineTests
                 AssertTrue("English Odyssey landing-outcome prompt label exists: " + key,
                     !string.IsNullOrWhiteSpace(englishPromptLabels.Root?.Element(key)?.Value));
                 AssertTrue("Russian Odyssey landing-outcome prompt label exists: " + key,
+                    !string.IsNullOrWhiteSpace(russianPromptLabels.Root?.Element(key)?.Value));
+            }
+            string[] questCategoryLabelKeys =
+            {
+                "DiaryPromptTemplate_SoloDefault.fields.55.label",
+                "DiaryPromptTemplate_SoloDefault.fields.56.label",
+                "DiaryPromptTemplate_SoloImportant.fields.135.label",
+                "DiaryPromptTemplate_SoloImportant.fields.136.label"
+            };
+            for (int i = 0; i < questCategoryLabelKeys.Length; i++)
+            {
+                string key = questCategoryLabelKeys[i];
+                AssertTrue("English Odyssey quest prompt label exists: " + key,
+                    !string.IsNullOrWhiteSpace(englishPromptLabels.Root?.Element(key)?.Value));
+                AssertTrue("Russian Odyssey quest prompt label exists: " + key,
                     !string.IsNullOrWhiteSpace(russianPromptLabels.Root?.Element(key)?.Value));
             }
 
@@ -4667,8 +4716,8 @@ namespace DiaryPipelineTests
                 "persona_trait_description_2", "persona_milestone", "tale_source_def",
                 "tale_source_label", "tale_killer_role", "tale_victim_role"
             };
-            AssertEqual("SoloImportant Phase-8 projection extends the append-only list to 135 fields",
-                135, new List<XElement>(solo.Element("fields").Elements("li")).Count);
+            AssertEqual("SoloImportant Odyssey O3 projection extends the append-only list to 137 fields",
+                137, new List<XElement>(solo.Element("fields").Elements("li")).Count);
             for (int i = 0; i < contextKeys.Length; i++)
             {
                 AssertTrue("SoloImportant persona prompt field exists: " + contextKeys[i],

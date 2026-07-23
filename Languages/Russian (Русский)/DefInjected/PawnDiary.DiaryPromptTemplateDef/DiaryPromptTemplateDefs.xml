@@ -619,4 +619,9 @@
   <DiaryPromptTemplate_SoloImportant.fields.132.label>подтверждённая причина разрыва</DiaryPromptTemplate_SoloImportant.fields.132.label>
   <DiaryPromptTemplate_SoloImportant.fields.133.label>смертопокой</DiaryPromptTemplate_SoloImportant.fields.133.label>
   <DiaryPromptTemplate_SoloImportant.fields.134.label>тяжесть прерывания смертопокоя</DiaryPromptTemplate_SoloImportant.fields.134.label>
+  <!-- Обогащение точных корней заданий Odyssey O3; индексы полей только добавляются. -->
+  <DiaryPromptTemplate_SoloDefault.fields.55.label>категория места Odyssey</DiaryPromptTemplate_SoloDefault.fields.55.label>
+  <DiaryPromptTemplate_SoloDefault.fields.56.label>важное место назначения Odyssey</DiaryPromptTemplate_SoloDefault.fields.56.label>
+  <DiaryPromptTemplate_SoloImportant.fields.135.label>категория места Odyssey</DiaryPromptTemplate_SoloImportant.fields.135.label>
+  <DiaryPromptTemplate_SoloImportant.fields.136.label>важное место назначения Odyssey</DiaryPromptTemplate_SoloImportant.fields.136.label>
 </LanguageData>

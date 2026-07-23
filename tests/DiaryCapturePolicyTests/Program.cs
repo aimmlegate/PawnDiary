@@ -1063,6 +1063,14 @@ namespace DiaryCapturePolicyTests
             AssertEqual("quest failed context",
                 "quest=ThreatQuest; signal=failed; label=the thrumbo pulse; faction=Pirate; rewards=none; quest_label=the thrumbo pulse; quest_signal=failed; quest_faction=Pirate; quest_rewards=none",
                 QuestEventData.BuildGameContext("ThreatQuest", "failed", "the thrumbo pulse", "Pirate", "none"));
+            AssertEqual("exact Odyssey quest context",
+                "quest=Gravcore_Mechhive; signal=completed; label=mechhive; faction=unknown; rewards=none; quest_label=mechhive; quest_signal=completed; quest_faction=unknown; quest_rewards=none; odyssey_quest=true; odyssey_site_category=mechhive; odyssey_major_destination=true",
+                QuestEventData.BuildGameContext(
+                    "Gravcore_Mechhive", "completed", "mechhive", "unknown", "none", "mechhive", true));
+            AssertEqual("unsafe Odyssey category omitted",
+                "quest=Gravcore_Mechhive; signal=completed; label=mechhive; faction=unknown; rewards=none; quest_label=mechhive; quest_signal=completed; quest_faction=unknown; quest_rewards=none",
+                QuestEventData.BuildGameContext(
+                    "Gravcore_Mechhive", "completed", "mechhive", "unknown", "none", "mechhive; choice=destroy", true));
         }
 
         // ── Ritual (finished Ideology rituals) ──

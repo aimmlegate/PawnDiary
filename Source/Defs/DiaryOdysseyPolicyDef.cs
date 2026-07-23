@@ -8,7 +8,7 @@ using Verse;
 
 namespace PawnDiary
 {
-    /// <summary>One exact biome/site Def-name mapping authored in Odyssey policy XML.</summary>
+    /// <summary>One exact biome/site/quest-root Def-name mapping authored in Odyssey policy XML.</summary>
     public sealed class DiaryOdysseyLocationCategoryDef
     {
         public string defName = string.Empty;
@@ -63,6 +63,8 @@ namespace PawnDiary
             new List<DiaryOdysseyLocationCategoryDef>();
         public List<DiaryOdysseyLocationCategoryDef> siteCategories =
             new List<DiaryOdysseyLocationCategoryDef>();
+        public List<DiaryOdysseyLocationCategoryDef> questCategories =
+            new List<DiaryOdysseyLocationCategoryDef>();
         public List<DiaryOdysseyReasonRuleDef> reasonRules =
             new List<DiaryOdysseyReasonRuleDef>();
 
@@ -101,6 +103,7 @@ namespace PawnDiary
 
             foreach (string error in MappingErrors(biomeCategories, "biomeCategories")) yield return error;
             foreach (string error in MappingErrors(siteCategories, "siteCategories")) yield return error;
+            foreach (string error in MappingErrors(questCategories, "questCategories")) yield return error;
 
             HashSet<string> reasons = new HashSet<string>(StringComparer.Ordinal);
             HashSet<int> priorities = new HashSet<int>();
@@ -227,6 +230,7 @@ namespace PawnDiary
 
             CopyMappings(source.biomeCategories, result.biomeCategories);
             CopyMappings(source.siteCategories, result.siteCategories);
+            CopyMappings(source.questCategories, result.questCategories);
             List<OdysseyReasonRule> reasons = CopyReasons(source.reasonRules);
             if (reasons.Count > 0) result.reasonRules = reasons;
             cachedSource = source;

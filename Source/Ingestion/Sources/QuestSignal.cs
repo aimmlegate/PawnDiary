@@ -44,6 +44,7 @@ namespace PawnDiary.Ingestion
         internal string TextKey { get; }
         internal DiaryInteractionGroupDef Group { get; }
         internal RoyalAscentLifecycleDecision AscentDecision { get; }
+        internal OdysseyQuestRootClassification OdysseyQuest { get; }
 
         public QuestFanoutSignal(Quest quest, string signal, string textKey)
         {
@@ -56,6 +57,10 @@ namespace PawnDiary.Ingestion
             TextKey = textKey;
             QuestDefName = string.IsNullOrEmpty(quest.root?.defName) ? "unknown" : quest.root.defName;
             CleanedLabel = BuildQuestLabel(quest);
+            OdysseyPolicySnapshot odysseyPolicy = DiaryOdysseyPolicy.Snapshot();
+            OdysseyQuest = ModsConfig.OdysseyActive && odysseyPolicy.enabled
+                ? OdysseyLocationPolicy.ClassifyQuestRoot(QuestDefName, odysseyPolicy)
+                : new OdysseyQuestRootClassification();
             RoyaltyPolicySnapshot royaltyPolicy = DiaryRoyaltyPolicy.Snapshot();
             AscentDecision = RoyalAscentPolicy.Evaluate(
                 new RoyalAscentLifecycleFacts
@@ -335,6 +340,8 @@ namespace PawnDiary.Ingestion
                 Label = source.CleanedLabel,
                 FactionDefName = source.FactionDefName,
                 Rewards = source.Rewards,
+                OdysseyCategoryToken = source.OdysseyQuest?.categoryToken,
+                OdysseyMajorDestination = source.OdysseyQuest?.majorDestination ?? false,
             };
         }
 
@@ -354,7 +361,13 @@ namespace PawnDiary.Ingestion
             }
 
             string perPawnContext = QuestEventData.BuildGameContext(
-                source.QuestDefName, source.Signal, source.CleanedLabel, source.FactionDefName, source.Rewards);
+                source.QuestDefName,
+                source.Signal,
+                source.CleanedLabel,
+                source.FactionDefName,
+                source.Rewards,
+                payload.OdysseyCategoryToken,
+                payload.OdysseyMajorDestination);
 
             // The description is prose, so it lives in the localized event text (fed to the LLM as
             // "what happened") rather than the structured game-context marker.

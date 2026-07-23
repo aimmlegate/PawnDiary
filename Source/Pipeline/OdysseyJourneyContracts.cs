@@ -141,6 +141,18 @@ namespace PawnDiary
         public bool majorDestination;
     }
 
+    /// <summary>
+    /// Detached result of matching one exact QuestScriptDef root against Odyssey XML policy.
+    /// The category describes only the visible objective family; the generic Quest lifecycle signal
+    /// remains the sole source of accepted/completed/failed truth.
+    /// </summary>
+    internal sealed class OdysseyQuestRootClassification
+    {
+        public bool recognized;
+        public string categoryToken = string.Empty;
+        public bool majorDestination;
+    }
+
     /// <summary>One XML-shaped landing-reason priority and cooldown exception.</summary>
     internal sealed class OdysseyReasonRule
     {
@@ -186,6 +198,8 @@ namespace PawnDiary
         public List<OdysseyLocationCategoryRule> biomeCategories =
             new List<OdysseyLocationCategoryRule>();
         public List<OdysseyLocationCategoryRule> siteCategories =
+            new List<OdysseyLocationCategoryRule>();
+        public List<OdysseyLocationCategoryRule> questCategories =
             new List<OdysseyLocationCategoryRule>();
         public List<OdysseyReasonRule> reasonRules = new List<OdysseyReasonRule>();
 

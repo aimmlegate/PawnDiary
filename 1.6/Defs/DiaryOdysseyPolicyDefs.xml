@@ -56,6 +56,12 @@
     </biomeCategories>
 
     <siteCategories>
+      <!-- Non-Site MapParents reach CaptureLocation through parent.def rather than MainSitePartDef. -->
+      <li><defName>AsteroidMiningSite</defName><categoryToken>asteroid</categoryToken></li>
+      <li><defName>AsteroidBasic</defName><categoryToken>asteroid</categoryToken></li>
+      <li><defName>OrbitalItemStash</defName><categoryToken>asteroid</categoryToken></li>
+      <li><defName>SpaceSettlement</defName><categoryToken>orbital_station</categoryToken></li>
+      <li><defName>Mechhive</defName><categoryToken>mechhive</categoryToken><majorDestination>true</majorDestination></li>
       <li><defName>GravshipWreckage</defName><categoryToken>wreckage</categoryToken></li>
       <li><defName>Opportunity_AbandonedPlatform</defName><categoryToken>orbital_platform</categoryToken></li>
       <li><defName>Opportunity_MechanoidPlatform</defName><categoryToken>orbital_platform</categoryToken></li>
@@ -79,6 +85,20 @@
       <li><defName>OpportunitySite_AncientWarehouse</defName><categoryToken>ancient_site</categoryToken></li>
       <li><defName>OpportunitySite_AncientInfestedSettlement</defName><categoryToken>ancient_site</categoryToken></li>
     </siteCategories>
+
+    <!-- Exact QuestScriptDef roots enrich the mature Quest route without claiming hidden contents,
+         gravcore recovery, or the Mechhive destroy/scavenge choice. -->
+    <questCategories>
+      <li><defName>Gravcore_MechanoidRelay</defName><categoryToken>gravcore_site</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>Gravcore_InsectLair</defName><categoryToken>gravcore_site</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>Gravcore_AncientReactor</defName><categoryToken>gravcore_site</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>Gravcore_OrbitalMechanoidPlatform</defName><categoryToken>gravcore_site</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>Gravcore_AncientStockpile</defName><categoryToken>gravcore_site</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>Gravcore_CrashedMechanoidPlatform</defName><categoryToken>gravcore_site</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>Gravcore_OrbitalAncientPlatform</defName><categoryToken>gravcore_site</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>Gravcore_FrozenTerraformer</defName><categoryToken>gravcore_site</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>Gravcore_Mechhive</defName><categoryToken>mechhive</categoryToken><majorDestination>true</majorDestination></li>
+    </questCategories>
 
     <reasonRules>
       <li><reasonToken>major_destination</reasonToken><priority>0</priority><bypassCooldown>true</bypassCooldown><important>true</important></li>

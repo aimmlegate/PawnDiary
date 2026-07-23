@@ -10,9 +10,10 @@
 // An exact start-window policy may own one preparation page without claiming a personal quest actor.
 // Completed and failed signals remain the only terminal Quest pages.
 //
-// Rich context (quest description, issuer faction defName, rewards summary) is captured upstream
-// and embedded in the localized event text (description) and the game-context marker (rewards +
-// faction). The event carries a "quest=" marker so the UI classifies it into the Quest domain.
+// Rich context (quest description, issuer faction defName, rewards summary, and optional exact
+// Odyssey objective category) is captured upstream and embedded in the localized event text
+// (description) and the game-context marker (rewards + faction + category). The event carries a
+// "quest=" marker so the UI classifies it into the Quest domain.
 // "unknown"/"none" are the English sentinels for absent faction/rewards (AGENTS.md section 12).
 using System;
 using System.Text;
@@ -54,6 +55,15 @@ namespace PawnDiary.Capture
 
         /// <summary>Short cleaned reward summary, or <see cref="RewardsNone"/>.</summary>
         public string Rewards;
+
+        /// <summary>
+        /// XML-classified Odyssey objective family for an exact QuestScriptDef root, or blank.
+        /// This does not claim that a gravcore was recovered or which Mechhive choice was made.
+        /// </summary>
+        public string OdysseyCategoryToken;
+
+        /// <summary>Whether XML marks the recognized Odyssey objective as a major destination.</summary>
+        public bool OdysseyMajorDestination;
 
         /// <summary>
         /// Chooses the model/UI-facing quest label from the values exposed by RimWorld. Some quests
@@ -139,9 +149,16 @@ namespace PawnDiary.Capture
         /// description is intentionally NOT embedded here — it is prose, so it lives in the localized
         /// event text instead. Field order is locked by tests in DiaryCapturePolicyTests.
         /// </summary>
-        public static string BuildGameContext(string defName, string signal, string label, string factionDefName, string rewards)
+        public static string BuildGameContext(
+            string defName,
+            string signal,
+            string label,
+            string factionDefName,
+            string rewards,
+            string odysseyCategoryToken = null,
+            bool odysseyMajorDestination = false)
         {
-            return "quest=" + defName
+            string context = "quest=" + defName
                 + "; signal=" + signal
                 + "; label=" + label
                 + "; faction=" + factionDefName
@@ -150,6 +167,16 @@ namespace PawnDiary.Capture
                 + "; quest_signal=" + signal
                 + "; quest_faction=" + factionDefName
                 + "; quest_rewards=" + rewards;
+            string category = CleanOneLine(odysseyCategoryToken);
+            if (category.Length == 0 || category.IndexOfAny(new[] { ';', '=', '|' }) >= 0)
+            {
+                return context;
+            }
+
+            return context
+                + "; odyssey_quest=true"
+                + "; odyssey_site_category=" + category
+                + "; odyssey_major_destination=" + (odysseyMajorDestination ? "true" : "false");
         }
 
         private static string NormalizeLabelCandidate(string value)
