@@ -93,6 +93,15 @@ namespace PawnDiary
                     return;
                 }
 
+                // Projectability gate (LORE_MEMORY_SEED_PLAN §9): recall only when the finally
+                // chosen prompt template actually renders MemoryContext. Neutral death/arrival
+                // and title pages never project memory, so recalling for them would bump
+                // lastRecalledTick/recallCount on rows whose lines can never reach a prompt.
+                if (!EventProjectsMemoryContext(diaryEvent))
+                {
+                    return;
+                }
+
                 // Initiator POV (always present).
                 ApplyMemoryRecallForRole(diaryEvent, DiaryEvent.InitiatorRole, policy);
 
@@ -153,6 +162,26 @@ namespace PawnDiary
         {
             PawnDiarySettings settings = PawnDiaryMod.Settings;
             return settings != null && settings.enableMemorySystem;
+        }
+
+        /// <summary>
+        /// True when the template that generation will finally choose for this event declares an
+        /// enabled MemoryContext field. Reuses the exact generation-time path (ToPayload ->
+        /// PolicyFor -> TemplateKeyFor) so the prediction cannot drift from the real choice; the
+        /// event's template-determining facts (solo/death/arrival/reflection/context markers) are
+        /// all frozen before registration. Main thread only — ToPayload/PolicyFor touch
+        /// Translate() and DefDatabase.
+        /// </summary>
+        private static bool EventProjectsMemoryContext(DiaryEvent diaryEvent)
+        {
+            DiaryEventPayload payload = DiaryPipelineAdapters.ToPayload(diaryEvent);
+            DiaryPolicySnapshot promptPolicy = DiaryPipelineAdapters.PolicyFor(payload);
+            string templateKey = DiaryPromptPlanner.TemplateKeyFor(new DiaryPromptRequest
+            {
+                payload = payload,
+                policy = promptPolicy
+            });
+            return DiaryPromptPlanner.ProjectsMemoryContext(promptPolicy.Template(templateKey));
         }
 
         /// <summary>

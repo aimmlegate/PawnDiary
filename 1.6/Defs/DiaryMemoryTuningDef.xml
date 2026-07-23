@@ -113,6 +113,9 @@
     <recallCooldownTicks>300000</recallCooldownTicks>
     <repetitionPenaltyFactor>0.25</repetitionPenaltyFactor>
     <memoryContextMaxChars>500</memoryContextMaxChars>
+    <!-- Universal whole-line ceiling for the memory prompt block: whole picks are dropped
+         (associative first), never truncated mid-memory (LORE_MEMORY_SEED_PLAN §9). -->
+    <memoryContextMaxLines>2</memoryContextMaxLines>
 
     <!-- Age -> label bands, evaluated in order; the last row is the "else" catch-all. Labels reach
          the LLM prompt, so translations override them via DefInjected. -->

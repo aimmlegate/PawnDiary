@@ -32,6 +32,13 @@ namespace PawnDiary
         public int createdTick;                       // event tick (may be historical)
         public int lastRecalledTick;                  // init = createdTick; refreshed on recall
         public int recallCount;                       // diagnostics + eviction tie-break
+        // Lore provenance (design/LORE_MEMORY_SEED_PLAN.md §3). Empty for lived memories; the
+        // authoritative DiaryLoreSeedDef name for an authored lore seed. Frozen at deposit.
+        public string loreSeedDefName = string.Empty;
+        // Narrative-age offset (§3.1): affects only the rendered age band and the minimum-age
+        // recall guard. Real createdTick/lastRecalledTick stay authoritative for recency decay,
+        // cooldowns, and eviction — never backdate createdTick (§16 G1).
+        public int narrativeAgeOffsetTicks;
 
         public void ExposeData()
         {
@@ -47,6 +54,9 @@ namespace PawnDiary
             Scribe_Values.Look(ref createdTick, "createdTick", 0);
             Scribe_Values.Look(ref lastRecalledTick, "lastRecalledTick", 0);
             Scribe_Values.Look(ref recallCount, "recallCount", 0);
+            // Additive lore keys: rows saved before the lore layer load as lived memories.
+            Scribe_Values.Look(ref loreSeedDefName, "loreSeedDefName");
+            Scribe_Values.Look(ref narrativeAgeOffsetTicks, "narrativeAgeOffsetTicks", 0);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -65,6 +75,8 @@ namespace PawnDiary
                 }
 
                 importance = Math.Max(0f, Math.Min(1f, importance));
+                loreSeedDefName = Clean(loreSeedDefName);
+                narrativeAgeOffsetTicks = Math.Max(0, narrativeAgeOffsetTicks);
                 if (lastRecalledTick < createdTick)
                 {
                     // A recall can never predate the memory itself; repair odd saves upward.
@@ -90,7 +102,9 @@ namespace PawnDiary
                 createdTick = createdTick,
                 lastRecalledTick = lastRecalledTick,
                 recallCount = recallCount,
-                text = text
+                text = text,
+                loreSeedDefName = loreSeedDefName ?? string.Empty,
+                narrativeAgeOffsetTicks = narrativeAgeOffsetTicks
             };
         }
 

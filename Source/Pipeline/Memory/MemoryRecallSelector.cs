@@ -206,7 +206,11 @@ namespace PawnDiary
             float score = baseScore * salience * decay;
 
             // Never echo this morning: same-day fragments score zero regardless of overlap.
-            if (age < Math.Max(0, policy.minRecallAgeTicks))
+            // The minimum-age guard alone uses the EFFECTIVE narrative age (real age + authored
+            // lore offset, LORE_MEMORY_SEED_PLAN §3.1) so an initial lore seed can surface on the
+            // pawn's very first prompt. Recency decay above and the cooldown below deliberately
+            // keep using real ticks: a freshly deposited row must not look old to scoring.
+            if (EffectiveNarrativeAge(age, fragment) < Math.Max(0, policy.minRecallAgeTicks))
             {
                 return 0f;
             }
@@ -244,6 +248,16 @@ namespace PawnDiary
                 }
             }
 
+            // Whole-line ceiling (LORE_MEMORY_SEED_PLAN §9): never deliver more lines than the
+            // universal cap, dropping the associative pick first. Applies before the character
+            // budget so the surviving-pick list always equals the delivered lines exactly.
+            int maxLines = Math.Max(0, policy.memoryContextMaxLines);
+            while (result.picks.Count > maxLines)
+            {
+                result.picks.RemoveAt(result.picks.Count - 1);
+                result.diagnostics.Add(MemoryDiagnosticTokens.LineCapDroppedPick);
+            }
+
             int budget = Math.Max(0, policy.memoryContextMaxChars);
             string rendered = Render(result.picks, usable, currentTick, policy);
             if (rendered.Length > budget && result.picks.Count > 1)
@@ -278,8 +292,10 @@ namespace PawnDiary
                     continue;
                 }
 
+                // The rendered age band reflects the pawn's NARRATIVE sense of time (§3.1): an
+                // initial lore seed reads as an old memory even though its row is brand new.
                 int age = Math.Max(0, currentTick - fragment.createdTick);
-                string label = AgeLabel(policy, age);
+                string label = AgeLabel(policy, EffectiveNarrativeAge(age, fragment));
                 string text = fragment.text.Trim();
                 lines.Add(label.Length == 0 ? "- " + text : "- (" + label + ") " + text);
             }
@@ -287,8 +303,18 @@ namespace PawnDiary
             return string.Join("\n", lines.ToArray());
         }
 
+        /// <summary>
+        /// Real age plus the authored lore narrative offset (LORE_MEMORY_SEED_PLAN §3.1). Long
+        /// arithmetic so a large authored offset near an old real age can never wrap negative.
+        /// Zero offset — every lived memory — makes this identical to the real age.
+        /// </summary>
+        private static long EffectiveNarrativeAge(int realAge, MemoryFragmentSnapshot fragment)
+        {
+            return (long)realAge + Math.Max(0, fragment.narrativeAgeOffsetTicks);
+        }
+
         /// <summary>First band whose maxAgeTicks covers the age wins; the last band is the else.</summary>
-        private static string AgeLabel(MemoryPolicySnapshot policy, int age)
+        private static string AgeLabel(MemoryPolicySnapshot policy, long age)
         {
             string fallback = string.Empty;
             if (policy.ageBands != null)

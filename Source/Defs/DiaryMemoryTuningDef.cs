@@ -82,6 +82,8 @@ namespace PawnDiary
         public int recallCooldownTicks = 300000;
         public float repetitionPenaltyFactor = 0.25f;
         public int memoryContextMaxChars = 500;
+        // Universal whole-line ceiling for the rendered memory prompt block (LORE_MEMORY_SEED_PLAN §9).
+        public int memoryContextMaxLines = 2;
         public List<DiaryMemoryAgeBandDef> ageBands;
         // Prompt prose is localized through DefInjected. Blank remains a safe fallback when a Def
         // is missing or a translation has not supplied the optional instruction.
@@ -143,6 +145,7 @@ namespace PawnDiary
             snapshot.recallCooldownTicks = Math.Max(0, source.recallCooldownTicks);
             snapshot.repetitionPenaltyFactor = Clamp01(source.repetitionPenaltyFactor);
             snapshot.memoryContextMaxChars = PositiveOrFallback(source.memoryContextMaxChars, snapshot.memoryContextMaxChars);
+            snapshot.memoryContextMaxLines = PositiveOrFallback(source.memoryContextMaxLines, snapshot.memoryContextMaxLines);
             snapshot.memoryContextInstruction = source.memoryContextInstruction ?? string.Empty;
             snapshot.maxFragmentsPerPawn = PositiveOrFallback(source.maxFragmentsPerPawn, snapshot.maxFragmentsPerPawn);
             snapshot.coreImportanceThreshold = Clamp01(source.coreImportanceThreshold);

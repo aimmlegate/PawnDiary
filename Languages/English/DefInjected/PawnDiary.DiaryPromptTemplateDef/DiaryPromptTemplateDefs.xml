@@ -524,7 +524,12 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
   <DiaryPromptTemplate_SoloImportant.fields.124.label>belief context</DiaryPromptTemplate_SoloImportant.fields.124.label>
   <DiaryPromptTemplate_SoloInternalState.fields.40.label>belief context</DiaryPromptTemplate_SoloInternalState.fields.40.label>
   <DiaryPromptTemplate_SoloBatched.fields.40.label>belief context</DiaryPromptTemplate_SoloBatched.fields.40.label>
-  <DiaryPromptTemplate_SoloDayReflection.fields.38.label>belief context</DiaryPromptTemplate_SoloDayReflection.fields.38.label>
-  <DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>belief context</DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>
-  <DiaryPromptTemplate_SoloArcReflection.fields.16.label>belief context</DiaryPromptTemplate_SoloArcReflection.fields.16.label>
+  <!-- Lore L1: reflections gained a memory row BEFORE belief context, shifting the belief index
+       by one on exactly these three templates (LORE_MEMORY_SEED_PLAN §9). -->
+  <DiaryPromptTemplate_SoloDayReflection.fields.38.label>memory</DiaryPromptTemplate_SoloDayReflection.fields.38.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.39.label>belief context</DiaryPromptTemplate_SoloDayReflection.fields.39.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>memory</DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.14.label>belief context</DiaryPromptTemplate_SoloQuadrumReflection.fields.14.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.16.label>memory</DiaryPromptTemplate_SoloArcReflection.fields.16.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.17.label>belief context</DiaryPromptTemplate_SoloArcReflection.fields.17.label>
 </LanguageData>

@@ -637,6 +637,8 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>trait</label><source>GameContext</source><contextKey>trait</contextKey></li>
       <li><label>trait description</label><source>GameContext</source><contextKey>trait_description</contextKey></li>
       <li><label>narrative context</label><source>NarrativeContext</source></li>
+      <!-- Lore L1: reflections project bounded memory too (LORE_MEMORY_SEED_PLAN §9). -->
+      <li><label>memory</label><source>MemoryContext</source></li>
       <!-- Ideology Phase 1: absent/irrelevant belief context is omitted by PromptAssembler. -->
       <li><label>belief context</label><source>BeliefContext</source></li>
     </fields>
@@ -667,6 +669,8 @@ Do not write a bullet list. Output only diary text. End with normal sentence pun
       <li><label>my last opening line (do not reuse)</label><source>LastOpener</source></li>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
       <li><label>narrative context</label><source>NarrativeContext</source></li>
+      <!-- Lore L1: reflections project bounded memory too (LORE_MEMORY_SEED_PLAN §9). -->
+      <li><label>memory</label><source>MemoryContext</source></li>
       <!-- Ideology Phase 1: absent/irrelevant belief context is omitted by PromptAssembler. -->
       <li><label>belief context</label><source>BeliefContext</source></li>
     </fields>
@@ -700,6 +704,8 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
       <li><label>my last opening line (do not reuse)</label><source>LastOpener</source></li>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
       <li><label>narrative context</label><source>NarrativeContext</source></li>
+      <!-- Lore L1: reflections project bounded memory too (LORE_MEMORY_SEED_PLAN §9). -->
+      <li><label>memory</label><source>MemoryContext</source></li>
       <!-- Ideology Phase 1: absent/irrelevant belief context is omitted by PromptAssembler. -->
       <li><label>belief context</label><source>BeliefContext</source></li>
     </fields>

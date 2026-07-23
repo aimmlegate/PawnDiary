@@ -305,6 +305,16 @@ namespace PawnDiary
                 return true;
             }
 
+            // A non-empty frozen memory recall is required in EVERY detail preset
+            // (LORE_MEMORY_SEED_PLAN §9): recall metadata was already bumped when the memory was
+            // selected, so a late Balanced/Compact budget cut would create a phantom recall. The
+            // value stays bounded by the universal two-line/500-char memory policy, not by the
+            // preset's soft budget. Empty recall never reaches candidates (no renderable value).
+            if (Eq(source, MemoryContextPrompt.Source))
+            {
+                return true;
+            }
+
             if (Eq(source, "PawnSummary") && Eq(templateKey, DiaryPipelineTemplates.ArrivalDescription))
             {
                 return true;

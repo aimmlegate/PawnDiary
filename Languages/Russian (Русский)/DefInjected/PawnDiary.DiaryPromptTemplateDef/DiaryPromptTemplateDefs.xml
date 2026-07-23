@@ -569,7 +569,12 @@
   <DiaryPromptTemplate_SoloImportant.fields.124.label>контекст убеждений</DiaryPromptTemplate_SoloImportant.fields.124.label>
   <DiaryPromptTemplate_SoloInternalState.fields.40.label>контекст убеждений</DiaryPromptTemplate_SoloInternalState.fields.40.label>
   <DiaryPromptTemplate_SoloBatched.fields.40.label>контекст убеждений</DiaryPromptTemplate_SoloBatched.fields.40.label>
-  <DiaryPromptTemplate_SoloDayReflection.fields.38.label>контекст убеждений</DiaryPromptTemplate_SoloDayReflection.fields.38.label>
-  <DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>контекст убеждений</DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>
-  <DiaryPromptTemplate_SoloArcReflection.fields.16.label>контекст убеждений</DiaryPromptTemplate_SoloArcReflection.fields.16.label>
+  <!-- Lore L1: у трёх шаблонов-рефлексий появилось поле памяти ПЕРЕД контекстом убеждений,
+       поэтому индекс контекста убеждений сдвинут на единицу (LORE_MEMORY_SEED_PLAN §9). -->
+  <DiaryPromptTemplate_SoloDayReflection.fields.38.label>воспоминания</DiaryPromptTemplate_SoloDayReflection.fields.38.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.39.label>контекст убеждений</DiaryPromptTemplate_SoloDayReflection.fields.39.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>воспоминания</DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.14.label>контекст убеждений</DiaryPromptTemplate_SoloQuadrumReflection.fields.14.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.16.label>воспоминания</DiaryPromptTemplate_SoloArcReflection.fields.16.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.17.label>контекст убеждений</DiaryPromptTemplate_SoloArcReflection.fields.17.label>
 </LanguageData>

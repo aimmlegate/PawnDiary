@@ -143,6 +143,32 @@ namespace PawnDiary
             return important ? DiaryPipelineTemplates.SoloImportant : DiaryPipelineTemplates.SoloDefault;
         }
 
+        /// <summary>
+        /// THE central memory-projectability decision (LORE_MEMORY_SEED_PLAN §9): a template
+        /// projects memory only when it declares an enabled MemoryContext field. The recall
+        /// applier gates on this for the finally chosen template so recall metadata is never
+        /// bumped for a page (neutral death/arrival, title) that cannot render the memory.
+        /// </summary>
+        public static bool ProjectsMemoryContext(DiaryTemplatePolicy template)
+        {
+            if (template?.fields == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < template.fields.Count; i++)
+            {
+                DiaryPromptFieldPolicy field = template.fields[i];
+                if (field != null && field.enabled
+                    && string.Equals(field.source, MemoryContextPrompt.Source, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static DiaryPromptPlan EmptyPlan()
         {
             return new DiaryPromptPlan

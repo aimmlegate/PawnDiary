@@ -35,6 +35,8 @@ namespace PawnMemoryTests
             TestSpreadGateSeedFlip();
             TestRenderingAgeBands();
             TestRenderingBudget();
+            TestNarrativeAgeOffsetGuardAndLabel();
+            TestLineCapWholePicks();
             TestDeterminismAndNoMutation();
             TestOneMechanismRoundTrip();
             TestEvictionStaleRule();
@@ -55,7 +57,7 @@ namespace PawnMemoryTests
             {
                 "combat", "danger", "conflict", "breakdown", "dread", "body", "psychic", "royalty",
                 "ritual", "work", "family", "romance", "death", "arrival", "illness", "joy",
-                "sorrow", "social"
+                "sorrow", "social", "lore"
             };
             for (int i = 0; i < known.Length; i++)
             {
@@ -65,7 +67,7 @@ namespace PawnMemoryTests
             AssertTrue("tag vocabulary is case-sensitive schema", !MemoryTagTokens.IsKnown("Combat"));
             AssertTrue("unknown tag rejected", !MemoryTagTokens.IsKnown("unknown"));
             AssertTrue("empty tag rejected", !MemoryTagTokens.IsKnown(string.Empty));
-            AssertTrue("exactly eighteen tag tokens", CountKnownTokens(known) == 18);
+            AssertTrue("exactly nineteen tag tokens", CountKnownTokens(known) == 19);
 
             MemoryPolicySnapshot policy = MemoryPolicySnapshot.CreateDefault();
             AssertNear("default minDepositImportance", 0.3f, policy.minDepositImportance, 0.0001f);
@@ -91,6 +93,7 @@ namespace PawnMemoryTests
             AssertEqual("default recallCooldownTicks", 300000, policy.recallCooldownTicks);
             AssertNear("default repetitionPenaltyFactor", 0.25f, policy.repetitionPenaltyFactor, 0.0001f);
             AssertEqual("default memoryContextMaxChars", 500, policy.memoryContextMaxChars);
+            AssertEqual("default memoryContextMaxLines", 2, policy.memoryContextMaxLines);
             AssertEqual("default maxFragmentsPerPawn", 60, policy.maxFragmentsPerPawn);
             AssertNear("default coreImportanceThreshold", 0.8f, policy.coreImportanceThreshold, 0.0001f);
             AssertEqual("default maxCoreFragmentsPerPawn", 15, policy.maxCoreFragmentsPerPawn);
@@ -154,6 +157,7 @@ namespace PawnMemoryTests
             AssertXmlInt(def, "recallCooldownTicks", policy.recallCooldownTicks);
             AssertXmlFloat(def, "repetitionPenaltyFactor", policy.repetitionPenaltyFactor);
             AssertXmlInt(def, "memoryContextMaxChars", policy.memoryContextMaxChars);
+            AssertXmlInt(def, "memoryContextMaxLines", policy.memoryContextMaxLines);
             AssertXmlInt(def, "maxFragmentsPerPawn", policy.maxFragmentsPerPawn);
             AssertXmlFloat(def, "coreImportanceThreshold", policy.coreImportanceThreshold);
             AssertXmlInt(def, "maxCoreFragmentsPerPawn", policy.maxCoreFragmentsPerPawn);
@@ -823,6 +827,89 @@ namespace PawnMemoryTests
             MemoryRecallResult nothingRecalled = MemoryRecallSelector.Recall(
                 Query(Tags("dread"), Tags(), 2060000), store, policy);
             AssertEqual("no picks renders an empty string", string.Empty, nothingRecalled.memoryContext);
+        }
+
+        /// <summary>
+        /// LORE_MEMORY_SEED_PLAN §3.1: the narrative-age offset satisfies the minimum-age guard and
+        /// picks the rendered age band, while recency decay keeps using real ticks — a lore seed can
+        /// surface on the first prompt as an "old" memory without ever looking stale to scoring.
+        /// </summary>
+        private static void TestNarrativeAgeOffsetGuardAndLabel()
+        {
+            MemoryPolicySnapshot policy = RecallPolicy();
+            List<MemoryFragmentSnapshot> store = PerfectOverlapStore();
+
+            MemoryRecallResult gated = MemoryRecallSelector.Recall(
+                Query(Tags("combat", "danger"), Tags("yorick", "rifle", "fire"), 60999), store, policy);
+            AssertEqual("real age below the minimum stays gated without an offset", 0, gated.picks.Count);
+
+            store[0].narrativeAgeOffsetTicks = 1;
+            MemoryRecallResult eligible = MemoryRecallSelector.Recall(
+                Query(Tags("combat", "danger"), Tags("yorick", "rifle", "fire"), 60999), store, policy);
+            AssertEqual("narrative offset satisfies the minimum-age guard", 1, eligible.picks.Count);
+            // Decay still runs on the REAL 59999-tick age: 1.5 * 0.5^(59999/1800000).
+            AssertNear("recency decay stays on real age", 1.46574f, eligible.picks[0].score, 0.001f);
+
+            store[0].narrativeAgeOffsetTicks = -500000;
+            MemoryRecallResult negative = MemoryRecallSelector.Recall(
+                Query(Tags("combat", "danger"), Tags("yorick", "rifle", "fire"), 60999), store, policy);
+            AssertEqual("negative offsets clamp to zero effect", 0, negative.picks.Count);
+
+            // The rendered band follows the narrative age; the score does not move at all.
+            const int current = 10000000;
+            List<MemoryFragmentSnapshot> aged = new List<MemoryFragmentSnapshot>
+            {
+                Frag("seed", current - 100000, Tags("combat", "danger"), Tags("yorick", "rifle", "fire"),
+                    1.0f, "The elders' story."),
+                Frag("f1", current - 100000, Tags("work"), Tags("fields"), 0.4f, "Working the fields."),
+                Frag("f2", current - 100000, Tags("illness"), Tags("flu"), 0.4f, "A bad flu week."),
+                Frag("f3", current - 100000, Tags("family"), Tags("mother"), 0.4f, "A letter from mother.")
+            };
+            MemoryRecallResult lived = MemoryRecallSelector.Recall(
+                Query(Tags("combat", "danger"), Tags("yorick", "rifle", "fire"), current), aged, policy);
+            AssertEqual("zero offset renders the real-age band",
+                "- (a few days ago) The elders' story.", lived.memoryContext);
+
+            aged[0].narrativeAgeOffsetTicks = 7200000;
+            MemoryRecallResult loreAged = MemoryRecallSelector.Recall(
+                Query(Tags("combat", "danger"), Tags("yorick", "rifle", "fire"), current), aged, policy);
+            AssertEqual("offset renders the narrative-age band",
+                "- (a long time ago) The elders' story.", loreAged.memoryContext);
+            AssertNear("offset never changes the score",
+                lived.picks[0].score, loreAged.picks[0].score, 0.0000001f);
+        }
+
+        /// <summary>
+        /// LORE_MEMORY_SEED_PLAN §9: the universal whole-line ceiling drops complete picks
+        /// (associative first) so the surviving-pick list always equals the delivered lines.
+        /// </summary>
+        private static void TestLineCapWholePicks()
+        {
+            List<MemoryFragmentSnapshot> store = BridgeStore();
+
+            MemoryPolicySnapshot oneLine = RecallPolicy(recallGate: 1f, spreadGate: 1f);
+            oneLine.memoryContextMaxLines = 1;
+            MemoryRecallResult capped = MemoryRecallSelector.Recall(
+                Query(Tags("combat", "danger"), Tags(), 2060000), store, oneLine);
+            AssertEqual("one-line cap keeps only the direct pick", 1, capped.picks.Count);
+            AssertEqual("the direct pick survives the cap", "raid", capped.picks[0].memoryId);
+            AssertTrue("exactly one whole line is delivered",
+                !capped.memoryContext.Contains("\n")
+                && capped.memoryContext.Contains("The raid where Yorick fell."));
+            AssertContains("line-cap diagnostic", capped.diagnostics,
+                MemoryDiagnosticTokens.LineCapDroppedPick);
+
+            MemoryPolicySnapshot defaultCap = RecallPolicy(recallGate: 1f, spreadGate: 1f);
+            MemoryRecallResult both = MemoryRecallSelector.Recall(
+                Query(Tags("combat", "danger"), Tags(), 2060000), store, defaultCap);
+            AssertEqual("the default two-line cap keeps the bridge outcome", 2, both.picks.Count);
+
+            MemoryPolicySnapshot zero = RecallPolicy(recallGate: 1f, spreadGate: 1f);
+            zero.memoryContextMaxLines = 0;
+            MemoryRecallResult cleared = MemoryRecallSelector.Recall(
+                Query(Tags("combat", "danger"), Tags(), 2060000), store, zero);
+            AssertEqual("a zero cap surfaces nothing", 0, cleared.picks.Count);
+            AssertEqual("a zero cap renders an empty context", string.Empty, cleared.memoryContext);
         }
 
         private static void TestDeterminismAndNoMutation()

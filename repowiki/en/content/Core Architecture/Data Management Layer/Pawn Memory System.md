@@ -2,6 +2,16 @@
 
 ## Update Summary
 **Changes Made**
+- Lore L1 (design/LORE_MEMORY_SEED_PLAN.md): MemoryFragment carries optional lore provenance
+  (`loreSeedDefName`) and a `narrativeAgeOffsetTicks` that affects only the rendered age band and
+  the minimum-recall-age guard (recency decay, cooldowns, and eviction stay on real ticks); the
+  closed tag vocabulary gained the `lore` token
+- Lore L1 projectability: recall now runs only when the finally chosen prompt template declares a
+  `MemoryContext` field (`DiaryPromptPlanner.ProjectsMemoryContext` + a gate in
+  `DiaryGameComponent.Memory.cs`), all 11 first-person templates — now including the three
+  reflections — project memory, neutral death/arrival/title never do, a non-empty memory field is
+  required in every context-detail preset, and the rendered block is bounded by the universal
+  `memoryContextMaxLines` (2) / `memoryContextMaxChars` (500) whole-pick policy
 - Added comprehensive memory subsystem implementation through DiaryGameComponent.Memory.cs (475 lines)
 - Integrated memory pipeline phases W1-W3 for structured processing workflow
 - Enhanced context management and lifecycle control mechanisms

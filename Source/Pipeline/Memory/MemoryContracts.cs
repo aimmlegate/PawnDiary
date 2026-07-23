@@ -54,6 +54,9 @@ namespace PawnDiary
         public const string Joy = "joy";
         public const string Sorrow = "sorrow";
         public const string Social = "social";
+        // Lore provenance marker (LORE_MEMORY_SEED_PLAN §3). Queries never emit this token, so it
+        // adds no recall score; it exists for filtering, diagnostics, tests, and policy application.
+        public const string Lore = "lore";
 
         public static bool IsKnown(string value)
         {
@@ -61,7 +64,7 @@ namespace PawnDiary
                 || value == Dread || value == Body || value == Psychic || value == Royalty
                 || value == Ritual || value == Work || value == Family || value == Romance
                 || value == Death || value == Arrival || value == Illness || value == Joy
-                || value == Sorrow || value == Social;
+                || value == Sorrow || value == Social || value == Lore;
         }
     }
 
@@ -79,6 +82,7 @@ namespace PawnDiary
         public const string SelectedAssociative = "selected_associative";
         public const string BudgetDroppedAssociative = "budget_dropped_associative";
         public const string BudgetDroppedDirect = "budget_dropped_direct";
+        public const string LineCapDroppedPick = "line_cap_dropped_pick";
     }
 
     /// <summary>One XML-owned colorCue -> base importance row (design §7.3 importance table).</summary>
@@ -158,6 +162,9 @@ namespace PawnDiary
         public int recallCooldownTicks = 300000;
         public float repetitionPenaltyFactor = 0.25f;
         public int memoryContextMaxChars = 500;
+        // Universal whole-line ceiling for the rendered memoryContext (LORE_MEMORY_SEED_PLAN §9):
+        // never more than this many whole memory lines reach a prompt, in every detail preset.
+        public int memoryContextMaxLines = 2;
         public List<MemoryAgeBand> ageBands = new List<MemoryAgeBand>();
         public string memoryContextInstruction = string.Empty;
 
@@ -271,6 +278,11 @@ namespace PawnDiary
         public int lastRecalledTick;
         public int recallCount;
         public string text = string.Empty;
+        // Lore provenance (LORE_MEMORY_SEED_PLAN §3): empty for lived memories.
+        public string loreSeedDefName = string.Empty;
+        // Narrative-age offset (§3.1): rendered age band + minimum-age guard only. Real ticks
+        // above stay authoritative for recency decay, cooldowns, and eviction.
+        public int narrativeAgeOffsetTicks;
     }
 
     /// <summary>

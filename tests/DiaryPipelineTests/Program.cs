@@ -19,6 +19,8 @@ namespace DiaryPipelineTests
             TestSoloPromptPlan();
             TestNarrativeContextPromptField();
             TestBeliefContextPromptField();
+            TestMemoryContextProjectabilityAndTemplates();
+            TestMemoryContextRequiredInEveryPreset();
             TestPromptContextDetailSelection();
             TestPromptContextDetailOverrideResolution();
             TestOwnedPromptTextIsNotSentenceCapped();
@@ -837,6 +839,125 @@ namespace DiaryPipelineTests
                     template?.Element("fields")?.Elements("li")
                         .Count(row => ChildValue(row, "source") == BeliefContextPrompt.Source) ?? 0);
             }
+        }
+
+        /// <summary>
+        /// LORE_MEMORY_SEED_PLAN §9: the central projectability decision plus the shipped-XML
+        /// contract — all 11 first-person templates (now including the three reflections) declare
+        /// MemoryContext exactly once; neutral death/arrival and title templates never do.
+        /// </summary>
+        private static void TestMemoryContextProjectabilityAndTemplates()
+        {
+            AssertTrue("null template never projects memory",
+                !DiaryPromptPlanner.ProjectsMemoryContext(null));
+            AssertTrue("field-less template never projects memory",
+                !DiaryPromptPlanner.ProjectsMemoryContext(new DiaryTemplatePolicy()));
+
+            DiaryTemplatePolicy withMemory = new DiaryTemplatePolicy
+            {
+                fields = Fields(Field("pov", "PovName"), Field("memory", MemoryContextPrompt.Source))
+            };
+            AssertTrue("an enabled MemoryContext field projects memory",
+                DiaryPromptPlanner.ProjectsMemoryContext(withMemory));
+
+            withMemory.fields[1].enabled = false;
+            AssertTrue("a disabled MemoryContext field does not project memory",
+                !DiaryPromptPlanner.ProjectsMemoryContext(withMemory));
+
+            XDocument templates = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryPromptTemplateDefs.xml"));
+            string[] firstPersonTemplates =
+            {
+                "PairDefault", "PairImportant", "PairCombat", "PairBatched",
+                "SoloDefault", "SoloImportant", "SoloInternalState", "SoloBatched",
+                "SoloDayReflection", "SoloQuadrumReflection", "SoloArcReflection"
+            };
+            for (int i = 0; i < firstPersonTemplates.Length; i++)
+            {
+                XElement template = templates.Root?.Elements("PawnDiary.DiaryPromptTemplateDef")
+                    .FirstOrDefault(row => ChildValue(row, "templateKey") == firstPersonTemplates[i]);
+                AssertEqual("memory source appears exactly once in " + firstPersonTemplates[i], 1,
+                    template?.Element("fields")?.Elements("li")
+                        .Count(row => ChildValue(row, "source") == MemoryContextPrompt.Source) ?? 0);
+            }
+
+            string[] neutralTemplates = { "DeathDescription", "ArrivalDescription", "Title" };
+            for (int i = 0; i < neutralTemplates.Length; i++)
+            {
+                XElement template = templates.Root?.Elements("PawnDiary.DiaryPromptTemplateDef")
+                    .FirstOrDefault(row => ChildValue(row, "templateKey") == neutralTemplates[i]);
+                AssertTrue("neutral template exists: " + neutralTemplates[i], template != null);
+                AssertEqual("memory source never appears in " + neutralTemplates[i], 0,
+                    template?.Element("fields")?.Elements("li")
+                        .Count(row => ChildValue(row, "source") == MemoryContextPrompt.Source) ?? -1);
+            }
+        }
+
+        /// <summary>
+        /// LORE_MEMORY_SEED_PLAN §9: a non-empty frozen memory recall is REQUIRED context in Full,
+        /// Balanced, and Compact — a binding preset budget cuts optional fields around it but can
+        /// never cut the memory whose recall metadata was already bumped. Empty recall stays an
+        /// absent field.
+        /// </summary>
+        private static void TestMemoryContextRequiredInEveryPreset()
+        {
+            string frozenRecall = "- (a few days ago) The raid where Yorick fell.\n"
+                + "- (a couple of weeks ago) Yorick showing me his rifle collection.";
+            PromptContextDetailLevel[] levels =
+            {
+                PromptContextDetailLevel.Full,
+                PromptContextDetailLevel.Balanced,
+                PromptContextDetailLevel.Compact
+            };
+            for (int i = 0; i < levels.Length; i++)
+            {
+                DiaryEventPayload payload = SoloPayload(
+                    "e-memory-required", "quiet work", "Alice repaired the generator alone.");
+                payload.initiator.memoryContext = frozenRecall;
+                DiaryPolicySnapshot policy = Policy(combat: false, important: true);
+                DiaryTemplatePolicy template = policy.Template(DiaryPipelineTemplates.SoloImportant);
+                template.fields.Add(Field("memory", MemoryContextPrompt.Source));
+                template.fields.Add(Field("my last opening line (do not reuse)", "LastOpener"));
+
+                DiaryPromptPlan plan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+                {
+                    payload = payload,
+                    policy = policy,
+                    povRole = DiaryPipelineRoles.Initiator,
+                    contextDetailLevel = levels[i],
+                    // A deliberately unaffordable budget: every optional field gets cut.
+                    contextBudgets = new PromptContextBudgets { balancedDefault = 1, compactDefault = 1 }
+                });
+
+                PromptContextFieldReport kept = plan.contextSelectionReport.kept
+                    .FirstOrDefault(row => row.source == MemoryContextPrompt.Source);
+                AssertTrue("memory field survives " + levels[i], kept != null);
+                AssertTrue("memory field is required under " + levels[i], kept != null && kept.required);
+                AssertContains("memory lines reach the " + levels[i] + " prompt whole",
+                    plan.userPrompt, "memory: " + frozenRecall);
+                if (levels[i] != PromptContextDetailLevel.Full)
+                {
+                    AssertTrue("the binding " + levels[i] + " budget still cuts optional fields",
+                        plan.contextSelectionReport.cut
+                            .Any(row => row.source == "LastOpener"));
+                }
+            }
+
+            DiaryEventPayload silent = SoloPayload(
+                "e-memory-empty", "quiet work", "Alice repaired the generator alone.");
+            silent.initiator.memoryContext = string.Empty;
+            DiaryPolicySnapshot silentPolicy = Policy(combat: false, important: true);
+            silentPolicy.Template(DiaryPipelineTemplates.SoloImportant).fields.Add(
+                Field("memory", MemoryContextPrompt.Source));
+            DiaryPromptPlan silentPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = silent,
+                policy = silentPolicy,
+                povRole = DiaryPipelineRoles.Initiator,
+                contextDetailLevel = PromptContextDetailLevel.Compact
+            });
+            AssertTrue("empty recall costs no prompt field",
+                !silentPlan.userPrompt.Contains("memory:"));
         }
 
         private static int BeliefContextScore(string domain, string gameContext)

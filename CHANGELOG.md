@@ -8,6 +8,12 @@ pre-release version ladder for project history.
 
 ## 2026-07-23
 
+- **Lore memory L1 — contracts, truthfulness, and bounded prompt projection.** Memory fragments
+  gained optional lore provenance and a narrative-age offset (age band + minimum-age guard only;
+  real ticks keep driving decay/cooldown/eviction); recall is now gated on the finally chosen
+  template's `MemoryContext` projection so neutral death/arrival/title pages never bump recall
+  metadata; the three reflection templates project bounded memory; a non-empty memory field is
+  required in every context-detail preset under the universal two-line/500-char whole-pick cap.
 - **Ideology Phase 3 review hardening.** Cancelled net-zero belief changes, made diagnostics read-only,
   skipped no-DLC scans, and repaired load-time tick and quadrum normalization.
 - **Documentation restructured into a repository wiki.** Migrated human docs into a browsable
