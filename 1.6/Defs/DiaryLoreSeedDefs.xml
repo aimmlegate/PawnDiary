@@ -10,7 +10,10 @@
     FROZEN MATCHER VOCABULARY (§10/§11 pass 1 audit; QA tests enforce this list):
     - tags: the closed MemoryTagTokens vocabulary ('lore' is implied and added at deposit).
     - keywords: ONLY values the audited query path produces via the stable contextKeywordKeys —
-        raid=               incident defNames: RaidEnemy, Infestation, MechCluster
+        raid=               incident defNames: RaidEnemy, Infestation
+                            (mech clusters are NOT raid-routed — IncidentWorker_MechCluster is
+                             not raid-like, so "MechCluster" is never a query value; the mechanoid
+                             seeds reach live threats through faction=Mechanoid instead.)
         faction=            faction defNames:  Mechanoid, Insect, Empire, Pirate
         hediff=             hediff defNames:   Plague, Flu, Malaria, LuciferiumHigh,
                                                PsychicAmplifier, MechlinkImplant
@@ -210,7 +213,7 @@
     <weight>1.0</weight>
     <mutexGroup>mechanoid_origin</mutexGroup>
     <tags><li>combat</li><li>danger</li><li>dread</li></tags>
-    <keywords><li>Mechanoid</li><li>MechCluster</li></keywords>
+    <keywords><li>Mechanoid</li></keywords>
     <backstoryCategories><li>Tribal</li><li>AdultTribal</li><li>ChildTribal</li><li>TribalHunter</li></backstoryCategories>
   </PawnDiary.DiaryLoreSeedDef>
 
@@ -223,7 +226,7 @@
     <weight>1.0</weight>
     <mutexGroup>mechanoid_origin</mutexGroup>
     <tags><li>combat</li><li>danger</li></tags>
-    <keywords><li>Mechanoid</li><li>MechCluster</li></keywords>
+    <keywords><li>Mechanoid</li></keywords>
     <excludeBackstoryCategories><li>Tribal</li><li>AdultTribal</li><li>ChildTribal</li></excludeBackstoryCategories>
   </PawnDiary.DiaryLoreSeedDef>
 

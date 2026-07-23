@@ -1654,7 +1654,7 @@ namespace PawnMemoryTests
         // path (§10) and updating the catalog header comment.
         private static readonly string[] AuditedKeywordVocabulary =
         {
-            "RaidEnemy", "Infestation", "MechCluster",
+            "RaidEnemy", "Infestation",
             "Mechanoid", "Insect", "Empire", "Pirate",
             "Plague", "Flu", "Malaria", "LuciferiumHigh", "PsychicAmplifier", "MechlinkImplant",
             "PsychicDrone", "PsychicSoothe", "ToxicFallout", "SolarFlare", "Eclipse",
