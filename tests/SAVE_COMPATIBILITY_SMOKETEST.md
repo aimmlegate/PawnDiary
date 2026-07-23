@@ -903,6 +903,37 @@ pages. Hidden `MightJoin`/`Traitor` state and situational VEE thoughts are delib
 6. Confirm the reflection postfix fires once on the installed 1.0.41 hook and embedded interest labels
    localize correctly. Tune the XML `0.55` threshold only from observed alignment distribution.
 
+## Quality Wave Phase 1 — hands-on rows
+
+Automation covers the resolved values (`DiaryPipelineTests`, `PawnDiaryOutputLanguageFixtureTests`,
+`PawnDiaryCueStyleFixtureTests`). These two rows are what automation cannot see, and are **not**
+claimed as covered until a human runs them.
+
+### C4 — per-cue page tints and header rules (visual)
+
+1. Open a colonist's Diary tab on a colony with mixed history and confirm the per-cue washes read as
+   *tinted parchment*, not colored panels — check at minimum a combat page, a social fight, a mental
+   break, a romance/heartfelt (white cue) page, a royal-title page, a psycast/psylink page, a
+   body-part page, a quiet page, and a quadrum reflection.
+2. Confirm combat, social-fight, and mental-break pages look **identical to the previous version** —
+   those three values were preserved exactly, so any visible change there is a regression.
+3. Confirm an "eventful" busy-incident page now carries the warm amber accent and tint rather than the
+   default accent on plain parchment.
+4. Confirm header rules: only combat, danger, socialFight, mentalBreak, extremeDark, white, psychic,
+   and royalty draw a colored line under the title; every other cue keeps the shared parchment rule.
+5. Delete (or rename) `1.6/Defs/DiaryUiStyleDef.xml`, restart, and confirm the tab renders the same —
+   the C# fallback list mirrors the XML row for row.
+
+### B1 — output-language directive (prose quality)
+
+1. With a real model configured, generate entries in English and confirm no behavior change beyond one
+   extra trailing system-prompt line (inspect via Prompt Test Mode).
+2. Switch RimWorld to Russian, generate entries **and titles**, and confirm both come back in Russian.
+   This is the failure mode the feature exists for; a title in a different language from its page is a
+   regression.
+3. Set `outputLanguageDirectiveEnabled=false` in `DiaryTuningDef.xml`, restart, and confirm the
+   captured system prompt is byte-identical to the pre-B1 build (no trailing line, no blank line).
+
 ## What counts as a regression
 
 Any of:
