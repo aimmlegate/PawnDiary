@@ -814,6 +814,8 @@ namespace PawnDiary.RimTests
                 { "ritualAnomalyPsychic", AnomalyPackageId },
                 { "progressionGrowthMoment", BiotechPackageId },
                 { "progressionMechanitorLifecycle", BiotechPackageId },
+                { "biotechPsychicBondLifecycle", BiotechPackageId },
+                { "biotechDeathrestInterrupted", BiotechPackageId },
                 { "progressionXenotype", BiotechPackageId }
             };
             Dictionary<string, string> expectedWindows = new Dictionary<string, string>
