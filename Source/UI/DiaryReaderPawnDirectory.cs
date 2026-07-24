@@ -31,6 +31,8 @@ namespace PawnDiary
             new List<DiaryGameComponent.DiaryReaderPawnInfo>();
         private readonly Dictionary<string, Pawn> resolvedPawns =
             new Dictionary<string, Pawn>(StringComparer.Ordinal);
+        private readonly HashSet<string> currentLivingColonistIds =
+            new HashSet<string>(StringComparer.Ordinal);
         private readonly Dictionary<string, DiaryReaderListRow> policyRowsByPawnId =
             new Dictionary<string, DiaryReaderListRow>(StringComparer.Ordinal);
         private readonly List<DiaryReaderPawnRow> rows = new List<DiaryReaderPawnRow>();
@@ -87,19 +89,20 @@ namespace PawnDiary
         {
             resolvedPawns.Clear();
             CollectResolvedPawns();
+            CollectCurrentLivingColonists();
             component.CollectDiaryReaderPawns(savedInfo);
             policyRowsByPawnId.Clear();
 
             // Any current living colonist can open a diary, including a new colonist with zero pages.
-            foreach (KeyValuePair<string, Pawn> pair in resolvedPawns)
+            foreach (string pawnId in currentLivingColonistIds)
             {
-                Pawn pawn = pair.Value;
-                if (pawn == null || pawn.Dead || !pawn.IsColonist)
+                Pawn pawn;
+                if (!resolvedPawns.TryGetValue(pawnId, out pawn) || pawn == null || pawn.Dead)
                 {
                     continue;
                 }
 
-                policyRowsByPawnId[pair.Key] = PolicyRow(pawn, pair.Key, 0);
+                policyRowsByPawnId[pawnId] = PolicyRow(pawn, pawnId, 0, true);
             }
 
             for (int i = 0; i < savedInfo.Count; i++)
@@ -110,7 +113,11 @@ namespace PawnDiary
                 DiaryReaderListRow row;
                 if (!policyRowsByPawnId.TryGetValue(info.pawnId, out row))
                 {
-                    row = PolicyRow(pawn, info.pawnId, info.EntryCount);
+                    row = PolicyRow(
+                        pawn,
+                        info.pawnId,
+                        info.EntryCount,
+                        currentLivingColonistIds.Contains(info.pawnId));
                     policyRowsByPawnId[info.pawnId] = row;
                 }
 
@@ -146,16 +153,51 @@ namespace PawnDiary
             }
         }
 
-        private static DiaryReaderListRow PolicyRow(Pawn pawn, string pawnId, int entryCount)
+        private static DiaryReaderListRow PolicyRow(
+            Pawn pawn,
+            string pawnId,
+            int entryCount,
+            bool isCurrentColonist)
         {
             return new DiaryReaderListRow
             {
                 pawnId = pawnId,
                 name = pawn?.LabelShortCap ?? string.Empty,
                 alive = pawn != null && !pawn.Dead,
-                isColonist = pawn != null && pawn.IsColonist,
+                isCurrentColonist = isCurrentColonist,
                 entryCount = entryCount
             };
+        }
+
+        /// <summary>
+        /// Marks only pawns in vanilla's current free-colonist roster as living reader subjects.
+        /// World pawns can retain the player faction and report IsColonist after leaving the active
+        /// roster, so deriving this flag from every resolved pawn leaks outsiders into "Colonists".
+        /// </summary>
+        private void CollectCurrentLivingColonists()
+        {
+            currentLivingColonistIds.Clear();
+            IEnumerable<Pawn> colonists =
+                PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists;
+            if (colonists == null)
+            {
+                return;
+            }
+
+            foreach (Pawn pawn in colonists)
+            {
+                if (pawn == null || pawn.Dead)
+                {
+                    continue;
+                }
+
+                AddPawn(pawn);
+                string pawnId = pawn.GetUniqueLoadID();
+                if (!string.IsNullOrWhiteSpace(pawnId))
+                {
+                    currentLivingColonistIds.Add(pawnId);
+                }
+            }
         }
 
         private void CollectResolvedPawns()

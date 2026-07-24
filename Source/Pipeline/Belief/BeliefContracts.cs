@@ -88,6 +88,7 @@ namespace PawnDiary
     {
         public const string ExactCorrelation = "exact_correlation";
         public const string StructuralCorrelation = "structural_correlation";
+        public const string ForcedCorrection = "forced_correction";
         public const string SemanticAlias = "semantic_alias";
         public const string GuardedLexical = "guarded_lexical";
         public const string BelowConfidence = "below_confidence";
@@ -97,7 +98,7 @@ namespace PawnDiary
         public static bool IsKnown(string value)
         {
             return value == ExactCorrelation || value == StructuralCorrelation
-                || value == SemanticAlias || value == GuardedLexical
+                || value == ForcedCorrection || value == SemanticAlias || value == GuardedLexical
                 || value == BelowConfidence || value == Ambiguous || value == NoMatch;
         }
     }

@@ -197,7 +197,7 @@ namespace PawnDiary
                 candidates = ForcedCorrectionCandidates(evidence, expanded, livePrecepts, liveMemes, policy);
                 if (candidates.Count > 0)
                     result.automaticCoverage = AcceptedDiagnostic(
-                        BeliefAutomaticCoverageOutcomeTokens.StructuralCorrelation, candidates);
+                        BeliefAutomaticCoverageOutcomeTokens.ForcedCorrection, candidates);
             }
             BeliefLexicalMatchResult lexical = null;
             if (!directIdentityAnswered && candidates.Count == 0)
@@ -232,6 +232,7 @@ namespace PawnDiary
                 && result.automaticCoverage != null
                 && (result.automaticCoverage.outcome == BeliefAutomaticCoverageOutcomeTokens.ExactCorrelation
                     || result.automaticCoverage.outcome == BeliefAutomaticCoverageOutcomeTokens.StructuralCorrelation
+                    || result.automaticCoverage.outcome == BeliefAutomaticCoverageOutcomeTokens.ForcedCorrection
                     || result.automaticCoverage.outcome == BeliefAutomaticCoverageOutcomeTokens.SemanticAlias
                     || result.automaticCoverage.outcome == BeliefAutomaticCoverageOutcomeTokens.GuardedLexical))
             {

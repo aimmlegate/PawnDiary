@@ -73,6 +73,17 @@ namespace PawnDiary.Ingestion
 
         public override int DedupWindowTicks => DiaryTuning.Current.romanceDedupTicks;
 
+        public override void CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
+        {
+            if (payload == null)
+            {
+                return;
+            }
+
+            sink.CaptureEventKnowledgeWithoutPage(
+                pawn, otherPawn, relationDef.defName, BuildKnowledgeContext(), payload.Tick);
+        }
+
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)
         {
             if (decision != CaptureDecision.GeneratePair)
@@ -83,8 +94,7 @@ namespace PawnDiary.Ingestion
             // Impure build: label, XML prompt instruction, localized text, gameContext.
             string label = relationDef.LabelCap.Resolve();
             string cleanedLabel = DiaryLineCleaner.CleanLine(label);
-            string kind = RomanceEventData.KindFor(relationDef.defName);
-            string gameContext = RomanceEventData.BuildGameContext(relationDef.defName, cleanedLabel, kind);
+            string gameContext = BuildKnowledgeContext();
             string instruction = InteractionGroups.InstructionForGroup(group);
 
             // Both pawns see the same factual text; the LLM prompt adds per-pawn summaries and
@@ -94,6 +104,13 @@ namespace PawnDiary.Ingestion
             DiaryEvent romanceEvent = sink.AddPairwiseEvent(pawn, otherPawn, relationDef.defName, label,
                 text, text, instruction, gameContext);
             sink.QueuePair(romanceEvent);
+        }
+
+        private string BuildKnowledgeContext()
+        {
+            string cleanedLabel = DiaryLineCleaner.CleanLine(relationDef.LabelCap.Resolve());
+            string kind = RomanceEventData.KindFor(relationDef.defName);
+            return RomanceEventData.BuildGameContext(relationDef.defName, cleanedLabel, kind);
         }
     }
 }

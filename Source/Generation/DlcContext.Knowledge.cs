@@ -36,8 +36,17 @@ namespace PawnDiary
         /// </summary>
         public static List<string> PawnFactionAllowedCultureDefNames(Pawn pawn)
         {
+            return FactionAllowedCultureDefNames(pawn?.Faction);
+        }
+
+        /// <summary>
+        /// One faction's allowed culture defNames. Kept separate from the pawn accessor so an
+        /// arrival prefix can snapshot the origin faction before Pawn.SetFaction replaces it.
+        /// </summary>
+        public static List<string> FactionAllowedCultureDefNames(Faction faction)
+        {
             List<string> cultures = new List<string>();
-            List<CultureDef> allowed = pawn?.Faction?.def?.allowedCultures;
+            List<CultureDef> allowed = faction?.def?.allowedCultures;
             if (allowed == null)
             {
                 return cultures;

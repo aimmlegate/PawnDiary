@@ -83,6 +83,19 @@ namespace PawnDiary.Ingestion
 
         public override int DedupWindowTicks => policy != null ? System.Math.Max(0, policy.dedupTicks) : 0;
 
+        public override void CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
+        {
+            if (source == HediffSignalSource.Appeared && payload != null)
+            {
+                sink.CaptureEventKnowledgeWithoutPage(
+                    pawn,
+                    null,
+                    payload.DefName,
+                    sink.BuildHediffKnowledgeContext(hediff, payload),
+                    payload.Tick);
+            }
+        }
+
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)
         {
             if (decision == CaptureDecision.GenerateSolo)

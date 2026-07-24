@@ -18,11 +18,11 @@ namespace PawnDiaryRimTalkBridge
     /// <summary>Removes the legacy {{diary_shared}} prompt entry from the active RimTalk preset.</summary>
     internal static class SharedMemoryLegacyCleanup
     {
-        private static bool cleanupDone;
+        private static object cleanedPreset;
 
         public static void ResetForNewGame()
         {
-            cleanupDone = false;
+            cleanedPreset = null;
         }
 
         /// <summary>
@@ -33,15 +33,23 @@ namespace PawnDiaryRimTalkBridge
         /// </summary>
         public static void RunOnce()
         {
-            if (cleanupDone || !PawnDiaryRimTalkBridgeMod.RimTalkActive)
+            if (!PawnDiaryRimTalkBridgeMod.RimTalkActive)
             {
                 return;
             }
 
-            cleanupDone = true;
             try
             {
+                object activePreset = RimTalkPromptAPI.GetActivePreset();
+                if (activePreset == null || ReferenceEquals(cleanedPreset, activePreset))
+                {
+                    return;
+                }
+
                 RemoveLegacyEntry();
+                // Mark only after successful removal. The periodic pass will retry API failures and
+                // will clean a newly selected preset exactly once when the active object changes.
+                cleanedPreset = activePreset;
             }
             catch (Exception e)
             {

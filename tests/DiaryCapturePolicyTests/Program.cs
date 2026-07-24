@@ -64,6 +64,7 @@ namespace DiaryCapturePolicyTests
             TestExternalDedupKey();
             TestExternalBuildGameContextFormat();
             TestArrivalDecide();
+            TestKnowledgeCaptureWithoutPagePolicy();
             TestArrivalBuildGameContextFormat();
             TestDeathDecide();
             TestDeathBuildFallbackGameContextFormat();
@@ -1249,6 +1250,51 @@ namespace DiaryCapturePolicyTests
             AssertEqual("arrival records through neutral prompt route",
                 CaptureDecision.GenerateSoloArrivalDescription,
                 ArrivalEventData.Decide(Arrival(), Ctx()));
+        }
+
+        private static void TestKnowledgeCaptureWithoutPagePolicy()
+        {
+            AssertEqual(
+                "disabled arrival page still permits valid knowledge",
+                true,
+                DiaryKnowledgeCapturePolicy.ShouldCaptureWithoutPage(
+                    Arrival(),
+                    Ctx(user: false)));
+            AssertEqual(
+                "existing arrival remains rejected by knowledge fallback",
+                false,
+                DiaryKnowledgeCapturePolicy.ShouldCaptureWithoutPage(
+                    Arrival(existing: true),
+                    Ctx(user: false)));
+
+            GrowthMomentEventData growth = new GrowthMomentEventData
+            {
+                ChildId = "Child_1",
+                Age = 10,
+                ChildEligible = true,
+                HasVerifiedMutation = true
+            };
+            AssertEqual(
+                "disabled growth page still permits verified knowledge",
+                true,
+                DiaryKnowledgeCapturePolicy.ShouldCaptureWithoutPage(
+                    growth,
+                    Ctx(signal: false)));
+            growth.AlreadyRecorded = true;
+            AssertEqual(
+                "already-recorded growth remains rejected by knowledge fallback",
+                false,
+                DiaryKnowledgeCapturePolicy.ShouldCaptureWithoutPage(
+                    growth,
+                    Ctx(signal: false)));
+            growth.AlreadyRecorded = false;
+            growth.HasVerifiedMutation = false;
+            AssertEqual(
+                "unverified growth remains rejected by knowledge fallback",
+                false,
+                DiaryKnowledgeCapturePolicy.ShouldCaptureWithoutPage(
+                    growth,
+                    Ctx(signal: false)));
         }
 
         private static void TestArrivalBuildGameContextFormat()

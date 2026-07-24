@@ -14,6 +14,7 @@
     <Compile Include="..\..\Source\Pipeline\Knowledge\ImportantMemoryLineRenderer.cs" Link="ImportantMemoryLineRenderer.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\KnowledgeEvictionPlanner.cs" Link="KnowledgeEvictionPlanner.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\CultureResolver.cs" Link="CultureResolver.cs" />
+    <Compile Include="..\..\Source\Pipeline\Knowledge\KnowledgeRelationPolicy.cs" Link="KnowledgeRelationPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\CultureAnnotationPlanner.cs" Link="CultureAnnotationPlanner.cs" />
     <Compile Include="..\..\Source\Pipeline\Memory\MemoryContextPrompt.cs" Link="MemoryContextPrompt.cs" />
     <Compile Include="..\..\Source\Generation\DiaryContextFields.cs" Link="DiaryContextFields.cs" />

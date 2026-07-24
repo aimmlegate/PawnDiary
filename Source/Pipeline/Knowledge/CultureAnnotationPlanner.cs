@@ -138,17 +138,28 @@ namespace PawnDiary
         private static bool TriggersByContextKey(CultureTopicRule topic, AnnotationFieldView field)
         {
             if (topic.triggerContextKeys == null
-                || !string.Equals(field.source, "GameContext", StringComparison.OrdinalIgnoreCase)
-                || string.IsNullOrWhiteSpace(field.contextKey))
+                || !string.Equals(field.source, "GameContext", StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
 
             for (int i = 0; i < topic.triggerContextKeys.Count; i++)
             {
-                if (!string.IsNullOrWhiteSpace(topic.triggerContextKeys[i])
-                    && string.Equals(field.contextKey, topic.triggerContextKeys[i].Trim(),
-                        StringComparison.OrdinalIgnoreCase))
+                string triggerKey = topic.triggerContextKeys[i];
+                if (string.IsNullOrWhiteSpace(triggerKey))
+                {
+                    continue;
+                }
+
+                triggerKey = triggerKey.Trim();
+                if (string.Equals(field.contextKey, triggerKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                string structuredValue = DiaryContextFields.Value(
+                    field.structuredContext, triggerKey);
+                if (!KnowledgeTokens.IsSentinelValue(structuredValue))
                 {
                     return true;
                 }
@@ -161,9 +172,7 @@ namespace PawnDiary
         private static bool TriggersByContextPair(CultureTopicRule topic, AnnotationFieldView field)
         {
             if (topic.triggerContextPairs == null
-                || !string.Equals(field.source, "GameContext", StringComparison.OrdinalIgnoreCase)
-                || string.IsNullOrWhiteSpace(field.contextKey)
-                || string.IsNullOrWhiteSpace(field.resolvedValue))
+                || !string.Equals(field.source, "GameContext", StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
@@ -182,10 +191,14 @@ namespace PawnDiary
                     continue;
                 }
 
-                if (string.Equals(field.contextKey, pair.Substring(0, equalsIndex).Trim(),
-                        StringComparison.OrdinalIgnoreCase)
-                    && string.Equals(field.resolvedValue.Trim(),
-                        pair.Substring(equalsIndex + 1).Trim(), StringComparison.OrdinalIgnoreCase))
+                string key = pair.Substring(0, equalsIndex).Trim();
+                string expected = pair.Substring(equalsIndex + 1).Trim();
+                bool displayedPair = string.Equals(
+                        field.contextKey, key, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(
+                        field.resolvedValue?.Trim(), expected, StringComparison.OrdinalIgnoreCase);
+                if (displayedPair || DiaryContextFields.FieldEquals(
+                    field.structuredContext, key, expected))
                 {
                     return true;
                 }

@@ -50,6 +50,15 @@ namespace PawnDiary.Ingestion
         public override int DedupWindowTicks =>
             DiaryBiotechPolicy.Snapshot().bondDeathrest.psychicBondCorrelationExpiryTicks;
 
+        public override void CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
+        {
+            if (payload != null && mutation != null)
+            {
+                sink.CaptureEventKnowledgeWithoutPage(
+                    firstPawn, secondPawn, payload.DefName, BuildGameContext(), payload.Tick);
+            }
+        }
+
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)
         {
             if (sink == null || mutation == null || payload == null

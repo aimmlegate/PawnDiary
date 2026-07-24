@@ -6,7 +6,8 @@
 //   3. Injection switch: with the memory setting OFF, capture still happens (§3.2) while the
 //      event's relevant-past slot stays empty; with it ON, a later related event carries at most
 //      two dated lines referencing the stored fact.
-//   4. Culture: capture resolves the pawn's origin culture once, with "captured" provenance.
+//   4. Culture/save compatibility: capture resolves origin once with "captured" provenance, and
+//      schema-1 saves durably mark still-unresolved origins as "inferred" before stamping schema 2.
 //   5. Quiet-hediff channel: an XML-allowlisted persistent hediff (Sterilized) is remembered
 //      even though it produces no diary page of its own.
 //   6. Body events: a REAL amputation (Pawn_HealthTracker.AddHediff) records the stable
@@ -30,6 +31,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.Serialization;
 using PawnDiary.Ingestion;
 using RimTestRedux;
 using RimWorld;
@@ -132,6 +134,58 @@ namespace PawnDiary.RimTests
                 "A Chitchat page must not deposit an important-event record.");
         }
 
+        /// <summary>
+        /// The real RomanceSignal still deposits marriage knowledge for both pawns when its XML page
+        /// group is disabled, while creating no DiaryEvent and no generation work.
+        /// </summary>
+        [Test]
+        public static void DisabledRomancePageStillCapturesKnowledgeWithoutPage()
+        {
+            scope.SpawnAsLiveColonist(pawnA);
+            scope.SpawnAsLiveColonist(pawnB);
+            DiaryInteractionGroupDef group =
+                InteractionGroups.ClassifyRomanceRelation(PawnRelationDefOf.Spouse.defName);
+            Require(group != null, "The shipped spouse romance group could not be resolved.");
+
+            bool priorValue;
+            bool hadOverride = PawnDiaryMod.Settings.groupEnabled.TryGetValue(
+                group.defName, out priorValue);
+            PawnDiaryRecord diaryA = DiaryFor(pawnA);
+            PawnDiaryRecord diaryB = DiaryFor(pawnB);
+            int pagesA = diaryA.eventIds.Count;
+            int pagesB = diaryB.eventIds.Count;
+            int memoriesA = CountKind(
+                diaryA.EnsureKnowledgeState(), "relation.spouse.gained");
+            int memoriesB = CountKind(
+                diaryB.EnsureKnowledgeState(), "relation.spouse.gained");
+            try
+            {
+                PawnDiaryMod.Settings.groupEnabled[group.defName] = false;
+                DiaryEvents.Submit(new RomanceSignal(
+                    pawnA, pawnB, PawnRelationDefOf.Spouse));
+
+                Require(
+                    CountKind(diaryA.EnsureKnowledgeState(), "relation.spouse.gained")
+                        == memoriesA + 1
+                    && CountKind(diaryB.EnsureKnowledgeState(), "relation.spouse.gained")
+                        == memoriesB + 1,
+                    "A disabled romance page must still deposit one marriage memory per pawn.");
+                Require(diaryA.eventIds.Count == pagesA && diaryB.eventIds.Count == pagesB,
+                    "No-page knowledge capture must not register a DiaryEvent.");
+            }
+            finally
+            {
+                if (hadOverride)
+                {
+                    PawnDiaryMod.Settings.groupEnabled[group.defName] = priorValue;
+                }
+                else
+                {
+                    PawnDiaryMod.Settings.groupEnabled.Remove(group.defName);
+                }
+            }
+        }
+
         // ── 3: the one player switch gates injection only ────────────────────────────────────────────
 
         /// <summary>
@@ -156,15 +210,14 @@ namespace PawnDiary.RimTests
             PawnDiaryMod.Settings.enableMemorySystem = true;
             DiaryEvent onEvent = AddRomancePairEvent(pawnA, pawnB, "Lover", "lover");
             string block = onEvent.MemoryContextForRole(DiaryEvent.InitiatorRole);
-            if (!onEvent.IsSkipped(DiaryEvent.InitiatorRole))
-            {
-                Require(!string.IsNullOrWhiteSpace(block),
-                    "A related past record (shared partner) must inject relevant-past lines.");
-                Require(block.Split('\n').Length <= 2,
-                    "At most two relevant-past lines may be injected (§3.2), got: " + block);
-                Require(block.IndexOf(pawnB.LabelShort, StringComparison.OrdinalIgnoreCase) >= 0,
-                    "The marriage line must reference the partner by saved name; got: " + block);
-            }
+            Require(!onEvent.IsSkipped(DiaryEvent.InitiatorRole),
+                "The memory-on romance fixture unexpectedly skipped its initiator POV.");
+            Require(!string.IsNullOrWhiteSpace(block),
+                "A related past record (shared partner) must inject relevant-past lines.");
+            Require(block.Split('\n').Length <= 2,
+                "At most two relevant-past lines may be injected (§3.2), got: " + block);
+            Require(block.IndexOf(pawnB.LabelShort, StringComparison.OrdinalIgnoreCase) >= 0,
+                "The marriage line must reference the partner by saved name; got: " + block);
         }
 
         // ── 4: culture resolution at capture ─────────────────────────────────────────────────────────
@@ -189,6 +242,45 @@ namespace PawnDiary.RimTests
             AddRomancePairEvent(pawnA, pawnB, "ExLover", "breakup");
             Require(KnowledgeFor(pawnA).originCultureDefName == resolved,
                 "The origin culture must never be silently rewritten (§4.1).");
+        }
+
+        /// <summary>
+        /// Replays the component's schema-1 migration on an isolated, uninitialized component so the
+        /// loaded colony is untouched. The inferred marker must become saved state before schema 2 is
+        /// stamped; an already-resolved culture must keep its captured provenance.
+        /// </summary>
+        [Test]
+        public static void SchemaOneMigrationPersistsLegacyCultureProvenance()
+        {
+            FieldInfo diariesField = typeof(DiaryGameComponent).GetField(
+                "diaries", BindingFlags.Instance | BindingFlags.NonPublic);
+            FieldInfo versionField = typeof(DiaryGameComponent).GetField(
+                "knowledgeSchemaVersion", BindingFlags.Instance | BindingFlags.NonPublic);
+            MethodInfo migrate = typeof(DiaryGameComponent).GetMethod(
+                "PostLoadInitKnowledge", BindingFlags.Instance | BindingFlags.NonPublic);
+            Require(diariesField != null && versionField != null && migrate != null,
+                "Knowledge migration reflection handles changed.");
+
+            PawnDiaryRecord unresolved = new PawnDiaryRecord { pawnId = "legacy-unresolved" };
+            PawnKnowledgeState unresolvedState = unresolved.EnsureKnowledgeState();
+            PawnDiaryRecord resolved = new PawnDiaryRecord { pawnId = "legacy-resolved" };
+            PawnKnowledgeState resolvedState = resolved.EnsureKnowledgeState();
+            resolvedState.originCultureDefName = "Rustican";
+            resolvedState.originCultureSource = KnowledgeTokens.CultureSourceCaptured;
+
+            DiaryGameComponent isolated = (DiaryGameComponent)
+                FormatterServices.GetUninitializedObject(typeof(DiaryGameComponent));
+            diariesField.SetValue(isolated, new List<PawnDiaryRecord> { unresolved, resolved });
+            versionField.SetValue(isolated, 1);
+            migrate.Invoke(isolated, null);
+
+            Require(unresolvedState.originCultureSource == KnowledgeTokens.CultureSourceInferred,
+                "A schema-1 unresolved origin must gain durable inferred provenance.");
+            Require(resolvedState.originCultureDefName == "Rustican"
+                    && resolvedState.originCultureSource == KnowledgeTokens.CultureSourceCaptured,
+                "Migration must not rewrite an already-resolved captured culture.");
+            Require((int)versionField.GetValue(isolated) == 2,
+                "Successful legacy migration must stamp knowledge schema 2.");
         }
 
         // ── 5: quiet-hediff channel ──────────────────────────────────────────────────────────────────
@@ -260,7 +352,17 @@ namespace PawnDiary.RimTests
                 + string.Join(",", loss.subjectKeys.ToArray()) + "].");
 
             DiaryEvent installEvent = scope.FireAndRequireEvent(
-                () => patient.health.AddHediff(bionicLeg, leg),
+                () =>
+                {
+                    // Vanilla surgery removes MissingBodyPart before installing the replacement.
+                    // Adding a bionic directly to a missing part logs a real RimWorld error.
+                    Hediff missing = patient.health.hediffSet.GetFirstHediffOfDef(missingPart);
+                    if (missing != null)
+                    {
+                        patient.health.RemoveHediff(missing);
+                    }
+                    patient.health.AddHediff(bionicLeg, leg);
+                },
                 bionicLeg.defName,
                 patient,
                 null);
@@ -297,14 +399,13 @@ namespace PawnDiary.RimTests
 
             DiaryEvent demotion = AddProgressionSoloEvent(pawnA, "RoyalTitleDemoted",
                 "progression=RoyalTitleDemoted; progression_kind=royal_title; label=title; previous_value=Knight; new_value=none");
-            if (!demotion.IsSkipped(DiaryEvent.InitiatorRole))
-            {
-                string slot = demotion.MemoryContextForRole(DiaryEvent.InitiatorRole);
-                Require(!string.IsNullOrWhiteSpace(slot)
-                        && slot.IndexOf(gained.dateLabel, StringComparison.Ordinal) >= 0,
-                    "The demotion must recall the investiture via the shared 'title' key; slot: '"
-                    + slot + "'.");
-            }
+            Require(!demotion.IsSkipped(DiaryEvent.InitiatorRole),
+                "The title-demotion fixture unexpectedly skipped its initiator POV.");
+            string slot = demotion.MemoryContextForRole(DiaryEvent.InitiatorRole);
+            Require(!string.IsNullOrWhiteSpace(slot)
+                    && slot.IndexOf(gained.dateLabel, StringComparison.Ordinal) >= 0,
+                "The demotion must recall the investiture via the shared 'title' key; slot: '"
+                + slot + "'.");
         }
 
         // ── 8: death fan-out through a real Pawn.Kill ────────────────────────────────────────────────
@@ -336,11 +437,10 @@ namespace PawnDiary.RimTests
 
             RegisterDeadPawnCleanup(victim);
             DamageInfo dinfo = new DamageInfo(DamageDefOf.Cut, 9999f, 999f, -1f, killer);
-            scope.FireAndRequireEvent(
-                () => victim.Kill(dinfo),
-                DeathFallbackSignal.DeathFallbackDefName,
-                victim,
-                null);
+            // Ordinary combat deaths usually produce a vanilla death Tale; only condition/need deaths
+            // without such a Tale use PawnDiary_DeathFallback. This fixture is about the independent
+            // knowledge fan-out, so requiring the fallback page would assert the wrong production route.
+            victim.Kill(dinfo);
 
             Require(CountKind(killerState, "death.killed") == killedBefore + 1,
                 "The pawn instigator must remember the kill.");
@@ -371,13 +471,19 @@ namespace PawnDiary.RimTests
         public static void ConversionReplacesAdoptedCultureAndRecords()
         {
             PawnKnowledgeState state = KnowledgeFor(pawnA);
+            state.originCultureDefName = string.Empty;
+            state.originCultureSource = string.Empty;
             int before = CountKind(state, "status.ideo.converted");
 
-            scope.Component.CaptureIdeoConversionKnowledge(pawnA, "Old Way", "The Flame", "Corunan");
+            scope.Component.CaptureIdeoConversionKnowledge(
+                pawnA, "Old Way", "The Flame", "Corunan", "Rustican");
+            Require(state.originCultureDefName == "Rustican",
+                "Conversion must resolve origin from the pre-mutation culture, not the adopted one.");
             Require(state.adoptedCultureDefName == "Corunan",
                 "The first conversion must set the adopted culture.");
 
-            scope.Component.CaptureIdeoConversionKnowledge(pawnA, "The Flame", "New Dawn", "Kriminul");
+            scope.Component.CaptureIdeoConversionKnowledge(
+                pawnA, "The Flame", "New Dawn", "Kriminul", "Corunan");
             Require(state.adoptedCultureDefName == "Kriminul",
                 "A second conversion must REPLACE the adopted culture, got '"
                 + state.adoptedCultureDefName + "'.");
@@ -464,23 +570,21 @@ namespace PawnDiary.RimTests
             DiaryEvent titled = AddProgressionSoloEvent(writer, "RoyalTitleGained",
                 "progression=RoyalTitleGained; progression_kind=royal_title; label=title; new_value=Knight");
             string empireClause = EmpireClauseFor(state);
-            if (empireClause.Length == 0)
-            {
-                Log.Message("[PawnDiary RimTest knowledge] no culture profile resolved; skipping.");
-                return;
-            }
+            Require(empireClause.Length > 0,
+                "The generated colonist must resolve a shipped culture profile for this fixture.");
 
+            scope.Component.QueueSolo(titled, DiaryEvent.InitiatorRole);
             string themedPrompt = scope.CapturedPrompt(titled, DiaryEvent.InitiatorRole);
             Require(themedPrompt.IndexOf(empireClause, StringComparison.Ordinal) >= 0,
                 "The themed prompt must carry the culture clause '" + empireClause + "'.");
 
             DiaryEvent chat = AddPairEvent(writer, pawnB, "Chitchat");
-            if (!chat.IsSkipped(DiaryEvent.InitiatorRole))
-            {
-                string chatPrompt = scope.CapturedPrompt(chat, DiaryEvent.InitiatorRole);
-                Require(chatPrompt.IndexOf(empireClause, StringComparison.Ordinal) < 0,
-                    "An ordinary chat prompt must not carry the empire clause.");
-            }
+            Require(!chat.IsSkipped(DiaryEvent.InitiatorRole),
+                "The ordinary-chat negative-control fixture unexpectedly skipped its initiator POV.");
+            scope.Component.QueuePair(chat);
+            string chatPrompt = scope.CapturedPrompt(chat, DiaryEvent.InitiatorRole);
+            Require(chatPrompt.IndexOf(empireClause, StringComparison.Ordinal) < 0,
+                "An ordinary chat prompt must not carry the empire clause.");
         }
 
         /// <summary>The empire-topic clause of the writer's resolved (or fallback) profile.</summary>

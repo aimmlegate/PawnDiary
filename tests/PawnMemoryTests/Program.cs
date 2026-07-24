@@ -31,7 +31,9 @@ namespace PawnMemoryTests
             TestClassifierPositiveCatalog();
             TestClassifierNegativeCatalog();
             TestClassifierOwnersAndParticipants();
+            TestClassifierBirthChildIdentity();
             TestClassifierContextGatesAndSubjects();
+            TestIdentityPrefilter();
             TestClassifierDedupDeterminism();
             TestClassifierFirstMatchOrder();
             TestLineRendererTemplatesAndFallback();
@@ -48,6 +50,7 @@ namespace PawnMemoryTests
             TestCultureResolutionPaths();
             TestCultureLegacyInferenceAndStability();
             TestCultureConversionReplacement();
+            TestFamilyRelationDirection();
             TestAnnotationTopicDetectionPerField();
             TestAnnotationCapsAndPriority();
             TestAnnotationOriginAdoptedRendering();
@@ -114,6 +117,19 @@ namespace PawnMemoryTests
                         {
                             contextKey = (string)row.Element("contextKey") ?? string.Empty,
                             prefix = (string)row.Element("prefix") ?? string.Empty
+                        });
+                    }
+                }
+
+                XElement participantKeys = def.Element("participantKeys");
+                if (participantKeys != null)
+                {
+                    foreach (XElement row in participantKeys.Elements("li"))
+                    {
+                        rule.participantKeyRules.Add(new KnowledgeParticipantKeyRule
+                        {
+                            contextKey = (string)row.Element("contextKey") ?? string.Empty,
+                            nameContextKey = (string)row.Element("nameContextKey") ?? string.Empty
                         });
                     }
                 }
@@ -344,6 +360,38 @@ namespace PawnMemoryTests
             AssertEqual("owners.blank", 0, drafts.Count);
         }
 
+        private static void TestClassifierBirthChildIdentity()
+        {
+            KnowledgeCaptureSignal first = EventSignal(
+                "BiotechFamilyBirth",
+                "biotech_birth=true; child_id=Pawn_Child1; child_name=Mira",
+                "P1",
+                "P2",
+                tick: 4000);
+            List<ImportantMemoryDraft> drafts = Classify(first);
+            AssertEqual("birthIdentity.ownerCount", 2, drafts.Count);
+            for (int i = 0; i < drafts.Count; i++)
+            {
+                AssertContains(
+                    "birthIdentity.subject." + i,
+                    drafts[i].record.subjectKeys,
+                    "pawn:Pawn_Child1");
+                KnowledgeParticipant child = drafts[i].record.participants.First(
+                    participant => participant.pawnId == "Pawn_Child1");
+                AssertEqual("birthIdentity.name." + i, "Mira", child.name);
+            }
+
+            ImportantMemoryDraft second = Classify(EventSignal(
+                "BiotechFamilyBirth",
+                "biotech_birth=true; child_id=Pawn_Child2; child_name=Niko",
+                "P1",
+                "P2",
+                tick: 4000))[0];
+            AssertTrue(
+                "birthIdentity.twinsDistinct",
+                drafts[0].record.dedupKey != second.record.dedupKey);
+        }
+
         private static void TestClassifierContextGatesAndSubjects()
         {
             // requireContext "key=value" gates: the install row extracts subject and fact rows.
@@ -371,6 +419,18 @@ namespace PawnMemoryTests
             drafts = Classify(EventSignal("RoyalTitleGained",
                 "progression=RoyalTitleGained; new_value=Knight"));
             AssertContains("gates.title.constant", drafts[0].record.subjectKeys, "title");
+        }
+
+        private static void TestIdentityPrefilter()
+        {
+            AssertTrue("prefilter.quiet.hit", ImportantEventClassifier.MayMatchIdentity(
+                KnowledgeTokens.SignalHediffQuiet, "LuciferiumAddiction", shippedRules));
+            AssertTrue("prefilter.quiet.miss", !ImportantEventClassifier.MayMatchIdentity(
+                KnowledgeTokens.SignalHediffQuiet, "Cut", shippedRules));
+            AssertTrue("prefilter.removed.suffix", ImportantEventClassifier.MayMatchIdentity(
+                KnowledgeTokens.SignalHediffRemoved, "BionicArm_addedpart", shippedRules));
+            AssertTrue("prefilter.event.contextOnly", ImportantEventClassifier.MayMatchIdentity(
+                KnowledgeTokens.SignalEvent, "UnlistedBodyDef", shippedRules));
         }
 
         private static void TestClassifierDedupDeterminism()
@@ -701,6 +761,16 @@ namespace PawnMemoryTests
             AssertEqual("culture.ideo", "Corunan", state.originCultureDefName);
             AssertEqual("culture.ideo.source", KnowledgeTokens.CultureSourceCaptured, state.originSource);
 
+            // An origin-boundary snapshot outranks mutable post-arrival/current ideology state.
+            state = CultureResolver.ResolveOrigin(new CultureResolutionInput
+            {
+                capturedOriginCultureDefName = "Rustican",
+                ideologyActive = true,
+                ideoCultureDefName = "Corunan",
+                factionCultureDefNames = new List<string> { "Astropolitan" }
+            });
+            AssertEqual("culture.capturedBoundary", "Rustican", state.originCultureDefName);
+
             // Without Ideology ⇒ the faction's FIRST allowed culture (deterministic).
             state = CultureResolver.ResolveOrigin(new CultureResolutionInput
             {
@@ -752,6 +822,36 @@ namespace PawnMemoryTests
             AssertEqual("convert.effective", "Astropolitan", CultureResolver.EffectiveCulture(state));
             AssertEqual("convert.effectiveOrigin", "Rustican",
                 CultureResolver.EffectiveCulture(new CultureStateSnapshot { originCultureDefName = "Rustican" }));
+        }
+
+        private static void TestFamilyRelationDirection()
+        {
+            AssertEqual(
+                "relation.parentToChild",
+                "Child",
+                KnowledgeRelationPolicy.VictimRelationDefName("Parent"));
+            AssertEqual(
+                "relation.childToParent",
+                "Parent",
+                KnowledgeRelationPolicy.VictimRelationDefName("Child"));
+            AssertEqual(
+                "relation.spouseStable",
+                "Spouse",
+                KnowledgeRelationPolicy.VictimRelationDefName("Spouse"));
+            AssertEqual(
+                "relation.deathFanoutAllowsLastSlot",
+                true,
+                KnowledgeRelationPolicy.CanEmitDeathFamilyOwner(
+                    KnowledgeRelationPolicy.MaximumDeathFamilyOwners - 1));
+            AssertEqual(
+                "relation.deathFanoutStopsAtCap",
+                false,
+                KnowledgeRelationPolicy.CanEmitDeathFamilyOwner(
+                    KnowledgeRelationPolicy.MaximumDeathFamilyOwners));
+            AssertEqual(
+                "relation.deathFanoutRejectsMalformedCount",
+                false,
+                KnowledgeRelationPolicy.CanEmitDeathFamilyOwner(-1));
         }
 
         // ── Inline annotation (§4.3) ─────────────────────────────────────────────────────────────────
@@ -816,6 +916,20 @@ namespace PawnMemoryTests
             AssertEqual("detect.key.count", 1, plan.entries.Count);
             AssertEqual("detect.key.field", 1, plan.entries[0].fieldIndex);
             AssertEqual("detect.key.text", "(culture: strange weather)", plan.entries[0].text);
+
+            // The template may display one GameContext key while another stable key in the same
+            // selected event context owns the topic.
+            AnnotationFieldView structured = Field(5, "GameContext", "ritual complete", "label");
+            structured.structuredContext = "label=ritual complete; psychic_ritual=stormcalling";
+            plan = CultureAnnotationPlanner.Plan(
+                new List<AnnotationFieldView> { structured },
+                "SomeRitual", topics, profile, null, policy);
+            AssertEqual("detect.structuredKey.topic", "psychic", plan.matchedTopics[0]);
+            structured.structuredContext = "label=implant; part_tier=archotech";
+            plan = CultureAnnotationPlanner.Plan(
+                new List<AnnotationFieldView> { structured },
+                "X", topics, profile, null, policy);
+            AssertEqual("detect.structuredPair.topic", "archotech", plan.matchedTopics[0]);
 
             // Context-PAIR trigger: key AND exact stable value must both match.
             plan = CultureAnnotationPlanner.Plan(
@@ -993,13 +1107,15 @@ namespace PawnMemoryTests
             // missing row would silently ship English into Russian prompts.
             string ruPath = Path.Combine(RepoRoot(), "Languages", "Russian (Русский)",
                 "DefInjected", "PawnDiary.DiaryImportantEventDef", "DiaryImportantEventDefs.xml");
-            string ru = File.ReadAllText(ruPath);
+            XDocument ru = XDocument.Load(ruPath);
             foreach (ImportantEventRule rule in shippedRules)
             {
+                XElement label = ru.Root.Element(rule.defName + ".label");
+                XElement line = ru.Root.Element(rule.defName + ".lineTemplate");
                 AssertTrue("catalog.ru." + rule.defName + ".label",
-                    ru.Contains("<" + rule.defName + ".label>"));
+                    label != null && !string.IsNullOrWhiteSpace(label.Value));
                 AssertTrue("catalog.ru." + rule.defName + ".line",
-                    ru.Contains("<" + rule.defName + ".lineTemplate>"));
+                    line != null && !string.IsNullOrWhiteSpace(line.Value));
             }
         }
 

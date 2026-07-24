@@ -31,6 +31,13 @@ namespace PawnDiary
                 ? KnowledgeTokens.CultureSourceInferred
                 : KnowledgeTokens.CultureSourceCaptured;
 
+            if (!string.IsNullOrWhiteSpace(input.capturedOriginCultureDefName))
+            {
+                state.originCultureDefName = input.capturedOriginCultureDefName.Trim();
+                state.originSource = source;
+                return state;
+            }
+
             if (input.ideologyActive && !string.IsNullOrWhiteSpace(input.ideoCultureDefName))
             {
                 state.originCultureDefName = input.ideoCultureDefName.Trim();

@@ -71,6 +71,15 @@ namespace PawnDiary.Ingestion
 
         public override int DedupWindowTicks => dedupWindowTicks;
 
+        public override void CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
+        {
+            if (payload != null)
+            {
+                sink.CaptureEventKnowledgeWithoutPage(
+                    pawn, null, payload.DefName, gameContext, payload.Tick);
+            }
+        }
+
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)
         {
             if (decision != CaptureDecision.GenerateSolo)

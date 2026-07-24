@@ -264,6 +264,25 @@ namespace PawnDiary
             {
                 instruction = AppendBodyPartInstructionCues(instruction, data);
             }
+            string gameContext = BuildHediffKnowledgeContext(hediff, data);
+
+            DiaryEvent diaryEvent = AddSoloEvent(
+                pawn, null, data.DefName, data.Label, text, instruction, gameContext,
+                beliefEvidence, preparedBelief);
+            QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
+        }
+
+        /// <summary>
+        /// Projects the stable health/body facts used by important-event classification. Shared by
+        /// the page path and no-page knowledge path so their structured identities cannot drift.
+        /// </summary>
+        internal string BuildHediffKnowledgeContext(Hediff hediff, HediffEventData data)
+        {
+            if (data == null)
+            {
+                return string.Empty;
+            }
+
             string gameContext = HediffEventData.BuildGameContext(
                 data.DefName, data.Label, data.SourceToken, data.GroupKey, data.ModeToken,
                 data.SeverityF2, data.StageString, data.CleanedStageLabel, data.CleanedBodyPartLabel,
@@ -274,12 +293,8 @@ namespace PawnDiary
             {
                 gameContext += "; part_def=" + hediff.Part.def.defName;
             }
-            gameContext = AppendBiotechFamilyContext(hediff, gameContext);
 
-            DiaryEvent diaryEvent = AddSoloEvent(
-                pawn, null, data.DefName, data.Label, text, instruction, gameContext,
-                beliefEvidence, preparedBelief);
-            QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
+            return AppendBiotechFamilyContext(hediff, gameContext);
         }
 
         private static string ImmediateHediffText(HediffSignalPolicy policy, HediffSignalSource source,
@@ -359,13 +374,13 @@ namespace PawnDiary
             }
 
             group = InteractionGroups.ClassifyHediff(HediffClassifierKey(hediff));
-            if (group == null || !group.HasHediffPolicy || !PawnDiaryMod.Settings.IsGroupEnabled(group.defName))
+            if (group == null || !group.HasHediffPolicy)
             {
                 return false;
             }
 
             policy = group.hediff;
-            return policy != null && policy.enabled;
+            return policy != null;
         }
 
         internal static bool IsMissingPartHediff(Hediff hediff)

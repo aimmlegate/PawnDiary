@@ -55,6 +55,21 @@ namespace PawnDiary.Ingestion
 
         public override int DedupWindowTicks => DiaryBiotechPolicy.Snapshot().birthCorrelationExpiryTicks;
 
+        public override void CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
+        {
+            if (snapshot == null || payload == null || writerPawns.Count == 0)
+            {
+                return;
+            }
+
+            sink.CaptureEventKnowledgeWithoutPage(
+                writerPawns[0],
+                writerPawns.Count > 1 ? writerPawns[1] : null,
+                FamilyBirthEventData.DefName,
+                BirthContextFormatter.Build(snapshot, writers),
+                snapshot.birthTick);
+        }
+
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)
         {
             if (sink == null || snapshot == null || writers?.writers == null

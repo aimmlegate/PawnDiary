@@ -20,6 +20,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using PawnDiary.Ingestion;
 using RimTestRedux;
 using RimWorld;
 using RimWorld.Planet;
@@ -255,12 +256,36 @@ namespace PawnDiary.RimTests
                 throw new AssertionException("RimWorld failed to generate an isolated test pawn.");
             }
 
-            // Record the pawn's diary while it is still factionless, set the generation flag, then make it
-            // an eligible colonist. When generation is disabled, any SetFaction/arrival hook is unable to
-            // reach an API. When it is enabled, prompt-test mode (required for that path) keeps the arrival
-            // hook prompt-only, so it still cannot send a request.
+            // A factionless pawn is not diary-eligible, so SetDiaryGenerationEnabled cannot create its
+            // record yet. Temporarily disable only the arrival PAGE while SetFaction crosses the real
+            // production hook; page-independent knowledge capture may still create the record, but no
+            // setup prompt can be queued or sent. Restore the player's exact override immediately.
+            DiaryInteractionGroupDef arrivalGroup =
+                InteractionGroups.ByKey(ArrivalSignal.ArrivalGroupKey);
+            if (arrivalGroup == null)
+            {
+                throw new AssertionException(
+                    "The shipped arrival group is missing; refusing to cross SetFaction in a test fixture.");
+            }
+            bool priorArrivalSetting = false;
+            bool hadArrivalOverride = PawnDiaryMod.Settings.groupEnabled.TryGetValue(
+                arrivalGroup.defName, out priorArrivalSetting);
+            PawnDiaryMod.Settings.groupEnabled[arrivalGroup.defName] = false;
+
+            try
+            {
+                pawn.SetFaction(PlayerFaction);
+            }
+            finally
+            {
+                if (hadArrivalOverride)
+                    PawnDiaryMod.Settings.groupEnabled[arrivalGroup.defName] = priorArrivalSetting;
+                else
+                    PawnDiaryMod.Settings.groupEnabled.Remove(arrivalGroup.defName);
+            }
+
+            // The pawn is eligible now, so this call cannot silently fail as the old pre-SetFaction call did.
             Component.SetDiaryGenerationEnabled(pawn, generationEnabled);
-            pawn.SetFaction(PlayerFaction);
             if (!DiaryGameComponent.IsDiaryEligible(pawn))
             {
                 throw new AssertionException(
@@ -270,11 +295,8 @@ namespace PawnDiary.RimTests
             testPawns.Add(pawn);
             testPawnIds.Add(pawn.GetUniqueLoadID());
 
-            // The SetFaction above runs through the live game, so PawnSetFactionPatch.Postfix fires and
-            // records a neutral "how I joined" arrival page for this pawn during setup. That is correct in
-            // real play, but it is not state a test asked for: it pre-satisfies the arrival dedup (so a
-            // test's own ArrivalSignal is dropped as a duplicate) and shows up as an extra ungenerated page
-            // in any per-pawn count. Scrub it so every freshly created test pawn starts from a blank diary.
+            // SetFaction still runs the arrival identity/knowledge boundary. Scrub that setup-only state so
+            // every fixture starts blank and an arrival test can submit its own same-frame signal.
             ScrubSetupArrivalForPawn(pawn);
             return pawn;
         }
@@ -399,16 +421,33 @@ namespace PawnDiary.RimTests
                 }
             }
 
+            Dictionary<string, PawnDiaryRecord> diariesById =
+                DiariesByIdField?.GetValue(Component) as Dictionary<string, PawnDiaryRecord>;
+            PawnDiaryRecord record = null;
+            diariesById?.TryGetValue(pawnId, out record);
+            bool changed = false;
             if (arrivalEventIds.Count > 0)
             {
                 repository.RemoveEvents(arrivalEventIds);
                 (ArchiveField?.GetValue(Component) as DiaryArchiveRepository)?.RemoveForEventIds(arrivalEventIds);
-
-                Dictionary<string, PawnDiaryRecord> diariesById =
-                    DiariesByIdField?.GetValue(Component) as Dictionary<string, PawnDiaryRecord>;
-                PawnDiaryRecord record = null;
-                diariesById?.TryGetValue(pawnId, out record);
                 record?.eventIds?.RemoveAll(id => arrivalEventIds.Contains(id));
+                changed = true;
+            }
+
+            // MEMORY_SYSTEM_REDESIGN_PLAN makes capture independent from page creation. Therefore a
+            // disabled setup arrival has no DiaryEvent to find above, but it still deposits the correct
+            // status.faction.joined record. It belongs to scaffolding, not the test scenario.
+            PawnKnowledgeState knowledge = record?.KnowledgeStateOrNull();
+            if (knowledge?.records != null
+                && knowledge.records.RemoveAll(row => row != null
+                    && string.Equals(row.eventKind, "status.faction.joined",
+                        StringComparison.OrdinalIgnoreCase)) > 0)
+            {
+                changed = true;
+            }
+
+            if (changed)
+            {
                 DiaryStateVersion.Bump();
             }
 

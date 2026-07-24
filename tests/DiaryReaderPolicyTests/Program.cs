@@ -15,6 +15,7 @@ namespace DiaryReaderPolicyTests
             TestLivingColonistWithZeroPagesIsIncluded();
             TestUnknownNameFallback();
             TestLivingNonColonistIsDeparted();
+            TestOffRosterPlayerPawnIsExcludedWithoutPages();
             TestStablePawnIdTiebreak();
             TestResponsiveWindowGeometry();
 
@@ -77,6 +78,16 @@ namespace DiaryReaderPolicyTests
             Equal("visitor-pages", result.rows[0].pawnId, "paged visitor remains historical");
         }
 
+        private static void TestOffRosterPlayerPawnIsExcludedWithoutPages()
+        {
+            DiaryReaderListResult result = DiaryReaderListPolicy.Order(
+                new[] { Row("former-player-pawn", "Former", true, false, 0) },
+                "Unknown pawn");
+
+            Equal(0, result.rows.Count,
+                "alive player-faction pawn outside the current colonist roster is excluded");
+        }
+
         private static void TestStablePawnIdTiebreak()
         {
             DiaryReaderListResult result = DiaryReaderListPolicy.Order(
@@ -119,7 +130,7 @@ namespace DiaryReaderPolicyTests
             string pawnId,
             string name,
             bool alive,
-            bool isColonist,
+            bool isCurrentColonist,
             int entryCount)
         {
             return new DiaryReaderListRow
@@ -127,7 +138,7 @@ namespace DiaryReaderPolicyTests
                 pawnId = pawnId,
                 name = name,
                 alive = alive,
-                isColonist = isColonist,
+                isCurrentColonist = isCurrentColonist,
                 entryCount = entryCount
             };
         }

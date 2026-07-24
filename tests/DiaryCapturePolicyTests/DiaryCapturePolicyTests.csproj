@@ -77,6 +77,7 @@
     <Compile Include="..\..\Source\Pipeline\DiaryEventDomainClassifier.cs" Link="Pipeline\DiaryEventDomainClassifier.cs" />
     <Compile Include="..\..\Source\Capture\Catalog\DiaryEventSpec.cs" Link="Capture\Catalog\DiaryEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Catalog\DiaryEventCatalog.cs" Link="Capture\Catalog\DiaryEventCatalog.cs" />
+    <Compile Include="..\..\Source\Capture\Catalog\DiaryKnowledgeCapturePolicy.cs" Link="Capture\Catalog\DiaryKnowledgeCapturePolicy.cs" />
     <Compile Include="..\..\Source\Capture\Specs\ThoughtEventSpec.cs" Link="Capture\Specs\ThoughtEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\InspirationEventSpec.cs" Link="Capture\Specs\InspirationEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\MoodEventSpec.cs" Link="Capture\Specs\MoodEventSpec.cs" />

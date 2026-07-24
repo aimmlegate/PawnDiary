@@ -27,6 +27,7 @@ namespace PawnDiary
             TestLexicalCommonConfidenceAndAmbiguityRejection();
             TestLexicalFuzzyAndUnknownTopicBehavior();
             TestAutomaticCoverageDiagnosticsAndPhase5Fixtures();
+            TestPhase5CProjectionRestraintAndEventRepetition();
             TestBodyOrganMealRaidAndRitualScenarios();
             TestExactFoodEvidenceClient();
             TestLiveDoctrineIntersectionRedundancyAndCaps();
@@ -472,6 +473,11 @@ namespace PawnDiary
             BeliefAutomaticCoverageDiagnostics.Add(bounded, lexicalResult.automaticCoverage, 2);
             AssertTrue("automatic diagnostic aggregation is bounded",
                 bounded.observedCount == 2 && bounded.droppedCount == 1);
+            BeliefAutomaticCoverageDiagnostics.Add(bounded, below.automaticCoverage, 2);
+            BeliefAutomaticCoverageDiagnostics.Add(bounded, ambiguous.automaticCoverage, 2);
+            BeliefAutomaticCoverageDiagnostics.Add(bounded, noCandidate.automaticCoverage, 2);
+            AssertEqual("dropped diagnostic count remains accurate beyond the sample cap",
+                4, bounded.droppedCount);
 
             BeliefAutomaticCoverageAggregate hostile = new BeliefAutomaticCoverageAggregate();
             BeliefAutomaticCoverageDiagnostics.Add(hostile, new BeliefAutomaticCoverageDiagnostic
@@ -584,6 +590,159 @@ namespace PawnDiary
                 issueDefName, resolved.stances[0].precept.issue.defName);
             AssertEqual(label + " ordinary metadata requires no exact correction", 0,
                 BeliefPolicySnapshot.CreateDefault().correlationOverrides.Count);
+        }
+
+        private static void TestPhase5CProjectionRestraintAndEventRepetition()
+        {
+            BeliefPolicySnapshot policy = BeliefPolicySnapshot.CreateDefault();
+            BeliefPreceptFact target = Precept(
+                "Phase5C_Correlated", "Phase5C_Issue",
+                "event-bound worldview", 1);
+            target.description =
+                "Only the detached exact correlation makes this doctrine relevant.";
+            target.correlations.Add(Correlation(
+                BeliefCorrelationKindTokens.Thought,
+                "Phase5C_Thought",
+                BeliefValenceTokens.Neutral));
+            target.associatedMemeDefNames.Add("Phase5C_Meme");
+            BeliefPreceptFact unrelated = Precept(
+                "Phase5C_Unrelated", "Phase5C_UnrelatedIssue",
+                "unrelated distant doctrine", 3);
+            BeliefSnapshot snapshot = Snapshot(target, unrelated);
+            snapshot.memes.Add(new BeliefMemeFact
+            {
+                defName = "Phase5C_Meme",
+                label = "Phase 5C supporting meme",
+                description = "A bounded supporting fact."
+            });
+            snapshot.structure = new BeliefMemeFact
+            {
+                defName = "Phase5C_Structure",
+                label = "Phase 5C structure",
+                description = "A bounded structure fact.",
+                isStructure = true
+            };
+            snapshot.deities.Add(new BeliefDeityFact
+            {
+                name = "Phase 5C deity",
+                relatedMemeDefName = "Phase5C_Meme"
+            });
+
+            BeliefEventEvidence evidence = Evidence(true);
+            evidence.thoughtDefNames.Add("Phase5C_Thought");
+            evidence.projection = new BeliefContextProjection
+            {
+                maximumSelectedStances = 1,
+                maximumSupportingMemes = 1,
+                maximumContextCharacters = 520,
+                includeRole = true,
+                includeCertainty = true,
+                includeStructure = true,
+                includeDeity = true,
+                includeNarrativeInterpretation = true
+            };
+            BeliefStanceResolution resolved = Resolve(
+                snapshot, evidence, policy, seed: 31);
+            AssertSelected("Phase 5C exact correlation selects only the supported doctrine",
+                resolved, target.defName);
+            AssertCoverage("Phase 5C exact correlation diagnostic", resolved,
+                BeliefAutomaticCoverageOutcomeTokens.ExactCorrelation,
+                BeliefRelevanceSourceTokens.ThoughtCorrelation,
+                BeliefRelevanceTierTokens.ExactCorrelation);
+
+            string full = BeliefContextFormatter.Format(
+                resolved, NarrativeDetailLevelTokens.Full, policy);
+            string balanced = BeliefContextFormatter.Format(
+                resolved, NarrativeDetailLevelTokens.Balanced, policy);
+            string compact = BeliefContextFormatter.Format(
+                resolved, NarrativeDetailLevelTokens.Compact, policy);
+            AssertContains("Phase 5C Full keeps supported structure", full,
+                "structure: Phase 5C structure");
+            AssertContains("Phase 5C Full keeps a related deity", full,
+                "deity: Phase 5C deity");
+            AssertContains("Phase 5C Balanced keeps supported structure", balanced,
+                "structure: Phase 5C structure");
+            AssertTrue("Phase 5C Compact omits structure under the shipped budget",
+                !compact.Contains("structure:"));
+            AssertContains("Phase 5C Compact may retain the mechanically related deity",
+                compact, "deity: Phase 5C deity");
+            AssertTrue("Phase 5C bounded blocks exclude unrelated doctrine",
+                full.IndexOf(unrelated.displayLabel, StringComparison.Ordinal) < 0
+                && balanced.IndexOf(unrelated.displayLabel, StringComparison.Ordinal) < 0
+                && compact.IndexOf(unrelated.displayLabel, StringComparison.Ordinal) < 0);
+            AssertTrue("Phase 5C event projection enforces its context cap",
+                full.Length <= evidence.projection.maximumContextCharacters);
+
+            BeliefEventEvidence suppressed = Evidence(true);
+            suppressed.thoughtDefNames.Add("Phase5C_Thought");
+            suppressed.projection = new BeliefContextProjection
+            {
+                maximumSelectedStances = 1,
+                maximumSupportingMemes = 1,
+                maximumContextCharacters = 520,
+                includeRole = true,
+                includeCertainty = true,
+                includeStructure = false,
+                includeDeity = false,
+                includeNarrativeInterpretation = true
+            };
+            string suppressedText = BeliefContextFormatter.Format(
+                Resolve(snapshot, suppressed, policy, seed: 31),
+                NarrativeDetailLevelTokens.Full,
+                policy);
+            AssertTrue("Phase 5C source projection suppresses structure and deity together",
+                !suppressedText.Contains("structure:")
+                && !suppressedText.Contains("deity:"));
+
+            BeliefPreceptFact repeatFirst = Precept(
+                "Phase5C_RepeatFirst", "Phase5C_RepeatIssueFirst",
+                "first exact repeated stance", 1);
+            BeliefPreceptFact repeatSecond = Precept(
+                "Phase5C_RepeatSecond", "Phase5C_RepeatIssueSecond",
+                "second exact repeated stance", 1);
+            repeatFirst.correlations.Add(Correlation(
+                BeliefCorrelationKindTokens.Thought,
+                "Phase5C_SharedRepeatThought",
+                BeliefValenceTokens.Neutral));
+            repeatSecond.correlations.Add(Correlation(
+                BeliefCorrelationKindTokens.Thought,
+                "Phase5C_SharedRepeatThought",
+                BeliefValenceTokens.Neutral));
+            BeliefSnapshot repetitionSnapshot = Snapshot(
+                repeatFirst, repeatSecond);
+            BeliefEventEvidence repetitionEvidence = Evidence(true);
+            repetitionEvidence.thoughtDefNames.Add(
+                "Phase5C_SharedRepeatThought");
+            repetitionEvidence.projection = new BeliefContextProjection
+            {
+                maximumSelectedStances = 1,
+                maximumSupportingMemes = 0,
+                maximumContextCharacters = 240,
+                includeStructure = false,
+                includeDeity = false
+            };
+            bool changed = false;
+            for (int seed = 1; seed <= 256 && !changed; seed++)
+            {
+                BeliefStanceResolution initial = Resolve(
+                    repetitionSnapshot, repetitionEvidence, policy,
+                    seed: seed);
+                BeliefStanceResolution later = Resolve(
+                    repetitionSnapshot,
+                    repetitionEvidence,
+                    policy,
+                    seed: seed,
+                    recent: new List<string>
+                    {
+                        initial.stances[0].precept.defName
+                    });
+                changed = initial.stances[0].precept.defName
+                    != later.stances[0].precept.defName;
+            }
+            AssertTrue("Phase 5C shipped recent-selection penalty changes a later event choice",
+                changed);
+            AssertEqual("Phase 5C exceptional-correction audit remains empty", 0,
+                policy.correlationOverrides.Count);
         }
 
         private static void AssertCoverage(
@@ -2681,6 +2840,17 @@ namespace PawnDiary
             BeliefStanceResolution forced = Resolve(Snapshot(target), forceEvidence, forceBuilder.Build());
             AssertSelected("optional force correction remains live-snapshot intersected", forced, "Correction_Target");
             AssertEqual("force correction key retained", "fixture_force", forced.stances[0].correctionKey);
+            AssertCoverage("force correction has its own automatic-coverage outcome", forced,
+                BeliefAutomaticCoverageOutcomeTokens.ForcedCorrection,
+                BeliefRelevanceSourceTokens.Correction,
+                BeliefRelevanceTierTokens.DirectIdentity);
+            BeliefAutomaticCoverageAggregate correctionAggregate =
+                new BeliefAutomaticCoverageAggregate();
+            BeliefAutomaticCoverageDiagnostics.Add(
+                correctionAggregate, forced.automaticCoverage, 8);
+            AssertEqual("force correction aggregate count", 1,
+                correctionAggregate.OutcomeCount(
+                    BeliefAutomaticCoverageOutcomeTokens.ForcedCorrection));
 
             BeliefPolicyBuilder excludeBuilder = BeliefPolicyBuilder.CreateDefault();
             excludeBuilder.correlationOverrides.Add(new BeliefCorrelationCorrection(

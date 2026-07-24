@@ -48,6 +48,45 @@ namespace PawnDiary.Ingestion
 
         public override int DedupWindowTicks => DiaryBiotechPolicy.Snapshot().growthPendingExpiryTicks;
 
+        public override void CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
+        {
+            if (sink == null || child == null || mutation == null || payload == null)
+            {
+                return;
+            }
+
+            GrowthWriterShape shape = GrowthWriterPolicy.Decide(
+                payload.ChildId,
+                payload.ChildEligible,
+                payload.SupporterEligible ? mutation.supporter : null);
+            if (shape == GrowthWriterShape.Drop
+                || (shape == GrowthWriterShape.Pair && supporter == null)
+                || (shape == GrowthWriterShape.SupporterSolo && supporter == null))
+            {
+                return;
+            }
+
+            BiotechPolicySnapshot policy = DiaryBiotechPolicy.Snapshot();
+            string context = GrowthMomentContextFormatter.Build(
+                mutation,
+                OpportunityDescription(policy, mutation.opportunityBand),
+                ObservationDescription(policy, mutation.supporter?.observationBand),
+                shape == GrowthWriterShape.SupporterSolo
+                    ? mutation.supporter?.roleToken ?? string.Empty
+                    : BiotechFamilyRoleTokens.Child,
+                shape == GrowthWriterShape.Pair
+                    ? mutation.supporter?.roleToken ?? string.Empty
+                    : string.Empty,
+                newInterestDescription: policy.newInterestDescription,
+                deepenedInterestDescription: policy.deepenedInterestDescription);
+            Pawn writer = shape == GrowthWriterShape.SupporterSolo ? supporter : child;
+            Pawn partner = shape == GrowthWriterShape.ChildSolo
+                ? supporter
+                : shape == GrowthWriterShape.SupporterSolo ? child : supporter;
+            sink.CaptureEventKnowledgeWithoutPage(
+                writer, partner, GrowthMomentEventData.DefName, context, payload.Tick);
+        }
+
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)
         {
             if ((decision != CaptureDecision.GenerateSolo && decision != CaptureDecision.GeneratePair)

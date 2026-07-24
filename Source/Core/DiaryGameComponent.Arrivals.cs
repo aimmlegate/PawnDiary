@@ -43,6 +43,16 @@ namespace PawnDiary
                 List<Pawn> colonists = map.mapPawns.FreeColonists;
                 for (int i = 0; i < colonists.Count; i++)
                 {
+                    Pawn colonist = colonists[i];
+                    if (colonist != null
+                        && HasArrivalBoundaryFor(colonist.GetUniqueLoadID()))
+                    {
+                        // A load-time repair may re-arm because one later pawn is missing. Do not
+                        // resubmit every earlier colonist: knowledge-only arrivals deliberately have
+                        // no page, and their tick-based memory key would otherwise change each load.
+                        continue;
+                    }
+
                     // Isolate each colonist. This scan gates ALL diary capture on a new game
                     // (EnsureStartingArrivalsBefore retries it before every signal, and ticking waits
                     // on it too), so a pawn whose context build or capture throws must cost only their
@@ -50,12 +60,12 @@ namespace PawnDiary
                     // silenced the whole diary while erroring on every event.
                     try
                     {
-                        DiaryEvents.Submit(new ArrivalSignal(colonists[i], BuildStartingArrivalContext(colonists[i])));
+                        DiaryEvents.Submit(new ArrivalSignal(colonist, BuildStartingArrivalContext(colonist)));
                     }
                     catch (Exception e)
                     {
                         Log.Warning("[Pawn Diary] Skipped the starting-arrival entry for "
-                            + (colonists[i]?.LabelShort ?? "an unnamed colonist") + ": " + e);
+                            + (colonist?.LabelShort ?? "an unnamed colonist") + ": " + e);
                     }
                 }
             }
@@ -65,7 +75,8 @@ namespace PawnDiary
 
         /// <summary>
         /// Load-time check for the arrival bootstrap: true when any free map colonist eligible for a
-        /// diary has no arrival page yet. Mirrors TryRecordStartingColonistArrivals' iteration
+        /// diary has neither an arrival page nor its durable arrival knowledge yet. Mirrors
+        /// TryRecordStartingColonistArrivals' iteration
         /// (maps -> FreeColonists) so a re-armed scan can always reach every pawn this reports. Saves
         /// in this state exist: the pre-2026-07-08 wedge aborted the founding scan mid-loop (pawns
         /// after the broken one never got pages), the mod can be added to an existing colony, and a
@@ -90,7 +101,9 @@ namespace PawnDiary
                 for (int i = 0; i < colonists.Count; i++)
                 {
                     Pawn pawn = colonists[i];
-                    if (pawn != null && IsDiaryEligible(pawn) && !HasArrivalEventFor(pawn.GetUniqueLoadID()))
+                    if (pawn != null
+                        && IsDiaryEligible(pawn)
+                        && !HasArrivalBoundaryFor(pawn.GetUniqueLoadID()))
                     {
                         return true;
                     }
@@ -125,6 +138,28 @@ namespace PawnDiary
             // Old arrival refs compact into the archive before their hot ref is dropped; a compacted
             // arrival still means "this pawn already has an arrival page".
             return archive.FirstArrivalTickForPawn(pawnId).HasValue;
+        }
+
+        /// <summary>
+        /// True when a disabled arrival page still produced its durable faction-joined knowledge.
+        /// This remains separately inspectable for diagnostics and loaded tests, while the capture
+        /// boundary below treats either a page or this marker as proof the one-time arrival ran.
+        /// </summary>
+        internal bool HasArrivalKnowledgeFor(string pawnId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId))
+            {
+                return false;
+            }
+
+            PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
+            PawnKnowledgeState state = diary?.KnowledgeStateOrNull();
+            return state != null && state.HasEventKind(KnowledgeTokens.EventKindFactionJoined);
+        }
+
+        internal bool HasArrivalBoundaryFor(string pawnId)
+        {
+            return HasArrivalEventFor(pawnId) || HasArrivalKnowledgeFor(pawnId);
         }
 
         private static string BuildStartingArrivalContext(Pawn pawn)

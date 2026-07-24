@@ -213,6 +213,68 @@ namespace PawnDiary.RimTests
                 "A valid arrival submitted after a bad one did not record its arrival description.");
         }
 
+        /// <summary>
+        /// A deliberately disabled arrival page still leaves the stable knowledge marker that the
+        /// load bootstrap uses as proof it already processed this pawn. Without that marker check,
+        /// every reload would submit the pawn again at a new tick and mint another durable memory.
+        /// </summary>
+        [Test]
+        public static void DisabledArrivalPageLeavesReloadIdempotencyMarker()
+        {
+            string pawnId = arrivalPawn.GetUniqueLoadID();
+            DiaryInteractionGroupDef arrivalGroup =
+                InteractionGroups.ByKey(ArrivalSignal.ArrivalGroupKey);
+            PawnDiaryRimTestScope.Require(
+                arrivalGroup != null,
+                "The shipped arrival interaction group could not be resolved.");
+
+            bool priorValue;
+            bool hadOverride = PawnDiaryMod.Settings.groupEnabled.TryGetValue(
+                arrivalGroup.defName,
+                out priorValue);
+            try
+            {
+                PawnDiaryMod.Settings.groupEnabled[arrivalGroup.defName] = false;
+                scope.RequireNoNewEvent(
+                    () => DiaryEvents.Submit(
+                        new ArrivalSignal(arrivalPawn, BuildStartingArrivalContext(arrivalPawn))));
+
+                PawnDiaryRimTestScope.Require(
+                    !scope.Component.HasArrivalEventFor(pawnId),
+                    "A disabled arrival group unexpectedly created a diary page.");
+                PawnDiaryRimTestScope.Require(
+                    scope.Component.HasArrivalKnowledgeFor(pawnId),
+                    "A disabled arrival page did not leave its durable bootstrap marker.");
+                PawnKnowledgeState state = scope.Component.KnowledgeStateForPawnId(pawnId);
+                PawnDiaryRimTestScope.Require(
+                    state != null
+                        && state.HasEventKind(KnowledgeTokens.EventKindFactionJoined),
+                    "The arrival bootstrap marker was not stored as faction-joined knowledge.");
+                PawnDiaryRimTestScope.Require(
+                    scope.Component.HasArrivalBoundaryFor(pawnId),
+                    "The knowledge-only arrival did not close the shared one-time arrival boundary.");
+
+                int recordCount = state.records.Count;
+                scope.RequireNoNewEvent(
+                    () => DiaryEvents.Submit(
+                        new ArrivalSignal(arrivalPawn, "arrival_source=duplicate_probe")));
+                PawnDiaryRimTestScope.Require(
+                    state.records.Count == recordCount,
+                    "A repeated arrival submission duplicated knowledge after the disabled-page boundary.");
+            }
+            finally
+            {
+                if (hadOverride)
+                {
+                    PawnDiaryMod.Settings.groupEnabled[arrivalGroup.defName] = priorValue;
+                }
+                else
+                {
+                    PawnDiaryMod.Settings.groupEnabled.Remove(arrivalGroup.defName);
+                }
+            }
+        }
+
         // ----- helpers -------------------------------------------------------------------------------
 
         /// <summary>

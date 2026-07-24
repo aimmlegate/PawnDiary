@@ -28,13 +28,24 @@ namespace PawnDiary.Ingestion
 
         private readonly Pawn pawn;
         private readonly string arrivalContext;
+        private readonly string capturedOriginCultureDefName;
         private readonly DiaryInteractionGroupDef arrivalGroup;
         private readonly ArrivalEventData payload;
 
         public ArrivalSignal(Pawn pawn, string arrivalContext)
+            : this(pawn, arrivalContext, string.Empty)
+        {
+        }
+
+        /// <summary>
+        /// Builds an arrival with the origin culture captured before SetFaction mutated the pawn.
+        /// The two-argument overload remains for starting-colonist scans and binary compatibility.
+        /// </summary>
+        public ArrivalSignal(Pawn pawn, string arrivalContext, string capturedOriginCultureDefName)
         {
             this.pawn = pawn;
             this.arrivalContext = arrivalContext;
+            this.capturedOriginCultureDefName = capturedOriginCultureDefName ?? string.Empty;
 
             if (!DiaryGameComponent.GamePlaying || pawn == null || PawnDiaryMod.Settings == null)
             {
@@ -51,10 +62,18 @@ namespace PawnDiary.Ingestion
                 PawnLabel = DiaryLineCleaner.CleanLine(pawn.LabelShortCap),
                 PawnLoadId = pawnId,
                 ArrivalContext = arrivalContext,
-                // Needs the live event store; read it through the current component. Matches the old
-                // RecordColonistArrival capture order (drops if an arrival page already exists).
-                HasExistingArrival = DiaryGameComponent.Instance?.HasArrivalEventFor(pawnId) ?? false,
+                // Needs the component's persisted page/knowledge state, so the pure payload receives
+                // the result rather than reaching into live game state itself. Arrival is a one-time
+                // boundary. A disabled page still leaves durable faction-joined
+                // knowledge, and that marker must reject later submissions exactly like an existing
+                // hot or archived page.
+                HasExistingArrival = DiaryGameComponent.Instance?.HasArrivalBoundaryFor(pawnId) ?? false,
             };
+
+            // Origin is a one-time identity fact, not page policy. Capture it before dispatch can
+            // reject a disabled arrival page.
+            DiaryGameComponent.Instance?.CaptureOriginCulture(
+                pawn, this.capturedOriginCultureDefName);
 
             // The arrival route is the sole owner of creepjoiner acceptance continuity. State is
             // observed before catalog/settings gates so disabling pages cannot manufacture a later
@@ -72,6 +91,22 @@ namespace PawnDiary.Ingestion
                 userEnabled: arrivalGroup == null || PawnDiaryMod.Settings.IsGroupEnabled(arrivalGroup.defName),
                 signalEnabled: true,
                 ambientSignalEnabled: true);
+        }
+
+        public override void CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
+        {
+            if (payload == null)
+            {
+                return;
+            }
+
+            sink.CaptureEventKnowledgeWithoutPage(
+                pawn,
+                null,
+                ArrivalDefName,
+                ArrivalEventData.BuildGameContext(
+                    payload.PawnLabel, payload.PawnLoadId, payload.ArrivalContext),
+                payload.Tick);
         }
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)

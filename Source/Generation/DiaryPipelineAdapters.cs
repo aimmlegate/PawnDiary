@@ -179,6 +179,44 @@ namespace PawnDiary
             return snapshot;
         }
 
+        /// <summary>
+        /// Cheap projection check used at event registration. It resolves only the selected template
+        /// and scans that template's field rows; it deliberately avoids building the full 15-template
+        /// prompt policy, culture profiles, belief policy, prompt overrides, and tone selection.
+        /// </summary>
+        public static bool ProjectsMemoryContext(DiaryEvent diaryEvent)
+        {
+            DiaryEventPayload payload = ToPayload(diaryEvent);
+            string classifierKey = ClassifierKeyForPayload(payload);
+            DiaryInteractionGroupDef group = GroupForPayload(payload, classifierKey);
+            DiaryPolicySnapshot minimalPolicy = new DiaryPolicySnapshot
+            {
+                group = new DiaryGroupPolicy
+                {
+                    important = payload?.display == null || payload.display.important,
+                    combat = GroupCombat(payload, group)
+                }
+            };
+            string templateKey = DiaryPromptPlanner.TemplateKeyFor(new DiaryPromptRequest
+            {
+                payload = payload,
+                policy = minimalPolicy
+            });
+            List<DiaryPromptFieldDef> fields = DiaryPromptTemplates.FieldsFor(templateKey);
+            for (int i = 0; i < fields.Count; i++)
+            {
+                DiaryPromptFieldDef field = fields[i];
+                if (field != null && field.enabled
+                    && string.Equals(
+                        field.source, MemoryContextPrompt.Source, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static string ResolveEventPromptField(IList<string> keys,
             Func<DiaryEventPromptDef, string> field, PromptOverrideDictionary overrides)
         {

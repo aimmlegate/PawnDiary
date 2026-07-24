@@ -71,6 +71,16 @@ namespace PawnDiary
                 return;
             }
 
+            // Mod settings can be opened from RimWorld's main menu, where the active root is
+            // UIRoot_Entry rather than UIRoot_Play. Find.MainTabsRoot assumes the play root and
+            // throws an InvalidCastException there, which aborts Dialog_ModSettings.PreClose and
+            // leaves the settings window impossible to close. There is no inspect tab to dismiss
+            // outside a running game, so stop before touching that play-only accessor.
+            if (Current.ProgramState != ProgramState.Playing || Current.Game == null)
+            {
+                return;
+            }
+
             MainTabWindow_Inspect inspectWindow =
                 MainButtonDefOf.Inspect?.TabWindow as MainTabWindow_Inspect;
             if (inspectWindow != null

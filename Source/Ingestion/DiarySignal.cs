@@ -58,6 +58,16 @@ namespace PawnDiary.Ingestion
         public virtual bool ForceRecord => false;
 
         /// <summary>
+        /// Captures durable important-event knowledge when the catalog drops only the diary page
+        /// (for example because the player disabled that page group). The default is a no-op because
+        /// most signals are deliberately outside the closed important-event allowlist. Overrides must
+        /// only project already-captured facts; they must never create a DiaryEvent or queue generation.
+        /// </summary>
+        public virtual void CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
+        {
+        }
+
+        /// <summary>
         /// Dedup key for this event (raw, source-prefixed, e.g. <c>"thought|pawnId|defName"</c>).
         /// Return <see cref="string.Empty"/> for sources that do not dedup. The dispatcher uses this
         /// against the shared recent-events store. Usually delegates to a pure <c>Payload.DedupKey()</c>.

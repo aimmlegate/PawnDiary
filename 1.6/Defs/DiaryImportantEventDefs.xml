@@ -108,6 +108,12 @@
       <li>BabyBorn</li>
     </matchDefNames>
     <owners>both</owners>
+    <subjectKeys>
+      <li><contextKey>child_id</contextKey><prefix>pawn</prefix></li>
+    </subjectKeys>
+    <participantKeys>
+      <li><contextKey>child_id</contextKey><nameContextKey>child_name</nameContextKey></li>
+    </participantKeys>
     <factKeys><li>child_id</li></factKeys>
     <lineTemplate>welcomed a newborn child</lineTemplate>
   </PawnDiary.DiaryImportantEventDef>

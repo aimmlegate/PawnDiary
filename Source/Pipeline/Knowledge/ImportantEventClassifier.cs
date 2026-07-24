@@ -76,6 +76,65 @@ namespace PawnDiary
             return best;
         }
 
+        /// <summary>
+        /// Cheap identity-only prefilter for hot listeners. False proves that no enabled rule in the
+        /// channel can match this defName; true means context may still accept or reject it later.
+        /// </summary>
+        public static bool MayMatchIdentity(
+            string signalToken, string defName, List<ImportantEventRule> rules)
+        {
+            if (string.IsNullOrWhiteSpace(signalToken) || rules == null)
+            {
+                return false;
+            }
+
+            string candidate = defName ?? string.Empty;
+            for (int i = 0; i < rules.Count; i++)
+            {
+                ImportantEventRule rule = rules[i];
+                if (rule == null || !rule.enabled
+                    || !string.Equals(
+                        rule.signal, signalToken, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (!HasAnyNameMatcher(rule))
+                {
+                    return true;
+                }
+
+                if (rule.matchDefNames != null)
+                {
+                    for (int j = 0; j < rule.matchDefNames.Count; j++)
+                    {
+                        if (!string.IsNullOrWhiteSpace(rule.matchDefNames[j])
+                            && string.Equals(candidate, rule.matchDefNames[j].Trim(),
+                                StringComparison.OrdinalIgnoreCase))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                if (rule.matchSuffixes != null)
+                {
+                    for (int j = 0; j < rule.matchSuffixes.Count; j++)
+                    {
+                        string suffix = rule.matchSuffixes[j];
+                        if (!string.IsNullOrWhiteSpace(suffix)
+                            && candidate.EndsWith(
+                                suffix.Trim(), StringComparison.OrdinalIgnoreCase))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
         private static int Compare(ImportantEventRule left, ImportantEventRule right)
         {
             int order = left.order.CompareTo(right.order);
@@ -232,6 +291,7 @@ namespace PawnDiary
             };
 
             AddCounterpartParticipant(record, signal, ownerId);
+            AddContextParticipants(record, signal, rule, ownerId);
             if (signal.extraParticipants != null)
             {
                 for (int i = 0; i < signal.extraParticipants.Count; i++)
@@ -322,6 +382,42 @@ namespace PawnDiary
             };
         }
 
+        private static void AddContextParticipants(ImportantMemoryRecordSnapshot record,
+            KnowledgeCaptureSignal signal, ImportantEventRule rule, string ownerId)
+        {
+            if (rule.participantKeyRules == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < rule.participantKeyRules.Count; i++)
+            {
+                KnowledgeParticipantKeyRule participantRule = rule.participantKeyRules[i];
+                if (participantRule == null || string.IsNullOrWhiteSpace(participantRule.contextKey))
+                {
+                    continue;
+                }
+
+                string pawnId = DiaryContextFields.Value(
+                    signal.gameContext, participantRule.contextKey);
+                if (KnowledgeTokens.IsSentinelValue(pawnId)
+                    || string.Equals(pawnId, ownerId, StringComparison.OrdinalIgnoreCase)
+                    || HasParticipant(record.participants, pawnId))
+                {
+                    continue;
+                }
+
+                string name = string.IsNullOrWhiteSpace(participantRule.nameContextKey)
+                    ? string.Empty
+                    : DiaryContextFields.Value(signal.gameContext, participantRule.nameContextKey);
+                record.participants.Add(new KnowledgeParticipant
+                {
+                    pawnId = pawnId.Trim(),
+                    name = KnowledgeTokens.IsSentinelValue(name) ? string.Empty : name.Trim()
+                });
+            }
+        }
+
         /// <summary>The other diary-event POV becomes the record's first participant.</summary>
         private static void AddCounterpartParticipant(
             ImportantMemoryRecordSnapshot record, KnowledgeCaptureSignal signal, string ownerId)
@@ -363,6 +459,20 @@ namespace PawnDiary
             for (int i = 0; i < values.Count; i++)
             {
                 if (string.Equals(values[i], target, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasParticipant(List<KnowledgeParticipant> participants, string pawnId)
+        {
+            for (int i = 0; i < participants.Count; i++)
+            {
+                if (string.Equals(
+                    participants[i]?.pawnId, pawnId, StringComparison.OrdinalIgnoreCase))
                 {
                     return true;
                 }

@@ -67,6 +67,17 @@ namespace PawnDiary
         public static bool PermitOwnerHookReady { get; private set; }
         public static bool PermitUseHookReady { get; private set; }
 
+        /// <summary>
+        /// Typed failure classification kept separate from the developer-facing detail text. Status
+        /// reporting must not change merely because somebody improves the wording of a warning.
+        /// </summary>
+        private enum PatchFailureKind
+        {
+            None,
+            MissingTarget,
+            PatchException
+        }
+
         public static void TryRegister(Harmony harmony)
         {
             HooksReady = false;
@@ -208,11 +219,14 @@ namespace PawnDiary
             string prefixName,
             string postfixName,
             string finalizerName,
-            out string failureDetail)
+            out string failureDetail,
+            out PatchFailureKind failureKind)
         {
             failureDetail = string.Empty;
+            failureKind = PatchFailureKind.None;
             if (target == null)
             {
+                failureKind = PatchFailureKind.MissingTarget;
                 failureDetail = "target method was not found";
                 return false;
             }
@@ -232,6 +246,7 @@ namespace PawnDiary
                 // The owning registration row emits one bounded, feature-specific warning below.
                 // Logging here as well would produce duplicate errors for the same missing seam and
                 // could repeat if another compatibility layer retries registration.
+                failureKind = PatchFailureKind.PatchException;
                 failureDetail = DescribePatchFailure(ex);
                 return false;
             }
@@ -247,8 +262,10 @@ namespace PawnDiary
             string finalizerName = null)
         {
             string failureDetail;
+            PatchFailureKind failureKind;
             bool ready = Patch(
-                harmony, target, prefixName, postfixName, finalizerName, out failureDetail);
+                harmony, target, prefixName, postfixName, finalizerName,
+                out failureDetail, out failureKind);
             if (!ready && failures != null)
                 failures.Add(targetLabel + " [" + failureDetail + "]");
             DiaryPatchManifest.Report(
@@ -256,7 +273,7 @@ namespace PawnDiary
                 targetLabel,
                 ready
                     ? DiaryPatchManifest.HookStatus.Applied
-                    : failureDetail == "target method was not found"
+                    : failureKind == PatchFailureKind.MissingTarget
                         ? DiaryPatchManifest.HookStatus.Degraded
                         : DiaryPatchManifest.HookStatus.Failed,
                 ready ? null : failureDetail);
@@ -273,15 +290,17 @@ namespace PawnDiary
             string finalizerName = null)
         {
             string failureDetail;
+            PatchFailureKind failureKind;
             bool ready = Patch(
-                harmony, target, prefixName, postfixName, finalizerName, out failureDetail);
+                harmony, target, prefixName, postfixName, finalizerName,
+                out failureDetail, out failureKind);
             WarnMissingOnce(ready, targetLabel, fallback, failureDetail);
             DiaryPatchManifest.Report(
                 "Royalty",
                 targetLabel,
                 ready
                     ? DiaryPatchManifest.HookStatus.Applied
-                    : failureDetail == "target method was not found"
+                    : failureKind == PatchFailureKind.MissingTarget
                         ? DiaryPatchManifest.HookStatus.Degraded
                         : DiaryPatchManifest.HookStatus.Failed,
                 ready ? null : failureDetail + "; " + fallback);
@@ -325,7 +344,9 @@ namespace PawnDiary
         {
             // A known target plus a deliberately absent Harmony instance enters the exact exception
             // branch. No patch can be installed, and the caller can assert that diagnostics survive.
-            return Patch(null, target, null, null, null, out failureDetail);
+            PatchFailureKind ignoredFailureKind;
+            return Patch(
+                null, target, null, null, null, out failureDetail, out ignoredFailureKind);
         }
 
         private static void PermitGetPostfix(Pawn_RoyaltyTracker __instance, FactionPermit __result)

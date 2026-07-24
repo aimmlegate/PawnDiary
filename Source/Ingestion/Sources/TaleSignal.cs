@@ -188,6 +188,19 @@ namespace PawnDiary.Ingestion
 
         public override int DedupWindowTicks => DiaryTuning.Current.taleDedupTicks;
 
+        public override void CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
+        {
+            if (payload != null && tale != null && taleDef != null)
+            {
+                sink.CaptureEventKnowledgeWithoutPage(
+                    firstPawn,
+                    secondPawn,
+                    payload.DefName,
+                    BuildKnowledgeGameContext(),
+                    payload.Tick);
+            }
+        }
+
         public override string EventTypeDedupKey(DiaryEventData payload, CaptureDecision decision)
         {
             return routesDeathDescription
@@ -214,37 +227,7 @@ namespace PawnDiary.Ingestion
             string instruction = personaMilestone != null
                 ? InteractionGroups.InstructionForPersonaWeapon(personaMilestoneGroup)
                 : InteractionGroups.InstructionForTale(taleDef);
-            string gameContext;
-            if (personaMilestone != null)
-            {
-                gameContext = TaleEventData.BuildGameContext(
-                    PersonaMilestoneContextFormatter.FirstKillDefName,
-                    label,
-                    tale.GetType().Name,
-                    attachedDef?.defName,
-                    attachedDef == null
-                        ? string.Empty
-                        : DiaryLineCleaner.CleanLine(attachedDef.LabelCap.Resolve()));
-                gameContext = PersonaMilestoneContextFormatter.FormatFirstKill(
-                    gameContext,
-                    personaWeapon,
-                    personaBond,
-                    personaMilestone.selectedTraits,
-                    taleDef.defName,
-                    sourceLabel,
-                    personaKillerRole,
-                    personaVictimRole,
-                    DiaryRoyaltyPolicy.Snapshot());
-            }
-            else
-            {
-                gameContext = BuildTaleGameContext(tale, taleDef, label, attachedDef);
-            }
-            if (routesDeathDescription)
-            {
-                gameContext = AppendDeathDescriptionContext(gameContext, deathVictim, firstPawn, secondPawn);
-            }
-
+            string gameContext = BuildKnowledgeGameContext();
             if (plan.Shape == TaleEventData.TaleEmitShape.Batch)
             {
                 if (batchGroup != null)
@@ -326,6 +309,46 @@ namespace PawnDiary.Ingestion
                 PersonaKillThoughtCorrelation.Claim(personaKillScope, payload.Tick);
                 ApplyPersonaNarrativeEvidence(sink, soloEvent);
             }
+        }
+
+        private string BuildKnowledgeGameContext()
+        {
+            string sourceLabel = CleanTaleLabel(taleDef);
+            string label = personaMilestone != null
+                ? "PawnDiary.Event.Persona.FirstKill.Label".Translate().Resolve()
+                : sourceLabel;
+            Def attachedDef = AttachedDefFor(tale);
+            string gameContext;
+            if (personaMilestone != null)
+            {
+                gameContext = TaleEventData.BuildGameContext(
+                    PersonaMilestoneContextFormatter.FirstKillDefName,
+                    label,
+                    tale.GetType().Name,
+                    attachedDef?.defName,
+                    attachedDef == null
+                        ? string.Empty
+                        : DiaryLineCleaner.CleanLine(attachedDef.LabelCap.Resolve()));
+                gameContext = PersonaMilestoneContextFormatter.FormatFirstKill(
+                    gameContext,
+                    personaWeapon,
+                    personaBond,
+                    personaMilestone.selectedTraits,
+                    taleDef.defName,
+                    sourceLabel,
+                    personaKillerRole,
+                    personaVictimRole,
+                    DiaryRoyaltyPolicy.Snapshot());
+            }
+            else
+            {
+                gameContext = BuildTaleGameContext(tale, taleDef, label, attachedDef);
+            }
+            if (routesDeathDescription)
+            {
+                gameContext = AppendDeathDescriptionContext(gameContext, deathVictim, firstPawn, secondPawn);
+            }
+            return gameContext;
         }
 
         // ── Tale-specific helpers moved verbatim from the old DiaryGameComponent.Tales.cs ──

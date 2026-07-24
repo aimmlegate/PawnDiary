@@ -11,7 +11,6 @@
          (AGENTS.md / SKILL.md rule): every file linked here lives under the bridge's Source/Pure/. -->
     <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\ContextFormat.cs" Link="ContextFormat.cs" />
     <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\ColonyEventsFormat.cs" Link="ColonyEventsFormat.cs" />
-    <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\SharedMemorySelection.cs" Link="SharedMemorySelection.cs" />
     <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\ConversationAssembly.cs" Link="ConversationAssembly.cs" />
     <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\ConversationContext.cs" Link="ConversationContext.cs" />
     <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\UnicodeText.cs" Link="UnicodeText.cs" />

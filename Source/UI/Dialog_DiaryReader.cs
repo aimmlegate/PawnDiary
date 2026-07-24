@@ -13,7 +13,6 @@ namespace PawnDiary
     /// <summary>
     /// Standalone reader for all pawn diaries in the current game.
     /// </summary>
-    [StaticConstructorOnStartup]
     internal sealed class Dialog_DiaryReader : Window
     {
         private const float DirectoryHeaderHeight = 30f;
@@ -228,7 +227,7 @@ namespace PawnDiary
                 "PawnDiary.Reader.ShowDeadPawns".Translate(),
                 ref showDeadPawns);
             TooltipHandler.TipRegion(toggleRect, "PawnDiary.Reader.ShowDeadPawnsTip".Translate());
-            if (oldShowDead && !showDeadPawns && !selectedSubject.Alive)
+            if (oldShowDead && !showDeadPawns && SelectedSubjectIsDeparted())
             {
                 selectedSubject = default(DiaryReaderSubject);
                 EnsureSelectionVisible();
@@ -279,6 +278,33 @@ namespace PawnDiary
             {
                 Widgets.EndScrollView();
             }
+        }
+
+        /// <summary>
+        /// Returns whether the selected row belongs to the hidden historical partition. Aliveness
+        /// is not enough: a former colonist can still be alive while correctly appearing under
+        /// "Dead and departed".
+        /// </summary>
+        private bool SelectedSubjectIsDeparted()
+        {
+            if (!selectedSubject.IsValid)
+            {
+                return false;
+            }
+
+            IReadOnlyList<DiaryReaderPawnRow> rows = directory.Rows;
+            for (int i = 0; i < rows.Count; i++)
+            {
+                if (string.Equals(
+                    rows[i].Subject.PawnId,
+                    selectedSubject.PawnId,
+                    StringComparison.Ordinal))
+                {
+                    return rows[i].Departed;
+                }
+            }
+
+            return false;
         }
 
         private static void DrawSectionHeader(Rect rect, string label)

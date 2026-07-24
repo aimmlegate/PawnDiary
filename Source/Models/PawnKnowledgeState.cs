@@ -250,6 +250,29 @@ namespace PawnDiary
             return false;
         }
 
+        /// <summary>True when any durable record has the supplied stable event-kind token.</summary>
+        public bool HasEventKind(string eventKind)
+        {
+            if (string.IsNullOrWhiteSpace(eventKind) || records == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < records.Count; i++)
+            {
+                if (records[i] != null
+                    && string.Equals(
+                        records[i].eventKind,
+                        eventKind,
+                        System.StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>Pure culture mirror for the resolver/annotation planner.</summary>
         internal CultureStateSnapshot ToCultureSnapshot()
         {

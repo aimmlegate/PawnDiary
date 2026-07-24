@@ -14,7 +14,7 @@ namespace PawnDiary
         public string pawnId;
         public string name;
         public bool alive;
-        public bool isColonist;
+        public bool isCurrentColonist;
         public int entryCount;
     }
 
@@ -58,11 +58,11 @@ namespace PawnDiary
                         pawnId = input.pawnId,
                         name = string.IsNullOrWhiteSpace(input.name) ? fallbackName : input.name.Trim(),
                         alive = input.alive,
-                        isColonist = input.isColonist,
+                        isCurrentColonist = input.isCurrentColonist,
                         entryCount = Math.Max(0, input.entryCount)
                     };
 
-                    if (row.alive && row.isColonist)
+                    if (row.alive && row.isCurrentColonist)
                     {
                         living.Add(row);
                     }

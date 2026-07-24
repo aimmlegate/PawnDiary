@@ -58,7 +58,7 @@
   <PawnDiaryRimTalkBridge.Settings.PairMinGapTicks>Minimum gap per pawn pair (ticks)</PawnDiaryRimTalkBridge.Settings.PairMinGapTicks>
   <PawnDiaryRimTalkBridge.Settings.TranscriptLineCap>Quoted chat lines per entry</PawnDiaryRimTalkBridge.Settings.TranscriptLineCap>
 
-  <!-- Feature 1 (colony situation) + Feature 3 (pair shared memory) toggles and counts. -->
+  <!-- Optional colony-situation context. -->
   <PawnDiaryRimTalkBridge.Settings.InjectColonyContext>Include the colony's situation in chat</PawnDiaryRimTalkBridge.Settings.InjectColonyContext>
   <PawnDiaryRimTalkBridge.Settings.InjectColonyContextDesc>Adds a short, curated line about what the colony is going through right now — a raid, harsh weather, an eerie presence, an open quest — to conversation context. Off by default, as other mods may already feed live events into chat.</PawnDiaryRimTalkBridge.Settings.InjectColonyContextDesc>
   <PawnDiaryRimTalkBridge.Settings.ColonyEventCount>Colony situation lines per chat</PawnDiaryRimTalkBridge.Settings.ColonyEventCount>
@@ -80,11 +80,6 @@
   <PawnDiaryRimTalkBridge.Colony.ThreatLow>there is danger near the colony</PawnDiaryRimTalkBridge.Colony.ThreatLow>
   <PawnDiaryRimTalkBridge.Colony.Anomaly>an unnatural dread hangs over the colony</PawnDiaryRimTalkBridge.Colony.Anomaly>
   <PawnDiaryRimTalkBridge.Colony.Quest>an unresolved matter weighs on everyone: {0}</PawnDiaryRimTalkBridge.Colony.Quest>
-
-  <!-- Feature 3: pair shared-memory block ({{diary_shared}}). Header prose the chat LLM reads; the
-       lines reuse Prompt.MemoryLine above. Sample is shown only in RimTalk's settings preview. -->
-  <PawnDiaryRimTalkBridge.Prompt.SharedMemoriesHeader>shared history between them:</PawnDiaryRimTalkBridge.Prompt.SharedMemoriesHeader>
-  <PawnDiaryRimTalkBridge.Prompt.SharedMemoriesSample>shared history between them:&#10;- The long winter (5th of Aprimay): they weathered the cold snap side by side.</PawnDiaryRimTalkBridge.Prompt.SharedMemoriesSample>
 
   <!-- Tier B persona-led diary voice: the rule Pawn Diary receives as an override. Tier B now supplies
        the pawn's PSYCHOTYPE (outlook) — who they are — while Pawn Diary keeps how they write. The old

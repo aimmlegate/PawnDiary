@@ -16,8 +16,9 @@ namespace PawnDiary
     }
 
     /// <summary>
-    /// Fixed-memory session aggregate. Counts stop at the XML-owned sample limit; no per-event rows or
-    /// arbitrary keys are retained, so long dev sessions cannot grow memory with colony or mod size.
+    /// Fixed-memory session aggregate. Outcome sampling stops at the XML-owned limit; the scalar
+    /// dropped counter continues (saturating only at Int32.MaxValue) so the report still says how much
+    /// activity the sample omitted. No per-event rows or arbitrary keys are retained.
     /// </summary>
     internal sealed class BeliefAutomaticCoverageAggregate
     {
@@ -77,6 +78,7 @@ namespace PawnDiary
         {
             BeliefAutomaticCoverageOutcomeTokens.ExactCorrelation,
             BeliefAutomaticCoverageOutcomeTokens.StructuralCorrelation,
+            BeliefAutomaticCoverageOutcomeTokens.ForcedCorrection,
             BeliefAutomaticCoverageOutcomeTokens.SemanticAlias,
             BeliefAutomaticCoverageOutcomeTokens.GuardedLexical,
             BeliefAutomaticCoverageOutcomeTokens.BelowConfidence,
@@ -201,7 +203,7 @@ namespace PawnDiary
             int cap = Math.Max(1, Math.Min(100000, maximumSamples));
             if (aggregate.observedCount >= cap)
             {
-                if (aggregate.droppedCount < cap) aggregate.droppedCount++;
+                if (aggregate.droppedCount < int.MaxValue) aggregate.droppedCount++;
                 return;
             }
 

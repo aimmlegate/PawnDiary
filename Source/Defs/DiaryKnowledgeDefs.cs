@@ -36,6 +36,10 @@ namespace PawnDiary
         /// <summary>initiator / recipient / both (event channel) or provided (other channels).</summary>
         public string owners = KnowledgeTokens.OwnersBoth;
         public List<DiaryKnowledgeSubjectKeyRow> subjectKeys = new List<DiaryKnowledgeSubjectKeyRow>();
+        /// <summary>Additional pawn identities copied from structured context (for example a newborn
+        /// child who is the subject but not necessarily one of the two adult page writers).</summary>
+        public List<DiaryKnowledgeParticipantKeyRow> participantKeys =
+            new List<DiaryKnowledgeParticipantKeyRow>();
         public List<string> constantSubjectKeys = new List<string>();
         /// <summary>gameContext keys copied into the record's fact rows.</summary>
         public List<string> factKeys = new List<string>();
@@ -115,6 +119,22 @@ namespace PawnDiary
                 }
             }
 
+            if (participantKeys != null)
+            {
+                for (int i = 0; i < participantKeys.Count; i++)
+                {
+                    DiaryKnowledgeParticipantKeyRow row = participantKeys[i];
+                    if (row != null && !string.IsNullOrWhiteSpace(row.contextKey))
+                    {
+                        rule.participantKeyRules.Add(new KnowledgeParticipantKeyRule
+                        {
+                            contextKey = row.contextKey.Trim(),
+                            nameContextKey = (row.nameContextKey ?? string.Empty).Trim()
+                        });
+                    }
+                }
+            }
+
             return rule;
         }
 
@@ -140,6 +160,13 @@ namespace PawnDiary
     {
         public string contextKey;
         public string prefix;
+    }
+
+    /// <summary>One extra participant extraction row: id key plus optional display-name key.</summary>
+    public class DiaryKnowledgeParticipantKeyRow
+    {
+        public string contextKey;
+        public string nameContextKey;
     }
 
     /// <summary>One cultural interpretation topic (§4.2) with structured triggers (§4.3).</summary>

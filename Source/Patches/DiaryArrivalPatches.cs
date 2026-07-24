@@ -52,8 +52,10 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryEvents.Submit(new ArrivalSignal(__instance,
-                    ArrivalContextCache.ConsumeOrBuild(__instance, "set_faction")));
+                ArrivalContextCache.ArrivalContextSnapshot snapshot =
+                    ArrivalContextCache.ConsumeOrBuildSnapshot(__instance, "set_faction");
+                DiaryEvents.Submit(new ArrivalSignal(
+                    __instance, snapshot.context, snapshot.originCultureDefName));
             });
         }
     }

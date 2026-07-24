@@ -148,7 +148,8 @@ namespace PawnDiary
         /// <summary>
         /// Resolves a developer preview from an already-detached snapshot. This exists so the suite
         /// can derive its synthetic evidence and final context from one live capture without retaining
-        /// an Ideo/Precept or evaluating the resolver twice.
+        /// an Ideo/Precept or evaluating the resolver twice. Synthetic previews deliberately do not enter
+        /// the live automatic-coverage aggregate: opening the prompt lab must not rewrite observed rates.
         /// </summary>
         public static BeliefContextBuildResult BuildSyntheticPreview(
             BeliefSnapshot snapshot,
@@ -167,7 +168,9 @@ namespace PawnDiary
 
         /// <summary>
         /// Builds the primary saved context for one standalone belief reflection. The live doctrine is
-        /// read once at rest; pending before/after facts come only from the saved Phase-3 state.
+        /// read once at rest; pending before/after facts come only from the saved Phase-3 state. Phase-5
+        /// automatic coverage measures ordinary event enrichment, not quiet-reflection fallback, so this
+        /// separate resolver mode deliberately does not enter the session aggregate.
         /// </summary>
         public static BeliefContextBuildResult BuildReflection(
             Pawn pawn,

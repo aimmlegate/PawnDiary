@@ -104,9 +104,23 @@ namespace PawnDiary
                     return false;
                 }
             }
-            else if (!TryDecide(payload, signal.BuildContext(), out decision))
+            else
             {
-                return false;
+                CaptureContext context = signal.BuildContext();
+                if (!TryDecide(payload, context, out decision))
+                {
+                    // Page policy and knowledge policy are intentionally independent, but semantic
+                    // rejection still applies to both. Relax only page switches and re-run the pure
+                    // reducer before invoking an allowlisted signal's no-page adapter. This prevents
+                    // duplicate arrivals, invalid mutations, and already-recorded family events from
+                    // becoming knowledge merely because their ordinary page was dropped.
+                    if (DiaryKnowledgeCapturePolicy.ShouldCaptureWithoutPage(payload, context))
+                    {
+                        signal.CaptureKnowledgeWithoutPage(this);
+                    }
+
+                    return false;
+                }
             }
 
             string eventTypeKey = EventTypeDedupKeyFor(signal, payload, decision, key);

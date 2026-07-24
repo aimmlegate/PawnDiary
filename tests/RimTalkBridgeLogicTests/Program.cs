@@ -158,13 +158,6 @@ namespace RimTalkBridgeLogicTests
             TestColony_MaxCharsWholeLineTruncation();
             TestColony_EqualWeightKeepsInsertionOrder();
 
-            // SharedMemorySelection
-            TestPairKey_OrderIndependentAndStable();
-            TestSelect_EdgeCases();
-            TestSelect_RecencyBias();
-            TestSelect_ImportanceBias();
-            TestSelect_DeterministicForSeed();
-
             // ConversationAssembler
             TestAssembly_ReplyChainJoins();
             TestAssembly_UnknownParentStartsNewRoot();
@@ -392,99 +385,6 @@ namespace RimTalkBridgeLogicTests
             string result = ColonyEventsFormat.BuildColonySituation(lines, ColonyHeader, 6, 1000);
             Assert(result == "colony situation:\n- alpha\n- bravo\n- charlie",
                 "equal weights keep insertion order (stable sort); got:\n" + result);
-        }
-
-        // ---- SharedMemorySelection -----------------------------------------------
-
-        private static void TestPairKey_OrderIndependentAndStable()
-        {
-            Assert(SharedMemorySelection.PairKey("bob", "alice") == SharedMemorySelection.PairKey("alice", "bob"),
-                "pair key is order-independent");
-            Assert(SharedMemorySelection.PairKey("alice", "bob") == "alice|bob", "ordered min|max");
-            Assert(SharedMemorySelection.PairKey("alice", "alice") == "alice|alice", "self-pair is stable");
-            Assert(SharedMemorySelection.PairKey(null, "bob") == "|bob", "null id treated as empty, order-independent");
-        }
-
-        private static void TestSelect_EdgeCases()
-        {
-            Assert(SharedMemorySelection.Select(null, 3, 1).Count == 0, "null → empty");
-            Assert(SharedMemorySelection.Select(new List<SharedMemoryCandidate>(), 3, 1).Count == 0, "empty → empty");
-
-            List<SharedMemoryCandidate> three = Candidates(3);
-            Assert(SharedMemorySelection.Select(three, 0, 1).Count == 0, "maxPick 0 → empty");
-            Assert(SharedMemorySelection.Select(three, -1, 1).Count == 0, "maxPick < 0 → empty");
-
-            List<SharedMemoryCandidate> all = SharedMemorySelection.Select(three, 5, 1);
-            Assert(all.Count == 3, "maxPick >= count returns all; got " + all.Count);
-            // Returned newest-first: ticks 3,2,1 (Candidates builds ascending tick by index).
-            Assert(all[0].Tick == 3 && all[1].Tick == 2 && all[2].Tick == 1,
-                "all returned newest-first; got " + all[0].Tick + "," + all[1].Tick + "," + all[2].Tick);
-        }
-
-        private static void TestSelect_RecencyBias()
-        {
-            // Two candidates, equal importance, different age. Across many seeds the newer one (higher
-            // tick) should be picked first far more often than the older one.
-            int newerFirst = 0;
-            int olderFirst = 0;
-            for (int seed = 0; seed < 4000; seed++)
-            {
-                List<SharedMemoryCandidate> c = new List<SharedMemoryCandidate>
-                {
-                    new SharedMemoryCandidate { Title = "old", Tick = 10 },
-                    new SharedMemoryCandidate { Title = "new", Tick = 100 }
-                };
-                List<SharedMemoryCandidate> picked = SharedMemorySelection.Select(c, 1, seed);
-                if (picked[0].Title == "new") newerFirst++; else olderFirst++;
-            }
-            // recencyWeight 1.0 vs 0.5 → newer expected ~2x. Assert a clear margin.
-            Assert(newerFirst > olderFirst * 3 / 2, "newer picked far more often; new=" + newerFirst + " old=" + olderFirst);
-            Assert(olderFirst > 0, "older still occasionally picked (weighted, not deterministic); old=" + olderFirst);
-        }
-
-        private static void TestSelect_ImportanceBias()
-        {
-            // Same age, one has both bonuses (cue + conversation), one is plain. The boosted one should
-            // win the first pick far more often.
-            int boostedFirst = 0;
-            int plainFirst = 0;
-            for (int seed = 0; seed < 4000; seed++)
-            {
-                List<SharedMemoryCandidate> c = new List<SharedMemoryCandidate>
-                {
-                    new SharedMemoryCandidate { Title = "plain", Tick = 50 },
-                    new SharedMemoryCandidate { Title = "boosted", Tick = 50, HasAtmosphereCue = true, IsConversationEntry = true }
-                };
-                List<SharedMemoryCandidate> picked = SharedMemorySelection.Select(c, 1, seed);
-                if (picked[0].Title == "boosted") boostedFirst++; else plainFirst++;
-            }
-            Assert(boostedFirst > plainFirst, "cued+conversation candidate outranks plain of equal age; boosted="
-                + boostedFirst + " plain=" + plainFirst);
-        }
-
-        private static void TestSelect_DeterministicForSeed()
-        {
-            List<SharedMemoryCandidate> a = Candidates(5);
-            List<SharedMemoryCandidate> b = Candidates(5);
-            List<SharedMemoryCandidate> pa = SharedMemorySelection.Select(a, 3, 12345);
-            List<SharedMemoryCandidate> pb = SharedMemorySelection.Select(b, 3, 12345);
-            Assert(pa.Count == 3 && pb.Count == 3, "maxPick respected; got " + pa.Count + "," + pb.Count);
-            bool same = true;
-            for (int i = 0; i < pa.Count; i++)
-            {
-                if (pa[i].Tick != pb[i].Tick) same = false;
-            }
-            Assert(same, "same seed + inputs → identical selection (deterministic)");
-        }
-
-        private static List<SharedMemoryCandidate> Candidates(int n)
-        {
-            List<SharedMemoryCandidate> list = new List<SharedMemoryCandidate>();
-            for (int i = 0; i < n; i++)
-            {
-                list.Add(new SharedMemoryCandidate { Title = "m" + i, Summary = "s" + i, Date = "d" + i, Tick = i + 1 });
-            }
-            return list;
         }
 
         // ---- ConversationAssembler ----------------------------------------------

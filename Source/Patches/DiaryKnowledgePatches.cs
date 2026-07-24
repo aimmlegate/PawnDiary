@@ -61,8 +61,15 @@ namespace PawnDiary
     [HarmonyPatch(typeof(Pawn_IdeoTracker), nameof(Pawn_IdeoTracker.SetIdeo))]
     internal static class IdeoConversionKnowledgePatch
     {
-        /// <summary>Old ideo captured before the swap; null state means "not a conversion".</summary>
-        public static void Prefix(Pawn_IdeoTracker __instance, Ideo ideo, out Ideo __state)
+        internal sealed class ConversionCaptureState
+        {
+            public Ideo previousIdeo;
+            public string previousCultureDefName = string.Empty;
+        }
+
+        /// <summary>Old ideo/culture captured before the swap; null means "not a conversion".</summary>
+        public static void Prefix(Pawn_IdeoTracker __instance, Ideo ideo,
+            out ConversionCaptureState __state)
         {
             __state = null;
             if (!ModsConfig.IdeologyActive || !DiaryGameComponent.GamePlaying)
@@ -73,13 +80,20 @@ namespace PawnDiary
             Ideo previous = __instance?.Ideo;
             if (previous != null && ideo != null && previous != ideo)
             {
-                __state = previous;
+                __state = new ConversionCaptureState
+                {
+                    previousIdeo = previous,
+                    previousCultureDefName = previous.culture?.defName ?? string.Empty
+                };
             }
         }
 
-        public static void Postfix(Pawn_IdeoTracker __instance, Ideo ideo, Ideo __state)
+        public static void Postfix(Pawn_IdeoTracker __instance, Ideo ideo,
+            ConversionCaptureState __state)
         {
-            if (__state == null || ideo == null)
+            // SetIdeo can reject an attempted assignment (notably for babies). Re-read committed
+            // state so an early-returned vanilla call cannot manufacture a conversion record.
+            if (__state?.previousIdeo == null || ideo == null || __instance?.Ideo != ideo)
             {
                 return;
             }
@@ -93,7 +107,11 @@ namespace PawnDiary
                 }
 
                 DiaryGameComponent.Instance?.CaptureIdeoConversionKnowledge(
-                    pawn, __state.name, ideo.name, ideo.culture?.defName);
+                    pawn,
+                    __state.previousIdeo.name,
+                    ideo.name,
+                    ideo.culture?.defName,
+                    __state.previousCultureDefName);
             });
         }
 

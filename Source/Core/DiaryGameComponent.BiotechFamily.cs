@@ -112,7 +112,7 @@ namespace PawnDiary
             BirthWriterSelection writers = BirthOwnershipPolicy.SelectWriters(state.snapshot, policy);
             bool canonicalEnabled = PawnDiaryMod.Settings != null
                 && PawnDiaryMod.Settings.IsBiotechFamilyBirthEnabled(state.snapshot.ritualBirth);
-            if (writers.writers.Count == 0 || !canonicalEnabled)
+            if (writers.writers.Count == 0)
             {
                 return false;
             }
@@ -129,6 +129,21 @@ namespace PawnDiary
                 resolvedWriters,
                 writerPawns,
                 child);
+
+            if (!canonicalEnabled)
+            {
+                // Page settings do not control durable knowledge. Capture the exact canonical birth
+                // immediately (child identity is already frozen), then claim the nested mature
+                // Tale/Thought signals so they cannot create a second, less precise birth record.
+                DispatchBiotechBirth(
+                    state.snapshot,
+                    resolvedWriters,
+                    writerPawns,
+                    child,
+                    eventContext,
+                    enabledAtBirth: false);
+                return true;
+            }
 
             bool writerBecameUnavailable = writerPawns.Count < writers.writers.Count;
             for (int i = 0; i < writerPawns.Count; i++)

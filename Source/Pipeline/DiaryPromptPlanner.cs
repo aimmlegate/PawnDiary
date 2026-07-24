@@ -124,11 +124,17 @@ namespace PawnDiary
 
                 views.Add(new AnnotationFieldView
                 {
+                    // This index intentionally targets assemblerFields, not the compacted views list.
+                    // ApplyCultureAnnotations uses it after the planner returns.
                     index = i,
                     source = field.source ?? string.Empty,
                     contextKey = field.contextKey ?? string.Empty,
                     resolvedValue = PromptAssembler.ResolveFieldValue(
-                        field.source, field.contextKey, values)
+                        field.source, field.contextKey, values),
+                    structuredContext = string.Equals(
+                        field.source, "GameContext", StringComparison.OrdinalIgnoreCase)
+                        ? payload.gameContext ?? string.Empty
+                        : string.Empty
                 });
             }
 

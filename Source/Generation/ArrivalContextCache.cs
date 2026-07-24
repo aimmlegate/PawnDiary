@@ -15,7 +15,14 @@ namespace PawnDiary
     /// </summary>
     internal static class ArrivalContextCache
     {
-        private static readonly Dictionary<string, string> CachedByPawnId = new Dictionary<string, string>();
+        internal sealed class ArrivalContextSnapshot
+        {
+            public string context = string.Empty;
+            public string originCultureDefName = string.Empty;
+        }
+
+        private static readonly Dictionary<string, ArrivalContextSnapshot> CachedByPawnId =
+            new Dictionary<string, ArrivalContextSnapshot>();
         private static readonly Queue<string> CachedPawnOrder = new Queue<string>();
 
         // Arrival facts are consumed in the Pawn.SetFaction postfix right after Capture, so a
@@ -87,7 +94,21 @@ namespace PawnDiary
                 parts.Add("arrival_surroundings=" + surroundings);
             }
 
-            Store(pawnId, string.Join("; ", parts.ToArray()));
+            string originCulture = DlcContext.PawnIdeoCultureDefName(pawn);
+            if (string.IsNullOrWhiteSpace(originCulture))
+            {
+                List<string> factionCultures = DlcContext.FactionAllowedCultureDefNames(pawn.Faction);
+                if (factionCultures.Count > 0)
+                {
+                    originCulture = factionCultures[0];
+                }
+            }
+
+            Store(pawnId, new ArrivalContextSnapshot
+            {
+                context = string.Join("; ", parts.ToArray()),
+                originCultureDefName = originCulture ?? string.Empty
+            });
         }
 
         /// <summary>
@@ -96,13 +117,22 @@ namespace PawnDiary
         /// </summary>
         public static string ConsumeOrBuild(Pawn pawn, string fallbackSource)
         {
+            return ConsumeOrBuildSnapshot(pawn, fallbackSource).context;
+        }
+
+        /// <summary>
+        /// Consumes both the arrival facts and the pre-mutation origin culture. The latter must not
+        /// be reconstructed from the pawn after SetFaction, because that would use the player faction.
+        /// </summary>
+        public static ArrivalContextSnapshot ConsumeOrBuildSnapshot(Pawn pawn, string fallbackSource)
+        {
             if (pawn == null)
             {
-                return string.Empty;
+                return new ArrivalContextSnapshot();
             }
 
             string pawnId = pawn.GetUniqueLoadID();
-            string cached;
+            ArrivalContextSnapshot cached;
             if (!string.IsNullOrWhiteSpace(pawnId) && CachedByPawnId.TryGetValue(pawnId, out cached))
             {
                 CachedByPawnId.Remove(pawnId);
@@ -121,17 +151,20 @@ namespace PawnDiary
                 parts.Add("creepjoiner=true");
             }
 
-            return string.Join("; ", parts.ToArray());
+            return new ArrivalContextSnapshot
+            {
+                context = string.Join("; ", parts.ToArray())
+            };
         }
 
-        private static void Store(string pawnId, string context)
+        private static void Store(string pawnId, ArrivalContextSnapshot snapshot)
         {
             if (!CachedByPawnId.ContainsKey(pawnId))
             {
                 CachedPawnOrder.Enqueue(pawnId);
             }
 
-            CachedByPawnId[pawnId] = context;
+            CachedByPawnId[pawnId] = snapshot ?? new ArrivalContextSnapshot();
             PruneOldestEntries();
             CompactOrderIfNeeded();
         }

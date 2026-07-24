@@ -75,6 +75,22 @@ namespace PawnDiary.Ingestion
 
         public override int DedupWindowTicks => Math.Max(1, policy.separationThresholdTicks);
 
+        public override void CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
+        {
+            if (payload == null || weapon == null || lifecycle == null)
+            {
+                return;
+            }
+
+            sink.CaptureEventKnowledgeWithoutPage(
+                pawn,
+                null,
+                payload.DefName,
+                PersonaWeaponContextFormatter.Format(
+                    weapon, previous, lifecycle, selectedTraits, localizedDuration, policy),
+                payload.Tick);
+        }
+
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)
         {
             if (sink == null || pawn == null || weapon == null || group == null

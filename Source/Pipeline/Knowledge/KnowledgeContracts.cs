@@ -32,6 +32,11 @@ namespace PawnDiary
         public const string SignalDeathInstigator = "deathInstigator";
         public const string SignalDeathFamily = "deathFamily";
 
+        // Event-kind tokens that runtime lifecycle code must recognize. Most event kinds remain
+        // XML-only; arrival is special because the load bootstrap must treat its durable knowledge
+        // record as satisfying the boundary when the player deliberately disabled arrival pages.
+        public const string EventKindFactionJoined = "status.faction.joined";
+
         // Owner tokens for signal=event rows: which POV of the diary event owns the record.
         public const string OwnersInitiator = "initiator";
         public const string OwnersRecipient = "recipient";
@@ -107,6 +112,13 @@ namespace PawnDiary
         public string prefix = string.Empty;
     }
 
+    /// <summary>Rule for extracting an additional pawn participant id/name from gameContext.</summary>
+    internal sealed class KnowledgeParticipantKeyRule
+    {
+        public string contextKey = string.Empty;
+        public string nameContextKey = string.Empty;
+    }
+
     /// <summary>
     /// Pure copy of one DiaryImportantEventDef row: the XML-owned allowlist entry describing one
     /// important event kind (§2.1) — its capture channel, matchers, owners, and rendering.
@@ -131,6 +143,8 @@ namespace PawnDiary
         /// <summary>KnowledgeTokens.Owners* — who owns the record for the event channel.</summary>
         public string owners = KnowledgeTokens.OwnersBoth;
         public List<KnowledgeSubjectKeyRule> subjectKeyRules = new List<KnowledgeSubjectKeyRule>();
+        public List<KnowledgeParticipantKeyRule> participantKeyRules =
+            new List<KnowledgeParticipantKeyRule>();
         /// <summary>Fixed subject keys every record of this kind carries — the "title/status
         /// family" entity keys (§3.1), e.g. "title" on every royal-title row so a demotion can
         /// recall the original investiture.</summary>
@@ -285,6 +299,11 @@ namespace PawnDiary
     /// <summary>Inputs the impure side gathers for one origin-culture resolution (§4.1).</summary>
     internal sealed class CultureResolutionInput
     {
+        /// <summary>
+        /// Culture captured at the pawn's origin boundary before a mutable faction/ideology change.
+        /// When present this outranks all current-state fallbacks.
+        /// </summary>
+        public string capturedOriginCultureDefName = string.Empty;
         public bool ideologyActive;
         /// <summary>pawn.Ideo?.culture defName (blank when absent).</summary>
         public string ideoCultureDefName = string.Empty;
@@ -318,6 +337,12 @@ namespace PawnDiary
         public string source = string.Empty;
         public string contextKey = string.Empty;
         public string resolvedValue = string.Empty;
+        /// <summary>
+        /// Full structured gameContext for a selected GameContext field. This lets XML topic triggers
+        /// inspect stable keys that are present in the event even when the template displays a
+        /// different individual context key.
+        /// </summary>
+        public string structuredContext = string.Empty;
     }
 
     /// <summary>Per-owner record totals for global-cap eviction planning (§2.3).</summary>

@@ -26,13 +26,9 @@ namespace PawnDiary
 {
     public partial class DiaryGameComponent
     {
-        /// <summary>Component-level knowledge schema. 0 = save predates the redesign; the load
-        /// pass marks its pawns for legacy culture inference, then stamps 1 (§6).</summary>
+        /// <summary>Component-level knowledge schema. Versions below 2 used a transient legacy
+        /// culture marker; the load pass durably marks unresolved cultures, then stamps 2 (§6).</summary>
         private int knowledgeSchemaVersion;
-
-        /// <summary>Pawn ids whose diary existed before the redesign's first load — their origin
-        /// cultures resolve as "inferred" rather than "captured" (§4.1). Transient.</summary>
-        private readonly HashSet<string> legacyCulturePawnIds = new HashSet<string>();
 
         /// <summary>Last retrieval report per pawn for the dev tab (§7). Transient, bounded by
         /// the number of diaried pawns.</summary>
@@ -72,28 +68,35 @@ namespace PawnDiary
         /// </summary>
         private void PostLoadInitKnowledge()
         {
-            legacyCulturePawnIds.Clear();
-            if (knowledgeSchemaVersion < 1)
+            if (knowledgeSchemaVersion < 2)
             {
                 if (diaries != null)
                 {
                     for (int i = 0; i < diaries.Count; i++)
                     {
-                        if (diaries[i] != null && !string.IsNullOrWhiteSpace(diaries[i].pawnId))
+                        PawnDiaryRecord diary = diaries[i];
+                        if (diary != null && !string.IsNullOrWhiteSpace(diary.pawnId))
                         {
-                            legacyCulturePawnIds.Add(diaries[i].pawnId);
+                            PawnKnowledgeState state = EnsureKnowledgeState(diary);
+                            if (string.IsNullOrWhiteSpace(state.originCultureDefName)
+                                && string.IsNullOrWhiteSpace(state.originCultureSource))
+                            {
+                                // Persist the provenance marker immediately. A player may save again
+                                // before this pawn emits another event; a transient id set would lose
+                                // the fact that the later resolution is inferred from a legacy save.
+                                state.originCultureSource = KnowledgeTokens.CultureSourceInferred;
+                            }
                         }
                     }
                 }
 
-                knowledgeSchemaVersion = 1;
+                knowledgeSchemaVersion = 2;
             }
         }
 
         private void ResetKnowledgeForNewGame()
         {
-            knowledgeSchemaVersion = 1;
-            legacyCulturePawnIds.Clear();
+            knowledgeSchemaVersion = 2;
             knowledgeReportsByPawnId.Clear();
         }
 
@@ -141,6 +144,75 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Captures one allowlisted event directly from its source snapshot when page policy rejected
+        /// the DiaryEvent. This is intentionally the same classifier/persistence path as
+        /// <see cref="CaptureKnowledgeForEvent"/> but creates missing diary records for eligible POVs,
+        /// because an arrival or first disabled page may be the pawn's first durable state.
+        /// </summary>
+        internal void CaptureEventKnowledgeWithoutPage(Pawn initiator, Pawn recipient, string defName,
+            string gameContext, int tick)
+        {
+            if (string.IsNullOrWhiteSpace(defName))
+            {
+                return;
+            }
+
+            try
+            {
+                PawnDiaryRecord initiatorDiary = EnsureKnowledgeOwner(initiator);
+                PawnDiaryRecord recipientDiary = EnsureKnowledgeOwner(recipient);
+                if (initiatorDiary == null && recipientDiary == null)
+                {
+                    return;
+                }
+
+                EnsureCultureResolved(initiator);
+                EnsureCultureResolved(recipient);
+                KnowledgeCaptureSignal signal = new KnowledgeCaptureSignal
+                {
+                    signal = KnowledgeTokens.SignalEvent,
+                    defName = defName,
+                    tick = Math.Max(0, tick),
+                    dateLabel = KnowledgeDateLabelAt(initiator ?? recipient, tick),
+                    gameContext = gameContext ?? string.Empty,
+                    initiatorPawnId = initiatorDiary?.pawnId ?? string.Empty,
+                    initiatorName = initiator == null
+                        ? string.Empty
+                        : DiaryLineCleaner.CleanLine(initiator.LabelShortCap),
+                    recipientPawnId = recipientDiary?.pawnId ?? string.Empty,
+                    recipientName = recipient == null
+                        ? string.Empty
+                        : DiaryLineCleaner.CleanLine(recipient.LabelShortCap)
+                };
+                PersistDrafts(ImportantEventClassifier.Classify(
+                    signal, DiaryKnowledgePolicy.ImportantEventRules(), DiaryKnowledgePolicy.Snapshot()));
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[Pawn Diary] No-page knowledge capture failed for "
+                    + defName + ": " + e,
+                    ("PawnDiary.Knowledge.NoPage." + defName).GetHashCode());
+            }
+        }
+
+        private PawnDiaryRecord EnsureKnowledgeOwner(Pawn pawn)
+        {
+            return IsDiaryEligible(pawn) ? FindDiary(pawn, true) : null;
+        }
+
+        /// <summary>
+        /// Resolves origin culture at the arrival boundary even when the arrival page is disabled.
+        /// A captured pre-SetFaction value wins; starting pawns use the ordinary current-state fallback.
+        /// </summary>
+        internal void CaptureOriginCulture(Pawn pawn, string capturedOriginCultureDefName)
+        {
+            if (EnsureKnowledgeOwner(pawn) != null)
+            {
+                EnsureCultureResolved(pawn, capturedOriginCultureDefName);
+            }
+        }
+
         // ── Capture: dedicated channels (quiet hediffs, roles, conversion, death fan-out) ────────────
 
         /// <summary>
@@ -159,7 +231,22 @@ namespace PawnDiary
 
             try
             {
-                PawnDiaryRecord diary = FindDiary(pawn, false);
+                // AddHediff is a combat-hot hook. Reject the overwhelming majority of wounds and
+                // temporary conditions by XML-derived identity before allocating context strings,
+                // resolving dates, or snapshotting the full policy.
+                string signalDefName = removed && addedPartOrImplant
+                    ? hediffDefName + "_" + BodyPartEventPolicy.KindAddedPart
+                    : hediffDefName;
+                string signalToken = removed
+                    ? KnowledgeTokens.SignalHediffRemoved
+                    : KnowledgeTokens.SignalHediffQuiet;
+                if (!ImportantEventClassifier.MayMatchIdentity(
+                    signalToken, signalDefName, DiaryKnowledgePolicy.ImportantEventRules()))
+                {
+                    return;
+                }
+
+                PawnDiaryRecord diary = EnsureKnowledgeOwner(pawn);
                 if (diary == null)
                 {
                     return;
@@ -167,16 +254,13 @@ namespace PawnDiary
 
                 // The removal channel reuses the event channel's "<def>_addedpart" suffix naming
                 // so XML rows can match structurally without enumerating every implant defName.
-                string signalDefName = removed && addedPartOrImplant
-                    ? hediffDefName + "_" + BodyPartEventPolicy.KindAddedPart
-                    : hediffDefName;
                 string context = "hediff=" + hediffDefName
                     + "; label=" + (hediffLabel ?? string.Empty)
                     + (string.IsNullOrWhiteSpace(partLabel) ? string.Empty : "; body_part=" + partLabel)
                     + (string.IsNullOrWhiteSpace(partDefName) ? string.Empty : "; part_def=" + partDefName);
                 KnowledgeCaptureSignal signal = new KnowledgeCaptureSignal
                 {
-                    signal = removed ? KnowledgeTokens.SignalHediffRemoved : KnowledgeTokens.SignalHediffQuiet,
+                    signal = signalToken,
                     defName = signalDefName,
                     tick = Find.TickManager.TicksGame,
                     dateLabel = KnowledgeDateLabelNow(pawn),
@@ -203,7 +287,7 @@ namespace PawnDiary
 
             try
             {
-                PawnDiaryRecord diary = FindDiary(pawn, false);
+                PawnDiaryRecord diary = EnsureKnowledgeOwner(pawn);
                 if (diary == null)
                 {
                     return;
@@ -237,6 +321,17 @@ namespace PawnDiary
         internal void CaptureIdeoConversionKnowledge(Pawn pawn, string previousIdeoName,
             string newIdeoName, string newCultureDefName)
         {
+            CaptureIdeoConversionKnowledge(
+                pawn, previousIdeoName, newIdeoName, newCultureDefName, string.Empty);
+        }
+
+        /// <summary>
+        /// Conversion capture with the pre-mutation culture used to resolve origin before adopted
+        /// culture changes. The four-argument overload remains for test/binary compatibility.
+        /// </summary>
+        internal void CaptureIdeoConversionKnowledge(Pawn pawn, string previousIdeoName,
+            string newIdeoName, string newCultureDefName, string previousCultureDefName)
+        {
             if (pawn == null)
             {
                 return;
@@ -244,20 +339,21 @@ namespace PawnDiary
 
             try
             {
-                PawnDiaryRecord diary = FindDiary(pawn, false);
+                PawnDiaryRecord diary = EnsureKnowledgeOwner(pawn);
                 if (diary == null)
                 {
                     return;
                 }
 
                 PawnKnowledgeState state = EnsureKnowledgeState(diary);
-                EnsureCultureResolved(pawn);
+                EnsureCultureResolved(pawn, previousCultureDefName);
                 // Conversion REPLACES the latest adopted culture; earlier adopted cultures are
                 // not retained (§4.1).
-                if (!string.IsNullOrWhiteSpace(newCultureDefName))
-                {
-                    state.adoptedCultureDefName = newCultureDefName.Trim();
-                }
+                CultureStateSnapshot converted = CultureResolver.ApplyConversion(
+                    state.ToCultureSnapshot(), newCultureDefName);
+                state.originCultureDefName = converted.originCultureDefName;
+                state.originCultureSource = converted.originSource;
+                state.adoptedCultureDefName = converted.adoptedCultureDefName;
 
                 KnowledgeCaptureSignal signal = new KnowledgeCaptureSignal
                 {
@@ -300,7 +396,8 @@ namespace PawnDiary
                 string victimId = victim.GetUniqueLoadID();
 
                 Pawn instigator = dinfo.HasValue ? dinfo.Value.Instigator as Pawn : null;
-                if (instigator != null && instigator != victim && FindDiary(instigator, false) != null)
+                if (instigator != null && instigator != victim
+                    && EnsureKnowledgeOwner(instigator) != null)
                 {
                     string weaponLabel = dinfo.Value.Weapon != null ? dinfo.Value.Weapon.label : string.Empty;
                     EmitDeathSignal(KnowledgeTokens.SignalDeathInstigator, "PawnDiary_DeathInstigator",
@@ -318,30 +415,30 @@ namespace PawnDiary
                     return;
                 }
 
-                int fanoutBudget = 12; // defensive cap: modded mega-families must not flood capture
+                int familyOwnersEmitted = 0;
                 foreach (Pawn other in victim.relations.RelatedPawns)
                 {
-                    if (fanoutBudget <= 0)
+                    if (!KnowledgeRelationPolicy.CanEmitDeathFamilyOwner(familyOwnersEmitted))
                     {
                         break;
                     }
 
-                    if (other == null || other == victim || other == instigator
-                        || FindDiary(other, false) == null)
+                    if (other == null || other == victim || other == instigator)
                     {
                         continue;
                     }
 
                     string relationLabel = CloseFamilyRelationLabel(victim, other);
-                    if (string.IsNullOrWhiteSpace(relationLabel))
+                    if (string.IsNullOrWhiteSpace(relationLabel)
+                        || EnsureKnowledgeOwner(other) == null)
                     {
                         continue;
                     }
 
-                    fanoutBudget--;
                     EmitDeathSignal(KnowledgeTokens.SignalDeathFamily, "PawnDiary_DeathFamily",
                         other, victimId, victimName, tick, date,
                         "victim=" + victimName + "; relation=" + relationLabel);
+                    familyOwnersEmitted++;
                 }
             }
             catch (Exception e)
@@ -392,7 +489,20 @@ namespace PawnDiary
                 }
             }
 
-            return best != null ? best.GetGenderSpecificLabel(victim) : string.Empty;
+            if (best == null)
+            {
+                return string.Empty;
+            }
+
+            string victimRelation = KnowledgeRelationPolicy.VictimRelationDefName(best.defName);
+            PawnRelationDef ownerView = string.Equals(
+                    victimRelation, PawnRelationDefOf.Parent.defName, StringComparison.OrdinalIgnoreCase)
+                ? PawnRelationDefOf.Parent
+                : string.Equals(
+                    victimRelation, PawnRelationDefOf.Child.defName, StringComparison.OrdinalIgnoreCase)
+                    ? PawnRelationDefOf.Child
+                    : best;
+            return ownerView.GetGenderSpecificLabel(victim);
         }
 
         // ── Culture (§4.1) ───────────────────────────────────────────────────────────────────────────
@@ -402,7 +512,7 @@ namespace PawnDiary
         /// use their current ideology culture; otherwise the faction's allowed cultures decide.
         /// Pawns from a pre-redesign save resolve as "inferred".
         /// </summary>
-        private void EnsureCultureResolved(Pawn pawn)
+        private void EnsureCultureResolved(Pawn pawn, string capturedOriginCultureDefName = null)
         {
             if (pawn == null)
             {
@@ -423,10 +533,14 @@ namespace PawnDiary
 
             CultureResolutionInput input = new CultureResolutionInput
             {
+                capturedOriginCultureDefName = capturedOriginCultureDefName ?? string.Empty,
                 ideologyActive = ModsConfig.IdeologyActive,
                 ideoCultureDefName = DlcContext.PawnIdeoCultureDefName(pawn),
                 factionCultureDefNames = DlcContext.PawnFactionAllowedCultureDefNames(pawn),
-                legacyInference = legacyCulturePawnIds.Contains(diary.pawnId)
+                legacyInference = string.Equals(
+                    state.originCultureSource,
+                    KnowledgeTokens.CultureSourceInferred,
+                    StringComparison.OrdinalIgnoreCase)
             };
             CultureStateSnapshot resolved = CultureResolver.ResolveOrigin(input);
             if (!string.IsNullOrWhiteSpace(resolved.originCultureDefName))
@@ -559,14 +673,7 @@ namespace PawnDiary
         /// </summary>
         private static bool EventProjectsMemoryContext(DiaryEvent diaryEvent)
         {
-            DiaryEventPayload payload = DiaryPipelineAdapters.ToPayload(diaryEvent);
-            DiaryPolicySnapshot promptPolicy = DiaryPipelineAdapters.PolicyFor(payload);
-            string templateKey = DiaryPromptPlanner.TemplateKeyFor(new DiaryPromptRequest
-            {
-                payload = payload,
-                policy = promptPolicy
-            });
-            return DiaryPromptPlanner.ProjectsMemoryContext(promptPolicy.Template(templateKey));
+            return DiaryPipelineAdapters.ProjectsMemoryContext(diaryEvent);
         }
 
         private void ApplyRelevantPastForRole(DiaryEvent diaryEvent, string povRole,
@@ -954,6 +1061,12 @@ namespace PawnDiary
         /// diary pages use. Falls back to a tile-less date when the pawn has no map.</summary>
         private static string KnowledgeDateLabelNow(Pawn pawn)
         {
+            return KnowledgeDateLabelAt(pawn, Find.TickManager?.TicksGame ?? 0);
+        }
+
+        /// <summary>Renders the diary-style date for a captured event tick, including delayed signals.</summary>
+        private static string KnowledgeDateLabelAt(Pawn pawn, int tick)
+        {
             try
             {
                 UnityEngine.Vector2 location = UnityEngine.Vector2.zero;
@@ -963,7 +1076,7 @@ namespace PawnDiary
                     location = Find.WorldGrid.LongLatOf(map.Tile);
                 }
 
-                return GenDate.DateFullStringAt(GenDate.TickGameToAbs(Find.TickManager.TicksGame),
+                return GenDate.DateFullStringAt(GenDate.TickGameToAbs(Math.Max(0, tick)),
                     location);
             }
             catch (Exception)
