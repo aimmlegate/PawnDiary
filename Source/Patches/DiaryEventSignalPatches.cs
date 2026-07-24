@@ -453,10 +453,16 @@ namespace PawnDiary
                 return;
             }
 
+            const string targetLabel = "CompProximityLetter.CompTick";
             Type targetType = AccessTools.TypeByName(TargetTypeName);
             if (targetType == null)
             {
                 Log.Warning("[Pawn Diary] Could not find CompProximityLetter; proximity-letter event windows will not be captured.");
+                DiaryPatchManifest.Report(
+                    "EventWindow",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Degraded,
+                    "CompProximityLetter type not found; proximity-letter windows disabled");
                 return;
             }
 
@@ -469,6 +475,11 @@ namespace PawnDiary
             if (target == null || LetterSentField == null)
             {
                 Log.Warning("[Pawn Diary] Could not find CompProximityLetter.CompTick; proximity-letter event windows will not be captured.");
+                DiaryPatchManifest.Report(
+                    "EventWindow",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Degraded,
+                    "method or letterSent field not found; proximity-letter windows disabled");
                 return;
             }
 
@@ -476,6 +487,8 @@ namespace PawnDiary
                 target,
                 prefix: new HarmonyMethod(typeof(ProximityLetterEventWindowPatch), nameof(Prefix)),
                 postfix: new HarmonyMethod(typeof(ProximityLetterEventWindowPatch), nameof(Postfix)));
+            DiaryPatchManifest.Report(
+                "EventWindow", targetLabel, DiaryPatchManifest.HookStatus.Applied);
         }
 
         /// <summary>
@@ -614,10 +627,16 @@ namespace PawnDiary
                 return;
             }
 
+            const string targetLabel = "Building_VoidMonolith.Activate(Pawn)";
             Type targetType = AccessTools.TypeByName(TargetTypeName);
             if (targetType == null)
             {
                 Log.Warning("[Pawn Diary] Could not find Building_VoidMonolith; void monolith activation event windows will not be captured.");
+                DiaryPatchManifest.Report(
+                    "EventWindow",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Degraded,
+                    "Building_VoidMonolith type not found; activation windows disabled");
                 return;
             }
 
@@ -625,6 +644,11 @@ namespace PawnDiary
             if (target == null)
             {
                 Log.Warning("[Pawn Diary] Could not find Building_VoidMonolith.Activate(Pawn); void monolith activation event windows will not be captured.");
+                DiaryPatchManifest.Report(
+                    "EventWindow",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Degraded,
+                    "Activate(Pawn) target not found; activation windows disabled");
                 return;
             }
 
@@ -634,6 +658,11 @@ namespace PawnDiary
                 Log.Warning("[Pawn Diary] Could not find Building_VoidMonolith.autoActivateTick; "
                     + "void monolith activation events are disabled to avoid assigning automatic "
                     + "activation to a random colonist.");
+                DiaryPatchManifest.Report(
+                    "EventWindow",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Degraded,
+                    "autoActivateTick field changed; unverified agency is not captured");
                 return;
             }
 
@@ -647,6 +676,11 @@ namespace PawnDiary
             {
                 Log.Warning("[Pawn Diary] Could not resolve Find.Anomaly.LevelDef; void monolith "
                     + "activation events are disabled rather than recording an unverified level.");
+                DiaryPatchManifest.Report(
+                    "EventWindow",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Degraded,
+                    "Find.Anomaly.LevelDef changed; unverified levels are not captured");
                 return;
             }
             LevelInspectTextField = monolithLevelDefType == null
@@ -660,6 +694,8 @@ namespace PawnDiary
                 target,
                 prefix: new HarmonyMethod(typeof(VoidMonolithActivationEventWindowPatch), nameof(Prefix)),
                 postfix: new HarmonyMethod(typeof(VoidMonolithActivationEventWindowPatch), nameof(Postfix)));
+            DiaryPatchManifest.Report(
+                "EventWindow", targetLabel, DiaryPatchManifest.HookStatus.Applied);
         }
 
         /// <summary>
@@ -769,10 +805,17 @@ namespace PawnDiary
                 return;
             }
 
+            const string targetLabel =
+                "PrisonBreakUtility.StartPrisonBreak(by-ref overload)";
             Type targetType = AccessTools.TypeByName(TargetTypeName);
             if (targetType == null)
             {
                 Log.Warning("[Pawn Diary] Could not find PrisonBreakUtility; prison-break event windows will not be captured.");
+                DiaryPatchManifest.Report(
+                    "EventWindow",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Degraded,
+                    "PrisonBreakUtility type not found; prison-break windows disabled");
                 return;
             }
 
@@ -787,10 +830,17 @@ namespace PawnDiary
             if (target == null)
             {
                 Log.Warning("[Pawn Diary] Could not find PrisonBreakUtility.StartPrisonBreak by-ref overload; prison-break event windows will not be captured.");
+                DiaryPatchManifest.Report(
+                    "EventWindow",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Degraded,
+                    "by-ref overload not found; prison-break windows disabled");
                 return;
             }
 
             harmony.Patch(target, postfix: new HarmonyMethod(typeof(PrisonBreakEventWindowPatch), nameof(Postfix)));
+            DiaryPatchManifest.Report(
+                "EventWindow", targetLabel, DiaryPatchManifest.HookStatus.Applied);
         }
 
         /// <summary>

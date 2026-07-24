@@ -61,6 +61,11 @@ namespace PawnDiary
             {
                 Log.Warning("[Pawn Diary] Could not find " + targetName
                     + "; optional food belief enrichment is disabled.");
+                DiaryPatchManifest.Report(
+                    "IdeologyFood",
+                    targetName,
+                    DiaryPatchManifest.HookStatus.Degraded,
+                    "target not found; optional food belief enrichment disabled");
                 return false;
             }
 
@@ -77,6 +82,8 @@ namespace PawnDiary
                     finalizer: finalizerName == null
                         ? null
                         : new HarmonyMethod(typeof(FoodIngestionEvidencePatch), finalizerName));
+                DiaryPatchManifest.Report(
+                    "IdeologyFood", targetName, DiaryPatchManifest.HookStatus.Applied);
                 return true;
             }
             catch (Exception exception)
@@ -85,6 +92,11 @@ namespace PawnDiary
                 // registration then continues to every later DLC/compatibility hook in the registrar.
                 Log.Warning("[Pawn Diary] Could not register " + targetName
                     + "; optional food belief enrichment is disabled. " + exception);
+                DiaryPatchManifest.Report(
+                    "IdeologyFood",
+                    targetName,
+                    DiaryPatchManifest.HookStatus.Failed,
+                    exception.GetType().Name + ": " + exception.Message);
                 return false;
             }
         }

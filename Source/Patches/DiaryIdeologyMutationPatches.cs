@@ -31,11 +31,27 @@ namespace PawnDiary
             ConversionAttemptHookReady = false;
             OffsetCertaintyHookReady = false;
             SetIdeologyHookReady = false;
-            if (harmony == null || !ModsConfig.IdeologyActive) return;
+            if (harmony == null || !ModsConfig.IdeologyActive)
+            {
+                if (harmony != null)
+                {
+                    DiaryPatchManifest.Report(
+                        "Ideology",
+                        "all Ideology mutation hooks",
+                        DiaryPatchManifest.HookStatus.Skipped,
+                        "Ideology inactive");
+                }
+                return;
+            }
             if (!DlcContext.BeliefMutationProjectionReady)
             {
                 Log.Warning("[Pawn Diary] Pawn_IdeoTracker.pawn changed; exact Ideology mutation "
                     + "capture is disabled until the projection adapter is updated.");
+                DiaryPatchManifest.Report(
+                    "Ideology",
+                    "Pawn_IdeoTracker mutation projection",
+                    DiaryPatchManifest.HookStatus.Degraded,
+                    "Pawn_IdeoTracker.pawn changed; exact mutation capture disabled");
                 return;
             }
 
@@ -74,6 +90,11 @@ namespace PawnDiary
             {
                 Log.Warning("[Pawn Diary] " + targetName + " changed; exact Ideology mutation "
                     + "capture is disabled for that route.");
+                DiaryPatchManifest.Report(
+                    "Ideology",
+                    targetName,
+                    DiaryPatchManifest.HookStatus.Degraded,
+                    "target changed; exact mutation capture disabled for this route");
                 return false;
             }
             try
@@ -83,12 +104,19 @@ namespace PawnDiary
                     prefix: new HarmonyMethod(typeof(DiaryIdeologyMutationPatches), prefixName),
                     postfix: new HarmonyMethod(typeof(DiaryIdeologyMutationPatches), postfixName),
                     finalizer: new HarmonyMethod(typeof(DiaryIdeologyMutationPatches), nameof(Finalizer)));
+                DiaryPatchManifest.Report(
+                    "Ideology", targetName, DiaryPatchManifest.HookStatus.Applied);
                 return true;
             }
             catch (Exception exception)
             {
                 Log.Warning("[Pawn Diary] Could not register " + targetName
                     + "; exact Ideology mutation capture is disabled for that route. " + exception);
+                DiaryPatchManifest.Report(
+                    "Ideology",
+                    targetName,
+                    DiaryPatchManifest.HookStatus.Failed,
+                    exception.GetType().Name + ": " + exception.Message);
                 return false;
             }
         }

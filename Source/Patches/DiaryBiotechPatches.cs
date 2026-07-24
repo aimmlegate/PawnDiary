@@ -23,6 +23,7 @@ namespace PawnDiary
         public static void TryRegister(Harmony harmony)
         {
             if (harmony == null) return;
+            const string targetLabel = "PregnancyUtility.ApplyBirthOutcome(...)";
             MethodBase target = AccessTools.DeclaredMethod(
                 typeof(PregnancyUtility),
                 "ApplyBirthOutcome",
@@ -44,6 +45,11 @@ namespace PawnDiary
             {
                 Log.Warning("[Pawn Diary] PregnancyUtility.ApplyBirthOutcome changed; canonical "
                     + "Biotech births are disabled and mature routes remain active.");
+                DiaryPatchManifest.Report(
+                    "Biotech",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Degraded,
+                    "signature changed; canonical births disabled, mature routes active");
                 return;
             }
 
@@ -54,11 +60,18 @@ namespace PawnDiary
                     prefix: new HarmonyMethod(typeof(BiotechBirthOutcomePatch), nameof(Prefix)),
                     postfix: new HarmonyMethod(typeof(BiotechBirthOutcomePatch), nameof(Postfix)),
                     finalizer: new HarmonyMethod(typeof(BiotechBirthOutcomePatch), nameof(Finalizer)));
+                DiaryPatchManifest.Report(
+                    "Biotech", targetLabel, DiaryPatchManifest.HookStatus.Applied);
             }
             catch (Exception exception)
             {
                 Log.Warning("[Pawn Diary] Could not register canonical Biotech birth capture; "
                     + "mature routes remain active. " + exception);
+                DiaryPatchManifest.Report(
+                    "Biotech",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Failed,
+                    exception.GetType().Name + ": " + exception.Message);
             }
         }
 
@@ -171,11 +184,17 @@ namespace PawnDiary
         public static void TryRegister(Harmony harmony)
         {
             if (harmony == null) return;
+            const string targetLabel = "Hediff_Pregnant.Miscarry()";
             MethodBase target = AccessTools.DeclaredMethod(typeof(Hediff_Pregnant), "Miscarry", Type.EmptyTypes);
             if (target == null)
             {
                 Log.Warning("[Pawn Diary] Hediff_Pregnant.Miscarry changed; exact Biotech family-loss "
                     + "enrichment is disabled.");
+                DiaryPatchManifest.Report(
+                    "Biotech",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Degraded,
+                    "target changed; exact family-loss enrichment disabled");
                 return;
             }
 
@@ -186,10 +205,17 @@ namespace PawnDiary
                     prefix: new HarmonyMethod(typeof(BiotechMiscarriagePatch), nameof(Prefix)),
                     postfix: new HarmonyMethod(typeof(BiotechMiscarriagePatch), nameof(Postfix)),
                     finalizer: new HarmonyMethod(typeof(BiotechMiscarriagePatch), nameof(Finalizer)));
+                DiaryPatchManifest.Report(
+                    "Biotech", targetLabel, DiaryPatchManifest.HookStatus.Applied);
             }
             catch (Exception exception)
             {
                 Log.Warning("[Pawn Diary] Could not register Biotech miscarriage enrichment: " + exception);
+                DiaryPatchManifest.Report(
+                    "Biotech",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Failed,
+                    exception.GetType().Name + ": " + exception.Message);
             }
         }
 
@@ -240,6 +266,8 @@ namespace PawnDiary
         public static void TryRegister(Harmony harmony)
         {
             if (harmony == null) return;
+            const string targetLabel =
+                "HediffWithParents.SetParents(Pawn, Pawn, GeneSet)";
             MethodBase target = AccessTools.Method(
                 typeof(HediffWithParents),
                 "SetParents",
@@ -248,6 +276,11 @@ namespace PawnDiary
             {
                 Log.Warning("[Pawn Diary] HediffWithParents.SetParents changed; Biotech family "
                     + "pregnancy/labor correlation is disabled.");
+                DiaryPatchManifest.Report(
+                    "Biotech",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Degraded,
+                    "target changed; pregnancy/labor correlation disabled");
                 return;
             }
 
@@ -256,11 +289,18 @@ namespace PawnDiary
                 harmony.Patch(target, postfix: new HarmonyMethod(
                     typeof(BiotechFamilyHediffPatch),
                     nameof(Postfix)));
+                DiaryPatchManifest.Report(
+                    "Biotech", targetLabel, DiaryPatchManifest.HookStatus.Applied);
             }
             catch (Exception exception)
             {
                 Log.Warning("[Pawn Diary] Could not register Biotech family Hediff capture: "
                     + exception);
+                DiaryPatchManifest.Report(
+                    "Biotech",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Failed,
+                    exception.GetType().Name + ": " + exception.Message);
             }
         }
 
@@ -296,6 +336,8 @@ namespace PawnDiary
                 return;
             }
 
+            const string targetLabel =
+                "ChoiceLetter_GrowthMoment.ConfigureGrowthLetter + MakeChoices";
             Type type = typeof(ChoiceLetter_GrowthMoment);
             MethodBase configure = AccessTools.DeclaredMethod(type, "ConfigureGrowthLetter", new[]
             {
@@ -320,6 +362,11 @@ namespace PawnDiary
                 Log.Warning(
                     "[Pawn Diary] Biotech growth-letter methods changed; canonical growth capture is disabled "
                     + "and ordinary birthdays remain active.");
+                DiaryPatchManifest.Report(
+                    "Biotech",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Degraded,
+                    "methods or fields changed; canonical growth capture disabled, ordinary birthdays active");
                 return;
             }
 
@@ -339,6 +386,8 @@ namespace PawnDiary
                         typeof(BiotechGrowthLetterPatch),
                         nameof(MakeChoicesPostfix)));
                 HooksReady = true;
+                DiaryPatchManifest.Report(
+                    "Biotech", targetLabel, DiaryPatchManifest.HookStatus.Applied);
             }
             catch (Exception exception)
             {
@@ -346,6 +395,11 @@ namespace PawnDiary
                 Log.Warning(
                     "[Pawn Diary] Could not register complete Biotech growth capture; ordinary birthdays "
                     + "remain active. " + exception);
+                DiaryPatchManifest.Report(
+                    "Biotech",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Failed,
+                    exception.GetType().Name + ": " + exception.Message);
             }
         }
 
@@ -486,6 +540,11 @@ namespace PawnDiary
             {
                 Log.Warning("[Pawn Diary] " + targetName + " changed; exact Biotech gene capture "
                     + "is disabled for that route and the slow observer remains active.");
+                DiaryPatchManifest.Report(
+                    "Biotech",
+                    targetName,
+                    DiaryPatchManifest.HookStatus.Degraded,
+                    "changed; exact gene capture disabled for this route, slow observer active");
                 return;
             }
             try
@@ -495,11 +554,18 @@ namespace PawnDiary
                     prefix: new HarmonyMethod(typeof(BiotechXenogermMutationPatch), prefixName),
                     postfix: new HarmonyMethod(typeof(BiotechXenogermMutationPatch), postfixName),
                     finalizer: new HarmonyMethod(typeof(BiotechXenogermMutationPatch), nameof(Finalizer)));
+                DiaryPatchManifest.Report(
+                    "Biotech", targetName, DiaryPatchManifest.HookStatus.Applied);
             }
             catch (Exception exception)
             {
                 Log.Warning("[Pawn Diary] Could not register " + targetName + "; the slow Biotech "
                     + "gene observer remains active. " + exception);
+                DiaryPatchManifest.Report(
+                    "Biotech",
+                    targetName,
+                    DiaryPatchManifest.HookStatus.Failed,
+                    exception.GetType().Name + ": " + exception.Message);
             }
         }
 

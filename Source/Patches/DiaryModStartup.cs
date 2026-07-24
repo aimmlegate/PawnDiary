@@ -19,6 +19,10 @@ namespace PawnDiary
 
         static DiaryModStartup()
         {
+            // Every registration below reports its outcome to DiaryPatchManifest so the last line of
+            // startup can log one hook-health summary (the update-day breakage overview).
+            DiaryPatchManifest.Reset();
+
             // Apply all attribute-tagged ([HarmonyPatch]) patches. Each class is patched independently
             // so one bad target (often a fragile RimWorld-version-specific method) cannot abort the
             // whole sweep and leave the rest of the mod's hooks unregistered.
@@ -36,6 +40,11 @@ namespace PawnDiary
             catch (Exception e)
             {
                 Log.Error("[Pawn Diary] Fragile patch registration failed: " + e);
+                DiaryPatchManifest.Report(
+                    "startup",
+                    "DiaryPatchRegistrar.RegisterFragilePatches",
+                    DiaryPatchManifest.HookStatus.Failed,
+                    e.GetType().Name + ": " + e.Message);
             }
 
             try
@@ -56,7 +65,15 @@ namespace PawnDiary
                 Log.Error("[Pawn Diary] Advanced settings override application failed: " + e);
             }
 
-            Log.Message("[Pawn Diary] Loaded.");
+            // Keep the literal "[Pawn Diary] Loaded." prefix — it is a long-standing grep target.
+            // The appended manifest summary is the one-glance hook-health line for game updates.
+            Log.Message("[Pawn Diary] Loaded. " + DiaryPatchManifest.BuildSummary());
+            string degradedHooks = DiaryPatchManifest.BuildDetail();
+            if (degradedHooks.Length > 0)
+            {
+                Log.Warning("[Pawn Diary] Hook problems (a RimWorld update likely changed these "
+                    + "targets; the listed fallbacks are active): " + degradedHooks);
+            }
         }
 
         /// <summary>
@@ -98,10 +115,20 @@ namespace PawnDiary
             {
                 types = e.Types;
                 Log.Warning("[Pawn Diary] Harmony patch type scan was partial; attempting available types. " + e);
+                DiaryPatchManifest.Report(
+                    "startup",
+                    "assembly type scan",
+                    DiaryPatchManifest.HookStatus.Degraded,
+                    "partial ReflectionTypeLoadException; available patch classes attempted");
             }
             catch (Exception e)
             {
                 Log.Error("[Pawn Diary] Harmony patch type scan failed: " + e);
+                DiaryPatchManifest.Report(
+                    "startup",
+                    "assembly type scan",
+                    DiaryPatchManifest.HookStatus.Failed,
+                    e.GetType().Name + ": " + e.Message);
                 return;
             }
 
@@ -115,10 +142,19 @@ namespace PawnDiary
                 try
                 {
                     harmony.CreateClassProcessor(type).Patch();
+                    DiaryPatchManifest.Report(
+                        "attribute",
+                        type.Name,
+                        DiaryPatchManifest.HookStatus.Applied);
                 }
                 catch (Exception e)
                 {
                     Log.Error("[Pawn Diary] Harmony patch class failed (" + type.FullName + "): " + e);
+                    DiaryPatchManifest.Report(
+                        "attribute",
+                        type.Name,
+                        DiaryPatchManifest.HookStatus.Failed,
+                        e.GetType().Name + ": " + e.Message);
                 }
             }
         }

@@ -89,10 +89,21 @@ namespace PawnDiary
                     Log.Message("[Pawn Diary] MainTabWindow_Quests quest-accept UI action not found; "
                         + "quest accepted bookkeeping will rely on Quest.Accept only.");
                 }
+                // Skipped, not Degraded: this closure-name miss is the documented normal case and
+                // must not make a clean boot's manifest summary look unhealthy.
+                DiaryPatchManifest.Report(
+                    "Quest",
+                    "MainTabWindow_Quests UI accept closure",
+                    DiaryPatchManifest.HookStatus.Skipped,
+                    "compiler-generated name absent (expected); Quest.Accept hook covers acceptance");
                 return;
             }
 
             harmony.Patch(target, postfix: new HarmonyMethod(typeof(QuestUiAcceptPatch), nameof(Postfix)));
+            DiaryPatchManifest.Report(
+                "Quest",
+                "MainTabWindow_Quests UI accept closure",
+                DiaryPatchManifest.HookStatus.Applied);
         }
 
         /// <summary>

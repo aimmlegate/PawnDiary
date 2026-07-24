@@ -47,22 +47,48 @@ namespace PawnDiary
                 if (error != null)
                 {
                     harmony.Patch(error, postfix: postfix);
+                    DiaryPatchManifest.Report(
+                        "Diagnostics",
+                        "Log.Error(string)",
+                        DiaryPatchManifest.HookStatus.Applied);
                 }
                 else
                 {
                     Log.Warning("[Pawn Diary] Error reporter could not patch Log.Error; raised errors will not be reported.");
+                    DiaryPatchManifest.Report(
+                        "Diagnostics",
+                        "Log.Error(string)",
+                        DiaryPatchManifest.HookStatus.Degraded,
+                        "target not found; errors will not be reported");
                 }
 
                 MethodBase errorOnce = AccessTools.Method(typeof(Log), "ErrorOnce", new[] { typeof(string), typeof(int) });
                 if (errorOnce != null)
                 {
                     harmony.Patch(errorOnce, postfix: postfix);
+                    DiaryPatchManifest.Report(
+                        "Diagnostics",
+                        "Log.ErrorOnce(string, int)",
+                        DiaryPatchManifest.HookStatus.Applied);
+                }
+                else
+                {
+                    DiaryPatchManifest.Report(
+                        "Diagnostics",
+                        "Log.ErrorOnce(string, int)",
+                        DiaryPatchManifest.HookStatus.Degraded,
+                        "target not found; ErrorOnce messages will not be reported");
                 }
             }
             catch (Exception e)
             {
                 // Registration is best-effort; if it fails the mod runs exactly as before, just without reporting.
                 Log.Warning("[Pawn Diary] Error reporter patch registration failed: " + e);
+                DiaryPatchManifest.Report(
+                    "Diagnostics",
+                    "Log error reporter",
+                    DiaryPatchManifest.HookStatus.Failed,
+                    e.GetType().Name + ": " + e.Message);
             }
         }
 

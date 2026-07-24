@@ -38,9 +38,15 @@ namespace PawnDiary
                 return;
             }
 
+            const string targetLabel = "SpeakUp.DialogManager.Ensue(List<string>)";
             Type dialogManagerType = AccessTools.TypeByName(DialogManagerTypeName);
             if (dialogManagerType == null)
             {
+                DiaryPatchManifest.Report(
+                    "Compat",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Skipped,
+                    "SpeakUp not loaded");
                 return;
             }
 
@@ -48,11 +54,18 @@ namespace PawnDiary
             if (target == null)
             {
                 Log.Warning("[Pawn Diary] Could not find SpeakUp reply scheduler; tagged social-log grammar will use fallback text.");
+                DiaryPatchManifest.Report(
+                    "Compat",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Degraded,
+                    "SpeakUp reply scheduler changed; tagged social-log grammar uses fallback text");
                 return;
             }
 
             harmony.Patch(target, prefix: new HarmonyMethod(typeof(SpeakUpReplySchedulingGuardPatch), nameof(Prefix)));
             patchRegistered = true;
+            DiaryPatchManifest.Report(
+                "Compat", targetLabel, DiaryPatchManifest.HookStatus.Applied);
         }
 
         /// <summary>

@@ -71,7 +71,18 @@ namespace PawnDiary
             CreepJoinerSurgicalHookReady = false;
             GhoulTransformationHookReady = false;
             VoidOutcomeHookReady = false;
-            if (harmony == null || !ModsConfig.AnomalyActive) return;
+            if (harmony == null || !ModsConfig.AnomalyActive)
+            {
+                if (harmony != null)
+                {
+                    DiaryPatchManifest.Report(
+                        "Anomaly",
+                        "all Anomaly hooks",
+                        DiaryPatchManifest.HookStatus.Skipped,
+                        "Anomaly inactive");
+                }
+                return;
+            }
 
             TryRegisterStudy(harmony);
             TryRegisterContainment(harmony);
@@ -83,6 +94,8 @@ namespace PawnDiary
 
         private static void TryRegisterStudy(Harmony harmony)
         {
+            const string targetLabel =
+                "CompStudyUnlocks.OnStudied(Pawn, float, KnowledgeCategoryDef)";
             try
             {
                 Type studyType = AccessTools.TypeByName(StudyUnlocksTypeName);
@@ -96,6 +109,11 @@ namespace PawnDiary
                 if (target == null)
                 {
                     WarnMissing("the exact CompStudyUnlocks.OnStudied(Pawn, float, KnowledgeCategoryDef) target was not found");
+                    DiaryPatchManifest.Report(
+                        "Anomaly",
+                        targetLabel,
+                        DiaryPatchManifest.HookStatus.Degraded,
+                        "target not found; study milestones disabled");
                     return;
                 }
 
@@ -104,16 +122,24 @@ namespace PawnDiary
                     prefix: new HarmonyMethod(typeof(DiaryAnomalyPatches), nameof(StudyPrefix)),
                     postfix: new HarmonyMethod(typeof(DiaryAnomalyPatches), nameof(StudyPostfix)));
                 StudyHookReady = true;
+                DiaryPatchManifest.Report(
+                    "Anomaly", targetLabel, DiaryPatchManifest.HookStatus.Applied);
             }
             catch (Exception exception)
             {
                 WarnMissing("registration failed: " + exception.GetType().Name + ": "
                     + Limit(exception.Message));
+                DiaryPatchManifest.Report(
+                    "Anomaly",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Failed,
+                    exception.GetType().Name + ": " + Limit(exception.Message));
             }
         }
 
         private static void TryRegisterContainment(Harmony harmony)
         {
+            const string targetLabel = "CompHoldingPlatformTarget.Escape(bool initiator)";
             try
             {
                 Type targetType = AccessTools.TypeByName(HoldingPlatformTargetTypeName);
@@ -128,6 +154,11 @@ namespace PawnDiary
                 {
                     WarnMissingContainment(
                         "the exact CompHoldingPlatformTarget.Escape(bool initiator) target was not found");
+                    DiaryPatchManifest.Report(
+                        "Anomaly",
+                        targetLabel,
+                        DiaryPatchManifest.HookStatus.Degraded,
+                        "target not found; containment-breach pages disabled");
                     return;
                 }
 
@@ -140,11 +171,18 @@ namespace PawnDiary
                     finalizer: new HarmonyMethod(
                         typeof(DiaryAnomalyPatches), nameof(ContainmentFinalizer)));
                 ContainmentHookReady = true;
+                DiaryPatchManifest.Report(
+                    "Anomaly", targetLabel, DiaryPatchManifest.HookStatus.Applied);
             }
             catch (Exception exception)
             {
                 WarnMissingContainment("registration failed: " + exception.GetType().Name + ": "
                     + Limit(exception.Message));
+                DiaryPatchManifest.Report(
+                    "Anomaly",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Failed,
+                    exception.GetType().Name + ": " + Limit(exception.Message));
             }
         }
 
@@ -191,6 +229,7 @@ namespace PawnDiary
             string finalizerName,
             string outcomeLabel)
         {
+            string targetLabel = "Pawn_CreepJoinerTracker." + methodName + "()";
             try
             {
                 MethodInfo target = trackerType == null
@@ -202,6 +241,11 @@ namespace PawnDiary
                     WarnMissingCreepJoiner(outcomeLabel,
                         "the exact public Pawn_CreepJoinerTracker." + methodName
                             + "() target or required committed-transition field was not found");
+                    DiaryPatchManifest.Report(
+                        "Anomaly",
+                        targetLabel,
+                        DiaryPatchManifest.HookStatus.Degraded,
+                        "target or required committed-transition field not found");
                     return false;
                 }
 
@@ -212,6 +256,8 @@ namespace PawnDiary
                     finalizer: finalizerName == null
                         ? null
                         : new HarmonyMethod(typeof(DiaryAnomalyPatches), finalizerName));
+                DiaryPatchManifest.Report(
+                    "Anomaly", targetLabel, DiaryPatchManifest.HookStatus.Applied);
                 return true;
             }
             catch (Exception exception)
@@ -219,12 +265,19 @@ namespace PawnDiary
                 WarnMissingCreepJoiner(outcomeLabel,
                     "registration failed: " + exception.GetType().Name + ": "
                         + Limit(exception.Message));
+                DiaryPatchManifest.Report(
+                    "Anomaly",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Failed,
+                    exception.GetType().Name + ": " + Limit(exception.Message));
                 return false;
             }
         }
 
         private static void TryRegisterCreepJoinerSurgicalInspection(Harmony harmony)
         {
+            const string targetLabel =
+                "Creepjoiner surgical inspection boundaries";
             try
             {
                 Type recipeType = AccessTools.TypeByName(SurgicalInspectionRecipeTypeName);
@@ -257,6 +310,11 @@ namespace PawnDiary
                 {
                     WarnMissingSurgical(
                         "the exact recipe, Pawn result, or tracker disclosure signature was not found");
+                    DiaryPatchManifest.Report(
+                        "Anomaly",
+                        targetLabel,
+                        DiaryPatchManifest.HookStatus.Degraded,
+                        "recipe, Pawn result, or tracker disclosure signature changed");
                     return;
                 }
 
@@ -279,6 +337,8 @@ namespace PawnDiary
                     postfix: new HarmonyMethod(
                         typeof(DiaryAnomalyPatches), nameof(SurgicalPawnInspectionPostfix)));
                 CreepJoinerSurgicalHookReady = true;
+                DiaryPatchManifest.Report(
+                    "Anomaly", targetLabel, DiaryPatchManifest.HookStatus.Applied);
             }
             catch (Exception exception)
             {
@@ -287,11 +347,18 @@ namespace PawnDiary
                 CreepJoinerSurgicalHookReady = false;
                 WarnMissingSurgical("registration failed: " + exception.GetType().Name + ": "
                     + Limit(exception.Message));
+                DiaryPatchManifest.Report(
+                    "Anomaly",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Failed,
+                    exception.GetType().Name + ": " + Limit(exception.Message));
             }
         }
 
         private static void TryRegisterGhoulTransformation(Harmony harmony)
         {
+            const string targetLabel =
+                "Recipe_GhoulInfusion.ApplyOnPawn(Pawn, BodyPartRecord, Pawn, List<Thing>, Bill)";
             try
             {
                 Type recipeType = AccessTools.TypeByName(GhoulInfusionRecipeTypeName);
@@ -310,6 +377,11 @@ namespace PawnDiary
                     WarnMissingGhoul(
                         "the exact public Recipe_GhoulInfusion.ApplyOnPawn(Pawn, "
                             + "BodyPartRecord, Pawn, List<Thing>, Bill) signature was not found");
+                    DiaryPatchManifest.Report(
+                        "Anomaly",
+                        targetLabel,
+                        DiaryPatchManifest.HookStatus.Degraded,
+                        "exact public signature not found; ghoul transformation pages disabled");
                     return;
                 }
 
@@ -322,17 +394,26 @@ namespace PawnDiary
                     finalizer: new HarmonyMethod(
                         typeof(DiaryAnomalyPatches), nameof(GhoulInfusionFinalizer)));
                 GhoulTransformationHookReady = true;
+                DiaryPatchManifest.Report(
+                    "Anomaly", targetLabel, DiaryPatchManifest.HookStatus.Applied);
             }
             catch (Exception exception)
             {
                 GhoulTransformationHookReady = false;
                 WarnMissingGhoul("registration failed: " + exception.GetType().Name + ": "
                     + Limit(exception.Message));
+                DiaryPatchManifest.Report(
+                    "Anomaly",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Failed,
+                    exception.GetType().Name + ": " + Limit(exception.Message));
             }
         }
 
         private static void TryRegisterVoidOutcome(Harmony harmony)
         {
+            const string targetLabel =
+                "VoidAwakeningUtility.EmbraceTheVoid + DisruptTheLink";
             try
             {
                 Type utilityType = AccessTools.TypeByName(VoidAwakeningUtilityTypeName);
@@ -343,6 +424,11 @@ namespace PawnDiary
                     WarnMissingVoid(
                         "the exact public VoidAwakeningUtility.EmbraceTheVoid(Pawn) and "
                             + "DisruptTheLink(Pawn) targets were not found");
+                    DiaryPatchManifest.Report(
+                        "Anomaly",
+                        targetLabel,
+                        DiaryPatchManifest.HookStatus.Degraded,
+                        "one or both exact terminal void targets not found");
                     return;
                 }
 
@@ -363,6 +449,8 @@ namespace PawnDiary
                     finalizer: new HarmonyMethod(
                         typeof(DiaryAnomalyPatches), nameof(VoidOutcomeFinalizer)));
                 VoidOutcomeHookReady = true;
+                DiaryPatchManifest.Report(
+                    "Anomaly", targetLabel, DiaryPatchManifest.HookStatus.Applied);
             }
             catch (Exception exception)
             {
@@ -371,6 +459,11 @@ namespace PawnDiary
                 VoidOutcomeHookReady = false;
                 WarnMissingVoid("registration failed: " + exception.GetType().Name + ": "
                     + Limit(exception.Message));
+                DiaryPatchManifest.Report(
+                    "Anomaly",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Failed,
+                    exception.GetType().Name + ": " + Limit(exception.Message));
             }
         }
 

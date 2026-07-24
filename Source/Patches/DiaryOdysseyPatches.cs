@@ -93,6 +93,8 @@ namespace PawnDiary
         {
             HooksReady = false;
             if (harmony == null) return;
+            const string targetLabel =
+                "WorldComponent_GravshipController.LandingEnded()";
             Type type = typeof(WorldComponent_GravshipController);
             MethodBase target = AccessTools.DeclaredMethod(type, "LandingEnded", Type.EmptyTypes);
             gravshipField = AccessTools.Field(type, "gravship");
@@ -101,6 +103,11 @@ namespace PawnDiary
             {
                 Log.Warning("[Pawn Diary] Odyssey LandingEnded changed; successful landing history "
                     + "capture is disabled while vanilla landing remains untouched.");
+                DiaryPatchManifest.Report(
+                    "Odyssey",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Degraded,
+                    "method or required fields changed; landing history capture disabled");
                 return;
             }
 
@@ -111,12 +118,19 @@ namespace PawnDiary
                     prefix: new HarmonyMethod(typeof(OdysseyLandingEndedPatch), nameof(Prefix)),
                     postfix: new HarmonyMethod(typeof(OdysseyLandingEndedPatch), nameof(Postfix)));
                 HooksReady = true;
+                DiaryPatchManifest.Report(
+                    "Odyssey", targetLabel, DiaryPatchManifest.HookStatus.Applied);
             }
             catch (Exception exception)
             {
                 HooksReady = false;
                 Log.Warning("[Pawn Diary] Could not register Odyssey landing-finish history capture; "
                     + "vanilla landing remains untouched. " + exception);
+                DiaryPatchManifest.Report(
+                    "Odyssey",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Failed,
+                    exception.GetType().Name + ": " + exception.Message);
             }
         }
 
@@ -180,6 +194,7 @@ namespace PawnDiary
         {
             HooksReady = false;
             if (harmony == null) return;
+            const string targetLabel = "LandingOutcomeWorker.ApplyOutcome overrides";
             outcomeDefField = AccessTools.Field(typeof(LandingOutcomeWorker), "def");
             MethodInfo postfix = AccessTools.DeclaredMethod(
                 typeof(OdysseyLandingOutcomePatch), nameof(Postfix));
@@ -187,6 +202,11 @@ namespace PawnDiary
             {
                 Log.Warning("[Pawn Diary] Odyssey landing-outcome internals changed; exact outcome "
                     + "context is disabled while vanilla landing remains untouched.");
+                DiaryPatchManifest.Report(
+                    "Odyssey",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Degraded,
+                    "Def field or postfix changed; exact outcome context disabled");
                 return;
             }
 
@@ -215,10 +235,23 @@ namespace PawnDiary
             }
 
             HooksReady = patched > 0;
-            if (!HooksReady)
+            if (HooksReady)
+            {
+                DiaryPatchManifest.Report(
+                    "Odyssey",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Applied,
+                    "patched " + patched + " overrides");
+            }
+            else
             {
                 Log.Warning("[Pawn Diary] No concrete Odyssey landing-outcome override was found; "
                     + "exact outcome context is disabled.");
+                DiaryPatchManifest.Report(
+                    "Odyssey",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Degraded,
+                    "no concrete override found");
             }
         }
 
@@ -259,7 +292,20 @@ namespace PawnDiary
         internal static void TryRegister(Harmony harmony)
         {
             HookReady = false;
-            if (harmony == null || !ModsConfig.OdysseyActive) return;
+            if (harmony == null || !ModsConfig.OdysseyActive)
+            {
+                if (harmony != null)
+                {
+                    DiaryPatchManifest.Report(
+                        "Odyssey",
+                        "CompCerebrexCore.DeactivateCore(bool scavenging)",
+                        DiaryPatchManifest.HookStatus.Skipped,
+                        "Odyssey inactive");
+                }
+                return;
+            }
+            const string targetLabel =
+                "CompCerebrexCore.DeactivateCore(bool scavenging)";
             try
             {
                 Type compType = AccessTools.TypeByName(CompTypeName);
@@ -282,6 +328,11 @@ namespace PawnDiary
                     WarnMissing(
                         "the exact private CompCerebrexCore.DeactivateCore(bool scavenging) "
                             + "owner or its quest-correlation fields were not found");
+                    DiaryPatchManifest.Report(
+                        "Odyssey",
+                        targetLabel,
+                        DiaryPatchManifest.HookStatus.Degraded,
+                        "target or quest-correlation fields not found");
                     return;
                 }
 
@@ -294,6 +345,8 @@ namespace PawnDiary
                     finalizer: new HarmonyMethod(
                         typeof(OdysseyMechhiveOutcomePatch), nameof(Finalizer)));
                 HookReady = true;
+                DiaryPatchManifest.Report(
+                    "Odyssey", targetLabel, DiaryPatchManifest.HookStatus.Applied);
             }
             catch (Exception exception)
             {
@@ -301,6 +354,11 @@ namespace PawnDiary
                 WarnMissing(
                     "registration failed: " + exception.GetType().Name + ": "
                         + exception.Message);
+                DiaryPatchManifest.Report(
+                    "Odyssey",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Failed,
+                    exception.GetType().Name + ": " + exception.Message);
             }
         }
 

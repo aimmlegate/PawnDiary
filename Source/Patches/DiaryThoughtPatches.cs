@@ -26,6 +26,8 @@ namespace PawnDiary
         /// </summary>
         public static void TryRegister(Harmony harmony)
         {
+            const string targetLabel =
+                "MemoryThoughtHandler.TryGainMemory(Thought_Memory, Pawn)";
             MethodBase target = AccessTools.Method(
                 typeof(MemoryThoughtHandler), "TryGainMemory",
                 new[] { typeof(Thought_Memory), typeof(Pawn) });
@@ -33,10 +35,17 @@ namespace PawnDiary
             {
                 Log.Warning("[Pawn Diary] Could not find MemoryThoughtHandler.TryGainMemory(Thought_Memory, Pawn); "
                     + "thought diary entries are disabled (a RimWorld update likely renamed it).");
+                DiaryPatchManifest.Report(
+                    "Thought",
+                    targetLabel,
+                    DiaryPatchManifest.HookStatus.Degraded,
+                    "target not found; thought diary entries disabled");
                 return;
             }
 
             harmony.Patch(target, postfix: new HarmonyMethod(typeof(ThoughtGainPatch), nameof(Postfix)));
+            DiaryPatchManifest.Report(
+                "Thought", targetLabel, DiaryPatchManifest.HookStatus.Applied);
         }
 
         /// <summary>

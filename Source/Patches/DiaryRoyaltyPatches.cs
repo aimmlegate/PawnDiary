@@ -79,7 +79,18 @@ namespace PawnDiary
             HeirAppointmentHookReady = false;
             PermitOwnerHookReady = false;
             PermitUseHookReady = false;
-            if (harmony == null || !ModsConfig.RoyaltyActive) return;
+            if (harmony == null || !ModsConfig.RoyaltyActive)
+            {
+                if (harmony != null)
+                {
+                    DiaryPatchManifest.Report(
+                        "Royalty",
+                        "all Royalty hooks",
+                        DiaryPatchManifest.HookStatus.Skipped,
+                        "Royalty inactive");
+                }
+                return;
+            }
             Type type = typeof(CompBladelinkWeapon);
             bool ready = true;
             List<string> personaFailures = new List<string>();
@@ -240,6 +251,15 @@ namespace PawnDiary
                 harmony, target, prefixName, postfixName, finalizerName, out failureDetail);
             if (!ready && failures != null)
                 failures.Add(targetLabel + " [" + failureDetail + "]");
+            DiaryPatchManifest.Report(
+                "Royalty",
+                targetLabel,
+                ready
+                    ? DiaryPatchManifest.HookStatus.Applied
+                    : failureDetail == "target method was not found"
+                        ? DiaryPatchManifest.HookStatus.Degraded
+                        : DiaryPatchManifest.HookStatus.Failed,
+                ready ? null : failureDetail);
             return ready;
         }
 
@@ -256,6 +276,15 @@ namespace PawnDiary
             bool ready = Patch(
                 harmony, target, prefixName, postfixName, finalizerName, out failureDetail);
             WarnMissingOnce(ready, targetLabel, fallback, failureDetail);
+            DiaryPatchManifest.Report(
+                "Royalty",
+                targetLabel,
+                ready
+                    ? DiaryPatchManifest.HookStatus.Applied
+                    : failureDetail == "target method was not found"
+                        ? DiaryPatchManifest.HookStatus.Degraded
+                        : DiaryPatchManifest.HookStatus.Failed,
+                ready ? null : failureDetail + "; " + fallback);
             return ready;
         }
 
