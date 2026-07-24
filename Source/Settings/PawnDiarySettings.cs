@@ -143,30 +143,38 @@ namespace PawnDiary
         public bool promptTestMode = false;
         // Master toggle for the LLM-titling flow. When false, no extra title call is made and
         // diary card headers stay date-only.
+        // FORCED ON and hidden from the settings window — see ApplyForcedFeatureSwitches.
         public bool generateTitles = true;
         // Display-only diary page atmosphere. When true, rare extreme entries can use unusual
         // spacing or staggered word sizes in the Diary tab. This never changes prompts or saved
         // generated text.
+        // FORCED ON and hidden from the settings window — see ApplyForcedFeatureSwitches.
         public bool enableAtmosphericFormatting = true;
-        // Experimental (default off): when true, the whole Diary window takes a subtle seasonal color
-        // wash that follows the season at the top of the page and crossfades as you scroll. Display-only
-        // — it never changes prompts or saved text. Off by default while the look is being tuned.
+        // Experimental: when true, the whole Diary window takes a subtle seasonal color wash that
+        // follows the season at the top of the page and crossfades as you scroll. Display-only — it
+        // never changes prompts or saved text.
+        // FORCED OFF and hidden from the settings window — see ApplyForcedFeatureSwitches.
         public bool enableSeasonalBackground = false;
         // Master toggle for live prompt enchantments. When true, first-person diary prompts may get
         // one live health/status hint weighted by DiaryPromptEnchantmentDefs.xml.
+        // DERIVED from contextDetailLevel — see ApplyForcedFeatureSwitches.
         public bool enablePromptEnchantments = true;
         // Master toggle for the psychotype (outlook) voice layer. When true, each pawn's psychotype rule
         // is folded into first-person prompts alongside their writing style. When false, the block is
         // omitted and pending psychotype rolls stay deferred; existing pawns keep their saved psychotype.
+        // DERIVED from contextDetailLevel — see ApplyForcedFeatureSwitches.
         public bool enablePsychotypes = true;
         // The ONE player-facing memory switch (design/MEMORY_SYSTEM_REDESIGN_PLAN.md §3.2): it
         // gates PROMPT INJECTION only — the "relevant past" lines and inline culture annotations.
         // Important-event capture and culture tracking continue while this is off, so re-enabling
         // later surfaces everything that happened meanwhile. The saved key predates the redesign
         // on purpose (§6): the old master value carries over.
+        // DERIVED from contextDetailLevel — see ApplyForcedFeatureSwitches.
         public bool enableMemorySystem = true;
         // Global prompt-context detail level. Full preserves the original prompt shape; smaller levels
-        // dynamically choose the most relevant optional fields for small local models.
+        // dynamically choose the most relevant optional fields for small local models. It is also the
+        // ONE player-facing switch for the three optional writing layers above (live context hints,
+        // psychotypes, pawn memory) — see ApplyForcedFeatureSwitches / PromptContextFeaturePolicy.
         public PromptContextDetailLevel contextDetailLevel = PromptContextDetailLevel.Full;
         // Master switch for public integration API behavior. Registration remains harmless while this
         // is off, but external submissions, reads, and provider invocations no-op.
@@ -1014,6 +1022,7 @@ namespace PawnDiary
             maxTokens = Mathf.Clamp(maxTokens, 32, 2048);
             temperature = Mathf.Clamp(temperature, 0f, 2f);
             contextDetailLevel = NormalizeContextDetailLevel(contextDetailLevel);
+            ApplyForcedFeatureSwitches();
             injectGeneratedSpeechToPlayLog = false;
             systemPromptOverride = systemPromptOverride ?? string.Empty;
             systemPromptReflectionOverride = systemPromptReflectionOverride ?? string.Empty;
@@ -1022,6 +1031,32 @@ namespace PawnDiary
             generationChanceWeight = ClampGenerationChanceWeight(generationChanceWeight);
             maxActiveDiaryEvents = ClampActiveDiaryEventLimit(maxActiveDiaryEvents);
             maxArchivedDiaryEvents = ClampArchivedDiaryEventLimit(maxArchivedDiaryEvents);
+        }
+
+        /// <summary>
+        /// Re-derives the settings the player no longer toggles one by one.
+        ///
+        /// Two groups live here. First, three display/writing switches are pinned to the shipped
+        /// behavior: short page titles and rare atmosphere formatting are always on, and the
+        /// experimental seasonal window tint is always off. Second, the three optional prompt layers
+        /// (live context hints, psychotypes, pawn memory) follow the Prompt context detail preset via
+        /// the pure <see cref="PromptContextFeaturePolicy"/> table.
+        ///
+        /// Called from <see cref="ClampValues"/>, which runs after loading settings, before saving
+        /// them, and once per settings-window frame — so an older settings file with the opposite
+        /// values converges the moment it is read, and clicking a preset row takes effect the same
+        /// frame. The fields stay real (not computed properties) so every existing reader, save
+        /// migration, and test seam keeps working unchanged.
+        /// </summary>
+        private void ApplyForcedFeatureSwitches()
+        {
+            generateTitles = true;
+            enableAtmosphericFormatting = true;
+            enableSeasonalBackground = false;
+
+            enablePromptEnchantments = PromptContextFeaturePolicy.AllowsPromptEnchantments(contextDetailLevel);
+            enablePsychotypes = PromptContextFeaturePolicy.AllowsPsychotypes(contextDetailLevel);
+            enableMemorySystem = PromptContextFeaturePolicy.AllowsMemoryContext(contextDetailLevel);
         }
 
         /// <summary>

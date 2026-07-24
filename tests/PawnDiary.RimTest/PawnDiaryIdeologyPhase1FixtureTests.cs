@@ -392,6 +392,11 @@ namespace PawnDiary.RimTests
             BeliefEventEvidence ambiguousEvidence = BeliefEventEvidenceFactory.ForEvent(
                 pawnId, tick, "fixture", "EventR53", DiaryEvent.InitiatorRole,
                 "obsidian orchards covenant mercy goldleaf lanterns", string.Empty);
+            ambiguousEvidence.matchFields.Add(new BeliefEvidenceTextFact
+            {
+                field = "event_label",
+                value = "obsidian orchards covenant mercy goldleaf lanterns"
+            });
             BeliefStanceResolution ambiguous = EventRelativeStanceResolver.Resolve(
                 new BeliefResolutionRequest
                 {

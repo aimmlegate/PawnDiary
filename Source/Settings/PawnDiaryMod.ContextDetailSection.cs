@@ -29,24 +29,38 @@ namespace PawnDiary
                 new Rect(innerRect.x, y, innerRect.width, ContextDetailFullRowHeight),
                 PromptContextDetailLevel.Full,
                 "PawnDiary.Settings.ContextDetail.Full.Added",
-                null);
+                null,
+                "PawnDiary.Settings.ContextDetail.Full.Layers");
             y += ContextDetailFullRowHeight + 4f;
 
             DrawContextDetailPresetRow(
                 new Rect(innerRect.x, y, innerRect.width, ContextDetailPresetRowHeight),
                 PromptContextDetailLevel.Balanced,
                 "PawnDiary.Settings.ContextDetail.Balanced.Added",
-                "PawnDiary.Settings.ContextDetail.Balanced.Cut");
+                "PawnDiary.Settings.ContextDetail.Balanced.Cut",
+                "PawnDiary.Settings.ContextDetail.Balanced.Layers");
             y += ContextDetailPresetRowHeight + 4f;
 
             DrawContextDetailPresetRow(
                 new Rect(innerRect.x, y, innerRect.width, ContextDetailPresetRowHeight),
                 PromptContextDetailLevel.Compact,
                 "PawnDiary.Settings.ContextDetail.Compact.Added",
-                "PawnDiary.Settings.ContextDetail.Compact.Cut");
+                "PawnDiary.Settings.ContextDetail.Compact.Cut",
+                "PawnDiary.Settings.ContextDetail.Compact.Layers");
         }
 
-        private static void DrawContextDetailPresetRow(Rect rect, PromptContextDetailLevel level, string addedKey, string cutKey)
+        /// <summary>
+        /// Draws one clickable preset row: what the preset sends, what it drops first, and which
+        /// optional writing layers (pawn memory, psychotype outlook, live context hints) it keeps.
+        /// The "cut first" line is absent for Full, so the row lays itself out as two or three
+        /// equal-height text lines depending on how many it was given.
+        /// </summary>
+        private static void DrawContextDetailPresetRow(
+            Rect rect,
+            PromptContextDetailLevel level,
+            string addedKey,
+            string cutKey,
+            string layersKey)
         {
             PromptContextDetailLevel normalizedLevel = PawnDiarySettings.NormalizeContextDetailLevel(level);
             if (Settings.contextDetailLevel == normalizedLevel)
@@ -74,19 +88,27 @@ namespace PawnDiary
             Text.Anchor = TextAnchor.UpperLeft;
             float textX = inner.x + nameWidth + gap;
             bool showCut = !string.IsNullOrEmpty(cutKey);
-            float detailHeight = showCut ? (inner.height - 4f) / 2f : inner.height;
-            Rect addLabelRect = new Rect(textX, inner.y, labelWidth, detailHeight);
-            Rect addTextRect = new Rect(addLabelRect.xMax + gap, inner.y, Mathf.Max(0f, inner.xMax - addLabelRect.xMax - gap), detailHeight);
+            const float lineGap = 4f;
+            int lineCount = showCut ? 3 : 2;
+            float detailHeight = (inner.height - lineGap * (lineCount - 1)) / lineCount;
+            float lineY = inner.y;
 
-            DrawAccentLabel(addLabelRect, "PawnDiary.Settings.ContextDetail.AddedLabel".Translate().ToString());
-            Widgets.LabelFit(addTextRect, addedKey.Translate().ToString());
+            DrawContextDetailTextLine(
+                textX, lineY, labelWidth, gap, inner.xMax, detailHeight,
+                "PawnDiary.Settings.ContextDetail.AddedLabel", addedKey);
+            lineY += detailHeight + lineGap;
+
             if (showCut)
             {
-                Rect cutLabelRect = new Rect(textX, inner.y + detailHeight + 4f, labelWidth, detailHeight);
-                Rect cutTextRect = new Rect(cutLabelRect.xMax + gap, cutLabelRect.y, Mathf.Max(0f, inner.xMax - cutLabelRect.xMax - gap), detailHeight);
-                DrawAccentLabel(cutLabelRect, "PawnDiary.Settings.ContextDetail.CutLabel".Translate().ToString());
-                Widgets.LabelFit(cutTextRect, cutKey.Translate().ToString());
+                DrawContextDetailTextLine(
+                    textX, lineY, labelWidth, gap, inner.xMax, detailHeight,
+                    "PawnDiary.Settings.ContextDetail.CutLabel", cutKey);
+                lineY += detailHeight + lineGap;
             }
+
+            DrawContextDetailTextLine(
+                textX, lineY, labelWidth, gap, inner.xMax, detailHeight,
+                "PawnDiary.Settings.ContextDetail.LayersLabel", layersKey);
 
             Text.Anchor = previousAnchor;
             Text.Font = previousFont;
@@ -95,7 +117,29 @@ namespace PawnDiary
             if (Widgets.ButtonInvisible(rect))
             {
                 Settings.contextDetailLevel = normalizedLevel;
+                // Picking a preset also flips the three optional writing layers. ClampValues (called at
+                // the end of the Main tab draw) re-derives them, so the change lands this frame.
             }
+        }
+
+        /// <summary>
+        /// Draws one accent-labelled explanation line inside a preset row. The caller keeps the shared
+        /// font/anchor state, so this only positions the label and its wrapped-to-fit description.
+        /// </summary>
+        private static void DrawContextDetailTextLine(
+            float textX,
+            float lineY,
+            float labelWidth,
+            float gap,
+            float rightEdge,
+            float lineHeight,
+            string labelKey,
+            string textKey)
+        {
+            Rect labelRect = new Rect(textX, lineY, labelWidth, lineHeight);
+            Rect textRect = new Rect(labelRect.xMax + gap, lineY, Mathf.Max(0f, rightEdge - labelRect.xMax - gap), lineHeight);
+            DrawAccentLabel(labelRect, labelKey.Translate().ToString());
+            Widgets.LabelFit(textRect, textKey.Translate().ToString());
         }
     }
 }

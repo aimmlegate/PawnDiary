@@ -15,6 +15,10 @@ namespace PawnDiary
         public string fullContext = string.Empty;
         public BeliefStanceResolution resolution = new BeliefStanceResolution();
         public IdeologyNarrativeSnapshot ideologyNarrative;
+        // A recent-event reflection reuses the already-selected, prompt-safe narrative text from
+        // that exact source page. It deliberately carries no evidence/reference state forward:
+        // duplicating those rows would let one reflection masquerade as a second canonical event.
+        public string frozenNarrativeContext = string.Empty;
         // The same bounded N1 history snapshot feeds both resolver-level precept diversity and the
         // shared candidate selector. Carrying it with a prepared body result avoids a second store scan.
         public List<string> recentSelectedCandidateKeys = new List<string>();
@@ -224,7 +228,14 @@ namespace PawnDiary
                     evaluated = true,
                     resolution = resolution,
                     fullContext = BeliefContextFormatter.Format(
-                        resolution, NarrativeDetailLevelTokens.Full, effective)
+                        resolution, NarrativeDetailLevelTokens.Full, effective),
+                    ideologyNarrative = resolution.includeNarrativeInterpretation
+                        ? IdeologyNarrativeSnapshotFactory.Create(
+                            resolution,
+                            evidence.narrative,
+                            effective,
+                            FormatInterpretationFact(resolution, effective))
+                        : null
                 };
             }
             catch (Exception exception)

@@ -184,39 +184,42 @@ namespace PawnDiary
                 listing.Gap(4f);
                 DrawApiEndpointsEditor(listing);
 
-                SectionTitle(listing, "PawnDiary.Settings.GenerationHeader".Translate());
-                listing.CheckboxLabeled(
-                    "PawnDiary.Settings.ShowDiaryInspectTab".Translate(),
-                    ref Settings.showDiaryInspectTab,
-                    "PawnDiary.Settings.ShowDiaryInspectTabTip".Translate());
+                // Where diaries open. The reading window is the mode switch, so it leads the group:
+                // while it is on, DiaryUiRouter hides both the inspect tab and the per-pawn Diary
+                // gizmo, which makes the inspect-tab checkbox below meaningless — so hide it too
+                // rather than showing a switch that cannot do anything.
+                SectionTitle(listing, "PawnDiary.Settings.ReadingHeader".Translate());
                 listing.CheckboxLabeled(
                     "PawnDiary.Settings.UseDiaryReaderWindow".Translate(),
                     ref Settings.useDiaryReaderWindow,
                     "PawnDiary.Settings.UseDiaryReaderWindowTip".Translate());
-                listing.CheckboxLabeled(
-                    "PawnDiary.Settings.GenerateTitles".Translate(),
-                    ref Settings.generateTitles,
-                    "PawnDiary.Settings.GenerateTitlesTip".Translate());
-                listing.CheckboxLabeled(
-                    "PawnDiary.Settings.EnableAtmosphericFormatting".Translate(),
-                    ref Settings.enableAtmosphericFormatting,
-                    "PawnDiary.Settings.EnableAtmosphericFormattingTip".Translate());
-                listing.CheckboxLabeled(
-                    "PawnDiary.Settings.EnableSeasonalBackground".Translate(),
-                    ref Settings.enableSeasonalBackground,
-                    "PawnDiary.Settings.EnableSeasonalBackgroundTip".Translate());
-                listing.CheckboxLabeled(
-                    "PawnDiary.Settings.EnablePromptEnchantments".Translate(),
-                    ref Settings.enablePromptEnchantments,
-                    "PawnDiary.Settings.EnablePromptEnchantmentsTip".Translate());
-                listing.CheckboxLabeled(
-                    "PawnDiary.Settings.EnablePsychotypes".Translate(),
-                    ref Settings.enablePsychotypes,
-                    "PawnDiary.Settings.EnablePsychotypesTip".Translate());
-                listing.CheckboxLabeled(
-                    "PawnDiary.Settings.EnableMemorySystem".Translate(),
-                    ref Settings.enableMemorySystem,
-                    "PawnDiary.Settings.EnableMemorySystemTip".Translate());
+                if (!Settings.useDiaryReaderWindow)
+                {
+                    listing.CheckboxLabeled(
+                        "PawnDiary.Settings.ShowDiaryInspectTab".Translate(),
+                        ref Settings.showDiaryInspectTab,
+                        "PawnDiary.Settings.ShowDiaryInspectTabTip".Translate());
+                }
+
+                // How much gets written. Page titles and rare atmosphere formatting are always on and
+                // the experimental seasonal tint is always off (PawnDiarySettings.ApplyForcedFeatureSwitches),
+                // so this group is the frequency dial only.
+                SectionTitle(listing, "PawnDiary.Settings.GenerationHeader".Translate());
+                listing.Label("PawnDiary.Settings.GenerationChanceWeight".Translate(Settings.generationChanceWeight.ToString("0.##")));
+                Settings.generationChanceWeight = listing.Slider(
+                    Settings.generationChanceWeight,
+                    PawnDiarySettings.MinGenerationChanceWeight,
+                    PawnDiarySettings.MaxGenerationChanceWeight);
+
+                // The preset block also owns live context hints, psychotypes, and pawn memory, which is
+                // why those three no longer have checkboxes of their own.
+                DrawContextDetailSection(listing);
+
+                SectionTitle(listing, "PawnDiary.Settings.StorageHeader".Translate());
+                DrawMaxActiveDiaryEventsField(listing);
+                DrawMaxArchivedDiaryEventsField(listing);
+
+                SectionTitle(listing, "PawnDiary.Settings.IntegrationsHeader".Translate());
                 listing.CheckboxLabeled(
                     "PawnDiary.Settings.AllowExternalIntegrations".Translate(),
                     ref Settings.allowExternalIntegrations,
@@ -232,6 +235,7 @@ namespace PawnDiary
                     ref Settings.enableErrorReporting,
                     "PawnDiary.Settings.EnableErrorReportingTip".Translate());
 
+                SectionTitle(listing, "PawnDiary.Settings.ExperimentalHeader".Translate());
                 listing.CheckboxLabeled(
                     "PawnDiary.Settings.ShowExperimentalAdvancedOverrides".Translate(),
                     ref Settings.showExperimentalAdvancedOverrides,
@@ -244,16 +248,6 @@ namespace PawnDiary
                         ref Settings.promptTestMode,
                         "PawnDiary.Settings.PromptTestModeTip".Translate());
                 }
-
-                listing.Label("PawnDiary.Settings.GenerationChanceWeight".Translate(Settings.generationChanceWeight.ToString("0.##")));
-                Settings.generationChanceWeight = listing.Slider(
-                    Settings.generationChanceWeight,
-                    PawnDiarySettings.MinGenerationChanceWeight,
-                    PawnDiarySettings.MaxGenerationChanceWeight);
-                DrawMaxActiveDiaryEventsField(listing);
-                DrawMaxArchivedDiaryEventsField(listing);
-                DrawContextDetailSection(listing);
-
             }
             finally
             {

@@ -286,6 +286,10 @@
   <PawnDiary.Settings.Category>Pawn Diary</PawnDiary.Settings.Category>
   <PawnDiary.Settings.Connection>Подключение к модели</PawnDiary.Settings.Connection>
   <PawnDiary.Settings.GenerationHeader>Написание дневника</PawnDiary.Settings.GenerationHeader>
+  <PawnDiary.Settings.ReadingHeader>Чтение</PawnDiary.Settings.ReadingHeader>
+  <PawnDiary.Settings.StorageHeader>Хранение страниц</PawnDiary.Settings.StorageHeader>
+  <PawnDiary.Settings.IntegrationsHeader>Интеграции и конфиденциальность</PawnDiary.Settings.IntegrationsHeader>
+  <PawnDiary.Settings.ExperimentalHeader>Экспериментальное</PawnDiary.Settings.ExperimentalHeader>
   <PawnDiary.Settings.ApisHeader>Подключения работают параллельно, каждое со своей моделью</PawnDiary.Settings.ApisHeader>
   <PawnDiary.Settings.ShowModelSettings>Показать модели</PawnDiary.Settings.ShowModelSettings>
   <PawnDiary.Settings.HideModelSettings>Скрыть модели</PawnDiary.Settings.HideModelSettings>
@@ -364,18 +368,6 @@
   <PawnDiary.Reader.UnknownPawn>Неизвестный персонаж</PawnDiary.Reader.UnknownPawn>
   <PawnDiary.Reader.PawnRowPages>{0} стр.</PawnDiary.Reader.PawnRowPages>
   <PawnDiary.Reader.SelectPawnHint>Выберите персонажа слева, чтобы прочитать его дневник.</PawnDiary.Reader.SelectPawnHint>
-  <PawnDiary.Settings.GenerateTitles>Короткие заголовки страниц</PawnDiary.Settings.GenerateTitles>
-  <PawnDiary.Settings.GenerateTitlesTip>Если включено, после каждой страницы модель отдельным запросом пишет короткий заголовок. Это добавляет задержку и расход токенов. Если выключено, в заголовке остаётся дата.</PawnDiary.Settings.GenerateTitlesTip>
-  <PawnDiary.Settings.EnableAtmosphericFormatting>Редкое атмосферное оформление</PawnDiary.Settings.EnableAtmosphericFormatting>
-  <PawnDiary.Settings.EnableAtmosphericFormattingTip>Если включено, особенно напряжённые страницы могут получать необычные отступы, скачущие слова или искажённую странную речь. Это касается нервных срывов, аномалий, мрачных записей, смерти и тяжёлых состояний. Запросы и сохранённый текст не меняются.</PawnDiary.Settings.EnableAtmosphericFormattingTip>
-  <PawnDiary.Settings.EnableSeasonalBackground>Сезонный оттенок окна (эксперимент)</PawnDiary.Settings.EnableSeasonalBackground>
-  <PawnDiary.Settings.EnableSeasonalBackgroundTip>Если включено, всё окно дневника получает мягкий цветовой оттенок под сезон читаемой страницы (весна — зелёный, лето — золотой, осень — оранжевый, зима — синий) с плавным переходом при прокрутке. Только оформление: запросы и сохранённый текст не меняются. По умолчанию выключено, пока внешний вид дорабатывается.</PawnDiary.Settings.EnableSeasonalBackgroundTip>
-  <PawnDiary.Settings.EnablePromptEnchantments>Игровой контекст в запросах</PawnDiary.Settings.EnablePromptEnchantments>
-  <PawnDiary.Settings.EnablePromptEnchantmentsTip>Если включено, запрос от первого лица может получить одну важную подсказку о текущем состоянии поселенца или поселения. XML задаёт, какие подсказки возможны и как часто они выбираются.</PawnDiary.Settings.EnablePromptEnchantmentsTip>
-  <PawnDiary.Settings.EnablePsychotypes>Психотипы поселенцев</PawnDiary.Settings.EnablePsychotypes>
-  <PawnDiary.Settings.EnablePsychotypesTip>Если включено, каждый поселенец получает психотип — склад характера и взгляд на мир: что он замечает, ценит и чего боится. Психотип выбирается случайно с учётом увлечений в навыках и добавляется в запросы от первого лица рядом с манерой письма. Если настройка выключена, взгляд в запросы не попадает, а психотипы новых поселенцев ждут включения; уже назначенные сохраняются. Выбрать психотип заново можно во вкладке «Дневник», в редакторе манеры письма.</PawnDiary.Settings.EnablePsychotypesTip>
-  <PawnDiary.Settings.EnableMemorySystem>Память пешек в дневниках</PawnDiary.Settings.EnableMemorySystem>
-  <PawnDiary.Settings.EnableMemorySystemTip>Если включено, в подсказку дневника могут попадать до двух датированных фактов из прошлого пешки (свадьбы, утраты, перемены тела, титулы и другие важные события) и короткая культурная ремарка к месту. Если выключено, прошлое в подсказки не подставляется — но важные события всё равно записываются, а культурный фон отслеживается, так что после включения всё вернётся.</PawnDiary.Settings.EnableMemorySystemTip>
   <PawnDiary.Settings.AllowExternalIntegrations>Разрешить интеграции сторонних модов</PawnDiary.Settings.AllowExternalIntegrations>
   <PawnDiary.Settings.AllowExternalIntegrationsTip>Если включено, другие моды могут через публичный API для интеграций отправлять события в дневник, читать открытые сводки и добавлять краткие строки контекста поселенца.</PawnDiary.Settings.AllowExternalIntegrationsTip>
   <PawnDiary.Settings.EnableExternalKeySharing>Передавать ключи API другим модам</PawnDiary.Settings.EnableExternalKeySharing>
@@ -411,15 +403,19 @@
   <PawnDiary.Settings.ContextDetail.Balanced>Сбалансированный</PawnDiary.Settings.ContextDetail.Balanced>
   <PawnDiary.Settings.ContextDetail.Compact>Краткий</PawnDiary.Settings.ContextDetail.Compact>
   <PawnDiary.Settings.ContextDetailSectionTitle>Подробность контекста запроса</PawnDiary.Settings.ContextDetailSectionTitle>
-  <PawnDiary.Settings.ContextDetailSectionHelp>Это лишь пример: реальные события используют фактически собранные данные. Нажмите строку, чтобы выбрать, сколько необязательного контекста отправлять или отсекать.</PawnDiary.Settings.ContextDetailSectionHelp>
+  <PawnDiary.Settings.ContextDetailSectionHelp>Пример для наглядности: в игре берутся настоящие собранные факты. Выберите строку, чтобы задать объём необязательного контекста и то, какие слои письма остаются включёнными.</PawnDiary.Settings.ContextDetailSectionHelp>
   <PawnDiary.Settings.ContextDetail.RowTip>Нажмите строку, чтобы выбрать этот уровень подробности.</PawnDiary.Settings.ContextDetail.RowTip>
   <PawnDiary.Settings.ContextDetail.AddedLabel>Отправляется</PawnDiary.Settings.ContextDetail.AddedLabel>
   <PawnDiary.Settings.ContextDetail.CutLabel>Исключается первым</PawnDiary.Settings.ContextDetail.CutLabel>
+  <PawnDiary.Settings.ContextDetail.LayersLabel>Слои</PawnDiary.Settings.ContextDetail.LayersLabel>
   <PawnDiary.Settings.ContextDetail.Full.Added>Все доступные данные: сведения о событии, поселенце и окружении, связь с прошлыми записями, предыдущая запись, оружие и тип события.</PawnDiary.Settings.ContextDetail.Full.Added>
+  <PawnDiary.Settings.ContextDetail.Full.Layers>Память поселенцев, психотипы и игровой контекст в запросах — всё включено.</PawnDiary.Settings.ContextDetail.Full.Layers>
   <PawnDiary.Settings.ContextDetail.Balanced.Added>Обязательные факты и самые важные подсказки: опасность, тяжёлое состояние здоровья или настроения, прямые инструкции и особые указания по событию.</PawnDiary.Settings.ContextDetail.Balanced.Added>
   <PawnDiary.Settings.ContextDetail.Balanced.Cut>Маловажные отсылки к прошлым записям, сведения об обычной обстановке и тоне, второстепенные числа и повторы.</PawnDiary.Settings.ContextDetail.Balanced.Cut>
+  <PawnDiary.Settings.ContextDetail.Balanced.Layers>Психотипы и игровой контекст остаются, память поселенцев выключена.</PawnDiary.Settings.ContextDetail.Balanced.Layers>
   <PawnDiary.Settings.ContextDetail.Compact.Added>Обязательные факты и одна наиболее полезная деталь: например опасность, травма, обязанность или важные отношения.</PawnDiary.Settings.ContextDetail.Compact.Added>
   <PawnDiary.Settings.ContextDetail.Compact.Cut>Большинство отсылок к прошлым записям и сведений об окружении, повседневные данные о поселенце и малозначимые подробности.</PawnDiary.Settings.ContextDetail.Compact.Cut>
+  <PawnDiary.Settings.ContextDetail.Compact.Layers>Память поселенцев, психотипы и игровой контекст — всё выключено.</PawnDiary.Settings.ContextDetail.Compact.Layers>
   <PawnDiary.Settings.GenerationChanceWeight>Множитель случайных записей: {0}×</PawnDiary.Settings.GenerationChanceWeight>
   <PawnDiary.Settings.GenerationChanceWeightHelp>Множитель вероятности необязательных страниц: случайных записей о работе, развитии отношений и применении способностей. 1× использует значения XML; 0× отключает такие страницы.</PawnDiary.Settings.GenerationChanceWeightHelp>
   <PawnDiary.Settings.MaxActiveDiaryEvents>Активных страниц на поселенца ({0}–{1})</PawnDiary.Settings.MaxActiveDiaryEvents>
@@ -483,7 +479,7 @@
   <PawnDiary.Settings.PsychotypeStudioTitle>Психотипы</PawnDiary.Settings.PsychotypeStudioTitle>
   <PawnDiary.Settings.PsychotypeStudioHelp>Редактируйте названия, правила взгляда и семейство из DiaryPsychotypeDefs.xml или добавляйте свои. Свой психотип можно назначить поселенцу вручную, но случайно он не выпадает; правка готового меняет то, что может выпасть новым поселенцам.</PawnDiary.Settings.PsychotypeStudioHelp>
   <PawnDiary.Settings.PsychotypeStudioSummary>Психотипов: {0}; своих: {1}; изменено: {2}</PawnDiary.Settings.PsychotypeStudioSummary>
-  <PawnDiary.Settings.PsychotypeStudioDisabledHint>Психотипы выключены в основных настройках; правки применятся, когда вы их снова включите.</PawnDiary.Settings.PsychotypeStudioDisabledHint>
+  <PawnDiary.Settings.PsychotypeStudioDisabledHint>Психотипы выключены на кратком уровне подробности запроса; правки применятся, когда вы выберете полный или сбалансированный.</PawnDiary.Settings.PsychotypeStudioDisabledHint>
   <PawnDiary.Settings.AddPsychotypePreset>Добавить свой психотип</PawnDiary.Settings.AddPsychotypePreset>
   <PawnDiary.Settings.NewPsychotypeLabel>Новый психотип</PawnDiary.Settings.NewPsychotypeLabel>
   <PawnDiary.Settings.ResetPsychotypePresets>Сбросить все психотипы</PawnDiary.Settings.ResetPsychotypePresets>

@@ -274,6 +274,19 @@ namespace PawnDiary.RimTests
         [Test]
         public static void BeliefReflectionResolvesItsTemplateAndDrivesThePolicyTokenCap()
         {
+            List<DiaryPromptFieldDef> fallback = DiaryPromptTemplates.FallbackFieldsFor(
+                DiaryPromptTemplates.SoloBeliefReflection);
+            int fallbackNarrativeFields = 0;
+            int fallbackMemoryFields = 0;
+            for (int i = 0; i < fallback.Count; i++)
+            {
+                if (fallback[i]?.source == NarrativeContextPrompt.Source) fallbackNarrativeFields++;
+                if (fallback[i]?.source == MemoryContextPrompt.Source) fallbackMemoryFields++;
+            }
+            PawnDiaryRimTestScope.Require(
+                fallbackNarrativeFields == 1 && fallbackMemoryFields == 1,
+                "The stripped-XML SoloBeliefReflection fallback lost NarrativeContext or MemoryContext.");
+
             if (!ModsConfig.IdeologyActive)
             {
                 // Not a silent pass: prove the gate is what stops it, so a broken gate cannot hide here.
@@ -286,8 +299,10 @@ namespace PawnDiary.RimTests
 
             const string povText = "Turning the ideoligion over in the dark.";
             const string instruction = "Reflect on what you still believe.";
+            const string frozenNarrative = "The earlier page preserved one exact narrative fact.";
             DiaryEvent diaryEvent = scope.FireAndRequireEvent(
-                () => DiaryEvents.Submit(BeliefSignalFor(povText, instruction)),
+                () => DiaryEvents.Submit(BeliefSignalFor(
+                    povText, instruction, frozenNarrative)),
                 BeliefReflectionEventData.DefNameToken,
                 pawn,
                 null);
@@ -297,6 +312,8 @@ namespace PawnDiary.RimTests
 
             RequireTemplate(diaryEvent, DiaryPromptTemplates.SoloBeliefReflection);
             RequireContains(prompt, "instruction: " + instruction, "belief reflection instruction line");
+            RequireContains(prompt, frozenNarrative,
+                "belief reflection frozen narrative-context line");
             RequireDirectSpeechOmitted(diaryEvent, DiaryPromptTemplates.SoloBeliefReflection);
 
             // The belief template drives a 360-token cap of its own, like quadrum's 350 and arc's 420.
@@ -374,7 +391,10 @@ namespace PawnDiary.RimTests
 
         // Builds the exact signal DispatchPreparedBeliefReflection sends, with a literal frozen belief
         // block so nothing depends on the live pawn's ideo tracker or on saved reflection debt.
-        private static BeliefReflectionSignal BeliefSignalFor(string povText, string instruction = "Reflect.")
+        private static BeliefReflectionSignal BeliefSignalFor(
+            string povText,
+            string instruction = "Reflect.",
+            string frozenNarrativeContext = "")
         {
             BeliefReflectionEventData data = new BeliefReflectionEventData
             {
@@ -389,7 +409,8 @@ namespace PawnDiary.RimTests
             {
                 evaluated = true,
                 fullContext = "faith: steady",
-                resolution = new BeliefStanceResolution()
+                resolution = new BeliefStanceResolution(),
+                frozenNarrativeContext = frozenNarrativeContext
             };
             return new BeliefReflectionSignal(
                 data,
