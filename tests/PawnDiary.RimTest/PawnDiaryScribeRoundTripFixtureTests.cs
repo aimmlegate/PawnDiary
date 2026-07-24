@@ -481,6 +481,103 @@ namespace PawnDiary.RimTests
                 "An archive row should retain its compact selected-key history.");
         }
 
+        /// <summary>
+        /// Quality Wave Phase 2's behavior-free contract migration proves both additive POV strings
+        /// use real Scribe keys, old rows normalize empty, neutral pages reject pawn-only context, and
+        /// malformed oversized values are capped during PostLoadInit.
+        /// </summary>
+        [Test]
+        public static void QualityWavePovContextRoundTripsAndNormalizes()
+        {
+            DiaryEvent original = new DiaryEvent
+            {
+                eventId = "evt_quality_wave_contract",
+                tick = 456791,
+                date = "8th Aprimay 5502",
+                interactionDefName = "Chat",
+                interactionLabel = "chat",
+                gameContext = "source=rimtest_quality_wave",
+                colorCue = DiaryEvent.QuietColorCue,
+                initiatorPawnId = "Thing_Human_QualityInit",
+                initiatorName = "Mira",
+                recipientPawnId = "Thing_Human_QualityRecip",
+                recipientName = "Sol",
+            };
+            original.SetIdentitySummary(DiaryEvent.InitiatorRole,
+                "relationships=Kai (sister, friendly)");
+            original.SetIdentitySummary(DiaryEvent.RecipientRole,
+                "relationships=Uma (rival, hostile)");
+            original.SetMoodSnapshot(DiaryEvent.InitiatorRole,
+                "mood=stressed; thoughts=hungry (negative)");
+            original.SetMoodSnapshot(DiaryEvent.RecipientRole, "mood=happy");
+            original.SetIdentitySummary(DiaryEvent.NeutralRole, "must not persist");
+            original.SetMoodSnapshot(DiaryEvent.NeutralRole, "must not persist");
+
+            DiaryEvent loaded = ScribeRoundTrip(original);
+            AssertStr("relationships=Kai (sister, friendly)",
+                loaded.IdentitySummaryForRole(DiaryEvent.InitiatorRole),
+                "initiator identity summary");
+            AssertStr("relationships=Uma (rival, hostile)",
+                loaded.IdentitySummaryForRole(DiaryEvent.RecipientRole),
+                "recipient identity summary");
+            AssertStr("mood=stressed; thoughts=hungry (negative)",
+                loaded.MoodSnapshotForRole(DiaryEvent.InitiatorRole),
+                "initiator mood snapshot");
+            AssertStr("mood=happy",
+                loaded.MoodSnapshotForRole(DiaryEvent.RecipientRole),
+                "recipient mood snapshot");
+            AssertStr(string.Empty, loaded.IdentitySummaryForRole(DiaryEvent.NeutralRole),
+                "neutral identity summary");
+            AssertStr(string.Empty, loaded.MoodSnapshotForRole(DiaryEvent.NeutralRole),
+                "neutral mood snapshot");
+
+            DiaryEvent legacyLoaded = ScribeRoundTrip(new DiaryEvent
+            {
+                eventId = "evt_quality_wave_legacy",
+                tick = 456792,
+                date = "8th Aprimay 5502",
+                interactionDefName = "Chat",
+                interactionLabel = "chat",
+                gameContext = "source=rimtest_quality_wave",
+                colorCue = DiaryEvent.QuietColorCue,
+                solo = true,
+                initiatorPawnId = "Thing_Human_QualityLegacy",
+                initiatorName = "Old Save",
+            });
+            AssertStr(string.Empty,
+                legacyLoaded.IdentitySummaryForRole(DiaryEvent.InitiatorRole),
+                "legacy identity summary");
+            AssertStr(string.Empty,
+                legacyLoaded.MoodSnapshotForRole(DiaryEvent.InitiatorRole),
+                "legacy mood snapshot");
+
+            // Bypass the normal setters to simulate a malformed/modded save whose raw slot value
+            // exceeds the defensive contract. The real PostLoadInit path must repair it.
+            FieldInfo slotField = typeof(DiaryEvent).GetField(
+                "initiatorSlot", BindingFlags.Instance | BindingFlags.NonPublic);
+            Require(slotField != null, "Could not locate DiaryEvent.initiatorSlot for cap fixture.");
+            DiaryEvent oversized = new DiaryEvent
+            {
+                eventId = "evt_quality_wave_oversized",
+                tick = 456793,
+                interactionDefName = "Chat",
+                interactionLabel = "chat",
+                initiatorPawnId = "Thing_Human_QualityOversized",
+                initiatorName = "Oversized",
+                solo = true,
+            };
+            DiaryEvent.PovSlot rawSlot = (DiaryEvent.PovSlot)slotField.GetValue(oversized);
+            rawSlot.identitySummary = new string('i', 700);
+            rawSlot.moodSnapshot = new string('m', 701);
+            slotField.SetValue(oversized, rawSlot);
+
+            DiaryEvent capped = ScribeRoundTrip(oversized);
+            Require(capped.IdentitySummaryForRole(DiaryEvent.InitiatorRole).Length == 600,
+                "identitySummary was not capped to 600 characters on load.");
+            Require(capped.MoodSnapshotForRole(DiaryEvent.InitiatorRole).Length == 600,
+                "moodSnapshot was not capped to 600 characters on load.");
+        }
+
         // ---- ArchivedDiaryEntry round-trip ---------------------------------------------------------
 
         /// <summary>

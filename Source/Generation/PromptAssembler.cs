@@ -64,6 +64,8 @@ namespace PawnDiary
         public string relationship;
         public string narrativeContext;
         public string memoryContext;
+        public string identitySummary;
+        public string moodSnapshot;
         public string beliefContext;
         public string lastOpener;
         public string previousEntryEnding;
@@ -210,6 +212,8 @@ namespace PawnDiary
             // pulling in the separate narrative, memory, and belief policy implementations.
             if (Eq(source, "NarrativeContext")) return v.narrativeContext;
             if (Eq(source, "MemoryContext")) return v.memoryContext;
+            if (Eq(source, "Identity")) return v.identitySummary;
+            if (Eq(source, "MoodSnapshot")) return v.moodSnapshot;
             if (Eq(source, "BeliefContext")) return v.beliefContext;
             if (Eq(source, "LastOpener")) return v.lastOpener;
             if (Eq(source, "PreviousEntryEnding")) return v.previousEntryEnding;

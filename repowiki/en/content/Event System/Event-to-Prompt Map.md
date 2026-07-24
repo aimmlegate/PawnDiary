@@ -92,6 +92,15 @@ not thread-safe) from `LanguageDatabase.activeLanguage.FriendlyNameNative`, and 
 resolvable language name, or `outputLanguageDirectiveEnabled=false` in `DiaryTuningDef.xml` leaves the
 composed system prompt byte-identical to before.
 
+### Per-POV frozen context
+
+First-person events persist optional context in separate initiator and recipient slots so prompt
+assembly never has to re-read live pawn state. The additive `IdentitySummary` and `MoodSnapshot`
+fields follow that path from `DiaryEvent.PovSlot` through `DiaryPovPayload` and `PromptValues`;
+neutral chronicle pages cannot receive them. Missing old-save keys normalize to empty, each saved
+value has a defensive 600-character cap, and an empty field costs no prompt tokens. Their owning
+capture policies decide whether and when to populate them.
+
 ## XML ownership
 
 | File | Owns |

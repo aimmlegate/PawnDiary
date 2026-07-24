@@ -400,6 +400,8 @@ namespace PawnDiary
                 memoryContext = MemoryContextPrompt.Compose(
                     pov?.memoryContext,
                     request.policy?.memoryContextInstruction),
+                identitySummary = pov?.identitySummary,
+                moodSnapshot = pov?.moodSnapshot,
                 beliefContext = BeliefContextPrompt.Compose(
                     pov?.beliefContext,
                     DetailToken(request.contextDetailLevel),

@@ -24,6 +24,7 @@ namespace DiaryPipelineTests
             TestBeliefCombinedDlcPromptFixtures();
             TestMemoryContextProjectabilityAndTemplates();
             TestMemoryContextRequiredInEveryPreset();
+            TestQualityWavePovContextContracts();
             TestPromptContextDetailSelection();
             TestPromptContextDetailOverrideResolution();
             TestOwnedPromptTextIsNotSentenceCapped();
@@ -166,6 +167,35 @@ namespace DiaryPipelineTests
             AssertTrue(
                 "prompt policy does not mirror inherited recipient instructions",
                 !PromptSettingsMenuPolicy.TemplateFieldShouldShowInheritedFallback("recipientFinalInstruction"));
+        }
+
+        /// <summary>
+        /// Phase 2's shared migration is intentionally behavior-free: it only proves that the two
+        /// additive strings survive the plain POV contract and resolve through their stable template
+        /// source tokens. A5/B2 add capture policy and XML rows in their own releases.
+        /// </summary>
+        private static void TestQualityWavePovContextContracts()
+        {
+            DiaryPovPayload payload = new DiaryPovPayload
+            {
+                identitySummary = "relationships=Kim (sister, friendly)",
+                moodSnapshot = "mood=stressed; thoughts=hungry (negative)"
+            };
+            PromptValues values = new PromptValues
+            {
+                identitySummary = payload.identitySummary,
+                moodSnapshot = payload.moodSnapshot
+            };
+
+            AssertEqual("Identity source resolves the frozen POV identity summary",
+                payload.identitySummary,
+                PromptAssembler.ResolveFieldValue("Identity", string.Empty, values));
+            AssertEqual("MoodSnapshot source resolves the frozen event-time mood string",
+                payload.moodSnapshot,
+                PromptAssembler.ResolveFieldValue("MoodSnapshot", string.Empty, values));
+            AssertEqual("unknown source remains empty after the Phase 2 contract extension",
+                string.Empty,
+                PromptAssembler.ResolveFieldValue("QualityWaveUnknown", string.Empty, values));
         }
 
         private static void TestTuningOverrideMigration()

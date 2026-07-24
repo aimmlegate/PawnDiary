@@ -61,6 +61,10 @@ namespace PawnDiary
         // (MEMORY_SYSTEM_REDESIGN_PLAN §3.2). Empty means no related record surfaced; the prompt
         // field disappears entirely (zero token cost).
         public string memoryContext;
+        // Quality Wave Phase 2 event-time facts. Empty is the normal path until the owning feature
+        // chooses to populate the slot, and therefore costs no prompt tokens.
+        public string identitySummary;
+        public string moodSnapshot;
         // The pawn's culture defNames from the knowledge state (§4.1), read at payload build time
         // so annotations always use the LATEST adopted culture. Blank = no resolved culture.
         public string originCultureDefName;

@@ -270,6 +270,8 @@ namespace PawnDiary
                 continuity = diaryEvent.ContinuityForRole(role),
                 narrativeContext = diaryEvent.NarrativeContextForRole(role),
                 memoryContext = diaryEvent.MemoryContextForRole(role),
+                identitySummary = diaryEvent.IdentitySummaryForRole(role),
+                moodSnapshot = diaryEvent.MoodSnapshotForRole(role),
                 beliefContext = diaryEvent.BeliefContextForRole(role),
                 lastOpener = diaryEvent.LastOpenerForRole(role),
                 previousEntryEnding = diaryEvent.PreviousEntryEndingForRole(role),

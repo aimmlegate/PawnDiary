@@ -138,6 +138,11 @@ namespace PawnDiary
             // no memory surfaced (the prompt field disappears entirely). Capped at 600 chars on
             // save-normalization so a corrupt save cannot bloat the prompt.
             internal string memoryContext;
+            // Quality Wave Phase 2 additive context. These are frozen event-time strings for the
+            // first-person pawn slots only. Keeping them beside memoryContext gives both features the
+            // same save/load and prompt-projection path without exposing live Pawn state downstream.
+            internal string identitySummary;
+            internal string moodSnapshot;
             // Ideology Phase 1: full, sanitized event-time belief block. Prompt detail presets filter
             // this saved value; they never re-read or re-resolve live doctrine.
             internal string beliefContext;
@@ -436,6 +441,10 @@ namespace PawnDiary
             Scribe_Values.Look(ref slot.narrativeContext, NarrativeSlotKey(prefix, NarrativeSaveKeys.Context));
             // Additive memory-context key. Old saves leave this null; NormalizeLoadedSlot coalesces it.
             Scribe_Values.Look(ref slot.memoryContext, prefix + "MemoryContext");
+            // Quality Wave Phase 2 additive keys. Old saves leave both null; normalization below
+            // coalesces and caps them before any prompt can see them.
+            Scribe_Values.Look(ref slot.identitySummary, prefix + "IdentitySummary");
+            Scribe_Values.Look(ref slot.moodSnapshot, prefix + "MoodSnapshot");
             // Ideology Phase 1 additive per-POV key. Old saves normalize to an empty block.
             Scribe_Values.Look(ref slot.beliefContext, prefix + "BeliefContext");
         }
@@ -528,7 +537,19 @@ namespace PawnDiary
             {
                 slot.memoryContext = slot.memoryContext.Substring(0, 600);
             }
+            slot.identitySummary = NormalizeQualityWaveContext(slot.identitySummary);
+            slot.moodSnapshot = NormalizeQualityWaveContext(slot.moodSnapshot);
             slot.beliefContext = BeliefContextFormatter.NormalizeSaved(slot.beliefContext);
+        }
+
+        // The Quality Wave context fields follow memoryContext's defensive 600-character save cap.
+        // This is schema safety rather than feature policy: the authored selectors produce much
+        // smaller strings, while a malformed/modded save must never inflate an LLM prompt without
+        // bound.
+        private static string NormalizeQualityWaveContext(string value)
+        {
+            string normalized = DiarySaveNormalization.NormalizeString(value);
+            return normalized.Length <= 600 ? normalized : normalized.Substring(0, 600);
         }
 
         /// <summary>
@@ -1367,6 +1388,34 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Returns the frozen key-relationships summary for this first-person POV. Neutral chronicle
+        /// pages deliberately return empty because the summary belongs to one pawn's social view.
+        /// </summary>
+        public string IdentitySummaryForRole(string povRole)
+        {
+            if (!RoleIsInitiatorOrRecipient(povRole))
+            {
+                return string.Empty;
+            }
+
+            return SlotFor(povRole).identitySummary ?? string.Empty;
+        }
+
+        /// <summary>
+        /// Returns the optional event-time mood snapshot for this first-person POV. Empty means the
+        /// deterministic inclusion policy omitted it; neutral chronicle pages never receive one.
+        /// </summary>
+        public string MoodSnapshotForRole(string povRole)
+        {
+            if (!RoleIsInitiatorOrRecipient(povRole))
+            {
+                return string.Empty;
+            }
+
+            return SlotFor(povRole).moodSnapshot ?? string.Empty;
+        }
+
+        /// <summary>
         /// Returns the full event-time belief block for one first-person POV. Neutral chronicle pages
         /// have no pawn belief boundary and therefore always return empty.
         /// </summary>
@@ -1405,6 +1454,28 @@ namespace PawnDiary
             SlotFor(povRole).memoryContext = string.IsNullOrWhiteSpace(memoryContext)
                 ? string.Empty
                 : memoryContext.Trim();
+        }
+
+        /// <summary>Freezes one already-localized, bounded key-relationships summary.</summary>
+        internal void SetIdentitySummary(string povRole, string identitySummary)
+        {
+            if (!RoleIsInitiatorOrRecipient(povRole))
+            {
+                return;
+            }
+
+            SlotFor(povRole).identitySummary = NormalizeQualityWaveContext(identitySummary);
+        }
+
+        /// <summary>Freezes one already-localized, bounded event-time mood snapshot.</summary>
+        internal void SetMoodSnapshot(string povRole, string moodSnapshot)
+        {
+            if (!RoleIsInitiatorOrRecipient(povRole))
+            {
+                return;
+            }
+
+            SlotFor(povRole).moodSnapshot = NormalizeQualityWaveContext(moodSnapshot);
         }
 
         /// <summary>Returns a defensive copy of this POV's compact continuity references.</summary>
