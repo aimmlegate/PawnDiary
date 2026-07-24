@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <MainButtonDef>
+    <defName>PawnDiary_DiaryReader</defName>
+    <label>diaries</label>
+    <description>Open the colony diary reader.</description>
+    <workerClass>PawnDiary.MainButtonWorker_DiaryReader</workerClass>
+    <order>85</order>
+    <minimized>true</minimized>
+    <iconPath>UI/Commands/PawnDiaryOpen</iconPath>
+    <validWithoutMap>true</validWithoutMap>
+  </MainButtonDef>
+</Defs>

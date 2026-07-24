@@ -49,7 +49,18 @@ namespace PawnDiary
 
             float weight = PawnDiarySettings.ClampGenerationChanceWeight(
                 PawnDiaryMod.Settings?.generationChanceWeight ?? PawnDiarySettings.DefaultGenerationChanceWeight);
-            return Rand.Chance(Mathf.Clamp01(PromotionChance(group.promotion, initiator, recipient) * weight));
+            // The route is frozen into the capture payload. Isolate this one-shot diary decision so
+            // it cannot advance the global seeded RNG used by RimWorld gameplay.
+            Rand.PushState();
+            try
+            {
+                return Rand.Chance(
+                    Mathf.Clamp01(PromotionChance(group.promotion, initiator, recipient) * weight));
+            }
+            finally
+            {
+                Rand.PopState();
+            }
         }
 
         /// <summary>

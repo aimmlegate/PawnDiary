@@ -1,0 +1,949 @@
+// Host-neutral journal view that renders one pawn's finished diary entries.
+// The inspect tab and standalone reader window call Draw() using RimWorld's immediate-mode GUI
+// (the whole view is re-emitted each frame). It indexes saved events through
+// DiaryGameComponent.BeginTabYearIndexBuild and materializes the selected year's cards on demand.
+// See AGENTS.md ("lifecycle").
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using RimWorld;
+using UnityEngine;
+using Verse;
+
+namespace PawnDiary
+{
+    /// <summary>
+    /// Reusable journal renderer shared by the pawn inspect tab and standalone reader window.
+    /// </summary>
+    internal sealed partial class DiaryJournalView
+    {
+        // The entry cache is impure UI state: it stores the selected live Pawn and reuses visible lists
+        // between immediate-mode draw frames until the pawn's render token or dev filters change.
+        private readonly DiaryJournalVisibleEntriesCache visibleEntriesCache = new DiaryJournalVisibleEntriesCache();
+
+        // The selected-year measurement arrays are rebuilt every frame from the cache's ordered page.
+        // Keeping them here leaves the cache focused on entry visibility rather than card rendering.
+        private string[] entryKeysBuffer = new string[0];
+        private bool[] expandedTargetsBuffer = new bool[0];
+        private float[] expansionBlendsBuffer = new float[0];
+        private float[] fullHeightsBuffer = new float[0];
+        private float[] heightsBuffer = new float[0];
+        private float[] entryOffsetsBuffer = new float[0];
+        // Non-null for entries that open a new quadrum: the localized "Aprimay · Spring · 5500" header
+        // drawn just above the card. Filled during the same layout pass that computes row offsets so
+        // the reserved divider space and the drawn divider can never disagree.
+        private string[] dividerLabelsBuffer = new string[0];
+
+        // Virtualized scroll layout for the selected year. The ordered entry List is reused by
+        // DiaryJournalVisibleEntriesCache, so the cache key includes its revision/year in addition to the
+        // object reference. Offscreen cards are not drawn, and idle frames reuse row offsets instead
+        // of measuring/summing hundreds of collapsed rows every draw.
+        private List<DiaryEntryView> cachedLayoutEntries;
+        private int cachedLayoutVisibleRevision = -1;
+        private string cachedLayoutPawnId;
+        private int cachedLayoutSelectedYear = UnknownYear;
+        private float cachedLayoutViewWidth = -1f;
+        private bool cachedLayoutShowDebug;
+        private DiaryRenderToken cachedLayoutToken;
+        private int cachedLayoutHighlightVersion = -1;
+        private int cachedLayoutExpansionVersion = -1;
+        private float cachedLayoutViewHeight;
+        private bool cachedLayoutAnimationSettled = true;
+        private bool layoutBuildInProgress;
+        private List<DiaryEntryView> layoutBuildEntries;
+        private int layoutBuildVisibleRevision = -1;
+        private string layoutBuildPawnId;
+        private int layoutBuildSelectedYear = UnknownYear;
+        private float layoutBuildViewWidth = -1f;
+        private bool layoutBuildShowDebug;
+        private DiaryRenderToken layoutBuildToken;
+        private int layoutBuildHighlightVersion = -1;
+        private int layoutBuildExpansionVersion = -1;
+        private int layoutBuildIndex;
+        private float layoutBuildCurY;
+        private bool layoutBuildAnimationSettled = true;
+        // Quadrum key of the previously laid-out row, carried across sliced layout frames so a divider
+        // is placed exactly at each quadrum change even when the build spans several frames.
+        private int layoutBuildPrevQuadrumKey = DiaryQuadrumDivider.UndatedKey;
+
+        // Cached full (expanded) card heights. The helper owns the measured-height dictionary, while
+        // this tab still decides when rows exist, whether they are expanded, and where they sit in the
+        // virtual scroll layout.
+        private readonly DiaryEntryCardMeasurer entryCardMeasurer = new DiaryEntryCardMeasurer();
+
+        // Diary tab presentation values are XML-backed via DiaryUiStyleDef. These accessors keep the
+        // drawing code readable while letting modders retune spacing/colors without recompiling.
+        internal static DiaryUiStyleDef UiStyle => DiaryUiStyles.Current;
+        private static float ControlLineHeight => UiStyle.controlLineHeight;
+        private static float ControlGap => UiStyle.controlGap;
+        private static float EntryTitleHeight => UiStyle.entryTitleHeight;
+        private static float EntryTextTop => UiStyle.entryTextTop;
+        private static float EntryBottomPadding => UiStyle.entryBottomPadding;
+        private static float StatusBadgeWidth => UiStyle.statusBadgeWidth;
+        private static float StatusBadgeHeight => UiStyle.statusBadgeHeight;
+        private static float StatusBadgeRightPadding => UiStyle.statusBadgeRightPadding;
+        private static float RoleplayLineGap => UiStyle.roleplayLineGap;
+        private static float RoleplayParagraphGap => UiStyle.roleplayParagraphGap;
+        private static float SpeechBlockLeftInset => UiStyle.speechBlockLeftInset;
+        private static float SpeechBlockVerticalPadding => UiStyle.speechBlockVerticalPadding;
+        private static float EntryGap => UiStyle.entryGap;
+        private static int AutoExpandedEntryCount => UiStyle.autoExpandedEntryCount;
+        private const int DevMockDiaryTargetYears = 3;
+        private const int DevMockDiaryEntriesPerYear = 2000;
+        private const int DevMockDiaryTargetCount = DevMockDiaryTargetYears * DevMockDiaryEntriesPerYear;
+        private static float CollapsedEntryHeight => UiStyle.CollapsedEntryHeight;
+        private static float ExpansionAnimationSpeed => UiStyle.expansionAnimationSpeed;
+        private static float LinkedEntryPadding => UiStyle.linkedEntryPadding;
+        private static float LinkedEntryLabelHeight => UiStyle.linkedEntryLabelHeight;
+        private static float LinkedEntryTextHeight => UiStyle.linkedEntryTextHeight;
+        private static float LinkedEntryTotalHeight => UiStyle.linkedEntryTotalHeight;
+        private static float YearFilterHeight => UiStyle.yearFilterHeight;
+        private static float YearFilterGap => UiStyle.yearFilterGap;
+
+        // Player-facing writing-style opener in the Diary header. Layout values come from XML via
+        // UiStyle (DiaryUiStyleDef). DevControlsHeight is a stable display-only estimate of the dev
+        // block (mock/prompt-suite/dev-preview rows) so PawnControlsHeight can reserve its space.
+        private static float WritingStyleIconSize => UiStyle.writingStyleIconSize;
+        private static float WritingStyleIconRightGap => UiStyle.writingStyleIconRightGap;
+        // Horizontal clearance kept between the header's rightmost icon and the window's right edge, so
+        // the icons never sit under the window close (X) button when the filter panel is hidden.
+        private const float HeaderCloseButtonClearance = 34f;
+        private static float WritingStyleIconAlpha => UiStyle.writingStyleIconAlpha;
+        private static float WritingStyleIconHoverAlpha => UiStyle.writingStyleIconHoverAlpha;
+        // Stable display-only estimate of the dev block height (4 toggle rows + 3 full-width fixture
+        // buttons + the 3-column preview grid). It only needs to be an upper bound: the filter panel
+        // scrolls, so a little slack just adds scroll space, while under-reserving would clip the last
+        // preview row. Keep this in step with DrawPawnControls + DrawDevPreviewButtons if they change.
+        private const float DevControlsHeight = 360f;
+        private static float YearButtonWidth => UiStyle.yearButtonWidth;
+        private static float ModelNameTopPadding => UiStyle.modelNameTopPadding;
+        private static float ModelNameHeight => UiStyle.modelNameHeight;
+        private static float DebugTextTopPadding => UiStyle.debugTextTopPadding;
+        private static float EntryAccentWidth => UiStyle.entryAccentWidth;
+        private static float EntryLabelMaxWidth => UiStyle.entryLabelMaxWidth;
+        private static float QuadrumDividerHeight => UiStyle.quadrumDividerHeight;
+        private static float QuadrumDividerTopGap => UiStyle.quadrumDividerTopGap;
+        private static float QuadrumDividerLineGap => UiStyle.quadrumDividerLineGap;
+        private static float QuadrumDividerIconSize => UiStyle.quadrumDividerIconSize;
+        private static float QuadrumDividerIconGap => UiStyle.quadrumDividerIconGap;
+        private static float EntryFadeDurationSeconds => UiStyle.entryFadeDurationSeconds;
+        private static float TitleFadeDurationSeconds => UiStyle.titleFadeDurationSeconds;
+        private static float VirtualizedEntryOverscanHeight => UiStyle.VirtualizedEntryOverscanHeight;
+        private static float WritingDotSize => UiStyle.writingDotSize;
+        private static float WritingDotGap => UiStyle.writingDotGap;
+        private static float AtmosphereInset => UiStyle.atmosphereInset;
+        private static float MemorialInset => UiStyle.memorialInset;
+        private static string SpeechBlockOpenMarker => string.IsNullOrWhiteSpace(UiStyle.speechBlockOpenMarker) ? DiaryDirectSpeechParser.DefaultOpenMarker : UiStyle.speechBlockOpenMarker;
+        private static string SpeechBlockCloseMarker => string.IsNullOrWhiteSpace(UiStyle.speechBlockCloseMarker) ? DiaryDirectSpeechParser.DefaultCloseMarker : UiStyle.speechBlockCloseMarker;
+
+        private static Color QuietColor => UiStyle.QuietTextColor;
+        private static Color NarrativeColor => UiStyle.NarrativeTextColor;
+        private static Color FallbackDialogueColor => UiStyle.FallbackDialogueColor;
+        private static Color SpeechBlockBgColor => UiStyle.SpeechBlockBgColor;
+        private static Color HeaderRuleColor => UiStyle.HeaderRuleColor;
+        private static Color AccentHighlightColor => UiStyle.AccentHighlightColor;
+        private static Color LinkedEntryBgColor => UiStyle.LinkedEntryBgColor;
+        private static Color LinkedEntryBorderColor => UiStyle.LinkedEntryBorderColor;
+        private static Color LinkedEntryTextColor => UiStyle.LinkedEntryTextColor;
+        private static Color LinkedEntryHoverColor => UiStyle.LinkedEntryHoverColor;
+
+        // Cached roleplay body style, reused every frame to avoid allocating a fresh GUIStyle per
+        // line. Built once from the active font, then refreshed (font size + color) on each use so it
+        // still tracks UI-scale changes. Rich text is enabled so the inline <b>/<i>/<color> tags from
+        // DiaryTextFormat render instead of printing literally. Shared by the measure and draw passes.
+        private static GUIStyle bodyStyle;
+        private static readonly Dictionary<string, float> EntryFirstSeenSeconds = new Dictionary<string, float>();
+        // Upper bound on the first-seen fade cache. It keys on eventId|role|status (and title), so a
+        // long session would otherwise grow it without limit. When exceeded we clear it wholesale;
+        // the only visible effect is that currently-shown cards fade in once more, which is rare (it
+        // takes hundreds of distinct entry states to trigger) and harmless.
+        private const int MaxFirstSeenEntries = 512;
+        // Same idea for per-card expand/collapse animation blends. The tab object is long-lived and
+        // shared across pawns, so stale animation keys should not accumulate forever.
+        private const int MaxExpansionBlendEntries = MaxFirstSeenEntries;
+        // Old saves have only the display date, not an absolute tick. Use this sentinel when a
+        // date cannot be grouped into a game year; such entries stay reachable on an "undated" page.
+        private const int UnknownYear = int.MinValue;
+
+        // Unity scroll position; persists across frames so the user's scroll offset isn't lost on redraw.
+        private Vector2 scrollPosition;
+        // Smoothed seasonal background wash. The target is the wash color of the season at the top of
+        // the journal viewport; the shown color eases toward it each frame (see UpdateSeasonWash) so
+        // scrolling across a season divider crossfades instead of snapping. The filter panel reuses the
+        // same field, so both columns share one seasonal tint (the panel lags the journal by one frame,
+        // which is imperceptible).
+        private Color seasonWashColor = new Color(0f, 0f, 0f, 0f);
+        private float seasonWashLastRealtime = -1f;
+        // The Diary tab pages history by in-game year so one enormous save cannot create one
+        // enormous Unity scroll view. Stored per tab instance, and reset when the selected pawn changes.
+        private string yearFilterPawnId;
+        private int selectedYear = UnknownYear;
+        // Manual expand/collapse choices are session UI state. The default is "newest 15 open,
+        // older pages collapsed", but a player's click on a specific card wins until the tab dies.
+        private readonly Dictionary<string, bool> entryExpansionOverrides = new Dictionary<string, bool>();
+        private readonly Dictionary<string, float> entryExpansionBlend = new Dictionary<string, float>();
+        private int entryExpansionVersion;
+        private float lastExpansionAnimationSeconds;
+        // Set by the Social-tab click patch before opening this tab. FillTab consumes it once
+        // the relevant pawn's generated entry list is available.
+        private static string pendingScrollPawnId;
+        private static string pendingScrollEventId;
+
+        private sealed class RoleplayLineBlock
+        {
+            public string line;
+            public float leftInset;
+            public float rightInset;
+            public float extraTopGap;
+            public float extraBottomGap;
+            public FontStyle fontStyle = FontStyle.Normal;
+            public TextAnchor alignment = TextAnchor.UpperLeft;
+            public int seedSalt;
+            public bool directSpeech;
+        }
+
+        /// <summary>
+        /// True when the player currently wants the right-hand filter/controls panel shown. Defaults to
+        /// on when settings are not yet loaded (early startup) so the tab still sizes for the panel.
+        /// </summary>
+        internal static bool FilterPanelSettingEnabled()
+        {
+            return PawnDiaryMod.Settings == null || PawnDiaryMod.Settings.showDiaryFilterPanel;
+        }
+
+        /// <summary>
+        /// Experimental, default-off gate for the global seasonal background wash. Defaults to off when
+        /// settings are not yet loaded, so the wash never flashes on before the player opts in.
+        /// </summary>
+        private static bool SeasonalBackgroundEnabled()
+        {
+            return PawnDiaryMod.Settings != null && PawnDiaryMod.Settings.enableSeasonalBackground;
+        }
+
+        /// <summary>
+        /// Requests that the next Diary tab draw for this pawn scroll to the given event card.
+        /// Used by the Social-tab play-log click patch.
+        /// </summary>
+        internal static void RequestScrollToEntry(Pawn pawn, string eventId)
+        {
+            RequestScrollToEntry(pawn?.GetUniqueLoadID(), eventId);
+        }
+
+        /// <summary>
+        /// Requests a scroll using only the reader subject's stable pawn ID.
+        /// </summary>
+        internal static void RequestScrollToEntry(string pawnId, string eventId)
+        {
+            pendingScrollPawnId = pawnId;
+            pendingScrollEventId = eventId;
+        }
+
+        /// <summary>
+        /// Clears a pending scroll request when the tab could not be opened after all.
+        /// </summary>
+        internal static void ClearPendingScrollRequest()
+        {
+            pendingScrollPawnId = null;
+            pendingScrollEventId = null;
+        }
+
+        /// <summary>
+        /// Draws the journal into a host-provided rectangle. Called every frame; the whole UI is
+        /// rebuilt from current state each time.
+        /// </summary>
+        internal void Draw(Rect outerRect, DiaryReaderSubject subject, DiaryGameComponent component)
+        {
+            if (!subject.IsValid)
+            {
+                return;
+            }
+
+            Pawn pawn = subject.Pawn;
+            // Seasonal background wash (experimental, off by default) — global for the whole window:
+            // painted first, edge to edge, so it sits behind the header, the journal, and the right-hand
+            // filter/dev panel and the entire diary shifts color with the season. It uses the smoothed
+            // color the journal pass computed last frame (target = season at the top of the viewport);
+            // one frame of lag is imperceptible.
+            if (SeasonalBackgroundEnabled() && seasonWashColor.a > 0f)
+            {
+                Widgets.DrawBoxSolid(outerRect, seasonWashColor);
+            }
+
+            Rect rect = outerRect.ContractedBy(12f);
+            component?.AcknowledgeGeneratedEntriesForId(subject.PawnId);
+            EnsureFavoritesSynced(subject.PawnId, component);
+            ApplyPendingDevPreview(pawn);
+
+            bool showLlmDebugInfo = ShouldShowLlmDebugInfo();
+            // Dev-mode-only: when on, reveal in-progress/stuck entries in the list (the full debug
+            // toggle already shows them, so this only matters when debug info is off).
+            bool showGeneratingEntries = ShouldShowGeneratingEntries();
+            bool showPromptOnlyEntries = ShouldShowPromptOnlyEntries();
+            // Build a cheap year/count index first. Full DiaryEntryView cards are materialized only
+            // for selectedYear below, so selecting a pawn with thousands of archived pages stays
+            // responsive.
+            DiaryRenderToken token;
+            visibleEntriesCache.RebuildIndexIfNeeded(
+                subject,
+                component,
+                showLlmDebugInfo,
+                showGeneratingEntries,
+                showPromptOnlyEntries,
+                devPreviewKind,
+                out token);
+            int generatingCount = visibleEntriesCache.GeneratingCount;
+
+            // Two-column layout: the journal (virtualized cards) on the left, and an independent,
+            // non-virtualized filter/controls panel on the right. The panel hosts the year selector,
+            // the journal filters, and — in dev mode — the diary dev tools. The journal keeps its familiar
+            // width because tabWidth grew by the panel's width; hiding the panel (header toggle) shrinks
+            // the whole tab back to that journal width (ResponsiveTabWidth), with the year pager falling
+            // back inline below and the dev tools staying panel-only.
+            bool filterPanelEnabled = FilterPanelSettingEnabled();
+            float panelWidth = filterPanelEnabled ? ResolveFilterPanelWidth(rect.width) : 0f;
+            Rect filterPanelRect = new Rect(rect.xMax - panelWidth, rect.y, panelWidth, rect.height);
+            Rect journalRect = panelWidth > 0f
+                ? new Rect(rect.x, rect.y, Mathf.Max(0f, rect.width - panelWidth - FilterPanelGap), rect.height)
+                : rect;
+
+            Rect headerRect = new Rect(journalRect.x, journalRect.y, journalRect.width, 34f);
+            // Start the right-side icon cluster clear of the window's close (X) button. When the filter
+            // panel is hidden the journal spans the full width, so without this clamp the icons would sit
+            // under the X in the top-right corner.
+            float headerRight = Mathf.Min(journalRect.xMax, rect.xMax - HeaderCloseButtonClearance);
+
+            // Filter-panel toggle: a compact funnel icon that shows/hides the right-hand sidebar. Drawn
+            // first so it takes the rightmost slot; the writing-style icon sits to its left.
+            {
+                float toggleSize = Mathf.Max(1f, WritingStyleIconSize);
+                Rect toggleRect = new Rect(
+                    headerRight - toggleSize,
+                    journalRect.y + Mathf.Max(0f, (headerRect.height - toggleSize) * 0.5f),
+                    toggleSize,
+                    toggleSize);
+                // "Active" third state = the panel is open and at least one journal filter is engaged
+                // (favorites-only or any tag chip), so the funnel reads amber while it is narrowing
+                // the journal.
+                bool filtersActive = JournalFiltersActive;
+                if (DrawFilterPanelToggleIcon(toggleRect, filterPanelEnabled, filtersActive))
+                {
+                    ToggleFilterPanelVisible();
+                }
+
+                headerRight = toggleRect.x - Mathf.Max(0f, WritingStyleIconRightGap);
+            }
+
+            // Writing-style opener sits just left of the filter toggle.
+            if (ShouldDrawWritingStyleButton(pawn, component))
+            {
+                float iconSize = Mathf.Max(1f, WritingStyleIconSize);
+                Rect writingStyleIconRect = new Rect(
+                    headerRight - iconSize,
+                    journalRect.y + Mathf.Max(0f, (headerRect.height - iconSize) * 0.5f),
+                    iconSize,
+                    iconSize);
+                DrawWritingStyleHeaderIcon(writingStyleIconRect, pawn, component);
+                headerRight = writingStyleIconRect.x - Mathf.Max(0f, WritingStyleIconRightGap);
+            }
+
+            headerRect.width = Mathf.Max(0f, headerRight - journalRect.x);
+
+            Text.Font = GameFont.Medium;
+            string headerLabel = "PawnDiary.Tab.DiaryHeader".Translate(subject.DisplayName);
+            Widgets.Label(headerRect, headerLabel);
+            float headerLabelWidth = Text.CalcSize(headerLabel).x;
+            Text.Font = GameFont.Small;
+
+            // "Writing pages..." indicator now sits just after the title on the LEFT, so it never crowds
+            // the top-right icon cluster or the window close button. Clamped to stay left of the icons.
+            if (generatingCount > 0)
+            {
+                float indicatorX = Mathf.Max(
+                    journalRect.x,
+                    Mathf.Min(journalRect.x + headerLabelWidth + 12f, headerRight - StatusBadgeWidth - 4f));
+                Rect writingIndicatorRect = new Rect(
+                    indicatorX,
+                    journalRect.y + Mathf.Max(0f, (headerRect.height - StatusBadgeHeight) * 0.5f),
+                    StatusBadgeWidth,
+                    StatusBadgeHeight);
+                DrawWritingIndicator(writingIndicatorRect);
+            }
+
+            // Dev tools and the year selector live only in the right-hand panel, so the journal column
+            // opens directly under the header (a fixed 36px title row plus the usual gap).
+            float entriesY = journalRect.y + 36f + EntryGap;
+
+            // Resolve the year list and the selected year's ordered cards up front so the filter panel
+            // (drawn once, in every state) can host the year selector and the tag filter chips, and the
+            // journal column below can render or show its own loading/empty state.
+            bool indexLoading = visibleEntriesCache.IsIndexLoading;
+            List<int> years = indexLoading ? null : visibleEntriesCache.VisibleYears;
+            if (!indexLoading)
+            {
+                component?.AcknowledgeGeneratedEntriesForId(
+                    subject.PawnId,
+                    visibleEntriesCache.CompletedCount,
+                    visibleEntriesCache.PendingCount,
+                    token);
+                EnsureSelectedYear(subject.PawnId, years);
+                SelectYearForPendingScroll(subject.PawnId, visibleEntriesCache);
+            }
+
+            List<DiaryEntryView> ordered = null;
+            bool haveOrdered = !indexLoading
+                && years.Count > 0
+                && visibleEntriesCache.TryGetOrderedEntriesForSelectedYear(subject.PawnId, selectedYear, out ordered);
+
+            DrawFilterPanel(filterPanelRect, subject, component, years, visibleEntriesCache, haveOrdered ? ordered : null);
+
+            // Year navigation lives exclusively in the filter panel now — there is no inline year pager
+            // in the journal column, even when the panel is hidden. Reopen the panel via the header
+            // filter icon to change years; this keeps the journal free of any control chrome.
+
+            Rect outRect = new Rect(journalRect.x, entriesY, journalRect.width, journalRect.yMax - entriesY);
+
+            if (indexLoading)
+            {
+                DrawDiaryLoading(outRect, visibleEntriesCache.LoadingProcessed, visibleEntriesCache.LoadingTotal);
+                return;
+            }
+
+            if (years.Count == 0)
+            {
+                Widgets.Label(outRect, (showLlmDebugInfo ? "PawnDiary.Tab.NoEntries" : "PawnDiary.Tab.NoGeneratedEntries").Translate());
+                return;
+            }
+
+            if (!haveOrdered)
+            {
+                DrawDiaryLoading(outRect, visibleEntriesCache.LoadingProcessed, visibleEntriesCache.LoadingTotal);
+                return;
+            }
+
+            if (ordered.Count == 0)
+            {
+                Widgets.Label(outRect, (showLlmDebugInfo ? "PawnDiary.Tab.NoEntries" : "PawnDiary.Tab.NoGeneratedEntries").Translate());
+                return;
+            }
+
+            // Journal filters (favorites-only + the tag chips) narrow the year's cards to the pages
+            // the player asked for. The UNFILTERED list still feeds the tag-chip collection and the
+            // year pager counts above, so chips and counts stay stable while filtering narrows the
+            // journal. With no filter engaged the journal uses the cache's list directly and the
+            // filtering pass costs nothing.
+            List<DiaryEntryView> shown = ordered;
+            int shownRevision = visibleEntriesCache.VisibleRevision;
+            if (JournalFiltersActive)
+            {
+                shown = EnsureFilteredJournalEntries(ordered, visibleEntriesCache.VisibleRevision);
+                shownRevision = journalFilterVersion;
+                if (shown.Count == 0)
+                {
+                    Widgets.Label(outRect, "PawnDiary.Tab.NoEntriesMatchFilters".Translate());
+                    return;
+                }
+            }
+
+            // Subtract 16f to leave room for the scrollbar grip inside the scroll view.
+            float viewWidth = outRect.width - 16f;
+            float animationDelta = ExpansionAnimationDelta();
+            List<DiaryNameHighlight> nameHighlights = NameHighlightsFor(pawn);
+            int layoutProcessed;
+            int layoutTotal;
+            if (!RebuildEntryLayoutIfNeeded(
+                shown,
+                shownRevision,
+                subject.PawnId,
+                viewWidth,
+                showLlmDebugInfo,
+                token,
+                nameHighlights,
+                animationDelta,
+                out layoutProcessed,
+                out layoutTotal))
+            {
+                DrawDiaryLoading(
+                    outRect,
+                    visibleEntriesCache.LoadingProcessed + layoutProcessed,
+                    visibleEntriesCache.LoadingTotal + layoutTotal);
+                return;
+            }
+
+            string[] entryKeys = entryKeysBuffer;
+            bool[] expandedTargets = expandedTargetsBuffer;
+            float[] expansionBlends = expansionBlendsBuffer;
+            float[] fullHeights = fullHeightsBuffer;
+            float[] heights = heightsBuffer;
+            float[] entryOffsets = entryOffsetsBuffer;
+            float viewHeight = cachedLayoutViewHeight;
+            Rect viewRect = new Rect(0f, 0f, viewWidth, viewHeight);
+
+            TryApplyPendingScroll(subject.PawnId, shown, entryOffsets, viewHeight, outRect.height);
+            scrollPosition.y = Mathf.Clamp(scrollPosition.y, 0f, Mathf.Max(0f, viewHeight - outRect.height));
+
+            // Update the seasonal wash target from the season of the entry at the top of the scroll,
+            // easing toward it. The wash itself is painted once across the whole tab at the top of
+            // FillTab (using this smoothed value); here we only advance it as the user scrolls.
+            if (SeasonalBackgroundEnabled())
+            {
+                int washTopIndex = FirstVisibleEntryIndex(shown.Count, scrollPosition.y);
+                Season washSeason = washTopIndex >= 0 && washTopIndex < shown.Count
+                    ? DiaryQuadrumDivider.SeasonFor(shown[washTopIndex])
+                    : Season.Undefined;
+                UpdateSeasonWash(washSeason);
+            }
+
+            Widgets.BeginScrollView(outRect, ref scrollPosition, viewRect);
+            // Immediate-mode safety net: BeginScrollView and the per-card GUI.BeginGroup below push
+            // onto Unity's shared GUI clip stack, and their matching EndGroup/EndScrollView calls pop
+            // it. If a draw call throws mid-card those pops are skipped, leaving the stack unbalanced
+            // and corrupting the rest of the frame's UI — not just this tab. The finally closes
+            // whatever is still open, so one bad entry degrades to a missing card, never a broken UI.
+            Color dialogueColor = PreferredDialogueColor(pawn);
+            bool entryGroupOpen = false;
+            try
+            {
+                float overscanHeight = VirtualizedEntryOverscanHeight;
+                float visibleTop = Mathf.Max(0f, scrollPosition.y - overscanHeight);
+                float visibleBottom = Mathf.Min(viewHeight, scrollPosition.y + outRect.height + overscanHeight);
+                int firstVisibleIndex = FirstVisibleEntryIndex(shown.Count, visibleTop);
+                for (int i = firstVisibleIndex; i < shown.Count; i++)
+                {
+                    DiaryEntryView entry = shown[i];
+                    bool expanded = expandedTargets[i];
+                    float expansionBlend = expansionBlends[i];
+                    float fullHeight = fullHeights[i];
+                    float height = heights[i];
+                    float curY = entryOffsets[i];
+
+                    // Viewport virtualization. Widgets.BeginScrollView clips pixels, but would still
+                    // execute every card's immediate-mode UI calls. Cached offsets let us jump to the
+                    // first buffered row and stop once rows fall below the buffered viewport. The
+                    // overscan keeps rows alive just outside the screen during fast scrolls, avoiding
+                    // visible pop-in/animation at the exact viewport edge.
+                    if (curY > visibleBottom)
+                    {
+                        break;
+                    }
+
+                    // Season/quadrum divider sits in the reserved space just above this card. Drawn in
+                    // scroll-view coordinates (outside the per-card group) so it spans the full width.
+                    string dividerLabel = i < dividerLabelsBuffer.Length ? dividerLabelsBuffer[i] : null;
+                    if (!string.IsNullOrEmpty(dividerLabel))
+                    {
+                        Rect dividerRect = new Rect(0f, curY - QuadrumDividerHeight, viewRect.width, QuadrumDividerHeight);
+                        // Season derived from the same entry the label came from, so the glyph always
+                        // matches the "· season ·" text. Cheap: only visible divider rows resolve it.
+                        DrawQuadrumDivider(dividerRect, dividerLabel, DiaryQuadrumDivider.SeasonFor(entry));
+                    }
+
+                    Rect entryRect = new Rect(0f, curY, viewRect.width, height);
+
+                    Color accentColor = EntryAccentColor(entry);
+                    GUI.BeginGroup(entryRect);
+                    entryGroupOpen = true;
+                    Rect localEntryRect = new Rect(0f, 0f, entryRect.width, fullHeight);
+                    Rect visibleEntryRect = new Rect(0f, 0f, entryRect.width, height);
+                    // Keep the full-card chrome while a row is still animating. Swapping to the compact
+                    // renderer early made the border/header framing appear to jump near the closed state.
+                    bool compactCollapsed = !expanded && expansionBlend <= 0f;
+                    if (compactCollapsed)
+                    {
+                        bool favClicked = DrawCollapsedEntry(entry, visibleEntryRect, accentColor, expanded, expansionBlend, entryKeys[i], subject.PawnId, component);
+                        if (Widgets.ButtonInvisible(visibleEntryRect, false) && !favClicked)
+                        {
+                            SetEntryExpanded(entry, true, expansionBlend);
+                        }
+
+                        GUI.EndGroup();
+                        entryGroupOpen = false;
+                        continue;
+                    }
+
+                    if (DiaryEntryCardRenderer.DrawExpanded(
+                        new DiaryEntryCardRenderRequest
+                        {
+                            Entry = entry,
+                            EntryKey = entryKeys[i],
+                            LocalEntryRect = localEntryRect,
+                            VisibleEntryRect = visibleEntryRect,
+                            Pawn = pawn,
+                            PawnId = subject.PawnId,
+                            Component = component,
+                            Owner = this,
+                            AccentColor = accentColor,
+                            DialogueColor = dialogueColor,
+                            Expanded = expanded,
+                            ExpansionBlend = expansionBlend,
+                            ShowLlmDebugInfo = showLlmDebugInfo,
+                            NameHighlights = nameHighlights,
+                        }))
+                    {
+                        SetEntryExpanded(entry, !expanded, expansionBlend);
+                    }
+
+                    GUI.EndGroup();
+                    entryGroupOpen = false;
+                }
+            }
+            finally
+            {
+                // Close a card group left open by a mid-card throw before ending the scroll view, so
+                // the GUI clip stack is balanced no matter where the loop above stopped.
+                if (entryGroupOpen)
+                {
+                    GUI.EndGroup();
+                }
+
+                Widgets.EndScrollView();
+            }
+        }
+
+        /// <summary>
+        /// Grows reusable per-entry draw buffers when a larger diary page is opened.
+        /// </summary>
+        private void EnsureEntryMeasurementBufferCapacity(int count)
+        {
+            if (entryKeysBuffer.Length < count)
+            {
+                Array.Resize(ref entryKeysBuffer, count);
+            }
+
+            if (expandedTargetsBuffer.Length < count)
+            {
+                Array.Resize(ref expandedTargetsBuffer, count);
+            }
+
+            if (expansionBlendsBuffer.Length < count)
+            {
+                Array.Resize(ref expansionBlendsBuffer, count);
+            }
+
+            if (fullHeightsBuffer.Length < count)
+            {
+                Array.Resize(ref fullHeightsBuffer, count);
+            }
+
+            if (heightsBuffer.Length < count)
+            {
+                Array.Resize(ref heightsBuffer, count);
+            }
+
+            if (entryOffsetsBuffer.Length < count)
+            {
+                Array.Resize(ref entryOffsetsBuffer, count);
+            }
+
+            if (dividerLabelsBuffer.Length < count)
+            {
+                Array.Resize(ref dividerLabelsBuffer, count);
+            }
+        }
+
+        /// <summary>
+        /// Rebuilds row offsets/heights for the current year only when something that can affect list
+        /// layout changed. Idle scroll frames reuse this data, so large archived histories do not make
+        /// the tab rescan every card just to compute scroll height.
+        /// </summary>
+        private bool RebuildEntryLayoutIfNeeded(
+            List<DiaryEntryView> ordered,
+            int visibleRevision,
+            string pawnId,
+            float viewWidth,
+            bool showLlmDebugInfo,
+            DiaryRenderToken token,
+            List<DiaryNameHighlight> nameHighlights,
+            float animationDelta,
+            out int processed,
+            out int total)
+        {
+            processed = ordered?.Count ?? 0;
+            total = processed;
+            int count = ordered?.Count ?? 0;
+            bool listDirty = cachedLayoutEntries != ordered
+                || cachedLayoutVisibleRevision != visibleRevision
+                || !string.Equals(cachedLayoutPawnId, pawnId, StringComparison.Ordinal)
+                || cachedLayoutSelectedYear != selectedYear;
+            // Visual layout only needs to rebuild when a real layout input changed: card width, the
+            // debug toggle, or the name-highlight set (bold markup changes wrapping). The render
+            // token is intentionally NOT tested here: its stateVersion half is the process-wide
+            // DiaryStateVersion counter, which ticks whenever ANY pawn's entry status/text/title
+            // changes anywhere in the colony. Testing it made every such tick declare the layout
+            // dirty and trip the synchronous processAll rebuild below, so viewing a large history
+            // during active generation hitched on every tick. Real text changes arrive through a
+            // rebuilt ordered list (new visibleRevision), which listDirty already catches — so the
+            // token term is redundant as well as harmful. (The cachedLayoutToken field is still
+            // recorded for diagnostics; it just no longer drives the dirty decision.)
+            bool visualLayoutDirty = cachedLayoutViewWidth != viewWidth
+                || cachedLayoutShowDebug != showLlmDebugInfo
+                || cachedLayoutHighlightVersion != nameHighlightsVersion;
+            bool expansionLayoutDirty = cachedLayoutExpansionVersion != entryExpansionVersion
+                || !cachedLayoutAnimationSettled;
+            bool bufferDirty = entryOffsetsBuffer.Length < count || heightsBuffer.Length < count;
+            bool layoutDirty = visualLayoutDirty || expansionLayoutDirty || bufferDirty;
+            bool dirty = listDirty || layoutDirty;
+            if (!dirty)
+            {
+                return true;
+            }
+
+            bool alreadyShowingSelectedYear = cachedLayoutEntries != null
+                && string.Equals(cachedLayoutPawnId, pawnId, StringComparison.Ordinal)
+                && cachedLayoutSelectedYear == selectedYear
+                && cachedLayoutViewHeight > 0f;
+            if ((!listDirty && layoutDirty) || (listDirty && alreadyShowingSelectedYear))
+            {
+                // The selected year's data is already visible. Rebuild offsets immediately so scroll,
+                // collapse/expand, highlight refreshes, and quiet entry updates never swap the list for
+                // the blocking loading panel. Cold loads and explicit year changes still use slices.
+                BeginEntryLayoutBuild(ordered, visibleRevision, pawnId, viewWidth, showLlmDebugInfo, token, count);
+                ProcessEntryLayoutSlice(
+                    ordered,
+                    viewWidth,
+                    showLlmDebugInfo,
+                    token,
+                    nameHighlights,
+                    animationDelta,
+                    count,
+                    true,
+                    expansionLayoutDirty);
+                processed = count;
+                total = count;
+                return true;
+            }
+
+            // Same reasoning as the visualLayoutDirty check above: the in-progress sliced layout
+            // build must only be invalidated by a STRUCTURAL change (different list, year, width,
+            // filters, highlight set, or expansion version) — never by a global state-version tick.
+            // Letting a tick restart this build made the layout scan reset to row zero every frame
+            // under active generation, so a large history could never finish laying out and the tab
+            // sat on the loading panel. The captured token is still stored (layoutBuildToken) for
+            // diagnostics; it is deliberately not part of the identity test.
+            if (!layoutBuildInProgress
+                || layoutBuildEntries != ordered
+                || layoutBuildVisibleRevision != visibleRevision
+                || !string.Equals(layoutBuildPawnId, pawnId, StringComparison.Ordinal)
+                || layoutBuildSelectedYear != selectedYear
+                || layoutBuildViewWidth != viewWidth
+                || layoutBuildShowDebug != showLlmDebugInfo
+                || layoutBuildHighlightVersion != nameHighlightsVersion
+                || layoutBuildExpansionVersion != entryExpansionVersion)
+            {
+                BeginEntryLayoutBuild(ordered, visibleRevision, pawnId, viewWidth, showLlmDebugInfo, token, count);
+            }
+
+            ProcessEntryLayoutSlice(ordered, viewWidth, showLlmDebugInfo, token, nameHighlights, animationDelta, count, false, false);
+            processed = layoutBuildInProgress ? layoutBuildIndex : count;
+            total = count;
+            return !layoutBuildInProgress;
+        }
+
+        private void BeginEntryLayoutBuild(
+            List<DiaryEntryView> ordered,
+            int visibleRevision,
+            string pawnId,
+            float viewWidth,
+            bool showLlmDebugInfo,
+            DiaryRenderToken token,
+            int count)
+        {
+            EnsureEntryMeasurementBufferCapacity(count);
+            layoutBuildInProgress = true;
+            layoutBuildEntries = ordered;
+            layoutBuildVisibleRevision = visibleRevision;
+            layoutBuildPawnId = pawnId;
+            layoutBuildSelectedYear = selectedYear;
+            layoutBuildViewWidth = viewWidth;
+            layoutBuildShowDebug = showLlmDebugInfo;
+            layoutBuildToken = token;
+            layoutBuildHighlightVersion = nameHighlightsVersion;
+            layoutBuildExpansionVersion = entryExpansionVersion;
+            layoutBuildIndex = 0;
+            layoutBuildCurY = 0f;
+            layoutBuildAnimationSettled = true;
+            layoutBuildPrevQuadrumKey = DiaryQuadrumDivider.UndatedKey;
+        }
+
+        private void ProcessEntryLayoutSlice(
+            List<DiaryEntryView> ordered,
+            float viewWidth,
+            bool showLlmDebugInfo,
+            DiaryRenderToken token,
+            List<DiaryNameHighlight> nameHighlights,
+            float animationDelta,
+            int count,
+            bool processAll,
+            bool forceAnimation)
+        {
+            if (!layoutBuildInProgress)
+            {
+                return;
+            }
+
+            int processedThisSlice = 0;
+            int animationMax = Math.Max(1, DiaryTuning.UiHistoryScanMaxEventsPerFrame);
+            int max = processAll ? int.MaxValue : animationMax;
+            float endTime = processAll
+                ? float.MaxValue
+                : Time.realtimeSinceStartup + Math.Max(0.0001f, DiaryTuning.UiHistoryScanFrameBudgetSeconds);
+            bool animateLayout = forceAnimation || count <= animationMax;
+            bool cacheMissingAnimationRows = !forceAnimation || count <= MaxExpansionBlendEntries;
+
+            while (layoutBuildIndex < count && processedThisSlice < max)
+            {
+                int i = layoutBuildIndex;
+                DiaryEntryView entry = ordered[i];
+                string entryKey = EntryKey(entry);
+                bool expanded = IsEntryExpanded(entry, i);
+                float expansionBlend = animateLayout
+                    ? ExpansionBlendFor(entryKey, expanded, animationDelta, cacheMissingAnimationRows)
+                    : (expanded ? 1f : 0f);
+                if (Mathf.Abs(expansionBlend - (expanded ? 1f : 0f)) > 0.001f)
+                {
+                    layoutBuildAnimationSettled = false;
+                }
+
+                // Fully collapsed cards only need header height, so avoid expensive wrapped-text
+                // measurement until they are expanding or open. Expanded cards are measured once and
+                // then cached (see CachedEntryHeight) so reading a long page does not re-measure text
+                // every frame.
+                float fullHeight = (expanded || expansionBlend > 0f)
+                    ? CachedEntryHeight(entry, entryKey, viewWidth, showLlmDebugInfo, token, nameHighlights)
+                    : CollapsedEntryHeight;
+
+                // Reserve a quadrum/season divider above this card when it opens a new quadrum. The
+                // Undated page (no in-game year) skips dividers entirely. The reserved space here must
+                // match exactly what DrawQuadrumDivider paints in the draw loop, so both read the same
+                // stored label and geometry.
+                int quadrumKey = selectedYear == UnknownYear
+                    ? DiaryQuadrumDivider.UndatedKey
+                    : DiaryQuadrumDivider.QuadrumKey(entry);
+                bool dividerAbove = DiaryQuadrumDivider.HasDividerAbove(layoutBuildPrevQuadrumKey, quadrumKey, i == 0);
+                dividerLabelsBuffer[i] = dividerAbove ? DiaryQuadrumDivider.Label(entry) : null;
+                layoutBuildPrevQuadrumKey = quadrumKey;
+                if (!string.IsNullOrEmpty(dividerLabelsBuffer[i]))
+                {
+                    // The first divider hugs the top; later ones get a small gap above their card.
+                    layoutBuildCurY += QuadrumDividerHeight + (i == 0 ? 0f : QuadrumDividerTopGap);
+                }
+
+                entryKeysBuffer[i] = entryKey;
+                expandedTargetsBuffer[i] = expanded;
+                expansionBlendsBuffer[i] = expansionBlend;
+                fullHeightsBuffer[i] = fullHeight;
+                heightsBuffer[i] = AnimatedEntryHeight(fullHeight, expansionBlend);
+                entryOffsetsBuffer[i] = layoutBuildCurY;
+
+                layoutBuildCurY += heightsBuffer[i];
+                if (i < count - 1)
+                {
+                    layoutBuildCurY += EntryGap;
+                }
+
+                layoutBuildIndex++;
+                processedThisSlice++;
+
+                if (!processAll && processedThisSlice > 0 && Time.realtimeSinceStartup >= endTime)
+                {
+                    break;
+                }
+            }
+
+            if (layoutBuildIndex < count)
+            {
+                return;
+            }
+
+            cachedLayoutEntries = layoutBuildEntries;
+            cachedLayoutVisibleRevision = layoutBuildVisibleRevision;
+            cachedLayoutPawnId = layoutBuildPawnId;
+            cachedLayoutSelectedYear = layoutBuildSelectedYear;
+            cachedLayoutViewWidth = layoutBuildViewWidth;
+            cachedLayoutShowDebug = layoutBuildShowDebug;
+            cachedLayoutToken = layoutBuildToken;
+            cachedLayoutHighlightVersion = layoutBuildHighlightVersion;
+            cachedLayoutExpansionVersion = layoutBuildExpansionVersion;
+            cachedLayoutAnimationSettled = layoutBuildAnimationSettled;
+            cachedLayoutViewHeight = layoutBuildCurY + 12f; // includes bottom padding
+            layoutBuildInProgress = false;
+        }
+
+        /// <summary>
+        /// Binary-searches the cached row offsets for the first card that may be visible.
+        /// </summary>
+        private int FirstVisibleEntryIndex(int count, float visibleTop)
+        {
+            int low = 0;
+            int high = count - 1;
+            int result = count;
+            while (low <= high)
+            {
+                int mid = (low + high) / 2;
+                if (entryOffsetsBuffer[mid] + heightsBuffer[mid] < visibleTop)
+                {
+                    low = mid + 1;
+                }
+                else
+                {
+                    result = mid;
+                    high = mid - 1;
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Eases <see cref="seasonWashColor"/> toward the wash color for <paramref name="topSeason"/>
+        /// (the season at the top of the journal) and returns it. Uses a frame-rate-independent
+        /// exponential ease on real time, so the crossfade runs smoothly even while the game is paused;
+        /// the first frame snaps straight to the target to avoid a fade-in from transparent.
+        /// </summary>
+        private Color UpdateSeasonWash(Season topSeason)
+        {
+            Color target = UiStyle.SeasonWashColor(topSeason);
+            float now = Time.realtimeSinceStartup;
+            if (seasonWashLastRealtime < 0f)
+            {
+                seasonWashColor = target;
+            }
+            else
+            {
+                float dt = Mathf.Max(0f, now - seasonWashLastRealtime);
+                float t = 1f - Mathf.Exp(-dt * Mathf.Max(0.01f, UiStyle.seasonWashLerpSpeed));
+                seasonWashColor = Color.Lerp(seasonWashColor, target, t);
+            }
+
+            seasonWashLastRealtime = now;
+            return seasonWashColor;
+        }
+
+        /// <summary>
+        /// Returns the full (expanded) card height for an entry, measuring wrapped text once and
+        /// reusing the result across draw frames. Finished entry text is stable, so re-measuring
+        /// every expanded card 60x/second while the tab is open is pure waste once it has been laid
+        /// out. The cache is dropped wholesale whenever something that can change a card's height
+        /// changes: the pawn's render token (entry text/status), the card width, the debug-info
+        /// toggle, or the name-highlight set (bold highlight markup can change text wrapping, and the
+        /// highlight set changes off the live colony without bumping the render token). Collapsed
+        /// cards bypass this entirely via the constant CollapsedEntryHeight.
+        /// </summary>
+        private float CachedEntryHeight(
+            DiaryEntryView entry,
+            string entryKey,
+            float width,
+            bool showLlmDebugInfo,
+            DiaryRenderToken token,
+            List<DiaryNameHighlight> nameHighlights)
+        {
+            return entryCardMeasurer.CachedHeight(
+                EntryMeasureRequest(entry, entryKey, width, showLlmDebugInfo, nameHighlights),
+                token,
+                nameHighlightsVersion);
+        }
+
+
+
+
+    }
+}

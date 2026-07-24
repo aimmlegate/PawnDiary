@@ -9,9 +9,9 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>
-    /// Partial implementation of the pawn Diary inspector tab.
+    /// Entry-card helpers for the reusable diary journal renderer.
     /// </summary>
-    public partial class ITab_Pawn_Diary
+    internal sealed partial class DiaryJournalView
     {
         /// <summary>
         /// Returns the entry body text for the current view mode: polished generated output in
@@ -61,10 +61,11 @@ namespace PawnDiary
             public Rect LocalEntryRect;
             public Rect VisibleEntryRect;
             public Pawn Pawn;
+            public string PawnId;
             public DiaryGameComponent Component;
-            // The owning tab instance: the favorite star reads/toggles the pawn's persisted favorite
+            // The owning journal instance: the favorite star reads/toggles the pawn's persisted favorite
             // set through it. Null is tolerated (star simply cannot toggle) for defensive robustness.
-            public ITab_Pawn_Diary Tab;
+            public DiaryJournalView Owner;
             public Color AccentColor;
             public Color DialogueColor;
             public bool Expanded;
@@ -120,10 +121,10 @@ namespace PawnDiary
                     titleRect,
                     entry,
                     request.EntryKey,
-                    request.Tab != null && request.Tab.IsFavoriteEntry(request.EntryKey));
+                    request.Owner != null && request.Owner.IsFavoriteEntry(request.EntryKey));
                 if (favClicked)
                 {
-                    request.Tab?.ToggleFavoriteEntry(request.Pawn, request.Component, request.EntryKey);
+                    request.Owner?.ToggleFavoriteEntry(request.PawnId, request.Component, request.EntryKey);
                 }
                 Rect chipTitleRect = new Rect(titleRect.x, titleRect.y, titleRect.width - TitleFavoriteReserve(entry), titleRect.height);
 
@@ -359,9 +360,8 @@ namespace PawnDiary
         /// Re-syncs the favorite lookup mirror from the pawn's saved record when the shown pawn or the
         /// loaded game changed. Cheap no-op on every other frame, so FillTab calls it unconditionally.
         /// </summary>
-        private void EnsureFavoritesSynced(Pawn pawn, DiaryGameComponent component)
+        private void EnsureFavoritesSynced(string pawnId, DiaryGameComponent component)
         {
-            string pawnId = pawn?.GetUniqueLoadID();
             if (ReferenceEquals(component, favoritesSyncedComponent)
                 && string.Equals(pawnId, favoritesSyncedPawnId, StringComparison.Ordinal))
             {
@@ -371,7 +371,7 @@ namespace PawnDiary
             favoritesSyncedComponent = component;
             favoritesSyncedPawnId = pawnId;
             favoriteEntryKeys.Clear();
-            IReadOnlyList<string> saved = component?.FavoriteEntryKeysFor(pawn);
+            IReadOnlyList<string> saved = component?.FavoriteEntryKeysForId(pawnId);
             if (saved != null)
             {
                 for (int i = 0; i < saved.Count; i++)
@@ -400,18 +400,18 @@ namespace PawnDiary
         /// filter re-runs this frame. Refused past the defensive bound (matching the record-side
         /// policy) rather than evicting older favorites.
         /// </summary>
-        private void ToggleFavoriteEntry(Pawn pawn, DiaryGameComponent component, string entryKey)
+        private void ToggleFavoriteEntry(string pawnId, DiaryGameComponent component, string entryKey)
         {
             if (string.IsNullOrEmpty(entryKey))
             {
                 return;
             }
 
-            EnsureFavoritesSynced(pawn, component);
+            EnsureFavoritesSynced(pawnId, component);
             if (favoriteEntryKeys.Remove(entryKey))
             {
                 favoritesVersion++;
-                component?.SetEntryFavorite(pawn, entryKey, false);
+                component?.SetEntryFavoriteById(pawnId, entryKey, false);
                 return;
             }
 
@@ -422,7 +422,7 @@ namespace PawnDiary
 
             favoriteEntryKeys.Add(entryKey);
             favoritesVersion++;
-            component?.SetEntryFavorite(pawn, entryKey, true);
+            component?.SetEntryFavoriteById(pawnId, entryKey, true);
         }
 
         /// <summary>
@@ -1321,7 +1321,19 @@ namespace PawnDiary
             }
 
             Pawn otherPawn = FindPawnByLoadId(link.OtherPawnId);
-            if (otherPawn == null || !otherPawn.Spawned)
+            if (otherPawn == null)
+            {
+                return;
+            }
+
+            // The standalone reader switches its own subject and does not disturb map selection.
+            if (DiaryUiRouter.ReaderWindowMode)
+            {
+                DiaryUiRouter.OpenDiaryAt(otherPawn, link.EventId);
+                return;
+            }
+
+            if (!otherPawn.Spawned)
             {
                 return;
             }
@@ -1335,13 +1347,7 @@ namespace PawnDiary
             Find.Selector.ClearSelection();
             Find.Selector.Select(otherPawn, true, false);
 
-            // Request scroll to the shared event and open the diary tab
-            ITab_Pawn_Diary.RequestScrollToEntry(otherPawn, link.EventId);
-            InspectTabBase opened = ITab_Pawn_Diary.OpenDiaryTab();
-            if (!(opened is ITab_Pawn_Diary))
-            {
-                ITab_Pawn_Diary.ClearPendingScrollRequest();
-            }
+            DiaryUiRouter.OpenDiaryAt(otherPawn, link.EventId);
         }
 
         /// <summary>

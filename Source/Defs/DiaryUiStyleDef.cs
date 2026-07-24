@@ -119,6 +119,21 @@ namespace PawnDiary
         public float tabMinHeight = 360f;
         public float tabScreenHeightMargin = 72f;
 
+        // ---- Standalone three-pane reader window ----
+        public float readerPawnListWidth = 220f;
+        public float readerPawnListWidthCompact = 170f;
+        public float readerCompactThreshold = 1360f;
+        public float readerPaneGap = 12f;
+        public float readerBookWidth = 850f;
+        public float readerPawnRowHeight = 48f;
+        public float readerPortraitSize = 40f;
+        public float readerMaxWidth = 1460f;
+        public float readerMaxHeight = 940f;
+        public float readerMinWidth = 760f;
+        public float readerMinHeight = 520f;
+        public float readerScreenMargin = 48f;
+        public DiaryUiColorSpec readerDeadPawnTint = Color(0.72f, 0.66f, 0.62f, 1f);
+
         // ---- Right-hand filter/controls panel ----
         // Independent, non-virtualized scroll column on the right of the Diary tab. Holds the year
         // selector, filter controls, and (in dev mode) the diary dev tools.
@@ -399,6 +414,7 @@ namespace PawnDiary
         public float CollapsedEntryHeight => entryTitleHeight + collapsedEntryChromePadding;
         public float VirtualizedEntryOverscanHeight => virtualizedEntryOverscanHeight > 0f && !float.IsNaN(virtualizedEntryOverscanHeight) ? virtualizedEntryOverscanHeight : 0f;
         public Color QuietTextColor => quietTextColor.ToColor(new Color(0.42f, 0.48f, 0.52f));
+        public Color ReaderDeadPawnTint => readerDeadPawnTint.ToColor(new Color(0.72f, 0.66f, 0.62f, 1f));
         public Color NarrativeTextColor => narrativeTextColor.ToColor(new Color(0.78f, 0.78f, 0.72f));
         public Color FallbackDialogueColor => fallbackDialogueColor.ToColor(new Color(0.58f, 0.80f, 1f));
         public Color SpeechBlockBgColor => speechBlockBgColor.ToColor(new Color(0.10f, 0.14f, 0.16f, 0.55f));

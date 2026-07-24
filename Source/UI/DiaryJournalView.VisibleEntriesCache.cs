@@ -1,5 +1,5 @@
-// Visible-entry cache for the Diary tab. RimWorld redraws inspector tabs every frame, so this
-// helper owns the impure pawn/token-backed lists that can be reused between draw passes.
+// Visible-entry cache for the reusable diary journal. RimWorld redraws UI hosts every frame, so this
+// helper owns the impure subject/token-backed lists that can be reused between draw passes.
 using System;
 using System.Collections.Generic;
 using Verse;
@@ -7,22 +7,22 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>
-    /// Partial implementation of the pawn Diary inspector tab.
+    /// Visible-entry cache helpers for the reusable diary journal renderer.
     /// </summary>
-    public partial class ITab_Pawn_Diary
+    internal sealed partial class DiaryJournalView
     {
         /// <summary>
         /// Caches the selected pawn's lightweight year index and materializes full card views only for
         /// the currently selected year. This keeps pawn switching cheap even when dev fixtures seed
         /// thousands of archived pages.
         /// </summary>
-        private sealed class DiaryTabVisibleEntriesCache
+        private sealed class DiaryJournalVisibleEntriesCache
         {
             private const int MaxCachedPawnStates = 6;
 
             private sealed class CachedPawnState
             {
-                public Pawn cachedIndexPawn;
+                public string cachedIndexPawnId;
                 public DiaryRenderToken cachedIndexToken;
                 public bool cachedIndexShowDebug;
                 public bool cachedIndexShowGenerating;
@@ -51,7 +51,7 @@ namespace PawnDiary
                 public int orderedYear;
             }
 
-            private Pawn cachedIndexPawn;
+            private string cachedIndexPawnId;
             private DiaryRenderToken cachedIndexToken;
             private bool cachedIndexShowDebug;
             private bool cachedIndexShowGenerating;
@@ -150,7 +150,7 @@ namespace PawnDiary
             /// change. No full card views are created here for saved entries.
             /// </summary>
             public void RebuildIndexIfNeeded(
-                Pawn pawn,
+                DiaryReaderSubject subject,
                 DiaryGameComponent component,
                 bool showLlmDebugInfo,
                 bool showGeneratingEntries,
@@ -165,7 +165,7 @@ namespace PawnDiary
                     return;
                 }
 
-                string cacheKey = CacheKeyFor(pawn, showLlmDebugInfo, showGeneratingEntries, showPromptOnlyEntries, devPreviewKind);
+                string cacheKey = CacheKeyFor(subject.PawnId, showLlmDebugInfo, showGeneratingEntries, showPromptOnlyEntries, devPreviewKind);
                 if (!string.Equals(cacheKey, currentCacheKey, StringComparison.Ordinal))
                 {
                     StoreCurrentState();
@@ -176,8 +176,8 @@ namespace PawnDiary
                     }
                 }
 
-                token = component.RenderTokenFor(pawn);
-                bool sameVisibleCache = cachedIndexPawn != null
+                token = component.RenderTokenForId(subject.PawnId);
+                bool sameVisibleCache = !string.IsNullOrWhiteSpace(cachedIndexPawnId)
                     && string.Equals(cacheKey, currentCacheKey, StringComparison.Ordinal)
                     && cachedIndexShowDebug == showLlmDebugInfo
                     && cachedIndexShowGenerating == showGeneratingEntries
@@ -192,16 +192,21 @@ namespace PawnDiary
                 }
 
                 if (cachedIndexBuild == null
-                    || !cachedIndexBuild.Matches(pawn, token, showLlmDebugInfo, showGeneratingEntries, showPromptOnlyEntries)
+                    || !cachedIndexBuild.Matches(subject.PawnId, token, showLlmDebugInfo, showGeneratingEntries, showPromptOnlyEntries)
                     || cachedIndexPreviewKind != devPreviewKind)
                 {
-                    cachedIndexPawn = pawn;
+                    cachedIndexPawnId = subject.PawnId;
                     cachedIndexToken = token;
                     cachedIndexShowDebug = showLlmDebugInfo;
                     cachedIndexShowGenerating = showGeneratingEntries;
                     cachedIndexShowPromptOnly = showPromptOnlyEntries;
                     cachedIndexPreviewKind = devPreviewKind;
-                    cachedIndexBuild = component.BeginTabYearIndexBuild(pawn, showLlmDebugInfo, showGeneratingEntries, showPromptOnlyEntries);
+                    cachedIndexBuild = component.BeginTabYearIndexBuild(
+                        subject.PawnId,
+                        subject.Alive,
+                        showLlmDebugInfo,
+                        showGeneratingEntries,
+                        showPromptOnlyEntries);
                     if (!(sameVisibleCache && cachedIndex != null))
                     {
                         cachedIndex = null;
@@ -233,7 +238,7 @@ namespace PawnDiary
                     return;
                 }
 
-                cachedIndexPawn = pawn;
+                cachedIndexPawnId = subject.PawnId;
                 cachedIndexToken = token;
                 cachedIndexShowDebug = showLlmDebugInfo;
                 cachedIndexShowGenerating = showGeneratingEntries;
@@ -260,7 +265,7 @@ namespace PawnDiary
                     }
                 }
 
-                AddDevPreviewEntryIfNeeded(pawn, devPreviewKind);
+                AddDevPreviewEntryIfNeeded(subject.Pawn, devPreviewKind);
                 cachedVisibleYears.Sort((left, right) => right.CompareTo(left));
                 cachedVisibleRevision++;
                 cachedOrderedVisibleRevision = -1;
@@ -300,7 +305,7 @@ namespace PawnDiary
             /// years still use viewport virtualization after this; older years are not materialized
             /// until selected.
             /// </summary>
-            public bool TryGetOrderedEntriesForSelectedYear(Pawn pawn, int year, out List<DiaryEntryView> ordered)
+            public bool TryGetOrderedEntriesForSelectedYear(string pawnId, int year, out List<DiaryEntryView> ordered)
             {
                 ordered = cachedOrderedEntries;
                 if (cachedOrderedVisibleRevision == cachedVisibleRevision && cachedOrderedYear == year)
@@ -308,7 +313,6 @@ namespace PawnDiary
                     return true;
                 }
 
-                string pawnId = pawn?.GetUniqueLoadID();
                 bool canRefreshQuietly = cachedOrderedYear == year && cachedOrderedEntries.Count > 0;
                 if (!loadingSelectedYear
                     || loadingYear != year
@@ -387,14 +391,13 @@ namespace PawnDiary
             }
 
             private static string CacheKeyFor(
-                Pawn pawn,
+                string pawnId,
                 bool showLlmDebugInfo,
                 bool showGeneratingEntries,
                 bool showPromptOnlyEntries,
                 DevDiaryPreviewKind devPreviewKind)
             {
-                string pawnId = pawn?.GetUniqueLoadID() ?? string.Empty;
-                return pawnId
+                return (pawnId ?? string.Empty)
                     + "|debug=" + showLlmDebugInfo
                     + "|generating=" + showGeneratingEntries
                     + "|promptOnly=" + showPromptOnlyEntries
@@ -403,7 +406,7 @@ namespace PawnDiary
 
             private bool HasCurrentState()
             {
-                return cachedIndexPawn != null
+                return !string.IsNullOrWhiteSpace(cachedIndexPawnId)
                     || cachedIndex != null
                     || cachedIndexBuild != null
                     || cachedVisibleYears.Count > 0
@@ -421,7 +424,7 @@ namespace PawnDiary
 
                 CachedPawnState state = new CachedPawnState
                 {
-                    cachedIndexPawn = cachedIndexPawn,
+                    cachedIndexPawnId = cachedIndexPawnId,
                     cachedIndexToken = cachedIndexToken,
                     cachedIndexShowDebug = cachedIndexShowDebug,
                     cachedIndexShowGenerating = cachedIndexShowGenerating,
@@ -466,7 +469,7 @@ namespace PawnDiary
                     return false;
                 }
 
-                cachedIndexPawn = state.cachedIndexPawn;
+                cachedIndexPawnId = state.cachedIndexPawnId;
                 cachedIndexToken = state.cachedIndexToken;
                 cachedIndexShowDebug = state.cachedIndexShowDebug;
                 cachedIndexShowGenerating = state.cachedIndexShowGenerating;
@@ -529,7 +532,7 @@ namespace PawnDiary
 
             private void ClearCurrentState()
             {
-                cachedIndexPawn = null;
+                cachedIndexPawnId = null;
                 cachedIndexToken = default(DiaryRenderToken);
                 cachedIndex = null;
                 cachedIndexBuild = null;

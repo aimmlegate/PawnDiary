@@ -28,6 +28,22 @@
     <tabMinHeight>360</tabMinHeight>
     <tabScreenHeightMargin>72</tabScreenHeightMargin>
 
+    <!-- Fixed, responsive standalone reader window. The left pawn list becomes compact below the
+         threshold; readerBookWidth is the journal's preferred cap, not a hard minimum. -->
+    <readerPawnListWidth>220</readerPawnListWidth>
+    <readerPawnListWidthCompact>170</readerPawnListWidthCompact>
+    <readerCompactThreshold>1360</readerCompactThreshold>
+    <readerPaneGap>12</readerPaneGap>
+    <readerBookWidth>850</readerBookWidth>
+    <readerPawnRowHeight>48</readerPawnRowHeight>
+    <readerPortraitSize>40</readerPortraitSize>
+    <readerMaxWidth>1460</readerMaxWidth>
+    <readerMaxHeight>940</readerMaxHeight>
+    <readerMinWidth>760</readerMinWidth>
+    <readerMinHeight>520</readerMinHeight>
+    <readerScreenMargin>48</readerScreenMargin>
+    <readerDeadPawnTint><r>0.72</r><g>0.66</g><b>0.62</b><a>1</a></readerDeadPawnTint>
+
     <!-- Right-hand filter/controls panel (independent, non-virtualized scroll column). -->
     <filterPanelWidth>260</filterPanelWidth>
     <filterPanelGap>12</filterPanelGap>

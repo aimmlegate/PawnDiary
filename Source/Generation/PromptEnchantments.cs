@@ -79,7 +79,8 @@ namespace PawnDiary
         /// <summary>
         /// Returns one live context prompt for this pawn, or empty when disabled/no match.
         /// </summary>
-        public static string RuleFor(Pawn pawn, bool includeImportantEventContext = false,
+        public static string RuleFor(Pawn pawn, string eventId, string writerStableId, int rerollSalt,
+            bool includeImportantEventContext = false,
             IList<PromptEnchantmentCandidate> extraCandidates = null,
             float normalCandidateWeightMultiplier = 1f,
             IList<string> suppressedHediffDefNames = null,
@@ -90,24 +91,39 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            PromptEnchantmentTuning tuning = DiaryTuning.PromptEnchantmentTuning;
-            List<PromptEnchantmentCandidate> normalCandidates = new List<PromptEnchantmentCandidate>();
-            List<DiaryPromptEnchantmentDef> defs = DefDatabase<DiaryPromptEnchantmentDef>.AllDefsListForReading;
-            if (!suppressNormalCandidates && pawn != null && defs != null && defs.Count > 0)
+            // Prompt enchantments are rebuilt during Regenerate, so their candidate gates and final
+            // weighted pick share a stable private stream keyed to this event, POV, and reroll.
+            string pawnId = string.IsNullOrWhiteSpace(writerStableId)
+                ? pawn?.GetUniqueLoadID() ?? string.Empty
+                : writerStableId;
+            Rand.PushState(HumorChancePolicy.StableSeed(eventId, pawnId, rerollSalt));
+            try
             {
-                normalCandidates = PromptEnchantmentCollector.Collect(
-                    pawn,
-                    defs,
-                    includeImportantEventContext,
-                    tuning);
-            }
+                PromptEnchantmentTuning tuning = DiaryTuning.PromptEnchantmentTuning;
+                List<PromptEnchantmentCandidate> normalCandidates = new List<PromptEnchantmentCandidate>();
+                List<DiaryPromptEnchantmentDef> defs =
+                    DefDatabase<DiaryPromptEnchantmentDef>.AllDefsListForReading;
+                if (!suppressNormalCandidates && pawn != null && defs != null && defs.Count > 0)
+                {
+                    normalCandidates = PromptEnchantmentCollector.Collect(
+                        pawn,
+                        defs,
+                        includeImportantEventContext,
+                        tuning);
+                }
 
-            List<PromptEnchantmentCandidate> candidates = PromptEnchantmentPlanner.PrepareCandidatesForBuild(
-                normalCandidates,
-                extraCandidates,
-                normalCandidateWeightMultiplier,
-                suppressedHediffDefNames);
-            return PromptEnchantmentPlanner.Build(candidates, tuning, Rand.Range(0f, 1f));
+                List<PromptEnchantmentCandidate> candidates =
+                    PromptEnchantmentPlanner.PrepareCandidatesForBuild(
+                        normalCandidates,
+                        extraCandidates,
+                        normalCandidateWeightMultiplier,
+                        suppressedHediffDefNames);
+                return PromptEnchantmentPlanner.Build(candidates, tuning, Rand.Range(0f, 1f));
+            }
+            finally
+            {
+                Rand.PopState();
+            }
         }
     }
 }

@@ -9,16 +9,16 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>
-    /// Partial implementation of the pawn Diary inspector tab.
+    /// Expand/collapse helpers for the reusable diary journal renderer.
     /// </summary>
-    public partial class ITab_Pawn_Diary
+    internal sealed partial class DiaryJournalView
     {
         /// <summary>
         /// Draws a closed diary page as a deliberate compact row: one bordered header, one accent
         /// strip, and no body tint/rule. This keeps collapsed histories readable instead of looking
         /// like clipped full cards.
         /// </summary>
-        private bool DrawCollapsedEntry(DiaryEntryView entry, Rect rect, Color accent, bool expanded, float expansionBlend, string entryKey, Pawn pawn, DiaryGameComponent component)
+        private bool DrawCollapsedEntry(DiaryEntryView entry, Rect rect, Color accent, bool expanded, float expansionBlend, string entryKey, string pawnId, DiaryGameComponent component)
         {
 
             Widgets.DrawMenuSection(rect);
@@ -59,7 +59,7 @@ namespace PawnDiary
             bool favClicked = DrawTitleFavorite(titleRect, entry, entryKey, IsFavoriteEntry(entryKey));
             if (favClicked)
             {
-                ToggleFavoriteEntry(pawn, component, entryKey);
+                ToggleFavoriteEntry(pawnId, component, entryKey);
             }
 
             Rect chipTitleRect = new Rect(titleRect.x, titleRect.y, titleRect.width - TitleFavoriteReserve(entry), titleRect.height);

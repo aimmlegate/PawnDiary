@@ -112,6 +112,7 @@ namespace PawnDiary
             return selectedThing != null
                 && ITab_Pawn_Diary.CanShowDiaryFor(diaryPawn)
                 && (PawnDiaryMod.Settings == null || !PawnDiaryMod.Settings.showDiaryInspectTab)
+                && (PawnDiaryMod.Settings == null || !PawnDiaryMod.Settings.useDiaryReaderWindow)
                 && Find.Selector != null
                 && Find.Selector.NumSelected == 1
                 && Find.Selector.SingleSelectedThing == selectedThing;
@@ -128,15 +129,21 @@ namespace PawnDiary
                 defaultDesc = "PawnDiary.Command.OpenDiaryDesc".Translate(),
                 icon = DiaryCommandIcon,
                 groupKey = DiaryCommandGroupKey,
-                action = ToggleDiaryTab
+                action = () => ToggleDiaryTab(diaryPawn)
             };
         }
 
         /// <summary>
         /// Opens the hidden Diary tab, or closes it when the same tab is already open in Inspect.
         /// </summary>
-        private static void ToggleDiaryTab()
+        private static void ToggleDiaryTab(Pawn diaryPawn)
         {
+            if (DiaryUiRouter.ReaderWindowMode)
+            {
+                DiaryUiRouter.OpenDiaryFor(diaryPawn);
+                return;
+            }
+
             MainTabWindow_Inspect inspectWindow = MainButtonDefOf.Inspect?.TabWindow as MainTabWindow_Inspect;
             if (inspectWindow != null
                 && Find.MainTabsRoot != null
@@ -147,7 +154,7 @@ namespace PawnDiary
                 return;
             }
 
-            ITab_Pawn_Diary.OpenDiaryTab();
+            DiaryUiRouter.OpenDiaryFor(diaryPawn);
         }
 
         /// <summary>

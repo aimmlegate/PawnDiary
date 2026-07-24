@@ -923,7 +923,15 @@ namespace PawnDiary
         /// </summary>
         internal IReadOnlyList<string> FavoriteEntryKeysFor(Pawn pawn)
         {
-            PawnDiaryRecord diary = FindDiary(pawn, false);
+            return FavoriteEntryKeysForId(pawn?.GetUniqueLoadID());
+        }
+
+        /// <summary>
+        /// Returns saved favorite entry keys using only the subject's stable pawn ID.
+        /// </summary>
+        internal IReadOnlyList<string> FavoriteEntryKeysForId(string pawnId)
+        {
+            PawnDiaryRecord diary = LookupDiaryByPawnId(pawnId);
             return diary?.favoriteEntryKeys;
         }
 
@@ -935,12 +943,20 @@ namespace PawnDiary
         /// </summary>
         internal void SetEntryFavorite(Pawn pawn, string entryKey, bool favorite)
         {
+            SetEntryFavoriteById(pawn?.GetUniqueLoadID(), entryKey, favorite);
+        }
+
+        /// <summary>
+        /// Stars or un-stars one diary page using only the subject's stable pawn ID.
+        /// </summary>
+        internal void SetEntryFavoriteById(string pawnId, string entryKey, bool favorite)
+        {
             if (string.IsNullOrEmpty(entryKey))
             {
                 return;
             }
 
-            PawnDiaryRecord diary = FindDiary(pawn, false);
+            PawnDiaryRecord diary = LookupDiaryByPawnId(pawnId);
             if (diary == null)
             {
                 return;

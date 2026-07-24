@@ -218,6 +218,9 @@ namespace PawnDiary
 
             return PromptEnchantments.RuleFor(
                 pawn,
+                diaryEvent?.eventId ?? string.Empty,
+                pawnId,
+                diaryEvent?.promptVariantRerolls ?? 0,
                 diaryEvent != null && diaryEvent.IsImportant(),
                 candidates,
                 eventWindowNormalMultiplier * observedConditionNormalMultiplier,

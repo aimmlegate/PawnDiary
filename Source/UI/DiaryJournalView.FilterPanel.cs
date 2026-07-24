@@ -19,9 +19,9 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>
-    /// Partial implementation of the pawn Diary inspector tab.
+    /// Filter-panel helpers for the reusable diary journal renderer.
     /// </summary>
-    public partial class ITab_Pawn_Diary
+    internal sealed partial class DiaryJournalView
     {
         // Scroll offset for the filter panel, kept independent from the journal's scrollPosition so the
         // two columns scroll on their own.
@@ -180,15 +180,15 @@ namespace PawnDiary
         /// </summary>
         private void DrawFilterPanel(
             Rect panelRect,
-            Pawn pawn,
+            DiaryReaderSubject subject,
             DiaryGameComponent component,
             List<int> years,
-            DiaryTabVisibleEntriesCache entriesCache,
+            DiaryJournalVisibleEntriesCache entriesCache,
             List<DiaryEntryView> orderedForTags)
         {
             // This lifecycle reset must run even when the panel is hidden. FillTab still applies active
             // filters in that state, so returning first would leak the previous pawn's selections.
-            ResetFilterStateOnPawnChange(pawn);
+            ResetFilterStateOnPawnChange(subject.PawnId);
             if (panelRect.width <= 1f || panelRect.height <= 1f)
             {
                 return;
@@ -225,7 +225,7 @@ namespace PawnDiary
                 if (Prefs.DevMode)
                 {
                     listing.GapLine();
-                    DrawFilterDevSection(listing, pawn, component);
+                    DrawFilterDevSection(listing, subject.Pawn, component);
                 }
             }
             catch (Exception e)
@@ -252,7 +252,7 @@ namespace PawnDiary
         /// Year selector section: reuses the existing FloatMenu pager when several years exist, or a
         /// plain label for a single year. Drawn only once the year index is ready.
         /// </summary>
-        private void DrawFilterYearSection(Listing_Standard listing, List<int> years, DiaryTabVisibleEntriesCache entriesCache)
+        private void DrawFilterYearSection(Listing_Standard listing, List<int> years, DiaryJournalVisibleEntriesCache entriesCache)
         {
             if (years == null || years.Count == 0)
             {
@@ -384,9 +384,8 @@ namespace PawnDiary
         /// Clears the journal filter selections and panel scroll when the shown pawn changes, so state
         /// does not carry across pawns on this shared tab instance.
         /// </summary>
-        private void ResetFilterStateOnPawnChange(Pawn pawn)
+        private void ResetFilterStateOnPawnChange(string pawnId)
         {
-            string pawnId = pawn?.GetUniqueLoadID();
             if (string.Equals(pawnId, filterPanelPawnId, StringComparison.Ordinal))
             {
                 return;

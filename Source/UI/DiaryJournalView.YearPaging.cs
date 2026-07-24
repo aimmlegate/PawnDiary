@@ -9,16 +9,16 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>
-    /// Partial implementation of the pawn Diary inspector tab.
+    /// Year-paging helpers for the reusable diary journal renderer.
     /// </summary>
-    public partial class ITab_Pawn_Diary
+    internal sealed partial class DiaryJournalView
     {
         /// <summary>
         /// Draws the one-year-at-a-time pager above the diary list. The buttons move through years
         /// that actually have visible entries, newest first; all entries for the selected year are
         /// shown in the scroll view below.
         /// </summary>
-        private void DrawYearFilter(Rect rect, List<int> years, DiaryTabVisibleEntriesCache entriesCache)
+        private void DrawYearFilter(Rect rect, List<int> years, DiaryJournalVisibleEntriesCache entriesCache)
         {
             if (years == null || years.Count <= 1)
             {
@@ -67,7 +67,7 @@ namespace PawnDiary
         /// Opens the year picker: a FloatMenu listing every year that has visible entries, newest
         /// first, each with its page count. Shared by the pager and the filter panel's dropdown.
         /// </summary>
-        private void ShowYearFloatMenu(List<int> years, DiaryTabVisibleEntriesCache entriesCache)
+        private void ShowYearFloatMenu(List<int> years, DiaryJournalVisibleEntriesCache entriesCache)
         {
             if (years == null || years.Count == 0)
             {
@@ -167,7 +167,7 @@ namespace PawnDiary
         /// Keeps the selected year valid for the current pawn. New pawns open on their newest
         /// available year, which is the first item because <see cref="YearsFor"/> sorts descending.
         /// </summary>
-        private void EnsureSelectedYear(Pawn pawn, List<int> years)
+        private void EnsureSelectedYear(string pawnId, List<int> years)
         {
 
             if (years == null || years.Count == 0)
@@ -184,8 +184,6 @@ namespace PawnDiary
             }
 
 
-
-            string pawnId = pawn?.GetUniqueLoadID();
 
             if (yearFilterPawnId != pawnId || !years.Contains(selectedYear))
             {
@@ -204,10 +202,10 @@ namespace PawnDiary
         /// A Social-tab or linked-entry jump may target an older year. Switch the pager first so
         /// TryApplyPendingScroll can find the event in the filtered list and place it on screen.
         /// </summary>
-        private void SelectYearForPendingScroll(Pawn pawn, DiaryTabVisibleEntriesCache entriesCache)
+        private void SelectYearForPendingScroll(string pawnId, DiaryJournalVisibleEntriesCache entriesCache)
         {
 
-            if (pawn == null || entriesCache == null || string.IsNullOrWhiteSpace(pendingScrollPawnId) || string.IsNullOrWhiteSpace(pendingScrollEventId))
+            if (string.IsNullOrWhiteSpace(pawnId) || entriesCache == null || string.IsNullOrWhiteSpace(pendingScrollPawnId) || string.IsNullOrWhiteSpace(pendingScrollEventId))
             {
 
                 return;
@@ -216,7 +214,7 @@ namespace PawnDiary
 
 
 
-            if (pawn.GetUniqueLoadID() != pendingScrollPawnId)
+            if (pawnId != pendingScrollPawnId)
             {
 
                 return;
@@ -424,10 +422,10 @@ namespace PawnDiary
         /// Consumes a pending Social-tab jump request by placing the target card near the top
         /// of the scroll view. If the entry disappeared before redraw, clear the stale request.
         /// </summary>
-        private void TryApplyPendingScroll(Pawn pawn, List<DiaryEntryView> ordered, float[] offsets, float viewHeight, float outHeight)
+        private void TryApplyPendingScroll(string pawnId, List<DiaryEntryView> ordered, float[] offsets, float viewHeight, float outHeight)
         {
 
-            if (pawn == null || string.IsNullOrWhiteSpace(pendingScrollPawnId) || string.IsNullOrWhiteSpace(pendingScrollEventId))
+            if (string.IsNullOrWhiteSpace(pawnId) || string.IsNullOrWhiteSpace(pendingScrollPawnId) || string.IsNullOrWhiteSpace(pendingScrollEventId))
             {
 
                 return;
@@ -435,8 +433,6 @@ namespace PawnDiary
             }
 
 
-
-            string pawnId = pawn.GetUniqueLoadID();
 
             if (pawnId != pendingScrollPawnId)
             {
