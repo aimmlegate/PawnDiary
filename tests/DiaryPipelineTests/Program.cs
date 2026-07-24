@@ -631,6 +631,14 @@ namespace DiaryPipelineTests
                 maxTokens = 30
             });
             AssertTrue("empty narrative context omits its field", !empty.userPrompt.Contains("narrative context:"));
+
+            XDocument templates = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryPromptTemplateDefs.xml"));
+            XElement beliefReflection = templates.Root?.Elements("PawnDiary.DiaryPromptTemplateDef")
+                .FirstOrDefault(row => ChildValue(row, "templateKey") == "SoloBeliefReflection");
+            AssertEqual("belief reflection retains the shared narrative source", 1,
+                beliefReflection?.Element("fields")?.Elements("li")
+                    .Count(row => ChildValue(row, "source") == NarrativeContextPrompt.Source) ?? 0);
         }
 
         private static void TestPromptContextDetailSelection()
@@ -887,7 +895,8 @@ namespace DiaryPipelineTests
             {
                 "PairDefault", "PairImportant", "PairCombat", "PairBatched",
                 "SoloDefault", "SoloImportant", "SoloInternalState", "SoloBatched",
-                "SoloDayReflection", "SoloQuadrumReflection", "SoloArcReflection"
+                "SoloDayReflection", "SoloQuadrumReflection", "SoloArcReflection",
+                "SoloBeliefReflection"
             };
             for (int i = 0; i < firstPersonTemplates.Length; i++)
             {

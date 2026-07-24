@@ -36,6 +36,7 @@ namespace RoyaltyContextTests
             TestPermitOwnerDecisionAndQuickAidArbitration();
             TestPermitNarrativeEvidenceRequiresExactAllowlistAndPov();
             TestRoyalAscentLifecycleOwnershipExpiryAndMigration();
+            TestRoyalAscentTerminalReflectionContract();
             TestReconciliationScheduleBounds();
             TestPersonaPersistenceBaselinesAndNormalization();
             TestTitleObservationNormalizationAndOrdering();
@@ -180,6 +181,72 @@ namespace RoyaltyContextTests
                 correlationId = correlationId,
                 tick = tick
             };
+        }
+
+        private static void TestRoyalAscentTerminalReflectionContract()
+        {
+            RoyaltyPolicySnapshot policy = RoyaltyPolicySnapshot.CreateDefault();
+            RoyalAscentLifecycleDecision completed = RoyalAscentPolicy.Evaluate(
+                AscentFacts("completed", "Quest_41", 700), policy, true);
+            List<NarrativeEvidence> evidence = RoyalAscentPolicy.JourneyEvidence(
+                "royal-ascent-terminal", 700, "Pawn_7", "initiator", completed,
+                "quest", policy.royalAscentQuestDefName);
+            AssertEqual("exact Ascent completion yields one terminal evidence row", 1, evidence.Count);
+
+            NarrativeReference reference = NarrativeReferencePolicy.FromEvidence(evidence[0]);
+            TerminalReflectionRequest request = new TerminalReflectionRequest
+            {
+                canonicalEventId = "royal-ascent-terminal",
+                canonicalEventTick = 700,
+                povPawnId = "Pawn_7",
+                povRole = "initiator",
+                contract = new TerminalReflectionContract
+                {
+                    ownershipCorrelated = completed.recognized && completed.closesWindow,
+                    phase = completed.phase,
+                    arcKey = completed.arcKey,
+                    sourceDomain = "quest",
+                    sourceDefName = policy.royalAscentQuestDefName
+                },
+                evidence = evidence,
+                references = new List<NarrativeReference> { reference }
+            };
+
+            TerminalReflectionDecision terminal = TerminalReflectionPolicy.Evaluate(request);
+            AssertTrue("exact Ascent terminal owner queues deferred reflection", terminal.queueMajorArc);
+            AssertEqual("Ascent terminal reflection excludes its canonical page from recap",
+                request.canonicalEventId, terminal.avoidRelatedEventId);
+
+            RoyalAscentLifecycleDecision started = RoyalAscentPolicy.Evaluate(
+                AscentFacts("accepted", "Quest_41", 600), policy, true);
+            List<NarrativeEvidence> startEvidence = RoyalAscentPolicy.JourneyEvidence(
+                "royal-ascent-start", 600, "Pawn_7", "initiator", started,
+                "quest", policy.royalAscentQuestDefName);
+            request.canonicalEventId = "royal-ascent-start";
+            request.canonicalEventTick = 600;
+            request.contract.phase = started.phase;
+            request.contract.arcKey = started.arcKey;
+            request.evidence = startEvidence;
+            request.references = new List<NarrativeReference>
+            {
+                NarrativeReferencePolicy.FromEvidence(startEvidence[0])
+            };
+            AssertTrue("Ascent acceptance cannot masquerade as terminal reflection evidence",
+                !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
+
+            request.canonicalEventId = "royal-ascent-terminal";
+            request.canonicalEventTick = 700;
+            request.contract.phase = completed.phase;
+            request.contract.arcKey = completed.arcKey;
+            request.evidence = evidence;
+            request.references = new List<NarrativeReference> { reference };
+            request.contract.sourceDefName = "EndGame_ModdedRoyalAscentLookalike";
+            AssertTrue("modded-looking Ascent source cannot borrow terminal ownership",
+                !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
+            request.contract.sourceDefName = policy.royalAscentQuestDefName;
+            request.contract.sourceDomain = "arrival";
+            AssertTrue("unverified arrival domain cannot borrow Ascent terminal ownership",
+                !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
         }
 
         private static void TestPermitAllowlistMappingsAndExclusions()

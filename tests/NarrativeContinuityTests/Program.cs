@@ -24,11 +24,13 @@ namespace NarrativeContinuityTests
             TestReferenceEqualityAndDeduplication();
             TestPersistenceCapsAndPromptFormatting();
             TestRoyaltyProviderApplicabilityAndBounds();
+            TestRoyaltyProviderPromptBudgetMatrix();
             TestBiotechProviderApplicabilityAndTruthGates();
             TestAnomalyProviderVisibleMappingsAndGates();
             TestOdysseyProviderEvidenceAndCrossDlcGates();
             TestOdysseyEnvironmentalPressureGatesAndComposition();
             TestIdeologyInterpretationCompositionAndIsolation();
+            TestIdeologyProviderPromptBudgetMatrix();
             TestCrossArcMemorySelection();
             TestTerminalReflectionQualification();
             TestReflectionPriorityAndDeferredConsumption();
@@ -988,6 +990,119 @@ namespace NarrativeContinuityTests
             };
         }
 
+        private static void TestRoyaltyProviderPromptBudgetMatrix()
+        {
+            NarrativeEvidence personaEvidence = Evidence();
+            personaEvidence.eventId = "royalty-persona-event";
+            personaEvidence.povPawnId = "pawn-1";
+            personaEvidence.facet = NarrativeFacetTokens.BondLifecycle;
+            personaEvidence.subjectKind = NarrativeSubjectKindTokens.Weapon;
+            personaEvidence.subjectId = "weapon-2";
+            personaEvidence.arcKey = "royalty-persona|weapon-2|1";
+            personaEvidence.sourceDomain = "persona_weapon";
+            personaEvidence.sourceDefName = "PersonaWeaponBondRecovered";
+
+            NarrativeEvidence titleEvidence = Evidence();
+            titleEvidence.eventId = "royalty-title-event";
+            titleEvidence.povPawnId = "pawn-1";
+            titleEvidence.facet = NarrativeFacetTokens.IdentityTransition;
+            titleEvidence.subjectKind = NarrativeSubjectKindTokens.Pawn;
+            titleEvidence.subjectId = "pawn-1";
+            titleEvidence.sourceDomain = "royalty_title";
+            titleEvidence.sourceDefName = "RoyalTitleChanged";
+
+            NarrativeEvidence ascentEvidence = Evidence();
+            ascentEvidence.eventId = "royalty-ascent-terminal";
+            ascentEvidence.tick = 1000;
+            ascentEvidence.povPawnId = "pawn-1";
+            ascentEvidence.facet = NarrativeFacetTokens.JourneyChapter;
+            ascentEvidence.phase = "completed";
+            ascentEvidence.subjectKind = NarrativeSubjectKindTokens.Colony;
+            ascentEvidence.subjectId = "royal_ascent";
+            ascentEvidence.arcKey = "court-ascent|Quest_41";
+            ascentEvidence.salience = NarrativeSalienceTokens.Terminal;
+            ascentEvidence.sourceDomain = "quest";
+            ascentEvidence.sourceDefName = "EndGame_RoyalAscent";
+
+            List<NarrativeEvidence> evidence = new List<NarrativeEvidence>
+            {
+                personaEvidence,
+                titleEvidence,
+                ascentEvidence
+            };
+            RoyaltyNarrativeSnapshot snapshot = new RoyaltyNarrativeSnapshot
+            {
+                providerAvailable = true,
+                povPawnId = "pawn-1",
+                pawnCanKnow = true,
+                hasVerifiedPovConnection = true,
+                personaBonds = new List<RoyaltyPersonaNarrativeFact>
+                {
+                    PersonaFact("weapon-2", 1)
+                },
+                titles = new List<RoyaltyTitleNarrativeFact>
+                {
+                    TitleFact("Faction_2", "Baron", new List<string> { "speech", "apparel" })
+                },
+                courtPressure = new RoyaltyCourtPressureNarrativeFact
+                {
+                    arcPrefix = "court-ascent",
+                    arcKey = "court-ascent|Quest_41",
+                    text = "Exact active court pressure.",
+                    sourceTick = 900
+                }
+            };
+            List<NarrativeLensCandidate> candidates = RoyaltyNarrativeProvider.Build(evidence, snapshot);
+            AssertEqual("combined exact Royalty facts yield persona, title, and pressure candidates",
+                3, candidates.Count);
+
+            NarrativePolicySnapshot policy = NarrativePolicySnapshot.CreateDefault();
+            string[] detailLevels =
+            {
+                NarrativeDetailLevelTokens.Full,
+                NarrativeDetailLevelTokens.Balanced,
+                NarrativeDetailLevelTokens.Compact
+            };
+            for (int i = 0; i < detailLevels.Length; i++)
+            {
+                string detailLevel = detailLevels[i];
+                NarrativeContextSelection selection = NarrativeContextSelector.Select(
+                    new NarrativeContextRequest
+                    {
+                        evidence = evidence,
+                        candidates = candidates,
+                        policy = policy,
+                        currentTick = 1000,
+                        detailLevel = detailLevel
+                    });
+                NarrativeDetailBudget budget = Budget(policy, detailLevel);
+                AssertTrue("Royalty " + detailLevel + " selects at least one exact fact",
+                    selection.selectedCandidates.Count > 0);
+                AssertTrue("Royalty " + detailLevel + " respects its lens budget",
+                    selection.selectedCandidates.Count
+                        <= budget.maxLenses + (budget.allowExactArcPair ? 1 : 0));
+                AssertTrue("Royalty " + detailLevel + " respects its character budget",
+                    selection.narrativeContext.Length <= budget.characterBudget);
+                for (int c = 0; c < selection.selectedCandidates.Count; c++)
+                {
+                    NarrativeLensCandidate selected = selection.selectedCandidates[c];
+                    AssertEqual("Royalty " + detailLevel + " keeps provider ownership",
+                        NarrativeProviderTokens.Royalty, selected.provider);
+                    AssertTrue("Royalty " + detailLevel + " emits only source-owned candidate text",
+                        candidates.Exists(candidate =>
+                            candidate.candidateKey == selected.candidateKey
+                            && candidate.text == selected.text));
+                }
+
+                string context = selection.narrativeContext.ToLowerInvariant();
+                AssertTrue("Royalty " + detailLevel + " invents no arrival or ending facts",
+                    !context.Contains("arrived")
+                    && !context.Contains("succeeded")
+                    && !context.Contains("escaped")
+                    && !context.Contains("inherited"));
+            }
+        }
+
         private static void TestOdysseyProviderEvidenceAndCrossDlcGates()
         {
             NarrativeEvidence familyEvidence = Evidence();
@@ -1239,6 +1354,105 @@ namespace NarrativeContinuityTests
             AssertEqual("provider failure preserves prior and later candidates", 2, isolated.Count);
             AssertEqual("provider failure preserves deterministic continuation", "after-failure",
                 isolated[1].candidateKey);
+        }
+
+        private static void TestIdeologyProviderPromptBudgetMatrix()
+        {
+            NarrativeEvidence evidence = Evidence();
+            evidence.arcKey = string.Empty;
+            IdeologyNarrativeSnapshot ideology = new IdeologyNarrativeSnapshot
+            {
+                providerAvailable = true,
+                pawnCanKnow = true,
+                hasVerifiedPovConnection = true,
+                povPawnId = evidence.povPawnId,
+                ideologyId = "Ideo_Phase6",
+                preceptKeyKind = "instance",
+                preceptStableId = "Precept_Phase6",
+                text = "Within the current faith, this exact event engaged a visible doctrine.",
+                sourceEvidence = evidence,
+                topicTokens = new List<string> { "identity" }
+            };
+            List<NarrativeLensCandidate> exact = IdeologyNarrativeProvider.Build(
+                new List<NarrativeEvidence> { evidence }, ideology);
+            AssertEqual("Phase 6 exact Ideology source creates one candidate", 1, exact.Count);
+
+            string[] peerProviders =
+            {
+                NarrativeProviderTokens.Royalty,
+                NarrativeProviderTokens.Biotech,
+                NarrativeProviderTokens.Anomaly,
+                NarrativeProviderTokens.Odyssey
+            };
+            List<NarrativeLensCandidate> candidates = new List<NarrativeLensCandidate> { exact[0] };
+            for (int i = 0; i < peerProviders.Length; i++)
+            {
+                NarrativeLensCandidate peer = Candidate(
+                    "phase6-peer-" + peerProviders[i],
+                    NarrativeCategoryTokens.Pressure,
+                    evidence.facet,
+                    text: "A separate visible " + peerProviders[i] + " fact remains source-owned.",
+                    topics: new List<string> { "peer_" + i },
+                    salience: NarrativeSalienceTokens.Minor,
+                    sourceTick: evidence.tick);
+                peer.provider = peerProviders[i];
+                peer.sourceEventId = evidence.eventId;
+                peer.providerAvailable = true;
+                peer.hasVerifiedPovConnection = true;
+                candidates.Add(peer);
+            }
+
+            NarrativePolicySnapshot policy = NarrativePolicySnapshot.CreateDefault();
+            string[] detailLevels =
+            {
+                NarrativeDetailLevelTokens.Full,
+                NarrativeDetailLevelTokens.Balanced,
+                NarrativeDetailLevelTokens.Compact
+            };
+            for (int i = 0; i < detailLevels.Length; i++)
+            {
+                string detailLevel = detailLevels[i];
+                NarrativeContextRequest request = new NarrativeContextRequest
+                {
+                    evidence = new List<NarrativeEvidence> { evidence },
+                    candidates = candidates,
+                    policy = policy,
+                    currentTick = evidence.tick,
+                    detailLevel = detailLevel,
+                    deterministicSeed = 613
+                };
+                NarrativeContextSelection first = NarrativeContextSelector.Select(request);
+                NarrativeContextSelection second = NarrativeContextSelector.Select(request);
+                NarrativeDetailBudget budget = Budget(policy, detailLevel);
+                AssertEqual("Phase 6 " + detailLevel + " selection stays deterministic",
+                    first.narrativeContext, second.narrativeContext);
+                AssertTrue("Phase 6 " + detailLevel + " stays inside the shared lens budget",
+                    first.selectedCandidates.Count <= budget.maxLenses);
+                AssertTrue("Phase 6 " + detailLevel + " stays inside the shared character budget",
+                    first.narrativeContext.Length <= budget.characterBudget);
+                AssertTrue("Phase 6 " + detailLevel + " retains the exact Ideology candidate",
+                    HasSelected(first, exact[0].candidateKey));
+                NarrativeLensCandidate selectedIdeology = first.selectedCandidates.Find(
+                    candidate => candidate.candidateKey == exact[0].candidateKey);
+                AssertTrue("Phase 6 " + detailLevel + " preserves Ideology source ownership",
+                    selectedIdeology != null
+                        && selectedIdeology.provider == NarrativeProviderTokens.Ideology
+                        && selectedIdeology.sourceEventId == evidence.eventId
+                        && selectedIdeology.text == ideology.text);
+            }
+
+            NarrativeEvidence wrongSource = Evidence();
+            wrongSource.sourceDefName = "UnrelatedPhase6Source";
+            List<NarrativeLensCandidate> peersOnly = NarrativeProviderOrchestrator.Collect(
+                new List<NarrativeEvidence> { wrongSource },
+                candidates.GetRange(1, candidates.Count - 1),
+                null,
+                null,
+                null,
+                null,
+                ideology);
+            AssertTrue("other providers cannot make mismatched Ideology evidence eligible",
+                !peersOnly.Exists(candidate => candidate.candidateKey == exact[0].candidateKey));
         }
 
         private static void TestOdysseyEnvironmentalPressureGatesAndComposition()

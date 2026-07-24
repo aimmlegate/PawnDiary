@@ -774,6 +774,8 @@ Do not write a report, sermon, doctrine summary, or list. Output only the diary 
       <li><label>you</label><source>PawnSummary</source></li>
       <li><label>event prompt</label><source>EventPrompt</source></li>
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
+      <li><label>narrative context</label><source>NarrativeContext</source></li>
+      <li><label>relevant past</label><source>MemoryContext</source></li>
       <li><label>belief context</label><source>BeliefContext</source></li>
       <li><label>belief trigger</label><source>GameContext</source><contextKey>belief_reflection_trigger</contextKey></li>
       <li><label>setting</label><source>Setting</source></li>

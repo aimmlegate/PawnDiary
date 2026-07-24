@@ -537,7 +537,7 @@ namespace DiaryPipelineTests
                 { "SoloDayReflection", "40|27" },
                 { "SoloQuadrumReflection", "15|" },
                 { "SoloArcReflection", "18|" },
-                { "SoloBeliefReflection", "12|" },
+                { "SoloBeliefReflection", "14|" },
                 { "DeathDescription", "15|" },
                 { "ArrivalDescription", "8|" },
                 { "Title", "1|" }

@@ -1042,14 +1042,17 @@ namespace PawnMemoryTests
             AssertEqual("switch.off", 0,
                 CultureAnnotationPlanner.Plan(fields, "X", topics, profile, null, off).entries.Count);
 
-            // Past-memory text and prior entries are structurally unscannable: their sources are
-            // simply absent from the allowlist, so markers inside them can never trigger.
+            // Past-memory text, already-generated narrative/belief layers, and prior entries are
+            // structurally unscannable: their sources are absent from the allowlist, so composition
+            // cannot feed generated interpretation back into a second culture annotation.
             KnowledgePolicySnapshot policy = KnowledgePolicySnapshot.CreateDefault();
             List<AnnotationFieldView> excluded = new List<AnnotationFieldView>
             {
                 Field(0, "MemoryContext", "- (day) xenotype=Hussar changed"),
-                Field(1, "EntryText", "yesterday xenotype=Hussar"),
-                Field(2, "HiddenInitiatorEntry", "xenotype=Hussar")
+                Field(1, "BeliefContext", "xenotype=Hussar is current doctrine"),
+                Field(2, "NarrativeContext", "xenotype=Hussar is a selected shared lens"),
+                Field(3, "EntryText", "yesterday xenotype=Hussar"),
+                Field(4, "HiddenInitiatorEntry", "xenotype=Hussar")
             };
             AssertEqual("sources.excluded", 0,
                 CultureAnnotationPlanner.Plan(excluded, "X", topics, profile, null, policy).entries.Count);

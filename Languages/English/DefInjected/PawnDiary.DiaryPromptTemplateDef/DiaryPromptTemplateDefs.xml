@@ -333,11 +333,13 @@ Do not write a report, sermon, doctrine summary, or list. Output only the diary 
   <DiaryPromptTemplate_SoloBeliefReflection.fields.4.label>you</DiaryPromptTemplate_SoloBeliefReflection.fields.4.label>
   <DiaryPromptTemplate_SoloBeliefReflection.fields.5.label>event prompt</DiaryPromptTemplate_SoloBeliefReflection.fields.5.label>
   <DiaryPromptTemplate_SoloBeliefReflection.fields.6.label>event enhancement</DiaryPromptTemplate_SoloBeliefReflection.fields.6.label>
-  <DiaryPromptTemplate_SoloBeliefReflection.fields.7.label>belief context</DiaryPromptTemplate_SoloBeliefReflection.fields.7.label>
-  <DiaryPromptTemplate_SoloBeliefReflection.fields.8.label>belief trigger</DiaryPromptTemplate_SoloBeliefReflection.fields.8.label>
-  <DiaryPromptTemplate_SoloBeliefReflection.fields.9.label>setting</DiaryPromptTemplate_SoloBeliefReflection.fields.9.label>
-  <DiaryPromptTemplate_SoloBeliefReflection.fields.10.label>my last opening line (do not reuse)</DiaryPromptTemplate_SoloBeliefReflection.fields.10.label>
-  <DiaryPromptTemplate_SoloBeliefReflection.fields.11.label>how my previous entry ended (continuity; do not retell it)</DiaryPromptTemplate_SoloBeliefReflection.fields.11.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.7.label>narrative context</DiaryPromptTemplate_SoloBeliefReflection.fields.7.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.8.label>relevant past</DiaryPromptTemplate_SoloBeliefReflection.fields.8.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.9.label>belief context</DiaryPromptTemplate_SoloBeliefReflection.fields.9.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.10.label>belief trigger</DiaryPromptTemplate_SoloBeliefReflection.fields.10.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.11.label>setting</DiaryPromptTemplate_SoloBeliefReflection.fields.11.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.12.label>my last opening line (do not reuse)</DiaryPromptTemplate_SoloBeliefReflection.fields.12.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.13.label>how my previous entry ended (continuity; do not retell it)</DiaryPromptTemplate_SoloBeliefReflection.fields.13.label>
   <DiaryPromptTemplate_DeathDescription.fields.0.label>event</DiaryPromptTemplate_DeathDescription.fields.0.label>
   <DiaryPromptTemplate_DeathDescription.fields.1.label>event prompt</DiaryPromptTemplate_DeathDescription.fields.1.label>
   <DiaryPromptTemplate_DeathDescription.fields.2.label>event enhancement</DiaryPromptTemplate_DeathDescription.fields.2.label>

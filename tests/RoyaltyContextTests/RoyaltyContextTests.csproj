@@ -10,6 +10,8 @@
   <!-- Only plain contracts/policies are linked. A Verse/RimWorld/Unity/Harmony dependency fails. -->
   <ItemGroup>
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContracts.cs" Link="NarrativeContracts.cs" />
+    <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeReferencePolicy.cs" Link="NarrativeReferencePolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\Narrative\TerminalReflectionPolicy.cs" Link="TerminalReflectionPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\RoyaltyContracts.cs" Link="RoyaltyContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\PersonaLifecyclePolicy.cs" Link="PersonaLifecyclePolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\PersonaKillCorrelationPolicy.cs" Link="PersonaKillCorrelationPolicy.cs" />
