@@ -36,8 +36,17 @@ namespace PawnDiary
                 request.contextDetailLevel,
                 request.contextBudgets);
 
+            // Inline culture annotation (MEMORY_SYSTEM_REDESIGN_PLAN §4.3): runs AFTER field
+            // selection, BEFORE assembly, on the fields that survived — never on system
+            // instructions, past-memory text, or prior entries (the XML scannable-source
+            // allowlist excludes them structurally).
+            List<PromptAssemblerField> assemblerFields = ToAssemblerFields(contextSelection.fields);
+            CultureAnnotationPlan annotationPlan = PlanCultureAnnotations(
+                request, payload, policy, assemblerFields, values);
+            ApplyCultureAnnotations(assemblerFields, annotationPlan);
+
             string userPrompt = PromptAssembler.RenderUserPrompt(
-                ToAssemblerFields(contextSelection.fields),
+                assemblerFields,
                 values,
                 finalInstruction);
 
@@ -49,7 +58,7 @@ namespace PawnDiary
                 request.outputLanguageDirective);
 
             int responseMaxTokens = request.maxTokens > 0 ? request.maxTokens : template.maxTokens;
-            return new DiaryPromptPlan
+            DiaryPromptPlan plan = new DiaryPromptPlan
             {
                 eventId = payload.eventId,
                 povRole = request.povRole,
@@ -62,6 +71,122 @@ namespace PawnDiary
                 responseRules = DiaryResponseRules.ForRequest(payload.eventId, request.povRole,
                     request.titleRequest, responseMaxTokens)
             };
+            plan.cultureAnnotationTopics.AddRange(annotationPlan.matchedTopics);
+            for (int i = 0; i < annotationPlan.entries.Count; i++)
+            {
+                int index = annotationPlan.entries[i].fieldIndex;
+                if (index >= 0 && index < assemblerFields.Count && assemblerFields[index] != null)
+                {
+                    plan.cultureAnnotatedSources.Add(assemblerFields[index].source ?? string.Empty);
+                }
+            }
+
+            return plan;
+        }
+
+        /// <summary>
+        /// Builds field views of the SELECTED fields (with their final resolved values) and runs
+        /// the pure annotation planner against the writer's origin/adopted culture profiles.
+        /// </summary>
+        private static CultureAnnotationPlan PlanCultureAnnotations(
+            DiaryPromptRequest request,
+            DiaryEventPayload payload,
+            DiaryPolicySnapshot policy,
+            List<PromptAssemblerField> assemblerFields,
+            PromptValues values)
+        {
+            KnowledgePolicySnapshot knowledgePolicy = policy.knowledgePolicy;
+            if (knowledgePolicy == null || !knowledgePolicy.injectionEnabled
+                || policy.cultureTopics == null || policy.cultureTopics.Count == 0
+                || request.titleRequest)
+            {
+                return new CultureAnnotationPlan();
+            }
+
+            DiaryPovPayload pov = payload.Pov(request.povRole);
+            CultureProfile originProfile = ResolveCultureProfile(
+                pov?.originCultureDefName, policy);
+            CultureProfile adoptedProfile = ResolveCultureProfile(
+                pov?.adoptedCultureDefName, policy);
+            if (originProfile == null && adoptedProfile == null)
+            {
+                return new CultureAnnotationPlan();
+            }
+
+            List<AnnotationFieldView> views = new List<AnnotationFieldView>(assemblerFields.Count);
+            for (int i = 0; i < assemblerFields.Count; i++)
+            {
+                PromptAssemblerField field = assemblerFields[i];
+                if (field == null || !field.enabled)
+                {
+                    continue;
+                }
+
+                views.Add(new AnnotationFieldView
+                {
+                    index = i,
+                    source = field.source ?? string.Empty,
+                    contextKey = field.contextKey ?? string.Empty,
+                    resolvedValue = PromptAssembler.ResolveFieldValue(
+                        field.source, field.contextKey, values)
+                });
+            }
+
+            return CultureAnnotationPlanner.Plan(
+                views,
+                payload.defName,
+                policy.cultureTopics,
+                originProfile,
+                adoptedProfile,
+                knowledgePolicy);
+        }
+
+        /// <summary>
+        /// Profile lookup (§4.2): a KNOWN culture without an authored profile uses the fallback
+        /// (Astropolitan) lens; a blank culture name yields none — no invented culture.
+        /// </summary>
+        private static CultureProfile ResolveCultureProfile(string cultureDefName, DiaryPolicySnapshot policy)
+        {
+            if (string.IsNullOrWhiteSpace(cultureDefName) || policy.cultureProfiles == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < policy.cultureProfiles.Count; i++)
+            {
+                CultureProfile profile = policy.cultureProfiles[i];
+                if (profile != null && string.Equals(profile.cultureDefName, cultureDefName.Trim(),
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    return profile;
+                }
+            }
+
+            return policy.fallbackCultureProfile;
+        }
+
+        private static void ApplyCultureAnnotations(
+            List<PromptAssemblerField> fields, CultureAnnotationPlan plan)
+        {
+            if (plan == null || plan.entries == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < plan.entries.Count; i++)
+            {
+                CultureAnnotationPlanEntry entry = plan.entries[i];
+                if (entry == null || entry.fieldIndex < 0 || entry.fieldIndex >= fields.Count
+                    || fields[entry.fieldIndex] == null || string.IsNullOrWhiteSpace(entry.text))
+                {
+                    continue;
+                }
+
+                PromptAssemblerField field = fields[entry.fieldIndex];
+                field.annotation = string.IsNullOrWhiteSpace(field.annotation)
+                    ? entry.text
+                    : field.annotation + " " + entry.text;
+            }
         }
 
         public static string TemplateKeyFor(DiaryPromptRequest request)

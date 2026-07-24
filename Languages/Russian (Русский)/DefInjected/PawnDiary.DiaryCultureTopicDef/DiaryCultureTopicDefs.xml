@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Русские названия культурных тем (видны в dev-инструментах; в промпт не попадают). -->
+<LanguageData>
+
+  <Diary_CultureTopic_Mechanoids.label>механоиды и механиторы</Diary_CultureTopic_Mechanoids.label>
+  <Diary_CultureTopic_Archotech.label>архотех и древние комплексы</Diary_CultureTopic_Archotech.label>
+  <Diary_CultureTopic_Psychic.label>псикасты, анима и псионика</Diary_CultureTopic_Psychic.label>
+  <Diary_CultureTopic_Empire.label>Империя, титулы и иерархия</Diary_CultureTopic_Empire.label>
+  <Diary_CultureTopic_Xenohumans.label>ксенолюди, гены и модификация тела</Diary_CultureTopic_Xenohumans.label>
+  <Diary_CultureTopic_Void.label>Пустота и необъяснимые сущности</Diary_CultureTopic_Void.label>
+  <Diary_CultureTopic_Space.label>глиттермиры, криптосон и космос</Diary_CultureTopic_Space.label>
+  <Diary_CultureTopic_Outsiders.label>чужаки, фракции и доверие</Diary_CultureTopic_Outsiders.label>
+
+</LanguageData>

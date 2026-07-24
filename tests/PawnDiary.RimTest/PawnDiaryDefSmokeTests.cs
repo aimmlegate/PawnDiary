@@ -46,7 +46,10 @@ namespace PawnDiary.RimTests
                 && anomalySnapshot.containmentMaxWriters == 2
                 && anomalySnapshot.promotedStudyMilestones.Count == 0);
             Assert.That(!ReferenceEquals(anomalySnapshot, DiaryAnomalyPolicy.Snapshot()));
-            RequireDef<DiaryMemoryTuningDef>("Diary_Memory");
+            RequireDef<DiaryKnowledgeTuningDef>("Diary_Knowledge");
+            RequireDef<DiaryImportantEventDef>("Diary_ImpEvent_Married");
+            RequireDef<DiaryCultureTopicDef>("Diary_CultureTopic_Mechanoids");
+            RequireDef<DiaryCultureProfileDef>("Diary_CultureProfile_Astropolitan");
         }
 
         /// <summary>

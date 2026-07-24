@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Tuning surface for the deterministic pawn-knowledge system
+  (design/MEMORY_SYSTEM_REDESIGN_PLAN.md §2.3, §3.2, §4.3). Behavioral values mirror
+  KnowledgePolicySnapshot.CreateDefault exactly (the pure suite's parity test enforces it);
+  relevantPastInstruction is the intentional exception - its code fallback is blank so deleting
+  this file omits optional guidance without hardcoding English.
+
+  The player's single memory switch (settings) is ANDed with <enabled>; both control PROMPT
+  INJECTION ONLY - important-event capture and culture tracking always continue (§3.2).
+
+  DLC-safety: plain strings and numbers only. Localization: relevantPastInstruction and the two
+  annotation formats are prompt prose, translated via DefInjected; scannable sources, context
+  keys, and prefixes are stable schema tokens and stay English everywhere.
+-->
+<Defs>
+  <PawnDiary.DiaryKnowledgeTuningDef>
+    <defName>Diary_Knowledge</defName>
+    <label>pawn knowledge policy</label>
+
+    <enabled>true</enabled>
+
+    <!-- Defensive limits (§2.3). No age-based eviction: records live until a hard cap. -->
+    <maxRecordsPerPawn>512</maxRecordsPerPawn>
+    <maxRecordsGlobal>20000</maxRecordsGlobal>
+    <fallbackSummaryMaxChars>240</fallbackSummaryMaxChars>
+    <evictionScanIntervalTicks>150000</evictionScanIntervalTicks>
+
+    <!-- Relevant-past prompt block (§3.2): at most two dated fact lines. -->
+    <relevantPastMaxLines>2</relevantPastMaxLines>
+    <relevantPastMaxChars>500</relevantPastMaxChars>
+    <relevantPastLineFormat>- ({0}) {1}</relevantPastLineFormat>
+    <relevantPastInstruction>Facts from this pawn's past. Use one only if it fits naturally; never force a mention - these are context, not today's events.</relevantPastInstruction>
+
+    <!-- Inline culture annotation (§4.3): at most two topics per prompt. -->
+    <maxCultureTopicsPerPrompt>2</maxCultureTopicsPerPrompt>
+    <annotationSingleFormat>(culture: {0})</annotationSingleFormat>
+    <annotationDualFormat>(origin: {0}; adopted: {1})</annotationDualFormat>
+
+    <!-- Field sources the topic detector may scan. System instructions, the relevant-past block
+         (MemoryContext), prior entries, and persona text are excluded by omission. -->
+    <scannableSources>
+      <li>EventNoun</li>
+      <li>PovText</li>
+      <li>NeutralText</li>
+      <li>PawnSummary</li>
+      <li>Setting</li>
+      <li>GameContext</li>
+      <li>DeathFacts</li>
+      <li>ArrivalFacts</li>
+    </scannableSources>
+
+    <!-- Subject-key extraction for the CURRENT event's retrieval query (§3.1). Values of these
+         gameContext keys become "prefix:value" probes against stored records' subject keys. -->
+    <querySubjectKeys>
+      <li><contextKey>romance</contextKey><prefix>relation</prefix></li>
+      <li><contextKey>part_def</contextKey><prefix>part</prefix></li>
+      <li><contextKey>hediff</contextKey><prefix>hediff</prefix></li>
+      <li><contextKey>royal_title</contextKey><prefix>title</prefix></li>
+      <li><contextKey>ideological_role</contextKey><prefix>role</prefix></li>
+      <li><contextKey>xenotype</contextKey><prefix>xenotype</prefix></li>
+      <li><contextKey>faction</contextKey><prefix>faction</prefix></li>
+      <li><contextKey>weapon</contextKey><prefix>weapon</prefix></li>
+    </querySubjectKeys>
+  </PawnDiary.DiaryKnowledgeTuningDef>
+</Defs>

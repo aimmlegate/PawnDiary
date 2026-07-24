@@ -60,13 +60,8 @@
   <PawnDiaryRimTalkBridge.Settings.TranscriptLineCap>Цитируемых реплик на одну запись</PawnDiaryRimTalkBridge.Settings.TranscriptLineCap>
 
   <!-- Тумблеры и счётчики: положение колонии (функция 1) и общая память пары (функция 3). -->
-  <PawnDiaryRimTalkBridge.Settings.InjectSharedMemory>Делиться общими воспоминаниями в разговоре</PawnDiaryRimTalkBridge.Settings.InjectSharedMemory>
-  <PawnDiaryRimTalkBridge.Settings.InjectSharedMemoryDesc>Когда двое поселенцев беседуют, к разговору добавляются общие записи дневника — былая ссора, доброта, пережитая вместе беда, — чтобы они могли вспомнить, что было между ними.</PawnDiaryRimTalkBridge.Settings.InjectSharedMemoryDesc>
-  <PawnDiaryRimTalkBridge.Settings.AutoInjectSharedMemory>Добавлять общие воспоминания автоматически</PawnDiaryRimTalkBridge.Settings.AutoInjectSharedMemory>
-  <PawnDiaryRimTalkBridge.Settings.AutoInjectSharedMemoryDesc>Сам вплетает общие воспоминания в разговоры — ничего настраивать не нужно. Выключите, если хотите вручную вставить переменную общих воспоминаний в шаблон чата: автоматическая вставка при этом убирается.</PawnDiaryRimTalkBridge.Settings.AutoInjectSharedMemoryDesc>
   <PawnDiaryRimTalkBridge.Settings.InjectColonyContext>Учитывать положение колонии в разговоре</PawnDiaryRimTalkBridge.Settings.InjectColonyContext>
   <PawnDiaryRimTalkBridge.Settings.InjectColonyContextDesc>Добавляет к контексту разговора короткую выверенную строку о том, чем сейчас живёт колония, — рейд, суровая погода, жуткое присутствие, незакрытое задание. По умолчанию выключено: другие моды могут уже передавать события в чат.</PawnDiaryRimTalkBridge.Settings.InjectColonyContextDesc>
-  <PawnDiaryRimTalkBridge.Settings.SharedMemoryCount>Общих воспоминаний на разговор</PawnDiaryRimTalkBridge.Settings.SharedMemoryCount>
   <PawnDiaryRimTalkBridge.Settings.ColonyEventCount>Строк о положении колонии на разговор</PawnDiaryRimTalkBridge.Settings.ColonyEventCount>
 
   <!-- Текст, вставляемый в подсказки RimTalk (уровень 1) -->
@@ -90,7 +85,6 @@
        используют Prompt.MemoryLine выше. Образец виден только в предпросмотре настроек RimTalk. -->
   <PawnDiaryRimTalkBridge.Prompt.SharedMemoriesHeader>что связывает их двоих:</PawnDiaryRimTalkBridge.Prompt.SharedMemoriesHeader>
   <PawnDiaryRimTalkBridge.Prompt.SharedMemoriesSample>что связывает их двоих:&#10;— Долгая зима (5-й день квадрума): они пережили похолодание бок о бок.</PawnDiaryRimTalkBridge.Prompt.SharedMemoriesSample>
-  <PawnDiaryRimTalkBridge.Prompt.SharedMemoryVariableDesc>Записи дневника, общие для двух беседующих поселенцев, — их прежние заметные моменты вместе — из Pawn Diary.</PawnDiaryRimTalkBridge.Prompt.SharedMemoryVariableDesc>
 
   <!-- Голос дневника по характеру (уровень B). Теперь уровень B задаёт ПСИХОТИП (взгляд на мир) —
        кто пешка есть, — а Pawn Diary сохраняет то, как она пишет. Старый VoiceRule оставлен только

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Русская локализация настроечного Def-а системы знаний: инструкция к блоку «из прошлого» и два
+  формата культурной пометки. Схемные токены (источники полей, ключи контекста) остаются
+  английскими и здесь не переводятся.
+-->
+<LanguageData>
+
+  <Diary_Knowledge.label>политика памяти пешек</Diary_Knowledge.label>
+  <Diary_Knowledge.relevantPastInstruction>Факты из прошлого этой пешки. Используй не больше одного и только если он ложится естественно; не упоминай насильно — это фон, а не события дня.</Diary_Knowledge.relevantPastInstruction>
+  <Diary_Knowledge.annotationSingleFormat>(культура: {0})</Diary_Knowledge.annotationSingleFormat>
+  <Diary_Knowledge.annotationDualFormat>(корни: {0}; принято: {1})</Diary_Knowledge.annotationDualFormat>
+
+</LanguageData>

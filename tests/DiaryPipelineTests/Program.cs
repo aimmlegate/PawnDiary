@@ -6840,13 +6840,8 @@ namespace DiaryPipelineTests
             AssertTrue("belief reflection group is Ideology-gated",
                 HasListValue(belief, "enableWhenPackageIdsLoaded", "Ludeon.RimWorld.Ideology"));
 
-            // The cue is persisted and load-bearing beyond color: DiaryMemoryTuningDef maps it to
-            // memory importance, so a cue with no row would silently change what pawns remember.
-            XDocument memory = XDocument.Load(RepoPath("1.6", "Defs", "DiaryMemoryTuningDef.xml"));
-            AssertTrue("the Ideology core cue has a memory-importance row",
-                memory.Descendants("cueImportance").Elements("li")
-                    .Any(row => string.Equals(ChildValue(row, "cue"), "ideology",
-                        StringComparison.OrdinalIgnoreCase)));
+            // (The old DiaryMemoryTuningDef cue-importance mapping was retired with the
+            // deterministic knowledge redesign — cues are display/classification only now.)
 
             // Prompt-policy key order: the synthetic Def name still wins, the new group defName takes
             // the slot the Interaction catch-all ("other") used to occupy, and the BeliefReflection

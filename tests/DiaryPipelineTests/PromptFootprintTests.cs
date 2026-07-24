@@ -216,7 +216,7 @@ namespace DiaryPipelineTests
             AssertEntry(catalog, "observedConditionInstruction", "AnomalyGrayFleshEvidence");
             AssertEntry(catalog, "observedConditionBundle", "AnomalyGrayFleshEvidence");
             AssertEntry(catalog, "policyInstruction", "Diary_NarrativeContinuity.promptFieldInstruction");
-            AssertEntry(catalog, "policyInstruction", "Diary_Memory.memoryContextInstruction");
+            AssertEntry(catalog, "policyInstruction", "Diary_Knowledge.relevantPastInstruction");
             AssertEntry(catalog, "policyInstruction", "Diary_BeliefPolicy.promptFieldInstruction");
             AssertEntry(catalog, "policyInstruction", "Diary_AuthoritySpeechPolicy.speakerPromptInstruction");
             AssertEntry(catalog, "policyInstruction", "Diary_AuthoritySpeechPolicy.witnessPromptInstruction");
@@ -1276,7 +1276,7 @@ namespace DiaryPipelineTests
                 {
                     narrativeContextFieldLabel = DefText("Diary_NarrativeContinuity", "promptFieldLabel"),
                     narrativeContextInstruction = DefText("Diary_NarrativeContinuity", "promptFieldInstruction"),
-                    memoryContextInstruction = DefText("Diary_Memory", "memoryContextInstruction"),
+                    memoryContextInstruction = DefText("Diary_Knowledge", "relevantPastInstruction"),
                     beliefContextFieldLabel = DefText("Diary_BeliefPolicy", "promptFieldLabel"),
                     beliefContextInstruction = DefText("Diary_BeliefPolicy", "promptFieldInstruction")
                 };
@@ -1429,9 +1429,9 @@ namespace DiaryPipelineTests
                 AddOptionalEntry("1.6/Defs/DiaryNarrativeContinuityDefs.xml",
                     "Diary_NarrativeContinuity.promptFieldInstruction", "policyInstruction",
                     DefText("Diary_NarrativeContinuity", "promptFieldInstruction"));
-                AddOptionalEntry("1.6/Defs/DiaryMemoryTuningDef.xml",
-                    "Diary_Memory.memoryContextInstruction", "policyInstruction",
-                    DefText("Diary_Memory", "memoryContextInstruction"));
+                AddOptionalEntry("1.6/Defs/DiaryKnowledgeTuningDef.xml",
+                    "Diary_Knowledge.relevantPastInstruction", "policyInstruction",
+                    DefText("Diary_Knowledge", "relevantPastInstruction"));
                 AddOptionalEntry("1.6/Defs/DiaryBeliefPolicyDef.xml",
                     "Diary_BeliefPolicy.promptFieldInstruction", "policyInstruction",
                     DefText("Diary_BeliefPolicy", "promptFieldInstruction"));

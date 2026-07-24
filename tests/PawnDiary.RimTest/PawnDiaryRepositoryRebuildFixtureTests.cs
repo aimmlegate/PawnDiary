@@ -1,9 +1,9 @@
 // In-game save/load fixture for Pawn Diary's repository index rebuilds and retention
 // (design/TEST_COVERAGE_PLAN.md §6.4, "repository/diary/archive index rebuilds ... retention"). This suite
 // needs NO colony and creates NO pawns: it builds DiaryEventRepository / DiaryArchiveRepository /
-// PawnMemoryRepository model objects directly, round-trips their SAVED lists through RimWorld's real
-// Scribe to a temp file, and proves transient indexes rebuild correctly, memory registration remains
-// idempotent across the lazy post-load path, loaded rows repair, and retention drops the right rows.
+// PawnKnowledgeState model objects directly, round-trips their SAVED data through RimWorld's real
+// Scribe to a temp file, and proves transient indexes rebuild correctly, loaded rows repair (incl.
+// knowledge-record dedup), and retention drops the right rows.
 //
 // Why a real Scribe round-trip and not a whole-game save: the two repositories serialize only their
 // master list (events.ExposeEvents "diaryEvents" / archive.ExposeArchive "diaryArchiveEntries"); the
@@ -35,17 +35,17 @@ using Verse;
 namespace PawnDiary.RimTests
 {
     /// <summary>
-    /// Proves the never-serialized indexes of <see cref="DiaryEventRepository"/>,
-    /// <see cref="DiaryArchiveRepository"/>, and <see cref="PawnMemoryRepository"/> rebuild after a
-    /// real Scribe load, that memory replay stays idempotent, that retention prunes and re-indexes
-    /// correctly, and that a reload drops duplicate archive rows.
+    /// Proves the never-serialized indexes of <see cref="DiaryEventRepository"/> and
+    /// <see cref="DiaryArchiveRepository"/> rebuild after a real Scribe load, that
+    /// <see cref="PawnKnowledgeState"/> round-trips with normalization repair, that retention
+    /// prunes and re-indexes correctly, and that a reload drops duplicate archive rows.
     /// </summary>
     [TestSuite]
     public static class PawnDiaryRepositoryRebuildFixtureTests
     {
         private const string EventsLabel = "diaryEvents";
         private const string ArchiveLabel = "diaryArchiveEntries";
-        private const string MemoryLabel = "pawnMemoryFragments";
+        private const string KnowledgeLabel = "pawnKnowledge";
 
         /// <summary>
         /// The event repository's id index is not saved: after a Scribe round-trip every id is unknown
@@ -129,87 +129,60 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
-        /// The inert memory repository persists only its master list. A real Scribe load must run
-        /// MemoryFragment.PostLoadInit repair, while the first ForPawn read lazily reconstructs the
-        /// unsaved pawn/deposit indexes. RemoveByIds must then keep those indexes synchronized.
+        /// The per-pawn knowledge state (MEMORY_SYSTEM_REDESIGN_PLAN §2.2, §4.1) round-trips
+        /// through real Scribe preserving culture provenance and important-event records, and
+        /// Normalize() repairs a hand-edited save: null lists heal, parallel fact lists realign,
+        /// and duplicated dedup keys collapse to one record.
         /// </summary>
         [Test]
-        public static void MemoryRepositoryRoundTripsRepairsAndReindexes()
+        public static void KnowledgeStateRoundTripsPreservesCultureAndDedups()
         {
-            PawnMemoryRepository source = new PawnMemoryRepository();
-            MemoryFragment repairMe = NewMemory("pd-memory-1", "PawnA", "pd-source-1", 200);
-            repairMe.tags = null;
-            repairMe.keywords = null;
-            repairMe.importance = 2f;
-            repairMe.lastRecalledTick = 100;
-            source.Register(repairMe);
-            source.Register(NewMemory("pd-memory-2", "PawnB", "pd-source-2", 300));
+            PawnKnowledgeState source = new PawnKnowledgeState
+            {
+                pawnId = "PawnA",
+                originCultureDefName = "Rustican",
+                originCultureSource = "captured",
+                adoptedCultureDefName = "Corunan",
+            };
+            source.records.Add(NewKnowledgeRecord("rec-1", "relation.spouse.gained", 200));
+            source.records.Add(NewKnowledgeRecord("rec-2", "body.part.lost", 300));
 
             RunWithTempFile(path =>
             {
-                SaveWithScribe(path, () => source.ExposeMemories(MemoryLabel));
+                PawnKnowledgeState saved = source;
+                SaveWithScribe(path, () => Scribe_Deep.Look(ref saved, KnowledgeLabel));
 
-                PawnMemoryRepository loaded = new PawnMemoryRepository();
-                LoadVarsWithScribe(path, () => loaded.ExposeMemories(MemoryLabel));
+                PawnKnowledgeState loaded = null;
+                LoadVarsWithScribe(path, () => Scribe_Deep.Look(ref loaded, KnowledgeLabel));
+                Require(loaded != null, "The knowledge state must round-trip through Scribe.");
+                loaded.Normalize();
 
-                Require(loaded.Count == 2,
-                    "Loaded memory count " + loaded.Count + " did not match the saved 2.");
-                IReadOnlyList<MemoryFragment> pawnA = loaded.ForPawn("PawnA");
-                IReadOnlyList<MemoryFragment> pawnB = loaded.ForPawn("PawnB");
-                Require(pawnA.Count == 1 && pawnB.Count == 1,
-                    "The lazy memory index rebuild must restore one row for each owner.");
-                Require(pawnA[0].tags != null && pawnA[0].tags.Count == 0
-                        && pawnA[0].keywords != null && pawnA[0].keywords.Count == 0,
-                    "MemoryFragment PostLoadInit must repair null tag/keyword lists.");
-                Require(Math.Abs(pawnA[0].importance - 1f) < 0.0001f,
-                    "MemoryFragment PostLoadInit must clamp importance to 1.");
-                Require(pawnA[0].lastRecalledTick == pawnA[0].createdTick,
-                    "MemoryFragment PostLoadInit must repair a recall tick older than creation.");
-                Require(loaded.HasDeposit("PawnA", "pd-source-1")
-                        && loaded.HasDeposit("PawnB", "pd-source-2"),
-                    "The rebuilt deposit-key index must contain both saved deposits.");
+                Require(loaded.originCultureDefName == "Rustican"
+                        && loaded.originCultureSource == "captured"
+                        && loaded.adoptedCultureDefName == "Corunan",
+                    "Culture provenance must survive the round trip unchanged.");
+                Require(loaded.records.Count == 2,
+                    "Both important-event records must survive; got " + loaded.records.Count + ".");
+                ImportantMemoryRecord first = loaded.records[0];
+                Require(first.eventKind == "relation.spouse.gained" && first.tick == 200,
+                    "Record kind/tick must survive the round trip.");
+                Require(first.participantIds.Count == 1 && first.participantNames[0] == "Brik",
+                    "Participant ids and saved display names must survive.");
+                Require(first.subjectKeys.Count == 1 && first.factKeys.Count == first.factValues.Count,
+                    "Subject keys and parallel fact lists must survive aligned.");
+                Require(loaded.HasDedupKey(first.dedupKey),
+                    "The dedup index view must see the loaded record.");
 
-                int removed = loaded.RemoveByIds(new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                {
-                    "pd-memory-1",
-                });
-                Require(removed == 1 && loaded.Count == 1 && loaded.ForPawn("PawnA").Count == 0,
-                    "RemoveByIds must remove the row and rebuild the owner index.");
-                Require(!loaded.HasDeposit("PawnA", "pd-source-1")
-                        && loaded.HasDeposit("PawnB", "pd-source-2"),
-                    "RemoveByIds must rebuild deposit keys without disturbing surviving owners.");
-            });
-        }
-
-        /// <summary>
-        /// Register owns the final pawn+source-event idempotency guarantee even if future wiring calls
-        /// it before DiaryGameComponent's normal PostLoadInit RebuildIndex. This pins the defensive
-        /// lazy-order contract that protects staged/replayed signals.
-        /// </summary>
-        [Test]
-        public static void MemoryRegisterIsIdempotentBeforeExplicitPostLoadRebuild()
-        {
-            PawnMemoryRepository source = new PawnMemoryRepository();
-            source.Register(NewMemory("pd-memory-original", "PawnA", "pd-source-same", 100));
-
-            RunWithTempFile(path =>
-            {
-                SaveWithScribe(path, () => source.ExposeMemories(MemoryLabel));
-
-                PawnMemoryRepository loaded = new PawnMemoryRepository();
-                LoadVarsWithScribe(path, () => loaded.ExposeMemories(MemoryLabel));
-
-                // Do NOT call RebuildIndex/ForPawn/HasDeposit first: Register itself must initialize
-                // the lazy indexes before it checks whether this deposit already exists.
-                loaded.Register(NewMemory("pd-memory-duplicate", "PawnA", "pd-source-same", 200));
-
-                IReadOnlyList<MemoryFragment> owned = loaded.ForPawn("PawnA");
-                Require(loaded.Count == 1 && owned.Count == 1,
-                    "A duplicate first registration after load must not append a second fragment.");
-                Require(string.Equals(owned[0].memoryId, "pd-memory-original", StringComparison.Ordinal),
-                    "The original loaded deposit must win over its replay.");
-                Require(loaded.HasDeposit("PawnA", "pd-source-same"),
-                    "The lazy rebuild must retain the original deposit key.");
+                // Hand-edited save repair: a duplicated dedup key collapses, null lists heal.
+                loaded.records.Add(NewKnowledgeRecord("rec-1", "relation.spouse.gained", 200));
+                loaded.records.Add(new ImportantMemoryRecord { recordId = "rec-3", dedupKey = "d3", participantIds = null, factKeys = null });
+                loaded.Normalize();
+                Require(loaded.records.Count == 3,
+                    "Normalize must drop the duplicated dedup key (2 originals + repaired rec-3), got "
+                    + loaded.records.Count + ".");
+                ImportantMemoryRecord repaired = loaded.records[2];
+                Require(repaired.participantIds != null && repaired.factKeys != null,
+                    "Normalize must heal null record lists.");
             });
         }
 
@@ -483,24 +456,28 @@ namespace PawnDiary.RimTests
             };
         }
 
-        private static MemoryFragment NewMemory(
-            string memoryId,
-            string pawnId,
-            string sourceEventId,
-            int createdTick)
+        private static ImportantMemoryRecord NewKnowledgeRecord(
+            string recordId,
+            string eventKind,
+            int tick)
         {
-            return new MemoryFragment
+            ImportantMemoryRecord record = new ImportantMemoryRecord
             {
-                memoryId = memoryId,
-                pawnId = pawnId,
-                sourceEventId = sourceEventId,
-                text = "memory text for " + memoryId,
-                tags = new List<string> { MemoryTagTokens.Social },
-                keywords = new List<string> { "fixture" },
-                importance = 0.5f,
-                createdTick = createdTick,
-                lastRecalledTick = createdTick,
+                recordId = recordId,
+                dedupKey = "PawnA|" + eventKind + "|subject|" + tick,
+                sourceEventId = "src-" + recordId,
+                eventKind = eventKind,
+                topicKey = "relationship",
+                tick = tick,
+                dateLabel = "1st of Aprimay, 5500",
+                fallbackSummary = "fallback for " + recordId,
             };
+            record.participantIds.Add("PawnB");
+            record.participantNames.Add("Brik");
+            record.subjectKeys.Add("part:Leg");
+            record.factKeys.Add("victim");
+            record.factValues.Add("Brik");
+            return record;
         }
 
         private static ArchivedDiaryEntry NewArchive(string eventId, string pawnId, string povRole, int tick)

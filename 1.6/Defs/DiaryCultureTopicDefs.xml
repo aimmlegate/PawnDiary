@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The eight cultural interpretation topics (design/MEMORY_SYSTEM_REDESIGN_PLAN.md §4.2), based on
+  the installed vanilla CultureDefs and the official Royalty/Biotech/Anomaly/Odyssey feature
+  scopes. Detection (§4.3) is STRUCTURED ONLY: stable defNames, gameContext keys, "key=value"
+  token pairs, and schema markers embedded in field text ("xenotype=") - never localized word
+  forms, so detection is identical in every language.
+
+  Ascending <order> is the priority when more topics fire than the two-per-prompt cap. External
+  mods add topics by shipping more PawnDiary.DiaryCultureTopicDef rows plus matching clause rows
+  in their culture profiles.
+-->
+<Defs>
+
+  <PawnDiary.DiaryCultureTopicDef>
+    <defName>Diary_CultureTopic_Mechanoids</defName>
+    <label>mechanoids and mechanitors</label>
+    <topicKey>mechanoids</topicKey>
+    <order>10</order>
+    <triggerDefNames>
+      <li>BiotechMechlinkInstalled</li>
+      <li>BiotechMechlinkRemoved</li>
+    </triggerDefNames>
+    <triggerContextPairs>
+      <li>faction=Mechanoid</li>
+    </triggerContextPairs>
+  </PawnDiary.DiaryCultureTopicDef>
+
+  <PawnDiary.DiaryCultureTopicDef>
+    <defName>Diary_CultureTopic_Archotech</defName>
+    <label>archotechnology and ancient complexes</label>
+    <topicKey>archotech</topicKey>
+    <order>20</order>
+    <triggerContextPairs>
+      <li>part_tier=archotech</li>
+    </triggerContextPairs>
+  </PawnDiary.DiaryCultureTopicDef>
+
+  <PawnDiary.DiaryCultureTopicDef>
+    <defName>Diary_CultureTopic_Psychic</defName>
+    <label>psycasts, anima, and psychic phenomena</label>
+    <topicKey>psychic</topicKey>
+    <order>30</order>
+    <triggerDefNames>
+      <li>PsylinkLevel</li>
+      <li>BiotechPsychicBondFormed</li>
+      <li>BiotechPsychicBondRuptured</li>
+    </triggerDefNames>
+    <triggerContextKeys>
+      <li>psychic_ritual</li>
+    </triggerContextKeys>
+    <triggerValueMarkers>
+      <li>psylink_level=</li>
+    </triggerValueMarkers>
+  </PawnDiary.DiaryCultureTopicDef>
+
+  <PawnDiary.DiaryCultureTopicDef>
+    <defName>Diary_CultureTopic_Empire</defName>
+    <label>the Empire, titles, and hierarchy</label>
+    <topicKey>empire</topicKey>
+    <order>40</order>
+    <triggerDefNames>
+      <li>RoyalTitleGained</li>
+      <li>RoyalTitlePromoted</li>
+      <li>RoyalTitleDemoted</li>
+      <li>RoyalTitleLost</li>
+      <li>RoyalSuccession</li>
+      <li>RoyalHeirAppointed</li>
+    </triggerDefNames>
+    <triggerContextKeys>
+      <li>royal_permit</li>
+    </triggerContextKeys>
+    <triggerValueMarkers>
+      <li>title=</li>
+    </triggerValueMarkers>
+  </PawnDiary.DiaryCultureTopicDef>
+
+  <PawnDiary.DiaryCultureTopicDef>
+    <defName>Diary_CultureTopic_Xenohumans</defName>
+    <label>xenohumans, genes, bionics, and body modification</label>
+    <topicKey>xenohumans</topicKey>
+    <order>50</order>
+    <triggerDefNames>
+      <li>XenotypeChanged</li>
+      <li>GeneIdentityChanged</li>
+    </triggerDefNames>
+    <triggerContextKeys>
+      <li>part_kind</li>
+    </triggerContextKeys>
+    <triggerValueMarkers>
+      <li>xenotype=</li>
+    </triggerValueMarkers>
+  </PawnDiary.DiaryCultureTopicDef>
+
+  <PawnDiary.DiaryCultureTopicDef>
+    <defName>Diary_CultureTopic_Void</defName>
+    <label>the void and unexplained entities</label>
+    <topicKey>void</topicKey>
+    <order>60</order>
+    <triggerContextKeys>
+      <li>dark_study</li>
+    </triggerContextKeys>
+    <triggerContextPairs>
+      <li>part_tier=anomalous</li>
+    </triggerContextPairs>
+  </PawnDiary.DiaryCultureTopicDef>
+
+  <PawnDiary.DiaryCultureTopicDef>
+    <defName>Diary_CultureTopic_Space</defName>
+    <label>glitterworlds, cryptosleep, gravships, and space</label>
+    <topicKey>space</topicKey>
+    <order>70</order>
+    <triggerContextKeys>
+      <li>odyssey_journey</li>
+    </triggerContextKeys>
+  </PawnDiary.DiaryCultureTopicDef>
+
+  <PawnDiary.DiaryCultureTopicDef>
+    <defName>Diary_CultureTopic_Outsiders</defName>
+    <label>outsiders, other factions, and trust</label>
+    <topicKey>outsiders</topicKey>
+    <order>80</order>
+    <triggerDefNames>
+      <li>PawnDiary_Arrival</li>
+    </triggerDefNames>
+    <triggerContextKeys>
+      <li>raid</li>
+    </triggerContextKeys>
+  </PawnDiary.DiaryCultureTopicDef>
+
+</Defs>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Русская локализация каталога важных событий (память пешек). lineTemplate — каноничная строка
+  факта в блоке «из прошлого»; формулировки построены как назывные обороты, чтобы подстановка
+  имён и ярлыков не требовала согласования по роду и падежу. Плейсхолдеры {other} и {факт}
+  подставляются как есть — не переводить их имена.
+-->
+<LanguageData>
+
+  <Diary_ImpEvent_LoverGained.label>новый роман</Diary_ImpEvent_LoverGained.label>
+  <Diary_ImpEvent_LoverGained.lineTemplate>начало романа с {other}</Diary_ImpEvent_LoverGained.lineTemplate>
+
+  <Diary_ImpEvent_Married.label>свадьба</Diary_ImpEvent_Married.label>
+  <Diary_ImpEvent_Married.lineTemplate>свадьба с {other}</Diary_ImpEvent_Married.lineTemplate>
+
+  <Diary_ImpEvent_Breakup.label>разрыв</Diary_ImpEvent_Breakup.label>
+  <Diary_ImpEvent_Breakup.lineTemplate>разрыв с {other}</Diary_ImpEvent_Breakup.lineTemplate>
+
+  <Diary_ImpEvent_Divorce.label>развод</Diary_ImpEvent_Divorce.label>
+  <Diary_ImpEvent_Divorce.lineTemplate>развод с {other}</Diary_ImpEvent_Divorce.lineTemplate>
+
+  <Diary_ImpEvent_PsychicBondFormed.label>псионическая связь</Diary_ImpEvent_PsychicBondFormed.label>
+  <Diary_ImpEvent_PsychicBondFormed.lineTemplate>псионическая связь с {other}</Diary_ImpEvent_PsychicBondFormed.lineTemplate>
+
+  <Diary_ImpEvent_PsychicBondRuptured.label>связь разорвана</Diary_ImpEvent_PsychicBondRuptured.label>
+  <Diary_ImpEvent_PsychicBondRuptured.lineTemplate>разорвана псионическая связь с {other}</Diary_ImpEvent_PsychicBondRuptured.lineTemplate>
+
+  <Diary_ImpEvent_Birth.label>рождение ребёнка</Diary_ImpEvent_Birth.label>
+  <Diary_ImpEvent_Birth.lineTemplate>в семье родился ребёнок</Diary_ImpEvent_Birth.lineTemplate>
+
+  <Diary_ImpEvent_DeathFamily.label>смерть близкого</Diary_ImpEvent_DeathFamily.label>
+  <Diary_ImpEvent_DeathFamily.lineTemplate>смерть близкого: {victim} ({relation})</Diary_ImpEvent_DeathFamily.lineTemplate>
+
+  <Diary_ImpEvent_DeathInstigator.label>убийство</Diary_ImpEvent_DeathInstigator.label>
+  <Diary_ImpEvent_DeathInstigator.lineTemplate>убийство: {victim}</Diary_ImpEvent_DeathInstigator.lineTemplate>
+
+  <Diary_ImpEvent_BodyPartLost.label>потеря части тела</Diary_ImpEvent_BodyPartLost.label>
+  <Diary_ImpEvent_BodyPartLost.lineTemplate>потеря: {body_part}</Diary_ImpEvent_BodyPartLost.lineTemplate>
+
+  <Diary_ImpEvent_BodyPartInstalled.label>установка части тела</Diary_ImpEvent_BodyPartInstalled.label>
+  <Diary_ImpEvent_BodyPartInstalled.lineTemplate>установлено: {label} ({body_part})</Diary_ImpEvent_BodyPartInstalled.lineTemplate>
+
+  <Diary_ImpEvent_BodyPartInstalledOrganic.label>пересадка органа</Diary_ImpEvent_BodyPartInstalledOrganic.label>
+  <Diary_ImpEvent_BodyPartInstalledOrganic.lineTemplate>установлено: {label} ({body_part})</Diary_ImpEvent_BodyPartInstalledOrganic.lineTemplate>
+
+  <Diary_ImpEvent_BodyPartRemoved.label>имплант удалён</Diary_ImpEvent_BodyPartRemoved.label>
+  <Diary_ImpEvent_BodyPartRemoved.lineTemplate>удалено: {label}</Diary_ImpEvent_BodyPartRemoved.lineTemplate>
+
+  <Diary_ImpEvent_PermanentCondition.label>постоянное состояние</Diary_ImpEvent_PermanentCondition.label>
+  <Diary_ImpEvent_PermanentCondition.lineTemplate>теперь навсегда: {label}</Diary_ImpEvent_PermanentCondition.lineTemplate>
+
+  <Diary_ImpEvent_FactionJoined.label>вступление в колонию</Diary_ImpEvent_FactionJoined.label>
+  <Diary_ImpEvent_FactionJoined.lineTemplate>вступление в колонию</Diary_ImpEvent_FactionJoined.lineTemplate>
+
+  <Diary_ImpEvent_GrowthMoment.label>этап взросления</Diary_ImpEvent_GrowthMoment.label>
+  <Diary_ImpEvent_GrowthMoment.lineTemplate>этап взросления</Diary_ImpEvent_GrowthMoment.lineTemplate>
+
+  <Diary_ImpEvent_IdeoConversion.label>обращение</Diary_ImpEvent_IdeoConversion.label>
+  <Diary_ImpEvent_IdeoConversion.lineTemplate>обращение: {new_ideo}</Diary_ImpEvent_IdeoConversion.lineTemplate>
+
+  <Diary_ImpEvent_RoleAssigned.label>новая роль</Diary_ImpEvent_RoleAssigned.label>
+  <Diary_ImpEvent_RoleAssigned.lineTemplate>новая роль: {role}</Diary_ImpEvent_RoleAssigned.lineTemplate>
+
+  <Diary_ImpEvent_RoleRemoved.label>роль утрачена</Diary_ImpEvent_RoleRemoved.label>
+  <Diary_ImpEvent_RoleRemoved.lineTemplate>роль утрачена: {role}</Diary_ImpEvent_RoleRemoved.lineTemplate>
+
+  <Diary_ImpEvent_TitleAdvanced.label>новый титул</Diary_ImpEvent_TitleAdvanced.label>
+  <Diary_ImpEvent_TitleAdvanced.lineTemplate>новый титул: {new_value}</Diary_ImpEvent_TitleAdvanced.lineTemplate>
+
+  <Diary_ImpEvent_TitleLost.label>титул утрачен</Diary_ImpEvent_TitleLost.label>
+  <Diary_ImpEvent_TitleLost.lineTemplate>титул утрачен: {previous_value}</Diary_ImpEvent_TitleLost.lineTemplate>
+
+  <Diary_ImpEvent_Psylink.label>псилинк</Diary_ImpEvent_Psylink.label>
+  <Diary_ImpEvent_Psylink.lineTemplate>псилинк уровня {new_value}</Diary_ImpEvent_Psylink.lineTemplate>
+
+  <Diary_ImpEvent_XenotypeChanged.label>смена ксенотипа</Diary_ImpEvent_XenotypeChanged.label>
+  <Diary_ImpEvent_XenotypeChanged.lineTemplate>новый ксенотип: {new_value}</Diary_ImpEvent_XenotypeChanged.lineTemplate>
+
+  <Diary_ImpEvent_GeneRewrite.label>гены переписаны</Diary_ImpEvent_GeneRewrite.label>
+  <Diary_ImpEvent_GeneRewrite.lineTemplate>гены серьёзно переписаны</Diary_ImpEvent_GeneRewrite.lineTemplate>
+
+  <Diary_ImpEvent_MechlinkInstalled.label>мехлинк установлен</Diary_ImpEvent_MechlinkInstalled.label>
+  <Diary_ImpEvent_MechlinkInstalled.lineTemplate>отныне механитор</Diary_ImpEvent_MechlinkInstalled.lineTemplate>
+
+  <Diary_ImpEvent_MechlinkRemoved.label>мехлинк удалён</Diary_ImpEvent_MechlinkRemoved.label>
+  <Diary_ImpEvent_MechlinkRemoved.lineTemplate>мехлинк утрачен</Diary_ImpEvent_MechlinkRemoved.lineTemplate>
+
+  <Diary_ImpEvent_PersonaBondFormed.label>связь с персона-оружием</Diary_ImpEvent_PersonaBondFormed.label>
+  <Diary_ImpEvent_PersonaBondFormed.lineTemplate>связь с персона-оружием {persona_weapon_name}</Diary_ImpEvent_PersonaBondFormed.lineTemplate>
+
+  <Diary_ImpEvent_PersonaBondEnded.label>связь с оружием оборвана</Diary_ImpEvent_PersonaBondEnded.label>
+  <Diary_ImpEvent_PersonaBondEnded.lineTemplate>связь с {persona_weapon_name} оборвана</Diary_ImpEvent_PersonaBondEnded.lineTemplate>
+
+</LanguageData>

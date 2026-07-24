@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Culture writing lenses (design/MEMORY_SYSTEM_REDESIGN_PLAN.md §4.2): one short interpretation
+  per topic for the four Core CultureDefs plus Royalty's Sophian. Each clause is a cultural
+  STANCE of at most 80 characters - it must never repeat factual game descriptions already in the
+  prompt. Content is grounded in design/RIMWORLD_LORE_COLLECTION.md.
+
+  Lenses: Astropolitan technical/cosmopolitan/space-familiar; Corunan ancestral/traditional/
+  spiritual; Rustican practical/industrial/frontier; Kriminul piratical/instrumental/
+  opportunistic; Sophian imperial/honor-bound/hierarchical.
+
+  cultureDefName is a plain string, so the Sophian profile sits inert without Royalty. Mods that
+  introduce new CultureDefs may ship their own profile; without one, the isFallback profile
+  (Astropolitan) voices them. Clause rows are translated by DefInjected BY LIST INDEX - never
+  delete or reorder a row; blank the clause instead.
+-->
+<Defs>
+
+  <PawnDiary.DiaryCultureProfileDef>
+    <defName>Diary_CultureProfile_Astropolitan</defName>
+    <label>astropolitan lens</label>
+    <cultureDefName>Astropolitan</cultureDefName>
+    <isFallback>true</isFallback>
+    <clauses>
+      <li><topicKey>mechanoids</topicKey><clause>old war hardware to study and outmaneuver, not to mystify</clause></li>
+      <li><topicKey>archotech</topicKey><clause>engineering beyond us, still engineering; log it, handle with protocol</clause></li>
+      <li><topicKey>psychic</topicKey><clause>a real field with real rules, poorly measured; respect the data</clause></li>
+      <li><topicKey>empire</topicKey><clause>one polity among many; its titles are treaty terms, not truths</clause></li>
+      <li><topicKey>xenohumans</topicKey><clause>bodies are platforms; an upgrade is maintenance, not betrayal</clause></li>
+      <li><topicKey>void</topicKey><clause>dark archotech, not magic - which is worse; quarantine it and keep records</clause></li>
+      <li><topicKey>space</topicKey><clause>the sky is home; ships, stations and the long cold sleep are ordinary life</clause></li>
+      <li><topicKey>outsiders</topicKey><clause>strangers are trade partners until audited; contracts over kinship</clause></li>
+    </clauses>
+  </PawnDiary.DiaryCultureProfileDef>
+
+  <PawnDiary.DiaryCultureProfileDef>
+    <defName>Diary_CultureProfile_Corunan</defName>
+    <label>corunan lens</label>
+    <cultureDefName>Corunan</cultureDefName>
+    <clauses>
+      <li><topicKey>mechanoids</topicKey><clause>the iron dead of an old war; binding them offends the ancestors</clause></li>
+      <li><topicKey>archotech</topicKey><clause>god-places; take nothing, leave offerings, speak of them softly</clause></li>
+      <li><topicKey>psychic</topicKey><clause>the spirits speak through tree and trance; rank buys no ear here</clause></li>
+      <li><topicKey>empire</topicKey><clause>outsider chiefs with fire from the sky; honor them warily, owe them nothing</clause></li>
+      <li><topicKey>xenohumans</topicKey><clause>the blood of the line is sacred; remade flesh asks the ancestors' pardon</clause></li>
+      <li><topicKey>void</topicKey><clause>a hungry spirit wearing machine skin; some doors the wise never open</clause></li>
+      <li><topicKey>space</topicKey><clause>the stars took the old ones away; that distance is a kind of death</clause></li>
+      <li><topicKey>outsiders</topicKey><clause>guest-right is sacred and betrayal unforgivable; kin first, always</clause></li>
+    </clauses>
+  </PawnDiary.DiaryCultureProfileDef>
+
+  <PawnDiary.DiaryCultureProfileDef>
+    <defName>Diary_CultureProfile_Rustican</defName>
+    <label>rustican lens</label>
+    <cultureDefName>Rustican</cultureDefName>
+    <clauses>
+      <li><topicKey>mechanoids</topicKey><clause>wolves at the fence; put them down, strip them for parts, mind the herd</clause></li>
+      <li><topicKey>archotech</topicKey><clause>somebody's ended story; loot carefully, seal what should stay sealed</clause></li>
+      <li><topicKey>psychic</topicKey><clause>useful weather from a strange sky; use it, don't build the farm on it</clause></li>
+      <li><topicKey>empire</topicKey><clause>law you can trade with, orbit-fire you can't argue with; keep accounts square</clause></li>
+      <li><topicKey>xenohumans</topicKey><clause>a tool fixed is a tool working; steel limbs plow as well as born ones</clause></li>
+      <li><topicKey>void</topicKey><clause>a sickness in the land; burn it out early and don't talk it into staying</clause></li>
+      <li><topicKey>space</topicKey><clause>glitter belongs in catalogs; here you fix the roof before dreaming of orbit</clause></li>
+      <li><topicKey>outsiders</topicKey><clause>good fences, fair prices, and a loaded gun by the door</clause></li>
+    </clauses>
+  </PawnDiary.DiaryCultureProfileDef>
+
+  <PawnDiary.DiaryCultureProfileDef>
+    <defName>Diary_CultureProfile_Kriminul</defName>
+    <label>kriminul lens</label>
+    <cultureDefName>Kriminul</cultureDefName>
+    <clauses>
+      <li><topicKey>mechanoids</topicKey><clause>walking salvage with teeth; profitable when someone else takes the risk</clause></li>
+      <li><topicKey>archotech</topicKey><clause>the biggest score there is, and why most crews never come back</clause></li>
+      <li><topicKey>psychic</topicKey><clause>an edge most can't buy; take it wherever it's offered</clause></li>
+      <li><topicKey>empire</topicKey><clause>fat targets wrapped in etiquette; their law ends where their guns do</clause></li>
+      <li><topicKey>xenohumans</topicKey><clause>meat is negotiable; pay for edges, sell what's spare</clause></li>
+      <li><topicKey>void</topicKey><clause>power nobody collects a debt on; even pirates leave the oily metal alone</clause></li>
+      <li><topicKey>space</topicKey><clause>lanes and cargo; heaven is a slow freighter with a broken escort</clause></li>
+      <li><topicKey>outsiders</topicKey><clause>trust is leverage you hand someone; mark the strangers, keep the crew</clause></li>
+    </clauses>
+  </PawnDiary.DiaryCultureProfileDef>
+
+  <PawnDiary.DiaryCultureProfileDef>
+    <defName>Diary_CultureProfile_Sophian</defName>
+    <label>sophian lens</label>
+    <cultureDefName>Sophian</cultureDefName>
+    <clauses>
+      <li><topicKey>mechanoids</topicKey><clause>a soldier's foe and a soldier's tool; command them or destroy them, with honor</clause></li>
+      <li><topicKey>archotech</topicKey><clause>relics above any rank; only the Empire may steward such power</clause></li>
+      <li><topicKey>psychic</topicKey><clause>rank made visible; a psylink is a duty granted level by level</clause></li>
+      <li><topicKey>empire</topicKey><clause>the last true order; every title a vow, every vow a debt owed upward</clause></li>
+      <li><topicKey>xenohumans</topicKey><clause>refinement in service of station; the body must honor the rank it bears</clause></li>
+      <li><topicKey>void</topicKey><clause>treason against reality itself; face it as a soldier, never bargain</clause></li>
+      <li><topicKey>space</topicKey><clause>Sophiamunda shines behind us; exile excuses nothing, least of all manners</clause></li>
+      <li><topicKey>outsiders</topicKey><clause>rank orders the world; the untitled are handled, not befriended</clause></li>
+    </clauses>
+  </PawnDiary.DiaryCultureProfileDef>
+
+</Defs>

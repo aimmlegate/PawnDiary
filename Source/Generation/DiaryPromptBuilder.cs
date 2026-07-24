@@ -139,7 +139,19 @@ namespace PawnDiary
                 titleRequest,
                 maxTokens,
                 contextDetailLevel);
-            return DiaryPromptPlanner.Build(request);
+            DiaryPromptPlan plan = DiaryPromptPlanner.Build(request);
+
+            // Dev tab (MEMORY_SYSTEM_REDESIGN_PLAN §7): remember which culture topics annotated
+            // this prompt so the last-selection report shows annotation targets alongside the
+            // relevant-past picks. Purely diagnostic; failures must never affect the plan.
+            if (plan != null && !titleRequest)
+            {
+                string pawnId = request.payload?.Pov(povRole)?.pawnId;
+                DiaryGameComponent.Instance?.RecordKnowledgeAnnotationReport(
+                    pawnId, plan.cultureAnnotationTopics, plan.cultureAnnotatedSources);
+            }
+
+            return plan;
         }
     }
 }

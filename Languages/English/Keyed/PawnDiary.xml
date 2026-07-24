@@ -162,6 +162,8 @@
   <PawnDiary.Dev.NoActiveEventWindows>No active event windows to close.</PawnDiary.Dev.NoActiveEventWindows>
   <PawnDiary.Dev.BeliefState.NoPawn>Select a pawn before logging belief state.</PawnDiary.Dev.BeliefState.NoPawn>
   <PawnDiary.Dev.BeliefState.Logged>Belief-state diagnostics were written to the dev log.</PawnDiary.Dev.BeliefState.Logged>
+  <PawnDiary.Dev.Knowledge.NoPawn>Select a pawn before logging knowledge state.</PawnDiary.Dev.Knowledge.NoPawn>
+  <PawnDiary.Dev.Knowledge.Logged>Knowledge-state diagnostics were written to the dev log.</PawnDiary.Dev.Knowledge.Logged>
   <PawnDiary.Dev.EventWindowForceClosed>Force-closed "{0}".</PawnDiary.Dev.EventWindowForceClosed>
   <PawnDiary.Dev.ForceCloseEventWindow.Tooltip>defName: {0}\nstart: {1}</PawnDiary.Dev.ForceCloseEventWindow.Tooltip>
   <PawnDiary.Dev.ExternalTestSummary>{0} noticed something odd — a test signal arrived through the mod integration API.</PawnDiary.Dev.ExternalTestSummary>
@@ -369,8 +371,8 @@
   <PawnDiary.Settings.EnablePromptEnchantmentsTip>When enabled, first-person diary prompts may include one important live context cue. XML controls which health conditions and important-event status cues can appear and how often they win the weighted random pick.</PawnDiary.Settings.EnablePromptEnchantmentsTip>
   <PawnDiary.Settings.EnablePsychotypes>Use pawn psychotypes (outlook layer)</PawnDiary.Settings.EnablePsychotypes>
   <PawnDiary.Settings.EnablePsychotypesTip>When enabled, each pawn gets a psychotype — an outlook/temperament lens (what they notice, value, and fear) rolled from their skill passions — folded into first-person prompts alongside their writing style. When disabled, the outlook is omitted from prompts and pending rolls stay deferred; existing pawns keep their saved psychotype. Edit a pawn's psychotype from their Diary tab's writing-style editor.</PawnDiary.Settings.EnablePsychotypesTip>
-  <PawnDiary.Settings.EnableLoreSeeds>Give pawns lore memories</PawnDiary.Settings.EnableLoreSeeds>
-  <PawnDiary.Settings.EnableLoreSeedsTip>When enabled, each pawn quietly receives a few authored background memories matching their backstory — old stories about the world they came from — that can surface in diary entries like any other memory. Existing saves acquire them lazily during play. When disabled, no new lore memories are created and existing ones stop appearing in diaries; nothing is deleted, so re-enabling restores them.</PawnDiary.Settings.EnableLoreSeedsTip>
+  <PawnDiary.Settings.EnableMemorySystem>Use pawn memory in diaries</PawnDiary.Settings.EnableMemorySystem>
+  <PawnDiary.Settings.EnableMemorySystemTip>When enabled, diary prompts may include up to two dated facts from the pawn's past (marriages, losses, body changes, titles and similar life events) plus a short cultural aside where relevant. When disabled, nothing from the past is injected into prompts — but important events are still recorded and cultural background is still tracked, so re-enabling later brings everything back.</PawnDiary.Settings.EnableMemorySystemTip>
   <PawnDiary.Settings.AllowExternalIntegrations>Allow external mod integrations</PawnDiary.Settings.AllowExternalIntegrations>
   <PawnDiary.Settings.AllowExternalIntegrationsTip>When enabled, other mods can submit diary events, read public diary snapshots, and add compact pawn context lines through the public integration API.</PawnDiary.Settings.AllowExternalIntegrationsTip>
   <PawnDiary.Settings.EnableExternalKeySharing>Share API keys with other mods</PawnDiary.Settings.EnableExternalKeySharing>

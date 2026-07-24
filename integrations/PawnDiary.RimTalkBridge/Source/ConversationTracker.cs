@@ -159,7 +159,7 @@ namespace PawnDiaryRimTalkBridge
                     continue;
                 }
 
-                string pairKey = SharedMemorySelection.PairKey(subjectId, partnerId);
+                string pairKey = ConversationPairKey(subjectId, partnerId);
                 bool alreadySeen = ConversationAssessmentCoordinator.HasSeen(conversation.RootTalkId);
                 bool samePairQueued = ConversationAssessmentCoordinator.HasQueuedPair(pairKey);
 
@@ -421,6 +421,15 @@ namespace PawnDiaryRimTalkBridge
             }
 
             return null;
+        }
+
+        /// <summary>Canonical unordered pair key (ordinal min|max join) — inherited byte-for-byte
+        /// from the retired SharedMemorySelection so queued-pair checks keep their exact format.</summary>
+        private static string ConversationPairKey(string idA, string idB)
+        {
+            string a = idA ?? string.Empty;
+            string b = idB ?? string.Empty;
+            return string.CompareOrdinal(a, b) <= 0 ? a + "|" + b : b + "|" + a;
         }
 
         private static void DevLog(bool enabled, string message)

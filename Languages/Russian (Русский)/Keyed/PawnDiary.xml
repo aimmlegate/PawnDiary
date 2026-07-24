@@ -156,6 +156,8 @@
   <PawnDiary.Dev.NoActiveEventWindows>Нет активных окон событий для закрытия.</PawnDiary.Dev.NoActiveEventWindows>
   <PawnDiary.Dev.BeliefState.NoPawn>Выберите поселенца перед записью состояния веры.</PawnDiary.Dev.BeliefState.NoPawn>
   <PawnDiary.Dev.BeliefState.Logged>Диагностика состояния веры записана в журнал разработчика.</PawnDiary.Dev.BeliefState.Logged>
+  <PawnDiary.Dev.Knowledge.NoPawn>Выберите поселенца перед записью состояния памяти.</PawnDiary.Dev.Knowledge.NoPawn>
+  <PawnDiary.Dev.Knowledge.Logged>Диагностика памяти и культуры записана в журнал разработчика.</PawnDiary.Dev.Knowledge.Logged>
   <PawnDiary.Dev.EventWindowForceClosed>Принудительно закрыто «{0}».</PawnDiary.Dev.EventWindowForceClosed>
   <PawnDiary.Dev.ForceCloseEventWindow.Tooltip>defName: {0}\nзапуск: {1}</PawnDiary.Dev.ForceCloseEventWindow.Tooltip>
   <PawnDiary.Dev.ExternalTestSummary>{0} замечает странное — тестовый сигнал пришёл через API для интеграций.</PawnDiary.Dev.ExternalTestSummary>
@@ -362,8 +364,8 @@
   <PawnDiary.Settings.EnablePromptEnchantmentsTip>Если включено, запрос от первого лица может получить одну важную подсказку о текущем состоянии поселенца или поселения. XML задаёт, какие подсказки возможны и как часто они выбираются.</PawnDiary.Settings.EnablePromptEnchantmentsTip>
   <PawnDiary.Settings.EnablePsychotypes>Психотипы поселенцев</PawnDiary.Settings.EnablePsychotypes>
   <PawnDiary.Settings.EnablePsychotypesTip>Если включено, каждый поселенец получает психотип — склад характера и взгляд на мир: что он замечает, ценит и чего боится. Психотип выбирается случайно с учётом увлечений в навыках и добавляется в запросы от первого лица рядом с манерой письма. Если настройка выключена, взгляд в запросы не попадает, а психотипы новых поселенцев ждут включения; уже назначенные сохраняются. Выбрать психотип заново можно во вкладке «Дневник», в редакторе манеры письма.</PawnDiary.Settings.EnablePsychotypesTip>
-  <PawnDiary.Settings.EnableLoreSeeds>Память о прошлом мире</PawnDiary.Settings.EnableLoreSeeds>
-  <PawnDiary.Settings.EnableLoreSeedsTip>Если включено, каждый поселенец незаметно получает несколько заготовленных воспоминаний, подобранных под его биографию, — обрывки историй о мире, из которого он пришёл. Они всплывают в дневниках наравне с обычными воспоминаниями; в старых сохранениях появляются постепенно по ходу игры. Если настройка выключена, новые такие воспоминания не создаются, а существующие перестают попадать в дневники — они не удаляются, и после включения всё возвращается.</PawnDiary.Settings.EnableLoreSeedsTip>
+  <PawnDiary.Settings.EnableMemorySystem>Память пешек в дневниках</PawnDiary.Settings.EnableMemorySystem>
+  <PawnDiary.Settings.EnableMemorySystemTip>Если включено, в подсказку дневника могут попадать до двух датированных фактов из прошлого пешки (свадьбы, утраты, перемены тела, титулы и другие важные события) и короткая культурная ремарка к месту. Если выключено, прошлое в подсказки не подставляется — но важные события всё равно записываются, а культурный фон отслеживается, так что после включения всё вернётся.</PawnDiary.Settings.EnableMemorySystemTip>
   <PawnDiary.Settings.AllowExternalIntegrations>Разрешить интеграции сторонних модов</PawnDiary.Settings.AllowExternalIntegrations>
   <PawnDiary.Settings.AllowExternalIntegrationsTip>Если включено, другие моды могут через публичный API для интеграций отправлять события в дневник, читать открытые сводки и добавлять краткие строки контекста поселенца.</PawnDiary.Settings.AllowExternalIntegrationsTip>
   <PawnDiary.Settings.EnableExternalKeySharing>Передавать ключи API другим модам</PawnDiary.Settings.EnableExternalKeySharing>

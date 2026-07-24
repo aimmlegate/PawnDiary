@@ -95,6 +95,11 @@ namespace PawnDiary
         // record predates N4 and must baseline silently at its first natural reflection opportunity.
         public PawnReflectionState reflectionState;
 
+        // Deterministic knowledge state (design/MEMORY_SYSTEM_REDESIGN_PLAN.md): origin/adopted
+        // culture plus lifelong important-event records. A missing deep row means the record
+        // predates the redesign; history starts from the update onward (§6).
+        public PawnKnowledgeState knowledgeState;
+
         /// <summary>
         /// Serialises/deserialises this record into the RimWorld save file.
         /// PostLoadInit keeps list fields non-null and recovers gracefully if a style Def was
@@ -126,6 +131,7 @@ namespace PawnDiary
             Scribe_Deep.Look(ref arcSchedule, "arcSchedule");
             Scribe_Deep.Look(ref beliefState, "beliefState");
             Scribe_Deep.Look(ref reflectionState, "reflectionState");
+            Scribe_Deep.Look(ref knowledgeState, "knowledgeState");
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -186,6 +192,7 @@ namespace PawnDiary
                 EnsureArcSchedule();
                 EnsureBeliefState();
                 EnsureReflectionState();
+                EnsureKnowledgeState();
             }
         }
 
@@ -234,6 +241,28 @@ namespace PawnDiary
 
             reflectionState.Normalize();
             return reflectionState;
+        }
+
+        /// <summary>
+        /// Returns normalized knowledge state (culture + important-event records,
+        /// design/MEMORY_SYSTEM_REDESIGN_PLAN.md), creating a fresh one for old saves — the
+        /// redesign's clean start deliberately migrates nothing from the associative system.
+        /// </summary>
+        public PawnKnowledgeState EnsureKnowledgeState()
+        {
+            if (knowledgeState == null)
+            {
+                knowledgeState = new PawnKnowledgeState { pawnId = pawnId ?? string.Empty };
+            }
+
+            knowledgeState.Normalize();
+            return knowledgeState;
+        }
+
+        /// <summary>The knowledge state without creating one — read-only inspection paths.</summary>
+        public PawnKnowledgeState KnowledgeStateOrNull()
+        {
+            return knowledgeState;
         }
     }
 }

@@ -389,14 +389,14 @@ Do not write a report, sermon, doctrine summary, or list. Output only the diary 
   <DiaryPromptTemplate_SoloArcReflection.fields.15.label>narrative context</DiaryPromptTemplate_SoloArcReflection.fields.15.label>
 
   <!-- Associative memory appends one optional field to each first-person template. -->
-  <DiaryPromptTemplate_PairDefault.fields.28.label>memory</DiaryPromptTemplate_PairDefault.fields.28.label>
-  <DiaryPromptTemplate_PairImportant.fields.75.label>memory</DiaryPromptTemplate_PairImportant.fields.75.label>
-  <DiaryPromptTemplate_PairCombat.fields.31.label>memory</DiaryPromptTemplate_PairCombat.fields.31.label>
-  <DiaryPromptTemplate_PairBatched.fields.27.label>memory</DiaryPromptTemplate_PairBatched.fields.27.label>
-  <DiaryPromptTemplate_SoloDefault.fields.43.label>memory</DiaryPromptTemplate_SoloDefault.fields.43.label>
-  <DiaryPromptTemplate_SoloImportant.fields.123.label>memory</DiaryPromptTemplate_SoloImportant.fields.123.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.39.label>memory</DiaryPromptTemplate_SoloInternalState.fields.39.label>
-  <DiaryPromptTemplate_SoloBatched.fields.39.label>memory</DiaryPromptTemplate_SoloBatched.fields.39.label>
+  <DiaryPromptTemplate_PairDefault.fields.28.label>relevant past</DiaryPromptTemplate_PairDefault.fields.28.label>
+  <DiaryPromptTemplate_PairImportant.fields.75.label>relevant past</DiaryPromptTemplate_PairImportant.fields.75.label>
+  <DiaryPromptTemplate_PairCombat.fields.31.label>relevant past</DiaryPromptTemplate_PairCombat.fields.31.label>
+  <DiaryPromptTemplate_PairBatched.fields.27.label>relevant past</DiaryPromptTemplate_PairBatched.fields.27.label>
+  <DiaryPromptTemplate_SoloDefault.fields.43.label>relevant past</DiaryPromptTemplate_SoloDefault.fields.43.label>
+  <DiaryPromptTemplate_SoloImportant.fields.123.label>relevant past</DiaryPromptTemplate_SoloImportant.fields.123.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.39.label>relevant past</DiaryPromptTemplate_SoloInternalState.fields.39.label>
+  <DiaryPromptTemplate_SoloBatched.fields.39.label>relevant past</DiaryPromptTemplate_SoloBatched.fields.39.label>
 
   <!-- Biotech Phase 4 appends model-facing B1 facts to the important pair/solo templates. -->
   <DiaryPromptTemplate_PairImportant.fields.29.label>birthday age</DiaryPromptTemplate_PairImportant.fields.29.label>
@@ -546,11 +546,11 @@ Do not write a report, sermon, doctrine summary, or list. Output only the diary 
   <DiaryPromptTemplate_SoloBatched.fields.40.label>belief context</DiaryPromptTemplate_SoloBatched.fields.40.label>
   <!-- Lore L1: reflections gained a memory row BEFORE belief context, shifting the belief index
        by one on exactly these three templates (LORE_MEMORY_SEED_PLAN §9). -->
-  <DiaryPromptTemplate_SoloDayReflection.fields.38.label>memory</DiaryPromptTemplate_SoloDayReflection.fields.38.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.38.label>relevant past</DiaryPromptTemplate_SoloDayReflection.fields.38.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.39.label>belief context</DiaryPromptTemplate_SoloDayReflection.fields.39.label>
-  <DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>memory</DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>relevant past</DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>
   <DiaryPromptTemplate_SoloQuadrumReflection.fields.14.label>belief context</DiaryPromptTemplate_SoloQuadrumReflection.fields.14.label>
-  <DiaryPromptTemplate_SoloArcReflection.fields.16.label>memory</DiaryPromptTemplate_SoloArcReflection.fields.16.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.16.label>relevant past</DiaryPromptTemplate_SoloArcReflection.fields.16.label>
   <DiaryPromptTemplate_SoloArcReflection.fields.17.label>belief context</DiaryPromptTemplate_SoloArcReflection.fields.17.label>
   <!-- Master Wave 11 review hardening: pollution facts survive default/non-important routing. -->
   <DiaryPromptTemplate_PairDefault.fields.30.label>pollution band</DiaryPromptTemplate_PairDefault.fields.30.label>

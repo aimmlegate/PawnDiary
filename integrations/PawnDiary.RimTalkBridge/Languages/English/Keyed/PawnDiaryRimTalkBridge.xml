@@ -59,13 +59,8 @@
   <PawnDiaryRimTalkBridge.Settings.TranscriptLineCap>Quoted chat lines per entry</PawnDiaryRimTalkBridge.Settings.TranscriptLineCap>
 
   <!-- Feature 1 (colony situation) + Feature 3 (pair shared memory) toggles and counts. -->
-  <PawnDiaryRimTalkBridge.Settings.InjectSharedMemory>Share memories between talking pawns</PawnDiaryRimTalkBridge.Settings.InjectSharedMemory>
-  <PawnDiaryRimTalkBridge.Settings.InjectSharedMemoryDesc>When two colonists talk, the diary moments they share — a past argument, a kindness, a hardship they went through together — are added to the conversation so they can bring up what happened between them before.</PawnDiaryRimTalkBridge.Settings.InjectSharedMemoryDesc>
-  <PawnDiaryRimTalkBridge.Settings.AutoInjectSharedMemory>Add shared memories automatically</PawnDiaryRimTalkBridge.Settings.AutoInjectSharedMemory>
-  <PawnDiaryRimTalkBridge.Settings.AutoInjectSharedMemoryDesc>Wires the shared memories into conversations with no setup. Turn this off if you would rather place the shared-memory variable in a chat template yourself. Turning it off removes the automatic entry again.</PawnDiaryRimTalkBridge.Settings.AutoInjectSharedMemoryDesc>
   <PawnDiaryRimTalkBridge.Settings.InjectColonyContext>Include the colony's situation in chat</PawnDiaryRimTalkBridge.Settings.InjectColonyContext>
   <PawnDiaryRimTalkBridge.Settings.InjectColonyContextDesc>Adds a short, curated line about what the colony is going through right now — a raid, harsh weather, an eerie presence, an open quest — to conversation context. Off by default, as other mods may already feed live events into chat.</PawnDiaryRimTalkBridge.Settings.InjectColonyContextDesc>
-  <PawnDiaryRimTalkBridge.Settings.SharedMemoryCount>Shared memories per conversation</PawnDiaryRimTalkBridge.Settings.SharedMemoryCount>
   <PawnDiaryRimTalkBridge.Settings.ColonyEventCount>Colony situation lines per chat</PawnDiaryRimTalkBridge.Settings.ColonyEventCount>
 
   <!-- Text injected into RimTalk prompts (level 1). The header/line/voice strings are prose the
@@ -90,7 +85,6 @@
        lines reuse Prompt.MemoryLine above. Sample is shown only in RimTalk's settings preview. -->
   <PawnDiaryRimTalkBridge.Prompt.SharedMemoriesHeader>shared history between them:</PawnDiaryRimTalkBridge.Prompt.SharedMemoriesHeader>
   <PawnDiaryRimTalkBridge.Prompt.SharedMemoriesSample>shared history between them:&#10;- The long winter (5th of Aprimay): they weathered the cold snap side by side.</PawnDiaryRimTalkBridge.Prompt.SharedMemoriesSample>
-  <PawnDiaryRimTalkBridge.Prompt.SharedMemoryVariableDesc>The diary memories the two talking colonists share — their previous notable moments together — drawn from Pawn Diary.</PawnDiaryRimTalkBridge.Prompt.SharedMemoryVariableDesc>
 
   <!-- Tier B persona-led diary voice: the rule Pawn Diary receives as an override. Tier B now supplies
        the pawn's PSYCHOTYPE (outlook) — who they are — while Pawn Diary keeps how they write. The old

@@ -438,14 +438,14 @@
   <DiaryPromptTemplate_SoloArcReflection.fields.15.label>повествовательный контекст</DiaryPromptTemplate_SoloArcReflection.fields.15.label>
 
   <!-- Associative memory appends one optional field to each first-person template. -->
-  <DiaryPromptTemplate_PairDefault.fields.28.label>воспоминания</DiaryPromptTemplate_PairDefault.fields.28.label>
-  <DiaryPromptTemplate_PairImportant.fields.75.label>воспоминания</DiaryPromptTemplate_PairImportant.fields.75.label>
-  <DiaryPromptTemplate_PairCombat.fields.31.label>воспоминания</DiaryPromptTemplate_PairCombat.fields.31.label>
-  <DiaryPromptTemplate_PairBatched.fields.27.label>воспоминания</DiaryPromptTemplate_PairBatched.fields.27.label>
-  <DiaryPromptTemplate_SoloDefault.fields.43.label>воспоминания</DiaryPromptTemplate_SoloDefault.fields.43.label>
-  <DiaryPromptTemplate_SoloImportant.fields.123.label>воспоминания</DiaryPromptTemplate_SoloImportant.fields.123.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.39.label>воспоминания</DiaryPromptTemplate_SoloInternalState.fields.39.label>
-  <DiaryPromptTemplate_SoloBatched.fields.39.label>воспоминания</DiaryPromptTemplate_SoloBatched.fields.39.label>
+  <DiaryPromptTemplate_PairDefault.fields.28.label>из прошлого</DiaryPromptTemplate_PairDefault.fields.28.label>
+  <DiaryPromptTemplate_PairImportant.fields.75.label>из прошлого</DiaryPromptTemplate_PairImportant.fields.75.label>
+  <DiaryPromptTemplate_PairCombat.fields.31.label>из прошлого</DiaryPromptTemplate_PairCombat.fields.31.label>
+  <DiaryPromptTemplate_PairBatched.fields.27.label>из прошлого</DiaryPromptTemplate_PairBatched.fields.27.label>
+  <DiaryPromptTemplate_SoloDefault.fields.43.label>из прошлого</DiaryPromptTemplate_SoloDefault.fields.43.label>
+  <DiaryPromptTemplate_SoloImportant.fields.123.label>из прошлого</DiaryPromptTemplate_SoloImportant.fields.123.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.39.label>из прошлого</DiaryPromptTemplate_SoloInternalState.fields.39.label>
+  <DiaryPromptTemplate_SoloBatched.fields.39.label>из прошлого</DiaryPromptTemplate_SoloBatched.fields.39.label>
 
   <!-- Biotech Phase 4: model-facing B1 facts appended to important pair/solo templates. -->
   <DiaryPromptTemplate_PairImportant.fields.29.label>возраст на день рождения</DiaryPromptTemplate_PairImportant.fields.29.label>
@@ -595,11 +595,11 @@
   <DiaryPromptTemplate_SoloBatched.fields.40.label>контекст убеждений</DiaryPromptTemplate_SoloBatched.fields.40.label>
   <!-- Lore L1: у трёх шаблонов-рефлексий появилось поле памяти ПЕРЕД контекстом убеждений,
        поэтому индекс контекста убеждений сдвинут на единицу (LORE_MEMORY_SEED_PLAN §9). -->
-  <DiaryPromptTemplate_SoloDayReflection.fields.38.label>воспоминания</DiaryPromptTemplate_SoloDayReflection.fields.38.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.38.label>из прошлого</DiaryPromptTemplate_SoloDayReflection.fields.38.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.39.label>контекст убеждений</DiaryPromptTemplate_SoloDayReflection.fields.39.label>
-  <DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>воспоминания</DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>из прошлого</DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>
   <DiaryPromptTemplate_SoloQuadrumReflection.fields.14.label>контекст убеждений</DiaryPromptTemplate_SoloQuadrumReflection.fields.14.label>
-  <DiaryPromptTemplate_SoloArcReflection.fields.16.label>воспоминания</DiaryPromptTemplate_SoloArcReflection.fields.16.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.16.label>из прошлого</DiaryPromptTemplate_SoloArcReflection.fields.16.label>
   <DiaryPromptTemplate_SoloArcReflection.fields.17.label>контекст убеждений</DiaryPromptTemplate_SoloArcReflection.fields.17.label>
   <!-- Усиление после ревью Master Wave 11: факты о загрязнении доступны и обычным шаблонам. -->
   <DiaryPromptTemplate_PairDefault.fields.30.label>уровень загрязнения</DiaryPromptTemplate_PairDefault.fields.30.label>

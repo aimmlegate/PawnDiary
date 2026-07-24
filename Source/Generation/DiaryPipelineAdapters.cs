@@ -116,7 +116,7 @@ namespace PawnDiary
             // main thread together with the existing template/group policy. The selected factual text
             // itself stays on DiaryEvent and is never rebuilt from live DLC state here.
             NarrativePolicySnapshot narrativePolicy = DiaryNarrativeContinuityPolicy.Snapshot();
-            MemoryPolicySnapshot memoryPolicy = DiaryMemoryPolicy.Snapshot();
+            KnowledgePolicySnapshot knowledgePolicy = DiaryKnowledgePolicy.Snapshot();
             BeliefPolicySnapshot beliefPolicy = DiaryBeliefPolicy.Snapshot();
             string classifierKey = ClassifierKeyForPayload(payload);
             DiaryInteractionGroupDef group = GroupForPayload(payload, classifierKey);
@@ -137,10 +137,14 @@ namespace PawnDiary
             {
                 narrativeContextFieldLabel = narrativePolicy.promptFieldLabel,
                 narrativeContextInstruction = narrativePolicy.promptFieldInstruction,
-                memoryContextInstruction = memoryPolicy.memoryContextInstruction,
+                memoryContextInstruction = knowledgePolicy.relevantPastInstruction,
                 beliefContextFieldLabel = DiaryBeliefPolicy.PromptFieldLabel,
                 beliefContextInstruction = DiaryBeliefPolicy.PromptFieldInstruction,
                 beliefPolicy = beliefPolicy,
+                knowledgePolicy = knowledgePolicy,
+                cultureTopics = DiaryKnowledgePolicy.CultureTopics(),
+                cultureProfiles = DiaryKnowledgePolicy.AllProfiles(),
+                fallbackCultureProfile = DiaryKnowledgePolicy.FallbackProfile(),
                 group = new DiaryGroupPolicy
                 {
                     defName = group?.defName,
@@ -216,7 +220,7 @@ namespace PawnDiary
         private static DiaryPovPayload PovFor(DiaryEvent diaryEvent, string role)
         {
             bool recipient = string.Equals(role, DiaryPipelineRoles.Recipient, StringComparison.OrdinalIgnoreCase);
-            return new DiaryPovPayload
+            DiaryPovPayload pov = new DiaryPovPayload
             {
                 role = role,
                 pawnId = recipient ? diaryEvent.recipientPawnId : diaryEvent.initiatorPawnId,
@@ -235,6 +239,18 @@ namespace PawnDiary
                 generationAllowed = !diaryEvent.IsSkipped(role),
                 skipReason = string.Empty
             };
+
+            // Culture names from the LIVE knowledge state (MEMORY_SYSTEM_REDESIGN_PLAN §4.1) so a
+            // regenerated page always annotates with the latest adopted culture. Main thread only.
+            PawnKnowledgeState knowledge = DiaryGameComponent.Instance
+                ?.KnowledgeStateForPawnId(pov.pawnId);
+            if (knowledge != null)
+            {
+                pov.originCultureDefName = knowledge.originCultureDefName;
+                pov.adoptedCultureDefName = knowledge.adoptedCultureDefName;
+            }
+
+            return pov;
         }
 
         private static void AddTemplate(DiaryPolicySnapshot snapshot, string templateKey)

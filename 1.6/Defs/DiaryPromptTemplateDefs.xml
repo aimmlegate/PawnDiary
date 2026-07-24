@@ -54,7 +54,7 @@
       <!-- Additive N1 field: PromptAssembler omits it entirely when no facts were selected. -->
       <li><label>narrative context</label><source>NarrativeContext</source></li>
       <!-- Additive memory field: PromptAssembler omits it entirely when no memory surfaced. -->
-      <li><label>memory</label><source>MemoryContext</source></li>
+      <li><label>relevant past</label><source>MemoryContext</source></li>
       <!-- Ideology Phase 1: absent/irrelevant belief context is omitted by PromptAssembler. -->
       <li><label>belief context</label><source>BeliefContext</source></li>
       <!-- Pollution context is also present on the default shape so a future non-important group
@@ -177,7 +177,7 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>launch quality</label><source>GameContext</source><contextKey>launch_quality</contextKey></li>
       <li><label>landing outcome</label><source>GameContext</source><contextKey>landing_outcome</contextKey></li>
       <!-- Additive memory field: PromptAssembler omits it entirely when no memory surfaced. -->
-      <li><label>memory</label><source>MemoryContext</source></li>
+      <li><label>relevant past</label><source>MemoryContext</source></li>
       <!-- Ideology Phase 1: absent/irrelevant belief context is omitted by PromptAssembler. -->
       <li><label>belief context</label><source>BeliefContext</source></li>
       <!-- Biotech Phase 7 pollution projection. Raw fractions, cells, ticks, map IDs, and ranks
@@ -243,7 +243,7 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>initiator's private entry (you never read it; keep continuity, never mention it)</label><source>HiddenInitiatorEntry</source></li>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
       <li><label>narrative context</label><source>NarrativeContext</source></li>
-      <li><label>memory</label><source>MemoryContext</source></li>
+      <li><label>relevant past</label><source>MemoryContext</source></li>
       <!-- Ideology Phase 1: absent/irrelevant belief context is omitted by PromptAssembler. -->
       <li><label>belief context</label><source>BeliefContext</source></li>
     </fields>
@@ -283,7 +283,7 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>my last opening line (do not reuse)</label><source>LastOpener</source></li>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
       <li><label>narrative context</label><source>NarrativeContext</source></li>
-      <li><label>memory</label><source>MemoryContext</source></li>
+      <li><label>relevant past</label><source>MemoryContext</source></li>
       <!-- Ideology Phase 1: absent/irrelevant belief context is omitted by PromptAssembler. -->
       <li><label>belief context</label><source>BeliefContext</source></li>
     </fields>
@@ -339,7 +339,7 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>trait</label><source>GameContext</source><contextKey>trait</contextKey></li>
       <li><label>trait description</label><source>GameContext</source><contextKey>trait_description</contextKey></li>
       <li><label>narrative context</label><source>NarrativeContext</source></li>
-      <li><label>memory</label><source>MemoryContext</source></li>
+      <li><label>relevant past</label><source>MemoryContext</source></li>
       <!-- Ideology Phase 1: absent/irrelevant belief context is omitted by PromptAssembler. -->
       <li><label>belief context</label><source>BeliefContext</source></li>
       <!-- Keep pollution facts independent of importance classification; see PairDefault above. -->
@@ -514,7 +514,7 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>permit setting</label><source>GameContext</source><contextKey>permit_setting</contextKey></li>
       <li><label>used during cooldown</label><source>GameContext</source><contextKey>used_during_cooldown</contextKey></li>
       <!-- Additive memory field: PromptAssembler omits it entirely when no memory surfaced. -->
-      <li><label>memory</label><source>MemoryContext</source></li>
+      <li><label>relevant past</label><source>MemoryContext</source></li>
       <!-- Ideology Phase 1: absent/irrelevant belief context is omitted by PromptAssembler. -->
       <li><label>belief context</label><source>BeliefContext</source></li>
       <!-- Biotech Phase 7 pollution projection; see PairImportant for the privacy contract. -->
@@ -581,7 +581,7 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>trait</label><source>GameContext</source><contextKey>trait</contextKey></li>
       <li><label>trait description</label><source>GameContext</source><contextKey>trait_description</contextKey></li>
       <li><label>narrative context</label><source>NarrativeContext</source></li>
-      <li><label>memory</label><source>MemoryContext</source></li>
+      <li><label>relevant past</label><source>MemoryContext</source></li>
       <!-- Ideology Phase 1: absent/irrelevant belief context is omitted by PromptAssembler. -->
       <li><label>belief context</label><source>BeliefContext</source></li>
     </fields>
@@ -633,7 +633,7 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>trait</label><source>GameContext</source><contextKey>trait</contextKey></li>
       <li><label>trait description</label><source>GameContext</source><contextKey>trait_description</contextKey></li>
       <li><label>narrative context</label><source>NarrativeContext</source></li>
-      <li><label>memory</label><source>MemoryContext</source></li>
+      <li><label>relevant past</label><source>MemoryContext</source></li>
       <!-- Ideology Phase 1: absent/irrelevant belief context is omitted by PromptAssembler. -->
       <li><label>belief context</label><source>BeliefContext</source></li>
     </fields>
@@ -686,7 +686,7 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>trait description</label><source>GameContext</source><contextKey>trait_description</contextKey></li>
       <li><label>narrative context</label><source>NarrativeContext</source></li>
       <!-- Lore L1: reflections project bounded memory too (LORE_MEMORY_SEED_PLAN §9). -->
-      <li><label>memory</label><source>MemoryContext</source></li>
+      <li><label>relevant past</label><source>MemoryContext</source></li>
       <!-- Ideology Phase 1: absent/irrelevant belief context is omitted by PromptAssembler. -->
       <li><label>belief context</label><source>BeliefContext</source></li>
     </fields>
@@ -716,7 +716,7 @@ Do not write a list. Output only the diary entry. End with normal punctuation.</
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
       <li><label>narrative context</label><source>NarrativeContext</source></li>
       <!-- Lore L1: reflections project bounded memory too (LORE_MEMORY_SEED_PLAN §9). -->
-      <li><label>memory</label><source>MemoryContext</source></li>
+      <li><label>relevant past</label><source>MemoryContext</source></li>
       <!-- Ideology Phase 1: absent/irrelevant belief context is omitted by PromptAssembler. -->
       <li><label>belief context</label><source>BeliefContext</source></li>
     </fields>
@@ -749,7 +749,7 @@ Do not write a report, biography, or list. Output only the diary entry. End with
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
       <li><label>narrative context</label><source>NarrativeContext</source></li>
       <!-- Lore L1: reflections project bounded memory too (LORE_MEMORY_SEED_PLAN §9). -->
-      <li><label>memory</label><source>MemoryContext</source></li>
+      <li><label>relevant past</label><source>MemoryContext</source></li>
       <!-- Ideology Phase 1: absent/irrelevant belief context is omitted by PromptAssembler. -->
       <li><label>belief context</label><source>BeliefContext</source></li>
     </fields>

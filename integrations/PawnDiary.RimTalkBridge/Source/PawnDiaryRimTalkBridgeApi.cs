@@ -38,10 +38,6 @@ namespace PawnDiaryRimTalkBridge
         /// <summary>Registry id for the entry-status listener that invalidates the context cache.</summary>
         public const string StatusListenerId = ModId + ".status";
 
-        /// <summary>Second entry-status listener id, for the pair shared-memory cache (Feature 3).
-        /// A separate id so it coexists with <see cref="StatusListenerId"/> (one id = one listener).</summary>
-        public const string SharedStatusListenerId = ModId + ".sharedstatus";
-
         /// <summary>Third entry-status listener id, for recent native-event assessment context.</summary>
         public const string AssessmentStatusListenerId = ModId + ".assessmentstatus";
 
@@ -58,14 +54,5 @@ namespace PawnDiaryRimTalkBridge
         /// name so both registrations share one identifier.</summary>
         public const string ColonyEventsVariableName = "colony_events";
 
-        /// <summary>RimTalk context variable name for the pair shared-memory block, usable as
-        /// <c>{{diary_shared}}</c> (Feature 3). Frozen token.</summary>
-        public const string SharedMemoryVariableName = "diary_shared";
-
-        /// <summary>Display name of the optional auto-injected RimTalk prompt entry that embeds
-        /// <c>{{diary_shared}}</c>. Label only — cleanup is keyed on <see cref="ModId"/> via
-        /// <c>RemovePromptEntriesByModId</c>, not on this name. Frozen token; an internal registry name,
-        /// not player-facing prose, so it stays English (not localized).</summary>
-        public const string SharedMemoryPromptEntryName = "PawnDiary shared memory";
     }
 }

@@ -193,13 +193,10 @@ namespace PawnDiary
             AddEventRef(initiator, diaryEvent.eventId, historicalTick >= 0);
             AddEventRef(recipient, diaryEvent.eventId, historicalTick >= 0);
             ApplyDiaryEventLimits();
-            // Lore seeds land BEFORE recall (LORE_MEMORY_SEED_PLAN §8.1) so an authored memory
-            // can surface on this very first prompt; then recall BEFORE deposit so this event
-            // cannot recall its own fragment.
-            EnsureLoreSeedsForPawn(initiator);
-            EnsureLoreSeedsForPawn(recipient);
-            ApplyMemoryContextForEvent(diaryEvent);
-            DepositMemoryFragments(diaryEvent, initiator);
+            // Retrieval runs BEFORE capture so this event can never surface the very record it is
+            // about to deposit (belt-and-braces beside the selector's self-echo guard).
+            ApplyRelevantPastForEvent(diaryEvent);
+            CaptureKnowledgeForEvent(diaryEvent, initiator, recipient);
             if (diaryEvent.IsSkipped(DiaryEvent.InitiatorRole))
             {
                 NotifyEntryStatusChanged(diaryEvent, DiaryEvent.InitiatorRole);
@@ -359,12 +356,10 @@ namespace PawnDiary
             events.Register(diaryEvent);
             AddEventRef(pawn, diaryEvent.eventId, historicalTick >= 0);
             ApplyDiaryEventLimits();
-            // Lore seeds land BEFORE recall (LORE_MEMORY_SEED_PLAN §8.1) so an authored memory
-            // can surface on this very first prompt; then recall BEFORE deposit so this event
-            // cannot recall its own fragment.
-            EnsureLoreSeedsForPawn(pawn);
-            ApplyMemoryContextForEvent(diaryEvent);
-            DepositMemoryFragments(diaryEvent, pawn);
+            // Retrieval runs BEFORE capture so this event can never surface the very record it is
+            // about to deposit (belt-and-braces beside the selector's self-echo guard).
+            ApplyRelevantPastForEvent(diaryEvent);
+            CaptureKnowledgeForEvent(diaryEvent, pawn, otherPawn);
             if (diaryEvent.IsSkipped(DiaryEvent.InitiatorRole))
             {
                 NotifyEntryStatusChanged(diaryEvent, DiaryEvent.InitiatorRole);

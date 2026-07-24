@@ -224,6 +224,9 @@ namespace PawnDiary
             BeliefHistoryCorrelationCache.Reset();
             BeliefMutationCache.Reset();
             DlcContext.ResetBeliefProjectionCaches();
+            // Knowledge Def caches are session-static; a different mod list next session must not
+            // see stale rules/profiles.
+            DiaryKnowledgePolicy.ResetCache();
             // TicksGame can repeat across different games, so drop the per-tick free-colonist snapshot
             // here (every Game construction) rather than risk reusing the previous game's list.
             ResetFreeColonistSnapshot();
@@ -269,7 +272,7 @@ namespace PawnDiary
             pollutionObservationVersion = CurrentPollutionObservationVersion;
             ResetOdysseyForNewGame();
             ResetAnomalyForNewGame();
-            ResetMemoryForNewGame();
+            ResetKnowledgeForNewGame();
             // Do NOT BeginSession here: the constructor already started this Game's session, and the
             // starting-colonist thoughts (GiveAllStartingPlayerPawnsThought) were queued in it during
             // InitNewGame. Restarting the session now would cancel those in-flight requests and leave
@@ -383,7 +386,7 @@ namespace PawnDiary
                     FlushAllTaleBatches();
                     FlushAllAmbientThoughtNotes();
                     ApplyDiaryEventLimits();
-                    ApplyMemoryEviction();
+                    ApplyKnowledgeEviction();
                     PruneDiaryEventRefs();
                 }
                 catch (Exception e)
@@ -396,7 +399,7 @@ namespace PawnDiary
             Scribe_Collections.Look(ref diaries, "diaries", LookMode.Deep);
             events.ExposeEvents("diaryEvents");
             archive.ExposeArchive("diaryArchiveEntries");
-            ExposeMemoryData();
+            ExposeKnowledgeData();
             Scribe_Collections.Look(ref activeEventWindows, "activeEventWindows", LookMode.Deep);
             // Plan 12: saved observed-condition runtime state. Additive key; old saves load an empty
             // list. See DiaryGameComponent.ObservedConditions.cs.
@@ -470,7 +473,7 @@ namespace PawnDiary
                     // works immediately (the first generation scan and any UI draw run before any new
                     // event is recorded this session).
                     events.RebuildIndex();
-                    PostLoadInitMemory();
+                    PostLoadInitKnowledge();
                     NormalizeActiveEventWindows();
                     NormalizeActiveObservedConditions();
                     NormalizeObservedConditionCooldowns();
@@ -780,7 +783,7 @@ namespace PawnDiary
 
             RunRoyaltyPersonaReconciliationIfDue(now);
 
-            MaybeRunMemoryEvictionScan(now);
+            MaybeRunKnowledgeEvictionScan(now);
 
             if (now >= nextOrphanRecoveryScanTick)
             {

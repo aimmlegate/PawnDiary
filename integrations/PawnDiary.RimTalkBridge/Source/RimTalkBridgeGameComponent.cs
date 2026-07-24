@@ -97,7 +97,7 @@ namespace PawnDiaryRimTalkBridge
         {
             DiaryContextInjector.ResetForNewGame();
             ColonyContextInjector.ResetForNewGame();
-            SharedMemoryInjector.ResetForNewGame();
+            SharedMemoryLegacyCleanup.ResetForNewGame();
             // FinalizeInit may run off the main thread in RimWorld 1.6. Only clear plain static data
             // here; PersonaSync performs API-backed cleanup from the first real game tick.
             PersonaSync.PrepareForNewGame();
@@ -341,8 +341,9 @@ namespace PawnDiaryRimTalkBridge
         {
             RefreshContextCaches(now);
             RefreshColonyContext(now);              // Feature 1: colony-situation block per map
-            SharedMemoryInjector.ProcessQueue(now); // Feature 3: build pairs the provider requested
-            SharedMemoryInjector.SyncAutoInject();  // Feature 3: reconcile the optional prompt entry
+            // Shared memory was retired (MEMORY_SYSTEM_REDESIGN_PLAN §6); only the one-shot
+            // preset cleanup remains until the next release.
+            SharedMemoryLegacyCleanup.RunOnce();
             PersonaSync.RunPass();
             ConversationTracker.ProcessDueConversations(now);
             ConversationAssessmentCoordinator.PollAndApply(now);

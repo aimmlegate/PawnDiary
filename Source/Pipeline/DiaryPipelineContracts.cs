@@ -57,9 +57,14 @@ namespace PawnDiary
         // Optional cross-event facts selected and frozen at the source event time. Empty is the normal
         // pre-N1/no-provider path and causes the XML prompt field to disappear entirely.
         public string narrativeContext;
-        // Optional associative-memory recall frozen at event capture time. Empty means no memory
-        // surfaced; the prompt field disappears entirely (zero token cost).
+        // Deterministic "relevant past" lines frozen at event capture time
+        // (MEMORY_SYSTEM_REDESIGN_PLAN §3.2). Empty means no related record surfaced; the prompt
+        // field disappears entirely (zero token cost).
         public string memoryContext;
+        // The pawn's culture defNames from the knowledge state (§4.1), read at payload build time
+        // so annotations always use the LATEST adopted culture. Blank = no resolved culture.
+        public string originCultureDefName;
+        public string adoptedCultureDefName;
         // Event-time Ideology interpretation, already sanitized and bounded by the guarded adapter.
         // Empty is the normal no-DLC or unrelated-event path and costs no prompt tokens.
         public string beliefContext;
@@ -206,14 +211,21 @@ namespace PawnDiary
         // strings only to render an already-frozen factual field; it never reads a live Def.
         public string narrativeContextFieldLabel = "narrative context";
         public string narrativeContextInstruction = string.Empty;
-        // Copied from DiaryMemoryTuningDef on the main thread. The pure planner uses this string
-        // only to prefix the already-frozen memory recall; it never reads a live Def.
+        // Copied from DiaryKnowledgeTuningDef on the main thread. The pure planner uses this
+        // string only to prefix the already-frozen relevant-past lines; it never reads a live Def.
         public string memoryContextInstruction = string.Empty;
         // Copied from DiaryBeliefPolicyDef on the main thread. The immutable resolver policy is also
         // captured once so prompt-detail projection never rereads live Defs.
         public string beliefContextFieldLabel = "belief context";
         public string beliefContextInstruction = string.Empty;
         public BeliefPolicySnapshot beliefPolicy = BeliefPolicySnapshot.CreateDefault();
+        // Culture annotation policy (MEMORY_SYSTEM_REDESIGN_PLAN §4.3), copied from the knowledge
+        // Defs on the main thread. The pure annotation planner resolves each POV's profiles from
+        // these lists by culture name; empty lists disable annotation entirely.
+        public KnowledgePolicySnapshot knowledgePolicy = new KnowledgePolicySnapshot();
+        public List<CultureTopicRule> cultureTopics = new List<CultureTopicRule>();
+        public List<CultureProfile> cultureProfiles = new List<CultureProfile>();
+        public CultureProfile fallbackCultureProfile;
 
         public DiaryTemplatePolicy Template(string templateKey)
         {
@@ -297,6 +309,10 @@ namespace PawnDiary
         public string debugLabel;
         public PromptContextSelectionReport contextSelectionReport;
         public DiaryResponseRules responseRules = new DiaryResponseRules();
+        // Culture annotation outcome (MEMORY_SYSTEM_REDESIGN_PLAN §7): matched topic keys and the
+        // sources of the annotated fields, surfaced by the dev tab. Empty when nothing annotated.
+        public List<string> cultureAnnotationTopics = new List<string>();
+        public List<string> cultureAnnotatedSources = new List<string>();
     }
 
     /// <summary>

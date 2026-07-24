@@ -1,0 +1,497 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The closed important-event allowlist (design/MEMORY_SYSTEM_REDESIGN_PLAN.md §2.1): the ONLY
+  gameplay changes a pawn keeps lifelong memory records of. Everything not listed here is ignored
+  by design - raids, battles without a persistent result, temporary illness, mental breaks,
+  conversations, social fights, quests, rituals, journeys, skills, passions, inspirations, and
+  ability use deliberately have no rows.
+
+  External mods extend the system by shipping more PawnDiary.DiaryImportantEventDef rows; no C#
+  is needed. `signal` picks the capture channel, matchers are plain strings (DLC defNames sit
+  harmlessly inert without the DLC), `owners` picks which POV keeps the record, and
+  `lineTemplate` is the localized canonical fact line ("{other}" = the other pawn's saved name,
+  "{<factKey>}" = that captured fact row). DefInjected translates label + lineTemplate.
+
+  eventKind tokens are SAVED DATA - never rename them.
+-->
+<Defs>
+
+  <!-- ===================== Relationships and family ===================== -->
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_LoverGained</defName>
+    <label>new lover</label>
+    <eventKind>relation.lover.gained</eventKind>
+    <topicKey>relationship</topicKey>
+    <signal>event</signal>
+    <order>10</order>
+    <matchDefNames><li>Lover</li></matchDefNames>
+    <owners>both</owners>
+    <lineTemplate>became lovers with {other}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_Married</defName>
+    <label>marriage</label>
+    <eventKind>relation.spouse.gained</eventKind>
+    <topicKey>relationship</topicKey>
+    <signal>event</signal>
+    <order>10</order>
+    <matchDefNames><li>Spouse</li></matchDefNames>
+    <owners>both</owners>
+    <lineTemplate>married {other}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_Breakup</defName>
+    <label>breakup</label>
+    <eventKind>relation.lover.lost</eventKind>
+    <topicKey>relationship</topicKey>
+    <signal>event</signal>
+    <order>10</order>
+    <matchDefNames><li>ExLover</li></matchDefNames>
+    <owners>both</owners>
+    <lineTemplate>broke up with {other}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_Divorce</defName>
+    <label>divorce</label>
+    <eventKind>relation.spouse.lost</eventKind>
+    <topicKey>relationship</topicKey>
+    <signal>event</signal>
+    <order>10</order>
+    <matchDefNames><li>ExSpouse</li></matchDefNames>
+    <owners>both</owners>
+    <lineTemplate>divorced {other}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_PsychicBondFormed</defName>
+    <label>psychic bond formed</label>
+    <eventKind>bond.psychic.formed</eventKind>
+    <topicKey>relationship</topicKey>
+    <signal>event</signal>
+    <order>20</order>
+    <matchDefNames><li>BiotechPsychicBondFormed</li></matchDefNames>
+    <owners>both</owners>
+    <constantSubjectKeys><li>bond:psychic</li></constantSubjectKeys>
+    <lineTemplate>formed a psychic bond with {other}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_PsychicBondRuptured</defName>
+    <label>psychic bond torn</label>
+    <eventKind>bond.psychic.ruptured</eventKind>
+    <topicKey>relationship</topicKey>
+    <signal>event</signal>
+    <order>20</order>
+    <matchDefNames><li>BiotechPsychicBondRuptured</li></matchDefNames>
+    <owners>both</owners>
+    <constantSubjectKeys><li>bond:psychic</li></constantSubjectKeys>
+    <lineTemplate>the psychic bond with {other} was torn</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <!-- Birth is remembered by the parents (the two writers of the family birth page). The
+       vanilla tale defNames cover no-Biotech births; BiotechFamilyBirth is the canonical
+       Biotech family page. -->
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_Birth</defName>
+    <label>child born</label>
+    <eventKind>family.birth</eventKind>
+    <topicKey>relationship</topicKey>
+    <signal>event</signal>
+    <order>30</order>
+    <matchDefNames>
+      <li>BiotechFamilyBirth</li>
+      <li>GaveBirth</li>
+      <li>BabyBorn</li>
+    </matchDefNames>
+    <owners>both</owners>
+    <factKeys><li>child_id</li></factKeys>
+    <lineTemplate>welcomed a newborn child</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <!-- Death fan-out (§2.1): the deceased's lover/spouse, parents, children, and siblings each
+       keep a record; ordinary witnesses do not. The capture channel builds one signal per family
+       owner with relation/victim facts already localized. -->
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_DeathFamily</defName>
+    <label>family death</label>
+    <eventKind>death.family</eventKind>
+    <topicKey>relationship</topicKey>
+    <signal>deathFamily</signal>
+    <order>10</order>
+    <matchDefNames><li>PawnDiary_DeathFamily</li></matchDefNames>
+    <owners>provided</owners>
+    <factKeys>
+      <li>relation</li>
+      <li>victim</li>
+    </factKeys>
+    <lineTemplate>lost {relation} {victim}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <!-- A pawn instigator remembers the kill; ordinary witnesses do not. -->
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_DeathInstigator</defName>
+    <label>killed someone</label>
+    <eventKind>death.killed</eventKind>
+    <topicKey>relationship</topicKey>
+    <signal>deathInstigator</signal>
+    <order>10</order>
+    <matchDefNames><li>PawnDiary_DeathInstigator</li></matchDefNames>
+    <owners>provided</owners>
+    <factKeys>
+      <li>victim</li>
+      <li>weapon</li>
+    </factKeys>
+    <lineTemplate>killed {victim}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <!-- ===================== Persistent body changes ===================== -->
+
+  <!-- Hediff events keep the plain hediff defName, so these rows gate on the structural
+       part_kind context token instead of names — any missing/added part matches without
+       enumerating hediff defNames. part_def is the stable BodyPartDef subject key; body_part
+       the display label. Ordinary scars never carry part_kind, so they are excluded by
+       construction. -->
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_BodyPartLost</defName>
+    <label>body part lost</label>
+    <eventKind>body.part.lost</eventKind>
+    <topicKey>body</topicKey>
+    <signal>event</signal>
+    <order>40</order>
+    <requireContext><li>part_kind=missingpart</li></requireContext>
+    <owners>initiator</owners>
+    <subjectKeys>
+      <li><contextKey>part_def</contextKey><prefix>part</prefix></li>
+    </subjectKeys>
+    <factKeys>
+      <li>body_part</li>
+      <li>part_cause</li>
+    </factKeys>
+    <lineTemplate>lost {body_part}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_BodyPartInstalled</defName>
+    <label>part installed</label>
+    <eventKind>body.part.installed</eventKind>
+    <topicKey>body</topicKey>
+    <signal>event</signal>
+    <order>40</order>
+    <requireContext><li>part_kind=addedpart</li></requireContext>
+    <owners>initiator</owners>
+    <subjectKeys>
+      <li><contextKey>part_def</contextKey><prefix>part</prefix></li>
+      <li><contextKey>hediff</contextKey><prefix>implant</prefix></li>
+    </subjectKeys>
+    <factKeys>
+      <li>label</li>
+      <li>body_part</li>
+      <li>part_tier</li>
+    </factKeys>
+    <lineTemplate>received {label}: {body_part}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <!-- Organic transplants (hearts, lungs) are installs too; separate row because context gates
+       are AND-combined. Shares the eventKind on purpose. -->
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_BodyPartInstalledOrganic</defName>
+    <label>organ transplanted</label>
+    <eventKind>body.part.installed</eventKind>
+    <topicKey>body</topicKey>
+    <signal>event</signal>
+    <order>41</order>
+    <requireContext><li>part_kind=organicpart</li></requireContext>
+    <owners>initiator</owners>
+    <subjectKeys>
+      <li><contextKey>part_def</contextKey><prefix>part</prefix></li>
+      <li><contextKey>hediff</contextKey><prefix>implant</prefix></li>
+    </subjectKeys>
+    <factKeys>
+      <li>label</li>
+      <li>body_part</li>
+    </factKeys>
+    <lineTemplate>received {label}: {body_part}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <!-- Implant/prosthetic removal has no diary page of its own; the hediffRemoved channel fires
+       from the health-tracker removal listener with the same "<hediffDef>_addedpart" naming. -->
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_BodyPartRemoved</defName>
+    <label>implant removed</label>
+    <eventKind>body.part.removed</eventKind>
+    <topicKey>body</topicKey>
+    <signal>hediffRemoved</signal>
+    <order>10</order>
+    <matchSuffixes><li>_addedpart</li></matchSuffixes>
+    <owners>provided</owners>
+    <subjectKeys>
+      <li><contextKey>part_def</contextKey><prefix>part</prefix></li>
+      <li><contextKey>hediff</contextKey><prefix>implant</prefix></li>
+    </subjectKeys>
+    <factKeys>
+      <li>label</li>
+      <li>body_part</li>
+    </factKeys>
+    <lineTemplate>had {label} removed</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <!-- Other persistent hediffs remembered ONLY when explicitly listed here (§2.1). The quiet
+       channel sees every appeared hediff regardless of diary-page policy. -->
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_PermanentCondition</defName>
+    <label>permanent condition</label>
+    <eventKind>body.condition.permanent</eventKind>
+    <topicKey>body</topicKey>
+    <signal>hediffQuiet</signal>
+    <order>10</order>
+    <matchDefNames>
+      <li>LuciferiumAddiction</li>
+      <li>Sterilized</li>
+    </matchDefNames>
+    <owners>provided</owners>
+    <subjectKeys>
+      <li><contextKey>hediff</contextKey><prefix>hediff</prefix></li>
+    </subjectKeys>
+    <factKeys><li>label</li></factKeys>
+    <lineTemplate>now lives with {label}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <!-- ===================== Persistent identity and status ===================== -->
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_FactionJoined</defName>
+    <label>joined the colony</label>
+    <eventKind>status.faction.joined</eventKind>
+    <topicKey>status</topicKey>
+    <signal>event</signal>
+    <order>50</order>
+    <matchDefNames><li>PawnDiary_Arrival</li></matchDefNames>
+    <owners>initiator</owners>
+    <constantSubjectKeys><li>faction</li></constantSubjectKeys>
+    <factKeys><li>arrival_source</li></factKeys>
+    <lineTemplate>joined the colony</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_GrowthMoment</defName>
+    <label>growth moment</label>
+    <eventKind>status.growth</eventKind>
+    <topicKey>status</topicKey>
+    <signal>event</signal>
+    <order>50</order>
+    <matchDefNames><li>BiotechGrowthMoment</li></matchDefNames>
+    <owners>initiator</owners>
+    <factKeys>
+      <li>growth_stage</li>
+      <li>selected_trait</li>
+    </factKeys>
+    <lineTemplate>reached a growth moment</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <!-- Conversion channel: fired from the ideology listener with old/new ideo + culture facts;
+       also the moment the pawn's adopted culture is replaced (§4.1). -->
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_IdeoConversion</defName>
+    <label>conversion</label>
+    <eventKind>status.ideo.converted</eventKind>
+    <topicKey>status</topicKey>
+    <signal>ideoConversion</signal>
+    <order>10</order>
+    <matchDefNames><li>PawnDiary_IdeoConversion</li></matchDefNames>
+    <owners>provided</owners>
+    <subjectKeys>
+      <li><contextKey>new_culture</contextKey><prefix>culture</prefix></li>
+    </subjectKeys>
+    <factKeys>
+      <li>previous_ideo</li>
+      <li>new_ideo</li>
+    </factKeys>
+    <lineTemplate>converted to {new_ideo}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_RoleAssigned</defName>
+    <label>role gained</label>
+    <eventKind>status.role.gained</eventKind>
+    <topicKey>status</topicKey>
+    <signal>roleAssigned</signal>
+    <order>10</order>
+    <matchDefNames><li>PawnDiary_RoleAssigned</li></matchDefNames>
+    <owners>provided</owners>
+    <constantSubjectKeys><li>role</li></constantSubjectKeys>
+    <factKeys>
+      <li>role</li>
+      <li>ideo</li>
+    </factKeys>
+    <lineTemplate>was made {role}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_RoleRemoved</defName>
+    <label>role lost</label>
+    <eventKind>status.role.lost</eventKind>
+    <topicKey>status</topicKey>
+    <signal>roleUnassigned</signal>
+    <order>10</order>
+    <matchDefNames><li>PawnDiary_RoleUnassigned</li></matchDefNames>
+    <owners>provided</owners>
+    <constantSubjectKeys><li>role</li></constantSubjectKeys>
+    <factKeys>
+      <li>role</li>
+      <li>ideo</li>
+    </factKeys>
+    <lineTemplate>is no longer {role}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_TitleAdvanced</defName>
+    <label>title gained</label>
+    <eventKind>status.title.advanced</eventKind>
+    <topicKey>status</topicKey>
+    <signal>event</signal>
+    <order>50</order>
+    <matchDefNames>
+      <li>RoyalTitleGained</li>
+      <li>RoyalTitlePromoted</li>
+    </matchDefNames>
+    <owners>initiator</owners>
+    <constantSubjectKeys><li>title</li></constantSubjectKeys>
+    <factKeys>
+      <li>previous_value</li>
+      <li>new_value</li>
+    </factKeys>
+    <lineTemplate>became {new_value}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_TitleLost</defName>
+    <label>title lost</label>
+    <eventKind>status.title.lost</eventKind>
+    <topicKey>status</topicKey>
+    <signal>event</signal>
+    <order>50</order>
+    <matchDefNames>
+      <li>RoyalTitleDemoted</li>
+      <li>RoyalTitleLost</li>
+    </matchDefNames>
+    <owners>initiator</owners>
+    <constantSubjectKeys><li>title</li></constantSubjectKeys>
+    <factKeys>
+      <li>previous_value</li>
+      <li>new_value</li>
+    </factKeys>
+    <lineTemplate>lost the title of {previous_value}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_Psylink</defName>
+    <label>psylink</label>
+    <eventKind>status.psylink</eventKind>
+    <topicKey>status</topicKey>
+    <signal>event</signal>
+    <order>50</order>
+    <matchDefNames><li>PsylinkLevel</li></matchDefNames>
+    <owners>initiator</owners>
+    <constantSubjectKeys><li>psylink</li></constantSubjectKeys>
+    <factKeys>
+      <li>previous_value</li>
+      <li>new_value</li>
+    </factKeys>
+    <lineTemplate>psylink reached level {new_value}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_XenotypeChanged</defName>
+    <label>xenotype changed</label>
+    <eventKind>body.xenotype</eventKind>
+    <topicKey>body</topicKey>
+    <signal>event</signal>
+    <order>50</order>
+    <matchDefNames><li>XenotypeChanged</li></matchDefNames>
+    <owners>initiator</owners>
+    <constantSubjectKeys><li>xenotype</li></constantSubjectKeys>
+    <factKeys>
+      <li>previous_value</li>
+      <li>new_value</li>
+    </factKeys>
+    <lineTemplate>became {new_value}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_GeneRewrite</defName>
+    <label>genes rewritten</label>
+    <eventKind>body.genes</eventKind>
+    <topicKey>body</topicKey>
+    <signal>event</signal>
+    <order>50</order>
+    <matchDefNames><li>GeneIdentityChanged</li></matchDefNames>
+    <owners>initiator</owners>
+    <constantSubjectKeys><li>xenotype</li></constantSubjectKeys>
+    <lineTemplate>genes were significantly rewritten</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_MechlinkInstalled</defName>
+    <label>mechlink installed</label>
+    <eventKind>status.mechlink.gained</eventKind>
+    <topicKey>status</topicKey>
+    <signal>event</signal>
+    <order>50</order>
+    <matchDefNames><li>BiotechMechlinkInstalled</li></matchDefNames>
+    <owners>initiator</owners>
+    <constantSubjectKeys><li>mechlink</li></constantSubjectKeys>
+    <lineTemplate>became a mechanitor</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_MechlinkRemoved</defName>
+    <label>mechlink removed</label>
+    <eventKind>status.mechlink.lost</eventKind>
+    <topicKey>status</topicKey>
+    <signal>event</signal>
+    <order>50</order>
+    <matchDefNames><li>BiotechMechlinkRemoved</li></matchDefNames>
+    <owners>initiator</owners>
+    <constantSubjectKeys><li>mechlink</li></constantSubjectKeys>
+    <lineTemplate>lost the mechlink</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_PersonaBondFormed</defName>
+    <label>persona bond</label>
+    <eventKind>bond.persona.formed</eventKind>
+    <topicKey>status</topicKey>
+    <signal>event</signal>
+    <order>50</order>
+    <matchDefNames><li>PersonaWeaponBondFormed</li></matchDefNames>
+    <owners>initiator</owners>
+    <constantSubjectKeys><li>bond:persona</li></constantSubjectKeys>
+    <subjectKeys>
+      <li><contextKey>persona_weapon_id</contextKey><prefix>weapon</prefix></li>
+    </subjectKeys>
+    <factKeys><li>persona_weapon_name</li></factKeys>
+    <lineTemplate>bonded with the persona weapon {persona_weapon_name}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_PersonaBondEnded</defName>
+    <label>persona bond ended</label>
+    <eventKind>bond.persona.ended</eventKind>
+    <topicKey>status</topicKey>
+    <signal>event</signal>
+    <order>50</order>
+    <matchDefNames><li>PersonaWeaponBondEnded</li></matchDefNames>
+    <owners>initiator</owners>
+    <constantSubjectKeys><li>bond:persona</li></constantSubjectKeys>
+    <subjectKeys>
+      <li><contextKey>persona_weapon_id</contextKey><prefix>weapon</prefix></li>
+    </subjectKeys>
+    <factKeys><li>persona_weapon_name</li></factKeys>
+    <lineTemplate>the bond with {persona_weapon_name} ended</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+</Defs>

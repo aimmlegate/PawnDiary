@@ -32,6 +32,10 @@ namespace PawnDiary
         public string source;
         public string contextKey;
         public bool enabled = true;
+        /// <summary>Optional inline culture annotation (MEMORY_SYSTEM_REDESIGN_PLAN §4.3),
+        /// appended to the END of this field's rendered value. Empty (the default) renders the
+        /// field byte-identically to before the annotation feature existed.</summary>
+        public string annotation;
     }
 
     /// <summary>
@@ -131,7 +135,7 @@ namespace PawnDiary
                     }
 
                     string label = string.IsNullOrWhiteSpace(field.label) ? field.source : field.label;
-                    AppendField(lines, label, ResolveSource(field, values));
+                    AppendField(lines, label, ResolveSource(field, values), field.annotation);
                 }
             }
 
@@ -223,8 +227,11 @@ namespace PawnDiary
         }
 
         // Adds "label: value" only when the value carries real signal. Empty strings and the
-        // placeholder values "none"/"n/a"/"unknown" are skipped so they cost no tokens.
-        private static void AppendField(List<string> lines, string label, string value)
+        // placeholder values "none"/"n/a"/"unknown" are skipped so they cost no tokens. A culture
+        // annotation is appended to the END of the rendered value (§4.3) and can never resurrect
+        // a skipped field.
+        private static void AppendField(List<string> lines, string label, string value,
+            string annotation = null)
         {
             if (string.IsNullOrWhiteSpace(value))
             {
@@ -235,6 +242,11 @@ namespace PawnDiary
             if (trimmed == "none" || trimmed == "n/a" || trimmed == "unknown")
             {
                 return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(annotation))
+            {
+                trimmed = trimmed + " " + annotation.Trim();
             }
 
             lines.Add(label + ": " + trimmed);

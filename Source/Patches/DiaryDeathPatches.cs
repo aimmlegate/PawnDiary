@@ -86,10 +86,19 @@ namespace PawnDiary
         /// Harmony Postfix for Pawn.Kill. Records a neutral final death entry when vanilla did not
         /// emit a death Tale for this kill path, such as some condition/need deaths.
         /// </summary>
-        public static void Postfix(Pawn __instance)
+        public static void Postfix(Pawn __instance, DamageInfo? dinfo)
         {
             DiaryPatchSafety.Run("PawnKillPatch.Postfix", () =>
             {
+                // Knowledge death fan-out (MEMORY_SYSTEM_REDESIGN_PLAN §2.1): a pawn instigator
+                // and the deceased's close family keep lifelong records. Runs for ANY humanlike
+                // death — the victim may be a raider killed by a colonist — while relations are
+                // still readable. The capture itself filters to diaried owners.
+                if (__instance?.RaceProps?.Humanlike == true)
+                {
+                    DiaryGameComponent.Instance?.CaptureDeathKnowledge(__instance, dinfo);
+                }
+
                 // Pawn.Kill fires for every death — animals, raiders, mechs — but only a humanlike
                 // colonist can ever get a death page. Gate before building/submitting the signal so
                 // the common non-colonist kill does no allocation or bus work. The decider re-checks

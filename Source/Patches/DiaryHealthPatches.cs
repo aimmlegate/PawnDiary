@@ -47,6 +47,18 @@ namespace PawnDiary
                     return;
                 }
 
+                // Quiet knowledge channel (MEMORY_SYSTEM_REDESIGN_PLAN §2.1): XML-allowlisted
+                // persistent hediffs are remembered BEFORE diary-page policy, so they capture even
+                // when the signal below is dropped or folded into a day reflection.
+                component.CaptureHediffKnowledge(
+                    s.pawn,
+                    s.hediff.def?.defName,
+                    s.hediff.def?.label,
+                    s.hediff.Part?.def?.defName,
+                    s.hediff.Part?.LabelCap,
+                    s.hediff.def?.countsAsAddedPartOrImplant == true,
+                    false);
+
                 HediffSignal signal = new HediffSignal(
                     s.pawn,
                     s.hediff,

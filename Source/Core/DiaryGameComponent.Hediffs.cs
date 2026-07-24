@@ -268,6 +268,12 @@ namespace PawnDiary
                 data.DefName, data.Label, data.SourceToken, data.GroupKey, data.ModeToken,
                 data.SeverityF2, data.StageString, data.CleanedStageLabel, data.CleanedBodyPartLabel,
                 data.PartKindToken, data.PartTierToken, data.AttitudeToken, data.CauseToken);
+            // Stable BodyPartDef key for the knowledge system's "same body part" retrieval
+            // (MEMORY_SYSTEM_REDESIGN_PLAN §3.1); body_part above stays the localized label.
+            if (hediff?.Part?.def != null)
+            {
+                gameContext += "; part_def=" + hediff.Part.def.defName;
+            }
             gameContext = AppendBiotechFamilyContext(hediff, gameContext);
 
             DiaryEvent diaryEvent = AddSoloEvent(

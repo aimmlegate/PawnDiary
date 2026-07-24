@@ -156,15 +156,12 @@ namespace PawnDiary
         // is folded into first-person prompts alongside their writing style. When false, the block is
         // omitted and pending psychotype rolls stay deferred; existing pawns keep their saved psychotype.
         public bool enablePsychotypes = true;
-        // Master toggle for the associative memory system. When true, pawns accumulate small tagged
-        // memory fragments from significant events and related memories surface in later diary prompts.
-        // When false, no deposits or recalls occur; existing fragments stay saved but inert.
+        // The ONE player-facing memory switch (design/MEMORY_SYSTEM_REDESIGN_PLAN.md §3.2): it
+        // gates PROMPT INJECTION only — the "relevant past" lines and inline culture annotations.
+        // Important-event capture and culture tracking continue while this is off, so re-enabling
+        // later surfaces everything that happened meanwhile. The saved key predates the redesign
+        // on purpose (§6): the old master value carries over.
         public bool enableMemorySystem = true;
-        // Authored lore-seed memories (LORE_MEMORY_SEED_PLAN §13). When false: no new lore
-        // deposits, lore rows are filtered out of recall, and they are excluded from cap-based
-        // eviction — never deleted (§16 G8). Existing saves inherit true and acquire seeds lazily
-        // once a catalog ships.
-        public bool enableLoreSeeds = true;
         // Global prompt-context detail level. Full preserves the original prompt shape; smaller levels
         // dynamically choose the most relevant optional fields for small local models.
         public PromptContextDetailLevel contextDetailLevel = PromptContextDetailLevel.Full;
@@ -283,7 +280,8 @@ namespace PawnDiary
             Scribe_Values.Look(ref enablePromptEnchantments, "enablePromptEnchantments", true);
             Scribe_Values.Look(ref enablePsychotypes, "enablePsychotypes", true);
             Scribe_Values.Look(ref enableMemorySystem, "enableMemorySystem", true);
-            Scribe_Values.Look(ref enableLoreSeeds, "enableLoreSeeds", true);
+            // The retired lore-seed toggle's "enableLoreSeeds" key is deliberately no longer read;
+            // its saved value is ignored (design/MEMORY_SYSTEM_REDESIGN_PLAN.md §6).
             Scribe_Values.Look(ref contextDetailLevel, "contextDetailLevel", PromptContextDetailLevel.Full);
             Scribe_Values.Look(ref allowExternalIntegrations, "allowExternalIntegrations", true);
             Scribe_Values.Look(ref enableExternalKeySharing, "enableExternalKeySharing", false);

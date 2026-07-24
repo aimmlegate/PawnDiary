@@ -134,7 +134,7 @@ namespace PawnDiary
             internal List<string> narrativeSelectedCandidateKeys;
             internal string narrativeContext;
             // Additive associative-memory state. Frozen recall result for this POV, rendered by
-            // MemoryRecallSelector and composed by MemoryContextPrompt at prompt time. Empty means
+            // ImportantMemorySelector and composed by MemoryContextPrompt at prompt time. Empty means
             // no memory surfaced (the prompt field disappears entirely). Capped at 600 chars on
             // save-normalization so a corrupt save cannot bloat the prompt.
             internal string memoryContext;

@@ -213,6 +213,28 @@ namespace PawnDiary
                 MessageTypeDefOf.NeutralEvent, false);
         }
 
+        /// <summary>
+        /// Dumps the selected pawn's knowledge state (MEMORY_SYSTEM_REDESIGN_PLAN §7): culture
+        /// provenance, profile status, every stored important event, and the last prompt-selection
+        /// report with per-candidate reasons and annotation targets. On demand only — no log spam.
+        /// </summary>
+        [DebugAction("Pawn Diary", "Log selected pawn knowledge state...", allowedGameStates = AllowedGameStates.PlayingOnMap, actionType = DebugActionType.Action)]
+        public static void LogSelectedPawnKnowledgeState()
+        {
+            DiaryGameComponent component = DiaryGameComponent.Instance;
+            Pawn pawn = Find.Selector.SingleSelectedThing as Pawn;
+            if (!Prefs.DevMode || component == null || pawn == null)
+            {
+                Messages.Message("PawnDiary.Dev.Knowledge.NoPawn".Translate(),
+                    MessageTypeDefOf.NeutralEvent, false);
+                return;
+            }
+
+            Log.Message("[Pawn Diary] knowledge_state\n" + component.KnowledgeDiagnosticsForDev(pawn));
+            Messages.Message("PawnDiary.Dev.Knowledge.Logged".Translate(),
+                MessageTypeDefOf.NeutralEvent, false);
+        }
+
         private static void HandleExportAllDiariesForDev()
         {
             DiaryGameComponent component = DiaryGameComponent.Instance;
