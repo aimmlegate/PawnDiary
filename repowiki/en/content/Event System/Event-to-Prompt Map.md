@@ -125,6 +125,12 @@ direct page for that pawn in hot or archived diary history suppresses the letter
 categories remain eligible. The scan is bounded, shared across map and caravan colonists, and clipped
 to the pawn's first arrival page so nobody remembers colony news from before joining.
 
+Quadrum reflections can also add one `memory` cue from the same quadrum one year earlier. The
+collector reads both hot events and compact archive rows, keeps only important non-reflection pages
+for that pawn, deduplicates their stable event identities, and wraps the maximum-weight remaining
+line in the localized “a year ago, same season” frame. The XML tuning switch defaults on; the callback
+is impossible during the first four absolute quadrums and its final weight is half a major event.
+
 ## XML ownership
 
 | File | Owns |

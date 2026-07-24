@@ -956,6 +956,7 @@
   <PawnDiary.Event.QuadrumReflectionHeader>Across {1}, these moments shaped {0}:</PawnDiary.Event.QuadrumReflectionHeader>
   <PawnDiary.Event.QuadrumReflectionDateRange>{0} - {1}</PawnDiary.Event.QuadrumReflectionDateRange>
   <PawnDiary.Event.QuadrumReflectionEvidenceLine>{0}: {1}</PawnDiary.Event.QuadrumReflectionEvidenceLine>
+  <PawnDiary.Event.QuadrumReflectionLastYear>a year ago, same season: {0}</PawnDiary.Event.QuadrumReflectionLastYear>
   <PawnDiary.Event.QuadrumReflectionInstruction>write one longer reflective diary entry as {0} looking back across {1}; mention dates naturally from the supplied highlights; connect the events into what this stretch of life has meant instead of listing them; use only supplied facts and the pawn's writing style</PawnDiary.Event.QuadrumReflectionInstruction>
   <PawnDiary.Event.HediffAppeared>{0} developed {1}.</PawnDiary.Event.HediffAppeared>
   <PawnDiary.Event.HediffProgressed>{0}'s {1} worsened.</PawnDiary.Event.HediffProgressed>

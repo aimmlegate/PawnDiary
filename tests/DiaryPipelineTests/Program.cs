@@ -28,6 +28,7 @@ namespace DiaryPipelineTests
             TestIdentitySummaryPolicy();
             TestMoodSnapshotPolicy();
             TestColonyNewsPolicy();
+            TestQuadrumAnniversaryMemoryPolicy();
             TestPromptContextDetailSelection();
             TestPromptContextDetailOverrideResolution();
             TestPromptContextFeatureLayersPerPreset();
@@ -692,6 +693,63 @@ namespace DiaryPipelineTests
             AssertEqual("H3 Russian news frame",
                 "колонии сообщили: {0}",
                 russian.Root.Element("PawnDiary.Event.DayReflectionNews")?.Value);
+        }
+
+        /// <summary>
+        /// H5-prompt pins the same-season calendar boundary, hot/archive identity deduplication,
+        /// deterministic maximum-weight choice, shipped toggle, and localized prompt frame.
+        /// </summary>
+        private static void TestQuadrumAnniversaryMemoryPolicy()
+        {
+            AssertTrue("H5 has no previous-year callback in the first four quadrums",
+                !QuadrumAnniversaryMemoryPolicy.HasPreviousYear(3));
+            AssertTrue("H5 callback starts after one complete year",
+                QuadrumAnniversaryMemoryPolicy.HasPreviousYear(4));
+            AssertEqual("H5 matching quadrum is exactly four quadrums earlier",
+                5, QuadrumAnniversaryMemoryPolicy.PreviousYearQuadrum(9));
+
+            string stableIdentity = QuadrumAnniversaryMemoryPolicy.IdentityFor(
+                " event-42 ", 123, "RaidEnemy", "initiator");
+            AssertEqual("H5 event id is the primary hot/archive identity", "event-42", stableIdentity);
+            AssertEqual("H5 legacy identity normalizes source metadata",
+                "legacy|123|raidenemy|initiator",
+                QuadrumAnniversaryMemoryPolicy.IdentityFor(null, 123, " RaidEnemy ", "INITIATOR"));
+
+            List<QuadrumAnniversaryMemoryCandidate> candidates =
+                new List<QuadrumAnniversaryMemoryCandidate>
+                {
+                    new QuadrumAnniversaryMemoryCandidate("event-a", 100, 0.7f, "hot event A"),
+                    new QuadrumAnniversaryMemoryCandidate("event-a", 100, 1f, "archive event A"),
+                    new QuadrumAnniversaryMemoryCandidate("event-b", 90, 1f, "event B"),
+                    new QuadrumAnniversaryMemoryCandidate("event-c", 110, 1f, "event C"),
+                    new QuadrumAnniversaryMemoryCandidate("", 120, 5f, "invalid identity"),
+                    new QuadrumAnniversaryMemoryCandidate("blank-line", 130, 5f, " "),
+                };
+            List<QuadrumAnniversaryMemoryCandidate> unique =
+                QuadrumAnniversaryMemoryPolicy.Deduplicate(candidates);
+            AssertEqual("H5 hot/archive overlap deduplicates by event identity", 3, unique.Count);
+
+            QuadrumAnniversaryMemoryCandidate best =
+                QuadrumAnniversaryMemoryPolicy.SelectBest(candidates);
+            AssertEqual("H5 max-weight tie prefers the newest memory", "event-c", best.sourceIdentity);
+            AssertEqual("H5 selected callback carries the frozen evidence line", "event C", best.evidenceLine);
+            AssertTrue("H5 null candidate set has no callback",
+                QuadrumAnniversaryMemoryPolicy.SelectBest(null) == null);
+
+            XDocument tuning = XDocument.Load(RepoPath("1.6", "Defs", "DiaryTuningDef.xml"));
+            AssertEqual("H5 shipped same-season callback is enabled", "true",
+                tuning.Descendants("onThisDayQuadrumCallbackEnabled").Single().Value.Trim());
+
+            XDocument english = XDocument.Load(
+                RepoPath("Languages", "English", "Keyed", "PawnDiary.xml"));
+            XDocument russian = XDocument.Load(
+                RepoPath("Languages", "Russian (Русский)", "Keyed", "PawnDiary.xml"));
+            AssertEqual("H5 English callback frame",
+                "a year ago, same season: {0}",
+                english.Root.Element("PawnDiary.Event.QuadrumReflectionLastYear")?.Value);
+            AssertEqual("H5 Russian callback frame",
+                "год назад, в тот же сезон: {0}",
+                russian.Root.Element("PawnDiary.Event.QuadrumReflectionLastYear")?.Value);
         }
 
         private static void TestTuningOverrideMigration()

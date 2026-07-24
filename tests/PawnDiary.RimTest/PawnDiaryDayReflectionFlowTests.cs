@@ -21,6 +21,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using PawnDiary.Capture;
 using RimWorld;
 using RimTestRedux;
 using Verse;
@@ -49,6 +50,7 @@ namespace PawnDiary.RimTests
         private static DiaryTuningDef tuning;
         private static bool savedDaySummaryEnabled;
         private static bool savedQuadrumEnabled;
+        private static bool savedQuadrumCallbackEnabled;
         private static bool savedArcEnabled;
         private static List<string> savedImportantKinds;
 
@@ -402,6 +404,101 @@ namespace PawnDiary.RimTests
                 "The archived direct raid row did not suppress same-category threat news.");
         }
 
+        /// <summary>
+        /// Quality Wave H5-prompt. A compact archive-only page from the matching quadrum last year
+        /// reaches the production collector as one low-weight memory signal.
+        /// </summary>
+        [Test]
+        public static void ArchiveOnlySameSeasonPageAddsMemorySignal()
+        {
+            int now = RequireUsableCurrentTick();
+            int currentQuadrum = (CurrentDayIndex() / GenDate.DaysPerQuadrum)
+                + QuadrumAnniversaryMemoryPolicy.QuadrumsPerYear;
+            string eventId = "quality-wave-anniversary-archive-" + Guid.NewGuid().ToString("N");
+            SeedAnniversaryArchive(
+                eventId,
+                now,
+                "A child completed an important growth milestone.",
+                DiaryEventDomainClassifier.Progression,
+                string.Empty);
+            SeedAnniversaryArchive(
+                "quality-wave-anniversary-reflection-" + Guid.NewGuid().ToString("N"),
+                now,
+                "A summary must never become its own memory source.",
+                DiaryEventDomainClassifier.Reflection,
+                "quadrum_reflection=true",
+                DayReflectionEventData.QuadrumDefNameToken);
+
+            List<DiaryGameComponent.QuadrumReflectionSignal> signals =
+                new List<DiaryGameComponent.QuadrumReflectionSignal>();
+            scope.Component.CollectLastYearQuadrumMemory(
+                pawn.GetUniqueLoadID(), currentQuadrum, signals);
+
+            PawnDiaryRimTestScope.Require(
+                signals.Count == 1,
+                "The archive-only same-season page did not produce exactly one callback signal.");
+            PawnDiaryRimTestScope.Require(
+                signals[0].contextTag.IndexOf(
+                    DayReflectionEventData.SignalKindMemory + ":" + eventId,
+                    StringComparison.Ordinal) >= 0,
+                "The archive-only callback did not carry its stable memory identity.");
+            PawnDiaryRimTestScope.Require(
+                signals[0].evidenceLine.IndexOf(
+                    "A child completed an important growth milestone.",
+                    StringComparison.Ordinal) >= 0,
+                "The archive-only callback did not carry the frozen archive evidence.");
+            PawnDiaryRimTestScope.Require(
+                Math.Abs(signals[0].weight - (tuning.daySummaryWeightMajorEvent * 0.5f)) < 0.0001f,
+                "The callback did not use half the major-event reflection weight.");
+        }
+
+        /// <summary>
+        /// Quality Wave H5-prompt. One event present in both hot and archived storage remains one
+        /// callback, and a first-year quadrum never emits a prior-year memory.
+        /// </summary>
+        [Test]
+        public static void HotArchiveOverlapDeduplicatesAndFirstYearStaysEmpty()
+        {
+            int now = RequireUsableCurrentTick();
+            DiaryEvent hot = scope.Component.AddSoloEvent(
+                pawn,
+                null,
+                "RaidEnemy",
+                "raid",
+                "Raiders attacked the colony.",
+                "write about the raid",
+                "raid=EnemyRaid",
+                now);
+            PawnDiaryRimTestScope.Require(
+                hot != null && hot.IsImportant(),
+                "Could not seed an important hot page for the H5 overlap fixture.");
+            SeedAnniversaryArchive(
+                hot.eventId,
+                hot.tick,
+                "Archived duplicate of the same raid.",
+                DiaryEventDomainClassifier.Raid,
+                "raid=EnemyRaid");
+
+            int callbackQuadrum = (CurrentDayIndex() / GenDate.DaysPerQuadrum)
+                + QuadrumAnniversaryMemoryPolicy.QuadrumsPerYear;
+            List<DiaryGameComponent.QuadrumReflectionSignal> signals =
+                new List<DiaryGameComponent.QuadrumReflectionSignal>();
+            scope.Component.CollectLastYearQuadrumMemory(
+                pawn.GetUniqueLoadID(), callbackQuadrum, signals);
+            PawnDiaryRimTestScope.Require(
+                signals.Count == 1,
+                "The hot/archive representation of one event produced duplicate callback signals.");
+            PawnDiaryRimTestScope.Require(
+                signals[0].contextTag.IndexOf(hot.eventId, StringComparison.Ordinal) >= 0,
+                "The deduplicated callback lost the shared event identity.");
+
+            signals.Clear();
+            scope.Component.CollectLastYearQuadrumMemory(pawn.GetUniqueLoadID(), 3, signals);
+            PawnDiaryRimTestScope.Require(
+                signals.Count == 0,
+                "A first-year quadrum emitted an impossible prior-year callback.");
+        }
+
         // ----- production seam invocation ---------------------------------------------------------
 
         // Invokes the retained private dev/test seam, which delegates to the same per-pawn arbitration
@@ -489,6 +586,35 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 ArchiveRepository().AddOrKeep(entry),
                 "Could not seed the H3 archived direct-story owner.");
+        }
+
+        private static void SeedAnniversaryArchive(
+            string eventId,
+            int tick,
+            string text,
+            string domain,
+            string gameContext,
+            string interactionDefName = "QualityWaveAnniversaryMemory")
+        {
+            ArchivedDiaryEntry entry = new ArchivedDiaryEntry
+            {
+                eventId = eventId,
+                pawnId = pawn.GetUniqueLoadID(),
+                povRole = DiaryEvent.InitiatorRole,
+                tick = tick,
+                date = "test date",
+                text = text,
+                interactionDefName = interactionDefName,
+                interactionLabel = "test anniversary memory",
+                important = true,
+                decorationDomain = domain,
+                decorationGameContext = gameContext
+            };
+            PawnDiaryRimTestScope.Require(
+                ArchiveRepository().AddOrKeep(entry),
+                "Could not seed the H5 archived anniversary memory.");
+            scope.RegisterCleanup(() => ArchiveRepository().RemoveForEventIds(
+                new HashSet<string> { eventId }));
         }
 
         private static DiaryArchiveRepository ArchiveRepository()
@@ -681,6 +807,7 @@ namespace PawnDiary.RimTests
             tuning = DiaryTuning.Current;
             savedDaySummaryEnabled = tuning.daySummaryEnabled;
             savedQuadrumEnabled = tuning.quadrumReflectionEnabled;
+            savedQuadrumCallbackEnabled = tuning.onThisDayQuadrumCallbackEnabled;
             savedArcEnabled = tuning.arcReflectionEnabled;
             savedImportantKinds = tuning.daySummaryImportantSignalKinds;
 
@@ -688,6 +815,7 @@ namespace PawnDiary.RimTests
             // Disable the rarer arc/quadrum reflections so they never pre-empt the daily one; the flush
             // tries both before the ordinary day path.
             tuning.quadrumReflectionEnabled = false;
+            tuning.onThisDayQuadrumCallbackEnabled = true;
             tuning.arcReflectionEnabled = false;
             // Only "hediff" needs to justify a reflection for these tests; a fresh list leaves the
             // shipped default untouched (the original reference is restored on teardown).
@@ -705,6 +833,7 @@ namespace PawnDiary.RimTests
 
             tuning.daySummaryEnabled = savedDaySummaryEnabled;
             tuning.quadrumReflectionEnabled = savedQuadrumEnabled;
+            tuning.onThisDayQuadrumCallbackEnabled = savedQuadrumCallbackEnabled;
             tuning.arcReflectionEnabled = savedArcEnabled;
             tuning.daySummaryImportantSignalKinds = savedImportantKinds;
         }

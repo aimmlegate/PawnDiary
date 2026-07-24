@@ -460,6 +460,9 @@ namespace PawnDiary
         // Rare long reflection near the end of each quadrum. The timing window spreads pawns across
         // several days, and maxPromptEvents is the prompt evidence cap so long histories stay bounded.
         public bool quadrumReflectionEnabled = true;
+        // When true, one maximum-weight important page from the same quadrum last year may join the
+        // current quadrum's evidence. The callback starts only after one complete RimWorld year.
+        public bool onThisDayQuadrumCallbackEnabled = true;
         public int quadrumReflectionTimingWindowDays = 3;
         public int quadrumReflectionMinImportantEntries = 6;
         public int quadrumReflectionMaxPromptEvents = 8;

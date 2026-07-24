@@ -997,6 +997,7 @@
   <PawnDiary.Event.QuadrumReflectionHeader>За {1} эти моменты сильнее всего изменили {0}:</PawnDiary.Event.QuadrumReflectionHeader>
   <PawnDiary.Event.QuadrumReflectionDateRange>{0}–{1}</PawnDiary.Event.QuadrumReflectionDateRange>
   <PawnDiary.Event.QuadrumReflectionEvidenceLine>{0}: {1}</PawnDiary.Event.QuadrumReflectionEvidenceLine>
+  <PawnDiary.Event.QuadrumReflectionLastYear>год назад, в тот же сезон: {0}</PawnDiary.Event.QuadrumReflectionLastYear>
   <PawnDiary.Event.QuadrumReflectionInstruction>напиши более длинную запись от лица {0} с оглядкой на {1}; даты вплетай естественно из переданных моментов; связывай события в смысл этого отрезка жизни, а не перечисляй их; используй только переданные факты и манеру письма поселенца</PawnDiary.Event.QuadrumReflectionInstruction>
   <PawnDiary.Event.ProgressionPassionMajor>главная страсть</PawnDiary.Event.ProgressionPassionMajor>
   <PawnDiary.Event.ProgressionPassionMinor>малая страсть</PawnDiary.Event.ProgressionPassionMinor>

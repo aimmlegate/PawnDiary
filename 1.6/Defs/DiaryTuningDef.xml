@@ -406,6 +406,8 @@
          so a whole colony does not queue long reflections on the same night. maxPromptEvents is the
          prompt evidence cap; the full qualifying count is still sent as context. -->
     <quadrumReflectionEnabled>true</quadrumReflectionEnabled>
+    <!-- Adds at most one important page from the matching quadrum one year earlier. -->
+    <onThisDayQuadrumCallbackEnabled>true</onThisDayQuadrumCallbackEnabled>
     <quadrumReflectionTimingWindowDays>3</quadrumReflectionTimingWindowDays>
     <quadrumReflectionMinImportantEntries>6</quadrumReflectionMinImportantEntries>
     <quadrumReflectionMaxPromptEvents>8</quadrumReflectionMaxPromptEvents>

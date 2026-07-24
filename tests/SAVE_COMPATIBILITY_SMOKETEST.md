@@ -951,9 +951,9 @@ claimed as covered until a human runs them.
 
 ## Quality Wave Phase 3 — hands-on rows
 
-Automation covers category matching, arrival clipping, direct-owner suppression, and loaded assembly
-wiring. These rows verify the player-facing evidence in a real colony; automated agents must not run
-the game.
+Automation covers category matching, arrival clipping, direct-owner suppression, prior-year
+hot/archive deduplication, the first-year gate, and loaded assembly wiring. These rows verify the
+player-facing evidence in a real colony; automated agents must not run the game.
 
 ### H3 — colony news in reflections
 
@@ -966,6 +966,16 @@ the game.
 3. Recruit a new diarist after an existing colony letter, then write their first reflection. The old
    letter must not be attributed to them. A caravan diarist should still see post-arrival colony news
    because the policy is intentionally not home-map-only.
+
+### H5-prompt — same-season callback
+
+1. Use a pawn with an important page in a completed quadrum, advance exactly one year to the final
+   reflection window of the matching quadrum, and trigger the long reflection. Prompt Test Mode
+   should show at most one localized `a year ago, same season: …` cue and a `memory:` signal tag.
+2. Repeat with that old page compacted into archive storage. The cue must remain available and must
+   not appear twice if the same event still has a hot representation for another POV.
+3. On a colony still inside its first four absolute quadrums, trigger every eligible quadrum
+   reflection window. No `memory:` cue or last-year framing should appear.
 
 ## What counts as a regression
 

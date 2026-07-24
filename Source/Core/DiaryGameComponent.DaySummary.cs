@@ -248,6 +248,7 @@ namespace PawnDiary
             int evidenceEndDay = Math.Min(day, quadrumStartDay + daysPerQuadrum - 1);
             List<QuadrumReflectionSignal> candidates = new List<QuadrumReflectionSignal>();
             CollectQuadrumReflectionSignals(pawnId, quadrumStartDay, evidenceEndDay, candidates);
+            CollectLastYearQuadrumMemory(pawnId, quadrum, candidates);
             CollectNewsSignals(
                 pawn,
                 GameTickForDayIndex(quadrumStartDay),
@@ -383,6 +384,153 @@ namespace PawnDiary
                     line,
                     DaySummarySignalTag(DayReflectionEventData.SignalKindEvent, ev.interactionDefName)));
             }
+        }
+
+        /// <summary>
+        /// Adds at most one important page from the same quadrum one year earlier. The callback has a
+        /// low fixed final weight so it enriches the current reflection without crowding out current
+        /// events; source strength is used only to choose which prior-year page represents the season.
+        /// </summary>
+        internal void CollectLastYearQuadrumMemory(
+            string pawnId,
+            int currentQuadrum,
+            List<QuadrumReflectionSignal> candidates)
+        {
+            if (!DiaryTuning.Current.onThisDayQuadrumCallbackEnabled
+                || !QuadrumAnniversaryMemoryPolicy.HasPreviousYear(currentQuadrum))
+            {
+                return;
+            }
+
+            QuadrumAnniversaryMemoryCandidate memory =
+                FindLastYearQuadrumMemory(pawnId, currentQuadrum);
+            if (memory == null)
+            {
+                return;
+            }
+
+            string framedLine = "PawnDiary.Event.QuadrumReflectionLastYear"
+                .Translate(memory.evidenceLine).Resolve();
+            candidates.Add(new QuadrumReflectionSignal(
+                DiaryTuning.Current.daySummaryWeightMajorEvent * 0.5f,
+                memory.tick,
+                framedLine,
+                DaySummarySignalTag(DayReflectionEventData.SignalKindMemory, memory.sourceIdentity)));
+        }
+
+        /// <summary>
+        /// Collects matching prior-year candidates from hot and compact archive storage, then delegates
+        /// identity deduplication and maximum-weight selection to the pure policy. Internal for the
+        /// loaded-game fixture; production reaches it only through <see cref="CollectLastYearQuadrumMemory"/>.
+        /// </summary>
+        internal QuadrumAnniversaryMemoryCandidate FindLastYearQuadrumMemory(
+            string pawnId,
+            int currentQuadrum)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId)
+                || !QuadrumAnniversaryMemoryPolicy.HasPreviousYear(currentQuadrum))
+            {
+                return null;
+            }
+
+            int targetQuadrum = QuadrumAnniversaryMemoryPolicy.PreviousYearQuadrum(currentQuadrum);
+            int startDay = QuadrumStartDay(targetQuadrum);
+            int endDay = startDay + GenDate.DaysPerQuadrum - 1;
+            List<QuadrumAnniversaryMemoryCandidate> memories =
+                new List<QuadrumAnniversaryMemoryCandidate>();
+
+            IReadOnlyList<DiaryEvent> hotEvents = events.AllEvents;
+            for (int i = hotEvents.Count - 1; i >= 0; i--)
+            {
+                DiaryEvent ev = hotEvents[i];
+                if (ev == null)
+                {
+                    continue;
+                }
+
+                int eventDay = DayIndexForGameTick(ev.tick);
+                if (eventDay > endDay)
+                {
+                    continue;
+                }
+
+                if (eventDay < startDay)
+                {
+                    break;
+                }
+
+                if (IsReflectionDefName(ev.interactionDefName) || !ev.IsImportant())
+                {
+                    continue;
+                }
+
+                string role;
+                if (!ev.TryGetDisplayRoleForPawn(pawnId, out role))
+                {
+                    continue;
+                }
+
+                string line = QuadrumEventEvidenceLine(ev, role);
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    continue;
+                }
+
+                memories.Add(new QuadrumAnniversaryMemoryCandidate(
+                    QuadrumAnniversaryMemoryPolicy.IdentityFor(
+                        ev.eventId, ev.tick, ev.interactionDefName, role),
+                    ev.tick,
+                    ev.IsCombatRelated()
+                        ? DiaryTuning.Current.daySummaryWeightCriticalEvent
+                        : DiaryTuning.Current.daySummaryWeightMajorEvent,
+                    line));
+            }
+
+            IReadOnlyList<ArchivedDiaryEntry> archivedEntries = archive?.EntriesForPawn(pawnId);
+            if (archivedEntries != null)
+            {
+                for (int i = archivedEntries.Count - 1; i >= 0; i--)
+                {
+                    ArchivedDiaryEntry entry = archivedEntries[i];
+                    if (entry == null)
+                    {
+                        continue;
+                    }
+
+                    int eventDay = DayIndexForGameTick(entry.tick);
+                    if (eventDay > endDay)
+                    {
+                        continue;
+                    }
+
+                    if (eventDay < startDay)
+                    {
+                        break;
+                    }
+
+                    if (!entry.important || IsArchivedReflectionMemorySource(entry))
+                    {
+                        continue;
+                    }
+
+                    string line = QuadrumArchiveEvidenceLine(entry);
+                    if (string.IsNullOrWhiteSpace(line))
+                    {
+                        continue;
+                    }
+
+                    memories.Add(new QuadrumAnniversaryMemoryCandidate(
+                        QuadrumAnniversaryMemoryPolicy.IdentityFor(
+                            entry.eventId, entry.tick, entry.interactionDefName, entry.povRole),
+                        entry.tick,
+                        IsCriticalArchivedMemory(entry)
+                            ? DiaryTuning.Current.daySummaryWeightCriticalEvent
+                            : DiaryTuning.Current.daySummaryWeightMajorEvent,
+                        line));
+                }
+            }
+
+            return QuadrumAnniversaryMemoryPolicy.SelectBest(memories);
         }
 
         /// <summary>
@@ -1002,6 +1150,76 @@ namespace PawnDiary
                 : "PawnDiary.Event.QuadrumReflectionEvidenceLine".Translate(date, line).Resolve();
         }
 
+        /// <summary>
+        /// Dated evidence cue reconstructed from one compact archive row. Prefer generated prose, but
+        /// keep the saved fallback fact useful for failed/stale historical pages.
+        /// </summary>
+        private static string QuadrumArchiveEvidenceLine(ArchivedDiaryEntry entry)
+        {
+            if (entry == null)
+            {
+                return string.Empty;
+            }
+
+            string label = DiaryLineCleaner.CleanLine(entry.interactionLabel);
+            string bodySource = entry.archivedGenerationStale
+                ? entry.text
+                : (string.IsNullOrWhiteSpace(entry.generatedText) ? entry.text : entry.generatedText);
+            string body = DiaryLineCleaner.CleanLine(bodySource);
+            body = TruncateForEvidence(body);
+            string line = string.IsNullOrWhiteSpace(body)
+                ? label
+                : (string.IsNullOrWhiteSpace(label) ? body : label + " — " + body);
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                return string.Empty;
+            }
+
+            string date = DiaryLineCleaner.CleanLine(entry.date);
+            return string.IsNullOrWhiteSpace(date)
+                ? line
+                : "PawnDiary.Event.QuadrumReflectionEvidenceLine".Translate(date, line).Resolve();
+        }
+
+        /// <summary>
+        /// Recovers the current hot-event critical/major split from metadata retained in cold storage.
+        /// These are stable saved strings, so old or no-DLC rows simply fall through to major weight.
+        /// </summary>
+        private static bool IsCriticalArchivedMemory(ArchivedDiaryEntry entry)
+        {
+            if (entry == null)
+            {
+                return false;
+            }
+
+            string domain = ArchivedMemoryDomain(entry);
+            return string.Equals(domain, DiaryEventDomainClassifier.Raid, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(domain, DiaryEventDomainClassifier.MentalState, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(entry.colorCue, DiaryEvent.CombatColorCue, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(entry.colorCue, DiaryEvent.SocialFightColorCue, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(entry.colorCue, DiaryEvent.MentalBreakColorCue, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>True when an archived row is itself a summary/reflection rather than source evidence.</summary>
+        private static bool IsArchivedReflectionMemorySource(ArchivedDiaryEntry entry)
+        {
+            return entry != null
+                && (IsReflectionDefName(entry.interactionDefName)
+                    || string.Equals(
+                        ArchivedMemoryDomain(entry),
+                        DiaryEventDomainClassifier.Reflection,
+                        StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static string ArchivedMemoryDomain(ArchivedDiaryEntry entry)
+        {
+            return entry == null
+                ? string.Empty
+                : (string.IsNullOrWhiteSpace(entry.decorationDomain)
+                    ? DiaryEventDomainClassifier.DomainForContext(entry.decorationGameContext)
+                    : entry.decorationDomain);
+        }
+
         private static string BuildQuadrumReflectionText(Pawn pawn, string quadrumDates,
             List<QuadrumReflectionSignal> highlights)
         {
@@ -1359,7 +1577,7 @@ namespace PawnDiary
         }
 
         /// <summary>One dated high-value diary entry competing for a quadrum reflection prompt slot.</summary>
-        private struct QuadrumReflectionSignal
+        internal struct QuadrumReflectionSignal
         {
             public readonly float weight;
             public readonly int tick;

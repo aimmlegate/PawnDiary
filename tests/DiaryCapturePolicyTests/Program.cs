@@ -1597,6 +1597,8 @@ namespace DiaryCapturePolicyTests
             policy.Add(DayReflectionEventData.SignalKindNews);
             AssertTrue("H3 XML can promote news to an important signal",
                 DayReflectionEventData.IsImportantSignalKind("NEWS", policy));
+            AssertTrue("H5 quadrum memory is not a daily important kind",
+                !DayReflectionEventData.IsImportantSignalKind(DayReflectionEventData.SignalKindMemory, policy));
             AssertTrue("day reflection empty policy disables all kinds",
                 !DayReflectionEventData.IsImportantSignalKind(DayReflectionEventData.SignalKindEvent, new List<string>()));
             AssertTrue("day reflection null policy disables all kinds",
@@ -1616,6 +1618,11 @@ namespace DiaryCapturePolicyTests
             AssertEqual("H3 news signal tag survives the capture context",
                 "day_reflection=true; day=42; highlights=1; candidates=1; filler_moments=0; signals=news:positive",
                 DayReflectionEventData.BuildGameContext(42, 1, 1, 0, "news:positive"));
+            string quadrumContext = DayReflectionEventData.BuildQuadrumGameContext(
+                74, 4, 60, 74, "1 Aprimay - 15 Aprimay", 72, 2, 7, "event:Raid,memory:event-42");
+            AssertTrue("H5 memory signal tag survives quadrum capture context",
+                quadrumContext.IndexOf(
+                    "signals=event:Raid,memory:event-42", StringComparison.Ordinal) >= 0);
         }
 
         private static void TestQuadrumReflectionPolicy()
