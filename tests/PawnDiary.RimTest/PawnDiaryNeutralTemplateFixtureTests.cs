@@ -45,10 +45,12 @@ namespace PawnDiary.RimTests
         // A deterministic starting-arrival context. "arrival_source=game_start" marks it a founding
         // arrival (ArrivalEventData.IsStartingArrival) and the extra keys flow into the rendered
         // "arrival facts" field (DiaryPromptPlanner.BuildArrivalFacts reads arrival_source /
-        // scenario_name / childhood_backstory), so our fact assertions are exact rather than depending
-        // on whatever backstory RimWorld happened to roll for the generated pawn.
+        // scenario_name / childhood_backstory_description), so our fact assertions are exact rather than
+        // depending on whatever backstory RimWorld happened to roll for the generated pawn. The prompt
+        // carries the backstory as PROSE only — the retired childhood_backstory title key is gone.
         private const string StartingArrivalContext =
-            "arrival_source=game_start; scenario_name=TestCrashlanded; childhood_backstory=TestWanderer";
+            "arrival_source=game_start; scenario_name=TestCrashlanded; "
+            + "childhood_backstory_description=TestWanderer grew up on the road.";
 
         // The title-cap the production title follow-up uses (DiaryGameComponent.TitleMaxTokens is a
         // private const 40; mirrored here because the plan carries whatever cap the caller requests).
@@ -121,7 +123,8 @@ namespace PawnDiary.RimTests
             RequireContains(prompt, label, "arrival pawn label");
             RequireContains(prompt, "arrival facts:", "arrival facts field label");
             RequireContains(prompt, "source=game_start", "arrival source fact");
-            RequireContains(prompt, "childhood=TestWanderer", "arrival childhood fact");
+            RequireContains(prompt, "childhood description=TestWanderer grew up on the road.",
+                "arrival childhood description fact");
 
             // The template opts out of the entire first-person voice apparatus.
             RequireNeutralNoVoiceContract(DiaryPromptTemplates.ArrivalDescription);

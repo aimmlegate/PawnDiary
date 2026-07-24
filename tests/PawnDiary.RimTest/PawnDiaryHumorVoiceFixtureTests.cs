@@ -50,7 +50,8 @@ namespace PawnDiary.RimTests
         // game_start" marks it a starting arrival so the ArrivalDescription template is selected; the
         // exact facts are irrelevant here (we only assert the humor cue is absent).
         private const string StartingArrivalContext =
-            "arrival_source=game_start; scenario_name=TestCrashlanded; childhood_backstory=TestWanderer";
+            "arrival_source=game_start; scenario_name=TestCrashlanded; "
+            + "childhood_backstory_description=TestWanderer grew up on the road.";
 
         private static PawnDiaryRimTestScope scope;
         private static Pawn pawn;

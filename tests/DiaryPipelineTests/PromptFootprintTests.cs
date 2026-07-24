@@ -526,15 +526,21 @@ namespace DiaryPipelineTests
         {
             Dictionary<string, string> expected = new Dictionary<string, string>(StringComparer.Ordinal)
             {
-                { "PairDefault", "41|18" },
-                { "PairImportant", "88|18" },
-                { "PairCombat", "33|18" },
-                { "PairBatched", "31|18" },
-                { "SoloDefault", "57|32" },
-                { "SoloImportant", "137|33" },
-                { "SoloInternalState", "42|28" },
-                { "SoloBatched", "42|28" },
-                { "SoloDayReflection", "40|27" },
+                // Counts are frozen; the disabled-index lists grew on 2026-07-24 when the
+                // character-sheet sweep switched off raw stat numbers (skill/psylink levels, ability
+                // recharge ticks) and labels whose own description row sits beside them (trait,
+                // chosen trait, persona traits, source-tale defName, permit family token). Rows are
+                // disabled rather than deleted so every index — and every indexed RU DefInjected
+                // label — stays put.
+                { "PairDefault", "41|15,18" },
+                { "PairImportant", "88|15,18,31" },
+                { "PairCombat", "33|15,18" },
+                { "PairBatched", "31|15,18" },
+                { "SoloDefault", "57|14,15,17,18,29,32,40" },
+                { "SoloImportant", "137|15,16,18,19,30,33,41,46,98,100,103,118" },
+                { "SoloInternalState", "42|10,11,13,14,25,28,36" },
+                { "SoloBatched", "42|10,11,13,14,25,28,36" },
+                { "SoloDayReflection", "40|9,10,12,13,24,27,35" },
                 { "SoloQuadrumReflection", "15|" },
                 { "SoloArcReflection", "18|" },
                 { "SoloBeliefReflection", "14|" },

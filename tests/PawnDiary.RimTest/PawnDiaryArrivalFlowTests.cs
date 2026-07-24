@@ -121,12 +121,18 @@ namespace PawnDiary.RimTests
                 scope.Component.HasArrivalEventFor(pawnId),
                 "The component did not report an arrival page for the colonist after recording one.");
 
-            // Scenario + backstory facts flow onto the page. A generated adult always has a titled childhood
-            // backstory, so its title fact is guaranteed; the scenario name fact is asserted only when the
-            // loaded game's scenario actually exposes a name (all vanilla scenarios do).
+            // Scenario + backstory facts flow onto the page. A generated adult always has a childhood
+            // backstory and every vanilla backstory carries description prose, so the description fact is
+            // guaranteed; the scenario name fact is asserted only when the loaded game's scenario actually
+            // exposes a name (all vanilla scenarios do). There is deliberately no backstory TITLE fact
+            // any more — the prose says the same thing, so the title was pure duplication.
             RequireContextContains(arrival, "arrival_description=true");
             RequireContextContains(arrival, "arrival_source=game_start");
-            RequireContextContains(arrival, "backstory=");
+            RequireContextContains(arrival, "backstory_description=");
+            PawnDiaryRimTestScope.Require(
+                arrival.gameContext.IndexOf("childhood_backstory=", StringComparison.Ordinal) < 0
+                    && arrival.gameContext.IndexOf("adulthood_backstory=", StringComparison.Ordinal) < 0,
+                "The arrival context still carries a retired backstory title fact.");
             Scenario scenario = Verse.Current.Game?.Scenario;
             if (scenario != null && !string.IsNullOrWhiteSpace(scenario.name))
             {

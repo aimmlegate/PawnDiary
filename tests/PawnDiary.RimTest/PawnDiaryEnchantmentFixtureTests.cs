@@ -67,7 +67,8 @@ namespace PawnDiary.RimTests
         // A deterministic founding-arrival context (mirrors the §4.2 neutral fixture) so the neutral
         // capture is a stable boundary-fact note rather than depending on the pawn's rolled backstory.
         private const string StartingArrivalContext =
-            "arrival_source=game_start; scenario_name=TestCrashlanded; childhood_backstory=TestWanderer";
+            "arrival_source=game_start; scenario_name=TestCrashlanded; "
+            + "childhood_backstory_description=TestWanderer grew up on the road.";
 
         // The four source kinds the collector understands (PromptEnchantmentCollector.IsCapacitySource /
         // IsRoyalTitleSource / IsIdeologyRoleSource; "Hediff" is the default for everything else).

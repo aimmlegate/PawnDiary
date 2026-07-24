@@ -208,13 +208,11 @@ namespace PawnDiary
                 return;
             }
 
-            string title = PromptContextValue(backstory.TitleCapFor(pawn.gender));
-            if (!string.IsNullOrWhiteSpace(title))
-            {
-                parts.Add(prefix + "_backstory=" + title);
-            }
-
-            // Starting-arrival entries need the full in-game backstory description so the model can
+            // No backstory TITLE fact ("childhood=Industrial orphan"). The description below already
+            // names and explains the same past in prose, so the title only repeated it — and a bare
+            // job-title label reads as a character sheet, which is the register we keep out of prompts.
+            //
+            // Starting-arrival entries need the in-game backstory description so the model can
             // connect the pawn's past to the scenario. Use one-line cleanup only, not the
             // sentence-capping LocalizedPromptText helper used for scenario blurbs.
             string description = PromptContextValue(SafeBackstoryDescription(backstory, pawn));
@@ -231,28 +229,46 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Resolves the pawn-adjusted backstory description without trusting
-        /// <c>BackstoryDef.FullDescriptionFor</c>: other mods transpile that vanilla method (e.g.
-        /// Vanilla Expanded Framework), and a bad interaction can throw NullReferenceException for
-        /// specific modded backstories. Falls back to the raw description template with its unresolved
-        /// [PAWN_*] grammar tokens stripped (so the model does not see "[PAWN_nameDef] grew up...") — the
-        /// arrival entry still gets its backstory line and, more importantly, arrival recording never aborts.
+        /// Resolves ONLY the backstory's flavor prose — the first block RimWorld's
+        /// <c>BackstoryDef.FullDescriptionFor</c> builds, before it appends the skill-gain list
+        /// ("Mining: +3"), the disabled-work lines, unlocked meditation foci, and the source-mod
+        /// credit. Those trailing sections are character-sheet wording, not narrative, and we keep
+        /// them out of the prompt for the same reason TraitPersonalityDescription stops before
+        /// Trait.TipString's mechanical tail. Whatever remains mechanically relevant is emitted
+        /// separately by <see cref="BuildBackstoryEffects"/>.
+        ///
+        /// Resolving the description ourselves also stops trusting <c>FullDescriptionFor</c>, which
+        /// other mods transpile (e.g. Vanilla Expanded Framework) and where a bad interaction could
+        /// throw NullReferenceException for specific modded backstories. The catch stays anyway:
+        /// it falls back to the raw description template with its unresolved [PAWN_*] grammar tokens
+        /// stripped (so the model does not see "[PAWN_nameDef] grew up..."), which keeps the backstory
+        /// line and, more importantly, keeps arrival recording from ever aborting.
         /// </summary>
         private static string SafeBackstoryDescription(BackstoryDef backstory, Pawn pawn)
         {
+            // BackstoryDef.ResolveReferences copies baseDesc into description when the def only
+            // supplies the former, so an empty value here means the backstory genuinely has no prose.
+            string template = backstory.description;
+            if (string.IsNullOrWhiteSpace(template))
+            {
+                return string.Empty;
+            }
+
             try
             {
-                return backstory.FullDescriptionFor(pawn).Resolve();
+                // The exact chain vanilla uses for the same text: fill [PAWN_*] grammar tokens for
+                // this pawn, then strip colour/markup tags.
+                return template.Formatted(pawn.Named("PAWN")).AdjustedFor(pawn).Resolve();
             }
             catch (Exception e)
             {
                 // One warning per backstory def, not one per attempt: while the arrival gate is
                 // pending, the same broken def would otherwise report on every diary signal.
                 Log.WarningOnce(
-                    "[Pawn Diary] BackstoryDef.FullDescriptionFor threw for '" + backstory.defName
-                    + "' (another mod patches it?); using the raw description text instead: " + e,
+                    "[Pawn Diary] Resolving the description of backstory '" + backstory.defName
+                    + "' threw (another mod patches it?); using the raw description text instead: " + e,
                     ("PawnDiary.ArrivalBackstoryDescription." + backstory.defName).GetHashCode());
-                return StripGrammarTokens(backstory.baseDesc);
+                return StripGrammarTokens(template);
             }
         }
 
@@ -271,9 +287,12 @@ namespace PawnDiary
 
         private static string BuildBackstoryEffects(BackstoryDef backstory, Pawn pawn)
         {
+            // Deliberately no skill gains. "Crafting +3" is a number off the character sheet: it tells
+            // the model nothing a diary sentence can use, and the backstory prose already says the pawn
+            // grew up in mines and workhouses. What stays here is the wording that still shapes a life —
+            // work this pawn cannot do, and traits they were born into.
             List<string> parts = new List<string>();
 
-            AddSkillGains(parts, backstory?.skillGains);
             AddWorkTypes(parts, ArrivalBackstoryLabel("DisabledWork"), backstory?.DisabledWorkTypes);
             AddWorkGivers(parts, ArrivalBackstoryLabel("DisabledTasks"), backstory?.DisabledWorkGivers);
             AddWorkTags(parts, ArrivalBackstoryLabel("DisabledWorkTags"), backstory?.workDisables ?? WorkTags.None);
@@ -282,30 +301,6 @@ namespace PawnDiary
             AddTraits(parts, ArrivalBackstoryLabel("DisallowedTraits"), backstory?.disallowedTraits, pawn);
 
             return string.Join(" | ", parts.ToArray());
-        }
-
-        private static void AddSkillGains(List<string> parts, List<SkillGain> gains)
-        {
-            if (parts == null || gains == null || gains.Count == 0)
-            {
-                return;
-            }
-
-            List<string> labels = new List<string>();
-            for (int i = 0; i < gains.Count; i++)
-            {
-                SkillGain gain = gains[i];
-                string skill = DefLabel(gain?.skill);
-                if (!string.IsNullOrWhiteSpace(skill) && gain.amount != 0)
-                {
-                    labels.Add(skill + " +" + gain.amount);
-                }
-            }
-
-            if (labels.Count > 0)
-            {
-                parts.Add(ArrivalBackstoryLabel("SkillBonuses") + ": " + string.Join(", ", labels.ToArray()));
-            }
         }
 
         private static string ArrivalBackstoryLabel(string suffix)

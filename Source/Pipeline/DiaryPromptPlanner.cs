@@ -545,10 +545,11 @@ namespace PawnDiary
             AddContextFact(parts, context, "arrival_source", "source");
             AddContextFact(parts, context, "scenario_name", "scenario");
             AddContextFact(parts, context, "scenario_description", "scenario detail");
-            AddContextFact(parts, context, "childhood_backstory", "childhood");
+            // No "childhood="/"adulthood=" title rows: the description says the same thing in prose.
+            // Old saves may still carry the retired childhood_backstory/adulthood_backstory keys in a
+            // stored arrival context; not reading them is what drops them from the rendered prompt.
             AddContextFact(parts, context, "childhood_backstory_description", "childhood description");
             AddContextFact(parts, context, "childhood_backstory_effects", "childhood effects");
-            AddContextFact(parts, context, "adulthood_backstory", "adulthood");
             AddContextFact(parts, context, "adulthood_backstory_description", "adulthood description");
             AddContextFact(parts, context, "adulthood_backstory_effects", "adulthood effects");
             AddContextFact(parts, context, "priorFaction", "prior faction");

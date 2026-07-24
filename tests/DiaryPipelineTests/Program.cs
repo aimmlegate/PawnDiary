@@ -2131,7 +2131,9 @@ namespace DiaryPipelineTests
 
             string[] requiredContextKeys =
             {
-                "birthday_age", "opportunity_description", "selected_trait",
+                // "selected_trait" (the bare trait NAME) is deliberately absent — see the exclusion
+                // assertion below. Its description row stays required.
+                "birthday_age", "opportunity_description",
                 "selected_trait_description", "new_interest_1", "interest_change_1",
                 "new_interest_2", "interest_change_2", "new_interest_3", "interest_change_3",
                 "new_interest_4", "interest_change_4", "observed_upbringing_description",
@@ -2184,6 +2186,12 @@ namespace DiaryPipelineTests
                         contextKeys.Contains(contextKey));
                 }
 
+                // The chosen trait reaches the model twice over without its label row: the growth
+                // summary sentence names it (GrowthMomentSignal's Summary.Trait line) and
+                // selected_trait_description says what it means. A bare game-term label on top of
+                // that is the character-sheet register we keep out of prompts.
+                AssertTrue(defName + " excludes the chosen-trait label its description already covers",
+                    !contextKeys.Contains("selected_trait"));
                 AssertTrue(defName + " excludes raw upbringing band",
                     !contextKeys.Contains("observed_upbringing_band"));
                 AssertTrue(defName + " excludes raw opportunity band token",
@@ -2577,7 +2585,14 @@ namespace DiaryPipelineTests
             AssertEqual("arrival system excludes persona", "System ArrivalDescription", arrival.systemPrompt);
             AssertContains("arrival neutral text", arrival.userPrompt, "what happened: Alice joined the colony from a crash pod.");
             AssertContains("arrival pawn", arrival.userPrompt, "colonist: Alice");
-            AssertContains("arrival facts", arrival.userPrompt, "arrival facts: source=game_start; scenario=Crashlanded; scenario detail=The three survivors awoke among wreckage; childhood=Urbworld urchin; childhood description=Alice grew up among alley markets. She learned whom to trust and when to run.; childhood effects=skill bonuses: Social +3, Melee +2 | disabled work tags: Intellectual; adulthood=Field medic; adulthood description=Alice spent years patching workers after industrial accidents. The sound of alarms became routine.; adulthood effects=skill bonuses: Medical +6 | disabled work: Artistic; surroundings=rainy field");
+            AssertContains("arrival facts", arrival.userPrompt, "arrival facts: source=game_start; scenario=Crashlanded; scenario detail=The three survivors awoke among wreckage; childhood description=Alice grew up among alley markets. She learned whom to trust and when to run.; childhood effects=disabled work tags: Intellectual; adulthood description=Alice spent years patching workers after industrial accidents. The sound of alarms became routine.; adulthood effects=disabled work: Artistic; surroundings=rainy field");
+            // The fixture context still carries the retired childhood_backstory/adulthood_backstory
+            // title keys, exactly as pre-2026-07-24 saves do. The planner must not render them: the
+            // description fact already says the same thing in prose.
+            AssertTrue("arrival facts omit the retired childhood title",
+                arrival.userPrompt.IndexOf("childhood=", StringComparison.Ordinal) < 0);
+            AssertTrue("arrival facts omit the retired adulthood title",
+                arrival.userPrompt.IndexOf("adulthood=", StringComparison.Ordinal) < 0);
             AssertContains("arrival pawn summary", arrival.userPrompt, "colonist pawn: Alice was a careful doctor.");
             AssertEqual("arrival neutral role", DiaryPipelineRoles.Neutral, arrival.responseRules.targetRole);
         }
@@ -7765,7 +7780,10 @@ namespace DiaryPipelineTests
                 solo = true,
                 eventNoun = "arrival",
                 neutralText = "Alice joined the colony from a crash pod.",
-                gameContext = "arrival_pawn=Alice; arrival_source=game_start; scenario_name=Crashlanded; scenario_description=The three survivors awoke among wreckage; childhood_backstory=Urbworld urchin; childhood_backstory_description=Alice grew up among alley markets. She learned whom to trust and when to run.; childhood_backstory_effects=skill bonuses: Social +3, Melee +2 | disabled work tags: Intellectual; adulthood_backstory=Field medic; adulthood_backstory_description=Alice spent years patching workers after industrial accidents. The sound of alarms became routine.; adulthood_backstory_effects=skill bonuses: Medical +6 | disabled work: Artistic; arrival_surroundings=rainy field",
+                // childhood_backstory / adulthood_backstory are RETIRED capture keys, kept here on
+                // purpose: saves written before 2026-07-24 still hold them, so this fixture doubles as
+                // the regression that the planner no longer renders them (see the arrival-facts test).
+                gameContext = "arrival_pawn=Alice; arrival_source=game_start; scenario_name=Crashlanded; scenario_description=The three survivors awoke among wreckage; childhood_backstory=Urbworld urchin; childhood_backstory_description=Alice grew up among alley markets. She learned whom to trust and when to run.; childhood_backstory_effects=disabled work tags: Intellectual; adulthood_backstory=Field medic; adulthood_backstory_description=Alice spent years patching workers after industrial accidents. The sound of alarms became routine.; adulthood_backstory_effects=disabled work: Artistic; arrival_surroundings=rainy field",
                 hasArrivalDescription = true,
                 initiator = new DiaryPovPayload
                 {

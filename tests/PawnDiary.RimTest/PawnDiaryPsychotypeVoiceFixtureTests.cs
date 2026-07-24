@@ -51,7 +51,8 @@ namespace PawnDiary.RimTests
         // A deterministic starting-arrival context so the arrival unit is recognized as a founding arrival
         // and captures on the NEUTRAL role synchronously (mirrors the §4.2 neutral-template fixture).
         private const string StartingArrivalContext =
-            "arrival_source=game_start; scenario_name=TestCrashlanded; childhood_backstory=TestWanderer";
+            "arrival_source=game_start; scenario_name=TestCrashlanded; "
+            + "childhood_backstory_description=TestWanderer grew up on the road.";
 
         // Distinctive marker rules, one per source layer, so the winning layer is identifiable by an exact
         // substring in the captured prompt without matching a whole translated paragraph.

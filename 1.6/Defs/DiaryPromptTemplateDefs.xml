@@ -36,7 +36,10 @@
       <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
       <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
       <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
-      <li><label>ability recharge ticks (long recharge = rarer, weightier use)</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
+      <!-- Disabled, not deleted (same reason as raid points below): a raw tick count is a character-sheet
+           number the model can only echo, and the parenthetical hint never made it writable. Ability
+           name, category, and target already carry the weight. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>ability recharge ticks (long recharge = rarer, weightier use)</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
       <li><label>raid arrival mode</label><source>GameContext</source><contextKey>arrival_mode</contextKey></li>
       <li><label>raid strategy</label><source>GameContext</source><contextKey>strategy</contextKey></li>
       <!-- Disabled, not deleted: raw storyteller points invited number-echoing, but removing the
@@ -109,7 +112,10 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
       <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
       <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
-      <li><label>ability recharge ticks (long recharge = rarer, weightier use)</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
+      <!-- Disabled, not deleted (same reason as raid points below): a raw tick count is a character-sheet
+           number the model can only echo, and the parenthetical hint never made it writable. Ability
+           name, category, and target already carry the weight. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>ability recharge ticks (long recharge = rarer, weightier use)</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
       <li><label>raid arrival mode</label><source>GameContext</source><contextKey>arrival_mode</contextKey></li>
       <li><label>raid strategy</label><source>GameContext</source><contextKey>strategy</contextKey></li>
       <!-- Disabled, not deleted: raw storyteller points invited number-echoing, but removing the
@@ -132,7 +138,9 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
            out of the model-facing template by design. Empty keys are omitted by PromptAssembler. -->
       <li><label>birthday age</label><source>GameContext</source><contextKey>birthday_age</contextKey></li>
       <li><label>opportunity at growth</label><source>GameContext</source><contextKey>opportunity_description</contextKey></li>
-      <li><label>chosen trait</label><source>GameContext</source><contextKey>selected_trait</contextKey></li>
+      <!-- Disabled, not deleted: "chosen trait meaning" below is the same trait in prose, which is what a
+           growth-moment entry can actually write from. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>chosen trait</label><source>GameContext</source><contextKey>selected_trait</contextKey></li>
       <li><label>chosen trait meaning</label><source>GameContext</source><contextKey>selected_trait_description</contextKey></li>
       <li><label>interest 1</label><source>GameContext</source><contextKey>new_interest_1</contextKey></li>
       <li><label>interest 1 change</label><source>GameContext</source><contextKey>interest_change_1</contextKey></li>
@@ -228,7 +236,10 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
       <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
       <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
-      <li><label>ability recharge ticks (long recharge = rarer, weightier use)</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
+      <!-- Disabled, not deleted (same reason as raid points below): a raw tick count is a character-sheet
+           number the model can only echo, and the parenthetical hint never made it writable. Ability
+           name, category, and target already carry the weight. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>ability recharge ticks (long recharge = rarer, weightier use)</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
       <li><label>raid arrival mode</label><source>GameContext</source><contextKey>arrival_mode</contextKey></li>
       <li><label>raid strategy</label><source>GameContext</source><contextKey>strategy</contextKey></li>
       <!-- Disabled, not deleted: raw storyteller points invited number-echoing, but removing the
@@ -272,7 +283,10 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
       <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
       <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
-      <li><label>ability recharge ticks (long recharge = rarer, weightier use)</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
+      <!-- Disabled, not deleted (same reason as raid points below): a raw tick count is a character-sheet
+           number the model can only echo, and the parenthetical hint never made it writable. Ability
+           name, category, and target already carry the weight. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>ability recharge ticks (long recharge = rarer, weightier use)</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
       <li><label>raid arrival mode</label><source>GameContext</source><contextKey>arrival_mode</contextKey></li>
       <li><label>raid strategy</label><source>GameContext</source><contextKey>strategy</contextKey></li>
       <!-- Disabled, not deleted: raw storyteller points invited number-echoing, but removing the
@@ -315,11 +329,15 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>quest rewards</label><source>GameContext</source><contextKey>quest_rewards</contextKey></li>
       <li><label>progression kind</label><source>GameContext</source><contextKey>progression_kind</contextKey></li>
       <li><label>skill</label><source>GameContext</source><contextKey>skill</contextKey></li>
-      <li><label>skill level</label><source>GameContext</source><contextKey>skill_level</contextKey></li>
-      <li><label>previous skill milestone</label><source>GameContext</source><contextKey>previous_skill_milestone</contextKey></li>
+      <!-- Disabled, not deleted: skill and psylink LEVELS are character-sheet numbers. The event's own
+           "what happened" line already states the milestone in words, so these rows only invited the
+           model to echo digits ("I reached level 10"). The skill NAME and passion stay — they say what
+           the pawn got good at and how much they care. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>skill level</label><source>GameContext</source><contextKey>skill_level</contextKey></li>
+      <li><enabled>false</enabled><label>previous skill milestone</label><source>GameContext</source><contextKey>previous_skill_milestone</contextKey></li>
       <li><label>passion</label><source>GameContext</source><contextKey>passion</contextKey></li>
-      <li><label>psylink level</label><source>GameContext</source><contextKey>psylink_level</contextKey></li>
-      <li><label>previous psylink level</label><source>GameContext</source><contextKey>previous_psylink_level</contextKey></li>
+      <li><enabled>false</enabled><label>psylink level</label><source>GameContext</source><contextKey>psylink_level</contextKey></li>
+      <li><enabled>false</enabled><label>previous psylink level</label><source>GameContext</source><contextKey>previous_psylink_level</contextKey></li>
       <li><label>xenotype</label><source>GameContext</source><contextKey>xenotype</contextKey></li>
       <li><label>previous xenotype</label><source>GameContext</source><contextKey>previous_xenotype</contextKey></li>
       <li><label>major xenotype</label><source>GameContext</source><contextKey>major_xenotype</contextKey></li>
@@ -330,7 +348,10 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
       <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
       <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
-      <li><label>ability recharge ticks (long recharge = rarer, weightier use)</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
+      <!-- Disabled, not deleted (same reason as raid points below): a raw tick count is a character-sheet
+           number the model can only echo, and the parenthetical hint never made it writable. Ability
+           name, category, and target already carry the weight. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>ability recharge ticks (long recharge = rarer, weightier use)</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
       <li><label>raid arrival mode</label><source>GameContext</source><contextKey>arrival_mode</contextKey></li>
       <li><label>raid strategy</label><source>GameContext</source><contextKey>strategy</contextKey></li>
       <!-- Disabled, not deleted: raw storyteller points invited number-echoing, but removing the
@@ -344,7 +365,10 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opening line (do not reuse)</label><source>LastOpener</source></li>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
-      <li><label>trait</label><source>GameContext</source><contextKey>trait</contextKey></li>
+      <!-- Disabled, not deleted: the trait NAME is already in this event's "what happened" line, and the
+           description row below says what the trait actually feels like. A bare label next to its own
+           description just invited the model to name the game term. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>trait</label><source>GameContext</source><contextKey>trait</contextKey></li>
       <li><label>trait description</label><source>GameContext</source><contextKey>trait_description</contextKey></li>
       <li><label>narrative context</label><source>NarrativeContext</source></li>
       <li><label>relevant past</label><source>MemoryContext</source></li>
@@ -395,11 +419,15 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>quest rewards</label><source>GameContext</source><contextKey>quest_rewards</contextKey></li>
       <li><label>progression kind</label><source>GameContext</source><contextKey>progression_kind</contextKey></li>
       <li><label>skill</label><source>GameContext</source><contextKey>skill</contextKey></li>
-      <li><label>skill level</label><source>GameContext</source><contextKey>skill_level</contextKey></li>
-      <li><label>previous skill milestone</label><source>GameContext</source><contextKey>previous_skill_milestone</contextKey></li>
+      <!-- Disabled, not deleted: skill and psylink LEVELS are character-sheet numbers. The event's own
+           "what happened" line already states the milestone in words, so these rows only invited the
+           model to echo digits ("I reached level 10"). The skill NAME and passion stay — they say what
+           the pawn got good at and how much they care. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>skill level</label><source>GameContext</source><contextKey>skill_level</contextKey></li>
+      <li><enabled>false</enabled><label>previous skill milestone</label><source>GameContext</source><contextKey>previous_skill_milestone</contextKey></li>
       <li><label>passion</label><source>GameContext</source><contextKey>passion</contextKey></li>
-      <li><label>psylink level</label><source>GameContext</source><contextKey>psylink_level</contextKey></li>
-      <li><label>previous psylink level</label><source>GameContext</source><contextKey>previous_psylink_level</contextKey></li>
+      <li><enabled>false</enabled><label>psylink level</label><source>GameContext</source><contextKey>psylink_level</contextKey></li>
+      <li><enabled>false</enabled><label>previous psylink level</label><source>GameContext</source><contextKey>previous_psylink_level</contextKey></li>
       <li><label>xenotype</label><source>GameContext</source><contextKey>xenotype</contextKey></li>
       <li><label>previous xenotype</label><source>GameContext</source><contextKey>previous_xenotype</contextKey></li>
       <li><label>major xenotype</label><source>GameContext</source><contextKey>major_xenotype</contextKey></li>
@@ -410,7 +438,10 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
       <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
       <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
-      <li><label>ability recharge ticks (long recharge = rarer, weightier use)</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
+      <!-- Disabled, not deleted (same reason as raid points below): a raw tick count is a character-sheet
+           number the model can only echo, and the parenthetical hint never made it writable. Ability
+           name, category, and target already carry the weight. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>ability recharge ticks (long recharge = rarer, weightier use)</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
       <li><label>raid arrival mode</label><source>GameContext</source><contextKey>arrival_mode</contextKey></li>
       <li><label>raid strategy</label><source>GameContext</source><contextKey>strategy</contextKey></li>
       <!-- Disabled, not deleted: raw storyteller points invited number-echoing, but removing the
@@ -424,7 +455,10 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opening line (do not reuse)</label><source>LastOpener</source></li>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
-      <li><label>trait</label><source>GameContext</source><contextKey>trait</contextKey></li>
+      <!-- Disabled, not deleted: the trait NAME is already in this event's "what happened" line, and the
+           description row below says what the trait actually feels like. A bare label next to its own
+           description just invited the model to name the game term. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>trait</label><source>GameContext</source><contextKey>trait</contextKey></li>
       <li><label>trait description</label><source>GameContext</source><contextKey>trait_description</contextKey></li>
       <li><label>narrative context</label><source>NarrativeContext</source></li>
       <!-- Biotech B1 prompt projection. Append-only so every older indexed DefInjected label keeps
@@ -433,7 +467,9 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
            out of the model-facing template by design. Empty keys are omitted by PromptAssembler. -->
       <li><label>birthday age</label><source>GameContext</source><contextKey>birthday_age</contextKey></li>
       <li><label>opportunity at growth</label><source>GameContext</source><contextKey>opportunity_description</contextKey></li>
-      <li><label>chosen trait</label><source>GameContext</source><contextKey>selected_trait</contextKey></li>
+      <!-- Disabled, not deleted: "chosen trait meaning" below is the same trait in prose, which is what a
+           growth-moment entry can actually write from. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>chosen trait</label><source>GameContext</source><contextKey>selected_trait</contextKey></li>
       <li><label>chosen trait meaning</label><source>GameContext</source><contextKey>selected_trait_description</contextKey></li>
       <li><label>interest 1</label><source>GameContext</source><contextKey>new_interest_1</contextKey></li>
       <li><label>interest 1 change</label><source>GameContext</source><contextKey>interest_change_1</contextKey></li>
@@ -489,13 +525,18 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>bond duration</label><source>GameContext</source><contextKey>bond_duration</contextKey></li>
       <li><label>previous bonded pawn</label><source>GameContext</source><contextKey>bond_previous_pawn</contextKey></li>
       <li><label>bond ending cause</label><source>GameContext</source><contextKey>bond_end_cause</contextKey></li>
-      <li><label>persona trait 1</label><source>GameContext</source><contextKey>persona_trait_1</contextKey></li>
+      <!-- Disabled, not deleted: each "meaning" row below is the same weapon trait in prose. Only THIS
+           template carries both; the milestone template further down has the labels alone and keeps
+           them. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>persona trait 1</label><source>GameContext</source><contextKey>persona_trait_1</contextKey></li>
       <li><label>persona trait 1 meaning</label><source>GameContext</source><contextKey>persona_trait_description_1</contextKey></li>
-      <li><label>persona trait 2</label><source>GameContext</source><contextKey>persona_trait_2</contextKey></li>
+      <li><enabled>false</enabled><label>persona trait 2</label><source>GameContext</source><contextKey>persona_trait_2</contextKey></li>
       <li><label>persona trait 2 meaning</label><source>GameContext</source><contextKey>persona_trait_description_2</contextKey></li>
       <!-- Royalty R3 Tale enrichment. Append-only to preserve every earlier DefInjected index. -->
       <li><label>persona milestone</label><source>GameContext</source><contextKey>persona_milestone</contextKey></li>
-      <li><label>source tale</label><source>GameContext</source><contextKey>tale_source_def</contextKey></li>
+      <!-- Disabled, not deleted: tale_source_def is a raw defName ("KilledMechanoid"), a machine token
+           the row below already carries as a localized name. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>source tale</label><source>GameContext</source><contextKey>tale_source_def</contextKey></li>
       <li><label>source tale name</label><source>GameContext</source><contextKey>tale_source_label</contextKey></li>
       <li><label>killer tale role</label><source>GameContext</source><contextKey>tale_killer_role</contextKey></li>
       <li><label>victim tale role</label><source>GameContext</source><contextKey>tale_victim_role</contextKey></li>
@@ -516,7 +557,10 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <!-- Royalty R6 dramatic permits. Append-only: permit Def/map IDs and ticks remain saved-only;
            model-visible rows use localized event-time strings plus stable family/cooldown truth. -->
       <li><label>permit</label><source>GameContext</source><contextKey>permit_label</contextKey></li>
-      <li><label>permit family</label><source>GameContext</source><contextKey>permit_family</contextKey></li>
+      <!-- Disabled, not deleted: permit_family is the internal classifier token ("callAid") behind the
+           localized permit name above — the same fact twice, once in machine words. It stays in saved
+           context for policy/arbitration. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>permit family</label><source>GameContext</source><contextKey>permit_family</contextKey></li>
       <li><label>permit faction</label><source>GameContext</source><contextKey>permit_faction</contextKey></li>
       <li><label>permit title</label><source>GameContext</source><contextKey>permit_title</contextKey></li>
       <li><label>permit setting</label><source>GameContext</source><contextKey>permit_setting</contextKey></li>
@@ -557,11 +601,15 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>external prompt fragment</label><source>GameContext</source><contextKey>external_prompt_fragment</contextKey></li>
       <li><label>progression kind</label><source>GameContext</source><contextKey>progression_kind</contextKey></li>
       <li><label>skill</label><source>GameContext</source><contextKey>skill</contextKey></li>
-      <li><label>skill level</label><source>GameContext</source><contextKey>skill_level</contextKey></li>
-      <li><label>previous skill milestone</label><source>GameContext</source><contextKey>previous_skill_milestone</contextKey></li>
+      <!-- Disabled, not deleted: skill and psylink LEVELS are character-sheet numbers. The event's own
+           "what happened" line already states the milestone in words, so these rows only invited the
+           model to echo digits ("I reached level 10"). The skill NAME and passion stay — they say what
+           the pawn got good at and how much they care. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>skill level</label><source>GameContext</source><contextKey>skill_level</contextKey></li>
+      <li><enabled>false</enabled><label>previous skill milestone</label><source>GameContext</source><contextKey>previous_skill_milestone</contextKey></li>
       <li><label>passion</label><source>GameContext</source><contextKey>passion</contextKey></li>
-      <li><label>psylink level</label><source>GameContext</source><contextKey>psylink_level</contextKey></li>
-      <li><label>previous psylink level</label><source>GameContext</source><contextKey>previous_psylink_level</contextKey></li>
+      <li><enabled>false</enabled><label>psylink level</label><source>GameContext</source><contextKey>psylink_level</contextKey></li>
+      <li><enabled>false</enabled><label>previous psylink level</label><source>GameContext</source><contextKey>previous_psylink_level</contextKey></li>
       <li><label>xenotype</label><source>GameContext</source><contextKey>xenotype</contextKey></li>
       <li><label>previous xenotype</label><source>GameContext</source><contextKey>previous_xenotype</contextKey></li>
       <li><label>major xenotype</label><source>GameContext</source><contextKey>major_xenotype</contextKey></li>
@@ -572,7 +620,10 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
       <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
       <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
-      <li><label>ability recharge ticks (long recharge = rarer, weightier use)</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
+      <!-- Disabled, not deleted (same reason as raid points below): a raw tick count is a character-sheet
+           number the model can only echo, and the parenthetical hint never made it writable. Ability
+           name, category, and target already carry the weight. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>ability recharge ticks (long recharge = rarer, weightier use)</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
       <li><label>raid arrival mode</label><source>GameContext</source><contextKey>arrival_mode</contextKey></li>
       <li><label>raid strategy</label><source>GameContext</source><contextKey>strategy</contextKey></li>
       <!-- Disabled, not deleted: raw storyteller points invited number-echoing, but removing the
@@ -586,7 +637,10 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opening line (do not reuse)</label><source>LastOpener</source></li>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
-      <li><label>trait</label><source>GameContext</source><contextKey>trait</contextKey></li>
+      <!-- Disabled, not deleted: the trait NAME is already in this event's "what happened" line, and the
+           description row below says what the trait actually feels like. A bare label next to its own
+           description just invited the model to name the game term. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>trait</label><source>GameContext</source><contextKey>trait</contextKey></li>
       <li><label>trait description</label><source>GameContext</source><contextKey>trait_description</contextKey></li>
       <li><label>narrative context</label><source>NarrativeContext</source></li>
       <li><label>relevant past</label><source>MemoryContext</source></li>
@@ -611,11 +665,15 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>external prompt fragment</label><source>GameContext</source><contextKey>external_prompt_fragment</contextKey></li>
       <li><label>progression kind</label><source>GameContext</source><contextKey>progression_kind</contextKey></li>
       <li><label>skill</label><source>GameContext</source><contextKey>skill</contextKey></li>
-      <li><label>skill level</label><source>GameContext</source><contextKey>skill_level</contextKey></li>
-      <li><label>previous skill milestone</label><source>GameContext</source><contextKey>previous_skill_milestone</contextKey></li>
+      <!-- Disabled, not deleted: skill and psylink LEVELS are character-sheet numbers. The event's own
+           "what happened" line already states the milestone in words, so these rows only invited the
+           model to echo digits ("I reached level 10"). The skill NAME and passion stay — they say what
+           the pawn got good at and how much they care. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>skill level</label><source>GameContext</source><contextKey>skill_level</contextKey></li>
+      <li><enabled>false</enabled><label>previous skill milestone</label><source>GameContext</source><contextKey>previous_skill_milestone</contextKey></li>
       <li><label>passion</label><source>GameContext</source><contextKey>passion</contextKey></li>
-      <li><label>psylink level</label><source>GameContext</source><contextKey>psylink_level</contextKey></li>
-      <li><label>previous psylink level</label><source>GameContext</source><contextKey>previous_psylink_level</contextKey></li>
+      <li><enabled>false</enabled><label>psylink level</label><source>GameContext</source><contextKey>psylink_level</contextKey></li>
+      <li><enabled>false</enabled><label>previous psylink level</label><source>GameContext</source><contextKey>previous_psylink_level</contextKey></li>
       <li><label>xenotype</label><source>GameContext</source><contextKey>xenotype</contextKey></li>
       <li><label>previous xenotype</label><source>GameContext</source><contextKey>previous_xenotype</contextKey></li>
       <li><label>major xenotype</label><source>GameContext</source><contextKey>major_xenotype</contextKey></li>
@@ -626,7 +684,10 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
       <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
       <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
-      <li><label>ability recharge ticks (long recharge = rarer, weightier use)</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
+      <!-- Disabled, not deleted (same reason as raid points below): a raw tick count is a character-sheet
+           number the model can only echo, and the parenthetical hint never made it writable. Ability
+           name, category, and target already carry the weight. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>ability recharge ticks (long recharge = rarer, weightier use)</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
       <li><label>raid arrival mode</label><source>GameContext</source><contextKey>arrival_mode</contextKey></li>
       <li><label>raid strategy</label><source>GameContext</source><contextKey>strategy</contextKey></li>
       <!-- Disabled, not deleted: raw storyteller points invited number-echoing, but removing the
@@ -640,7 +701,10 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opening line (do not reuse)</label><source>LastOpener</source></li>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
-      <li><label>trait</label><source>GameContext</source><contextKey>trait</contextKey></li>
+      <!-- Disabled, not deleted: the trait NAME is already in this event's "what happened" line, and the
+           description row below says what the trait actually feels like. A bare label next to its own
+           description just invited the model to name the game term. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>trait</label><source>GameContext</source><contextKey>trait</contextKey></li>
       <li><label>trait description</label><source>GameContext</source><contextKey>trait_description</contextKey></li>
       <li><label>narrative context</label><source>NarrativeContext</source></li>
       <li><label>relevant past</label><source>MemoryContext</source></li>
@@ -665,11 +729,15 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>progression kind</label><source>GameContext</source><contextKey>progression_kind</contextKey></li>
       <li><label>skill</label><source>GameContext</source><contextKey>skill</contextKey></li>
-      <li><label>skill level</label><source>GameContext</source><contextKey>skill_level</contextKey></li>
-      <li><label>previous skill milestone</label><source>GameContext</source><contextKey>previous_skill_milestone</contextKey></li>
+      <!-- Disabled, not deleted: skill and psylink LEVELS are character-sheet numbers. The event's own
+           "what happened" line already states the milestone in words, so these rows only invited the
+           model to echo digits ("I reached level 10"). The skill NAME and passion stay — they say what
+           the pawn got good at and how much they care. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>skill level</label><source>GameContext</source><contextKey>skill_level</contextKey></li>
+      <li><enabled>false</enabled><label>previous skill milestone</label><source>GameContext</source><contextKey>previous_skill_milestone</contextKey></li>
       <li><label>passion</label><source>GameContext</source><contextKey>passion</contextKey></li>
-      <li><label>psylink level</label><source>GameContext</source><contextKey>psylink_level</contextKey></li>
-      <li><label>previous psylink level</label><source>GameContext</source><contextKey>previous_psylink_level</contextKey></li>
+      <li><enabled>false</enabled><label>psylink level</label><source>GameContext</source><contextKey>psylink_level</contextKey></li>
+      <li><enabled>false</enabled><label>previous psylink level</label><source>GameContext</source><contextKey>previous_psylink_level</contextKey></li>
       <li><label>xenotype</label><source>GameContext</source><contextKey>xenotype</contextKey></li>
       <li><label>previous xenotype</label><source>GameContext</source><contextKey>previous_xenotype</contextKey></li>
       <li><label>major xenotype</label><source>GameContext</source><contextKey>major_xenotype</contextKey></li>
@@ -680,7 +748,10 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
       <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
       <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
-      <li><label>ability recharge ticks (long recharge = rarer, weightier use)</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
+      <!-- Disabled, not deleted (same reason as raid points below): a raw tick count is a character-sheet
+           number the model can only echo, and the parenthetical hint never made it writable. Ability
+           name, category, and target already carry the weight. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>ability recharge ticks (long recharge = rarer, weightier use)</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
       <li><label>raid arrival mode</label><source>GameContext</source><contextKey>arrival_mode</contextKey></li>
       <li><label>raid strategy</label><source>GameContext</source><contextKey>strategy</contextKey></li>
       <!-- Disabled, not deleted: raw storyteller points invited number-echoing, but removing the
@@ -694,7 +765,10 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opening line (do not reuse)</label><source>LastOpener</source></li>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
-      <li><label>trait</label><source>GameContext</source><contextKey>trait</contextKey></li>
+      <!-- Disabled, not deleted: the trait NAME is already in this event's "what happened" line, and the
+           description row below says what the trait actually feels like. A bare label next to its own
+           description just invited the model to name the game term. Disabled rows keep their index. -->
+      <li><enabled>false</enabled><label>trait</label><source>GameContext</source><contextKey>trait</contextKey></li>
       <li><label>trait description</label><source>GameContext</source><contextKey>trait_description</contextKey></li>
       <li><label>narrative context</label><source>NarrativeContext</source></li>
       <!-- Lore L1: reflections project bounded memory too (LORE_MEMORY_SEED_PLAN §9). -->

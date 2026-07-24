@@ -967,7 +967,6 @@
   <PawnDiary.Event.ArrivalLabel>Появление</PawnDiary.Event.ArrivalLabel>
   <PawnDiary.Event.StartingArrival>{0}: один из основателей поселения.</PawnDiary.Event.StartingArrival>
   <PawnDiary.Event.JoinedArrival>{0}: присоединение к поселению.</PawnDiary.Event.JoinedArrival>
-  <PawnDiary.Event.Arrival.Backstory.SkillBonuses>бонусы навыков</PawnDiary.Event.Arrival.Backstory.SkillBonuses>
   <PawnDiary.Event.Arrival.Backstory.DisabledWork>недоступные работы</PawnDiary.Event.Arrival.Backstory.DisabledWork>
   <PawnDiary.Event.Arrival.Backstory.DisabledTasks>недоступные задачи</PawnDiary.Event.Arrival.Backstory.DisabledTasks>
   <PawnDiary.Event.Arrival.Backstory.DisabledWorkTags>недоступные категории работ</PawnDiary.Event.Arrival.Backstory.DisabledWorkTags>

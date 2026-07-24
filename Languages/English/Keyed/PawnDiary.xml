@@ -992,7 +992,6 @@
   <PawnDiary.Event.ArrivalLabel>Arrival</PawnDiary.Event.ArrivalLabel>
   <PawnDiary.Event.StartingArrival>{0} was one of the colony's founding colonists.</PawnDiary.Event.StartingArrival>
   <PawnDiary.Event.JoinedArrival>{0} joined the colony.</PawnDiary.Event.JoinedArrival>
-  <PawnDiary.Event.Arrival.Backstory.SkillBonuses>skill bonuses</PawnDiary.Event.Arrival.Backstory.SkillBonuses>
   <PawnDiary.Event.Arrival.Backstory.DisabledWork>disabled work</PawnDiary.Event.Arrival.Backstory.DisabledWork>
   <PawnDiary.Event.Arrival.Backstory.DisabledTasks>disabled tasks</PawnDiary.Event.Arrival.Backstory.DisabledTasks>
   <PawnDiary.Event.Arrival.Backstory.DisabledWorkTags>disabled work tags</PawnDiary.Event.Arrival.Backstory.DisabledWorkTags>
