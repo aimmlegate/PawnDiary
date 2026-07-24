@@ -352,6 +352,16 @@
   <PawnDiary.Settings.ConnectionTestPrompt>Ответь одним коротким предложением, что подключение работает.</PawnDiary.Settings.ConnectionTestPrompt>
   <PawnDiary.Settings.ShowDiaryInspectTab>Показывать вкладку «Дневник»</PawnDiary.Settings.ShowDiaryInspectTab>
   <PawnDiary.Settings.ShowDiaryInspectTabTip>Если выключено, дневник открывается нижней кнопкой у выбранного поселенца или трупа.</PawnDiary.Settings.ShowDiaryInspectTabTip>
+  <PawnDiary.Settings.UseDiaryReaderWindow>Открывать дневники в отдельном окне для чтения</PawnDiary.Settings.UseDiaryReaderWindow>
+  <PawnDiary.Settings.UseDiaryReaderWindowTip>Альтернативный режим чтения: большая кнопка на нижней панели открывает окно из трёх частей — списка персонажей, дневника и фильтров. Пока режим включён, вкладка «Дневник» и кнопка у выбранного персонажа скрыты.</PawnDiary.Settings.UseDiaryReaderWindowTip>
+  <PawnDiary.Reader.LivingPawnsHeader>Поселенцы</PawnDiary.Reader.LivingPawnsHeader>
+  <PawnDiary.Reader.DepartedPawnsHeader>Погибшие и покинувшие колонию</PawnDiary.Reader.DepartedPawnsHeader>
+  <PawnDiary.Reader.ShowDeadPawns>Показывать погибших и ушедших</PawnDiary.Reader.ShowDeadPawns>
+  <PawnDiary.Reader.ShowDeadPawnsTip>Показать персонажей, которые погибли или покинули колонию, но сохранили страницы дневника.</PawnDiary.Reader.ShowDeadPawnsTip>
+  <PawnDiary.Reader.NoDiaries>Дневников пока нет.</PawnDiary.Reader.NoDiaries>
+  <PawnDiary.Reader.UnknownPawn>Неизвестный персонаж</PawnDiary.Reader.UnknownPawn>
+  <PawnDiary.Reader.PawnRowPages>{0} стр.</PawnDiary.Reader.PawnRowPages>
+  <PawnDiary.Reader.SelectPawnHint>Выберите персонажа слева, чтобы прочитать его дневник.</PawnDiary.Reader.SelectPawnHint>
   <PawnDiary.Settings.GenerateTitles>Короткие заголовки страниц</PawnDiary.Settings.GenerateTitles>
   <PawnDiary.Settings.GenerateTitlesTip>Если включено, после каждой страницы модель отдельным запросом пишет короткий заголовок. Это добавляет задержку и расход токенов. Если выключено, в заголовке остаётся дата.</PawnDiary.Settings.GenerateTitlesTip>
   <PawnDiary.Settings.EnableAtmosphericFormatting>Редкое атмосферное оформление</PawnDiary.Settings.EnableAtmosphericFormatting>

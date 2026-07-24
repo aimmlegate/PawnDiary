@@ -9,9 +9,9 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>
-    /// Partial implementation of the pawn Diary inspector tab.
+    /// Control and settings helpers for the reusable diary journal renderer.
     /// </summary>
-    public partial class ITab_Pawn_Diary
+    internal sealed partial class DiaryJournalView
     {
         /// <summary>
         /// Returns the height needed for per-pawn dev controls above the diary list. The player-facing

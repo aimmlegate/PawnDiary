@@ -9,9 +9,9 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>
-    /// Partial implementation of the pawn Diary inspector tab.
+    /// Roleplay-text helpers for the reusable diary journal renderer.
     /// </summary>
-    public partial class ITab_Pawn_Diary
+    internal sealed partial class DiaryJournalView
     {
         /// <summary>
         /// Draws generated text as light roleplay prose. Each line is formatted to rich text by

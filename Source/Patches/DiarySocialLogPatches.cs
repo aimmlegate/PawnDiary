@@ -178,19 +178,16 @@ namespace PawnDiary
                     return true;
                 }
 
-                if (!EnsureSelected(pawn))
+                if (!DiaryUiRouter.ReaderWindowMode && !EnsureSelected(pawn))
                 {
                     return true;
                 }
 
-                ITab_Pawn_Diary.RequestScrollToEntry(pawn, entry.EventId);
-                InspectTabBase opened = ITab_Pawn_Diary.OpenDiaryTab();
-                if (opened is ITab_Pawn_Diary)
+                if (DiaryUiRouter.OpenDiaryAt(pawn, entry.EventId))
                 {
                     return false;
                 }
 
-                ITab_Pawn_Diary.ClearPendingScrollRequest();
                 return true;
             });
         }

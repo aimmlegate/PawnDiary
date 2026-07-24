@@ -66,6 +66,8 @@ namespace PawnDiary
         private readonly HashSet<string> advancedExpandedOverrideFields = new HashSet<string>();
         private Vector2 advancedRailScroll;
         private Vector2 advancedBodyScroll;
+        // Last persisted host mode, used to close the old surface only when the setting changes.
+        private bool lastWrittenReaderWindowMode;
 
         // Measured pixel height of the settings content from the previous frame, used to size the
         // scroll view's inner rect. Starts generous so nothing clips before the first measurement;
@@ -95,6 +97,7 @@ namespace PawnDiary
         {
             ModContent = content;
             Settings = GetSettings<PawnDiarySettings>();
+            lastWrittenReaderWindowMode = Settings.useDiaryReaderWindow;
             apiConnectionController = new ApiConnectionController(() => Settings);
             LlmClient.ApplyDebugLoggingSetting();
             // Classify the install source (Workshop vs local) here on the main thread so the error
@@ -118,12 +121,17 @@ namespace PawnDiary
         /// </summary>
         public override void WriteSettings()
         {
+            bool wasReaderWindowMode = lastWrittenReaderWindowMode;
             Settings.ClampValues();
             Settings.NormalizeEndpointUrls();
             LlmClient.ApplyLaneConfiguration(Settings.ActiveEndpoints());
             LlmClient.ApplyDebugLoggingSetting();
             DiaryGameComponent.Instance?.ApplyDiaryEventLimitsFromSettings();
             DiaryGameComponent.Instance?.QueueMissingTitlesFromSettings();
+            DiaryUiRouter.ApplyReaderWindowModeChange(
+                wasReaderWindowMode,
+                Settings.useDiaryReaderWindow);
+            lastWrittenReaderWindowMode = Settings.useDiaryReaderWindow;
             base.WriteSettings();
         }
     }

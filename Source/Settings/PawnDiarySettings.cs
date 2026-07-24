@@ -122,6 +122,9 @@ namespace PawnDiary
         // default surface; disabling it uses the selected-pawn/corpse bottom command instead.
         // The tab remains registered either way so links can always open it.
         public bool showDiaryInspectTab = true;
+        // Alternative UI mode: all pawn diaries open in one standalone three-pane reader from the
+        // bottom main bar. While enabled, the inspect tab and selected-pawn Diary gizmo stay hidden.
+        public bool useDiaryReaderWindow = false;
         // UI preference: when true, the Diary tab shows its right-hand filter/controls sidebar. The
         // header toggle button flips this; hiding the panel widens the journal and keeps the year
         // pager reachable inline. Global (not per-pawn) so the choice persists across pawns/sessions.
@@ -272,6 +275,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref showPromptStudio, "showPromptStudio", true);
             Scribe_Values.Look(ref showExperimentalAdvancedOverrides, "showExperimentalAdvancedOverrides", false);
             Scribe_Values.Look(ref showDiaryInspectTab, "showDiaryInspectTab", true);
+            Scribe_Values.Look(ref useDiaryReaderWindow, "useDiaryReaderWindow", false);
             Scribe_Values.Look(ref showDiaryFilterPanel, "showDiaryFilterPanel", true);
             Scribe_Values.Look(ref showPersonaSettings, "showPersonaSettings", false);
             Scribe_Values.Look(ref showLlmDebugInfo, "showLlmDebugInfo", false);

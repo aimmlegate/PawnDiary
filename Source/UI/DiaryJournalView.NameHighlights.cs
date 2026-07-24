@@ -13,9 +13,9 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>
-    /// Partial implementation of the pawn Diary inspector tab.
+    /// Name-highlighting helpers for the reusable diary journal renderer.
     /// </summary>
-    public partial class ITab_Pawn_Diary
+    internal sealed partial class DiaryJournalView
     {
         private static readonly Dictionary<string, PropertyInfo> PawnBoolPropertyCache = new Dictionary<string, PropertyInfo>();
         private const int NameHighlightCacheTicks = 250;

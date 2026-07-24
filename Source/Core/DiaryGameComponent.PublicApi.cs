@@ -251,16 +251,33 @@ namespace PawnDiary
                 bool showLlmDebugInfo,
                 bool showGeneratingEntries,
                 bool showPromptOnlyEntries)
+                : this(
+                    owner,
+                    pawn?.GetUniqueLoadID(),
+                    PawnAliveForDiaryBounds(pawn),
+                    showLlmDebugInfo,
+                    showGeneratingEntries,
+                    showPromptOnlyEntries)
+            {
+            }
+
+            internal DiaryTabYearIndexBuild(
+                DiaryGameComponent owner,
+                string pawnId,
+                bool pawnAliveForBounds,
+                bool showLlmDebugInfo,
+                bool showGeneratingEntries,
+                bool showPromptOnlyEntries)
             {
                 this.owner = owner;
                 this.showLlmDebugInfo = showLlmDebugInfo;
                 this.showGeneratingEntries = showGeneratingEntries;
                 this.showPromptOnlyEntries = showPromptOnlyEntries;
-                pawnAliveForBounds = PawnAliveForDiaryBounds(pawn);
+                this.pawnAliveForBounds = pawnAliveForBounds;
 
-                pawnId = pawn?.GetUniqueLoadID();
-                diary = pawn == null ? null : owner.FindDiary(pawn, false);
-                token = owner.RenderTokenFor(pawn);
+                this.pawnId = pawnId;
+                diary = owner.LookupDiaryByPawnId(pawnId);
+                token = owner.RenderTokenForId(pawnId);
                 activeEventIds = owner.ActiveScanEventIds();
                 archivedEntries = owner.archive.EntriesForPawn(pawnId);
                 SeedBoundsFromArchive();
@@ -309,6 +326,16 @@ namespace PawnDiary
 
             public bool Matches(Pawn pawn, DiaryRenderToken currentToken, bool showDebug, bool showGenerating, bool showPromptOnly)
             {
+                return Matches(
+                    pawn?.GetUniqueLoadID(),
+                    currentToken,
+                    showDebug,
+                    showGenerating,
+                    showPromptOnly);
+            }
+
+            public bool Matches(string currentPawnId, DiaryRenderToken currentToken, bool showDebug, bool showGenerating, bool showPromptOnly)
+            {
                 // Only a STRUCTURAL change invalidates an in-progress build: a different pawn, a
                 // different event count (events were added/removed), or a filter toggle. The render
                 // token also carries the process-wide DiaryStateVersion, which ticks whenever ANY
@@ -320,7 +347,6 @@ namespace PawnDiary
                 // have slightly stale visibility, which the completed-index quiet-refresh path
                 // (RebuildIndexIfNeeded) corrects within a few frames. So the volatile stateVersion
                 // is deliberately ignored here, and only the structural eventCount is compared.
-                string currentPawnId = pawn?.GetUniqueLoadID();
                 return string.Equals(currentPawnId, pawnId, StringComparison.Ordinal)
                     && currentToken.eventCount == token.eventCount
                     && currentToken.archiveCount == token.archiveCount
@@ -577,6 +603,25 @@ namespace PawnDiary
             return new DiaryTabYearIndexBuild(this, pawn, showLlmDebugInfo, showGeneratingEntries, showPromptOnlyEntries);
         }
 
+        /// <summary>
+        /// Starts a frame-sliced year-index build for a subject that may no longer have a live Pawn.
+        /// </summary>
+        internal DiaryTabYearIndexBuild BeginTabYearIndexBuild(
+            string pawnId,
+            bool pawnAliveForBounds,
+            bool showLlmDebugInfo,
+            bool showGeneratingEntries,
+            bool showPromptOnlyEntries)
+        {
+            return new DiaryTabYearIndexBuild(
+                this,
+                pawnId,
+                pawnAliveForBounds,
+                showLlmDebugInfo,
+                showGeneratingEntries,
+                showPromptOnlyEntries);
+        }
+
         private HashSet<string> ActiveScanEventIds()
         {
             IReadOnlyList<DiaryEvent> activeEvents = ActiveScanEvents();
@@ -662,15 +707,30 @@ namespace PawnDiary
         /// </summary>
         internal void AcknowledgeGeneratedEntriesFor(Pawn pawn, int completedCount, int pendingCount, DiaryRenderToken token)
         {
-            if (pawn == null)
+            AcknowledgeGeneratedEntriesForId(
+                pawn?.GetUniqueLoadID(),
+                completedCount,
+                pendingCount,
+                token);
+        }
+
+        /// <summary>
+        /// Acknowledges a completed reader index using only the subject's stable pawn ID.
+        /// </summary>
+        internal void AcknowledgeGeneratedEntriesForId(
+            string pawnId,
+            int completedCount,
+            int pendingCount,
+            DiaryRenderToken token)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId))
             {
                 return;
             }
 
-            string pawnId = pawn.GetUniqueLoadID();
             SetCachedCommandStatus(pawnId, completedCount, pendingCount, false);
 
-            PawnDiaryRecord diary = FindDiary(pawn, false);
+            PawnDiaryRecord diary = LookupDiaryByPawnId(pawnId);
             if (diary != null)
             {
                 diary.hasUnreadGeneratedEntry = false;
@@ -683,12 +743,20 @@ namespace PawnDiary
         /// </summary>
         internal void AcknowledgeGeneratedEntriesFor(Pawn pawn)
         {
-            if (pawn == null)
+            AcknowledgeGeneratedEntriesForId(pawn?.GetUniqueLoadID());
+        }
+
+        /// <summary>
+        /// Marks the currently completed pages as seen using only the subject's stable pawn ID.
+        /// </summary>
+        internal void AcknowledgeGeneratedEntriesForId(string pawnId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId))
             {
                 return;
             }
 
-            PawnDiaryRecord diary = FindDiary(pawn, false);
+            PawnDiaryRecord diary = LookupDiaryByPawnId(pawnId);
             if (diary == null)
             {
                 return;
@@ -772,8 +840,15 @@ namespace PawnDiary
         /// </summary>
         internal DiaryRenderToken RenderTokenFor(Pawn pawn)
         {
-            PawnDiaryRecord diary = pawn == null ? null : FindDiary(pawn, false);
-            string pawnId = pawn?.GetUniqueLoadID();
+            return RenderTokenForId(pawn?.GetUniqueLoadID());
+        }
+
+        /// <summary>
+        /// Returns the reader cache token for a stable pawn ID, including archive-only subjects.
+        /// </summary>
+        internal DiaryRenderToken RenderTokenForId(string pawnId)
+        {
+            PawnDiaryRecord diary = LookupDiaryByPawnId(pawnId);
             return new DiaryRenderToken(
                 diary?.eventIds?.Count ?? 0,
                 archive.CountForPawn(pawnId),

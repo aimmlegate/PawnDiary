@@ -31,6 +31,22 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Opens the standalone three-pane reader before the alternative-mode setting is enabled.
+        /// </summary>
+        [DebugAction("Pawn Diary", "Open diary reader window", allowedGameStates = AllowedGameStates.Playing, actionType = DebugActionType.Action)]
+        public static void OpenDiaryReaderWindow()
+        {
+            if (!Prefs.DevMode || DiaryGameComponent.Instance == null)
+            {
+                return;
+            }
+
+            Pawn pawn = Find.Selector?.SingleSelectedThing as Pawn
+                ?? (Find.Selector?.SingleSelectedThing as Corpse)?.InnerPawn;
+            Dialog_DiaryReader.Open(pawn);
+        }
+
+        /// <summary>
         /// Writes every saved hot and archived diary page to disk from RimWorld's Debug Actions menu.
         /// </summary>
         [DebugAction("Pawn Diary", "Export all diary pages...", allowedGameStates = AllowedGameStates.PlayingOnMap, actionType = DebugActionType.Action)]
@@ -815,20 +831,20 @@ namespace PawnDiary
         {
             float y = rect.y;
             int column = 0;
-            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewPlain", ITab_Pawn_Diary.DevDiaryPreviewKind.Plain, pawn);
-            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewMarkdown", ITab_Pawn_Diary.DevDiaryPreviewKind.Markdown, pawn);
-            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewSpeech", ITab_Pawn_Diary.DevDiaryPreviewKind.Speech, pawn);
-            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewStaggered", ITab_Pawn_Diary.DevDiaryPreviewKind.Staggered, pawn);
-            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewCombat", ITab_Pawn_Diary.DevDiaryPreviewKind.Combat, pawn);
-            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewSocialFight", ITab_Pawn_Diary.DevDiaryPreviewKind.SocialFight, pawn);
-            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewDeath", ITab_Pawn_Diary.DevDiaryPreviewKind.Death, pawn);
-            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewMental", ITab_Pawn_Diary.DevDiaryPreviewKind.Mental, pawn);
-            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewDark", ITab_Pawn_Diary.DevDiaryPreviewKind.Dark, pawn);
-            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewStrange", ITab_Pawn_Diary.DevDiaryPreviewKind.Strange, pawn);
-            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewLinked", ITab_Pawn_Diary.DevDiaryPreviewKind.Linked, pawn);
-            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewWriting", ITab_Pawn_Diary.DevDiaryPreviewKind.Writing, pawn);
-            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewTitle", ITab_Pawn_Diary.DevDiaryPreviewKind.TitlePending, pawn);
-            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewClear", ITab_Pawn_Diary.DevDiaryPreviewKind.None, pawn);
+            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewPlain", DiaryJournalView.DevDiaryPreviewKind.Plain, pawn);
+            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewMarkdown", DiaryJournalView.DevDiaryPreviewKind.Markdown, pawn);
+            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewSpeech", DiaryJournalView.DevDiaryPreviewKind.Speech, pawn);
+            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewStaggered", DiaryJournalView.DevDiaryPreviewKind.Staggered, pawn);
+            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewCombat", DiaryJournalView.DevDiaryPreviewKind.Combat, pawn);
+            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewSocialFight", DiaryJournalView.DevDiaryPreviewKind.SocialFight, pawn);
+            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewDeath", DiaryJournalView.DevDiaryPreviewKind.Death, pawn);
+            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewMental", DiaryJournalView.DevDiaryPreviewKind.Mental, pawn);
+            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewDark", DiaryJournalView.DevDiaryPreviewKind.Dark, pawn);
+            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewStrange", DiaryJournalView.DevDiaryPreviewKind.Strange, pawn);
+            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewLinked", DiaryJournalView.DevDiaryPreviewKind.Linked, pawn);
+            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewWriting", DiaryJournalView.DevDiaryPreviewKind.Writing, pawn);
+            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewTitle", DiaryJournalView.DevDiaryPreviewKind.TitlePending, pawn);
+            DrawPreviewButton(rect, ref y, ref column, "PawnDiary.Tab.DevPreviewClear", DiaryJournalView.DevDiaryPreviewKind.None, pawn);
         }
 
         private void DrawPreviewButton(
@@ -836,10 +852,10 @@ namespace PawnDiary
             ref float y,
             ref int column,
             string labelKey,
-            ITab_Pawn_Diary.DevDiaryPreviewKind kind,
+            DiaryJournalView.DevDiaryPreviewKind kind,
             Pawn pawn)
         {
-            DrawGridButton(gridRect, ref y, ref column, 4, labelKey, () => ITab_Pawn_Diary.RequestDevPreviewForDev(pawn, kind));
+            DrawGridButton(gridRect, ref y, ref column, 4, labelKey, () => DiaryJournalView.RequestDevPreviewForDev(pawn, kind));
         }
 
         private void DrawFixtureCheckboxGrid(

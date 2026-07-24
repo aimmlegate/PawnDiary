@@ -190,6 +190,10 @@ namespace PawnDiary
                     ref Settings.showDiaryInspectTab,
                     "PawnDiary.Settings.ShowDiaryInspectTabTip".Translate());
                 listing.CheckboxLabeled(
+                    "PawnDiary.Settings.UseDiaryReaderWindow".Translate(),
+                    ref Settings.useDiaryReaderWindow,
+                    "PawnDiary.Settings.UseDiaryReaderWindowTip".Translate());
+                listing.CheckboxLabeled(
                     "PawnDiary.Settings.GenerateTitles".Translate(),
                     ref Settings.generateTitles,
                     "PawnDiary.Settings.GenerateTitlesTip".Translate());
@@ -460,7 +464,7 @@ namespace PawnDiary
             }
 
             // Generation controls only. Prompt and style editors live on dedicated tabs.
-            height += 790f;
+            height += 824f;
             if (Prefs.DevMode)
             {
                 height += 34f;

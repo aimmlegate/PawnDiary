@@ -8,9 +8,9 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>
-    /// Partial implementation of the pawn Diary inspector tab.
+    /// Dev-preview helpers for the reusable diary journal renderer.
     /// </summary>
-    public partial class ITab_Pawn_Diary
+    internal sealed partial class DiaryJournalView
     {
         internal enum DevDiaryPreviewKind
         {
@@ -52,13 +52,16 @@ namespace PawnDiary
             pendingDevPreviewKind = kind;
             pendingDevPreviewVersion++;
 
-            if (pawn.Spawned && Find.Selector != null && !Find.Selector.IsSelected(pawn))
+            if (!DiaryUiRouter.ReaderWindowMode
+                && pawn.Spawned
+                && Find.Selector != null
+                && !Find.Selector.IsSelected(pawn))
             {
                 Find.Selector.ClearSelection();
                 Find.Selector.Select(pawn, true, false);
             }
 
-            OpenDiaryTab();
+            DiaryUiRouter.OpenDiaryFor(pawn);
         }
 
         // The 14 transient formatting previews, in display order. Rendered as a 3-column grid (below)
