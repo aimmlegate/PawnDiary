@@ -28,6 +28,10 @@ namespace PawnDiary
     /// <summary>Builds one saved event-time belief block for one already-eligible POV.</summary>
     internal static class BeliefContextBuilder
     {
+        private static readonly object AutomaticCoverageLock = new object();
+        private static BeliefAutomaticCoverageAggregate automaticCoverage =
+            new BeliefAutomaticCoverageAggregate();
+
         public static BeliefContextBuildResult Build(
             Pawn pawn,
             BeliefEventEvidence sourceEvidence,
@@ -51,13 +55,28 @@ namespace PawnDiary
                 BeliefEventEvidenceFactory.AddHistoryDefNames(evidence,
                     BeliefHistoryCorrelationCache.NearbyDefNames(pawnId, eventTick, policy));
                 if (!BeliefEventEvidenceFactory.HasUsefulVisibleEvidence(evidence))
+                {
+                    RecordAutomaticCoverageForDev(
+                        BeliefAutomaticCoverageDiagnostics.RejectedNoMatch(
+                            BeliefAutomaticCoverageReasonTokens.NoEvidence),
+                        policy);
                     return BeliefContextBuildResult.Empty();
+                }
 
                 BeliefSnapshot snapshot = DlcContext.CaptureBeliefSnapshot(pawn, policy);
-                if (!snapshot.ideologyActive) return BeliefContextBuildResult.Empty();
+                if (!snapshot.ideologyActive)
+                {
+                    RecordAutomaticCoverageForDev(
+                        BeliefAutomaticCoverageDiagnostics.RejectedNoMatch(
+                            BeliefAutomaticCoverageReasonTokens.UnavailableSnapshot),
+                        policy);
+                    return BeliefContextBuildResult.Empty();
+                }
 
-                return Resolve(snapshot, evidence, eventId, pawnId, policy,
+                BeliefContextBuildResult result = Resolve(snapshot, evidence, eventId, pawnId, policy,
                     recentSelectedCandidateKeys, BeliefResolutionModeTokens.EventEnrichment);
+                RecordAutomaticCoverageForDev(result.resolution?.automaticCoverage, policy);
+                return result;
             }
             catch (Exception exception)
             {
@@ -69,6 +88,60 @@ namespace PawnDiary
                     + type.FullName + ": " + exception.Message,
                     ("PawnDiary.BeliefContextBuilder." + type.FullName).GetHashCode());
                 return BeliefContextBuildResult.Empty();
+            }
+        }
+
+        /// <summary>
+        /// Returns the current session aggregate as fixed tokens and invariant numbers only. It contains
+        /// no pawn/ideology labels, candidate IDs, descriptions, event prose, or prompt text.
+        /// </summary>
+        public static string AutomaticCoverageDiagnosticsForDev()
+        {
+            lock (AutomaticCoverageLock)
+            {
+                return BeliefAutomaticCoverageDiagnostics.Format(automaticCoverage);
+            }
+        }
+
+        /// <summary>Clears the dev-only aggregate at every new-game/load boundary.</summary>
+        internal static void ResetAutomaticCoverageDiagnostics()
+        {
+            lock (AutomaticCoverageLock)
+            {
+                automaticCoverage = new BeliefAutomaticCoverageAggregate();
+            }
+        }
+
+        /// <summary>
+        /// Loaded-test seam for the impure session holder. Production uses the dev-mode guarded recorder;
+        /// tests supply an already-classified DTO and still exercise the same bounded pure accumulator.
+        /// </summary>
+        internal static void RecordAutomaticCoverageForTests(
+            BeliefAutomaticCoverageDiagnostic diagnostic,
+            BeliefPolicySnapshot policy)
+        {
+            BeliefPolicySnapshot effective = policy ?? BeliefPolicySnapshot.CreateDefault();
+            lock (AutomaticCoverageLock)
+            {
+                BeliefAutomaticCoverageDiagnostics.Add(
+                    automaticCoverage,
+                    diagnostic,
+                    effective.maximumAutomaticDiagnosticSamples);
+            }
+        }
+
+        private static void RecordAutomaticCoverageForDev(
+            BeliefAutomaticCoverageDiagnostic diagnostic,
+            BeliefPolicySnapshot policy)
+        {
+            if (!Prefs.DevMode || diagnostic == null) return;
+            BeliefPolicySnapshot effective = policy ?? BeliefPolicySnapshot.CreateDefault();
+            lock (AutomaticCoverageLock)
+            {
+                BeliefAutomaticCoverageDiagnostics.Add(
+                    automaticCoverage,
+                    diagnostic,
+                    effective.maximumAutomaticDiagnosticSamples);
             }
         }
 

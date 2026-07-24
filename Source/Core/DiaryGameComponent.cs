@@ -544,6 +544,7 @@ namespace PawnDiary
                 BeliefHistoryCorrelationCache.Reset();
                 BeliefMutationCache.Reset();
                 DlcContext.ResetBeliefProjectionCaches();
+                BeliefContextBuilder.ResetAutomaticCoverageDiagnostics();
             }
             catch (Exception exception)
             {

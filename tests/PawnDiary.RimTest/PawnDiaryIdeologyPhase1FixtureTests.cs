@@ -200,10 +200,54 @@ namespace PawnDiary.RimTests
         {
             BeliefPolicySnapshot first = DiaryBeliefPolicy.Snapshot();
             BeliefPolicySnapshot second = DiaryBeliefPolicy.Snapshot();
+            DiaryBeliefPolicyDef loaded =
+                DefDatabase<DiaryBeliefPolicyDef>.GetNamedSilentFail("Diary_BeliefPolicy");
             PawnDiaryRimTestScope.Require(ReferenceEquals(first, second),
                 "Belief policy rebuilt its deep-copied snapshot inside one active language.");
             PawnDiaryRimTestScope.Require(DiaryBeliefPolicy.Enabled == first.enabled,
                 "The fast Enabled gate disagreed with the cached belief-policy snapshot.");
+            PawnDiaryRimTestScope.Require(loaded != null
+                    && loaded.maximumAutomaticDiagnosticSamples == 4096
+                    && first.maximumAutomaticDiagnosticSamples == 4096,
+                "The loaded XML automatic-diagnostic limit did not reach the immutable snapshot.");
+            PawnDiaryRimTestScope.Require(
+                loaded.correlationOverrides == null || loaded.correlationOverrides.Count == 0,
+                "The shipped exact belief-correction list must remain empty.");
+        }
+
+        /// <summary>
+        /// Exercises the impure session holder without requiring Ideology content. The aggregate must
+        /// reset cleanly and expose only fixed mechanical tokens from the loaded policy.
+        /// </summary>
+        [Test]
+        public static void AutomaticCoverageDiagnosticsUseLoadedBoundAndReset()
+        {
+            BeliefPolicySnapshot policy = DiaryBeliefPolicy.Snapshot();
+            BeliefContextBuilder.ResetAutomaticCoverageDiagnostics();
+            scope.RegisterCleanup(BeliefContextBuilder.ResetAutomaticCoverageDiagnostics);
+            PawnDiaryRimTestScope.Require(
+                BeliefContextBuilder.AutomaticCoverageDiagnosticsForDev().Contains("observed=0"),
+                "The automatic-coverage aggregate did not start empty.");
+
+            BeliefContextBuilder.RecordAutomaticCoverageForTests(
+                BeliefAutomaticCoverageDiagnostics.Accepted(
+                    BeliefAutomaticCoverageOutcomeTokens.ExactCorrelation,
+                    BeliefRelevanceSourceTokens.ThoughtCorrelation,
+                    BeliefRelevanceTierTokens.ExactCorrelation,
+                    1),
+                policy);
+            string diagnostic = BeliefContextBuilder.AutomaticCoverageDiagnosticsForDev();
+            PawnDiaryRimTestScope.Require(
+                diagnostic.Contains("observed=1")
+                    && diagnostic.Contains("last_outcome=exact_correlation")
+                    && diagnostic.Contains("last_source=thought_correlation")
+                    && diagnostic.Contains("last_tier=exact_correlation"),
+                "The loaded automatic-coverage aggregate lost its fixed winner tokens.");
+
+            BeliefContextBuilder.ResetAutomaticCoverageDiagnostics();
+            PawnDiaryRimTestScope.Require(
+                BeliefContextBuilder.AutomaticCoverageDiagnosticsForDev().Contains("observed=0"),
+                "The automatic-coverage aggregate did not reset.");
         }
 
         /// <summary>

@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContracts.cs" Link="NarrativeContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefContracts.cs" Link="BeliefContracts.cs" />
+    <Compile Include="..\..\Source\Pipeline\Belief\BeliefAutomaticCoverageDiagnostics.cs" Link="BeliefAutomaticCoverageDiagnostics.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefLexicalMatcher.cs" Link="BeliefLexicalMatcher.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\EventRelativeStanceResolver.cs" Link="EventRelativeStanceResolver.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefContextFormatter.cs" Link="BeliefContextFormatter.cs" />

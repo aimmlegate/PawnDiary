@@ -135,6 +135,9 @@ namespace PawnDiary
         public int historyCorrelationWindowTicks = 120;
         public int maximumMutationCorrelationEntries = 256;
         public int mutationCorrelationWindowTicks = 120;
+        // Dev-mode automatic coverage retains aggregate counts only. This XML-owned cap bounds how
+        // many resolver attempts one loaded session admits before additional samples are dropped.
+        public int maximumAutomaticDiagnosticSamples = 4096;
         public int maximumFieldCharacters = 320;
         public int maximumNormalizedTokensPerField = 48;
         public int maximumLexicalFieldsPerDocument = 96;
@@ -275,6 +278,7 @@ namespace PawnDiary
             builder.historyCorrelationWindowTicks = source.historyCorrelationWindowTicks;
             builder.maximumMutationCorrelationEntries = source.maximumMutationCorrelationEntries;
             builder.mutationCorrelationWindowTicks = source.mutationCorrelationWindowTicks;
+            builder.maximumAutomaticDiagnosticSamples = source.maximumAutomaticDiagnosticSamples;
             builder.maximumFieldCharacters = source.maximumFieldCharacters;
             builder.maximumNormalizedTokensPerField = source.maximumNormalizedTokensPerField;
             builder.maximumLexicalFieldsPerDocument = source.maximumLexicalFieldsPerDocument;
