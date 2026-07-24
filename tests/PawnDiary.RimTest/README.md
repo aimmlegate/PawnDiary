@@ -88,7 +88,7 @@ owners. Both use the shared harness:
 | `PawnDiaryIdeologyPhase3BeliefStateTests` | Ideology P3 | Page-silent first baseline, real tracker certainty accumulation, XML scan work cap, inactive-Ideology reset, and dev-safe mechanical diagnostics. |
 | `PawnDiaryDiaryTabFilterFixtureTests` | UI lifecycle | Hidden-panel pawn reset and year-specific tag reset without invoking immediate-mode rendering. |
 | `PawnDiaryArrivalFlowTests` | 18 | Neutral arrival page + first-ordering + bootstrap resilience. |
-| `PawnDiaryDayReflectionFlowTests` | 19 | Day/quadrum reflection highlight + once-per-day guard + evidence consumption. |
+| `PawnDiaryDayReflectionFlowTests` | 19 / Quality Wave H3 | Day/quadrum reflection highlight, once-per-day guard, evidence consumption, and arrival-bounded colony-news ownership across hot/archive history. |
 | `PawnDiaryArcReflectionFlowTests` | 20 | Arc reflection year/gap limits + memory filter/dedup + backoff. |
 | `PawnDiaryExternalApiFlowTests` | 21 | `PawnDiaryApi` submit solo/pair, group gate, budget, listener notify. |
 | `PawnDiaryEventWindowFlowTests` | 22 | Event-window start/end/one-shot/timeout + prompt-bias state; exact monolith ownership when Anomaly is active and inert loaded Defs when it is absent. |

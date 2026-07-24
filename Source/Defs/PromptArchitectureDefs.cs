@@ -495,6 +495,9 @@ namespace PawnDiary
         public bool requireDanger = true;
         public bool displayOnUiOnly = true;
         public List<string> letterDefNames;
+        // Categorized letter policy used by reflection news. Each row maps stable LetterDef names
+        // to stable direct-event domains/markers; translated labels never own stories.
+        public List<ColonyNewsCategoryRule> newsCategories;
     }
 
     /// <summary>
@@ -505,6 +508,7 @@ namespace PawnDiary
     {
         public const string ActiveMapConditions = "ActiveMapConditions";
         public const string RecentThreatLetter = "RecentThreatLetter";
+        public const string ColonyNews = "colony_news";
 
         public static DiaryContextReactionDef ForKey(string reactionKey)
         {
@@ -616,8 +620,10 @@ namespace PawnDiary
                 return cached;
             }
 
-            DiaryContextReactionDef fallback = string.Equals(reactionKey, RecentThreatLetter, StringComparison.OrdinalIgnoreCase)
-                ? new DiaryContextReactionDef
+            DiaryContextReactionDef fallback;
+            if (string.Equals(reactionKey, RecentThreatLetter, StringComparison.OrdinalIgnoreCase))
+            {
+                fallback = new DiaryContextReactionDef
                 {
                     defName = "DiaryContextReaction_Fallback_RecentThreatLetter",
                     reactionKey = RecentThreatLetter,
@@ -627,8 +633,24 @@ namespace PawnDiary
                     requireHomeMap = true,
                     requireDanger = true,
                     letterDefNames = new List<string> { "ThreatBig", "ThreatSmall" }
-                }
-                : new DiaryContextReactionDef
+                };
+            }
+            else if (string.Equals(reactionKey, ColonyNews, StringComparison.OrdinalIgnoreCase))
+            {
+                fallback = new DiaryContextReactionDef
+                {
+                    defName = "DiaryContextReaction_Fallback_ColonyNews",
+                    reactionKey = ColonyNews,
+                    scanBack = 40,
+                    timeoutTicks = 60000,
+                    requireHomeMap = false,
+                    requireDanger = false,
+                    newsCategories = DefaultColonyNewsCategories()
+                };
+            }
+            else
+            {
+                fallback = new DiaryContextReactionDef
                 {
                     defName = "DiaryContextReaction_Fallback_ActiveMapConditions",
                     reactionKey = ActiveMapConditions,
@@ -636,9 +658,62 @@ namespace PawnDiary
                     maxItems = 3,
                     displayOnUiOnly = true
                 };
+            }
 
             FallbackCache[key] = fallback;
             return fallback;
+        }
+
+        /// <summary>
+        /// Safe no-XML category policy. The shipped Def owns the same rows and can be patched by mods;
+        /// these values only keep reflection news useful if that Def is missing.
+        /// </summary>
+        private static List<ColonyNewsCategoryRule> DefaultColonyNewsCategories()
+        {
+            return new List<ColonyNewsCategoryRule>
+            {
+                new ColonyNewsCategoryRule
+                {
+                    category = "quest",
+                    letterDefNames = new List<string> { "NewQuest", "NewQuest_ThreatBig" },
+                    directEventDomains = new List<string> { "Quest" },
+                    directEventMarkers = new List<string> { "quest=" }
+                },
+                new ColonyNewsCategoryRule
+                {
+                    category = "threat",
+                    letterDefNames = new List<string>
+                    {
+                        "ThreatBig", "ThreatSmall", "NegativeEvent", "Death",
+                        "RitualOutcomeNegative", "RansomDemand"
+                    },
+                    directEventDomains = new List<string> { "Raid", "Hediff", "MentalState" },
+                    directEventMarkers = new List<string>
+                    {
+                        "raid=", "hediff=", "mental_state=", "death_description="
+                    }
+                },
+                new ColonyNewsCategoryRule
+                {
+                    category = "positive",
+                    letterDefNames = new List<string>
+                    {
+                        "NeutralEvent", "PositiveEvent", "RitualOutcomePositive",
+                        "AcceptVisitors", "AcceptJoiner"
+                    },
+                    directEventDomains = new List<string>
+                    {
+                        "Progression", "Romance", "Ritual", "Tale", "GravshipJourney",
+                        "PersonaWeapon", "RoyalPermit"
+                    },
+                    directEventMarkers = new List<string>
+                    {
+                        "arrival_description=", "progression=", "romance=", "ritual=",
+                        "psychic_ritual=", "tale=", "odyssey_journey=", "persona_weapon=",
+                        "royal_permit="
+                    }
+                }
+            };
         }
     }
 }

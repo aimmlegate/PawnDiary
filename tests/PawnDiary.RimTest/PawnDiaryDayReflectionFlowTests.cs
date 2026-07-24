@@ -279,6 +279,129 @@ namespace PawnDiary.RimTests
                 "A repeated scan in the baselined window should remain idempotent.");
         }
 
+        /// <summary>
+        /// Quality Wave H3. A post-arrival positive letter can become the sole important day signal
+        /// when XML promotes news, and the persisted reflection context records its stable category.
+        /// </summary>
+        [Test]
+        public static void PostArrivalLetterAddsCategorizedNewsCandidate()
+        {
+            int now = RequireUsableCurrentTick();
+            SeedArrivalBoundary(now - 100);
+            SeedArchiveLetter("PositiveEvent", "A refugee was welcomed", now - 20);
+            tuning.daySummaryImportantSignalKinds = new List<string> { "news" };
+
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => InvokeFlush(pawn),
+                "DayReflection",
+                pawn,
+                null);
+
+            string context = diaryEvent.gameContext ?? string.Empty;
+            PawnDiaryRimTestScope.Require(
+                context.IndexOf("news:positive", StringComparison.OrdinalIgnoreCase) >= 0,
+                "The allowed post-arrival letter did not reach the reflection as news:positive.");
+            PawnDiaryRimTestScope.Require(
+                (diaryEvent.initiatorText ?? string.Empty)
+                    .IndexOf("A refugee was welcomed", StringComparison.OrdinalIgnoreCase) >= 0,
+                "The selected archived letter label did not reach the frozen reflection evidence.");
+        }
+
+        /// <summary>
+        /// Quality Wave H3. Letters before the pawn's arrival boundary and before today's evidence
+        /// window stay absent; an independent hediff signal still lets the page expose the omission.
+        /// </summary>
+        [Test]
+        public static void PreArrivalAndExpiredLettersAreExcluded()
+        {
+            int now = RequireUsableCurrentTick();
+            int day = CurrentDayIndex();
+            int dayStartTick = GameTickForDay(day);
+            SeedArchiveLetter("PositiveEvent", "Yesterday's old colony news", dayStartTick - 1);
+            SeedArchiveLetter("PositiveEvent", "News from before joining", now - 20);
+            SeedArrivalBoundary(now - 10);
+            SeedPendingDayHediff(day);
+            tuning.daySummaryImportantSignalKinds = new List<string> { "hediff" };
+
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => InvokeFlush(pawn),
+                "DayReflection",
+                pawn,
+                null);
+
+            PawnDiaryRimTestScope.Require(
+                (diaryEvent.gameContext ?? string.Empty)
+                    .IndexOf("news:", StringComparison.OrdinalIgnoreCase) < 0,
+                "A pre-arrival or expired archived letter leaked into the day reflection.");
+        }
+
+        /// <summary>
+        /// Quality Wave H3. A hot direct raid page suppresses the newer threat letter, while an older
+        /// positive letter remains eligible instead of the whole colony-news collector going silent.
+        /// </summary>
+        [Test]
+        public static void HotDirectOwnerSuppressesOnlyItsNewsCategory()
+        {
+            int now = RequireUsableCurrentTick();
+            SeedArrivalBoundary(now - 100);
+            SeedArchiveLetter("PositiveEvent", "A trader offered welcome news", now - 20);
+            SeedArchiveLetter("ThreatBig", "Raiders were sighted", now - 10);
+            scope.Component.AddSoloEvent(
+                pawn,
+                null,
+                "RaidEnemy",
+                "raid",
+                "Raiders attacked the colony.",
+                "write about the raid",
+                "raid=EnemyRaid");
+            tuning.daySummaryImportantSignalKinds = new List<string> { "news" };
+
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => InvokeFlush(pawn),
+                "DayReflection",
+                pawn,
+                null);
+            string context = diaryEvent.gameContext ?? string.Empty;
+            PawnDiaryRimTestScope.Require(
+                context.IndexOf("news:positive", StringComparison.OrdinalIgnoreCase) >= 0,
+                "Suppressing the owned threat category also hid the unrelated positive news.");
+            PawnDiaryRimTestScope.Require(
+                context.IndexOf("news:threat", StringComparison.OrdinalIgnoreCase) < 0,
+                "The hot direct raid page did not suppress its same-category threat letter.");
+        }
+
+        /// <summary>
+        /// Quality Wave H3. The same category ownership check includes compact archived diary rows,
+        /// not only hot DiaryEvents.
+        /// </summary>
+        [Test]
+        public static void ArchivedDirectOwnerSuppressesSameCategoryNews()
+        {
+            int now = RequireUsableCurrentTick();
+            SeedArrivalBoundary(now - 100);
+            SeedArchiveLetter("PositiveEvent", "A calm opportunity appeared", now - 20);
+            SeedArchiveLetter("ThreatBig", "A mech threat was announced", now - 10);
+            SeedArchivedDirectOwner(
+                "archived-raid-owner-" + Guid.NewGuid().ToString("N"),
+                now - 5,
+                "Raid",
+                "raid=MechCluster");
+            tuning.daySummaryImportantSignalKinds = new List<string> { "news" };
+
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => InvokeFlush(pawn),
+                "DayReflection",
+                pawn,
+                null);
+            string context = diaryEvent.gameContext ?? string.Empty;
+            PawnDiaryRimTestScope.Require(
+                context.IndexOf("news:positive", StringComparison.OrdinalIgnoreCase) >= 0,
+                "The unrelated positive category should survive archived threat ownership.");
+            PawnDiaryRimTestScope.Require(
+                context.IndexOf("news:threat", StringComparison.OrdinalIgnoreCase) < 0,
+                "The archived direct raid row did not suppress same-category threat news.");
+        }
+
         // ----- production seam invocation ---------------------------------------------------------
 
         // Invokes the retained private dev/test seam, which delegates to the same per-pawn arbitration
@@ -306,6 +429,96 @@ namespace PawnDiary.RimTests
             }
 
             return diary;
+        }
+
+        // ----- Quality Wave H3 archived-letter fixtures -------------------------------------------
+
+        private static int RequireUsableCurrentTick()
+        {
+            int now = Find.TickManager.TicksGame;
+            if (now < 200)
+            {
+                throw new AssertionException(
+                    "Quality Wave H3 reflection fixtures require a loaded game beyond tick 200.");
+            }
+
+            return now;
+        }
+
+        private static int GameTickForDay(int day)
+        {
+            int offset = Find.TickManager.TicksAbs - Find.TickManager.TicksGame;
+            return (day * GenDate.TicksPerDay) - offset;
+        }
+
+        private static void SeedArrivalBoundary(int tick)
+        {
+            ArchivedDiaryEntry entry = new ArchivedDiaryEntry
+            {
+                eventId = "quality-wave-arrival-" + Guid.NewGuid().ToString("N"),
+                pawnId = pawn.GetUniqueLoadID(),
+                povRole = DiaryEvent.NeutralRole,
+                tick = tick,
+                text = "test arrival boundary",
+                interactionDefName = "PawnDiary_Arrival",
+                arrivalDescription = true
+            };
+            PawnDiaryRimTestScope.Require(
+                ArchiveRepository().AddOrKeep(entry),
+                "Could not seed the H3 archived arrival boundary.");
+        }
+
+        private static void SeedArchivedDirectOwner(
+            string eventId,
+            int tick,
+            string domain,
+            string gameContext)
+        {
+            ArchivedDiaryEntry entry = new ArchivedDiaryEntry
+            {
+                eventId = eventId,
+                pawnId = pawn.GetUniqueLoadID(),
+                povRole = DiaryEvent.InitiatorRole,
+                tick = tick,
+                text = "test direct owner",
+                interactionDefName = "QualityWaveDirectOwner",
+                important = true,
+                decorationDomain = domain,
+                decorationGameContext = gameContext
+            };
+            PawnDiaryRimTestScope.Require(
+                ArchiveRepository().AddOrKeep(entry),
+                "Could not seed the H3 archived direct-story owner.");
+        }
+
+        private static DiaryArchiveRepository ArchiveRepository()
+        {
+            FieldInfo field = typeof(DiaryGameComponent).GetField("archive", NonPublicInstance);
+            DiaryArchiveRepository repository = field?.GetValue(scope.Component) as DiaryArchiveRepository;
+            if (repository == null)
+            {
+                throw new AssertionException("Could not read DiaryGameComponent.archive.");
+            }
+
+            return repository;
+        }
+
+        private static void SeedArchiveLetter(string letterDefName, string label, int tick)
+        {
+            LetterDef letterDef = DefDatabase<LetterDef>.GetNamedSilentFail(letterDefName);
+            if (letterDef == null)
+            {
+                throw new AssertionException(
+                    "Required LetterDef '" + letterDefName + "' is not loaded.");
+            }
+
+            Letter letter = LetterMaker.MakeLetter(letterDef);
+            letter.Label = label;
+            letter.arrivalTick = tick;
+            PawnDiaryRimTestScope.Require(
+                Find.Archive.Add(letter),
+                "Could not seed archived letter '" + letterDefName + "'.");
+            scope.RegisterCleanup(() => Find.Archive?.Remove(letter));
         }
 
         // Ordinary EVT-19 tests seed current-day evidence and expect to exercise selection immediately.

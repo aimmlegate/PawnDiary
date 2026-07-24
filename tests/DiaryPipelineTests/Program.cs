@@ -27,6 +27,7 @@ namespace DiaryPipelineTests
             TestQualityWavePovContextContracts();
             TestIdentitySummaryPolicy();
             TestMoodSnapshotPolicy();
+            TestColonyNewsPolicy();
             TestPromptContextDetailSelection();
             TestPromptContextDetailOverrideResolution();
             TestPromptContextFeatureLayersPerPreset();
@@ -600,6 +601,97 @@ namespace DiaryPipelineTests
                 AssertEqual("B2 Russian indexed label " + templateKeys[i],
                     "ты", russian.Root.Element(elementName)?.Value);
             }
+        }
+
+        /// <summary>
+        /// H3 pins exact LetterDef classification, stable direct-story ownership, overlap ordering,
+        /// and the shipped XML category/weight contract without loading RimWorld.
+        /// </summary>
+        private static void TestColonyNewsPolicy()
+        {
+            List<ColonyNewsCategoryRule> rules = new List<ColonyNewsCategoryRule>
+            {
+                new ColonyNewsCategoryRule
+                {
+                    category = "quest",
+                    letterDefNames = new List<string> { "NewQuest", "NewQuest_ThreatBig" },
+                    directEventDomains = new List<string> { "Quest" },
+                    directEventMarkers = new List<string> { "quest=" }
+                },
+                new ColonyNewsCategoryRule
+                {
+                    category = "threat",
+                    letterDefNames = new List<string> { "ThreatBig", "NewQuest_ThreatBig" },
+                    directEventDomains = new List<string> { "Raid" },
+                    directEventMarkers = new List<string> { "raid=", "death_description=" }
+                },
+                new ColonyNewsCategoryRule
+                {
+                    category = "positive",
+                    letterDefNames = new List<string> { "PositiveEvent" },
+                    directEventDomains = new List<string> { "Progression" },
+                    directEventMarkers = new List<string> { "progression=" }
+                }
+            };
+
+            AssertEqual("H3 exact quest letter classification",
+                "quest", ColonyNewsPolicy.CategoryForLetter("NewQuest", rules));
+            AssertEqual("H3 letter classification is case-insensitive",
+                "threat", ColonyNewsPolicy.CategoryForLetter("threatbig", rules));
+            AssertEqual("H3 first matching rule owns overlapping quest-threat letters",
+                "quest", ColonyNewsPolicy.CategoryForLetter("NewQuest_ThreatBig", rules));
+            AssertEqual("H3 unknown letter is not inferred from its label",
+                string.Empty, ColonyNewsPolicy.CategoryForLetter("A Very Scary Letter", rules));
+
+            AssertTrue("H3 exact direct domain suppresses same-category news",
+                ColonyNewsPolicy.EventOwnsCategory("threat", "Raid", string.Empty, rules));
+            AssertTrue("H3 exact saved marker suppresses same-category news",
+                ColonyNewsPolicy.EventOwnsCategory(
+                    "threat", "Interaction", "prefix=x; death_description=true", rules));
+            AssertTrue("H3 context near-miss does not suppress",
+                !ColonyNewsPolicy.EventOwnsCategory(
+                    "threat", "Interaction", "not_raid=x; raiding=y", rules));
+            AssertTrue("H3 unrelated direct category remains eligible",
+                !ColonyNewsPolicy.EventOwnsCategory(
+                    "positive", "Raid", "raid=EnemyRaid", rules));
+            AssertTrue("H3 translated prose never acts as ownership",
+                !ColonyNewsPolicy.EventOwnsCategory(
+                    "quest", "Interaction", "the colony accepted a quest", rules));
+
+            XDocument reactions = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryContextReactionDefs.xml"));
+            XElement newsDef = reactions.Descendants("PawnDiary.DiaryContextReactionDef")
+                .Single(row => ChildValue(row, "reactionKey") == "colony_news");
+            AssertEqual("H3 shipped archive scan cap", "40", ChildValue(newsDef, "scanBack"));
+            AssertEqual("H3 shipped daily timeout", "60000", ChildValue(newsDef, "timeoutTicks"));
+            AssertEqual("H3 colony news is not home-map-only",
+                "false", ChildValue(newsDef, "requireHomeMap"));
+            string[] shippedCategories = newsDef.Element("newsCategories").Elements("li")
+                .Select(row => ChildValue(row, "category"))
+                .ToArray();
+            AssertEqual("H3 shipped category count", 3, shippedCategories.Length);
+            AssertEqual("H3 specific quest category remains first", "quest", shippedCategories[0]);
+            AssertEqual("H3 broad threat category remains second", "threat", shippedCategories[1]);
+            AssertEqual("H3 neutral-positive category remains third", "positive", shippedCategories[2]);
+
+            XDocument tuning = XDocument.Load(RepoPath("1.6", "Defs", "DiaryTuningDef.xml"));
+            AssertEqual("H3 shipped news weight", "0.3",
+                tuning.Descendants("daySummaryWeightNews").Single().Value.Trim());
+            List<string> importantKinds = tuning.Descendants("daySummaryImportantSignalKinds")
+                .Single().Elements("li").Select(row => row.Value.Trim()).ToList();
+            AssertTrue("H3 news remains background-only by default",
+                !importantKinds.Contains("news"));
+
+            XDocument english = XDocument.Load(
+                RepoPath("Languages", "English", "Keyed", "PawnDiary.xml"));
+            XDocument russian = XDocument.Load(
+                RepoPath("Languages", "Russian (Русский)", "Keyed", "PawnDiary.xml"));
+            AssertEqual("H3 English news frame",
+                "the colony was told: {0}",
+                english.Root.Element("PawnDiary.Event.DayReflectionNews")?.Value);
+            AssertEqual("H3 Russian news frame",
+                "колонии сообщили: {0}",
+                russian.Root.Element("PawnDiary.Event.DayReflectionNews")?.Value);
         }
 
         private static void TestTuningOverrideMigration()

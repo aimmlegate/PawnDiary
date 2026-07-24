@@ -17,6 +17,7 @@ namespace PawnDiary.Capture
         public const string SignalKindOpinion = "opinion";
         public const string SignalKindHediff = "hediff";
         public const string SignalKindFiller = "filler";
+        public const string SignalKindNews = "news";
 
         public override DiaryEventType EventType => DiaryEventType.DayReflection;
 

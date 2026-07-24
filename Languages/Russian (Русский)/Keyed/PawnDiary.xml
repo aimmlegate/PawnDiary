@@ -931,6 +931,7 @@
   <PawnDiary.Event.DayReflectionOpinionCooled>отношение к {0} заметно охладело</PawnDiary.Event.DayReflectionOpinionCooled>
   <PawnDiary.Event.DayReflectionHediff>новое состояние здоровья: {0}</PawnDiary.Event.DayReflectionHediff>
   <PawnDiary.Event.DayReflectionHediffProgressed>состояние здоровья ухудшилось: {0}</PawnDiary.Event.DayReflectionHediffProgressed>
+  <PawnDiary.Event.DayReflectionNews>колонии сообщили: {0}</PawnDiary.Event.DayReflectionNews>
   <PawnDiary.Event.HediffAppeared>Новое состояние здоровья у {0}: {1}.</PawnDiary.Event.HediffAppeared>
   <PawnDiary.Event.HediffProgressed>У {0} ухудшилось состояние: {1}.</PawnDiary.Event.HediffProgressed>
   <PawnDiary.Event.AnomalyHediffAppeared>Аномальное состояние у {0}: {1}.</PawnDiary.Event.AnomalyHediffAppeared>

@@ -29,4 +29,86 @@
     </letterDefNames>
   </PawnDiary.DiaryContextReactionDef>
 
+  <!--
+    H3 reflection news. Rule order is significant: NewQuest_ThreatBig is a quest before the
+    broader threat category gets a chance to inspect it. Ownership uses saved domains/markers only,
+    never translated letter or diary labels.
+  -->
+  <PawnDiary.DiaryContextReactionDef>
+    <defName>DiaryContextReaction_ColonyNews</defName>
+    <reactionKey>colony_news</reactionKey>
+    <enabled>true</enabled>
+    <scanBack>40</scanBack>
+    <timeoutTicks>60000</timeoutTicks>
+    <requireHomeMap>false</requireHomeMap>
+    <requireDanger>false</requireDanger>
+    <newsCategories>
+      <li>
+        <category>quest</category>
+        <letterDefNames>
+          <li>NewQuest</li>
+          <li>NewQuest_ThreatBig</li>
+        </letterDefNames>
+        <directEventDomains>
+          <li>Quest</li>
+        </directEventDomains>
+        <directEventMarkers>
+          <li>quest=</li>
+        </directEventMarkers>
+      </li>
+      <li>
+        <category>threat</category>
+        <letterDefNames>
+          <li>ThreatBig</li>
+          <li>ThreatSmall</li>
+          <li>NegativeEvent</li>
+          <li>Death</li>
+          <li>RitualOutcomeNegative</li>
+          <li>RansomDemand</li>
+        </letterDefNames>
+        <directEventDomains>
+          <li>Raid</li>
+          <li>Hediff</li>
+          <li>MentalState</li>
+        </directEventDomains>
+        <directEventMarkers>
+          <li>raid=</li>
+          <li>hediff=</li>
+          <li>mental_state=</li>
+          <li>death_description=</li>
+        </directEventMarkers>
+      </li>
+      <li>
+        <category>positive</category>
+        <letterDefNames>
+          <li>NeutralEvent</li>
+          <li>PositiveEvent</li>
+          <li>RitualOutcomePositive</li>
+          <li>AcceptVisitors</li>
+          <li>AcceptJoiner</li>
+        </letterDefNames>
+        <directEventDomains>
+          <li>Progression</li>
+          <li>Romance</li>
+          <li>Ritual</li>
+          <li>Tale</li>
+          <li>GravshipJourney</li>
+          <li>PersonaWeapon</li>
+          <li>RoyalPermit</li>
+        </directEventDomains>
+        <directEventMarkers>
+          <li>arrival_description=</li>
+          <li>progression=</li>
+          <li>romance=</li>
+          <li>ritual=</li>
+          <li>psychic_ritual=</li>
+          <li>tale=</li>
+          <li>odyssey_journey=</li>
+          <li>persona_weapon=</li>
+          <li>royal_permit=</li>
+        </directEventMarkers>
+      </li>
+    </newsCategories>
+  </PawnDiary.DiaryContextReactionDef>
+
 </Defs>

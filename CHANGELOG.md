@@ -8,6 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-07-25
 
+- **Quality Wave H3 — colony news in reflections.** Day and quadrum reflections can now carry one low-weight, XML-categorized colony letter after the writer's arrival boundary; exact hot/archive direct-story ownership suppresses only the matching threat, quest, or positive category.
 - **Quality Wave Phase 2 review hardening.** Interaction batches now reject replayed PlayLog rows before they can change counts, prose, or retained mood; reversed initiator order has loaded regression coverage; identity ties between duplicate nicknames use stable pawn IDs; and bounded POV context cannot split UTF-16 surrogate pairs during save normalization.
 
 ## 2026-07-24

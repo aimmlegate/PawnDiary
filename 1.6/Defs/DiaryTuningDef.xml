@@ -387,8 +387,8 @@
     <daySummaryEnabled>true</daySummaryEnabled>
     <daySummaryMaxHighlights>3</daySummaryMaxHighlights>
     <!-- Signal kinds that can justify creating a day reflection. Valid tokens:
-         event, opinion, hediff, filler. Leave filler out to keep common batched events as
-         background only; add it to allow quiet filler-only days to generate summaries. -->
+         event, opinion, hediff, news, filler. Leave news/filler out to keep colony letters and
+         common batched events as background only; add either to let it generate summaries. -->
     <daySummaryImportantSignalKinds>
       <li>event</li>
       <li>opinion</li>
@@ -400,6 +400,7 @@
     <daySummaryWeightHediff>0.8</daySummaryWeightHediff>
     <daySummaryWeightOpinionShift>0.6</daySummaryWeightOpinionShift>
     <daySummaryWeightFiller>0.15</daySummaryWeightFiller>
+    <daySummaryWeightNews>0.3</daySummaryWeightNews>
 
     <!-- Rare quadrum reflection. Pawns are deterministically spread across the final timing window
          so a whole colony does not queue long reflections on the same night. maxPromptEvents is the

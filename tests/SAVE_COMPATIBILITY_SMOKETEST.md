@@ -949,6 +949,24 @@ claimed as covered until a human runs them.
 3. Set `outputLanguageDirectiveEnabled=false` in `DiaryTuningDef.xml`, restart, and confirm the
    captured system prompt is byte-identical to the pre-B1 build (no trailing line, no blank line).
 
+## Quality Wave Phase 3 — hands-on rows
+
+Automation covers category matching, arrival clipping, direct-owner suppression, and loaded assembly
+wiring. These rows verify the player-facing evidence in a real colony; automated agents must not run
+the game.
+
+### H3 — colony news in reflections
+
+1. Let a positive/neutral colony letter arrive after a diarist joined, then trigger an eligible day
+   reflection with another important signal. Prompt Test Mode should show one localized
+   `the colony was told: …` cue and `signals=news:positive`.
+2. Repeat after a raid or quest already produced that pawn's direct same-day page. The matching
+   threat/quest letter must be absent; an unrelated allowed category from the same day may still
+   appear.
+3. Recruit a new diarist after an existing colony letter, then write their first reflection. The old
+   letter must not be attributed to them. A caravan diarist should still see post-arrival colony news
+   because the policy is intentionally not home-map-only.
+
 ## What counts as a regression
 
 Any of:

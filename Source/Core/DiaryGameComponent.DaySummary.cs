@@ -110,6 +110,16 @@ namespace PawnDiary
             // Gather candidates from every source, then keep only the most important few.
             List<DaySummarySignal> candidates = new List<DaySummarySignal>();
             CollectEventSignals(pawnId, day, candidates);
+            int nowTick = Find.TickManager.TicksGame;
+            int dayStartTick = GameTickForDayIndex(day);
+            int newsTimeout = Math.Max(0, DiaryContextReactions.TimeoutTicks(
+                DiaryContextReactions.ColonyNews,
+                GenDate.TicksPerDay));
+            if (newsTimeout > 0)
+            {
+                dayStartTick = Math.Max(dayStartTick, nowTick - newsTimeout);
+            }
+            CollectNewsSignals(pawn, dayStartTick, nowTick, candidates);
             CollectOpinionSignals(pawn, candidates);
             CollectHediffSignals(dayKey, candidates);
             int fillerCount = CollectFillerSignal(pawnId, day, candidates);
@@ -238,6 +248,11 @@ namespace PawnDiary
             int evidenceEndDay = Math.Min(day, quadrumStartDay + daysPerQuadrum - 1);
             List<QuadrumReflectionSignal> candidates = new List<QuadrumReflectionSignal>();
             CollectQuadrumReflectionSignals(pawnId, quadrumStartDay, evidenceEndDay, candidates);
+            CollectNewsSignals(
+                pawn,
+                GameTickForDayIndex(quadrumStartDay),
+                Math.Min(Find.TickManager.TicksGame, GameTickForDayIndex(evidenceEndDay + 1) - 1),
+                candidates);
             if (!QuadrumReflectionPolicy.HasEnoughHighValueEntries(candidates.Count,
                 DiaryTuning.QuadrumReflectionMinImportantEntries))
             {
@@ -424,6 +439,259 @@ namespace PawnDiary
                     line,
                     DaySummarySignalTag(kind, ev.interactionDefName),
                     IsDaySummarySignalImportant(kind)));
+            }
+        }
+
+        /// <summary>
+        /// Adds the newest allowed, unsuperseded colony letter inside the pawn's current evidence
+        /// window. The lower bound is clipped to the pawn's first arrival page so a new colonist never
+        /// remembers colony news from before they joined.
+        /// </summary>
+        private void CollectNewsSignals(
+            Pawn pawn,
+            int startTick,
+            int endTick,
+            List<DaySummarySignal> candidates)
+        {
+            ColonyNewsSignal news;
+            if (!TryCollectNewestNews(pawn, startTick, endTick, out news))
+            {
+                return;
+            }
+
+            string kind = DayReflectionEventData.SignalKindNews;
+            candidates.Add(new DaySummarySignal(
+                DiaryTuning.Current.daySummaryWeightNews,
+                news.evidenceLine,
+                DaySummarySignalTag(kind, news.category),
+                IsDaySummarySignalImportant(kind)));
+        }
+
+        /// <summary>
+        /// Quadrum adapter for the same bounded colony-letter scan used by daily reflections.
+        /// </summary>
+        private void CollectNewsSignals(
+            Pawn pawn,
+            int startTick,
+            int endTick,
+            List<QuadrumReflectionSignal> candidates)
+        {
+            ColonyNewsSignal news;
+            if (!TryCollectNewestNews(pawn, startTick, endTick, out news))
+            {
+                return;
+            }
+
+            candidates.Add(new QuadrumReflectionSignal(
+                DiaryTuning.Current.daySummaryWeightNews,
+                news.tick,
+                news.evidenceLine,
+                DaySummarySignalTag(DayReflectionEventData.SignalKindNews, news.category)));
+        }
+
+        /// <summary>
+        /// Scans RimWorld's archive newest-first with the XML cap, then rejects a candidate when a
+        /// direct same-category page for this pawn already owns the story in hot or archived history.
+        /// </summary>
+        private bool TryCollectNewestNews(
+            Pawn pawn,
+            int requestedStartTick,
+            int endTick,
+            out ColonyNewsSignal news)
+        {
+            news = default(ColonyNewsSignal);
+            DiaryContextReactionDef policy =
+                DiaryContextReactions.ForKey(DiaryContextReactions.ColonyNews);
+            if (!policy.enabled || pawn == null || Find.Archive == null || endTick < requestedStartTick)
+            {
+                return false;
+            }
+
+            if (policy.requireHomeMap && (pawn.Map == null || !pawn.Map.IsPlayerHome))
+            {
+                return false;
+            }
+
+            if (policy.requireDanger
+                && (pawn.Map?.dangerWatcher == null
+                    || pawn.Map.dangerWatcher.DangerRating == StoryDanger.None))
+            {
+                return false;
+            }
+
+            IReadOnlyList<ColonyNewsCategoryRule> rules = policy.newsCategories;
+            if (rules == null || rules.Count == 0)
+            {
+                return false;
+            }
+
+            string pawnId = pawn.GetUniqueLoadID();
+            int startTick = requestedStartTick;
+            int? arrivalTick = FirstArrivalTickFor(pawnId, FindDiary(pawn, false));
+            if (arrivalTick.HasValue)
+            {
+                startTick = Math.Max(startTick, arrivalTick.Value);
+            }
+
+            List<IArchivable> archivables = Find.Archive.ArchivablesListForReading;
+            if (archivables == null || archivables.Count == 0 || endTick < startTick)
+            {
+                return false;
+            }
+
+            int scanBack = Math.Max(0, DiaryContextReactions.ScanBack(
+                DiaryContextReactions.ColonyNews,
+                40));
+            int scanned = 0;
+            for (int i = archivables.Count - 1; i >= 0 && scanned < scanBack; i--, scanned++)
+            {
+                IArchivable archivable = archivables[i];
+                Letter letter = archivable as Letter;
+                if (letter?.def == null)
+                {
+                    continue;
+                }
+
+                int createdTick = SafeArchivableCreatedTick(archivable);
+                if (createdTick < 0)
+                {
+                    continue;
+                }
+
+                if (createdTick > endTick)
+                {
+                    continue;
+                }
+
+                if (createdTick < startTick)
+                {
+                    // RimWorld stores archivables in creation order, so every remaining row is older.
+                    break;
+                }
+
+                string category = ColonyNewsPolicy.CategoryForLetter(letter.def.defName, rules);
+                if (string.IsNullOrWhiteSpace(category)
+                    || HasDirectNewsOwner(pawnId, category, startTick, endTick, rules))
+                {
+                    continue;
+                }
+
+                string label = SafeColonyNewsLabel(archivable);
+                if (string.IsNullOrWhiteSpace(label))
+                {
+                    continue;
+                }
+
+                news = new ColonyNewsSignal(
+                    category,
+                    createdTick,
+                    "PawnDiary.Event.DayReflectionNews".Translate(label).Resolve());
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Checks both repositories for a displayable direct page owned by this pawn, category, and
+        /// evidence window. The category is matched only from stable domain/context tokens.
+        /// </summary>
+        private bool HasDirectNewsOwner(
+            string pawnId,
+            string category,
+            int startTick,
+            int endTick,
+            IReadOnlyList<ColonyNewsCategoryRule> rules)
+        {
+            IReadOnlyList<DiaryEvent> hot = events.AllEvents;
+            for (int i = hot.Count - 1; i >= 0; i--)
+            {
+                DiaryEvent diaryEvent = hot[i];
+                if (diaryEvent == null || diaryEvent.tick > endTick)
+                {
+                    continue;
+                }
+
+                if (diaryEvent.tick < startTick)
+                {
+                    break;
+                }
+
+                string role;
+                if (!diaryEvent.TryGetDisplayRoleForPawn(pawnId, out role))
+                {
+                    continue;
+                }
+
+                string domain = DiaryEventDomainClassifier.DomainForContext(diaryEvent.gameContext);
+                if (ColonyNewsPolicy.EventOwnsCategory(
+                    category,
+                    domain,
+                    diaryEvent.gameContext,
+                    rules))
+                {
+                    return true;
+                }
+            }
+
+            IReadOnlyList<ArchivedDiaryEntry> archived = archive.EntriesForPawn(pawnId);
+            for (int i = archived.Count - 1; i >= 0; i--)
+            {
+                ArchivedDiaryEntry entry = archived[i];
+                if (entry == null || entry.tick > endTick)
+                {
+                    continue;
+                }
+
+                if (entry.tick < startTick)
+                {
+                    break;
+                }
+
+                string context = entry.decorationGameContext;
+                string domain = string.IsNullOrWhiteSpace(entry.decorationDomain)
+                    ? DiaryEventDomainClassifier.DomainForContext(context)
+                    : entry.decorationDomain;
+                if (ColonyNewsPolicy.EventOwnsCategory(category, domain, context, rules))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static int SafeArchivableCreatedTick(IArchivable archivable)
+        {
+            if (archivable == null)
+            {
+                return -1;
+            }
+
+            try
+            {
+                return archivable.CreatedTicksGame;
+            }
+            catch
+            {
+                return -1;
+            }
+        }
+
+        private static string SafeColonyNewsLabel(IArchivable archivable)
+        {
+            if (archivable == null)
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                return PromptTextSanitizer.LocalizedPromptText(archivable.ArchivedLabel);
+            }
+            catch
+            {
+                return string.Empty;
             }
         }
 
@@ -1016,6 +1284,13 @@ namespace PawnDiary
             return (gameTick + offset) / GenDate.TicksPerDay;
         }
 
+        /// <summary>Converts an absolute world day boundary back into the saved game-tick timeline.</summary>
+        private static int GameTickForDayIndex(int day)
+        {
+            int offset = Find.TickManager.TicksAbs - Find.TickManager.TicksGame;
+            return (day * GenDate.TicksPerDay) - offset;
+        }
+
         private static string DaySummaryKey(string pawnId, int day)
         {
             return pawnId + "|" + day;
@@ -1097,6 +1372,21 @@ namespace PawnDiary
                 this.tick = tick;
                 this.evidenceLine = evidenceLine;
                 this.contextTag = contextTag;
+            }
+        }
+
+        /// <summary>One categorized archived letter ready to become a reflection candidate.</summary>
+        private struct ColonyNewsSignal
+        {
+            public readonly string category;
+            public readonly int tick;
+            public readonly string evidenceLine;
+
+            public ColonyNewsSignal(string category, int tick, string evidenceLine)
+            {
+                this.category = category;
+                this.tick = tick;
+                this.evidenceLine = evidenceLine;
             }
         }
     }

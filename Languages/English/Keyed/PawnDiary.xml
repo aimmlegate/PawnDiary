@@ -951,6 +951,7 @@
   <PawnDiary.Event.DayReflectionOpinionCooled>grew noticeably colder toward {0}</PawnDiary.Event.DayReflectionOpinionCooled>
   <PawnDiary.Event.DayReflectionHediff>a new affliction took hold: {0}</PawnDiary.Event.DayReflectionHediff>
   <PawnDiary.Event.DayReflectionHediffProgressed>a health condition worsened: {0}</PawnDiary.Event.DayReflectionHediffProgressed>
+  <PawnDiary.Event.DayReflectionNews>the colony was told: {0}</PawnDiary.Event.DayReflectionNews>
   <PawnDiary.Event.QuadrumReflectionLabel>Looking back on the quadrum</PawnDiary.Event.QuadrumReflectionLabel>
   <PawnDiary.Event.QuadrumReflectionHeader>Across {1}, these moments shaped {0}:</PawnDiary.Event.QuadrumReflectionHeader>
   <PawnDiary.Event.QuadrumReflectionDateRange>{0} - {1}</PawnDiary.Event.QuadrumReflectionDateRange>

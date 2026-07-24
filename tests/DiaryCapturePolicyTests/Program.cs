@@ -1592,6 +1592,11 @@ namespace DiaryCapturePolicyTests
                 DayReflectionEventData.IsImportantSignalKind("HEDIFF", policy));
             AssertTrue("day reflection non-listed kind is not important",
                 !DayReflectionEventData.IsImportantSignalKind(DayReflectionEventData.SignalKindFiller, policy));
+            AssertTrue("H3 news stays non-important when XML omits it",
+                !DayReflectionEventData.IsImportantSignalKind(DayReflectionEventData.SignalKindNews, policy));
+            policy.Add(DayReflectionEventData.SignalKindNews);
+            AssertTrue("H3 XML can promote news to an important signal",
+                DayReflectionEventData.IsImportantSignalKind("NEWS", policy));
             AssertTrue("day reflection empty policy disables all kinds",
                 !DayReflectionEventData.IsImportantSignalKind(DayReflectionEventData.SignalKindEvent, new List<string>()));
             AssertTrue("day reflection null policy disables all kinds",
@@ -1608,6 +1613,9 @@ namespace DiaryCapturePolicyTests
             AssertEqual("day reflection context null tags",
                 "day_reflection=true; day=42; highlights=1; candidates=1; filler_moments=0; signals=",
                 DayReflectionEventData.BuildGameContext(42, 1, 1, 0, null));
+            AssertEqual("H3 news signal tag survives the capture context",
+                "day_reflection=true; day=42; highlights=1; candidates=1; filler_moments=0; signals=news:positive",
+                DayReflectionEventData.BuildGameContext(42, 1, 1, 0, "news:positive"));
         }
 
         private static void TestQuadrumReflectionPolicy()

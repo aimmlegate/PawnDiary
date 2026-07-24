@@ -439,8 +439,8 @@ namespace PawnDiary
         // Highest number of highlights woven into one reflection (the weighted selection cap).
         public int daySummaryMaxHighlights = 3;
         // Which candidate kinds are strong enough to create a reflection. Valid tokens are event,
-        // opinion, hediff, and filler. Filler is excluded by default so small talk can add color but
-        // cannot create an otherwise-empty daily summary.
+        // opinion, hediff, news, and filler. News/filler are excluded by default so background colony
+        // context can add color but cannot create an otherwise-empty daily summary.
         public List<string> daySummaryImportantSignalKinds = new List<string>
         {
             DayReflectionEventData.SignalKindEvent,
@@ -456,6 +456,7 @@ namespace PawnDiary
         public float daySummaryWeightHediff = 0.8f;        // a hediff health signal
         public float daySummaryWeightOpinionShift = 0.6f;  // base; scaled up by swing magnitude
         public float daySummaryWeightFiller = 0.15f;       // background small talk / passing feelings
+        public float daySummaryWeightNews = 0.3f;          // newest unsuperseded colony letter
         // Rare long reflection near the end of each quadrum. The timing window spreads pawns across
         // several days, and maxPromptEvents is the prompt evidence cap so long histories stay bounded.
         public bool quadrumReflectionEnabled = true;

@@ -116,6 +116,15 @@ retain each POV's most emotionally extreme contributing event-time candidate (lo
 tick breaks ties); the final page never re-reads live mood at flush. The compact saved value is
 `mood=<qualitative bucket>` plus at most one formatted top thought.
 
+### Reflection evidence
+
+Day and quadrum reflections can use the newest allowed RimWorld archive letter as low-weight colony
+news. `DiaryContextReactionDefs.xml` classifies exact `LetterDef` names as `threat`, `quest`, or
+`positive`, and maps each category to stable direct-event domains/context markers. A same-category
+direct page for that pawn in hot or archived diary history suppresses the letter, while unrelated
+categories remain eligible. The scan is bounded, shared across map and caravan colonists, and clipped
+to the pawn's first arrival page so nobody remembers colony news from before joining.
+
 ## XML ownership
 
 | File | Owns |
