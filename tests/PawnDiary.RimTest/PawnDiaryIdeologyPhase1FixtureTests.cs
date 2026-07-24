@@ -378,12 +378,12 @@ namespace PawnDiary.RimTests
             string pawnId = pawn.GetUniqueLoadID();
             int tick = Find.TickManager.TicksGame;
             BeliefPreceptFact first = DetachedPrecept(
-                "FixtureDoctrineA91", "FixtureIssueA91", "silver orchard covenant mercy");
+                "FixtureDoctrineA91", "FixtureIssueA91", "obsidian orchards covenant mercy");
             BeliefPreceptFact second = DetachedPrecept(
-                "FixtureDoctrineB72", "FixtureIssueB72", "golden lantern covenant mercy");
+                "FixtureDoctrineB72", "FixtureIssueB72", "goldleaf lanterns covenant mercy");
             // The shared words are intentionally suppressed as corpus-common. Each candidate still has
-            // two equally weighted distinctive matches in the combined event text, so the loaded policy
-            // reaches the runner-up guard without depending on a fragile document-frequency boundary.
+            // two equally weighted distinctive matches long enough to earn the loaded policy's unique-
+            // token bonus, so both clear its confidence floor before reaching the runner-up guard.
             BeliefSnapshot ambiguousSnapshot = DetachedSnapshot(
                 pawnId,
                 tick,
@@ -391,7 +391,7 @@ namespace PawnDiary.RimTests
                 second);
             BeliefEventEvidence ambiguousEvidence = BeliefEventEvidenceFactory.ForEvent(
                 pawnId, tick, "fixture", "EventR53", DiaryEvent.InitiatorRole,
-                "silver orchard covenant mercy golden lantern", string.Empty);
+                "obsidian orchards covenant mercy goldleaf lanterns", string.Empty);
             BeliefStanceResolution ambiguous = EventRelativeStanceResolver.Resolve(
                 new BeliefResolutionRequest
                 {

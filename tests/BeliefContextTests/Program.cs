@@ -2289,6 +2289,28 @@ namespace PawnDiary
             AssertTrue("ambiguous matcher exposes no winner", tiedResult.winner == null);
             AssertEmpty("resolver remains silent on lexical tie", Resolve(tied,
                 TextEvidence(true, "crimson doctrine"), ambiguity.Build()));
+
+            // Mirror the loaded RimTest fixture with the shipped/default thresholds. Two long unique
+            // tokens per candidate clear the 65-point floor equally, so rejection must happen at the
+            // runner-up guard rather than the earlier below-confidence guard.
+            BeliefPreceptFact loadedFirst = Precept(
+                "FixtureDoctrineA91", "FixtureIssueA91", "obsidian orchards covenant mercy", 1);
+            BeliefPreceptFact loadedSecond = Precept(
+                "FixtureDoctrineB72", "FixtureIssueB72", "goldleaf lanterns covenant mercy", 1);
+            BeliefSnapshot loadedTie = Snapshot(loadedFirst, loadedSecond);
+            BeliefEventEvidence loadedEvidence = TextEvidence(
+                true, "obsidian orchards covenant mercy goldleaf lanterns");
+            BeliefStanceResolution loadedResolution = Resolve(
+                loadedTie, loadedEvidence, BeliefPolicySnapshot.CreateDefault());
+            AssertEmpty("shipped-threshold lexical tie remains silent", loadedResolution);
+            AssertEqual("shipped-threshold tie reports ambiguous",
+                BeliefAutomaticCoverageOutcomeTokens.Ambiguous,
+                loadedResolution.automaticCoverage.outcome);
+            AssertEqual("shipped-threshold tie reports runner-up ambiguity",
+                BeliefAutomaticCoverageReasonTokens.RunnerUpAmbiguity,
+                loadedResolution.automaticCoverage.reason);
+            AssertEqual("shipped-threshold tie retains both candidates", 2,
+                loadedResolution.automaticCoverage.candidateCount);
         }
 
         private static void TestLexicalFuzzyAndUnknownTopicBehavior()

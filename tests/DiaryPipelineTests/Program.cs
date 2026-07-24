@@ -19,6 +19,7 @@ namespace DiaryPipelineTests
             TestCombatPromptPlan();
             TestSoloPromptPlan();
             TestNarrativeContextPromptField();
+            TestNarrativeContinuityLocalizationContract();
             TestBeliefContextPromptField();
             TestBeliefCombinedDlcPromptFixtures();
             TestMemoryContextProjectabilityAndTemplates();
@@ -639,6 +640,69 @@ namespace DiaryPipelineTests
             AssertEqual("belief reflection retains the shared narrative source", 1,
                 beliefReflection?.Element("fields")?.Elements("li")
                     .Count(row => ChildValue(row, "source") == NarrativeContextPrompt.Source) ?? 0);
+        }
+
+        private static void TestNarrativeContinuityLocalizationContract()
+        {
+            XDocument templates = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryPromptTemplateDefs.xml"));
+            XDocument englishTemplates = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryPromptTemplateDef",
+                "DiaryPromptTemplateDefs.xml"));
+            XDocument russianTemplates = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected",
+                "PawnDiary.DiaryPromptTemplateDef", "DiaryPromptTemplateDefs.xml"));
+            XDocument englishPolicy = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected",
+                "PawnDiary.DiaryNarrativeContinuityDef",
+                "DiaryNarrativeContinuityDefs.xml"));
+            XDocument russianPolicy = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected",
+                "PawnDiary.DiaryNarrativeContinuityDef",
+                "DiaryNarrativeContinuityDefs.xml"));
+
+            string[] policyFields = { "label", "promptFieldLabel", "promptFieldInstruction" };
+            for (int i = 0; i < policyFields.Length; i++)
+            {
+                string key = "Diary_NarrativeContinuity." + policyFields[i];
+                AssertTrue("English Narrative Continuity DefInjected text exists: " + key,
+                    !string.IsNullOrWhiteSpace(KeyedValue(englishPolicy, key)));
+                AssertTrue("Russian Narrative Continuity DefInjected text exists: " + key,
+                    !string.IsNullOrWhiteSpace(KeyedValue(russianPolicy, key)));
+            }
+
+            int narrativeFields = 0;
+            int memoryFields = 0;
+            foreach (XElement template in templates.Root?.Elements(
+                "PawnDiary.DiaryPromptTemplateDef") ?? Enumerable.Empty<XElement>())
+            {
+                string defName = ChildValue(template, "defName");
+                List<XElement> fields = template.Element("fields")?.Elements("li").ToList()
+                    ?? new List<XElement>();
+                for (int fieldIndex = 0; fieldIndex < fields.Count; fieldIndex++)
+                {
+                    string source = ChildValue(fields[fieldIndex], "source");
+                    if (source != NarrativeContextPrompt.Source
+                        && source != MemoryContextPrompt.Source) continue;
+
+                    if (source == NarrativeContextPrompt.Source) narrativeFields++;
+                    else memoryFields++;
+                    string localizationKey = defName + ".fields." + fieldIndex + ".label";
+                    AssertTrue("English shared-context template label exists: " + localizationKey,
+                        !string.IsNullOrWhiteSpace(KeyedValue(englishTemplates, localizationKey)));
+                    AssertTrue("Russian shared-context template label exists: " + localizationKey,
+                        !string.IsNullOrWhiteSpace(KeyedValue(russianTemplates, localizationKey)));
+                }
+            }
+
+            AssertEqual("all applicable templates retain NarrativeContext source rows", 12,
+                narrativeFields);
+            AssertEqual("all applicable templates retain MemoryContext source rows", 12,
+                memoryFields);
+            AssertEqual("NarrativeContext remains an English structured schema token",
+                "NarrativeContext", NarrativeContextPrompt.Source);
+            AssertEqual("MemoryContext remains an English structured schema token",
+                "MemoryContext", MemoryContextPrompt.Source);
         }
 
         private static void TestPromptContextDetailSelection()

@@ -31,6 +31,7 @@ namespace NarrativeContinuityTests
             TestOdysseyEnvironmentalPressureGatesAndComposition();
             TestIdeologyInterpretationCompositionAndIsolation();
             TestIdeologyProviderPromptBudgetMatrix();
+            TestDlcCombinationMatrix();
             TestCrossArcMemorySelection();
             TestTerminalReflectionQualification();
             TestReflectionPriorityAndDeferredConsumption();
@@ -2342,6 +2343,179 @@ namespace NarrativeContinuityTests
                 ReflectionCoordinator.CanConsumeAfterDispatch(shorterCadences, true));
         }
 
+        /// <summary>
+        /// Exercises the authoritative N5 activation matrix through the one fixed provider
+        /// orchestrator. Inactive snapshots remain present but explicitly unavailable, which models a
+        /// DLC being disabled without letting stale provider state create work. Re-enabling the same
+        /// snapshots must immediately reproduce the same bounded, deterministic result.
+        /// </summary>
+        private static void TestDlcCombinationMatrix()
+        {
+            NarrativeEvidence shared = Evidence();
+            shared.tick = 1000;
+
+            NarrativeEvidence royaltyEvidence = Evidence();
+            royaltyEvidence.tick = 1000;
+            royaltyEvidence.facet = NarrativeFacetTokens.BondLifecycle;
+            royaltyEvidence.subjectKind = NarrativeSubjectKindTokens.Weapon;
+            royaltyEvidence.subjectId = "Weapon_Matrix";
+            royaltyEvidence.arcKey = "royalty-persona|Weapon_Matrix|1";
+
+            // Use a non-pawn exact subject so the combined synthetic event does not claim two
+            // conflicting pawn identities. The selector correctly rejects that impossible shape.
+            AnomalyNarrativeFact anomalyFact = AnomalyFact(
+                AnomalyNarrativeContinuityTokens.ContainmentBreach,
+                NarrativeFacetTokens.AmbientPressure,
+                AnomalyNarrativeContinuityTokens.Breached,
+                NarrativeSubjectKindTokens.Entity,
+                "Entity_Matrix",
+                "anomaly-breach|3|900|Entity_Matrix",
+                "A visibly contained entity escaped on this map.");
+            List<NarrativeEvidence> evidence = new List<NarrativeEvidence>
+            {
+                shared,
+                royaltyEvidence,
+                AnomalyEvidence(anomalyFact)
+            };
+
+            RoyaltyNarrativeSnapshot royalty = new RoyaltyNarrativeSnapshot
+            {
+                povPawnId = shared.povPawnId,
+                pawnCanKnow = true,
+                hasVerifiedPovConnection = true,
+                personaBonds = new List<RoyaltyPersonaNarrativeFact>
+                {
+                    PersonaFact("Weapon_Matrix", 1)
+                }
+            };
+            IdeologyNarrativeSnapshot ideology = new IdeologyNarrativeSnapshot
+            {
+                povPawnId = shared.povPawnId,
+                ideologyId = "Ideo_Matrix",
+                preceptKeyKind = "instance",
+                preceptStableId = "Precept_Matrix",
+                text = "Within Ari's worldview, this event directly engaged bodily change.",
+                sourceEvidence = shared,
+                topicTokens = new List<string> { "body_modification" },
+                pawnCanKnow = true,
+                hasVerifiedPovConnection = true
+            };
+            BiotechNarrativeSnapshot biotech = new BiotechNarrativeSnapshot
+            {
+                povPawnId = shared.povPawnId,
+                childId = shared.subjectId,
+                identityStableKey = "gene|MatrixGene",
+                identityText = "A visible inherited trait changed.",
+                identityTopicTokens = new List<string> { "identity", "gene" },
+                sourceTick = shared.tick,
+                pawnCanKnow = true,
+                hasVerifiedPovConnection = true
+            };
+            AnomalyNarrativeSnapshot anomaly = AnomalySnapshot(anomalyFact);
+            OdysseyNarrativeSnapshot odyssey = OdysseySnapshot();
+
+            string[] names =
+            {
+                "zero DLC",
+                "Royalty alone",
+                "Ideology alone",
+                "Biotech alone",
+                "Anomaly alone",
+                "Odyssey alone",
+                "Royalty + Biotech",
+                "Ideology + Biotech",
+                "Biotech + Odyssey",
+                "Royalty + Anomaly",
+                "Ideology + Anomaly",
+                "Ideology + Odyssey",
+                "all available DLCs"
+            };
+            bool[][] active =
+            {
+                new[] { false, false, false, false, false },
+                new[] { true, false, false, false, false },
+                new[] { false, true, false, false, false },
+                new[] { false, false, true, false, false },
+                new[] { false, false, false, true, false },
+                new[] { false, false, false, false, true },
+                new[] { true, false, true, false, false },
+                new[] { false, true, true, false, false },
+                new[] { false, false, true, false, true },
+                new[] { true, false, false, true, false },
+                new[] { false, true, false, true, false },
+                new[] { false, true, false, false, true },
+                new[] { true, true, true, true, true }
+            };
+
+            NarrativePolicySnapshot policy = NarrativePolicySnapshot.CreateDefault();
+            policy.maxSelectedCandidates = 2;
+            Budget(policy, NarrativeDetailLevelTokens.Full).maxLenses = 2;
+            Budget(policy, NarrativeDetailLevelTokens.Full).characterBudget = 1000;
+
+            for (int caseIndex = 0; caseIndex < names.Length; caseIndex++)
+            {
+                royalty.providerAvailable = active[caseIndex][0];
+                ideology.providerAvailable = active[caseIndex][1];
+                biotech.providerAvailable = active[caseIndex][2];
+                anomaly.providerAvailable = active[caseIndex][3];
+                odyssey.providerAvailable = active[caseIndex][4];
+
+                List<string> expectedProviders = new List<string>();
+                if (royalty.providerAvailable) expectedProviders.Add(NarrativeProviderTokens.Royalty);
+                if (ideology.providerAvailable) expectedProviders.Add(NarrativeProviderTokens.Ideology);
+                if (biotech.providerAvailable) expectedProviders.Add(NarrativeProviderTokens.Biotech);
+                if (anomaly.providerAvailable) expectedProviders.Add(NarrativeProviderTokens.Anomaly);
+                if (odyssey.providerAvailable) expectedProviders.Add(NarrativeProviderTokens.Odyssey);
+
+                List<NarrativeLensCandidate> candidates = NarrativeProviderOrchestrator.Collect(
+                    evidence, null, royalty, biotech, anomaly, odyssey, ideology);
+                AssertEqual(names[caseIndex] + " emits exactly one candidate per active provider",
+                    expectedProviders.Count, candidates.Count);
+                for (int providerIndex = 0; providerIndex < expectedProviders.Count; providerIndex++)
+                {
+                    AssertEqual(names[caseIndex] + " preserves provider order at " + providerIndex,
+                        expectedProviders[providerIndex], candidates[providerIndex].provider);
+                }
+
+                NarrativeContextRequest request = new NarrativeContextRequest
+                {
+                    evidence = evidence,
+                    candidates = candidates,
+                    policy = policy,
+                    currentTick = 1000,
+                    detailLevel = NarrativeDetailLevelTokens.Full,
+                    deterministicSeed = 1305
+                };
+                NarrativeContextSelection first = NarrativeContextSelector.Select(request);
+                NarrativeContextSelection second = NarrativeContextSelector.Select(request);
+                AssertEqual(names[caseIndex] + " respects the global two-lens cap",
+                    Math.Min(2, expectedProviders.Count), first.selectedCandidates.Count);
+                AssertEqual(names[caseIndex] + " selection is deterministic",
+                    SelectedCandidateKeys(first), SelectedCandidateKeys(second));
+                AssertTrue(names[caseIndex] + " prompt stays inside the configured character budget",
+                    first.narrativeContext.Length <= 1000);
+            }
+
+            // The final case leaves every snapshot enabled. Disable and re-enable the same objects to
+            // prove that provider activation itself owns no deferred queue or historical backfill.
+            royalty.providerAvailable = false;
+            ideology.providerAvailable = false;
+            biotech.providerAvailable = false;
+            anomaly.providerAvailable = false;
+            odyssey.providerAvailable = false;
+            AssertEqual("disabled DLC providers retain no candidate backlog", 0,
+                NarrativeProviderOrchestrator.Collect(
+                    evidence, null, royalty, biotech, anomaly, odyssey, ideology).Count);
+            royalty.providerAvailable = true;
+            ideology.providerAvailable = true;
+            biotech.providerAvailable = true;
+            anomaly.providerAvailable = true;
+            odyssey.providerAvailable = true;
+            AssertEqual("re-enabled DLC providers rebuild only the current five candidates", 5,
+                NarrativeProviderOrchestrator.Collect(
+                    evidence, null, royalty, biotech, anomaly, odyssey, ideology).Count);
+        }
+
         private static void TestCrossArcMemorySelection()
         {
             CrossArcMemorySelection linked = CrossArcReflectionMemorySelector.Select(
@@ -2835,6 +3009,15 @@ namespace NarrativeContinuityTests
             }
 
             return false;
+        }
+
+        private static string SelectedCandidateKeys(NarrativeContextSelection selection)
+        {
+            List<string> keys = new List<string>();
+            List<NarrativeLensCandidate> selected = selection?.selectedCandidates;
+            for (int i = 0; i < (selected?.Count ?? 0); i++)
+                keys.Add(selected[i]?.candidateKey ?? string.Empty);
+            return string.Join("|", keys.ToArray());
         }
 
         private static bool ContainsFacet(List<NarrativeEvidence> evidence, string facet)

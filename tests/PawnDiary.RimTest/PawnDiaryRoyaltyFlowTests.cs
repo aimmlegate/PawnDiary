@@ -606,11 +606,18 @@ namespace PawnDiary.RimTests
             CompBladelinkWeapon comp;
             CreatePersonaWeapon(out weapon, out comp);
             comp.CodeFor(pawn);
+            PawnDiaryRimTestScope.Require(
+                ReferenceEquals(comp.CodedPawn, pawn),
+                "Vanilla refused to code the non-primary persona fixture weapon.");
+            // This fixture tests Pawn Diary's pre-UnCode death enrichment, not another equipment mod's
+            // tracker normalization. Re-establish the exact relation written by vanilla OnCodedFor
+            // without equipping the weapon, so it remains deliberately non-primary.
+            pawn.equipment.bondedWeapon = weapon;
             scope.RequireNoNewEvent(() =>
             {
-                // CodeFor establishes the vanilla bondedWeapon reference without requiring the weapon
-                // to be primary. Drive Pawn Diary's exact equipment observer directly so this death-
-                // enrichment fixture does not also depend on other loaded mods' ThingOwner.Remove patches.
+                // The exact coded relation above does not require the weapon to be primary. Drive Pawn
+                // Diary's equipment observer directly so this death-enrichment fixture does not also
+                // depend on other loaded mods' ThingOwner.Remove patches.
                 scope.Component.ObserveRoyaltyPersonaEquipment(weapon, pawn);
             });
 
