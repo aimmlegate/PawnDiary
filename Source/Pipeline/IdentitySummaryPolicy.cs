@@ -14,6 +14,8 @@ namespace PawnDiary
     /// </summary>
     internal sealed class IdentityRow
     {
+        // Internal-only final tie-break. This stable id is never rendered into the prompt.
+        public string pawnId;
         public string name;
         public string relationLabel;
         public string sentimentLabel;
@@ -32,7 +34,8 @@ namespace PawnDiary
         /// <summary>
         /// Selects at most <paramref name="maximum"/> rows. If any named relation exists, its
         /// strongest row is reserved before the remaining slots are filled from the global ranking.
-        /// Ties use the colonist name with ordinal, case-insensitive comparison.
+        /// Ties use the colonist name with ordinal, case-insensitive comparison, then the stable pawn id
+        /// so two colonists with the same displayed nickname cannot fall back to live enumeration order.
         /// </summary>
         public static List<IdentityRow> Select(IReadOnlyList<IdentityRow> rows, int maximum)
         {
@@ -46,6 +49,7 @@ namespace PawnDiary
                 .Where(row => row != null && !string.IsNullOrWhiteSpace(row.name))
                 .OrderByDescending(row => OpinionMagnitude(row.opinion))
                 .ThenBy(row => row.name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(row => row.pawnId ?? string.Empty, StringComparer.Ordinal)
                 .ToList();
             if (ranked.Count == 0)
             {

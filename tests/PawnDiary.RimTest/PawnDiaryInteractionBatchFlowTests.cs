@@ -138,6 +138,108 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Replaying one exact source row must be inert before any pair-batch state changes. The two
+        /// later unique ids prove the duplicate did not advance Count and force an early flush.
+        /// </summary>
+        [Test]
+        public static void PairBatchRejectsRepeatedPlayLogIdBeforeMutation()
+        {
+            DiaryInteractionGroupDef group = RequireGroup("insults");
+            InteractionDef insult = RequireDef<InteractionDef>("Insult");
+            string label = insult.LabelCap.Resolve();
+
+            scope.RequireNoNewEvent(() => scope.Component.RecordBatchedInteraction(
+                group, firstPawn, secondPawn, insult, label,
+                "first unique row", "first recipient row", 910001));
+            scope.RequireNoNewEvent(() => scope.Component.RecordBatchedInteraction(
+                group, firstPawn, secondPawn, insult, label,
+                "duplicate row must be dropped", "duplicate recipient row must be dropped", 910001));
+            scope.RequireNoNewEvent(() => scope.Component.RecordBatchedInteraction(
+                group, firstPawn, secondPawn, insult, label,
+                "second unique row", "second recipient row", 910002));
+
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => scope.Component.RecordBatchedInteraction(
+                    group, firstPawn, secondPawn, insult, label,
+                    "third unique row", "third recipient row", 910003),
+                "InsultBatch",
+                firstPawn,
+                secondPawn);
+
+            scope.RequirePairRefs(diaryEvent, firstPawn, secondPawn);
+            RequireContextContains(diaryEvent, "events=" + BatchFlushThreshold);
+            PawnDiaryRimTestScope.Require(
+                diaryEvent.playLogEntryIds.Count == BatchFlushThreshold
+                    && diaryEvent.playLogEntryIds.Contains(910001)
+                    && diaryEvent.playLogEntryIds.Contains(910002)
+                    && diaryEvent.playLogEntryIds.Contains(910003),
+                "The pair batch did not retain exactly the three unique PlayLog ids.");
+            PawnDiaryRimTestScope.Require(
+                diaryEvent.initiatorText.IndexOf("duplicate row must be dropped", StringComparison.Ordinal) < 0
+                    && diaryEvent.recipientText.IndexOf(
+                        "duplicate recipient row must be dropped", StringComparison.Ordinal) < 0,
+                "A repeated PlayLog id still contributed duplicate pair-batch prose.");
+        }
+
+        /// <summary>
+        /// Alternating who initiated must still produce one order-independent pair batch whose raw text
+        /// and retained B2 mood stay attached to the original event POVs.
+        /// </summary>
+        [Test]
+        public static void PairBatchReversedRowsKeepOriginalPovOwnership()
+        {
+            ForceMoodSnapshotAlways();
+            DiaryInteractionGroupDef group = RequireGroup("insults");
+            InteractionDef insult = RequireDef<InteractionDef>("Insult");
+            string label = insult.LabelCap.Resolve();
+
+            firstPawn.needs.mood.CurLevel = 0.50f;
+            secondPawn.needs.mood.CurLevel = 0.50f;
+            scope.RequireNoNewEvent(() => scope.Component.RecordBatchedInteraction(
+                group, firstPawn, secondPawn, insult, label,
+                "first pawn opened", "second pawn received", 920001));
+
+            // The emotionally extreme row is deliberately reversed: secondPawn is the live initiator,
+            // while firstPawn is the live recipient. Production must swap both text and mood candidates.
+            firstPawn.needs.mood.CurLevel = 0.05f;
+            secondPawn.needs.mood.CurLevel = 0.90f;
+            scope.RequireNoNewEvent(() => scope.Component.RecordBatchedInteraction(
+                group, secondPawn, firstPawn, insult, label,
+                "second pawn initiated reverse", "first pawn received reverse", 920002));
+
+            firstPawn.needs.mood.CurLevel = 0.50f;
+            secondPawn.needs.mood.CurLevel = 0.50f;
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => scope.Component.RecordBatchedInteraction(
+                    group, firstPawn, secondPawn, insult, label,
+                    "first pawn closed", "second pawn closed", 920003),
+                "InsultBatch",
+                firstPawn,
+                secondPawn);
+
+            scope.RequirePairRefs(diaryEvent, firstPawn, secondPawn);
+            PawnDiaryRimTestScope.Require(
+                diaryEvent.initiatorText.IndexOf("first pawn received reverse", StringComparison.Ordinal) >= 0
+                    && diaryEvent.initiatorText.IndexOf(
+                        "second pawn initiated reverse", StringComparison.Ordinal) < 0,
+                "The reversed row's text escaped the original initiator POV.");
+            PawnDiaryRimTestScope.Require(
+                diaryEvent.recipientText.IndexOf("second pawn initiated reverse", StringComparison.Ordinal) >= 0
+                    && diaryEvent.recipientText.IndexOf(
+                        "first pawn received reverse", StringComparison.Ordinal) < 0,
+                "The reversed row's text escaped the original recipient POV.");
+
+            string firstMood = diaryEvent.MoodSnapshotForRole(DiaryEvent.InitiatorRole);
+            string secondMood = diaryEvent.MoodSnapshotForRole(DiaryEvent.RecipientRole);
+            PawnDiaryRimTestScope.Require(
+                firstMood.StartsWith("mood=" + DiaryBuckets.MoodBucket(5), StringComparison.Ordinal),
+                "The reversed row did not retain firstPawn's recipient-side mood in the initiator slot.");
+            PawnDiaryRimTestScope.Require(
+                secondMood.StartsWith("mood=" + DiaryBuckets.MoodBucket(90), StringComparison.Ordinal),
+                "The reversed row did not retain secondPawn's initiator-side mood in the recipient slot.");
+        }
+
+        /// <summary>
         /// EVT-02. Adds repeated Chitchat rows: the first rows accumulate with NO page, then the row that
         /// reaches the threshold flushes one solo ambient day note for the point-of-view pawn, carrying
         /// the sampled chatter as background evidence rather than one page per line.

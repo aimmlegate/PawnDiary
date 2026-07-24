@@ -576,6 +576,40 @@ namespace PawnDiary.RimTests
                 "identitySummary was not capped to 600 characters on load.");
             Require(capped.MoodSnapshotForRole(DiaryEvent.InitiatorRole).Length == 600,
                 "moodSnapshot was not capped to 600 characters on load.");
+
+            // Exercise both sides of the exact UTF-16 boundary. The identity pair would be split by a
+            // raw Substring(0, 600), while the mood pair ends exactly at the cap and must remain intact.
+            const string AstralCharacter = "\U0001F600";
+            DiaryEvent unicode = new DiaryEvent
+            {
+                eventId = "evt_quality_wave_unicode",
+                tick = 456794,
+                interactionDefName = "Chat",
+                interactionLabel = "chat",
+                initiatorPawnId = "Thing_Human_QualityUnicode",
+                initiatorName = "Unicode",
+                solo = true,
+            };
+            unicode.SetIdentitySummary(
+                DiaryEvent.InitiatorRole,
+                new string('i', 599) + AstralCharacter + "tail");
+            unicode.SetMoodSnapshot(
+                DiaryEvent.InitiatorRole,
+                new string('m', 598) + AstralCharacter + "tail");
+
+            // The first Scribe write itself is the regression boundary: XmlWriter rejects a lone high
+            // surrogate, so the old raw-Substring implementation fails before this round-trip returns.
+            DiaryEvent unicodeLoaded = ScribeRoundTrip(unicode);
+            string unicodeIdentity =
+                unicodeLoaded.IdentitySummaryForRole(DiaryEvent.InitiatorRole);
+            string unicodeMood =
+                unicodeLoaded.MoodSnapshotForRole(DiaryEvent.InitiatorRole);
+            Require(unicodeIdentity.Length == 599
+                    && (unicodeIdentity.Length == 0
+                        || !char.IsSurrogate(unicodeIdentity[unicodeIdentity.Length - 1])),
+                "identitySummary split a surrogate pair at the 600-character save cap.");
+            Require(unicodeMood.Length == 600 && char.IsSurrogatePair(unicodeMood, 598),
+                "moodSnapshot dropped or split a surrogate pair that ended exactly at the cap.");
         }
 
         // ---- ArchivedDiaryEntry round-trip ---------------------------------------------------------

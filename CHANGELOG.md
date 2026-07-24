@@ -6,6 +6,10 @@ Companion: [repowiki/README.md](repowiki/README.md) describes the current state.
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-07-25
+
+- **Quality Wave Phase 2 review hardening.** Interaction batches now reject replayed PlayLog rows before they can change counts, prose, or retained mood; reversed initiator order has loaded regression coverage; identity ties between duplicate nicknames use stable pawn IDs; and bounded POV context cannot split UTF-16 surrogate pairs during save normalization.
+
 ## 2026-07-24
 
 - **Prompts drop the character-sheet register: no stat numbers, and no label its own description already repeats.** Arrival notes lose the backstory *title* ("childhood=Industrial orphan") — the description right beneath it says the same thing in prose — and lose skill numbers from both of their sources: the explicit "skill bonuses: Crafting +3, Mining +3" fact, and RimWorld's own `FullDescriptionFor`, which appends the skill list, disabled-work lines, meditation foci, and a source-mod credit to the description text. The backstory description is now resolved from flavor prose alone, the same line the trait context already drew. The rule then swept the rest of the prompt surface: trait, chosen-trait, and persona-trait labels yield to their descriptions, and raw skill levels, psylink levels, and ability recharge ticks are no longer rendered — joining raid points, which was disabled for exactly this reason. Work a pawn can never do and traits they were born with are still supplied. Existing saves keep their stored context; the retired keys are simply no longer read.

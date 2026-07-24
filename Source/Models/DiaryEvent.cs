@@ -549,7 +549,7 @@ namespace PawnDiary
         private static string NormalizeQualityWaveContext(string value)
         {
             string normalized = DiarySaveNormalization.NormalizeString(value);
-            return normalized.Length <= 600 ? normalized : normalized.Substring(0, 600);
+            return TextTruncation.SafePrefix(normalized, 600);
         }
 
         /// <summary>

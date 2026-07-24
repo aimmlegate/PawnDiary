@@ -265,6 +265,31 @@ namespace DiaryPipelineTests
             AssertEqual("A5 no-relation fallback retains the next global row",
                 "Cora", noRelations[1].name);
 
+            IdentityRow duplicateNameLaterId = new IdentityRow
+            {
+                pawnId = "Thing_Human_Z",
+                name = "Sam",
+                sentimentLabel = "friendly",
+                opinion = 50
+            };
+            IdentityRow duplicateNameEarlierId = new IdentityRow
+            {
+                pawnId = "Thing_Human_A",
+                name = "Sam",
+                sentimentLabel = "hostile",
+                opinion = -50
+            };
+            List<IdentityRow> duplicateNames = IdentitySummaryPolicy.Select(
+                new List<IdentityRow> { duplicateNameLaterId, duplicateNameEarlierId },
+                1);
+            AssertEqual("A5 duplicate display names use the stable pawn id as the final tie-break",
+                "Thing_Human_A", duplicateNames[0].pawnId);
+            List<IdentityRow> duplicateNamesReversed = IdentitySummaryPolicy.Select(
+                new List<IdentityRow> { duplicateNameEarlierId, duplicateNameLaterId },
+                1);
+            AssertEqual("A5 duplicate-name selection is independent of live enumeration order",
+                duplicateNames[0].pawnId, duplicateNamesReversed[0].pawnId);
+
             string formatted = IdentitySummaryPolicy.Format(rows, 2);
             AssertEqual("A5 compact qualitative format",
                 "relationships=Ada (sister, friendly); Zara (devoted)",

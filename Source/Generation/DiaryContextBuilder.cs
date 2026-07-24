@@ -132,6 +132,7 @@ namespace PawnDiary
                     : ExternalText(relation.GetGenderSpecificLabelCap(candidate));
                 rows.Add(new IdentityRow
                 {
+                    pawnId = candidate.GetUniqueLoadID(),
                     name = name,
                     relationLabel = relationLabel,
                     sentimentLabel = DiaryBuckets.FormatOpinion(opinion),

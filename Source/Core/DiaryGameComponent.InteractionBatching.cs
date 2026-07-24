@@ -176,6 +176,14 @@ namespace PawnDiary
                 pendingInteractionBatches[key] = batch;
             }
 
+            // The PlayLog id is the source identity, not merely link metadata. Reject an already-seen
+            // row before it can add duplicate prose, replace retained mood, or advance the flush count.
+            // Older call paths use -1 when no PlayLog row exists; those remain independently admissible.
+            if (!TryAdmitPlayLogEntryId(batch.playLogEntryIds, playLogEntryId))
+            {
+                return;
+            }
+
             if (batch.Count == 0)
             {
                 CaptureFirstBatchTexts(batch, initiator, initiatorText, recipientText);
@@ -183,7 +191,6 @@ namespace PawnDiary
 
             AppendInteractionBatchLine(batch, initiator, interactionLabel, initiatorText, recipientText);
             RetainInteractionBatchMood(batch, initiator, recipient, eventTick);
-            AddPlayLogEntryId(batch.playLogEntryIds, playLogEntryId);
             batch.lastTick = eventTick;
 
             if (batch.Count >= BatchMaxEvents(batch.policy))
@@ -292,13 +299,19 @@ namespace PawnDiary
                 pendingAmbientInteractionNotes[key] = note;
             }
 
+            // Each eligible POV owns its own ambient note, so admit the source id independently in each
+            // note. A replay must be inert before it increments the count or changes samples/mood.
+            if (!TryAdmitPlayLogEntryId(note.playLogEntryIds, playLogEntryId))
+            {
+                return;
+            }
+
             int eventTick = Find.TickManager.TicksGame;
             note.eventCount++;
             note.lastTick = eventTick;
             note.moodSnapshot = MoodSnapshotPolicy.PreferBatchSnapshot(
                 note.moodSnapshot,
                 DiaryContextBuilder.CaptureMoodSnapshot(pawn, eventTick));
-            AddPlayLogEntryId(note.playLogEntryIds, playLogEntryId);
             AddAmbientParticipant(note, otherPawn);
 
             if (note.sampleLines.Count < AmbientMaxSampleLines(note.policy))
@@ -702,16 +715,23 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Adds one PlayLog id to an in-progress batch, ignoring the sentinel used by older call paths.
+        /// Admits one source row to an in-progress batch. A repeated non-negative PlayLog id is rejected;
+        /// the negative sentinel used by older/non-PlayLog call paths remains independently admissible.
         /// </summary>
-        private static void AddPlayLogEntryId(List<int> playLogEntryIds, int playLogEntryId)
+        private static bool TryAdmitPlayLogEntryId(List<int> playLogEntryIds, int playLogEntryId)
         {
-            if (playLogEntryIds == null || playLogEntryId < 0 || playLogEntryIds.Contains(playLogEntryId))
+            if (playLogEntryId < 0)
             {
-                return;
+                return true;
+            }
+
+            if (playLogEntryIds == null || playLogEntryIds.Contains(playLogEntryId))
+            {
+                return false;
             }
 
             playLogEntryIds.Add(playLogEntryId);
+            return true;
         }
 
         /// <summary>
