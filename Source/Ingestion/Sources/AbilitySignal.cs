@@ -128,10 +128,10 @@ namespace PawnDiary.Ingestion
                 RecordChance = chance,
                 DownstreamCovered = downstreamCovered,
                 // Roll is NOT drawn here. The pre-bus RecordAbilityUsed checked dedup before rolling,
-                // so a same-tick duplicate never consumed RimWorld's global RNG. Dispatch now performs
-                // the dedup CHECK before it reads Payload, so the roll is drawn lazily in the Payload
-                // getter below — only on the non-deduped path. This keeps Decide pure (it still reads
-                // Roll) while restoring the old RNG ordering.
+                // so a same-tick duplicate never performed the chance draw. Dispatch now performs the
+                // dedup CHECK before it reads Payload, so the isolated roll is drawn lazily in the
+                // Payload getter below — only on the non-deduped path. This keeps Decide pure (it still
+                // reads Roll) while preserving the historical draw timing.
             };
 
             dedupKey = "ability|" + caster.GetUniqueLoadID() + "|" + name + "|"
@@ -139,8 +139,8 @@ namespace PawnDiary.Ingestion
         }
 
         // Roll is drawn on the first Payload read instead of in the constructor. Solo Dispatch reads
-        // Payload only after the dedup check has passed, so a deduped duplicate activation never
-        // advances RimWorld's RNG stream. The rollDrawn guard makes the draw idempotent.
+        // Payload only after the dedup check has passed, so a deduped duplicate activation performs
+        // no unnecessary chance draw. The rollDrawn guard makes the isolated draw idempotent.
         private bool rollDrawn;
 
         public override DiaryEventData Payload
@@ -149,8 +149,18 @@ namespace PawnDiary.Ingestion
             {
                 if (payload != null && !payload.DownstreamCovered && !rollDrawn)
                 {
-                    payload.Roll = Rand.Value;
-                    rollDrawn = true;
+                    // This one-shot capture gate is frozen in the payload. Preserve the lazy,
+                    // post-dedup timing while keeping the draw off RimWorld's gameplay RNG stream.
+                    Rand.PushState();
+                    try
+                    {
+                        payload.Roll = Rand.Value;
+                        rollDrawn = true;
+                    }
+                    finally
+                    {
+                        Rand.PopState();
+                    }
                 }
 
                 return payload;

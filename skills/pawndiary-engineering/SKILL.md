@@ -36,7 +36,17 @@ description: PawnDiary repository workflow for Claude Code, Codex, and OpenCode.
    - If a function can be pure, make it pure. If it cannot, isolate the messy state collection and
      call a pure helper with a snapshot.
 
-4. Prefer XML-owned policy and constants
+4. Never consume the global gameplay RNG for cosmetic rolls
+   - Any `Rand.Value` / `Rand.Range` / `Rand.Chance` draw for a diary choice (style pick, highlight
+     selection, prompt flavor, enchantment, weather mention, or capture-time chance gate) must be
+     isolated in `Rand.PushState(...)` / `Rand.PopState()` so it does not advance RimWorld's seeded
+     `Rand` stream that the rest of the game draws from.
+   - Use `Rand.PushState(HumorChancePolicy.StableSeed(eventId, pawnId, salt))` for generation-time
+     picks that must reproduce on Regenerate/preview. Use unseeded `Rand.PushState()` for one-shot
+     capture picks whose result is persisted. Always `PopState()` in a `finally`.
+   - Mirror `Source/Generation/HumorCues.cs` and `Source/Generation/PsychotypeRolls.cs`.
+
+5. Prefer XML-owned policy and constants
    - Prompt text, template fields, event classifiers, thresholds, odds/cooldowns, UI visualization
      values, text decorations, tags, colors, labels/instructions, and other tunable policy should
      live in XML Defs under `1.6/Defs/` with code fallbacks where runtime safety requires them.
@@ -46,18 +56,18 @@ description: PawnDiary repository workflow for Claude Code, Codex, and OpenCode.
    - New player-facing UI strings and prompt prose must remain localization-friendly: Keyed strings
      or DefInjected text, following `AGENTS.md` and the localization rules above.
 
-5. Implement with minimum surface area
+6. Implement with minimum surface area
    - Prefer existing patterns/files over new abstractions.
    - Avoid unrelated cleanup.
 
-6. Add or update pure tests
+7. Add or update pure tests
    - Any new or changed pure function should have focused tests in a standalone console harness under
      `tests/`, or an existing pure test project should be extended.
    - Pure test projects must compile without RimWorld/Verse/Unity assemblies. If they need those
      assemblies, split the code again until the testable core is plain C#.
    - Cover selection/matching/order/edge cases for XML-driven policy and parser/formatter changes.
 
-7. Validate
+8. Validate
    - Build command:
      - `MSBuild Source\PawnDiary.csproj /t:Build /p:Configuration=Debug`
    - Run the relevant pure test projects after pure logic changes:
@@ -67,7 +77,7 @@ description: PawnDiary repository workflow for Claude Code, Codex, and OpenCode.
    - Validate touched XML with an XML parser when adding or editing Def files.
    - If `MSBuild` is unavailable in the environment, run the closest available build command and report the environment limitation.
 
-8. Never launch the live game
+9. Never launch the live game
    - Agents must not start `RimWorldWin64.exe` or Steam, use `-quicktest`, create or rename
      `Autostart.rws`, or otherwise run loaded-game/live-game validation.
    - Do not change the user's saves, `Prefs.xml`, RimTest configuration, or Steam launch options for
@@ -76,7 +86,7 @@ description: PawnDiary repository workflow for Claude Code, Codex, and OpenCode.
      give the user exact manual test steps and the expected evidence, then let the user run the game
      and report the results.
 
-9. Preserve reusable agent knowledge
+10. Preserve reusable agent knowledge
    - Do not update root documentation or event maps as routine bookkeeping.
    - Update a committed skill only when the change introduces important reusable knowledge for
      future agents.
@@ -137,6 +147,8 @@ text mod): `lore/animation.md`, `lore/textures.md`, `lore/sounds.md`, `lore/asse
 - Making broad edits unrelated to the task.
 - Letting RimWorld/Unity/Verse types leak into pure pipeline helpers or pure test projects.
 - Adding hardcoded tunable constants instead of XML-backed policy/style values.
+- Drawing `Rand.Value` / `Rand.Range` / `Rand.Chance` for a cosmetic pick without a
+  `Rand.PushState` / `Rand.PopState` guard, which shifts the game's seeded RNG stream.
 - Adding feature logic that cannot be tested without the game when the decision/formatting part could
   have been a pure function.
 

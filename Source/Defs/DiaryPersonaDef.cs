@@ -134,7 +134,17 @@ namespace PawnDiary
                 return Default ?? Fallback;
             }
 
-            return personas[Rand.Range(0, personas.Count)] ?? Default ?? Fallback;
+            // A new pawn keeps this one-shot result in its diary record. Isolate the cosmetic draw
+            // so choosing a writing style cannot advance RimWorld's seeded gameplay RNG stream.
+            Rand.PushState();
+            try
+            {
+                return personas[Rand.Range(0, personas.Count)] ?? Default ?? Fallback;
+            }
+            finally
+            {
+                Rand.PopState();
+            }
         }
 
         /// <summary>
@@ -227,8 +237,20 @@ namespace PawnDiary
                 return RandomStartingPersona(lifeStage);
             }
 
-            // Standard weighted pick: walk the cumulative weights until we pass the roll.
-            float roll = Rand.Range(0f, total);
+            // Standard weighted pick: walk the cumulative weights until we pass the roll. The chosen
+            // persona is persisted, so an unseeded private scope preserves the one-shot distribution
+            // without shifting RimWorld's gameplay RNG.
+            float roll;
+            Rand.PushState();
+            try
+            {
+                roll = Rand.Range(0f, total);
+            }
+            finally
+            {
+                Rand.PopState();
+            }
+
             float cumulative = 0f;
             for (int i = 0; i < personas.Count; i++)
             {

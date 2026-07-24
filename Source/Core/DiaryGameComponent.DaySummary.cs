@@ -541,29 +541,39 @@ namespace PawnDiary
             List<DaySummarySignal> pool = new List<DaySummarySignal>(candidates);
             List<DaySummarySignal> chosen = new List<DaySummarySignal>();
 
-            while (chosen.Count < max && pool.Count > 0)
+            // Highlight rotation is frozen into the captured reflection event. Use a private
+            // one-shot stream so this cosmetic sampling cannot perturb RimWorld's gameplay RNG.
+            Rand.PushState();
+            try
             {
-                float total = 0f;
-                for (int i = 0; i < pool.Count; i++)
+                while (chosen.Count < max && pool.Count > 0)
                 {
-                    total += Mathf.Max(0.0001f, pool[i].weight);
-                }
-
-                float roll = Rand.Value * total;
-                float acc = 0f;
-                int picked = pool.Count - 1;
-                for (int i = 0; i < pool.Count; i++)
-                {
-                    acc += Mathf.Max(0.0001f, pool[i].weight);
-                    if (roll <= acc)
+                    float total = 0f;
+                    for (int i = 0; i < pool.Count; i++)
                     {
-                        picked = i;
-                        break;
+                        total += Mathf.Max(0.0001f, pool[i].weight);
                     }
-                }
 
-                chosen.Add(pool[picked]);
-                pool.RemoveAt(picked);
+                    float roll = Rand.Value * total;
+                    float acc = 0f;
+                    int picked = pool.Count - 1;
+                    for (int i = 0; i < pool.Count; i++)
+                    {
+                        acc += Mathf.Max(0.0001f, pool[i].weight);
+                        if (roll <= acc)
+                        {
+                            picked = i;
+                            break;
+                        }
+                    }
+
+                    chosen.Add(pool[picked]);
+                    pool.RemoveAt(picked);
+                }
+            }
+            finally
+            {
+                Rand.PopState();
             }
 
             return chosen;
@@ -743,29 +753,39 @@ namespace PawnDiary
         {
             List<QuadrumReflectionSignal> pool = new List<QuadrumReflectionSignal>(candidates);
             List<QuadrumReflectionSignal> chosen = new List<QuadrumReflectionSignal>();
-            while (chosen.Count < max && pool.Count > 0)
+            // As with day highlights, the chosen set is persisted; isolate its one-shot weighted
+            // sampling from the seeded RNG stream used by RimWorld's simulation.
+            Rand.PushState();
+            try
             {
-                float total = 0f;
-                for (int i = 0; i < pool.Count; i++)
+                while (chosen.Count < max && pool.Count > 0)
                 {
-                    total += Mathf.Max(0.0001f, pool[i].weight);
-                }
-
-                float roll = Rand.Value * total;
-                float acc = 0f;
-                int picked = pool.Count - 1;
-                for (int i = 0; i < pool.Count; i++)
-                {
-                    acc += Mathf.Max(0.0001f, pool[i].weight);
-                    if (roll <= acc)
+                    float total = 0f;
+                    for (int i = 0; i < pool.Count; i++)
                     {
-                        picked = i;
-                        break;
+                        total += Mathf.Max(0.0001f, pool[i].weight);
                     }
-                }
 
-                chosen.Add(pool[picked]);
-                pool.RemoveAt(picked);
+                    float roll = Rand.Value * total;
+                    float acc = 0f;
+                    int picked = pool.Count - 1;
+                    for (int i = 0; i < pool.Count; i++)
+                    {
+                        acc += Mathf.Max(0.0001f, pool[i].weight);
+                        if (roll <= acc)
+                        {
+                            picked = i;
+                            break;
+                        }
+                    }
+
+                    chosen.Add(pool[picked]);
+                    pool.RemoveAt(picked);
+                }
+            }
+            finally
+            {
+                Rand.PopState();
             }
 
             return chosen;

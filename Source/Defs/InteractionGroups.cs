@@ -1015,7 +1015,20 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            return PromptVariants.Pick(group.instructions, group.instruction, Rand.Range(0, int.MaxValue));
+            // The selected wording is persisted on the captured event. Keep this one-shot cosmetic
+            // seed draw off RimWorld's global gameplay RNG while preserving the same variant spread.
+            Rand.PushState();
+            try
+            {
+                return PromptVariants.Pick(
+                    group.instructions,
+                    group.instruction,
+                    Rand.Range(0, int.MaxValue));
+            }
+            finally
+            {
+                Rand.PopState();
+            }
         }
 
         // Interaction-domain (social log) instruction.

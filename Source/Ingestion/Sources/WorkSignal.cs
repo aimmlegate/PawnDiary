@@ -74,7 +74,17 @@ namespace PawnDiary.Ingestion
                     chance *= Math.Max(0f, DiarySignalPolicies.WorkRecentDifferentTypeMultiplier);
                 }
 
-                passedChanceRoll = Rand.Value <= Math.Min(1f, Math.Max(0f, chance));
+                // The pass/fail result is persisted in the payload, so isolate this one-shot diary
+                // gate from the global seeded stream that drives RimWorld's simulation.
+                Rand.PushState();
+                try
+                {
+                    passedChanceRoll = Rand.Value <= Math.Min(1f, Math.Max(0f, chance));
+                }
+                finally
+                {
+                    Rand.PopState();
+                }
             }
 
             moodImpact = mood.IsPositive ? MoodImpact.Positive : mood.IsNegative ? MoodImpact.Negative : MoodImpact.Neutral;

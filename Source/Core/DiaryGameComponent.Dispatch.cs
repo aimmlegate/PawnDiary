@@ -16,8 +16,8 @@
 //
 // ── check-before-decide ──
 // The dedup CHECK runs before BuildContext/Decide, and the MARK runs after Decide. The split restores
-// the pre-refactor ability path (which checked dedup before drawing Rand.Value) so a dropped
-// duplicate no longer perturbs RimWorld's global RNG, and it skips pure Decide for deduped events.
+// the pre-refactor ability path (which checked dedup before drawing Rand.Value), so a dropped
+// duplicate performs no unnecessary isolated roll and skips pure Decide entirely.
 // The MARK stays after Decide so an event the catalog drops (e.g. an ability that fails its chance
 // roll) does not consume the dedup window.
 //
@@ -69,7 +69,7 @@ namespace PawnDiary
             //   1. It restores the pre-refactor ordering for sources whose old RecordXxx checked
             //      dedup before drawing impure state — notably Ability, which used to check dedup
             //      before its Rand.Value roll. Drawing the roll at capture time and only then
-            //      deduping would consume RimWorld's global RNG even on a dropped duplicate.
+            //      deduping would perform an unnecessary cosmetic roll for a dropped duplicate.
             //   2. It skips BuildContext + Decide for a deduped event, which is pure win with no
             //      behavior change (Decide is side-effect-free).
             // The dedup MARK stays after Decide (below): an event that Decide drops (e.g. an ability
@@ -87,7 +87,8 @@ namespace PawnDiary
             // already decided to drop (missing/ineligible inputs, no matching policy), and its
             // BuildContext may deref state that was never set. This is the common path for sources
             // that submit for every candidate (e.g. a HediffSignal for a hediff with no diary group).
-            // For Ability this read is also where the Rand.Value roll is drawn (lazily, post-dedup).
+            // For Ability this read is also where its isolated Rand.Value roll is drawn (lazily,
+            // post-dedup).
             DiaryEventData payload = signal.Payload;
             if (payload == null)
             {
