@@ -385,6 +385,11 @@ namespace PawnDiary
                 pawn, evidence, diaryEvent.eventId, diaryEvent.tick, povRole,
                 recentSelectedCandidateKeys);
             diaryEvent.SetBeliefContext(povRole, result?.fullContext);
+            // A recent-event belief reflection carries the exact bounded narrative text that was
+            // frozen on its source page. It is prompt context only: do not duplicate that page's
+            // canonical evidence/references onto the reflection.
+            if (!string.IsNullOrWhiteSpace(result?.frozenNarrativeContext))
+                diaryEvent.SetFrozenNarrativeContext(povRole, result.frozenNarrativeContext);
             // Event-owned guidance is appended only when the resolver found relevant live doctrine.
             // Thus a secular/unrelated authority speech stays byte-for-byte on the ordinary ritual path.
             if (!string.IsNullOrWhiteSpace(result?.fullContext)

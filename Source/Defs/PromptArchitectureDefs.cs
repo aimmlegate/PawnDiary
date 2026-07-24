@@ -341,7 +341,11 @@ namespace PawnDiary
             return fallback;
         }
 
-        private static List<DiaryPromptFieldDef> FallbackFieldsFor(string templateKey)
+        /// <summary>
+        /// Returns the code-owned emergency field shape for a missing or emptied XML template.
+        /// Internal visibility lets the loaded contract fixture verify this last-resort path directly.
+        /// </summary>
+        internal static List<DiaryPromptFieldDef> FallbackFieldsFor(string templateKey)
         {
             if (string.Equals(templateKey, DeathDescription, StringComparison.OrdinalIgnoreCase))
             {
@@ -418,6 +422,8 @@ namespace PawnDiary
                     Field("you", "PawnSummary"),
                     Field("event prompt", "EventPrompt"),
                     Field("event enhancement", "EventEnhancement"),
+                    Field("narrative context", NarrativeContextPrompt.Source),
+                    Field("relevant past", MemoryContextPrompt.Source),
                     Field("belief context", BeliefContextPrompt.Source),
                     ContextField("belief trigger", "belief_reflection_trigger"),
                     Field("setting", "Setting"),

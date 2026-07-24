@@ -1392,6 +1392,22 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Freezes prompt-only narrative text copied from an exact earlier page. This intentionally
+        /// leaves evidence, references, and candidate history empty so a reflection cannot become a
+        /// second canonical owner of the source event.
+        /// </summary>
+        internal void SetFrozenNarrativeContext(string povRole, string narrativeContext)
+        {
+            if (!RoleIsInitiatorOrRecipient(povRole))
+            {
+                return;
+            }
+
+            SlotFor(povRole).narrativeContext =
+                NarrativeStatePersistence.NormalizeNarrativeContext(narrativeContext);
+        }
+
+        /// <summary>
         /// Freezes the recalled memory-context text onto one POV slot. Called by the memory applier
         /// in DiaryGameComponent.Memory.cs immediately after recall, before deposit.
         /// </summary>

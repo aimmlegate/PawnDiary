@@ -342,6 +342,14 @@ namespace PawnDiary.RimTests
                 (page.gameContext ?? string.Empty).IndexOf(
                     "belief_reflection=true", StringComparison.OrdinalIgnoreCase) >= 0,
                 "The dispatched page was not marked as a belief reflection.");
+            string narrativeContext = page.NarrativeContextForRole(DiaryEvent.InitiatorRole);
+            PawnDiaryRimTestScope.Require(
+                !string.IsNullOrWhiteSpace(narrativeContext),
+                "The live belief-reflection path resolved belief context but projected no N3-I narrative fact.");
+            string prompt = scope.CapturedPrompt(page, DiaryEvent.InitiatorRole);
+            PawnDiaryRimTestScope.Require(
+                prompt.IndexOf(narrativeContext, StringComparison.Ordinal) >= 0,
+                "The saved belief-reflection narrative fact did not reach the captured prompt.");
 
             bool repeatedDispatch = true;
             scope.RequireNoNewEvent(() => repeatedDispatch = Arbitrate(pawn));

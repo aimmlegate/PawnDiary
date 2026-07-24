@@ -2298,8 +2298,19 @@ namespace PawnDiary
             BeliefPreceptFact loadedSecond = Precept(
                 "FixtureDoctrineB72", "FixtureIssueB72", "goldleaf lanterns covenant mercy", 1);
             BeliefSnapshot loadedTie = Snapshot(loadedFirst, loadedSecond);
-            BeliefEventEvidence loadedEvidence = TextEvidence(
-                true, "obsidian orchards covenant mercy goldleaf lanterns");
+            BeliefEventEvidence loadedEvidence = BeliefEventEvidenceFactory.ForEvent(
+                loadedTie.pawnId,
+                loadedTie.capturedTick,
+                "fixture",
+                "EventR53",
+                "initiator",
+                "obsidian orchards covenant mercy goldleaf lanterns",
+                string.Empty);
+            loadedEvidence.matchFields.Add(new BeliefEvidenceTextFact
+            {
+                field = "event_label",
+                value = "obsidian orchards covenant mercy goldleaf lanterns"
+            });
             BeliefStanceResolution loadedResolution = Resolve(
                 loadedTie, loadedEvidence, BeliefPolicySnapshot.CreateDefault());
             AssertEmpty("shipped-threshold lexical tie remains silent", loadedResolution);

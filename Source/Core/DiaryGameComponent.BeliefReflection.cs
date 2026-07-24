@@ -16,6 +16,7 @@ namespace PawnDiary
         {
             public string eventId = string.Empty;
             public string context = string.Empty;
+            public string narrativeContext = string.Empty;
         }
 
         /// <summary>Builds one detached belief opportunity without changing pending belief state.</summary>
@@ -108,7 +109,10 @@ namespace PawnDiary
                 {
                     evaluated = true,
                     fullContext = recent.context,
-                    resolution = new BeliefStanceResolution()
+                    resolution = new BeliefStanceResolution(),
+                    // The source event already selected and bounded this prompt-only text. Reuse it
+                    // without copying canonical evidence onto the new reflection page.
+                    frozenNarrativeContext = recent.narrativeContext
                 }
                 : BeliefContextBuilder.BuildReflection(
                     pawn, belief, preparedEventId, nowTick, decision.trigger, policy);
@@ -167,7 +171,8 @@ namespace PawnDiary
                 best = new RecentBeliefMemory
                 {
                     eventId = diaryEvent.eventId,
-                    context = context
+                    context = context,
+                    narrativeContext = diaryEvent.NarrativeContextForRole(role)
                 };
             }
             return best;

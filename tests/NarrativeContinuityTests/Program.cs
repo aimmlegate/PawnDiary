@@ -2448,9 +2448,7 @@ namespace NarrativeContinuityTests
             };
 
             NarrativePolicySnapshot policy = NarrativePolicySnapshot.CreateDefault();
-            policy.maxSelectedCandidates = 2;
-            Budget(policy, NarrativeDetailLevelTokens.Full).maxLenses = 2;
-            Budget(policy, NarrativeDetailLevelTokens.Full).characterBudget = 1000;
+            NarrativeDetailBudget fullBudget = Budget(policy, NarrativeDetailLevelTokens.Full);
 
             for (int caseIndex = 0; caseIndex < names.Length; caseIndex++)
             {
@@ -2492,8 +2490,8 @@ namespace NarrativeContinuityTests
                     Math.Min(2, expectedProviders.Count), first.selectedCandidates.Count);
                 AssertEqual(names[caseIndex] + " selection is deterministic",
                     SelectedCandidateKeys(first), SelectedCandidateKeys(second));
-                AssertTrue(names[caseIndex] + " prompt stays inside the configured character budget",
-                    first.narrativeContext.Length <= 1000);
+                AssertTrue(names[caseIndex] + " prompt stays inside the shipped fallback character budget",
+                    first.narrativeContext.Length <= fullBudget.characterBudget);
             }
 
             // The final case leaves every snapshot enabled. Disable and re-enable the same objects to
