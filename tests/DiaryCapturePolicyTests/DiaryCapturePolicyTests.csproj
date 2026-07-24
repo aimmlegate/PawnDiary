@@ -71,6 +71,10 @@
     <!-- Pure, System-only game-context field parser — links here so the external game-context
          security tests can assert a smuggled key cannot be resolved back out. -->
     <Compile Include="..\..\Source\Generation\DiaryContextFields.cs" Link="Generation\DiaryContextFields.cs" />
+    <!-- Pure marker -> source-domain recovery. Linked so the *Event*Data.BuildGameContext strings a
+         capture path emits can be asserted to route back to the domain their display/prompt policy
+         expects, instead of the two contracts drifting apart in separate test projects. -->
+    <Compile Include="..\..\Source\Pipeline\DiaryEventDomainClassifier.cs" Link="Pipeline\DiaryEventDomainClassifier.cs" />
     <Compile Include="..\..\Source\Capture\Catalog\DiaryEventSpec.cs" Link="Capture\Catalog\DiaryEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Catalog\DiaryEventCatalog.cs" Link="Capture\Catalog\DiaryEventCatalog.cs" />
     <Compile Include="..\..\Source\Capture\Specs\ThoughtEventSpec.cs" Link="Capture\Specs\ThoughtEventSpec.cs" />

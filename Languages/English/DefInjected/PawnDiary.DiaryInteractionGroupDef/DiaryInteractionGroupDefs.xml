@@ -65,6 +65,13 @@
   <dayreflection.label>Day&apos;s reflection</dayreflection.label>
   <dayreflection.instruction>a quiet end-of-day reflection looking back on the whole day</dayreflection.instruction>
   <dayreflection.tone>with a quiet, settling, end-of-day calm</dayreflection.tone>
+  <!-- Ideology belief reflections. The prompt text is deliberately identical to the generic
+       `reflection` row (this group exists only to carry the Ideology color); keep them in sync. -->
+  <reflectionBelief.label>Belief reflection</reflectionBelief.label>
+  <reflectionBelief.instruction>a reflective diary page that looks back over recent memories instead of reacting to one ordinary interaction</reflectionBelief.instruction>
+  <reflectionBelief.tone>with private reflection and continuity</reflectionBelief.tone>
+  <reflectionBelief.tones.0>reflective and personal, connecting memory to change over time</reflectionBelief.tones.0>
+  <reflectionBelief.tones.1>quietly inward, weighing what the remembered moments meant</reflectionBelief.tones.1>
   <arrival.label>Arrival</arrival.label>
   <other.label>A quiet day</other.label>
   <other.instruction>a social interaction between the pawns</other.instruction>

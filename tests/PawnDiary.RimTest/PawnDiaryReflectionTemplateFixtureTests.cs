@@ -1,5 +1,6 @@
 // Prompt-capture fixture for Pawn Diary's §4.2 reflection templates: SoloDayReflection,
-// SoloQuadrumReflection, and SoloArcReflection (design/TEST_COVERAGE_PLAN.md §4.2).
+// SoloQuadrumReflection, SoloArcReflection, and SoloBeliefReflection
+// (design/TEST_COVERAGE_PLAN.md §4.2).
 //
 // With Prompt Test Mode enabled (harness EnablePromptCapture) a fired reflection on a generating
 // colonist runs the real resolver: it picks the reflection template, renders the system + user prompt,
@@ -39,11 +40,12 @@ using Verse;
 namespace PawnDiary.RimTests
 {
     /// <summary>
-    /// Proves the three §4.2 reflection templates each resolve through the live prompt-capture pipeline:
-    /// SoloDayReflection/SoloQuadrumReflection/SoloArcReflection render their marker fields, omit the
-    /// direct-speech instruction, drive the intended token cap (quadrum 350, arc 420, day none), and that
-    /// only the day template renders an 'important context' field. Requires a loaded game because the
-    /// capture pipeline (like every capture path) is inert at the main menu.
+    /// Proves the §4.2 reflection templates each resolve through the live prompt-capture pipeline:
+    /// SoloDayReflection/SoloQuadrumReflection/SoloArcReflection/SoloBeliefReflection render their marker
+    /// fields, omit the direct-speech instruction, drive the intended token cap (quadrum 350, arc 420,
+    /// belief 360, day none), and that only the day template renders an 'important context' field. Also
+    /// pins the group/color routing a belief page depends on. Requires a loaded game because the capture
+    /// pipeline (like every capture path) is inert at the main menu.
     /// </summary>
     [TestSuite]
     public static class PawnDiaryReflectionTemplateFixtureTests
@@ -71,7 +73,9 @@ namespace PawnDiary.RimTests
         [BeforeEach]
         public static void SetUp()
         {
-            scope = PawnDiaryRimTestScope.Begin("reflection");
+            // Belief reflections split into their own Reflection-domain row (`reflectionBelief`) when
+            // the Ideology color was added, so both rows have to be on for this suite's signals.
+            scope = PawnDiaryRimTestScope.Begin("reflection", "reflectionBelief");
             scope.EnablePromptCapture(PromptContextDetailLevel.Full);
             pawn = scope.CreateGeneratingAdultColonist();
 
@@ -258,6 +262,139 @@ namespace PawnDiary.RimTests
 
             // Intentional absence: the arc template has no 'important context' (PromptEnchantment) field.
             RequireImportantContextFieldAbsent(prompt, DiaryPromptTemplates.SoloArcReflection);
+        }
+
+        /// <summary>
+        /// §4.2 SoloBeliefReflection. An Ideology belief reflection resolves the belief template, drives
+        /// the policy's own token cap, and omits direct speech like every other reflection. Skips cleanly
+        /// without Ideology, where the signal is gated off and no page can exist.
+        /// </summary>
+        [Test]
+        public static void BeliefReflectionResolvesItsTemplateAndDrivesThePolicyTokenCap()
+        {
+            if (!ModsConfig.IdeologyActive)
+            {
+                // Not a silent pass: prove the gate is what stops it, so a broken gate cannot hide here.
+                // BeliefReflectionSignal.BuildContext reports signalEnabled=false without Ideology, so
+                // the catalog drops the payload and no page may be created.
+                scope.RequireNoNewEvent(
+                    () => DiaryEvents.Submit(BeliefSignalFor("Nothing has settled yet.")));
+                return;
+            }
+
+            const string povText = "Turning the ideoligion over in the dark.";
+            const string instruction = "Reflect on what you still believe.";
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => DiaryEvents.Submit(BeliefSignalFor(povText, instruction)),
+                BeliefReflectionEventData.DefNameToken,
+                pawn,
+                null);
+
+            scope.RequireSoloRef(diaryEvent, pawn);
+            string prompt = scope.CapturedPrompt(diaryEvent, DiaryEvent.InitiatorRole);
+
+            RequireTemplate(diaryEvent, DiaryPromptTemplates.SoloBeliefReflection);
+            RequireContains(prompt, "instruction: " + instruction, "belief reflection instruction line");
+            RequireDirectSpeechOmitted(diaryEvent, DiaryPromptTemplates.SoloBeliefReflection);
+
+            // The belief template drives a 360-token cap of its own, like quadrum's 350 and arc's 420.
+            RequireTokenCap(diaryEvent, DiaryPromptTemplates.SoloBeliefReflection, 360);
+        }
+
+        /// <summary>
+        /// The routing this suite's belief page depends on, asserted directly against the loaded catalog:
+        /// the saved <c>belief_reflection=</c> marker recovers the Reflection domain, that domain's
+        /// <c>reflectionBelief</c> row claims the page, and the page is stamped with the Ideology core cue
+        /// and marked important. The marker had no case in DomainForContext, so belief pages recovered as
+        /// the Interaction social catch-all: unimportant, toneless, and washed out to the "quiet" cue.
+        ///
+        /// Deliberately DLC-independent — group classification is not availability-filtered, so an old
+        /// save written with Ideology must keep its color when it is loaded without the DLC.
+        /// </summary>
+        [Test]
+        public static void BeliefReflectionRecoversItsIdeologyGroupFromSavedContext()
+        {
+            string savedContext = BeliefReflectionEventData.BuildGameContext(
+                BeliefReflectionTriggerTokens.IdeologyChange);
+
+            PawnDiaryRimTestScope.Require(
+                string.Equals(
+                    DiaryEventDomainClassifier.DomainForContext(savedContext),
+                    DiaryEventDomainClassifier.Reflection,
+                    StringComparison.Ordinal),
+                "A saved belief reflection did not recover the Reflection domain, so display and prompt "
+                + "policy fall back to the Interaction social catch-all.");
+
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyDefName(
+                GroupDomain.Reflection, BeliefReflectionEventData.DefNameToken);
+            PawnDiaryRimTestScope.Require(
+                group != null && string.Equals(group.defName, "reflectionBelief", StringComparison.Ordinal),
+                "The belief reflection resolved group '" + (group?.defName ?? "<null>")
+                + "' instead of the dedicated reflectionBelief row.");
+            PawnDiaryRimTestScope.Require(group.important,
+                "The belief reflection group is not marked important, so its pages lose the UI marker.");
+
+            PawnDiaryRimTestScope.Require(
+                string.Equals(
+                    DiaryEvent.ResolveColorCue(BeliefReflectionEventData.DefNameToken, savedContext),
+                    DiaryEvent.IdeologyColorCue,
+                    StringComparison.Ordinal),
+                "A belief reflection page did not stamp the Ideology core color cue.");
+
+            // The split must not have stolen the other three reflections from the generic row.
+            string[] genericNames =
+            {
+                DayReflectionEventData.DefNameToken,
+                DayReflectionEventData.QuadrumDefNameToken,
+                ArcReflectionEventData.DefNameToken
+            };
+            for (int i = 0; i < genericNames.Length; i++)
+            {
+                DiaryInteractionGroupDef generic = InteractionGroups.ClassifyDefName(
+                    GroupDomain.Reflection, genericNames[i]);
+                PawnDiaryRimTestScope.Require(
+                    generic != null && string.Equals(generic.defName, "reflection", StringComparison.Ordinal),
+                    "'" + genericNames[i] + "' no longer classifies to the generic reflection row (got '"
+                    + (generic?.defName ?? "<null>") + "').");
+            }
+
+            // The split exists only to add a color: the wording handed to the model must be unchanged.
+            DiaryInteractionGroupDef genericRow = InteractionGroups.ByKey("reflection");
+            PawnDiaryRimTestScope.Require(genericRow != null, "The generic reflection group is missing.");
+            PawnDiaryRimTestScope.Require(
+                string.Equals(group.instruction, genericRow.instruction, StringComparison.Ordinal)
+                    && string.Equals(group.tone, genericRow.tone, StringComparison.Ordinal),
+                "The belief reflection group's localized prompt wording drifted from the generic "
+                + "reflection row, so a belief page no longer reads like the reflection it copies.");
+        }
+
+        // Builds the exact signal DispatchPreparedBeliefReflection sends, with a literal frozen belief
+        // block so nothing depends on the live pawn's ideo tracker or on saved reflection debt.
+        private static BeliefReflectionSignal BeliefSignalFor(string povText, string instruction = "Reflect.")
+        {
+            BeliefReflectionEventData data = new BeliefReflectionEventData
+            {
+                PawnId = pawn.GetUniqueLoadID(),
+                Tick = Find.TickManager.TicksGame,
+                DefName = BeliefReflectionEventData.DefNameToken,
+                Trigger = BeliefReflectionTriggerTokens.IdeologyChange,
+                HasBeliefContext = true,
+                AlreadyWritten = false,
+            };
+            BeliefContextBuildResult prepared = new BeliefContextBuildResult
+            {
+                evaluated = true,
+                fullContext = "faith: steady",
+                resolution = new BeliefStanceResolution()
+            };
+            return new BeliefReflectionSignal(
+                data,
+                pawn,
+                "Belief reflection",
+                povText,
+                instruction,
+                BeliefReflectionEventData.BuildGameContext(BeliefReflectionTriggerTokens.IdeologyChange),
+                prepared);
         }
 
         // ----- template/policy assertions (pure pipeline path) ------------------------------------

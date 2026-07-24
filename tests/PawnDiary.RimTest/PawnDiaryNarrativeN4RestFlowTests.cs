@@ -49,7 +49,9 @@ namespace PawnDiary.RimTests
         [BeforeEach]
         public static void SetUp()
         {
-            scope = PawnDiaryRimTestScope.Begin("reflection");
+            // Belief reflections own a separate Reflection-domain row (`reflectionBelief`) since the
+            // Ideology color split, and IsReflectionGroupEnabled reads that row for the belief branch.
+            scope = PawnDiaryRimTestScope.Begin("reflection", "reflectionBelief");
             RequireRuntimeSeams();
             SnapshotReflectionTuning();
         }

@@ -592,6 +592,14 @@
   <reflection.tones.0>лично и вдумчиво, связывая воспоминания с переменами во времени</reflection.tones.0>
   <reflection.tones.1>тихо и сокровенно, размышляя о значении памятных мгновений</reflection.tones.1>
 
+  <!-- Размышление о вере. Текст промпта намеренно совпадает с общей строкой `reflection`: эта
+       группа существует только ради цвета Ideology. При правке одной правь и вторую. -->
+  <reflectionBelief.label>Размышление о вере</reflectionBelief.label>
+  <reflectionBelief.instruction>дневниковая запись, которая оглядывается на недавние воспоминания, а не реагирует на одно рядовое событие</reflectionBelief.instruction>
+  <reflectionBelief.tone>лично и вдумчиво, сохраняя связь между событиями</reflectionBelief.tone>
+  <reflectionBelief.tones.0>лично и вдумчиво, связывая воспоминания с переменами во времени</reflectionBelief.tones.0>
+  <reflectionBelief.tones.1>тихо и сокровенно, размышляя о значении памятных мгновений</reflectionBelief.tones.1>
+
   <eventWindowMechCluster.label>Кластер механоидов</eventWindowMechCluster.label>
   <eventWindowMechCluster.instruction>рядом собрались спящие боевые машины; пиши ожидание, наблюдение и подготовку — холодную механическую угрозу, которая ещё не сдвинулась с места, и никогда не выдумывай бой</eventWindowMechCluster.instruction>
   <eventWindowMechCluster.tone>с холодной, терпеливой тревогой</eventWindowMechCluster.tone>

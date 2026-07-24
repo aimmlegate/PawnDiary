@@ -74,6 +74,7 @@ namespace DiaryPipelineTests
             TestIdeologyCrisisXmlContract();
             TestIdeologyCounselXmlContract();
             TestIdeologyConversionRitualXmlContract();
+            TestBeliefReflectionGroupXmlContract();
             TestProgressionMilestonePolicy();
             TestPsylinkProgressionLevelPolicy();
             TestArcReflectionSchedulePolicy();
@@ -2779,6 +2780,10 @@ namespace DiaryPipelineTests
                 GroupColorCue(groups, "anomalyStudyBreakthrough"));
             AssertEqual("belief crisis uses the deep Ideology shade", "ideologyDeep",
                 GroupColorCue(groups, "beliefCrisis"));
+            // A belief reflection is the calm counterpart of the crisis: same hue, core shade rather
+            // than deep, so a page about faith is recognisably Ideology without reading as dread.
+            AssertEqual("belief reflection uses the core Ideology shade", "ideology",
+                GroupColorCue(groups, "reflectionBelief"));
             AssertEqual("birth is the bright Biotech shade", "biotechBright",
                 GroupColorCue(groups, "biotechFamilyBirth"));
             AssertEqual("the Mechhive ending uses the deep Odyssey shade", "odysseyDeep",
@@ -6098,6 +6103,32 @@ namespace DiaryPipelineTests
                     "persona_weapon=bond_recovered; persona_weapon_name=Quiet Edge"));
             AssertEqual("arc reflection marker domain", "Reflection",
                 DiaryEventDomainClassifier.DomainForContext("arc_reflection=true; arc_year=5504"));
+            AssertEqual("day reflection marker domain", "Reflection",
+                DiaryEventDomainClassifier.DomainForContext("day_reflection=true; day=42; highlights=3"));
+            AssertEqual("quadrum reflection marker domain", "Reflection",
+                DiaryEventDomainClassifier.DomainForContext(
+                    "day_reflection=true; quadrum_reflection=true; day=44; quadrum=2"));
+            // Regression: the belief marker shipped without a case here, so a belief reflection fell
+            // through to Interaction and was recovered as the social catch-all — no reflection tone on
+            // the prompt, not marked important, and a "quiet" page instead of the Ideology color.
+            // These literals are the exact BeliefReflectionEventData.BuildGameContext shape, which
+            // DiaryCapturePolicyTests pins against the real builder (and routes through this same
+            // classifier), so a drift in either place fails there.
+            AssertEqual("belief reflection marker domain", "Reflection",
+                DiaryEventDomainClassifier.DomainForContext(
+                    "belief_reflection=true; belief_reflection_trigger=ideology_change"));
+            AssertEqual("belief reflection marker domain (quiet trigger)", "Reflection",
+                DiaryEventDomainClassifier.DomainForContext(
+                    "belief_reflection=true; belief_reflection_trigger=quiet"));
+            AssertTrue("belief reflection marker is not interaction prompt",
+                DiaryEventDomainClassifier.HasNonInteractionSourceMarker(
+                    "belief_reflection=true; belief_reflection_trigger=recent_event"));
+            AssertEqual("belief reflection classifier keeps the synthetic defName",
+                "PawnBeliefReflection",
+                DiaryEventDomainClassifier.GroupClassifierKey(
+                    "Reflection",
+                    "belief_reflection=true; belief_reflection_trigger=ideology_change",
+                    "PawnBeliefReflection"));
             AssertEqual("external marker wins over adapter context markers", "External",
                 DiaryEventDomainClassifier.DomainForContext("external=mod_key; source=author.adapter; thought=Inspired; work=Mining"));
             AssertEqual("ritual classifier includes behavior when present",
@@ -6563,6 +6594,159 @@ namespace DiaryPipelineTests
                 fallbackText.IndexOf("mood", StringComparison.Ordinal) >= 0
                     && englishText.IndexOf("mood", StringComparison.Ordinal) >= 0
                     && russianText.IndexOf("настроен", StringComparison.Ordinal) >= 0);
+        }
+
+        // The <tones> variant pool of one interaction-group Def, in XML order (the order DefInjected
+        // translates by numeric index). Returns an empty list when the group defines no pool.
+        private static List<string> ToneVariants(XElement group)
+        {
+            List<string> tones = new List<string>();
+            XElement pool = group?.Element("tones");
+            if (pool == null)
+            {
+                return tones;
+            }
+
+            foreach (XElement item in pool.Elements("li"))
+            {
+                tones.Add((item.Value ?? string.Empty).Trim());
+            }
+
+            return tones;
+        }
+
+        // The Ideology belief reflection is the only Reflection-domain page that is NOT the generic
+        // `reflection` row. It was split out purely to carry the Ideology color, so this pins both
+        // halves of that bargain: the split actually claims the page (order + exact name), and the
+        // prompt wording it hands the model is still byte-identical to the generic row's.
+        private static void TestBeliefReflectionGroupXmlContract()
+        {
+            XDocument groups = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryInteractionGroupDefs.xml"));
+            XElement belief = FindDef(
+                groups, "PawnDiary.DiaryInteractionGroupDef", "reflectionBelief");
+            XElement generic = FindDef(
+                groups, "PawnDiary.DiaryInteractionGroupDef", "reflection");
+            AssertTrue("belief reflection group exists", belief != null);
+            AssertTrue("generic reflection group remains", generic != null);
+            AssertEqual("belief reflection is a Reflection-domain group", "Reflection",
+                ChildValue(belief, "domain"));
+            AssertEqual("belief reflection is marked important", "true",
+                ChildValue(belief, "important"));
+
+            // Claiming the page at all depends on ordering before the generic row and on matching the
+            // synthetic name exactly — no token matcher, so nothing else can be dragged in with it.
+            AssertTrue("belief reflection group precedes the generic reflection row",
+                InteractionGroupOrder(belief) < InteractionGroupOrder(generic));
+            AssertTrue("belief reflection matches only its synthetic defName",
+                belief.Element("matchDefNames")?.Elements("li").Count() == 1
+                    && HasListValue(belief, "matchDefNames", "PawnBeliefReflection")
+                    && belief.Element("matchTokens") == null
+                    && belief.Element("matchPrefixes") == null
+                    && belief.Element("matchSuffixes") == null
+                    && belief.Element("matchSegments") == null
+                    && ChildValue(belief, "catchAll") != "true");
+            AssertEqual("belief reflection resolves to its own group",
+                "reflectionBelief",
+                ResolveInteractionGroup(groups, "Reflection", "PawnBeliefReflection", true));
+
+            // The generic row must NOT still list the name: a second, unreachable matcher is dead
+            // config that reads as though the generic row were still in play.
+            AssertTrue("generic reflection row no longer claims the belief page",
+                !HasListValue(generic, "matchDefNames", "PawnBeliefReflection"));
+            string[] genericNames = { "DayReflection", "QuadrumReflection", "PawnArcReflection" };
+            for (int i = 0; i < genericNames.Length; i++)
+            {
+                AssertEqual("generic reflection row still owns " + genericNames[i],
+                    "reflection",
+                    ResolveInteractionGroup(groups, "Reflection", genericNames[i], true));
+            }
+
+            // The split is cosmetic by design: identical prompt wording means an existing colony's
+            // belief pages keep reading exactly as they did before the group gained a color.
+            AssertEqual("belief reflection reuses the generic reflection instruction",
+                ChildValue(generic, "instruction"), ChildValue(belief, "instruction"));
+            AssertEqual("belief reflection reuses the generic reflection tone",
+                ChildValue(generic, "tone"), ChildValue(belief, "tone"));
+            List<string> genericTones = ToneVariants(generic);
+            List<string> beliefTones = ToneVariants(belief);
+            AssertEqual("belief reflection carries the same number of tone variants",
+                genericTones.Count, beliefTones.Count);
+            AssertTrue("generic reflection still supplies rotating tones", genericTones.Count >= 2);
+            for (int i = 0; i < genericTones.Count && i < beliefTones.Count; i++)
+            {
+                AssertEqual("belief reflection tone variant " + i + " is unchanged",
+                    genericTones[i], beliefTones[i]);
+            }
+
+            // Ideology gating mirrors beliefCrisis: the source signal is already IdeologyActive-gated,
+            // so this only hides the settings row (and forces IsGroupEnabled false) without the DLC.
+            AssertTrue("belief reflection group is Ideology-gated",
+                HasListValue(belief, "enableWhenPackageIdsLoaded", "Ludeon.RimWorld.Ideology"));
+
+            // The cue is persisted and load-bearing beyond color: DiaryMemoryTuningDef maps it to
+            // memory importance, so a cue with no row would silently change what pawns remember.
+            XDocument memory = XDocument.Load(RepoPath("1.6", "Defs", "DiaryMemoryTuningDef.xml"));
+            AssertTrue("the Ideology core cue has a memory-importance row",
+                memory.Descendants("cueImportance").Elements("li")
+                    .Any(row => string.Equals(ChildValue(row, "cue"), "ideology",
+                        StringComparison.OrdinalIgnoreCase)));
+
+            // Prompt-policy key order: the synthetic Def name still wins, the new group defName takes
+            // the slot the Interaction catch-all ("other") used to occupy, and the BeliefReflection
+            // event-prompt fallback — the key that actually resolves a DiaryEventPromptDef — is intact.
+            List<string> keys = DiaryEventPromptKeys.CandidateKeys(
+                new DiaryEventPayload { defName = "PawnBeliefReflection" },
+                "reflectionBelief",
+                "PawnBeliefReflection",
+                "BeliefReflection");
+            AssertEqual("belief reflection Def key remains first", "PawnBeliefReflection", keys[0]);
+            AssertEqual("belief reflection group key is second", "reflectionBelief", keys[1]);
+            AssertEqual("belief reflection event-prompt fallback remains last", "BeliefReflection",
+                keys[keys.Count - 1]);
+            // Why the group is not named `beliefReflection`: CandidateKeys dedups case-insensitively,
+            // so a group defName equal to the event-prompt key (bar case) silently swallows the
+            // fallback key instead of adding a candidate ahead of it.
+            AssertTrue("group defName does not collide with the event-prompt key",
+                !string.Equals(ChildValue(belief, "defName"), "BeliefReflection",
+                    StringComparison.OrdinalIgnoreCase));
+
+            XDocument prompts = XDocument.Load(RepoPath("1.6", "Defs", "DiaryEventPromptDefs.xml"));
+            XElement prompt = FindDef(
+                prompts, "PawnDiary.DiaryEventPromptDef", "DiaryEventPrompt_BeliefReflection");
+            AssertTrue("belief reflection event prompt exists", prompt != null);
+            AssertEqual("belief reflection event prompt keeps its event-type key", "BeliefReflection",
+                ChildValue(prompt, "eventType"));
+
+            // A new group with no DefInjected rows reads as its raw defName in the settings list for
+            // Russian players, so both language files must carry every localized field.
+            XDocument englishGroups = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryInteractionGroupDef",
+                "DiaryInteractionGroupDefs.xml"));
+            XDocument russianGroups = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected", "PawnDiary.DiaryInteractionGroupDef",
+                "DiaryInteractionGroupDefs.xml"));
+            string[] localizedFields = { ".label", ".instruction", ".tone", ".tones.0", ".tones.1" };
+            for (int i = 0; i < localizedFields.Length; i++)
+            {
+                string key = "reflectionBelief" + localizedFields[i];
+                AssertTrue("English belief reflection DefInjected value exists: " + key,
+                    !string.IsNullOrWhiteSpace(KeyedValue(englishGroups, key)));
+                AssertTrue("Russian belief reflection DefInjected value exists: " + key,
+                    !string.IsNullOrWhiteSpace(KeyedValue(russianGroups, key)));
+            }
+
+            // Translations must stay in sync with the Def XML they override, or a localized belief
+            // page would silently drift away from the generic reflection wording this split promises.
+            AssertEqual("English DefInjected belief instruction matches the Def",
+                ChildValue(belief, "instruction"),
+                KeyedValue(englishGroups, "reflectionBelief.instruction"));
+            AssertEqual("Russian DefInjected belief instruction matches the generic reflection row",
+                KeyedValue(russianGroups, "reflection.instruction"),
+                KeyedValue(russianGroups, "reflectionBelief.instruction"));
+            AssertEqual("Russian DefInjected belief tone matches the generic reflection row",
+                KeyedValue(russianGroups, "reflection.tone"),
+                KeyedValue(russianGroups, "reflectionBelief.tone"));
         }
 
         private static void TestIdeologyConversionRitualXmlContract()

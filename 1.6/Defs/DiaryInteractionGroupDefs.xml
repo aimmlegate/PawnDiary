@@ -878,6 +878,46 @@
 
   <!-- ===== Reflection domain ===== -->
 
+  <!-- Ideology belief reflections split out of the generic row below for ONE reason: to carry the
+       Ideology color family, so a page about faith reads as Ideology instead of as an unstyled
+       reflection. The instruction/tone/tones are copied VERBATIM from `reflection`, so the prompt
+       text a belief reflection receives is unchanged by the split; only colorCue, the settings row,
+       and the label differ. Keep the two in sync when either is retuned.
+       Ordered before `reflection` (160) so the exact name wins; `PawnBeliefReflection` is therefore
+       removed from the generic row's matchDefNames rather than left there unreachable.
+       The package gate mirrors `beliefCrisis`: the source signal is already
+       ModsConfig.IdeologyActive-gated, so this only hides the settings row (and makes
+       IsGroupEnabled false) in a game without Ideology. Classification itself is not
+       availability-filtered, so a save written with Ideology keeps this cue when it is loaded
+       without the DLC.
+       The defName is deliberately NOT "beliefReflection": prompt-policy candidate keys are deduped
+       case-insensitively (DiaryEventPromptKeys.CandidateKeys), so a group defName that differs from
+       the "BeliefReflection" event-prompt key only by case would swallow that key instead of
+       preceding it. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>reflectionBelief</defName>
+    <label>Belief reflection</label>
+    <order>155</order>
+    <domain>Reflection</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Ideology</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a reflective diary page that looks back over recent memories instead of reacting to one ordinary interaction</instruction>
+    <tone>with private reflection and continuity</tone>
+    <tones>
+      <li>reflective and personal, connecting memory to change over time</li>
+      <li>quietly inward, weighing what the remembered moments meant</li>
+    </tones>
+    <colorCue>ideology</colorCue>
+    <!-- Synthetic defName emitted by the belief-reflection adapter
+         (DiaryGameComponent.BeliefReflection.cs). -->
+    <matchDefNames>
+      <li>PawnBeliefReflection</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>reflection</defName>
     <label>Reflection</label>
@@ -895,7 +935,6 @@
       <li>DayReflection</li>
       <li>QuadrumReflection</li>
       <li>PawnArcReflection</li>
-      <li>PawnBeliefReflection</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 

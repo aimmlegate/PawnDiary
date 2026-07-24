@@ -53,7 +53,7 @@ Common template keys:
 |---|---|
 | Pair | `PairDefault`, `PairImportant`, `PairCombat`, `PairBatched` |
 | Solo | `SoloDefault`, `SoloImportant`, `SoloInternalState`, `SoloBatched` |
-| Reflection | `SoloDayReflection`, `SoloQuadrumReflection`, `SoloArcReflection` |
+| Reflection | `SoloDayReflection`, `SoloQuadrumReflection`, `SoloArcReflection`, `SoloBeliefReflection` |
 | Special | `DeathDescription`, `ArrivalDescription` |
 
 ### Color cues

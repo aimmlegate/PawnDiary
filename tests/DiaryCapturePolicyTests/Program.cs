@@ -2143,6 +2143,18 @@ namespace DiaryCapturePolicyTests
             AssertEqual("belief reflection context preserves exact trigger",
                 "belief_reflection=true; belief_reflection_trigger=certainty_shift",
                 BeliefReflectionEventData.BuildGameContext("certainty_shift"));
+            // Capture classifies a belief reflection in the Reflection domain
+            // (BeliefReflectionSignal.BuildContext); display and prompt policy recover the domain from
+            // this saved context instead. They disagreed until belief_reflection= was added to
+            // DomainForContext, which silently demoted every belief page to the social catch-all.
+            AssertEqual("belief reflection context recovers the Reflection domain",
+                DiaryEventDomainClassifier.Reflection,
+                DiaryEventDomainClassifier.DomainForContext(
+                    BeliefReflectionEventData.BuildGameContext("certainty_shift")));
+            AssertEqual("belief reflection recovers its domain for every shipped trigger",
+                DiaryEventDomainClassifier.Reflection,
+                DiaryEventDomainClassifier.DomainForContext(
+                    BeliefReflectionEventData.BuildGameContext(string.Empty)));
 
             DiaryEventSpec growthSpec = DiaryEventCatalog.Get(DiaryEventType.GrowthMoment);
             AssertTrue("catalog has GrowthMoment spec", growthSpec is GrowthMomentEventSpec);
