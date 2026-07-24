@@ -105,4 +105,54 @@ namespace PawnDiary
             return string.IsNullOrWhiteSpace(value);
         }
     }
+
+    /// <summary>
+    /// Decides whether one terminal-owned major-arc request may survive an ineligible rest check.
+    /// Ordinary major events have no canonical owner ID and retain the original one-check behavior.
+    /// </summary>
+    internal static class TerminalReflectionRetryPolicy
+    {
+        public static bool CanRetry(
+            bool majorEventTrigger,
+            string canonicalOwnerEventId,
+            int requestedTick,
+            int currentTick,
+            int maximumAgeTicks)
+        {
+            if (!majorEventTrigger
+                || string.IsNullOrWhiteSpace(canonicalOwnerEventId)
+                || requestedTick < 0
+                || currentTick < 0
+                || maximumAgeTicks <= 0)
+            {
+                return false;
+            }
+
+            return !IsExpired(
+                canonicalOwnerEventId,
+                requestedTick,
+                currentTick,
+                maximumAgeTicks);
+        }
+
+        public static bool IsExpired(
+            string canonicalOwnerEventId,
+            int requestedTick,
+            int currentTick,
+            int maximumAgeTicks)
+        {
+            if (string.IsNullOrWhiteSpace(canonicalOwnerEventId)
+                || requestedTick < 0
+                || currentTick < 0
+                || maximumAgeTicks <= 0)
+            {
+                return false;
+            }
+
+            // A defensive clock rewind must not discard valid saved debt. Treat it as age zero; the
+            // normal game clock will catch up and the same configured ceiling remains authoritative.
+            long age = Math.Max(0L, (long)currentTick - requestedTick);
+            return age > maximumAgeTicks;
+        }
+    }
 }

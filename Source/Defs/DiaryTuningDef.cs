@@ -474,6 +474,8 @@ namespace PawnDiary
         public int arcReflectionForceAfterYearDay = 45;
         // Retry delay after a forced yearly arc finds too few memories; prevents 250-tick rest rescans.
         public int arcReflectionMemoryShortfallRetryTicks = 60000;
+        // Terminal-owned requests may retry for at most one RimWorld year before stale debt is dropped.
+        public int arcReflectionTerminalRetryMaxTicks = 3600000;
         public int arcReflectionMinMemoriesPreferred = 4;
         public int arcReflectionMinMemoriesForced = 3;
         public int arcReflectionMaxMemories = 8;

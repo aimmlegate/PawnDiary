@@ -1832,6 +1832,14 @@ namespace NarrativeContinuityTests
             AssertEqual("terminal queue preserves canonical avoid id",
                 evidence.eventId, valid.avoidRelatedEventId);
 
+            AssertTrue("null terminal request fails closed",
+                !TerminalReflectionPolicy.Evaluate(null).queueMajorArc);
+            TerminalReflectionContract contract = request.contract;
+            request.contract = null;
+            AssertTrue("null terminal contract fails closed",
+                !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
+            request.contract = contract;
+
             request.contract.ownershipCorrelated = false;
             AssertTrue("failed terminal ownership cannot queue",
                 !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
@@ -1854,6 +1862,17 @@ namespace NarrativeContinuityTests
                 !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
             evidence.salience = NarrativeSalienceTokens.Terminal;
 
+            evidence.pawnCanKnow = false;
+            AssertTrue("hidden terminal evidence cannot queue",
+                !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
+            evidence.pawnCanKnow = true;
+
+            string facet = evidence.facet;
+            evidence.facet = NarrativeFacetTokens.IdentityTransition;
+            AssertTrue("wrong terminal facet cannot queue",
+                !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
+            evidence.facet = facet;
+
             evidence.povPawnId = "Pawn_other";
             AssertTrue("wrong terminal actor or witness cannot queue",
                 !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
@@ -1864,6 +1883,21 @@ namespace NarrativeContinuityTests
                 !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
             evidence.sourceDefName = request.contract.sourceDefName;
 
+            int canonicalTick = request.canonicalEventTick;
+            request.canonicalEventTick = canonicalTick + 1;
+            AssertTrue("mismatched canonical terminal tick cannot queue",
+                !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
+            request.canonicalEventTick = -1;
+            AssertTrue("negative canonical terminal tick fails closed",
+                !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
+            request.canonicalEventTick = canonicalTick;
+
+            List<NarrativeEvidence> evidenceRows = request.evidence;
+            request.evidence = null;
+            AssertTrue("null terminal evidence list fails closed",
+                !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
+            request.evidence = evidenceRows;
+
             request.references.Clear();
             AssertTrue("missing saved terminal reference cannot queue",
                 !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
@@ -1872,6 +1906,39 @@ namespace NarrativeContinuityTests
             reference.sourceEventId = "other-event";
             AssertTrue("mismatched saved terminal reference cannot queue",
                 !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
+            reference.sourceEventId = evidence.eventId;
+
+            List<NarrativeReference> referenceRows = request.references;
+            request.references = null;
+            AssertTrue("null terminal reference list fails closed",
+                !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
+            request.references = referenceRows;
+
+            request.evidence.Insert(0, null);
+            request.evidence.Insert(1, new NarrativeEvidence
+            {
+                eventId = evidence.eventId,
+                tick = evidence.tick,
+                povPawnId = evidence.povPawnId,
+                povRole = evidence.povRole,
+                facet = NarrativeFacetTokens.IdentityTransition
+            });
+            AssertTrue("malformed terminal rows do not hide a later exact row",
+                TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
+
+            int retryMax = 3600000;
+            AssertTrue("terminal debt retries at its exact age ceiling",
+                TerminalReflectionRetryPolicy.CanRetry(
+                    true, evidence.eventId, 100, 100 + retryMax, retryMax));
+            AssertTrue("terminal debt expires after its age ceiling",
+                TerminalReflectionRetryPolicy.IsExpired(
+                    evidence.eventId, 100, 101 + retryMax, retryMax));
+            AssertTrue("ordinary major debt does not gain terminal retries",
+                !TerminalReflectionRetryPolicy.CanRetry(
+                    true, string.Empty, 100, 101, retryMax));
+            AssertTrue("a defensive clock rewind preserves terminal debt",
+                TerminalReflectionRetryPolicy.CanRetry(
+                    true, evidence.eventId, 200, 100, retryMax));
         }
 
         private static void TestReflectionPriorityAndDeferredConsumption()

@@ -35,6 +35,10 @@ namespace PawnDiary.RimTests
             null,
             new[] { typeof(Pawn), typeof(bool) },
             null);
+        private static readonly MethodInfo PrunePendingMajorMethod =
+            typeof(DiaryGameComponent).GetMethod(
+                "PrunePendingMajorReflectionsWithoutRestOwner",
+                NonPublicInstance);
         private static readonly FieldInfo EventsField = typeof(DiaryGameComponent).GetField(
             "events", NonPublicInstance);
         private static readonly FieldInfo ArchiveField = typeof(DiaryGameComponent).GetField(
@@ -45,6 +49,9 @@ namespace PawnDiary.RimTests
         private static bool savedDaySummaryEnabled;
         private static bool savedQuadrumReflectionEnabled;
         private static bool savedArcReflectionEnabled;
+        private static int savedArcMinMemoriesForced;
+        private static int savedArcMemoryShortfallRetryTicks;
+        private static int savedArcTerminalRetryMaxTicks;
 
         [BeforeEach]
         public static void SetUp()
@@ -109,6 +116,119 @@ namespace PawnDiary.RimTests
                     && reflection.lastCrossArcTick >= 0
                     && reflection.lastBeliefTick >= 0,
                 "The silent baseline did not bound historical major/cross-arc/belief debt.");
+        }
+
+        /// <summary>
+        /// A terminal-owned request that initially has no non-recap memory remains pending through the
+        /// real rest coordinator, then writes once after a later memory satisfies the floor.
+        /// </summary>
+        [Test]
+        public static void TerminalMajorRetriesAfterShortfallThenWritesWithoutRecappingOwner()
+        {
+            ConfigureReflectionKinds(day: false, quadrum: false, arc: true);
+            scope.EnablePromptCapture();
+            tuning.arcReflectionMinMemoriesForced = 1;
+            tuning.arcReflectionMemoryShortfallRetryTicks = GenDate.TicksPerDay;
+            tuning.arcReflectionTerminalRetryMaxTicks =
+                GenDate.TicksPerDay * GenDate.DaysPerYear;
+
+            Pawn pawn = scope.CreateGeneratingAdultColonist();
+            scope.SpawnAsLiveColonist(pawn);
+            PawnDiaryRecord diary = DiaryFor(pawn);
+            PawnReflectionState reflection = AlreadyBaselined(diary);
+            string ownerId = "rimtest-terminal-owner|" + pawn.GetUniqueLoadID();
+            InsertHotArcMemory(pawn, diary, ownerId, "The terminal chapter closed.");
+            reflection.QueueMajorArc(Find.TickManager.TicksGame, ownerId);
+
+            bool firstDispatch = true;
+            scope.RequireNoNewEvent(() => firstDispatch = Arbitrate(pawn));
+            PawnDiaryRimTestScope.Require(
+                !firstDispatch
+                    && reflection.pendingMajorArc
+                    && reflection.pendingMajorArcAvoidEventId == ownerId
+                    && diary.EnsureArcSchedule().lastArcMemoryShortfallTick
+                        == Find.TickManager.TicksGame,
+                "The first shortfall did not preserve and back off the terminal-owned request.");
+
+            // Remove the one-day retry delay for this fixture instead of advancing the live game's clock.
+            tuning.arcReflectionMemoryShortfallRetryTicks = 0;
+            string supportingId = "rimtest-terminal-support|" + pawn.GetUniqueLoadID();
+            InsertHotArcMemory(pawn, diary, supportingId, "A later memory gave the chapter perspective.");
+
+            bool dispatched = false;
+            DiaryEvent reflectionPage = scope.FireAndRequireEvent(
+                () => dispatched = Arbitrate(pawn),
+                ArcReflectionEventData.DefNameToken,
+                pawn,
+                null,
+                rejectOtherTestPawnEvents: true);
+
+            PawnDiaryRimTestScope.Require(
+                dispatched
+                    && !reflection.pendingMajorArc
+                    && diary.EnsureArcSchedule().recentlyUsedEventIds.Contains(supportingId)
+                    && !diary.EnsureArcSchedule().recentlyUsedEventIds.Contains(ownerId),
+                "The retried terminal request did not write once from only non-recap supporting memory.");
+            scope.RequireSoloRef(reflectionPage, pawn);
+            PawnDiaryRimTestScope.Require(
+                (reflectionPage.gameContext ?? string.Empty).Contains("selected_memories=1"),
+                "The retried terminal reflection did not report its one non-recap memory.");
+        }
+
+        /// <summary>
+        /// A terminal request blocked by the annual schedule is backed off instead of being discarded or
+        /// re-evaluated on every 250-tick sleep scan.
+        /// </summary>
+        [Test]
+        public static void TerminalMajorBlockedByScheduleRemainsBoundedAndBackedOff()
+        {
+            ConfigureReflectionKinds(day: false, quadrum: false, arc: true);
+            tuning.arcReflectionMemoryShortfallRetryTicks = GenDate.TicksPerDay;
+            tuning.arcReflectionTerminalRetryMaxTicks =
+                GenDate.TicksPerDay * GenDate.DaysPerYear;
+
+            Pawn pawn = scope.CreateGeneratingAdultColonist();
+            scope.SpawnAsLiveColonist(pawn);
+            PawnDiaryRecord diary = DiaryFor(pawn);
+            PawnReflectionState reflection = AlreadyBaselined(diary);
+            PawnArcScheduleState schedule = diary.EnsureArcSchedule();
+            int currentYear = GenDate.Year(Find.TickManager.TicksAbs, 0f);
+            schedule.lastArcEntryYear = currentYear;
+            schedule.arcEntriesThisYear = Math.Max(1, tuning.arcReflectionMaxEntriesPerYear);
+            string ownerId = "rimtest-schedule-blocked-terminal|" + pawn.GetUniqueLoadID();
+            reflection.QueueMajorArc(Find.TickManager.TicksGame, ownerId);
+
+            bool dispatched = true;
+            scope.RequireNoNewEvent(() => dispatched = Arbitrate(pawn));
+            PawnDiaryRimTestScope.Require(
+                !dispatched
+                    && reflection.pendingMajorArc
+                    && reflection.pendingMajorArcAvoidEventId == ownerId
+                    && schedule.lastArcMemoryShortfallTick == Find.TickManager.TicksGame,
+                "A schedule-blocked terminal request was cleared or failed to enter bounded backoff.");
+        }
+
+        /// <summary>
+        /// If a queued owner dies, leaves, or otherwise disappears from the map-rest snapshot, the saved
+        /// request is removed before it can keep an otherwise-disabled full-colony scan alive forever.
+        /// </summary>
+        [Test]
+        public static void MissingRestOwnerPrunesSavedTerminalDebt()
+        {
+            Pawn pawn = scope.CreateAdultColonist();
+            PawnDiaryRecord diary = DiaryFor(pawn);
+            PawnReflectionState reflection = AlreadyBaselined(diary);
+            reflection.QueueMajorArc(
+                Find.TickManager.TicksGame,
+                "rimtest-missing-rest-owner|" + pawn.GetUniqueLoadID());
+
+            PrunePendingMajorMethod.Invoke(
+                scope.Component,
+                new object[] { new List<Pawn>() });
+
+            PawnDiaryRimTestScope.Require(
+                !reflection.pendingMajorArc,
+                "A diary without a map-rest owner retained permanent terminal reflection debt.");
         }
 
         /// <summary>
@@ -435,6 +555,28 @@ namespace PawnDiary.RimTests
             };
         }
 
+        private static void InsertHotArcMemory(
+            Pawn pawn,
+            PawnDiaryRecord diary,
+            string eventId,
+            string text)
+        {
+            DiaryEvent diaryEvent = new DiaryEvent
+            {
+                eventId = eventId,
+                tick = Find.TickManager.TicksGame,
+                date = "RimTest terminal retry",
+                interactionDefName = "RimTestArcMemory",
+                interactionLabel = "terminal retry memory",
+                solo = true,
+                initiatorPawnId = pawn.GetUniqueLoadID(),
+                initiatorName = pawn.LabelShortCap,
+                initiatorText = text
+            };
+            EventRepository().Register(diaryEvent);
+            diary.eventIds.Add(eventId);
+        }
+
         private static bool Arbitrate(Pawn pawn)
         {
             return (bool)ArbitrateMethod.Invoke(scope.Component, new object[] { pawn });
@@ -467,6 +609,7 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 ArbitrateMethod != null
                     && FindDiaryMethod != null
+                    && PrunePendingMajorMethod != null
                     && EventsField != null
                     && ArchiveField != null,
                 "Narrative N4 RimTest could not resolve the private runtime seams it exercises.");
@@ -481,11 +624,19 @@ namespace PawnDiary.RimTests
             savedDaySummaryEnabled = tuning.daySummaryEnabled;
             savedQuadrumReflectionEnabled = tuning.quadrumReflectionEnabled;
             savedArcReflectionEnabled = tuning.arcReflectionEnabled;
+            savedArcMinMemoriesForced = tuning.arcReflectionMinMemoriesForced;
+            savedArcMemoryShortfallRetryTicks = tuning.arcReflectionMemoryShortfallRetryTicks;
+            savedArcTerminalRetryMaxTicks = tuning.arcReflectionTerminalRetryMaxTicks;
             scope.RegisterCleanup(() =>
             {
                 tuning.daySummaryEnabled = savedDaySummaryEnabled;
                 tuning.quadrumReflectionEnabled = savedQuadrumReflectionEnabled;
                 tuning.arcReflectionEnabled = savedArcReflectionEnabled;
+                tuning.arcReflectionMinMemoriesForced = savedArcMinMemoriesForced;
+                tuning.arcReflectionMemoryShortfallRetryTicks =
+                    savedArcMemoryShortfallRetryTicks;
+                tuning.arcReflectionTerminalRetryMaxTicks =
+                    savedArcTerminalRetryMaxTicks;
             });
         }
 

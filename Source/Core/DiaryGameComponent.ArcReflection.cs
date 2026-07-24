@@ -22,6 +22,8 @@ namespace PawnDiary
         {
             if (pawn == null
                 || !IsDiaryEligible(pawn)
+                || !pawn.Spawned
+                || pawn.Map == null
                 || !DiaryTuning.Current.arcReflectionEnabled
                 || !IsReflectionGroupEnabled(ArcReflectionEventData.DefNameToken))
             {
@@ -110,6 +112,19 @@ namespace PawnDiary
 
             int nowTick = Find.TickManager.TicksGame;
             ArcReflectionScheduleTuning cadence = ArcScheduleTuning();
+            int terminalRetryMaxTicks =
+                Math.Max(0, DiaryTuning.Current.arcReflectionTerminalRetryMaxTicks);
+            bool retryTerminalRequest = TerminalReflectionRetryPolicy.CanRetry(
+                majorEventTrigger,
+                avoidRelatedEventId,
+                pendingOwner?.pendingMajorArcRequestedTick ?? -1,
+                nowTick,
+                terminalRetryMaxTicks);
+            bool terminalRequestExpired = TerminalReflectionRetryPolicy.IsExpired(
+                avoidRelatedEventId,
+                pendingOwner?.pendingMajorArcRequestedTick ?? -1,
+                nowTick,
+                terminalRetryMaxTicks);
             // Evaluate the underlying cadence even while the source/group is disabled so the coordinator
             // can issue an explicit debt-bounding instruction without scanning any memory archive.
             cadence.enabled = true;
@@ -146,8 +161,17 @@ namespace PawnDiary
                     groupEnabled = groupEnabled
                 }
             };
+            if (majorEventTrigger && terminalRequestExpired)
+            {
+                runtime.opportunity.due = false;
+                runtime.settleIneligible = pendingOwner == null
+                    ? (Action)null
+                    : pendingOwner.ClearPendingMajorArc;
+                return runtime;
+            }
 
-            if (!majorEventTrigger && schedule.IsMemoryShortfallBackoffActive(
+            if ((!majorEventTrigger || retryTerminalRequest)
+                && schedule.IsMemoryShortfallBackoffActive(
                 nowTick,
                 currentYear,
                 Math.Max(0, DiaryTuning.Current.arcReflectionMemoryShortfallRetryTicks)))
@@ -159,7 +183,11 @@ namespace PawnDiary
             {
                 if (majorEventTrigger && pendingOwner != null)
                 {
-                    runtime.settleIneligible = pendingOwner.ClearPendingMajorArc;
+                    // Terminal-owned debt survives cadence and shortfall checks only inside its XML-backed
+                    // retry window. Ordinary major events keep the original one-rest bound.
+                    runtime.settleIneligible = retryTerminalRequest
+                        ? (Action)(() => schedule.MarkMemoryShortfall(nowTick, currentYear))
+                        : pendingOwner.ClearPendingMajorArc;
                 }
 
                 return runtime;
@@ -216,7 +244,9 @@ namespace PawnDiary
                 runtime.opportunity.due = false;
                 if (majorEventTrigger && pendingOwner != null)
                 {
-                    runtime.settleIneligible = pendingOwner.ClearPendingMajorArc;
+                    runtime.settleIneligible = retryTerminalRequest
+                        ? (Action)(() => schedule.MarkMemoryShortfall(nowTick, currentYear))
+                        : pendingOwner.ClearPendingMajorArc;
                 }
                 else if (!majorEventTrigger)
                 {

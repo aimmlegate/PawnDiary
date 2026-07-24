@@ -419,6 +419,7 @@
     <arcReflectionMajorSeverityThreshold>90</arcReflectionMajorSeverityThreshold>
     <arcReflectionForceAfterYearDay>45</arcReflectionForceAfterYearDay>
     <arcReflectionMemoryShortfallRetryTicks>60000</arcReflectionMemoryShortfallRetryTicks>
+    <arcReflectionTerminalRetryMaxTicks>3600000</arcReflectionTerminalRetryMaxTicks>
     <arcReflectionMinMemoriesPreferred>4</arcReflectionMinMemoriesPreferred>
     <arcReflectionMinMemoriesForced>3</arcReflectionMinMemoriesForced>
     <arcReflectionMaxMemories>8</arcReflectionMaxMemories>

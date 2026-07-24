@@ -877,6 +877,17 @@ namespace PawnDiary
             NarrativePolicySnapshot reflectionPolicy = DiaryNarrativeContinuityPolicy.Snapshot();
             bool daySummaryOwnsFiller = DaySummaryOwnsFiller(reflectionPolicy);
             List<Pawn> colonists = SnapshotFreeColonists();
+            if (pendingMajorReflection)
+            {
+                PrunePendingMajorReflectionsWithoutRestOwner(colonists);
+                if (!HasPendingMajorReflection()
+                    && pendingAmbientInteractionNotes.Count == 0
+                    && pendingAmbientThoughtNotes.Count == 0
+                    && pendingDayHediffs.Count == 0)
+                {
+                    return;
+                }
+            }
             for (int i = 0; i < colonists.Count; i++)
             {
                 Pawn pawn = colonists[i];

@@ -311,6 +311,36 @@ namespace PawnDiary
             return false;
         }
 
+        /// <summary>
+        /// Clears saved major debt that the map-only natural-rest scanner can no longer consume. This
+        /// runs only when such debt is keeping an otherwise-disabled reflection scan alive.
+        /// </summary>
+        private void PrunePendingMajorReflectionsWithoutRestOwner(List<Pawn> freeColonists)
+        {
+            HashSet<string> restOwnerIds = new HashSet<string>(StringComparer.Ordinal);
+            if (freeColonists != null)
+            {
+                for (int i = 0; i < freeColonists.Count; i++)
+                {
+                    Pawn pawn = freeColonists[i];
+                    if (pawn != null && IsDiaryEligible(pawn))
+                    {
+                        restOwnerIds.Add(pawn.GetUniqueLoadID());
+                    }
+                }
+            }
+
+            for (int i = 0; i < diaries.Count; i++)
+            {
+                PawnDiaryRecord diary = diaries[i];
+                if (diary?.reflectionState?.pendingMajorArc == true
+                    && !restOwnerIds.Contains(diary.pawnId ?? string.Empty))
+                {
+                    diary.reflectionState.ClearPendingMajorArc();
+                }
+            }
+        }
+
         /// <summary>Cheap rest-scan guard used to clear saved belief debt after policy disablement.</summary>
         private bool HasPendingBeliefReflection()
         {

@@ -70,15 +70,30 @@ namespace PawnDiary
             }
         }
 
-        /// <summary>Replaces the bounded pending major request with the newest canonical source event.</summary>
-        public void QueueMajorArc(int requestedTick, string avoidRelatedEventId)
+        /// <summary>
+        /// Stores one pending major request. Re-delivery of the same canonical terminal owner is a no-op,
+        /// while a distinct newer major event replaces the bounded row.
+        /// </summary>
+        public bool QueueMajorArc(int requestedTick, string avoidRelatedEventId)
         {
+            string cleanEventId = CleanRelatedEventId(avoidRelatedEventId);
+            if (pendingMajorArc
+                && cleanEventId.Length > 0
+                && string.Equals(
+                    pendingMajorArcAvoidEventId,
+                    cleanEventId,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
             pendingMajorArc = true;
             pendingMajorArcRequestedTick = Math.Max(0, requestedTick);
-            pendingMajorArcAvoidEventId = CleanRelatedEventId(avoidRelatedEventId);
+            pendingMajorArcAvoidEventId = cleanEventId;
+            return true;
         }
 
-        /// <summary>Clears the deferred request after success, disablement, or one ineligible rest check.</summary>
+        /// <summary>Clears the deferred request after success, disablement, or its bounded retry window.</summary>
         public void ClearPendingMajorArc()
         {
             pendingMajorArc = false;

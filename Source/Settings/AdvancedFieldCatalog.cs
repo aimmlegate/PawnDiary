@@ -1330,6 +1330,7 @@ namespace PawnDiary
                 .Int("arcReflectionMajorSeverityThreshold", 0, 100)
                 .Int("arcReflectionForceAfterYearDay", 0, 100)
                 .Int("arcReflectionMemoryShortfallRetryTicks", 0, 600000)
+                .Int("arcReflectionTerminalRetryMaxTicks", 0, 7200000)
                 .Int("arcReflectionMinMemoriesPreferred", 0, 50)
                 .Int("arcReflectionMinMemoriesForced", 0, 50)
                 .Int("arcReflectionMaxMemories", 0, 50)

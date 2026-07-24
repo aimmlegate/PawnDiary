@@ -348,7 +348,7 @@ namespace PawnDiary
                             { "autonomous_weapons", "violence", "duty" },
                         salience = NarrativeSalienceTokens.Terminal,
                         pawnCanKnow = true,
-                        sourceDomain = "progression",
+                        sourceDomain = DiaryEventDomainClassifier.Progression,
                         sourceDefName = MechanitorEventDefNames.BossDefeated
                     }
                 };
@@ -370,7 +370,7 @@ namespace PawnDiary
                         && !string.IsNullOrWhiteSpace(row.bossPawnId),
                     phase = MechanitorBossPhaseTokens.Defeated,
                     arcKey = arcKey,
-                    sourceDomain = "progression",
+                    sourceDomain = DiaryEventDomainClassifier.Progression,
                     sourceDefName = MechanitorEventDefNames.BossDefeated
                 });
         }

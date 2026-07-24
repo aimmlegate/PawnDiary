@@ -74,6 +74,7 @@ namespace PawnDiary.RimTests
         {
             scope = PawnDiaryRimTestScope.Begin("reflection");
             reflectingPawn = scope.CreateAdultColonist();
+            scope.SpawnAsLiveColonist(reflectingPawn);
 
             tuningDef = DiaryTuning.Current;
             originalArcReflectionEnabled = tuningDef.arcReflectionEnabled;
@@ -200,7 +201,8 @@ namespace PawnDiary.RimTests
 
         /// <summary>
         /// N4. A major canonical page may request a later arc reflection, but the callback itself must not
-        /// emit a second page. The pending row is bounded to one request and preserves the avoid-related ID.
+        /// emit a second page. Same-owner delivery is idempotent, while a distinct newer owner replaces
+        /// the one bounded row.
         /// </summary>
         [Test]
         public static void MajorEventQueuesOneDeferredArcWithoutImmediatePage()
@@ -215,11 +217,40 @@ namespace PawnDiary.RimTests
                     && string.Equals(state.pendingMajorArcAvoidEventId, firstOwner, StringComparison.Ordinal),
                 "The major event should queue one deferred arc request with its avoid-related event ID.");
 
+            int firstRequestedTick = state.pendingMajorArcRequestedTick;
+            bool duplicateAccepted = state.QueueMajorArc(firstRequestedTick + 100, firstOwner.ToUpperInvariant());
+            PawnDiaryRimTestScope.Require(
+                !duplicateAccepted
+                    && state.pendingMajorArcRequestedTick == firstRequestedTick
+                    && string.Equals(
+                        state.pendingMajorArcAvoidEventId,
+                        firstOwner,
+                        StringComparison.Ordinal),
+                "Re-delivery of the same canonical terminal owner reset or duplicated its pending row.");
+
             scope.RequireNoNewEvent(() => InvokeConsiderAfterMajorEvent(latestOwner));
             PawnDiaryRimTestScope.Require(
                 state.pendingMajorArc
                     && string.Equals(state.pendingMajorArcAvoidEventId, latestOwner, StringComparison.Ordinal),
                 "A second major event should replace the bounded pending row instead of creating a page/list.");
+        }
+
+        /// <summary>
+        /// A world/despawned pawn cannot reach the map-only natural-rest scanner, so a major callback must
+        /// not strand permanent pending debt on that diary record.
+        /// </summary>
+        [Test]
+        public static void UnspawnedMajorOwnerCannotQueueUnreachableRestDebt()
+        {
+            Pawn unspawned = scope.CreateAdultColonist();
+            scope.RequireNoNewEvent(() => InvokeConsiderAfterMajorEvent(
+                "evt_unreachable_terminal_owner",
+                unspawned));
+
+            PawnReflectionState state = DiaryRecord(unspawned).EnsureReflectionState();
+            PawnDiaryRimTestScope.Require(
+                !state.pendingMajorArc,
+                "An unspawned pawn accumulated major reflection debt that no natural-rest scan can consume.");
         }
 
         /// <summary>
@@ -379,7 +410,9 @@ namespace PawnDiary.RimTests
 
         // ----- helpers ----------------------------------------------------------------------------
 
-        private static void InvokeConsiderAfterMajorEvent(string avoidRelatedEventId)
+        private static void InvokeConsiderAfterMajorEvent(
+            string avoidRelatedEventId,
+            Pawn pawn = null)
         {
             MethodInfo method = typeof(DiaryGameComponent).GetMethod(
                 "ConsiderArcReflectionAfterMajorEvent",
@@ -390,15 +423,17 @@ namespace PawnDiary.RimTests
                     "Could not locate DiaryGameComponent.ConsiderArcReflectionAfterMajorEvent.");
             }
 
-            method.Invoke(scope.Component, new object[] { reflectingPawn, avoidRelatedEventId });
+            method.Invoke(scope.Component, new object[] { pawn ?? reflectingPawn, avoidRelatedEventId });
         }
 
-        private static PawnDiaryRecord DiaryRecord()
+        private static PawnDiaryRecord DiaryRecord(Pawn pawn = null)
         {
             MethodInfo method = typeof(DiaryGameComponent).GetMethod(
                 "FindDiary",
                 BindingFlags.Instance | BindingFlags.NonPublic);
-            PawnDiaryRecord diary = method?.Invoke(scope.Component, new object[] { reflectingPawn, true })
+            PawnDiaryRecord diary = method?.Invoke(
+                scope.Component,
+                new object[] { pawn ?? reflectingPawn, true })
                 as PawnDiaryRecord;
             if (diary == null)
             {
