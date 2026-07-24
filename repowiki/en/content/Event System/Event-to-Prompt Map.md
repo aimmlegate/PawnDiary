@@ -101,6 +101,13 @@ neutral chronicle pages cannot receive them. Missing old-save keys normalize to 
 value has a defensive 600-character cap, and an empty field costs no prompt tokens. Their owning
 capture policies decide whether and when to populate them.
 
+Quality Wave A5 populates `IdentitySummary` only while creating a live pair event. For each POV it
+excludes the current partner, reserves the strongest named direct relation among living free
+colonists, then fills the XML-tuned two-row roster by absolute opinion strength. The saved
+`relationships=` value contains localized names, relation labels and qualitative sentiment only;
+numeric opinion never reaches the prompt. A historical birth with an older capture DTO stays empty
+rather than mixing today's colony roster into a past event.
+
 ## XML ownership
 
 | File | Owns |

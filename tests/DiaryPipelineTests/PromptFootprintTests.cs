@@ -526,10 +526,10 @@ namespace DiaryPipelineTests
         {
             Dictionary<string, string> expected = new Dictionary<string, string>(StringComparer.Ordinal)
             {
-                { "PairDefault", "40|18" },
-                { "PairImportant", "87|18" },
+                { "PairDefault", "41|18" },
+                { "PairImportant", "88|18" },
                 { "PairCombat", "33|18" },
-                { "PairBatched", "29|18" },
+                { "PairBatched", "30|18" },
                 { "SoloDefault", "57|32" },
                 { "SoloImportant", "137|33" },
                 { "SoloInternalState", "41|28" },

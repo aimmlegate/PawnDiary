@@ -170,6 +170,20 @@ namespace PawnDiary
                 neutralStatus = DiaryEvent.NotGeneratedStatus
             };
 
+            // A5 freezes the colony-relationship roster at the same boundary as pair continuity.
+            // Birth replay owns an older captured boundary but its DTO predates this additive field;
+            // reading today's colony while writing a historical birth would invent false context, so
+            // that path deliberately stays empty.
+            if (capturedContext == null)
+            {
+                diaryEvent.SetIdentitySummary(
+                    DiaryEvent.InitiatorRole,
+                    DiaryContextBuilder.BuildIdentitySummary(initiator, recipient));
+                diaryEvent.SetIdentitySummary(
+                    DiaryEvent.RecipientRole,
+                    DiaryContextBuilder.BuildIdentitySummary(recipient, initiator));
+            }
+
             ApplyCapturedOrLiveGenerationEligibility(
                 diaryEvent, DiaryEvent.InitiatorRole, initiator, initiatorCapture);
             ApplyCapturedOrLiveGenerationEligibility(

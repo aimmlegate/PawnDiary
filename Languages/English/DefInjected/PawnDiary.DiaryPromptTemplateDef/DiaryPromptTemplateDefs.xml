@@ -593,4 +593,8 @@ Do not write a report, sermon, doctrine summary, or list. Output only the diary 
   <DiaryPromptTemplate_SoloDefault.fields.56.label>major odyssey destination</DiaryPromptTemplate_SoloDefault.fields.56.label>
   <DiaryPromptTemplate_SoloImportant.fields.135.label>odyssey site category</DiaryPromptTemplate_SoloImportant.fields.135.label>
   <DiaryPromptTemplate_SoloImportant.fields.136.label>major odyssey destination</DiaryPromptTemplate_SoloImportant.fields.136.label>
+  <!-- Quality Wave A5 append-only pairwise identity labels. -->
+  <DiaryPromptTemplate_PairDefault.fields.40.label>key relationships</DiaryPromptTemplate_PairDefault.fields.40.label>
+  <DiaryPromptTemplate_PairImportant.fields.87.label>key relationships</DiaryPromptTemplate_PairImportant.fields.87.label>
+  <DiaryPromptTemplate_PairBatched.fields.29.label>key relationships</DiaryPromptTemplate_PairBatched.fields.29.label>
 </LanguageData>

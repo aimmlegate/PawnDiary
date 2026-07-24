@@ -25,6 +25,7 @@ namespace DiaryPipelineTests
             TestMemoryContextProjectabilityAndTemplates();
             TestMemoryContextRequiredInEveryPreset();
             TestQualityWavePovContextContracts();
+            TestIdentitySummaryPolicy();
             TestPromptContextDetailSelection();
             TestPromptContextDetailOverrideResolution();
             TestOwnedPromptTextIsNotSentenceCapped();
@@ -196,6 +197,135 @@ namespace DiaryPipelineTests
             AssertEqual("unknown source remains empty after the Phase 2 contract extension",
                 string.Empty,
                 PromptAssembler.ResolveFieldValue("QualityWaveUnknown", string.Empty, values));
+        }
+
+        /// <summary>
+        /// A5 pins the reserved-relation rule, global fill ranking, qualitative formatting, XML
+        /// tuning, append-only template projection, and EN/RU indexed labels.
+        /// </summary>
+        private static void TestIdentitySummaryPolicy()
+        {
+            IdentityRow relationTieA = new IdentityRow
+            {
+                name = "Ada",
+                relationLabel = "sister",
+                sentimentLabel = "friendly",
+                opinion = 40,
+                hasRelation = true
+            };
+            IdentityRow relationTieB = new IdentityRow
+            {
+                name = "Bea",
+                relationLabel = "cousin",
+                sentimentLabel = "hostile",
+                opinion = -40,
+                hasRelation = true
+            };
+            IdentityRow strongestOrdinary = new IdentityRow
+            {
+                name = "Zara",
+                sentimentLabel = "devoted",
+                opinion = 90
+            };
+            IdentityRow secondOrdinary = new IdentityRow
+            {
+                name = "Cora",
+                sentimentLabel = "resentful",
+                opinion = -70
+            };
+            List<IdentityRow> rows = new List<IdentityRow>
+            {
+                strongestOrdinary,
+                relationTieB,
+                secondOrdinary,
+                relationTieA,
+                null,
+                new IdentityRow { name = " ", opinion = int.MinValue }
+            };
+
+            List<IdentityRow> selected = IdentitySummaryPolicy.Select(rows, 2);
+            AssertEqual("A5 selects exactly the configured relationship count", 2, selected.Count);
+            AssertEqual("A5 reserves the name-tiebroken strongest direct relation",
+                "Ada", selected[0].name);
+            AssertEqual("A5 fills the remaining slot from the global absolute-opinion ranking",
+                "Zara", selected[1].name);
+
+            List<IdentityRow> one = IdentitySummaryPolicy.Select(rows, 1);
+            AssertEqual("A5 one-slot limit still reserves a direct relation", 1, one.Count);
+            AssertEqual("A5 one-slot limit chooses the strongest relation, not the global row",
+                "Ada", one[0].name);
+
+            List<IdentityRow> noRelations = IdentitySummaryPolicy.Select(
+                new List<IdentityRow> { strongestOrdinary, secondOrdinary },
+                2);
+            AssertEqual("A5 no-relation fallback starts with the strongest opinion magnitude",
+                "Zara", noRelations[0].name);
+            AssertEqual("A5 no-relation fallback retains the next global row",
+                "Cora", noRelations[1].name);
+
+            string formatted = IdentitySummaryPolicy.Format(rows, 2);
+            AssertEqual("A5 compact qualitative format",
+                "relationships=Ada (sister, friendly); Zara (devoted)",
+                formatted);
+            AssertTrue("A5 formatted roster never exposes numeric opinions",
+                formatted.IndexOf("40", StringComparison.Ordinal) < 0
+                    && formatted.IndexOf("90", StringComparison.Ordinal) < 0);
+            AssertEqual("A5 empty input omits the entire prompt field",
+                string.Empty, IdentitySummaryPolicy.Format(null, 2));
+            AssertEqual("A5 zero limit omits the entire prompt field",
+                string.Empty, IdentitySummaryPolicy.Format(rows, 0));
+
+            // The widened-magnitude helper must accept every int, even though RimWorld opinions are
+            // normally bounded to -100..100.
+            List<IdentityRow> adversarial = IdentitySummaryPolicy.Select(
+                new List<IdentityRow>
+                {
+                    new IdentityRow { name = "Minimum", sentimentLabel = "extreme", opinion = int.MinValue },
+                    new IdentityRow { name = "Maximum", sentimentLabel = "extreme", opinion = int.MaxValue }
+                },
+                1);
+            AssertEqual("A5 absolute ranking cannot overflow on int.MinValue",
+                "Minimum", adversarial[0].name);
+
+            XDocument tuning = XDocument.Load(RepoPath("1.6", "Defs", "DiaryTuningDef.xml"));
+            AssertEqual("A5 shipped maximum relation count",
+                "2",
+                tuning.Descendants("identitySummaryMaxRelations").Single().Value.Trim());
+
+            XDocument templates = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryPromptTemplateDefs.xml"));
+            string[] templateKeys = { "PairDefault", "PairImportant", "PairBatched" };
+            int[] identityIndexes = { 40, 87, 29 };
+            for (int i = 0; i < templateKeys.Length; i++)
+            {
+                XElement def = templates.Descendants("PawnDiary.DiaryPromptTemplateDef")
+                    .Single(row => ChildValue(row, "templateKey") == templateKeys[i]);
+                List<XElement> fields = def.Element("fields").Elements("li").ToList();
+                AssertEqual("A5 " + templateKeys[i] + " Identity field remains append-only",
+                    identityIndexes[i], fields.Count - 1);
+                AssertEqual("A5 " + templateKeys[i] + " projects Identity exactly once",
+                    1,
+                    fields.Count(row => ChildValue(row, "source") == "Identity"));
+                AssertEqual("A5 " + templateKeys[i] + " Identity label",
+                    "key relationships",
+                    ChildValue(fields[identityIndexes[i]], "label"));
+            }
+
+            XDocument english = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected",
+                "PawnDiary.DiaryPromptTemplateDef", "DiaryPromptTemplateDefs.xml"));
+            XDocument russian = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected",
+                "PawnDiary.DiaryPromptTemplateDef", "DiaryPromptTemplateDefs.xml"));
+            for (int i = 0; i < templateKeys.Length; i++)
+            {
+                string defName = "DiaryPromptTemplate_" + templateKeys[i];
+                string elementName = defName + ".fields." + identityIndexes[i] + ".label";
+                AssertEqual("A5 English indexed label " + templateKeys[i],
+                    "key relationships", english.Root.Element(elementName)?.Value);
+                AssertEqual("A5 Russian indexed label " + templateKeys[i],
+                    "важные отношения", russian.Root.Element(elementName)?.Value);
+            }
         }
 
         private static void TestTuningOverrideMigration()

@@ -8,6 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-07-24
 
+- **Quality Wave A5 — compact relationship identity.** Pairwise POVs now freeze up to two other free colonists as qualitative `relationships=` context, reserving the strongest named direct relation, excluding the current partner, and leaving captured historical births untouched.
 - **Quality Wave Phase 2 contract foundation.** Added additive, bounded per-POV identity-summary and mood-snapshot save/prompt fields with old-save-safe normalization; behavior remains unchanged until A5/B2 populate them.
 - **Master Wave 13 / Royalty Phase 8 compatibility hardening.** Re-audited exact Royalty ownership against N3-R, terminal reflections, one-rest arbitration, and Full/Balanced/Compact prompt budgets; focused pure coverage passed without a production behavior change.
 - **Master Wave 13 / Ideology Phase 6 compatibility hardening.** Re-audited exact belief ownership, N3-I/N4 composition, state safety, and Full/Balanced/Compact budgets; restored bounded narrative and memory context to belief reflections with focused pure coverage.

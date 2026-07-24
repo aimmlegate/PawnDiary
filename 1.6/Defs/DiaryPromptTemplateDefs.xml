@@ -71,6 +71,8 @@
       <li><label>verified rupture cause</label><source>GameContext</source><contextKey>cause</contextKey></li>
       <li><label>deathrest</label><source>GameContext</source><contextKey>deathrest</contextKey></li>
       <li><label>deathrest severity</label><source>GameContext</source><contextKey>completion_band</contextKey></li>
+      <!-- Quality Wave A5 append-only field; empty rosters are omitted by PromptAssembler. -->
+      <li><label>key relationships</label><source>Identity</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -193,6 +195,8 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>verified rupture cause</label><source>GameContext</source><contextKey>cause</contextKey></li>
       <li><label>deathrest</label><source>GameContext</source><contextKey>deathrest</contextKey></li>
       <li><label>deathrest severity</label><source>GameContext</source><contextKey>completion_band</contextKey></li>
+      <!-- Quality Wave A5 append-only field; empty rosters are omitted by PromptAssembler. -->
+      <li><label>key relationships</label><source>Identity</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -286,6 +290,8 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>relevant past</label><source>MemoryContext</source></li>
       <!-- Ideology Phase 1: absent/irrelevant belief context is omitted by PromptAssembler. -->
       <li><label>belief context</label><source>BeliefContext</source></li>
+      <!-- Quality Wave A5 append-only field; empty rosters are omitted by PromptAssembler. -->
+      <li><label>key relationships</label><source>Identity</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 

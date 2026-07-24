@@ -464,6 +464,10 @@
       <li>Disturbing</li>     <!-- Anomaly; inert without DLC -->
     </humorReducedTraitKeys>
 
+    <!-- Quality Wave A5. At most this many other free colonists appear in a pairwise POV's compact
+         relationships fact. One slot is reserved for the strongest named direct relation. -->
+    <identitySummaryMaxRelations>2</identitySummaryMaxRelations>
+
     <!-- Output-language directive. When true, every request's system prompt ends with one localized
          line naming the active RimWorld language, so the model is told what to write in instead of
          guessing it from the prompt wording. Set false to restore the old implicit behavior. -->

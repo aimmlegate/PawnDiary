@@ -14,6 +14,7 @@
     <Compile Include="..\..\Source\Pipeline\DiaryArchiveFallback.cs" Link="DiaryArchiveFallback.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryArchiveCompactionPlanner.cs" Link="DiaryArchiveCompactionPlanner.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryLifeBoundaryPolicy.cs" Link="DiaryLifeBoundaryPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\IdentitySummaryPolicy.cs" Link="IdentitySummaryPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryEventPromptKeys.cs" Link="DiaryEventPromptKeys.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryEntryTitleFilter.cs" Link="DiaryEntryTitleFilter.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryEntryStatsAccumulator.cs" Link="DiaryEntryStatsAccumulator.cs" />

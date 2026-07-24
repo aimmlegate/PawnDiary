@@ -96,6 +96,55 @@ namespace PawnDiary
             return parts.Count == 0 ? "none" : string.Join("; ", parts.ToArray());
         }
 
+        /// <summary>
+        /// Captures a compact roster of the writer's strongest colony relationships at event time.
+        /// The partner in the current pair is excluded because the ordinary continuity field already
+        /// describes that relationship in greater detail.
+        /// </summary>
+        public static string BuildIdentitySummary(Pawn povPawn, Pawn partnerPawn)
+        {
+            if (povPawn == null)
+            {
+                return string.Empty;
+            }
+
+            List<IdentityRow> rows = new List<IdentityRow>();
+            foreach (Pawn candidate in
+                PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists)
+            {
+                if (candidate == null || candidate == povPawn || candidate == partnerPawn)
+                {
+                    continue;
+                }
+
+                string name = ExternalText(candidate.LabelShortCap);
+                int opinion;
+                if (string.IsNullOrWhiteSpace(name)
+                    || !DiaryGameComponent.TryReadOpinion(povPawn, candidate, out opinion))
+                {
+                    continue;
+                }
+
+                PawnRelationDef relation =
+                    PawnRelationUtility.GetMostImportantRelation(povPawn, candidate);
+                string relationLabel = relation == null
+                    ? string.Empty
+                    : ExternalText(relation.GetGenderSpecificLabelCap(candidate));
+                rows.Add(new IdentityRow
+                {
+                    name = name,
+                    relationLabel = relationLabel,
+                    sentimentLabel = DiaryBuckets.FormatOpinion(opinion),
+                    opinion = opinion,
+                    hasRelation = relation != null && !string.IsNullOrWhiteSpace(relationLabel)
+                });
+            }
+
+            return IdentitySummaryPolicy.Format(
+                rows,
+                Math.Max(0, DiaryTuning.Current.identitySummaryMaxRelations));
+        }
+
         // The standing social memories that drive the opinion, aggregated by kind and direction
         // (e.g. "shared kind words (positive), insulted (strong negative)"). This intentionally reads
         // stored memories only: RimWorld's broader GetSocialThoughts helper also recalculates

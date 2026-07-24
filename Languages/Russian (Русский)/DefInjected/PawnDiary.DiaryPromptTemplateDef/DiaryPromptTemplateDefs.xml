@@ -642,4 +642,8 @@
   <DiaryPromptTemplate_SoloDefault.fields.56.label>важное место назначения Odyssey</DiaryPromptTemplate_SoloDefault.fields.56.label>
   <DiaryPromptTemplate_SoloImportant.fields.135.label>категория места Odyssey</DiaryPromptTemplate_SoloImportant.fields.135.label>
   <DiaryPromptTemplate_SoloImportant.fields.136.label>важное место назначения Odyssey</DiaryPromptTemplate_SoloImportant.fields.136.label>
+  <!-- Quality Wave A5: добавленные в конец подписи отношений для парных записей. -->
+  <DiaryPromptTemplate_PairDefault.fields.40.label>важные отношения</DiaryPromptTemplate_PairDefault.fields.40.label>
+  <DiaryPromptTemplate_PairImportant.fields.87.label>важные отношения</DiaryPromptTemplate_PairImportant.fields.87.label>
+  <DiaryPromptTemplate_PairBatched.fields.29.label>важные отношения</DiaryPromptTemplate_PairBatched.fields.29.label>
 </LanguageData>

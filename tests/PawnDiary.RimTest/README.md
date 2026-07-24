@@ -50,6 +50,7 @@ owners. Both use the shared harness:
 | Suite | EVT | Covers |
 |---|---|---|
 | `PawnDiaryEventReactionTests` | 01/07/08 | Interaction pair (PlayLog), romance (relation), mental state. |
+| `PawnDiaryQualityWavePhase2FlowTests` | Quality Wave A5 | Event-time per-POV identity context, prompt projection, partner exclusion, and historical-boundary safety. |
 | `PawnDiaryInteractionBatchFlowTests` | 02 | Interaction batch/ambient accumulation + flush. |
 | `PawnDiaryThoughtFlowTests` | 03 | Thought memory immediate/ambient route. |
 | `PawnDiaryThoughtProgressionFlowTests` | 04 | Thought-stage progression baseline/worsen/repeat. |

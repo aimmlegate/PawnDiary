@@ -525,6 +525,11 @@ namespace PawnDiary
             "Disturbing",
         };
 
+        // ---- Quality Wave: compact pairwise identity context ----
+        // Maximum number of other free colonists named in one first-person pair event. The pure
+        // selector reserves one slot for the strongest direct relation when any exists.
+        public int identitySummaryMaxRelations = 2;
+
         // ---- Output-language directive ----
         // When true, every LLM request ends its system prompt with one localized line naming the
         // active RimWorld language ("Write the diary entry in Русский."), so the model is told the
