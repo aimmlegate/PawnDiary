@@ -350,7 +350,7 @@ namespace PawnDiary.RimTests
                 ArcMemoryCandidate arcCandidate = ArcCandidateFromEvent(diaryEvent, writer);
                 PawnDiaryRimTestScope.Require(view != null
                         && view.GroupLabel == ascentGroup.label
-                        && view.ColorCue == "royalty"
+                        && view.ColorCue == DiaryEvent.RoyaltyBrightColorCue
                         && diaryEvent.ToneDirective() == ascentGroup.tone,
                     "A saved Royal Ascent terminal page fell back to generic Quest display policy.");
                 PawnDiaryRimTestScope.Require(arcCandidate?.groupKey == "questRoyalAscent",

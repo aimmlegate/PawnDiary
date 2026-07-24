@@ -343,21 +343,23 @@ namespace PawnDiary.RimTests
                     StringComparison.Ordinal),
                 "A belief reflection page did not stamp the Ideology core color cue.");
 
-            // The split must not have stolen the other three reflections from the generic row.
-            string[] genericNames =
+            // Every saved reflection token must recover the row that now owns its settings and style.
+            // Day and quadrum have dedicated rows; life-arc pages intentionally keep the generic row.
+            Dictionary<string, string> expectedGroups = new Dictionary<string, string>
             {
-                DayReflectionEventData.DefNameToken,
-                DayReflectionEventData.QuadrumDefNameToken,
-                ArcReflectionEventData.DefNameToken
+                { DayReflectionEventData.DefNameToken, "dayreflection" },
+                { DayReflectionEventData.QuadrumDefNameToken, "quadrumreflection" },
+                { ArcReflectionEventData.DefNameToken, "reflection" }
             };
-            for (int i = 0; i < genericNames.Length; i++)
+            foreach (KeyValuePair<string, string> expected in expectedGroups)
             {
-                DiaryInteractionGroupDef generic = InteractionGroups.ClassifyDefName(
-                    GroupDomain.Reflection, genericNames[i]);
+                DiaryInteractionGroupDef resolved = InteractionGroups.ClassifyDefName(
+                    GroupDomain.Reflection, expected.Key);
                 PawnDiaryRimTestScope.Require(
-                    generic != null && string.Equals(generic.defName, "reflection", StringComparison.Ordinal),
-                    "'" + genericNames[i] + "' no longer classifies to the generic reflection row (got '"
-                    + (generic?.defName ?? "<null>") + "').");
+                    resolved != null
+                        && string.Equals(resolved.defName, expected.Value, StringComparison.Ordinal),
+                    "'" + expected.Key + "' resolved to '" + (resolved?.defName ?? "<null>")
+                    + "' instead of its owned reflection row '" + expected.Value + "'.");
             }
 
             // The split exists only to add a color: the wording handed to the model must be unchanged.

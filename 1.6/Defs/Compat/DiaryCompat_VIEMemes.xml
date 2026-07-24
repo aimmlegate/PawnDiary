@@ -20,7 +20,7 @@
     <domain>Ritual</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>ideologyDeep</colorCue>
     <enableWhenPackageIdsLoaded>
       <li>VanillaExpanded.VMemesE</li>
     </enableWhenPackageIdsLoaded>
