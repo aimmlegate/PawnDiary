@@ -1,59 +1,92 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Русская локализация культурных линз (по 8 тезисов на культуру, до 80 символов). Тезисы
-  написаны как русские формулы мировоззрения, а не кальки с английского. Перевод идёт ПО
-  ИНДЕКСУ строки списка — строки нельзя удалять или переставлять.
+  Русская локализация культурных линз (по 14 тезисов на культуру, до 80 символов). Тезис —
+  это ВОСПРИЯТИЕ: чем явление ЯВЛЯЕТСЯ в картине мира культуры (естественное, сверхъестественное,
+  техническое, хозяйственное, иерархическое), без оценки «хорошо/плохо» — оценки принадлежат
+  слою идеолигии. Тезисы написаны как русские формулы мировоззрения, а не кальки с английского.
+  Перевод идёт ПО ИНДЕКСУ строки списка — строки нельзя удалять или переставлять; новые строки
+  только добавляются в конец в том же порядке во всех профилях.
 -->
 <LanguageData>
 
   <Diary_CultureProfile_Astropolitan.label>линза: астрополит</Diary_CultureProfile_Astropolitan.label>
-  <Diary_CultureProfile_Astropolitan.clauses.0.clause>железо старой войны: изучай и обыгрывай, а не мистифицируй</Diary_CultureProfile_Astropolitan.clauses.0.clause>
-  <Diary_CultureProfile_Astropolitan.clauses.1.clause>инженерия выше нашей, но всё же инженерия; работать по протоколу</Diary_CultureProfile_Astropolitan.clauses.1.clause>
-  <Diary_CultureProfile_Astropolitan.clauses.2.clause>реальное поле с реальными законами, плохо измеренное; уважай данные</Diary_CultureProfile_Astropolitan.clauses.2.clause>
-  <Diary_CultureProfile_Astropolitan.clauses.3.clause>одна держава из многих; их титулы — условия договора, не истина</Diary_CultureProfile_Astropolitan.clauses.3.clause>
-  <Diary_CultureProfile_Astropolitan.clauses.4.clause>тело — платформа; апгрейд — это обслуживание, а не предательство</Diary_CultureProfile_Astropolitan.clauses.4.clause>
-  <Diary_CultureProfile_Astropolitan.clauses.5.clause>тёмный архотех, не магия — тем хуже; на карантин и в журнал</Diary_CultureProfile_Astropolitan.clauses.5.clause>
-  <Diary_CultureProfile_Astropolitan.clauses.6.clause>небо — дом; корабли, станции и долгий холодный сон — обычная жизнь</Diary_CultureProfile_Astropolitan.clauses.6.clause>
-  <Diary_CultureProfile_Astropolitan.clauses.7.clause>чужак — торговый партнёр до первой проверки; контракт важнее родства</Diary_CultureProfile_Astropolitan.clauses.7.clause>
+  <Diary_CultureProfile_Astropolitan.clauses.0.clause>самоходные машины старой войны; железо, а не духи</Diary_CultureProfile_Astropolitan.clauses.0.clause>
+  <Diary_CultureProfile_Astropolitan.clauses.1.clause>инженерия разума не нашего масштаба — и всё же инженерия</Diary_CultureProfile_Astropolitan.clauses.1.clause>
+  <Diary_CultureProfile_Astropolitan.clauses.2.clause>измеримое поле, которое никто не нанёс на карту; приборы, а не знамения</Diary_CultureProfile_Astropolitan.clauses.2.clause>
+  <Diary_CultureProfile_Astropolitan.clauses.3.clause>одна держава из многих; титулы — условия договора, ранги — местный протокол</Diary_CultureProfile_Astropolitan.clauses.3.clause>
+  <Diary_CultureProfile_Astropolitan.clauses.4.clause>много генолиний одного вида; различия — история конструкции, не загадка</Diary_CultureProfile_Astropolitan.clauses.4.clause>
+  <Diary_CultureProfile_Astropolitan.clauses.5.clause>архотех тёмного рода; явления, на которых показания приборов расходятся</Diary_CultureProfile_Astropolitan.clauses.5.clause>
+  <Diary_CultureProfile_Astropolitan.clauses.6.clause>дом; корабли, станции и долгий холодный сон — обычная жизнь</Diary_CultureProfile_Astropolitan.clauses.6.clause>
+  <Diary_CultureProfile_Astropolitan.clauses.7.clause>контрагенты; незнакомец — это счёт, который ещё не открыт</Diary_CultureProfile_Astropolitan.clauses.7.clause>
+  <Diary_CultureProfile_Astropolitan.clauses.8.clause>запись закрывается; человек становится логами, долгами и построенным</Diary_CultureProfile_Astropolitan.clauses.8.clause>
+  <Diary_CultureProfile_Astropolitan.clauses.9.clause>тело — платформа; раны, детали и починки — его журнал обслуживания</Diary_CultureProfile_Astropolitan.clauses.9.clause>
+  <Diary_CultureProfile_Astropolitan.clauses.10.clause>семья — экипаж на весь рейс; её собирают так же, как рождают</Diary_CultureProfile_Astropolitan.clauses.10.clause>
+  <Diary_CultureProfile_Astropolitan.clauses.11.clause>сбой в работе разума; система идёт вразнос, пока не отдохнёт</Diary_CultureProfile_Astropolitan.clauses.11.clause>
+  <Diary_CultureProfile_Astropolitan.clauses.12.clause>местная фауна; экосистема, которую изучают, приручают и обгоняют</Diary_CultureProfile_Astropolitan.clauses.12.clause>
+  <Diary_CultureProfile_Astropolitan.clauses.13.clause>отказы среды; планета запустила один из худших своих сценариев</Diary_CultureProfile_Astropolitan.clauses.13.clause>
 
   <Diary_CultureProfile_Corunan.label>линза: корунец</Diary_CultureProfile_Corunan.label>
-  <Diary_CultureProfile_Corunan.clauses.0.clause>железные мертвецы старой войны; подчинять их — оскорблять предков</Diary_CultureProfile_Corunan.clauses.0.clause>
-  <Diary_CultureProfile_Corunan.clauses.1.clause>места богов: ничего не бери, оставь подношение, говори тихо</Diary_CultureProfile_Corunan.clauses.1.clause>
-  <Diary_CultureProfile_Corunan.clauses.2.clause>духи говорят через дерево и транс; чин здесь ничего не значит</Diary_CultureProfile_Corunan.clauses.2.clause>
-  <Diary_CultureProfile_Corunan.clauses.3.clause>чужие вожди с огнём с неба; чти осторожно и ничего им не будь должен</Diary_CultureProfile_Corunan.clauses.3.clause>
-  <Diary_CultureProfile_Corunan.clauses.4.clause>кровь рода священна; переделка плоти требует прощения предков</Diary_CultureProfile_Corunan.clauses.4.clause>
-  <Diary_CultureProfile_Corunan.clauses.5.clause>голодный дух в машинной шкуре; иные двери мудрые не открывают</Diary_CultureProfile_Corunan.clauses.5.clause>
-  <Diary_CultureProfile_Corunan.clauses.6.clause>звёзды забрали прежних; такая даль — почти что смерть</Diary_CultureProfile_Corunan.clauses.6.clause>
-  <Diary_CultureProfile_Corunan.clauses.7.clause>право гостя свято, предательство непростимо; родня прежде всего</Diary_CultureProfile_Corunan.clauses.7.clause>
+  <Diary_CultureProfile_Corunan.clauses.0.clause>железные мертвецы старой войны; тела, в которых нет духа</Diary_CultureProfile_Corunan.clauses.0.clause>
+  <Diary_CultureProfile_Corunan.clauses.1.clause>места богов и вещи богов; старейшие духи мира, ставшие камнем</Diary_CultureProfile_Corunan.clauses.1.clause>
+  <Diary_CultureProfile_Corunan.clauses.2.clause>мир духов касается этого мира; голоса через дерево и транс</Diary_CultureProfile_Corunan.clauses.2.clause>
+  <Diary_CultureProfile_Corunan.clauses.3.clause>ещё одно племя, сошедшее с неба; их титулы — их тотемы</Diary_CultureProfile_Corunan.clauses.3.clause>
+  <Diary_CultureProfile_Corunan.clauses.4.clause>иные линии крови, вылепленные иными духами; у каждой — свои предки</Diary_CultureProfile_Corunan.clauses.4.clause>
+  <Diary_CultureProfile_Corunan.clauses.5.clause>голодный дух в машинной шкуре; тьма между кострами, получившая тело</Diary_CultureProfile_Corunan.clauses.5.clause>
+  <Diary_CultureProfile_Corunan.clauses.6.clause>страна над небом, куда ушли прежние; земля мёртвых</Diary_CultureProfile_Corunan.clauses.6.clause>
+  <Diary_CultureProfile_Corunan.clauses.7.clause>гость, родня или никто; очаг решает, кем считать чужака</Diary_CultureProfile_Corunan.clauses.7.clause>
+  <Diary_CultureProfile_Corunan.clauses.8.clause>дорога к костру предков; мёртвые рядом, пока их называют по имени</Diary_CultureProfile_Corunan.clauses.8.clause>
+  <Diary_CultureProfile_Corunan.clauses.9.clause>дом духа; каждый шрам и каждая вставка — история, которую дом помнит</Diary_CultureProfile_Corunan.clauses.9.clause>
+  <Diary_CultureProfile_Corunan.clauses.10.clause>продолжение рода; каждый союз и каждое рождение связывают цепи предков</Diary_CultureProfile_Corunan.clauses.10.clause>
+  <Diary_CultureProfile_Corunan.clauses.11.clause>дух оседлал тело на время; человек всё ещё внутри</Diary_CultureProfile_Corunan.clauses.11.clause>
+  <Diary_CultureProfile_Corunan.clauses.12.clause>другие народы земли; в одних зверях живут духи, в других — знамения</Diary_CultureProfile_Corunan.clauses.12.clause>
+  <Diary_CultureProfile_Corunan.clauses.13.clause>мир-дух ворочается во сне; земля говорит погодой</Diary_CultureProfile_Corunan.clauses.13.clause>
 
   <Diary_CultureProfile_Rustican.label>линза: рустикан</Diary_CultureProfile_Rustican.label>
-  <Diary_CultureProfile_Rustican.clauses.0.clause>волки у ограды: добить, разобрать на запчасти, беречь стадо</Diary_CultureProfile_Rustican.clauses.0.clause>
-  <Diary_CultureProfile_Rustican.clauses.1.clause>чья-то оборванная история; бери с умом, запечатанное не трогай</Diary_CultureProfile_Rustican.clauses.1.clause>
-  <Diary_CultureProfile_Rustican.clauses.2.clause>полезная погода странного неба; пользуйся, но хозяйство на ней не строй</Diary_CultureProfile_Rustican.clauses.2.clause>
-  <Diary_CultureProfile_Rustican.clauses.3.clause>закон, с которым торгуют, и орбитальный огонь, с которым не спорят</Diary_CultureProfile_Rustican.clauses.3.clause>
-  <Diary_CultureProfile_Rustican.clauses.4.clause>починенный инструмент — рабочий инструмент; стальная рука пашет не хуже</Diary_CultureProfile_Rustican.clauses.4.clause>
-  <Diary_CultureProfile_Rustican.clauses.5.clause>зараза в земле; выжигай сразу и не заговаривай её на постой</Diary_CultureProfile_Rustican.clauses.5.clause>
-  <Diary_CultureProfile_Rustican.clauses.6.clause>глиттер — из каталогов; сперва почини крышу, потом мечтай об орбите</Diary_CultureProfile_Rustican.clauses.6.clause>
-  <Diary_CultureProfile_Rustican.clauses.7.clause>крепкий забор, честная цена и заряженное ружьё у двери</Diary_CultureProfile_Rustican.clauses.7.clause>
+  <Diary_CultureProfile_Rustican.clauses.0.clause>стальные волки; хищник здешних мест, а свалят — разберут на запчасти</Diary_CultureProfile_Rustican.clauses.0.clause>
+  <Diary_CultureProfile_Rustican.clauses.1.clause>наследие сгинувших великанов; старше любой купчей на эту землю</Diary_CultureProfile_Rustican.clauses.1.clause>
+  <Diary_CultureProfile_Rustican.clauses.2.clause>странная погода разума; в здешних краях бывает и такое</Diary_CultureProfile_Rustican.clauses.2.clause>
+  <Diary_CultureProfile_Rustican.clauses.3.clause>внеземной помещик; закон, подати и орбитальный огонь</Diary_CultureProfile_Rustican.clauses.3.clause>
+  <Diary_CultureProfile_Rustican.clauses.4.clause>люди бывают разных сортов, как семя и скот; порода к земле, а люди — люди</Diary_CultureProfile_Rustican.clauses.4.clause>
+  <Diary_CultureProfile_Rustican.clauses.5.clause>поветрие; идёт по земле и умам, как гниль по зерну</Diary_CultureProfile_Rustican.clauses.5.clause>
+  <Diary_CultureProfile_Rustican.clauses.6.clause>дальний конец торгового тракта; глиттермиры — города из каталога</Diary_CultureProfile_Rustican.clauses.6.clause>
+  <Diary_CultureProfile_Rustican.clauses.7.clause>сосед, покупатель или беда; ограда сама разберёт, кто есть кто</Diary_CultureProfile_Rustican.clauses.7.clause>
+  <Diary_CultureProfile_Rustican.clauses.8.clause>последняя жатва земли; всякий сезон кончается одинаково</Diary_CultureProfile_Rustican.clauses.8.clause>
+  <Diary_CultureProfile_Rustican.clauses.9.clause>рабочий инструмент изнашивается; латай, смазывай и работай дальше</Diary_CultureProfile_Rustican.clauses.9.clause>
+  <Diary_CultureProfile_Rustican.clauses.10.clause>хозяйство; руки соединили, рук прибавилось, за столом на одного больше</Diary_CultureProfile_Rustican.clauses.10.clause>
+  <Diary_CultureProfile_Rustican.clauses.11.clause>ненастье в голове; пройдёт, как любая буря, — останется чинить</Diary_CultureProfile_Rustican.clauses.11.clause>
+  <Diary_CultureProfile_Rustican.clauses.12.clause>скот, вредители или дичь; прочие жители фермы, пересчитанные к ночи</Diary_CultureProfile_Rustican.clauses.12.clause>
+  <Diary_CultureProfile_Rustican.clauses.13.clause>главный враг; сезон пропал, небо горит, работа начинается заново</Diary_CultureProfile_Rustican.clauses.13.clause>
 
   <Diary_CultureProfile_Kriminul.label>линза: криминул</Diary_CultureProfile_Kriminul.label>
-  <Diary_CultureProfile_Kriminul.clauses.0.clause>ходячий лом с зубами; выгодно, когда рискует кто-то другой</Diary_CultureProfile_Kriminul.clauses.0.clause>
-  <Diary_CultureProfile_Kriminul.clauses.1.clause>самый жирный куш на свете — и причина, почему команды не возвращаются</Diary_CultureProfile_Kriminul.clauses.1.clause>
-  <Diary_CultureProfile_Kriminul.clauses.2.clause>козырь, который не купишь; бери, где дают</Diary_CultureProfile_Kriminul.clauses.2.clause>
-  <Diary_CultureProfile_Kriminul.clauses.3.clause>жирные цели в этикете; их закон кончается там, где их стволы</Diary_CultureProfile_Kriminul.clauses.3.clause>
-  <Diary_CultureProfile_Kriminul.clauses.4.clause>плоть — предмет торга; плати за преимущество, лишнее продай</Diary_CultureProfile_Kriminul.clauses.4.clause>
-  <Diary_CultureProfile_Kriminul.clauses.5.clause>сила, с которой не стрясёшь долга; даже пираты обходят маслянистый металл</Diary_CultureProfile_Kriminul.clauses.5.clause>
-  <Diary_CultureProfile_Kriminul.clauses.6.clause>маршруты и груз; рай — это тихоходный сухогруз с отставшим конвоем</Diary_CultureProfile_Kriminul.clauses.6.clause>
-  <Diary_CultureProfile_Kriminul.clauses.7.clause>доверие — рычаг, который сам отдал; чужих метить, своих беречь</Diary_CultureProfile_Kriminul.clauses.7.clause>
+  <Diary_CultureProfile_Kriminul.clauses.0.clause>ходячий лом с зубами; выплата, которая отстреливается</Diary_CultureProfile_Kriminul.clauses.0.clause>
+  <Diary_CultureProfile_Kriminul.clauses.1.clause>самый большой сейф на свете, собранный кем-то умнее любой команды</Diary_CultureProfile_Kriminul.clauses.1.clause>
+  <Diary_CultureProfile_Kriminul.clauses.2.clause>козырь, который не купишь — только найдёшь; редок, как честная удача</Diary_CultureProfile_Kriminul.clauses.2.clause>
+  <Diary_CultureProfile_Kriminul.clauses.3.clause>богатейший конвой на плаву; этикет, намотанный на груз и стволы</Diary_CultureProfile_Kriminul.clauses.3.clause>
+  <Diary_CultureProfile_Kriminul.clauses.4.clause>команды набирают из любых генолиний; плоть разная, доля та же</Diary_CultureProfile_Kriminul.clauses.4.clause>
+  <Diary_CultureProfile_Kriminul.clauses.5.clause>сейф без дна; богатство, которое само тратит владельца</Diary_CultureProfile_Kriminul.clauses.5.clause>
+  <Diary_CultureProfile_Kriminul.clauses.6.clause>маршруты и груз; море, где киты — это сухогрузы</Diary_CultureProfile_Kriminul.clauses.6.clause>
+  <Diary_CultureProfile_Kriminul.clauses.7.clause>мишень, соперник или свой; каждый ложится в одну из трёх граф</Diary_CultureProfile_Kriminul.clauses.7.clause>
+  <Diary_CultureProfile_Kriminul.clauses.8.clause>доля, которую никто не заберёт; список короче — куш больше</Diary_CultureProfile_Kriminul.clauses.8.clause>
+  <Diary_CultureProfile_Kriminul.clauses.9.clause>оборотный капитал; урон — расход, починка — вложение, шрамы — расписки</Diary_CultureProfile_Kriminul.clauses.9.clause>
+  <Diary_CultureProfile_Kriminul.clauses.10.clause>узы прочнее контракта; единственные долги, что не пишут в книгу</Diary_CultureProfile_Kriminul.clauses.10.clause>
+  <Diary_CultureProfile_Kriminul.clauses.11.clause>у кого-то сместился балласт; каждая команда это переживала</Diary_CultureProfile_Kriminul.clauses.11.clause>
+  <Diary_CultureProfile_Kriminul.clauses.12.clause>имущество с зубами; сторожа, вьючные и мясо, которое дерётся</Diary_CultureProfile_Kriminul.clauses.12.clause>
+  <Diary_CultureProfile_Kriminul.clauses.13.clause>казино разом обчистило всех; на горящем небе не наживёшься</Diary_CultureProfile_Kriminul.clauses.13.clause>
 
   <Diary_CultureProfile_Sophian.label>линза: софиец</Diary_CultureProfile_Sophian.label>
-  <Diary_CultureProfile_Sophian.clauses.0.clause>враг солдата и орудие солдата; командуй или уничтожь — с честью</Diary_CultureProfile_Sophian.clauses.0.clause>
-  <Diary_CultureProfile_Sophian.clauses.1.clause>реликвии превыше чинов; лишь Империи вверено такое могущество</Diary_CultureProfile_Sophian.clauses.1.clause>
-  <Diary_CultureProfile_Sophian.clauses.2.clause>зримый ранг; псилинк — долг, даруемый ступень за ступенью</Diary_CultureProfile_Sophian.clauses.2.clause>
+  <Diary_CultureProfile_Sophian.clauses.0.clause>армия без присяги, знамени и капитуляции; война, ставшая механизмом</Diary_CultureProfile_Sophian.clauses.0.clause>
+  <Diary_CultureProfile_Sophian.clauses.1.clause>реликвии сил превыше любого трона; старше и выше самой Империи</Diary_CultureProfile_Sophian.clauses.1.clause>
+  <Diary_CultureProfile_Sophian.clauses.2.clause>зримый ранг; сила нисходит по той же лестнице, что и титулы</Diary_CultureProfile_Sophian.clauses.2.clause>
   <Diary_CultureProfile_Sophian.clauses.3.clause>последний истинный порядок; каждый титул — обет, каждый обет — долг</Diary_CultureProfile_Sophian.clauses.3.clause>
-  <Diary_CultureProfile_Sophian.clauses.4.clause>совершенство на службе положения; тело обязано чести ранга</Diary_CultureProfile_Sophian.clauses.4.clause>
-  <Diary_CultureProfile_Sophian.clauses.5.clause>измена самой реальности; встречай как солдат и никогда не торгуйся</Diary_CultureProfile_Sophian.clauses.5.clause>
-  <Diary_CultureProfile_Sophian.clauses.6.clause>Софиамунда сияет за спиной; изгнание не оправдание, тем более для манер</Diary_CultureProfile_Sophian.clauses.6.clause>
-  <Diary_CultureProfile_Sophian.clauses.7.clause>ранг устраивает мир; с нетитулованными ведут дела, а не дружбу</Diary_CultureProfile_Sophian.clauses.7.clause>
+  <Diary_CultureProfile_Sophian.clauses.4.clause>касты, вписанные в кровь: гусары для войны, джинны для механизмов</Diary_CultureProfile_Sophian.clauses.4.clause>
+  <Diary_CultureProfile_Sophian.clauses.5.clause>сила вне всякой лестницы рангов; полная противоположность порядка</Diary_CultureProfile_Sophian.clauses.5.clause>
+  <Diary_CultureProfile_Sophian.clauses.6.clause>старая отчизна Империи; Софиамунда и флоты, что её покинули</Diary_CultureProfile_Sophian.clauses.6.clause>
+  <Diary_CultureProfile_Sophian.clauses.7.clause>титулованные и нетитулованные; ранг говорит, кто перед тобой</Diary_CultureProfile_Sophian.clauses.7.clause>
+  <Diary_CultureProfile_Sophian.clauses.8.clause>пост сдан; титул возвращается вверх по той лестнице, откуда пришёл</Diary_CultureProfile_Sophian.clauses.8.clause>
+  <Diary_CultureProfile_Sophian.clauses.9.clause>мундир под мундиром; шрамы и сталь — послужной список</Diary_CultureProfile_Sophian.clauses.9.clause>
+  <Diary_CultureProfile_Sophian.clauses.10.clause>союз и наследование; брак — это договор, наследник — это право</Diary_CultureProfile_Sophian.clauses.10.clause>
+  <Diary_CultureProfile_Sophian.clauses.11.clause>дисциплина прорвана изнутри; строй смыкается, пока это не пройдёт</Diary_CultureProfile_Sophian.clauses.11.clause>
+  <Diary_CultureProfile_Sophian.clauses.12.clause>звери ранга и звери тягла; трумбо стоит выше большинства людей</Diary_CultureProfile_Sophian.clauses.12.clause>
+  <Diary_CultureProfile_Sophian.clauses.13.clause>осада, которую ведёт сам мир; порядок меряется тем, как он держит</Diary_CultureProfile_Sophian.clauses.13.clause>
 
 </LanguageData>

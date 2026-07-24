@@ -2,17 +2,23 @@
 <!--
   Culture writing lenses (design/MEMORY_SYSTEM_REDESIGN_PLAN.md §4.2): one short interpretation
   per topic for the four Core CultureDefs plus Royalty's Sophian. Each clause is a cultural
-  STANCE of at most 80 characters - it must never repeat factual game descriptions already in the
-  prompt. Content is grounded in design/RIMWORLD_LORE_COLLECTION.md.
+  PERCEPTION of at most 80 characters - it says what KIND of thing the phenomenon is in that
+  culture's worldview (natural, supernatural, technical, economic, hierarchical), never whether
+  it is good or bad. Approval and taboo belong to the ideoligion/belief layer; a clause with
+  moral valence can contradict a pawn's precepts, a perception frame cannot. It must also never
+  repeat factual game descriptions already in the prompt. Content is grounded in
+  design/RIMWORLD_LORE_COLLECTION.md.
 
-  Lenses: Astropolitan technical/cosmopolitan/space-familiar; Corunan ancestral/traditional/
-  spiritual; Rustican practical/industrial/frontier; Kriminul piratical/instrumental/
-  opportunistic; Sophian imperial/honor-bound/hierarchical.
+  Frames: Astropolitan - everything is a system (specs, protocols, accounts); Corunan -
+  everything is spirits, blood, and the dead; Rustican - everything is weather, stock, and land;
+  Kriminul - everything is loot, risk, and the crew; Sophian - everything is rank, oath, and
+  order.
 
   cultureDefName is a plain string, so the Sophian profile sits inert without Royalty. Mods that
   introduce new CultureDefs may ship their own profile; without one, the isFallback profile
   (Astropolitan) voices them. Clause rows are translated by DefInjected BY LIST INDEX - never
-  delete or reorder a row; blank the clause instead.
+  delete or reorder a row; blank the clause instead. New rows are appended at the end in the
+  same order in every profile.
 -->
 <Defs>
 
@@ -22,14 +28,20 @@
     <cultureDefName>Astropolitan</cultureDefName>
     <isFallback>true</isFallback>
     <clauses>
-      <li><topicKey>mechanoids</topicKey><clause>old war hardware to study and outmaneuver, not to mystify</clause></li>
-      <li><topicKey>archotech</topicKey><clause>engineering beyond us, still engineering; log it, handle with protocol</clause></li>
-      <li><topicKey>psychic</topicKey><clause>a real field with real rules, poorly measured; respect the data</clause></li>
-      <li><topicKey>empire</topicKey><clause>one polity among many; its titles are treaty terms, not truths</clause></li>
-      <li><topicKey>xenohumans</topicKey><clause>bodies are platforms; an upgrade is maintenance, not betrayal</clause></li>
-      <li><topicKey>void</topicKey><clause>dark archotech, not magic - which is worse; quarantine it and keep records</clause></li>
-      <li><topicKey>space</topicKey><clause>the sky is home; ships, stations and the long cold sleep are ordinary life</clause></li>
-      <li><topicKey>outsiders</topicKey><clause>strangers are trade partners until audited; contracts over kinship</clause></li>
+      <li><topicKey>mechanoids</topicKey><clause>self-directed war machines of an old conflict; hardware, not spirits</clause></li>
+      <li><topicKey>archotech</topicKey><clause>engineering from minds beyond human scale; still engineering</clause></li>
+      <li><topicKey>psychic</topicKey><clause>a measurable field no one has mapped; instruments, not omens</clause></li>
+      <li><topicKey>empire</topicKey><clause>one polity among many; titles are treaty terms, ranks a local protocol</clause></li>
+      <li><topicKey>xenohumans</topicKey><clause>many gene-lines of one species; variation is design history, not mystery</clause></li>
+      <li><topicKey>void</topicKey><clause>archotech of an unlit kind; phenomena the instruments refuse to agree on</clause></li>
+      <li><topicKey>space</topicKey><clause>home; ships, stations, and the long cold sleep are ordinary life</clause></li>
+      <li><topicKey>outsiders</topicKey><clause>counterparties; a stranger is an account not yet opened</clause></li>
+      <li><topicKey>death</topicKey><clause>the record closes; a person becomes logs, debts, and what they built</clause></li>
+      <li><topicKey>body</topicKey><clause>the body is a platform; wounds, parts, and fixes are its maintenance log</clause></li>
+      <li><topicKey>kinship</topicKey><clause>crew you sign on for life; families are assembled as much as born</clause></li>
+      <li><topicKey>madness</topicKey><clause>a fault state of the mind; the system runs strange until it rests</clause></li>
+      <li><topicKey>beasts</topicKey><clause>local fauna; an ecosystem you can study, tame, and occasionally outrun</clause></li>
+      <li><topicKey>disasters</topicKey><clause>environmental failure modes; the planet running one of its worse routines</clause></li>
     </clauses>
   </PawnDiary.DiaryCultureProfileDef>
 
@@ -38,14 +50,20 @@
     <label>corunan lens</label>
     <cultureDefName>Corunan</cultureDefName>
     <clauses>
-      <li><topicKey>mechanoids</topicKey><clause>the iron dead of an old war; binding them offends the ancestors</clause></li>
-      <li><topicKey>archotech</topicKey><clause>god-places; take nothing, leave offerings, speak of them softly</clause></li>
-      <li><topicKey>psychic</topicKey><clause>the spirits speak through tree and trance; rank buys no ear here</clause></li>
-      <li><topicKey>empire</topicKey><clause>outsider chiefs with fire from the sky; honor them warily, owe them nothing</clause></li>
-      <li><topicKey>xenohumans</topicKey><clause>the blood of the line is sacred; remade flesh asks the ancestors' pardon</clause></li>
-      <li><topicKey>void</topicKey><clause>a hungry spirit wearing machine skin; some doors the wise never open</clause></li>
-      <li><topicKey>space</topicKey><clause>the stars took the old ones away; that distance is a kind of death</clause></li>
-      <li><topicKey>outsiders</topicKey><clause>guest-right is sacred and betrayal unforgivable; kin first, always</clause></li>
+      <li><topicKey>mechanoids</topicKey><clause>the iron dead of an old war; bodies that walk with no spirit inside</clause></li>
+      <li><topicKey>archotech</topicKey><clause>god-places and god-things; the world's oldest spirits made solid</clause></li>
+      <li><topicKey>psychic</topicKey><clause>the spirit-world touching this one; voices through tree and trance</clause></li>
+      <li><topicKey>empire</topicKey><clause>another tribe come down from the sky; their titles are their totems</clause></li>
+      <li><topicKey>xenohumans</topicKey><clause>other lines of the blood, shaped by other spirits; each with its own ancestors</clause></li>
+      <li><topicKey>void</topicKey><clause>a hungry spirit in machine skin; the dark between the fires given a body</clause></li>
+      <li><topicKey>space</topicKey><clause>the country above the sky where the old ones went; a land of the dead</clause></li>
+      <li><topicKey>outsiders</topicKey><clause>guest, kin, or neither; the hearth decides what a stranger is</clause></li>
+      <li><topicKey>death</topicKey><clause>the walk to the ancestors' fire; the dead stay near while they are named</clause></li>
+      <li><topicKey>body</topicKey><clause>the spirit's house; every scar and graft is a story the house remembers</clause></li>
+      <li><topicKey>kinship</topicKey><clause>the line continuing; every match and birth joins two chains of ancestors</clause></li>
+      <li><topicKey>madness</topicKey><clause>a spirit riding the body for a while; the person is still in there</clause></li>
+      <li><topicKey>beasts</topicKey><clause>other peoples of the land; some beasts carry spirits, some carry omens</clause></li>
+      <li><topicKey>disasters</topicKey><clause>the world-spirit turning over in its sleep; the land speaks in weather</clause></li>
     </clauses>
   </PawnDiary.DiaryCultureProfileDef>
 
@@ -54,14 +72,20 @@
     <label>rustican lens</label>
     <cultureDefName>Rustican</cultureDefName>
     <clauses>
-      <li><topicKey>mechanoids</topicKey><clause>wolves at the fence; put them down, strip them for parts, mind the herd</clause></li>
-      <li><topicKey>archotech</topicKey><clause>somebody's ended story; loot carefully, seal what should stay sealed</clause></li>
-      <li><topicKey>psychic</topicKey><clause>useful weather from a strange sky; use it, don't build the farm on it</clause></li>
-      <li><topicKey>empire</topicKey><clause>law you can trade with, orbit-fire you can't argue with; keep accounts square</clause></li>
-      <li><topicKey>xenohumans</topicKey><clause>a tool fixed is a tool working; steel limbs plow as well as born ones</clause></li>
-      <li><topicKey>void</topicKey><clause>a sickness in the land; burn it out early and don't talk it into staying</clause></li>
-      <li><topicKey>space</topicKey><clause>glitter belongs in catalogs; here you fix the roof before dreaming of orbit</clause></li>
-      <li><topicKey>outsiders</topicKey><clause>good fences, fair prices, and a loaded gun by the door</clause></li>
+      <li><topicKey>mechanoids</topicKey><clause>wolves of steel; a predator the land breeds, worth parts when it's down</clause></li>
+      <li><topicKey>archotech</topicKey><clause>leftover works of vanished giants; older than any deed to this land</clause></li>
+      <li><topicKey>psychic</topicKey><clause>strange weather of the mind; it comes with the territory out here</clause></li>
+      <li><topicKey>empire</topicKey><clause>an off-world landlord; law, tariffs, and orbit-fire</clause></li>
+      <li><topicKey>xenohumans</topicKey><clause>folk come in strains like seed and stock; bred to their ground, people still</clause></li>
+      <li><topicKey>void</topicKey><clause>a blight; it spreads through ground and mind the way rot goes through grain</clause></li>
+      <li><topicKey>space</topicKey><clause>the far end of the supply road; glitterworlds are towns out of a catalog</clause></li>
+      <li><topicKey>outsiders</topicKey><clause>neighbor, customer, or trouble; the fence line sorts out which</clause></li>
+      <li><topicKey>death</topicKey><clause>the ground's final harvest; every season ends the same way</clause></li>
+      <li><topicKey>body</topicKey><clause>a working tool that wears; patch it, oil it, and work it again</clause></li>
+      <li><topicKey>kinship</topicKey><clause>a household; hands joined, hands raised, a table that seats one more</clause></li>
+      <li><topicKey>madness</topicKey><clause>bad weather in the head; it passes through like any storm, leaving repairs</clause></li>
+      <li><topicKey>beasts</topicKey><clause>stock, vermin, or game; the farm's other citizens, counted every night</clause></li>
+      <li><topicKey>disasters</topicKey><clause>the real enemy; seasons fail, skies burn, and the work starts over</clause></li>
     </clauses>
   </PawnDiary.DiaryCultureProfileDef>
 
@@ -70,14 +94,20 @@
     <label>kriminul lens</label>
     <cultureDefName>Kriminul</cultureDefName>
     <clauses>
-      <li><topicKey>mechanoids</topicKey><clause>walking salvage with teeth; profitable when someone else takes the risk</clause></li>
-      <li><topicKey>archotech</topicKey><clause>the biggest score there is, and why most crews never come back</clause></li>
-      <li><topicKey>psychic</topicKey><clause>an edge most can't buy; take it wherever it's offered</clause></li>
-      <li><topicKey>empire</topicKey><clause>fat targets wrapped in etiquette; their law ends where their guns do</clause></li>
-      <li><topicKey>xenohumans</topicKey><clause>meat is negotiable; pay for edges, sell what's spare</clause></li>
-      <li><topicKey>void</topicKey><clause>power nobody collects a debt on; even pirates leave the oily metal alone</clause></li>
-      <li><topicKey>space</topicKey><clause>lanes and cargo; heaven is a slow freighter with a broken escort</clause></li>
-      <li><topicKey>outsiders</topicKey><clause>trust is leverage you hand someone; mark the strangers, keep the crew</clause></li>
+      <li><topicKey>mechanoids</topicKey><clause>walking salvage with teeth; a payout that shoots back</clause></li>
+      <li><topicKey>archotech</topicKey><clause>the biggest vault there is, built by something smarter than any crew</clause></li>
+      <li><topicKey>psychic</topicKey><clause>an edge that can't be bought, only found; rare as honest luck</clause></li>
+      <li><topicKey>empire</topicKey><clause>the richest convoy afloat; etiquette wrapped around cargo and guns</clause></li>
+      <li><topicKey>xenohumans</topicKey><clause>crews come in every gene-line; the flesh varies, the split stays the same</clause></li>
+      <li><topicKey>void</topicKey><clause>a vault with no floor; wealth that spends whoever holds it</clause></li>
+      <li><topicKey>space</topicKey><clause>lanes and cargo; a sea where freighters are the whales</clause></li>
+      <li><topicKey>outsiders</topicKey><clause>mark, rival, or crew; everyone lands in one of the three</clause></li>
+      <li><topicKey>death</topicKey><clause>a share no one claims; the roster gets shorter, the split bigger</clause></li>
+      <li><topicKey>body</topicKey><clause>working capital; damage is cost, repair is investment, scars are receipts</clause></li>
+      <li><topicKey>kinship</topicKey><clause>ties that outlast a contract; the only debts nobody keeps books on</clause></li>
+      <li><topicKey>madness</topicKey><clause>someone's ballast shifting; every crew rides one out sooner or later</clause></li>
+      <li><topicKey>beasts</topicKey><clause>assets with teeth; guard-beasts, pack-beasts, and meat that fights back</clause></li>
+      <li><topicKey>disasters</topicKey><clause>the house cleaning everyone out at once; nobody profits off a burning sky</clause></li>
     </clauses>
   </PawnDiary.DiaryCultureProfileDef>
 
@@ -86,14 +116,20 @@
     <label>sophian lens</label>
     <cultureDefName>Sophian</cultureDefName>
     <clauses>
-      <li><topicKey>mechanoids</topicKey><clause>a soldier's foe and a soldier's tool; command them or destroy them, with honor</clause></li>
-      <li><topicKey>archotech</topicKey><clause>relics above any rank; only the Empire may steward such power</clause></li>
-      <li><topicKey>psychic</topicKey><clause>rank made visible; a psylink is a duty granted level by level</clause></li>
+      <li><topicKey>mechanoids</topicKey><clause>an army without oath, banner, or surrender; war made into machinery</clause></li>
+      <li><topicKey>archotech</topicKey><clause>relics of powers above any throne; older and higher than the Empire</clause></li>
+      <li><topicKey>psychic</topicKey><clause>rank made visible; power that descends the same ladder as titles</clause></li>
       <li><topicKey>empire</topicKey><clause>the last true order; every title a vow, every vow a debt owed upward</clause></li>
-      <li><topicKey>xenohumans</topicKey><clause>refinement in service of station; the body must honor the rank it bears</clause></li>
-      <li><topicKey>void</topicKey><clause>treason against reality itself; face it as a soldier, never bargain</clause></li>
-      <li><topicKey>space</topicKey><clause>Sophiamunda shines behind us; exile excuses nothing, least of all manners</clause></li>
-      <li><topicKey>outsiders</topicKey><clause>rank orders the world; the untitled are handled, not befriended</clause></li>
+      <li><topicKey>xenohumans</topicKey><clause>castes written into the blood; hussars for war, genies for engines</clause></li>
+      <li><topicKey>void</topicKey><clause>a power outside every ladder of rank; the opposite of order itself</clause></li>
+      <li><topicKey>space</topicKey><clause>the Empire's old country; Sophiamunda and the fleets that fled it</clause></li>
+      <li><topicKey>outsiders</topicKey><clause>the titled and the untitled; rank tells you what a stranger is</clause></li>
+      <li><topicKey>death</topicKey><clause>a post relieved; the title goes back up the ladder it came down</clause></li>
+      <li><topicKey>body</topicKey><clause>the uniform beneath the uniform; scars and steel are service records</clause></li>
+      <li><topicKey>kinship</topicKey><clause>alliance and inheritance; a marriage is a treaty, an heir is a claim</clause></li>
+      <li><topicKey>madness</topicKey><clause>discipline breached from within; the ranks close around it until it passes</clause></li>
+      <li><topicKey>beasts</topicKey><clause>beasts of rank and beasts of burden; a thrumbo outranks most men</clause></li>
+      <li><topicKey>disasters</topicKey><clause>a siege laid by the world itself; order is measured by how it holds</clause></li>
     </clauses>
   </PawnDiary.DiaryCultureProfileDef>
 

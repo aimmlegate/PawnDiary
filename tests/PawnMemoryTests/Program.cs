@@ -1127,8 +1127,8 @@ namespace PawnMemoryTests
 
             List<string> topicKeys = topicsDoc.Root.Elements("PawnDiary.DiaryCultureTopicDef")
                 .Select(def => (string)def.Element("topicKey")).ToList();
-            AssertEqual("cultureXml.topicCount", 8, topicKeys.Count);
-            AssertEqual("cultureXml.topicUnique", 8,
+            AssertEqual("cultureXml.topicCount", 14, topicKeys.Count);
+            AssertEqual("cultureXml.topicUnique", 14,
                 new HashSet<string>(topicKeys, StringComparer.OrdinalIgnoreCase).Count);
 
             List<XElement> profiles = profilesDoc.Root
@@ -1147,7 +1147,7 @@ namespace PawnMemoryTests
                 }
 
                 List<XElement> clauses = profile.Element("clauses").Elements("li").ToList();
-                AssertEqual("cultureXml." + culture + ".clauseCount", 8, clauses.Count);
+                AssertEqual("cultureXml." + culture + ".clauseCount", 14, clauses.Count);
                 foreach (XElement clause in clauses)
                 {
                     string topicKey = (string)clause.Element("topicKey");
@@ -1167,7 +1167,7 @@ namespace PawnMemoryTests
             foreach (XElement profile in profiles)
             {
                 string defName = (string)profile.Element("defName");
-                for (int i = 0; i < 8; i++)
+                for (int i = 0; i < 14; i++)
                 {
                     string tag = defName + ".clauses." + i + ".clause";
                     XElement row = ruDoc.Root.Element(tag);

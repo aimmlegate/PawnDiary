@@ -1,12 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  The eight cultural interpretation topics (design/MEMORY_SYSTEM_REDESIGN_PLAN.md §4.2), based on
-  the installed vanilla CultureDefs and the official Royalty/Biotech/Anomaly/Odyssey feature
+  The fourteen cultural interpretation topics (design/MEMORY_SYSTEM_REDESIGN_PLAN.md §4.2), based
+  on the installed vanilla CultureDefs and the official Royalty/Biotech/Anomaly/Odyssey feature
   scopes. Detection (§4.3) is STRUCTURED ONLY: stable defNames, gameContext keys, "key=value"
   token pairs, and schema markers embedded in field text ("xenotype=") - never localized word
   forms, so detection is identical in every language.
 
-  Ascending <order> is the priority when more topics fire than the two-per-prompt cap. External
+  triggerDefNames match the PROMPT payload defName, whose vocabulary varies by capture funnel:
+  synthetic PawnDiary_* names, progression constants (XenotypeChanged), relation defNames
+  (Spouse), TaleDef defNames (BondedWithAnimal), GameConditionDef defNames via the mood-event
+  funnel (ToxicFallout), and event-window START-SIGNAL defNames (MechCluster, SelfTame,
+  AncientShrineWarning - NOT the window defName). Names from absent DLCs or compat mods sit
+  harmlessly inert.
+
+  Ascending <order> is the priority when more topics fire than the two-per-prompt cap: rare,
+  exotic topics keep low numbers so they win over the common everyday topics (90+). External
   mods add topics by shipping more PawnDiary.DiaryCultureTopicDef rows plus matching clause rows
   in their culture profiles.
 -->
@@ -20,6 +28,7 @@
     <triggerDefNames>
       <li>BiotechMechlinkInstalled</li>
       <li>BiotechMechlinkRemoved</li>
+      <li>MechCluster</li>
     </triggerDefNames>
     <triggerContextPairs>
       <li>faction=Mechanoid</li>
@@ -31,6 +40,9 @@
     <label>archotechnology and ancient complexes</label>
     <topicKey>archotech</topicKey>
     <order>20</order>
+    <triggerDefNames>
+      <li>AncientShrineWarning</li>
+    </triggerDefNames>
     <triggerContextPairs>
       <li>part_tier=archotech</li>
     </triggerContextPairs>
@@ -45,6 +57,9 @@
       <li>PsylinkLevel</li>
       <li>BiotechPsychicBondFormed</li>
       <li>BiotechPsychicBondRuptured</li>
+      <li>AnimaTreeLinking</li>
+      <li>BestowingCeremony</li>
+      <li>PsychicDrone</li>
     </triggerDefNames>
     <triggerContextKeys>
       <li>psychic_ritual</li>
@@ -66,6 +81,8 @@
       <li>RoyalTitleLost</li>
       <li>RoyalSuccession</li>
       <li>RoyalHeirAppointed</li>
+      <li>RoyalAscent</li>
+      <li>EndGame_RoyalAscent</li>
     </triggerDefNames>
     <triggerContextKeys>
       <li>royal_permit</li>
@@ -75,18 +92,17 @@
     </triggerValueMarkers>
   </PawnDiary.DiaryCultureTopicDef>
 
+  <!-- Genetic subspecies only: bionics/surgery moved to Diary_CultureTopic_Body (part_kind
+       lives there now) so a born xenotype never gets a prosthetics lens or vice versa. -->
   <PawnDiary.DiaryCultureTopicDef>
     <defName>Diary_CultureTopic_Xenohumans</defName>
-    <label>xenohumans, genes, bionics, and body modification</label>
+    <label>xenohumans and genes</label>
     <topicKey>xenohumans</topicKey>
     <order>50</order>
     <triggerDefNames>
       <li>XenotypeChanged</li>
       <li>GeneIdentityChanged</li>
     </triggerDefNames>
-    <triggerContextKeys>
-      <li>part_kind</li>
-    </triggerContextKeys>
     <triggerValueMarkers>
       <li>xenotype=</li>
     </triggerValueMarkers>
@@ -97,6 +113,17 @@
     <label>the void and unexplained entities</label>
     <topicKey>void</topicKey>
     <order>60</order>
+    <triggerDefNames>
+      <li>VoidMonolith</li>
+      <li>Stirring</li>
+      <li>Waking</li>
+      <li>VoidAwakened</li>
+      <li>PawnDiary_AnomalyStudyBreakthrough</li>
+      <li>PawnDiary_ContainmentBreach</li>
+      <li>PawnDiary_GhoulTransformation</li>
+      <li>PawnDiary_VoidOutcome</li>
+      <li>PawnDiary_CreepJoinerOutcome</li>
+    </triggerDefNames>
     <triggerContextKeys>
       <li>dark_study</li>
     </triggerContextKeys>
@@ -110,6 +137,9 @@
     <label>glitterworlds, cryptosleep, gravships, and space</label>
     <topicKey>space</topicKey>
     <order>70</order>
+    <triggerDefNames>
+      <li>OdysseyGravshipLanding</li>
+    </triggerDefNames>
     <triggerContextKeys>
       <li>odyssey_journey</li>
     </triggerContextKeys>
@@ -122,10 +152,109 @@
     <order>80</order>
     <triggerDefNames>
       <li>PawnDiary_Arrival</li>
+      <li>PrisonBreak</li>
+      <li>VisitorGroup</li>
+      <li>VisitorGroupMax</li>
+      <li>VisitorGroupSelectFaction</li>
+      <li>HappyGuestJoins</li>
     </triggerDefNames>
     <triggerContextKeys>
       <li>raid</li>
     </triggerContextKeys>
+  </PawnDiary.DiaryCultureTopicDef>
+
+  <!-- ===== Common everyday topics (order 90+): they yield to the exotic lenses above when
+       both fire under the two-per-prompt cap. ===== -->
+
+  <PawnDiary.DiaryCultureTopicDef>
+    <defName>Diary_CultureTopic_Death</defName>
+    <label>death and the dead</label>
+    <topicKey>death</topicKey>
+    <order>90</order>
+    <triggerDefNames>
+      <li>PawnDiary_DeathFamily</li>
+      <li>PawnDiary_DeathInstigator</li>
+      <li>PawnDiary_DeathFallback</li>
+    </triggerDefNames>
+    <triggerContextPairs>
+      <li>ritual=Funeral</li>
+    </triggerContextPairs>
+  </PawnDiary.DiaryCultureTopicDef>
+
+  <!-- Owns the part_kind context key (addedpart/organicpart/missingpart) formerly on the
+       xenohumans topic: surgery and wounds are a body matter, not a gene matter. -->
+  <PawnDiary.DiaryCultureTopicDef>
+    <defName>Diary_CultureTopic_Body</defName>
+    <label>the body, wounds, and healing</label>
+    <topicKey>body</topicKey>
+    <order>100</order>
+    <triggerDefNames>
+      <li>HeartAttack</li>
+    </triggerDefNames>
+    <triggerContextKeys>
+      <li>part_kind</li>
+    </triggerContextKeys>
+  </PawnDiary.DiaryCultureTopicDef>
+
+  <PawnDiary.DiaryCultureTopicDef>
+    <defName>Diary_CultureTopic_Kinship</defName>
+    <label>kinship, marriage, and children</label>
+    <topicKey>kinship</topicKey>
+    <order>110</order>
+    <triggerDefNames>
+      <li>Lover</li>
+      <li>Spouse</li>
+      <li>ExLover</li>
+      <li>ExSpouse</li>
+      <li>BiotechFamilyBirth</li>
+      <li>GaveBirth</li>
+      <li>BabyBorn</li>
+      <li>BiotechGrowthMoment</li>
+    </triggerDefNames>
+  </PawnDiary.DiaryCultureTopicDef>
+
+  <PawnDiary.DiaryCultureTopicDef>
+    <defName>Diary_CultureTopic_Madness</defName>
+    <label>mental breaks and crises</label>
+    <topicKey>madness</topicKey>
+    <order>120</order>
+    <triggerValueMarkers>
+      <li>mental_state=</li>
+    </triggerValueMarkers>
+  </PawnDiary.DiaryCultureTopicDef>
+
+  <PawnDiary.DiaryCultureTopicDef>
+    <defName>Diary_CultureTopic_Beasts</defName>
+    <label>animals and the land</label>
+    <topicKey>beasts</topicKey>
+    <order>130</order>
+    <triggerDefNames>
+      <li>BondedWithAnimal</li>
+      <li>TamedAnimal</li>
+      <li>TrainedAnimal</li>
+      <li>KilledColonyAnimal</li>
+      <li>SelfTame</li>
+      <li>ManhunterPackPurple</li>
+      <li>AnimalInsanityMassPurple</li>
+    </triggerDefNames>
+  </PawnDiary.DiaryCultureTopicDef>
+
+  <PawnDiary.DiaryCultureTopicDef>
+    <defName>Diary_CultureTopic_Disasters</defName>
+    <label>disasters and calamities</label>
+    <topicKey>disasters</topicKey>
+    <order>140</order>
+    <triggerDefNames>
+      <li>Flashstorm</li>
+      <li>ToxicFallout</li>
+      <li>VolcanicWinter</li>
+      <li>ColdSnap</li>
+      <li>HeatWave</li>
+      <li>SolarFlare</li>
+      <li>ShortCircuit</li>
+      <li>VEE_Earthquake</li>
+      <li>VEE_MeteoriteShower</li>
+    </triggerDefNames>
   </PawnDiary.DiaryCultureTopicDef>
 
 </Defs>
