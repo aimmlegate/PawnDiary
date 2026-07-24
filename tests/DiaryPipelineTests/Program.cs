@@ -26,6 +26,7 @@ namespace DiaryPipelineTests
             TestMemoryContextRequiredInEveryPreset();
             TestPromptContextDetailSelection();
             TestPromptContextDetailOverrideResolution();
+            TestPromptContextFeatureLayersPerPreset();
             TestOwnedPromptTextIsNotSentenceCapped();
             TestPromptTemplatePolicyReachesPromptPlan();
             TestQuestPromptPlanFields();
@@ -703,6 +704,35 @@ namespace DiaryPipelineTests
                 "NarrativeContext", NarrativeContextPrompt.Source);
             AssertEqual("MemoryContext remains an English structured schema token",
                 "MemoryContext", MemoryContextPrompt.Source);
+
+            XElement beliefReflection = templates.Root?.Elements("PawnDiary.DiaryPromptTemplateDef")
+                .FirstOrDefault(row => ChildValue(row, "templateKey") == "SoloBeliefReflection");
+            string baseSystem = ChildValue(beliefReflection, "systemPrompt").ToLowerInvariant();
+            string baseFinal = ChildValue(beliefReflection, "finalInstruction").ToLowerInvariant();
+            string englishSystem = KeyedValue(
+                englishTemplates, "DiaryPromptTemplate_SoloBeliefReflection.systemPrompt")
+                .ToLowerInvariant();
+            string englishFinal = KeyedValue(
+                englishTemplates, "DiaryPromptTemplate_SoloBeliefReflection.finalInstruction")
+                .ToLowerInvariant();
+            string russianSystem = KeyedValue(
+                russianTemplates, "DiaryPromptTemplate_SoloBeliefReflection.systemPrompt")
+                .ToLowerInvariant();
+            string russianFinal = KeyedValue(
+                russianTemplates, "DiaryPromptTemplate_SoloBeliefReflection.finalInstruction")
+                .ToLowerInvariant();
+            AssertTrue("base belief-reflection system authorizes both shared context fields",
+                baseSystem.Contains("narrative context") && baseSystem.Contains("relevant past"));
+            AssertTrue("base belief-reflection final instruction authorizes both shared context fields",
+                baseFinal.Contains("narrative context") && baseFinal.Contains("relevant past"));
+            AssertTrue("English belief-reflection prompt authorizes both shared context fields",
+                englishSystem.Contains("narrative context") && englishSystem.Contains("relevant past")
+                && englishFinal.Contains("narrative context") && englishFinal.Contains("relevant past"));
+            AssertTrue("Russian belief-reflection prompt authorizes both shared context fields",
+                russianSystem.Contains("повествовательный контекст")
+                && russianSystem.Contains("сведения из прошлого")
+                && russianFinal.Contains("повествовательн")
+                && russianFinal.Contains("из прошлого"));
         }
 
         private static void TestPromptContextDetailSelection()
@@ -1087,6 +1117,45 @@ namespace DiaryPipelineTests
             AssertTrue("lane override wins",
                 PromptContextSelector.Resolve(PromptContextDetailLevel.Full, PromptContextDetailOverride.Compact)
                 == PromptContextDetailLevel.Compact);
+        }
+
+        /// <summary>
+        /// The prompt-context preset is the ONE player-facing switch for the three optional writing
+        /// layers, so the mapping is pinned here: Full keeps all three, Balanced drops only pawn
+        /// memory, and Compact drops all three. A bad enum value must land on Full, never on the
+        /// leanest preset — silently stripping a player's memory and psychotype layers would be the
+        /// worst possible reading of corrupted settings.
+        /// </summary>
+        private static void TestPromptContextFeatureLayersPerPreset()
+        {
+            AssertTrue("Full keeps live context hints",
+                PromptContextFeaturePolicy.AllowsPromptEnchantments(PromptContextDetailLevel.Full));
+            AssertTrue("Full keeps psychotypes",
+                PromptContextFeaturePolicy.AllowsPsychotypes(PromptContextDetailLevel.Full));
+            AssertTrue("Full keeps pawn memory",
+                PromptContextFeaturePolicy.AllowsMemoryContext(PromptContextDetailLevel.Full));
+
+            AssertTrue("Balanced keeps live context hints",
+                PromptContextFeaturePolicy.AllowsPromptEnchantments(PromptContextDetailLevel.Balanced));
+            AssertTrue("Balanced keeps psychotypes",
+                PromptContextFeaturePolicy.AllowsPsychotypes(PromptContextDetailLevel.Balanced));
+            AssertTrue("Balanced drops pawn memory",
+                !PromptContextFeaturePolicy.AllowsMemoryContext(PromptContextDetailLevel.Balanced));
+
+            AssertTrue("Compact drops live context hints",
+                !PromptContextFeaturePolicy.AllowsPromptEnchantments(PromptContextDetailLevel.Compact));
+            AssertTrue("Compact drops psychotypes",
+                !PromptContextFeaturePolicy.AllowsPsychotypes(PromptContextDetailLevel.Compact));
+            AssertTrue("Compact drops pawn memory",
+                !PromptContextFeaturePolicy.AllowsMemoryContext(PromptContextDetailLevel.Compact));
+
+            PromptContextDetailLevel invalid = (PromptContextDetailLevel)999;
+            AssertTrue("invalid level keeps live context hints like Full",
+                PromptContextFeaturePolicy.AllowsPromptEnchantments(invalid));
+            AssertTrue("invalid level keeps psychotypes like Full",
+                PromptContextFeaturePolicy.AllowsPsychotypes(invalid));
+            AssertTrue("invalid level keeps pawn memory like Full",
+                PromptContextFeaturePolicy.AllowsMemoryContext(invalid));
         }
 
         private static void TestOwnedPromptTextIsNotSentenceCapped()

@@ -293,6 +293,10 @@
   <PawnDiary.Settings.Category>Pawn Diary</PawnDiary.Settings.Category>
   <PawnDiary.Settings.Connection>Connection</PawnDiary.Settings.Connection>
   <PawnDiary.Settings.GenerationHeader>Diary writing</PawnDiary.Settings.GenerationHeader>
+  <PawnDiary.Settings.ReadingHeader>Reading</PawnDiary.Settings.ReadingHeader>
+  <PawnDiary.Settings.StorageHeader>Stored pages</PawnDiary.Settings.StorageHeader>
+  <PawnDiary.Settings.IntegrationsHeader>Integrations and privacy</PawnDiary.Settings.IntegrationsHeader>
+  <PawnDiary.Settings.ExperimentalHeader>Experimental</PawnDiary.Settings.ExperimentalHeader>
   <PawnDiary.Settings.ApisHeader>APIs - enabled rows run in parallel (one model each; add more rows for more models)</PawnDiary.Settings.ApisHeader>
   <PawnDiary.Settings.ShowModelSettings>Show models</PawnDiary.Settings.ShowModelSettings>
   <PawnDiary.Settings.HideModelSettings>Hide models</PawnDiary.Settings.HideModelSettings>
@@ -371,18 +375,6 @@
   <PawnDiary.Reader.UnknownPawn>Unknown pawn</PawnDiary.Reader.UnknownPawn>
   <PawnDiary.Reader.PawnRowPages>{0} pages</PawnDiary.Reader.PawnRowPages>
   <PawnDiary.Reader.SelectPawnHint>Select a pawn on the left to read their diary.</PawnDiary.Reader.SelectPawnHint>
-  <PawnDiary.Settings.GenerateTitles>Write short titles for diary pages</PawnDiary.Settings.GenerateTitles>
-  <PawnDiary.Settings.GenerateTitlesTip>When enabled, each diary entry sends a small follow-up LLM request to write a short title after the main page is written. Adds latency and one extra token bill per entry. When disabled, no new title is written and diary headers show only the date.</PawnDiary.Settings.GenerateTitlesTip>
-  <PawnDiary.Settings.EnableAtmosphericFormatting>Use rare atmosphere formatting</PawnDiary.Settings.EnableAtmosphericFormatting>
-  <PawnDiary.Settings.EnableAtmosphericFormattingTip>When enabled, only extreme diary pages can use unusual spacing, staggered variable-size words, or dramatic strange-chat speech distortion. Mental breaks, anomaly/dark entries, death descriptions, and pages written while heavily impaired may be affected. Prompts and saved diary text are unchanged.</PawnDiary.Settings.EnableAtmosphericFormattingTip>
-  <PawnDiary.Settings.EnableSeasonalBackground>Seasonal window tint (experimental)</PawnDiary.Settings.EnableSeasonalBackground>
-  <PawnDiary.Settings.EnableSeasonalBackgroundTip>When enabled, the whole Diary window takes on a subtle color wash that follows the season of the page you are reading (spring green, summer gold, autumn orange, winter blue) and crossfades as you scroll. Display-only; it never changes prompts or saved diary text. Off by default while the look is being tuned.</PawnDiary.Settings.EnableSeasonalBackgroundTip>
-  <PawnDiary.Settings.EnablePromptEnchantments>Use live prompt context hints</PawnDiary.Settings.EnablePromptEnchantments>
-  <PawnDiary.Settings.EnablePromptEnchantmentsTip>When enabled, first-person diary prompts may include one important live context cue. XML controls which health conditions and important-event status cues can appear and how often they win the weighted random pick.</PawnDiary.Settings.EnablePromptEnchantmentsTip>
-  <PawnDiary.Settings.EnablePsychotypes>Use pawn psychotypes (outlook layer)</PawnDiary.Settings.EnablePsychotypes>
-  <PawnDiary.Settings.EnablePsychotypesTip>When enabled, each pawn gets a psychotype — an outlook/temperament lens (what they notice, value, and fear) rolled from their skill passions — folded into first-person prompts alongside their writing style. When disabled, the outlook is omitted from prompts and pending rolls stay deferred; existing pawns keep their saved psychotype. Edit a pawn's psychotype from their Diary tab's writing-style editor.</PawnDiary.Settings.EnablePsychotypesTip>
-  <PawnDiary.Settings.EnableMemorySystem>Use pawn memory in diaries</PawnDiary.Settings.EnableMemorySystem>
-  <PawnDiary.Settings.EnableMemorySystemTip>When enabled, diary prompts may include up to two dated facts from the pawn's past (marriages, losses, body changes, titles and similar life events) plus a short cultural aside where relevant. When disabled, nothing from the past is injected into prompts — but important events are still recorded and cultural background is still tracked, so re-enabling later brings everything back.</PawnDiary.Settings.EnableMemorySystemTip>
   <PawnDiary.Settings.AllowExternalIntegrations>Allow external mod integrations</PawnDiary.Settings.AllowExternalIntegrations>
   <PawnDiary.Settings.AllowExternalIntegrationsTip>When enabled, other mods can submit diary events, read public diary snapshots, and add compact pawn context lines through the public integration API.</PawnDiary.Settings.AllowExternalIntegrationsTip>
   <PawnDiary.Settings.EnableExternalKeySharing>Share API keys with other mods</PawnDiary.Settings.EnableExternalKeySharing>
@@ -418,15 +410,19 @@
   <PawnDiary.Settings.ContextDetail.Balanced>Balanced</PawnDiary.Settings.ContextDetail.Balanced>
   <PawnDiary.Settings.ContextDetail.Compact>Compact</PawnDiary.Settings.ContextDetail.Compact>
   <PawnDiary.Settings.ContextDetailSectionTitle>Prompt context detail</PawnDiary.Settings.ContextDetailSectionTitle>
-  <PawnDiary.Settings.ContextDetailSectionHelp>Illustrative only: live events use real captured facts. Click a preset row to choose how much optional context is sent or cut.</PawnDiary.Settings.ContextDetailSectionHelp>
+  <PawnDiary.Settings.ContextDetailSectionHelp>Illustrative only: live events use real captured facts. Click a preset row to set how much optional context is sent and which writing layers stay on.</PawnDiary.Settings.ContextDetailSectionHelp>
   <PawnDiary.Settings.ContextDetail.RowTip>Click a row to use that context detail level.</PawnDiary.Settings.ContextDetail.RowTip>
   <PawnDiary.Settings.ContextDetail.AddedLabel>Sent</PawnDiary.Settings.ContextDetail.AddedLabel>
   <PawnDiary.Settings.ContextDetail.CutLabel>Cut first</PawnDiary.Settings.ContextDetail.CutLabel>
+  <PawnDiary.Settings.ContextDetail.LayersLabel>Layers</PawnDiary.Settings.ContextDetail.LayersLabel>
   <PawnDiary.Settings.ContextDetail.Full.Added>All renderable event, pawn, surroundings, continuity, prior-entry, weapon, and domain metadata.</PawnDiary.Settings.ContextDetail.Full.Added>
+  <PawnDiary.Settings.ContextDetail.Full.Layers>Pawn memory, psychotype outlook, and live context hints are all on.</PawnDiary.Settings.ContextDetail.Full.Layers>
   <PawnDiary.Settings.ContextDetail.Balanced.Added>Required facts plus high-signal cues: danger, severe health or mood, direct instructions, event guidance.</PawnDiary.Settings.ContextDetail.Balanced.Added>
   <PawnDiary.Settings.ContextDetail.Balanced.Cut>Weak continuity, ordinary setting or tone, low-priority numbers, duplicate metadata.</PawnDiary.Settings.ContextDetail.Balanced.Cut>
+  <PawnDiary.Settings.ContextDetail.Balanced.Layers>Psychotype outlook and live context hints stay on; pawn memory is off.</PawnDiary.Settings.ContextDetail.Balanced.Layers>
   <PawnDiary.Settings.ContextDetail.Compact.Added>Required facts plus the strongest useful cue, such as danger, injury, duty, or a key relation.</PawnDiary.Settings.ContextDetail.Compact.Added>
   <PawnDiary.Settings.ContextDetail.Compact.Cut>Most continuity, broad environment, routine pawn details, and low-signal metadata.</PawnDiary.Settings.ContextDetail.Compact.Cut>
+  <PawnDiary.Settings.ContextDetail.Compact.Layers>Pawn memory, psychotype outlook, and live context hints are all off.</PawnDiary.Settings.ContextDetail.Compact.Layers>
   <PawnDiary.Settings.GenerationChanceWeight>Random generation weight: {0}x</PawnDiary.Settings.GenerationChanceWeight>
   <PawnDiary.Settings.GenerationChanceWeightHelp>Multiplies optional random diary-page chances, including work sampling, social promotion, and ability-use sampling. 1x uses XML tuning defaults; 0x suppresses optional random pages.</PawnDiary.Settings.GenerationChanceWeightHelp>
   <PawnDiary.Settings.MaxActiveDiaryEvents>Active pages per pawn ({0}-{1})</PawnDiary.Settings.MaxActiveDiaryEvents>
@@ -490,7 +486,7 @@
   <PawnDiary.Settings.PsychotypeStudioTitle>Psychotypes</PawnDiary.Settings.PsychotypeStudioTitle>
   <PawnDiary.Settings.PsychotypeStudioHelp>Edit psychotype labels, outlook rules, and family from DiaryPsychotypeDefs.xml, or add your own. Custom psychotypes can be assigned to a pawn by hand but are never auto-rolled; editing a built-in changes what new pawns can roll.</PawnDiary.Settings.PsychotypeStudioHelp>
   <PawnDiary.Settings.PsychotypeStudioSummary>{0} psychotypes total, {1} custom, {2} edited</PawnDiary.Settings.PsychotypeStudioSummary>
-  <PawnDiary.Settings.PsychotypeStudioDisabledHint>Psychotypes are turned off in Main settings; edits here take effect once you re-enable them.</PawnDiary.Settings.PsychotypeStudioDisabledHint>
+  <PawnDiary.Settings.PsychotypeStudioDisabledHint>Psychotypes are off because prompt context detail is set to Compact; edits here take effect once you pick Full or Balanced.</PawnDiary.Settings.PsychotypeStudioDisabledHint>
   <PawnDiary.Settings.AddPsychotypePreset>Add custom psychotype</PawnDiary.Settings.AddPsychotypePreset>
   <PawnDiary.Settings.NewPsychotypeLabel>New Psychotype</PawnDiary.Settings.NewPsychotypeLabel>
   <PawnDiary.Settings.ResetPsychotypePresets>Restore all psychotype defaults</PawnDiary.Settings.ResetPsychotypePresets>

@@ -62,6 +62,41 @@ namespace PawnDiary
     }
 
     /// <summary>
+    /// Maps a prompt-context preset onto the three optional writing layers that used to have their own
+    /// checkboxes in mod settings: live prompt context hints, the psychotype (outlook) voice layer, and
+    /// pawn memory recall. One preset now decides all three, so this pure table is the single place
+    /// that defines the mapping — settings, UI text, and tests all read it instead of each re-deriving
+    /// the rule.
+    ///
+    /// Full keeps every layer. Balanced drops only pawn memory (the largest injected block). Compact
+    /// drops all three, so a small local model sees required facts and very little else.
+    ///
+    /// This intentionally follows the GLOBAL setting only. A per-lane
+    /// <see cref="PromptContextDetailOverride"/> still trims that lane's rendered fields, but the three
+    /// layers are decided long before a lane is picked, so they stay tied to the global preset.
+    /// </summary>
+    internal static class PromptContextFeaturePolicy
+    {
+        /// <summary>True when the preset allows the one live health/status cue in first-person prompts.</summary>
+        public static bool AllowsPromptEnchantments(PromptContextDetailLevel level)
+        {
+            return PromptContextSelector.Normalize(level) != PromptContextDetailLevel.Compact;
+        }
+
+        /// <summary>True when the preset allows the psychotype (outlook) block in first-person prompts.</summary>
+        public static bool AllowsPsychotypes(PromptContextDetailLevel level)
+        {
+            return PromptContextSelector.Normalize(level) != PromptContextDetailLevel.Compact;
+        }
+
+        /// <summary>True when the preset allows recalled past facts and culture asides in prompts.</summary>
+        public static bool AllowsMemoryContext(PromptContextDetailLevel level)
+        {
+            return PromptContextSelector.Normalize(level) == PromptContextDetailLevel.Full;
+        }
+    }
+
+    /// <summary>
     /// Character budgets for the Balanced/Compact presets, split by prompt family (standard entry,
     /// reflection, and neutral death/arrival). Pure data with code-default values; the impure
     /// <c>ContextDetailPolicy</c> supplies XML-tuned overrides. Full is unbudgeted and not stored here.
