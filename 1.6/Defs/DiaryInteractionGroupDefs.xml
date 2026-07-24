@@ -640,49 +640,10 @@
     </matchTokens>
   </PawnDiary.DiaryInteractionGroupDef>
 
-  <PawnDiary.DiaryInteractionGroupDef>
-    <defName>dayreflection</defName>
-    <label>Day's reflection</label>
-    <order>135</order>
-    <domain>Interaction</domain>
-    <defaultEnabled>true</defaultEnabled>
-    <important>true</important>
-    <instruction>a quiet end-of-day reflection looking back on the whole day</instruction>
-    <instructions>
-      <li>day's end — pick the one supplied moment that still has weight tonight and let the rest of the day settle around it</li>
-      <li>day's end — weigh the day as spent strength: what it took, what it gave back, what is left for tomorrow</li>
-      <li>day's end — write the body settling down: bunk, warmth, ache, hunger, or quiet, and let the supplied moments pass through it</li>
-    </instructions>
-    <tone>with a quiet, settling, end-of-day calm</tone>
-    <tones>
-      <li>tired and reflective, weighing what still matters</li>
-      <li>softly closing, like the day finally going quiet</li>
-    </tones>
-    <colorCue>white</colorCue>
-    <!-- Synthetic defName emitted by the day-summary builder (DiaryGameComponent.DaySummary.cs). -->
-    <matchDefNames>
-      <li>DayReflection</li>
-    </matchDefNames>
-  </PawnDiary.DiaryInteractionGroupDef>
-
-  <PawnDiary.DiaryInteractionGroupDef>
-    <defName>quadrumreflection</defName>
-    <label>Quadrum reflection</label>
-    <order>135</order>
-    <domain>Interaction</domain>
-    <defaultEnabled>true</defaultEnabled>
-    <important>true</important>
-    <instruction>a rare long reflection about a whole quadrum of this pawn's life</instruction>
-    <tone>wide, memory-heavy, and reflective across time</tone>
-    <tones>
-      <li>weighing the whole quadrum with distance and consequence</li>
-      <li>life-worn and reflective, connecting what changed over time</li>
-    </tones>
-    <colorCue>quadrumReflection</colorCue>
-    <matchDefNames>
-      <li>QuadrumReflection</li>
-    </matchDefNames>
-  </PawnDiary.DiaryInteractionGroupDef>
+  <!-- The day and quadrum reflection rows used to live here, in the Interaction domain. They were
+       unreachable: every reflection writes a *_reflection= marker, which DomainForContext maps to
+       the Reflection domain, so a saved day/quadrum page was never classified against an Interaction
+       row. Both now sit in the Reflection section below. -->
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>arrival</defName>
@@ -876,7 +837,67 @@
     <catchAll>true</catchAll>
   </PawnDiary.DiaryInteractionGroupDef>
 
-  <!-- ===== Reflection domain ===== -->
+  <!-- ===== Reflection domain =====
+       Every reflection page writes a `*_reflection=` marker, and DomainForContext maps all of them
+       here, so THIS is the only domain whose rows can claim a reflection. A reflection row's cue,
+       tone and importance are live; its `instruction`/`instructions` are not, because each
+       reflection kind carries its own Keyed instruction (PawnDiary.Event.*ReflectionInstruction)
+       frozen on the event at capture time. Order decides which row claims a page; the generic
+       `reflection` row is last and takes anything unlisted. -->
+
+  <!-- Day reflections. Moved here from the Interaction domain, where this row had been unreachable:
+       its tone, importance and settings toggle never applied to a single page.
+       It deliberately declares NO colorCue. The row used to name `white`, but that cue's meaning
+       drifted while the row was dead — it is now documented as the warm romance/heartfelt/birthday
+       shade and maps to the `joy` memory tag, which would pre-colour every end-of-day page (bad days
+       included) as warm and joyful. An ordinary day's-end page stays on default parchment until a
+       neutral cue of its own is designed. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>dayreflection</defName>
+    <label>Day's reflection</label>
+    <order>150</order>
+    <domain>Reflection</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a quiet end-of-day reflection looking back on the whole day</instruction>
+    <instructions>
+      <li>day's end — pick the one supplied moment that still has weight tonight and let the rest of the day settle around it</li>
+      <li>day's end — weigh the day as spent strength: what it took, what it gave back, what is left for tomorrow</li>
+      <li>day's end — write the body settling down: bunk, warmth, ache, hunger, or quiet, and let the supplied moments pass through it</li>
+    </instructions>
+    <tone>with a quiet, settling, end-of-day calm</tone>
+    <tones>
+      <li>tired and reflective, weighing what still matters</li>
+      <li>softly closing, like the day finally going quiet</li>
+    </tones>
+    <!-- Synthetic defName emitted by the day-summary builder (DiaryGameComponent.DaySummary.cs). -->
+    <matchDefNames>
+      <li>DayReflection</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Quadrum reflections. Also moved here from the Interaction domain. The `quadrumReflection` cue
+       exists solely for this row and is named after it, but nothing could stamp it while the row sat
+       in the wrong domain — the cold pale blue shipped 2026-06-30 and has never rendered. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>quadrumreflection</defName>
+    <label>Quadrum reflection</label>
+    <order>151</order>
+    <domain>Reflection</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a rare long reflection about a whole quadrum of this pawn's life</instruction>
+    <tone>wide, memory-heavy, and reflective across time</tone>
+    <tones>
+      <li>weighing the whole quadrum with distance and consequence</li>
+      <li>life-worn and reflective, connecting what changed over time</li>
+    </tones>
+    <colorCue>quadrumReflection</colorCue>
+    <!-- Synthetic defName emitted by the day-summary builder (DiaryGameComponent.DaySummary.cs). -->
+    <matchDefNames>
+      <li>QuadrumReflection</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
 
   <!-- Ideology belief reflections split out of the generic row below for ONE reason: to carry the
        Ideology color family, so a page about faith reads as Ideology instead of as an unstyled
@@ -918,6 +939,13 @@
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
+  <!-- The generic reflection row: last in the domain, so it owns the life-arc page and anything a
+       future reflection kind adds before it gets a row of its own. The day/quadrum/belief names are
+       deliberately NOT listed here any more — the rows above claim them first, and a second matcher
+       that can never win only reads as though this row were still in play.
+       Arc pages stay on default parchment: unlike quadrum, no cue was ever authored for them, and
+       picking one is a design choice rather than a fix. Give this row (or a dedicated `reflectionArc`
+       row above it) a colorCue when that colour is chosen. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>reflection</defName>
     <label>Reflection</label>
@@ -932,8 +960,6 @@
       <li>quietly inward, weighing what the remembered moments meant</li>
     </tones>
     <matchDefNames>
-      <li>DayReflection</li>
-      <li>QuadrumReflection</li>
       <li>PawnArcReflection</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>

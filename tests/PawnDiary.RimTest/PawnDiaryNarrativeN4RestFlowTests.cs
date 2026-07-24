@@ -49,9 +49,11 @@ namespace PawnDiary.RimTests
         [BeforeEach]
         public static void SetUp()
         {
-            // Belief reflections own a separate Reflection-domain row (`reflectionBelief`) since the
-            // Ideology color split, and IsReflectionGroupEnabled reads that row for the belief branch.
-            scope = PawnDiaryRimTestScope.Begin("reflection", "reflectionBelief");
+            // IsReflectionGroupEnabled resolves the Reflection-domain row that claims each kind, and
+            // every kind now owns one: day/quadrum moved out of the Interaction domain and belief
+            // split off for the Ideology color. The coordinator arbitrates across all of them.
+            scope = PawnDiaryRimTestScope.Begin(
+                "reflection", "dayreflection", "quadrumreflection", "reflectionBelief");
             RequireRuntimeSeams();
             SnapshotReflectionTuning();
         }

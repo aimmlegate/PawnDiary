@@ -73,9 +73,11 @@ namespace PawnDiary.RimTests
         [BeforeEach]
         public static void SetUp()
         {
-            // Belief reflections split into their own Reflection-domain row (`reflectionBelief`) when
-            // the Ideology color was added, so both rows have to be on for this suite's signals.
-            scope = PawnDiaryRimTestScope.Begin("reflection", "reflectionBelief");
+            // Each reflection kind now owns its own Reflection-domain row (day/quadrum moved out of
+            // the Interaction domain, belief split off for the Ideology color), and every signal gates
+            // userEnabled on the row that claims its page — so all four have to be on here.
+            scope = PawnDiaryRimTestScope.Begin(
+                "reflection", "dayreflection", "quadrumreflection", "reflectionBelief");
             scope.EnablePromptCapture(PromptContextDetailLevel.Full);
             pawn = scope.CreateGeneratingAdultColonist();
 

@@ -75,6 +75,8 @@ namespace DiaryPipelineTests
             TestIdeologyCounselXmlContract();
             TestIdeologyConversionRitualXmlContract();
             TestBeliefReflectionGroupXmlContract();
+            TestReflectionDomainRoutingXmlContract();
+            TestReflectionSettingsInheritance();
             TestProgressionMilestonePolicy();
             TestPsylinkProgressionLevelPolicy();
             TestArcReflectionSchedulePolicy();
@@ -6596,6 +6598,164 @@ namespace DiaryPipelineTests
                     && russianText.IndexOf("настроен", StringComparison.Ordinal) >= 0);
         }
 
+        // Every reflection page writes a `*_reflection=` marker, and DomainForContext maps all of them
+        // to the Reflection domain — so ONLY a Reflection-domain row can claim one. The day and quadrum
+        // rows sat in the Interaction domain for their whole life and were therefore dead: their tone,
+        // their importance flag, their settings toggle and (for quadrum) the cue named after them could
+        // never apply to a single page. This pins the domain each reflection row lives in, so putting a
+        // reflection row back in the Interaction domain fails here instead of shipping silently.
+        private static void TestReflectionDomainRoutingXmlContract()
+        {
+            XDocument groups = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryInteractionGroupDefs.xml"));
+
+            // The synthetic source name each reflection kind saves, and the row that must claim it.
+            string[][] routes =
+            {
+                new[] { "DayReflection", "dayreflection" },
+                new[] { "QuadrumReflection", "quadrumreflection" },
+                new[] { "PawnBeliefReflection", "reflectionBelief" },
+                new[] { "PawnArcReflection", "reflection" }
+            };
+            for (int i = 0; i < routes.Length; i++)
+            {
+                AssertEqual("reflection '" + routes[i][0] + "' resolves to its own row",
+                    routes[i][1],
+                    ResolveInteractionGroup(groups, "Reflection", routes[i][0], true));
+
+                XElement row = FindDef(groups, "PawnDiary.DiaryInteractionGroupDef", routes[i][1]);
+                AssertTrue("reflection row exists: " + routes[i][1], row != null);
+                AssertEqual("reflection row is in the Reflection domain: " + routes[i][1],
+                    "Reflection", ChildValue(row, "domain"));
+            }
+
+            // Order decides which row claims a page, so a duplicate makes the winner load-order
+            // dependent. The two moved rows shipped sharing order 135 while both were unreachable.
+            HashSet<int> orders = new HashSet<int>();
+            XElement generic = FindDef(groups, "PawnDiary.DiaryInteractionGroupDef", "reflection");
+            foreach (XElement row in groups.Descendants("PawnDiary.DiaryInteractionGroupDef"))
+            {
+                if (!string.Equals(ChildValue(row, "domain"), "Reflection", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                int order = InteractionGroupOrder(row);
+                AssertTrue("reflection row order is unique: " + ChildValue(row, "defName") + " (" + order + ")",
+                    orders.Add(order));
+                AssertTrue("generic reflection row is ordered last: " + ChildValue(row, "defName"),
+                    ReferenceEquals(row, generic) || order < InteractionGroupOrder(generic));
+            }
+
+            // Regression guard: no Interaction-domain row may name a reflection source. Such a row can
+            // never win — this is exactly the state day/quadrum were stuck in.
+            string[] reflectionNames =
+            {
+                "DayReflection", "QuadrumReflection", "PawnArcReflection", "PawnBeliefReflection"
+            };
+            foreach (XElement row in groups.Descendants("PawnDiary.DiaryInteractionGroupDef"))
+            {
+                if (!string.Equals(ChildValue(row, "domain"), "Interaction", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                for (int i = 0; i < reflectionNames.Length; i++)
+                {
+                    AssertTrue("Interaction row '" + ChildValue(row, "defName")
+                        + "' must not claim reflection source " + reflectionNames[i],
+                        !HasListValue(row, "matchDefNames", reflectionNames[i]));
+                }
+            }
+
+            // Quadrum's cue exists solely for its row and is named after it; it had never rendered.
+            AssertEqual("quadrum reflections stamp the cue named after them", "quadrumReflection",
+                GroupColorCue(groups, "quadrumreflection"));
+            XDocument style = XDocument.Load(RepoPath("1.6", "Defs", "DiaryUiStyleDef.xml"));
+            AssertTrue("the quadrum reflection cue has a UI style row",
+                HasCueColor(style, "quadrumReflection"));
+
+            // Day reflections deliberately carry NO cue. `white` is documented in DiaryUiStyleDef as the
+            // warm romance/heartfelt/birthday shade and maps to the `joy` memory tag, so restoring it
+            // would paint every end-of-day page — bad days included — warm and joyful.
+            AssertTrue("day reflections do not reuse the warm romance cue",
+                string.IsNullOrWhiteSpace(GroupColorCue(groups, "dayreflection")));
+            AssertTrue("the generic reflection row still has no cue of its own",
+                string.IsNullOrWhiteSpace(GroupColorCue(groups, "reflection")));
+
+            // Each moved row keeps its own authored tone — the payload of the move, since a group's
+            // `instruction` never reaches a reflection prompt (each kind carries a Keyed instruction)
+            // but its `tone` does. Before the move all four shared the generic reflection tone.
+            XElement day = FindDef(groups, "PawnDiary.DiaryInteractionGroupDef", "dayreflection");
+            XElement quadrum = FindDef(groups, "PawnDiary.DiaryInteractionGroupDef", "quadrumreflection");
+            AssertTrue("day reflections keep their own end-of-day tone",
+                !string.IsNullOrWhiteSpace(ChildValue(day, "tone"))
+                    && !string.Equals(ChildValue(day, "tone"), ChildValue(generic, "tone"),
+                        StringComparison.Ordinal));
+            AssertTrue("quadrum reflections keep their own across-time tone",
+                !string.IsNullOrWhiteSpace(ChildValue(quadrum, "tone"))
+                    && !string.Equals(ChildValue(quadrum, "tone"), ChildValue(generic, "tone"),
+                        StringComparison.Ordinal));
+
+            // The moved rows keep their defNames, so player settings overrides and the existing EN/RU
+            // DefInjected keys carry over untouched. Russian is the one that would regress visibly.
+            XDocument russianGroups = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected", "PawnDiary.DiaryInteractionGroupDef",
+                "DiaryInteractionGroupDefs.xml"));
+            string[] movedRows = { "dayreflection", "quadrumreflection" };
+            for (int i = 0; i < movedRows.Length; i++)
+            {
+                AssertTrue("moved row keeps its Russian label: " + movedRows[i],
+                    !string.IsNullOrWhiteSpace(KeyedValue(russianGroups, movedRows[i] + ".label")));
+                AssertTrue("moved row keeps its Russian tone: " + movedRows[i],
+                    !string.IsNullOrWhiteSpace(KeyedValue(russianGroups, movedRows[i] + ".tone")));
+            }
+        }
+
+        // A reflection row carved out of the single generic `reflection` toggle must not silently
+        // re-enable a kind the player had already turned off through that one row.
+        private static void TestReflectionSettingsInheritance()
+        {
+            AssertTrue("day reflections inherit the legacy reflection choice",
+                ReflectionSettingsInheritance.IsSplitRow("dayreflection"));
+            AssertTrue("quadrum reflections inherit the legacy reflection choice",
+                ReflectionSettingsInheritance.IsSplitRow("quadrumreflection"));
+            AssertTrue("belief reflections inherit the legacy reflection choice",
+                ReflectionSettingsInheritance.IsSplitRow("reflectionBelief"));
+            // The generic row keeps owning the life-arc page directly, so it inherits from nothing.
+            AssertTrue("the generic reflection row is not a split row",
+                !ReflectionSettingsInheritance.IsSplitRow("reflection"));
+            AssertTrue("an unrelated group is not a split row",
+                !ReflectionSettingsInheritance.IsSplitRow("romance")
+                    && !ReflectionSettingsInheritance.IsSplitRow(null)
+                    && !ReflectionSettingsInheritance.IsSplitRow(string.Empty));
+
+            // A player who turned the old broad row off meant every reflection kind.
+            AssertTrue("a disabled legacy row keeps the new row off",
+                !ReflectionSettingsInheritance.Enabled(null, false, true));
+            // ...until they deliberately turn one back on, which wins.
+            AssertTrue("an explicit new-row choice beats the legacy one",
+                ReflectionSettingsInheritance.Enabled(true, false, true));
+            AssertTrue("an explicit new-row disable beats an enabled legacy row",
+                !ReflectionSettingsInheritance.Enabled(false, true, true));
+            // With no saved choice anywhere, the XML default applies.
+            AssertTrue("no saved choice falls back to the XML default",
+                ReflectionSettingsInheritance.Enabled(null, null, true)
+                    && !ReflectionSettingsInheritance.Enabled(null, null, false));
+
+            // Re-enabling one kind must SURVIVE override pruning: its value equals the XML default, so
+            // without this carve-out it would be dropped as redundant and the disabled legacy choice
+            // would immediately win it back — the row would refuse to stay on.
+            AssertTrue("re-enabling against a disabled legacy row is stored",
+                ReflectionSettingsInheritance.ShouldStoreOverride(true, true, false));
+            AssertTrue("a value matching both the default and the legacy row is not stored",
+                !ReflectionSettingsInheritance.ShouldStoreOverride(true, true, true));
+            AssertTrue("a value matching the default with no legacy choice is not stored",
+                !ReflectionSettingsInheritance.ShouldStoreOverride(true, true, null));
+            AssertTrue("a value differing from the default is always stored",
+                ReflectionSettingsInheritance.ShouldStoreOverride(false, true, null));
+        }
+
         // The <tones> variant pool of one interaction-group Def, in XML order (the order DefInjected
         // translates by numeric index). Returns an empty list when the group defines no pool.
         private static List<string> ToneVariants(XElement group)
@@ -6654,13 +6814,9 @@ namespace DiaryPipelineTests
             // config that reads as though the generic row were still in play.
             AssertTrue("generic reflection row no longer claims the belief page",
                 !HasListValue(generic, "matchDefNames", "PawnBeliefReflection"));
-            string[] genericNames = { "DayReflection", "QuadrumReflection", "PawnArcReflection" };
-            for (int i = 0; i < genericNames.Length; i++)
-            {
-                AssertEqual("generic reflection row still owns " + genericNames[i],
-                    "reflection",
-                    ResolveInteractionGroup(groups, "Reflection", genericNames[i], true));
-            }
+            AssertEqual("generic reflection row still owns the life-arc page",
+                "reflection",
+                ResolveInteractionGroup(groups, "Reflection", "PawnArcReflection", true));
 
             // The split is cosmetic by design: identical prompt wording means an existing colony's
             // belief pages keep reading exactly as they did before the group gained a color.

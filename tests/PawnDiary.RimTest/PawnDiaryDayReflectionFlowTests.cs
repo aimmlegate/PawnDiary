@@ -60,9 +60,11 @@ namespace PawnDiary.RimTests
         [BeforeEach]
         public static void SetUp()
         {
-            // "reflection" is the Reflection-domain group whose matchDefNames includes DayReflection /
-            // QuadrumReflection; DayReflectionSignal.BuildContext gates userEnabled on it.
-            scope = PawnDiaryRimTestScope.Begin("reflection");
+            // DayReflectionSignal.BuildContext gates userEnabled on the Reflection-domain row that
+            // claims the page. Day and quadrum own separate rows since they moved out of the
+            // Interaction domain (where they had been unreachable); "reflection" stays on for the
+            // generic row those two used to share.
+            scope = PawnDiaryRimTestScope.Begin("reflection", "dayreflection", "quadrumreflection");
             pawn = scope.CreateAdultColonist();
 
             ForceDeterministicReflectionTuning();

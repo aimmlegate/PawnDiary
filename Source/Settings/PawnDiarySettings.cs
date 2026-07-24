@@ -849,6 +849,17 @@ namespace PawnDiary
                     group.defaultEnabled);
             }
 
+            if (ReflectionSettingsInheritance.IsSplitRow(group.defName))
+            {
+                // Day, quadrum and belief reflections each own a row now. Before the split the generic
+                // `reflection` row was the only working reflection toggle, so a player who turned it
+                // off meant all of them — honor that until the new row is deliberately touched.
+                return ReflectionSettingsInheritance.Enabled(
+                    GroupEnabledOverride(group.defName),
+                    GroupEnabledOverride(ReflectionSettingsInheritance.LegacyGroupDefName),
+                    group.defaultEnabled);
+            }
+
             bool saved;
             return groupEnabled.TryGetValue(group.defName, out saved) ? saved : group.defaultEnabled;
         }
@@ -919,8 +930,12 @@ namespace PawnDiary
                 && ConversionRitualSettingsInheritance.ShouldStoreOverride(
                     enabled, group.defaultEnabled,
                     GroupEnabledOverride(ConversionRitualPolicy.LegacyGroupDefName));
+            bool keepReflectionOverride = ReflectionSettingsInheritance.IsSplitRow(group.defName)
+                && ReflectionSettingsInheritance.ShouldStoreOverride(
+                    enabled, group.defaultEnabled,
+                    GroupEnabledOverride(ReflectionSettingsInheritance.LegacyGroupDefName));
             if (enabled == group.defaultEnabled
-                && !keepCounselOverride && !keepConversionRitualOverride)
+                && !keepCounselOverride && !keepConversionRitualOverride && !keepReflectionOverride)
             {
                 groupEnabled.Remove(group.defName);
                 return;
@@ -1141,6 +1156,12 @@ namespace PawnDiary
                     redundant = !ConversionRitualSettingsInheritance.ShouldStoreOverride(
                         entry.Value, group.defaultEnabled,
                         GroupEnabledOverride(ConversionRitualPolicy.LegacyGroupDefName));
+                }
+                if (redundant && ReflectionSettingsInheritance.IsSplitRow(group.defName))
+                {
+                    redundant = !ReflectionSettingsInheritance.ShouldStoreOverride(
+                        entry.Value, group.defaultEnabled,
+                        GroupEnabledOverride(ReflectionSettingsInheritance.LegacyGroupDefName));
                 }
                 if (group == null || redundant)
                 {

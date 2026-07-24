@@ -55,6 +55,7 @@
     <Compile Include="..\..\Source\Pipeline\EventWindowPolicy.cs" Link="EventWindowPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\ProgressionMilestonePolicy.cs" Link="ProgressionMilestonePolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\ArcReflectionSchedulePolicy.cs" Link="ArcReflectionSchedulePolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\ReflectionSettingsInheritance.cs" Link="ReflectionSettingsInheritance.cs" />
     <Compile Include="..\..\Source\Pipeline\ArcReflectionMemorySelector.cs" Link="ArcReflectionMemorySelector.cs" />
     <Compile Include="..\..\Source\Pipeline\ApiEndpointPolicy.cs" Link="ApiEndpointPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\ModelReasoningCapability.cs" Link="ModelReasoningCapability.cs" />
