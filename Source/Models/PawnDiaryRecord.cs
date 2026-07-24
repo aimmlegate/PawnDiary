@@ -226,8 +226,21 @@ namespace PawnDiary
                 beliefState = new PawnBeliefState();
             }
 
-            int now = Find.TickManager?.TicksGame ?? int.MaxValue;
-            beliefState.Normalize(now, DiaryBeliefPolicy.Snapshot());
+            // PostLoadInit normally has a game clock, but detached Scribe fixtures and unusual load
+            // ordering may not. Deferring age-based cleanup is safer than treating "no clock" as
+            // int.MaxValue, which would erase otherwise valid pending certainty evidence.
+            int? now = Find.TickManager?.TicksGame;
+            if (now.HasValue)
+            {
+                beliefState.Normalize(now.Value, DiaryBeliefPolicy.Snapshot());
+            }
+
+            return beliefState;
+        }
+
+        /// <summary>The passive belief state without creating or normalizing one.</summary>
+        public PawnBeliefState BeliefStateOrNull()
+        {
             return beliefState;
         }
 

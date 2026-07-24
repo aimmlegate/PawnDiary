@@ -122,10 +122,16 @@ namespace PawnDiary
         /// </summary>
         internal string BeliefStateDiagnosticsForDev(Pawn pawn)
         {
-            PawnDiaryRecord diary = FindDiary(pawn, false);
+            // FindDiary applies lazy defaults to every nested saved state. Diagnostics instead use the
+            // raw index lookup so merely opening a dev report cannot change the save.
+            PawnDiaryRecord diary = pawn == null
+                ? null
+                : LookupDiaryByPawnId(pawn.GetUniqueLoadID());
             if (diary == null) return "status=no_diary";
             BeliefPolicySnapshot policy = DiaryBeliefPolicy.Snapshot();
-            PawnBeliefState state = diary.EnsureBeliefState();
+            // A dev inspection action must not create old-save state or normalize pending evidence.
+            PawnBeliefState state = diary.BeliefStateOrNull();
+            if (state == null) return "status=no_belief_state";
             int now = Find.TickManager?.TicksGame ?? 0;
 
             string trend = BeliefCertaintyTrendTokens.Unknown;
@@ -160,9 +166,9 @@ namespace PawnDiary
                 .Append(state.pendingIdeologyChange ? "true" : "false");
             text.Append("; reflection_trigger=").Append(reflection.trigger);
             text.Append("; reflection_block=").Append(reflection.blockReason);
-            text.Append("; reflected_source_count=").Append(state.lastReflectedSourceIds.Count);
-            text.Append("; recent_precept_count=").Append(state.recentSelectedPreceptDefNames.Count);
-            text.Append("; recent_meme_count=").Append(state.recentSelectedMemeDefNames.Count);
+            text.Append("; reflected_source_count=").Append(state.lastReflectedSourceIds?.Count ?? 0);
+            text.Append("; recent_precept_count=").Append(state.recentSelectedPreceptDefNames?.Count ?? 0);
+            text.Append("; recent_meme_count=").Append(state.recentSelectedMemeDefNames?.Count ?? 0);
             return text.ToString();
         }
     }

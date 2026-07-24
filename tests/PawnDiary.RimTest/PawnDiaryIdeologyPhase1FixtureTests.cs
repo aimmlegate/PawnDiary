@@ -220,6 +220,62 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// A dev report is an observation path: it must neither create an old-save belief row nor
+        /// normalize stale/corrupt values as a side effect of logging them.
+        /// </summary>
+        [Test]
+        public static void BeliefStateDiagnosticsDoNotMutateSavedState()
+        {
+            MethodInfo findDiary = typeof(DiaryGameComponent).GetMethod(
+                "FindDiary",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            PawnDiaryRimTestScope.Require(findDiary != null,
+                "Could not locate DiaryGameComponent.FindDiary for the diagnostics fixture.");
+            PawnDiaryRecord diary = findDiary.Invoke(
+                scope.Component,
+                new object[] { pawn, true }) as PawnDiaryRecord;
+            PawnDiaryRimTestScope.Require(diary != null,
+                "The diagnostics fixture could not create its disposable diary record.");
+
+            diary.beliefState = null;
+            string absent = scope.Component.BeliefStateDiagnosticsForDev(pawn);
+            PawnDiaryRimTestScope.Require(
+                absent == "status=no_belief_state" && diary.BeliefStateOrNull() == null,
+                "Inspecting an old-save diary created a belief-state row.");
+
+            PawnBeliefState raw = new PawnBeliefState
+            {
+                baselineOnNextScan = false,
+                hasLastObservation = true,
+                lastIdeologyId = "Ideo_DiagnosticsFixture",
+                lastCertainty = 1.25f,
+                hasPendingCertainty = true,
+                pendingCertaintyBefore = 0.9f,
+                pendingCertaintyAfter = 0.1f,
+                pendingCertaintyFirstTick = 0,
+                pendingCertaintyLastTick = 0,
+                reflectionsThisQuadrum = -7,
+                lastReflectedSourceIds = null,
+                recentSelectedPreceptDefNames = null,
+                recentSelectedMemeDefNames = null
+            };
+            diary.beliefState = raw;
+
+            string present = scope.Component.BeliefStateDiagnosticsForDev(pawn);
+            PawnDiaryRimTestScope.Require(
+                present.StartsWith("status=ok", StringComparison.Ordinal)
+                    && present.Contains("reflected_source_count=0")
+                    && ReferenceEquals(raw, diary.BeliefStateOrNull())
+                    && raw.hasPendingCertainty
+                    && Math.Abs(raw.lastCertainty - 1.25f) < 0.0001f
+                    && raw.reflectionsThisQuadrum == -7
+                    && raw.lastReflectedSourceIds == null
+                    && raw.recentSelectedPreceptDefNames == null
+                    && raw.recentSelectedMemeDefNames == null,
+                "The diagnostics report normalized or replaced saved belief state.");
+        }
+
+        /// <summary>
         /// Exercises the impure session holder without requiring Ideology content. The aggregate must
         /// reset cleanly and expose only fixed mechanical tokens from the loaded policy.
         /// </summary>

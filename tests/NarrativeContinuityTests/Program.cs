@@ -1189,7 +1189,8 @@ namespace NarrativeContinuityTests
                 topics: new List<string> { "bonding" },
                 sourceTick: evidence.tick);
             Budget(policy, NarrativeDetailLevelTokens.Full).maxLenses = 1;
-            policy.repetitionPenalty = 1000f;
+            AssertEqual("N3-I repetition fixture uses the shipped XML/default penalty",
+                45, (int)policy.repetitionPenalty);
             request.candidates = new List<NarrativeLensCandidate> { ideologyCandidates[0], fresh };
             request.recentSelectedCandidateKeys = new List<string>();
             NarrativeContextSelection unrepeated = NarrativeContextSelector.Select(request);

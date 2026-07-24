@@ -22,11 +22,18 @@
     <Compile Include="..\..\Source\Pipeline\OdysseyContextFormatter.cs" Link="OdysseyContextFormatter.cs" />
     <Compile Include="..\..\Source\Pipeline\PollutionContextFormatter.cs" Link="PollutionContextFormatter.cs" />
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContextPrompt.cs" Link="NarrativeContextPrompt.cs" />
+    <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeReferencePolicy.cs" Link="NarrativeReferencePolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContextSelector.cs" Link="NarrativeContextSelector.cs" />
     <Compile Include="..\..\Source\Pipeline\Memory\MemoryContextPrompt.cs" Link="MemoryContextPrompt.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\KnowledgeContracts.cs" Link="KnowledgeContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\CultureAnnotationPlanner.cs" Link="CultureAnnotationPlanner.cs" />
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContracts.cs" Link="NarrativeContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefContracts.cs" Link="BeliefContracts.cs" />
+    <Compile Include="..\..\Source\Pipeline\Belief\BeliefAutomaticCoverageDiagnostics.cs" Link="BeliefAutomaticCoverageDiagnostics.cs" />
+    <Compile Include="..\..\Source\Pipeline\Belief\BeliefLexicalMatcher.cs" Link="BeliefLexicalMatcher.cs" />
+    <Compile Include="..\..\Source\Pipeline\Belief\EventRelativeStanceResolver.cs" Link="EventRelativeStanceResolver.cs" />
+    <Compile Include="..\..\Source\Pipeline\Belief\IdeologyNarrativeProvider.cs" Link="IdeologyNarrativeProvider.cs" />
+    <Compile Include="..\..\Source\Pipeline\Belief\BeliefReflectionPolicy.cs" Link="BeliefReflectionPolicy.cs" />
     <!-- BeliefContracts.cs references BeliefMutationCauseTokens; without this link the harness does not compile. -->
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefMutationPolicy.cs" Link="BeliefMutationPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefContextFormatter.cs" Link="BeliefContextFormatter.cs" />

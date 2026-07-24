@@ -10,7 +10,7 @@ using PawnDiary.Integration;
 
 namespace DiaryPipelineTests
 {
-    internal static class Program
+    internal static partial class Program
     {
         private static int assertions;
 
@@ -855,115 +855,7 @@ namespace DiaryPipelineTests
 
         private static void TestBeliefCombinedDlcPromptFixtures()
         {
-            AssertBeliefCombinedDlcPromptFixture(
-                "Ideology + Royalty",
-                "Progression",
-                "title=Acolyte",
-                new[] { "royal title: Acolyte" },
-                "A current royal duty remains the primary event fact.");
-            AssertBeliefCombinedDlcPromptFixture(
-                "Ideology + Biotech",
-                "Progression",
-                "xenotype=Hussar",
-                new[] { "xenotype: Hussar" },
-                "A verified xenotype transition remains the primary event fact.");
-            AssertBeliefCombinedDlcPromptFixture(
-                "Ideology + Anomaly",
-                "Ritual",
-                "ritual_type=PsychicRitual",
-                new[] { "ritual type: PsychicRitual" },
-                "The visible psychic ritual result is known; hidden outcomes are absent.");
-            AssertBeliefCombinedDlcPromptFixture(
-                "Ideology + Odyssey",
-                "GravshipJourney",
-                "journey_phase=landing",
-                new[] { "journey phase: landing" },
-                "The verified landing remains the primary journey fact.");
-            AssertBeliefCombinedDlcPromptFixture(
-                "all contexts",
-                "Ritual",
-                "title=Acolyte; xenotype=Hussar; ritual_type=PsychicRitual; journey_phase=landing",
-                new[]
-                {
-                    "royal title: Acolyte",
-                    "xenotype: Hussar",
-                    "ritual type: PsychicRitual",
-                    "journey phase: landing"
-                },
-                "The visible psychic ritual result is known.\n"
-                + "The verified gravship landing remains current.");
-        }
-
-        private static void AssertBeliefCombinedDlcPromptFixture(
-            string label,
-            string domain,
-            string gameContext,
-            string[] expectedDlcFields,
-            string narrativeContext)
-        {
-            DiaryEventPayload payload = SoloPayload(
-                "e-combined-" + label.Replace(" ", "-"),
-                "combined DLC event",
-                "Alice recorded one verified change.");
-            payload.domain = domain;
-            payload.gameContext = gameContext;
-            payload.initiator.beliefContext =
-                "relevant precept: the verified change matters";
-            payload.initiator.narrativeContext = narrativeContext;
-
-            DiaryPolicySnapshot policy = Policy(combat: false, important: true);
-            policy.beliefContextInstruction = "Use this event-relevant live stance.";
-            policy.narrativeContextInstruction =
-                "Use only these selected, source-owned DLC facts.";
-            DiaryTemplatePolicy template = policy.Template(DiaryPipelineTemplates.SoloImportant);
-            template.fields.Add(ContextField("ritual type", "ritual_type"));
-            template.fields.Add(Field("narrative context", NarrativeContextPrompt.Source));
-            template.fields.Add(Field("belief context", BeliefContextPrompt.Source));
-
-            AssertTrue(label + " selected narrative lenses stay under the shared Full cap",
-                narrativeContext.Length <= 320
-                && narrativeContext.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Length <= 2);
-
-            PromptContextDetailLevel[] levels =
-            {
-                PromptContextDetailLevel.Full,
-                PromptContextDetailLevel.Balanced,
-                PromptContextDetailLevel.Compact
-            };
-            for (int i = 0; i < levels.Length; i++)
-            {
-                DiaryPromptPlan plan = DiaryPromptPlanner.Build(new DiaryPromptRequest
-                {
-                    payload = payload,
-                    policy = policy,
-                    povRole = DiaryPipelineRoles.Initiator,
-                    contextDetailLevel = levels[i]
-                });
-
-                PromptContextFieldReport belief = plan.contextSelectionReport.kept
-                    .FirstOrDefault(row => row.source == BeliefContextPrompt.Source);
-                AssertTrue(label + " keeps relevant Ideology context in " + levels[i],
-                    belief != null);
-                AssertContains(label + " renders relevant Ideology context in " + levels[i],
-                    plan.userPrompt,
-                    "belief context: Use this event-relevant live stance.");
-                for (int fieldIndex = 0; fieldIndex < expectedDlcFields.Length; fieldIndex++)
-                {
-                    AssertContains(label + " keeps DLC fact " + fieldIndex
-                            + " beside Ideology in " + levels[i],
-                        plan.userPrompt,
-                        expectedDlcFields[fieldIndex]);
-                }
-                AssertTrue(label + " " + levels[i] + " obeys the shared context-character cap",
-                    plan.contextSelectionReport.outputChars
-                        <= plan.contextSelectionReport.budgetChars);
-                if (levels[i] == PromptContextDetailLevel.Full)
-                {
-                    AssertContains(label + " Full prompt carries the bounded selected lens",
-                        plan.userPrompt,
-                        "narrative context: Use only these selected, source-owned DLC facts.");
-                }
-            }
+            RunBeliefCombinedPhase5CFixtures();
         }
 
         /// <summary>
