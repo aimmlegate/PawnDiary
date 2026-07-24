@@ -26,6 +26,7 @@ namespace PawnDiary
             TestLexicalNormalizationAndGuardedMatches();
             TestLexicalCommonConfidenceAndAmbiguityRejection();
             TestLexicalFuzzyAndUnknownTopicBehavior();
+            TestAutomaticCoverageDiagnosticsAndPhase5Fixtures();
             TestBodyOrganMealRaidAndRitualScenarios();
             TestExactFoodEvidenceClient();
             TestLiveDoctrineIntersectionRedundancyAndCaps();
@@ -93,6 +94,11 @@ namespace PawnDiary
             AssertEqual("mutation window fallback is bounded", 120, safe.mutationCorrelationWindowTicks);
             AssertEqual("belief scan interval fallback is bounded", 250, safe.beliefScanIntervalTicks);
             AssertEqual("belief scan work fallback is bounded", 4, safe.maximumBeliefPawnsPerScan);
+            AssertEqual("automatic diagnostic sample fallback is bounded", 4096,
+                safe.maximumAutomaticDiagnosticSamples);
+            malformed.maximumAutomaticDiagnosticSamples = int.MaxValue;
+            AssertEqual("automatic diagnostic sample fallback survives malformed XML", 4096,
+                malformed.Build().maximumAutomaticDiagnosticSamples);
             AssertEqual("pending belief age fallback is bounded", 3600000,
                 safe.pendingBeliefEvidenceMaxAgeTicks);
             AssertEqual("reflected belief source fallback is bounded", 16,
@@ -101,6 +107,340 @@ namespace PawnDiary
                 BeliefPolicySnapshot.CreateDefault().canonicalEventOwnershipRules.Count);
             AssertEqual("code fallback enriches no mutation event routes", 0,
                 BeliefPolicySnapshot.CreateDefault().mutationEventRules.Count);
+        }
+
+        private static void TestAutomaticCoverageDiagnosticsAndPhase5Fixtures()
+        {
+            BeliefPolicySnapshot policy = BeliefPolicySnapshot.CreateDefault();
+
+            BeliefPreceptFact exactSource = Precept(
+                "Mod_Source_5A", "Issue_Source_5A", "quiet source doctrine", 0);
+            exactSource.instanceId = "mod-source-instance-5a";
+            BeliefPreceptFact lexicalBait = Precept(
+                "HighImpact_Lexical_Bait", "Issue_Bait", "luminous orchard authority", 3);
+            BeliefEventEvidence exactSourceEvidence = SourceEvidence(
+                exactSource.instanceId, exactSource.defName);
+            exactSourceEvidence.matchFields.Add(Text("event_label", lexicalBait.displayLabel));
+            BeliefStanceResolution exactSourceResult = Resolve(
+                Snapshot(exactSource, lexicalBait), exactSourceEvidence, policy);
+            AssertSelected("Phase 5A exact source outranks high-impact lexical bait",
+                exactSourceResult, exactSource.defName);
+            AssertCoverage("Phase 5A exact source diagnostic", exactSourceResult,
+                BeliefAutomaticCoverageOutcomeTokens.ExactCorrelation,
+                BeliefRelevanceSourceTokens.SourcePrecept,
+                BeliefRelevanceTierTokens.SourcePrecept);
+            AssertAutomaticMetadataFixture(
+                "ordinary social/thought",
+                BeliefCorrelationKindTokens.Thought,
+                "ModSocialThought_5A",
+                "interaction",
+                "Interaction_CustomSocial");
+            AssertAutomaticMetadataFixture(
+                "ritual/apostasy",
+                BeliefCorrelationKindTokens.HistoryEvent,
+                "ModApostasyHistory_5A",
+                "ritual",
+                "Ritual_CustomApostasy");
+            AssertAutomaticMetadataFixture(
+                "Biotech",
+                BeliefCorrelationKindTokens.Thought,
+                "ModGrowthVatThought_5A",
+                "biotech",
+                "GrowthVat_Custom");
+            AssertAutomaticMetadataFixture(
+                "Anomaly",
+                BeliefCorrelationKindTokens.HistoryEvent,
+                "ModPsychicRitualHistory_5A",
+                "anomaly",
+                "PsychicRitual_Custom");
+            AssertAutomaticMetadataFixture(
+                "Odyssey",
+                BeliefCorrelationKindTokens.Thought,
+                "ModVacuumHabitatThought_5A",
+                "odyssey",
+                "VacuumHabitat_Custom");
+            AssertAutomaticMetadataFixture(
+                "arbitrary-ID mod public metadata",
+                BeliefCorrelationKindTokens.HistoryEvent,
+                "TotallyUnknownHistory_91827",
+                "modded",
+                "ThirdPartyEvent_7721");
+            BeliefPreceptFact authority = Precept(
+                "ModAuthority_5A", "IssueAuthority_5A", "ranked authority", 0);
+            BeliefPreceptFact authorityBait = Precept(
+                "AuthorityLexicalBait_5A", "OtherAuthorityIssue_5A", "ceremonial speaker", 3);
+            BeliefEventEvidence authorityEvidence = Evidence(true);
+            authorityEvidence.narrative.sourceDomain = "ritual";
+            authorityEvidence.narrative.povRole = "moral_guide";
+            authorityEvidence.issueDefNames.Add("IssueAuthority_5A");
+            authorityEvidence.matchFields.Add(Text("ritual_label", "ceremonial speaker"));
+            BeliefStanceResolution authorityResult = Resolve(
+                Snapshot(authority, authorityBait), authorityEvidence, policy);
+            AssertSelected("role/authority structural metadata beats lexical impact",
+                authorityResult, authority.defName);
+            AssertCoverage("role/authority structural diagnostic", authorityResult,
+                BeliefAutomaticCoverageOutcomeTokens.StructuralCorrelation,
+                BeliefRelevanceSourceTokens.IssueIdentity,
+                BeliefRelevanceTierTokens.DirectIdentity);
+
+            BeliefMemeFact structuralMeme = Meme("ModStructureMeme_5A", "ranked order", 1);
+            BeliefPreceptFact memeLinked = Precept(
+                "ModMemeLinked_5A", "IssueMeme_5A", "ordered office", 0);
+            memeLinked.requiredMemeDefNames.Add(structuralMeme.defName);
+            BeliefSnapshot memeSnapshot = Snapshot(memeLinked);
+            memeSnapshot.memes.Add(structuralMeme);
+            BeliefEventEvidence memeEvidence = Evidence(true);
+            memeEvidence.memeDefNames.Add(structuralMeme.defName);
+            BeliefStanceResolution memeResult = Resolve(memeSnapshot, memeEvidence, policy);
+            AssertCoverage("meme structural diagnostic", memeResult,
+                BeliefAutomaticCoverageOutcomeTokens.StructuralCorrelation,
+                BeliefRelevanceSourceTokens.MemeAssociation,
+                BeliefRelevanceTierTokens.DirectIdentity);
+
+            BeliefPolicyBuilder semanticBuilder = BeliefPolicyBuilder.CreateDefault();
+            semanticBuilder.semanticAliases.Add(new BeliefSemanticAlias(
+                "authority_speech",
+                new List<string> { "ranked authority" }));
+            BeliefEventEvidence semanticEvidence = Evidence(true);
+            semanticEvidence.semanticAliasTokens.Add("authority_speech");
+            BeliefStanceResolution semanticResult = Resolve(
+                Snapshot(Precept("SemanticAuthority_5A", "SemanticIssue_5A", "ranked authority", 1)),
+                semanticEvidence,
+                semanticBuilder.Build());
+            AssertCoverage("semantic-alias match diagnostic", semanticResult,
+                BeliefAutomaticCoverageOutcomeTokens.SemanticAlias,
+                semanticResult.stances[0].relevanceSource,
+                semanticResult.stances[0].relevanceTier);
+            AssertTrue("semantic-alias winner exposes an XML-relative confidence band",
+                semanticResult.automaticCoverage.confidenceBand
+                    == BeliefAutomaticCoverageConfidenceBandTokens.Qualified
+                || semanticResult.automaticCoverage.confidenceBand
+                    == BeliefAutomaticCoverageConfidenceBandTokens.Strong);
+
+            BeliefStanceResolution lexicalResult = Resolve(
+                Snapshot(Precept("LexicalOrchard_5A", "LexicalOrchardIssue_5A",
+                    "carefully tended luminous orchards", 1)),
+                TextEvidence(true, "carefully tended luminous orchards"),
+                policy);
+            AssertCoverage("guarded lexical match diagnostic", lexicalResult,
+                BeliefAutomaticCoverageOutcomeTokens.GuardedLexical,
+                lexicalResult.stances[0].relevanceSource,
+                lexicalResult.stances[0].relevanceTier);
+
+            BeliefPolicyBuilder belowBuilder = BeliefPolicyBuilder.CreateDefault();
+            belowBuilder.minimumLexicalConfidence = 10000f;
+            BeliefStanceResolution below = Resolve(
+                Snapshot(Precept("Below_5A", "BelowIssue_5A", "bounded copper orchard", 1)),
+                TextEvidence(true, "bounded copper orchard"),
+                belowBuilder.Build());
+            AssertEmpty("below-confidence diagnostic remains a rejection", below);
+            AssertEqual("below-confidence outcome",
+                BeliefAutomaticCoverageOutcomeTokens.BelowConfidence,
+                below.automaticCoverage.outcome);
+            AssertEqual("below-confidence band",
+                BeliefAutomaticCoverageConfidenceBandTokens.BelowMinimum,
+                below.automaticCoverage.confidenceBand);
+            BeliefPolicyBuilder gapProbeBuilder = BeliefPolicyBuilder.CreateDefault();
+            gapProbeBuilder.minimumLexicalConfidence = 0f;
+            gapProbeBuilder.lexicalRunnerUpMargin = 0f;
+            gapProbeBuilder.commonTokenMinimumDocuments = 32;
+            BeliefSnapshot gapSnapshot = Snapshot(
+                Precept("GapWinner_5A", "GapIssueA_5A", "crystal mercy iron duty silver law", 1),
+                Precept("GapRunner_5A", "GapIssueB_5A", "crystal mercy iron duty", 1));
+            BeliefEventEvidence gapEvidence = TextEvidence(
+                true, "crystal mercy iron duty silver law");
+            BeliefLexicalMatchResult gapProbe = BeliefLexicalMatcher.Match(
+                gapEvidence, gapSnapshot, gapSnapshot.precepts, gapProbeBuilder.Build());
+            AssertTrue("runner-up fixture has two independently qualifying candidates",
+                gapProbe.topCandidate != null && gapProbe.candidateCount == 2 && gapProbe.runnerUpGap > 0f);
+
+            BeliefPolicyBuilder exactGapBuilder = BeliefPolicyBuilder.CreateDefault();
+            exactGapBuilder.minimumLexicalConfidence = 0f;
+            exactGapBuilder.commonTokenMinimumDocuments = 32;
+            exactGapBuilder.lexicalRunnerUpMargin = gapProbe.runnerUpGap;
+            BeliefStanceResolution exactGap = Resolve(
+                gapSnapshot, gapEvidence, exactGapBuilder.Build());
+            AssertCoverage("runner-up gap equality is accepted", exactGap,
+                BeliefAutomaticCoverageOutcomeTokens.GuardedLexical,
+                exactGap.stances[0].relevanceSource,
+                exactGap.stances[0].relevanceTier);
+            AssertNear("accepted diagnostic preserves runner-up gap",
+                gapProbe.runnerUpGap, exactGap.automaticCoverage.runnerUpGap);
+
+            BeliefPolicyBuilder overGapBuilder = BeliefPolicyBuilder.CreateDefault();
+            overGapBuilder.minimumLexicalConfidence = 0f;
+            overGapBuilder.commonTokenMinimumDocuments = 32;
+            overGapBuilder.lexicalRunnerUpMargin = gapProbe.runnerUpGap + 0.01f;
+            BeliefStanceResolution ambiguous = Resolve(
+                gapSnapshot, gapEvidence, overGapBuilder.Build());
+            AssertEmpty("runner-up gap just below margin is rejected", ambiguous);
+            AssertEqual("ambiguous outcome",
+                BeliefAutomaticCoverageOutcomeTokens.Ambiguous,
+                ambiguous.automaticCoverage.outcome);
+            AssertNear("ambiguous diagnostic preserves runner-up gap",
+                gapProbe.runnerUpGap, ambiguous.automaticCoverage.runnerUpGap);
+
+            BeliefStanceResolution noCandidate = Resolve(
+                Snapshot(Precept("NoCandidate_5A", "NoCandidateIssue_5A", "silent basalt custom", 1)),
+                TextEvidence(true, "unrelated copper meadow"),
+                policy);
+            AssertEmpty("no-candidate fixture remains unchanged", noCandidate);
+            AssertEqual("no-candidate outcome", BeliefAutomaticCoverageOutcomeTokens.NoMatch,
+                noCandidate.automaticCoverage.outcome);
+            AssertEqual("no-candidate reason", BeliefAutomaticCoverageReasonTokens.NoCandidate,
+                noCandidate.automaticCoverage.reason);
+
+            BeliefStanceResolution noEvidence = Resolve(
+                Snapshot(Precept("NoEvidence_5A", "NoEvidenceIssue_5A", "silent doctrine", 1)),
+                Evidence(true),
+                policy);
+            AssertEqual("no-evidence outcome", BeliefAutomaticCoverageOutcomeTokens.NoMatch,
+                noEvidence.automaticCoverage.outcome);
+            AssertEqual("no-evidence reason", BeliefAutomaticCoverageReasonTokens.NoEvidence,
+                noEvidence.automaticCoverage.reason);
+
+            BeliefStanceResolution hidden = Resolve(
+                Snapshot(Precept("Hidden_5A", "HiddenIssue_5A", "secret doctrine", 3)),
+                TextEvidence(false, "secret doctrine"),
+                policy);
+            AssertEmpty("hidden evidence still creates no stance", hidden);
+            AssertEqual("hidden evidence rejection is explicit",
+                BeliefAutomaticCoverageReasonTokens.UnverifiedEvidence,
+                hidden.automaticCoverage.reason);
+
+            AssertEqual("Phase 5A still ships no exact correction",
+                0, policy.correlationOverrides.Count);
+            List<BeliefAutomaticCoverageDiagnostic> sequence =
+                new List<BeliefAutomaticCoverageDiagnostic>
+                {
+                    exactSourceResult.automaticCoverage,
+                    authorityResult.automaticCoverage,
+                    semanticResult.automaticCoverage,
+                    lexicalResult.automaticCoverage,
+                    below.automaticCoverage,
+                    ambiguous.automaticCoverage,
+                    noCandidate.automaticCoverage,
+                    noEvidence.automaticCoverage
+                };
+            BeliefAutomaticCoverageAggregate firstAggregate =
+                new BeliefAutomaticCoverageAggregate();
+            BeliefAutomaticCoverageAggregate secondAggregate =
+                new BeliefAutomaticCoverageAggregate();
+            for (int i = 0; i < sequence.Count; i++)
+            {
+                BeliefAutomaticCoverageDiagnostics.Add(firstAggregate, sequence[i], 64);
+                BeliefAutomaticCoverageDiagnostics.Add(secondAggregate, sequence[i], 64);
+            }
+            AssertEqual("aggregate exact count", 1,
+                firstAggregate.OutcomeCount(BeliefAutomaticCoverageOutcomeTokens.ExactCorrelation));
+            AssertEqual("aggregate structural count", 1,
+                firstAggregate.OutcomeCount(BeliefAutomaticCoverageOutcomeTokens.StructuralCorrelation));
+            AssertEqual("aggregate semantic count", 1,
+                firstAggregate.OutcomeCount(BeliefAutomaticCoverageOutcomeTokens.SemanticAlias));
+            AssertEqual("aggregate lexical count", 1,
+                firstAggregate.OutcomeCount(BeliefAutomaticCoverageOutcomeTokens.GuardedLexical));
+            AssertEqual("aggregate below-confidence count", 1,
+                firstAggregate.OutcomeCount(BeliefAutomaticCoverageOutcomeTokens.BelowConfidence));
+            AssertEqual("aggregate ambiguous count", 1,
+                firstAggregate.OutcomeCount(BeliefAutomaticCoverageOutcomeTokens.Ambiguous));
+            AssertEqual("aggregate no-match count", 2,
+                firstAggregate.OutcomeCount(BeliefAutomaticCoverageOutcomeTokens.NoMatch));
+            AssertTrue("aggregate exposes winner-tier counts",
+                firstAggregate.WinnerTierCount(BeliefRelevanceTierTokens.SourcePrecept) == 1
+                && firstAggregate.WinnerTierCount(BeliefRelevanceTierTokens.DirectIdentity) == 1);
+            AssertTrue("aggregate exposes confidence-band counts",
+                firstAggregate.ConfidenceBandCount(
+                    BeliefAutomaticCoverageConfidenceBandTokens.Structural) == 2
+                && firstAggregate.runnerUpGapCount >= 1);
+            AssertEqual("identical diagnostic input formats deterministically",
+                BeliefAutomaticCoverageDiagnostics.Format(firstAggregate),
+                BeliefAutomaticCoverageDiagnostics.Format(secondAggregate));
+
+            BeliefAutomaticCoverageAggregate bounded = new BeliefAutomaticCoverageAggregate();
+            BeliefAutomaticCoverageDiagnostics.Add(bounded, exactSourceResult.automaticCoverage, 2);
+            BeliefAutomaticCoverageDiagnostics.Add(bounded, authorityResult.automaticCoverage, 2);
+            BeliefAutomaticCoverageDiagnostics.Add(bounded, lexicalResult.automaticCoverage, 2);
+            AssertTrue("automatic diagnostic aggregation is bounded",
+                bounded.observedCount == 2 && bounded.droppedCount == 1);
+
+            BeliefAutomaticCoverageAggregate hostile = new BeliefAutomaticCoverageAggregate();
+            BeliefAutomaticCoverageDiagnostics.Add(hostile, new BeliefAutomaticCoverageDiagnostic
+            {
+                outcome = "Player's Secret Doctrine",
+                reason = "custom ideology description",
+                winnerSource = "authored source label",
+                winnerTier = "prompt text",
+                confidenceBand = "private name",
+                confidence = float.NaN,
+                runnerUpGap = float.PositiveInfinity,
+                candidateCount = int.MaxValue
+            }, 8);
+            string hostileFormatted = BeliefAutomaticCoverageDiagnostics.Format(hostile);
+            AssertTrue("diagnostic formatter never logs authored/free-form tokens",
+                hostileFormatted.IndexOf("Secret", StringComparison.Ordinal) < 0
+                && hostileFormatted.IndexOf("custom ideology", StringComparison.Ordinal) < 0
+                && hostileFormatted.IndexOf("authored source", StringComparison.Ordinal) < 0
+                && hostileFormatted.IndexOf("prompt text", StringComparison.Ordinal) < 0
+                && hostileFormatted.IndexOf("private name", StringComparison.Ordinal) < 0);
+            AssertContains("diagnostic formatter normalizes unknown outcomes",
+                hostileFormatted, "last_outcome=no_match");
+        }
+
+        private static void AssertAutomaticMetadataFixture(
+            string label,
+            string correlationKind,
+            string correlationDefName,
+            string sourceDomain,
+            string sourceDefName)
+        {
+            string stableSuffix = correlationDefName.Replace("_", string.Empty);
+            BeliefPreceptFact correlated = Precept(
+                "ArbitraryPrecept_" + stableSuffix,
+                "ArbitraryIssue_" + stableSuffix,
+                "metadata-poor-looking but structurally linked stance",
+                0);
+            correlated.correlations.Add(Correlation(
+                correlationKind, correlationDefName, BeliefValenceTokens.Neutral));
+            BeliefPreceptFact lexicalBait = Precept(
+                "UnrelatedHighImpact_" + stableSuffix,
+                "UnrelatedIssue_" + stableSuffix,
+                "luminous authority ceremony",
+                3);
+            BeliefEventEvidence evidence = Evidence(true);
+            evidence.narrative.sourceDomain = sourceDomain;
+            evidence.narrative.sourceDefName = sourceDefName;
+            evidence.matchFields.Add(Text("event_label", lexicalBait.displayLabel));
+            if (correlationKind == BeliefCorrelationKindTokens.Thought)
+                evidence.thoughtDefNames.Add(correlationDefName);
+            else
+                evidence.historyEventDefNames.Add(correlationDefName);
+
+            BeliefStanceResolution resolved = Resolve(
+                Snapshot(correlated, lexicalBait),
+                evidence,
+                BeliefPolicySnapshot.CreateDefault());
+            AssertSelected(label + " fixture selects arbitrary-ID metadata", resolved, correlated.defName);
+            AssertCoverage(label + " fixture diagnostic", resolved,
+                BeliefAutomaticCoverageOutcomeTokens.ExactCorrelation,
+                correlationKind == BeliefCorrelationKindTokens.Thought
+                    ? BeliefRelevanceSourceTokens.ThoughtCorrelation
+                    : BeliefRelevanceSourceTokens.HistoryCorrelation,
+                BeliefRelevanceTierTokens.ExactCorrelation);
+            AssertEqual(label + " fixture requires no exact correction", 0,
+                BeliefPolicySnapshot.CreateDefault().correlationOverrides.Count);
+        }
+
+        private static void AssertCoverage(
+            string name,
+            BeliefStanceResolution actual,
+            string outcome,
+            string winnerSource,
+            string winnerTier)
+        {
+            AssertTrue(name + " exists", actual?.automaticCoverage != null);
+            AssertEqual(name + " outcome", outcome, actual.automaticCoverage.outcome);
+            AssertEqual(name + " winner source", winnerSource, actual.automaticCoverage.winnerSource);
+            AssertEqual(name + " winner tier", winnerTier, actual.automaticCoverage.winnerTier);
         }
 
         private static void TestPhase2MutationCoalescingCorrelationAndOwnership()

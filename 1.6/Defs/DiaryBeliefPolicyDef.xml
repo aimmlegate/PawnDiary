@@ -25,6 +25,8 @@
     <historyCorrelationWindowTicks>120</historyCorrelationWindowTicks>
     <maximumMutationCorrelationEntries>256</maximumMutationCorrelationEntries>
     <mutationCorrelationWindowTicks>120</mutationCorrelationWindowTicks>
+    <!-- Dev-only aggregate diagnostics retain no event rows or authored text. -->
+    <maximumAutomaticDiagnosticSamples>4096</maximumAutomaticDiagnosticSamples>
     <maximumFieldCharacters>320</maximumFieldCharacters>
     <maximumNormalizedTokensPerField>48</maximumNormalizedTokensPerField>
     <maximumLexicalFieldsPerDocument>96</maximumLexicalFieldsPerDocument>

@@ -80,6 +80,64 @@ namespace PawnDiary
         public const string QuietFallback = "quiet_fallback";
     }
 
+    /// <summary>
+    /// Stable automatic-coverage outcomes. These tokens describe resolver mechanics only; they never
+    /// carry precept labels, ideology names, descriptions, or prompt text.
+    /// </summary>
+    internal static class BeliefAutomaticCoverageOutcomeTokens
+    {
+        public const string ExactCorrelation = "exact_correlation";
+        public const string StructuralCorrelation = "structural_correlation";
+        public const string SemanticAlias = "semantic_alias";
+        public const string GuardedLexical = "guarded_lexical";
+        public const string BelowConfidence = "below_confidence";
+        public const string Ambiguous = "ambiguous";
+        public const string NoMatch = "no_match";
+
+        public static bool IsKnown(string value)
+        {
+            return value == ExactCorrelation || value == StructuralCorrelation
+                || value == SemanticAlias || value == GuardedLexical
+                || value == BelowConfidence || value == Ambiguous || value == NoMatch;
+        }
+    }
+
+    /// <summary>Stable rejection details for the combined no-candidate/no-evidence outcome.</summary>
+    internal static class BeliefAutomaticCoverageReasonTokens
+    {
+        public const string None = "none";
+        public const string InvalidInput = "invalid_input";
+        public const string UnavailableSnapshot = "unavailable_snapshot";
+        public const string UnverifiedEvidence = "unverified_evidence";
+        public const string NoEvidence = "no_evidence";
+        public const string NoCandidate = "no_candidate";
+
+        public static bool IsKnown(string value)
+        {
+            return value == None || value == InvalidInput || value == UnavailableSnapshot
+                || value == UnverifiedEvidence || value == NoEvidence || value == NoCandidate;
+        }
+    }
+
+    /// <summary>
+    /// XML-relative confidence bands. Structural winners do not use lexical confidence; all other
+    /// bands are computed from the configured minimum confidence and runner-up margin.
+    /// </summary>
+    internal static class BeliefAutomaticCoverageConfidenceBandTokens
+    {
+        public const string None = "none";
+        public const string Structural = "structural";
+        public const string BelowMinimum = "below_minimum";
+        public const string Qualified = "qualified";
+        public const string Strong = "strong";
+
+        public static bool IsKnown(string value)
+        {
+            return value == None || value == Structural || value == BelowMinimum
+                || value == Qualified || value == Strong;
+        }
+    }
+
     /// <summary>Optional explicit compatibility-correction actions. The shipped list is empty.</summary>
     internal static class BeliefCorrectionActionTokens
     {
@@ -385,6 +443,23 @@ namespace PawnDiary
         public List<string> recentSelectionDefNames = new List<string>();
     }
 
+    /// <summary>
+    /// One bounded, dev-safe resolver diagnostic. Every string is a stable schema token, while numeric
+    /// values are aggregate-safe scores/counts. Candidate identities and authored text stay outside it.
+    /// </summary>
+    internal sealed class BeliefAutomaticCoverageDiagnostic
+    {
+        public string outcome = BeliefAutomaticCoverageOutcomeTokens.NoMatch;
+        public string reason = BeliefAutomaticCoverageReasonTokens.NoCandidate;
+        public string winnerSource = string.Empty;
+        public string winnerTier = string.Empty;
+        public string confidenceBand = BeliefAutomaticCoverageConfidenceBandTokens.None;
+        public float confidence;
+        public float runnerUpGap;
+        public bool hasRunnerUpGap;
+        public int candidateCount;
+    }
+
     /// <summary>One selected live stance with pure diagnostics describing why it was selected.</summary>
     internal sealed class ResolvedBeliefStance
     {
@@ -404,6 +479,8 @@ namespace PawnDiary
     /// <summary>Ordered, bounded result. It can represent useful mutation or direct-meme context without a stance.</summary>
     internal sealed class BeliefStanceResolution
     {
+        public BeliefAutomaticCoverageDiagnostic automaticCoverage =
+            new BeliefAutomaticCoverageDiagnostic();
         public List<ResolvedBeliefStance> stances = new List<ResolvedBeliefStance>();
         public string ideologyId = string.Empty;
         public string ideologyName = string.Empty;
@@ -820,6 +897,7 @@ namespace PawnDiary
         public int historyCorrelationWindowTicks = 120;
         public int maximumMutationCorrelationEntries = 256;
         public int mutationCorrelationWindowTicks = 120;
+        public int maximumAutomaticDiagnosticSamples = 4096;
         public int maximumFieldCharacters = 320;
         public int maximumNormalizedTokensPerField = 48;
         public int maximumLexicalFieldsPerDocument = 96;
@@ -976,6 +1054,7 @@ namespace PawnDiary
         public readonly int historyCorrelationWindowTicks;
         public readonly int maximumMutationCorrelationEntries;
         public readonly int mutationCorrelationWindowTicks;
+        public readonly int maximumAutomaticDiagnosticSamples;
         public readonly int maximumFieldCharacters;
         public readonly int maximumNormalizedTokensPerField;
         public readonly int maximumLexicalFieldsPerDocument;
@@ -1055,6 +1134,8 @@ namespace PawnDiary
             historyCorrelationWindowTicks = Clamp(value.historyCorrelationWindowTicks, 0, 600, 120);
             maximumMutationCorrelationEntries = Clamp(value.maximumMutationCorrelationEntries, 1, 2048, 256);
             mutationCorrelationWindowTicks = Clamp(value.mutationCorrelationWindowTicks, 0, 600, 120);
+            maximumAutomaticDiagnosticSamples = Clamp(
+                value.maximumAutomaticDiagnosticSamples, 1, 100000, 4096);
             maximumFieldCharacters = Clamp(value.maximumFieldCharacters, 32, 2048, 320);
             maximumNormalizedTokensPerField = Clamp(value.maximumNormalizedTokensPerField, 4, 128, 48);
             maximumLexicalFieldsPerDocument = Clamp(value.maximumLexicalFieldsPerDocument, 8, 256, 96);

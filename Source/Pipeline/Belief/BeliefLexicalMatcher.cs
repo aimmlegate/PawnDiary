@@ -15,6 +15,9 @@ namespace PawnDiary
         public float confidence;
         public string relevanceSource = string.Empty;
         public string relevanceTier = string.Empty;
+        // Stable field-kind token from the event document. It lets diagnostics distinguish an
+        // XML semantic-alias admission from ordinary guarded text without retaining matched text.
+        public string matchedEventFieldKind = string.Empty;
         public string matchedIdentity = string.Empty;
         public string correlationValence = BeliefValenceTokens.Unknown;
         public int distinctiveTokenMatches;
@@ -26,8 +29,13 @@ namespace PawnDiary
     internal sealed class BeliefLexicalMatchResult
     {
         public BeliefLexicalMatch winner;
+        // The best bounded candidate remains available when confidence/margin rejects it. Consumers
+        // must not log matchedIdentity; the automatic-coverage DTO copies fixed tokens/numbers only.
+        public BeliefLexicalMatch topCandidate;
         public float runnerUpConfidence;
         public float runnerUpGap;
+        public float requiredRunnerUpMargin;
+        public int candidateCount;
         public bool rejectedAsAmbiguous;
         public bool rejectedBelowConfidence;
     }
@@ -135,6 +143,8 @@ namespace PawnDiary
             if (scored.Count == 0) return result;
 
             Scored top = scored[0];
+            result.topCandidate = top.match;
+            result.candidateCount = scored.Count;
             result.runnerUpConfidence = scored.Count > 1 ? scored[1].match.confidence : 0f;
             result.runnerUpGap = top.match.confidence - result.runnerUpConfidence;
             if (top.match.confidence < effective.minimumLexicalConfidence)
@@ -146,6 +156,7 @@ namespace PawnDiary
             float requiredMargin = top.match.fuzzyTokenMatches > 0 && top.match.distinctiveTokenMatches == 0
                 ? effective.fuzzyRunnerUpMargin
                 : effective.lexicalRunnerUpMargin;
+            result.requiredRunnerUpMargin = requiredMargin;
             if (scored.Count > 1 && result.runnerUpGap < requiredMargin)
             {
                 result.rejectedAsAmbiguous = true;
@@ -443,6 +454,7 @@ namespace PawnDiary
             int exactMatches = 0;
             int fuzzyMatches = 0;
             string bestKind = "precept";
+            string bestEventKind = string.Empty;
             float bestContribution = 0f;
             string matchedIdentity = string.Empty;
             string bestValence = BeliefValenceTokens.Unknown;
@@ -463,6 +475,7 @@ namespace PawnDiary
                     {
                         bestContribution = contribution;
                         bestKind = beliefField.kind;
+                        bestEventKind = eventField.kind;
                         matchedIdentity = beliefField.phrase;
                         bestValence = beliefField.valence;
                     }
@@ -487,6 +500,7 @@ namespace PawnDiary
                 {
                     bestContribution = contribution;
                     bestKind = beliefDocument.tokenKinds[token];
+                    eventDocument.tokenKinds.TryGetValue(token, out bestEventKind);
                     matchedIdentity = token;
                     beliefDocument.tokenValences.TryGetValue(token, out bestValence);
                 }
@@ -523,6 +537,7 @@ namespace PawnDiary
                     {
                         bestContribution = contribution;
                         bestKind = beliefDocument.tokenKinds[bestToken];
+                        eventDocument.tokenKinds.TryGetValue(eventToken.Key, out bestEventKind);
                         matchedIdentity = eventToken.Key + "~" + bestToken;
                         beliefDocument.tokenValences.TryGetValue(bestToken, out bestValence);
                     }
@@ -560,6 +575,7 @@ namespace PawnDiary
                 confidence = score,
                 relevanceSource = source,
                 relevanceTier = tier,
+                matchedEventFieldKind = bestEventKind,
                 matchedIdentity = matchedIdentity,
                 correlationValence = tier == BeliefRelevanceTierTokens.CorrelationText
                     ? BeliefValenceTokens.Normalize(bestValence)

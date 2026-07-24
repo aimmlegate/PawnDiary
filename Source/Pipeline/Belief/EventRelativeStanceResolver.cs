@@ -129,40 +129,77 @@ namespace PawnDiary
         /// </summary>
         public static BeliefStanceResolution Resolve(BeliefResolutionRequest request)
         {
-            BeliefStanceResolution empty = new BeliefStanceResolution();
-            if (request == null || request.snapshot == null || request.evidence == null) return empty;
+            BeliefStanceResolution result = new BeliefStanceResolution();
+            if (request == null || request.snapshot == null || request.evidence == null)
+                return Reject(result, BeliefAutomaticCoverageReasonTokens.InvalidInput);
             BeliefPolicySnapshot policy = request.policy ?? BeliefPolicySnapshot.CreateDefault();
             BeliefSnapshot snapshot = request.snapshot;
             BeliefEventEvidence evidence = request.evidence;
             BeliefContextProjection projection = evidence.projection;
             if (!policy.enabled || !BeliefResolutionModeTokens.IsKnown(request.mode)
-                || !snapshot.ideologyActive || SafeId(snapshot.ideologyId, policy).Length == 0
-                || evidence.narrative == null || evidence.narrative.pawnCanKnow != true)
-                return empty;
+                || !snapshot.ideologyActive || SafeId(snapshot.ideologyId, policy).Length == 0)
+                return Reject(result, BeliefAutomaticCoverageReasonTokens.UnavailableSnapshot);
+            if (evidence.narrative == null)
+                return Reject(result, BeliefAutomaticCoverageReasonTokens.InvalidInput);
+            if (evidence.narrative.pawnCanKnow != true)
+                return Reject(result, BeliefAutomaticCoverageReasonTokens.UnverifiedEvidence);
 
             ExpandedBeliefEvidence expanded = BeliefEventEvidencePolicy.Expand(evidence, policy);
             if (request.mode == BeliefResolutionModeTokens.EventEnrichment
-                && !HasUsefulVisibleEvidence(evidence, expanded)) return empty;
+                && !HasUsefulVisibleEvidence(evidence, expanded))
+                return Reject(result, BeliefAutomaticCoverageReasonTokens.NoEvidence);
 
             List<BeliefPreceptFact> livePrecepts = NormalizePrecepts(snapshot.precepts, evidence, expanded, policy);
             List<BeliefMemeFact> liveMemes = NormalizeMemes(snapshot.memes, policy);
             List<Candidate> candidates = SourcePreceptCandidates(evidence, livePrecepts, policy);
+            if (candidates.Count > 0)
+                result.automaticCoverage = AcceptedDiagnostic(
+                    BeliefAutomaticCoverageOutcomeTokens.ExactCorrelation, candidates);
             if (candidates.Count == 0)
+            {
                 candidates = ExactCorrelationCandidates(evidence, livePrecepts, policy);
+                if (candidates.Count > 0)
+                    result.automaticCoverage = AcceptedDiagnostic(
+                        BeliefAutomaticCoverageOutcomeTokens.ExactCorrelation, candidates);
+            }
 
             List<BeliefMemeFact> directlyMatchedMemes = new List<BeliefMemeFact>();
             if (candidates.Count == 0)
+            {
                 candidates = DirectIdentityCandidates(evidence, livePrecepts, liveMemes, directlyMatchedMemes, policy);
+                if (candidates.Count > 0)
+                    result.automaticCoverage = AcceptedDiagnostic(
+                        BeliefAutomaticCoverageOutcomeTokens.StructuralCorrelation, candidates);
+                else if (directlyMatchedMemes.Count > 0)
+                    result.automaticCoverage = BeliefAutomaticCoverageDiagnostics.Accepted(
+                        BeliefAutomaticCoverageOutcomeTokens.StructuralCorrelation,
+                        BeliefRelevanceSourceTokens.MemeAssociation,
+                        BeliefRelevanceTierTokens.DirectIdentity,
+                        directlyMatchedMemes.Count);
+            }
             bool directIdentityAnswered = candidates.Count > 0 || directlyMatchedMemes.Count > 0;
             if (!directIdentityAnswered)
+            {
                 candidates = ForcedCorrectionCandidates(evidence, expanded, livePrecepts, liveMemes, policy);
+                if (candidates.Count > 0)
+                    result.automaticCoverage = AcceptedDiagnostic(
+                        BeliefAutomaticCoverageOutcomeTokens.StructuralCorrelation, candidates);
+            }
+            BeliefLexicalMatchResult lexical = null;
             if (!directIdentityAnswered && candidates.Count == 0)
-                candidates = LexicalCandidates(evidence, expanded, snapshot, livePrecepts, policy);
+            {
+                candidates = LexicalCandidates(
+                    evidence, expanded, snapshot, livePrecepts, policy, out lexical);
+                result.automaticCoverage = BeliefAutomaticCoverageDiagnostics.FromLexical(lexical, policy);
+            }
             if (!directIdentityAnswered && candidates.Count == 0
                 && request.mode == BeliefResolutionModeTokens.QuietReflection)
                 candidates = QuietFallbackCandidates(livePrecepts, policy);
 
-            BeliefStanceResolution result = new BeliefStanceResolution();
+            if (result.automaticCoverage == null
+                || !BeliefAutomaticCoverageOutcomeTokens.IsKnown(result.automaticCoverage.outcome))
+                result.automaticCoverage = BeliefAutomaticCoverageDiagnostics.RejectedNoMatch(
+                    BeliefAutomaticCoverageReasonTokens.NoCandidate);
             result.ideologyId = snapshot.ideologyId ?? string.Empty;
             result.ideologyName = snapshot.ideologyName ?? string.Empty;
             result.roleName = projection == null || projection.includeRole
@@ -177,6 +214,18 @@ namespace PawnDiary
             result.mutationSubjectIsPov = result.mutation != null
                 && string.Equals(snapshot.pawnId, result.mutation.pawnId, StringComparison.Ordinal);
             List<Candidate> selected = Select(candidates, evidence, request, policy);
+            if (selected.Count > 0
+                && result.automaticCoverage != null
+                && (result.automaticCoverage.outcome == BeliefAutomaticCoverageOutcomeTokens.ExactCorrelation
+                    || result.automaticCoverage.outcome == BeliefAutomaticCoverageOutcomeTokens.StructuralCorrelation
+                    || result.automaticCoverage.outcome == BeliefAutomaticCoverageOutcomeTokens.SemanticAlias
+                    || result.automaticCoverage.outcome == BeliefAutomaticCoverageOutcomeTokens.GuardedLexical))
+            {
+                // Weighted within-tier diversity may choose a different candidate from the first sorted
+                // row. Refresh fixed winner tokens only; candidate identity remains deliberately absent.
+                result.automaticCoverage.winnerSource = selected[0].relevanceSource;
+                result.automaticCoverage.winnerTier = selected[0].relevanceTier;
+            }
             int selectedCap = projection == null
                 ? selected.Count
                 : Math.Min(selected.Count, Math.Max(1, Math.Min(2, projection.maximumSelectedStances)));
@@ -191,7 +240,7 @@ namespace PawnDiary
                         projection.maximumSupportingMemes,
                         result.supportingMemes.Count - projection.maximumSupportingMemes);
             }
-            if (!result.HasUsefulContext) return empty;
+            if (!result.HasUsefulContext) return result;
 
             result.structure = policy.includeStructure && (projection == null || projection.includeStructure)
                 ? NormalizeMeme(snapshot.structure, policy)
@@ -399,9 +448,10 @@ namespace PawnDiary
             ExpandedBeliefEvidence expanded,
             BeliefSnapshot snapshot,
             List<BeliefPreceptFact> precepts,
-            BeliefPolicySnapshot policy)
+            BeliefPolicySnapshot policy,
+            out BeliefLexicalMatchResult lexical)
         {
-            BeliefLexicalMatchResult lexical = BeliefLexicalMatcher.Match(
+            lexical = BeliefLexicalMatcher.Match(
                 evidence, snapshot, precepts, policy, expanded);
             if (lexical.winner == null) return new List<Candidate>();
             Candidate candidate = NewCandidate(lexical.winner.precept, null, lexical.winner.relevanceSource,
@@ -411,6 +461,27 @@ namespace PawnDiary
             candidate.confidence = lexical.winner.confidence;
             candidate.runnerUpGap = lexical.runnerUpGap;
             return new List<Candidate> { candidate };
+        }
+
+        private static BeliefAutomaticCoverageDiagnostic AcceptedDiagnostic(
+            string outcome,
+            List<Candidate> candidates)
+        {
+            Candidate winner = candidates == null || candidates.Count == 0 ? null : candidates[0];
+            return BeliefAutomaticCoverageDiagnostics.Accepted(
+                outcome,
+                winner == null ? string.Empty : winner.relevanceSource,
+                winner == null ? string.Empty : winner.relevanceTier,
+                candidates == null ? 0 : candidates.Count);
+        }
+
+        private static BeliefStanceResolution Reject(
+            BeliefStanceResolution result,
+            string reason)
+        {
+            BeliefStanceResolution value = result ?? new BeliefStanceResolution();
+            value.automaticCoverage = BeliefAutomaticCoverageDiagnostics.RejectedNoMatch(reason);
+            return value;
         }
 
         private static List<Candidate> QuietFallbackCandidates(

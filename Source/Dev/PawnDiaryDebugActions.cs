@@ -225,6 +225,8 @@ namespace PawnDiary
             }
 
             Log.Message("[Pawn Diary] belief_state " + component.BeliefStateDiagnosticsForDev(pawn));
+            Log.Message("[Pawn Diary] belief_coverage "
+                + BeliefContextBuilder.AutomaticCoverageDiagnosticsForDev());
             Messages.Message("PawnDiary.Dev.BeliefState.Logged".Translate(),
                 MessageTypeDefOf.NeutralEvent, false);
         }
