@@ -108,6 +108,14 @@ colonists, then fills the XML-tuned two-row roster by absolute opinion strength.
 numeric opinion never reaches the prompt. A historical birth with an older capture DTO stays empty
 rather than mixing today's colony roster into a past event.
 
+Quality Wave B2 populates `MoodSnapshot` only for exact internal-state (`mood_event`, `thought`,
+`inspiration`, `work`, `hediff`) and batch context markers. Inclusion multiplies the XML master chance
+by the pawn's authored mood-band chance, then compares one stable event/pawn/role hash roll, so the two
+POVs sample independently without consuming gameplay randomness. Interaction and ambient batches
+retain each POV's most emotionally extreme contributing event-time candidate (lower mood, then earlier
+tick breaks ties); the final page never re-reads live mood at flush. The compact saved value is
+`mood=<qualitative bucket>` plus at most one formatted top thought.
+
 ## XML ownership
 
 | File | Owns |

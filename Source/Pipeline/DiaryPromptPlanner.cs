@@ -226,12 +226,11 @@ namespace PawnDiary
             bool hasOtherPawn = !payload.solo;
             bool combat = request.policy?.group != null && request.policy.group.combat;
             bool important = request.policy?.group == null || request.policy.group.important;
-            bool batched = HasContext(payload, "batch=");
-            bool internalState = HasContext(payload, "mood_event=")
-                || HasContext(payload, "thought=")
-                || HasContext(payload, "inspiration=")
-                || HasContext(payload, "work=")
-                || HasContext(payload, "hediff=");
+            // B2 owns the exact structured marker vocabulary shared by mood-snapshot eligibility and
+            // template routing. Keeping these decisions together prevents a new internal marker from
+            // receiving mood context while accidentally selecting an unrelated prompt shape.
+            bool batched = MoodSnapshotPolicy.IsBatchedContext(payload.gameContext);
+            bool internalState = MoodSnapshotPolicy.IsInternalStateContext(payload.gameContext);
 
             if (hasOtherPawn)
             {
@@ -567,11 +566,6 @@ namespace PawnDiary
             {
                 parts.Add(label + "=" + value);
             }
-        }
-
-        private static bool HasContext(DiaryEventPayload payload, string marker)
-        {
-            return payload != null && DiaryContextFields.HasMarker(payload.gameContext, marker);
         }
 
         private static string AppendInstructionText(string instruction, string extraInstruction)

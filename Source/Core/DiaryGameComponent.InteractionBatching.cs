@@ -154,11 +154,11 @@ namespace PawnDiary
                 return;
             }
 
+            int eventTick = Find.TickManager.TicksGame;
             string key = InteractionBatchKey(group, interactionDef, initiator, recipient);
             PendingInteractionBatch batch;
             if (!pendingInteractionBatches.TryGetValue(key, out batch))
             {
-                int now = Find.TickManager.TicksGame;
                 batch = new PendingInteractionBatch
                 {
                     group = group,
@@ -167,8 +167,8 @@ namespace PawnDiary
                     recipient = recipient,
                     initiatorPawnId = initiator.GetUniqueLoadID(),
                     recipientPawnId = recipient.GetUniqueLoadID(),
-                    firstTick = now,
-                    lastTick = now,
+                    firstTick = eventTick,
+                    lastTick = eventTick,
                     firstDefName = interactionDef.defName,
                     firstLabel = interactionLabel,
                     instruction = InteractionInstruction(interactionDef)
@@ -182,8 +182,9 @@ namespace PawnDiary
             }
 
             AppendInteractionBatchLine(batch, initiator, interactionLabel, initiatorText, recipientText);
+            RetainInteractionBatchMood(batch, initiator, recipient, eventTick);
             AddPlayLogEntryId(batch.playLogEntryIds, playLogEntryId);
-            batch.lastTick = Find.TickManager.TicksGame;
+            batch.lastTick = eventTick;
 
             if (batch.Count >= BatchMaxEvents(batch.policy))
             {
@@ -291,8 +292,12 @@ namespace PawnDiary
                 pendingAmbientInteractionNotes[key] = note;
             }
 
+            int eventTick = Find.TickManager.TicksGame;
             note.eventCount++;
-            note.lastTick = Find.TickManager.TicksGame;
+            note.lastTick = eventTick;
+            note.moodSnapshot = MoodSnapshotPolicy.PreferBatchSnapshot(
+                note.moodSnapshot,
+                DiaryContextBuilder.CaptureMoodSnapshot(pawn, eventTick));
             AddPlayLogEntryId(note.playLogEntryIds, playLogEntryId);
             AddAmbientParticipant(note, otherPawn);
 
@@ -417,7 +422,15 @@ namespace PawnDiary
                 + "; first_tick=" + note.firstTick
                 + "; last_tick=" + note.lastTick;
 
-            DiaryEvent diaryEvent = AddSoloEvent(note.pawn, null, defName, label, text, instruction, gameContext);
+            DiaryEvent diaryEvent = AddSoloEventWithFrozenMood(
+                note.pawn,
+                null,
+                defName,
+                label,
+                text,
+                instruction,
+                gameContext,
+                note.moodSnapshot);
             AddPlayLogEntryIds(diaryEvent, note.playLogEntryIds);
             writtenAmbientInteractionNotes.Add(key);
             QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
@@ -491,15 +504,34 @@ namespace PawnDiary
                     eligibleText = BatchFallback(batch, eligiblePawn, otherPawn);
                 }
 
-                DiaryEvent soloEvent = AddSoloEvent(eligiblePawn, otherPawn, defName, label,
-                    eligibleText, instruction, gameContext);
+                MoodSnapshotCandidate eligibleMood = initiatorEligible
+                    ? batch.initiatorMoodSnapshot
+                    : batch.recipientMoodSnapshot;
+                DiaryEvent soloEvent = AddSoloEventWithFrozenMood(
+                    eligiblePawn,
+                    otherPawn,
+                    defName,
+                    label,
+                    eligibleText,
+                    instruction,
+                    gameContext,
+                    eligibleMood);
                 AddPlayLogEntryIds(soloEvent, batch.playLogEntryIds);
                 QueueLlmRewrite(soloEvent, DiaryEvent.InitiatorRole);
                 return;
             }
 
-            DiaryEvent diaryEvent = AddPairwiseEvent(batch.initiator, batch.recipient, defName, label,
-                initiatorText, recipientText, instruction, gameContext);
+            DiaryEvent diaryEvent = AddPairwiseEventWithFrozenMood(
+                batch.initiator,
+                batch.recipient,
+                defName,
+                label,
+                initiatorText,
+                recipientText,
+                instruction,
+                gameContext,
+                batch.initiatorMoodSnapshot,
+                batch.recipientMoodSnapshot);
             // defName above may be a synthetic combined-batch name; keep the originating interaction's
             // real def so the generated-speech Social-log row can resolve a valid InteractionDef.
             diaryEvent.playLogInteractionDefName = batch.firstDefName;
@@ -555,6 +587,50 @@ namespace PawnDiary
             diaryEvent.playLogInteractionDefName = defName;
             AddPlayLogEntryIds(diaryEvent, batch.playLogEntryIds);
             QueuePairwiseGeneration(diaryEvent);
+        }
+
+        /// <summary>
+        /// Captures each incoming moment's two detached mood candidates and retains the most extreme
+        /// candidate per original batch POV, even when a later PlayLog row reverses pawn order.
+        /// </summary>
+        private static void RetainInteractionBatchMood(
+            PendingInteractionBatch batch,
+            Pawn eventInitiator,
+            Pawn eventRecipient,
+            int eventTick)
+        {
+            if (batch == null || eventInitiator == null || eventRecipient == null)
+            {
+                return;
+            }
+
+            MoodSnapshotCandidate initiatorMood =
+                DiaryContextBuilder.CaptureMoodSnapshot(eventInitiator, eventTick);
+            MoodSnapshotCandidate recipientMood =
+                DiaryContextBuilder.CaptureMoodSnapshot(eventRecipient, eventTick);
+            bool sameOrientation = string.Equals(
+                eventInitiator.GetUniqueLoadID(),
+                batch.initiatorPawnId,
+                StringComparison.Ordinal);
+            if (sameOrientation)
+            {
+                batch.initiatorMoodSnapshot = MoodSnapshotPolicy.PreferBatchSnapshot(
+                    batch.initiatorMoodSnapshot,
+                    initiatorMood);
+                batch.recipientMoodSnapshot = MoodSnapshotPolicy.PreferBatchSnapshot(
+                    batch.recipientMoodSnapshot,
+                    recipientMood);
+                return;
+            }
+
+            // The pair key is order-independent, so a later social-log row can arrive with the same
+            // two pawns reversed. Keep candidates aligned to the batch's original POV slots.
+            batch.initiatorMoodSnapshot = MoodSnapshotPolicy.PreferBatchSnapshot(
+                batch.initiatorMoodSnapshot,
+                recipientMood);
+            batch.recipientMoodSnapshot = MoodSnapshotPolicy.PreferBatchSnapshot(
+                batch.recipientMoodSnapshot,
+                initiatorMood);
         }
 
         /// <summary>
@@ -1045,6 +1121,10 @@ namespace PawnDiary
             // Per-POV line accumulators — each moment appends one line per POV.
             public readonly List<string> initiatorLines = new List<string>();
             public readonly List<string> recipientLines = new List<string>();
+            // B2 retains the most mood-extreme event-time candidate per original POV. These detached
+            // values are sampled only after the final DiaryEvent receives its stable ID.
+            public MoodSnapshotCandidate initiatorMoodSnapshot;
+            public MoodSnapshotCandidate recipientMoodSnapshot;
             // RimWorld social-log ids represented by the eventual merged diary event.
             public readonly List<int> playLogEntryIds = new List<int>();
 
@@ -1085,6 +1165,8 @@ namespace PawnDiary
             public readonly List<string> participantIds = new List<string>();
             public readonly List<string> participantNames = new List<string>();
             public readonly List<int> playLogEntryIds = new List<int>();
+            // Most extreme mood observed while this per-pawn note accumulated; never re-read at flush.
+            public MoodSnapshotCandidate moodSnapshot;
 
             public string GroupKey
             {

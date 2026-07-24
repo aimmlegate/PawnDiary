@@ -468,6 +468,17 @@
          relationships fact. One slot is reserved for the strongest named direct relation. -->
     <identitySummaryMaxRelations>2</identitySummaryMaxRelations>
 
+    <!-- Quality Wave B2. An eligible first-person event includes its event-time mood with the exact
+         product of the global apply chance and the matching inclusive-upper-bound band chance. -->
+    <moodSnapshotApplyChance>0.6</moodSnapshotApplyChance>
+    <moodSnapshotChances>
+      <li><maxPercent>15</maxPercent><chance>0.95</chance></li>
+      <li><maxPercent>35</maxPercent><chance>0.50</chance></li>
+      <li><maxPercent>65</maxPercent><chance>0.12</chance></li>
+      <li><maxPercent>85</maxPercent><chance>0.30</chance></li>
+      <li><maxPercent>101</maxPercent><chance>0.55</chance></li>
+    </moodSnapshotChances>
+
     <!-- Output-language directive. When true, every request's system prompt ends with one localized
          line naming the active RimWorld language, so the model is told what to write in instead of
          guessing it from the prompt wording. Set false to restore the old implicit behavior. -->

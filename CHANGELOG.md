@@ -8,6 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-07-24
 
+- **Quality Wave B2 — event-time mood snapshots.** Eligible internal-state and batched POVs can now freeze a compact qualitative mood plus one top thought using XML-authored band × master probability and deterministic event/pawn/role sampling; interaction batches retain their most emotionally extreme contributing moment and never re-read mood at flush.
 - **Quality Wave A5 — compact relationship identity.** Pairwise POVs now freeze up to two other free colonists as qualitative `relationships=` context, reserving the strongest named direct relation, excluding the current partner, and leaving captured historical births untouched.
 - **Quality Wave Phase 2 contract foundation.** Added additive, bounded per-POV identity-summary and mood-snapshot save/prompt fields with old-save-safe normalization; behavior remains unchanged until A5/B2 populate them.
 - **Master Wave 13 / Royalty Phase 8 compatibility hardening.** Re-audited exact Royalty ownership against N3-R, terminal reflections, one-rest arbitration, and Full/Balanced/Compact prompt budgets; focused pure coverage passed without a production behavior change.

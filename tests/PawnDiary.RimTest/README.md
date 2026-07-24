@@ -51,7 +51,8 @@ owners. Both use the shared harness:
 |---|---|---|
 | `PawnDiaryEventReactionTests` | 01/07/08 | Interaction pair (PlayLog), romance (relation), mental state. |
 | `PawnDiaryQualityWavePhase2FlowTests` | Quality Wave A5 | Event-time per-POV identity context, prompt projection, partner exclusion, and historical-boundary safety. |
-| `PawnDiaryInteractionBatchFlowTests` | 02 | Interaction batch/ambient accumulation + flush. |
+| `PawnDiaryQualityWaveMoodFlowTests` | Quality Wave B2 | Eligible event-time mood capture and real SoloInternalState prompt projection. |
+| `PawnDiaryInteractionBatchFlowTests` | 02 / Quality Wave B2 | Interaction batch/ambient accumulation + flush and most-extreme event-time mood retention. |
 | `PawnDiaryThoughtFlowTests` | 03 | Thought memory immediate/ambient route. |
 | `PawnDiaryThoughtProgressionFlowTests` | 04 | Thought-stage progression baseline/worsen/repeat. |
 | `PawnDiaryInspirationFlowTests` | 05 | Inspiration solo page + group gate. |

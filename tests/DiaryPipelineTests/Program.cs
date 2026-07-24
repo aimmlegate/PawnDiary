@@ -26,6 +26,7 @@ namespace DiaryPipelineTests
             TestMemoryContextRequiredInEveryPreset();
             TestQualityWavePovContextContracts();
             TestIdentitySummaryPolicy();
+            TestMoodSnapshotPolicy();
             TestPromptContextDetailSelection();
             TestPromptContextDetailOverrideResolution();
             TestOwnedPromptTextIsNotSentenceCapped();
@@ -301,8 +302,8 @@ namespace DiaryPipelineTests
                 XElement def = templates.Descendants("PawnDiary.DiaryPromptTemplateDef")
                     .Single(row => ChildValue(row, "templateKey") == templateKeys[i]);
                 List<XElement> fields = def.Element("fields").Elements("li").ToList();
-                AssertEqual("A5 " + templateKeys[i] + " Identity field remains append-only",
-                    identityIndexes[i], fields.Count - 1);
+                AssertEqual("A5 " + templateKeys[i] + " Identity field retains its indexed position",
+                    "Identity", ChildValue(fields[identityIndexes[i]], "source"));
                 AssertEqual("A5 " + templateKeys[i] + " projects Identity exactly once",
                     1,
                     fields.Count(row => ChildValue(row, "source") == "Identity"));
@@ -325,6 +326,253 @@ namespace DiaryPipelineTests
                     "key relationships", english.Root.Element(elementName)?.Value);
                 AssertEqual("A5 Russian indexed label " + templateKeys[i],
                     "важные отношения", russian.Root.Element(elementName)?.Value);
+            }
+        }
+
+        /// <summary>
+        /// B2 pins the authored mood bands, exact product sampling, process-stable POV rolls, exact
+        /// context markers, most-extreme batch retention, compact formatting, and append-only prompt
+        /// projection. Live RimWorld capture has a separate loaded-game fixture.
+        /// </summary>
+        private static void TestMoodSnapshotPolicy()
+        {
+            List<MoodSnapshotChanceRule> rules = new List<MoodSnapshotChanceRule>
+            {
+                new MoodSnapshotChanceRule { maxPercent = 15, chance = 0.95f },
+                new MoodSnapshotChanceRule { maxPercent = 35, chance = 0.50f },
+                new MoodSnapshotChanceRule { maxPercent = 65, chance = 0.12f },
+                new MoodSnapshotChanceRule { maxPercent = 85, chance = 0.30f },
+                new MoodSnapshotChanceRule { maxPercent = 101, chance = 0.55f }
+            };
+
+            AssertTrue("B2 mood 0 uses the through-15 band",
+                Math.Abs(MoodSnapshotPolicy.BandChance(0, rules, 0.07f) - 0.95f) < 0.0001f);
+            AssertTrue("B2 mood 15 remains in the inclusive through-15 band",
+                Math.Abs(MoodSnapshotPolicy.BandChance(15, rules, 0.07f) - 0.95f) < 0.0001f);
+            AssertTrue("B2 mood 16 crosses into the through-35 band",
+                Math.Abs(MoodSnapshotPolicy.BandChance(16, rules, 0.07f) - 0.50f) < 0.0001f);
+            AssertTrue("B2 mood 35 remains in the inclusive through-35 band",
+                Math.Abs(MoodSnapshotPolicy.BandChance(35, rules, 0.07f) - 0.50f) < 0.0001f);
+            AssertTrue("B2 mood 36 crosses into the through-65 band",
+                Math.Abs(MoodSnapshotPolicy.BandChance(36, rules, 0.07f) - 0.12f) < 0.0001f);
+            AssertTrue("B2 mood 65 remains in the inclusive through-65 band",
+                Math.Abs(MoodSnapshotPolicy.BandChance(65, rules, 0.07f) - 0.12f) < 0.0001f);
+            AssertTrue("B2 mood 66 crosses into the through-85 band",
+                Math.Abs(MoodSnapshotPolicy.BandChance(66, rules, 0.07f) - 0.30f) < 0.0001f);
+            AssertTrue("B2 mood 85 remains in the inclusive through-85 band",
+                Math.Abs(MoodSnapshotPolicy.BandChance(85, rules, 0.07f) - 0.30f) < 0.0001f);
+            AssertTrue("B2 mood 86 crosses into the final band",
+                Math.Abs(MoodSnapshotPolicy.BandChance(86, rules, 0.07f) - 0.55f) < 0.0001f);
+            AssertTrue("B2 mood 100 remains covered by the final authored boundary",
+                Math.Abs(MoodSnapshotPolicy.BandChance(100, rules, 0.07f) - 0.55f) < 0.0001f);
+            AssertTrue("B2 mood outside authored coverage uses the caller fallback",
+                Math.Abs(MoodSnapshotPolicy.BandChance(102, rules, 0.07f) - 0.07f) < 0.0001f);
+            AssertTrue("B2 absent rules use the caller fallback",
+                Math.Abs(MoodSnapshotPolicy.BandChance(50, null, 0.07f) - 0.07f) < 0.0001f);
+
+            AssertTrue("B2 applies the exact global-times-band product below its threshold",
+                MoodSnapshotPolicy.ShouldInclude(0.299999f, 0.60f, 0.50f));
+            AssertTrue("B2 product threshold is half-open",
+                !MoodSnapshotPolicy.ShouldInclude(0.30f, 0.60f, 0.50f));
+            AssertTrue("B2 invalid rolls are rejected",
+                !MoodSnapshotPolicy.ShouldInclude(float.NaN, 1f, 1f)
+                    && !MoodSnapshotPolicy.ShouldInclude(-0.01f, 1f, 1f)
+                    && !MoodSnapshotPolicy.ShouldInclude(1f, 1f, 1f));
+            AssertTrue("B2 invalid chances clamp to zero",
+                !MoodSnapshotPolicy.ShouldInclude(0f, float.PositiveInfinity, 1f)
+                    && !MoodSnapshotPolicy.ShouldInclude(0f, 1f, float.NaN));
+
+            float firstRoll = MoodSnapshotPolicy.DeterministicRoll(
+                "event-17", "pawn-42", DiaryPipelineRoles.Initiator);
+            AssertTrue("B2 deterministic roll stays in [0,1)", firstRoll >= 0d && firstRoll < 1d);
+            AssertTrue("B2 deterministic roll repeats exactly",
+                firstRoll == MoodSnapshotPolicy.DeterministicRoll(
+                    "event-17", "pawn-42", DiaryPipelineRoles.Initiator));
+            AssertTrue("B2 POV roles have independent stable samples",
+                firstRoll != MoodSnapshotPolicy.DeterministicRoll(
+                    "event-17", "pawn-42", DiaryPipelineRoles.Recipient));
+            AssertTrue("B2 event IDs participate in stable sampling",
+                firstRoll != MoodSnapshotPolicy.DeterministicRoll(
+                    "event-18", "pawn-42", DiaryPipelineRoles.Initiator));
+
+            string[] internalContexts =
+            {
+                "prefix=x; mood_event=break risk",
+                "prefix=x; thought=ate without table",
+                "prefix=x; inspiration=Inspired_Creativity",
+                "prefix=x; work=constructing",
+                "prefix=x; hediff=Flu"
+            };
+            foreach (string context in internalContexts)
+            {
+                AssertTrue("B2 internal marker is eligible: " + context,
+                    MoodSnapshotPolicy.IsInternalStateContext(context)
+                        && MoodSnapshotPolicy.IsEligibleContext(context));
+                DiaryEventPayload routedPayload = SoloPayload(
+                    "e-b2-marker-" + context.Length,
+                    "internal state",
+                    "Alice noticed an internal change.");
+                routedPayload.gameContext = context;
+                DiaryPromptPlan routedPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+                {
+                    payload = routedPayload,
+                    policy = Policy(combat: false, important: true),
+                    povRole = DiaryPipelineRoles.Initiator
+                });
+                AssertEqual("B2 eligible marker shares SoloInternalState routing: " + context,
+                    DiaryPipelineTemplates.SoloInternalState, routedPlan.templateKey);
+            }
+
+            AssertTrue("B2 exact batch marker is eligible",
+                MoodSnapshotPolicy.IsBatchedContext("group=chat; batch=ambient_day_note")
+                    && MoodSnapshotPolicy.IsEligibleContext("group=chat; batch=ambient_day_note"));
+            DiaryEventPayload routedBatch = SoloPayload(
+                "e-b2-batch-marker", "passing conversations", "Several conversations colored the day.");
+            routedBatch.gameContext = "group=chat; batch=ambient_day_note";
+            DiaryPromptPlan routedBatchPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = routedBatch,
+                policy = Policy(combat: false, important: false),
+                povRole = DiaryPipelineRoles.Initiator
+            });
+            AssertEqual("B2 eligible batch marker shares SoloBatched routing",
+                DiaryPipelineTemplates.SoloBatched, routedBatchPlan.templateKey);
+            AssertTrue("B2 near-miss markers are not eligible",
+                !MoodSnapshotPolicy.IsEligibleContext(
+                    "not_mood_event=x; mood_eventual=y; thoughtfulness=z; batching=no"));
+            AssertTrue("B2 ordinary contexts remain ineligible",
+                !MoodSnapshotPolicy.IsEligibleContext("weather=rain; room=kitchen"));
+
+            DiaryEventPayload exactInternal = SoloPayload(
+                "e-b2-internal", "thought", "Alice remembered dinner.");
+            exactInternal.gameContext = "thought=ate without table";
+            DiaryPromptPlan exactPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = exactInternal,
+                policy = Policy(combat: false, important: true),
+                povRole = DiaryPipelineRoles.Initiator
+            });
+            AssertEqual("B2 planner shares exact internal-state marker routing",
+                DiaryPipelineTemplates.SoloInternalState, exactPlan.templateKey);
+
+            DiaryEventPayload nearMiss = SoloPayload(
+                "e-b2-near", "thought", "Alice considered dinner.");
+            nearMiss.gameContext = "thoughtfulness=ate without table";
+            DiaryPromptPlan nearMissPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = nearMiss,
+                policy = Policy(combat: false, important: true),
+                povRole = DiaryPipelineRoles.Initiator
+            });
+            AssertEqual("B2 planner rejects near-miss internal-state markers",
+                DiaryPipelineTemplates.SoloImportant, nearMissPlan.templateKey);
+
+            MoodSnapshotCandidate low = new MoodSnapshotCandidate
+            {
+                moodPercent = 10,
+                tick = 200,
+                text = "mood=awful"
+            };
+            MoodSnapshotCandidate highTie = new MoodSnapshotCandidate
+            {
+                moodPercent = 90,
+                tick = 100,
+                text = "mood=ecstatic"
+            };
+            AssertTrue("B2 equal-distance tie prefers lower mood",
+                ReferenceEquals(low, MoodSnapshotPolicy.PreferBatchSnapshot(low, highTie)));
+
+            MoodSnapshotCandidate mostExtreme = new MoodSnapshotCandidate
+            {
+                moodPercent = 5,
+                tick = 300,
+                text = "mood=terrible"
+            };
+            AssertTrue("B2 greater distance replaces retained evidence",
+                ReferenceEquals(mostExtreme,
+                    MoodSnapshotPolicy.PreferBatchSnapshot(low, mostExtreme)));
+
+            MoodSnapshotCandidate sameMoodEarlier = new MoodSnapshotCandidate
+            {
+                moodPercent = 10,
+                tick = 50,
+                text = "mood=awful earlier"
+            };
+            AssertTrue("B2 same-mood tie prefers earlier tick",
+                ReferenceEquals(sameMoodEarlier,
+                    MoodSnapshotPolicy.PreferBatchSnapshot(low, sameMoodEarlier)));
+            AssertTrue("B2 null candidate preserves retained evidence",
+                ReferenceEquals(low, MoodSnapshotPolicy.PreferBatchSnapshot(low, null)));
+            AssertTrue("B2 null retained evidence accepts the candidate",
+                ReferenceEquals(low, MoodSnapshotPolicy.PreferBatchSnapshot(null, low)));
+
+            MoodSnapshotCandidate adversarial = new MoodSnapshotCandidate
+            {
+                moodPercent = int.MinValue,
+                tick = 1,
+                text = "adversarial"
+            };
+            AssertTrue("B2 extreme-distance comparison cannot overflow on int.MinValue",
+                ReferenceEquals(adversarial,
+                    MoodSnapshotPolicy.PreferBatchSnapshot(low, adversarial)));
+
+            AssertEqual("B2 slim mood plus one-thought format",
+                "mood=stressed; thoughts=hungry (negative)",
+                MoodSnapshotPolicy.FormatText(" stressed ", " hungry (negative) "));
+            AssertEqual("B2 mood-only format",
+                "mood=content", MoodSnapshotPolicy.FormatText("content", null));
+            AssertEqual("B2 blank mood omits the field",
+                string.Empty, MoodSnapshotPolicy.FormatText(" ", "hungry"));
+
+            XDocument tuning = XDocument.Load(RepoPath("1.6", "Defs", "DiaryTuningDef.xml"));
+            AssertEqual("B2 shipped global apply chance", "0.6",
+                tuning.Descendants("moodSnapshotApplyChance").Single().Value.Trim());
+            XElement shippedRules = tuning.Descendants("moodSnapshotChances").Single();
+            string[] expectedRules = { "15|0.95", "35|0.50", "65|0.12", "85|0.30", "101|0.55" };
+            string[] actualRules = shippedRules.Elements("li")
+                .Select(row => ChildValue(row, "maxPercent")
+                    + "|" + ChildValue(row, "chance"))
+                .ToArray();
+            AssertEqual("B2 shipped mood-band rule count",
+                expectedRules.Length, actualRules.Length);
+            for (int i = 0; i < expectedRules.Length; i++)
+            {
+                AssertEqual("B2 shipped mood-band rule " + i,
+                    expectedRules[i], actualRules[i]);
+            }
+
+            XDocument templates = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryPromptTemplateDefs.xml"));
+            string[] templateKeys = { "PairBatched", "SoloInternalState", "SoloBatched" };
+            int[] moodIndexes = { 30, 41, 41 };
+            for (int i = 0; i < templateKeys.Length; i++)
+            {
+                XElement def = templates.Descendants("PawnDiary.DiaryPromptTemplateDef")
+                    .Single(row => ChildValue(row, "templateKey") == templateKeys[i]);
+                List<XElement> fields = def.Element("fields").Elements("li").ToList();
+                AssertEqual("B2 " + templateKeys[i] + " MoodSnapshot field remains append-only",
+                    moodIndexes[i], fields.Count - 1);
+                AssertEqual("B2 " + templateKeys[i] + " projects MoodSnapshot exactly once",
+                    1,
+                    fields.Count(row => ChildValue(row, "source") == "MoodSnapshot"));
+                AssertEqual("B2 " + templateKeys[i] + " MoodSnapshot label",
+                    "you", ChildValue(fields[moodIndexes[i]], "label"));
+            }
+
+            XDocument english = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected",
+                "PawnDiary.DiaryPromptTemplateDef", "DiaryPromptTemplateDefs.xml"));
+            XDocument russian = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected",
+                "PawnDiary.DiaryPromptTemplateDef", "DiaryPromptTemplateDefs.xml"));
+            for (int i = 0; i < templateKeys.Length; i++)
+            {
+                string defName = "DiaryPromptTemplate_" + templateKeys[i];
+                string elementName = defName + ".fields." + moodIndexes[i] + ".label";
+                AssertEqual("B2 English indexed label " + templateKeys[i],
+                    "you", english.Root.Element(elementName)?.Value);
+                AssertEqual("B2 Russian indexed label " + templateKeys[i],
+                    "ты", russian.Root.Element(elementName)?.Value);
             }
         }
 

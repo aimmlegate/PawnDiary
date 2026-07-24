@@ -530,6 +530,20 @@ namespace PawnDiary
         // selector reserves one slot for the strongest direct relation when any exists.
         public int identitySummaryMaxRelations = 2;
 
+        // ---- Quality Wave: occasional event-time mood context ----
+        // The final inclusion probability is the exact product of this apply chance and the matching
+        // mood band's chance. maxPercent is inclusive; 101 is a defensive catch-all above 100.
+        public float moodSnapshotApplyChance = 0.6f;
+        public List<MoodSnapshotChanceRule> moodSnapshotChances =
+            new List<MoodSnapshotChanceRule>
+            {
+                new MoodSnapshotChanceRule { maxPercent = 15, chance = 0.95f },
+                new MoodSnapshotChanceRule { maxPercent = 35, chance = 0.50f },
+                new MoodSnapshotChanceRule { maxPercent = 65, chance = 0.12f },
+                new MoodSnapshotChanceRule { maxPercent = 85, chance = 0.30f },
+                new MoodSnapshotChanceRule { maxPercent = 101, chance = 0.55f },
+            };
+
         // ---- Output-language directive ----
         // When true, every LLM request ends its system prompt with one localized line naming the
         // active RimWorld language ("Write the diary entry in Русский."), so the model is told the

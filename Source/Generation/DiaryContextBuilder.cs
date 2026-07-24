@@ -1014,6 +1014,53 @@ namespace PawnDiary
             return string.Empty;
         }
 
+        /// <summary>
+        /// Captures B2's detached event-time mood candidate. The existing thought sampler uses
+        /// Unity's random stream, so this method restores that stream exactly after selecting at
+        /// most one thought; diary context must never perturb gameplay randomness.
+        /// </summary>
+        public static MoodSnapshotCandidate CaptureMoodSnapshot(Pawn pawn, int tick)
+        {
+            if (pawn?.needs?.mood == null)
+            {
+                return null;
+            }
+
+            int moodPercent = Mathf.Clamp(
+                Mathf.RoundToInt(pawn.needs.mood.CurLevelPercentage * 100f),
+                0,
+                100);
+            string moodLabel = BuildMoodSummary(pawn);
+            if (string.IsNullOrWhiteSpace(moodLabel))
+            {
+                return null;
+            }
+
+            List<string> thoughts;
+            UnityEngine.Random.State randomState = UnityEngine.Random.state;
+            try
+            {
+                thoughts = BuildTopThoughtsSummary(pawn);
+            }
+            finally
+            {
+                UnityEngine.Random.state = randomState;
+            }
+
+            string topThought = thoughts == null
+                ? string.Empty
+                : thoughts.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? string.Empty;
+            string text = MoodSnapshotPolicy.FormatText(moodLabel, topThought);
+            return string.IsNullOrWhiteSpace(text)
+                ? null
+                : new MoodSnapshotCandidate
+                {
+                    moodPercent = moodPercent,
+                    tick = tick,
+                    text = text
+                };
+        }
+
         private static string BuildMoodSummary(Pawn pawn)
         {
             if (pawn.needs?.mood == null)

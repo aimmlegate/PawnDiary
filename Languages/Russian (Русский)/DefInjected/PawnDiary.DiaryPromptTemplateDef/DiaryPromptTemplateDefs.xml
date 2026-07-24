@@ -646,4 +646,8 @@
   <DiaryPromptTemplate_PairDefault.fields.40.label>важные отношения</DiaryPromptTemplate_PairDefault.fields.40.label>
   <DiaryPromptTemplate_PairImportant.fields.87.label>важные отношения</DiaryPromptTemplate_PairImportant.fields.87.label>
   <DiaryPromptTemplate_PairBatched.fields.29.label>важные отношения</DiaryPromptTemplate_PairBatched.fields.29.label>
+  <!-- Quality Wave B2: добавленные в конец подписи настроения в момент события. -->
+  <DiaryPromptTemplate_PairBatched.fields.30.label>ты</DiaryPromptTemplate_PairBatched.fields.30.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.41.label>ты</DiaryPromptTemplate_SoloInternalState.fields.41.label>
+  <DiaryPromptTemplate_SoloBatched.fields.41.label>ты</DiaryPromptTemplate_SoloBatched.fields.41.label>
 </LanguageData>

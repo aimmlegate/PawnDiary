@@ -168,6 +168,77 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Quality Wave B2. Changes the writer's mood across a three-row pair batch and proves the
+        /// flushed page keeps the most extreme event-time sample (lower mood wins an equal-distance
+        /// tie), not the neutral live mood present when the batch flushes.
+        /// </summary>
+        [Test]
+        public static void PairBatchRetainsMostExtremeEventTimeMood()
+        {
+            ForceMoodSnapshotAlways();
+            InteractionDef insult = RequireDef<InteractionDef>("Insult");
+
+            firstPawn.needs.mood.CurLevel = 0.05f;
+            scope.RequireNoNewEvent(() => AddInteractionRow(insult, firstPawn, secondPawn));
+            firstPawn.needs.mood.CurLevel = 0.95f;
+            scope.RequireNoNewEvent(() => AddInteractionRow(insult, firstPawn, secondPawn));
+            firstPawn.needs.mood.CurLevel = 0.50f;
+
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => AddInteractionRow(insult, firstPawn, secondPawn),
+                "InsultBatch",
+                firstPawn,
+                secondPawn);
+
+            string expectedPrefix = "mood=" + DiaryBuckets.MoodBucket(5);
+            string snapshot = diaryEvent.MoodSnapshotForRole(DiaryEvent.InitiatorRole);
+            PawnDiaryRimTestScope.Require(
+                snapshot.StartsWith(expectedPrefix, StringComparison.Ordinal),
+                "The pair batch did not retain the lower tied extreme from event time. Expected '"
+                    + expectedPrefix + "', got '" + snapshot + "'.");
+            PawnDiaryRimTestScope.Require(
+                snapshot.IndexOf(DiaryBuckets.MoodBucket(50), StringComparison.Ordinal) < 0,
+                "The pair batch re-read the neutral flush-time mood instead of frozen evidence.");
+            PawnDiaryRimTestScope.Require(
+                !string.IsNullOrEmpty(
+                    diaryEvent.MoodSnapshotForRole(DiaryEvent.RecipientRole)),
+                "The pair batch did not evaluate and freeze the recipient POV independently.");
+        }
+
+        /// <summary>
+        /// Quality Wave B2. Proves an ambient day-note retains the writer's most extreme incoming
+        /// mood candidate and carries it through the solo frozen-mood factory at count-based flush.
+        /// </summary>
+        [Test]
+        public static void AmbientBatchRetainsMostExtremeEventTimeMood()
+        {
+            ForceMoodSnapshotAlways();
+            InteractionDef chitchat = RequireDef<InteractionDef>("Chitchat");
+
+            firstPawn.needs.mood.CurLevel = 0.05f;
+            scope.RequireNoNewEvent(() => AddInteractionRow(chitchat, firstPawn, secondPawn));
+            firstPawn.needs.mood.CurLevel = 0.95f;
+            scope.RequireNoNewEvent(() => AddInteractionRow(chitchat, firstPawn, secondPawn));
+            firstPawn.needs.mood.CurLevel = 0.50f;
+
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => AddInteractionRow(chitchat, firstPawn, secondPawn),
+                "SmallTalkAmbientDay",
+                firstPawn,
+                null);
+
+            string expectedPrefix = "mood=" + DiaryBuckets.MoodBucket(5);
+            string snapshot = diaryEvent.MoodSnapshotForRole(DiaryEvent.InitiatorRole);
+            PawnDiaryRimTestScope.Require(
+                snapshot.StartsWith(expectedPrefix, StringComparison.Ordinal),
+                "The ambient batch did not retain the lower tied extreme from event time. Expected '"
+                    + expectedPrefix + "', got '" + snapshot + "'.");
+            PawnDiaryRimTestScope.Require(
+                snapshot.IndexOf(DiaryBuckets.MoodBucket(50), StringComparison.Ordinal) < 0,
+                "The ambient batch re-read the neutral flush-time mood instead of frozen evidence.");
+        }
+
+        /// <summary>
         /// EVT-02. When the batching group is disabled in settings, even a burst of rows past the flush
         /// threshold is dropped at capture: no batch accumulates and no diary page is ever produced.
         /// </summary>
@@ -242,6 +313,53 @@ namespace PawnDiary.RimTests
             bool original = group.promotion.enabled;
             group.promotion.enabled = false;
             scope.RegisterCleanup(() => group.promotion.enabled = original);
+        }
+
+        /// <summary>
+        /// Makes B2 inclusion deterministic for a loaded fixture and restores every authored tuning
+        /// float afterward. The production deterministic hash still runs; a probability of one simply
+        /// guarantees that any valid [0,1) roll is accepted.
+        /// </summary>
+        private static void ForceMoodSnapshotAlways()
+        {
+            DiaryTuningDef tuning = DiaryTuning.Current;
+            float originalApplyChance = tuning.moodSnapshotApplyChance;
+            tuning.moodSnapshotApplyChance = 1f;
+
+            List<MoodSnapshotChanceRule> rules = tuning.moodSnapshotChances;
+            float[] originalRuleChances = rules == null ? null : new float[rules.Count];
+            if (rules != null)
+            {
+                for (int i = 0; i < rules.Count; i++)
+                {
+                    MoodSnapshotChanceRule rule = rules[i];
+                    if (rule == null)
+                    {
+                        continue;
+                    }
+
+                    originalRuleChances[i] = rule.chance;
+                    rule.chance = 1f;
+                }
+            }
+
+            scope.RegisterCleanup(() =>
+            {
+                tuning.moodSnapshotApplyChance = originalApplyChance;
+                if (rules == null || originalRuleChances == null)
+                {
+                    return;
+                }
+
+                int count = Math.Min(rules.Count, originalRuleChances.Length);
+                for (int i = 0; i < count; i++)
+                {
+                    if (rules[i] != null)
+                    {
+                        rules[i].chance = originalRuleChances[i];
+                    }
+                }
+            });
         }
 
         /// <summary>Removes every in-memory batch entry that references either test pawn.</summary>

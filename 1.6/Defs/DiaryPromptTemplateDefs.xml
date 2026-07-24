@@ -292,6 +292,8 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>belief context</label><source>BeliefContext</source></li>
       <!-- Quality Wave A5 append-only field; empty rosters are omitted by PromptAssembler. -->
       <li><label>key relationships</label><source>Identity</source></li>
+      <!-- Quality Wave B2 append-only retained batch state; live flush mood is never read. -->
+      <li><label>you</label><source>MoodSnapshot</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -590,6 +592,8 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>relevant past</label><source>MemoryContext</source></li>
       <!-- Ideology Phase 1: absent/irrelevant belief context is omitted by PromptAssembler. -->
       <li><label>belief context</label><source>BeliefContext</source></li>
+      <!-- Quality Wave B2 append-only event-time POV state; deterministic omission costs no tokens. -->
+      <li><label>you</label><source>MoodSnapshot</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -642,6 +646,8 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>relevant past</label><source>MemoryContext</source></li>
       <!-- Ideology Phase 1: absent/irrelevant belief context is omitted by PromptAssembler. -->
       <li><label>belief context</label><source>BeliefContext</source></li>
+      <!-- Quality Wave B2 append-only retained batch state; live flush mood is never read. -->
+      <li><label>you</label><source>MoodSnapshot</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 

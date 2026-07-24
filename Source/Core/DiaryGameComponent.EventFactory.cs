@@ -99,6 +99,40 @@ namespace PawnDiary
                 recipientText, instruction, gameContext, null, historicalTick, beliefEvidence, null);
         }
 
+        /// <summary>
+        /// Creates a finished interaction batch from mood candidates captured at its member events.
+        /// The final event ID performs the one inclusion sample; live flush-time mood is never read.
+        /// </summary>
+        internal DiaryEvent AddPairwiseEventWithFrozenMood(
+            Pawn initiator,
+            Pawn recipient,
+            string defName,
+            string label,
+            string initiatorText,
+            string recipientText,
+            string instruction,
+            string gameContext,
+            MoodSnapshotCandidate initiatorMood,
+            MoodSnapshotCandidate recipientMood)
+        {
+            return AddPairwiseEventCore(
+                initiator,
+                recipient,
+                defName,
+                label,
+                initiatorText,
+                recipientText,
+                instruction,
+                gameContext,
+                null,
+                -1,
+                null,
+                null,
+                initiatorMood,
+                recipientMood,
+                true);
+        }
+
         private DiaryEvent AddPairwiseEventCore(
             Pawn initiator,
             Pawn recipient,
@@ -111,7 +145,10 @@ namespace PawnDiary
             BirthEventContextSnapshot capturedContext,
             int historicalTick,
             BeliefEventEvidence beliefEvidence,
-            BeliefContextBuildResult preparedInitiatorBelief)
+            BeliefContextBuildResult preparedInitiatorBelief,
+            MoodSnapshotCandidate frozenInitiatorMood = null,
+            MoodSnapshotCandidate frozenRecipientMood = null,
+            bool useFrozenMood = false)
         {
             IReadOnlyList<DiaryEvent> activeEvents = ActiveScanEvents();
             string initiatorId = initiator.GetUniqueLoadID();
@@ -170,10 +207,9 @@ namespace PawnDiary
                 neutralStatus = DiaryEvent.NotGeneratedStatus
             };
 
-            // A5 freezes the colony-relationship roster at the same boundary as pair continuity.
-            // Birth replay owns an older captured boundary but its DTO predates this additive field;
-            // reading today's colony while writing a historical birth would invent false context, so
-            // that path deliberately stays empty.
+            // A5/B2 freeze optional pawn context at the event boundary. Birth replay owns an older
+            // captured boundary but its DTO predates these additive fields; reading today's colony or
+            // mood while writing a historical birth would invent false context, so that path stays empty.
             if (capturedContext == null)
             {
                 diaryEvent.SetIdentitySummary(
@@ -182,6 +218,18 @@ namespace PawnDiary
                 diaryEvent.SetIdentitySummary(
                     DiaryEvent.RecipientRole,
                     DiaryContextBuilder.BuildIdentitySummary(recipient, initiator));
+                ApplyMoodSnapshot(
+                    diaryEvent,
+                    DiaryEvent.InitiatorRole,
+                    initiator,
+                    frozenInitiatorMood,
+                    useFrozenMood);
+                ApplyMoodSnapshot(
+                    diaryEvent,
+                    DiaryEvent.RecipientRole,
+                    recipient,
+                    frozenRecipientMood,
+                    useFrozenMood);
             }
 
             ApplyCapturedOrLiveGenerationEligibility(
@@ -302,6 +350,36 @@ namespace PawnDiary
                 null, historicalTick, beliefEvidence, null);
         }
 
+        /// <summary>
+        /// Creates a finished solo/ambient batch from its most extreme event-time mood candidate.
+        /// The final event ID performs the one inclusion sample without re-reading live mood.
+        /// </summary>
+        internal DiaryEvent AddSoloEventWithFrozenMood(
+            Pawn pawn,
+            Pawn otherPawn,
+            string defName,
+            string label,
+            string text,
+            string instruction,
+            string gameContext,
+            MoodSnapshotCandidate mood)
+        {
+            return AddSoloEventCore(
+                pawn,
+                otherPawn,
+                defName,
+                label,
+                text,
+                instruction,
+                gameContext,
+                null,
+                -1,
+                null,
+                null,
+                mood,
+                true);
+        }
+
         private DiaryEvent AddSoloEventCore(
             Pawn pawn,
             Pawn otherPawn,
@@ -313,7 +391,9 @@ namespace PawnDiary
             BirthEventContextSnapshot capturedContext,
             int historicalTick,
             BeliefEventEvidence beliefEvidence,
-            BeliefContextBuildResult preparedBelief)
+            BeliefContextBuildResult preparedBelief,
+            MoodSnapshotCandidate frozenMood = null,
+            bool useFrozenMood = false)
         {
             IReadOnlyList<DiaryEvent> activeEvents = ActiveScanEvents();
             string pawnId = pawn.GetUniqueLoadID();
@@ -359,6 +439,16 @@ namespace PawnDiary
                 neutralStatus = DiaryEvent.NotGeneratedStatus
             };
 
+            if (capturedContext == null)
+            {
+                ApplyMoodSnapshot(
+                    diaryEvent,
+                    DiaryEvent.InitiatorRole,
+                    pawn,
+                    frozenMood,
+                    useFrozenMood);
+            }
+
             ApplyCapturedOrLiveGenerationEligibility(
                 diaryEvent, DiaryEvent.InitiatorRole, pawn, pawnCapture);
             ApplyBeliefContext(diaryEvent, DiaryEvent.InitiatorRole, pawn,
@@ -380,6 +470,51 @@ namespace PawnDiary
             }
 
             return diaryEvent;
+        }
+
+        /// <summary>
+        /// Applies B2's exact band-product probability to one detached candidate. A batch passes
+        /// <paramref name="useFrozenMood"/> so a null retained value stays null instead of falling
+        /// through to a flush-time Pawn read.
+        /// </summary>
+        private static void ApplyMoodSnapshot(
+            DiaryEvent diaryEvent,
+            string povRole,
+            Pawn pawn,
+            MoodSnapshotCandidate frozenMood,
+            bool useFrozenMood)
+        {
+            if (diaryEvent == null
+                || pawn == null
+                || !MoodSnapshotPolicy.IsEligibleContext(diaryEvent.gameContext))
+            {
+                return;
+            }
+
+            MoodSnapshotCandidate candidate = useFrozenMood
+                ? frozenMood
+                : DiaryContextBuilder.CaptureMoodSnapshot(pawn, diaryEvent.tick);
+            if (candidate == null || string.IsNullOrWhiteSpace(candidate.text))
+            {
+                return;
+            }
+
+            DiaryTuningDef tuning = DiaryTuning.Current;
+            float bandChance = MoodSnapshotPolicy.BandChance(
+                candidate.moodPercent,
+                tuning.moodSnapshotChances,
+                0f);
+            float roll = MoodSnapshotPolicy.DeterministicRoll(
+                diaryEvent.eventId,
+                diaryEvent.PawnIdForRole(povRole),
+                povRole);
+            if (MoodSnapshotPolicy.ShouldInclude(
+                roll,
+                tuning.moodSnapshotApplyChance,
+                bandChance))
+            {
+                diaryEvent.SetMoodSnapshot(povRole, candidate.text);
+            }
         }
 
         private void ApplyBeliefContext(
