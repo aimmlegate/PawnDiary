@@ -91,6 +91,10 @@ namespace PawnDiary.RimTests
         private readonly HashSet<string> additionallyOwnedEventIds =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly List<Action> customCleanups = new List<Action>();
+        // Source-owned dedup keys do not always contain a pawn id (for example, Anomaly subjects and
+        // Odyssey quest arcs). Snapshot and clear the whole transient store so a second RimTest run in
+        // the same loaded game cannot suppress a fixture, then restore the player's exact baseline.
+        private readonly List<DictionaryEntry> originalRecentEvents = new List<DictionaryEntry>();
         private Dictionary<string, bool> originalGroupEnabled;
         private bool randPushed;
 
@@ -141,6 +145,7 @@ namespace PawnDiary.RimTests
             RequireReflectionField(ArchiveField, "archive");
             RequireReflectionField(DiariesField, "diaries");
             RequireReflectionField(DiariesByIdField, "diariesById");
+            RequireReflectionField(RecentEventsField, "recentEvents");
 
             PawnDiaryRimTestScope scope = new PawnDiaryRimTestScope
             {
@@ -150,6 +155,7 @@ namespace PawnDiary.RimTests
                     PawnDiaryMod.Settings.groupEnabled,
                     StringComparer.OrdinalIgnoreCase),
             };
+            scope.IsolateRecentEvents();
 
             // Isolate the RNG BEFORE any capture runs so nothing the fired events roll (group tone
             // rotation, humor, staggered intensity) advances the player's own random stream.
@@ -832,6 +838,7 @@ namespace PawnDiary.RimTests
             TryCleanup(RemoveTestPlayLogEntries, ref firstFailure);
             TryCleanup(RemoveTestDiaryState, ref firstFailure);
             TryCleanup(RemoveTransientKeysForTestPawns, ref firstFailure);
+            TryCleanup(RestoreRecentEvents, ref firstFailure);
             TryCleanup(RestoreGroupSettings, ref firstFailure);
             if (promptCaptureEnabled)
             {
@@ -863,6 +870,37 @@ namespace PawnDiary.RimTests
                 throw new AssertionException(
                     "Pawn Diary test cleanup failed after attempting every cleanup step: " + firstFailure);
             }
+        }
+
+        /// <summary>
+        /// Gives each fixture a clean transient dedup store while retaining every live-game entry for
+        /// exact restoration. This is test isolation only; the production store remains the same object.
+        /// </summary>
+        private void IsolateRecentEvents()
+        {
+            IDictionary recentEvents = RecentEventsField.GetValue(Component) as IDictionary;
+            Require(recentEvents != null,
+                "Pawn Diary's recentEvents store was unavailable for RimTest isolation.");
+            foreach (DictionaryEntry entry in recentEvents)
+            {
+                originalRecentEvents.Add(entry);
+            }
+            recentEvents.Clear();
+        }
+
+        /// <summary>Restores the live game's transient dedup entries after removing the fixture's rows.</summary>
+        private void RestoreRecentEvents()
+        {
+            IDictionary recentEvents = RecentEventsField.GetValue(Component) as IDictionary;
+            Require(recentEvents != null,
+                "Pawn Diary's recentEvents store was unavailable during RimTest restoration.");
+            recentEvents.Clear();
+            for (int i = 0; i < originalRecentEvents.Count; i++)
+            {
+                DictionaryEntry entry = originalRecentEvents[i];
+                recentEvents[entry.Key] = entry.Value;
+            }
+            originalRecentEvents.Clear();
         }
 
         // ----- assertion helper -------------------------------------------------------------------

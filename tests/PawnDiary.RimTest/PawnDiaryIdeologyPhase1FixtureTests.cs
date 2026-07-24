@@ -325,7 +325,16 @@ namespace PawnDiary.RimTests
                 "FixtureDoctrineA91", "FixtureIssueA91", "crystal mercy iron duty");
             BeliefPreceptFact second = DetachedPrecept(
                 "FixtureDoctrineB72", "FixtureIssueB72", "crystal mercy iron duty");
-            BeliefSnapshot ambiguousSnapshot = DetachedSnapshot(pawnId, tick, first, second);
+            // With only the two tied documents, the shipped common-token policy intentionally removes
+            // every shared word before scoring. Two unrelated loaded stances keep the tied phrase below
+            // that corpus-frequency cutoff, allowing this fixture to exercise runner-up ambiguity.
+            BeliefSnapshot ambiguousSnapshot = DetachedSnapshot(
+                pawnId,
+                tick,
+                first,
+                second,
+                DetachedPrecept("FixtureDoctrineC34", "FixtureIssueC34", "silent basalt orchard"),
+                DetachedPrecept("FixtureDoctrineD58", "FixtureIssueD58", "cobalt river lantern"));
             BeliefEventEvidence ambiguousEvidence = BeliefEventEvidenceFactory.ForEvent(
                 pawnId, tick, "fixture", "EventR53", DiaryEvent.InitiatorRole,
                 "crystal mercy iron duty", string.Empty);
