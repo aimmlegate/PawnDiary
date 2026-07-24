@@ -323,6 +323,9 @@ namespace PawnDiary.RimTests
             for (int i = 0; i < signals.Length; i++)
             {
                 Pawn writer = i == 0 ? pawn : scope.CreateAdultColonist();
+                // Terminal reflection debt is consumed only by the map rest scanner. Keep the
+                // fixture truthful by making every claimed debt owner reachable by that scanner.
+                scope.SpawnAsLiveColonist(writer);
                 Quest quest = BuildAscentQuest("Terminal fixture " + i);
                 QuestFanoutSignal fanout = new QuestFanoutSignal(quest, signals[i], textKeys[i]);
                 DiaryEvent diaryEvent = scope.FireAndRequireEvent(

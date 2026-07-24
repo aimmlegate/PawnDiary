@@ -49,6 +49,7 @@ namespace PawnDiary.RimTests
         private static bool savedDaySummaryEnabled;
         private static bool savedQuadrumReflectionEnabled;
         private static bool savedArcReflectionEnabled;
+        private static int savedArcMinMemoriesPreferred;
         private static int savedArcMinMemoriesForced;
         private static int savedArcMemoryShortfallRetryTicks;
         private static int savedArcTerminalRetryMaxTicks;
@@ -127,6 +128,9 @@ namespace PawnDiary.RimTests
         {
             ConfigureReflectionKinds(day: false, quadrum: false, arc: true);
             scope.EnablePromptCapture();
+            // A terminal major event is an opportunistic schedule entry unless the annual cadence
+            // itself is forced, so this fixture must lower the preferred and forced floors together.
+            tuning.arcReflectionMinMemoriesPreferred = 1;
             tuning.arcReflectionMinMemoriesForced = 1;
             tuning.arcReflectionMemoryShortfallRetryTicks = GenDate.TicksPerDay;
             tuning.arcReflectionTerminalRetryMaxTicks =
@@ -187,7 +191,9 @@ namespace PawnDiary.RimTests
             tuning.arcReflectionTerminalRetryMaxTicks =
                 GenDate.TicksPerDay * GenDate.DaysPerYear;
 
-            Pawn pawn = scope.CreateGeneratingAdultColonist();
+            // The year cap prevents dispatch before generation is considered, so this fixture does
+            // not need prompt capture or a generation-enabled pawn.
+            Pawn pawn = scope.CreateAdultColonist();
             scope.SpawnAsLiveColonist(pawn);
             PawnDiaryRecord diary = DiaryFor(pawn);
             PawnReflectionState reflection = AlreadyBaselined(diary);
@@ -624,6 +630,7 @@ namespace PawnDiary.RimTests
             savedDaySummaryEnabled = tuning.daySummaryEnabled;
             savedQuadrumReflectionEnabled = tuning.quadrumReflectionEnabled;
             savedArcReflectionEnabled = tuning.arcReflectionEnabled;
+            savedArcMinMemoriesPreferred = tuning.arcReflectionMinMemoriesPreferred;
             savedArcMinMemoriesForced = tuning.arcReflectionMinMemoriesForced;
             savedArcMemoryShortfallRetryTicks = tuning.arcReflectionMemoryShortfallRetryTicks;
             savedArcTerminalRetryMaxTicks = tuning.arcReflectionTerminalRetryMaxTicks;
@@ -632,6 +639,7 @@ namespace PawnDiary.RimTests
                 tuning.daySummaryEnabled = savedDaySummaryEnabled;
                 tuning.quadrumReflectionEnabled = savedQuadrumReflectionEnabled;
                 tuning.arcReflectionEnabled = savedArcReflectionEnabled;
+                tuning.arcReflectionMinMemoriesPreferred = savedArcMinMemoriesPreferred;
                 tuning.arcReflectionMinMemoriesForced = savedArcMinMemoriesForced;
                 tuning.arcReflectionMemoryShortfallRetryTicks =
                     savedArcMemoryShortfallRetryTicks;
