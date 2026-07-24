@@ -60,7 +60,7 @@ namespace PawnDiary.RimTests
         [BeforeEach]
         public static void SetUp()
         {
-            scope = PawnDiaryRimTestScope.Begin("anomalyVoidOutcome");
+            scope = PawnDiaryRimTestScope.Begin("anomalyVoidOutcome", "reflection");
             scope.OwnDiaryEventsCreatedAfterThisPoint();
             policyDef = DefDatabase<DiaryAnomalyPolicyDef>.GetNamedSilentFail(
                 DiaryAnomalyPolicy.DefName);
@@ -76,6 +76,10 @@ namespace PawnDiary.RimTests
             savedTerminalActor = TerminalActorField?.GetValue(scope.Component) as string;
             savedTerminalEventId = TerminalEventIdField?.GetValue(scope.Component) as string;
             policyDef.voidOutcomeEnabled = true;
+            DiaryTuningDef tuning = DiaryTuning.Current;
+            bool originalArcReflection = tuning.arcReflectionEnabled;
+            tuning.arcReflectionEnabled = true;
+            scope.RegisterCleanup(() => tuning.arcReflectionEnabled = originalArcReflection);
             DlcContext.SetMonolithLevelOverrideForTests(null);
             AnomalyTransientState.Reset();
         }
@@ -414,6 +418,14 @@ namespace PawnDiary.RimTests
                     && snapshot.terminalActorPawnId == actor.GetUniqueLoadID()
                     && snapshot.terminalEventId == (page.eventId ?? string.Empty),
                 "The terminal outcome, actor, or event id was not committed exactly once.");
+            List<NarrativeEvidence> evidence =
+                page.NarrativeEvidenceForRole(DiaryEvent.InitiatorRole);
+            PawnDiaryRimTestScope.Require(evidence.Count == 1
+                    && evidence[0].phase == outcome
+                    && evidence[0].arcKey == AnomalyVoidOutcomePolicy.NarrativeArcKey
+                    && evidence[0].salience == NarrativeSalienceTokens.Terminal,
+                "The terminal void page lost its exact source-owned reflection evidence.");
+            scope.RequirePendingMajorArc(actor, page.eventId);
         }
 
         // Runs the exact prefix, records the single-pawn terminal Tale (which the active scope defers),

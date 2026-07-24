@@ -18,6 +18,27 @@ namespace PawnDiary.Capture
         public const string BossDefeated = "BiotechBossDefeated";
     }
 
+    /// <summary>Stable Narrative Continuity phases for the exact boss chapter.</summary>
+    internal static class MechanitorBossPhaseTokens
+    {
+        public const string Called = "called";
+        public const string Defeated = "defeated";
+    }
+
+    /// <summary>Pure stable identity for one caller-owned boss chapter.</summary>
+    internal static class MechanitorArcKeys
+    {
+        public static string BossChapter(string mechanitorPawnId, int calledTick)
+        {
+            string pawnId = (mechanitorPawnId ?? string.Empty).Trim();
+            return pawnId.Length == 0 || calledTick < 0
+                || pawnId.IndexOf('|') >= 0 || pawnId.IndexOf(';') >= 0
+                || pawnId.IndexOf('\r') >= 0 || pawnId.IndexOf('\n') >= 0
+                ? string.Empty
+                : "biotech-mechanitor|" + pawnId + "|" + calledTick;
+        }
+    }
+
     /// <summary>Stable mechanitor context labels; these are schema tokens, not localized prose.</summary>
     internal static class MechanitorContextKeys
     {

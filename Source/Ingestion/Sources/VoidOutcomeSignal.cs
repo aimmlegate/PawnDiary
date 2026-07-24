@@ -3,6 +3,7 @@
 // gates, localized fallback text, one solo event creation, and generation handoff. The choosing pawn is
 // the sole canonical author, so this signal never fans out to pocket-map companions.
 using System;
+using System.Collections.Generic;
 using PawnDiary.Capture;
 using Verse;
 
@@ -93,7 +94,52 @@ namespace PawnDiary.Ingestion
                 context);
             if (CreatedEvent != null)
             {
+                ApplyNarrativeEvidence(sink);
                 FinishCreatedEvent(sink, actor);
+            }
+        }
+
+        /// <summary>Freezes the exact actor/branch/monolith terminal row before N4 can inspect it.</summary>
+        private void ApplyNarrativeEvidence(DiaryGameComponent sink)
+        {
+            try
+            {
+                string pawnId = actor.GetUniqueLoadID();
+                NarrativeContextBuildResult result = NarrativeContextBuilder.Build(
+                    new NarrativeContextBuildRequest
+                    {
+                        eventId = CreatedEvent.eventId,
+                        eventTick = CreatedEvent.tick,
+                        povPawnId = pawnId,
+                        povRole = DiaryEvent.InitiatorRole,
+                        evidence = new List<NarrativeEvidence>
+                        {
+                            new NarrativeEvidence
+                            {
+                                facet = NarrativeFacetTokens.JourneyChapter,
+                                phase = plan.outcomeToken,
+                                subjectKind = NarrativeSubjectKindTokens.Colony,
+                                subjectId = "anomaly_void",
+                                arcKey = AnomalyVoidOutcomePolicy.NarrativeArcKey,
+                                beliefTopics = new List<string> { "anomaly", "void", "home" },
+                                salience = NarrativeSalienceTokens.Terminal,
+                                pawnCanKnow = true,
+                                sourceDomain = AnomalyVoidOutcomePolicy.NarrativeSourceDomain,
+                                sourceDefName = payload.DefName
+                            }
+                        }
+                    });
+                if (result.evidence.Count > 0)
+                {
+                    CreatedEvent.ApplyNarrativeContext(DiaryEvent.InitiatorRole, result);
+                }
+            }
+            catch (Exception exception)
+            {
+                Log.ErrorOnce(
+                    "[Pawn Diary] Terminal void Narrative Continuity evidence failed; the page remains: "
+                        + exception,
+                    "PawnDiary.VoidOutcome.NarrativeEvidence".GetHashCode());
             }
         }
 

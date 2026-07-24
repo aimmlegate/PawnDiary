@@ -24,11 +24,15 @@ namespace PawnDiary.RimTests
         [BeforeEach]
         public static void SetUp()
         {
-            scope = PawnDiaryRimTestScope.Begin("progressionMechanitorLifecycle");
+            scope = PawnDiaryRimTestScope.Begin("progressionMechanitorLifecycle", "reflection");
             DiarySignalPolicyDef progression = DiarySignalPolicies.ForKey(DiarySignalPolicies.Progression);
             bool original = progression.enabled;
             progression.enabled = true;
             scope.RegisterCleanup(() => progression.enabled = original);
+            DiaryTuningDef tuning = DiaryTuning.Current;
+            bool originalArcReflection = tuning.arcReflectionEnabled;
+            tuning.arcReflectionEnabled = true;
+            scope.RegisterCleanup(() => tuning.arcReflectionEnabled = originalArcReflection);
             controller = scope.CreateAdultColonist();
             scope.SpawnAsLiveColonist(controller);
         }
@@ -174,6 +178,77 @@ namespace PawnDiary.RimTests
                 MechanitorDeathScope.End(controller);
                 MechanitorDeathScope.End(controller);
             }
+        }
+
+        /// <summary>
+        /// The exact saved caller + spawned boss ownership may close one terminal chapter and queue one
+        /// later non-recap major reflection; a repeated death callback cannot replay either operation.
+        /// </summary>
+        [Test]
+        public static void ExactBossDefeatQueuesOneDeferredTerminalReflection()
+        {
+            if (!RequireBiotechOrSkip(
+                nameof(ExactBossDefeatQueuesOneDeferredTerminalReflection))) return;
+            BossgroupDef group = DefDatabase<BossgroupDef>.AllDefsListForReading
+                .FirstOrDefault(def => def?.boss?.kindDef != null);
+            PawnDiaryRimTestScope.Require(group != null,
+                "Biotech is active but no callable boss group with a boss kind was loaded.");
+            Faction hostileFaction = Find.FactionManager?.AllFactionsListForReading?
+                .FirstOrDefault(faction => faction != null && faction.HostileTo(Faction.OfPlayer));
+            PawnDiaryRimTestScope.Require(hostileFaction != null,
+                "The boss-defeat fixture could not find a hostile faction.");
+            Pawn boss = scope.CreateTrackedPawn(group.boss.kindDef, hostileFaction);
+
+            scope.FireAndRequireEvent(
+                () => scope.Component.OnMechanitorBossCalled(controller, group),
+                MechanitorEventDefNames.BossCalled,
+                controller,
+                null);
+            scope.Component.OnMechanitorBossSpawned(boss);
+            DiaryEvent defeated = scope.FireAndRequireEvent(
+                () => scope.Component.OnMechanitorBossDefeated(boss),
+                MechanitorEventDefNames.BossDefeated,
+                controller,
+                null);
+
+            List<NarrativeEvidence> evidence =
+                defeated.NarrativeEvidenceForRole(DiaryEvent.InitiatorRole);
+            PawnDiaryRimTestScope.Require(evidence.Count == 1
+                    && evidence[0].phase == MechanitorBossPhaseTokens.Defeated
+                    && evidence[0].arcKey == MechanitorArcKeys.BossChapter(
+                        controller.GetUniqueLoadID(),
+                        MechanitorState(controller).bossCalls[0].calledTick)
+                    && evidence[0].salience == NarrativeSalienceTokens.Terminal,
+                "The exact boss defeat lost its caller-owned terminal evidence.");
+            scope.RequirePendingMajorArc(controller, defeated.eventId);
+            scope.RequireNoNewEvent(() => scope.Component.OnMechanitorBossDefeated(boss));
+            scope.RequirePendingMajorArc(controller, defeated.eventId);
+        }
+
+        /// <summary>Exact boss ownership still commits, but disabled output cannot queue N4 debt.</summary>
+        [Test]
+        public static void DisabledBossPageCannotQueueTerminalReflection()
+        {
+            if (!RequireBiotechOrSkip(
+                nameof(DisabledBossPageCannotQueueTerminalReflection))) return;
+            BossgroupDef group = DefDatabase<BossgroupDef>.AllDefsListForReading
+                .FirstOrDefault(def => def?.boss?.kindDef != null);
+            Faction hostileFaction = Find.FactionManager?.AllFactionsListForReading?
+                .FirstOrDefault(faction => faction != null && faction.HostileTo(Faction.OfPlayer));
+            PawnDiaryRimTestScope.Require(group != null && hostileFaction != null,
+                "The disabled boss-owner fixture lacks a boss group or hostile faction.");
+            Pawn boss = scope.CreateTrackedPawn(group.boss.kindDef, hostileFaction);
+            PawnDiaryMod.Settings.SetGroupEnabled("progressionMechanitorLifecycle", false);
+
+            scope.RequireNoNewEvent(
+                () => scope.Component.OnMechanitorBossCalled(controller, group));
+            scope.Component.OnMechanitorBossSpawned(boss);
+            scope.RequireNoNewEvent(
+                () => scope.Component.OnMechanitorBossDefeated(boss));
+
+            PawnReflectionState reflection = scope.ReflectionStateFor(controller);
+            PawnDiaryRimTestScope.Require(reflection == null || !reflection.pendingMajorArc,
+                "A disabled canonical boss page accumulated terminal reflection debt.");
         }
 
         /// <summary>Audits the exact verified RimWorld 1.6 seams and our fail-safe owner ID.</summary>

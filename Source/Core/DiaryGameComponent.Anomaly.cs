@@ -481,7 +481,22 @@ namespace PawnDiary
                 // reflection does not merely recap the terminal page (avoid_related_event_recap). The
                 // scheduler still obeys its own rate limits/settings and no-ops when the actor cannot
                 // write.
-                ConsiderArcReflectionAfterMajorEvent(writer, signal.CreatedEvent.eventId);
+                ConsiderArcReflectionAfterTerminalEvent(
+                    writer,
+                    signal.CreatedEvent,
+                    DiaryEvent.InitiatorRole,
+                    new TerminalReflectionContract
+                    {
+                        ownershipCorrelated = AnomalyVoidOutcomePolicy.OwnsTerminalTale(plan)
+                            && string.Equals(
+                                writer.GetUniqueLoadID(),
+                                committedActorId,
+                                StringComparison.Ordinal),
+                        phase = plan.outcomeToken,
+                        arcKey = AnomalyVoidOutcomePolicy.NarrativeArcKey,
+                        sourceDomain = AnomalyVoidOutcomePolicy.NarrativeSourceDomain,
+                        sourceDefName = AnomalyEventDefNames.VoidOutcome
+                    });
             }
             catch (Exception exception)
             {

@@ -30,6 +30,7 @@ namespace NarrativeContinuityTests
             TestOdysseyEnvironmentalPressureGatesAndComposition();
             TestIdeologyInterpretationCompositionAndIsolation();
             TestCrossArcMemorySelection();
+            TestTerminalReflectionQualification();
             TestReflectionPriorityAndDeferredConsumption();
             Console.WriteLine("NarrativeContinuityTests passed " + assertions + " assertions.");
             return 0;
@@ -1787,6 +1788,90 @@ namespace NarrativeContinuityTests
                 NarrativeContextPrompt.Compose(" ", "Use facts."));
             AssertEqual("narrative context keeps policy instruction and whole fact", "Use facts.\nA complete fact.",
                 NarrativeContextPrompt.Compose("A complete fact.", "Use facts."));
+        }
+
+        private static void TestTerminalReflectionQualification()
+        {
+            NarrativeEvidence evidence = new NarrativeEvidence
+            {
+                eventId = "terminal-event",
+                tick = 700,
+                povPawnId = "Pawn_7",
+                povRole = "initiator",
+                facet = NarrativeFacetTokens.JourneyChapter,
+                phase = "defeated",
+                subjectKind = NarrativeSubjectKindTokens.Entity,
+                subjectId = "Boss_A",
+                arcKey = "biotech-mechanitor|Pawn_7|600",
+                salience = NarrativeSalienceTokens.Terminal,
+                pawnCanKnow = true,
+                sourceDomain = "progression",
+                sourceDefName = "BiotechBossDefeated"
+            };
+            NarrativeReference reference = NarrativeReferencePolicy.FromEvidence(evidence);
+            TerminalReflectionRequest request = new TerminalReflectionRequest
+            {
+                canonicalEventId = evidence.eventId,
+                canonicalEventTick = evidence.tick,
+                povPawnId = evidence.povPawnId,
+                povRole = evidence.povRole,
+                contract = new TerminalReflectionContract
+                {
+                    ownershipCorrelated = true,
+                    phase = evidence.phase,
+                    arcKey = evidence.arcKey,
+                    sourceDomain = evidence.sourceDomain,
+                    sourceDefName = evidence.sourceDefName
+                },
+                evidence = new List<NarrativeEvidence> { evidence },
+                references = new List<NarrativeReference> { reference }
+            };
+
+            TerminalReflectionDecision valid = TerminalReflectionPolicy.Evaluate(request);
+            AssertTrue("exact terminal evidence queues one major arc", valid.queueMajorArc);
+            AssertEqual("terminal queue preserves canonical avoid id",
+                evidence.eventId, valid.avoidRelatedEventId);
+
+            request.contract.ownershipCorrelated = false;
+            AssertTrue("failed terminal ownership cannot queue",
+                !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
+            request.contract.ownershipCorrelated = true;
+
+            string phase = evidence.phase;
+            evidence.phase = "called";
+            AssertTrue("mismatched terminal phase cannot queue",
+                !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
+            evidence.phase = phase;
+
+            string arc = evidence.arcKey;
+            evidence.arcKey = "unrelated|arc";
+            AssertTrue("mismatched terminal arc cannot queue",
+                !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
+            evidence.arcKey = arc;
+
+            evidence.salience = NarrativeSalienceTokens.Major;
+            AssertTrue("non-terminal salience cannot queue",
+                !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
+            evidence.salience = NarrativeSalienceTokens.Terminal;
+
+            evidence.povPawnId = "Pawn_other";
+            AssertTrue("wrong terminal actor or witness cannot queue",
+                !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
+            evidence.povPawnId = request.povPawnId;
+
+            evidence.sourceDefName = "BiotechBossCalled";
+            AssertTrue("wrong terminal source cannot queue",
+                !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
+            evidence.sourceDefName = request.contract.sourceDefName;
+
+            request.references.Clear();
+            AssertTrue("missing saved terminal reference cannot queue",
+                !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
+            request.references.Add(reference);
+
+            reference.sourceEventId = "other-event";
+            AssertTrue("mismatched saved terminal reference cannot queue",
+                !TerminalReflectionPolicy.Evaluate(request).queueMajorArc);
         }
 
         private static void TestReflectionPriorityAndDeferredConsumption()

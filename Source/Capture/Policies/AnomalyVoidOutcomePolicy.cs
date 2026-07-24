@@ -9,6 +9,12 @@ namespace PawnDiary.Capture
     /// <summary>Authorizes one verified terminal void outcome and selects the sole choosing author.</summary>
     internal static class AnomalyVoidOutcomePolicy
     {
+        /// <summary>Stable shared monolith continuity identity used by the three XML chapters.</summary>
+        internal const string NarrativeArcKey = "anomaly-monolith|0";
+
+        /// <summary>Stable diagnostics domain for the dedicated A3 owner.</summary>
+        internal const string NarrativeSourceDomain = "anomaly";
+
         /// <summary>Terminal MonolithLevelDef.defName reached by an embrace.</summary>
         internal const string EmbracedLevelDefName = "Embraced";
 

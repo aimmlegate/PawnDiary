@@ -3,6 +3,7 @@
 // applies XML/settings gates, creates one localized solo fallback page, restores the preverified diary
 // reference, and queues generation. No witness or colony fan-out is allowed.
 using System;
+using System.Collections.Generic;
 using PawnDiary.Capture;
 using Verse;
 
@@ -87,7 +88,56 @@ namespace PawnDiary.Ingestion
                 Fallback(),
                 InteractionGroups.InstructionForGroup(group),
                 OdysseyMechhiveContextFormatter.Format(facts, plan, policy));
-            if (CreatedEvent != null) FinishCreatedEvent(sink);
+            if (CreatedEvent != null)
+            {
+                ApplyNarrativeEvidence();
+                FinishCreatedEvent(sink);
+            }
+        }
+
+        /// <summary>Freezes the exact operator/choice/quest terminal row before N4 can inspect it.</summary>
+        private void ApplyNarrativeEvidence()
+        {
+            try
+            {
+                string pawnId = actor.GetUniqueLoadID();
+                NarrativeContextBuildResult result = NarrativeContextBuilder.Build(
+                    new NarrativeContextBuildRequest
+                    {
+                        eventId = CreatedEvent.eventId,
+                        eventTick = CreatedEvent.tick,
+                        povPawnId = pawnId,
+                        povRole = DiaryEvent.InitiatorRole,
+                        evidence = new List<NarrativeEvidence>
+                        {
+                            new NarrativeEvidence
+                            {
+                                facet = NarrativeFacetTokens.JourneyChapter,
+                                phase = plan.outcomeToken,
+                                subjectKind = NarrativeSubjectKindTokens.Entity,
+                                subjectId = plan.sourceKey,
+                                arcKey = plan.sourceKey,
+                                beliefTopics = new List<string>
+                                    { "autonomous_weapons", "violence", "duty" },
+                                salience = NarrativeSalienceTokens.Terminal,
+                                pawnCanKnow = true,
+                                sourceDomain = OdysseyMechhiveOutcomePolicy.NarrativeSourceDomain,
+                                sourceDefName = payload.DefName
+                            }
+                        }
+                    });
+                if (result.evidence.Count > 0)
+                {
+                    CreatedEvent.ApplyNarrativeContext(DiaryEvent.InitiatorRole, result);
+                }
+            }
+            catch (Exception exception)
+            {
+                Log.ErrorOnce(
+                    "[Pawn Diary] Mechhive Narrative Continuity evidence failed; the page remains: "
+                        + exception,
+                    "PawnDiary.Odyssey.Mechhive.NarrativeEvidence".GetHashCode());
+            }
         }
 
         private void FinishCreatedEvent(DiaryGameComponent sink)

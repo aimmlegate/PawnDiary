@@ -48,11 +48,16 @@ namespace PawnDiary.RimTests
         [BeforeEach]
         public static void SetUp()
         {
-            scope = PawnDiaryRimTestScope.Begin("questRoyalAscent", "questCompleted", "questFailed");
+            scope = PawnDiaryRimTestScope.Begin(
+                "questRoyalAscent", "questCompleted", "questFailed", "reflection");
             pawn = scope.CreateAdultColonist();
             livePolicy = DiaryRoyaltyPolicy.Snapshot();
             originalPolicyEnabled = livePolicy.enabled;
             livePolicy.enabled = true;
+            DiaryTuningDef tuning = DiaryTuning.Current;
+            bool originalArcReflection = tuning.arcReflectionEnabled;
+            tuning.arcReflectionEnabled = true;
+            scope.RegisterCleanup(() => tuning.arcReflectionEnabled = originalArcReflection);
             RequireReflectionState();
             RegisterTransientStoreCleanup();
         }
@@ -340,6 +345,7 @@ namespace PawnDiary.RimTests
                         && evidence[0].arcKey == "royalty-ascent|" + quest.GetUniqueLoadID()
                         && evidence[0].salience == NarrativeSalienceTokens.Terminal,
                     "Royal Ascent terminal page did not freeze its exact shared journey evidence.");
+                scope.RequirePendingMajorArc(writer, diaryEvent.eventId);
                 DiaryEntryView view = diaryEvent.ToViewFor(writer.GetUniqueLoadID());
                 ArcMemoryCandidate arcCandidate = ArcCandidateFromEvent(diaryEvent, writer);
                 PawnDiaryRimTestScope.Require(view != null

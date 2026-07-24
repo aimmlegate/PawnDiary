@@ -610,7 +610,8 @@ namespace PawnDiary
         private bool DispatchProgression(Pawn pawn, ProgressionEventData data, string label, string text,
             bool majorArcCandidate, string dedupKey = null, int dedupWindowTicks = 0,
             List<NarrativeEvidence> narrativeEvidence = null,
-            BiotechNarrativeSnapshot biotechNarrative = null)
+            BiotechNarrativeSnapshot biotechNarrative = null,
+            TerminalReflectionContract terminalReflection = null)
         {
             DiaryInteractionGroupDef group = InteractionGroups.ClassifyProgression(data.DefName);
             bool userEnabled = group != null && PawnDiaryMod.Settings != null
@@ -624,7 +625,7 @@ namespace PawnDiary
                 data.PreviousValue,
                 data.NewValue,
                 data.Context);
-            bool emitted = Dispatch(new ProgressionSignal(
+            ProgressionSignal progressionSignal = new ProgressionSignal(
                 data,
                 pawn,
                 label,
@@ -637,8 +638,17 @@ namespace PawnDiary
                 dedupKey,
                 dedupWindowTicks,
                 narrativeEvidence,
-                biotechNarrative));
-            if (emitted && majorArcCandidate)
+                biotechNarrative);
+            bool emitted = Dispatch(progressionSignal);
+            if (emitted && terminalReflection != null)
+            {
+                ConsiderArcReflectionAfterTerminalEvent(
+                    pawn,
+                    progressionSignal.CreatedEvent,
+                    DiaryEvent.InitiatorRole,
+                    terminalReflection);
+            }
+            else if (emitted && majorArcCandidate)
             {
                 ConsiderArcReflectionAfterMajorEvent(pawn);
             }

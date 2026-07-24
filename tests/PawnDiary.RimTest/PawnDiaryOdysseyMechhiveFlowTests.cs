@@ -44,7 +44,8 @@ namespace PawnDiary.RimTests
         [BeforeEach]
         public static void SetUp()
         {
-            scope = PawnDiaryRimTestScope.Begin(OdysseyGroupDefNames.MechhiveOutcome);
+            scope = PawnDiaryRimTestScope.Begin(
+                OdysseyGroupDefNames.MechhiveOutcome, "reflection");
             scope.OwnDiaryEventsCreatedAfterThisPoint();
             policyDef = DefDatabase<DiaryOdysseyPolicyDef>.GetNamedSilentFail(
                 DiaryOdysseyPolicy.DefName);
@@ -53,6 +54,10 @@ namespace PawnDiary.RimTests
             originalPageEnabled = policyDef.mechhiveOutcomePageEnabled;
             savedOutcomeState = OutcomeStateField?.GetValue(scope.Component);
             policyDef.mechhiveOutcomePageEnabled = true;
+            DiaryTuningDef tuning = DiaryTuning.Current;
+            bool originalArcReflection = tuning.arcReflectionEnabled;
+            tuning.arcReflectionEnabled = true;
+            scope.RegisterCleanup(() => tuning.arcReflectionEnabled = originalArcReflection);
             OutcomeStateField?.SetValue(scope.Component, null);
             OdysseyTransientState.Reset();
         }
@@ -299,6 +304,15 @@ namespace PawnDiary.RimTests
                     && saved.questId == questId
                     && saved.eventId == (page.eventId ?? string.Empty),
                 "O3 terminal source, actor, quest, or event identity was not committed exactly.");
+            string arcKey = OdysseyArcKeys.MechhiveOutcome(questId);
+            System.Collections.Generic.List<NarrativeEvidence> evidence =
+                page.NarrativeEvidenceForRole(DiaryEvent.InitiatorRole);
+            PawnDiaryRimTestScope.Require(evidence.Count == 1
+                    && evidence[0].phase == outcome
+                    && evidence[0].arcKey == arcKey
+                    && evidence[0].salience == NarrativeSalienceTokens.Terminal,
+                "The Mechhive page lost its exact source-owned reflection evidence.");
+            scope.RequirePendingMajorArc(actor, page.eventId);
             PawnDiaryRimTestScope.Require(
                 OdysseyMechhiveOutcomeScope.CountForTests == 0,
                 "The successful O3 fixture leaked its deferred Quest frame.");

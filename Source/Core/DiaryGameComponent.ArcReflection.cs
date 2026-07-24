@@ -53,6 +53,40 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Queues N4 only when an already-created terminal page still carries the exact source-owned
+        /// evidence and reference promised by its callback. This is the impure bridge around the pure
+        /// qualification policy; it never creates a second page at the terminal boundary.
+        /// </summary>
+        internal void ConsiderArcReflectionAfterTerminalEvent(
+            Pawn pawn,
+            DiaryEvent diaryEvent,
+            string povRole,
+            TerminalReflectionContract contract)
+        {
+            if (pawn == null || diaryEvent == null || string.IsNullOrWhiteSpace(povRole))
+            {
+                return;
+            }
+
+            string pawnId = pawn.GetUniqueLoadID();
+            TerminalReflectionDecision decision = TerminalReflectionPolicy.Evaluate(
+                new TerminalReflectionRequest
+                {
+                    canonicalEventId = diaryEvent.eventId,
+                    canonicalEventTick = diaryEvent.tick,
+                    povPawnId = pawnId,
+                    povRole = povRole,
+                    contract = contract,
+                    evidence = diaryEvent.NarrativeEvidenceForRole(povRole),
+                    references = diaryEvent.NarrativeReferencesForRole(povRole)
+                });
+            if (decision.queueMajorArc)
+            {
+                ConsiderArcReflectionAfterMajorEvent(pawn, decision.avoidRelatedEventId);
+            }
+        }
+
+        /// <summary>
         /// Collects one detached annual/major opportunity and retains the existing selected memories only
         /// in this impure runtime candidate. No cadence/pending state is consumed during collection.
         /// </summary>

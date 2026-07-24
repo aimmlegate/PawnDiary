@@ -381,6 +381,22 @@ namespace PawnDiary.Ingestion
             }
 
             ApplyRoyalAscentNarrativeEvidence(sink, questEvent);
+            if (source.AscentDecision?.emitsTerminalPage == true)
+            {
+                sink.ConsiderArcReflectionAfterTerminalEvent(
+                    pawn,
+                    questEvent,
+                    DiaryEvent.InitiatorRole,
+                    new TerminalReflectionContract
+                    {
+                        ownershipCorrelated = source.AscentDecision.recognized
+                            && source.AscentDecision.closesWindow,
+                        phase = source.AscentDecision.phase,
+                        arcKey = source.AscentDecision.arcKey,
+                        sourceDomain = "quest",
+                        sourceDefName = source.QuestDefName
+                    });
+            }
 
             sink.QueueSolo(questEvent, DiaryEvent.InitiatorRole);
         }

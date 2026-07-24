@@ -77,6 +77,9 @@ namespace PawnDiary
     /// <summary>Validates the exact committed source and decides whether one actor-authored page exists.</summary>
     internal static class OdysseyMechhiveOutcomePolicy
     {
+        /// <summary>Stable diagnostics domain for the dedicated O3 owner.</summary>
+        internal const string NarrativeSourceDomain = "odyssey";
+
         /// <summary>
         /// Prefix-time prediction for claiming vanilla's synchronous Quest completion. Every downstream
         /// page gate is explicit because the Quest fan-out runs before the postfix verifies the outcome.

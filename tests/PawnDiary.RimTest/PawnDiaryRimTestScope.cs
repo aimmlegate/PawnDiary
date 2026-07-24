@@ -487,6 +487,35 @@ namespace PawnDiary.RimTests
             }
         }
 
+        /// <summary>Returns the test pawn's saved N4 row without exposing production save stores.</summary>
+        public PawnReflectionState ReflectionStateFor(Pawn pawn)
+        {
+            string pawnId = pawn?.GetUniqueLoadID();
+            List<PawnDiaryRecord> rows = DiariesField?.GetValue(Component) as List<PawnDiaryRecord>;
+            for (int i = 0; i < (rows == null ? 0 : rows.Count); i++)
+            {
+                if (rows[i] != null && string.Equals(
+                    rows[i].pawnId, pawnId, StringComparison.Ordinal))
+                {
+                    return rows[i].EnsureReflectionState();
+                }
+            }
+            return null;
+        }
+
+        /// <summary>Asserts one bounded deferred major request points at its canonical source page.</summary>
+        public void RequirePendingMajorArc(Pawn pawn, string canonicalEventId)
+        {
+            PawnReflectionState state = ReflectionStateFor(pawn);
+            Require(state != null && state.pendingMajorArc
+                    && string.Equals(
+                        state.pendingMajorArcAvoidEventId,
+                        canonicalEventId,
+                        StringComparison.Ordinal),
+                "Expected one deferred major reflection for canonical event '"
+                    + canonicalEventId + "'.");
+        }
+
         /// <summary>
         /// Makes this scope own every diary event created after this call, even when production policy
         /// assigns the page to a real loaded-map witness instead of one of the isolated test pawns.

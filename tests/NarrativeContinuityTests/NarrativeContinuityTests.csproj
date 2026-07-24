@@ -21,5 +21,6 @@
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefContracts.cs" Link="BeliefContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\IdeologyNarrativeProvider.cs" Link="IdeologyNarrativeProvider.cs" />
     <Compile Include="..\..\Source\Pipeline\Narrative\ReflectionCoordinator.cs" Link="ReflectionCoordinator.cs" />
+    <Compile Include="..\..\Source\Pipeline\Narrative\TerminalReflectionPolicy.cs" Link="TerminalReflectionPolicy.cs" />
   </ItemGroup>
 </Project>

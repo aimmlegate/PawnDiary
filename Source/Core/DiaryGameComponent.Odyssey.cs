@@ -221,7 +221,22 @@ namespace PawnDiary
                 // optionally request the existing rare arc-reflection scheduler while excluding
                 // that page from immediate recap. The scheduler retains all of its own cadence,
                 // settings, memory-sufficiency, and writer-eligibility gates.
-                ConsiderArcReflectionAfterMajorEvent(actor, signal.CreatedEvent.eventId);
+                ConsiderArcReflectionAfterTerminalEvent(
+                    actor,
+                    signal.CreatedEvent,
+                    DiaryEvent.InitiatorRole,
+                    new TerminalReflectionContract
+                    {
+                        ownershipCorrelated = OdysseyMechhiveOutcomePolicy.OwnsQuestSuccess(plan)
+                            && string.Equals(
+                                actor.GetUniqueLoadID(),
+                                plan.actorPawnId,
+                                StringComparison.Ordinal),
+                        phase = plan.outcomeToken,
+                        arcKey = plan.sourceKey,
+                        sourceDomain = OdysseyMechhiveOutcomePolicy.NarrativeSourceDomain,
+                        sourceDefName = OdysseyMechhiveEventDefNames.Outcome
+                    });
             }
             catch (Exception exception)
             {

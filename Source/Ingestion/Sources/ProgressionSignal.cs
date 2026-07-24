@@ -27,6 +27,9 @@ namespace PawnDiary.Ingestion
         private readonly List<NarrativeEvidence> narrativeEvidence;
         private readonly BiotechNarrativeSnapshot biotechNarrative;
 
+        /// <summary>Non-null only after this signal actually created its canonical progression page.</summary>
+        internal DiaryEvent CreatedEvent { get; private set; }
+
         public ProgressionSignal(ProgressionEventData payload, Pawn pawn, string label, string text,
             string instruction, string gameContext, bool eligible, bool userEnabled, bool signalEnabled,
             string dedupKey = null, int dedupWindowTicks = 0,
@@ -77,6 +80,7 @@ namespace PawnDiary.Ingestion
 
             DiaryEvent diaryEvent = sink.AddSoloEvent(pawn, null, payload.DefName,
                 label, text, instruction, gameContext);
+            CreatedEvent = diaryEvent;
             ApplyNarrativeEvidence(sink, diaryEvent);
             sink.QueueSolo(diaryEvent, DiaryEvent.InitiatorRole);
         }

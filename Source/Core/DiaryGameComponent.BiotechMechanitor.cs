@@ -330,6 +330,28 @@ namespace PawnDiary
             row.defeatedObserved = true;
             Pawn caller = FindLivePawnByLoadId(candidate.ownerId);
             if (!IsDiaryEligible(caller)) return;
+            string callerId = caller.GetUniqueLoadID();
+            string arcKey = MechanitorArcKeys.BossChapter(callerId, row.calledTick);
+            List<NarrativeEvidence> evidence = arcKey.Length == 0
+                ? null
+                : new List<NarrativeEvidence>
+                {
+                    new NarrativeEvidence
+                    {
+                        facet = NarrativeFacetTokens.JourneyChapter,
+                        phase = MechanitorBossPhaseTokens.Defeated,
+                        subjectKind = NarrativeSubjectKindTokens.Entity,
+                        subjectId = row.bossDefName ?? string.Empty,
+                        subjectLabel = row.bossLabel ?? string.Empty,
+                        arcKey = arcKey,
+                        beliefTopics = new List<string>
+                            { "autonomous_weapons", "violence", "duty" },
+                        salience = NarrativeSalienceTokens.Terminal,
+                        pawnCanKnow = true,
+                        sourceDomain = "progression",
+                        sourceDefName = MechanitorEventDefNames.BossDefeated
+                    }
+                };
             EmitMechanitorProgression(
                 caller,
                 MechanitorEventDefNames.BossDefeated,
@@ -339,7 +361,18 @@ namespace PawnDiary
                     .Translate(caller.LabelShortCap, row.bossLabel).Resolve(),
                 BossContext("boss_defeated", row, called: true, defeated: true),
                 "mechanitor-boss-defeated|" + caller.GetUniqueLoadID() + "|"
-                    + row.bossDefName + "|" + row.calledTick);
+                    + row.bossDefName + "|" + row.calledTick,
+                evidence,
+                new TerminalReflectionContract
+                {
+                    ownershipCorrelated = candidate.call == row
+                        && string.Equals(candidate.ownerId, callerId, StringComparison.Ordinal)
+                        && !string.IsNullOrWhiteSpace(row.bossPawnId),
+                    phase = MechanitorBossPhaseTokens.Defeated,
+                    arcKey = arcKey,
+                    sourceDomain = "progression",
+                    sourceDefName = MechanitorEventDefNames.BossDefeated
+                });
         }
 
         private List<MechanitorBossOwnershipCandidate> BossOwnershipCandidates()
@@ -386,7 +419,9 @@ namespace PawnDiary
             string label,
             string text,
             string context,
-            string dedupKey)
+            string dedupKey,
+            List<NarrativeEvidence> narrativeEvidence = null,
+            TerminalReflectionContract terminalReflection = null)
         {
             if (controller == null) return false;
             ProgressionEventData data = ProgressionData(
@@ -398,7 +433,9 @@ namespace PawnDiary
                 text,
                 majorArcCandidate: false,
                 dedupKey: dedupKey,
-                dedupWindowTicks: DiaryTuning.Current.genericEventTypeDedupTicks);
+                dedupWindowTicks: DiaryTuning.Current.genericEventTypeDedupTicks,
+                narrativeEvidence: narrativeEvidence,
+                terminalReflection: terminalReflection);
         }
 
         private static string MechanitorMechContext(
