@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using HarmonyLib;
 using PawnDiary.Capture;
 using PawnDiary.Ingestion;
@@ -22,6 +23,9 @@ namespace PawnDiary.RimTests
     public static class PawnDiaryIdeologyPhase1FixtureTests
     {
         private const string LogPrefix = "[PawnDiary RimTest Ideology Phase 1] ";
+        private const string BiotechPackageId = "Ludeon.RimWorld.Biotech";
+        private const string AnomalyPackageId = "Ludeon.RimWorld.Anomaly";
+        private const string OdysseyPackageId = "Ludeon.RimWorld.Odyssey";
         private static PawnDiaryRimTestScope scope;
         private static Pawn pawn;
 
@@ -241,13 +245,143 @@ namespace PawnDiary.RimTests
                 diagnostic.Contains("observed=1")
                     && diagnostic.Contains("last_outcome=exact_correlation")
                     && diagnostic.Contains("last_source=thought_correlation")
-                    && diagnostic.Contains("last_tier=exact_correlation"),
+                    && diagnostic.Contains("last_tier=exact_correlation")
+                    && diagnostic.Contains("rejection_reasons="),
                 "The loaded automatic-coverage aggregate lost its fixed winner tokens.");
+
+            BeliefPolicyBuilder boundedBuilder = BeliefPolicyBuilder.CreateDefault();
+            boundedBuilder.maximumAutomaticDiagnosticSamples = 1;
+            BeliefPolicySnapshot boundedPolicy = boundedBuilder.Build();
+            BeliefContextBuilder.ResetAutomaticCoverageDiagnostics();
+            BeliefContextBuilder.RecordAutomaticCoverageForTests(
+                new BeliefAutomaticCoverageDiagnostic
+                {
+                    outcome = "Player-authored doctrine",
+                    reason = "Private ideology text",
+                    winnerSource = "Secret source",
+                    winnerTier = "Diary prose",
+                    confidenceBand = "Custom name",
+                    confidence = float.NaN,
+                    runnerUpGap = float.PositiveInfinity,
+                    candidateCount = int.MaxValue
+                },
+                boundedPolicy);
+            BeliefContextBuilder.RecordAutomaticCoverageForTests(
+                BeliefAutomaticCoverageDiagnostics.Accepted(
+                    BeliefAutomaticCoverageOutcomeTokens.ExactCorrelation,
+                    BeliefRelevanceSourceTokens.HistoryCorrelation,
+                    BeliefRelevanceTierTokens.ExactCorrelation,
+                    1),
+                boundedPolicy);
+            string bounded = BeliefContextBuilder.AutomaticCoverageDiagnosticsForDev();
+            PawnDiaryRimTestScope.Require(
+                bounded.Contains("observed=1") && bounded.Contains("dropped=1")
+                    && bounded.IndexOf("Player-authored", StringComparison.Ordinal) < 0
+                    && bounded.IndexOf("Private ideology", StringComparison.Ordinal) < 0
+                    && bounded.IndexOf("Secret source", StringComparison.Ordinal) < 0
+                    && bounded.IndexOf("Diary prose", StringComparison.Ordinal) < 0
+                    && bounded.IndexOf("Custom name", StringComparison.Ordinal) < 0,
+                "The loaded automatic-coverage holder was unbounded or exposed authored text.");
 
             BeliefContextBuilder.ResetAutomaticCoverageDiagnostics();
             PawnDiaryRimTestScope.Require(
                 BeliefContextBuilder.AutomaticCoverageDiagnosticsForDev().Contains("observed=0"),
                 "The automatic-coverage aggregate did not reset.");
+        }
+
+        /// <summary>
+        /// Discovers one ordinary public HistoryEventDef/ThoughtDef component link from each active
+        /// official DLC, projects it through the real guarded adapter, and proves exact metadata beats
+        /// unrelated lexical bait without a production precept catalog or correction.
+        /// </summary>
+        [Test]
+        public static void OfficialDlcPreceptMetadataResolvesStructurallyWithoutCorrections()
+        {
+            if (!ModsConfig.IdeologyActive)
+            {
+                PawnDiaryRimTestScope.Require(!DlcContext.CaptureBeliefSnapshot(pawn).ideologyActive,
+                    "Official DLC belief metadata must remain inert when Ideology is inactive.");
+                Log.Message(LogPrefix + "official DLC belief metadata: not applicable "
+                    + "(Ideology inactive); guarded snapshot returned empty.");
+                return;
+            }
+
+            VerifyOfficialDlcMetadata("Biotech", BiotechPackageId, ModsConfig.BiotechActive);
+            VerifyOfficialDlcMetadata("Anomaly", AnomalyPackageId, ModsConfig.AnomalyActive);
+            VerifyOfficialDlcMetadata("Odyssey", OdysseyPackageId, ModsConfig.OdysseyActive);
+        }
+
+        /// <summary>
+        /// Compiled loaded-policy coverage for the conservative negative paths: equal lexical candidates
+        /// are ambiguous, an unrelated ordinary event stays empty, and an unavailable DLC snapshot no-ops.
+        /// </summary>
+        [Test]
+        public static void AutomaticCoverageWeakAmbiguousAndUnavailableEvidenceStaysEmpty()
+        {
+            BeliefPolicySnapshot policy = DiaryBeliefPolicy.Snapshot();
+            string pawnId = pawn.GetUniqueLoadID();
+            int tick = Find.TickManager.TicksGame;
+            BeliefPreceptFact first = DetachedPrecept(
+                "FixtureDoctrineA91", "FixtureIssueA91", "crystal mercy iron duty");
+            BeliefPreceptFact second = DetachedPrecept(
+                "FixtureDoctrineB72", "FixtureIssueB72", "crystal mercy iron duty");
+            BeliefSnapshot ambiguousSnapshot = DetachedSnapshot(pawnId, tick, first, second);
+            BeliefEventEvidence ambiguousEvidence = BeliefEventEvidenceFactory.ForEvent(
+                pawnId, tick, "fixture", "EventR53", DiaryEvent.InitiatorRole,
+                "crystal mercy iron duty", string.Empty);
+            BeliefStanceResolution ambiguous = EventRelativeStanceResolver.Resolve(
+                new BeliefResolutionRequest
+                {
+                    snapshot = ambiguousSnapshot,
+                    evidence = ambiguousEvidence,
+                    policy = policy,
+                    mode = BeliefResolutionModeTokens.EventEnrichment
+                });
+            PawnDiaryRimTestScope.Require(
+                ambiguous.stances.Count == 0
+                    && ambiguous.automaticCoverage.outcome
+                        == BeliefAutomaticCoverageOutcomeTokens.Ambiguous
+                    && ambiguous.automaticCoverage.reason
+                        == BeliefAutomaticCoverageReasonTokens.RunnerUpAmbiguity
+                    && ambiguous.automaticCoverage.candidateCount == 2,
+                "Equal loaded-policy lexical candidates did not fail closed as ambiguous.");
+
+            BeliefSnapshot unrelatedSnapshot = DetachedSnapshot(
+                pawnId, tick, DetachedPrecept(
+                    "DoctrineK41", "IssueK41", "silent basalt orchard"));
+            BeliefEventEvidence unrelatedEvidence = BeliefEventEvidenceFactory.ForEvent(
+                pawnId, tick, "fixture", "EventQ72", DiaryEvent.InitiatorRole,
+                "cobalt river", string.Empty);
+            BeliefStanceResolution unrelated = EventRelativeStanceResolver.Resolve(
+                new BeliefResolutionRequest
+                {
+                    snapshot = unrelatedSnapshot,
+                    evidence = unrelatedEvidence,
+                    policy = policy,
+                    mode = BeliefResolutionModeTokens.EventEnrichment
+                });
+            PawnDiaryRimTestScope.Require(
+                unrelated.stances.Count == 0
+                    && unrelated.automaticCoverage.outcome
+                        == BeliefAutomaticCoverageOutcomeTokens.NoMatch
+                    && string.IsNullOrEmpty(BeliefContextFormatter.Format(
+                        unrelated, NarrativeDetailLevelTokens.Full, policy)),
+                "Weak unrelated ordinary evidence gained belief context.");
+
+            unrelatedSnapshot.ideologyActive = false;
+            BeliefStanceResolution unavailable = EventRelativeStanceResolver.Resolve(
+                new BeliefResolutionRequest
+                {
+                    snapshot = unrelatedSnapshot,
+                    evidence = unrelatedEvidence,
+                    policy = policy,
+                    mode = BeliefResolutionModeTokens.EventEnrichment
+                });
+            PawnDiaryRimTestScope.Require(
+                unavailable.stances.Count == 0
+                    && unavailable.automaticCoverage.reason
+                        == BeliefAutomaticCoverageReasonTokens.UnavailableSnapshot,
+                "A DLC-unavailable detached snapshot did not cleanly no-op.");
         }
 
         /// <summary>
@@ -497,6 +631,310 @@ namespace PawnDiary.RimTests
                 Log.Message(LogPrefix + "history observer exact resolver branch: no loaded current "
                     + "visible precept exposed a resolvable HistoryEventDef; cache/non-emission still passed.");
             }
+        }
+
+        private static void VerifyOfficialDlcMetadata(
+            string packName,
+            string packageId,
+            bool packageActive)
+        {
+            if (!packageActive)
+            {
+                Log.Message(LogPrefix + "package=" + packageId
+                    + "; status=not_applicable; reason=dlc_inactive");
+                return;
+            }
+
+            PreceptDef target;
+            string correlationKind;
+            string correlationDefName;
+            string sourceField;
+            PawnDiaryRimTestScope.Require(
+                TryFindOfficialCorrelation(
+                    packageId, out target, out correlationKind, out correlationDefName, out sourceField),
+                packName + " exposed no safe public ThoughtDef/HistoryEventDef precept metadata.");
+            BeliefSnapshot snapshot = CaptureSinglePreceptSnapshot(target);
+            snapshot.precepts.RemoveAll(
+                precept => !string.Equals(
+                    precept?.defName, target.defName, StringComparison.Ordinal));
+            BeliefPreceptFact projected = snapshot.precepts.FirstOrDefault();
+            BeliefCorrelationFact projectedCorrelation = projected?.correlations?.FirstOrDefault(
+                correlation => correlation != null
+                    && string.Equals(correlation.kind, correlationKind, StringComparison.Ordinal)
+                    && string.Equals(
+                        correlation.defName, correlationDefName, StringComparison.Ordinal));
+            PawnDiaryRimTestScope.Require(
+                snapshot.ideologyActive && projected != null
+                    && projected.issue?.defName == target.issue.defName
+                    && projectedCorrelation != null
+                    && string.Equals(
+                        projectedCorrelation.sourceFieldToken, sourceField, StringComparison.OrdinalIgnoreCase)
+                    && !string.IsNullOrWhiteSpace(projectedCorrelation.sourceComponentKind),
+                packName + " ordinary precept metadata did not cross the guarded projection boundary.");
+
+            BeliefPreceptFact lexicalBait = DetachedPrecept(
+                "LexicalBait_" + packName,
+                "LexicalBaitIssue_" + packName,
+                "luminous authority ceremony");
+            lexicalBait.impactRank = 3;
+            snapshot.precepts.Add(lexicalBait);
+            BeliefEventEvidence evidence = BeliefEventEvidenceFactory.ForEvent(
+                snapshot.pawnId,
+                snapshot.capturedTick,
+                "fixture",
+                "OfficialMetadataFixture_" + packName,
+                DiaryEvent.InitiatorRole,
+                lexicalBait.displayLabel,
+                string.Empty);
+            if (correlationKind == BeliefCorrelationKindTokens.HistoryEvent)
+                evidence.historyEventDefNames.Add(correlationDefName);
+            else
+                evidence.thoughtDefNames.Add(correlationDefName);
+
+            BeliefPolicySnapshot policy = DiaryBeliefPolicy.Snapshot();
+            BeliefStanceResolution resolved = EventRelativeStanceResolver.Resolve(
+                new BeliefResolutionRequest
+                {
+                    snapshot = snapshot,
+                    evidence = evidence,
+                    policy = policy,
+                    mode = BeliefResolutionModeTokens.EventEnrichment,
+                    deterministicSeed = 17
+                });
+            PawnDiaryRimTestScope.Require(
+                resolved.stances.Count == 1
+                    && resolved.stances[0].precept.defName == target.defName
+                    && resolved.stances[0].relevanceTier
+                        == BeliefRelevanceTierTokens.ExactCorrelation
+                    && resolved.automaticCoverage.outcome
+                        == BeliefAutomaticCoverageOutcomeTokens.ExactCorrelation
+                    && resolved.automaticCoverage.reason
+                        == BeliefAutomaticCoverageReasonTokens.None
+                    && resolved.automaticCoverage.candidateCount >= 1
+                    && policy.correlationOverrides.Count == 0,
+                packName + " structural metadata did not beat unrelated high-impact lexical bait.");
+
+            BeliefContextBuilder.ResetAutomaticCoverageDiagnostics();
+            scope.RegisterCleanup(BeliefContextBuilder.ResetAutomaticCoverageDiagnostics);
+            BeliefContextBuilder.RecordAutomaticCoverageForTests(
+                resolved.automaticCoverage, policy);
+            string diagnostic = BeliefContextBuilder.AutomaticCoverageDiagnosticsForDev();
+            PawnDiaryRimTestScope.Require(
+                diagnostic.Contains("last_outcome=exact_correlation")
+                    && diagnostic.Contains("last_candidates=")
+                    && diagnostic.IndexOf(target.defName, StringComparison.OrdinalIgnoreCase) < 0
+                    && diagnostic.IndexOf(target.issue.defName, StringComparison.OrdinalIgnoreCase) < 0
+                    && diagnostic.IndexOf(correlationDefName, StringComparison.OrdinalIgnoreCase) < 0,
+                packName + " automatic-coverage output exposed authored text or runtime candidate IDs.");
+            Log.Message(LogPrefix + "package=" + packageId + "; status=resolved; tier="
+                + BeliefRelevanceTierTokens.ExactCorrelation + "; source=" + correlationKind
+                + "; corrections=0");
+
+            VerifyMetadataPoorOfficialPreceptStaysUnsupported(packName, packageId, policy);
+        }
+
+        private static void VerifyMetadataPoorOfficialPreceptStaysUnsupported(
+            string packName,
+            string packageId,
+            BeliefPolicySnapshot policy)
+        {
+            PreceptDef unsupported = OfficialPrecepts(packageId).FirstOrDefault(def =>
+            {
+                string ignoredKind;
+                string ignoredDefName;
+                string ignoredField;
+                return !TryFindDirectCorrelation(
+                    def, true, out ignoredKind, out ignoredDefName, out ignoredField)
+                    && !TryFindDirectCorrelation(
+                        def, false, out ignoredKind, out ignoredDefName, out ignoredField)
+                    && (def.preceptClass == null
+                        || !typeof(Precept_Ritual).IsAssignableFrom(def.preceptClass));
+            });
+            if (unsupported == null)
+            {
+                Log.Message(LogPrefix + "package=" + packageId
+                    + "; metadata_poor_status=none_safe_to_instantiate");
+                return;
+            }
+
+            BeliefSnapshot snapshot = CaptureSinglePreceptSnapshot(unsupported);
+            snapshot.precepts.RemoveAll(
+                precept => !string.Equals(
+                    precept?.defName, unsupported.defName, StringComparison.Ordinal));
+            BeliefPreceptFact projected = snapshot.precepts.FirstOrDefault();
+            PawnDiaryRimTestScope.Require(
+                projected != null && projected.correlations.Count == 0,
+                packName + " metadata-poor fixture unexpectedly projected a structural correlation.");
+            BeliefEventEvidence evidence = BeliefEventEvidenceFactory.ForEvent(
+                snapshot.pawnId, snapshot.capturedTick, "fixture", "EventZ19",
+                DiaryEvent.InitiatorRole, "cobalt river", string.Empty);
+            evidence.historyEventDefNames.Add("UnrelatedHistoryQ72");
+            BeliefStanceResolution unresolved = EventRelativeStanceResolver.Resolve(
+                new BeliefResolutionRequest
+                {
+                    snapshot = snapshot,
+                    evidence = evidence,
+                    policy = policy,
+                    mode = BeliefResolutionModeTokens.EventEnrichment
+                });
+            PawnDiaryRimTestScope.Require(
+                unresolved.stances.Count == 0
+                    && unresolved.automaticCoverage.outcome
+                        == BeliefAutomaticCoverageOutcomeTokens.NoMatch,
+                packName + " metadata-poor precept guessed belief context from unrelated evidence.");
+            Log.Message(LogPrefix + "package=" + packageId
+                + "; metadata_poor_status=unsupported; structural_links=0; corrections=0");
+        }
+
+        private static bool TryFindOfficialCorrelation(
+            string packageId,
+            out PreceptDef target,
+            out string correlationKind,
+            out string correlationDefName,
+            out string sourceField)
+        {
+            List<PreceptDef> candidates = OfficialPrecepts(packageId);
+            // Prefer a public eventDef field because that is the most conservative ordinary-event
+            // correlation. Fall back to the equally safe public thought field when a pack has no event.
+            for (int pass = 0; pass < 2; pass++)
+            {
+                bool history = pass == 0;
+                for (int i = 0; i < candidates.Count; i++)
+                {
+                    if (!TryFindDirectCorrelation(
+                            candidates[i], history,
+                            out correlationKind, out correlationDefName, out sourceField))
+                        continue;
+                    target = candidates[i];
+                    return true;
+                }
+            }
+
+            target = null;
+            correlationKind = string.Empty;
+            correlationDefName = string.Empty;
+            sourceField = string.Empty;
+            return false;
+        }
+
+        private static bool TryFindDirectCorrelation(
+            PreceptDef precept,
+            bool history,
+            out string correlationKind,
+            out string correlationDefName,
+            out string sourceField)
+        {
+            correlationKind = string.Empty;
+            correlationDefName = string.Empty;
+            sourceField = string.Empty;
+            if (precept?.comps == null) return false;
+            for (int componentIndex = 0; componentIndex < precept.comps.Count; componentIndex++)
+            {
+                PreceptComp component = precept.comps[componentIndex];
+                if (component == null) continue;
+                FieldInfo[] fields = component.GetType()
+                    .GetFields(BindingFlags.Instance | BindingFlags.Public)
+                    .OrderBy(field => field.Name, StringComparer.Ordinal)
+                    .ToArray();
+                for (int fieldIndex = 0; fieldIndex < fields.Length; fieldIndex++)
+                {
+                    FieldInfo field = fields[fieldIndex];
+                    bool expectedName = history
+                        ? string.Equals(field.Name, "eventDef", StringComparison.OrdinalIgnoreCase)
+                        : string.Equals(field.Name, "thought", StringComparison.OrdinalIgnoreCase);
+                    bool expectedType = history
+                        ? typeof(HistoryEventDef).IsAssignableFrom(field.FieldType)
+                        : typeof(ThoughtDef).IsAssignableFrom(field.FieldType);
+                    if (!expectedName || !expectedType) continue;
+
+                    // Read a public field only after both its exact name and Def type are proven. This
+                    // mirrors production's conservative projector and never invokes a reflected getter.
+                    Def value;
+                    try { value = field.GetValue(component) as Def; }
+                    catch { continue; }
+                    if (value == null || string.IsNullOrWhiteSpace(value.defName)) continue;
+                    correlationKind = history
+                        ? BeliefCorrelationKindTokens.HistoryEvent
+                        : BeliefCorrelationKindTokens.Thought;
+                    correlationDefName = value.defName;
+                    sourceField = field.Name;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static List<PreceptDef> OfficialPrecepts(string packageId)
+        {
+            return DefDatabase<PreceptDef>.AllDefsListForReading
+                .Where(def => def != null && def.issue != null && !string.IsNullOrWhiteSpace(def.defName)
+                    && string.Equals(
+                        def.modContentPack?.PackageId, packageId, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(def => def.defName, StringComparer.Ordinal)
+                .ToList();
+        }
+
+        private static BeliefSnapshot CaptureSinglePreceptSnapshot(PreceptDef target)
+        {
+            PawnDiaryRimTestScope.Require(target?.issue != null && pawn?.ideo != null
+                    && Faction.OfPlayer != null,
+                "The official DLC precept fixture lacks a target, Ideology tracker, or player faction.");
+            Ideo fixture = IdeoGenerator.GenerateIdeo(new IdeoGenerationParms
+            {
+                forFaction = Faction.OfPlayer.def,
+                fixedIdeo = true
+            });
+            PawnDiaryRimTestScope.Require(fixture != null,
+                "The official DLC precept fixture could not generate a disposable ideoligion.");
+            List<Precept> existing = fixture.PreceptsListForReading
+                .Where(precept => precept?.def?.issue == target.issue)
+                .ToList();
+            for (int i = 0; i < existing.Count; i++) fixture.RemovePrecept(existing[i], false);
+            fixture.AddPrecept(
+                PreceptMaker.MakePrecept(target), false, Faction.OfPlayer.def, null);
+            pawn.ideo.SetIdeo(fixture);
+            BeliefHistoryCorrelationCache.Reset();
+            return DlcContext.CaptureBeliefSnapshot(pawn, DiaryBeliefPolicy.Snapshot());
+        }
+
+        private static BeliefSnapshot DetachedSnapshot(
+            string pawnId,
+            int tick,
+            params BeliefPreceptFact[] precepts)
+        {
+            BeliefSnapshot snapshot = new BeliefSnapshot
+            {
+                ideologyActive = true,
+                pawnId = pawnId,
+                capturedTick = tick,
+                ideologyId = "RimTestIdeology",
+                ideologyName = "RimTest Ideoligion"
+            };
+            if (precepts != null) snapshot.precepts.AddRange(precepts);
+            return snapshot;
+        }
+
+        private static BeliefPreceptFact DetachedPrecept(
+            string defName,
+            string issueDefName,
+            string text)
+        {
+            return new BeliefPreceptFact
+            {
+                instanceId = defName + "#fixture",
+                defName = defName,
+                issue = new BeliefIssueFact
+                {
+                    defName = issueDefName,
+                    label = text,
+                    description = text
+                },
+                displayLabel = text,
+                description = text,
+                visible = true,
+                impactRank = 1
+            };
         }
 
         private static Ideo CreateIdeoWithThoughtPrecept(

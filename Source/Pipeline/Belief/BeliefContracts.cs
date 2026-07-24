@@ -109,13 +109,19 @@ namespace PawnDiary
         public const string InvalidInput = "invalid_input";
         public const string UnavailableSnapshot = "unavailable_snapshot";
         public const string UnverifiedEvidence = "unverified_evidence";
+        public const string MismatchedPov = "mismatched_pov";
+        public const string FutureEvidence = "future_evidence";
         public const string NoEvidence = "no_evidence";
+        public const string BelowConfidence = "below_confidence";
+        public const string RunnerUpAmbiguity = "runner_up_ambiguity";
         public const string NoCandidate = "no_candidate";
 
         public static bool IsKnown(string value)
         {
             return value == None || value == InvalidInput || value == UnavailableSnapshot
-                || value == UnverifiedEvidence || value == NoEvidence || value == NoCandidate;
+                || value == UnverifiedEvidence || value == MismatchedPov
+                || value == FutureEvidence || value == NoEvidence || value == BelowConfidence
+                || value == RunnerUpAmbiguity || value == NoCandidate;
         }
     }
 

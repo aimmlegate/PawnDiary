@@ -136,13 +136,27 @@ namespace PawnDiary
             BeliefSnapshot snapshot = request.snapshot;
             BeliefEventEvidence evidence = request.evidence;
             BeliefContextProjection projection = evidence.projection;
-            if (!policy.enabled || !BeliefResolutionModeTokens.IsKnown(request.mode)
-                || !snapshot.ideologyActive || SafeId(snapshot.ideologyId, policy).Length == 0)
+            if (!policy.enabled || !snapshot.ideologyActive)
                 return Reject(result, BeliefAutomaticCoverageReasonTokens.UnavailableSnapshot);
+            if (!BeliefResolutionModeTokens.IsKnown(request.mode)
+                || SafeId(snapshot.pawnId, policy).Length == 0
+                || SafeId(snapshot.ideologyId, policy).Length == 0
+                || snapshot.capturedTick < 0)
+                return Reject(result, BeliefAutomaticCoverageReasonTokens.InvalidInput);
             if (evidence.narrative == null)
                 return Reject(result, BeliefAutomaticCoverageReasonTokens.InvalidInput);
             if (evidence.narrative.pawnCanKnow != true)
                 return Reject(result, BeliefAutomaticCoverageReasonTokens.UnverifiedEvidence);
+            // Runtime re-stamps every detached source row for the current POV before this pure call.
+            // A mismatched pawn or a row dated after its snapshot is therefore malformed correlation
+            // evidence, not permission to compare player-authored doctrine text.
+            string evidencePov = SafeId(evidence.narrative.povPawnId, policy);
+            if (evidencePov.Length == 0 || evidence.narrative.tick < 0)
+                return Reject(result, BeliefAutomaticCoverageReasonTokens.InvalidInput);
+            if (!Same(snapshot.pawnId, evidencePov))
+                return Reject(result, BeliefAutomaticCoverageReasonTokens.MismatchedPov);
+            if (evidence.narrative.tick > snapshot.capturedTick)
+                return Reject(result, BeliefAutomaticCoverageReasonTokens.FutureEvidence);
 
             ExpandedBeliefEvidence expanded = BeliefEventEvidencePolicy.Expand(evidence, policy);
             if (request.mode == BeliefResolutionModeTokens.EventEnrichment

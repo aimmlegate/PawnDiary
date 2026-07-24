@@ -165,6 +165,24 @@ namespace PawnDiary
                 "TotallyUnknownHistory_91827",
                 "modded",
                 "ThirdPartyEvent_7721");
+            AssertCrossDlcOrdinaryMetadataFixture(
+                "Biotech bloodfeeder",
+                "Bloodfeeders_Reviled",
+                "Bloodfeeders",
+                BeliefCorrelationKindTokens.Thought,
+                "Bloodfeeders_Reviled_Opinion_Bloodfeeder");
+            AssertCrossDlcOrdinaryMetadataFixture(
+                "Anomaly psychic ritual",
+                "PsychicRituals_Exalted",
+                "PsychicRituals",
+                BeliefCorrelationKindTokens.Thought,
+                "NoPsychicRituals");
+            AssertCrossDlcOrdinaryMetadataFixture(
+                "Odyssey space habitat",
+                "SpaceHabitat_Preferred",
+                "SpaceHabitat",
+                BeliefCorrelationKindTokens.Thought,
+                "SpaceHabitat_Mood");
             BeliefPreceptFact authority = Precept(
                 "ModAuthority_5A", "IssueAuthority_5A", "ranked authority", 0);
             BeliefPreceptFact authorityBait = Precept(
@@ -216,6 +234,25 @@ namespace PawnDiary
                     == BeliefAutomaticCoverageConfidenceBandTokens.Qualified
                 || semanticResult.automaticCoverage.confidenceBand
                     == BeliefAutomaticCoverageConfidenceBandTokens.Strong);
+            BeliefPolicyBuilder localizedSemanticBuilder = BeliefPolicyBuilder.CreateDefault();
+            localizedSemanticBuilder.semanticAliases.Add(new BeliefSemanticAlias(
+                "space_habitat",
+                new List<string> { "космическая среда обитания" }));
+            BeliefEventEvidence localizedSemanticEvidence = Evidence(true);
+            localizedSemanticEvidence.semanticAliasTokens.Add("space_habitat");
+            BeliefStanceResolution localizedSemanticResult = Resolve(
+                Snapshot(Precept("LocalizedSpaceHabitat_5B", "LocalizedSpaceIssue_5B",
+                    "КОСМИЧЕСКАЯ СРЕДА ОБИТАНИЯ", 1)),
+                localizedSemanticEvidence,
+                localizedSemanticBuilder.Build());
+            AssertCoverage("localized semantic-alias match diagnostic", localizedSemanticResult,
+                BeliefAutomaticCoverageOutcomeTokens.SemanticAlias,
+                localizedSemanticResult.stances[0].relevanceSource,
+                localizedSemanticResult.stances[0].relevanceTier);
+            AssertEqual("localized aliases normalize without an English-only path",
+                "космическая среда обитания",
+                BeliefLexicalMatcher.Normalize(
+                    "КОСМИЧЕСКАЯ СРЕДА ОБИТАНИЯ", 320, 48));
 
             BeliefStanceResolution lexicalResult = Resolve(
                 Snapshot(Precept("LexicalOrchard_5A", "LexicalOrchardIssue_5A",
@@ -240,6 +277,9 @@ namespace PawnDiary
             AssertEqual("below-confidence band",
                 BeliefAutomaticCoverageConfidenceBandTokens.BelowMinimum,
                 below.automaticCoverage.confidenceBand);
+            AssertEqual("below-confidence rejection reason",
+                BeliefAutomaticCoverageReasonTokens.BelowConfidence,
+                below.automaticCoverage.reason);
             BeliefPolicyBuilder gapProbeBuilder = BeliefPolicyBuilder.CreateDefault();
             gapProbeBuilder.minimumLexicalConfidence = 0f;
             gapProbeBuilder.lexicalRunnerUpMargin = 0f;
@@ -279,6 +319,9 @@ namespace PawnDiary
                 ambiguous.automaticCoverage.outcome);
             AssertNear("ambiguous diagnostic preserves runner-up gap",
                 gapProbe.runnerUpGap, ambiguous.automaticCoverage.runnerUpGap);
+            AssertEqual("ambiguous rejection reason",
+                BeliefAutomaticCoverageReasonTokens.RunnerUpAmbiguity,
+                ambiguous.automaticCoverage.reason);
 
             BeliefStanceResolution noCandidate = Resolve(
                 Snapshot(Precept("NoCandidate_5A", "NoCandidateIssue_5A", "silent basalt custom", 1)),
@@ -308,6 +351,55 @@ namespace PawnDiary
                 BeliefAutomaticCoverageReasonTokens.UnverifiedEvidence,
                 hidden.automaticCoverage.reason);
 
+            BeliefStanceResolution nullInput = EventRelativeStanceResolver.Resolve(null);
+            AssertEmpty("null diagnostic input fails closed", nullInput);
+            AssertEqual("null diagnostic input reason",
+                BeliefAutomaticCoverageReasonTokens.InvalidInput,
+                nullInput.automaticCoverage.reason);
+
+            BeliefSnapshot malformedSnapshot = Snapshot(
+                Precept("Malformed_5B", "MalformedIssue_5B", "malformed doctrine", 1));
+            malformedSnapshot.pawnId = string.Empty;
+            BeliefStanceResolution malformed = Resolve(
+                malformedSnapshot, TextEvidence(true, "malformed doctrine"), policy);
+            AssertEmpty("malformed snapshot identity fails closed", malformed);
+            AssertEqual("malformed snapshot identity reason",
+                BeliefAutomaticCoverageReasonTokens.InvalidInput,
+                malformed.automaticCoverage.reason);
+
+            BeliefEventEvidence mismatchedPovEvidence = TextEvidence(true, "mismatched doctrine");
+            mismatchedPovEvidence.narrative.povPawnId = "DifferentPawn";
+            BeliefStanceResolution mismatchedPov = Resolve(
+                Snapshot(Precept("Mismatched_5B", "MismatchedIssue_5B",
+                    "mismatched doctrine", 1)),
+                mismatchedPovEvidence,
+                policy);
+            AssertEmpty("mismatched POV evidence fails closed", mismatchedPov);
+            AssertEqual("mismatched POV rejection reason",
+                BeliefAutomaticCoverageReasonTokens.MismatchedPov,
+                mismatchedPov.automaticCoverage.reason);
+
+            BeliefEventEvidence futureEvidence = TextEvidence(true, "future doctrine");
+            futureEvidence.narrative.tick = 12346;
+            BeliefStanceResolution future = Resolve(
+                Snapshot(Precept("Future_5B", "FutureIssue_5B", "future doctrine", 1)),
+                futureEvidence,
+                policy);
+            AssertEmpty("future evidence fails closed", future);
+            AssertEqual("future evidence rejection reason",
+                BeliefAutomaticCoverageReasonTokens.FutureEvidence,
+                future.automaticCoverage.reason);
+
+            BeliefSnapshot unavailableSnapshot = Snapshot(
+                Precept("Unavailable_5B", "UnavailableIssue_5B", "unavailable doctrine", 1));
+            unavailableSnapshot.ideologyActive = false;
+            BeliefStanceResolution unavailable = Resolve(
+                unavailableSnapshot, TextEvidence(true, "unavailable doctrine"), policy);
+            AssertEmpty("DLC-unavailable snapshot fails closed", unavailable);
+            AssertEqual("DLC-unavailable rejection reason",
+                BeliefAutomaticCoverageReasonTokens.UnavailableSnapshot,
+                unavailable.automaticCoverage.reason);
+
             AssertEqual("Phase 5A still ships no exact correction",
                 0, policy.correlationOverrides.Count);
             List<BeliefAutomaticCoverageDiagnostic> sequence =
@@ -320,7 +412,10 @@ namespace PawnDiary
                     below.automaticCoverage,
                     ambiguous.automaticCoverage,
                     noCandidate.automaticCoverage,
-                    noEvidence.automaticCoverage
+                    noEvidence.automaticCoverage,
+                    mismatchedPov.automaticCoverage,
+                    future.automaticCoverage,
+                    unavailable.automaticCoverage
                 };
             BeliefAutomaticCoverageAggregate firstAggregate =
                 new BeliefAutomaticCoverageAggregate();
@@ -343,7 +438,7 @@ namespace PawnDiary
                 firstAggregate.OutcomeCount(BeliefAutomaticCoverageOutcomeTokens.BelowConfidence));
             AssertEqual("aggregate ambiguous count", 1,
                 firstAggregate.OutcomeCount(BeliefAutomaticCoverageOutcomeTokens.Ambiguous));
-            AssertEqual("aggregate no-match count", 2,
+            AssertEqual("aggregate no-match count", 5,
                 firstAggregate.OutcomeCount(BeliefAutomaticCoverageOutcomeTokens.NoMatch));
             AssertTrue("aggregate exposes winner-tier counts",
                 firstAggregate.WinnerTierCount(BeliefRelevanceTierTokens.SourcePrecept) == 1
@@ -352,6 +447,21 @@ namespace PawnDiary
                 firstAggregate.ConfidenceBandCount(
                     BeliefAutomaticCoverageConfidenceBandTokens.Structural) == 2
                 && firstAggregate.runnerUpGapCount >= 1);
+            AssertTrue("aggregate exposes fixed rejection-reason counts",
+                firstAggregate.RejectionReasonCount(
+                    BeliefAutomaticCoverageReasonTokens.BelowConfidence) == 1
+                && firstAggregate.RejectionReasonCount(
+                    BeliefAutomaticCoverageReasonTokens.RunnerUpAmbiguity) == 1
+                && firstAggregate.RejectionReasonCount(
+                    BeliefAutomaticCoverageReasonTokens.NoCandidate) == 1
+                && firstAggregate.RejectionReasonCount(
+                    BeliefAutomaticCoverageReasonTokens.NoEvidence) == 1
+                && firstAggregate.RejectionReasonCount(
+                    BeliefAutomaticCoverageReasonTokens.MismatchedPov) == 1
+                && firstAggregate.RejectionReasonCount(
+                    BeliefAutomaticCoverageReasonTokens.FutureEvidence) == 1
+                && firstAggregate.RejectionReasonCount(
+                    BeliefAutomaticCoverageReasonTokens.UnavailableSnapshot) == 1);
             AssertEqual("identical diagnostic input formats deterministically",
                 BeliefAutomaticCoverageDiagnostics.Format(firstAggregate),
                 BeliefAutomaticCoverageDiagnostics.Format(secondAggregate));
@@ -384,6 +494,10 @@ namespace PawnDiary
                 && hostileFormatted.IndexOf("private name", StringComparison.Ordinal) < 0);
             AssertContains("diagnostic formatter normalizes unknown outcomes",
                 hostileFormatted, "last_outcome=no_match");
+            AssertContains("diagnostic formatter exposes only fixed rejection buckets",
+                BeliefAutomaticCoverageDiagnostics.Format(firstAggregate),
+                "rejection_reasons=invalid_input:0,unavailable_snapshot:1,"
+                + "unverified_evidence:0,mismatched_pov:1,future_evidence:1");
         }
 
         private static void AssertAutomaticMetadataFixture(
@@ -427,6 +541,48 @@ namespace PawnDiary
                     : BeliefRelevanceSourceTokens.HistoryCorrelation,
                 BeliefRelevanceTierTokens.ExactCorrelation);
             AssertEqual(label + " fixture requires no exact correction", 0,
+                BeliefPolicySnapshot.CreateDefault().correlationOverrides.Count);
+        }
+
+        private static void AssertCrossDlcOrdinaryMetadataFixture(
+            string label,
+            string preceptDefName,
+            string issueDefName,
+            string correlationKind,
+            string correlationDefName)
+        {
+            BeliefPreceptFact correlated = Precept(
+                preceptDefName, issueDefName, "ordinary loaded doctrine metadata", 0);
+            correlated.correlations.Add(Correlation(
+                correlationKind, correlationDefName, BeliefValenceTokens.Neutral));
+            BeliefPreceptFact lexicalBait = Precept(
+                label.Replace(" ", string.Empty) + "_LexicalBait_5B",
+                label.Replace(" ", string.Empty) + "_BaitIssue_5B",
+                "luminous authority ceremony", 3);
+            BeliefEventEvidence evidence = Evidence(true);
+            evidence.narrative.sourceDomain = "ordinary_dlc";
+            evidence.narrative.sourceDefName = label.Replace(" ", string.Empty) + "_Event_5B";
+            evidence.matchFields.Add(Text("event_label", lexicalBait.displayLabel));
+            if (correlationKind == BeliefCorrelationKindTokens.Thought)
+                evidence.thoughtDefNames.Add(correlationDefName);
+            else
+                evidence.historyEventDefNames.Add(correlationDefName);
+
+            BeliefStanceResolution resolved = Resolve(
+                Snapshot(correlated, lexicalBait),
+                evidence,
+                BeliefPolicySnapshot.CreateDefault());
+            AssertSelected(label + " ordinary metadata beats lexical bait",
+                resolved, correlated.defName);
+            AssertCoverage(label + " ordinary metadata diagnostic", resolved,
+                BeliefAutomaticCoverageOutcomeTokens.ExactCorrelation,
+                correlationKind == BeliefCorrelationKindTokens.Thought
+                    ? BeliefRelevanceSourceTokens.ThoughtCorrelation
+                    : BeliefRelevanceSourceTokens.HistoryCorrelation,
+                BeliefRelevanceTierTokens.ExactCorrelation);
+            AssertEqual(label + " ordinary metadata keeps its issue identity",
+                issueDefName, resolved.stances[0].precept.issue.defName);
+            AssertEqual(label + " ordinary metadata requires no exact correction", 0,
                 BeliefPolicySnapshot.CreateDefault().correlationOverrides.Count);
         }
 
@@ -882,6 +1038,7 @@ namespace PawnDiary
             BeliefSnapshot converterSnapshot = Snapshot();
             converterSnapshot.pawnId = "ConverterPawn";
             converterSnapshot.certainty = new BeliefCertaintyFact { hasCurrent = true, current = 0.8f };
+            sharedTargetMutation.narrative.povPawnId = converterSnapshot.pawnId;
             BeliefStanceResolution converterResolution = Resolve(
                 converterSnapshot, sharedTargetMutation, BeliefPolicySnapshot.CreateDefault());
             AssertNear("recipient mutation does not rewrite converter certainty", 0.8f,
@@ -1449,6 +1606,7 @@ namespace PawnDiary
             BeliefEventEvidence speakerFresh = AuthoritySpeechPolicy.EvidenceFor(
                 "Speaker", 880, "ThroneSpeech", "Speaker label",
                 AuthoritySpeechPolicy.PerspectiveSpeaker, throne, policy);
+            authoritySnapshot.pawnId = speakerFresh.narrative.povPawnId;
             BeliefStanceResolution speakerResolution = Resolve(
                 authoritySnapshot, speakerFresh, resolverPolicy);
             AssertSelected("authority speech selects only relevant visible doctrine",
@@ -1469,6 +1627,7 @@ namespace PawnDiary
                 BeliefContextFormatter.Format(
                     speakerResolution, NarrativeDetailLevelTokens.Full, resolverPolicy));
 
+            authoritySnapshot.pawnId = witness.narrative.povPawnId;
             BeliefStanceResolution witnessResolution = Resolve(
                 authoritySnapshot, witness, resolverPolicy);
             AssertSelected("witness may receive the shared relevant authority doctrine",
@@ -2297,6 +2456,9 @@ namespace PawnDiary
             BeliefPolicySnapshot policy = BeliefPolicySnapshot.CreateDefault();
             BeliefSnapshot converterSnapshot = Snapshot();
             converterSnapshot.pawnId = "ConverterPawn";
+            // Runtime pair-page orchestration re-stamps the source row for each POV before resolving.
+            // Mirror that contract here while retaining SyntheticPawn as the mutation subject.
+            evidence.narrative.povPawnId = converterSnapshot.pawnId;
             BeliefStanceResolution result = Resolve(converterSnapshot, evidence, policy);
             AssertTrue("mutation-only resolution is useful context", result.HasUsefulContext);
             AssertEqual("mutation-only resolution needs no selected stance", 0, result.stances.Count);
@@ -2339,6 +2501,7 @@ namespace PawnDiary
 
             BeliefSnapshot targetSnapshot = Snapshot();
             targetSnapshot.pawnId = "SyntheticPawn";
+            evidence.narrative.povPawnId = targetSnapshot.pawnId;
             BeliefStanceResolution targetResult = Resolve(targetSnapshot, evidence, policy);
             AssertTrue("mutation owner is identified as the current POV",
                 targetResult.mutationSubjectIsPov);
@@ -3239,11 +3402,15 @@ namespace PawnDiary
             insectLoved.issue.description = string.Empty;
             insectLoved.description =
                 "There is nothing more divine than the succulent, slimy flesh of an insect.";
+            BeliefSnapshot insectSnapshot = Snapshot(insectLoved, genericFood, unrelated);
+            insectSnapshot.capturedTick = exactInsect.narrative.tick;
             AssertSelected("exact insect-meat evidence activates only the matching live stance",
-                Resolve(Snapshot(insectLoved, genericFood, unrelated), exactInsect, policy),
+                Resolve(insectSnapshot, exactInsect, policy),
                 insectLoved.defName);
+            BeliefSnapshot unrelatedInsectSnapshot = Snapshot(unrelated);
+            unrelatedInsectSnapshot.capturedTick = exactInsect.narrative.tick;
             AssertEmpty("exact insect-meat evidence leaves unrelated doctrine silent",
-                Resolve(Snapshot(unrelated), exactInsect, policy));
+                Resolve(unrelatedInsectSnapshot, exactInsect, policy));
 
             FoodIngestionEvidenceFact exactAnimalMeat = FoodFact(
                 FoodIngestionEvidenceKindTokens.AnimalMeat, "Meat_Muffalo", "muffalo meat");

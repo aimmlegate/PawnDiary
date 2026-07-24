@@ -29,6 +29,8 @@ namespace PawnDiary
             new List<BeliefAutomaticCoverageCount>();
         public readonly List<BeliefAutomaticCoverageCount> confidenceBands =
             new List<BeliefAutomaticCoverageCount>();
+        public readonly List<BeliefAutomaticCoverageCount> rejectionReasons =
+            new List<BeliefAutomaticCoverageCount>();
         public float runnerUpGapTotal;
         public float minimumRunnerUpGap;
         public float maximumRunnerUpGap;
@@ -52,6 +54,12 @@ namespace PawnDiary
         public int ConfidenceBandCount(string token)
         {
             return CountFor(confidenceBands, token);
+        }
+
+        /// <summary>Returns a fixed-token rejection-reason count, or zero when it has not occurred.</summary>
+        public int RejectionReasonCount(string token)
+        {
+            return CountFor(rejectionReasons, token);
         }
 
         private static int CountFor(List<BeliefAutomaticCoverageCount> rows, string token)
@@ -97,6 +105,19 @@ namespace PawnDiary
             BeliefAutomaticCoverageConfidenceBandTokens.None
         };
 
+        private static readonly string[] RejectionReasonOrder =
+        {
+            BeliefAutomaticCoverageReasonTokens.InvalidInput,
+            BeliefAutomaticCoverageReasonTokens.UnavailableSnapshot,
+            BeliefAutomaticCoverageReasonTokens.UnverifiedEvidence,
+            BeliefAutomaticCoverageReasonTokens.MismatchedPov,
+            BeliefAutomaticCoverageReasonTokens.FutureEvidence,
+            BeliefAutomaticCoverageReasonTokens.NoEvidence,
+            BeliefAutomaticCoverageReasonTokens.BelowConfidence,
+            BeliefAutomaticCoverageReasonTokens.RunnerUpAmbiguity,
+            BeliefAutomaticCoverageReasonTokens.NoCandidate
+        };
+
         /// <summary>Creates one accepted structural or exact diagnostic.</summary>
         public static BeliefAutomaticCoverageDiagnostic Accepted(
             string outcome,
@@ -140,7 +161,11 @@ namespace PawnDiary
             return new BeliefAutomaticCoverageDiagnostic
             {
                 outcome = outcome,
-                reason = BeliefAutomaticCoverageReasonTokens.None,
+                reason = lexical.rejectedBelowConfidence
+                    ? BeliefAutomaticCoverageReasonTokens.BelowConfidence
+                    : lexical.rejectedAsAmbiguous
+                        ? BeliefAutomaticCoverageReasonTokens.RunnerUpAmbiguity
+                        : BeliefAutomaticCoverageReasonTokens.None,
                 winnerSource = SafeSource(top.relevanceSource),
                 winnerTier = SafeTier(top.relevanceTier),
                 confidenceBand = ConfidenceBand(
@@ -185,6 +210,7 @@ namespace PawnDiary
             IncrementKnown(aggregate.outcomes, OutcomeOrder, safe.outcome);
             IncrementKnown(aggregate.winnerTiers, WinnerTierOrder, safe.winnerTier);
             IncrementKnown(aggregate.confidenceBands, ConfidenceBandOrder, safe.confidenceBand);
+            IncrementKnown(aggregate.rejectionReasons, RejectionReasonOrder, safe.reason);
             if (safe.hasRunnerUpGap)
             {
                 aggregate.runnerUpGapTotal += safe.runnerUpGap;
@@ -207,6 +233,7 @@ namespace PawnDiary
             AppendCounts(text, "outcomes", value.outcomes, OutcomeOrder);
             AppendCounts(text, "winner_tiers", value.winnerTiers, WinnerTierOrder);
             AppendCounts(text, "confidence_bands", value.confidenceBands, ConfidenceBandOrder);
+            AppendCounts(text, "rejection_reasons", value.rejectionReasons, RejectionReasonOrder);
             float average = value.runnerUpGapCount == 0
                 ? 0f
                 : value.runnerUpGapTotal / value.runnerUpGapCount;
