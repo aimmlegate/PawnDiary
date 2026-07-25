@@ -78,6 +78,7 @@ namespace DiaryPipelineTests
             TestContextProviderRegistry();
             TestEventWindowPolicy();
             TestDiaryEntryFilterPolicy();
+            TestDiaryEntrySearch();
             TestAnomalySemanticPrecisionXmlPolicy();
             TestOdysseyExistingIntegrationXmlPolicy();
             TestOdysseyJourneyFoundationXmlContract();
@@ -4506,6 +4507,53 @@ namespace DiaryPipelineTests
                 "evt_0|initiator", bounded[0]);
             AssertEqual("favorite normalization keeps the last in-bound key",
                 "evt_4095|initiator", bounded[bounded.Count - 1]);
+        }
+
+        private static void TestDiaryEntrySearch()
+        {
+            AssertTrue(
+                "search stays inactive below the configured minimum",
+                !DiaryEntrySearch.IsActive(" a ", 3));
+            AssertTrue(
+                "inactive search keeps every page",
+                DiaryEntrySearch.Matches("No match", "No match", " a ", 3));
+            AssertTrue(
+                "search activates at the configured minimum after trimming",
+                DiaryEntrySearch.IsActive(" fire ", 3));
+            AssertTrue(
+                "search matches a title without regard to casing",
+                DiaryEntrySearch.Matches("A Narrow Escape", "Quiet prose.", "ESCAPE", 3));
+            AssertTrue(
+                "search matches this page's body without regard to casing",
+                DiaryEntrySearch.Matches("Untitled", "We survived the mechanoid fire.", "MeChAnOiD", 3));
+            AssertTrue(
+                "search rejects a term absent from the supplied title and body",
+                !DiaryEntrySearch.Matches("Untitled", "This pawn's own prose.", "connected pov", 3));
+
+            string highlighted = DiaryEntrySearch.HighlightRichText(
+                "<b>Fire</b> and fire",
+                "FIRE",
+                "f0a010",
+                3);
+            AssertEqual(
+                "search highlighting preserves existing rich-text tags and original casing",
+                "<b><color=#F0A010>Fire</color></b> and <color=#F0A010>fire</color>",
+                highlighted);
+
+            string safeLessThan = ((char)0x2039).ToString();
+            string safeGreaterThan = ((char)0x203A).ToString();
+            AssertEqual(
+                "plain title highlighting escapes raw rich-text brackets",
+                "A " + safeLessThan + "tag" + safeGreaterThan + " <color=#F0A010>Fire</color>",
+                DiaryEntrySearch.HighlightPlainText("A <tag> Fire", "fire", "#F0A010", 3));
+            AssertEqual(
+                "invalid highlight colors leave rich text unchanged",
+                "Fire",
+                DiaryEntrySearch.HighlightRichText("Fire", "fire", "not-a-color", 3));
+            AssertEqual(
+                "malformed rich-text brackets remain visible without stalling highlighting",
+                "<color=#F0A010>Fire</color> <unclosed",
+                DiaryEntrySearch.HighlightRichText("Fire <unclosed", "fire", "F0A010", 3));
         }
 
         private static void TestEventWindowPolicy()

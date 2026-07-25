@@ -72,6 +72,8 @@ namespace PawnDiary
             public float ExpansionBlend;
             public bool ShowLlmDebugInfo;
             public IEnumerable<DiaryNameHighlight> NameHighlights;
+            public string SearchQuery;
+            public string SearchHighlightColorHex;
         }
 
         /// <summary>
@@ -138,7 +140,9 @@ namespace PawnDiary
                 DrawEntryHeader(
                     new Rect(localEntryRect.x + 34f, localEntryRect.y + 5f, Mathf.Max(80f, headerRight - localEntryRect.x - 34f), 22f),
                     entry,
-                    accentColor);
+                    accentColor,
+                    request.SearchQuery,
+                    request.SearchHighlightColorHex);
                 DrawExpansionIndicator(titleRect, request.Expanded, request.ExpansionBlend, accentColor);
                 bool toggleExpansion = Widgets.ButtonInvisible(titleRect, false) && !favClicked;
 
@@ -195,7 +199,9 @@ namespace PawnDiary
                         allowDirectSpeechBlocks,
                         decorationContext,
                         roleplaySeed,
-                        entryNameHighlights);
+                        entryNameHighlights,
+                        request.SearchQuery,
+                        request.SearchHighlightColorHex);
                 }
 
                 float afterTextY = textRect.yMax;
@@ -606,7 +612,12 @@ namespace PawnDiary
         /// matching the reference mockup. Finished titles keep the short fade + soft accent pulse;
         /// pending title follow-ups keep the date visible and animate dots in the future title slot.
         /// </summary>
-        private static void DrawEntryHeader(Rect rect, DiaryEntryView entry, Color accent)
+        private static void DrawEntryHeader(
+            Rect rect,
+            DiaryEntryView entry,
+            Color accent,
+            string searchQuery,
+            string searchHighlightColorHex)
         {
             if (entry == null)
             {
@@ -629,7 +640,14 @@ namespace PawnDiary
                 return;
             }
 
-            DrawHeaderTitle(titleRect, entry, title, accent, hasDate);
+            DrawHeaderTitle(
+                titleRect,
+                entry,
+                title,
+                accent,
+                hasDate,
+                searchQuery,
+                searchHighlightColorHex);
         }
 
         /// <summary>
@@ -668,7 +686,14 @@ namespace PawnDiary
         /// the old single-label header used, now applied to just the title. A leading "\u2014 " separator is
         /// drawn only when a date precedes it, so a rare date-less entry shows no dangling em-dash.
         /// </summary>
-        private static void DrawHeaderTitle(Rect rect, DiaryEntryView entry, string title, Color accent, bool hasDate)
+        private static void DrawHeaderTitle(
+            Rect rect,
+            DiaryEntryView entry,
+            string title,
+            Color accent,
+            bool hasDate,
+            string searchQuery,
+            string searchHighlightColorHex)
         {
             if (rect.width <= 0f)
             {
@@ -689,7 +714,12 @@ namespace PawnDiary
             titleColor.a = alpha;
             GUI.color = titleColor;
 
-            Widgets.LabelFit(rect, hasDate ? "\u2014 " + title : title);
+            string highlightedTitle = DiaryEntrySearch.HighlightPlainText(
+                title,
+                searchQuery,
+                searchHighlightColorHex,
+                UiStyle.FilterSearchMinimumCharacters);
+            Widgets.LabelFit(rect, hasDate ? "\u2014 " + highlightedTitle : highlightedTitle);
 
             GUI.color = oldColor;
             Text.Anchor = oldAnchor;

@@ -139,6 +139,9 @@ namespace PawnDiary
         // selector, filter controls, and (in dev mode) the diary dev tools.
         public float filterPanelWidth = 260f;
         public float filterPanelGap = 12f;
+        // Live text search stays inactive until this many trimmed characters have been typed, avoiding
+        // enormous low-signal result sets for queries such as "a".
+        public int filterSearchMinimumCharacters = 3;
 
         // ---- Control/header/card dimensions ----
         public float controlLineHeight = 28f;
@@ -283,6 +286,9 @@ namespace PawnDiary
         // Amber accent for the filter-panel toggle when the panel is open AND a filter is engaged, so
         // the third ("active") state stands apart from the plain open (bright) and closed (dim) states.
         public DiaryUiColorSpec filterActiveIconColor = Color(0.96f, 0.78f, 0.40f, 0.98f);
+        // Bright amber applied to matching title/body substrings. This is color-only markup so search
+        // highlighting cannot change card wrapping or invalidate measured row heights.
+        public DiaryUiColorSpec filterSearchHighlightColor = Color(1f, 0.74f, 0.24f, 1f);
         public DiaryUiColorSpec debugTextColor = Color(0.54f, 0.58f, 0.60f, 0.90f);
         public DiaryUiColorSpec devDangerButtonColor = Color(0.95f, 0.22f, 0.18f, 0.92f);
         public DiaryUiColorSpec linkedEntryLabelColor = Color(0.80f, 0.85f, 0.92f, 1f);
@@ -445,6 +451,7 @@ namespace PawnDiary
         public Color RegenerateEntryButtonColor => regenerateEntryButtonColor.ToColor(new Color(0.82f, 0.85f, 0.88f, 0.85f));
         public Color FavoriteStarColor => favoriteStarColor.ToColor(new Color(0.98f, 0.82f, 0.34f, 1f));
         public Color FilterActiveIconColor => filterActiveIconColor.ToColor(new Color(0.96f, 0.78f, 0.40f, 0.98f));
+        public Color FilterSearchHighlightColor => filterSearchHighlightColor.ToColor(new Color(1f, 0.74f, 0.24f, 1f));
         public Color DebugTextColor => debugTextColor.ToColor(new Color(0.54f, 0.58f, 0.60f, 0.90f));
         public Color DevDangerButtonColor => devDangerButtonColor.ToColor(new Color(0.95f, 0.22f, 0.18f, 0.92f));
         public Color LinkedEntryLabelColor => linkedEntryLabelColor.ToColor(new Color(0.80f, 0.85f, 0.92f));
@@ -458,6 +465,20 @@ namespace PawnDiary
         public Color PawnNamePrisonerColor => pawnNamePrisonerColor.ToColor(new Color(0.95f, 0.48f, 0.20f));
         public Color PawnNameEnemyColor => pawnNameEnemyColor.ToColor(ColoredText.FactionColor_Hostile);
         public Color PawnNameNeutralColor => pawnNameNeutralColor.ToColor(new Color(0.55f, 0.72f, 1f));
+
+        /// <summary>
+        /// XML-owned minimum query length, defensively clamped so a malformed Def cannot make search
+        /// unusable or require an impractically long query.
+        /// </summary>
+        public int FilterSearchMinimumCharacters
+        {
+            get
+            {
+                if (filterSearchMinimumCharacters < 1) return 1;
+                if (filterSearchMinimumCharacters > 32) return 32;
+                return filterSearchMinimumCharacters;
+            }
+        }
 
         public Color ColorForCue(string cue, bool important)
         {

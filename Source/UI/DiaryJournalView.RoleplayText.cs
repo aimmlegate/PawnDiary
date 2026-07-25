@@ -28,7 +28,9 @@ namespace PawnDiary
             bool allowDirectSpeechBlocks,
             DiaryTextDecorationContext decorationContext,
             int seed,
-            IEnumerable<DiaryNameHighlight> nameHighlights)
+            IEnumerable<DiaryNameHighlight> nameHighlights,
+            string searchQuery,
+            string searchHighlightColorHex)
         {
             GameFont oldFont = Text.Font;
             Color oldColor = GUI.color;
@@ -53,6 +55,11 @@ namespace PawnDiary
                 style.fontStyle = block.fontStyle;
                 style.alignment = block.alignment;
                 string rich = RoleplayRichText(block, dialogueColor, decorationContext, seed, style.fontSize, nameHighlights);
+                rich = DiaryEntrySearch.HighlightRichText(
+                    rich,
+                    searchQuery,
+                    searchHighlightColorHex,
+                    UiStyle.FilterSearchMinimumCharacters);
                 float lineWidth = Mathf.Max(80f, rect.width - block.leftInset - block.rightInset);
                 float textHeight = style.CalcHeight(new GUIContent(rich), lineWidth);
                 float blockHeight = textHeight;

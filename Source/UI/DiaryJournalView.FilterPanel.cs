@@ -1,8 +1,9 @@
 // Right-hand filter/controls panel for the Diary tab. Split from ITab_Pawn_Diary.cs.
 //
 // This is an independent, NON-virtualized scroll column drawn beside the journal. It owns the year
-// selector, the journal filter controls (a favorites-only star toggle + per-tag chips that narrow
-// the journal's cards), and — in dev mode — the diary dev tools that used to sit above the journal.
+// selector, the journal filter controls (live title/body search, a favorites-only star toggle, and
+// per-tag chips that narrow the journal's cards), and — in dev mode — the diary dev tools that used
+// to sit above the journal.
 // It is built entirely from existing RimWorld widgets (Listing_Standard, Widgets.CheckboxLabeled/
 // ButtonText, the year FloatMenu pager, DrawMenuSection) rather than any bespoke control.
 //
@@ -37,6 +38,9 @@ namespace PawnDiary
         private string filterPanelPawnId;
         private bool filterFavoritesOnly;
         private readonly HashSet<string> filterActiveTags = new HashSet<string>();
+        // Live query typed in the panel. It is session-only UI state and resets with the shown pawn,
+        // matching the favorites/tag selections; search remains on when paging between that pawn's years.
+        private string filterSearchQuery = string.Empty;
         // Reusable buffer for the per-year distinct tags. The source/revision/year keys let Layout,
         // Repaint, and other IMGUI passes reuse it instead of rescanning a long diary every draw.
         // Each row carries the group label plus its color cue/importance so a filter chip can be tinted
@@ -62,16 +66,37 @@ namespace PawnDiary
         private bool journalFilterFavoritesOnly;
         private readonly HashSet<string> journalFilterTags = new HashSet<string>();
         private int journalFilterFavoritesVersion = -1;
+        private string journalFilterSearchQuery = string.Empty;
+        private bool journalFilterShowLlmDebugInfo;
         private int journalFilterVersion;
 
         /// <summary>
-        /// True while any journal filter selection is engaged (favorites-only or at least one tag
-        /// chip). Drives both the header funnel's amber "filtering" state and whether FillTab narrows
-        /// the journal through <see cref="EnsureFilteredJournalEntries"/>.
+        /// True while any journal filter selection is engaged (favorites-only, at least one tag chip,
+        /// or an active text query). Drives both the header funnel's amber "filtering" state and
+        /// whether FillTab narrows the journal through <see cref="EnsureFilteredJournalEntries"/>.
         /// </summary>
         private bool JournalFiltersActive
         {
-            get { return filterFavoritesOnly || filterActiveTags.Count > 0; }
+            get { return filterFavoritesOnly || filterActiveTags.Count > 0 || JournalSearchActive; }
+        }
+
+        private bool JournalSearchActive
+        {
+            get { return DiaryEntrySearch.IsActive(filterSearchQuery, UiStyle.FilterSearchMinimumCharacters); }
+        }
+
+        /// <summary>
+        /// Trimmed active query shared by filtering and card highlighting; empty while the player has
+        /// typed fewer than the XML-configured minimum characters.
+        /// </summary>
+        private string ActiveJournalSearchQuery
+        {
+            get
+            {
+                return JournalSearchActive
+                    ? DiaryEntrySearch.NormalizeQuery(filterSearchQuery)
+                    : string.Empty;
+            }
         }
 
         /// <summary>
@@ -83,14 +108,20 @@ namespace PawnDiary
         /// counts intentionally read the UNFILTERED year list so they cannot shrink away while
         /// filtering narrows the journal.
         /// </summary>
-        private List<DiaryEntryView> EnsureFilteredJournalEntries(List<DiaryEntryView> ordered, int visibleRevision)
+        private List<DiaryEntryView> EnsureFilteredJournalEntries(
+            List<DiaryEntryView> ordered,
+            int visibleRevision,
+            bool showLlmDebugInfo)
         {
+            string searchQuery = ActiveJournalSearchQuery;
             bool dirty = journalFilterSource != ordered
                 || journalFilterSourceRevision != visibleRevision
                 || journalFilterFavoritesOnly != filterFavoritesOnly
                 || journalFilterFavoritesVersion != favoritesVersion
                 || journalFilterTags.Count != filterActiveTags.Count
-                || !journalFilterTags.SetEquals(filterActiveTags);
+                || !journalFilterTags.SetEquals(filterActiveTags)
+                || !string.Equals(journalFilterSearchQuery, searchQuery, StringComparison.Ordinal)
+                || journalFilterShowLlmDebugInfo != showLlmDebugInfo;
             if (!dirty)
             {
                 return journalFilterBuffer;
@@ -107,7 +138,12 @@ namespace PawnDiary
                             filterFavoritesOnly,
                             IsFavoriteEntry(entry.EntryKey),
                             entry.GroupLabel,
-                            filterActiveTags))
+                            filterActiveTags)
+                        && DiaryEntrySearch.Matches(
+                            EntryDisplayTitle(entry),
+                            EntryBodyText(entry, showLlmDebugInfo),
+                            searchQuery,
+                            UiStyle.FilterSearchMinimumCharacters))
                     {
                         journalFilterBuffer.Add(entry);
                     }
@@ -120,6 +156,8 @@ namespace PawnDiary
             journalFilterFavoritesVersion = favoritesVersion;
             journalFilterTags.Clear();
             journalFilterTags.UnionWith(filterActiveTags);
+            journalFilterSearchQuery = searchQuery;
+            journalFilterShowLlmDebugInfo = showLlmDebugInfo;
             journalFilterVersion++;
             return journalFilterBuffer;
         }
@@ -272,8 +310,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Journal filter controls: a favorites-only toggle, per-tag chips for the tags present in the
-        /// current year, and a Clear button. The selections narrow the journal via
+        /// Journal filter controls: live title/body search, a favorites-only toggle, per-tag chips for
+        /// the tags present in the current year, and a Clear button. The selections narrow the journal via
         /// <see cref="EnsureFilteredJournalEntries"/> on the next frame.
         /// </summary>
         private void DrawJournalFilterSection(
@@ -281,9 +319,12 @@ namespace PawnDiary
             List<DiaryEntryView> orderedForTags,
             int visibleRevision)
         {
-            // No "Filters" section header: the favorites star and the tag chips read as filter controls
-            // on their own, and the extra title only added clutter above them.
+            // No umbrella "Filters" header: search, the favorites star, and tag chips are self-labeling,
+            // and an extra title only adds clutter above them.
             listing.Gap(6f);
+            DrawFilterSearch(listing);
+
+            listing.Gap(8f);
             DrawFavoritesOnlyToggle(listing);
 
             listing.Gap(6f);
@@ -305,13 +346,35 @@ namespace PawnDiary
             }
 
             listing.Gap(8f);
-            // Clear resets the filter selections; the journal re-filters on the next frame. A separate
-            // "Apply" button was removed — filtering is toggle-driven and applies immediately.
+            // Clear resets every filter selection, including live search; the journal re-filters on the
+            // next frame. There is deliberately no Apply/Search button: every edit applies immediately.
             Rect clearRect = listing.GetRect(ControlLineHeight);
             if (Widgets.ButtonText(clearRect, "PawnDiary.Tab.FilterClear".Translate()))
             {
                 filterFavoritesOnly = false;
                 filterActiveTags.Clear();
+                filterSearchQuery = string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Draws the single-line live search field. Queries shorter than the XML-configured minimum stay
+        /// visible in the field but do not narrow the year, preventing one-letter result floods.
+        /// </summary>
+        private void DrawFilterSearch(Listing_Standard listing)
+        {
+            DrawFilterSectionHeader(listing, "PawnDiary.Tab.FilterSearchHeader".Translate());
+            Rect searchRect = listing.GetRect(ControlLineHeight);
+            filterSearchQuery = Widgets.TextField(searchRect, filterSearchQuery ?? string.Empty);
+            TooltipHandler.TipRegion(searchRect, "PawnDiary.Tab.FilterSearchTip".Translate());
+
+            if (!string.IsNullOrWhiteSpace(filterSearchQuery) && !JournalSearchActive)
+            {
+                Color oldColor = GUI.color;
+                GUI.color = UiStyle.ModelNameColor;
+                listing.Label(
+                    "PawnDiary.Tab.FilterSearchMinimum".Translate(UiStyle.FilterSearchMinimumCharacters));
+                GUI.color = oldColor;
             }
         }
 
@@ -394,6 +457,7 @@ namespace PawnDiary
             filterPanelPawnId = pawnId;
             filterFavoritesOnly = false;
             filterActiveTags.Clear();
+            filterSearchQuery = string.Empty;
             filterPanelScrollPosition = Vector2.zero;
             filterTagInfoSource = null;
             filterTagInfoSourceRevision = -1;

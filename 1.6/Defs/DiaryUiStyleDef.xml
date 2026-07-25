@@ -47,6 +47,8 @@
     <!-- Right-hand filter/controls panel (independent, non-virtualized scroll column). -->
     <filterPanelWidth>260</filterPanelWidth>
     <filterPanelGap>12</filterPanelGap>
+    <!-- Live title/body search activates only after this many trimmed characters. -->
+    <filterSearchMinimumCharacters>3</filterSearchMinimumCharacters>
 
     <!-- Header/card dimensions -->
     <controlLineHeight>28</controlLineHeight>
@@ -177,6 +179,8 @@
     <favoriteStarColor><r>0.98</r><g>0.82</g><b>0.34</b><a>1</a></favoriteStarColor>
     <!-- Filter-panel toggle when open AND a filter is engaged (amber "active" third state). -->
     <filterActiveIconColor><r>0.96</r><g>0.78</g><b>0.40</b><a>0.98</a></filterActiveIconColor>
+    <!-- Matching title/body substrings. Color-only markup preserves measured text wrapping. -->
+    <filterSearchHighlightColor><r>1</r><g>0.74</g><b>0.24</b><a>1</a></filterSearchHighlightColor>
     <debugTextColor><r>0.54</r><g>0.58</g><b>0.60</b><a>0.90</a></debugTextColor>
     <devDangerButtonColor><r>0.95</r><g>0.22</g><b>0.18</b><a>0.92</a></devDangerButtonColor>
     <linkedEntryLabelColor><r>0.80</r><g>0.85</g><b>0.92</b><a>1</a></linkedEntryLabelColor>

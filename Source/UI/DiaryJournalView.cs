@@ -333,9 +333,8 @@ namespace PawnDiary
                     journalRect.y + Mathf.Max(0f, (headerRect.height - toggleSize) * 0.5f),
                     toggleSize,
                     toggleSize);
-                // "Active" third state = the panel is open and at least one journal filter is engaged
-                // (favorites-only or any tag chip), so the funnel reads amber while it is narrowing
-                // the journal.
+                // "Active" third state = at least one journal filter is engaged (live search,
+                // favorites-only, or any tag chip), so the funnel reads amber while it narrows the journal.
                 bool filtersActive = JournalFiltersActive;
                 if (DrawFilterPanelToggleIcon(toggleRect, filterPanelEnabled, filtersActive))
                 {
@@ -438,20 +437,26 @@ namespace PawnDiary
                 return;
             }
 
-            // Journal filters (favorites-only + the tag chips) narrow the year's cards to the pages
-            // the player asked for. The UNFILTERED list still feeds the tag-chip collection and the
-            // year pager counts above, so chips and counts stay stable while filtering narrows the
-            // journal. With no filter engaged the journal uses the cache's list directly and the
-            // filtering pass costs nothing.
+            // Journal filters (live search + favorites-only + tag chips) narrow only the selected
+            // year's cards. The UNFILTERED list still feeds tag collection and year counts, so those
+            // controls stay stable while filtering. With no active filter the journal uses the cache's
+            // list directly and the filtering pass costs nothing.
             List<DiaryEntryView> shown = ordered;
             int shownRevision = visibleEntriesCache.VisibleRevision;
             if (JournalFiltersActive)
             {
-                shown = EnsureFilteredJournalEntries(ordered, visibleEntriesCache.VisibleRevision);
+                shown = EnsureFilteredJournalEntries(
+                    ordered,
+                    visibleEntriesCache.VisibleRevision,
+                    showLlmDebugInfo);
                 shownRevision = journalFilterVersion;
                 if (shown.Count == 0)
                 {
-                    Widgets.Label(outRect, "PawnDiary.Tab.NoEntriesMatchFilters".Translate());
+                    Widgets.Label(
+                        outRect,
+                        (JournalSearchActive
+                            ? "PawnDiary.Tab.NoEntriesMatchSearch"
+                            : "PawnDiary.Tab.NoEntriesMatchFilters").Translate());
                     return;
                 }
             }
@@ -460,6 +465,10 @@ namespace PawnDiary
             float viewWidth = outRect.width - 16f;
             float animationDelta = ExpansionAnimationDelta();
             List<DiaryNameHighlight> nameHighlights = NameHighlightsFor(pawn);
+            string activeSearchQuery = ActiveJournalSearchQuery;
+            string searchHighlightColorHex = activeSearchQuery.Length == 0
+                ? string.Empty
+                : ColorUtility.ToHtmlStringRGB(UiStyle.FilterSearchHighlightColor);
             int layoutProcessed;
             int layoutTotal;
             if (!RebuildEntryLayoutIfNeeded(
@@ -583,7 +592,17 @@ namespace PawnDiary
                     bool compactCollapsed = !expanded && expansionBlend <= 0f;
                     if (compactCollapsed)
                     {
-                        bool favClicked = DrawCollapsedEntry(entry, visibleEntryRect, accentColor, expanded, expansionBlend, entryKeys[i], subject.PawnId, component);
+                        bool favClicked = DrawCollapsedEntry(
+                            entry,
+                            visibleEntryRect,
+                            accentColor,
+                            expanded,
+                            expansionBlend,
+                            entryKeys[i],
+                            subject.PawnId,
+                            component,
+                            activeSearchQuery,
+                            searchHighlightColorHex);
                         if (Widgets.ButtonInvisible(visibleEntryRect, false) && !favClicked)
                         {
                             SetEntryExpanded(entry, true, expansionBlend);
@@ -611,6 +630,8 @@ namespace PawnDiary
                             ExpansionBlend = expansionBlend,
                             ShowLlmDebugInfo = showLlmDebugInfo,
                             NameHighlights = nameHighlights,
+                            SearchQuery = activeSearchQuery,
+                            SearchHighlightColorHex = searchHighlightColorHex,
                         }))
                     {
                         SetEntryExpanded(entry, !expanded, expansionBlend);

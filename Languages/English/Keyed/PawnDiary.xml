@@ -255,11 +255,15 @@
   <PawnDiary.Tab.FavoriteRemoveTip>Remove this page from favorites.</PawnDiary.Tab.FavoriteRemoveTip>
   <!-- Right-hand filter/controls panel: year selector, journal filters, and (dev mode) dev tools. -->
   <PawnDiary.Tab.FilterYearHeader>Year</PawnDiary.Tab.FilterYearHeader>
+  <PawnDiary.Tab.FilterSearchHeader>Search title and text</PawnDiary.Tab.FilterSearchHeader>
+  <PawnDiary.Tab.FilterSearchTip>Search this pawn's titles and page text in the selected year. Linked POV previews are excluded.</PawnDiary.Tab.FilterSearchTip>
+  <PawnDiary.Tab.FilterSearchMinimum>Type at least {0} characters to search.</PawnDiary.Tab.FilterSearchMinimum>
   <PawnDiary.Tab.FilterFavoritesOnly>Favorites only</PawnDiary.Tab.FilterFavoritesOnly>
   <PawnDiary.Tab.FilterTagsHeader>Tags</PawnDiary.Tab.FilterTagsHeader>
   <PawnDiary.Tab.FilterNoTags>No tags in this year.</PawnDiary.Tab.FilterNoTags>
   <PawnDiary.Tab.FilterClear>Clear</PawnDiary.Tab.FilterClear>
   <PawnDiary.Tab.NoEntriesMatchFilters>No pages match the current filters. Clear the filters in the filters panel to see the whole year.</PawnDiary.Tab.NoEntriesMatchFilters>
+  <PawnDiary.Tab.NoEntriesMatchSearch>No pages match the search and selected filters in this year.</PawnDiary.Tab.NoEntriesMatchSearch>
   <PawnDiary.Tab.FilterDevHeader>Dev tools</PawnDiary.Tab.FilterDevHeader>
   <!-- Header toggle button that shows/hides the right-hand filter panel. -->
   <PawnDiary.Tab.ShowFilterPanel>Show the filters panel.</PawnDiary.Tab.ShowFilterPanel>

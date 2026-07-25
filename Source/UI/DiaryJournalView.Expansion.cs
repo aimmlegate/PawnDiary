@@ -18,7 +18,17 @@ namespace PawnDiary
         /// strip, and no body tint/rule. This keeps collapsed histories readable instead of looking
         /// like clipped full cards.
         /// </summary>
-        private bool DrawCollapsedEntry(DiaryEntryView entry, Rect rect, Color accent, bool expanded, float expansionBlend, string entryKey, string pawnId, DiaryGameComponent component)
+        private bool DrawCollapsedEntry(
+            DiaryEntryView entry,
+            Rect rect,
+            Color accent,
+            bool expanded,
+            float expansionBlend,
+            string entryKey,
+            string pawnId,
+            DiaryGameComponent component,
+            string searchQuery,
+            string searchHighlightColorHex)
         {
 
             Widgets.DrawMenuSection(rect);
@@ -87,7 +97,12 @@ namespace PawnDiary
 
                 22f);
 
-            DrawEntryHeader(headerRect, entry, accent);
+            DrawEntryHeader(
+                headerRect,
+                entry,
+                accent,
+                searchQuery,
+                searchHighlightColorHex);
 
             DrawExpansionIndicator(titleRect, expanded, expansionBlend, accent);
 
