@@ -3,7 +3,7 @@
 Onboarding for anyone (AI agent or human) changing this mod. **Read this once** and the code
 should read easily. Companion files:
 - `skills/pawndiary-engineering/SKILL.md` — the workflow to follow (plan → smallest change → build → document).
-- `repowiki/README.md` — human-readable architecture, runtime, event, and integration pages.
+- `repowiki/README.md` — player guides plus exhaustive source-backed testing references.
 - `CHANGELOG.md` — short dated notes for notable changes only.
 - `CLAUDE.md` / `CODEX.md` — thin per-agent wrappers; both defer to this file.
 
@@ -107,8 +107,9 @@ installed?* It must run or no-op — never crash, never spam errors.
   exist at runtime. **Do not** use `System.Web.Extensions` / `JavaScriptSerializer` or add external
   JSON libraries — JSON is parsed by `Source/Util/MiniJson.cs`.
 - **Source layout.** All C# lives under `Source/` (the game ignores it and loads only the compiled
-  DLL), grouped by concern. The `.csproj` globs `**\*.cs`, so new files need no project edit. Full
-  tree: `repowiki/README.md` and the relevant source directories.
+  DLL), grouped by concern. The `.csproj` globs `**\*.cs`, so new files need no project edit.
+  Source-backed behavior references start at `repowiki/README.md`; code ownership remains in the
+  relevant source directories.
 - **Editable data is XML**, loaded at startup with no recompile: Defs under `1.6/Defs/` and strings
   under `Languages/`.
 
@@ -139,7 +140,7 @@ bypass.
 ---
 
 ## Pointers
-- `repowiki/README.md` — human architecture and integration entry point.
+- `repowiki/README.md` — player guides and exhaustive testing-reference entry point.
 - `design/*_IMPLEMENTATION_PLAN.md` — focused plans when a feature needs one.
 - `CHANGELOG.md` — short dated notes for notable changes only.
 - `1.6/Defs/*.xml` — editable interaction groups / tuning / prompts / personas (no recompile).

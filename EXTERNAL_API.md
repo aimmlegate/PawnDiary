@@ -1,10 +1,13 @@
 # Pawn Diary External API
 
-This root file is a compatibility pointer. The readable adapter guide is now in the GitHub wiki:
+This root file is the stable entry point for the public in-process adapter contract:
 
-- [External API Quickstart](repowiki/en/content/Integration%20Framework/Public%20API%20Reference/External%20API%20Quickstart.md) — setup, minimal C# call, XML claim, write paths, request schema, snapshots, and safety rules.
-- [Adapter Contract](repowiki/en/content/Integration%20Framework/Public%20API%20Reference/Adapter%20Contract.md) — versioning, lifecycle, budgets, ownership, and no-DLC compatibility.
 - [Buildable example adapter](integrations/PawnDiary.ExampleAdapter/) — use `Source/PawnDiaryExampleApi.cs` as the starting point.
+- [Shipped compatibility reference](repowiki/en/reference/Compatibility.md) — exact first-party adapters, XML policies, setup, and expected evidence.
+- [Prompt and outbound-data guide](repowiki/en/Prompt-Building.md#external-integrations) — what an admitted external event can send through a configured LLM lane.
 
 The supported public namespace is `PawnDiary.Integration`; current `PawnDiaryApi.ApiVersion` is 8.
-Implementation guidance lives in the linked Adapter Contract and buildable example.
+The public request, result, snapshot, and listener types are defined under
+[`Source/Integration`](Source/Integration/). Compile only against the public
+`PawnDiary.Integration` namespace, treat status/result objects as snapshots, respect API readiness
+and source budgets, and keep optional-mod behavior inert when its dependency is absent.

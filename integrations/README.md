@@ -1,7 +1,7 @@
 # integrations/ — adapter mods for Pawn Diary
 
 Each folder here is a **separate RimWorld mod** (its own `About/About.xml`) that integrates another
-mod with Pawn Diary through the public API ([Adapter Contract](../repowiki/en/content/Integration%20Framework/Public%20API%20Reference/Adapter%20Contract.md)).
+mod with Pawn Diary through the [public API contract](../EXTERNAL_API.md).
 Adapters compile against `1.6/Assemblies/PawnDiary.dll` and touch only the
 `PawnDiary.Integration` namespace — never core internals.
 

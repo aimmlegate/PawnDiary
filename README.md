@@ -9,25 +9,10 @@ that pawn's point of view.
 Pawn Diary is for storytelling only. It does not add needs, jobs, hediffs, memories, weapons,
 buildings, or gameplay pressure.
 
-## Pawn Diary Repository Wiki
+## Pawn Diary wiki
 
-### Start here
-
-- [Getting Started](repowiki/en/content/Getting%20Started.md) — installation, configuration, and
-  the main runtime pieces.
-- [Core Architecture](repowiki/en/content/Core%20Architecture/Core%20Architecture.md) — lifecycle,
-  layers, and data flow.
-- [Event System](repowiki/en/content/Event%20System/Event%20System.md) — event capture and signal
-  handling.
-- [AI Generation Engine](repowiki/en/content/AI%20Generation%20Engine/AI%20Generation%20Engine.md)
-  — prompt, model, response, and decoration stages.
-- [Configuration & Customization](repowiki/en/content/Configuration%20%26%20Customization/Configuration%20%26%20Customization.md)
-  — settings and XML-driven policy.
-- [DLC Integrations](repowiki/en/content/DLC%20Integrations/DLC%20Integrations.md) — optional DLC
-  behavior and no-DLC safety.
-- [Integration Framework](repowiki/en/content/Integration%20Framework/Integration%20Framework.md)
-  — public adapters and external integrations.
-- [Development Guide](repowiki/en/content/Development%20Guide/Development%20Guide.md) — setup,
-  testing, and contribution workflow.
-- [Troubleshooting & FAQ](repowiki/en/content/Troubleshooting%20%26%20FAQ.md) — common problems
-  and fixes.
+- [Wiki landing page](repowiki/README.md) — player, advanced-configuration, and testing routes.
+- [How Pawn Diary works](repowiki/en/How-It-Works.md) — capture, admission, generation, and storage.
+- [Captured events](repowiki/en/Captured-Events.md) — player-visible event families and outcomes.
+- [Player settings](repowiki/en/Player-Settings.md) — the five current settings tabs and diagnostics.
+- [Testing references](repowiki/en/reference/Event-Catalog.md) — exhaustive source-backed verification.

@@ -1,29 +1,23 @@
-# Pawn Diary Repository Wiki
+# Pawn Diary wiki
 
-> Snapshot actualized 2026-07-25. The XML Def landing page and generated type reference are rebuilt
-> from the current `1.6/Defs` catalog by `tools/generate-xml-def-wiki.ps1`.
+Pawn Diary turns selected RimWorld moments into persistent, first-person colonist diary pages using a configured language-model endpoint.
 
-## Start here
+## Player guides
 
-- [Repository Map & Runtime Flow](en/content/Core%20Architecture/Repository%20Map%20%26%20Runtime%20Flow.md) — the concise human map of modules and lifecycle.
-- [Event-to-Prompt Map](en/content/Event%20System/Event-to-Prompt%20Map.md) — event sources, prompt selection, templates, and XML ownership.
-- [Generated XML Def Reference](en/content/Configuration%20%26%20Customization/XML%20Definition%20System/Generated%20Def%20Reference/Generated%20Def%20Reference.md) — live files, types, instances, labels, declarations, and observed fields.
-- [External API Quickstart](en/content/Integration%20Framework/Public%20API%20Reference/External%20API%20Quickstart.md) — adapter setup, submission paths, and request schema.
-- [Adapter Contract](en/content/Integration%20Framework/Public%20API%20Reference/Adapter%20Contract.md) — compatibility, lifecycle, safety, and integration rules.
+- [How Pawn Diary works](en/How-It-Works.md)
+- [What events it captures](en/Captured-Events.md)
+- [Player settings](en/Player-Settings.md)
 
-- [Getting Started](en/content/Getting%20Started.md) — installation, configuration, and the main
-  runtime pieces.
-- [Core Architecture](en/content/Core%20Architecture/Core%20Architecture.md) — lifecycle, layers,
-  and data flow.
-- [Event System](en/content/Event%20System/Event%20System.md) — event capture and signal handling.
-- [AI Generation Engine](en/content/AI%20Generation%20Engine/AI%20Generation%20Engine.md) — prompt,
-  model, response, and decoration stages.
-- [Configuration & Customization](en/content/Configuration%20%26%20Customization/Configuration%20%26%20Customization.md)
-  — settings and XML-driven policy.
-- [DLC Integrations](en/content/DLC%20Integrations/DLC%20Integrations.md) — optional DLC behavior and
-  no-DLC safety.
-- [Integration Framework](en/content/Integration%20Framework/Integration%20Framework.md) — public
-  adapters and external integrations.
-- [Development Guide](en/content/Development%20Guide/Development%20Guide.md) — setup, testing, and
-  contribution workflow.
-- [Troubleshooting & FAQ](en/content/Troubleshooting%20%26%20FAQ.md) — common problems and fixes.
+## Advanced configuration
+
+- [XML customization](en/XML-Customization.md)
+- [Prompt building and outbound data](en/Prompt-Building.md)
+
+## Testing references
+
+- [Event catalog](en/reference/Event-Catalog.md)
+- [Observed conditions and event windows](en/reference/Observed-Conditions-and-Windows.md)
+- [Prompt reference](en/reference/Prompt-Reference.md)
+- [Compatibility](en/reference/Compatibility.md)
+
+Current source code and XML remain authoritative when later RimWorld or mod updates change behavior.
