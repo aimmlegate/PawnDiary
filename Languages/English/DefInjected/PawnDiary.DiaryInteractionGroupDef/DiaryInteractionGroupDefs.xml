@@ -193,7 +193,7 @@
   <ritualConversion.tones.0>intimate and doctrinal, centered on the writer&apos;s assigned role and the belief facts supplied</ritualConversion.tones.0>
   <ritualConversion.tones.1>ceremonial but restrained, never turning quality or atmosphere into an unsupported conversion</ritualConversion.tones.1>
   <ritualRoyal.label>Royal rituals</ritualRoyal.label>
-  <ritualRoyal.instruction>a Royalty ritual completed; use any exact royal mutation pawn, faction, before/after title, psylink, and cause fields supplied, without explaining mechanics or inventing an effect</ritualRoyal.instruction>
+  <ritualRoyal.instruction>a Royalty ritual completed; use any exact royal mutation pawn, faction, before/after title, and cause fields supplied, without explaining mechanics or inventing an effect</ritualRoyal.instruction>
   <ritualRoyal.tone>with formal rank and ritual authority</ritualRoyal.tone>
   <ritualRoyal.tones.0>courtly and charged with rank, title, witnesses, and public authority</ritualRoyal.tones.0>
   <ritualRoyal.tones.1>psyfocus-hushed and tradition-bound, the ceremony larger than one pawn&apos;s body</ritualRoyal.tones.1>
@@ -271,7 +271,7 @@
   <abilityUsed.instruction>a pawn used an ability—write the decision, effort, target if supplied, and immediate consequence without adding mechanics or outcomes that were not given</abilityUsed.instruction>
   <abilityUsed.tone>with focused exertion and practical consequence</abilityUsed.tone>
   <abilityUsed.tones.0>focused and concrete, about the moment of use rather than a broad summary</abilityUsed.tones.0>
-  <abilityUsed.tones.1>practical and sensory, grounded in the named ability, target, and cooldown rarity</abilityUsed.tones.1>
+  <abilityUsed.tones.1>practical and sensory, grounded in the named ability and where it was aimed</abilityUsed.tones.1>
   <animal.tones.0>soft and patient, focused on trust through action</animal.tones.0>
   <animal.tones.1>practical and warm, fondness shown without sentimentality</animal.tones.1>
   <anomaly.tones.0>skin-prickling and sensory, one ordinary detail made wrong</anomaly.tones.0>
@@ -408,7 +408,7 @@
   <progressionSkillPassion.tones.0>proud but grounded, aware of the labor behind the milestone</progressionSkillPassion.tones.0>
   <progressionSkillPassion.tones.1>quietly intense, treating skill as part of who the pawn is becoming</progressionSkillPassion.tones.1>
   <progressionPsylink.label>Psylink gained</progressionPsylink.label>
-  <progressionPsylink.instruction>a psylink level gain; preserve the exact before/after level and supplied cause, writing the psychic change as lived sensation, responsibility, or unease without inventing powers</progressionPsylink.instruction>
+  <progressionPsylink.instruction>a psylink level gain; keep the exact level from the event line and the supplied cause, never inventing a previous level, writing the psychic change as lived sensation, responsibility, or unease without inventing powers</progressionPsylink.instruction>
   <progressionPsylink.tone>with strange inner pressure</progressionPsylink.tone>
   <progressionPsylink.tones.0>awed and uneasy, aware of power settling into the mind</progressionPsylink.tones.0>
   <progressionPsylink.tones.1>focused and intimate, describing the change from inside the body</progressionPsylink.tones.1>
@@ -539,7 +539,7 @@
   <questRoyalAscent.tone>with ceremonial pressure, collective duty, and consequences larger than one pawn</questRoyalAscent.tone>
   <questRoyalAscent.tones.0>formal but personal, the colony's shared obligation felt through one witness</questRoyalAscent.tones.0>
   <questRoyalAscent.tones.1>tense and status-aware, keeping every unobserved imperial detail uncertain</questRoyalAscent.tones.1>
-  <royalPermitDramatic.instruction>a successful dramatic royal-permit use; preserve the exact permit family, faction, title, and setting supplied; describe only the pawn calling in the permit, never claiming aid arrived, a shuttle finished its trip, an orbital strike hit, or favor was spent</royalPermitDramatic.instruction>
+  <royalPermitDramatic.instruction>a successful dramatic royal-permit use; preserve the exact permit, faction, title, and setting supplied; describe only the pawn calling in the permit, never claiming aid arrived, a shuttle finished its trip, an orbital strike hit, or favor was spent</royalPermitDramatic.instruction>
   <royalPermitDramatic.tone>with the weight of authority being turned into immediate action</royalPermitDramatic.tone>
   <royalPermitDramatic.tones.0>decisive and personal, grounded in what it felt like to invoke hard-won authority</royalPermitDramatic.tones.0>
   <royalPermitDramatic.tones.1>tense and status-aware, preserving uncertainty about every effect not yet observed</royalPermitDramatic.tones.1>

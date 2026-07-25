@@ -9,7 +9,7 @@
   <DiaryHumorCue_MisplacedPriority.label>misplaced-priority</DiaryHumorCue_MisplacedPriority.label>
   <DiaryHumorCue_MisplacedPriority.rule>Mention one small inconvenience as if it mattered more than the event itself. Do not explain the mismatch.</DiaryHumorCue_MisplacedPriority.rule>
   <DiaryHumorCue_DeadpanInventory.label>deadpan-inventory</DiaryHumorCue_DeadpanInventory.label>
-  <DiaryHumorCue_DeadpanInventory.rule>List what happened as a dry inventory of minor losses and gains. No emotion words.</DiaryHumorCue_DeadpanInventory.rule>
+  <DiaryHumorCue_DeadpanInventory.rule>Account for the day in small losses and gains, in ordinary sentences and never as a list. No emotion words. For example: "The roof cost an afternoon and gave back a dry bunk."</DiaryHumorCue_DeadpanInventory.rule>
   <DiaryHumorCue_PoliteRegret.label>polite-regret</DiaryHumorCue_PoliteRegret.label>
   <DiaryHumorCue_PoliteRegret.rule>Close with one over-formal, slightly too-polite regret about something trivial.</DiaryHumorCue_PoliteRegret.rule>
   <DiaryHumorCue_SidewaysObservation.label>sideways-observation</DiaryHumorCue_SidewaysObservation.label>
@@ -21,13 +21,13 @@
   <DiaryHumorCue_ShrugCloser.label>shrug-closer</DiaryHumorCue_ShrugCloser.label>
   <DiaryHumorCue_ShrugCloser.rule>Close with one short line that treats the whole event as barely worth noting.</DiaryHumorCue_ShrugCloser.rule>
   <DiaryHumorCue_RoutineTerrible.label>routine-terrible</DiaryHumorCue_RoutineTerrible.label>
-  <DiaryHumorCue_RoutineTerrible.rule>State the worst part as if it were routine inventory. No drama, no reflection, no pity.</DiaryHumorCue_RoutineTerrible.rule>
+  <DiaryHumorCue_RoutineTerrible.rule>State the worst part in the flat voice used for chores, as one ordinary sentence. No drama, no reflection, no pity. For example: "We buried him before the soup was done."</DiaryHumorCue_RoutineTerrible.rule>
   <DiaryHumorCue_HouseholdMaintenance.label>household-maintenance</DiaryHumorCue_HouseholdMaintenance.label>
   <DiaryHumorCue_HouseholdMaintenance.rule>End with one quiet line that treats the terrible thing as ordinary household maintenance.</DiaryHumorCue_HouseholdMaintenance.rule>
   <DiaryHumorCue_UnacknowledgedDark.label>unacknowledged-dark</DiaryHumorCue_UnacknowledgedDark.label>
   <DiaryHumorCue_UnacknowledgedDark.rule>Let one detail be darker than the narrator acknowledges. They do not react to it at all.</DiaryHumorCue_UnacknowledgedDark.rule>
   <DiaryHumorCue_DryTallyOfLoss.label>dry-tally-of-loss</DiaryHumorCue_DryTallyOfLoss.label>
-  <DiaryHumorCue_DryTallyOfLoss.rule>Tally who or what was lost in a flat, clerical tone, like checking off chores.</DiaryHumorCue_DryTallyOfLoss.rule>
+  <DiaryHumorCue_DryTallyOfLoss.rule>Name who or what was lost in a flat, clerical tone, inside normal sentences rather than a tally. For example: "Two of the north team did not come back, and the shed went with them."</DiaryHumorCue_DryTallyOfLoss.rule>
   <DiaryHumorCue_GrimUnderstatement.label>grim-understatement</DiaryHumorCue_GrimUnderstatement.label>
   <DiaryHumorCue_GrimUnderstatement.rule>Reduce the scale of the disaster with one calm understatement. Sincerity, not sarcasm.</DiaryHumorCue_GrimUnderstatement.rule>
   <DiaryHumorCue_MatterOfFactMortality.label>matter-of-fact-mortality</DiaryHumorCue_MatterOfFactMortality.label>
@@ -39,5 +39,5 @@
   <DiaryHumorCue_GrimPracticality.label>grim-practicality</DiaryHumorCue_GrimPracticality.label>
   <DiaryHumorCue_GrimPracticality.rule>Pivot immediately to one practical next task, as if the event were already settled.</DiaryHumorCue_GrimPracticality.rule>
   <DiaryHumorCue_EvenMeasure.label>even-measure</DiaryHumorCue_EvenMeasure.label>
-  <DiaryHumorCue_EvenMeasure.rule>Weigh the day's loss against some trivial gain and call it even, flatly.</DiaryHumorCue_EvenMeasure.rule>
+  <DiaryHumorCue_EvenMeasure.rule>Set the day's loss beside some trivial gain and call it even, flatly, in one sentence. For example: "Lost the greenhouse, kept the seed box, so call it even."</DiaryHumorCue_EvenMeasure.rule>
 </LanguageData>

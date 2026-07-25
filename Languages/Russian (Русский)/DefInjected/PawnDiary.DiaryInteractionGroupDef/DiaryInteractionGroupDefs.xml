@@ -255,7 +255,7 @@
   <ritualConversion.tones.0>сокровенно и доктринально, вокруг точной роли автора и переданных фактов веры</ritualConversion.tones.0>
   <ritualConversion.tones.1>церемониально, но сдержанно, не превращая качество или атмосферу в неподтверждённое обращение</ritualConversion.tones.1>
   <ritualRoyal.label>Имперские ритуалы</ritualRoyal.label>
-  <ritualRoyal.instruction>завершён ритуал Royalty; используй переданные точные поля поселенца, фракции, прежнего и нового титула, уровня пси-связи и причины, не объясняя механики и не выдумывая эффект</ritualRoyal.instruction>
+  <ritualRoyal.instruction>завершён ритуал Royalty; используй переданные точные поля поселенца, фракции, прежнего и нового титула и причины, не объясняя механики и не выдумывая эффект</ritualRoyal.instruction>
   <ritualRoyal.tone>с формальным рангом и ритуальной властью</ritualRoyal.tone>
   <ritualRoyal.tones.0>придворно и заряжено рангом, титулом, свидетелями и публичной властью</ritualRoyal.tones.0>
   <ritualRoyal.tones.1>тихо, с пси-фокусом и опорой на традицию; церемония больше тела одного поселенца</ritualRoyal.tones.1>
@@ -333,7 +333,7 @@
   <abilityUsed.instruction>применена способность; пиши решение, усилие, цель, если она передана, и ближайшее последствие без новых механик и исходов</abilityUsed.instruction>
   <abilityUsed.tone>с сосредоточенным усилием и практическим последствием</abilityUsed.tone>
   <abilityUsed.tones.0>сосредоточенно и конкретно, о моменте применения, а не о широкой сводке</abilityUsed.tones.0>
-  <abilityUsed.tones.1>практично, с упором на телесные ощущения, названную способность, цель и длительность перезарядки</abilityUsed.tones.1>
+  <abilityUsed.tones.1>практично, с упором на телесные ощущения, названную способность и то, куда она была направлена</abilityUsed.tones.1>
   <animal.tones.0>мягко и терпеливо, с упором на доверие через действие</animal.tones.0>
   <animal.tones.1>практично и тепло, нежность без сентиментальности</animal.tones.1>
   <anomaly.tones.0>через телесные ощущения, когда одна обычная деталь вдруг стала зловещей</anomaly.tones.0>
@@ -470,7 +470,7 @@
   <progressionSkillPassion.tones.0>гордо, но без пафоса, помня о труде за этой отметкой</progressionSkillPassion.tones.0>
   <progressionSkillPassion.tones.1>тихо напряжённо, будто навык становится частью самого поселенца</progressionSkillPassion.tones.1>
   <progressionPsylink.label>Рост пси-связи</progressionPsylink.label>
-  <progressionPsylink.instruction>пси-связь стала сильнее; сохрани точные прежний и новый уровни и переданную причину, описывая перемену как ощущение, ответственность или тревогу без выдуманных способностей</progressionPsylink.instruction>
+  <progressionPsylink.instruction>пси-связь стала сильнее; сохрани уровень из описания события и переданную причину, не выдумывая прежний уровень, и опиши перемену как ощущение, ответственность или тревогу без выдуманных способностей</progressionPsylink.instruction>
   <progressionPsylink.tone>со странным внутренним давлением</progressionPsylink.tone>
   <progressionPsylink.tones.0>заворожённо и тревожно, новая сила укореняется прямо в сознании</progressionPsylink.tones.0>
   <progressionPsylink.tones.1>сосредоточенно и близко к телу, перемена описана изнутри</progressionPsylink.tones.1>
@@ -651,7 +651,7 @@
   <questRoyalAscent.tone>с церемониальным давлением, общим долгом и последствиями, превосходящими одного поселенца</questRoyalAscent.tone>
   <questRoyalAscent.tones.0>формально, но лично: общее обязательство поселения ощущается глазами одного свидетеля</questRoyalAscent.tones.0>
   <questRoyalAscent.tones.1>напряжённо и с вниманием к статусу, сохраняя неопределённость всех ненаблюдавшихся имперских подробностей</questRoyalAscent.tones.1>
-  <royalPermitDramatic.instruction>успешное применение значимого королевского разрешения; точно сохрани переданные семейство разрешения, фракцию, титул и место, опиши лишь вызов помощи или применение полномочия и не утверждай, что помощь прибыла, шаттл завершил путь, орбитальная атака поразила цель или была потрачена определённая сумма благосклонности</royalPermitDramatic.instruction>
+  <royalPermitDramatic.instruction>успешное применение значимого королевского разрешения; точно сохрани переданные разрешение, фракцию, титул и место, опиши лишь вызов помощи или применение полномочия и не утверждай, что помощь прибыла, шаттл завершил путь, орбитальная атака поразила цель или была потрачена определённая сумма благосклонности</royalPermitDramatic.instruction>
   <royalPermitDramatic.tone>с весом власти, превращённой в немедленное действие</royalPermitDramatic.tone>
   <royalPermitDramatic.tones.0>решительно и лично, опираясь на ощущение применения заслуженной власти</royalPermitDramatic.tones.0>
   <royalPermitDramatic.tones.1>напряжённо и с чувством статуса, сохраняя неизвестность всех ещё не наблюдавшихся последствий</royalPermitDramatic.tones.1>

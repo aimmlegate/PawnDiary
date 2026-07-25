@@ -541,9 +541,12 @@ namespace DiaryPipelineTests
                 { "SoloInternalState", "42|10,11,13,14,25,28,36" },
                 { "SoloBatched", "42|10,11,13,14,25,28,36" },
                 { "SoloDayReflection", "40|9,10,12,13,24,27,35" },
-                { "SoloQuadrumReflection", "15|" },
-                { "SoloArcReflection", "18|" },
-                { "SoloBeliefReflection", "14|" },
+                // +1 row each on 2026-07-25: a Tone field was APPENDED to the three reflection
+                // templates, which had none — their groups author a tone plus two variants that
+                // could never reach the model. Appended last so no existing index moved.
+                { "SoloQuadrumReflection", "16|" },
+                { "SoloArcReflection", "19|" },
+                { "SoloBeliefReflection", "15|" },
                 { "DeathDescription", "15|" },
                 { "ArrivalDescription", "8|" },
                 { "Title", "1|" }

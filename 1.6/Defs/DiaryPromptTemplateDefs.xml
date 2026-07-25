@@ -89,7 +89,7 @@
     <templateKey>PairImportant</templateKey>
     <maxTokens>200</maxTokens>
     <systemPrompt>You are the colonist named in "pov". Write 2-5 first-person diary sentences as "I", even where the notes describe you by name. This event matters: develop more of the supplied facts and continuity, but do not pad thin notes.
-Use only supplied facts: event first, event/group instruction second, tone and writing style last.
+Use only supplied facts: event first, event/group instruction second, tone last.
 Add at most one reaction of your own — an emotion, impression, or interpretation. Invent nothing else: no new events, people, places, actions, dialogue, motives, treatment, outcomes, or time skips.
 Open differently: never with weather, "Today", or your last opening line. Avoid stock phrases like "heart skipped a beat" or "I couldn't help but".
 Direct speech only for the POV pawn's own quoted words, as [[speech]]words[[/speech]]; paraphrase everyone else.
@@ -213,7 +213,7 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
     <templateKey>PairCombat</templateKey>
     <maxTokens>200</maxTokens>
     <systemPrompt>You are the colonist named in "pov". Write 2-5 first-person diary sentences as "I", even where the notes describe you by name. This event matters: develop more of the supplied facts and continuity, but do not pad thin notes.
-Use only supplied facts: event first, event/group instruction second, tone and writing style last.
+Use only supplied facts: event first, event/group instruction second, tone last.
 Add at most one reaction of your own — an emotion, impression, or interpretation. Invent nothing else: no new events, people, places, actions, dialogue, motives, treatment, outcomes, or time skips.
 Open differently: never with weather, "Today", or your last opening line. Avoid stock phrases like "heart skipped a beat" or "I couldn't help but".
 Direct speech only for the POV pawn's own quoted words, as [[speech]]words[[/speech]]; paraphrase everyone else.
@@ -397,7 +397,7 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
     <templateKey>SoloImportant</templateKey>
     <maxTokens>200</maxTokens>
     <systemPrompt>You are the colonist named in "pov". Write 2-5 first-person diary sentences as "I", even where the notes describe you by name. This event matters: develop more of the supplied facts and continuity, but do not pad thin notes.
-Use only supplied facts: event first, event/group instruction second, tone and writing style last.
+Use only supplied facts: event first, event/group instruction second, tone last.
 Add at most one reaction of your own — an emotion, impression, or interpretation. Invent nothing else: no new events, people, places, actions, dialogue, motives, treatment, outcomes, or time skips.
 Open differently: never with weather, "Today", or your last opening line. Avoid stock phrases like "heart skipped a beat" or "I couldn't help but".
 Direct speech only for the POV pawn's own quoted words, as [[speech]]words[[/speech]]; paraphrase everyone else.
@@ -719,6 +719,11 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
     <defName>DiaryPromptTemplate_SoloDayReflection</defName>
     <templateKey>SoloDayReflection</templateKey>
     <appendDirectSpeechInstruction>false</appendDirectSpeechInstruction>
+    <!-- The last thing a small model reads wins on length. Without this override the shared
+         singlePovInstruction ("1-3 first-person diary sentences about the event above") closed every
+         day-reflection request, contradicting systemPromptReflection's 2-4 end-of-day anchor two
+         messages earlier. This restates the reflection task and its length, nothing else. -->
+    <finalInstruction>Write 2-4 first-person sentences looking back on the whole day, using only the supplied moments. Output only the entry.</finalInstruction>
     <fields>
       <li><label>event</label><source>EventNoun</source></li>
       <li><label>pov</label><source>PovName</source></li>
@@ -805,6 +810,10 @@ Do not write a list. Output only the diary entry. End with normal punctuation.</
       <li><label>relevant past</label><source>MemoryContext</source></li>
       <!-- Ideology Phase 1: absent/irrelevant belief context is omitted by PromptAssembler. -->
       <li><label>belief context</label><source>BeliefContext</source></li>
+      <!-- APPENDED: the quadrumreflection group authors a tone and two tone variants, but this
+           template had no Tone row, so none of them ever reached the model. Appended at the END so
+           every existing indexed DefInjected label (fields.N.label) keeps pointing at its own row. -->
+      <li><label>tone</label><source>Tone</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -838,6 +847,9 @@ Do not write a report, biography, or list. Output only the diary entry. End with
       <li><label>relevant past</label><source>MemoryContext</source></li>
       <!-- Ideology Phase 1: absent/irrelevant belief context is omitted by PromptAssembler. -->
       <li><label>belief context</label><source>BeliefContext</source></li>
+      <!-- APPENDED, same reason as the quadrum template above: the generic `reflection` group owns
+           the life-arc page and authors a tone plus two variants that had no field to ride. -->
+      <li><label>tone</label><source>Tone</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -867,6 +879,9 @@ Do not write a report, sermon, doctrine summary, or list. Output only the diary 
       <li><label>setting</label><source>Setting</source></li>
       <li><label>my last opening line (do not reuse)</label><source>LastOpener</source></li>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
+      <!-- APPENDED, same reason as the two reflection templates above: reflectionBelief authors a
+           tone plus two variants that this template had no field to carry. -->
+      <li><label>tone</label><source>Tone</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 

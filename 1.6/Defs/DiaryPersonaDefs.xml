@@ -49,7 +49,7 @@
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_MelancholyDreamer</defName>
     <label>thought-current</label>
-    <rule>This pawn tends to write flowing sentences where a sensation carries into a thought. Keep the event anchored in the middle. For example: "Rain tapped the roof, and the silence after the letter felt heavier than the words."</rule>
+    <rule>This pawn tends to write flowing sentences where a sensation carries into a thought. Keep the event anchored in the middle. For example: "The lamp guttered twice, and the silence after the letter felt heavier than the words."</rule>
     <themes>
       <li>dramatic</li>
       <li>anxious</li>
@@ -98,7 +98,7 @@
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_BluntVerdict</defName>
     <label>verdict-first</label>
-    <rule>This pawn tends to open with a blunt one-word or two-word verdict — waste, good, bad idea, fine — then give the fact that earned it. No softening, no apology. For example: "Waste of a morning. The pump chewed another seal."</rule>
+    <rule>This pawn tends to open with a blunt one- or two-word verdict on the event, then give the fact that earned it. No softening, no apology. For example: "Waste of a morning. The pump chewed another seal."</rule>
     <themes>
       <li>hostile</li>
       <li>grim</li>
@@ -182,7 +182,7 @@
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_LedgerKeeper</defName>
     <label>survival-ledger</label>
-    <rule>This pawn tends to write in practical inventory terms: loss, gain, remaining need. No literal tables. For example: "Lost two meals. Gained one clean bandage. Need sleep."</rule>
+    <rule>This pawn tends to weigh what a day cost against what it returned, in full sentences and never a list. For example: "Two meals went on one clean bandage, and I still owe myself a night's sleep."</rule>
     <themes>
       <li>analytical</li>
       <li>grim</li>
@@ -192,7 +192,7 @@
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_HardboiledGumshoe</defName>
     <label>heavy-haze</label>
-    <rule>This pawn tends to open with weight, dimness, heat, smoke, or fatigue, then state the action plainly. For example: "The corridor smelled of medicine. I kept walking."</rule>
+    <rule>This pawn tends to open with weight, dimness, smoke, grit, or fatigue — never the weather — then state the action plainly. For example: "The corridor smelled of medicine. I kept walking."</rule>
     <themes>
       <li>grim</li>
       <li>analytical</li>
@@ -212,7 +212,7 @@
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_ClinicalExperimenter</defName>
     <label>body-fragment</label>
-    <rule>This pawn tends to write close body fragments around the event: hand, breath, eye, skin, then one clear fact. For example: "Knuckles split. Breath sour. Door shut."</rule>
+    <rule>This pawn tends to notice the body first — a hand, a breath, the skin — and carry it into one clear fact about the event. For example: "My knuckles were split and my breath sour by the time the door shut."</rule>
     <themes>
       <li>analytical</li>
       <li>dramatic</li>
@@ -282,7 +282,7 @@
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_RamblingOldTimer</defName>
     <label>labor-fate</label>
-    <rule>This pawn tends to compare the event to labor, weather, hunger, or fate in one weighty clause. Keep the comparison grounded. For example: "The winter ate the woodpile like an old debt coming due."</rule>
+    <rule>This pawn tends to compare the event to labor, weather, hunger, or fate in one weighty clause. Keep the comparison grounded. For example: "Hunger went through the stores the way an old debt comes due."</rule>
     <themes>
       <li>grim</li>
       <li>dramatic</li>
@@ -399,7 +399,7 @@
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_QuietCounter</defName>
     <label>counted-things</label>
-    <rule>This pawn tends to count what can be counted — two or three details, numbers as words, never a list — then what the numbers mean. For example: "Two graves. One shovel. The ground was harder than last time."</rule>
+    <rule>This pawn tends to count what can be counted, numbers as words, inside running sentences rather than a list, then say what the count meant. For example: "Two graves took one shovel and most of the afternoon."</rule>
     <themes>
       <li>analytical</li>
       <li>grim</li>
@@ -446,7 +446,7 @@
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_HollowWitness</defName>
     <label>storm-stone</label>
-    <rule>This pawn tends to tie harsh feeling to cold, wind, stone, distance, or open dark. Do not lose the event. For example: "The wind worried the roof. I stood there like stone until it held."</rule>
+    <rule>This pawn tends to tie harsh feeling to cold, wind, stone, distance, or open dark. Do not lose the event. For example: "The dark past the lamp had no edge to it. I stood there like stone until the door held."</rule>
     <themes>
       <li>void</li>
       <li>grim</li>

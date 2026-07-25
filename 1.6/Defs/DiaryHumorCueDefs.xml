@@ -59,7 +59,7 @@
   <PawnDiary.DiaryHumorCueDef>
     <defName>DiaryHumorCue_DeadpanInventory</defName>
     <label>deadpan-inventory</label>
-    <rule>List what happened as a dry inventory of minor losses and gains. No emotion words.</rule>
+    <rule>Account for the day in small losses and gains, in ordinary sentences and never as a list. No emotion words. For example: "The roof cost an afternoon and gave back a dry bunk."</rule>
     <tier>Light</tier>
     <weight>1</weight>
   </PawnDiary.DiaryHumorCueDef>
@@ -109,7 +109,7 @@
   <PawnDiary.DiaryHumorCueDef>
     <defName>DiaryHumorCue_RoutineTerrible</defName>
     <label>routine-terrible</label>
-    <rule>State the worst part as if it were routine inventory. No drama, no reflection, no pity.</rule>
+    <rule>State the worst part in the flat voice used for chores, as one ordinary sentence. No drama, no reflection, no pity. For example: "We buried him before the soup was done."</rule>
     <tier>Gallows</tier>
     <weight>1</weight>
   </PawnDiary.DiaryHumorCueDef>
@@ -133,7 +133,7 @@
   <PawnDiary.DiaryHumorCueDef>
     <defName>DiaryHumorCue_DryTallyOfLoss</defName>
     <label>dry-tally-of-loss</label>
-    <rule>Tally who or what was lost in a flat, clerical tone, like checking off chores.</rule>
+    <rule>Name who or what was lost in a flat, clerical tone, inside normal sentences rather than a tally. For example: "Two of the north team did not come back, and the shed went with them."</rule>
     <tier>Gallows</tier>
     <weight>1</weight>
   </PawnDiary.DiaryHumorCueDef>
@@ -181,7 +181,7 @@
   <PawnDiary.DiaryHumorCueDef>
     <defName>DiaryHumorCue_EvenMeasure</defName>
     <label>even-measure</label>
-    <rule>Weigh the day's loss against some trivial gain and call it even, flatly.</rule>
+    <rule>Set the day's loss beside some trivial gain and call it even, flatly, in one sentence. For example: "Lost the greenhouse, kept the seed box, so call it even."</rule>
     <tier>Gallows</tier>
     <weight>1</weight>
   </PawnDiary.DiaryHumorCueDef>

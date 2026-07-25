@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  English DefInjected copy of the shipped psychotype (outlook) labels and rules — the second voice
+  layer beside the writing style. Must stay byte-identical to 1.6/Defs/DiaryPsychotypeDefs.xml
+  (PromptFootprintTests enforces it). The .label is picker-only and never reaches the model.
+-->
+<LanguageData>
+  <DiaryPsychotype_Neutral.label>neutral</DiaryPsychotype_Neutral.label>
+  <DiaryPsychotype_Content.label>Content</DiaryPsychotype_Content.label>
+  <DiaryPsychotype_Content.rule>This pawn measures a day by warmth, food, and company; losing a small comfort stings more than any grand setback.</DiaryPsychotype_Content.rule>
+  <DiaryPsychotype_Ambitious.label>Ambitious</DiaryPsychotype_Ambitious.label>
+  <DiaryPsychotype_Ambitious.rule>This pawn sizes each event as progress toward a larger life or a delay; a day without progress feels like quiet defeat.</DiaryPsychotype_Ambitious.rule>
+  <DiaryPsychotype_Dutiful.label>Dutiful</DiaryPsychotype_Dutiful.label>
+  <DiaryPsychotype_Dutiful.rule>This pawn weighs each day by what they owed and delivered; others' reliance comes first, their own comfort last.</DiaryPsychotype_Dutiful.rule>
+  <DiaryPsychotype_Nostalgic.label>Nostalgic</DiaryPsychotype_Nostalgic.label>
+  <DiaryPsychotype_Nostalgic.rule>This pawn measures today against a lost before, tenderly; small things keep recalling what is gone.</DiaryPsychotype_Nostalgic.rule>
+  <DiaryPsychotype_Pragmatic.label>Pragmatic</DiaryPsychotype_Pragmatic.label>
+  <DiaryPsychotype_Pragmatic.rule>This pawn takes events at face value and sizes them by practical consequence; feelings get a brief moment, then work.</DiaryPsychotype_Pragmatic.rule>
+  <DiaryPsychotype_Wry.label>Wry</DiaryPsychotype_Wry.label>
+  <DiaryPsychotype_Wry.rule>This pawn notices the small absurdity inside serious moments; the darker the day, the drier the observation.</DiaryPsychotype_Wry.rule>
+  <DiaryPsychotype_Paranoid.label>Paranoid</DiaryPsychotype_Paranoid.label>
+  <DiaryPsychotype_Paranoid.rule>This pawn assumes nothing is as harmless as it looks: kindness has motive, coincidence counts, quiet days feel wrong.</DiaryPsychotype_Paranoid.rule>
+  <DiaryPsychotype_Detached.label>Detached</DiaryPsychotype_Detached.label>
+  <DiaryPsychotype_Detached.rule>This pawn watches their own life as if from across the room; praise and blame land with the same quiet.</DiaryPsychotype_Detached.rule>
+  <DiaryPsychotype_Superstitious.label>Superstitious</DiaryPsychotype_Superstitious.label>
+  <DiaryPsychotype_Superstitious.rule>This pawn reads weather, dreams, and odd timing as signs meant for them; every event carries hidden significance.</DiaryPsychotype_Superstitious.rule>
+  <DiaryPsychotype_Ruthless.label>Ruthless</DiaryPsychotype_Ruthless.label>
+  <DiaryPsychotype_Ruthless.rule>This pawn sizes every event by what it cost or gained them; rules and others' feelings are noted, not felt.</DiaryPsychotype_Ruthless.rule>
+  <DiaryPsychotype_Volatile.label>Volatile</DiaryPsychotype_Volatile.label>
+  <DiaryPsychotype_Volatile.rule>This pawn feels people as wonderful or unbearable, sometimes both in a day; distance reads as the start of being left.</DiaryPsychotype_Volatile.rule>
+  <DiaryPsychotype_Theatrical.label>Theatrical</DiaryPsychotype_Theatrical.label>
+  <DiaryPsychotype_Theatrical.rule>This pawn recounts events by who was watching; being overlooked stings worse than being hurt.</DiaryPsychotype_Theatrical.rule>
+  <DiaryPsychotype_Narcissistic.label>Narcissistic</DiaryPsychotype_Narcissistic.label>
+  <DiaryPsychotype_Narcissistic.rule>This pawn reads every event as chiefly about them; their part grows in the telling, criticism echoes for days.</DiaryPsychotype_Narcissistic.rule>
+  <DiaryPsychotype_Hollow.label>Hollow</DiaryPsychotype_Hollow.label>
+  <DiaryPsychotype_Hollow.rule>This pawn feels almost nothing where others feel much; emotions are read like instruments, events sized for use.</DiaryPsychotype_Hollow.rule>
+  <DiaryPsychotype_Ravenous.label>Ravenous</DiaryPsychotype_Ravenous.label>
+  <DiaryPsychotype_Ravenous.rule>This pawn's appetite sits under every thought; bodies read as meat first, and meals are the true events of the day.</DiaryPsychotype_Ravenous.rule>
+  <DiaryPsychotype_Bloodthirsty.label>Bloodthirsty</DiaryPsychotype_Bloodthirsty.label>
+  <DiaryPsychotype_Bloodthirsty.rule>This pawn only feels awake when something bleeds or breaks; fights are relived fondly, peace blurs into waiting.</DiaryPsychotype_Bloodthirsty.rule>
+  <DiaryPsychotype_Resentful.label>Resentful</DiaryPsychotype_Resentful.label>
+  <DiaryPsychotype_Resentful.rule>This pawn privately believes they deserve better; slights are filed away, others' luck feels unfair.</DiaryPsychotype_Resentful.rule>
+  <DiaryPsychotype_Avoidant.label>Avoidant</DiaryPsychotype_Avoidant.label>
+  <DiaryPsychotype_Avoidant.rule>This pawn reads rejection into neutral faces; they want closeness, keep distance to stay safe, and count it as loss.</DiaryPsychotype_Avoidant.rule>
+  <DiaryPsychotype_Dependent.label>Dependent</DiaryPsychotype_Dependent.label>
+  <DiaryPsychotype_Dependent.rule>This pawn feels no decision is safe until someone they trust approves it; being needed comforts, deciding frightens.</DiaryPsychotype_Dependent.rule>
+  <DiaryPsychotype_Perfectionist.label>Perfectionist</DiaryPsychotype_Perfectionist.label>
+  <DiaryPsychotype_Perfectionist.rule>This pawn feels safe when things are counted and finished; disorder gnaws harder than danger.</DiaryPsychotype_Perfectionist.rule>
+  <DiaryPsychotype_WideEyed.label>Wide-eyed</DiaryPsychotype_WideEyed.label>
+  <DiaryPsychotype_WideEyed.rule>This pawn finds everything enormous and interesting; even scary events are also, secretly, a little exciting.</DiaryPsychotype_WideEyed.rule>
+  <DiaryPsychotype_BraveFront.label>Brave-front</DiaryPsychotype_BraveFront.label>
+  <DiaryPsychotype_BraveFront.rule>This pawn is scared more often than they admit; danger gets played down, but fear shows in the details they linger on.</DiaryPsychotype_BraveFront.rule>
+  <DiaryPsychotype_ShyWatcher.label>Shy-watcher</DiaryPsychotype_ShyWatcher.label>
+  <DiaryPsychotype_ShyWatcher.rule>This pawn watches from the edge and notices more than anyone guesses; others are the subject, their own part is small.</DiaryPsychotype_ShyWatcher.rule>
+  <DiaryPsychotype_WildThing.label>Wild-thing</DiaryPsychotype_WildThing.label>
+  <DiaryPsychotype_WildThing.rule>This pawn runs at the world headfirst; rules exist to be tested, and the best moments are loud, fast, and forbidden.</DiaryPsychotype_WildThing.rule>
+  <DiaryPsychotype_LittleAdult.label>Little-adult</DiaryPsychotype_LittleAdult.label>
+  <DiaryPsychotype_LittleAdult.rule>This pawn works at being taken seriously; grown-up concerns are solemnly borrowed, delights reported with embarrassment.</DiaryPsychotype_LittleAdult.rule>
+</LanguageData>

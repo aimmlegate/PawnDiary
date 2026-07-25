@@ -1522,8 +1522,9 @@
       <li>quietly grateful, focused on tension leaving the body</li>
     </tones>
     <matchDefNames>
+      <!-- GameConditionDef names only: mood-event classification runs off condition registration,
+           so the former "Party" row (a GatheringDef) could never match. -->
       <li>Aurora</li>
-      <li>Party</li>
       <li>PsychicSoothe</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
@@ -1626,8 +1627,11 @@
     <matchDefNames>
       <!-- TODO: ProblemCauser conditions are too complex to handle correctly — skipped for now. -->
       <!-- <li>ProblemCauser</li> -->
-      <li>PsychicSuppressorMale</li>
-      <li>PsychicSuppressorFemale</li>
+      <!-- PsychicSuppression is the Royalty GameConditionDef the suppressor building raises; it is
+           gender-tuned, so it lands unevenly on the colony, which is exactly this group's premise.
+           The earlier PsychicSuppressorMale/Female rows named the BUILDING variant, not a condition,
+           so this group never matched once. Matchers are plain strings and are never translated. -->
+      <li>PsychicSuppression</li>
       <li>UnnaturalDarkness</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
@@ -2456,13 +2460,13 @@
       <li>cautiously relieved, trust arriving slowly</li>
       <li>uneasy and grateful, help still feeling like risk</li>
     </tones>
+    <!-- "RaidBeacon" was removed from both lists: 1.6 has no such def, only the incident-target tag
+         Map_RaidBeacon, which never reaches a raid classifier. -->
     <matchDefNames>
       <li>RaidFriendly</li>
-      <li>RaidBeacon</li>
     </matchDefNames>
     <matchTokens>
       <li>RaidFriendly</li>
-      <li>RaidBeacon</li>
     </matchTokens>
   </PawnDiary.DiaryInteractionGroupDef>
 
@@ -2701,7 +2705,7 @@
     <enableWhenPackageIdsLoaded>
       <li>Ludeon.RimWorld.Royalty</li>
     </enableWhenPackageIdsLoaded>
-    <instruction>a Royalty ritual completed; use any exact royal mutation pawn, faction, before/after title, psylink, and cause fields supplied, without explaining mechanics or inventing an effect</instruction>
+    <instruction>a Royalty ritual completed; use any exact royal mutation pawn, faction, before/after title, and cause fields supplied, without explaining mechanics or inventing an effect</instruction>
     <tone>with formal rank and ritual authority</tone>
     <tones>
       <li>courtly and charged with rank, title, witnesses, and public authority</li>
@@ -2801,7 +2805,7 @@
     <enableWhenPackageIdsLoaded>
       <li>Ludeon.RimWorld.Royalty</li>
     </enableWhenPackageIdsLoaded>
-    <instruction>a successful dramatic royal-permit use; preserve the exact permit family, faction, title, and setting supplied; describe only the pawn calling in the permit, never claiming aid arrived, a shuttle finished its trip, an orbital strike hit, or favor was spent</instruction>
+    <instruction>a successful dramatic royal-permit use; preserve the exact permit, faction, title, and setting supplied; describe only the pawn calling in the permit, never claiming aid arrived, a shuttle finished its trip, an orbital strike hit, or favor was spent</instruction>
     <tone>with the weight of authority being turned into immediate action</tone>
     <tones>
       <li>decisive and personal, grounded in what it felt like to invoke hard-won authority</li>
@@ -3215,7 +3219,7 @@
     <tone>with focused exertion and practical consequence</tone>
     <tones>
       <li>focused and concrete, about the moment of use rather than a broad summary</li>
-      <li>practical and sensory, grounded in the named ability, target, and cooldown rarity</li>
+      <li>practical and sensory, grounded in the named ability and where it was aimed</li>
     </tones>
     <catchAll>true</catchAll>
   </PawnDiary.DiaryInteractionGroupDef>
@@ -3351,7 +3355,7 @@
     <enableWhenPackageIdsLoaded>
       <li>Ludeon.RimWorld.Royalty</li>
     </enableWhenPackageIdsLoaded>
-    <instruction>a psylink level gain; preserve the exact before/after level and supplied cause, writing the psychic change as lived sensation, responsibility, or unease without inventing powers</instruction>
+    <instruction>a psylink level gain; keep the exact level from the event line and the supplied cause, never inventing a previous level, writing the psychic change as lived sensation, responsibility, or unease without inventing powers</instruction>
     <tone>with strange inner pressure</tone>
     <tones>
       <li>awed and uneasy, aware of power settling into the mind</li>

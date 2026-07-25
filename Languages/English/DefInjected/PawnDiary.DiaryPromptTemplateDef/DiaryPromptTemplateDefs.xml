@@ -601,4 +601,10 @@ Do not write a report, sermon, doctrine summary, or list. Output only the diary 
   <DiaryPromptTemplate_PairBatched.fields.30.label>you</DiaryPromptTemplate_PairBatched.fields.30.label>
   <DiaryPromptTemplate_SoloInternalState.fields.41.label>you</DiaryPromptTemplate_SoloInternalState.fields.41.label>
   <DiaryPromptTemplate_SoloBatched.fields.41.label>you</DiaryPromptTemplate_SoloBatched.fields.41.label>
+  <!-- Added 2026-07-25: the appended tone row on each reflection template, plus the day-reflection
+       final instruction that replaced the shared 1-3-sentence anchor. Byte-identical to the base Def. -->
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.15.label>tone</DiaryPromptTemplate_SoloQuadrumReflection.fields.15.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.18.label>tone</DiaryPromptTemplate_SoloArcReflection.fields.18.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.14.label>tone</DiaryPromptTemplate_SoloBeliefReflection.fields.14.label>
+  <DiaryPromptTemplate_SoloDayReflection.finalInstruction>Write 2-4 first-person sentences looking back on the whole day, using only the supplied moments. Output only the entry.</DiaryPromptTemplate_SoloDayReflection.finalInstruction>
 </LanguageData>

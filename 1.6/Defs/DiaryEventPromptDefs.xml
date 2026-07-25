@@ -163,7 +163,7 @@
     <label>ability</label>
     <eventType>Ability</eventType>
     <prompt>Write a successful pawn ability use as a concrete moment of focus, risk, or exertion.</prompt>
-    <enhancement>Use the supplied ability name, category, target, and cooldown facts. Treat short-cooldown abilities as quick minor moments and long-cooldown abilities as rarer, weightier choices; do not invent extra effects.</enhancement>
+    <enhancement>Use the supplied ability name, category, and target. Write the moment of use — the effort it took, where it was aimed, what it cost right then — as lived sensation, not a technique explained; do not invent extra effects or outcomes.</enhancement>
   </PawnDiary.DiaryEventPromptDef>
 
   <PawnDiary.DiaryEventPromptDef>
@@ -345,8 +345,8 @@
     <defName>DiaryEventPrompt_PsylinkLevel</defName>
     <label>psylink gain</label>
     <eventType>PsylinkLevel</eventType>
-    <prompt>Write the exact supplied psylink level increase and its known or unknown cause.</prompt>
-    <enhancement>Preserve the before/after levels and cause. Write lived psychic sensation, responsibility, or unease without naming unprovided powers or explaining implant and ritual mechanics.</enhancement>
+    <prompt>Write the exact supplied psylink level reached and its known or unknown cause.</prompt>
+    <enhancement>Keep the exact level stated in the event line and the supplied cause; never invent a previous level or the size of the jump. Write lived psychic sensation, responsibility, or unease without naming unprovided powers or explaining implant and ritual mechanics.</enhancement>
   </PawnDiary.DiaryEventPromptDef>
 
   <PawnDiary.DiaryEventPromptDef>
@@ -354,7 +354,7 @@
     <label>royal bestowing ceremony</label>
     <eventType>BestowingCeremony</eventType>
     <prompt>Write the completed imperial bestowing ceremony from the supplied ritual role.</prompt>
-    <enhancement>Use the exact mutation pawn, faction, title before/after, psylink before/after, and imperial_bestowing cause when present. Keep all changes in this ritual page; do not invent honors, speeches, powers, or another progression scene.</enhancement>
+    <enhancement>Use the exact mutation pawn, faction, title before/after, and imperial_bestowing cause when present. Any psychic change is felt, never numbered. Keep all changes in this ritual page; do not invent honors, speeches, powers, or another progression scene.</enhancement>
   </PawnDiary.DiaryEventPromptDef>
 
   <PawnDiary.DiaryEventPromptDef>
@@ -362,7 +362,7 @@
     <label>anima linking ceremony</label>
     <eventType>AnimaTreeLinking</eventType>
     <prompt>Write the completed anima linking ceremony from the supplied ritual role.</prompt>
-    <enhancement>Use the exact psylink before/after and anima_linking cause when present. Keep the psychic change in this ritual page and do not invent powers, imperial rank, or extra ritual effects.</enhancement>
+    <enhancement>Use the supplied anima_linking cause when present, and write the deepening link as felt, never as a level. Keep the psychic change in this ritual page and do not invent powers, imperial rank, or extra ritual effects.</enhancement>
   </PawnDiary.DiaryEventPromptDef>
 
   <!-- Royalty R2 dramatic permits. The broad row is a safe domain fallback; exact family rows own
@@ -375,7 +375,7 @@
       <li>Ludeon.RimWorld.Royalty</li>
     </enableWhenPackageIdsLoaded>
     <prompt>Write an exact successful dramatic royal-permit use from the permit owner&apos;s point of view.</prompt>
-    <enhancement>Preserve the supplied permit, family, faction, title, setting, and cooldown-use fact. Describe invoking authority, not an unobserved result; invent no target, arrival, impact, completion, dialogue, or favor amount.</enhancement>
+    <enhancement>Preserve the supplied permit, faction, title, setting, and cooldown-use fact. Describe invoking authority, not an unobserved result; invent no target, arrival, impact, completion, dialogue, or favor amount.</enhancement>
   </PawnDiary.DiaryEventPromptDef>
 
   <PawnDiary.DiaryEventPromptDef>

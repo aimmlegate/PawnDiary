@@ -37,7 +37,7 @@
       <li><topicKey>space</topicKey><clause>home; ships, stations, and the long cold sleep are ordinary life</clause></li>
       <li><topicKey>outsiders</topicKey><clause>counterparties; a stranger is an account not yet opened</clause></li>
       <li><topicKey>death</topicKey><clause>the record closes; a person becomes logs, debts, and what they built</clause></li>
-      <li><topicKey>body</topicKey><clause>the body is a platform; wounds, parts, and fixes are its maintenance log</clause></li>
+      <li><topicKey>body</topicKey><clause>the body is a platform; wounds, parts, and fixes are its upkeep</clause></li>
       <li><topicKey>kinship</topicKey><clause>crew you sign on for life; families are assembled as much as born</clause></li>
       <li><topicKey>madness</topicKey><clause>a fault state of the mind; the system runs strange until it rests</clause></li>
       <li><topicKey>beasts</topicKey><clause>local fauna; an ecosystem you can study, tame, and occasionally outrun</clause></li>
@@ -103,7 +103,7 @@
       <li><topicKey>space</topicKey><clause>lanes and cargo; a sea where freighters are the whales</clause></li>
       <li><topicKey>outsiders</topicKey><clause>mark, rival, or crew; everyone lands in one of the three</clause></li>
       <li><topicKey>death</topicKey><clause>a share no one claims; the roster gets shorter, the split bigger</clause></li>
-      <li><topicKey>body</topicKey><clause>working capital; damage is cost, repair is investment, scars are receipts</clause></li>
+      <li><topicKey>body</topicKey><clause>working capital; damage is cost, repair is investment, scars are the price paid</clause></li>
       <li><topicKey>kinship</topicKey><clause>ties that outlast a contract; the only debts nobody keeps books on</clause></li>
       <li><topicKey>madness</topicKey><clause>someone's ballast shifting; every crew rides one out sooner or later</clause></li>
       <li><topicKey>beasts</topicKey><clause>assets with teeth; guard-beasts, pack-beasts, and meat that fights back</clause></li>
