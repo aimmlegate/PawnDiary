@@ -503,6 +503,8 @@
     <chance>0.75</chance>
     <weight>1</weight>
     <severity>1.2</severity>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.Blindness</descriptionOverrideKey>
+    <cueKeys><li>PawnDiary.Prompt.Health.Cue.WorldWithoutSight</li></cueKeys>
     <hediffDefNames>
       <li>Blindness</li>
     </hediffDefNames>
@@ -527,6 +529,8 @@
     <chance>0.75</chance>
     <weight>1.1</weight>
     <severity>1.15</severity>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.TraumaSavant</descriptionOverrideKey>
+    <cueKeys><li>PawnDiary.Prompt.Health.Cue.ThoughtWithoutOrdinaryFeeling</li></cueKeys>
     <hediffDefNames>
       <li>TraumaSavant</li>
     </hediffDefNames>
@@ -571,6 +575,8 @@
     <chance>0.55</chance>
     <weight>0.9</weight>
     <severity>1.1</severity>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.Joywire</descriptionOverrideKey>
+    <cueKeys><li>PawnDiary.Prompt.Health.Cue.ArtificialCheer</li></cueKeys>
     <hediffDefNames>
       <li>Joywire</li>
     </hediffDefNames>
@@ -604,6 +610,8 @@
     <chance>0.45</chance>
     <weight>0.9</weight>
     <severity>1</severity>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.Pregnancy</descriptionOverrideKey>
+    <cueKeys><li>PawnDiary.Prompt.Health.Cue.BodyCarryingNewLife</li></cueKeys>
     <hediffDefNames>
       <li>Pregnant</li>
       <li>PregnantHuman</li>
@@ -761,6 +769,8 @@
     <chance>0.85</chance>
     <weight>1.4</weight>
     <severity>1.5</severity>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.VoidShockOrTouched</descriptionOverrideKey>
+    <cueKeys><li>PawnDiary.Prompt.Health.Cue.VoidAfterimage</li></cueKeys>
     <hediffDefNames>
       <li>VoidShock</li>
       <li>VoidTouched</li>
@@ -924,6 +934,8 @@
     <chance>0.7</chance>
     <weight>1.2</weight>
     <severity>1.3</severity>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.Carcinoma</descriptionOverrideKey>
+    <cueKeys><li>PawnDiary.Prompt.Health.Cue.SlowInternalThreat</li></cueKeys>
     <hediffDefNames>
       <li>Carcinoma</li>
     </hediffDefNames>
@@ -987,6 +999,8 @@
     <chance>0.6</chance>
     <weight>1</weight>
     <severity>1.1</severity>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.Deathrest</descriptionOverrideKey>
+    <cueKeys><li>PawnDiary.Prompt.Health.Cue.DeathlikeSleep</li></cueKeys>
     <hediffDefNames>
       <li>Deathrest</li>
       <li>DeathrestExhaustion</li>
@@ -999,6 +1013,8 @@
     <chance>0.7</chance>
     <weight>1.1</weight>
     <severity>1.2</severity>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.LungRot</descriptionOverrideKey>
+    <cueKeys><li>PawnDiary.Prompt.Health.Cue.BreathUnderStrain</li></cueKeys>
     <hediffDefNames>
       <li>LungRot</li>
       <li>LungRotExposure</li>
@@ -1025,6 +1041,8 @@
     <chance>0.8</chance>
     <weight>1.3</weight>
     <severity>1.4</severity>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.VacuumExposure</descriptionOverrideKey>
+    <cueKeys><li>PawnDiary.Prompt.Health.Cue.VacuumBurning</li></cueKeys>
     <hediffDefNames>
       <li>VacuumExposure</li>
       <li>VacuumBurn</li>
@@ -1039,6 +1057,8 @@
     <chance>0.7</chance>
     <weight>1.1</weight>
     <severity>1.2</severity>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.GravNausea</descriptionOverrideKey>
+    <cueKeys><li>PawnDiary.Prompt.Health.Cue.GravityTurningStomach</li></cueKeys>
     <hediffDefNames>
       <li>GravNausea</li>
     </hediffDefNames>

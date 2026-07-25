@@ -52,6 +52,7 @@
   <animal.tone>with quiet, gentle fondness</animal.tone>
   <heartfelt.label>Heartfelt talk</heartfelt.label>
   <heartfelt.instruction>warmth exchanged—a deep talk, kind words, or a gentle hand steadying someone</heartfelt.instruction>
+  <heartfelt.instructions.3>warmth between people — stay with one small sign of trust and why this pawn noticed it now</heartfelt.instructions.3>
   <heartfelt.tone>with soft, tender warmth</heartfelt.tone>
   <teaching.label>Teaching &amp; lessons</teaching.label>
   <teaching.instruction>a lesson passed down—an adult teaching or playing with a child</teaching.instruction>
@@ -61,6 +62,7 @@
   <smalltalk.instructions.0>small talk — use the supplied topic if present; otherwise let the ordinary rhythm carry the entry</smalltalk.instructions.0>
   <smalltalk.instructions.1>small talk — write the feeling under it: ease, awkwardness, duty, or distance</smalltalk.instructions.1>
   <smalltalk.instructions.2>small talk — write the pauses and back-and-forth without inventing a new topic</smalltalk.instructions.2>
+  <smalltalk.instructions.3>small talk — anchor the exchange in one ordinary task or place already supplied, and let familiarity do the rest</smalltalk.instructions.3>
   <smalltalk.tone>with light, easy familiarity</smalltalk.tone>
   <dayreflection.label>Day&apos;s reflection</dayreflection.label>
   <dayreflection.instruction>a quiet end-of-day reflection looking back on the whole day</dayreflection.instruction>
@@ -77,6 +79,7 @@
   <other.instruction>a social interaction between the pawns</other.instruction>
   <socialfight.label>Social fights</socialfight.label>
   <socialfight.instruction>tempers snapped—two people came to blows. Write it as heat and impact</socialfight.instruction>
+  <socialfight.instructions.3>a fistfight — stay with one supplied impact and the instant both people realize the argument has become violence</socialfight.instructions.3>
   <socialfight.tone>with raw, adrenal fury</socialfight.tone>
   <insultspree.label>Insult sprees</insultspree.label>
   <insultspree.instruction>a pawn breaking into repeated verbal cruelty; prefer the actual insult log entries when they are recorded</insultspree.instruction>
@@ -95,6 +98,7 @@
   <talecombat.instructions.0>combat, injury, or rescue — open on a supplied sound cue if present; otherwise open on immediate danger without inventing a battle outcome</talecombat.instructions.0>
   <talecombat.instructions.1>combat, injury, or rescue — open on body impact only when supported: pain, heat, breath, or the injury already supplied</talecombat.instructions.1>
   <talecombat.instructions.2>combat, injury, or rescue — use another pawn only if supplied; otherwise stay with the POV surviving the moment</talecombat.instructions.2>
+  <talecombat.instructions.3>combat, injury, or rescue — follow the strongest supplied beat, then stop before inventing what happened next</talecombat.instructions.3>
   <talecombat.tone>with fear and visceral danger</talecombat.tone>
   <talehealth.label>Health &amp; medicine</talehealth.label>
   <talehealth.instruction>the body&apos;s fragility—surgery, illness, exposure, or recovery. Write fear, relief, or trust</talehealth.instruction>
@@ -586,4 +590,9 @@
   <biotechDeathrestInterrupted.tone>with abruptly broken stillness and physical unease</biotechDeathrestInterrupted.tone>
   <biotechDeathrestInterrupted.tones.0>disoriented and bodily, centered on rest ending before recovery</biotechDeathrestInterrupted.tones.0>
   <biotechDeathrestInterrupted.tones.1>quietly alarming, preserving the unknown cause instead of filling it in</biotechDeathrestInterrupted.tones.1>
+  <observedBiotechPollution.label>Colony pollution</observedBiotechPollution.label>
+  <observedBiotechPollution.instruction>pollution across the colony map becoming impossible to ignore; keep the scale qualitative and write how a changed landscape alters the meaning of home</observedBiotechPollution.instruction>
+  <observedBiotechPollution.tone>with environmental pressure and uneasy attachment to home</observedBiotechPollution.tone>
+  <observedBiotechPollution.tones.0>practical and unsettled, ordinary routines bending around contamination</observedBiotechPollution.tones.0>
+  <observedBiotechPollution.tones.1>quietly protective, measuring what still makes this place home</observedBiotechPollution.tones.1>
 </LanguageData>

@@ -147,6 +147,7 @@
     </tones>
     <matchDefNames>
       <li>Lover</li>
+      <li>Fiance</li>
       <li>Spouse</li>
       <li>ExLover</li>
       <li>ExSpouse</li>
@@ -507,6 +508,7 @@
       <li>warmth between people — write the specific gesture from the notes and the guard it lowered</li>
       <li>warmth between people — write what the pawn did not manage to say back, without inventing quoted words</li>
       <li>warmth between people — write the after-effect: the room easier, the work lighter, the pawn less alone tonight</li>
+      <li>warmth between people — stay with one small sign of trust and why this pawn noticed it now</li>
     </instructions>
     <tone>with soft, tender warmth</tone>
     <tones>
@@ -614,6 +616,7 @@
       <li>small talk — use the supplied topic if present; otherwise let the ordinary rhythm carry the entry</li>
       <li>small talk — write the feeling under it: ease, awkwardness, duty, or distance</li>
       <li>small talk — write the pauses and back-and-forth without inventing a new topic</li>
+      <li>small talk — anchor the exchange in one ordinary task or place already supplied, and let familiarity do the rest</li>
     </instructions>
     <tone>with light, easy familiarity</tone>
     <tones>
@@ -681,6 +684,7 @@
       <li>VoidMonolithActivation</li>
       <li>VoidMonolithWaking</li>
       <li>VoidMonolithVoidAwakened</li>
+      <li>VoidMonolithGleaming</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
@@ -843,6 +847,30 @@
     <colorCue>white</colorCue>
     <matchDefNames>
       <li>PawnDiary_ArtImmortalized</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>observedBiotechPollution</defName>
+    <label>Colony pollution</label>
+    <order>146</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Biotech</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>pollution across the colony map becoming impossible to ignore; keep the scale qualitative and write how a changed landscape alters the meaning of home</instruction>
+    <tone>with environmental pressure and uneasy attachment to home</tone>
+    <tones>
+      <li>practical and unsettled, ordinary routines bending around contamination</li>
+      <li>quietly protective, measuring what still makes this place home</li>
+    </tones>
+    <colorCue>biotechDeep</colorCue>
+    <matchDefNames>
+      <li>BiotechPollutionMeaningful</li>
+      <li>BiotechPollutionSevere</li>
+      <li>BiotechPollutionCritical</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
@@ -1023,6 +1051,7 @@
       <li>a fistfight — write the tunnel of it: sound dropping away, hands acting first, the room too small</li>
       <li>a fistfight — write the first minute after: breath, knuckles, who looked away, what is now broken between them</li>
       <li>a fistfight — write the cost under the anger: shame, relief, or the grudge settling in for a long stay</li>
+      <li>a fistfight — stay with one supplied impact and the instant both people realize the argument has become violence</li>
     </instructions>
     <tone>with raw, adrenal fury</tone>
     <tones>
@@ -1214,6 +1243,7 @@
       <li>combat, injury, or rescue — open on a supplied sound cue if present; otherwise open on immediate danger without inventing a battle outcome</li>
       <li>combat, injury, or rescue — open on body impact only when supported: pain, heat, breath, or the injury already supplied</li>
       <li>combat, injury, or rescue — use another pawn only if supplied; otherwise stay with the POV surviving the moment</li>
+      <li>combat, injury, or rescue — follow the strongest supplied beat, then stop before inventing what happened next</li>
     </instructions>
     <tone>with fear and visceral danger</tone>
     <tones>
@@ -1551,6 +1581,7 @@
            so the former "Party" row (a GatheringDef) could never match. -->
       <li>Aurora</li>
       <li>PsychicSoothe</li>
+      <li>BioluminescentSpores</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
@@ -1577,6 +1608,10 @@
       <li>VolcanicWinter</li>
       <!-- Odyssey sky hardship; the SeasonalFlood thing is observed separately as live state. -->
       <li>VolcanicAsh</li>
+      <li>UnnaturalHeat</li>
+      <li>Drought</li>
+      <li>DarkenedSkies</li>
+      <li>DeepFreeze</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
@@ -1603,6 +1638,8 @@
       <li>Flashstorm</li>
       <!-- Anomaly blood rain; inert without the DLC. -->
       <li>BloodRain</li>
+      <li>VolcanicDebris</li>
+      <li>LavaFlow</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
@@ -1629,6 +1666,10 @@
       <li>GrayPall</li>
       <li>DeathPall</li>
       <li>ToxicFallout</li>
+      <li>SolarFlare</li>
+      <li>NoxiousHaze</li>
+      <li>HateChantDrone</li>
+      <li>GillRot</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 

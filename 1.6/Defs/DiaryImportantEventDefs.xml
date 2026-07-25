@@ -31,6 +31,18 @@
   </PawnDiary.DiaryImportantEventDef>
 
   <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_Engaged</defName>
+    <label>engagement</label>
+    <eventKind>relation.fiance.gained</eventKind>
+    <topicKey>relationship</topicKey>
+    <signal>event</signal>
+    <order>10</order>
+    <matchDefNames><li>Fiance</li></matchDefNames>
+    <owners>both</owners>
+    <lineTemplate>became engaged to {other}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
     <defName>Diary_ImpEvent_Married</defName>
     <label>marriage</label>
     <eventKind>relation.spouse.gained</eventKind>

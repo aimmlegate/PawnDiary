@@ -141,4 +141,61 @@
   <DiaryEventPrompt_RoyalPermitOrbitalSalvo.label>royal orbital salvo invoked</DiaryEventPrompt_RoyalPermitOrbitalSalvo.label>
   <DiaryEventPrompt_RoyalPermitOrbitalSalvo.prompt>Write the permit owner exercising an orbital-salvo permit.</DiaryEventPrompt_RoyalPermitOrbitalSalvo.prompt>
   <DiaryEventPrompt_RoyalPermitOrbitalSalvo.enhancement>Center the decision, authority, and anticipation at the supplied setting. Do not invent a target, impacts, casualties, damage, accuracy, completion, dialogue, or a favor amount.</DiaryEventPrompt_RoyalPermitOrbitalSalvo.enhancement>
+  <DiaryEventPrompt_AnomalyStudyBreakthrough.label>Anomaly study breakthrough</DiaryEventPrompt_AnomalyStudyBreakthrough.label>
+  <DiaryEventPrompt_AnomalyStudyBreakthrough.prompt>Write the exact visible Anomaly study breakthrough reached by this researcher.</DiaryEventPrompt_AnomalyStudyBreakthrough.prompt>
+  <DiaryEventPrompt_AnomalyStudyBreakthrough.enhancement>Preserve the supplied subject and milestone. Do not invent hidden research, abilities, codex text, or later consequences.</DiaryEventPrompt_AnomalyStudyBreakthrough.enhancement>
+  <DiaryEventPrompt_AnomalyContainmentBreach.label>Anomaly containment breach</DiaryEventPrompt_AnomalyContainmentBreach.label>
+  <DiaryEventPrompt_AnomalyContainmentBreach.prompt>Write the exact containment breach from the supplied witness role.</DiaryEventPrompt_AnomalyContainmentBreach.prompt>
+  <DiaryEventPrompt_AnomalyContainmentBreach.enhancement>Name only escaped entities and visible facts supplied. Do not assign blame, cause, hidden powers, or an outcome after the breach.</DiaryEventPrompt_AnomalyContainmentBreach.enhancement>
+  <DiaryEventPrompt_AnomalyCreepJoinerOutcome.label>strange-arrival outcome</DiaryEventPrompt_AnomalyCreepJoinerOutcome.label>
+  <DiaryEventPrompt_AnomalyCreepJoinerOutcome.prompt>Write the strange arrival&apos;s exact visible outcome.</DiaryEventPrompt_AnomalyCreepJoinerOutcome.prompt>
+  <DiaryEventPrompt_AnomalyCreepJoinerOutcome.enhancement>Keep the supplied role and visible result. Do not reveal hidden motives, drawbacks, infections, timers, or discoveries not stated.</DiaryEventPrompt_AnomalyCreepJoinerOutcome.enhancement>
+  <DiaryEventPrompt_AnomalyGhoulTransformation.label>ghoul transformation</DiaryEventPrompt_AnomalyGhoulTransformation.label>
+  <DiaryEventPrompt_AnomalyGhoulTransformation.prompt>Write the completed ghoul transformation from the supplied subject or surgeon point of view.</DiaryEventPrompt_AnomalyGhoulTransformation.prompt>
+  <DiaryEventPrompt_AnomalyGhoulTransformation.enhancement>Keep participant roles and visible results exact. Do not invent procedure mechanics, a cure, later abilities, or moral judgment.</DiaryEventPrompt_AnomalyGhoulTransformation.enhancement>
+  <DiaryEventPrompt_AnomalyVoidOutcome.label>answer to the void</DiaryEventPrompt_AnomalyVoidOutcome.label>
+  <DiaryEventPrompt_AnomalyVoidOutcome.prompt>Write the exact terminal answer this pawn committed before the void.</DiaryEventPrompt_AnomalyVoidOutcome.prompt>
+  <DiaryEventPrompt_AnomalyVoidOutcome.enhancement>Preserve the supplied branch and visible result. Do not merge alternatives or invent dialogue, mechanics, consequences, or another pawn&apos;s agency.</DiaryEventPrompt_AnomalyVoidOutcome.enhancement>
+  <DiaryEventPrompt_RitualAnomalyInvitation.label>Anomaly invitation ritual</DiaryEventPrompt_RitualAnomalyInvitation.label>
+  <DiaryEventPrompt_RitualAnomalyInvitation.prompt>Write the supplied invitation ritual or its recorded outcome as one witnessed occult event.</DiaryEventPrompt_RitualAnomalyInvitation.prompt>
+  <DiaryEventPrompt_RitualAnomalyInvitation.enhancement>Use only the ritual, role, quality, participants, and outcome supplied. Do not invent what was invited, what answered, dialogue, or later effects.</DiaryEventPrompt_RitualAnomalyInvitation.enhancement>
+  <DiaryEventPrompt_RitualAnomalyFleshAndWeather.label>Anomaly flesh or weather ritual</DiaryEventPrompt_RitualAnomalyFleshAndWeather.label>
+  <DiaryEventPrompt_RitualAnomalyFleshAndWeather.prompt>Write the supplied flesh-shaping or unnatural-weather ritual and its visible result.</DiaryEventPrompt_RitualAnomalyFleshAndWeather.prompt>
+  <DiaryEventPrompt_RitualAnomalyFleshAndWeather.enhancement>Keep exact roles, quality, and outcome. Do not invent bodily changes, weather damage, hidden causes, or later consequences.</DiaryEventPrompt_RitualAnomalyFleshAndWeather.enhancement>
+  <DiaryEventPrompt_RitualAnomalyPredation.label>Anomaly predation ritual</DiaryEventPrompt_RitualAnomalyPredation.label>
+  <DiaryEventPrompt_RitualAnomalyPredation.prompt>Write the supplied predatory ritual from this pawn&apos;s exact participant or witness role.</DiaryEventPrompt_RitualAnomalyPredation.prompt>
+  <DiaryEventPrompt_RitualAnomalyPredation.enhancement>Use only named targets, quality, and visible outcome. Do not invent pursuit, wounds, deaths, powers, or what happened afterward.</DiaryEventPrompt_RitualAnomalyPredation.enhancement>
+  <DiaryEventPrompt_RitualAnomalyMind.label>Anomaly mind ritual</DiaryEventPrompt_RitualAnomalyMind.label>
+  <DiaryEventPrompt_RitualAnomalyMind.prompt>Write the supplied mind-affecting ritual as immediate psychic pressure and its recorded result.</DiaryEventPrompt_RitualAnomalyMind.prompt>
+  <DiaryEventPrompt_RitualAnomalyMind.enhancement>Keep roles, quality, and outcome exact. Do not invent private thoughts, lasting damage, secret knowledge, or additional victims.</DiaryEventPrompt_RitualAnomalyMind.enhancement>
+  <DiaryEventPrompt_RitualAnomalyAbduction.label>Anomaly abduction ritual</DiaryEventPrompt_RitualAnomalyAbduction.label>
+  <DiaryEventPrompt_RitualAnomalyAbduction.prompt>Write the supplied abduction ritual and only the arrival, disappearance, or outcome it visibly proved.</DiaryEventPrompt_RitualAnomalyAbduction.prompt>
+  <DiaryEventPrompt_RitualAnomalyAbduction.enhancement>Preserve exact actors, targets, quality, and result. Do not invent a destination, captivity, rescue, dialogue, or events beyond the record.</DiaryEventPrompt_RitualAnomalyAbduction.enhancement>
+  <DiaryEventPrompt_RitualAnomalyDeathRefusal.label>Anomaly death-refusal ritual</DiaryEventPrompt_RitualAnomalyDeathRefusal.label>
+  <DiaryEventPrompt_RitualAnomalyDeathRefusal.prompt>Write the supplied ritual that contests death and its exact recorded outcome.</DiaryEventPrompt_RitualAnomalyDeathRefusal.prompt>
+  <DiaryEventPrompt_RitualAnomalyDeathRefusal.enhancement>Keep the named subject, roles, quality, and visible result. Do not invent resurrection details, hidden costs, dialogue, or later survival.</DiaryEventPrompt_RitualAnomalyDeathRefusal.enhancement>
+  <DiaryEventPrompt_RitualAnomalyPsychic.label>Anomaly psychic ritual</DiaryEventPrompt_RitualAnomalyPsychic.label>
+  <DiaryEventPrompt_RitualAnomalyPsychic.prompt>Write the supplied psychic ritual as a witnessed act with its exact recorded result.</DiaryEventPrompt_RitualAnomalyPsychic.prompt>
+  <DiaryEventPrompt_RitualAnomalyPsychic.enhancement>Use only participants, quality, target, and outcome supplied. Do not invent thoughts, powers, voices, hidden knowledge, or later effects.</DiaryEventPrompt_RitualAnomalyPsychic.enhancement>
+  <DiaryEventPrompt_BiotechFamilyBirth.label>family birth</DiaryEventPrompt_BiotechFamilyBirth.label>
+  <DiaryEventPrompt_BiotechFamilyBirth.prompt>Write the supplied birth as a family threshold from this pawn&apos;s exact role.</DiaryEventPrompt_BiotechFamilyBirth.prompt>
+  <DiaryEventPrompt_BiotechFamilyBirth.enhancement>Use only parent, baby, setting, and outcome facts supplied. Do not invent labor details, health, genes, names, dialogue, or future bonds.</DiaryEventPrompt_BiotechFamilyBirth.enhancement>
+  <DiaryEventPrompt_BiotechDeathrestInterrupted.label>interrupted deathrest</DiaryEventPrompt_BiotechDeathrestInterrupted.label>
+  <DiaryEventPrompt_BiotechDeathrestInterrupted.prompt>Write the confirmed interruption of active deathrest as incomplete waking and bodily consequence.</DiaryEventPrompt_BiotechDeathrestInterrupted.prompt>
+  <DiaryEventPrompt_BiotechDeathrestInterrupted.enhancement>Use only the supplied state and setting. Do not invent a cause, culprit, routine completion, dialogue, or additional injury.</DiaryEventPrompt_BiotechDeathrestInterrupted.enhancement>
+  <DiaryEventPrompt_OdysseyGravshipLanding.label>gravship landing</DiaryEventPrompt_OdysseyGravshipLanding.label>
+  <DiaryEventPrompt_OdysseyGravshipLanding.prompt>Write the supplied gravship landing as the end of a journey and the first sight of a place.</DiaryEventPrompt_OdysseyGravshipLanding.prompt>
+  <DiaryEventPrompt_OdysseyGravshipLanding.enhancement>Preserve exact ship, place, role, and visible result. Do not invent the route, hazards, passengers, damage, discoveries, or what follows.</DiaryEventPrompt_OdysseyGravshipLanding.enhancement>
+  <DiaryEventPrompt_RecruitGroup.label>recruitment or captivity</DiaryEventPrompt_RecruitGroup.label>
+  <DiaryEventPrompt_RecruitGroup.prompt>Write the exact recruitment, resistance, prison, or release interaction supplied.</DiaryEventPrompt_RecruitGroup.prompt>
+  <DiaryEventPrompt_RecruitGroup.enhancement>Keep recruiter, captive, outcome, and social text exact. Do not invent coercion, consent, promises, escape plans, or a later allegiance change.</DiaryEventPrompt_RecruitGroup.enhancement>
+  <DiaryEventPrompt_TrialGroup.label>trial or accusation</DiaryEventPrompt_TrialGroup.label>
+  <DiaryEventPrompt_TrialGroup.prompt>Write the supplied accusation, defense, or judgment from this pawn&apos;s exact role.</DiaryEventPrompt_TrialGroup.prompt>
+  <DiaryEventPrompt_TrialGroup.enhancement>Use only the charge, participants, social text, and recorded outcome. Do not invent evidence, testimony, guilt, sentence, or crowd reaction.</DiaryEventPrompt_TrialGroup.enhancement>
+  <DiaryEventPrompt_ConversionGroup.label>conversion or preaching</DiaryEventPrompt_ConversionGroup.label>
+  <DiaryEventPrompt_ConversionGroup.prompt>Write the supplied conversion or preaching interaction as pressure between stated beliefs.</DiaryEventPrompt_ConversionGroup.prompt>
+  <DiaryEventPrompt_ConversionGroup.enhancement>Preserve speaker, listener, social text, certainty, and outcome supplied. Do not invent doctrine, arguments, a former faith, or conversion without proof.</DiaryEventPrompt_ConversionGroup.enhancement>
+  <DiaryEventPrompt_SlaveryGroup.label>slavery or suppression</DiaryEventPrompt_SlaveryGroup.label>
+  <DiaryEventPrompt_SlaveryGroup.prompt>Write the supplied enslavement, suppression, or defiance interaction from this pawn&apos;s exact role.</DiaryEventPrompt_SlaveryGroup.prompt>
+  <DiaryEventPrompt_SlaveryGroup.enhancement>Use only status, participants, social text, and result supplied. Do not invent abuse, consent, rebellion plans, escape, emancipation, or later punishment.</DiaryEventPrompt_SlaveryGroup.enhancement>
 </LanguageData>

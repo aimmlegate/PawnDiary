@@ -26,6 +26,22 @@
 
   <VolcanicWinterActive.label>вулканическая зима</VolcanicWinterActive.label>
 
+  <EclipseActive.label>затмение</EclipseActive.label>
+  <PsychicDroneActive.label>псионический гул</PsychicDroneActive.label>
+  <PsychicSootheActive.label>псионическое умиротворение</PsychicSootheActive.label>
+  <PsychicSuppressionActive.label>псионическое подавление</PsychicSuppressionActive.label>
+  <GrayPallActive.label>смрад серой пелены</GrayPallActive.label>
+  <UnnaturalHeatActive.label>неестественная жара</UnnaturalHeatActive.label>
+  <HateChantDroneActive.label>песнопение ненависти</HateChantDroneActive.label>
+  <NoxiousHazeActive.label>кислотный смог</NoxiousHazeActive.label>
+  <DroughtActive.label>засуха</DroughtActive.label>
+  <VolcanicDebrisActive.label>вулканические обломки</VolcanicDebrisActive.label>
+  <LavaFlowActive.label>поток лавы</LavaFlowActive.label>
+  <DarkenedSkiesActive.label>потемневшее небо</DarkenedSkiesActive.label>
+  <BioluminescentSporesActive.label>биолюминесцентные споры</BioluminescentSporesActive.label>
+  <GillRotActive.label>жаберная гниль</GillRotActive.label>
+  <DeepFreezeActive.label>глубокая заморозка</DeepFreezeActive.label>
+
   <SeasonalFloodActive.label>сезонный паводок</SeasonalFloodActive.label>
 
   <BloodRainActive.label>кровавый дождь</BloodRainActive.label>

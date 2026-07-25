@@ -1090,6 +1090,7 @@
   <PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>{0} deliberately stirred the void monolith: {1}.</PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>
   <PawnDiary.Event.EventWindow.VoidMonolithWaking.Start>{0} deliberately woke the void monolith further: {1}.</PawnDiary.Event.EventWindow.VoidMonolithWaking.Start>
   <PawnDiary.Event.EventWindow.VoidMonolithVoidAwakened.Start>{0} awakened the void through the monolith: {1}.</PawnDiary.Event.EventWindow.VoidMonolithVoidAwakened.Start>
+  <PawnDiary.Event.EventWindow.VoidMonolithGleaming.Start>{0} raised the void monolith into its gleaming state: {1}.</PawnDiary.Event.EventWindow.VoidMonolithGleaming.Start>
   <PawnDiary.Event.EventWindow.Birthday.Start>{0} reached biological age {1}.</PawnDiary.Event.EventWindow.Birthday.Start>
   <PawnDiary.Event.EventWindow.HeartAttack.Start>{0} suffered a heart attack: {1}.</PawnDiary.Event.EventWindow.HeartAttack.Start>
   <PawnDiary.Event.EventWindow.PrisonBreak.Start>{0} heard the prison break alarm: {1}.</PawnDiary.Event.EventWindow.PrisonBreak.Start>
@@ -1206,6 +1207,26 @@
   <PawnDiary.Prompt.Health.Cue.VoidDetachment>void detachment</PawnDiary.Prompt.Health.Cue.VoidDetachment>
   <PawnDiary.Prompt.Health.Cue.HumanWarmthAbsent>human warmth absent</PawnDiary.Prompt.Health.Cue.HumanWarmthAbsent>
   <PawnDiary.Prompt.Health.Cue.DarkVoidVoice>use the forced dark void writing style</PawnDiary.Prompt.Health.Cue.DarkVoidVoice>
+  <PawnDiary.Prompt.Health.Description.Blindness>sight is absent; ground the entry in sound, touch, distance, remembered layout, and reliance without pretending the pawn can see</PawnDiary.Prompt.Health.Description.Blindness>
+  <PawnDiary.Prompt.Health.Cue.WorldWithoutSight>a world read without sight</PawnDiary.Prompt.Health.Cue.WorldWithoutSight>
+  <PawnDiary.Prompt.Health.Description.TraumaSavant>ordinary social feeling has gone quiet while thought and technical focus remain unnaturally sharp; keep the contrast restrained</PawnDiary.Prompt.Health.Description.TraumaSavant>
+  <PawnDiary.Prompt.Health.Cue.ThoughtWithoutOrdinaryFeeling>sharp thought without ordinary feeling</PawnDiary.Prompt.Health.Cue.ThoughtWithoutOrdinaryFeeling>
+  <PawnDiary.Prompt.Health.Description.Joywire>an implanted current keeps mood artificially bright even when the moment itself may not deserve cheer</PawnDiary.Prompt.Health.Description.Joywire>
+  <PawnDiary.Prompt.Health.Cue.ArtificialCheer>artificial cheer against the facts</PawnDiary.Prompt.Health.Cue.ArtificialCheer>
+  <PawnDiary.Prompt.Health.Description.Pregnancy>the pawn is carrying a developing child; let bodily awareness, anticipation, and uncertainty enter only where the event makes them relevant</PawnDiary.Prompt.Health.Description.Pregnancy>
+  <PawnDiary.Prompt.Health.Cue.BodyCarryingNewLife>a body carrying new life</PawnDiary.Prompt.Health.Cue.BodyCarryingNewLife>
+  <PawnDiary.Prompt.Health.Description.VoidShockOrTouched>contact with the void has left thought and sensation altered; keep the disturbance close and unexplained rather than adding hidden lore</PawnDiary.Prompt.Health.Description.VoidShockOrTouched>
+  <PawnDiary.Prompt.Health.Cue.VoidAfterimage>the void&apos;s afterimage</PawnDiary.Prompt.Health.Cue.VoidAfterimage>
+  <PawnDiary.Prompt.Health.Description.Carcinoma>a slow internal illness is present; write bodily uncertainty and treatment pressure without inventing prognosis, pain, or diagnosis details</PawnDiary.Prompt.Health.Description.Carcinoma>
+  <PawnDiary.Prompt.Health.Cue.SlowInternalThreat>a slow threat inside the body</PawnDiary.Prompt.Health.Cue.SlowInternalThreat>
+  <PawnDiary.Prompt.Health.Description.Deathrest>the body is drawn toward deathlike restorative sleep; keep its stillness, hunger for rest, or incomplete recovery relevant without inventing interruption</PawnDiary.Prompt.Health.Description.Deathrest>
+  <PawnDiary.Prompt.Health.Cue.DeathlikeSleep>deathlike restorative sleep</PawnDiary.Prompt.Health.Cue.DeathlikeSleep>
+  <PawnDiary.Prompt.Health.Description.LungRot>breathing is threatened by a rotting lung condition; use strain, caution, or air hunger only to the degree supplied</PawnDiary.Prompt.Health.Description.LungRot>
+  <PawnDiary.Prompt.Health.Cue.BreathUnderStrain>breath under strain</PawnDiary.Prompt.Health.Cue.BreathUnderStrain>
+  <PawnDiary.Prompt.Health.Description.VacuumExposure>exposure to vacuum has injured the body; write pressure, raw tissue, and fragile recovery without inventing the accident or exact damage</PawnDiary.Prompt.Health.Description.VacuumExposure>
+  <PawnDiary.Prompt.Health.Cue.VacuumBurning>vacuum-burned tissue</PawnDiary.Prompt.Health.Cue.VacuumBurning>
+  <PawnDiary.Prompt.Health.Description.GravNausea>changed gravity has unsettled balance and stomach; let motion, orientation, and queasiness tint the moment without adding a new incident</PawnDiary.Prompt.Health.Description.GravNausea>
+  <PawnDiary.Prompt.Health.Cue.GravityTurningStomach>gravity turning the stomach</PawnDiary.Prompt.Health.Cue.GravityTurningStomach>
   <PawnDiary.Prompt.Context.Important>important context</PawnDiary.Prompt.Context.Important>
   <PawnDiary.Prompt.Context.RoyalTitle>royal title</PawnDiary.Prompt.Context.RoyalTitle>
   <PawnDiary.Prompt.Context.IdeologyRole>ideoligion role</PawnDiary.Prompt.Context.IdeologyRole>
@@ -1265,6 +1286,51 @@
   <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Condition>ash dimming the sun</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Condition>
   <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Description>ash high in the atmosphere has dimmed the sun for a long stretch; days are gray and cold, plants grow slowly, and the light itself feels rationed</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Description>
   <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Cue.DimSky>gray, rationed daylight</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Cue.DimSky>
+  <PawnDiary.Prompt.ObservedCondition.EclipseActive.Priority>let the eclipse dim ordinary life</PawnDiary.Prompt.ObservedCondition.EclipseActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.EclipseActive.Condition>daylight swallowed by an eclipse</PawnDiary.Prompt.ObservedCondition.EclipseActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.EclipseActive.Description>the sun is hidden even during daytime; lamps, sleep, work, and the sense of time all adjust to unexpected dark</PawnDiary.Prompt.ObservedCondition.EclipseActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.PsychicDroneActive.Priority>let the psychic drone strain this pawn&apos;s thoughts</PawnDiary.Prompt.ObservedCondition.PsychicDroneActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.PsychicDroneActive.Condition>a psychic drone affecting the colony</PawnDiary.Prompt.ObservedCondition.PsychicDroneActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.PsychicDroneActive.Description>an orbital signal pushes minds toward distress; keep its effect personal to this pawn and never invent a source they can identify</PawnDiary.Prompt.ObservedCondition.PsychicDroneActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.PsychicSootheActive.Priority>let the psychic soothe ease the background</PawnDiary.Prompt.ObservedCondition.PsychicSootheActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.PsychicSootheActive.Condition>a calming psychic signal over the colony</PawnDiary.Prompt.ObservedCondition.PsychicSootheActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.PsychicSootheActive.Description>an unseen signal is settling minds and loosening tension; write the relief as felt without explaining the distant source</PawnDiary.Prompt.ObservedCondition.PsychicSootheActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.PsychicSuppressionActive.Priority>let psychic suppression cloud the background</PawnDiary.Prompt.ObservedCondition.PsychicSuppressionActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.PsychicSuppressionActive.Condition>a suppression field muddling thought and coordination</PawnDiary.Prompt.ObservedCondition.PsychicSuppressionActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.PsychicSuppressionActive.Description>a regional field reduces consciousness for those it affects; write slowed reasoning and effort only where supplied pawn facts support it</PawnDiary.Prompt.ObservedCondition.PsychicSuppressionActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.GrayPallActive.Priority>keep the gray pall&apos;s outdoor stench in the background</PawnDiary.Prompt.ObservedCondition.GrayPallActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.GrayPallActive.Condition>the colony is living beneath a gray pall</PawnDiary.Prompt.ObservedCondition.GrayPallActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.GrayPallActive.Description>a putrid smell hangs over the map and bites harder outdoors; let irritation, closed doors, and spoiled air color the entry</PawnDiary.Prompt.ObservedCondition.GrayPallActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalHeatActive.Priority>let the unnatural heat strain the day</PawnDiary.Prompt.ObservedCondition.UnnaturalHeatActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalHeatActive.Condition>outdoor air heated by an unnatural source</PawnDiary.Prompt.ObservedCondition.UnnaturalHeatActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalHeatActive.Description>the atmosphere itself is being heated; coolers, shade, sleep, and work bend around heat with no natural weather behind it</PawnDiary.Prompt.ObservedCondition.UnnaturalHeatActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.HateChantDroneActive.Priority>keep the hate chant&apos;s psychic pressure close</PawnDiary.Prompt.ObservedCondition.HateChantDroneActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.HateChantDroneActive.Condition>hostile chanting pressing into every mind</PawnDiary.Prompt.ObservedCondition.HateChantDroneActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.HateChantDroneActive.Description>distant cultists feed a hateful psychic drone that worsens while it continues; write headache, crawling skin, and mounting anger</PawnDiary.Prompt.ObservedCondition.HateChantDroneActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.NoxiousHazeActive.Priority>let the acidic smog press on outdoor work</PawnDiary.Prompt.ObservedCondition.NoxiousHazeActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.NoxiousHazeActive.Condition>acidic smog over the colony</PawnDiary.Prompt.ObservedCondition.NoxiousHazeActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.NoxiousHazeActive.Description>pollution-born haze slows plants, harms exposed things, and drags at mood; write coated air and altered routine, not mechanics</PawnDiary.Prompt.ObservedCondition.NoxiousHazeActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.DroughtActive.Priority>let the drought shape the colony&apos;s planning</PawnDiary.Prompt.ObservedCondition.DroughtActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.DroughtActive.Condition>a prolonged drought slowing plant growth</PawnDiary.Prompt.ObservedCondition.DroughtActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.DroughtActive.Description>rain has stayed away and plants grow slowly; work, food plans, and attention to every green shoot carry the pressure</PawnDiary.Prompt.ObservedCondition.DroughtActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.VolcanicDebrisActive.Priority>keep the volcanic debris shower immediate</PawnDiary.Prompt.ObservedCondition.VolcanicDebrisActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.VolcanicDebrisActive.Condition>molten volcanic debris falling nearby</PawnDiary.Prompt.ObservedCondition.VolcanicDebrisActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.VolcanicDebrisActive.Description>a nearby eruption is throwing hot debris across the region; write alarm from above without inventing a strike, injury, or damage</PawnDiary.Prompt.ObservedCondition.VolcanicDebrisActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.LavaFlowActive.Priority>keep the advancing lava flow immediate</PawnDiary.Prompt.ObservedCondition.LavaFlowActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.LavaFlowActive.Condition>lava moving across low volcanic ground</PawnDiary.Prompt.ObservedCondition.LavaFlowActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.LavaFlowActive.Description>lava is pouring into the area along low volcanic rock; write heat, route changes, and keeping clear without inventing what it destroys</PawnDiary.Prompt.ObservedCondition.LavaFlowActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.DarkenedSkiesActive.Priority>let the darkened skies weigh on the day</PawnDiary.Prompt.ObservedCondition.DarkenedSkiesActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.DarkenedSkiesActive.Condition>thick clouds blocking sky and sun</PawnDiary.Prompt.ObservedCondition.DarkenedSkiesActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.DarkenedSkiesActive.Description>black cloud has taken the daylight; routines continue under a dim ceiling, with light and time feeling narrowed</PawnDiary.Prompt.ObservedCondition.DarkenedSkiesActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.BioluminescentSporesActive.Priority>let the glowing spores lend the day wonder</PawnDiary.Prompt.ObservedCondition.BioluminescentSporesActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.BioluminescentSporesActive.Condition>harmless bioluminescent spores in the air</PawnDiary.Prompt.ObservedCondition.BioluminescentSporesActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.BioluminescentSporesActive.Description>a fungal bloom fills the air with strange light and poses no danger; allow beauty and curiosity without inventing effects</PawnDiary.Prompt.ObservedCondition.BioluminescentSporesActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.GillRotActive.Priority>let the gill rot shadow food from the water</PawnDiary.Prompt.ObservedCondition.GillRotActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.GillRotActive.Condition>a harmless fungus thinning local fish</PawnDiary.Prompt.ObservedCondition.GillRotActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.GillRotActive.Description>fish populations are declining while people remain safe; write the quiet loss and changing expectations around fishing</PawnDiary.Prompt.ObservedCondition.GillRotActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.DeepFreezeActive.Priority>let the deep freeze dominate daily routine</PawnDiary.Prompt.ObservedCondition.DeepFreezeActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.DeepFreezeActive.Condition>an ancient device driving temperatures down</PawnDiary.Prompt.ObservedCondition.DeepFreezeActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.DeepFreezeActive.Description>temperatures are falling far below normal; heat, shelter, travel, and exposed life all become immediate concerns</PawnDiary.Prompt.ObservedCondition.DeepFreezeActive.Description>
   <PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Priority>let the swollen water shape the background without turning it into a second event</PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Priority>
   <PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Condition>seasonal floodwater spreading over low ground</PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Condition>
   <PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Description>rain upriver swelled the river; floodwater covers familiar low ground and routines bend around it until it recedes</PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Description>

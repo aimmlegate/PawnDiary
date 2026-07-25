@@ -64,6 +64,7 @@
   <heartfelt.instructions.0>тепло между людьми: назови конкретный жест из заметок и ту настороженность, которую он снял</heartfelt.instructions.0>
   <heartfelt.instructions.1>тепло между людьми: напиши, что поселенец не сумел сказать в ответ, не выдумывая цитат</heartfelt.instructions.1>
   <heartfelt.instructions.2>тепло между людьми: пиши, что осталось после — в комнате легче, работа мягче, этим вечером не так одиноко</heartfelt.instructions.2>
+  <heartfelt.instructions.3>тепло между людьми — задержись на одном маленьком признаке доверия и на том, почему поселенец заметил его именно сейчас</heartfelt.instructions.3>
   <heartfelt.tone>с мягким, нежным теплом</heartfelt.tone>
   <teaching.label>Обучение и уроки</teaching.label>
   <teaching.instruction>урок, переданный дальше — взрослый учит ребёнка или играет с ним</teaching.instruction>
@@ -76,6 +77,7 @@
   <smalltalk.instructions.0>болтовня: используй заданную тему, если она есть; иначе опирайся на обычный ритм разговора</smalltalk.instructions.0>
   <smalltalk.instructions.1>болтовня: пиши чувство под разговором — лёгкость, неловкость, долг или дистанцию</smalltalk.instructions.1>
   <smalltalk.instructions.2>болтовня: пиши паузы и обмен репликами, не выдумывая новую тему</smalltalk.instructions.2>
+  <smalltalk.instructions.3>светская беседа — привяжи разговор к уже указанному обычному делу или месту, остальное пусть сделает привычная близость</smalltalk.instructions.3>
   <smalltalk.tone>с лёгкой, непринуждённой близостью</smalltalk.tone>
   <dayreflection.label>Итог дня</dayreflection.label>
   <dayreflection.instruction>тихое вечернее размышление, оглядывающееся на весь день</dayreflection.instruction>
@@ -94,6 +96,7 @@
   <socialfight.instructions.0>драка: пиши сузившийся мир — звук пропадает, руки действуют первыми, комната тесна</socialfight.instructions.0>
   <socialfight.instructions.1>драка: пиши первую минуту после — дыхание, костяшки, кто отвёл глаза, что теперь сломано между ними</socialfight.instructions.1>
   <socialfight.instructions.2>драка: пиши цену под злостью — стыд, облегчение или обиду, которая поселилась надолго</socialfight.instructions.2>
+  <socialfight.instructions.3>драка — держись одного указанного удара и мига, когда оба понимают, что спор стал насилием</socialfight.instructions.3>
   <socialfight.tone>с резкой адреналиновой яростью</socialfight.tone>
   <insultspree.label>Поток оскорблений</insultspree.label>
   <insultspree.instruction>поселенец срывается в повторяющуюся словесную жестокость; предпочитай настоящие записи об оскорблениях из журнала, когда они есть</insultspree.instruction>
@@ -112,6 +115,7 @@
   <talecombat.instructions.0>бой, ранение или спасение: начни с переданного звука, если он есть; иначе начни с непосредственной опасности, не выдумывая исход боя</talecombat.instructions.0>
   <talecombat.instructions.1>бой, ранение или спасение: начинай с телесного удара, только если факты дают для него основание, — боль, жар, дыхание или уже переданная рана</talecombat.instructions.1>
   <talecombat.instructions.2>бой, ранение или спасение: используй другого поселенца, только если он передан; иначе сосредоточься на том, как автор пережил момент</talecombat.instructions.2>
+  <talecombat.instructions.3>бой, ранение или спасение — следуй за самым сильным переданным эпизодом и остановись, прежде чем выдумывать продолжение</talecombat.instructions.3>
   <talecombat.tone>со страхом и нутряной опасностью</talecombat.tone>
   <talehealth.label>Здоровье и медицина</talehealth.label>
   <talehealth.instruction>хрупкость тела: операция, болезнь, переохлаждение или выздоровление. Пиши страх, облегчение или доверие</talehealth.instruction>
@@ -698,4 +702,9 @@
   <biotechDeathrestInterrupted.tone>с резко нарушенной тишиной и телесной тревогой</biotechDeathrestInterrupted.tone>
   <biotechDeathrestInterrupted.tones.0>дезориентированно и телесно, сосредоточившись на отдыхе, оборванном до восстановления</biotechDeathrestInterrupted.tones.0>
   <biotechDeathrestInterrupted.tones.1>тихо и тревожно, сохраняя неизвестную причину вместо догадок</biotechDeathrestInterrupted.tones.1>
+  <observedBiotechPollution.label>Загрязнение поселения</observedBiotechPollution.label>
+  <observedBiotechPollution.instruction>загрязнение всей карты поселения, которое уже невозможно игнорировать; сохраняй качественный масштаб и пиши, как изменившийся ландшафт меняет смысл дома</observedBiotechPollution.instruction>
+  <observedBiotechPollution.tone>с давлением заражённой среды и тревожной привязанностью к дому</observedBiotechPollution.tone>
+  <observedBiotechPollution.tones.0>практично и тревожно: обычный уклад гнётся вокруг загрязнения</observedBiotechPollution.tones.0>
+  <observedBiotechPollution.tones.1>тихо и бережно, измеряя, что всё ещё делает это место домом</observedBiotechPollution.tones.1>
 </LanguageData>

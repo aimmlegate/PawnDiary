@@ -26,6 +26,22 @@
 
   <VolcanicWinterActive.label>volcanic winter</VolcanicWinterActive.label>
 
+  <EclipseActive.label>eclipse</EclipseActive.label>
+  <PsychicDroneActive.label>psychic drone</PsychicDroneActive.label>
+  <PsychicSootheActive.label>psychic soothe</PsychicSootheActive.label>
+  <PsychicSuppressionActive.label>psychic suppression</PsychicSuppressionActive.label>
+  <GrayPallActive.label>gray pall</GrayPallActive.label>
+  <UnnaturalHeatActive.label>unnatural heat</UnnaturalHeatActive.label>
+  <HateChantDroneActive.label>hate chanting</HateChantDroneActive.label>
+  <NoxiousHazeActive.label>acidic smog</NoxiousHazeActive.label>
+  <DroughtActive.label>drought</DroughtActive.label>
+  <VolcanicDebrisActive.label>volcanic debris</VolcanicDebrisActive.label>
+  <LavaFlowActive.label>lava flow</LavaFlowActive.label>
+  <DarkenedSkiesActive.label>darkened skies</DarkenedSkiesActive.label>
+  <BioluminescentSporesActive.label>bioluminescent spores</BioluminescentSporesActive.label>
+  <GillRotActive.label>gill rot</GillRotActive.label>
+  <DeepFreezeActive.label>deep freeze</DeepFreezeActive.label>
+
   <SeasonalFloodActive.label>seasonal flooding</SeasonalFloodActive.label>
 
   <BloodRainActive.label>blood rain</BloodRainActive.label>

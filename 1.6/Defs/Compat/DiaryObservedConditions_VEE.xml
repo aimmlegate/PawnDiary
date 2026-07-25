@@ -7,10 +7,9 @@
   lasts. The live GameCondition is the source of truth, so loading a save mid-event rediscovers it and
   clearing the condition removes the cue after the normal 2,500-tick debounce.
 
-  DiaryObservedConditionDef has no package-gate field. Safety instead comes from exact plain-string
-  matchers: without VEE none of these names can be active, so the defs remain inert and create no
-  missing-def reference or warning. This is also safe when VEE's NoOdyssey folder changes available
-  content. Source names were rechecked against official VEE v2.01 commit
+  Each row is package-gated so non-owners do not see dead settings. Exact plain-string matchers still
+  avoid real Def references, so VEE's NoOdyssey folder can safely change available content. Source
+  names were rechecked against official VEE v2.01 commit
   112f0324238b352dad8ca54aa0d2a391d10ec99a (2026-07-11).
 
   SpaceBattle is intentionally absent: it is short and covered by DiaryEventWindows_VEE.xml. VEE
@@ -19,7 +18,7 @@
 -->
 <Defs>
 
-  <PawnDiary.DiaryObservedConditionDef>
+  <PawnDiary.DiaryObservedConditionDef MayRequire="VanillaExpanded.VEE">
     <defName>VeeDroughtActive</defName>
     <label>VEE drought</label>
     <conditionKey>VeeDroughtActive</conditionKey>
@@ -48,7 +47,7 @@
     </promptCueKeys>
   </PawnDiary.DiaryObservedConditionDef>
 
-  <PawnDiary.DiaryObservedConditionDef>
+  <PawnDiary.DiaryObservedConditionDef MayRequire="VanillaExpanded.VEE">
     <defName>VeeLongNightActive</defName>
     <label>VEE long night</label>
     <conditionKey>VeeLongNightActive</conditionKey>
@@ -77,7 +76,7 @@
     </promptCueKeys>
   </PawnDiary.DiaryObservedConditionDef>
 
-  <PawnDiary.DiaryObservedConditionDef>
+  <PawnDiary.DiaryObservedConditionDef MayRequire="VanillaExpanded.VEE">
     <defName>VeeScorchActive</defName>
     <label>VEE scorch</label>
     <conditionKey>VeeScorchActive</conditionKey>
@@ -106,7 +105,7 @@
     </promptCueKeys>
   </PawnDiary.DiaryObservedConditionDef>
 
-  <PawnDiary.DiaryObservedConditionDef>
+  <PawnDiary.DiaryObservedConditionDef MayRequire="VanillaExpanded.VEE">
     <defName>VeeWhiteoutActive</defName>
     <label>VEE whiteout</label>
     <conditionKey>VeeWhiteoutActive</conditionKey>
@@ -135,7 +134,7 @@
     </promptCueKeys>
   </PawnDiary.DiaryObservedConditionDef>
 
-  <PawnDiary.DiaryObservedConditionDef>
+  <PawnDiary.DiaryObservedConditionDef MayRequire="VanillaExpanded.VEE">
     <defName>VeePsychicBloomActive</defName>
     <label>VEE psychic bloom</label>
     <conditionKey>VeePsychicBloomActive</conditionKey>
@@ -166,7 +165,7 @@
 
   <!-- These four VEE conditions share one psychic-pressure voice. PsychicRain is deliberately the
        unprefixed GameConditionDef name; the package-independent exact matcher is still safe. -->
-  <PawnDiary.DiaryObservedConditionDef>
+  <PawnDiary.DiaryObservedConditionDef MayRequire="VanillaExpanded.VEE">
     <defName>VeePsychicHumActive</defName>
     <label>VEE psychic pressure</label>
     <conditionKey>VeePsychicHumActive</conditionKey>

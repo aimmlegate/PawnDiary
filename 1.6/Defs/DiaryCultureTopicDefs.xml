@@ -118,6 +118,7 @@
       <li>Stirring</li>
       <li>Waking</li>
       <li>VoidAwakened</li>
+      <li>Gleaming</li>
       <li>PawnDiary_AnomalyStudyBreakthrough</li>
       <li>PawnDiary_ContainmentBreach</li>
       <li>PawnDiary_GhoulTransformation</li>
@@ -139,6 +140,9 @@
     <order>70</order>
     <triggerDefNames>
       <li>OdysseyGravshipLanding</li>
+      <li>LaunchedShip</li>
+      <li>EnteredCryptosleep</li>
+      <li>PutIntoCryptosleep</li>
     </triggerDefNames>
     <triggerContextKeys>
       <li>odyssey_journey</li>
@@ -251,6 +255,9 @@
       <li>ColdSnap</li>
       <li>HeatWave</li>
       <li>SolarFlare</li>
+      <li>Blight</li>
+      <li>UnnaturalDarkness</li>
+      <li>VolcanicAsh</li>
       <li>ShortCircuit</li>
       <li>VEE_Earthquake</li>
       <li>VEE_MeteoriteShower</li>

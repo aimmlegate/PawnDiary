@@ -227,6 +227,50 @@
   </PawnDiary.DiaryEventWindowDef>
 
   <PawnDiary.DiaryEventWindowDef>
+    <defName>VoidMonolithGleaming</defName>
+    <label>gleaming monolith</label>
+    <windowKey>VoidMonolithGleaming</windowKey>
+    <enabled>true</enabled>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <timeoutTicks>-1</timeoutTicks>
+    <dedupTicks>2500</dedupTicks>
+    <restartOnStart>false</restartOnStart>
+    <keepActive>false</keepActive>
+    <recordScope>SubjectPawn</recordScope>
+    <recordStartEvent>true</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <recordEndWithoutActive>false</recordEndWithoutActive>
+    <recordTimeoutEvent>false</recordTimeoutEvent>
+    <instruction>write the pawn deliberately raising the void monolith into its gleaming state as its last visible escalation; stay with the activator's senses and psychic experience without inventing a terminal choice or outcome</instruction>
+    <colorCue>anomalyDeep</colorCue>
+    <startTextKey>PawnDiary.Event.EventWindow.VoidMonolithGleaming.Start</startTextKey>
+    <startSignals>
+      <li>
+        <source>VoidMonolith</source>
+        <signal>activated</signal>
+        <matchDefNames>
+          <li>Gleaming</li>
+        </matchDefNames>
+      </li>
+    </startSignals>
+    <narrativeEvidence>
+      <facet>journey_chapter</facet>
+      <phase>gleaming</phase>
+      <arcKey>anomaly-monolith|0</arcKey>
+      <salience>major</salience>
+      <beliefTopics>
+        <li>monolith</li>
+        <li>void</li>
+        <li>culmination</li>
+      </beliefTopics>
+    </narrativeEvidence>
+    <promptEnabled>false</promptEnabled>
+    <promptWeight>0</promptWeight>
+  </PawnDiary.DiaryEventWindowDef>
+
+  <PawnDiary.DiaryEventWindowDef>
     <defName>Birthday</defName>
     <label>birthday</label>
     <windowKey>Birthday</windowKey>
@@ -436,6 +480,9 @@
     <label>mech cluster</label>
     <windowKey>MechClusterLanded</windowKey>
     <enabled>true</enabled>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
     <!-- Three days of lingering dread unless something else clears it first. -->
     <timeoutTicks>180000</timeoutTicks>
     <dedupTicks>60000</dedupTicks>

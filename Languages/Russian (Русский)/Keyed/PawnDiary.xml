@@ -1121,6 +1121,7 @@
   <PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>{0}: первая настройка монолита пустоты: {1}.</PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>
   <PawnDiary.Event.EventWindow.VoidMonolithWaking.Start>{0}: дальнейшее пробуждение монолита пустоты: {1}.</PawnDiary.Event.EventWindow.VoidMonolithWaking.Start>
   <PawnDiary.Event.EventWindow.VoidMonolithVoidAwakened.Start>{0}: пробуждение пустоты через монолит: {1}.</PawnDiary.Event.EventWindow.VoidMonolithVoidAwakened.Start>
+  <PawnDiary.Event.EventWindow.VoidMonolithGleaming.Start>{0}: монолит пустоты поднят до сияющего состояния: {1}.</PawnDiary.Event.EventWindow.VoidMonolithGleaming.Start>
   <PawnDiary.Event.EventWindow.Birthday.Start>{0}: биологический возраст {1}.</PawnDiary.Event.EventWindow.Birthday.Start>
   <PawnDiary.Event.EventWindow.HeartAttack.Start>{0}: сердечный приступ: {1}.</PawnDiary.Event.EventWindow.HeartAttack.Start>
   <PawnDiary.Event.EventWindow.PrisonBreak.Start>{0}: тревога о побеге: {1}.</PawnDiary.Event.EventWindow.PrisonBreak.Start>
@@ -1237,6 +1238,26 @@
   <PawnDiary.Prompt.Health.Cue.VoidDetachment>отрешённость пустоты</PawnDiary.Prompt.Health.Cue.VoidDetachment>
   <PawnDiary.Prompt.Health.Cue.HumanWarmthAbsent>человеческого тепла нет</PawnDiary.Prompt.Health.Cue.HumanWarmthAbsent>
   <PawnDiary.Prompt.Health.Cue.DarkVoidVoice>используй вынужденную тёмную манеру письма пустоты</PawnDiary.Prompt.Health.Cue.DarkVoidVoice>
+  <PawnDiary.Prompt.Health.Description.Blindness>зрение отсутствует; опирай запись на звук, прикосновение, расстояние, память о пространстве и помощь других, не притворяясь, что поселенец видит</PawnDiary.Prompt.Health.Description.Blindness>
+  <PawnDiary.Prompt.Health.Cue.WorldWithoutSight>мир, читаемый без зрения</PawnDiary.Prompt.Health.Cue.WorldWithoutSight>
+  <PawnDiary.Prompt.Health.Description.TraumaSavant>обычные социальные чувства стихли, а мышление и техническая сосредоточенность неестественно обострились; передавай этот контраст сдержанно</PawnDiary.Prompt.Health.Description.TraumaSavant>
+  <PawnDiary.Prompt.Health.Cue.ThoughtWithoutOrdinaryFeeling>острая мысль без обычного чувства</PawnDiary.Prompt.Health.Cue.ThoughtWithoutOrdinaryFeeling>
+  <PawnDiary.Prompt.Health.Description.Joywire>имплантированный ток удерживает настроение искусственно светлым, даже когда сам момент вовсе не радостен</PawnDiary.Prompt.Health.Description.Joywire>
+  <PawnDiary.Prompt.Health.Cue.ArtificialCheer>искусственная радость вопреки фактам</PawnDiary.Prompt.Health.Cue.ArtificialCheer>
+  <PawnDiary.Prompt.Health.Description.Pregnancy>поселенец вынашивает развивающегося ребёнка; телесное ощущение, ожидание и неизвестность входят в запись лишь когда уместны событию</PawnDiary.Prompt.Health.Description.Pregnancy>
+  <PawnDiary.Prompt.Health.Cue.BodyCarryingNewLife>тело, несущее новую жизнь</PawnDiary.Prompt.Health.Cue.BodyCarryingNewLife>
+  <PawnDiary.Prompt.Health.Description.VoidShockOrTouched>соприкосновение с пустотой изменило мысли и ощущения; держи тревогу близкой и необъяснённой, не добавляя тайной мифологии</PawnDiary.Prompt.Health.Description.VoidShockOrTouched>
+  <PawnDiary.Prompt.Health.Cue.VoidAfterimage>послесвечение пустоты</PawnDiary.Prompt.Health.Cue.VoidAfterimage>
+  <PawnDiary.Prompt.Health.Description.Carcinoma>внутри медленно развивается болезнь; пиши о телесной неизвестности и лечении, не выдумывая прогноз, боль или подробности диагноза</PawnDiary.Prompt.Health.Description.Carcinoma>
+  <PawnDiary.Prompt.Health.Cue.SlowInternalThreat>медленная угроза внутри тела</PawnDiary.Prompt.Health.Cue.SlowInternalThreat>
+  <PawnDiary.Prompt.Health.Description.Deathrest>тело тянется к восстанавливающему сну, похожему на смерть; используй его неподвижность и неполное восстановление, не выдумывая прерывание</PawnDiary.Prompt.Health.Description.Deathrest>
+  <PawnDiary.Prompt.Health.Cue.DeathlikeSleep>восстанавливающий сон, похожий на смерть</PawnDiary.Prompt.Health.Cue.DeathlikeSleep>
+  <PawnDiary.Prompt.Health.Description.LungRot>гниль угрожает дыханию; используй напряжение, осторожность и нехватку воздуха лишь в переданной степени</PawnDiary.Prompt.Health.Description.LungRot>
+  <PawnDiary.Prompt.Health.Cue.BreathUnderStrain>дыхание под нагрузкой</PawnDiary.Prompt.Health.Cue.BreathUnderStrain>
+  <PawnDiary.Prompt.Health.Description.VacuumExposure>воздействие вакуума повредило тело; пиши о давлении, обожжённой ткани и хрупком восстановлении, не выдумывая происшествие и точный ущерб</PawnDiary.Prompt.Health.Description.VacuumExposure>
+  <PawnDiary.Prompt.Health.Cue.VacuumBurning>обожжённая вакуумом ткань</PawnDiary.Prompt.Health.Cue.VacuumBurning>
+  <PawnDiary.Prompt.Health.Description.GravNausea>изменившаяся гравитация нарушила равновесие и мутит желудок; пусть движение, ориентация и тошнота окрасят момент, не создавая нового события</PawnDiary.Prompt.Health.Description.GravNausea>
+  <PawnDiary.Prompt.Health.Cue.GravityTurningStomach>гравитация переворачивает желудок</PawnDiary.Prompt.Health.Cue.GravityTurningStomach>
   <PawnDiary.Prompt.Context.Important>важный контекст</PawnDiary.Prompt.Context.Important>
   <PawnDiary.Prompt.Context.RoyalTitle>титул</PawnDiary.Prompt.Context.RoyalTitle>
   <PawnDiary.Prompt.Context.IdeologyRole>роль в идеологии</PawnDiary.Prompt.Context.IdeologyRole>
@@ -1296,6 +1317,51 @@
   <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Condition>пепел застит солнце</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Condition>
   <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Description>пепел высоко в небе надолго притушил солнце; дни стоят серые и холодные, всё растёт медленно, и сам свет будто выдают по норме</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Description>
   <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Cue.DimSky>серый свет по норме</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Cue.DimSky>
+  <PawnDiary.Prompt.ObservedCondition.EclipseActive.Priority>пусть затмение приглушает обычную жизнь</PawnDiary.Prompt.ObservedCondition.EclipseActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.EclipseActive.Condition>дневной свет поглощён затмением</PawnDiary.Prompt.ObservedCondition.EclipseActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.EclipseActive.Description>солнце скрыто даже днём; лампы, сон, работа и само чувство времени подстраиваются под неожиданную тьму</PawnDiary.Prompt.ObservedCondition.EclipseActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.PsychicDroneActive.Priority>пусть псионический гул давит на мысли этого поселенца</PawnDiary.Prompt.ObservedCondition.PsychicDroneActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.PsychicDroneActive.Condition>псионический гул действует на поселение</PawnDiary.Prompt.ObservedCondition.PsychicDroneActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.PsychicDroneActive.Description>орбитальный сигнал тревожит разум; оставь его воздействие личным для поселенца и не выдумывай источник, который тот якобы распознал</PawnDiary.Prompt.ObservedCondition.PsychicDroneActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.PsychicSootheActive.Priority>пусть псионическое умиротворение смягчает фон</PawnDiary.Prompt.ObservedCondition.PsychicSootheActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.PsychicSootheActive.Condition>успокаивающий псионический сигнал над поселением</PawnDiary.Prompt.ObservedCondition.PsychicSootheActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.PsychicSootheActive.Description>невидимый сигнал успокаивает разум и ослабляет напряжение; опиши ощущаемое облегчение, не объясняя далёкий источник</PawnDiary.Prompt.ObservedCondition.PsychicSootheActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.PsychicSuppressionActive.Priority>пусть псионическое подавление затуманивает фон</PawnDiary.Prompt.ObservedCondition.PsychicSuppressionActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.PsychicSuppressionActive.Condition>поле подавления спутывает мысли и координацию</PawnDiary.Prompt.ObservedCondition.PsychicSuppressionActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.PsychicSuppressionActive.Description>региональное поле снижает ясность сознания у тех, на кого действует; пиши о замедленном мышлении и усилиях лишь при поддержке фактов о поселенце</PawnDiary.Prompt.ObservedCondition.PsychicSuppressionActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.GrayPallActive.Priority>пусть наружный смрад серой пелены остаётся на фоне</PawnDiary.Prompt.ObservedCondition.GrayPallActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.GrayPallActive.Condition>поселение живёт под серой пеленой</PawnDiary.Prompt.ObservedCondition.GrayPallActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.GrayPallActive.Description>над картой висит гнилостный запах, особенно едкий снаружи; пусть раздражение, закрытые двери и испорченный воздух окрасят запись</PawnDiary.Prompt.ObservedCondition.GrayPallActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalHeatActive.Priority>пусть неестественная жара изнуряет день</PawnDiary.Prompt.ObservedCondition.UnnaturalHeatActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalHeatActive.Condition>наружный воздух нагрет неестественным источником</PawnDiary.Prompt.ObservedCondition.UnnaturalHeatActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalHeatActive.Description>нагревается сама атмосфера; охладители, тень, сон и работа подстраиваются под жару, за которой нет естественной погоды</PawnDiary.Prompt.ObservedCondition.UnnaturalHeatActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.HateChantDroneActive.Priority>держи рядом псионическое давление песнопения ненависти</PawnDiary.Prompt.ObservedCondition.HateChantDroneActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.HateChantDroneActive.Condition>враждебное песнопение давит на каждый разум</PawnDiary.Prompt.ObservedCondition.HateChantDroneActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.HateChantDroneActive.Description>далёкие культисты питают ненавистью усиливающийся псионический гул; пиши о головной боли, мурашках и растущей злости</PawnDiary.Prompt.ObservedCondition.HateChantDroneActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.NoxiousHazeActive.Priority>пусть кислотный смог давит на работу снаружи</PawnDiary.Prompt.ObservedCondition.NoxiousHazeActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.NoxiousHazeActive.Condition>кислотный смог над поселением</PawnDiary.Prompt.ObservedCondition.NoxiousHazeActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.NoxiousHazeActive.Description>порождённая загрязнением дымка замедляет растения, вредит всему открытому и портит настроение; пиши о налёте и изменившемся распорядке, не о механике</PawnDiary.Prompt.ObservedCondition.NoxiousHazeActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.DroughtActive.Priority>пусть засуха меняет планы поселения</PawnDiary.Prompt.ObservedCondition.DroughtActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.DroughtActive.Condition>долгая засуха замедляет рост растений</PawnDiary.Prompt.ObservedCondition.DroughtActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.DroughtActive.Description>дождя давно нет, растения растут медленно; работа, планы на еду и внимание к каждому зелёному ростку несут это давление</PawnDiary.Prompt.ObservedCondition.DroughtActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.VolcanicDebrisActive.Priority>держи ливень вулканических обломков в центре момента</PawnDiary.Prompt.ObservedCondition.VolcanicDebrisActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.VolcanicDebrisActive.Condition>раскалённые вулканические обломки падают поблизости</PawnDiary.Prompt.ObservedCondition.VolcanicDebrisActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.VolcanicDebrisActive.Description>близкое извержение разбрасывает по региону горячие обломки; пиши о тревоге сверху, не выдумывая попадание, ранение или ущерб</PawnDiary.Prompt.ObservedCondition.VolcanicDebrisActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.LavaFlowActive.Priority>держи наступающий поток лавы в центре момента</PawnDiary.Prompt.ObservedCondition.LavaFlowActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.LavaFlowActive.Condition>лава движется по низкой вулканической породе</PawnDiary.Prompt.ObservedCondition.LavaFlowActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.LavaFlowActive.Description>лава вливается в местность по низкой вулканической породе; пиши о жаре, смене маршрутов и осторожности, не выдумывая разрушения</PawnDiary.Prompt.ObservedCondition.LavaFlowActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.DarkenedSkiesActive.Priority>пусть потемневшее небо давит на день</PawnDiary.Prompt.ObservedCondition.DarkenedSkiesActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.DarkenedSkiesActive.Condition>густые тучи закрыли небо и солнце</PawnDiary.Prompt.ObservedCondition.DarkenedSkiesActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.DarkenedSkiesActive.Description>чёрная облачность забрала дневной свет; привычный уклад продолжается под тусклым потолком, а свет и время будто сжались</PawnDiary.Prompt.ObservedCondition.DarkenedSkiesActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.BioluminescentSporesActive.Priority>пусть светящиеся споры придадут дню чудесности</PawnDiary.Prompt.ObservedCondition.BioluminescentSporesActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.BioluminescentSporesActive.Condition>безвредные биолюминесцентные споры в воздухе</PawnDiary.Prompt.ObservedCondition.BioluminescentSporesActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.BioluminescentSporesActive.Description>грибное цветение наполняет воздух странным светом и не несёт опасности; допускай красоту и любопытство, не выдумывая последствий</PawnDiary.Prompt.ObservedCondition.BioluminescentSporesActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.GillRotActive.Priority>пусть жаберная гниль бросает тень на пищу из воды</PawnDiary.Prompt.ObservedCondition.GillRotActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.GillRotActive.Condition>безвредный для людей грибок сокращает местную рыбу</PawnDiary.Prompt.ObservedCondition.GillRotActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.GillRotActive.Description>рыбы становится меньше, но людям ничто не угрожает; пиши о тихой утрате и меняющихся ожиданиях от рыбалки</PawnDiary.Prompt.ObservedCondition.GillRotActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.DeepFreezeActive.Priority>пусть глубокая заморозка определяет весь распорядок</PawnDiary.Prompt.ObservedCondition.DeepFreezeActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.DeepFreezeActive.Condition>древнее устройство резко снижает температуру</PawnDiary.Prompt.ObservedCondition.DeepFreezeActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.DeepFreezeActive.Description>температура падает намного ниже нормы; тепло, укрытие, дорога и всё живое снаружи становятся неотложной заботой</PawnDiary.Prompt.ObservedCondition.DeepFreezeActive.Description>
   <PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Priority>пусть разлившаяся вода остаётся фоном, не превращаясь во второе событие</PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Priority>
   <PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Condition>сезонный паводок затопил низины</PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Condition>
   <PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Description>дожди выше по течению подняли реку, и паводок скрыл знакомые низины; вода уйдёт, но пока тропы и повседневные дела приходится подстраивать под разлив</PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Description>

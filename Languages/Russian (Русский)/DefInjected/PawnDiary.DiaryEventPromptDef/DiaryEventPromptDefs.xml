@@ -142,4 +142,61 @@
   <DiaryEventPrompt_RoyalPermitOrbitalSalvo.label>запрошен королевский орбитальный залп</DiaryEventPrompt_RoyalPermitOrbitalSalvo.label>
   <DiaryEventPrompt_RoyalPermitOrbitalSalvo.prompt>Опиши, как владелец применяет разрешение на орбитальный залп.</DiaryEventPrompt_RoyalPermitOrbitalSalvo.prompt>
   <DiaryEventPrompt_RoyalPermitOrbitalSalvo.enhancement>Сосредоточься на решении, власти и ожидании в переданном месте. Не выдумывай цель, попадания, жертвы, урон, точность, завершение, реплики или сумму благосклонности.</DiaryEventPrompt_RoyalPermitOrbitalSalvo.enhancement>
+  <DiaryEventPrompt_AnomalyStudyBreakthrough.label>Прорыв в изучении аномалии</DiaryEventPrompt_AnomalyStudyBreakthrough.label>
+  <DiaryEventPrompt_AnomalyStudyBreakthrough.prompt>Опиши точный видимый прорыв в изучении Anomaly, достигнутый этим исследователем.</DiaryEventPrompt_AnomalyStudyBreakthrough.prompt>
+  <DiaryEventPrompt_AnomalyStudyBreakthrough.enhancement>Сохрани переданные объект и веху. Не выдумывай скрытые исследования, способности, текст кодекса или будущие последствия.</DiaryEventPrompt_AnomalyStudyBreakthrough.enhancement>
+  <DiaryEventPrompt_AnomalyContainmentBreach.label>Прорыв содержания аномалии</DiaryEventPrompt_AnomalyContainmentBreach.label>
+  <DiaryEventPrompt_AnomalyContainmentBreach.prompt>Опиши точный прорыв содержания с переданной точки зрения свидетеля.</DiaryEventPrompt_AnomalyContainmentBreach.prompt>
+  <DiaryEventPrompt_AnomalyContainmentBreach.enhancement>Называй лишь переданные сбежавшие сущности и видимые факты. Не назначай вину, причину, скрытые силы или последующий исход.</DiaryEventPrompt_AnomalyContainmentBreach.enhancement>
+  <DiaryEventPrompt_AnomalyCreepJoinerOutcome.label>Исход странного прибытия</DiaryEventPrompt_AnomalyCreepJoinerOutcome.label>
+  <DiaryEventPrompt_AnomalyCreepJoinerOutcome.prompt>Опиши точный видимый исход странного прибытия.</DiaryEventPrompt_AnomalyCreepJoinerOutcome.prompt>
+  <DiaryEventPrompt_AnomalyCreepJoinerOutcome.enhancement>Сохрани переданные роль и видимый результат. Не раскрывай неуказанные мотивы, недостатки, заражения, таймеры или открытия.</DiaryEventPrompt_AnomalyCreepJoinerOutcome.enhancement>
+  <DiaryEventPrompt_AnomalyGhoulTransformation.label>Превращение в гуля</DiaryEventPrompt_AnomalyGhoulTransformation.label>
+  <DiaryEventPrompt_AnomalyGhoulTransformation.prompt>Опиши завершённое превращение в гуля от переданной точки зрения субъекта или хирурга.</DiaryEventPrompt_AnomalyGhoulTransformation.prompt>
+  <DiaryEventPrompt_AnomalyGhoulTransformation.enhancement>Точно сохрани роли участников и видимый результат. Не выдумывай механику процедуры, лечение, будущие способности или моральную оценку.</DiaryEventPrompt_AnomalyGhoulTransformation.enhancement>
+  <DiaryEventPrompt_AnomalyVoidOutcome.label>Ответ пустоте</DiaryEventPrompt_AnomalyVoidOutcome.label>
+  <DiaryEventPrompt_AnomalyVoidOutcome.prompt>Опиши точный окончательный ответ, который этот поселенец дал пустоте.</DiaryEventPrompt_AnomalyVoidOutcome.prompt>
+  <DiaryEventPrompt_AnomalyVoidOutcome.enhancement>Сохрани переданные ветвь и видимый результат. Не смешивай альтернативы и не выдумывай реплики, механику, последствия или действия другого поселенца.</DiaryEventPrompt_AnomalyVoidOutcome.enhancement>
+  <DiaryEventPrompt_RitualAnomalyInvitation.label>Ритуал приглашения аномалии</DiaryEventPrompt_RitualAnomalyInvitation.label>
+  <DiaryEventPrompt_RitualAnomalyInvitation.prompt>Опиши переданный ритуал приглашения или его записанный исход как одно увиденное оккультное событие.</DiaryEventPrompt_RitualAnomalyInvitation.prompt>
+  <DiaryEventPrompt_RitualAnomalyInvitation.enhancement>Используй лишь переданные ритуал, роль, качество, участников и исход. Не выдумывай, кого приглашали, что ответило, реплики или будущие эффекты.</DiaryEventPrompt_RitualAnomalyInvitation.enhancement>
+  <DiaryEventPrompt_RitualAnomalyFleshAndWeather.label>Ритуал плоти или погоды</DiaryEventPrompt_RitualAnomalyFleshAndWeather.label>
+  <DiaryEventPrompt_RitualAnomalyFleshAndWeather.prompt>Опиши переданный ритуал изменения плоти или неестественной погоды и его видимый результат.</DiaryEventPrompt_RitualAnomalyFleshAndWeather.prompt>
+  <DiaryEventPrompt_RitualAnomalyFleshAndWeather.enhancement>Точно сохрани роли, качество и исход. Не выдумывай телесные изменения, погодный ущерб, скрытые причины или будущие последствия.</DiaryEventPrompt_RitualAnomalyFleshAndWeather.enhancement>
+  <DiaryEventPrompt_RitualAnomalyPredation.label>Ритуал хищничества аномалии</DiaryEventPrompt_RitualAnomalyPredation.label>
+  <DiaryEventPrompt_RitualAnomalyPredation.prompt>Опиши переданный хищнический ритуал с точной точки зрения участника или свидетеля.</DiaryEventPrompt_RitualAnomalyPredation.prompt>
+  <DiaryEventPrompt_RitualAnomalyPredation.enhancement>Используй лишь названные цели, качество и видимый исход. Не выдумывай погоню, ранения, смерти, силы или дальнейшие события.</DiaryEventPrompt_RitualAnomalyPredation.enhancement>
+  <DiaryEventPrompt_RitualAnomalyMind.label>Ритуал воздействия на разум</DiaryEventPrompt_RitualAnomalyMind.label>
+  <DiaryEventPrompt_RitualAnomalyMind.prompt>Опиши переданный ритуал воздействия на разум как непосредственное псионическое давление и записанный результат.</DiaryEventPrompt_RitualAnomalyMind.prompt>
+  <DiaryEventPrompt_RitualAnomalyMind.enhancement>Точно сохрани роли, качество и исход. Не выдумывай чужие мысли, долгий вред, тайное знание или дополнительных жертв.</DiaryEventPrompt_RitualAnomalyMind.enhancement>
+  <DiaryEventPrompt_RitualAnomalyAbduction.label>Ритуал похищения аномалии</DiaryEventPrompt_RitualAnomalyAbduction.label>
+  <DiaryEventPrompt_RitualAnomalyAbduction.prompt>Опиши переданный ритуал похищения и лишь доказанные им прибытие, исчезновение или исход.</DiaryEventPrompt_RitualAnomalyAbduction.prompt>
+  <DiaryEventPrompt_RitualAnomalyAbduction.enhancement>Сохрани точных участников, цели, качество и результат. Не выдумывай место назначения, плен, спасение, реплики или дальнейшие события.</DiaryEventPrompt_RitualAnomalyAbduction.enhancement>
+  <DiaryEventPrompt_RitualAnomalyDeathRefusal.label>Ритуал отказа смерти</DiaryEventPrompt_RitualAnomalyDeathRefusal.label>
+  <DiaryEventPrompt_RitualAnomalyDeathRefusal.prompt>Опиши переданный ритуал, бросающий вызов смерти, и его точный записанный исход.</DiaryEventPrompt_RitualAnomalyDeathRefusal.prompt>
+  <DiaryEventPrompt_RitualAnomalyDeathRefusal.enhancement>Сохрани названный субъект, роли, качество и видимый результат. Не выдумывай подробности воскрешения, тайную цену, реплики или дальнейшее выживание.</DiaryEventPrompt_RitualAnomalyDeathRefusal.enhancement>
+  <DiaryEventPrompt_RitualAnomalyPsychic.label>Псионический ритуал аномалии</DiaryEventPrompt_RitualAnomalyPsychic.label>
+  <DiaryEventPrompt_RitualAnomalyPsychic.prompt>Опиши переданный псионический ритуал как увиденное действие с точным записанным результатом.</DiaryEventPrompt_RitualAnomalyPsychic.prompt>
+  <DiaryEventPrompt_RitualAnomalyPsychic.enhancement>Используй лишь переданных участников, качество, цель и исход. Не выдумывай мысли, силы, голоса, тайное знание или будущие эффекты.</DiaryEventPrompt_RitualAnomalyPsychic.enhancement>
+  <DiaryEventPrompt_BiotechFamilyBirth.label>Рождение в семье</DiaryEventPrompt_BiotechFamilyBirth.label>
+  <DiaryEventPrompt_BiotechFamilyBirth.prompt>Опиши переданные роды как семейный рубеж с точной точки зрения этого поселенца.</DiaryEventPrompt_BiotechFamilyBirth.prompt>
+  <DiaryEventPrompt_BiotechFamilyBirth.enhancement>Используй лишь переданные факты о родителе, ребёнке, месте и исходе. Не выдумывай подробности родов, здоровье, гены, имена, реплики или будущие связи.</DiaryEventPrompt_BiotechFamilyBirth.enhancement>
+  <DiaryEventPrompt_BiotechDeathrestInterrupted.label>Прерванный смертопокой</DiaryEventPrompt_BiotechDeathrestInterrupted.label>
+  <DiaryEventPrompt_BiotechDeathrestInterrupted.prompt>Опиши подтверждённое прерывание активного смертопокоя как незавершённое пробуждение и телесное последствие.</DiaryEventPrompt_BiotechDeathrestInterrupted.prompt>
+  <DiaryEventPrompt_BiotechDeathrestInterrupted.enhancement>Используй лишь переданные состояние и место. Не выдумывай причину, виновника, обычное завершение, реплики или дополнительные травмы.</DiaryEventPrompt_BiotechDeathrestInterrupted.enhancement>
+  <DiaryEventPrompt_OdysseyGravshipLanding.label>Посадка гравикорабля</DiaryEventPrompt_OdysseyGravshipLanding.label>
+  <DiaryEventPrompt_OdysseyGravshipLanding.prompt>Опиши переданную посадку гравикорабля как конец пути и первый взгляд на новое место.</DiaryEventPrompt_OdysseyGravshipLanding.prompt>
+  <DiaryEventPrompt_OdysseyGravshipLanding.enhancement>Сохрани точные корабль, место, роль и видимый результат. Не выдумывай маршрут, опасности, пассажиров, ущерб, открытия или продолжение.</DiaryEventPrompt_OdysseyGravshipLanding.enhancement>
+  <DiaryEventPrompt_RecruitGroup.label>Вербовка или плен</DiaryEventPrompt_RecruitGroup.label>
+  <DiaryEventPrompt_RecruitGroup.prompt>Опиши точную переданную вербовку, сопротивление, тюремное событие или освобождение.</DiaryEventPrompt_RecruitGroup.prompt>
+  <DiaryEventPrompt_RecruitGroup.enhancement>Точно сохрани вербовщика, пленника, исход и социальный текст. Не выдумывай принуждение, согласие, обещания, планы побега или будущую смену стороны.</DiaryEventPrompt_RecruitGroup.enhancement>
+  <DiaryEventPrompt_TrialGroup.label>Суд или обвинение</DiaryEventPrompt_TrialGroup.label>
+  <DiaryEventPrompt_TrialGroup.prompt>Опиши переданное обвинение, защиту или решение с точной точки зрения этого поселенца.</DiaryEventPrompt_TrialGroup.prompt>
+  <DiaryEventPrompt_TrialGroup.enhancement>Используй лишь обвинение, участников, социальный текст и записанный исход. Не выдумывай доказательства, показания, вину, приговор или реакцию толпы.</DiaryEventPrompt_TrialGroup.enhancement>
+  <DiaryEventPrompt_ConversionGroup.label>Обращение или проповедь</DiaryEventPrompt_ConversionGroup.label>
+  <DiaryEventPrompt_ConversionGroup.prompt>Опиши переданное обращение или проповедь как давление между названными убеждениями.</DiaryEventPrompt_ConversionGroup.prompt>
+  <DiaryEventPrompt_ConversionGroup.enhancement>Сохрани переданные роли говорящего и слушателя, социальный текст, уверенность и исход. Не выдумывай доктрину, доводы, прежнюю веру или недоказанное обращение.</DiaryEventPrompt_ConversionGroup.enhancement>
+  <DiaryEventPrompt_SlaveryGroup.label>Рабство или подавление</DiaryEventPrompt_SlaveryGroup.label>
+  <DiaryEventPrompt_SlaveryGroup.prompt>Опиши переданное порабощение, подавление или неповиновение с точной точки зрения этого поселенца.</DiaryEventPrompt_SlaveryGroup.prompt>
+  <DiaryEventPrompt_SlaveryGroup.enhancement>Используй лишь переданные статус, участников, социальный текст и результат. Не выдумывай насилие, согласие, планы бунта, побег, освобождение или последующее наказание.</DiaryEventPrompt_SlaveryGroup.enhancement>
 </LanguageData>

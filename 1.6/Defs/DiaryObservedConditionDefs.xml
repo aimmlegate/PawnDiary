@@ -373,6 +373,379 @@
     </promptCueKeys>
   </PawnDiary.DiaryObservedConditionDef>
 
+  <!-- Cheap vanilla condition coverage. These are prompt-only observers: the matching interaction
+       groups decide where a real condition-start page belongs, while live state colors later pages. -->
+  <PawnDiary.DiaryObservedConditionDef>
+    <defName>EclipseActive</defName>
+    <label>eclipse</label>
+    <conditionKey>EclipseActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>GameCondition</observerType>
+    <pollIntervalTicks>1500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>2500</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <matchDefNames><li>Eclipse</li></matchDefNames>
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>4</promptWeight>
+    <normalPromptWeightMultiplier>0.8</normalPromptWeightMultiplier>
+    <promptDecayTicks>120000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.EclipseActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.EclipseActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.EclipseActive.Description</promptDescriptionKey>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <PawnDiary.DiaryObservedConditionDef>
+    <defName>PsychicDroneActive</defName>
+    <label>psychic drone</label>
+    <conditionKey>PsychicDroneActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>GameCondition</observerType>
+    <pollIntervalTicks>1500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>2500</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <matchDefNames><li>PsychicDrone</li></matchDefNames>
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>6</promptWeight>
+    <normalPromptWeightMultiplier>0.8</normalPromptWeightMultiplier>
+    <promptDecayTicks>120000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.PsychicDroneActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.PsychicDroneActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.PsychicDroneActive.Description</promptDescriptionKey>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <PawnDiary.DiaryObservedConditionDef>
+    <defName>PsychicSootheActive</defName>
+    <label>psychic soothe</label>
+    <conditionKey>PsychicSootheActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>GameCondition</observerType>
+    <pollIntervalTicks>1500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>2500</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <matchDefNames><li>PsychicSoothe</li></matchDefNames>
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>3</promptWeight>
+    <normalPromptWeightMultiplier>1</normalPromptWeightMultiplier>
+    <promptDecayTicks>120000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.PsychicSootheActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.PsychicSootheActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.PsychicSootheActive.Description</promptDescriptionKey>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <PawnDiary.DiaryObservedConditionDef MayRequire="Ludeon.RimWorld.Royalty">
+    <defName>PsychicSuppressionActive</defName>
+    <label>psychic suppression</label>
+    <conditionKey>PsychicSuppressionActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>GameCondition</observerType>
+    <pollIntervalTicks>1500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>2500</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <matchDefNames><li>PsychicSuppression</li></matchDefNames>
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>5</promptWeight>
+    <normalPromptWeightMultiplier>0.8</normalPromptWeightMultiplier>
+    <promptDecayTicks>120000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.PsychicSuppressionActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.PsychicSuppressionActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.PsychicSuppressionActive.Description</promptDescriptionKey>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <PawnDiary.DiaryObservedConditionDef MayRequire="Ludeon.RimWorld.Anomaly">
+    <defName>GrayPallActive</defName>
+    <label>gray pall</label>
+    <conditionKey>GrayPallActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>GameCondition</observerType>
+    <pollIntervalTicks>1500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>2500</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <matchDefNames><li>GrayPall</li></matchDefNames>
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>7</promptWeight>
+    <normalPromptWeightMultiplier>0.8</normalPromptWeightMultiplier>
+    <promptDecayTicks>120000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.GrayPallActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.GrayPallActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.GrayPallActive.Description</promptDescriptionKey>
+    <colorCue>anomalyDeep</colorCue>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <PawnDiary.DiaryObservedConditionDef MayRequire="Ludeon.RimWorld.Anomaly">
+    <defName>UnnaturalHeatActive</defName>
+    <label>unnatural heat</label>
+    <conditionKey>UnnaturalHeatActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>GameCondition</observerType>
+    <pollIntervalTicks>1500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>2500</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <matchDefNames><li>UnnaturalHeat</li></matchDefNames>
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>6</promptWeight>
+    <normalPromptWeightMultiplier>0.8</normalPromptWeightMultiplier>
+    <promptDecayTicks>120000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.UnnaturalHeatActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.UnnaturalHeatActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.UnnaturalHeatActive.Description</promptDescriptionKey>
+    <colorCue>anomaly</colorCue>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <PawnDiary.DiaryObservedConditionDef MayRequire="Ludeon.RimWorld.Anomaly">
+    <defName>HateChantDroneActive</defName>
+    <label>hate chanting</label>
+    <conditionKey>HateChantDroneActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>GameCondition</observerType>
+    <pollIntervalTicks>1500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>2500</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <matchDefNames><li>HateChantDrone</li></matchDefNames>
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>12</promptWeight>
+    <normalPromptWeightMultiplier>0.6</normalPromptWeightMultiplier>
+    <promptDecayTicks>120000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.HateChantDroneActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.HateChantDroneActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.HateChantDroneActive.Description</promptDescriptionKey>
+    <colorCue>anomalyDeep</colorCue>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <PawnDiary.DiaryObservedConditionDef MayRequire="Ludeon.RimWorld.Biotech">
+    <defName>NoxiousHazeActive</defName>
+    <label>acidic smog</label>
+    <conditionKey>NoxiousHazeActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>GameCondition</observerType>
+    <pollIntervalTicks>1500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>2500</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <matchDefNames><li>NoxiousHaze</li></matchDefNames>
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>6</promptWeight>
+    <normalPromptWeightMultiplier>0.8</normalPromptWeightMultiplier>
+    <promptDecayTicks>120000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.NoxiousHazeActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.NoxiousHazeActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.NoxiousHazeActive.Description</promptDescriptionKey>
+    <colorCue>biotechDeep</colorCue>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <PawnDiary.DiaryObservedConditionDef MayRequire="Ludeon.RimWorld.Odyssey">
+    <defName>DroughtActive</defName>
+    <label>drought</label>
+    <conditionKey>DroughtActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>GameCondition</observerType>
+    <pollIntervalTicks>1500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>2500</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <matchDefNames><li>Drought</li></matchDefNames>
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>4</promptWeight>
+    <normalPromptWeightMultiplier>1</normalPromptWeightMultiplier>
+    <promptDecayTicks>120000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.DroughtActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.DroughtActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.DroughtActive.Description</promptDescriptionKey>
+    <colorCue>odyssey</colorCue>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <PawnDiary.DiaryObservedConditionDef MayRequire="Ludeon.RimWorld.Odyssey">
+    <defName>VolcanicDebrisActive</defName>
+    <label>volcanic debris</label>
+    <conditionKey>VolcanicDebrisActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>GameCondition</observerType>
+    <pollIntervalTicks>1500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>2500</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <matchDefNames><li>VolcanicDebris</li></matchDefNames>
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>8</promptWeight>
+    <normalPromptWeightMultiplier>0.8</normalPromptWeightMultiplier>
+    <promptDecayTicks>120000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.VolcanicDebrisActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.VolcanicDebrisActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.VolcanicDebrisActive.Description</promptDescriptionKey>
+    <colorCue>odysseyDeep</colorCue>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <PawnDiary.DiaryObservedConditionDef MayRequire="Ludeon.RimWorld.Odyssey">
+    <defName>LavaFlowActive</defName>
+    <label>lava flow</label>
+    <conditionKey>LavaFlowActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>GameCondition</observerType>
+    <pollIntervalTicks>1500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>2500</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <matchDefNames><li>LavaFlow</li></matchDefNames>
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>10</promptWeight>
+    <normalPromptWeightMultiplier>0.8</normalPromptWeightMultiplier>
+    <promptDecayTicks>120000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.LavaFlowActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.LavaFlowActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.LavaFlowActive.Description</promptDescriptionKey>
+    <colorCue>odysseyDeep</colorCue>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <PawnDiary.DiaryObservedConditionDef MayRequire="Ludeon.RimWorld.Odyssey">
+    <defName>DarkenedSkiesActive</defName>
+    <label>darkened skies</label>
+    <conditionKey>DarkenedSkiesActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>GameCondition</observerType>
+    <pollIntervalTicks>1500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>2500</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <matchDefNames><li>DarkenedSkies</li></matchDefNames>
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>4</promptWeight>
+    <normalPromptWeightMultiplier>1</normalPromptWeightMultiplier>
+    <promptDecayTicks>120000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.DarkenedSkiesActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.DarkenedSkiesActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.DarkenedSkiesActive.Description</promptDescriptionKey>
+    <colorCue>odyssey</colorCue>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <PawnDiary.DiaryObservedConditionDef MayRequire="Ludeon.RimWorld.Odyssey">
+    <defName>BioluminescentSporesActive</defName>
+    <label>bioluminescent spores</label>
+    <conditionKey>BioluminescentSporesActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>GameCondition</observerType>
+    <pollIntervalTicks>1500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>2500</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <matchDefNames><li>BioluminescentSpores</li></matchDefNames>
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>3</promptWeight>
+    <normalPromptWeightMultiplier>1</normalPromptWeightMultiplier>
+    <promptDecayTicks>120000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.BioluminescentSporesActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.BioluminescentSporesActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.BioluminescentSporesActive.Description</promptDescriptionKey>
+    <colorCue>odysseyBright</colorCue>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <PawnDiary.DiaryObservedConditionDef MayRequire="Ludeon.RimWorld.Odyssey">
+    <defName>GillRotActive</defName>
+    <label>gill rot</label>
+    <conditionKey>GillRotActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>GameCondition</observerType>
+    <pollIntervalTicks>1500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>2500</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <matchDefNames><li>GillRot</li></matchDefNames>
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>4</promptWeight>
+    <normalPromptWeightMultiplier>1</normalPromptWeightMultiplier>
+    <promptDecayTicks>120000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.GillRotActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.GillRotActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.GillRotActive.Description</promptDescriptionKey>
+    <colorCue>odyssey</colorCue>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <PawnDiary.DiaryObservedConditionDef MayRequire="Ludeon.RimWorld.Odyssey">
+    <defName>DeepFreezeActive</defName>
+    <label>deep freeze</label>
+    <conditionKey>DeepFreezeActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>GameCondition</observerType>
+    <pollIntervalTicks>1500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>2500</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <matchDefNames><li>DeepFreeze</li></matchDefNames>
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>7</promptWeight>
+    <normalPromptWeightMultiplier>0.8</normalPromptWeightMultiplier>
+    <promptDecayTicks>120000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.DeepFreezeActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.DeepFreezeActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.DeepFreezeActive.Description</promptDescriptionKey>
+    <colorCue>odysseyDeep</colorCue>
+  </PawnDiary.DiaryObservedConditionDef>
+
   <!-- Odyssey O2: SeasonalFlood is a live map thing, not a one-shot mood/game-condition event.
        Package-gating keeps the Def and its settings row out of no-Odyssey games. The short end
        debounce ignores transient scan gaps; the restart cooldown prevents rapid reactivation near

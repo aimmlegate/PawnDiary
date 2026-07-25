@@ -10,6 +10,9 @@
   <Diary_ImpEvent_LoverGained.label>новый роман</Diary_ImpEvent_LoverGained.label>
   <Diary_ImpEvent_LoverGained.lineTemplate>начало романа с {other}</Diary_ImpEvent_LoverGained.lineTemplate>
 
+  <Diary_ImpEvent_Engaged.label>помолвка</Diary_ImpEvent_Engaged.label>
+  <Diary_ImpEvent_Engaged.lineTemplate>помолвка с {other}</Diary_ImpEvent_Engaged.lineTemplate>
+
   <Diary_ImpEvent_Married.label>свадьба</Diary_ImpEvent_Married.label>
   <Diary_ImpEvent_Married.lineTemplate>свадьба с {other}</Diary_ImpEvent_Married.lineTemplate>
 
