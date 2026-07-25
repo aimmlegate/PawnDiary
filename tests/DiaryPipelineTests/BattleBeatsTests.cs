@@ -147,9 +147,15 @@ namespace DiaryPipelineTests
             AssertEqual("H1 beats join with the separator",
                 "I shot the raider | the raider fell",
                 BattleBeatsPolicy.FormatBeats(selected, 240));
-            AssertEqual("H1 an over-long join is capped",
-                "I shot the raider |",
+            AssertEqual("H1 an over-long join is capped with an explicit ellipsis",
+                "I shot the raider...",
                 BattleBeatsPolicy.FormatBeats(selected, 20));
+            AssertEqual("H1 a cap never freezes a partial word or separator",
+                "I shot the...",
+                BattleBeatsPolicy.FormatBeats(selected, 19));
+            AssertEqual("H1 a tiny cap returns a bounded ellipsis",
+                "..",
+                BattleBeatsPolicy.FormatBeats(selected, 2));
             AssertEqual("H1 no beats format to an empty field",
                 string.Empty, BattleBeatsPolicy.FormatBeats(new List<BattleBeatCandidate>(), 240));
             AssertEqual("H1 absent beats format to an empty field",

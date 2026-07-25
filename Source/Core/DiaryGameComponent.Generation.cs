@@ -399,19 +399,27 @@ namespace PawnDiary
             // Raid pages are solo, so only the initiator can own this work.
             if (!DiaryEvent.RoleEquals(povRole, DiaryEvent.InitiatorRole)
                 || !DiaryContextFields.HasField(diaryEvent.gameContext, RaidEventData.RaidContextKey)
+                || !diaryEvent.IsImportant()
                 || BattleBeatsPolicy.AlreadyChecked(diaryEvent.gameContext))
             {
+                // Non-important friendly arrivals use SoloDefault, which does not project
+                // battle_beats. Do not delay or mine context the selected prompt cannot consume.
                 return true;
             }
 
             DiaryTuningDef tuning = DiaryTuning.Current;
-            Pawn pov = tuning == null || !tuning.battleBeatsEnabled
-                ? null
-                : FindLivePawnByLoadId(diaryEvent.initiatorPawnId, livePawnsById);
+            if (tuning == null || !tuning.battleBeatsEnabled)
+            {
+                // An off switch is not a completed scan. Leave the saved marker absent so enabling the
+                // feature later in the same save can still mine an eligible pending raid page.
+                return true;
+            }
+
+            Pawn pov = FindLivePawnByLoadId(diaryEvent.initiatorPawnId, livePawnsById);
             if (pov == null)
             {
-                // Feature disabled, or the pawn is no longer loaded and no POV text could be rendered.
-                // Record that mining ran so the page never re-enters this path, and queue normally.
+                // The pawn is no longer available and no POV text could be rendered. Record that mining
+                // ran so the page never re-enters this path, and queue normally.
                 diaryEvent.gameContext = BattleBeatsPolicy.ApplyToContext(diaryEvent.gameContext, string.Empty);
                 return true;
             }

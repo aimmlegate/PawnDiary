@@ -12,11 +12,22 @@ namespace PawnDiary
     internal static class DiaryEventPromptKeys
     {
         public static List<string> CandidateKeys(DiaryEventPayload payload, string groupDefName,
-            string classifierKey, string fallbackEventKey)
+            string classifierKey, string fallbackEventKey, bool preferGroup = false)
         {
             List<string> keys = new List<string>();
-            AddUnique(keys, payload?.defName);
-            AddUnique(keys, groupDefName);
+            if (preferGroup)
+            {
+                // Composite classifiers (notably rituals) know more than the raw source Def name.
+                // "Conversion", for example, is both a ritual Def and the case-insensitive key of
+                // the ordinary social-conversion prompt. Let the exact ritual group win that collision.
+                AddUnique(keys, groupDefName);
+                AddUnique(keys, payload?.defName);
+            }
+            else
+            {
+                AddUnique(keys, payload?.defName);
+                AddUnique(keys, groupDefName);
+            }
             AddUnique(keys, classifierKey);
             AddUnique(keys, fallbackEventKey);
             return keys;

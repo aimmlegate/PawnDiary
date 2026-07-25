@@ -801,6 +801,7 @@ namespace PawnDiary.RimTests
                 { "counsel", IdeologyPackageId },
                 { "ritualConversion", IdeologyPackageId },
                 { "eventWindowVoidMonolith", AnomalyPackageId },
+                { "observedBiotechPollution", BiotechPackageId },
                 { "anomalyStudyBreakthrough", AnomalyPackageId },
                 { "anomalyContainmentBreach", AnomalyPackageId },
                 { "anomalyCreepJoinerOutcome", AnomalyPackageId },
@@ -826,7 +827,9 @@ namespace PawnDiary.RimTests
                 { "VoidMonolithActivation", AnomalyPackageId },
                 { "VoidMonolithWaking", AnomalyPackageId },
                 { "VoidMonolithVoidAwakened", AnomalyPackageId },
-                { "RoyalAscent", RoyaltyPackageId }
+                { "VoidMonolithGleaming", AnomalyPackageId },
+                { "RoyalAscent", RoyaltyPackageId },
+                { "MechClusterLanded", RoyaltyPackageId }
             };
 
             RequireOfficialPackageFlagAgreement();

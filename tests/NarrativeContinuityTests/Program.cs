@@ -299,7 +299,8 @@ namespace NarrativeContinuityTests
             {
                 AnomalyNarrativeContinuityTokens.Stirring,
                 AnomalyNarrativeContinuityTokens.Waking,
-                AnomalyNarrativeContinuityTokens.VoidAwakened
+                AnomalyNarrativeContinuityTokens.VoidAwakened,
+                AnomalyNarrativeContinuityTokens.Gleaming
             };
             AssertTrue("Stirring accepts only its shipped window/source identity",
                 AnomalyNarrativeContinuityTokens.MatchesVisibleMonolithSource(
@@ -316,6 +317,11 @@ namespace NarrativeContinuityTests
                     AnomalyNarrativeContinuityTokens.MonolithVoidAwakenedWindowDefName,
                     AnomalyNarrativeContinuityTokens.VoidAwakened,
                     AnomalyNarrativeContinuityTokens.MonolithVoidAwakenedSourceDefName));
+            AssertTrue("Gleaming accepts only its shipped window/source identity",
+                AnomalyNarrativeContinuityTokens.MatchesVisibleMonolithSource(
+                    AnomalyNarrativeContinuityTokens.MonolithGleamingWindowDefName,
+                    AnomalyNarrativeContinuityTokens.Gleaming,
+                    AnomalyNarrativeContinuityTokens.MonolithGleamingSourceDefName));
             AssertTrue("swapped monolith window identity fails closed",
                 !AnomalyNarrativeContinuityTokens.MatchesVisibleMonolithSource(
                     AnomalyNarrativeContinuityTokens.MonolithWakingWindowDefName,
@@ -330,7 +336,10 @@ namespace NarrativeContinuityTests
                     AnomalyNarrativeContinuityTokens.MonolithWakingSourceDefName)
                 && AnomalyNarrativeContinuityTokens.MatchesVisibleMonolithPhaseSource(
                     AnomalyNarrativeContinuityTokens.VoidAwakened,
-                    AnomalyNarrativeContinuityTokens.MonolithVoidAwakenedSourceDefName));
+                    AnomalyNarrativeContinuityTokens.MonolithVoidAwakenedSourceDefName)
+                && AnomalyNarrativeContinuityTokens.MatchesVisibleMonolithPhaseSource(
+                    AnomalyNarrativeContinuityTokens.Gleaming,
+                    AnomalyNarrativeContinuityTokens.MonolithGleamingSourceDefName));
             AssertTrue("Void Awakened rejects a swapped reached-level source",
                 !AnomalyNarrativeContinuityTokens.MatchesVisibleMonolithPhaseSource(
                     AnomalyNarrativeContinuityTokens.VoidAwakened,
@@ -510,7 +519,7 @@ namespace NarrativeContinuityTests
                         new List<NarrativeEvidence> { AnomalyEvidence(hidden) },
                         AnomalySnapshot(hidden)).Count);
             }
-            string[] terminalOrUnsupportedMonolith = { "gleaming", "embraced", "disrupted", "terminal" };
+            string[] terminalOrUnsupportedMonolith = { "embraced", "disrupted", "terminal" };
             for (int i = 0; i < terminalOrUnsupportedMonolith.Length; i++)
             {
                 AnomalyNarrativeFact hidden = AnomalyFact(
@@ -2787,7 +2796,9 @@ namespace NarrativeContinuityTests
                         ? AnomalyNarrativeContinuityTokens.MonolithWakingSourceDefName
                         : fact.phase == AnomalyNarrativeContinuityTokens.VoidAwakened
                             ? AnomalyNarrativeContinuityTokens.MonolithVoidAwakenedSourceDefName
-                            : fact.phase;
+                            : fact.phase == AnomalyNarrativeContinuityTokens.Gleaming
+                                ? AnomalyNarrativeContinuityTokens.MonolithGleamingSourceDefName
+                                : fact.phase;
             }
 
             return new NarrativeEvidence

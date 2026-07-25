@@ -6,9 +6,9 @@
 //   (a) the real BattleBeatsBuilder runs against RimWorld's live Find.BattleLog without throwing and
 //       reports "no battle" for a pawn who has not fought — the shape check that the 1.6 Battle/LogEntry
 //       API this feature reflects over still exists;
-//   (b) the generation gate: a fresh raid page refuses to queue and stamps a retry, an aged-out raid
-//       page queues and records the permanent checked marker, a disabled feature marks and moves on,
-//       and an already-mined page is never re-mined;
+//   (b) the generation gate: a fresh hostile raid page refuses to queue and stamps a retry, an aged-out
+//       raid page queues and records the permanent checked marker, disabled/friendly pages pass through
+//       without consuming the scan, and an already-mined page is never re-mined;
 //   (c) the loaded prompt templates actually project battle_beats, at the exact field indexes the
 //       Russian DefInjected labels are pinned to.
 //
@@ -200,8 +200,9 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
-        /// With the feature disabled the page queues immediately, carries no beats field, and still
-        /// records the checked marker so it never re-enters the mining path.
+        /// With the feature disabled the page queues immediately and carries no beats/checked field.
+        /// The absent marker is deliberate: enabling the feature later must not look like a completed
+        /// scan on an event that has not generated yet.
         /// </summary>
         [Test]
         public static void DisabledMiningQueuesImmediatelyWithNoBeatsField()
@@ -212,11 +213,33 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(InvokePrepare(diaryEvent),
                 "Disabled battle-beats mining still blocked a raid page from queueing.");
             PawnDiaryRimTestScope.Require(
-                BattleBeatsPolicy.AlreadyChecked(diaryEvent.gameContext),
-                "Disabled battle-beats mining did not record the checked marker.");
+                !BattleBeatsPolicy.AlreadyChecked(diaryEvent.gameContext),
+                "Disabled battle-beats mining consumed the checked marker, so enabling it later cannot scan.");
             PawnDiaryRimTestScope.Require(
                 !DiaryContextFields.HasField(diaryEvent.gameContext, BattleBeatsPolicy.BeatsContextKey),
                 "Disabled battle-beats mining still wrote a beats field.");
+        }
+
+        /// <summary>
+        /// RaidFriendly routes to SoloDefault because its XML group is non-important. That template has
+        /// no battle-beats field, so the gate must neither delay nor mine evidence the prompt will drop.
+        /// </summary>
+        [Test]
+        public static void FriendlyRaidPagesPassWithoutMiningOrDelay()
+        {
+            DiaryEvent diaryEvent = RecordRaidPage();
+            diaryEvent.interactionDefName = "RaidFriendly";
+            diaryEvent.gameContext = RaidEventData.BuildGameContext(
+                "RaidFriendly", "Friendly raid", "AllyFaction", "260");
+
+            PawnDiaryRimTestScope.Require(InvokePrepare(diaryEvent),
+                "A non-important friendly raid was delayed for battle beats its prompt cannot project.");
+            PawnDiaryRimTestScope.Require(
+                !BattleBeatsPolicy.AlreadyChecked(diaryEvent.gameContext),
+                "A non-important friendly raid mined battle beats its prompt cannot project.");
+            PawnDiaryRimTestScope.Require(
+                !RemoveDelayKey(diaryEvent.eventId + "|" + DiaryEvent.InitiatorRole),
+                "A non-important friendly raid stamped a battle-beats retry.");
         }
 
         /// <summary>
@@ -341,9 +364,19 @@ namespace PawnDiary.RimTests
                     "Pawn Diary battle-beats fixture could not locate DiaryGameComponent.TryPrepareBattleBeats.");
             }
 
+            // CreateAdultColonist deliberately leaves test pawns unspawned, so the production fallback
+            // cannot rediscover raidPawn through Find.Maps. Periodic generation scans already pass their
+            // live-pawn snapshot here; mirror that path so this fixture tests mining rather than the
+            // separate "POV is no longer loaded" fail-open branch.
+            Dictionary<string, Pawn> livePawnsById = raidPawn == null
+                ? null
+                : new Dictionary<string, Pawn>
+                {
+                    { raidPawn.GetUniqueLoadID(), raidPawn }
+                };
             object result = PrepareBattleBeatsMethod.Invoke(
                 scope.Component,
-                new object[] { diaryEvent, povRole ?? DiaryEvent.InitiatorRole, null });
+                new object[] { diaryEvent, povRole ?? DiaryEvent.InitiatorRole, livePawnsById });
             return result is bool && (bool)result;
         }
 

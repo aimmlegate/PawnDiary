@@ -3,9 +3,9 @@
 // The RULES — deed-identity verification, the ownership key, deterministic per-artwork sampling, and
 // the three-tier writer order — are pure and covered headlessly by DiaryPipelineTests and
 // DiaryCapturePolicyTests. What only a loaded game can prove is the wiring:
-//   (a) the two CompArt members this feature reaches by name still exist with the shapes it assumes —
-//       the public InitializeArt(ArtGenerationContext)/JustCreatedBy(Pawn) hooks and the private
-//       TaleReference.tale field the exact deed identity is built from;
+//   (a) the CompArt and grave members this feature reaches by name still exist with the shapes it
+//       assumes — the public InitializeArt(ArtGenerationContext)/JustCreatedBy(Pawn) hooks, the
+//       sarcophagus completion hook, and the private TaleReference.tale field used for deed identity;
 //   (b) the colony-wide ownership query really finds a claim in the hot store, and really fails
 //       CLOSED on an identity it cannot compare;
 //   (c) the diary-existence check the artist fallback depends on agrees with a real pawn's pages;
@@ -83,6 +83,16 @@ namespace PawnDiary.RimTests
                 null);
             PawnDiaryRimTestScope.Require(justCreatedBy != null,
                 "CompArt.JustCreatedBy(Pawn) is gone; the H6 artist-fallback postfix cannot bind.");
+
+            MethodInfo graveArtComplete = typeof(Building_Grave).GetMethod(
+                nameof(Building_Grave.Notify_HauledTo),
+                BindingFlags.Instance | BindingFlags.Public,
+                null,
+                new[] { typeof(Pawn), typeof(Thing), typeof(int) },
+                null);
+            PawnDiaryRimTestScope.Require(graveArtComplete != null,
+                "Building_Grave.Notify_HauledTo(Pawn, Thing, int) is gone; sarcophagus art cannot retry "
+                + "after its tale and artist are both known.");
 
             PawnDiaryRimTestScope.Require(
                 typeof(CompArt).GetProperty("TaleRef", BindingFlags.Instance | BindingFlags.Public) != null,
@@ -227,7 +237,7 @@ namespace PawnDiary.RimTests
                 "The art-immortalization text dropped one of its arguments.");
         }
 
-        /// <summary>The shipped tuning must load with a usable chance, or the feature is dead on arrival.</summary>
+        /// <summary>The shipped tuning must preserve the locked 50% mention chance.</summary>
         [Test]
         public static void ShippedTuningIsUsable()
         {
@@ -236,8 +246,8 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(tuning.artImmortalizationEnabled,
                 "Art immortalization ships disabled.");
             PawnDiaryRimTestScope.Require(
-                tuning.artImmortalizationChance > 0f && tuning.artImmortalizationChance <= 1f,
-                "The shipped art-immortalization chance is outside (0,1], so the feature can never fire.");
+                Math.Abs(tuning.artImmortalizationChance - 0.50f) < 0.0001f,
+                "The shipped art-immortalization chance drifted from the locked 50% decision.");
         }
 
         private static void RequireLocalized(string key, string resolved)

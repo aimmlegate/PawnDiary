@@ -196,7 +196,42 @@ namespace PawnDiary
                 return joined.Length == 0 ? string.Empty : joined;
             }
 
-            return TextTruncation.SafePrefix(joined, maxChars).TrimEnd();
+            if (joined.Length <= maxChars)
+            {
+                return joined;
+            }
+
+            const string ellipsis = "...";
+            if (maxChars <= ellipsis.Length)
+            {
+                return TextTruncation.SafePrefix(ellipsis, maxChars);
+            }
+
+            int prefixLength = maxChars - ellipsis.Length;
+            string prefix = TextTruncation.SafePrefix(joined, prefixLength).TrimEnd();
+
+            // Never freeze a separator fragment such as " |" into prompt context. If the cap cuts a
+            // word, prefer the preceding boundary when one exists; the ellipsis still makes truncation
+            // explicit when the first word alone exceeds the cap.
+            if (prefix.EndsWith("|", StringComparison.Ordinal))
+            {
+                prefix = prefix.TrimEnd('|', ' ');
+            }
+            else if (prefix.Length < joined.Length
+                && prefix.Length > 0
+                && !char.IsWhiteSpace(joined[prefix.Length])
+                && !char.IsWhiteSpace(prefix[prefix.Length - 1]))
+            {
+                int boundary = prefix.LastIndexOf(' ');
+                if (boundary > 0)
+                {
+                    prefix = prefix.Substring(0, boundary).TrimEnd('|', ' ');
+                }
+            }
+
+            return prefix.Length == 0
+                ? TextTruncation.SafePrefix(ellipsis, maxChars)
+                : prefix + ellipsis;
         }
 
         /// <summary>

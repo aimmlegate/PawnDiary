@@ -116,6 +116,23 @@ namespace PawnDiary.RimTests
                 string.Equals(deduped[0], "SourceDefName", StringComparison.Ordinal)
                     && string.Equals(deduped[1], DiaryEventDomainClassifier.Interaction, StringComparison.Ordinal),
                 "Dedup must keep first-seen order: source defName then the broad domain fallback.");
+
+            List<string> groupFirst = DiaryEventPromptKeys.CandidateKeys(
+                new DiaryEventPayload
+                {
+                    defName = "Conversion",
+                    domain = DiaryEventDomainClassifier.Ritual
+                },
+                "ritualConversion",
+                "Conversion;RitualBehaviorWorker_Conversion",
+                DiaryEventDomainClassifier.Ritual,
+                preferGroup: true);
+            PawnDiaryRimTestScope.Require(
+                groupFirst.Count == 4
+                    && string.Equals(groupFirst[0], "ritualConversion", StringComparison.Ordinal)
+                    && string.Equals(groupFirst[1], "Conversion", StringComparison.Ordinal),
+                "Composite ritual classification must prefer its exact group prompt before a colliding "
+                    + "raw Def name.");
         }
 
         /// <summary>

@@ -63,8 +63,13 @@ namespace PawnDiary
             DiaryTuningDef tuning)
         {
             BattleBeatsInspection inspection = new BattleBeatsInspection();
-            if (pov == null || tuning == null || !tuning.battleBeatsEnabled)
+            if (pov == null || tuning == null || !tuning.battleBeatsEnabled
+                || string.IsNullOrWhiteSpace(raiderFactionDefName)
+                || string.Equals(raiderFactionDefName, PawnDiary.Capture.RaidEventData.FactionUnknown,
+                    StringComparison.OrdinalIgnoreCase))
             {
+                // Faction identity is part of ownership. Treating "unknown" as a wildcard can attach
+                // the POV's unrelated battle (including a concurrent infestation) to this raid page.
                 return inspection;
             }
 
@@ -143,9 +148,7 @@ namespace PawnDiary
             BattleBeatsInspection inspection)
         {
             List<BattleBeatCandidate> candidates = new List<BattleBeatCandidate>();
-            bool raiderSeen = string.IsNullOrWhiteSpace(raiderFactionDefName)
-                || string.Equals(raiderFactionDefName, PawnDiary.Capture.RaidEventData.FactionUnknown,
-                    StringComparison.OrdinalIgnoreCase);
+            bool raiderSeen = false;
             int latestPovAbsTick = int.MinValue;
 
             List<LogEntry> entries = battle.Entries;

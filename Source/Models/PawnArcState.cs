@@ -30,6 +30,83 @@ namespace PawnDiary
     }
 
     /// <summary>
+    /// One remembered bonded death (Quality Wave H2). Stored as a list item, like
+    /// <see cref="SkillMilestoneState"/>, so the save schema stays additive.
+    /// </summary>
+    public class BondedDeathMemoryState : IExposable
+    {
+        public string victimId;
+        public string victimName;
+        // Stable relation defName ("Spouse", "Child", "Bond"). Drives the strongest-bond retention
+        // order; never displayed, so it must not be localized.
+        public string relationDefName;
+        // Already-localized relation label for the prompt ("husband", "bonded animal").
+        public string relationLabel;
+        public int deathTick;
+        // Highest whole anniversary year already evaluated. Marked even when the recall sample fails,
+        // so reloading the save cannot reroll a year that was already decided.
+        public int lastProcessedAnniversaryYear;
+
+        public void ExposeData()
+        {
+            Scribe_Values.Look(ref victimId, "victimId");
+            Scribe_Values.Look(ref victimName, "victimName");
+            Scribe_Values.Look(ref relationDefName, "relationDefName");
+            Scribe_Values.Look(ref relationLabel, "relationLabel");
+            Scribe_Values.Look(ref deathTick, "deathTick", 0);
+            Scribe_Values.Look(ref lastProcessedAnniversaryYear, "lastProcessedAnniversaryYear", 0);
+
+            if (Scribe.mode == LoadSaveMode.PostLoadInit)
+            {
+                Normalize();
+            }
+        }
+
+        public void Normalize()
+        {
+            victimId = (victimId ?? string.Empty).Trim();
+            victimName = (victimName ?? string.Empty).Trim();
+            relationDefName = (relationDefName ?? string.Empty).Trim();
+            relationLabel = (relationLabel ?? string.Empty).Trim();
+            deathTick = Math.Max(0, deathTick);
+            lastProcessedAnniversaryYear = Math.Max(0, lastProcessedAnniversaryYear);
+        }
+
+        /// <summary>True for a row that can still be matched to a victim and a death moment.</summary>
+        public bool IsUsable()
+        {
+            return !string.IsNullOrWhiteSpace(victimId) && !string.IsNullOrWhiteSpace(relationDefName);
+        }
+    }
+
+    /// <summary>
+    /// One personal record's highest value ever observed (Quality Wave H2). Monotonic: a modded record
+    /// reset lowers the live value but never this mark, so the same milestone cannot be awarded twice.
+    /// </summary>
+    public class RecordHighWaterState : IExposable
+    {
+        public string recordDefName;
+        public float highestValue;
+
+        public void ExposeData()
+        {
+            Scribe_Values.Look(ref recordDefName, "recordDefName");
+            Scribe_Values.Look(ref highestValue, "highestValue", 0f);
+
+            if (Scribe.mode == LoadSaveMode.PostLoadInit)
+            {
+                recordDefName = (recordDefName ?? string.Empty).Trim();
+                highestValue = SafeValue(highestValue);
+            }
+        }
+
+        internal static float SafeValue(float value)
+        {
+            return float.IsNaN(value) || float.IsInfinity(value) || value < 0f ? 0f : value;
+        }
+    }
+
+    /// <summary>
     /// Scanner bookkeeping for progression entries. Baseline mode suppresses old-save catch-up spam.
     /// </summary>
     public class PawnProgressionState : IExposable
@@ -58,6 +135,29 @@ namespace PawnDiary
         // a legitimate observed titleless pawn.
         public RoyaltyPawnProgressionState royaltyObservationState;
 
+        // ---- Quality Wave H2: anniversaries and personal records ---------------------------------
+        // Highest biological age already accounted for. -1 means "never observed": the first scan
+        // records the pawn's current age and writes nothing, so an old save gets no missed birthdays.
+        public int lastObservedBiologicalAgeYears = -1;
+        // Highest whole arrival year already evaluated (0 = none). Advanced for EVERY year the scanner
+        // considers, including non-milestone ones, so year 4 cannot resurface as a page later.
+        public int lastArrivalAnniversaryYear;
+        // Remembered bonded deaths, strongest bond first, capped by XML (default 16).
+        public List<BondedDeathMemoryState> bondedDeathMemories = new List<BondedDeathMemoryState>();
+        // Death-discovery cursor over saved diary history. -1 means "never scanned". Monotonic: a
+        // memory evicted by the cap is forgotten for good instead of being rediscovered every scan.
+        public int lastBondedDeathDiscoveryTick = -1;
+        // Absolute world day of the pawn's most recent bonded-death page. Enforces the locked
+        // "at most one combined bonded-death page per pawn per day" rule across scans.
+        public int lastBondedDeathPageDay = int.MinValue;
+        // Monotonic highest value ever seen per record defName.
+        public List<RecordHighWaterState> recordHighWater = new List<RecordHighWaterState>();
+        // H2 has its OWN baseline flag, like trait gain: a save made before this feature has empty H2
+        // state AND an already-false baselineProgressionOnNextScan, so the shared flag cannot protect
+        // it. Defaulting to true makes the first scan after upgrading silently record where each pawn
+        // already is instead of emitting every anniversary they ever passed.
+        public bool baselineAnniversariesOnNextScan = true;
+
         public void ExposeData()
         {
             Scribe_Collections.Look(ref skillMilestones, "skillMilestones", LookMode.Deep);
@@ -71,6 +171,15 @@ namespace PawnDiary
             Scribe_Values.Look(ref baselineProgressionOnNextScan, "baselineProgressionOnNextScan", true);
             Scribe_Deep.Look(ref biotechProgressionState, BiotechSaveKeys.PawnProgressionState);
             Scribe_Deep.Look(ref royaltyObservationState, RoyaltySaveKeys.PawnObservationState);
+            // H2 additive rows. Every default matches "nothing observed yet", so an old save loads
+            // silent state and the first scan baselines it.
+            Scribe_Values.Look(ref lastObservedBiologicalAgeYears, "lastObservedBiologicalAgeYears", -1);
+            Scribe_Values.Look(ref lastArrivalAnniversaryYear, "lastArrivalAnniversaryYear", 0);
+            Scribe_Collections.Look(ref bondedDeathMemories, "bondedDeathMemories", LookMode.Deep);
+            Scribe_Values.Look(ref lastBondedDeathDiscoveryTick, "lastBondedDeathDiscoveryTick", -1);
+            Scribe_Values.Look(ref lastBondedDeathPageDay, "lastBondedDeathPageDay", int.MinValue);
+            Scribe_Collections.Look(ref recordHighWater, "recordHighWater", LookMode.Deep);
+            Scribe_Values.Look(ref baselineAnniversariesOnNextScan, "baselineAnniversariesOnNextScan", true);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -141,6 +250,142 @@ namespace PawnDiary
 
                 knownTraitKeys[i] = key.Trim();
             }
+
+            NormalizeAnniversaryState();
+        }
+
+        /// <summary>
+        /// Repairs the Quality Wave H2 rows. Absence normalizes to "never observed" rather than to
+        /// zero-as-a-real-value, which is what keeps an old save from receiving retroactive pages.
+        /// </summary>
+        private void NormalizeAnniversaryState()
+        {
+            lastObservedBiologicalAgeYears = Math.Max(-1, lastObservedBiologicalAgeYears);
+            lastArrivalAnniversaryYear = Math.Max(0, lastArrivalAnniversaryYear);
+            lastBondedDeathDiscoveryTick = Math.Max(-1, lastBondedDeathDiscoveryTick);
+
+            if (bondedDeathMemories == null)
+            {
+                bondedDeathMemories = new List<BondedDeathMemoryState>();
+            }
+
+            HashSet<string> seenVictims = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < bondedDeathMemories.Count; i++)
+            {
+                BondedDeathMemoryState memory = bondedDeathMemories[i];
+                memory?.Normalize();
+                if (memory == null || !memory.IsUsable() || !seenVictims.Add(memory.victimId))
+                {
+                    bondedDeathMemories.RemoveAt(i);
+                    i--;
+                }
+            }
+
+            if (recordHighWater == null)
+            {
+                recordHighWater = new List<RecordHighWaterState>();
+            }
+
+            HashSet<string> seenRecords = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < recordHighWater.Count; i++)
+            {
+                RecordHighWaterState record = recordHighWater[i];
+                if (record == null || string.IsNullOrWhiteSpace(record.recordDefName))
+                {
+                    recordHighWater.RemoveAt(i);
+                    i--;
+                    continue;
+                }
+
+                record.recordDefName = record.recordDefName.Trim();
+                record.highestValue = RecordHighWaterState.SafeValue(record.highestValue);
+                if (!seenRecords.Add(record.recordDefName))
+                {
+                    recordHighWater.RemoveAt(i);
+                    i--;
+                }
+            }
+        }
+
+        /// <summary>Returns the remembered bonded death for this victim, or null.</summary>
+        public BondedDeathMemoryState FindBondedDeathMemory(string victimId)
+        {
+            if (string.IsNullOrWhiteSpace(victimId) || bondedDeathMemories == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < bondedDeathMemories.Count; i++)
+            {
+                BondedDeathMemoryState memory = bondedDeathMemories[i];
+                if (memory != null && string.Equals(memory.victimId, victimId, StringComparison.Ordinal))
+                {
+                    return memory;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>Highest value ever observed for one record defName; 0 when never observed.</summary>
+        public float HighestRecordValue(string recordDefName)
+        {
+            if (string.IsNullOrWhiteSpace(recordDefName) || recordHighWater == null)
+            {
+                return 0f;
+            }
+
+            for (int i = 0; i < recordHighWater.Count; i++)
+            {
+                RecordHighWaterState record = recordHighWater[i];
+                if (record != null
+                    && string.Equals(record.recordDefName, recordDefName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return RecordHighWaterState.SafeValue(record.highestValue);
+                }
+            }
+
+            return 0f;
+        }
+
+        /// <summary>
+        /// Raises one record's high-water mark. Never lowers it: a modded record reset must not make an
+        /// already-awarded milestone available again.
+        /// </summary>
+        public void SetRecordHighWater(string recordDefName, float value)
+        {
+            if (string.IsNullOrWhiteSpace(recordDefName))
+            {
+                return;
+            }
+
+            if (recordHighWater == null)
+            {
+                recordHighWater = new List<RecordHighWaterState>();
+            }
+
+            string key = recordDefName.Trim();
+            float safeValue = RecordHighWaterState.SafeValue(value);
+            for (int i = 0; i < recordHighWater.Count; i++)
+            {
+                RecordHighWaterState record = recordHighWater[i];
+                if (record != null
+                    && string.Equals(record.recordDefName, key, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (safeValue > record.highestValue)
+                    {
+                        record.highestValue = safeValue;
+                    }
+
+                    return;
+                }
+            }
+
+            recordHighWater.Add(new RecordHighWaterState
+            {
+                recordDefName = key,
+                highestValue = safeValue
+            });
         }
 
         public int HighestSkillMilestone(string skillDefName)

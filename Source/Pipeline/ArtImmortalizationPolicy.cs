@@ -67,6 +67,17 @@ namespace PawnDiary
         public const string TaleIdContextKey = "art_tale_id";
 
         /// <summary>
+        /// Converts the live adapter's two eligibility facts into the one flag writer selection uses.
+        /// RimWorld keeps a dead colonist's faction, so <c>Pawn.IsColonist</c> can remain true after
+        /// death; the explicit death fact prevents a deceased deed subject from taking the page away
+        /// from the living concerned-colonist / artist fallbacks.
+        /// </summary>
+        public static bool IsEligibleWriter(bool diaryEligible, bool dead)
+        {
+            return diaryEligible && !dead;
+        }
+
+        /// <summary>
         /// Builds a tale's stable identity from its def name and numeric ID. Returns an empty string
         /// when either part is missing or would corrupt the key, so callers fail closed.
         /// </summary>

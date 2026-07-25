@@ -1461,6 +1461,17 @@
   <PawnDiary.Event.RoyalHeirAppointed.Text>{0} was explicitly appointed as {1}'s heir to the title {2} in {3}.</PawnDiary.Event.RoyalHeirAppointed.Text>
   <PawnDiary.Event.ProgressionTraitLabel>New trait: {0}</PawnDiary.Event.ProgressionTraitLabel>
   <PawnDiary.Event.ProgressionTraitText>{0}'s character took a lasting turn: they became {1}.</PawnDiary.Event.ProgressionTraitText>
+  <!-- Quality Wave H2 anniversaries and personal records. {0} is always the writing pawn. -->
+  <PawnDiary.Event.AnniversaryBirthdayLabel>Turned {0}</PawnDiary.Event.AnniversaryBirthdayLabel>
+  <PawnDiary.Event.AnniversaryBirthdayText>{0} turned {1} today.</PawnDiary.Event.AnniversaryBirthdayText>
+  <PawnDiary.Event.AnniversaryArrivalLabel>{0} years here</PawnDiary.Event.AnniversaryArrivalLabel>
+  <PawnDiary.Event.AnniversaryArrivalText>{0} has been part of this colony for {1} years as of today.</PawnDiary.Event.AnniversaryArrivalText>
+  <PawnDiary.Event.AnniversaryDeathLabel>Remembering {0}</PawnDiary.Event.AnniversaryDeathLabel>
+  <PawnDiary.Event.AnniversaryDeathText>Today marks {1} years since {0} lost {2} ({3}).</PawnDiary.Event.AnniversaryDeathText>
+  <PawnDiary.Event.AnniversaryDeathCombinedText>Today is the anniversary of more than one loss for {0}: {1}.</PawnDiary.Event.AnniversaryDeathCombinedText>
+  <PawnDiary.Event.AnniversaryDeathCombinedEntry>{0} ({1}), {2} years ago</PawnDiary.Event.AnniversaryDeathCombinedEntry>
+  <PawnDiary.Event.AnniversaryRecordLabel>{0}: {1}</PawnDiary.Event.AnniversaryRecordLabel>
+  <PawnDiary.Event.AnniversaryRecordText>{0} has now reached {1} for {2}.</PawnDiary.Event.AnniversaryRecordText>
   <PawnDiary.Event.ArcReflectionLabel>Year {0} reflection</PawnDiary.Event.ArcReflectionLabel>
   <PawnDiary.Event.ArcReflectionHeader>{0}'s memories from year {1}:</PawnDiary.Event.ArcReflectionHeader>
   <PawnDiary.Event.ArcReflectionEvidenceLine>{0}: {1}</PawnDiary.Event.ArcReflectionEvidenceLine>

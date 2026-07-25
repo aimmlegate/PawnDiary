@@ -51,6 +51,7 @@ namespace PawnDiary
         public string monolithStirringNarrativeFormat = string.Empty;
         public string monolithWakingNarrativeFormat = string.Empty;
         public string monolithVoidAwakenedNarrativeFormat = string.Empty;
+        public string monolithGleamingNarrativeFormat = string.Empty;
         public string containmentBreachNarrativeFormat = string.Empty;
         public string creepJoinerSurgicalRevealNarrativeFormat = string.Empty;
         public string creepJoinerRejectedNarrativeFormat = string.Empty;
@@ -199,6 +200,8 @@ namespace PawnDiary
                     return source.monolithWakingNarrativeFormat ?? string.Empty;
                 if (phase == AnomalyNarrativeContinuityTokens.VoidAwakened)
                     return source.monolithVoidAwakenedNarrativeFormat ?? string.Empty;
+                if (phase == AnomalyNarrativeContinuityTokens.Gleaming)
+                    return source.monolithGleamingNarrativeFormat ?? string.Empty;
                 return string.Empty;
             }
             if (sourceKind == AnomalyNarrativeContinuityTokens.ContainmentBreach)

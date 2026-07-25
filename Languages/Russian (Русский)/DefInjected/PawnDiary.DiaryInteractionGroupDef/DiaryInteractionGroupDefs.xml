@@ -493,6 +493,26 @@
   <progressionTraitGained.tone>с тревожным узнаванием себя</progressionTraitGained.tone>
   <progressionTraitGained.tones.0>тихо ошеломлённо, ловя в себе новую мысль или желание</progressionTraitGained.tones.0>
   <progressionTraitGained.tones.1>вдумчиво и близко, прослеживая, где перемена проступает в обычных мелочах</progressionTraitGained.tones.1>
+  <progressionBirthday.label>День рождения</progressionBirthday.label>
+  <progressionBirthday.instruction>поселенцу исполнился ещё один год; пиши это как личную отметку в жизни — что для него значит само число здесь и сейчас, а не праздник, — опираясь только на переданный возраст</progressionBirthday.instruction>
+  <progressionBirthday.tone>с тихим ощущением уходящего времени</progressionBirthday.tone>
+  <progressionBirthday.tones.0>вдумчиво и лично, замечая, что изменил ещё один год</progressionBirthday.tones.0>
+  <progressionBirthday.tones.1>мягко с усмешкой, понимая, что время идёт даже на краю мира</progressionBirthday.tones.1>
+  <progressionArrivalAnniversary.label>Годовщина в колонии</progressionArrivalAnniversary.label>
+  <progressionArrivalAnniversary.instruction>с прихода поселенца в колонию прошло целое число лет; пиши чувство своего места, отдаление от того, кем он был по прибытии, или беспокойство от того, как много времени прошло, — опираясь только на переданное число лет</progressionArrivalAnniversary.instruction>
+  <progressionArrivalAnniversary.tone>с весом прожитого времени</progressionArrivalAnniversary.tone>
+  <progressionArrivalAnniversary.tones.0>устоявшись и примеряя, сравнивая сегодняшний день с днём прибытия</progressionArrivalAnniversary.tones.0>
+  <progressionArrivalAnniversary.tones.1>неспокойно и в поиске, не понимая, туда ли ушли эти годы</progressionArrivalAnniversary.tones.1>
+  <progressionDeathAnniversary.label>Память об утрате</progressionDeathAnniversary.label>
+  <progressionDeathAnniversary.instruction>годовщина утраты близкого человека; пиши память об этой дате — что до сих пор носится в себе и как оно переменилось, — опираясь только на переданные имена, родство и число прошедших лет, и никогда не пересказывая саму смерть</progressionDeathAnniversary.instruction>
+  <progressionDeathAnniversary.tone>со сдержанным горем, которому дали отлежаться</progressionDeathAnniversary.tone>
+  <progressionDeathAnniversary.tones.0>тихо и без сентиментальности, вспоминая человека, а не потерю</progressionDeathAnniversary.tones.0>
+  <progressionDeathAnniversary.tones.1>тяжело и скрытно: дата приходит раньше самой мысли</progressionDeathAnniversary.tones.1>
+  <progressionRecordMilestone.label>Личный рекорд</progressionRecordMilestone.label>
+  <progressionRecordMilestone.instruction>личный счёт дошёл до значимой отметки; пиши, чем сделало поселенца такое количество одной и той же работы, опираясь только на переданные название счёта и итог, и никогда не как очки или достижение</progressionRecordMilestone.instruction>
+  <progressionRecordMilestone.tone>с простым признанием накопленного труда</progressionRecordMilestone.tone>
+  <progressionRecordMilestone.tones.0>сухо и устало, считая скорее цену, чем заслугу</progressionRecordMilestone.tones.0>
+  <progressionRecordMilestone.tones.1>тихо с гордостью, понимая, что число сложилось из обычных дней</progressionRecordMilestone.tones.1>
   <progressionOther.label>Развитие</progressionOther.label>
   <progressionOther.instruction>поселенец заметно изменился; переданный факт «до и после» подай просто, лично и без лишних объяснений</progressionOther.instruction>
   <externalDevTest.label>Внешнее тестовое событие</externalDevTest.label>

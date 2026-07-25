@@ -742,7 +742,7 @@ namespace PawnDiary
             {
                 // The writer has already been selected from this exact, visible signal. That makes
                 // pawnCanKnow=true source-owned truth rather than a provider inference. The builder
-                // normalizes/caps the plain DTO and freezes a compact reference. Only the three exact
+                // normalizes/caps the plain DTO and freezes a compact reference. Only the exact visible
                 // monolith chapter templates additionally receive the N3-A Anomaly lens snapshot.
                 string arcKey = !string.IsNullOrWhiteSpace(active?.startNarrativeArcKey)
                     ? active.startNarrativeArcKey

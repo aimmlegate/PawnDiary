@@ -386,6 +386,7 @@ namespace PawnDiary
         public const string Stirring = "stirring";
         public const string Waking = "waking";
         public const string VoidAwakened = "void_awakened";
+        public const string Gleaming = "gleaming";
         public const string SurgicalReveal = "surgical_reveal";
         public const string Rejected = "rejected";
         public const string Aggressive = "aggressive";
@@ -402,11 +403,13 @@ namespace PawnDiary
         public const string MonolithStirringSourceDefName = "Stirring";
         public const string MonolithWakingSourceDefName = "Waking";
         public const string MonolithVoidAwakenedSourceDefName = "VoidAwakened";
+        public const string MonolithGleamingSourceDefName = "Gleaming";
         public const string MonolithStirringWindowDefName = "VoidMonolithActivation";
         public const string MonolithWakingWindowDefName = "VoidMonolithWaking";
         public const string MonolithVoidAwakenedWindowDefName = "VoidMonolithVoidAwakened";
+        public const string MonolithGleamingWindowDefName = "VoidMonolithGleaming";
 
-        /// <summary>Accepts only the three shipped window/phase/reached-level identities.</summary>
+        /// <summary>Accepts only the four shipped window/phase/reached-level identities.</summary>
         public static bool MatchesVisibleMonolithSource(
             string windowDefName,
             string phase,
@@ -415,7 +418,8 @@ namespace PawnDiary
             if (!MatchesVisibleMonolithPhaseSource(phase, sourceDefName)) return false;
             if (phase == Stirring) return windowDefName == MonolithStirringWindowDefName;
             if (phase == Waking) return windowDefName == MonolithWakingWindowDefName;
-            return windowDefName == MonolithVoidAwakenedWindowDefName;
+            if (phase == VoidAwakened) return windowDefName == MonolithVoidAwakenedWindowDefName;
+            return phase == Gleaming && windowDefName == MonolithGleamingWindowDefName;
         }
 
         /// <summary>
@@ -426,7 +430,8 @@ namespace PawnDiary
         {
             if (phase == Stirring) return sourceDefName == MonolithStirringSourceDefName;
             if (phase == Waking) return sourceDefName == MonolithWakingSourceDefName;
-            return phase == VoidAwakened && sourceDefName == MonolithVoidAwakenedSourceDefName;
+            if (phase == VoidAwakened) return sourceDefName == MonolithVoidAwakenedSourceDefName;
+            return phase == Gleaming && sourceDefName == MonolithGleamingSourceDefName;
         }
     }
 
@@ -746,7 +751,8 @@ namespace PawnDiary
         {
             return phase == AnomalyNarrativeContinuityTokens.Stirring
                 || phase == AnomalyNarrativeContinuityTokens.Waking
-                || phase == AnomalyNarrativeContinuityTokens.VoidAwakened;
+                || phase == AnomalyNarrativeContinuityTokens.VoidAwakened
+                || phase == AnomalyNarrativeContinuityTokens.Gleaming;
         }
 
         private static bool IsVisibleCreepJoinerPhase(string phase)

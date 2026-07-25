@@ -124,7 +124,10 @@ namespace PawnDiary
                 payload,
                 group?.defName,
                 classifierKey,
-                FallbackEventPromptKeyForPayload(payload));
+                FallbackEventPromptKeyForPayload(payload),
+                preferGroup: string.Equals(
+                    payload?.domain, DiaryEventDomainClassifier.Ritual,
+                    StringComparison.OrdinalIgnoreCase));
             string eventPromptKey;
             DiaryEventPrompts.ForFirstAvailableKey(eventPromptKeys, out eventPromptKey);
             string eventPromptText = ResolveEventPromptField(eventPromptKeys, def => def?.prompt,

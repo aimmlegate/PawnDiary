@@ -585,6 +585,60 @@ namespace PawnDiary
                 new BattleBeatScoreRule { kind = BattleBeatsPolicy.KindOther, score = 5 },
             };
 
+        // ---- Quality Wave H2: anniversaries and personal records ----
+        // A slow scanner that notices the dates and totals a colonist would notice themselves: another
+        // birthday, another year since they joined, the anniversary of losing someone they loved, and
+        // the point where a personal tally becomes part of who they are. Everything here is silent on
+        // a pawn's first scan, so loading an old save never produces a burst of missed pages.
+        public int anniversaryScanIntervalTicks = 15000;
+        // Whole years since joining that are worth a page, plus the repeating step used after the
+        // highest one above (10 + 5 = 15, 20, 25…). Year 4 and 6 are deliberately silent.
+        public List<int> arrivalAnniversaryMilestoneYears = new List<int> { 1, 2, 3, 5, 10 };
+        public int arrivalAnniversaryRecurringIntervalYears = 5;
+        // Relation defNames worth remembering a death for, CLOSEST BOND FIRST. This ordering decides
+        // both who survives the memory cap and whose name leads a combined page. Plain strings, so a
+        // relation from content the player does not own is simply never matched.
+        public List<string> bondedDeathRelationPriority = new List<string>
+        {
+            "Spouse",
+            "Fiance",
+            "Lover",
+            "Child",
+            "Parent",
+            "Bond",     // Biotech/vanilla animal bond; inert when the pawn has none
+            "Sibling",
+        };
+        // Most bonded deaths one pawn remembers. Past this the weakest/oldest bonds are forgotten for
+        // good — the discovery cursor never walks back, so they cannot be rediscovered.
+        public int bondedDeathMemoryCap = 16;
+        // Grief this fresh is always remembered; later years decay (see RecallChance).
+        public int bondedDeathGuaranteedYears = 3;
+        public float bondedDeathFirstDecayChance = 0.60f;
+        public float bondedDeathDecayMultiplier = 0.65f;
+        public float bondedDeathFloorChance = 0.05f;
+        // Names combined into one page when several bonded deaths share an anniversary date.
+        public int bondedDeathMaxCombinedNames = 3;
+        // Personal tallies worth a page, and at which totals. Record defNames are plain strings looked
+        // up with GetNamedSilentFail, so a modded or removed record never throws.
+        public List<RecordMilestoneRule> recordMilestones = new List<RecordMilestoneRule>
+        {
+            new RecordMilestoneRule
+            {
+                recordDefName = "Kills",
+                thresholds = new List<int> { 10, 25, 50, 100 }
+            },
+            new RecordMilestoneRule
+            {
+                recordDefName = "MealsCooked",
+                thresholds = new List<int> { 100, 500, 1000, 5000 }
+            },
+            new RecordMilestoneRule
+            {
+                recordDefName = "ThingsConstructed",
+                thresholds = new List<int> { 100, 500, 1000, 5000 }
+            },
+        };
+
         // ---- Quality Wave H6: art immortalization ----
         // When a sculpture's generated art tale is about a colony deed, one quiet diary page may be
         // written about it. At most one page exists per deed for the whole colony, no matter how many
@@ -592,7 +646,7 @@ namespace PawnDiary
         // the deed. Each artwork samples independently and deterministically from its own stable ID
         // plus the deed's identity, so re-initializing a sculpture can never reroll it.
         public bool artImmortalizationEnabled = true;
-        public float artImmortalizationChance = 0.35f;
+        public float artImmortalizationChance = 0.50f;
 
         // ---- Output-language directive ----
         // When true, every LLM request ends its system prompt with one localized line naming the

@@ -32,6 +32,7 @@ namespace DiaryPipelineTests
             TestOnThisDayDividerPolicy();
             TestBattleBeatsPolicy();
             TestArtImmortalizationPolicy();
+            TestAnniversaryPolicy();
             TestCheapXmlExtensionCoverage();
             TestPromptContextDetailSelection();
             TestPromptContextDetailOverrideResolution();
@@ -7056,11 +7057,19 @@ namespace DiaryPipelineTests
             AssertEqual("event prompt key duplicate removed", 3, keys.Count);
 
             List<string> ritualKeys = DiaryEventPromptKeys.CandidateKeys(
-                new DiaryEventPayload { defName = "Ritual_Speech" },
+                new DiaryEventPayload
+                {
+                    defName = "Ritual_Speech",
+                    domain = DiaryEventDomainClassifier.Ritual
+                },
                 "ritualRoyal",
                 "Ritual_Speech;RitualBehaviorWorker_ThroneSpeech",
-                "Ritual");
-            AssertEqual("event prompt key classifier retained", "Ritual_Speech;RitualBehaviorWorker_ThroneSpeech", ritualKeys[2]);
+                "Ritual",
+                preferGroup: true);
+            AssertEqual("ritual prompt key exact group first", "ritualRoyal", ritualKeys[0]);
+            AssertEqual("ritual prompt key source second", "Ritual_Speech", ritualKeys[1]);
+            AssertEqual("event prompt key classifier retained",
+                "Ritual_Speech;RitualBehaviorWorker_ThroneSpeech", ritualKeys[2]);
             AssertEqual("event prompt key ritual fallback", "Ritual", ritualKeys[3]);
         }
 

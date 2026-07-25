@@ -192,6 +192,41 @@
     <enhancement>Use the supplied before-and-after fields exactly. Do not explain game mechanics, invent training scenes, or add powers, titles, body changes, or achievements that were not supplied.</enhancement>
   </PawnDiary.DiaryEventPromptDef>
 
+  <!-- Quality Wave H2. Keyed to the exact synthetic source defNames, which the prompt lookup tries
+       before the group and the broad Progression domain, so these rows apply only to anniversary pages
+       and every other progression page keeps DiaryEventPrompt_Progression above. -->
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PawnBirthday</defName>
+    <label>birthday</label>
+    <eventType>PawnBirthday</eventType>
+    <prompt>Write another year of age as a quiet private life-marker.</prompt>
+    <enhancement>Use the supplied age exactly. Do not invent a party, a gift, a well-wisher, or anyone else noticing the date, and do not state the pawn's birth date or year.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_ArrivalAnniversary</defName>
+    <label>colony anniversary</label>
+    <eventType>ArrivalAnniversary</eventType>
+    <prompt>Write a whole number of years spent in this colony as private stock-taking.</prompt>
+    <enhancement>Use the supplied number of years exactly. Do not invent the circumstances of the arrival, a ceremony, or anyone else marking the date, and do not summarize colony history that was not supplied.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_BondedDeathAnniversary</defName>
+    <label>remembered loss</label>
+    <eventType>BondedDeathAnniversary</eventType>
+    <prompt>Write remembrance on the anniversary of losing someone close.</prompt>
+    <enhancement>Keep every supplied name, relation, and number of years exactly. Do not retell how they died, invent last words, a grave, a gathering, or anyone else remembering with this pawn, and do not claim contact with the dead.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RecordMilestone</defName>
+    <label>personal record</label>
+    <eventType>RecordMilestone</eventType>
+    <prompt>Write what doing this much of one thing has made of the pawn.</prompt>
+    <enhancement>Use the supplied tally name and total exactly. Do not present it as a score, achievement, rank, or comparison with anyone else, and do not invent specific past instances that make up the total.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
   <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_ArcReflection</defName>
     <label>arc reflection</label>

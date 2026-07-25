@@ -60,6 +60,18 @@
   <DiaryEventPrompt_Progression.label>развитие</DiaryEventPrompt_Progression.label>
   <DiaryEventPrompt_Progression.prompt>Напиши личную запись о перемене поселенца: навыке, усилии, положении, теле или самоощущении.</DiaryEventPrompt_Progression.prompt>
   <DiaryEventPrompt_Progression.enhancement>До и после бери только из переданных полей. Не объясняй игровые системы, не добавляй тренировку, новые силы, титулы, телесные изменения или достижения, которых нет в фактах.</DiaryEventPrompt_Progression.enhancement>
+  <DiaryEventPrompt_PawnBirthday.label>день рождения</DiaryEventPrompt_PawnBirthday.label>
+  <DiaryEventPrompt_PawnBirthday.prompt>Напиши ещё один год жизни как тихую личную отметку.</DiaryEventPrompt_PawnBirthday.prompt>
+  <DiaryEventPrompt_PawnBirthday.enhancement>Возраст бери точно как передан. Не придумывай праздник, подарок, поздравления или чужое внимание к дате и не называй дату или год рождения.</DiaryEventPrompt_PawnBirthday.enhancement>
+  <DiaryEventPrompt_ArrivalAnniversary.label>годовщина в колонии</DiaryEventPrompt_ArrivalAnniversary.label>
+  <DiaryEventPrompt_ArrivalAnniversary.prompt>Напиши личный подсчёт лет, прожитых в этой колонии.</DiaryEventPrompt_ArrivalAnniversary.prompt>
+  <DiaryEventPrompt_ArrivalAnniversary.enhancement>Число лет бери точно как передано. Не придумывай обстоятельства прибытия, торжество или чужое внимание к дате и не пересказывай историю колонии, которой нет в фактах.</DiaryEventPrompt_ArrivalAnniversary.enhancement>
+  <DiaryEventPrompt_BondedDeathAnniversary.label>память об утрате</DiaryEventPrompt_BondedDeathAnniversary.label>
+  <DiaryEventPrompt_BondedDeathAnniversary.prompt>Напиши память в годовщину утраты близкого человека.</DiaryEventPrompt_BondedDeathAnniversary.prompt>
+  <DiaryEventPrompt_BondedDeathAnniversary.enhancement>Все переданные имена, родство и число лет сохраняй точно. Не пересказывай, как человек погиб, не придумывай последние слова, могилу, поминки или тех, кто вспоминает вместе с поселенцем, и не выдумывай связь с мёртвыми.</DiaryEventPrompt_BondedDeathAnniversary.enhancement>
+  <DiaryEventPrompt_RecordMilestone.label>личный рекорд</DiaryEventPrompt_RecordMilestone.label>
+  <DiaryEventPrompt_RecordMilestone.prompt>Напиши, чем сделало поселенца такое количество одной и той же работы.</DiaryEventPrompt_RecordMilestone.prompt>
+  <DiaryEventPrompt_RecordMilestone.enhancement>Название счёта и итог бери точно как переданы. Не подавай это как очки, достижение, место в рейтинге или сравнение с кем-то и не придумывай отдельные случаи, из которых сложился итог.</DiaryEventPrompt_RecordMilestone.enhancement>
   <DiaryEventPrompt_ArcReflection.label>годовое размышление</DiaryEventPrompt_ArcReflection.label>
   <DiaryEventPrompt_ArcReflection.prompt>Напиши редкую личную запись о том, каким становится поселенец через выбранные воспоминания.</DiaryEventPrompt_ArcReflection.prompt>
   <DiaryEventPrompt_ArcReflection.enhancement>Воспоминания — опорные точки, а не список обязательных пунктов. Свяжи несколько из них в ощущение перемены, сожаления, гордости, страха или решимости; не пытайся упомянуть каждое.</DiaryEventPrompt_ArcReflection.enhancement>

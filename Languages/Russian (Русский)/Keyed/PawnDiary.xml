@@ -1042,6 +1042,19 @@
   <PawnDiary.Event.RoyalTitle.Lost.Text>{0} полностью утратил титул {1} во фракции {3}.</PawnDiary.Event.RoyalTitle.Lost.Text>
   <PawnDiary.Event.ProgressionTraitLabel>Новая черта: {0}</PawnDiary.Event.ProgressionTraitLabel>
   <PawnDiary.Event.ProgressionTraitText>В характере {0} закрепилась новая черта: {1}.</PawnDiary.Event.ProgressionTraitText>
+  <!-- Годовщины и личные рекорды (Quality Wave H2). {0} — всегда тот, кто пишет запись.
+       Числа стоят в порядковой форме («{1}-я годовщина»), потому что она верна и для 1, 2, 3,
+       и для 5, 10, 15 — иначе пришлось бы выбирать между «год», «года» и «лет». -->
+  <PawnDiary.Event.AnniversaryBirthdayLabel>Исполнилось {0}</PawnDiary.Event.AnniversaryBirthdayLabel>
+  <PawnDiary.Event.AnniversaryBirthdayText>Сегодня {0} исполнилось {1}.</PawnDiary.Event.AnniversaryBirthdayText>
+  <PawnDiary.Event.AnniversaryArrivalLabel>Годовщина в колонии: {0}</PawnDiary.Event.AnniversaryArrivalLabel>
+  <PawnDiary.Event.AnniversaryArrivalText>Сегодня {0} отмечает {1}-ю годовщину в этой колонии.</PawnDiary.Event.AnniversaryArrivalText>
+  <PawnDiary.Event.AnniversaryDeathLabel>Память о {0}</PawnDiary.Event.AnniversaryDeathLabel>
+  <PawnDiary.Event.AnniversaryDeathText>Сегодня {1}-я годовщина утраты: {0} потерял {2} ({3}).</PawnDiary.Event.AnniversaryDeathText>
+  <PawnDiary.Event.AnniversaryDeathCombinedText>Сегодня для {0} совпали годовщины сразу нескольких утрат: {1}.</PawnDiary.Event.AnniversaryDeathCombinedText>
+  <PawnDiary.Event.AnniversaryDeathCombinedEntry>{0} ({1}) — {2}-я годовщина</PawnDiary.Event.AnniversaryDeathCombinedEntry>
+  <PawnDiary.Event.AnniversaryRecordLabel>{0}: {1}</PawnDiary.Event.AnniversaryRecordLabel>
+  <PawnDiary.Event.AnniversaryRecordText>У {0} счёт по «{2}» дошёл до {1}.</PawnDiary.Event.AnniversaryRecordText>
   <PawnDiary.Event.ArcReflectionLabel>Размышление о {0} годе</PawnDiary.Event.ArcReflectionLabel>
   <PawnDiary.Event.ArcReflectionHeader>Воспоминания {0} за {1} год:</PawnDiary.Event.ArcReflectionHeader>
   <PawnDiary.Event.ArcReflectionEvidenceLine>{0}: {1}</PawnDiary.Event.ArcReflectionEvidenceLine>

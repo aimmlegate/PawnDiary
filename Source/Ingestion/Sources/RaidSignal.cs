@@ -76,11 +76,10 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
-            RaiderFactionDefName = parms.faction?.def?.defName;
-            if (string.IsNullOrEmpty(RaiderFactionDefName))
-            {
-                RaiderFactionDefName = RaidEventData.FactionUnknown;
-            }
+            RaiderFactionDefName = RaidEventData.ResolveRaiderFactionDefName(
+                IncidentDefName,
+                parms.faction?.def?.defName,
+                Faction.OfInsects?.def?.defName);
             FactionId = parms.faction?.GetUniqueLoadID() ?? string.Empty;
             MapId = map.GetUniqueLoadID() ?? string.Empty;
 

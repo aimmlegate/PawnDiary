@@ -509,7 +509,66 @@
          whether a given artwork is the one that claims it. Sampling is deterministic per artwork, so
          re-initializing the same sculpture never rerolls. Set enabled false to silence the feature. -->
     <artImmortalizationEnabled>true</artImmortalizationEnabled>
-    <artImmortalizationChance>0.35</artImmortalizationChance>
+    <artImmortalizationChance>0.50</artImmortalizationChance>
+
+    <!-- Quality Wave H2. A slow scanner for the dates and totals a colonist would notice themselves.
+         Every pawn's FIRST scan only records where they already are, so loading an old save never
+         produces a burst of missed pages. Turn any sub-feature off through its own settings row
+         (Birthday / Colony anniversary / Remembered loss / Personal record), not from here.
+
+         arrivalAnniversary*: whole years since joining worth a page, then the repeating step used
+         above the highest listed year (10 + 5 = 15, 20, 25…). Years 4 and 6 stay silent on purpose.
+
+         bondedDeath*: which losses are remembered, and how the memory fades. The priority list is
+         CLOSEST BOND FIRST — it decides both who survives the memory cap and whose name leads a
+         combined page. Rows are plain relation defNames, so a relation from content the player does
+         not own simply never matches. The first bondedDeathGuaranteedYears anniversaries are certain;
+         the next year uses bondedDeathFirstDecayChance, and each year after multiplies by
+         bondedDeathDecayMultiplier until it settles on bondedDeathFloorChance, so an old loss becomes
+         rare but never impossible. Sampling is deterministic per pawn/victim/year, so a reload cannot
+         reroll it.
+
+         recordMilestones: personal tallies and the totals worth a page. Record defNames are looked up
+         silently, so a modded or removed record is ignored instead of throwing. Each threshold fires
+         at most once ever, measured against a monotonic high-water mark. -->
+    <anniversaryScanIntervalTicks>15000</anniversaryScanIntervalTicks>
+    <arrivalAnniversaryMilestoneYears>
+      <li>1</li>
+      <li>2</li>
+      <li>3</li>
+      <li>5</li>
+      <li>10</li>
+    </arrivalAnniversaryMilestoneYears>
+    <arrivalAnniversaryRecurringIntervalYears>5</arrivalAnniversaryRecurringIntervalYears>
+    <bondedDeathRelationPriority>
+      <li>Spouse</li>
+      <li>Fiance</li>
+      <li>Lover</li>
+      <li>Child</li>
+      <li>Parent</li>
+      <li>Bond</li>       <!-- bonded animal; inert for a pawn who never bonded with one -->
+      <li>Sibling</li>
+    </bondedDeathRelationPriority>
+    <bondedDeathMemoryCap>16</bondedDeathMemoryCap>
+    <bondedDeathGuaranteedYears>3</bondedDeathGuaranteedYears>
+    <bondedDeathFirstDecayChance>0.60</bondedDeathFirstDecayChance>
+    <bondedDeathDecayMultiplier>0.65</bondedDeathDecayMultiplier>
+    <bondedDeathFloorChance>0.05</bondedDeathFloorChance>
+    <bondedDeathMaxCombinedNames>3</bondedDeathMaxCombinedNames>
+    <recordMilestones>
+      <li>
+        <recordDefName>Kills</recordDefName>
+        <thresholds><li>10</li><li>25</li><li>50</li><li>100</li></thresholds>
+      </li>
+      <li>
+        <recordDefName>MealsCooked</recordDefName>
+        <thresholds><li>100</li><li>500</li><li>1000</li><li>5000</li></thresholds>
+      </li>
+      <li>
+        <recordDefName>ThingsConstructed</recordDefName>
+        <thresholds><li>100</li><li>500</li><li>1000</li><li>5000</li></thresholds>
+      </li>
+    </recordMilestones>
 
     <!-- Output-language directive. When true, every request's system prompt ends with one localized
          line naming the active RimWorld language, so the model is told what to write in instead of

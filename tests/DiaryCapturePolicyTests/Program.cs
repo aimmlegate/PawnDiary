@@ -982,6 +982,14 @@ namespace DiaryCapturePolicyTests
                 RaidEventData.ShouldDelayGeneration("RaidEnemy", "EdgeWalkIn", "ImmediateAttackSmartDrop", 2500));
             AssertEqual("infestation bypasses raid delay", false,
                 RaidEventData.ShouldDelayGeneration("Infestation", null, null, 2500));
+            AssertEqual("explicit raid faction is preserved", "Pirate",
+                RaidEventData.ResolveRaiderFactionDefName("RaidEnemy", " Pirate ", "Insect"));
+            AssertEqual("infestation recovers the spawned insect faction", "Insect",
+                RaidEventData.ResolveRaiderFactionDefName("Infestation", null, " Insect "));
+            AssertEqual("ordinary factionless raid stays unknown", RaidEventData.FactionUnknown,
+                RaidEventData.ResolveRaiderFactionDefName("RaidEnemy", null, "Insect"));
+            AssertEqual("infestation without an insect faction stays unknown", RaidEventData.FactionUnknown,
+                RaidEventData.ResolveRaiderFactionDefName("Infestation", null, null));
         }
 
         private static void TestRaidBuildGameContextFormat()

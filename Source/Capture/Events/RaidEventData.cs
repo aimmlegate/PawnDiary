@@ -105,6 +105,27 @@ namespace PawnDiary.Capture
         }
 
         /// <summary>
+        /// Resolves the faction identity battle-beat mining must match. Infestation incident parameters
+        /// do not carry a faction even though the spawned insects do, so the live adapter supplies the
+        /// base-game insect faction as an explicit fallback. Other factionless incidents stay unknown
+        /// and therefore fail closed instead of borrowing an unrelated concurrent fight.
+        /// </summary>
+        public static string ResolveRaiderFactionDefName(
+            string incidentDefName, string capturedFactionDefName, string insectFactionDefName)
+        {
+            string captured = (capturedFactionDefName ?? string.Empty).Trim();
+            if (captured.Length > 0)
+            {
+                return captured;
+            }
+
+            string insects = (insectFactionDefName ?? string.Empty).Trim();
+            return ContainsIgnoreCase(incidentDefName, "Infestation") && insects.Length > 0
+                ? insects
+                : FactionUnknown;
+        }
+
+        /// <summary>
         /// Pure policy for the raid LLM delay. Normal raids usually spend time approaching, so a
         /// positive XML delay waits before generation. Drop-pod raids and infestations are immediate
         /// threats and bypass the wait.

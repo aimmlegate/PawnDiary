@@ -59,6 +59,18 @@
   <DiaryEventPrompt_Progression.label>progression</DiaryEventPrompt_Progression.label>
   <DiaryEventPrompt_Progression.prompt>Write a pawn progression moment as a concrete private diary entry about change, effort, status, or identity.</DiaryEventPrompt_Progression.prompt>
   <DiaryEventPrompt_Progression.enhancement>Use the supplied before-and-after fields exactly. Do not explain game mechanics, invent training scenes, or add powers, titles, body changes, or achievements that were not supplied.</DiaryEventPrompt_Progression.enhancement>
+  <DiaryEventPrompt_PawnBirthday.label>birthday</DiaryEventPrompt_PawnBirthday.label>
+  <DiaryEventPrompt_PawnBirthday.prompt>Write another year of age as a quiet private life-marker.</DiaryEventPrompt_PawnBirthday.prompt>
+  <DiaryEventPrompt_PawnBirthday.enhancement>Use the supplied age exactly. Do not invent a party, a gift, a well-wisher, or anyone else noticing the date, and do not state the pawn's birth date or year.</DiaryEventPrompt_PawnBirthday.enhancement>
+  <DiaryEventPrompt_ArrivalAnniversary.label>colony anniversary</DiaryEventPrompt_ArrivalAnniversary.label>
+  <DiaryEventPrompt_ArrivalAnniversary.prompt>Write a whole number of years spent in this colony as private stock-taking.</DiaryEventPrompt_ArrivalAnniversary.prompt>
+  <DiaryEventPrompt_ArrivalAnniversary.enhancement>Use the supplied number of years exactly. Do not invent the circumstances of the arrival, a ceremony, or anyone else marking the date, and do not summarize colony history that was not supplied.</DiaryEventPrompt_ArrivalAnniversary.enhancement>
+  <DiaryEventPrompt_BondedDeathAnniversary.label>remembered loss</DiaryEventPrompt_BondedDeathAnniversary.label>
+  <DiaryEventPrompt_BondedDeathAnniversary.prompt>Write remembrance on the anniversary of losing someone close.</DiaryEventPrompt_BondedDeathAnniversary.prompt>
+  <DiaryEventPrompt_BondedDeathAnniversary.enhancement>Keep every supplied name, relation, and number of years exactly. Do not retell how they died, invent last words, a grave, a gathering, or anyone else remembering with this pawn, and do not claim contact with the dead.</DiaryEventPrompt_BondedDeathAnniversary.enhancement>
+  <DiaryEventPrompt_RecordMilestone.label>personal record</DiaryEventPrompt_RecordMilestone.label>
+  <DiaryEventPrompt_RecordMilestone.prompt>Write what doing this much of one thing has made of the pawn.</DiaryEventPrompt_RecordMilestone.prompt>
+  <DiaryEventPrompt_RecordMilestone.enhancement>Use the supplied tally name and total exactly. Do not present it as a score, achievement, rank, or comparison with anyone else, and do not invent specific past instances that make up the total.</DiaryEventPrompt_RecordMilestone.enhancement>
   <DiaryEventPrompt_ArcReflection.label>arc reflection</DiaryEventPrompt_ArcReflection.label>
   <DiaryEventPrompt_ArcReflection.prompt>Write a rare life-arc diary entry about who the pawn is becoming across the selected memories.</DiaryEventPrompt_ArcReflection.prompt>
   <DiaryEventPrompt_ArcReflection.enhancement>Use the selected memories as anchors, not as a checklist. Connect only a few memories into a private sense of change, regret, pride, fear, or resolve. Do not mention every memory.</DiaryEventPrompt_ArcReflection.enhancement>

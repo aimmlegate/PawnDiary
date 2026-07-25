@@ -119,6 +119,9 @@ the whole lore file when the work there is new. Keep any additions to `docs/` lo
   `lore/pawns.md`. Emit `pawn.LabelShort` / `Name.ToStringShort` (the **Nick**), never
   `NameTriple.First`, or the diary names colonists the player never sees. Trait labels like "nervous"
   are spectrum *degree* labels, not defNames. `PawnsFinder` uses British **Travelling** (two L's).
+  `gameContext` is a `"; key=value"` string, so no *value* may contain `"; "` — join multi-value
+  fields with `DiaryListText.JoinComma`, or the saved field parses back as its first element alone
+  (a silent truncation: the value is written whole and read back short).
 - **Persistence & ticking** — `Source/Core/DiaryGameComponent*.cs` → `lore/scribe-saving.md` +
   `lore/performance.md` + `lore/test-loop.md`. Reset every `static` cache (e.g. `DeathContextCache`)
   in `GameComponent.FinalizeInit` — statics leak across exit-to-menu + load. Schedule day-cadence work

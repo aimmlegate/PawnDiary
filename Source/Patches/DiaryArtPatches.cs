@@ -1,15 +1,16 @@
-// Quality Wave H6: hooks RimWorld's art generation so a sculpture about a colony deed can produce one
-// quiet diary page. Both hooks are public, stable CompArt methods, so attribute discovery is safe.
+// Quality Wave H6: hooks RimWorld's art generation so artwork about a colony deed can produce one
+// quiet diary page. The normal hooks are public, stable CompArt methods; graves need one additional
+// stable hook because their artist callback runs before their tale is attached.
 //
-// WHY TWO HOOKS (verified against the 1.6 assemblies by scanning every caller):
+// WHY THREE HOOKS (verified against the 1.6 assemblies by scanning every caller):
 //   * `CompQuality.SetQuality`, `Frame.CompleteConstruction`, and `JobDriver_BuildCubeSculpture` call
 //     `InitializeArt`, which is where the tale is actually attached — but it never sees the artist.
 //   * `GenRecipe.PostProcessProduct` and `Frame.CompleteConstruction` then call `JustCreatedBy(pawn)`,
 //     which knows the artist but does no art work of its own.
-//   * `InitializeArt` always runs FIRST. That ordering is exactly what the locked writer order wants:
-//     the first hook claims the deed for the pawn it is ABOUT, and the second hook only gets a turn
-//     when nobody in the tale could write, which is precisely when the artist fallback applies.
-// Firing twice is harmless because ownership is exactly-once per deed.
+//   * Normal construction calls `InitializeArt` first, exactly what the locked writer order wants.
+//     `Building_Grave.Notify_HauledTo` is the exception: it calls `JustCreatedBy` first and then the
+//     separate `InitializeArt(Thing)` overload. Its postfix retries after both facts are available.
+// Re-entry is harmless because ownership is exactly-once per deed.
 //
 // Everything decided here is delegated: the writer order and the sampling live in the pure
 // Source/Pipeline/ArtImmortalizationPolicy.cs, and ownership lives in
@@ -26,7 +27,7 @@ namespace PawnDiary
 {
     /// <summary>
     /// Fires after the artwork's tale is attached. At this point the deed is known but the artist is
-    /// not, so only the deed's own subject can be chosen as writer.
+    /// not, so the deed's subject or another concerned colonist can be chosen as writer.
     /// </summary>
     [HarmonyPatch(typeof(CompArt), nameof(CompArt.InitializeArt), new[] { typeof(ArtGenerationContext) })]
     internal static class CompArtInitializeArtPatch
@@ -39,8 +40,9 @@ namespace PawnDiary
     }
 
     /// <summary>
-    /// Fires once the artist is known. Runs after <see cref="CompArtInitializeArtPatch"/>, so it only
-    /// ever produces a page when the deed's own subject could not write it.
+    /// Fires once the artist is known. On normal construction this runs after
+    /// <see cref="CompArtInitializeArtPatch"/>, so it supplies the final artist fallback. Graves use
+    /// the dedicated completion hook below because vanilla calls these two methods in reverse order.
     /// </summary>
     [HarmonyPatch(typeof(CompArt), nameof(CompArt.JustCreatedBy))]
     internal static class CompArtJustCreatedByPatch
@@ -53,7 +55,23 @@ namespace PawnDiary
     }
 
     /// <summary>
-    /// The shared body behind both art hooks: resolve the deed, confirm it is unclaimed, sample, pick
+    /// Sarcophagi attach art after <see cref="CompArt.JustCreatedBy(Pawn)"/>, using the unpatched
+    /// <c>InitializeArt(Thing)</c> overload. Retry after the grave finishes so both the buried deed and
+    /// the hauler/artist are known; this is what lets a living colonist write about a deceased diarist.
+    /// </summary>
+    [HarmonyPatch(typeof(Building_Grave), nameof(Building_Grave.Notify_HauledTo),
+        new[] { typeof(Pawn), typeof(Thing), typeof(int) })]
+    internal static class BuildingGraveNotifyHauledToArtPatch
+    {
+        public static void Postfix(Building_Grave __instance, Pawn hauler)
+        {
+            DiaryPatchSafety.Run("Art immortalization (grave art complete)", (__instance, hauler),
+                state => DiaryArtImmortalization.TryRecord(state.Item1?.GetComp<CompArt>(), state.Item2));
+        }
+    }
+
+    /// <summary>
+    /// The shared body behind all three art hooks: resolve the deed, confirm it is unclaimed, sample, pick
     /// a writer, and submit. Every exit is a silent no-op — art generation must never break because
     /// the diary declined to write about it.
     /// </summary>
@@ -155,26 +173,19 @@ namespace PawnDiary
             Dictionary<string, ArtWriterCandidate> byId = new Dictionary<string, ArtWriterCandidate>();
             AddCandidate(byId, component, subject, dominant: true, concerned: true, sculptor: false);
 
-            // Ask the tale which live colonists it concerns, rather than trying to read its own
-            // participant fields: Tale.Concerns is public and every Tale subclass implements it.
-            List<Map> maps = Find.Maps;
-            if (maps != null)
+            // Ask the tale which living free colonists it concerns, including caravans and travelling
+            // transporters. Tale.Concerns is public and every Tale subclass implements it; PawnsFinder
+            // supplies the canonical cross-map collection (British double-L "Travelling").
+            IEnumerable<Pawn> colonists =
+                PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists;
+            if (colonists != null)
             {
-                for (int i = 0; i < maps.Count; i++)
+                foreach (Pawn pawn in colonists)
                 {
-                    List<Pawn> colonists = maps[i]?.mapPawns?.FreeColonists;
-                    if (colonists == null)
+                    if (pawn != null && tale.Concerns(pawn))
                     {
-                        continue;
-                    }
-
-                    for (int j = 0; j < colonists.Count; j++)
-                    {
-                        Pawn pawn = colonists[j];
-                        if (pawn != null && tale.Concerns(pawn))
-                        {
-                            AddCandidate(byId, component, pawn, dominant: false, concerned: true, sculptor: false);
-                        }
+                        AddCandidate(byId, component, pawn,
+                            dominant: false, concerned: true, sculptor: false);
                     }
                 }
             }
@@ -209,7 +220,8 @@ namespace PawnDiary
                 {
                     pawnId = pawnId,
                     loadId = pawn.thingIDNumber,
-                    eligible = DiaryGameComponent.IsDiaryEligible(pawn),
+                    eligible = ArtImmortalizationPolicy.IsEligibleWriter(
+                        DiaryGameComponent.IsDiaryEligible(pawn), pawn.Dead),
                     hasColonyDiary = component.HasColonyDiaryFor(pawnId)
                 };
                 byId[pawnId] = candidate;
@@ -222,8 +234,9 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Maps the chosen candidate ID back to its live pawn. Only three pawns can ever be chosen —
-        /// the deed's subject, a concerned colonist, or the artist — so this avoids a second colony scan.
+        /// Maps the chosen candidate ID back to its live pawn. The subject and artist are checked
+        /// directly; a concerned witness is resolved through the same canonical maps/caravans/
+        /// travelling-transporters collection used to build candidates.
         /// </summary>
         private static Pawn ResolveCandidate(string pawnId, Pawn subject, Pawn sculptor)
         {
@@ -237,25 +250,16 @@ namespace PawnDiary
                 return sculptor;
             }
 
-            List<Map> maps = Find.Maps;
-            if (maps != null)
+            IEnumerable<Pawn> colonists =
+                PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists;
+            if (colonists != null)
             {
-                for (int i = 0; i < maps.Count; i++)
+                foreach (Pawn pawn in colonists)
                 {
-                    List<Pawn> colonists = maps[i]?.mapPawns?.FreeColonists;
-                    if (colonists == null)
+                    if (pawn != null
+                        && string.Equals(pawn.GetUniqueLoadID(), pawnId, System.StringComparison.Ordinal))
                     {
-                        continue;
-                    }
-
-                    for (int j = 0; j < colonists.Count; j++)
-                    {
-                        Pawn pawn = colonists[j];
-                        if (pawn != null
-                            && string.Equals(pawn.GetUniqueLoadID(), pawnId, System.StringComparison.Ordinal))
-                        {
-                            return pawn;
-                        }
+                        return pawn;
                     }
                 }
             }

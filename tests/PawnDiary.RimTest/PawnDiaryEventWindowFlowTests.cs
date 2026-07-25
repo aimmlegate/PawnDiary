@@ -255,10 +255,11 @@ namespace PawnDiary.RimTests
             {
                 "VoidMonolithActivation",
                 "VoidMonolithWaking",
-                "VoidMonolithVoidAwakened"
+                "VoidMonolithVoidAwakened",
+                "VoidMonolithGleaming"
             };
-            string[] levelDefNames = { "Stirring", "Waking", "VoidAwakened" };
-            string[] phases = { "stirring", "waking", "void_awakened" };
+            string[] levelDefNames = { "Stirring", "Waking", "VoidAwakened", "Gleaming" };
+            string[] phases = { "stirring", "waking", "void_awakened", "gleaming" };
 
             // These XML Defs stay loaded when Anomaly is absent, but MissingRequiredPackage() makes
             // their runtime routes inert. Use the loaded-only helper so this test can exercise that
@@ -318,9 +319,6 @@ namespace PawnDiary.RimTests
                     windowDefNames[i] + " did not freeze its exact visible monolith chapter lens.");
             }
 
-            // Gleaming is an automatic transition with no actor. The exact XML windows must leave it silent.
-            scope.RequireNoNewEvent(() => scope.Component.RecordEventWindowSignal(
-                "VoidMonolith", "Gleaming", "activated", "Gleaming", null, firstPawn));
         }
 
         // ----- test helpers -----------------------------------------------------------------------

@@ -131,6 +131,11 @@ namespace DiaryPipelineTests
         // --- Writer order -----------------------------------------------------------------------------
         private static void TestArtWriterOrder()
         {
+            AssertTrue("H6 a living diary-eligible pawn may write",
+                ArtImmortalizationPolicy.IsEligibleWriter(diaryEligible: true, dead: false));
+            AssertTrue("H6 a dead colonist is rejected even when RimWorld still calls them eligible",
+                !ArtImmortalizationPolicy.IsEligibleWriter(diaryEligible: true, dead: true));
+
             // Tier 1: the deed's own subject writes, even though a lower-ID colonist is also concerned.
             List<ArtWriterCandidate> withSubject = new List<ArtWriterCandidate>
             {

@@ -287,6 +287,7 @@ namespace PawnDiary
             nextWorkScanTick = 0;
             nextHediffProgressionScanTick = 0;
             nextProgressionScanTick = 0;
+            ResetAnniversaryScanSchedule();
             nextBeliefScanTick = 0;
             beliefScanCursor = 0;
             nextRoyaltyPersonaReconciliationTick = 0;
@@ -346,6 +347,7 @@ namespace PawnDiary
             nextWorkScanTick = 0;
             nextHediffProgressionScanTick = 0;
             nextProgressionScanTick = 0;
+            ResetAnniversaryScanSchedule();
             nextBeliefScanTick = 0;
             beliefScanCursor = 0;
             nextRoyaltyPersonaReconciliationTick = 0;
@@ -773,6 +775,15 @@ namespace PawnDiary
             {
                 nextProgressionScanTick = now + Math.Max(250, DiarySignalPolicies.ProgressionScanIntervalTicks);
                 ScanPawnProgressionsForDiaryEvents();
+            }
+
+            // Quality Wave H2. Anniversaries and personal records move on a calendar, not per tick, so
+            // this runs on its own much slower XML cadence than the progression scanner above.
+            if (!initialArrivalScanPending && now >= nextAnniversaryScanTick)
+            {
+                nextAnniversaryScanTick = now
+                    + Math.Max(250, DiaryTuning.Current.anniversaryScanIntervalTicks);
+                ScanAnniversariesForDiaryEvents();
             }
 
             if (!initialArrivalScanPending && ModsConfig.IdeologyActive && now >= nextBeliefScanTick)

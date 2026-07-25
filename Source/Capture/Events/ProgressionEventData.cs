@@ -23,6 +23,12 @@ namespace PawnDiary.Capture
         public const string RoyalSuccessionDefName = "RoyalSuccession";
         public const string RoyalHeirAppointedDefName = "RoyalHeirAppointed";
         public const string TraitGainedDefName = "TraitGained";
+        // Quality Wave H2 anniversaries and personal records. These are synthetic source names, not
+        // RimWorld Defs, and they are stable save tokens: renaming one orphans existing pages.
+        public const string PawnBirthdayDefName = "PawnBirthday";
+        public const string ArrivalAnniversaryDefName = "ArrivalAnniversary";
+        public const string BondedDeathAnniversaryDefName = "BondedDeathAnniversary";
+        public const string RecordMilestoneDefName = "RecordMilestone";
         public const string OtherDefName = "ProgressionOther";
 
         public override DiaryEventType EventType => DiaryEventType.Progression;

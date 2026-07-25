@@ -1040,6 +1040,37 @@ leaves a Thing plus a Tale behind, and Tale rows cannot be cleanly removed from 
 6. Restore `artImmortalizationChance` to `0.35`, or set `artImmortalizationEnabled` false and confirm
    the feature goes completely silent with no errors.
 
+## Anniversaries and personal records (Quality Wave H2) — hands-on
+
+Automation covers the year arithmetic, the milestone set, the grief decay schedule, retention order,
+monotonic record crossings, and the Def/localization wiring, and it drives the real scanner with a
+supplied "now" tick. It cannot cover the one path that needs a real colonist to actually die, so the
+flow tests seed the saved memory rows instead of discovering them.
+
+1. **Bonded-death discovery.** Let a colonist with a spouse, lover, parent, child, or bonded animal
+   lose that person or animal, so the death produces its normal diary page. Save and reload, then let
+   an in-game year pass (a long fast-forward is fine). On the anniversary date the survivor should get
+   exactly one quiet, important page remembering them by name and relation. It must not retell the
+   death, invent a grave or a gathering, or claim contact with the dead.
+2. **The memory survives eviction pressure.** With `bondedDeathMemoryCap` temporarily lowered to `1`,
+   confirm a pawn who lost two people keeps only the closer bond and that the forgotten one never
+   comes back after a reload — the discovery cursor only moves forward on purpose.
+3. **Several losses on one date.** If two bonded deaths ever share a calendar date, the anniversary
+   must be ONE page naming at most three people, closest bond first — never one page per person.
+4. **Birthday hand-off.** Leave the ordinary "Birthday" row enabled and confirm a colonist's birthday
+   still produces exactly one page (the event-window one), with no second anniversary page. Then
+   disable that row, and confirm the next birthday produces the H2 "Birthday" page instead.
+5. **Colony anniversary.** After a colonist's first, second, third, fifth, and tenth full year in the
+   colony, one quiet page each. Years four and six must be silent.
+6. **Personal record.** Let a colonist pass a shipped threshold (10 kills, 100 meals cooked, or 100
+   things constructed). One quiet page, written as accumulated work rather than as a score. Passing the
+   same threshold can never happen twice, even after a reload.
+7. **Silence check.** Disable all four Advanced rows (Birthday / Colony anniversary / Remembered loss /
+   Personal record) and confirm the feature goes completely silent with no errors, and that
+   re-enabling a row later does NOT produce a catch-up page for a date that already passed.
+8. **Old save.** Load a save made before this version. The first scan must write nothing at all — no
+   birthdays, anniversaries, remembered losses, or record milestones the colony already passed.
+
 ## What counts as a regression
 
 Any of:

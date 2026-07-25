@@ -3507,6 +3507,92 @@
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
+  <!-- Quality Wave H2. Four independently toggleable anniversary/record rows. All four are
+       Progression-domain synthetic source names (see ProgressionEventData), so the classifier matches
+       them by exact string and a player who disables one row loses only that row. Only the remembered
+       loss is important: a birthday, a colony anniversary, and a personal tally are quiet pages that
+       should never outrank a real event in a reflection. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionBirthday</defName>
+    <label>Birthday</label>
+    <order>830</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <!-- The ordinary birthday event window (eventWindowBirthday) and Biotech's growth letter own a
+         birthday when either produced a page. This row is what covers the birthdays neither of them
+         claimed, so keep the instruction to the same quiet life-marker register. -->
+    <instruction>another year of age reached; write it as a private life-marker — what the number means to this pawn here, not a celebration — using only the supplied age</instruction>
+    <tone>with quiet awareness of time passing</tone>
+    <tones>
+      <li>reflective and personal, noticing what another year has changed</li>
+      <li>softly wry, aware that time keeps moving even on the rim</li>
+    </tones>
+    <colorCue>white</colorCue>
+    <matchDefNames>
+      <li>PawnBirthday</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionArrivalAnniversary</defName>
+    <label>Colony anniversary</label>
+    <order>835</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a whole number of years since this pawn joined the colony; write belonging, distance from who they were on arrival, or unease at how long it has been, using only the supplied number of years</instruction>
+    <tone>with the weight of elapsed time</tone>
+    <tones>
+      <li>settled and measuring, comparing now against the day they arrived</li>
+      <li>unsettled and searching, unsure the years went where they meant them to</li>
+    </tones>
+    <colorCue>quiet</colorCue>
+    <matchDefNames>
+      <li>ArrivalAnniversary</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionDeathAnniversary</defName>
+    <label>Remembered loss</label>
+    <order>840</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <!-- Purposeful later remembrance, NOT a second telling of the death. The original death page
+         remains canonical; this page is the pawn choosing to carry it on the date. -->
+    <instruction>the anniversary of losing someone this pawn was close to; write remembrance on the date — what is still carried and how it has changed — using only the supplied names, relations, and elapsed years, and never retelling the death itself</instruction>
+    <tone>with restrained grief that has had time to settle</tone>
+    <tones>
+      <li>quiet and unsentimental, remembering a person rather than a loss</li>
+      <li>heavy and private, the date arriving before the thought does</li>
+    </tones>
+    <colorCue>white</colorCue>
+    <matchDefNames>
+      <li>BondedDeathAnniversary</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionRecordMilestone</defName>
+    <label>Personal record</label>
+    <order>845</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a personal tally reached a total that means something; write what doing that much of one thing has made of this pawn, using only the supplied tally name and total, and never as a score or achievement</instruction>
+    <tone>with plain recognition of accumulated work</tone>
+    <tones>
+      <li>matter-of-fact and tired, counting the cost rather than the credit</li>
+      <li>quietly proud, aware the number is made of ordinary days</li>
+    </tones>
+    <colorCue>quiet</colorCue>
+    <matchDefNames>
+      <li>RecordMilestone</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>progressionOther</defName>
     <label>Progression</label>
