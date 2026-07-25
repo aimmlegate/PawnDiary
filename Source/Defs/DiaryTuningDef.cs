@@ -548,6 +548,43 @@ namespace PawnDiary
                 new MoodSnapshotChanceRule { maxPercent = 101, chance = 0.55f },
             };
 
+        // ---- Quality Wave H1: raid combat beats ----
+        // A raid page can quote the strongest moment or two from the POV pawn's own fight, taken from
+        // RimWorld's combat log. Generation waits for that fight to go quiet so an early miss cannot
+        // be mistaken for the whole story, and gives up at the hard deadline so an endless siege still
+        // produces a page. Set battleBeatsEnabled false to skip mining entirely.
+        public bool battleBeatsEnabled = true;
+        // Most beats quoted in one page.
+        public int battleBeatsMaxCount = 2;
+        // Newest-first cap on how many battles are examined per attempt.
+        public int battleBeatsScanBackBattles = 8;
+        // Newest-first cap on how many log entries are examined per battle. Long sieges accumulate
+        // hundreds of entries; the newest ones are the ones worth quoting.
+        public int battleBeatsScanBackEntries = 200;
+        // How long a raid page waits between mining attempts while combat is unresolved.
+        public int battleBeatsRetryIntervalTicks = 250;
+        // The POV pawn's fight counts as finished after this long with no new log entry about them.
+        public int battleBeatsQuietTicks = 1200;
+        // Hard deadline measured from the raid event's own tick. At this age the page is written from
+        // whatever evidence exists, so a long siege can never stall a diary entry forever.
+        public int battleBeatsMaxAgeTicks = 30000;
+        // Total character cap for the joined beats field.
+        public int battleBeatsMaxChars = 240;
+        // A battle counts for this raid when its entries reach back no further than this before the
+        // raid tick, so a fight that was already over when the raiders arrived is never quoted.
+        public int battleBeatsGraceTicks = 600;
+        // Score per beat kind; the highest scores fill the battleBeatsMaxCount slots. Kind tokens are
+        // the stable schema words in BattleBeatsPolicy (transition = a pawn went down or died).
+        public List<BattleBeatScoreRule> battleBeatsScores =
+            new List<BattleBeatScoreRule>
+            {
+                new BattleBeatScoreRule { kind = BattleBeatsPolicy.KindTransition, score = 100 },
+                new BattleBeatScoreRule { kind = BattleBeatsPolicy.KindHit, score = 60 },
+                new BattleBeatScoreRule { kind = BattleBeatsPolicy.KindDeflected, score = 25 },
+                new BattleBeatScoreRule { kind = BattleBeatsPolicy.KindMiss, score = 10 },
+                new BattleBeatScoreRule { kind = BattleBeatsPolicy.KindOther, score = 5 },
+            };
+
         // ---- Output-language directive ----
         // When true, every LLM request ends its system prompt with one localized line naming the
         // active RimWorld language ("Write the diary entry in Русский."), so the model is told the

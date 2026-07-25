@@ -30,6 +30,12 @@ namespace PawnDiary.Capture
         /// English carve-out: structured sentinels are intentionally not localized).</summary>
         public const string FactionUnknown = "unknown";
 
+        /// <summary>The leading context key the UI parses to classify an event into the Raid domain.</summary>
+        public const string RaidContextKey = "raid";
+
+        /// <summary>Context key holding the raider faction's defName.</summary>
+        public const string FactionContextKey = "faction";
+
         public override DiaryEventType EventType => DiaryEventType.Raid;
 
         /// <summary>The incident's defName (e.g. "RaidEnemy", "RaidFriendly", "Infestation").</summary>
@@ -80,9 +86,9 @@ namespace PawnDiary.Capture
             string defName, string label, string factionDefName, string points,
             string arrivalModeDefName = null, string strategyDefName = null)
         {
-            string context = "raid=" + defName
+            string context = RaidContextKey + "=" + defName
                 + "; label=" + label
-                + "; faction=" + factionDefName
+                + "; " + FactionContextKey + "=" + factionDefName
                 + "; points=" + points;
 
             if (!string.IsNullOrWhiteSpace(arrivalModeDefName))

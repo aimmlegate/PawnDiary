@@ -30,6 +30,7 @@ namespace DiaryPipelineTests
             TestColonyNewsPolicy();
             TestQuadrumAnniversaryMemoryPolicy();
             TestOnThisDayDividerPolicy();
+            TestBattleBeatsPolicy();
             TestPromptContextDetailSelection();
             TestPromptContextDetailOverrideResolution();
             TestPromptContextFeatureLayersPerPreset();
@@ -5579,8 +5580,12 @@ namespace DiaryPipelineTests
                 "persona_trait_description_2", "persona_milestone", "tale_source_def",
                 "tale_source_label", "tale_killer_role", "tale_victim_role"
             };
-            AssertEqual("SoloImportant Odyssey O3 projection extends the append-only list to 137 fields",
-                137, new List<XElement>(solo.Element("fields").Elements("li")).Count);
+            // Field-count guard for the append-only rule: raising this number is only correct when the
+            // new rows were APPENDED, because DefInjected labels are indexed (fields.N.label) and an
+            // inserted row silently re-attaches every translation below it. Last raised by Quality Wave
+            // H1's "combat beats" row (index 137).
+            AssertEqual("SoloImportant keeps its append-only field list at 138 fields",
+                138, new List<XElement>(solo.Element("fields").Elements("li")).Count);
             for (int i = 0; i < contextKeys.Length; i++)
             {
                 AssertTrue("SoloImportant persona prompt field exists: " + contextKeys[i],

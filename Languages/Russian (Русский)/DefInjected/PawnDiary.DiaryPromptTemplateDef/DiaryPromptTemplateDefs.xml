@@ -656,4 +656,7 @@
   <DiaryPromptTemplate_SoloArcReflection.fields.18.label>тон</DiaryPromptTemplate_SoloArcReflection.fields.18.label>
   <DiaryPromptTemplate_SoloBeliefReflection.fields.14.label>тон</DiaryPromptTemplate_SoloBeliefReflection.fields.14.label>
   <DiaryPromptTemplate_SoloDayReflection.finalInstruction>Напиши 2–4 предложения от первого лица, оглядываясь на весь день и опираясь только на переданные моменты. Выведи только текст записи.</DiaryPromptTemplate_SoloDayReflection.finalInstruction>
+  <!-- Quality Wave H1: добавленные в конец подписи для самых заметных мгновений собственного боя. -->
+  <DiaryPromptTemplate_PairCombat.fields.33.label>моменты боя</DiaryPromptTemplate_PairCombat.fields.33.label>
+  <DiaryPromptTemplate_SoloImportant.fields.137.label>моменты боя</DiaryPromptTemplate_SoloImportant.fields.137.label>
 </LanguageData>

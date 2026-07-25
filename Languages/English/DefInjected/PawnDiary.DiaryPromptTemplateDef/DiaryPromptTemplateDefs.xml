@@ -607,4 +607,7 @@ Do not write a report, sermon, doctrine summary, or list. Output only the diary 
   <DiaryPromptTemplate_SoloArcReflection.fields.18.label>tone</DiaryPromptTemplate_SoloArcReflection.fields.18.label>
   <DiaryPromptTemplate_SoloBeliefReflection.fields.14.label>tone</DiaryPromptTemplate_SoloBeliefReflection.fields.14.label>
   <DiaryPromptTemplate_SoloDayReflection.finalInstruction>Write 2-4 first-person sentences looking back on the whole day, using only the supplied moments. Output only the entry.</DiaryPromptTemplate_SoloDayReflection.finalInstruction>
+  <!-- Quality Wave H1 append-only combat-beats labels. Byte-identical to the base Def. -->
+  <DiaryPromptTemplate_PairCombat.fields.33.label>combat beats</DiaryPromptTemplate_PairCombat.fields.33.label>
+  <DiaryPromptTemplate_SoloImportant.fields.137.label>combat beats</DiaryPromptTemplate_SoloImportant.fields.137.label>
 </LanguageData>

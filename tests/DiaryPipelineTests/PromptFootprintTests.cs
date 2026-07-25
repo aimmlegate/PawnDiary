@@ -534,10 +534,13 @@ namespace DiaryPipelineTests
                 // label — stays put.
                 { "PairDefault", "41|15,18" },
                 { "PairImportant", "88|15,18,31" },
-                { "PairCombat", "33|15,18" },
+                // +1 row each on 2026-07-25: Quality Wave H1 APPENDED a combat-beats field to the two
+                // raid-capable templates (PairCombat index 33, SoloImportant index 137). Appended last
+                // so no existing index — and no indexed EN/RU DefInjected label — moved.
+                { "PairCombat", "34|15,18" },
                 { "PairBatched", "31|15,18" },
                 { "SoloDefault", "57|14,15,17,18,29,32,40" },
-                { "SoloImportant", "137|15,16,18,19,30,33,41,46,98,100,103,118" },
+                { "SoloImportant", "138|15,16,18,19,30,33,41,46,98,100,103,118" },
                 { "SoloInternalState", "42|10,11,13,14,25,28,36" },
                 { "SoloBatched", "42|10,11,13,14,25,28,36" },
                 { "SoloDayReflection", "40|9,10,12,13,24,27,35" },

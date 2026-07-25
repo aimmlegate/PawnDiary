@@ -482,6 +482,28 @@
       <li><maxPercent>101</maxPercent><chance>0.55</chance></li>
     </moodSnapshotChances>
 
+    <!-- Quality Wave H1. A raid page can quote the strongest moment or two from the POV pawn's own
+         fight. Generation waits battleBeatsQuietTicks after that pawn's last combat-log entry, retries
+         every battleBeatsRetryIntervalTicks while the fight is unresolved, and gives up at
+         battleBeatsMaxAgeTicks so an endless siege still produces a page. Kind tokens below are the
+         stable schema words in BattleBeatsPolicy; transition means a pawn went down or died. -->
+    <battleBeatsEnabled>true</battleBeatsEnabled>
+    <battleBeatsMaxCount>2</battleBeatsMaxCount>
+    <battleBeatsScanBackBattles>8</battleBeatsScanBackBattles>
+    <battleBeatsScanBackEntries>200</battleBeatsScanBackEntries>
+    <battleBeatsRetryIntervalTicks>250</battleBeatsRetryIntervalTicks>
+    <battleBeatsQuietTicks>1200</battleBeatsQuietTicks>
+    <battleBeatsMaxAgeTicks>30000</battleBeatsMaxAgeTicks>
+    <battleBeatsMaxChars>240</battleBeatsMaxChars>
+    <battleBeatsGraceTicks>600</battleBeatsGraceTicks>
+    <battleBeatsScores>
+      <li><kind>transition</kind><score>100</score></li>
+      <li><kind>hit</kind><score>60</score></li>
+      <li><kind>deflected</kind><score>25</score></li>
+      <li><kind>miss</kind><score>10</score></li>
+      <li><kind>other</kind><score>5</score></li>
+    </battleBeatsScores>
+
     <!-- Output-language directive. When true, every request's system prompt ends with one localized
          line naming the active RimWorld language, so the model is told what to write in instead of
          guessing it from the prompt wording. Set false to restore the old implicit behavior. -->

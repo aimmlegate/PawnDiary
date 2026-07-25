@@ -8,6 +8,7 @@
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
 using System.Collections.Generic;
+using PawnDiary.Capture;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -330,6 +331,16 @@ namespace PawnDiary
                 return;
             }
 
+            // Quality Wave H1. This is the ONE funnel every solo page passes through: the periodic
+            // scanner reaches it via EnsureGenerationQueued, and a signal's own emit reaches it via
+            // QueueSolo. The raid source uses BOTH — an ordinary walk-in raid takes the delayed path,
+            // while a drop-pod raid or infestation queues straight from its emit tick — so the beats
+            // gate has to live here or those immediate-threat pages would never wait for their fight.
+            if (!TryPrepareBattleBeats(diaryEvent, povRole, livePawnsById))
+            {
+                return;
+            }
+
             // Persona, psychotype, prompt enchantment, and humor are resolved once at queue time. The
             // prompt may be rebuilt after API-lane selection with a different context-detail level, but
             // these captured strings keep that rebuild from rerolling live context, style, or outlook.
@@ -369,6 +380,86 @@ namespace PawnDiary
                 null,
                 boundsCache,
                 livePawnsById);
+        }
+
+        /// <summary>
+        /// Quality Wave H1. Before a raid page is queued, mine RimWorld's combat log for the strongest
+        /// moment or two of the POV pawn's own fight and freeze them onto the saved context. Returns
+        /// false when the caller must NOT queue yet, because the fight is still unresolved; a retry
+        /// tick is stamped so the generation scanner comes back. Every other event returns true
+        /// immediately, so this costs one context-marker probe on the normal path.
+        ///
+        /// The "checked" marker is written into the SAVED context rather than a session set on
+        /// purpose: without it, loading a game would restart mining on a raid whose combat log has
+        /// long since been pruned, and the page would retry until its deadline every single load.
+        /// </summary>
+        private bool TryPrepareBattleBeats(DiaryEvent diaryEvent, string povRole,
+            Dictionary<string, Pawn> livePawnsById)
+        {
+            // Raid pages are solo, so only the initiator can own this work.
+            if (!DiaryEvent.RoleEquals(povRole, DiaryEvent.InitiatorRole)
+                || !DiaryContextFields.HasField(diaryEvent.gameContext, RaidEventData.RaidContextKey)
+                || BattleBeatsPolicy.AlreadyChecked(diaryEvent.gameContext))
+            {
+                return true;
+            }
+
+            DiaryTuningDef tuning = DiaryTuning.Current;
+            Pawn pov = tuning == null || !tuning.battleBeatsEnabled
+                ? null
+                : FindLivePawnByLoadId(diaryEvent.initiatorPawnId, livePawnsById);
+            if (pov == null)
+            {
+                // Feature disabled, or the pawn is no longer loaded and no POV text could be rendered.
+                // Record that mining ran so the page never re-enters this path, and queue normally.
+                diaryEvent.gameContext = BattleBeatsPolicy.ApplyToContext(diaryEvent.gameContext, string.Empty);
+                return true;
+            }
+
+            int now = Find.TickManager.TicksGame;
+            BattleBeatsInspection inspection;
+            try
+            {
+                inspection = BattleBeatsBuilder.Inspect(
+                    pov,
+                    DiaryContextFields.Value(diaryEvent.gameContext, RaidEventData.FactionContextKey),
+                    diaryEvent.tick,
+                    now,
+                    tuning);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[Pawn Diary] Battle-beats mining failed: " + e,
+                    "DiaryGameComponent.TryPrepareBattleBeats".GetHashCode());
+                diaryEvent.gameContext = BattleBeatsPolicy.ApplyToContext(diaryEvent.gameContext, string.Empty);
+                return true;
+            }
+
+            BattleBeatsDecision decision = BattleBeatsPolicy.Decide(
+                inspection.battleFound,
+                inspection.latestRelevantGameTick,
+                diaryEvent.tick,
+                now,
+                tuning.battleBeatsQuietTicks,
+                tuning.battleBeatsMaxAgeTicks);
+            if (decision == BattleBeatsDecision.Retry)
+            {
+                // Reuses the raid anticipation delay's transient marker, so the existing scan-request
+                // plumbing brings us back without a second scheduling mechanism.
+                DelayGenerationUntil(diaryEvent, povRole,
+                    now + Math.Max(1, tuning.battleBeatsRetryIntervalTicks));
+                return false;
+            }
+
+            string beats = BattleBeatsPolicy.FormatBeats(
+                BattleBeatsPolicy.Select(
+                    inspection.candidates,
+                    tuning.battleBeatsMaxCount,
+                    tuning.battleBeatsScores,
+                    0),
+                tuning.battleBeatsMaxChars);
+            diaryEvent.gameContext = BattleBeatsPolicy.ApplyToContext(diaryEvent.gameContext, beats);
+            return true;
         }
 
         /// <summary>

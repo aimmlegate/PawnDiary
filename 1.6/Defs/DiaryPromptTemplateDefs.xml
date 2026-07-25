@@ -261,6 +261,9 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>relevant past</label><source>MemoryContext</source></li>
       <!-- Ideology Phase 1: absent/irrelevant belief context is omitted by PromptAssembler. -->
       <li><label>belief context</label><source>BeliefContext</source></li>
+      <!-- Quality Wave H1 append-only field: the strongest moment(s) of this pawn's own fight, taken
+           from RimWorld's combat log. Absent on non-raid pages and omitted by PromptAssembler. -->
+      <li><label>combat beats</label><source>GameContext</source><contextKey>battle_beats</contextKey></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -584,6 +587,9 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <!-- Odyssey O3 exact Quest-root enrichment. Append-only to preserve older indexed labels. -->
       <li><label>odyssey site category</label><source>GameContext</source><contextKey>odyssey_site_category</contextKey></li>
       <li><label>major odyssey destination</label><source>GameContext</source><contextKey>odyssey_major_destination</contextKey></li>
+      <!-- Quality Wave H1 append-only field: the strongest moment(s) of this pawn's own fight, taken
+           from RimWorld's combat log. Absent on non-raid pages and omitted by PromptAssembler. -->
+      <li><label>combat beats</label><source>GameContext</source><contextKey>battle_beats</contextKey></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 

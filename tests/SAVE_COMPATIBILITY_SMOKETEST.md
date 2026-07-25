@@ -998,6 +998,30 @@ automated agents must not run the game.
 5. Dev mode: run "Fill mock entries" on a pawn, page through the fabricated years, and confirm no
    callback row ever appears on mock history (its dates are fake, its ticks are not).
 
+## Quality Wave Phase 5 — hands-on rows
+
+Automation covers the scoring/selection rules, the retry-quiet-deadline decision, the saved context
+fields, the live combat-log API shape, and the prompt-template projection. What automation cannot
+cover is a REAL fight: creating synthetic `Battle`/`LogEntry` rows would write into the player's own
+combat log and every concerned pawn's records tracker, with no clean way to undo it.
+
+### H1 — raid combat beats
+
+1. Let an ordinary walk-in raid arrive and have a colonist actually fight. Their raid page must not
+   appear while the fight is still going. Once that pawn has been out of combat for ~1200 ticks
+   (~half an in-game hour), the page should generate, and dev-mode "Show prompt" for it should carry
+   a `combat beats` field naming the strongest one or two real moments of *their* fight.
+2. Prefer a fight that includes a down or a kill: those must outrank plain hits in the quoted beats.
+3. Let a raid arrive and leave without any colonist fighting (or deliberately hide everyone). At the
+   `battleBeatsMaxAgeTicks` deadline (~30000 ticks) the page must still generate, with no `combat
+   beats` field and no red errors in the log.
+4. Save during the wait in row 1 and reload. The page must resume waiting — not restart from scratch,
+   and not skip straight to generating.
+5. Export the raid entry (dev "Export diaries") and confirm the saved context carries
+   `battle_beats_checked=true`. Reload again: that page must never re-scan the combat log.
+6. A drop-pod raid or an infestation must behave the same way (they bypass only the *anticipation*
+   delay, not the beats wait).
+
 ## What counts as a regression
 
 Any of:
