@@ -184,6 +184,28 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Like <see cref="CreateAdultColonist"/> but at an EXACT biological age. A few features only
+        /// exist at one age — Biotech growth moments happen at 7, 10, and 13 — and the observers that
+        /// read <c>pawn.ageTracker.AgeBiologicalYears</c> cannot be fooled on the 30-year-old fixture,
+        /// so those cases need a pawn who really is that age. Generation stays disabled and the pawn is
+        /// tracked for teardown exactly like the adult fixture.
+        ///
+        /// An age below <c>DiaryTuning.Current.minimumFirstPersonAgeYears</c> is not diary-eligible and
+        /// is rejected by <see cref="CreateColonist"/>'s own eligibility rail; an age under 13 asks
+        /// RimWorld for a child colonist, which requires Biotech.
+        /// </summary>
+        public Pawn CreateColonistAtBiologicalAge(int biologicalAgeYears)
+        {
+            if (biologicalAgeYears <= 0)
+            {
+                throw new AssertionException(
+                    "A fixture colonist needs a positive biological age, got " + biologicalAgeYears + ".");
+            }
+
+            return CreateColonist(generationEnabled: false, biologicalAgeYears);
+        }
+
+        /// <summary>
         /// Generates and tracks a non-colonist pawn for DLC/runtime seam tests. The pawn is never given
         /// a diary record, and ordinary scope teardown removes it from the map/world before destroying it.
         /// </summary>
@@ -243,7 +265,7 @@ namespace PawnDiary.RimTests
             return CreateColonist(generationEnabled: true);
         }
 
-        private Pawn CreateColonist(bool generationEnabled)
+        private Pawn CreateColonist(bool generationEnabled, int biologicalAgeYears = 30)
         {
             PawnGenerationRequest request = new PawnGenerationRequest(
                 PawnKindDefOf.Colonist,
@@ -253,8 +275,13 @@ namespace PawnDiary.RimTests
                 canGeneratePawnRelations: false,
                 allowPregnant: false,
                 allowAddictions: false,
-                fixedBiologicalAge: 30f,
-                developmentalStages: DevelopmentalStage.Adult,
+                fixedBiologicalAge: biologicalAgeYears,
+                // RimWorld's teenager life stage (13+) already reports the Adult developmental stage,
+                // so only a genuinely younger fixture asks for a child. The chronological age is left
+                // to the generator, as it always was, because nothing in these suites reads it.
+                developmentalStages: biologicalAgeYears >= 13
+                    ? DevelopmentalStage.Adult
+                    : DevelopmentalStage.Child,
                 forceNoGear: true);
             Pawn pawn = PawnGenerator.GeneratePawn(request);
             if (pawn == null)

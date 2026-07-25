@@ -299,6 +299,11 @@ namespace PawnDiary.RimTests
         /// <summary>
         /// While a configured Biotech letter is postponed, its saved pending row owns the exact
         /// birthday. The periodic H2 scanner must advance observation without writing a competing page.
+        ///
+        /// Growth ownership only ever exists at one of Biotech's canonical growth ages (7/10/13) — both
+        /// BeginBiotechGrowthBirthday and PendingBiotechGrowthMomentPolicy.FindNewest reject any other
+        /// age — while the scanner reads the pawn's REAL biological age. So this one test needs its own
+        /// 13-year-old colonist instead of the suite's 30-year-old fixture; the age cannot be faked.
         /// </summary>
         [Test]
         public static void PendingGrowthLetterSuppressesOrdinaryBirthdayScanner()
@@ -310,25 +315,37 @@ namespace PawnDiary.RimTests
                 return;
             }
 
-            int age = pawn.ageTracker.AgeBiologicalYears;
+            const int GrowthAge = 13;
+            Pawn child = scope.CreateColonistAtBiologicalAge(GrowthAge);
+            string childId = child.GetUniqueLoadID();
+            scope.RegisterCleanup(() => RemovePendingRowsFor(childId));
+            // Without the birthday's own row switched on, "no page appeared" would prove nothing.
+            SetGroupEnabled("progressionBirthday", true);
+
             BiotechGrowthBirthdayState birthday =
-                ConfigureOwnedLetter(age, out ChoiceLetter_GrowthMoment _);
+                ConfigureOwnedLetter(child, GrowthAge, out ChoiceLetter_GrowthMoment _);
             PawnDiaryRimTestScope.Require(
                 birthday != null && birthday.configuredLetterOwnsBirthday,
                 "The configured growth letter did not claim the birthday.");
             PawnDiaryRimTestScope.Require(
                 PendingBiotechGrowthMomentPolicy.FindNewest(
-                    PendingGrowthRows(), pawn.GetUniqueLoadID(), age) != null,
+                    PendingGrowthRows(), childId, GrowthAge) != null,
                 "The configured growth letter did not leave a saved pending owner.");
 
-            PawnProgressionState state = scope.Component.AnniversaryStateFor(pawn);
-            state.baselineAnniversariesOnNextScan = false;
-            state.lastObservedBiologicalAgeYears = age - 1;
-            scope.RequireNoNewEvent(() => scope.Component.ScanAnniversariesForPawn(
-                pawn,
-                Find.TickManager?.TicksGame ?? 0,
-                DiaryGameComponent.SnapshotAnniversaryRecordDefs()));
-            PawnDiaryRimTestScope.Require(state.lastObservedBiologicalAgeYears == age,
+            // The first scan is EVERY anniversary observer's silent baseline (arrival, bonded losses,
+            // records), so after it the birthday below is the only thing that could still emit.
+            int now = Find.TickManager?.TicksGame ?? 0;
+            scope.RequireNoNewEvent(() => ScanAnniversaries(child, now));
+            PawnProgressionState state = scope.Component.AnniversaryStateFor(child);
+            PawnDiaryRimTestScope.Require(state != null && !state.baselineAnniversariesOnNextScan,
+                "The baseline scan did not clear the H2 baseline flag.");
+
+            // Pretend we last saw the child a year younger: the scanner then reads their real current
+            // age as a birthday just reached, exactly as it would the tick after BirthdayBiological.
+            state.lastObservedBiologicalAgeYears = GrowthAge - 1;
+            scope.RequireNoNewEvent(() => ScanAnniversaries(child, now));
+            scope.RequireNoEventForTestPawns(ProgressionEventData.PawnBirthdayDefName);
+            PawnDiaryRimTestScope.Require(state.lastObservedBiologicalAgeYears == GrowthAge,
                 "The suppressed birthday did not advance observation and would retry forever.");
         }
 
@@ -767,7 +784,15 @@ namespace PawnDiary.RimTests
             int age,
             out ChoiceLetter_GrowthMoment letter)
         {
-            BiotechGrowthBirthdayState birthday = scope.Component.BeginBiotechGrowthBirthday(pawn, age);
+            return ConfigureOwnedLetter(pawn, age, out letter);
+        }
+
+        private static BiotechGrowthBirthdayState ConfigureOwnedLetter(
+            Pawn target,
+            int age,
+            out ChoiceLetter_GrowthMoment letter)
+        {
+            BiotechGrowthBirthdayState birthday = scope.Component.BeginBiotechGrowthBirthday(target, age);
             letter = new ChoiceLetter_GrowthMoment();
             if (birthday == null)
             {
@@ -779,7 +804,7 @@ namespace PawnDiary.RimTests
             {
                 Invoke(configureGrowthLetterMethod, letter, new object[]
                 {
-                    pawn, 1, 1, 1, new List<string>(), pawn.Name
+                    target, 1, 1, 1, new List<string>(), target.Name
                 });
             }
             finally
@@ -788,6 +813,13 @@ namespace PawnDiary.RimTests
             }
 
             return birthday;
+        }
+
+        /// <summary>Runs the live H2 scanner for one pawn, the same call the tick loop makes.</summary>
+        private static void ScanAnniversaries(Pawn target, int now)
+        {
+            scope.Component.ScanAnniversariesForPawn(
+                target, now, DiaryGameComponent.SnapshotAnniversaryRecordDefs());
         }
 
         private static PendingBiotechGrowthMoment ValidPendingGrowth(string pawnId, int age, int tick)
@@ -895,6 +927,21 @@ namespace PawnDiary.RimTests
                     || (row.pawnId != null
                         && row.pawnId.StartsWith(PreCapFixturePrefix, StringComparison.Ordinal))));
             BiotechGrowthCorrelation.Clear();
+        }
+
+        // Pending growth rows are SAVED state, so a test that creates its own extra pawn must remove
+        // that pawn's rows too — the suite-wide cleanup above only knows the shared fixture.
+        private static void RemovePendingRowsFor(string pawnId)
+        {
+            if (scope?.Component == null || pendingGrowthField == null
+                || string.IsNullOrEmpty(pawnId))
+            {
+                return;
+            }
+
+            List<PendingBiotechGrowthMoment> rows = pendingGrowthField.GetValue(scope.Component)
+                as List<PendingBiotechGrowthMoment>;
+            rows?.RemoveAll(row => row != null && row.pawnId == pawnId);
         }
 
         private static void RequirePromptContains(string prompt, string fragment, string label)

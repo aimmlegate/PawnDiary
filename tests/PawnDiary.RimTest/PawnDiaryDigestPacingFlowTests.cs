@@ -48,7 +48,11 @@ namespace PawnDiary.RimTests
         [BeforeEach]
         public static void SetUp()
         {
-            scope = PawnDiaryRimTestScope.Begin("heartfelt");
+            // "heartfelt" is the DeepTalk group these tests drive. The two Reflection-domain rows are
+            // the user toggles DayReflectionSignal.BuildContext gates on: without "dayreflection" the
+            // day reflection can never be written, and the two reflection tests below would pass or
+            // fail on the developer's own settings instead of on B6's behavior. (Same rows as EVT-19.)
+            scope = PawnDiaryRimTestScope.Begin("heartfelt", "reflection", "dayreflection");
             firstPawn = scope.CreateAdultColonist();
             secondPawn = scope.CreateAdultColonist();
 
@@ -116,6 +120,17 @@ namespace PawnDiary.RimTests
             int day = CurrentDayIndex();
             SetCount(firstPawn, day, TestSoftCap);
             SetCount(secondPawn, day, TestSoftCap);
+            // Vanilla DeepTalk ships no <logRulesRecipient>, so RimWorld renders ONE symmetric sentence
+            // ("A and B exchanged ideas about X") for both points of view and a swapped-POV bug would be
+            // invisible. Take the group's own opt-out of rendered game text — a real shipped route — so
+            // each side falls back to its neutral line, which really is POV-ordered.
+            ForceNeutralInteractionText(heartfeltGroup);
+            // The neutral line names the writer first, so it only distinguishes the two sides while the
+            // two generated colonists have different short names. Say so plainly rather than letting a
+            // one-in-a-thousand name collision read as a POV bug.
+            PawnDiaryRimTestScope.Require(
+                !string.Equals(firstPawn.LabelShortCap, secondPawn.LabelShortCap, StringComparison.Ordinal),
+                "This fixture needs two differently-named colonists to tell the two sides apart.");
 
             scope.RequireNoNewEvent(() => AddDeepTalkRow(firstPawn, secondPawn));
 
@@ -376,6 +391,17 @@ namespace PawnDiary.RimTests
                 group.important = originalImportant;
                 group.combat = originalCombat;
             });
+        }
+
+        // Interaction-domain groups may opt out of capturing RimWorld's rendered social-log text (the
+        // compatibility route for grammar that has side effects during capture). On that route every
+        // captured line is Pawn Diary's own neutral phrasing, which names the writer first — so it is
+        // the one deterministic way to observe which side of a shared moment a diary remembered.
+        private static void ForceNeutralInteractionText(DiaryInteractionGroupDef group)
+        {
+            bool original = group.captureRenderedGameText;
+            group.captureRenderedGameText = false;
+            scope.RegisterCleanup(() => group.captureRenderedGameText = original);
         }
 
         private static void ForcePacingTuning(int cap, int maxLines)
