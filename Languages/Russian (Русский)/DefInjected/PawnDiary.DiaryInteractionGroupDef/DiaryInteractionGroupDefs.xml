@@ -25,7 +25,7 @@
   <slavery.instruction>тяжесть цепей — подавление надсмотрщиком или первая искра неповиновения</slavery.instruction>
   <slavery.tone>с мрачной, гнетущей тревогой</slavery.tone>
   <counsel.label>Утешение</counsel.label>
-  <counsel.instruction>точная попытка утешить собеседника: следуй переданному успеху или провалу, не путай утешающего и слушателя и считай итог только облегчением или ухудшением настроения и мыслей, а не переменой убеждений</counsel.instruction>
+  <counsel.instruction>попытка утешить собеседника: следуй переданному успеху или провалу, не путай утешающего и слушателя и считай итог только облегчением или ухудшением настроения и мыслей, а не переменой убеждений</counsel.instruction>
   <counsel.tone>с внимательным теплом при успехе или неловким сожалением при провале</counsel.tone>
   <counsel.tones.0>с тёплым облегчением, сосредоточившись на том, что слушателю стало спокойнее</counsel.tones.0>
   <counsel.tones.1>с неловким сожалением, сосредоточившись на утешении, которое не помогло</counsel.tones.1>
@@ -108,7 +108,7 @@
   <mentalbreak.instructions.2>нервный срыв: мир сужается — одно простое ощущение, затем состояние берёт верх</mentalbreak.instructions.2>
   <mentalbreak.tone>с издёрганной, захлёстывающей силой</mentalbreak.tone>
   <beliefCrisis.label>Кризис убеждений</beliefCrisis.label>
-  <beliefCrisis.instruction>точный кризис убеждений: по переданным фактам отличай настоящую смену идеолигии от пошатнувшихся под сомнениями убеждений и никогда не выдумывай прежнюю идеолигию</beliefCrisis.instruction>
+  <beliefCrisis.instruction>кризис убеждений: по переданным фактам отличай настоящую смену идеолигии от пошатнувшихся под сомнениями убеждений и никогда не выдумывай прежнюю идеолигию</beliefCrisis.instruction>
   <beliefCrisis.tone>с потрясённой убеждённостью и мучительным внутренним сомнением</beliefCrisis.tone>
   <talecombat.label>Бой, ранения и смерть</talecombat.label>
   <talecombat.instruction>кровь и опасность: бой, ранение, смерть или спасение. Пиши, каково было это пережить</talecombat.instruction>
@@ -161,20 +161,20 @@
   <moodeventPositive.label>Положительные события настроения</moodeventPositive.label>
   <moodeventPositive.instruction>что-то подняло настроение: хорошее событие в масштабе поселения, от которого отпускает сердце</moodeventPositive.instruction>
   <moodeventPositive.instructions.0>общая удача: пиши общую лёгкость — плечи опустились, шутки вернулись, работа пошла веселее</moodeventPositive.instructions.0>
-  <moodeventPositive.instructions.1>общая удача: пиши личную долю поселенца в общем благе, опираясь на переданное условие</moodeventPositive.instructions.1>
+  <moodeventPositive.instructions.1>общая удача: пиши личную долю поселенца в общем благе, опираясь на переданное состояние</moodeventPositive.instructions.1>
   <moodeventPositive.instructions.2>общая удача: пиши настороженность под облегчением — радоваться, пока длится, на этой-то планете</moodeventPositive.instructions.2>
   <moodeventPositive.tone>с приподнятым, отпущенным духом</moodeventPositive.tone>
   <moodeventNegative.label>Отрицательные события настроения</moodeventNegative.label>
   <moodeventNegative.instruction>что-то давит: плохое событие в масштабе поселения, от которого внутри становится туго</moodeventNegative.instruction>
-  <moodeventNegative.instructions.0>общая тягота: пиши, как условие дотягивается до распорядка самого поселенца — свет, еда, сон, нервы или работа</moodeventNegative.instructions.0>
+  <moodeventNegative.instructions.0>общая тягота: пиши, как это состояние дотягивается до распорядка самого поселенца — свет, еда, сон, нервы или работа</moodeventNegative.instructions.0>
   <moodeventNegative.instructions.1>общая тягота: пиши настроение поселения по приметам — ответы короче, комнаты пустее, двери закрываются раньше</moodeventNegative.instructions.1>
   <moodeventNegative.instructions.2>общая тягота: пиши простую арифметику — сколько ещё можно терпеть и что закончится первым, только из переданных фактов</moodeventNegative.instructions.2>
   <moodeventNegative.tone>с придавливающим напряжением</moodeventNegative.tone>
   <moodeventMixed.label>Неоднозначные события настроения</moodeventMixed.label>
-  <moodeventMixed.instruction>условие задевает всех по-разному; пиши, как оно сказывается именно на этом поселенце</moodeventMixed.instruction>
-  <moodeventMixed.instructions.0>неровное условие: реши однозначно, как оно влияет именно на этого поселенца — легче ему или тяжелее, строго по переданным фактам</moodeventMixed.instructions.0>
-  <moodeventMixed.instructions.1>неровное условие: пиши разницу — что оно делает с этим поселенцем и что, судя по всему, с остальными рядом</moodeventMixed.instructions.1>
-  <moodeventMixed.instructions.2>неровное условие: пиши саму странность, давящую на чувства и настроение, не объясняя её механику</moodeventMixed.instructions.2>
+  <moodeventMixed.instruction>общее состояние задевает всех по-разному; пиши, как оно сказывается именно на этом поселенце</moodeventMixed.instruction>
+  <moodeventMixed.instructions.0>неоднозначное состояние: реши однозначно, как оно влияет именно на этого поселенца — легче ему или тяжелее, строго по переданным фактам</moodeventMixed.instructions.0>
+  <moodeventMixed.instructions.1>неоднозначное состояние: пиши разницу — что оно делает с этим поселенцем и что, судя по всему, с остальными рядом</moodeventMixed.instructions.1>
+  <moodeventMixed.instructions.2>неоднозначное состояние: пиши саму странность, давящую на чувства и настроение, не объясняя её механику</moodeventMixed.instructions.2>
   <moodeventMixed.tone>с тревожным, неоднозначным зарядом</moodeventMixed.tone>
   <moodeventOther.label>Мимолётные настроения</moodeventOther.label>
   <moodeventOther.instruction>событие в масштабе поселения, влияющее на настроение поселенца</moodeventOther.instruction>
@@ -210,7 +210,7 @@
   <workDarkStudy.tone>с нарастающим, неутихающим ужасом</workDarkStudy.tone>
   <workPassion.label>Любимая работа</workPassion.label>
   <workPassion.instruction>работа задевает увлечение поселенца: положительная, сосредоточенная, тихо приятная, но без вида, будто в поселении легко</workPassion.instruction>
-  <workPassion.instructions.0>любимая работа: пиши растворение в деле — время пропадает, руки сами знают что делать, работа ведёт, а не подгоняет</workPassion.instructions.0>
+  <workPassion.instructions.0>любимая работа: пиши растворение в деле — время пропадает, руки сами знают, что делать, работа ведёт, а не подгоняет</workPassion.instructions.0>
   <workPassion.instructions.1>любимая работа: назови одну мелочь ремесла, сделанную в точности как надо, и тихое удовольствие от неё</workPassion.instructions.1>
   <workPassion.instructions.2>любимая работа: пусть поселенец признает, что делал бы это даже в плохой день, не притворяясь, что жизнь здесь легка</workPassion.instructions.2>
   <workPassion.tone>с простым удовлетворением</workPassion.tone>
@@ -231,12 +231,12 @@
   <hediffPartGainedArtificial.label>Искусственные части тела</hediffPartGainedArtificial.label>
   <hediffPartGainedArtificial.instruction>сделанная вещь стала частью тела поселенца; пиши о весе, посадке, полезной точности, непривычной работе механизма, стыде или облегчении с учётом отношения поселенца и уровня новой части</hediffPartGainedArtificial.instruction>
   <hediffPartLostNatural.label>Утраченные части тела</hediffPartLostNatural.label>
-  <hediffPartLostNatural.instruction>поселенец утратил естественную часть тела; передай первое странное ощущение провала — шок, отсутствие, боль, фантомное чувство, вес повязки или холодный расчёт — с учётом отношения поселенца и причины</hediffPartLostNatural.instruction>
+  <hediffPartLostNatural.instruction>поселенец утратил естественную часть тела; передай первое странное ощущение пустого места — шок, отсутствие, боль, фантомное чувство, вес повязки или холодный расчёт — с учётом отношения поселенца и причины</hediffPartLostNatural.instruction>
   <hediffPregnancy.label>Беременность</hediffPregnancy.label>
-  <hediffPregnancy.instruction>беременность как начало, меняющее жизнь; поселенец замечает тело, будущее, страх, надежду или неопределённость, радость не предполагается</hediffPregnancy.instruction>
+  <hediffPregnancy.instruction>беременность как начало, меняющее жизнь; поселенец замечает тело, будущее, страх, надежду или неопределённость — не считай радость сама собой разумеющейся</hediffPregnancy.instruction>
   <hediffPregnancy.tone>с сокровенной неопределённостью и тихой серьёзностью</hediffPregnancy.tone>
   <hediffLabor.label>Роды</hediffLabor.label>
-  <hediffLabor.instruction>приближаются схватки и роды; пиши срочность, боль, страх, заботу и порог рождения, не забегая к младенцу, если он не передан</hediffLabor.instruction>
+  <hediffLabor.instruction>приближаются схватки и роды; пиши срочность, боль, страх, заботу и порог рождения, не забегая вперёд к младенцу, если он не передан</hediffLabor.instruction>
   <hediffLabor.tone>со срочным телесным напряжением</hediffLabor.tone>
   <hediffAnomalyCompulsion.label>Принуждения аномалии</hediffAnomalyCompulsion.label>
   <hediffAnomalyCompulsion.instruction>аномалия давит на мысли или тело поселенца; пиши одержимость, транс, ломку, ярость, месть мертвеца или обесчеловеченную отстранённость согласно названному состоянию, не объясняя сущность и не выдумывая лечение</hediffAnomalyCompulsion.instruction>
@@ -248,23 +248,23 @@
   <hediffMajorHealth.instructions.2>затяжная хворь: пиши, как поселенец прислушивается к телу — проверяет слишком часто и боится завтрашней проверки; лечения не выдумывай</hediffMajorHealth.instructions.2>
   <hediffMajorHealth.tone>с телесной тревогой и уязвимостью</hediffMajorHealth.tone>
   <raid.label>Налёты</raid.label>
-  <raid.instruction>поселение ожидает налёта, который уже начался, но враг может ещё приближаться: тревога, оружие, позиции и задержанное дыхание перед столкновением. Пиши об ожидании боя, если из фактов не следует, что он уже дошёл до поселенцев</raid.instruction>
+  <raid.instruction>поселение встречает налёт, который уже объявился, но враг может ещё приближаться: тревога, оружие, позиции и задержанное дыхание перед столкновением. Пиши об ожидании боя, если из фактов не следует, что он уже дошёл до поселенцев</raid.instruction>
   <raid.instructions.0>налёт приближается к поселению: начни с тревоги, расстояния, укрытия, погоды или проверки оружия; доведи запись лишь до первого столкновения</raid.instructions.0>
   <raid.instructions.1>поселение готовится к нападению: пиши ожидание, приказы, двери, мешки с песком, дыхание и страх до того, как бой полностью начался</raid.instructions.1>
-  <raid.instructions.2>налёт мог ещё не дойти до защитников: упоминай дым, кровь, раны и последствия только когда они переданы; иначе держись подготовки, страха и первого взгляда на опасность</raid.instructions.2>
+  <raid.instructions.2>налёт мог ещё не дойти до защитников: упоминай дым, кровь, раны и последствия, только когда они переданы; иначе держись подготовки, страха и первого взгляда на опасность</raid.instructions.2>
   <raid.tone>с напряжённым ожиданием боя</raid.tone>
   <ritualConversion.label>Ритуалы обращения</ritualConversion.label>
   <ritualConversion.instruction>завершён ритуал обращения; чётко различай точки зрения духовного наставника, обращаемого, участника и зрителя, используй только переданные факты веры на момент события и никогда не считай качество ритуала само по себе доказательством обращения</ritualConversion.instruction>
-  <ritualConversion.tone>с публичной убеждённостью, личным сомнением и точными духовными последствиями</ritualConversion.tone>
-  <ritualConversion.tones.0>сокровенно и доктринально, вокруг точной роли автора и переданных фактов веры</ritualConversion.tones.0>
+  <ritualConversion.tone>с публичной убеждённостью, личным сомнением и конкретными духовными последствиями</ritualConversion.tone>
+  <ritualConversion.tones.0>сокровенно и доктринально, вокруг назначенной автору роли и переданных фактов веры</ritualConversion.tones.0>
   <ritualConversion.tones.1>церемониально, но сдержанно, не превращая качество или атмосферу в неподтверждённое обращение</ritualConversion.tones.1>
   <ritualRoyal.label>Имперские ритуалы</ritualRoyal.label>
-  <ritualRoyal.instruction>завершён ритуал Royalty; используй переданные точные поля поселенца, фракции, прежнего и нового титула и причины, не объясняя механики и не выдумывая эффект</ritualRoyal.instruction>
+  <ritualRoyal.instruction>завершён ритуал Royalty; используй в точности переданные сведения о поселенце, фракции, прежнем и новом титуле и причине, не объясняя механики и не выдумывая эффект</ritualRoyal.instruction>
   <ritualRoyal.tone>с формальным рангом и ритуальной властью</ritualRoyal.tone>
-  <ritualRoyal.tones.0>придворно и заряжено рангом, титулом, свидетелями и публичной властью</ritualRoyal.tones.0>
-  <ritualRoyal.tones.1>тихо, с пси-фокусом и опорой на традицию; церемония больше тела одного поселенца</ritualRoyal.tones.1>
+  <ritualRoyal.tones.0>придворно, с зарядом ранга, титула, свидетелей и публичной власти</ritualRoyal.tones.0>
+  <ritualRoyal.tones.1>тихо, с пси-фокусом и опорой на традицию; церемония больше, чем тело одного поселенца</ritualRoyal.tones.1>
   <ritualChildbirth.label>Ритуал рождения</ritualChildbirth.label>
-  <ritualChildbirth.instruction>завершён ритуал рождения; запись медицински и эмоционально уместная: боль, забота, риск, изнеможение, облегчение или страх важнее мистики</ritualChildbirth.instruction>
+  <ritualChildbirth.instruction>завершён ритуал рождения; пиши медицински и эмоционально уместно: боль, забота, риск, изнеможение, облегчение или страх важнее мистики</ritualChildbirth.instruction>
   <ritualChildbirth.tone>с клинической нежностью и телесной срочностью</ritualChildbirth.tone>
   <ritualChildbirth.tones.0>медицински, сокровенно и бережно вокруг боли, заботы, опасности и облегчения</ritualChildbirth.tones.0>
   <ritualChildbirth.tones.1>нежно, но без сентиментальности, с упором на тело, помощников и непосредственный исход</ritualChildbirth.tones.1>
@@ -274,14 +274,14 @@
   <ritualGravship.tones.0>технично и процедурно, с упором на проверки, системы, отсчёт и готовность</ritualGravship.tones.0>
   <ritualGravship.tones.1>напряжённо и по-экипажному, с дисциплиной запуска и сдержанным ожиданием</ritualGravship.tones.1>
   <odysseyGravshipLanding.label>Посадка гравикорабля</odysseyGravshipLanding.label>
-  <odysseyGravshipLanding.instruction>гравикорабль успешно прибыл; опиши от первого лица переданные причину путешествия, его длительность, роль рассказчика, корабль, место отправления и назначения; если указан точный исход посадки, вплети только это видимое последствие в ту же посадку; место задания означает только прибытие, а не завершение задания; не выдумывай опасности и последствия сверх переданных фактов</odysseyGravshipLanding.instruction>
+  <odysseyGravshipLanding.instruction>гравикорабль успешно прибыл; опиши от первого лица переданные причину путешествия, его длительность, роль рассказчика, корабль, место отправления и назначения; если исход посадки передан, вплети его как единственное видимое последствие; место задания означает только прибытие, а не завершение задания; не выдумывай опасности и последствия сверх переданных фактов</odysseyGravshipLanding.instruction>
   <odysseyGravshipLanding.tone>с облегчением прибытия, вниманием к экипажу и весом опускающегося мобильного дома</odysseyGravshipLanding.tone>
   <odysseyGravshipLanding.tones.0>приземлённо и чувственно, с упором на снижение, касание земли и значение этого места</odysseyGravshipLanding.tones.0>
   <odysseyGravshipLanding.tones.1>по-экипажному и задумчиво, осмысляя завершённый путь и не выдумывая продолжение</odysseyGravshipLanding.tones.1>
   <odysseyMechhiveOutcome.label>Судьба мех-улья</odysseyMechhiveOutcome.label>
-  <odysseyMechhiveOutcome.instruction>точный оператор совершил видимый финальный выбор в мех-улье; сохрани, было ли ядро Cerebrex уничтожено или разобрано ради добычи, используй только переданные сведения об участнике и месте и не выдумывай контроль над мех-ульем, диалоги, скрытое участие в бою, мотивы или последствия сверх подтверждённой ветви</odysseyMechhiveOutcome.instruction>
+  <odysseyMechhiveOutcome.instruction>указанный оператор совершил видимый финальный выбор в мех-улье; сохрани, было ли ядро Cerebrex уничтожено или разобрано ради добычи, используй только переданные сведения об участнике и месте и не выдумывай контроль над мех-ульем, диалоги, скрытое участие в бою, мотивы или последствия сверх подтверждённой ветви</odysseyMechhiveOutcome.instruction>
   <odysseyMechhiveOutcome.tone>с окончательной решимостью, величием механизма и тяжестью выбора у самого ядра</odysseyMechhiveOutcome.tone>
-  <odysseyMechhiveOutcome.tones.0>окончательно и приземлённо, вокруг точного выбора оператора — уничтожить или разобрать ядро</odysseyMechhiveOutcome.tones.0>
+  <odysseyMechhiveOutcome.tones.0>окончательно и приземлённо, вокруг сделанного оператором выбора — уничтожить или разобрать ядро</odysseyMechhiveOutcome.tones.0>
   <odysseyMechhiveOutcome.tones.1>масштабно, но лично, не превращая видимый механизм в неподтверждённый контроль или завоевание</odysseyMechhiveOutcome.tones.1>
   <ritualAnomalyInvitation.label>Призывающие псионические ритуалы</ritualAnomalyInvitation.label>
   <ritualAnomalyInvitation.instruction>завершён псионический ритуал, призывающий нечто к поселению; держись переданной точки зрения, намеренного призыва и неизвестности, не утверждай, что именно явилось и что случилось потом</ritualAnomalyInvitation.instruction>
@@ -294,7 +294,7 @@
   <ritualAnomalyFleshAndWeather.tones.0>нутряно и тревожно, с упором на решение сделать мир опаснее</ritualAnomalyFleshAndWeather.tones.0>
   <ritualAnomalyFleshAndWeather.tones.1>под тяжестью ожидаемой враждебной погоды или плоти, без выдуманного исхода</ritualAnomalyFleshAndWeather.tones.1>
   <ritualAnomalyPredation.label>Хищные псионические ритуалы</ritualAnomalyPredation.label>
-  <ritualAnomalyPredation.instruction>завершён псионический ритуал, призванный отнять у цели навык, годы или псионические силы; действие, положение жертвы и ощущения определяй только по переданной точке зрения и фактам о другом поселенце, не выдумывай точную потерю и дальнейшее состояние</ritualAnomalyPredation.instruction>
+  <ritualAnomalyPredation.instruction>завершён псионический ритуал, призванный отнять у цели навык, годы или псионические силы; действие, положение жертвы и ощущения определяй только по переданной точке зрения и фактам о другом поселенце, не выдумывай, что именно отнято и что стало с целью дальше</ritualAnomalyPredation.instruction>
   <ritualAnomalyPredation.tone>с близким хищничеством и сдержанным псионическим вредом</ritualAnomalyPredation.tone>
   <ritualAnomalyPredation.tones.0>близко и хищно, различая того, кто действовал, и того, кто терпел</ritualAnomalyPredation.tones.0>
   <ritualAnomalyPredation.tones.1>нравственно напряжённо и телесно странно, не выходя за известные этой точке зрения факты</ritualAnomalyPredation.tones.1>
@@ -311,7 +311,7 @@
   <ritualAnomalyDeathRefusal.label>Ритуал отказа смерти</ritualAnomalyDeathRefusal.label>
   <ritualAnomalyDeathRefusal.instruction>псионический ритуал наделил цель отказом смерти; опиши решение установить неестественную связь со смертью с переданной точки зрения, но не утверждай, что цель уже умерла или вернулась</ritualAnomalyDeathRefusal.instruction>
   <ritualAnomalyDeathRefusal.tone>с мрачным намерением и незавершённой сделкой со смертью</ritualAnomalyDeathRefusal.tone>
-  <ritualAnomalyDeathRefusal.tones.0>торжественно и неестественно, как подготовку, а не воскрешение</ritualAnomalyDeathRefusal.tones.0>
+  <ritualAnomalyDeathRefusal.tones.0>торжественно и неестественно, как о подготовке, а не о воскрешении</ritualAnomalyDeathRefusal.tones.0>
   <ritualAnomalyDeathRefusal.tones.1>с тихим вызовом смерти, не утверждая будущую смерть или возвращение</ritualAnomalyDeathRefusal.tones.1>
   <ritualAnomalyPsychic.label>Псионические ритуалы</ritualAnomalyPsychic.label>
   <ritualAnomalyPsychic.instruction>завершён неизвестный или добавленный модом псионический ритуал Anomaly; используй переданную точку зрения и видимые факты, оставляй дальнейший эффект неизвестным и не выдумывай механики или последствия</ritualAnomalyPsychic.instruction>
@@ -347,9 +347,9 @@
   <dayreflection.tones.0>устало и вдумчиво, взвешивая, что ещё важно</dayreflection.tones.0>
   <dayreflection.tones.1>мягко завершаясь, будто день наконец затихает</dayreflection.tones.1>
   <heartfelt.tones.0>мягко и открыто, позволяя теплу проявиться прямо</heartfelt.tones.0>
-  <heartfelt.tones.1>тихо сдержанно, тепло показано через малую сдержанность</heartfelt.tones.1>
+  <heartfelt.tones.1>тихо и сдержанно, тепло угадывается за скупыми словами</heartfelt.tones.1>
   <hediffAnomalyCompulsion.tones.0>навязчиво и неестественно, мысль или нерв цепляется за что-то чужое</hediffAnomalyCompulsion.tones.0>
-  <hediffAnomalyCompulsion.tones.1>тревожно и принудительно, ум и тело тянутся туда, куда не следует</hediffAnomalyCompulsion.tones.1>
+  <hediffAnomalyCompulsion.tones.1>тревожно и неодолимо, ум и тело тянутся туда, куда не следует</hediffAnomalyCompulsion.tones.1>
   <hediffLabor.tones.0>срочно и телесно, дыхание и боль задают темп</hediffLabor.tones.0>
   <hediffLabor.tones.1>на пороге напряжения, с упором на страх, заботу и ожидание</hediffLabor.tones.1>
   <hediffMajorHealth.tones.0>уязвимо и телесно, симптомы определяют каждую мысль</hediffMajorHealth.tones.0>
@@ -359,19 +359,19 @@
   <hediffPartGainedArtificial.tones.0>близко и практично, тело учится ритму нового инструмента</hediffPartGainedArtificial.tones.0>
   <hediffPartGainedArtificial.tones.1>телесно и тихо, механизм и плоть делят один распорядок</hediffPartGainedArtificial.tones.1>
   <hediffPartLostNatural.tones.0>телесно и ошеломлённо, отсутствие громче боли</hediffPartLostNatural.tones.0>
-  <hediffPartLostNatural.tones.1>сыро и практично, утрата становится новой картой тела</hediffPartLostNatural.tones.1>
-  <hediffPregnancy.tones.0>телесно и сокровенно, неопределённость держат близко</hediffPregnancy.tones.0>
+  <hediffPartLostNatural.tones.1>оголённо и практично, утрата становится новой картой тела</hediffPartLostNatural.tones.1>
+  <hediffPregnancy.tones.0>телесно и сокровенно, неопределённость держат при себе</hediffPregnancy.tones.0>
   <hediffPregnancy.tones.1>обращено в будущее и тихо, надежда и страх в равновесии</hediffPregnancy.tones.1>
   <inspiration.tones.0>ярко и решительно, мысль обращается в замысел</inspiration.tones.0>
-  <inspiration.tones.1>электрически и беспокойно, цель толкает тело вперёд</inspiration.tones.1>
+  <inspiration.tones.1>наэлектризованно и беспокойно, цель толкает тело вперёд</inspiration.tones.1>
   <insults.tones.0>горячо и отрывисто, как злость, зажатая в зубах</insults.tones.0>
-  <insults.tones.1>холодно и режуще, с упором на жало после</insults.tones.1>
+  <insults.tones.1>холодно и режуще, с упором на то, как жалит после</insults.tones.1>
   <insultspree.tones.0>занозисто и навязчиво, как злость в поисках мишеней</insultspree.tones.0>
   <insultspree.tones.1>кисло и измотанно, жестокость звучит почти машинально</insultspree.tones.1>
   <mentalbreak.tones.0>обрывочно и задыхаясь, мысль под слишком большим давлением</mentalbreak.tones.0>
   <mentalbreak.tones.1>оцепенело и вкось, реальность сужена до одного порыва</mentalbreak.tones.1>
-  <moodeventMixed.tones.0>тревожно и неоднозначно, поселенец не уверен, что чувствовать</moodeventMixed.tones.0>
-  <moodeventMixed.tones.1>настороженно и телесно, замечая, как сказывается условие</moodeventMixed.tones.1>
+  <moodeventMixed.tones.0>тревожно и неоднозначно, поселенец не знает, что чувствовать</moodeventMixed.tones.0>
+  <moodeventMixed.tones.1>настороженно и телесно, замечая, как сказывается это состояние</moodeventMixed.tones.1>
   <moodeventNegative.tones.0>тяжело и низко, каждая деталь давит вниз</moodeventNegative.tones.0>
   <moodeventNegative.tones.1>раздражённо и обветренно, напряжение проступает в терпении</moodeventNegative.tones.1>
   <moodeventPositive.tones.0>открыто и свободно, позволяя облегчению прозвучать прямо</moodeventPositive.tones.0>
@@ -379,7 +379,7 @@
   <questAccepted.label>Задание принято</questAccepted.label>
   <questAccepted.instruction>поселение вместе взялось за новое задание: предвкушение, любопытство и ответственность за общее обещание. Пиши о надежде или сомнении этого поселенца, не утверждая, что задание принял только он</questAccepted.instruction>
   <questAccepted.tone>с предвкушением и осторожным любопытством</questAccepted.tone>
-  <questAccepted.tones.0>осторожно и с взглядом вперёд, обещание взвешено против риска</questAccepted.tones.0>
+  <questAccepted.tones.0>осторожно и со взглядом вперёд, соизмеряя обещание с риском</questAccepted.tones.0>
   <questAccepted.tones.1>любопытно, но настороженно: надежда сдерживается практическими сомнениями</questAccepted.tones.1>
   <questCompleted.label>Задание выполнено</questCompleted.label>
   <questCompleted.instruction>задание выполнено общими усилиями поселения: облегчение, удовлетворение и уплаченная цена. Пиши о заслуженной развязке, не утверждая, что этот поселенец справился один</questCompleted.instruction>
@@ -392,14 +392,14 @@
   <questFailed.tones.0>тяжело и с сожалением о том, что ускользнуло от всех</questFailed.tones.0>
   <questFailed.tones.1>тихо и горестно: общие последствия ощущаются сильнее, чем объясняются</questFailed.tones.1>
   <raid.tones.0>напряжённо и тактически, в ожидании, когда бой прорвётся</raid.tones.0>
-  <raid.tones.1>срочно, но с предчувствием, страх сгущается перед столкновением</raid.tones.1>
+  <raid.tones.1>торопливо, но с предчувствием, страх сгущается перед столкновением</raid.tones.1>
   <raidDropPod.label>Налёты из транспортных капсул</raidDropPod.label>
   <raidDropPod.instruction>налётчики врываются прямо в поселение через транспортные капсулы: внезапный удар, без долгого предупреждения, опасность уже внутри периметра</raidDropPod.instruction>
   <raidDropPod.instructions.0>налёт из транспортных капсул внутри или у поселения: начни с удара, тревог и суматохи, пока никто не успел подготовиться</raidDropPod.instructions.0>
   <raidDropPod.instructions.1>налёт из транспортных капсул без медленного приближения: первые оглушённые секунды, затем мгновенный выбор поселенца, укрытие, оружие или бегство</raidDropPod.instructions.1>
   <raidDropPod.instructions.2>налётчики падают сверху; передай внезапность и близость угрозы без долгой осады или подхода, если из фактов не следует обратное</raidDropPod.instructions.2>
   <raidDropPod.tone>с потрясением мгновенного удара</raidDropPod.tone>
-  <raidDropPod.tones.0>стремительно как удар и дезориентированно, опасность уже внутри стен</raidDropPod.tones.0>
+  <raidDropPod.tones.0>стремительно, как удар, и дезориентированно, опасность уже внутри стен</raidDropPod.tones.0>
   <raidDropPod.tones.1>потрясённо и в упор, каждое предложение откликается на внезапное столкновение</raidDropPod.tones.1>
   <raidFriendly.label>Дружественные прибытия и налёты</raidFriendly.label>
   <raidFriendly.instruction>дружественный отряд прибывает в поселение: подкрепление, союзники или мирная высадка. Пиши облегчение или тревогу, которую они приносят</raidFriendly.instruction>
@@ -407,16 +407,16 @@
   <raidFriendly.tones.0>осторожно облегчённо, доверие приходит медленно</raidFriendly.tones.0>
   <raidFriendly.tones.1>тревожно и благодарно, помощь всё ещё кажется рискованной</raidFriendly.tones.1>
   <raidInfestation.label>Нашествия насекомых</raidInfestation.label>
-  <raidInfestation.instruction>насекомые прорываются из-под земли поселения: хитин, тоннели, тесная паника и опасность среди комнат. Это внезапный внутренний ужас, не обычный налёт</raidInfestation.instruction>
+  <raidInfestation.instruction>насекомые прорываются из-под земли поселения: хитин, тоннели, паника в тесноте и опасность в самих комнатах. Это внезапный внутренний ужас, не обычный налёт</raidInfestation.instruction>
   <raidInfestation.instructions.0>нашествие внутри поселения: начни со звука, пыли, когтей, темноты или комнаты, которая из безопасной стала враждебной</raidInfestation.instructions.0>
-  <raidInfestation.instructions.1>насекомые прорываются изнутри базы; пиши тесный страх и мгновенное выживание, не приближение далёкого врага</raidInfestation.instructions.1>
+  <raidInfestation.instructions.1>насекомые прорываются изнутри базы; пиши страх в тесноте и борьбу за жизнь здесь и сейчас, а не приближение далёкого врага</raidInfestation.instructions.1>
   <raidInfestation.instructions.2>подземная угроза входит в обжитое пространство; передай её близость через телесные ощущения и практические действия, не выдумывая итог боя</raidInfestation.instructions.2>
   <raidInfestation.tone>с клаустрофобной, хитиновой паникой</raidInfestation.tone>
   <raidInfestation.tones.0>клаустрофобно и в ужасе, безопасность оборачивается прорывом</raidInfestation.tones.0>
   <raidInfestation.tones.1>близко, грязно и в панике, угроза уже под ногами</raidInfestation.tones.1>
   <recruit.tones.0>сдержанно и расчётливо, каждая фраза оценивает, чем можно надавить</recruit.tones.0>
   <recruit.tones.1>туго и настороженно, с упором на власть в комнате</recruit.tones.1>
-  <ritual.tones.0>церемониально и неподвижно, с оглядкой на смотрящие глаза</ritual.tones.0>
+  <ritual.tones.0>церемониально и неподвижно, помня о взглядах вокруг</ritual.tones.0>
   <ritual.tones.1>благоговейно, но тревожно, с упором на долг и последствие</ritual.tones.1>
   <romance.tones.0>близко и телесно, со сдержанной уязвимостью</romance.tones.0>
   <romance.tones.1>тихо и вдумчиво, с упором на то, что изменилось</romance.tones.1>
@@ -426,9 +426,9 @@
   <rimtalk_chatter.tones.1>просто и наблюдательно, позволяя мелким словам сохранить своё значение</rimtalk_chatter.tones.1>
   <slavery.tones.0>гнетуще и тяжело, с упором на контроль</slavery.tones.0>
   <slavery.tones.1>тихо непокорно, со злостью, удержанной под давлением</slavery.tones.1>
-  <smalltalk.tones.0>свободно и разговорно, ведомо мелкими паузами</smalltalk.tones.0>
+  <smalltalk.tones.0>свободно и разговорно, ритм задают мелкие паузы</smalltalk.tones.0>
   <smalltalk.tones.1>просто и по-приятельски, обычная деталь делает работу</smalltalk.tones.1>
-  <socialfight.tones.0>быстро и телесно, ведомо ударом и дыханием</socialfight.tones.0>
+  <socialfight.tones.0>быстро и телесно, ритм задают удар и дыхание</socialfight.tones.0>
   <socialfight.tones.1>потрясённо и тяжело, злость остывает в последствиях</socialfight.tones.1>
   <strangechat.tones.0>снаружи всё обычно, но под поверхностью что-то не так</strangechat.tones.0>
   <strangechat.tones.1>тихо и жутко, обрываясь прежде, чем тревога рассеется</strangechat.tones.1>
@@ -438,15 +438,15 @@
   <talecombat.tones.1>оглушённо, когда пережитая опасность ещё не отпускает</talecombat.tones.1>
   <talehealth.tones.0>хрупко и клинично, с упором на тело и риск</talehealth.tones.0>
   <talehealth.tones.1>облегчённо, но потрясённо, доверие или страх ещё рядом</talehealth.tones.1>
-  <taleincident.tones.0>шатко и срочно, с упором на суматоху</taleincident.tones.0>
+  <taleincident.tones.0>шатко и торопливо, с упором на суматоху</taleincident.tones.0>
   <taleincident.tones.1>опустошённо и оглушённо, с упором на урон после</taleincident.tones.1>
   <talelife.tones.0>приглушённо и весомо, с осознанием, что жизнь повернула</talelife.tones.0>
-  <talelife.tones.1>мгновенно и лично, с упором на первый изменившийся вздох</talelife.tones.1>
+  <talelife.tones.1>мгновенно и лично, с упором на первый изменившийся вдох</talelife.tones.1>
   <talequality.tones.0>гордо и осязаемо, с упором на руки и материал</talequality.tones.0>
   <talequality.tones.1>до костей устало и удовлетворённо, как свершение после надрыва</talequality.tones.1>
   <talequiet.tones.0>лично и немногословно, сосредоточившись на одном небольшом чувстве</talequiet.tones.0>
   <talequiet.tones.1>легко и кратко, мимолётная заметка, а не признание</talequiet.tones.1>
-  <talework.tones.0>ровно и практично, гордость держат близко к работе</talework.tones.0>
+  <talework.tones.0>ровно и практично, гордость не отрывается от работы</talework.tones.0>
   <talework.tones.1>тихо и довольно, с упором на навык, который укореняется в движениях</talework.tones.1>
   <teaching.tones.0>терпеливо и наставительно, с упором на маленький прогресс</teaching.tones.0>
   <teaching.tones.1>игриво, но без пафоса, показывая привязанность через внимание</teaching.tones.1>
@@ -454,20 +454,20 @@
   <thoughtNegative.tones.1>туго и телесно, раздражение или обида сидят в нутре</thoughtNegative.tones.1>
   <thoughtOther.tones.0>кратко и полуощутимо, ушло почти сразу</thoughtOther.tones.0>
   <thoughtOther.tones.1>просто и наблюдательно, называя настроение без драмы</thoughtOther.tones.1>
-  <thoughtPositive.tones.0>маленько и ярко, как напряжение, которое ненадолго отпустило</thoughtPositive.tones.0>
+  <thoughtPositive.tones.0>коротко и ярко, как напряжение, которое ненадолго отпустило</thoughtPositive.tones.0>
   <thoughtPositive.tones.1>тихо приподнято, с упором на мысль, что стоит сохранить</thoughtPositive.tones.1>
   <thoughtPregnancyFamily.tones.0>сдержанно и сокровенно, эмоцию держат бережно</thoughtPregnancyFamily.tones.0>
-  <thoughtPregnancyFamily.tones.1>телесно и неопределённо, надежда и страх оба возможны</thoughtPregnancyFamily.tones.1>
+  <thoughtPregnancyFamily.tones.1>телесно и неопределённо: возможны и надежда, и страх</thoughtPregnancyFamily.tones.1>
   <trial.tones.0>формально и хрупко, каждое предложение как показание</trial.tones.0>
   <trial.tones.1>под взглядами и обнажённо, с упором на стыд или защиту</trial.tones.1>
   <workDarkStudy.tones.0>близко и чувственно, ужас проступает сквозь саму работу</workDarkStudy.tones.0>
   <workDarkStudy.tones.1>тихо и тревожно, словно само любопытство было ошибкой</workDarkStudy.tones.1>
-  <workPassion.tones.0>сосредоточенно и удовлетворённо, удовольствие держат практичным</workPassion.tones.0>
+  <workPassion.tones.0>сосредоточенно и удовлетворённо, удовольствие остаётся практичным</workPassion.tones.0>
   <workPassion.tones.1>поглощённо и осязаемо, увлечённость проступает сквозь задачу</workPassion.tones.1>
   <workRoutine.tones.0>буднично и ритмично, обычная работа продолжается</workRoutine.tones.0>
   <workRoutine.tones.1>тихо практично, внимание на инструментах и последовательности</workRoutine.tones.1>
   <workStrain.tones.0>устало и резко, досада в руках</workStrain.tones.0>
-  <workStrain.tones.1>грязно и обречённо, раздражение удержано под долгом</workStrain.tones.1>
+  <workStrain.tones.1>грязно и обречённо, раздражение придавлено долгом</workStrain.tones.1>
   <progressionSkillPassion.label>Веха любимого навыка</progressionSkillPassion.label>
   <progressionSkillPassion.instruction>веха в навыке, который важен поселенцу; пиши гордость, усилие, раздражение или самоощущение только через названный навык и уровень</progressionSkillPassion.instruction>
   <progressionSkillPassion.tone>с честным осознанием заработанного роста</progressionSkillPassion.tone>
@@ -484,7 +484,7 @@
   <progressionXenotype.tones.0>настороженно и изменённо, прежнее «я» становится незнакомым</progressionXenotype.tones.0>
   <progressionXenotype.tones.1>телесно и наедине с собой, с упором на то, что новое тело значит сегодня ночью</progressionXenotype.tones.1>
   <progressionRoyalTitle.label>Королевский ранг и наследование</progressionRoyalTitle.label>
-  <progressionRoyalTitle.instruction>точная смена титула, наследование или назначение наследника в указанной фракции; сохрани всех переданных людей, фракцию и титул, затем пиши о статусе, бремени, горе, гордости, облегчении или потере без объяснения механик</progressionRoyalTitle.instruction>
+  <progressionRoyalTitle.instruction>указанная смена титула, наследование или назначение наследника в указанной фракции; сохрани всех переданных людей, фракцию и титул, затем пиши о статусе, бремени, горе, гордости, облегчении или потере без объяснения механик</progressionRoyalTitle.instruction>
   <progressionRoyalTitle.tone>с официальной тяжестью и личной ценой</progressionRoyalTitle.tone>
   <progressionRoyalTitle.tones.0>размеренно и неловко, с пониманием, что титул меняет чужие взгляды</progressionRoyalTitle.tones.0>
   <progressionRoyalTitle.tones.1>тихо и с чувством бремени, воспринимая ранг одновременно как честь и обязанность</progressionRoyalTitle.tones.1>
@@ -498,18 +498,18 @@
   <progressionBirthday.tone>с тихим ощущением уходящего времени</progressionBirthday.tone>
   <progressionBirthday.tones.0>вдумчиво и лично, замечая, что изменил ещё один год</progressionBirthday.tones.0>
   <progressionBirthday.tones.1>мягко с усмешкой, понимая, что время идёт даже на краю мира</progressionBirthday.tones.1>
-  <progressionArrivalAnniversary.label>Годовщина в колонии</progressionArrivalAnniversary.label>
-  <progressionArrivalAnniversary.instruction>с прихода поселенца в колонию прошло целое число лет; пиши чувство своего места, отдаление от того, кем он был по прибытии, или беспокойство от того, как много времени прошло, — опираясь только на переданное число лет</progressionArrivalAnniversary.instruction>
+  <progressionArrivalAnniversary.label>Годовщина в поселении</progressionArrivalAnniversary.label>
+  <progressionArrivalAnniversary.instruction>со дня прихода поселенца в поселение прошло целое число лет; пиши чувство, что он здесь свой, отдаление от того, кем он был по прибытии, или беспокойство от того, как много времени прошло, — опираясь только на переданное число лет</progressionArrivalAnniversary.instruction>
   <progressionArrivalAnniversary.tone>с весом прожитого времени</progressionArrivalAnniversary.tone>
-  <progressionArrivalAnniversary.tones.0>устоявшись и примеряя, сравнивая сегодняшний день с днём прибытия</progressionArrivalAnniversary.tones.0>
+  <progressionArrivalAnniversary.tones.0>устоявшись и примеряясь, сравнивая сегодняшний день с днём прибытия</progressionArrivalAnniversary.tones.0>
   <progressionArrivalAnniversary.tones.1>неспокойно и в поиске, не понимая, туда ли ушли эти годы</progressionArrivalAnniversary.tones.1>
   <progressionDeathAnniversary.label>Память об утрате</progressionDeathAnniversary.label>
-  <progressionDeathAnniversary.instruction>годовщина утраты близкого человека; пиши память об этой дате — что до сих пор носится в себе и как оно переменилось, — опираясь только на переданные имена, родство и число прошедших лет, и никогда не пересказывая саму смерть</progressionDeathAnniversary.instruction>
+  <progressionDeathAnniversary.instruction>годовщина утраты близкого человека; пиши память об этой дате — что поселенец до сих пор носит в себе и как это переменилось, — опираясь только на переданные имена, родство и число прошедших лет, и никогда не пересказывая саму смерть</progressionDeathAnniversary.instruction>
   <progressionDeathAnniversary.tone>со сдержанным горем, которому дали отлежаться</progressionDeathAnniversary.tone>
   <progressionDeathAnniversary.tones.0>тихо и без сентиментальности, вспоминая человека, а не потерю</progressionDeathAnniversary.tones.0>
   <progressionDeathAnniversary.tones.1>тяжело и скрытно: дата приходит раньше самой мысли</progressionDeathAnniversary.tones.1>
   <progressionRecordMilestone.label>Личный рекорд</progressionRecordMilestone.label>
-  <progressionRecordMilestone.instruction>личный счёт дошёл до значимой отметки; пиши, чем сделало поселенца такое количество одной и той же работы, опираясь только на переданные название счёта и итог, и никогда не как очки или достижение</progressionRecordMilestone.instruction>
+  <progressionRecordMilestone.instruction>личный счёт дошёл до значимой отметки; пиши, чем сделало поселенца такое количество одной и той же работы, опираясь только на переданные название счёта и итог и никогда не подавая это как очки или достижение</progressionRecordMilestone.instruction>
   <progressionRecordMilestone.tone>с простым признанием накопленного труда</progressionRecordMilestone.tone>
   <progressionRecordMilestone.tones.0>сухо и устало, считая скорее цену, чем заслугу</progressionRecordMilestone.tones.0>
   <progressionRecordMilestone.tones.1>тихо с гордостью, понимая, что число сложилось из обычных дней</progressionRecordMilestone.tones.1>
@@ -525,7 +525,7 @@
   <raidAnomalyEntities.instructions.0>нечеловеческие нападающие — начни с первой неестественной детали: силуэта, походки, мокрого звука, невозможной тишины или знакомого места, ставшего небезопасным; не называй их точнее, чем в данных</raidAnomalyEntities.instructions.0>
   <raidAnomalyEntities.instructions.1>нечеловеческие нападающие — пиши, как тело отказывается признавать их людьми: тошнота, волосы дыбом, дрожащий прицел, желание отвести взгляд</raidAnomalyEntities.instructions.1>
   <raidAnomalyEntities.instructions.2>нечеловеческие нападающие — держись непосредственной борьбы за жизнь и телесных ощущений; раны и исходы бери только из данных и не давай ужасу рассеяться до конца</raidAnomalyEntities.instructions.2>
-  <raidAnomalyEntities.tone>ужас, проступающий сквозь горячку боя</raidAnomalyEntities.tone>
+  <raidAnomalyEntities.tone>с ужасом, проступающим сквозь горячку боя</raidAnomalyEntities.tone>
   <raidAnomalyEntities.tones.0>в ужасе и на ощущениях: нападающие не воспринимаются как люди</raidAnomalyEntities.tones.0>
   <raidAnomalyEntities.tones.1>собранно и с упором на выживание, сохраняя ощущение неестественности</raidAnomalyEntities.tones.1>
 
@@ -644,86 +644,86 @@
 
   <!-- Quality Wave H6. -->
   <artImmortalized.label>Увековечено в искусстве</artImmortalized.label>
-  <artImmortalized.instruction>прошлый поступок колонии, превращённый в произведение искусства; пиши, каково это — встретить собственное прошлое в виде вещи, не пересказывая само событие и не выдумывая, что о нём думают другие</artImmortalized.instruction>
+  <artImmortalized.instruction>прошлый поступок поселения, превращённый в произведение искусства; пиши, каково это — встретить собственное прошлое в виде вещи, не пересказывая само событие и не выдумывая, что о нём думают другие</artImmortalized.instruction>
   <artImmortalized.tone>негромко, с небольшой дистанцией к собственному прошлому</artImmortalized.tone>
   <artImmortalized.tones.0>с усмешкой над собой и лёгкой неловкостью оттого, что стал украшением</artImmortalized.tones.0>
   <artImmortalized.tones.1>тихо тронуто тем, что кто-то счёл этот миг достойным памяти</artImmortalized.tones.1>
   <artImmortalized.tones.2>отстранённо, будто фигура в этой работе — кто-то другой</artImmortalized.tones.2>
 
   <progressionGrowthMoment.label>Момент взросления</progressionGrowthMoment.label>
-  <progressionGrowthMoment.instruction>принятый выбор в момент взросления ребёнка; сосредоточься на личности, изменившихся интересах, имени, новых обязанностях и качественном описании возможностей, не цитируя уровни, числа или списки работ и не оценивая взрослых, растивших ребёнка</progressionGrowthMoment.instruction>
+  <progressionGrowthMoment.instruction>принятый выбор в момент взросления ребёнка; сосредоточься на личности, изменившихся интересах, имени, новых обязанностях и сути открывшихся возможностей, не цитируя уровни, числа или списки работ и не оценивая взрослых, растивших ребёнка</progressionGrowthMoment.instruction>
   <progressionGrowthMoment.tone>с ощущением формирующейся личности и неуверенным взглядом в будущее</progressionGrowthMoment.tone>
-  <progressionGrowthMoment.tones.0>лично и с взглядом вперёд, опираясь только на черту или интересы, которые действительно изменились</progressionGrowthMoment.tones.0>
+  <progressionGrowthMoment.tones.0>лично и со взглядом вперёд, опираясь только на черту или интересы, которые действительно изменились</progressionGrowthMoment.tones.0>
   <progressionGrowthMoment.tones.1>замечая открывшиеся новые возможности, но не превращая их в оценку и не выдумывая, кто их создал</progressionGrowthMoment.tones.1>
 
   <progressionMechanitorLifecycle.label>Путь механитора</progressionMechanitorLifecycle.label>
-  <progressionMechanitorLifecycle.instruction>глава пути механитора; пиши от лица человека-контролёра, используя только указанные факты о мехе, сроке службы, бою или угрозе босса, не превращая пропускную способность в эмоцию и не выдумывая, кто нанёс последний удар</progressionMechanitorLifecycle.instruction>
+  <progressionMechanitorLifecycle.instruction>глава пути механитора; пиши от лица человека, управляющего мехами, используя только указанные факты о мехе, сроке службы, бою или угрозе босса, не превращая пропускную способность в эмоцию и не выдумывая, кто нанёс последний удар</progressionMechanitorLifecycle.instruction>
   <progressionMechanitorLifecycle.tone>с ответственностью за разумы, превращённые в приказ и последствия</progressionMechanitorLifecycle.tone>
-  <progressionMechanitorLifecycle.tones.0>лично и ответственно, сосредоточившись на связи контролёра с командованием</progressionMechanitorLifecycle.tones.0>
+  <progressionMechanitorLifecycle.tones.0>лично и ответственно, сосредоточившись на связи человека с машинами, которыми он командует</progressionMechanitorLifecycle.tones.0>
   <progressionMechanitorLifecycle.tones.1>технологично, но по-человечески, связывая конкретные машины и угрозы с пережитыми последствиями</progressionMechanitorLifecycle.tones.1>
 
   <biotechFamilyBirth.label>Рождение в семье</biotechFamilyBirth.label>
-  <biotechFamilyBirth.instruction>рождение в семье глазами точно известного взрослого участника; используй только указанные роль и исход, допускай страх, горе, истощение, облегчение или неопределённость и никогда не предполагай радость или желанное родительство</biotechFamilyBirth.instruction>
+  <biotechFamilyBirth.instruction>рождение в семье глазами указанного взрослого участника; используй только указанные роль и исход, допускай страх, горе, истощение, облегчение или неопределённость и никогда не предполагай радость или желанное родительство</biotechFamilyBirth.instruction>
   <biotechFamilyBirth.tone>с близкими последствиями и честной эмоциональной неопределённостью</biotechFamilyBirth.tone>
   <biotechFamilyBirth.tones.0>телесно и близко к непосредственному исходу, не приписывая автору неуказанных чувств</biotechFamilyBirth.tones.0>
   <biotechFamilyBirth.tones.1>о семье, но без сентиментальности, бережно различая роли родившего, генетической матери и отца</biotechFamilyBirth.tones.1>
   <personaWeaponLifecycle.label>Связь с разумным оружием</personaWeaponLifecycle.label>
-  <personaWeaponLifecycle.instruction>точный этап связи с разумным оружием; используй переданные оружие, прежнее и новое состояния связи, длительность, прежнего связанного поселенца, причину окончания и выбранные структурные факты о чертах; не выдумывай реплики, боевую сцену, мотив оружия или смерть</personaWeaponLifecycle.instruction>
+  <personaWeaponLifecycle.instruction>конкретный этап связи с разумным оружием; используй переданные оружие, прежнее и новое состояния связи, длительность, прежнего связанного поселенца, причину окончания и выбранные структурные факты о чертах; не выдумывай реплики, боевую сцену, мотив оружия или смерть</personaWeaponLifecycle.instruction>
   <personaWeaponLifecycle.tone>с близкой верностью, трением и тревожным присутствием оружия, которое помнит</personaWeaponLifecycle.tone>
   <personaWeaponLifecycle.tones.0>близко и странно, как о проживаемых отношениях, но без выдуманных реплик оружия</personaWeaponLifecycle.tones.0>
   <personaWeaponLifecycle.tones.1>лично и задумчиво, опираясь на верность, отсутствие, возвращение или окончательность из точных фактов</personaWeaponLifecycle.tones.1>
   <personaWeaponMilestone.label>Вехи разумного оружия</personaWeaponMilestone.label>
-  <personaWeaponMilestone.instruction>первое значимое убийство точным связанным разумным оружием; используй переданные жертву, исходное сказание, оружие, состояние связи и выбранные структурные факты о чертах, оставь убийцу единственной точкой зрения дневника и не выдумывай реплики, мотив оружия, другое убийство или последние мысли жертвы</personaWeaponMilestone.instruction>
+  <personaWeaponMilestone.instruction>первое значимое убийство указанным связанным разумным оружием; используй переданные жертву, исходное сказание, оружие, состояние связи и выбранные структурные факты о чертах, оставь убийцу единственной точкой зрения дневника и не выдумывай реплики, мотив оружия, другое убийство или последние мысли жертвы</personaWeaponMilestone.instruction>
   <personaWeaponMilestone.tone>с телесными последствиями и тревожной близостью оружия, разделившего этот момент</personaWeaponMilestone.tone>
-  <personaWeaponMilestone.tones.0>непосредственно и весомо, опираясь на точную смерть и установленные черты оружия без выдуманной речи</personaWeaponMilestone.tones.0>
-  <personaWeaponMilestone.tones.1>близко и тревожно, взвешивая перемену между владельцем и оружием после этого точного первого убийства</personaWeaponMilestone.tones.1>
+  <personaWeaponMilestone.tones.0>непосредственно и весомо, опираясь на описанную смерть и установленные черты оружия, без выдуманной речи</personaWeaponMilestone.tones.0>
+  <personaWeaponMilestone.tones.1>близко и тревожно, взвешивая перемену между владельцем и оружием после этого первого убийства</personaWeaponMilestone.tones.1>
   <royalPermitDramatic.label>Значимые королевские разрешения</royalPermitDramatic.label>
-  <questRoyalAscent.label>Королевское вознесение</questRoyalAscent.label>
-  <questRoyalAscent.instruction>точная глава жизненного цикла задания Королевского вознесения; выбирай смысл только по quest_signal: accepted означает, что поселение обязалось подготовиться, но не доказывает прибытие стелларха; completed означает, что игра успешно завершила задание по приёму, но не доказывает, кто поднялся на борт или покинул планету; failed означает провал задания без подтверждённой точной причины; опиши общий долг и давление глазами одного свидетеля, не выдумывая прибытие, реплики, посадку, отлёт, награды или вину</questRoyalAscent.instruction>
+  <questRoyalAscent.label>Знатное восхождение</questRoyalAscent.label>
+  <questRoyalAscent.instruction>конкретная глава жизненного цикла задания «Знатное восхождение»; выбирай смысл только по quest_signal: accepted означает, что поселение обязалось подготовиться, но не доказывает прибытие стелларха; completed означает, что игра успешно завершила задание по приёму, но не доказывает, кто поднялся на борт или покинул планету; failed означает провал задания без подтверждённой точной причины; опиши общий долг и давление глазами одного свидетеля, не выдумывая прибытие, реплики, посадку, отлёт, награды или вину</questRoyalAscent.instruction>
   <questRoyalAscent.tone>с церемониальным давлением, общим долгом и последствиями, превосходящими одного поселенца</questRoyalAscent.tone>
-  <questRoyalAscent.tones.0>формально, но лично: общее обязательство поселения ощущается глазами одного свидетеля</questRoyalAscent.tones.0>
+  <questRoyalAscent.tones.0>формально, но лично: общее обязательство поселения передано глазами одного свидетеля</questRoyalAscent.tones.0>
   <questRoyalAscent.tones.1>напряжённо и с вниманием к статусу, сохраняя неопределённость всех ненаблюдавшихся имперских подробностей</questRoyalAscent.tones.1>
   <royalPermitDramatic.instruction>успешное применение значимого королевского разрешения; точно сохрани переданные разрешение, фракцию, титул и место, опиши лишь вызов помощи или применение полномочия и не утверждай, что помощь прибыла, шаттл завершил путь, орбитальная атака поразила цель или была потрачена определённая сумма благосклонности</royalPermitDramatic.instruction>
   <royalPermitDramatic.tone>с весом власти, превращённой в немедленное действие</royalPermitDramatic.tone>
   <royalPermitDramatic.tones.0>решительно и лично, опираясь на ощущение применения заслуженной власти</royalPermitDramatic.tones.0>
   <royalPermitDramatic.tones.1>напряжённо и с чувством статуса, сохраняя неизвестность всех ещё не наблюдавшихся последствий</royalPermitDramatic.tones.1>
   <anomalyStudyBreakthrough.label>Прорывы в изучении аномалий</anomalyStudyBreakthrough.label>
-  <anomalyStudyBreakthrough.instruction>подтверждённая веха изучения Anomaly, достигнутая точным исследователем; сохрани переданные изучаемый объект, смысловой этап и видимый контекст знаний, не цитируй сырые очки прогресса, неоткрытый кодекс, скрытые способности или будущие последствия</anomalyStudyBreakthrough.instruction>
-  <anomalyStudyBreakthrough.tone>с добытым трудом пониманием и тревогой от знания, меняющего границы возможного</anomalyStudyBreakthrough.tone>
-  <anomalyStudyBreakthrough.tones.0>любознательно и тревожно, вокруг точного открытия, а не скрытой механики</anomalyStudyBreakthrough.tones.0>
+  <anomalyStudyBreakthrough.instruction>подтверждённая веха изучения аномалии, достигнутая указанным исследователем; сохрани переданные изучаемый объект, смысловой этап и видимый контекст знаний, не цитируй сырые очки прогресса, неоткрытый кодекс, скрытые способности или будущие последствия</anomalyStudyBreakthrough.instruction>
+  <anomalyStudyBreakthrough.tone>с трудно добытым пониманием и тревогой от знания, меняющего границы возможного</anomalyStudyBreakthrough.tone>
+  <anomalyStudyBreakthrough.tones.0>любознательно и тревожно, вокруг самого открытия, а не скрытой механики</anomalyStudyBreakthrough.tones.0>
   <anomalyStudyBreakthrough.tones.1>увлечённо, но настороженно, сохраняя подлинную неизвестность всех последствий</anomalyStudyBreakthrough.tones.1>
-  <anomalyContainmentBreach.label>Прорывы содержания аномалий</anomalyContainmentBreach.label>
-  <anomalyContainmentBreach.instruction>подтверждённый непреднамеренный прорыв содержания, записанный от лица автора с точно указанной ролью; используй лишь переданные сбежавшие сущности и видимую обстановку, не выдумывай халатность, саботаж, проверку содержания, скрытые силы, вину или участника намеренного освобождения</anomalyContainmentBreach.instruction>
-  <anomalyContainmentBreach.tone>с немедленной тревогой и неизвестностью того, что освобождённые сущности сделают дальше</anomalyContainmentBreach.tone>
-  <anomalyContainmentBreach.tones.0>срочно и опираясь на то, что вырвалось, без назначения причины или виновного</anomalyContainmentBreach.tones.0>
-  <anomalyContainmentBreach.tones.1>настороженно и телесно напряжённо, сохраняя точную связь автора с прорывом</anomalyContainmentBreach.tones.1>
+  <anomalyContainmentBreach.label>Нарушения изоляции аномалий</anomalyContainmentBreach.label>
+  <anomalyContainmentBreach.instruction>подтверждённое непреднамеренное нарушение изоляции, записанное от лица автора с указанной ролью; используй лишь переданные сбежавшие сущности и видимую обстановку, не выдумывай халатность, саботаж, проверку изоляции, скрытые силы, вину или участника намеренного освобождения</anomalyContainmentBreach.instruction>
+  <anomalyContainmentBreach.tone>с острой тревогой и неизвестностью того, что освобождённые сущности сделают дальше</anomalyContainmentBreach.tone>
+  <anomalyContainmentBreach.tones.0>встревоженно и опираясь на то, что вырвалось, не назначая ни причины, ни виноватого</anomalyContainmentBreach.tones.0>
+  <anomalyContainmentBreach.tones.1>настороженно и телесно напряжённо, сохраняя подлинную связь автора с прорывом</anomalyContainmentBreach.tones.1>
   <anomalyCreepJoinerOutcome.label>Видимые исходы странных прибытий</anomalyCreepJoinerOutcome.label>
-  <anomalyCreepJoinerOutcome.instruction>странный прибывший достиг одного точно видимого игроку исхода; опиши только переданные общее раскрытие, отказ, агрессию или уход и подтверждённую роль автора; при хирургическом раскрытии сохраняй различие между хирургом-исследователем и пациентом, не называй обнаруженную тайну, не цитируй текст осмотра и не раскрывай скрытый недостаток, заражение, носителя, таймер, будущую трансформацию или ненаблюдаемый мотив</anomalyCreepJoinerOutcome.instruction>
+  <anomalyCreepJoinerOutcome.instruction>странный прибывший достиг одного из видимых игроку исходов; опиши только переданные общее раскрытие, отказ, агрессию или уход и подтверждённую роль автора; при хирургическом раскрытии сохраняй различие между хирургом-исследователем и пациентом, не называй обнаруженную тайну, не цитируй текст осмотра и не раскрывай скрытый недостаток, заражение, носителя, таймер, будущую трансформацию или ненаблюдаемый мотив</anomalyCreepJoinerOutcome.instruction>
   <anomalyCreepJoinerOutcome.tone>с потрясённым осознанием и строгой неизвестностью всего, что ещё скрыто</anomalyCreepJoinerOutcome.tone>
   <anomalyCreepJoinerOutcome.tones.0>лично и тревожно, останавливаясь точно на границе видимого знания</anomalyCreepJoinerOutcome.tones.0>
   <anomalyCreepJoinerOutcome.tones.1>напряжённо и наблюдательно, не превращая подозрение в тайную уверенность</anomalyCreepJoinerOutcome.tones.1>
   <anomalyGhoulTransformation.label>Превращения в гуля</anomalyGhoulTransformation.label>
   <anomalyGhoulTransformation.instruction>завершённое подтверждённое превращение не-гуля в гуля; чётко разделяй точки зрения субъекта и хирурга, опиши необратимый телесный выбор по переданным фактам момента события и не выдумывай механику процедуры, будущие способности, моральную оценку или другое превращение</anomalyGhoulTransformation.instruction>
   <anomalyGhoulTransformation.tone>с необратимым телесным последствием и последним ясным ощущением уходящей человеческой жизни</anomalyGhoulTransformation.tone>
-  <anomalyGhoulTransformation.tones.0>телесно и мрачно, опираясь на точные роли субъекта и хирурга</anomalyGhoulTransformation.tones.0>
+  <anomalyGhoulTransformation.tones.0>телесно и мрачно, опираясь на указанные роли субъекта и хирурга</anomalyGhoulTransformation.tones.0>
   <anomalyGhoulTransformation.tones.1>лично и окончательно, без объяснения игровых механизмов перемены</anomalyGhoulTransformation.tones.1>
   <anomalyVoidOutcome.label>Ответ пустоте</anomalyVoidOutcome.label>
-  <anomalyVoidOutcome.instruction>точный участник совершил подтверждённый окончательный выбор поселения перед пустотой; сохрани, была ли связь принята или разрушена, и переданные видимые последствия, не выдумывай другую ветвь, скрытую механику, реплики или действия другого поселенца</anomalyVoidOutcome.instruction>
+  <anomalyVoidOutcome.instruction>указанный участник совершил подтверждённый окончательный выбор поселения перед пустотой; сохрани, была ли связь принята или разрушена, и переданные видимые последствия, не выдумывай другую ветвь, скрытую механику, реплики или действия другого поселенца</anomalyVoidOutcome.instruction>
   <anomalyVoidOutcome.tone>с окончательным выбором, накопленным ужасом и тяжестью ответа, который нельзя отозвать</anomalyVoidOutcome.tone>
-  <anomalyVoidOutcome.tones.0>окончательно и ясно, вокруг точного совершённого выбора участника</anomalyVoidOutcome.tones.0>
+  <anomalyVoidOutcome.tones.0>окончательно и ясно, вокруг именно того выбора, который совершён</anomalyVoidOutcome.tones.0>
   <anomalyVoidOutcome.tones.1>космически, но лично, не выходя за переданный видимый исход</anomalyVoidOutcome.tones.1>
   <biotechPsychicBondLifecycle.label>Жизненный цикл психической связи</biotechPsychicBondLifecycle.label>
-  <biotechPsychicBondLifecycle.instruction>подтверждённое образование или разрушение психической связи между двумя указанными пешками; сообщай только этот психический факт, называй причину лишь когда она указана и не додумывай романтику, согласие, судьбу, предательство или постоянство</biotechPsychicBondLifecycle.instruction>
+  <biotechPsychicBondLifecycle.instruction>подтверждённое образование или разрушение психической связи между двумя указанными людьми; сообщай только этот психический факт, называй причину, лишь когда она указана, и не додумывай романтику, согласие, судьбу, предательство или постоянство</biotechPsychicBondLifecycle.instruction>
   <biotechPsychicBondLifecycle.tone>с личным психическим последствием и строгой фактической сдержанностью</biotechPsychicBondLifecycle.tone>
   <biotechPsychicBondLifecycle.tones.0>близко и тревожно, ощущая другой разум, но не определяя отношения</biotechPsychicBondLifecycle.tones.0>
   <biotechPsychicBondLifecycle.tones.1>явно и весомо, сохраняя неопределённость смысла, выбора и будущего</biotechPsychicBondLifecycle.tones.1>
-  <biotechDeathrestInterrupted.label>Прерванный смертопокой</biotechDeathrestInterrupted.label>
-  <biotechDeathrestInterrupted.instruction>подтверждённое тяжёлое прерывание активного смертопокоя; опиши незавершённое пробуждение и телесные последствия, не выдумывая виновника или причину, и не называй обычное завершённое пробуждение прерыванием</biotechDeathrestInterrupted.instruction>
+  <biotechDeathrestInterrupted.label>Прерванный торпор</biotechDeathrestInterrupted.label>
+  <biotechDeathrestInterrupted.instruction>подтверждённое тяжёлое прерывание активного торпора; опиши незавершённое пробуждение и телесные последствия, не выдумывая виновника или причину, и не называй обычное завершённое пробуждение прерыванием</biotechDeathrestInterrupted.instruction>
   <biotechDeathrestInterrupted.tone>с резко нарушенной тишиной и телесной тревогой</biotechDeathrestInterrupted.tone>
   <biotechDeathrestInterrupted.tones.0>дезориентированно и телесно, сосредоточившись на отдыхе, оборванном до восстановления</biotechDeathrestInterrupted.tones.0>
-  <biotechDeathrestInterrupted.tones.1>тихо и тревожно, сохраняя неизвестную причину вместо догадок</biotechDeathrestInterrupted.tones.1>
+  <biotechDeathrestInterrupted.tones.1>тихо и тревожно, оставляя причину неизвестной вместо догадок</biotechDeathrestInterrupted.tones.1>
   <observedBiotechPollution.label>Загрязнение поселения</observedBiotechPollution.label>
-  <observedBiotechPollution.instruction>загрязнение всей карты поселения, которое уже невозможно игнорировать; сохраняй качественный масштаб и пиши, как изменившийся ландшафт меняет смысл дома</observedBiotechPollution.instruction>
+  <observedBiotechPollution.instruction>загрязнение всей карты поселения, которое уже невозможно игнорировать; передавай масштаб словами, без цифр, и пиши, как изменившийся ландшафт меняет смысл дома</observedBiotechPollution.instruction>
   <observedBiotechPollution.tone>с давлением заражённой среды и тревожной привязанностью к дому</observedBiotechPollution.tone>
   <observedBiotechPollution.tones.0>практично и тревожно: обычный уклад гнётся вокруг загрязнения</observedBiotechPollution.tones.0>
   <observedBiotechPollution.tones.1>тихо и бережно, измеряя, что всё ещё делает это место домом</observedBiotechPollution.tones.1>

@@ -55,14 +55,14 @@
   <PawnDiaryRimTalkBridge.Settings.ConversationQuietTicks>Тишина, завершающая разговор (в тиках)</PawnDiaryRimTalkBridge.Settings.ConversationQuietTicks>
   <PawnDiaryRimTalkBridge.Settings.PerPawnDailyCap>Записей разговоров на поселенца (0 — выкл., 1 — макс. в день)</PawnDiaryRimTalkBridge.Settings.PerPawnDailyCap>
   <PawnDiaryRimTalkBridge.Settings.PawnCooldownInfo>После одного принятого события чата оба участника игнорируют новые события чата {0} тиков — полный игровой день. Таймер сохраняется вместе с игрой.</PawnDiaryRimTalkBridge.Settings.PawnCooldownInfo>
-  <PawnDiaryRimTalkBridge.Settings.ColonyDailyCap>Макс. записей разговоров на колонию в день (0 — выкл.)</PawnDiaryRimTalkBridge.Settings.ColonyDailyCap>
+  <PawnDiaryRimTalkBridge.Settings.ColonyDailyCap>Макс. записей разговоров на поселение в день (0 — выкл.)</PawnDiaryRimTalkBridge.Settings.ColonyDailyCap>
   <PawnDiaryRimTalkBridge.Settings.PairMinGapTicks>Мин. промежуток для пары (в тиках)</PawnDiaryRimTalkBridge.Settings.PairMinGapTicks>
   <PawnDiaryRimTalkBridge.Settings.TranscriptLineCap>Цитируемых реплик на одну запись</PawnDiaryRimTalkBridge.Settings.TranscriptLineCap>
 
-  <!-- Тумблеры и счётчики: положение колонии (функция 1) и общая память пары (функция 3). -->
-  <PawnDiaryRimTalkBridge.Settings.InjectColonyContext>Учитывать положение колонии в разговоре</PawnDiaryRimTalkBridge.Settings.InjectColonyContext>
-  <PawnDiaryRimTalkBridge.Settings.InjectColonyContextDesc>Добавляет к контексту разговора короткую выверенную строку о том, чем сейчас живёт колония, — рейд, суровая погода, жуткое присутствие, незакрытое задание. По умолчанию выключено: другие моды могут уже передавать события в чат.</PawnDiaryRimTalkBridge.Settings.InjectColonyContextDesc>
-  <PawnDiaryRimTalkBridge.Settings.ColonyEventCount>Строк о положении колонии на разговор</PawnDiaryRimTalkBridge.Settings.ColonyEventCount>
+  <!-- Тумблеры и счётчики: положение поселения (функция 1) и общая память пары (функция 3). -->
+  <PawnDiaryRimTalkBridge.Settings.InjectColonyContext>Учитывать положение поселения в разговоре</PawnDiaryRimTalkBridge.Settings.InjectColonyContext>
+  <PawnDiaryRimTalkBridge.Settings.InjectColonyContextDesc>Добавляет к контексту разговора короткую выверенную строку о том, чем сейчас живёт поселение, — рейд, суровая погода, жуткое присутствие, незакрытое задание. По умолчанию выключено: другие моды могут уже передавать события в чат.</PawnDiaryRimTalkBridge.Settings.InjectColonyContextDesc>
+  <PawnDiaryRimTalkBridge.Settings.ColonyEventCount>Строк о положении поселения на разговор</PawnDiaryRimTalkBridge.Settings.ColonyEventCount>
 
   <!-- Текст, вставляемый в подсказки RimTalk (уровень 1) -->
   <PawnDiaryRimTalkBridge.Prompt.DiaryMemoriesHeader>свежие записи дневника:</PawnDiaryRimTalkBridge.Prompt.DiaryMemoriesHeader>
@@ -71,18 +71,18 @@
   <PawnDiaryRimTalkBridge.Prompt.DiaryVariableDesc>Свежие записи дневника этого поселенца и, если включено, строка о его манере вести дневник.</PawnDiaryRimTalkBridge.Prompt.DiaryVariableDesc>
   <PawnDiaryRimTalkBridge.Prompt.DiaryPersonaVariableDesc>Психотип этого поселенца из Pawn Diary. Доступен для явного использования в шаблоне и никогда не вставляется автоматически.</PawnDiaryRimTalkBridge.Prompt.DiaryPersonaVariableDesc>
 
-  <!-- Функция 1: блок положения колонии ({{colony_events}}). Проза, которую читает ИИ чата как
-       окружение пешки, — настоящее время, атмосферно, без упоминания мода. {0} в Colony.Quest —
+  <!-- Функция 1: блок положения поселения ({{colony_events}}). Проза, которую читает ИИ чата как
+       окружение поселенца, — настоящее время, атмосферно, без упоминания мода. {0} в Colony.Quest —
        собственное имя задания. Активные состояния берут ярлык из самой игры (ключа здесь нет). -->
-  <PawnDiaryRimTalkBridge.Prompt.ColonyEventsHeader>что творится в колонии:</PawnDiaryRimTalkBridge.Prompt.ColonyEventsHeader>
-  <PawnDiaryRimTalkBridge.Prompt.ColonyEventsVariableDesc>Короткая выверенная сводка о том, чем сейчас живёт колония, — угрозы, погодные напасти, присутствие аномалии, незакрытые задания — из Pawn Diary.</PawnDiaryRimTalkBridge.Prompt.ColonyEventsVariableDesc>
-  <PawnDiaryRimTalkBridge.Colony.ThreatHigh>колония под серьёзным ударом</PawnDiaryRimTalkBridge.Colony.ThreatHigh>
-  <PawnDiaryRimTalkBridge.Colony.ThreatLow>рядом с колонией неспокойно</PawnDiaryRimTalkBridge.Colony.ThreatLow>
-  <PawnDiaryRimTalkBridge.Colony.Anomaly>над колонией нависла неестественная жуть</PawnDiaryRimTalkBridge.Colony.Anomaly>
+  <PawnDiaryRimTalkBridge.Prompt.ColonyEventsHeader>что творится в поселении:</PawnDiaryRimTalkBridge.Prompt.ColonyEventsHeader>
+  <PawnDiaryRimTalkBridge.Prompt.ColonyEventsVariableDesc>Короткая выверенная сводка о том, чем сейчас живёт поселение, — угрозы, погодные напасти, присутствие аномалии, незакрытые задания — из Pawn Diary.</PawnDiaryRimTalkBridge.Prompt.ColonyEventsVariableDesc>
+  <PawnDiaryRimTalkBridge.Colony.ThreatHigh>поселение под серьёзным ударом</PawnDiaryRimTalkBridge.Colony.ThreatHigh>
+  <PawnDiaryRimTalkBridge.Colony.ThreatLow>рядом с поселением неспокойно</PawnDiaryRimTalkBridge.Colony.ThreatLow>
+  <PawnDiaryRimTalkBridge.Colony.Anomaly>над поселением нависла неестественная жуть</PawnDiaryRimTalkBridge.Colony.Anomaly>
   <PawnDiaryRimTalkBridge.Colony.Quest>всех гнетёт нерешённое дело: {0}</PawnDiaryRimTalkBridge.Colony.Quest>
 
   <!-- Голос дневника по характеру (уровень B). Теперь уровень B задаёт ПСИХОТИП (взгляд на мир) —
-       кто пешка есть, — а Pawn Diary сохраняет то, как она пишет. Старый VoiceRule оставлен только
+       кто такой поселенец, — а Pawn Diary сохраняет то, как он пишет. Старый VoiceRule оставлен только
        ради корректного чтения переопределений из старых сохранений до разовой миграции. -->
   <PawnDiaryRimTalkBridge.Persona.VoiceRule>голос, продиктованный характером: {0}</PawnDiaryRimTalkBridge.Persona.VoiceRule>
   <PawnDiaryRimTalkBridge.Persona.LensRule>Этот поселенец судит обо всём, исходя из того, кто он: {0}</PawnDiaryRimTalkBridge.Persona.LensRule>

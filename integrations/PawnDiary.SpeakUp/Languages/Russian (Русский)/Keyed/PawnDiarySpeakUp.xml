@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
-  <PawnDiarySpeakUp.Settings.Category>Дневник пешки: SpeakUp</PawnDiarySpeakUp.Settings.Category>
+  <PawnDiarySpeakUp.Settings.Category>Дневник поселенца: SpeakUp</PawnDiarySpeakUp.Settings.Category>
   <PawnDiarySpeakUp.Settings.SpeakUpMissing>SpeakUp не активен. Этот адаптер загружен бездействующим.</PawnDiarySpeakUp.Settings.SpeakUpMissing>
   <PawnDiarySpeakUp.Settings.ConversationsSection>Запись целых разговоров</PawnDiarySpeakUp.Settings.ConversationsSection>
   <PawnDiarySpeakUp.Settings.CaptureConversations>Записывать завершённые разговоры SpeakUp</PawnDiarySpeakUp.Settings.CaptureConversations>

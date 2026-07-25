@@ -26,9 +26,9 @@
   <DiaryPersona_GrimVeteran.label>свидетельский протокол</DiaryPersona_GrimVeteran.label>
   <DiaryPersona_GrimVeteran.rule>Этот поселенец склонен писать отрывистые свидетельские заметки в таком порядке: что было видно, что изменилось, что осталось неясным. Например: «Дым над лесом. Караул удвоили. Никто не пришёл».</DiaryPersona_GrimVeteran.rule>
   <DiaryPersona_WhimsicalEccentric.label>кривая усмешка</DiaryPersona_WhimsicalEccentric.label>
-  <DiaryPersona_WhimsicalEccentric.rule>Этот поселенец склонен подмечать одну нелепую или несуразную телесную деталь, а затем возвращаться к настоящему событию. Странность должна идти из переданного контекста. Например: «Ведро выглядело храбрее меня. И всё же поймало течь».</DiaryPersona_WhimsicalEccentric.rule>
+  <DiaryPersona_WhimsicalEccentric.rule>Этот поселенец склонен подмечать одну нелепую или несуразную деталь обстановки, а затем возвращаться к настоящему событию. Странность должна идти из переданного контекста. Например: «Ведро выглядело храбрее меня. И всё же поймало течь».</DiaryPersona_WhimsicalEccentric.rule>
   <DiaryPersona_NobleIdealist.label>тихая ответственность</DiaryPersona_NobleIdealist.label>
-  <DiaryPersona_NobleIdealist.rule>Этот поселенец склонен писать сдержанные предложения об ответственности и последствии. Без громких речей. Например: «Починка была пустяковой, но, оставь мы её, она обошлась бы нам дороже».</DiaryPersona_NobleIdealist.rule>
+  <DiaryPersona_NobleIdealist.rule>Этот поселенец склонен писать сдержанные предложения об ответственности и последствиях. Без громких речей. Например: «Починка была пустяковой, но, оставь мы её, она обошлась бы нам дороже».</DiaryPersona_NobleIdealist.rule>
   <DiaryPersona_BitterLoner.label>вежливая игла</DiaryPersona_BitterLoner.label>
   <DiaryPersona_BitterLoner.rule>Этот поселенец склонен писать ровные предложения и заканчивать запись одним мелким светским уколом. Не выдумывай реплик. Например: «Починкой все восхищались — как раз когда трудная часть уже была позади».</DiaryPersona_BitterLoner.rule>
   <DiaryPersona_EagerSocialite.label>несказанное</DiaryPersona_EagerSocialite.label>
@@ -48,7 +48,7 @@
   <DiaryPersona_RamblingOldTimer.label>труд и судьба</DiaryPersona_RamblingOldTimer.label>
   <DiaryPersona_RamblingOldTimer.rule>Этот поселенец склонен сравнивать событие с трудом, погодой, голодом или судьбой в одном серьёзном замечании. Сравнение должно оставаться простым и житейским. Например: «Голод прошёл по запасам, как старый долг, которому пришёл срок».</DiaryPersona_RamblingOldTimer.rule>
   <DiaryPersona_SuperstitiousRitualist.label>простая судьба</DiaryPersona_SuperstitiousRitualist.label>
-  <DiaryPersona_SuperstitiousRitualist.rule>Этот поселенец склонен излагать твёрдый факт, а затем отвечать на него простым фаталистичным предложением. Без пророчеств. Например: «Посевы померзли. Иные годы сперва берут, а уж потом дают».</DiaryPersona_SuperstitiousRitualist.rule>
+  <DiaryPersona_SuperstitiousRitualist.rule>Этот поселенец склонен излагать твёрдый факт, а затем отвечать на него простым фаталистичным предложением. Без пророчеств. Например: «Посевы помёрзли. Иные годы сперва берут, а уж потом дают».</DiaryPersona_SuperstitiousRitualist.rule>
   <DiaryPersona_DetachedPhilosopher.label>тихий парадокс</DiaryPersona_DetachedPhilosopher.label>
   <DiaryPersona_DetachedPhilosopher.rule>Этот поселенец склонен завершать запись одним скупым парадоксом или уроком из события; всё до него остаётся простым. Парадокс должен быть конкретным, а не мистическим. Например: «Дверь выстояла, потому что сперва прогнулась».</DiaryPersona_DetachedPhilosopher.rule>
   <DiaryPersona_ImagistMinimalist.label>сжатый образ</DiaryPersona_ImagistMinimalist.label>
@@ -82,7 +82,7 @@
   <DiaryPersona_MindscrewPain.label>игла боли</DiaryPersona_MindscrewPain.label>
   <DiaryPersona_MindscrewPain.rule>Этот поселенец склонен писать короткими, отрывистыми предложениями под давлением боли: один твёрдый факт, один резкий приступ, затем то, что ещё нужно было сделать. Сохрани событие понятным и не выдумывай тюремщиков, доктрин или кар сверх переданных фактов. Например: «Сталь в руках. За глазами ярко резануло. Штабель удержался».</DiaryPersona_MindscrewPain.rule>
   <DiaryPersona_InhumanizedVoid.label>тишина пустоты</DiaryPersona_InhumanizedVoid.label>
-  <DiaryPersona_InhumanizedVoid.rule>Этот поселенец склонен писать с холодной отрешённостью пустоты: один простой факт, затем один тёмный пространственный или телесный образ. Пиши скупо и нечеловечно, опираясь на переданное событие. Например: «Лампа мигнула и села. Темнота придвинулась считать мои вдохи».</DiaryPersona_InhumanizedVoid.rule>
+  <DiaryPersona_InhumanizedVoid.rule>Этот поселенец склонен писать с холодной отрешённостью пустоты: один простой факт, затем один тёмный пространственный или телесный образ. Пиши скупо и нечеловечно, опираясь на переданное событие. Например: «Лампа мигнула и погасла. Темнота придвинулась считать мои вдохи».</DiaryPersona_InhumanizedVoid.rule>
   <DiaryPersona_DrunkRambling.label>хмельная петля</DiaryPersona_DrunkRambling.label>
   <DiaryPersona_DrunkRambling.rule>Этот поселенец склонен писать как крепко выпивший: фразы тянутся чуть дольше нужного, мысль съезжает в замечание вбок, теплота или обида звучат громче, чем стоило бы, — а потом запись спохватывается и возвращается к делу. Факты из данных не трогай; шатается только подача. Например: «Забор починил, ну, почти, и мы с забором теперь друг друга понимаем, чего о некоторых не скажешь. Ладно. Забор починен».</DiaryPersona_DrunkRambling.rule>
   <DiaryPersona_FadingMemory.label>ускользающая нить</DiaryPersona_FadingMemory.label>
@@ -105,7 +105,7 @@
   <DiaryPersona_SidewaysStarter.label>вход сбоку</DiaryPersona_SidewaysStarter.label>
   <DiaryPersona_SidewaysStarter.rule>Этот поселенец склонен начинать с самой неважной правдивой детали из заметок, а затем невозмутимо ставить рядом настоящее событие. Обе части — из переданного контекста; несоответствие не объясняй. Например: «Чайник пора было чистить от накипи. Да, и ещё: через восточный гребень пришли налётчики».</DiaryPersona_SidewaysStarter.rule>
 
-  <!-- Детские манеры письма (наивно-конкретные, только для юных пешек до кристаллизации) -->
+  <!-- Детские манеры письма (наивно-конкретные, только для юных поселенцев до кристаллизации) -->
   <DiaryPersona_ChildPlainOrder.label>и потом</DiaryPersona_ChildPlainOrder.label>
   <DiaryPersona_ChildPlainOrder.rule>Этот поселенец склонен записывать всё ровно в том порядке, как случилось, связывая через «и потом», в настоящем времени. Каждое предложение — одно происходящее событие. Держись переданных фактов. Например: «Я просыпаюсь и потом холодно и потом мы едим и потом собака лает и я смеюсь».</DiaryPersona_ChildPlainOrder.rule>
 

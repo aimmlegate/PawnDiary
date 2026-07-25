@@ -15,7 +15,7 @@
   <DiaryHumorCue_SidewaysObservation.label>побочная деталь</DiaryHumorCue_SidewaysObservation.label>
   <DiaryHumorCue_SidewaysObservation.rule>Добавь одно боковое наблюдение о соседней бытовой детали и остановись. Оно должно стоять рядом с событием странно, но правдоподобно.</DiaryHumorCue_SidewaysObservation.rule>
   <DiaryHumorCue_ConditionalCopOut.label>авось пройдёт</DiaryHumorCue_ConditionalCopOut.label>
-  <DiaryHumorCue_ConditionalCopOut.rule>Закончи спокойной условной фразой в духе «авось обойдётся», но своими словами: исход будто ещё может обойтись без худшего. Не раздувай тревогу.</DiaryHumorCue_ConditionalCopOut.rule>
+  <DiaryHumorCue_ConditionalCopOut.rule>Закончи спокойной условной фразой в духе «авось обойдётся», но своими словами: будто всё ещё может обойтись без худшего. Не раздувай тревогу.</DiaryHumorCue_ConditionalCopOut.rule>
   <DiaryHumorCue_RenamedThing.label>возвышенное название</DiaryHumorCue_RenamedThing.label>
   <DiaryHumorCue_RenamedThing.rule>Один раз назови обычную вещь слишком торжественно или канцелярски, будто это важный объект хозяйства. Не объясняй переименование.</DiaryHumorCue_RenamedThing.rule>
   <DiaryHumorCue_ShrugCloser.label>ну и ладно</DiaryHumorCue_ShrugCloser.label>
@@ -27,7 +27,7 @@
   <DiaryHumorCue_UnacknowledgedDark.label>тьма мимоходом</DiaryHumorCue_UnacknowledgedDark.label>
   <DiaryHumorCue_UnacknowledgedDark.rule>Оставь одну мрачную деталь почти незамеченной, как будто рассказчик привык к такому порядку вещей. Не реагируй на неё отдельно.</DiaryHumorCue_UnacknowledgedDark.rule>
   <DiaryHumorCue_DryTallyOfLoss.label>канцелярский ущерб</DiaryHumorCue_DryTallyOfLoss.label>
-  <DiaryHumorCue_DryTallyOfLoss.rule>Назови потерянных людей и вещи ровным канцелярским тоном, но внутри обычных предложений, а не ведомостью. Например: «Двое с северного края не вернулись, и сарай ушёл вместе с ними».</DiaryHumorCue_DryTallyOfLoss.rule>
+  <DiaryHumorCue_DryTallyOfLoss.rule>Назови потерянных людей и вещи ровным канцелярским тоном, но внутри обычных предложений, а не ведомостью. Например: «Двое с северного края не вернулись, и сарай пропал вместе с ними».</DiaryHumorCue_DryTallyOfLoss.rule>
   <DiaryHumorCue_GrimUnderstatement.label>скромная катастрофа</DiaryHumorCue_GrimUnderstatement.label>
   <DiaryHumorCue_GrimUnderstatement.rule>Сожми бедствие до спокойной фразы, будто это неприятность среднего размера. Тон искренний и усталый, не язвительный.</DiaryHumorCue_GrimUnderstatement.rule>
   <DiaryHumorCue_MatterOfFactMortality.label>будничная смертность</DiaryHumorCue_MatterOfFactMortality.label>

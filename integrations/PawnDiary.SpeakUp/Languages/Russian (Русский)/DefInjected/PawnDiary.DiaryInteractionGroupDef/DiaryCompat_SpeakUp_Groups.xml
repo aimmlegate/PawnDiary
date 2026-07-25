@@ -13,7 +13,7 @@
   <speakupbridge_jokes.instruction>дневная череда шуток; запомни, кто пытался смешить, кто смеялся и кто стонал, не выдумывая остроту</speakupbridge_jokes.instruction>
   <speakupbridge_jokes.instructions.0>шутки: используй переданные реплики, чтобы показать ритм пары, а не сочинить шутку получше</speakupbridge_jokes.instructions.0>
   <speakupbridge_jokes.instructions.1>шутки: заметь, принёс ли юмор облегчение, привязанность, смущение или раздражение</speakupbridge_jokes.instructions.1>
-  <speakupbridge_jokes.instructions.2>шутки: держи лёгкий тон, если только настроение или отношения пешки не придают реакции больший вес</speakupbridge_jokes.instructions.2>
+  <speakupbridge_jokes.instructions.2>шутки: держи лёгкий тон, если только настроение или отношения поселенца не придают реакции больший вес</speakupbridge_jokes.instructions.2>
   <speakupbridge_jokes.tone>игриво, свободно и наблюдательно к людям</speakupbridge_jokes.tone>
   <speakupbridge_jokes.tones.0>с сухим весельем, включая стоны</speakupbridge_jokes.tones.0>
   <speakupbridge_jokes.tones.1>тепло и быстро, смех разбивает работу</speakupbridge_jokes.tones.1>
@@ -29,7 +29,7 @@
 
   <speakupbridge_reactions.label>реакции на мысли SpeakUp</speakupbridge_reactions.label>
   <speakupbridge_reactions.instruction>мимолётные реакции на уже переживаемое людьми; используй их как социальную фактуру дня, а не как отдельные драматические события</speakupbridge_reactions.instruction>
-  <speakupbridge_reactions.instructions.0>реакция на мысль: выбери только переданные реакции, раскрывающие закономерность в дне пешки</speakupbridge_reactions.instructions.0>
+  <speakupbridge_reactions.instructions.0>реакция на мысль: выбери только переданные реакции, раскрывающие закономерность в дне поселенца</speakupbridge_reactions.instructions.0>
   <speakupbridge_reactions.instructions.1>реакция на мысль: покажи, как чувства просочились в обычную речь, не выдумывая их причину</speakupbridge_reactions.instructions.1>
   <speakupbridge_reactions.instructions.2>реакция на мысль: складывай частые замечания мелко; фактура важнее стенограммы</speakupbridge_reactions.instructions.2>
   <speakupbridge_reactions.tone>кратко, наблюдательно и вплетённо в день</speakupbridge_reactions.tone>

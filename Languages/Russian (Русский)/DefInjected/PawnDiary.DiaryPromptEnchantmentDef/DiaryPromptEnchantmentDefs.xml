@@ -6,7 +6,7 @@
   <DiaryEnchant_ConsciousnessFading.label>угасающее сознание</DiaryEnchant_ConsciousnessFading.label>
   <DiaryEnchant_ConsciousnessBarelyAwake.label>едва в сознании</DiaryEnchant_ConsciousnessBarelyAwake.label>
   <DiaryEnchant_FeverishBody.label>лихорадящее тело</DiaryEnchant_FeverishBody.label>
-  <DiaryEnchant_BloodLossUrgency.label>угроза кровопотери</DiaryEnchant_BloodLossUrgency.label>
+  <DiaryEnchant_BloodLossUrgency.label>опасная кровопотеря</DiaryEnchant_BloodLossUrgency.label>
   <DiaryEnchant_AlcoholHigh.label>опьянение</DiaryEnchant_AlcoholHigh.label>
   <DiaryEnchant_Hangover.label>похмелье</DiaryEnchant_Hangover.label>
   <DiaryEnchant_AmbrosiaHigh.label>тепло амброзии</DiaryEnchant_AmbrosiaHigh.label>
@@ -28,8 +28,8 @@
   <DiaryEnchant_Mindscrew.label>мозгорез</DiaryEnchant_Mindscrew.label>
   <DiaryEnchant_Pregnancy.label>беременность</DiaryEnchant_Pregnancy.label>
   <DiaryEnchant_HemogenCraving.label>гемогенное голодание</DiaryEnchant_HemogenCraving.label>
-  <DiaryEnchant_PsychicBondTorn.label>разорванная пси-связь</DiaryEnchant_PsychicBondTorn.label>
-  <DiaryEnchant_BlissLobotomy.label>блаженство от лоботомии</DiaryEnchant_BlissLobotomy.label>
+  <DiaryEnchant_PsychicBondTorn.label>разорванная психическая связь</DiaryEnchant_PsychicBondTorn.label>
+  <DiaryEnchant_BlissLobotomy.label>блаженная лоботомия</DiaryEnchant_BlissLobotomy.label>
   <DiaryEnchant_RevenantHypnosis.label>гипноз ревенанта</DiaryEnchant_RevenantHypnosis.label>
   <DiaryEnchant_CubeInterest.label>интерес к кубу</DiaryEnchant_CubeInterest.label>
   <DiaryEnchant_CubeWithdrawal.label>кубическая ломка</DiaryEnchant_CubeWithdrawal.label>
@@ -37,7 +37,7 @@
   <DiaryEnchant_VoidShockOrTouched.label>шок пустоты или касание пустоты</DiaryEnchant_VoidShockOrTouched.label>
   <DiaryEnchant_CorpseTorment.label>месть мертвеца</DiaryEnchant_CorpseTorment.label>
   <DiaryEnchant_Inhumanized.label>обесчеловечивание</DiaryEnchant_Inhumanized.label>
-  <DiaryEnchant_FleshMutation.label>плотяное щупальце или кнут</DiaryEnchant_FleshMutation.label>
+  <DiaryEnchant_FleshMutation.label>плотяное щупальце или плеть</DiaryEnchant_FleshMutation.label>
   <DiaryEnchant_Malnutrition.label>истощение</DiaryEnchant_Malnutrition.label>
   <DiaryEnchant_TemperatureInjury.label>тепловой удар или переохлаждение</DiaryEnchant_TemperatureInjury.label>
   <DiaryEnchant_AnestheticHaze.label>наркозная пелена</DiaryEnchant_AnestheticHaze.label>
@@ -47,7 +47,7 @@
   <DiaryEnchant_WakeUpHigh.label>действие бодрина</DiaryEnchant_WakeUpHigh.label>
   <DiaryEnchant_CryptosleepSickness.label>криптосонная болезнь</DiaryEnchant_CryptosleepSickness.label>
   <DiaryEnchant_AgingBody.label>стареющее тело</DiaryEnchant_AgingBody.label>
-  <DiaryEnchant_Deathrest.label>смертный сон</DiaryEnchant_Deathrest.label>
+  <DiaryEnchant_Deathrest.label>торпор</DiaryEnchant_Deathrest.label>
   <DiaryEnchant_LungRot.label>гниль лёгких</DiaryEnchant_LungRot.label>
   <DiaryEnchant_BloodRage.label>кровавое бешенство</DiaryEnchant_BloodRage.label>
   <DiaryEnchant_VacuumExposure.label>вакуумное поражение</DiaryEnchant_VacuumExposure.label>

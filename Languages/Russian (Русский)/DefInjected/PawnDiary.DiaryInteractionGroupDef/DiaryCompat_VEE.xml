@@ -9,7 +9,7 @@
   <vee_raids.instructions.2>фиолетовый налёт — ограничься предупреждением и первым столкновением, если переданные факты не показывают большего</vee_raids.instructions.2>
   <vee_raids.tone>с тревогой перед знакомой угрозой, разросшейся до неестественных размеров</vee_raids.tone>
   <vee_raids.tones.0>напряжённо и недоверчиво: опасности не должно быть так много</vee_raids.tones.0>
-  <vee_raids.tones.1>резко и тактически: привычная оборона внезапно кажется слишком малой</vee_raids.tones.1>
+  <vee_raids.tones.1>резко и тактически: привычной обороны внезапно кажется слишком мало</vee_raids.tones.1>
 
   <vee_hediffs.label>Фоновые состояния VEE</vee_hediffs.label>
   <vee_hediffs.instruction>состояние VEE, общее для поселения; вплети его телесное или псионическое давление в итог дня и не изображай его внезапным личным диагнозом</vee_hediffs.instruction>
@@ -22,7 +22,7 @@
 
   <eventWindowVeeEarthquake.label>Землетрясение</eventWindowVeeEarthquake.label>
   <eventWindowVeeEarthquake.instruction>сама земля становится врагом; пиши тряску и первый честный подсчёт ущерба, но никогда не выдумывай исход</eventWindowVeeEarthquake.instruction>
-  <eventWindowVeeEarthquake.instructions.0>землетрясение — начни с равновесия, звука, пыли или с того, как нечто неподвижное начинает двигаться</eventWindowVeeEarthquake.instructions.0>
+  <eventWindowVeeEarthquake.instructions.0>землетрясение — начни с дрогнувшего равновесия, звука, пыли или с того, как нечто неподвижное начинает двигаться</eventWindowVeeEarthquake.instructions.0>
   <eventWindowVeeEarthquake.instructions.1>землетрясение — опиши первую неподвижную минуту после толчков и только тот ущерб, который поселенец действительно видит</eventWindowVeeEarthquake.instructions.1>
   <eventWindowVeeEarthquake.tone>с беспомощной тревогой, идущей из глубины земли</eventWindowVeeEarthquake.tone>
   <eventWindowVeeEarthquake.tones.0>потрясённо и телесно: полу больше нельзя доверять</eventWindowVeeEarthquake.tones.0>

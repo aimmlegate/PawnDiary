@@ -11,7 +11,7 @@
   <SolarFlareActive.label>солнечная вспышка</SolarFlareActive.label>
 
   <AnomalyGrayFleshEvidence.label>улики заражения подражателем</AnomalyGrayFleshEvidence.label>
-  <AnomalyGrayFleshEvidence.instruction>напиши это как паранойю и страх перед неизвестным существом, которое может заражать людей и подражать им; опирайся только на подозрения поселенца, делай обычные лица и голоса ненадёжными и никогда не объясняй скрытые игровые механики и не раскрывай носителя</AnomalyGrayFleshEvidence.instruction>
+  <AnomalyGrayFleshEvidence.instruction>напиши это как паранойю и страх перед неизвестным существом, которое может заражать людей и подражать им; опирайся только на подозрения поселенца, пусть привычные лица и голоса кажутся ненадёжными, и никогда не объясняй скрытые игровые механики и не раскрывай носителя</AnomalyGrayFleshEvidence.instruction>
 
   <MetalhorrorEmergence.label>проявление металлической жути</MetalhorrorEmergence.label>
 
@@ -30,7 +30,7 @@
   <PsychicDroneActive.label>псионический гул</PsychicDroneActive.label>
   <PsychicSootheActive.label>псионическое умиротворение</PsychicSootheActive.label>
   <PsychicSuppressionActive.label>псионическое подавление</PsychicSuppressionActive.label>
-  <GrayPallActive.label>смрад серой пелены</GrayPallActive.label>
+  <GrayPallActive.label>серая пелена</GrayPallActive.label>
   <UnnaturalHeatActive.label>неестественная жара</UnnaturalHeatActive.label>
   <HateChantDroneActive.label>песнопение ненависти</HateChantDroneActive.label>
   <NoxiousHazeActive.label>кислотный смог</NoxiousHazeActive.label>

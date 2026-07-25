@@ -68,10 +68,13 @@ namespace DiaryPipelineTests
             TestColorCueXmlPolicy();
             TestPromptTextSanitizer();
             TestPromptContextLines();
+            TestHealthImpactPolicy();
+            TestFaultIsolatedItemRunner();
             TestExternalEventRequestText();
             TestExternalPromptContextText();
             TestExternalEntryAttribution();
             TestExternalApiBudgetPolicy();
+            TestAdvancedSnapshotPolicy();
             TestListenerRegistry();
             TestCaptureCapabilityRegistry();
             TestDiaryListText();
@@ -698,7 +701,7 @@ namespace DiaryPipelineTests
                 "the colony was told: {0}",
                 english.Root.Element("PawnDiary.Event.DayReflectionNews")?.Value);
             AssertEqual("H3 Russian news frame",
-                "колонии сообщили: {0}",
+                "поселению сообщили: {0}",
                 russian.Root.Element("PawnDiary.Event.DayReflectionNews")?.Value);
         }
 
@@ -3971,6 +3974,17 @@ namespace DiaryPipelineTests
                 ExternalEventRequestText.CleanSummary(splitSurrogateSummary));
 
             AssertEqual(
+                "external event label flattens raw-key field delimiters",
+                "bridge key, outcome=forged",
+                ExternalEventRequestText.CleanEventLabel(
+                    " <b>bridge key</b>;\r\noutcome=forged\u0007 "));
+            string longLabel = new string('l', ExternalEventRequestText.MaxEventLabelChars + 20);
+            AssertEqual(
+                "external event label uses its defensive cap",
+                ExternalEventRequestText.MaxEventLabelChars,
+                ExternalEventRequestText.CleanEventLabel(longLabel).Length);
+
+            AssertEqual(
                 "external event extra context uses prompt context cleanup",
                 "mood=grim, focused; place=rec room; ignored=over-cap",
                 ExternalEventRequestText.JoinExtraContext(new List<string>
@@ -3979,6 +3993,62 @@ namespace DiaryPipelineTests
                     "place=<b>rec room</b>\r\n",
                     "ignored=over-cap"
                 }));
+        }
+
+        private static void TestHealthImpactPolicy()
+        {
+            AssertTrue(
+                "positive health impact is meaningful harm",
+                HealthImpactPolicy.IsMeaningfulHarm(0.2f, 0.05f));
+            AssertTrue(
+                "negative health impact is not harm",
+                !HealthImpactPolicy.IsMeaningfulHarm(-0.2f, 0.05f));
+            AssertTrue(
+                "threshold boundary is not visible harm",
+                !HealthImpactPolicy.IsMeaningfulHarm(0.05f, 0.05f));
+            AssertNear(
+                "positive health impact weights prompt selection",
+                0.4f,
+                HealthImpactPolicy.NormalizedHarm(0.4f));
+            AssertNear(
+                "health impact weight is capped",
+                1f,
+                HealthImpactPolicy.NormalizedHarm(3f));
+            AssertNear(
+                "invalid health impact does not add weight",
+                0f,
+                HealthImpactPolicy.NormalizedHarm(float.NaN));
+        }
+
+        private static void TestFaultIsolatedItemRunner()
+        {
+            List<int> attempted = new List<int>();
+            List<int> failed = new List<int>();
+            int successes = FaultIsolatedItemRunner.Run(
+                new[] { 1, 2, 3, 4 },
+                item =>
+                {
+                    attempted.Add(item);
+                    if (item == 2 || item == 4)
+                    {
+                        throw new InvalidOperationException("expected item failure");
+                    }
+
+                    return item == 1;
+                },
+                (item, exception) =>
+                {
+                    failed.Add(item);
+                    if (item == 2)
+                    {
+                        throw new InvalidOperationException("expected reporter failure");
+                    }
+                });
+
+            AssertEqual("all fault-isolated siblings are attempted", 4, attempted.Count);
+            AssertEqual("successful fanout result count excludes drops and failures", 1, successes);
+            AssertEqual("each throwing sibling is reported", 2, failed.Count);
+            AssertEqual("later sibling runs after callback and reporter failures", 4, attempted[3]);
         }
 
         private static void TestExternalPromptContextText()
@@ -4284,6 +4354,16 @@ namespace DiaryPipelineTests
                 ExternalApiBudgetPolicy.SourceRequestCapReason,
                 sourceRequestCap.blockReason);
 
+            ExternalApiBudgetDecision zeroTokenRequestCap = ExternalApiBudgetPolicy.Evaluate(
+                recent, sourceRequestTuning, 100, "adapter.a", 0);
+            AssertTrue("zero-token request still obeys source request cap",
+                !zeroTokenRequestCap.allowed);
+            AssertEqual("zero-token request cap reason",
+                ExternalApiBudgetPolicy.SourceRequestCapReason,
+                zeroTokenRequestCap.blockReason);
+            AssertEqual("zero-token request stores normalized token estimate",
+                0, zeroTokenRequestCap.requestedTokens);
+
             ExternalApiBudgetTuning globalTokenTuning = new ExternalApiBudgetTuning
             {
                 enabled = true,
@@ -4321,6 +4401,16 @@ namespace DiaryPipelineTests
             AssertEqual("blank budget source normalizes",
                 "unknown-source",
                 ExternalApiBudgetPolicy.NormalizeSourceId(" \t "));
+        }
+
+        private static void TestAdvancedSnapshotPolicy()
+        {
+            AssertTrue("early settings load defers pristine snapshot",
+                !AdvancedSnapshotPolicy.ShouldCapture(false, false));
+            AssertTrue("Def-ready startup captures pristine snapshot",
+                AdvancedSnapshotPolicy.ShouldCapture(false, true));
+            AssertTrue("later calls never replace the pristine snapshot",
+                !AdvancedSnapshotPolicy.ShouldCapture(true, true));
         }
 
         private static void TestDiaryListText()
@@ -10079,7 +10169,10 @@ namespace DiaryPipelineTests
             Dictionary<string, object> parsed = parsedObj as Dictionary<string, object>;
             AssertTrue("payload is a json object", parsed != null);
 
-            AssertEqual("payload schemaVersion", ErrorReportPayload.SchemaVersion, (int)(double)parsed["schemaVersion"]);
+            AssertTrue("payload schemaVersion preserves integral JSON type",
+                parsed["schemaVersion"] is long);
+            AssertEqual("payload schemaVersion", ErrorReportPayload.SchemaVersion,
+                checked((int)(long)parsed["schemaVersion"]));
             AssertEqual("payload modVersion", "1.2.3.4", (string)parsed["modVersion"]);
             AssertEqual("payload installId", "abc123def456", (string)parsed["installId"]);
             AssertEqual("payload installSource", "workshop", (string)parsed["installSource"]);
