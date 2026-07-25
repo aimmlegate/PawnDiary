@@ -10,6 +10,9 @@ namespace PawnDiary
 {
     public partial class PawnDiaryMod
     {
+        private const float PromptStudioFieldLabelHeight = 24f;
+        private const float PromptStudioFieldLabelGap = 2f;
+
         /// <summary>
         /// Draws the compact prompt editor. System prompts and event-source prompts share one
         /// selector so only the selected prompt block is open at a time.
@@ -151,8 +154,10 @@ namespace PawnDiary
             string currentEnhancement = Settings.eventEnhancementOverrides.Effective(eventKey, selected.enhancement);
             string currentForcedModel = Settings.eventForcedModelOverrides.Effective(eventKey, selected.forcedModel);
 
-            DrawFieldLabel(new Rect(innerRect.x, y, innerRect.width, 20f), "PawnDiary.Settings.EventPromptPromptField".Translate());
-            y += 22f;
+            DrawFieldLabel(
+                new Rect(innerRect.x, y, innerRect.width, PromptStudioFieldLabelHeight),
+                "PawnDiary.Settings.EventPromptPromptField".Translate());
+            y += PromptStudioFieldLabelHeight + PromptStudioFieldLabelGap;
             Rect promptRect = new Rect(innerRect.x, y, innerRect.width, EventPromptTextAreaHeight);
             string editedPrompt = Widgets.TextArea(promptRect, currentPrompt ?? string.Empty);
             if (!string.Equals(editedPrompt, currentPrompt ?? string.Empty, StringComparison.Ordinal))
@@ -161,8 +166,10 @@ namespace PawnDiary
             }
 
             y += EventPromptTextAreaHeight + 8f;
-            DrawFieldLabel(new Rect(innerRect.x, y, innerRect.width, 20f), "PawnDiary.Settings.EventPromptEnhancementField".Translate());
-            y += 22f;
+            DrawFieldLabel(
+                new Rect(innerRect.x, y, innerRect.width, PromptStudioFieldLabelHeight),
+                "PawnDiary.Settings.EventPromptEnhancementField".Translate());
+            y += PromptStudioFieldLabelHeight + PromptStudioFieldLabelGap;
             Rect enhancementRect = new Rect(innerRect.x, y, innerRect.width, EventPromptTextAreaHeight);
             string editedEnhancement = Widgets.TextArea(enhancementRect, currentEnhancement ?? string.Empty);
             if (!string.Equals(editedEnhancement, currentEnhancement ?? string.Empty, StringComparison.Ordinal))
@@ -171,8 +178,10 @@ namespace PawnDiary
             }
 
             y += EventPromptTextAreaHeight + 8f;
-            DrawFieldLabel(new Rect(innerRect.x, y, innerRect.width, 20f), "PawnDiary.Settings.EventPromptForcedModelField".Translate());
-            y += 22f;
+            DrawFieldLabel(
+                new Rect(innerRect.x, y, innerRect.width, PromptStudioFieldLabelHeight),
+                "PawnDiary.Settings.EventPromptForcedModelField".Translate());
+            y += PromptStudioFieldLabelHeight + PromptStudioFieldLabelGap;
             Rect forcedModelRect = new Rect(innerRect.x, y, innerRect.width, 28f);
             string editedForcedModel = Widgets.TextField(forcedModelRect, currentForcedModel ?? string.Empty);
             if (!string.Equals(editedForcedModel, currentForcedModel ?? string.Empty, StringComparison.Ordinal))
@@ -204,8 +213,10 @@ namespace PawnDiary
         private static void DrawSelectedSystemPromptEditor(Rect innerRect, ref float y, PromptStudioOption selected)
         {
             string before = selected.CurrentPrompt() ?? string.Empty;
-            DrawFieldLabel(new Rect(innerRect.x, y, innerRect.width, 20f), "PawnDiary.Settings.SystemPromptField".Translate());
-            y += 22f;
+            DrawFieldLabel(
+                new Rect(innerRect.x, y, innerRect.width, PromptStudioFieldLabelHeight),
+                "PawnDiary.Settings.SystemPromptField".Translate());
+            y += PromptStudioFieldLabelHeight + PromptStudioFieldLabelGap;
 
             Rect promptRect = new Rect(innerRect.x, y, innerRect.width, SystemPromptTextAreaHeight);
             string edited = Widgets.TextArea(promptRect, before);
@@ -324,7 +335,7 @@ namespace PawnDiary
 
         private static float PromptStudioBlockHeight(PromptStudioOption option)
         {
-            return option != null && option.IsEvent ? 424f : 300f;
+            return option != null && option.IsEvent ? 436f : 304f;
         }
 
         private static List<DiaryEventPromptDef> EventPromptDefsForSettings()

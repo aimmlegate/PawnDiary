@@ -17,7 +17,9 @@ namespace PawnDiary
     {
         // Fixed card height: the block always shows the same fields (no variable-height tag grid), so a
         // constant is enough. Sized to fit summary + buttons + selector + all edit fields + action row.
-        private const float PsychotypeStudioCardHeight = 412f;
+        private const float PsychotypeStudioCardHeight = 416f;
+        private const float PsychotypeStudioSmallLabelHeight = 24f;
+        private const float PsychotypeStudioFieldLabelGap = 2f;
 
         // The four adult roll buckets, in a stable order for the family dropdown.
         private static readonly string[] PsychotypeFamilies =
@@ -146,7 +148,7 @@ namespace PawnDiary
 
             y += 24f;
             DrawMutedLabel(
-                new Rect(innerRect.x, y, innerRect.width, 20f),
+                new Rect(innerRect.x, y, innerRect.width, PsychotypeStudioSmallLabelHeight),
                 (IsPsychotypeCustomized(selected.defName)
                     ? "PawnDiary.Settings.PromptStatusCustomized"
                     : "PawnDiary.Settings.PromptStatusDefault").Translate());
@@ -156,9 +158,9 @@ namespace PawnDiary
             string editedLabel = DrawCompactTextField(labelFieldRect, "PawnDiary.Settings.PsychotypeLabel".Translate(), currentLabel, 86f);
 
             y += 34f;
-            Rect ruleLabelRect = new Rect(innerRect.x, y, innerRect.width, 20f);
+            Rect ruleLabelRect = new Rect(innerRect.x, y, innerRect.width, PsychotypeStudioSmallLabelHeight);
             DrawFieldLabel(ruleLabelRect, "PawnDiary.Settings.PsychotypeRule".Translate());
-            y += 22f;
+            y += PsychotypeStudioSmallLabelHeight + PsychotypeStudioFieldLabelGap;
             Rect ruleRect = new Rect(innerRect.x, y, innerRect.width, PersonaRuleTextAreaHeight);
             string editedRule = Widgets.TextArea(ruleRect, currentRule);
 

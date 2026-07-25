@@ -1,6 +1,7 @@
 // Throttled RimWorld adapter that combines saved diary records with live/dead pawn resolution.
-// World/map scans belong here at the impure UI edge; ordering and inclusion stay in the System-only
-// DiaryReaderListPolicy so they are independently testable.
+// World/map scans stay at the impure UI edge and are coordinated through DiaryUiPawnSnapshot so the
+// reader and name highlighter do not enumerate the same pawn lists twice in one frame. Ordering and
+// inclusion stay in the System-only DiaryReaderListPolicy so they are independently testable.
 using System;
 using System.Collections.Generic;
 using RimWorld;
@@ -41,6 +42,8 @@ namespace PawnDiary
         private int lastDataCount = -1;
         private int lastBuildTick = int.MinValue;
         private float lastBuildRealtime = -1f;
+        private Game cachedGame;
+        private DiaryGameComponent cachedComponent;
 
         public IReadOnlyList<DiaryReaderPawnRow> Rows
         {
@@ -53,17 +56,30 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Rebuilds on saved-data count changes or at the bounded world-resolution cadence.
+        /// Rebuilds when the game/component session changes, saved-data count changes, or the
+        /// bounded world-resolution cadence expires.
         /// </summary>
         public void RefreshIfNeeded(
             DiaryGameComponent component,
             string unknownName,
             bool force)
         {
-            if (component == null)
+            Game game = Current.Game;
+            bool sessionChanged = DiaryUiPolicy.ReaderDirectorySessionChanged(
+                cachedGame,
+                game,
+                cachedComponent,
+                component);
+            if (sessionChanged)
             {
-                rows.Clear();
-                departedDividerIndex = 0;
+                // Data count, ticks, and pawn load IDs can all repeat in another save. Clear every
+                // strong Pawn reference before considering the throttle, then force the new session's
+                // first directory snapshot even when its record count happens to be identical.
+                ResetForSession(game, component);
+            }
+
+            if (game == null || component == null)
+            {
                 return;
             }
 
@@ -74,7 +90,7 @@ namespace PawnDiary
             bool tickElapsed = lastBuildTick == int.MinValue || nowTick - lastBuildTick >= RefreshTicks;
             bool realtimeElapsed = lastBuildRealtime < 0f
                 || nowRealtime - lastBuildRealtime >= RefreshRealtimeSeconds;
-            if (!force && !dataChanged && !(tickElapsed && realtimeElapsed))
+            if (!force && !sessionChanged && !dataChanged && !(tickElapsed && realtimeElapsed))
             {
                 return;
             }
@@ -83,6 +99,21 @@ namespace PawnDiary
             lastDataCount = dataCount;
             lastBuildTick = nowTick;
             lastBuildRealtime = nowRealtime;
+        }
+
+        private void ResetForSession(Game game, DiaryGameComponent component)
+        {
+            cachedGame = game;
+            cachedComponent = component;
+            savedInfo.Clear();
+            resolvedPawns.Clear();
+            currentLivingColonistIds.Clear();
+            policyRowsByPawnId.Clear();
+            rows.Clear();
+            departedDividerIndex = 0;
+            lastDataCount = -1;
+            lastBuildTick = int.MinValue;
+            lastBuildRealtime = -1f;
         }
 
         private void Rebuild(DiaryGameComponent component, string unknownName)
@@ -202,85 +233,10 @@ namespace PawnDiary
 
         private void CollectResolvedPawns()
         {
-            List<Map> maps = Find.Maps;
-            if (maps != null)
+            IReadOnlyList<WeakReference> pawns = DiaryUiPawnSnapshot.ResolvedReaderPawns();
+            for (int i = 0; i < pawns.Count; i++)
             {
-                for (int i = 0; i < maps.Count; i++)
-                {
-                    Map map = maps[i];
-                    List<Pawn> mapPawns = map?.mapPawns?.AllPawns;
-                    if (mapPawns != null)
-                    {
-                        for (int j = 0; j < mapPawns.Count; j++)
-                        {
-                            AddPawn(mapPawns[j]);
-                        }
-                    }
-
-                    CollectSpawnedCorpses(map);
-                    CollectCasketCorpses(map);
-                }
-            }
-
-            IEnumerable<Pawn> travelling = PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive;
-            if (travelling != null)
-            {
-                foreach (Pawn pawn in travelling)
-                {
-                    AddPawn(pawn);
-                }
-            }
-
-            if (Find.WorldPawns != null)
-            {
-                foreach (Pawn pawn in Find.WorldPawns.AllPawnsAlive)
-                {
-                    AddPawn(pawn);
-                }
-
-                foreach (Pawn pawn in Find.WorldPawns.AllPawnsDead)
-                {
-                    AddPawn(pawn);
-                }
-            }
-        }
-
-        private void CollectSpawnedCorpses(Map map)
-        {
-            List<Thing> corpses = map?.listerThings?.ThingsInGroup(ThingRequestGroup.Corpse);
-            if (corpses == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < corpses.Count; i++)
-            {
-                AddPawn((corpses[i] as Corpse)?.InnerPawn);
-            }
-        }
-
-        private void CollectCasketCorpses(Map map)
-        {
-            if (map?.listerBuildings == null)
-            {
-                return;
-            }
-
-            CollectCasketCorpses(map.listerBuildings.allBuildingsColonist);
-            CollectCasketCorpses(map.listerBuildings.allBuildingsNonColonist);
-        }
-
-        private void CollectCasketCorpses(IEnumerable<Building> buildings)
-        {
-            if (buildings == null)
-            {
-                return;
-            }
-
-            foreach (Building building in buildings)
-            {
-                Building_Casket casket = building as Building_Casket;
-                AddPawn((casket?.ContainedThing as Corpse)?.InnerPawn);
+                AddPawn(pawns[i].Target as Pawn);
             }
         }
 

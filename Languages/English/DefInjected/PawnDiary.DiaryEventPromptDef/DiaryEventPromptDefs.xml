@@ -84,6 +84,9 @@
   <DiaryEventPrompt_Arrival.label>arrival</DiaryEventPrompt_Arrival.label>
   <DiaryEventPrompt_Arrival.prompt>Write a factual colony-arrival note about how this pawn joined or began here.</DiaryEventPrompt_Arrival.prompt>
   <DiaryEventPrompt_Arrival.enhancement>Make the arrival feel like a threshold: dust, shock, silence, relief, suspicion, or first sight of shelter. Use only scenario and arrival facts.</DiaryEventPrompt_Arrival.enhancement>
+  <DiaryEventPrompt_BrainwipeArrival.label>amnesiac awakening</DiaryEventPrompt_BrainwipeArrival.label>
+  <DiaryEventPrompt_BrainwipeArrival.prompt>Write this anxious awakening after total autobiographical amnesia as a new beginning.</DiaryEventPrompt_BrainwipeArrival.prompt>
+  <DiaryEventPrompt_BrainwipeArrival.enhancement>The pawn knows their former memories are absent and feels anxiety about that blankness. Do not restore, summarize, or invent anything from before the brainwipe.</DiaryEventPrompt_BrainwipeArrival.enhancement>
   <DiaryEventPrompt_Death.label>death</DiaryEventPrompt_Death.label>
   <DiaryEventPrompt_Death.prompt>Write a factual death note about how the colonist died.</DiaryEventPrompt_Death.prompt>
   <DiaryEventPrompt_Death.enhancement>Make the death note stark and specific, with one concrete cause or setting detail. Use only supplied cause, body-part, weapon, condition, and setting facts; keep it brief.</DiaryEventPrompt_Death.enhancement>

@@ -980,6 +980,8 @@
   <PawnDiary.Event.ArrivalLabel>Появление</PawnDiary.Event.ArrivalLabel>
   <PawnDiary.Event.StartingArrival>{0}: в числе основателей поселения.</PawnDiary.Event.StartingArrival>
   <PawnDiary.Event.JoinedArrival>{0}: присоединение к поселению.</PawnDiary.Event.JoinedArrival>
+  <PawnDiary.Event.BrainwipeArrivalLabel>Пробуждение без памяти</PawnDiary.Event.BrainwipeArrivalLabel>
+  <PawnDiary.Event.BrainwipeArrival>{0} приходит в себя после стирания памяти: прошлое исчезло, а пустота вызывает тревогу.</PawnDiary.Event.BrainwipeArrival>
   <PawnDiary.Event.Arrival.Backstory.DisabledWork>недоступные работы</PawnDiary.Event.Arrival.Backstory.DisabledWork>
   <PawnDiary.Event.Arrival.Backstory.DisabledTasks>недоступные задачи</PawnDiary.Event.Arrival.Backstory.DisabledTasks>
   <PawnDiary.Event.Arrival.Backstory.DisabledWorkTags>недоступные категории работ</PawnDiary.Event.Arrival.Backstory.DisabledWorkTags>

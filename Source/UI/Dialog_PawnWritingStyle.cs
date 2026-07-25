@@ -51,10 +51,10 @@ namespace PawnDiary
         private Vector2 psychotypeBaseScroll;
         private Vector2 psychotypeCustomScroll;
 
-        // Layout constants (font line heights per AGENTS.md / UI lore: Tiny 18, Small 22, Medium 28).
+        // Layout constants (safe font row heights per AGENTS.md / UI lore: Tiny 20, Small 24, Medium 30).
         private const float HeaderHeight = 32f;
-        private const float LineHeight = 22f;
-        private const float LabelHeight = 20f;
+        private const float SmallLabelMinimumHeight = 24f;
+        private const float LabelBodyGap = 2f;
         private const float ButtonHeight = 30f;
         private const float PromptAreaHeight = 96f;
         private const float SmallPromptHeight = 72f;
@@ -63,7 +63,10 @@ namespace PawnDiary
         private const float Padding = 14f;
         private const float FieldGap = 6f;
         private const float ExplanationMinHeight = 40f;
-        private const float ExplanationMaxHeight = 96f;
+        private const float PsychotypeMinimumPickerWidth = 120f;
+        private const float PsychotypeRerollWidth = 90f;
+        private const float PsychotypePinWidth = 110f;
+        private const float PsychotypeControlGap = 6f;
 
         public Dialog_PawnWritingStyle(Pawn pawn, DiaryGameComponent component)
         {
@@ -131,7 +134,7 @@ namespace PawnDiary
                 inRect.width,
                 buttonRow.y - FieldGap - (inRect.y + HeaderHeight + FieldGap));
 
-            float innerWidth = scrollOuter.width - 16f; // reserve scrollbar width
+            float innerWidth = Mathf.Max(1f, scrollOuter.width - 16f); // reserve scrollbar width
             float contentHeight = MeasureContentHeight(innerWidth, styleResolution, psychotypeResolution);
             Rect contentRect = new Rect(0f, 0f, innerWidth, contentHeight);
 
@@ -154,8 +157,8 @@ namespace PawnDiary
 
         private void DrawStyleSection(float x, float width, ref float y, WritingStyleResolution resolution)
         {
-            DrawBaseStylePicker(new Rect(x, y, width, LineHeight), resolution);
-            y += LineHeight + FieldGap;
+            DrawBaseStylePicker(new Rect(x, y, width, ButtonHeight), resolution);
+            y += ButtonHeight + FieldGap;
 
             // Put precedence before the editable fields: players can immediately see whether the base,
             // their pawn-specific text, a health condition, or another mod currently controls the voice.
@@ -169,8 +172,7 @@ namespace PawnDiary
                 ref basePromptScroll,
                 PromptAreaHeight) + FieldGap;
 
-            string customLabel = "PawnDiary.WritingStyle.CustomPrompt".Translate().ToString()
-                + "  " + customRuleBuffer.Length + "/" + PlayerWritingStyleText.MaxRuleChars;
+            string customLabel = WritingStyleCustomLabel();
             y += DrawLabeledScrollText(
                 new Rect(x, y, width, PromptAreaHeight),
                 customLabel,
@@ -221,14 +223,50 @@ namespace PawnDiary
             Widgets.Label(new Rect(x, y, width, SectionTitleHeight), "PawnDiary.Psychotype.SectionTitle".Translate());
             y += SectionTitleHeight + FieldGap;
 
-            // Picker + Re-roll + Pin toggle on one row.
-            float pinWidth = 110f;
-            float rerollWidth = 90f;
-            float gap = 6f;
-            float pickerWidth = Mathf.Max(120f, width - pinWidth - rerollWidth - gap * 2f);
-            Rect pickerRect = new Rect(x, y, pickerWidth, ButtonHeight);
-            Rect rerollRect = new Rect(pickerRect.xMax + gap, y, rerollWidth, ButtonHeight);
-            Rect pinRect = new Rect(rerollRect.xMax + gap, y, pinWidth, ButtonHeight);
+            // Keep all three controls reachable on a narrow screen. They share one row when the picker
+            // still has its useful minimum width, then stack into full-width rows below that threshold.
+            int controlRows = DiaryUiPolicy.PsychotypeControlRowCount(
+                width,
+                PsychotypeMinimumPickerWidth,
+                PsychotypeRerollWidth,
+                PsychotypePinWidth,
+                PsychotypeControlGap);
+            Rect pickerRect;
+            Rect rerollRect;
+            Rect pinRect;
+            if (controlRows == 1)
+            {
+                float pickerWidth = width
+                    - PsychotypePinWidth
+                    - PsychotypeRerollWidth
+                    - PsychotypeControlGap * 2f;
+                pickerRect = new Rect(x, y, pickerWidth, ButtonHeight);
+                rerollRect = new Rect(
+                    pickerRect.xMax + PsychotypeControlGap,
+                    y,
+                    PsychotypeRerollWidth,
+                    ButtonHeight);
+                pinRect = new Rect(
+                    rerollRect.xMax + PsychotypeControlGap,
+                    y,
+                    PsychotypePinWidth,
+                    ButtonHeight);
+            }
+            else
+            {
+                pickerRect = new Rect(x, y, width, ButtonHeight);
+                rerollRect = new Rect(
+                    x,
+                    pickerRect.yMax + PsychotypeControlGap,
+                    width,
+                    ButtonHeight);
+                pinRect = new Rect(
+                    x,
+                    rerollRect.yMax + PsychotypeControlGap,
+                    width,
+                    ButtonHeight);
+            }
+
             DrawPsychotypePicker(pickerRect);
 
             if (Widgets.ButtonText(rerollRect, "PawnDiary.Psychotype.Reroll".Translate()))
@@ -243,7 +281,9 @@ namespace PawnDiary
             TooltipHandler.TipRegion(rerollRect, "PawnDiary.Psychotype.RerollTip".Translate());
             Widgets.CheckboxLabeled(pinRect, "PawnDiary.Psychotype.Pinned".Translate(), ref pendingPsychotypePinned);
             TooltipHandler.TipRegion(pinRect, "PawnDiary.Psychotype.PinnedTip".Translate());
-            y += ButtonHeight + FieldGap;
+            y += controlRows * ButtonHeight
+                + (controlRows - 1) * PsychotypeControlGap
+                + FieldGap;
 
             DrawExternalRegenRow(x, width, ref y);
 
@@ -254,8 +294,7 @@ namespace PawnDiary
                 ref psychotypeBaseScroll,
                 SmallPromptHeight) + FieldGap;
 
-            string customLabel = "PawnDiary.Psychotype.CustomRule".Translate().ToString()
-                + "  " + customPsychotypeBuffer.Length + "/" + PsychotypeText.MaxCustomRuleChars;
+            string customLabel = PsychotypeCustomLabel();
             y += DrawLabeledScrollText(
                 new Rect(x, y, width, SmallPromptHeight),
                 customLabel,
@@ -375,10 +414,11 @@ namespace PawnDiary
             bool editable = false,
             Action<string> editedText = null)
         {
-            Rect labelRect = new Rect(rect.x, rect.y, rect.width, LabelHeight);
+            float labelHeight = SmallLabelHeight(label, rect.width);
+            Rect labelRect = new Rect(rect.x, rect.y, rect.width, labelHeight);
             Widgets.Label(labelRect, label);
 
-            Rect bodyRect = new Rect(rect.x, labelRect.yMax + 2f, rect.width, bodyHeight);
+            Rect bodyRect = new Rect(rect.x, labelRect.yMax + LabelBodyGap, rect.width, bodyHeight);
             Widgets.DrawBoxSolid(bodyRect, new Color(0f, 0f, 0f, 0.25f));
 
             float innerWidth = Mathf.Max(20f, bodyRect.width - 16f);
@@ -399,15 +439,15 @@ namespace PawnDiary
             }
 
             Widgets.EndScrollView();
-            return labelRect.height + 2f + bodyHeight;
+            return labelRect.height + LabelBodyGap + bodyHeight;
         }
 
         private float DrawMessagePanel(Rect rect, string message, Color color)
         {
-            float height = Mathf.Clamp(
-                Text.CalcHeight(message, rect.width - Padding * 2f) + Padding * 2f,
+            float textWidth = Mathf.Max(1f, rect.width - Padding * 2f);
+            float height = Mathf.Max(
                 ExplanationMinHeight,
-                ExplanationMaxHeight);
+                Mathf.Ceil(Text.CalcHeight(message ?? string.Empty, textWidth) + Padding * 2f));
             Rect panelRect = new Rect(rect.x, rect.y, rect.width, height);
             Widgets.DrawBoxSolid(panelRect, color);
             Widgets.Label(panelRect.ContractedBy(Padding), message);
@@ -421,22 +461,42 @@ namespace PawnDiary
             float h = 0f;
 
             // Style section.
-            h += LineHeight + FieldGap;
+            h += ButtonHeight + FieldGap;
             h += MessagePanelHeight(WritingStyleStatusMessage(styleResolution), width);
-            h += (LabelHeight + 2f + PromptAreaHeight) + FieldGap;
-            h += (LabelHeight + 2f + PromptAreaHeight) + FieldGap;
+            h += LabeledScrollTextHeight(
+                "PawnDiary.WritingStyle.BasePrompt".Translate(),
+                width,
+                PromptAreaHeight) + FieldGap;
+            h += LabeledScrollTextHeight(
+                WritingStyleCustomLabel(),
+                width,
+                PromptAreaHeight) + FieldGap;
 
             // Psychotype section.
             h += SectionGap + FieldGap; // gap + separator line
             h += SectionTitleHeight + FieldGap;
-            h += ButtonHeight + FieldGap;
+            int controlRows = DiaryUiPolicy.PsychotypeControlRowCount(
+                width,
+                PsychotypeMinimumPickerWidth,
+                PsychotypeRerollWidth,
+                PsychotypePinWidth,
+                PsychotypeControlGap);
+            h += controlRows * ButtonHeight
+                + (controlRows - 1) * PsychotypeControlGap
+                + FieldGap;
             if (pawn != null && Integration.ExternalPsychotypeGenerators.CanReroll(pawn))
             {
                 h += ButtonHeight + FieldGap; // external Regenerate row
             }
 
-            h += (LabelHeight + 2f + SmallPromptHeight) + FieldGap;
-            h += (LabelHeight + 2f + SmallPromptHeight) + FieldGap;
+            h += LabeledScrollTextHeight(
+                "PawnDiary.Psychotype.BaseRule".Translate(),
+                width,
+                SmallPromptHeight) + FieldGap;
+            h += LabeledScrollTextHeight(
+                PsychotypeCustomLabel(),
+                width,
+                SmallPromptHeight) + FieldGap;
             h += MessagePanelHeight(PsychotypeHintMessage(psychotypeResolution), width);
 
             return h;
@@ -449,10 +509,45 @@ namespace PawnDiary
                 return 0f;
             }
 
-            return Mathf.Clamp(
-                Text.CalcHeight(message, width - Padding * 2f) + Padding * 2f,
+            float textWidth = Mathf.Max(1f, width - Padding * 2f);
+            return Mathf.Max(
                 ExplanationMinHeight,
-                ExplanationMaxHeight) + FieldGap;
+                Mathf.Ceil(Text.CalcHeight(message, textWidth) + Padding * 2f)) + FieldGap;
+        }
+
+        private static float LabeledScrollTextHeight(string label, float width, float bodyHeight)
+        {
+            return SmallLabelHeight(label, width) + LabelBodyGap + bodyHeight;
+        }
+
+        private static float SmallLabelHeight(string label, float width)
+        {
+            GameFont previousFont = Text.Font;
+            try
+            {
+                Text.Font = GameFont.Small;
+                return Mathf.Max(
+                    SmallLabelMinimumHeight,
+                    Mathf.Ceil(Text.CalcHeight(label ?? string.Empty, Mathf.Max(1f, width))));
+            }
+            finally
+            {
+                Text.Font = previousFont;
+            }
+        }
+
+        private string WritingStyleCustomLabel()
+        {
+            return "PawnDiary.WritingStyle.CustomPrompt".Translate().ToString()
+                + "  " + (customRuleBuffer ?? string.Empty).Length
+                + "/" + PlayerWritingStyleText.MaxRuleChars;
+        }
+
+        private string PsychotypeCustomLabel()
+        {
+            return "PawnDiary.Psychotype.CustomRule".Translate().ToString()
+                + "  " + (customPsychotypeBuffer ?? string.Empty).Length
+                + "/" + PsychotypeText.MaxCustomRuleChars;
         }
 
         private string WritingStyleStatusMessage(WritingStyleResolution resolution)

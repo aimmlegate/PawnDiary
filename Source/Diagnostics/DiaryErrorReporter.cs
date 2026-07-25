@@ -11,7 +11,6 @@
 //   * It must never throw into the game and never log its own failures (logging an error would come
 //     straight back through the capture patch — an infinite loop). Every path swallows silently.
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Net.Http;
@@ -51,12 +50,11 @@ namespace PawnDiary
             Timeout = Timeout.InfiniteTimeSpan
         };
 
-        // Fingerprints already handled this session — each distinct error is sent at most once.
-        private static readonly ConcurrentDictionary<string, byte> seenFingerprints = new ConcurrentDictionary<string, byte>();
-
-        // Interlocked counters (no lock needed): distinct reports dispatched, and sends in flight.
-        private static int uniqueDispatched;
-        private static int inFlight;
+        // One whole admission state per loaded game. ResetSession swaps the reference instead of
+        // zeroing shared counters: an HTTP request from the previous game then completes against its
+        // old state and cannot decrement the new game's in-flight count below zero.
+        private static ErrorReportSessionState currentSession =
+            new ErrorReportSessionState(MaxReportsPerSession, MaxInFlight);
 
         // Install source classified once on the main thread (see CacheInstallSource). Report() can run on
         // any thread, so it reads this cached string instead of touching the RimWorld ModContent object
@@ -75,6 +73,7 @@ namespace PawnDiary
         /// </summary>
         public static void Report(string rawMessage)
         {
+            ErrorReportAdmission admission = null;
             try
             {
                 if (string.IsNullOrEmpty(ErrorReportEndpoint) || string.IsNullOrWhiteSpace(rawMessage))
@@ -91,30 +90,24 @@ namespace PawnDiary
                 string scrubbed = ErrorScrub.Scrub(rawMessage, GatherSecrets(settings), ErrorScrub.DefaultMaxChars);
                 string fingerprint = ErrorFingerprint.Compute(scrubbed);
 
-                // Dedupe: the first sighting of a fingerprint claims the slot; repeats no-op.
-                if (!seenFingerprints.TryAdd(fingerprint, 0))
+                // Snapshot one session object. If a game reset races this call, every counter and the
+                // eventual completion still belong to this same snapshot; none leak into the new game.
+                ErrorReportSessionState session = Volatile.Read(ref currentSession);
+                if (!session.TryAdmit(fingerprint, out admission))
                 {
-                    return;
-                }
-
-                // Per-session cap on distinct errors.
-                if (Interlocked.Increment(ref uniqueDispatched) > MaxReportsPerSession)
-                {
-                    return;
-                }
-
-                // Bounded concurrency: drop rather than grow an unbounded backlog.
-                if (Interlocked.Increment(ref inFlight) > MaxInFlight)
-                {
-                    Interlocked.Decrement(ref inFlight);
                     return;
                 }
 
                 string json = ErrorReportPayload.ToJson(BuildReport(settings, scrubbed, fingerprint));
-                Task.Run(() => SendAsync(json));
+                ErrorReportAdmission scheduledAdmission = admission;
+                Task.Run(() => SendAsync(json, scheduledAdmission));
+                // Ownership moved to SendAsync. A synchronous exception before this line rolls the
+                // admission back in catch; after this line the send's finally releases it.
+                admission = null;
             }
             catch
             {
+                admission?.RollBack();
                 // Telemetry must never destabilize the game, and must never re-log (that would recurse
                 // through the capture patch). Swallow everything.
             }
@@ -123,9 +116,9 @@ namespace PawnDiary
         /// <summary>Clears per-session dedupe state and caps. Called once per loaded game.</summary>
         public static void ResetSession()
         {
-            seenFingerprints.Clear();
-            Interlocked.Exchange(ref uniqueDispatched, 0);
-            Interlocked.Exchange(ref inFlight, 0);
+            Interlocked.Exchange(
+                ref currentSession,
+                new ErrorReportSessionState(MaxReportsPerSession, MaxInFlight));
             // Drop the previous game's colony/colonist names; the new game republishes its own on tick.
             redactionNames = new string[0];
         }
@@ -362,7 +355,7 @@ namespace PawnDiary
             return dlc;
         }
 
-        private static async Task SendAsync(string json)
+        private static async Task SendAsync(string json, ErrorReportAdmission admission)
         {
             try
             {
@@ -378,7 +371,7 @@ namespace PawnDiary
             }
             finally
             {
-                Interlocked.Decrement(ref inFlight);
+                admission?.Complete();
             }
         }
     }

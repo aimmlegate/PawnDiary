@@ -166,14 +166,32 @@ namespace PawnDiary
                 DiaryTextDecorationContext decorationContext = EntryTextDecorationContext(entry);
                 int roleplaySeed = StableTextSeed(request.EntryKey);
                 IEnumerable<DiaryNameHighlight> entryNameHighlights = IsPromptOnly(entry) ? null : request.NameHighlights;
-                float mainTextHeight = RoleplayTextHeight(
-                    bodyText,
-                    innerTextWidth,
-                    atmosphereCue,
-                    allowDirectSpeechBlocks,
-                    decorationContext,
-                    roleplaySeed,
-                    entryNameHighlights);
+                PreparedRoleplayText preparedRoleplayText = request.Owner == null
+                    ? BuildPreparedRoleplayText(
+                        bodyText,
+                        innerTextWidth,
+                        request.DialogueColor,
+                        atmosphereCue,
+                        allowDirectSpeechBlocks,
+                        decorationContext,
+                        roleplaySeed,
+                        entryNameHighlights,
+                        request.SearchQuery,
+                        request.SearchHighlightColorHex)
+                    : request.Owner.PreparedRoleplayTextForEntry(
+                        request.EntryKey,
+                        request.Component,
+                        bodyText,
+                        innerTextWidth,
+                        request.DialogueColor,
+                        atmosphereCue,
+                        allowDirectSpeechBlocks,
+                        decorationContext,
+                        roleplaySeed,
+                        entryNameHighlights,
+                        request.SearchQuery,
+                        request.SearchHighlightColorHex);
+                float mainTextHeight = preparedRoleplayText.height;
                 float debugTextHeight = DiaryEntryCardMeasurer.DebugTextHeight(debugText, innerTextWidth);
 
                 if (linkedBefore)
@@ -190,18 +208,10 @@ namespace PawnDiary
                 }
                 else
                 {
-                    DrawRoleplayText(
+                    DrawPreparedRoleplayText(
                         textRect,
-                        bodyText,
-                        request.DialogueColor,
-                        EntryTextAlpha(entry) * BodyExpansionAlpha(request.ExpansionBlend),
-                        atmosphereCue,
-                        allowDirectSpeechBlocks,
-                        decorationContext,
-                        roleplaySeed,
-                        entryNameHighlights,
-                        request.SearchQuery,
-                        request.SearchHighlightColorHex);
+                        preparedRoleplayText,
+                        EntryTextAlpha(entry) * BodyExpansionAlpha(request.ExpansionBlend));
                 }
 
                 float afterTextY = textRect.yMax;
@@ -1423,25 +1433,46 @@ namespace PawnDiary
         /// dynamic text wrapping of the generated diary text and the linked-entry card
         /// (if present) positioned before or after the main text.
         /// </summary>
-        private static DiaryEntryCardMeasureRequest EntryMeasureRequest(
+        private DiaryEntryCardMeasureRequest EntryMeasureRequest(
             DiaryEntryView entry,
             string entryKey,
             float width,
             bool showLlmDebugInfo,
-            IEnumerable<DiaryNameHighlight> nameHighlights)
+            IEnumerable<DiaryNameHighlight> nameHighlights,
+            DiaryGameComponent component,
+            Color dialogueColor,
+            string searchQuery,
+            string searchHighlightColorHex)
         {
+            string bodyText = EntryBodyText(entry, showLlmDebugInfo);
+            string atmosphereCue = EntryAtmosphereCue(entry);
+            bool allowDirectSpeechBlocks = EntryAllowDirectSpeechBlocks(entry);
+            DiaryTextDecorationContext decorationContext = EntryTextDecorationContext(entry);
+            int textSeed = StableTextSeed(entryKey);
+            IEnumerable<DiaryNameHighlight> entryNameHighlights =
+                IsPromptOnly(entry) ? null : nameHighlights;
+            PreparedRoleplayText prepared = PreparedRoleplayTextForEntry(
+                entryKey,
+                component,
+                bodyText,
+                width - 20f,
+                dialogueColor,
+                atmosphereCue,
+                allowDirectSpeechBlocks,
+                decorationContext,
+                textSeed,
+                entryNameHighlights,
+                searchQuery,
+                searchHighlightColorHex);
             return new DiaryEntryCardMeasureRequest
             {
                 EntryKey = entryKey,
                 Width = width,
                 ShowLlmDebugInfo = showLlmDebugInfo,
-                BodyText = EntryBodyText(entry, showLlmDebugInfo),
-                DebugText = showLlmDebugInfo && entry != null ? entry.DebugText : string.Empty,
-                AtmosphereCue = EntryAtmosphereCue(entry),
-                AllowDirectSpeechBlocks = EntryAllowDirectSpeechBlocks(entry),
-                DecorationContext = EntryTextDecorationContext(entry),
-                TextSeed = StableTextSeed(entryKey),
-                NameHighlights = IsPromptOnly(entry) ? null : nameHighlights,
+                BodyTextHeight = prepared.height,
+                DebugText = showLlmDebugInfo && entry != null && !IsPromptOnly(entry)
+                    ? entry.DebugText
+                    : string.Empty,
                 HasLinkedEntry = entry != null && entry.LinkedEntry != null,
                 HasFooterLine = HasFooterLine(entry),
                 EntryTextTop = EntryTextTop,
@@ -1451,7 +1482,6 @@ namespace PawnDiary
                 ModelNameTopPadding = ModelNameTopPadding,
                 ModelNameHeight = ModelNameHeight,
                 DebugTextTopPadding = DebugTextTopPadding,
-                RoleplayTextHeight = RoleplayTextHeight,
             };
         }
     }

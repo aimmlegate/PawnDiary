@@ -10,6 +10,9 @@ namespace PawnDiary
 {
     public partial class PawnDiaryMod
     {
+        private const float PersonaStudioSmallLabelHeight = 24f;
+        private const float PersonaStudioFieldLabelGap = 2f;
+
         /// <summary>Draws the editable writing-style catalog as one compact highlighted block.</summary>
         private void DrawPersonaStudio(Listing_Standard listing)
         {
@@ -26,7 +29,7 @@ namespace PawnDiary
             int customized = Settings.personaPresets.presets == null ? 0 : Settings.personaPresets.presets.Count(preset => preset != null && !preset.custom);
             float tagPickerHeight = PersonaTagPickerHeight();
 
-            Rect cardRect = listing.GetRect(412f + tagPickerHeight);
+            Rect cardRect = listing.GetRect(420f + tagPickerHeight);
             Widgets.DrawMenuSection(cardRect);
             Rect innerRect = cardRect.ContractedBy(10f);
             float y = innerRect.y;
@@ -113,7 +116,7 @@ namespace PawnDiary
 
             y += 24f;
             DrawMutedLabel(
-                new Rect(innerRect.x, y, innerRect.width, 20f),
+                new Rect(innerRect.x, y, innerRect.width, PersonaStudioSmallLabelHeight),
                 (IsPersonaCustomized(selected.defName)
                     ? "PawnDiary.Settings.PromptStatusCustomized"
                     : "PawnDiary.Settings.PromptStatusDefault").Translate());
@@ -123,16 +126,16 @@ namespace PawnDiary
             string editedLabel = DrawCompactTextField(labelFieldRect, "PawnDiary.Settings.PersonaLabel".Translate(), currentLabel, 86f);
 
             y += 34f;
-            Rect ruleLabelRect = new Rect(innerRect.x, y, innerRect.width, 20f);
+            Rect ruleLabelRect = new Rect(innerRect.x, y, innerRect.width, PersonaStudioSmallLabelHeight);
             DrawFieldLabel(ruleLabelRect, "PawnDiary.Settings.PersonaRule".Translate());
-            y += 22f;
+            y += PersonaStudioSmallLabelHeight + PersonaStudioFieldLabelGap;
             Rect ruleRect = new Rect(innerRect.x, y, innerRect.width, PersonaRuleTextAreaHeight);
             string editedRule = Widgets.TextArea(ruleRect, currentRule);
 
             y += PersonaRuleTextAreaHeight + 8f;
-            Rect tagsLabelRect = new Rect(innerRect.x, y, innerRect.width, 20f);
+            Rect tagsLabelRect = new Rect(innerRect.x, y, innerRect.width, PersonaStudioSmallLabelHeight);
             DrawFieldLabel(tagsLabelRect, "PawnDiary.Settings.PersonaTags".Translate());
-            y += 22f;
+            y += PersonaStudioSmallLabelHeight + PersonaStudioFieldLabelGap;
             List<string> editedThemes = DrawPersonaTagPicker(new Rect(innerRect.x, y, innerRect.width, tagPickerHeight), currentThemes, custom);
 
             bool changed = !string.Equals(editedLabel, currentLabel, StringComparison.Ordinal)

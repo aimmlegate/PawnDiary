@@ -104,7 +104,12 @@ The first A2.2-expanded loaded run reached 342/347. Its two production failures 
 post-transformation subject-indexing gap; the other ghoul failures expected a pair from surgeon-only
 exceptional fallback and an immediate page from delayed `Wounded` batching. The remaining Biotech
 failure assumed the implanted GeneDef must always be N3-B's leading salient changed gene. The fixtures
-now follow the actual production contracts; the user-confirmed corrected rerun passed 347/347.
+now follow the actual production contracts; the user-confirmed corrected rerun passed 347/347. That
+number is a historical run artifact, not the current assembly size. Use
+`scripts\verify-coverage.ps1 -MatrixOnly` for the current source inventory, and record a new loaded
+runner result with the commit/build, exact mod profile, language, and applicable DLC-specific rows.
+Guarded DLC-inapplicable fixtures return early because this RimTest version has no distinct skip
+result, so a single all-green total must not be treated as proof of both DLC-on and DLC-off branches.
 
 The reimplant replay fixture deliberately completes vanilla's temporary loss-shock, gene-regrowth,
 and recipient-coma cooldowns before calling the real public method again. An immediate raw replay is
@@ -119,17 +124,15 @@ rerunning.
 
 ## Suite-owned cleanup & known limitations
 
-The harness auto-cleans and leak-audits every **pawn-id-keyed** store (events, diaries, dedup/command
-keys, interaction-batch/ambient stores, thought-progression, day-hediff, day-reflection). Some event
-sources use stores that are **not** pawn-scoped, so the suites that touch them clean their own state via
-`scope.RegisterCleanup` and the harness audit does not cover them. Folding these into the harness is a
-tracked follow-up:
-
-- **Colony fan-out dedup keys** in `recentEvents` (raid/quest), e.g. `raid|<def>|<mapIndex>|…` — no pawn id.
-- **`activeEventWindows`** rows (window/map-scoped) — EVT-22 cleans by `windowDefName`.
-- **`activeObservedConditions`** + `observedConditionCooldownUntilTick` — EVT-23 cleans by `subjectPawnId`.
-- **`knownAcceptedQuestIds`** (`HashSet<int>` by quest id) — EVT-16 cleans the ids it added.
-- **`delayedRaidGenerationReadyTicks`** — EVT-13 avoids it by forcing the generation delay to 0.
+The harness auto-cleans and leak-audits every pawn-owned store (events, diaries, dedup/command keys,
+interaction-batch/ambient stores, thought progression, day hediffs, and reflections). It also takes
+whole-collection snapshots of the component's non-pawn-scoped mutable stores before each test and
+restores them afterwards: `recentEvents`, `activeEventWindows`, `recentEventWindowEvents`,
+`activeObservedConditions`, `observedConditionCooldownUntilTick`, `knownAcceptedQuestIds`, and
+`delayedRaidGenerationReadyTicks`. This keeps a failed raid, quest, event-window, or observed-condition
+fixture from contaminating the next suite or the developer's colony. Tests must still register cleanup
+for vanilla objects and state they create outside `DiaryGameComponent` (pawns, hediffs, jobs, letters,
+maps, and similar game-owned data).
 
 **Run these two on a disposable colony:** their real trigger has vanilla side effects no test can undo.
 - `PawnDiaryDeathFlowTests` (EVT-10): a real `Pawn.Kill` gives *other* colonists `ColonistLost`/`KnowColonistDied` mood memories and may raise a death letter.
@@ -181,25 +184,27 @@ exists when the pawn's live ideoligion resolves a high-confidence precept stance
 `PawnDiaryIdeologyPhase1FixtureTests` owns the deterministic coverage by building its own `Ideo` with a
 `PreceptComp_Thought`.
 
-### Transport / async runtime (plan §6.3) — deferred by design
+### Transport / async runtime (plan §6.3) — split coverage
 
-The `LlmClient` queue/retry/failover/`Retry-After`/session/result-apply suite is **not** implemented here,
-on purpose:
+Loaded RimTest deliberately does not send HTTP or mutate the session-global `LlmClient`. Transport
+coverage is split at the pure/impure boundary:
 
-- Its socket-free boundary is already covered — the prompt-capture fixtures assert that Prompt Test Mode
-  renders and stores the prompt and marks the POV `prompt_only`, i.e. the pipeline stops before any
-  `LlmClient.Enqueue`.
-- The Harmony wiring `§6.1` asks about is proven transitively — the 20 event suites cannot produce a
-  `DiaryEvent` unless the base-game choke-point patches (`PlayLog.Add`, `TryStartMentalState`,
-  `RecordTale`, `RegisterCondition`, …) are live.
-- The remaining transport internals cannot be exercised **safely** from an in-game test: `LlmClient` is
-  static and session-global, so calling `BeginSession()` / `Enqueue()` cancels or races the *player's*
-  real in-flight generation (an unrestorable side effect), and there is no injectable request-executor.
+- `tests/LlmTransportPolicyTests` covers the stable resizable admission gate, bounded FIFO,
+  staggered-worker admission, cancellation, cooldown decisions, 408/429/5xx retry classification,
+  enqueue-time total deadlines, and exact credential redaction without opening a socket.
+- `tests/NetworkAuxiliaryTests` covers endpoint path/query/fragment construction and the
+  session-isolated bounded error-report admission state.
+- Prompt-capture fixtures prove the safe loaded boundary: Prompt Test Mode renders and stores the
+  prompt and marks the POV `prompt_only`, stopping before `LlmClient.Enqueue`.
+- Harmony evidence is row-specific. Manifest rows labeled `vanilla-trigger` drive a real patched
+  choke point (`PlayLog.Add`, `TryStartMentalState`, `RecordTale`, and similar); `production-flow` and
+  `downstream-flow` rows prove the named pipeline behavior but do not claim their Harmony prefix or
+  postfix fired. Patch-manifest fixtures prove target availability/registration, not runtime invocation.
 
-Doing it right needs a separate, reviewed production change: either a bounded in-game loopback HTTP
-endpoint pointed at by test-only lanes, or a narrow internal request-executor interface in `LlmClient`
-(production stays HTTP; the test double lives in this assembly). That belongs in its own PR, not a
-blind edit to the transport core — see `design/TEST_COVERAGE_PLAN.md §2.2 / §6.3`.
+Actual `HttpClient` request/response orchestration and the settings controller's main-thread UI
+publication still require a disposable-endpoint manual smoke check (or a future injected request
+executor). Calling `BeginSession`, `EndSession`, or `Enqueue` from loaded RimTest would cancel or race
+the player's real generation, so this assembly makes no end-to-end network claim.
 
 ## The shared harness — `PawnDiaryRimTestScope`
 
@@ -253,17 +258,18 @@ Two guarantees make this safe:
 
 ### Extending for later phases
 
-The harness deliberately restores only what today's suites touch. Later `design/TEST_COVERAGE_PLAN.md` phases
-add more state (hediffs, jobs, conditions, quests, event/observed-condition windows, LLM queues and
-lane cooldowns, map spawns, deliberate tick changes, child pawns behind a Biotech gate). Add each as a
-new snapshot/restore pair in `PawnDiaryRimTestScope` — or, for one-off per-test state, via
-`RegisterCleanup` — and extend the no-leak audit to cover it. Keep test bodies assertion-only.
+The harness restores the current component-owned pawn and global stores, but later
+`design/TEST_COVERAGE_PLAN.md` phases may add new mutable state (LLM queues/lane cooldowns, map spawns,
+deliberate tick changes, or DLC-gated child pawns). Add each component-owned collection as a whole
+snapshot/restore pair in `PawnDiaryRimTestScope`; use `RegisterCleanup` for one-off vanilla state.
+Extend the no-leak audit at the same time and keep test bodies assertion-only.
 
 ## Coverage audit
 
 When the local developer script `scripts/verify-coverage.ps1` is present, it validates all XML, runs
 every standalone pure test project, builds the core mod, builds this RimTest assembly when RimTest
-Redux is available, and prints the EVT-01…EVT-26 requirement matrix.
+Redux is available, and validates the EVT-01…EVT-26 manifest. Each row names a real source file,
+`[Test]` method, mod profile, and evidence level; a requirement token in a comment cannot satisfy it.
 
 ```powershell
 scripts\verify-coverage.ps1              # full audit (build + pure tests + matrix)
@@ -271,9 +277,10 @@ scripts\verify-coverage.ps1 -MatrixOnly  # just print the EVT coverage matrix
 ```
 
 It is intentionally separate from `.githooks/verify.ps1` because it also prints the full matrix.
-Both scripts build the RimTest assembly when `RimTestRedux.dll` is available, and skip that one
-optional build only when the dependency is genuinely absent; the mandatory hook additionally
-freshness-checks the committed test DLL.
+The tracked hook still validates every manifest row against its real `[Test]` method, then
+auto-discovers and runs every standalone test project. Both scripts build the RimTest assembly when
+`RimTestRedux.dll` is available and skip that optional build only when the dependency is genuinely
+absent; the mandatory hook additionally freshness-checks the committed test DLL.
 
 ## Guarantees for every test here (plan §9)
 

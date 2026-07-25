@@ -67,6 +67,7 @@ namespace PawnDiary
             private readonly List<DiaryEntryView> quietOrderedEntries = new List<DiaryEntryView>();
             private readonly Dictionary<string, CachedPawnState> cachedPawnStates = new Dictionary<string, CachedPawnState>();
             private readonly List<string> cachedPawnStateLru = new List<string>();
+            private DiaryGameComponent cachedComponent;
             private string currentCacheKey;
             private int cachedVisibleRevision;
             private int cachedGeneratingCount;
@@ -159,9 +160,17 @@ namespace PawnDiary
                 out DiaryRenderToken token)
             {
                 token = default(DiaryRenderToken);
+                if (DiaryUiPolicy.SessionChanged(cachedComponent, component))
+                {
+                    // A reused reader window can survive a return to the main menu and a new save. Render
+                    // tokens and pawn ids are only meaningful inside their owning game component, so never
+                    // restore a cached state from the previous game even when those values happen to match.
+                    ResetAllState();
+                    cachedComponent = component;
+                }
+
                 if (component == null)
                 {
-                    ClearIfNeeded();
                     return;
                 }
 
@@ -554,19 +563,8 @@ namespace PawnDiary
                 cachedOrderedVisibleRevision = -1;
             }
 
-            private void ClearIfNeeded()
+            private void ResetAllState()
             {
-                if (cachedIndex == null
-                    && cachedIndexBuild == null
-                    && cachedVisibleYears.Count == 0
-                    && cachedYearCounts.Count == 0
-                    && cachedPreviewEntry == null
-                    && cachedOrderedEntries.Count == 0
-                    && cachedPawnStates.Count == 0)
-                {
-                    return;
-                }
-
                 ClearCurrentState();
                 currentCacheKey = null;
                 cachedPawnStates.Clear();

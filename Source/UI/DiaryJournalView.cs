@@ -270,6 +270,7 @@ namespace PawnDiary
                 return;
             }
 
+            ResetSessionBoundUiStateIfNeeded(component);
             Pawn pawn = subject.Pawn;
             // Seasonal background wash (experimental, off by default) — global for the whole window:
             // painted first, edge to edge, so it sits behind the header, the journal, and the right-hand
@@ -308,9 +309,9 @@ namespace PawnDiary
             // Two-column layout: the journal (virtualized cards) on the left, and an independent,
             // non-virtualized filter/controls panel on the right. The panel hosts the year selector,
             // the journal filters, and — in dev mode — the diary dev tools. The journal keeps its familiar
-            // width because tabWidth grew by the panel's width; hiding the panel (header toggle) shrinks
-            // the whole tab back to that journal width (ResponsiveTabWidth), with the year pager falling
-            // back inline below and the dev tools staying panel-only.
+            // width because tabWidth grew by the panel's width; hiding the panel (or reaching a host too
+            // narrow to draw it) shrinks the whole tab back to that journal width. In that case the year
+            // pager falls back inline below the header while the dev tools remain panel-only.
             bool filterPanelEnabled = FilterPanelSettingEnabled();
             float panelWidth = filterPanelEnabled ? ResolveFilterPanelWidth(rect.width) : 0f;
             Rect filterPanelRect = new Rect(rect.xMax - panelWidth, rect.y, panelWidth, rect.height);
@@ -380,8 +381,8 @@ namespace PawnDiary
                 DrawWritingIndicator(writingIndicatorRect);
             }
 
-            // Dev tools and the year selector live only in the right-hand panel, so the journal column
-            // opens directly under the header (a fixed 36px title row plus the usual gap).
+            // The normal journal column opens directly under the header (a fixed 36px title row plus the
+            // usual gap). A narrow-layout year selector may advance this below after years are resolved.
             float entriesY = journalRect.y + 36f + EntryGap;
 
             // Resolve the year list and the selected year's ordered cards up front so the filter panel
@@ -407,9 +408,16 @@ namespace PawnDiary
 
             DrawFilterPanel(filterPanelRect, subject, component, years, visibleEntriesCache, haveOrdered ? ordered : null);
 
-            // Year navigation lives exclusively in the filter panel now — there is no inline year pager
-            // in the journal column, even when the panel is hidden. Reopen the panel via the header
-            // filter icon to change years; this keeps the journal free of any control chrome.
+            // Keep every year reachable when the player hides the sidebar or the host is too narrow to
+            // draw it. The same year control is reused inline, immediately above the scroll viewport.
+            if (!indexLoading && DiaryUiPolicy.ShouldShowInlineYearSelector(panelWidth, years.Count))
+            {
+                DrawYearFilter(
+                    new Rect(journalRect.x, entriesY, journalRect.width, YearFilterHeight),
+                    years,
+                    visibleEntriesCache);
+                entriesY += YearFilterHeight + YearFilterGap;
+            }
 
             Rect outRect = new Rect(journalRect.x, entriesY, journalRect.width, journalRect.yMax - entriesY);
 
@@ -469,6 +477,7 @@ namespace PawnDiary
             string searchHighlightColorHex = activeSearchQuery.Length == 0
                 ? string.Empty
                 : ColorUtility.ToHtmlStringRGB(UiStyle.FilterSearchHighlightColor);
+            Color dialogueColor = PreferredDialogueColor(pawn);
             int layoutProcessed;
             int layoutTotal;
             if (!RebuildEntryLayoutIfNeeded(
@@ -479,6 +488,10 @@ namespace PawnDiary
                 showLlmDebugInfo,
                 token,
                 nameHighlights,
+                component,
+                dialogueColor,
+                activeSearchQuery,
+                searchHighlightColorHex,
                 animationDelta,
                 out layoutProcessed,
                 out layoutTotal))
@@ -520,7 +533,6 @@ namespace PawnDiary
             // it. If a draw call throws mid-card those pops are skipped, leaving the stack unbalanced
             // and corrupting the rest of the frame's UI — not just this tab. The finally closes
             // whatever is still open, so one bad entry degrades to a missing card, never a broken UI.
-            Color dialogueColor = PreferredDialogueColor(pawn);
             bool entryGroupOpen = false;
             try
             {
@@ -713,6 +725,10 @@ namespace PawnDiary
             bool showLlmDebugInfo,
             DiaryRenderToken token,
             List<DiaryNameHighlight> nameHighlights,
+            DiaryGameComponent component,
+            Color dialogueColor,
+            string searchQuery,
+            string searchHighlightColorHex,
             float animationDelta,
             out int processed,
             out int total)
@@ -770,6 +786,10 @@ namespace PawnDiary
                     showLlmDebugInfo,
                     token,
                     nameHighlights,
+                    component,
+                    dialogueColor,
+                    searchQuery,
+                    searchHighlightColorHex,
                     animationDelta,
                     count,
                     true,
@@ -800,7 +820,20 @@ namespace PawnDiary
                 BeginEntryLayoutBuild(ordered, visibleRevision, pawnId, viewWidth, showLlmDebugInfo, token, count, onThisDayStamp);
             }
 
-            ProcessEntryLayoutSlice(ordered, viewWidth, showLlmDebugInfo, token, nameHighlights, animationDelta, count, false, false);
+            ProcessEntryLayoutSlice(
+                ordered,
+                viewWidth,
+                showLlmDebugInfo,
+                token,
+                nameHighlights,
+                component,
+                dialogueColor,
+                searchQuery,
+                searchHighlightColorHex,
+                animationDelta,
+                count,
+                false,
+                false);
             processed = layoutBuildInProgress ? layoutBuildIndex : count;
             total = count;
             return !layoutBuildInProgress;
@@ -844,6 +877,10 @@ namespace PawnDiary
             bool showLlmDebugInfo,
             DiaryRenderToken token,
             List<DiaryNameHighlight> nameHighlights,
+            DiaryGameComponent component,
+            Color dialogueColor,
+            string searchQuery,
+            string searchHighlightColorHex,
             float animationDelta,
             int count,
             bool processAll,
@@ -882,7 +919,17 @@ namespace PawnDiary
                 // then cached (see CachedEntryHeight) so reading a long page does not re-measure text
                 // every frame.
                 float fullHeight = (expanded || expansionBlend > 0f)
-                    ? CachedEntryHeight(entry, entryKey, viewWidth, showLlmDebugInfo, token, nameHighlights)
+                    ? CachedEntryHeight(
+                        entry,
+                        entryKey,
+                        viewWidth,
+                        showLlmDebugInfo,
+                        token,
+                        nameHighlights,
+                        component,
+                        dialogueColor,
+                        searchQuery,
+                        searchHighlightColorHex)
                     : CollapsedEntryHeight;
 
                 // Reserve a quadrum/season divider above this card when it opens a new quadrum. The
@@ -1033,12 +1080,35 @@ namespace PawnDiary
             float width,
             bool showLlmDebugInfo,
             DiaryRenderToken token,
-            List<DiaryNameHighlight> nameHighlights)
+            List<DiaryNameHighlight> nameHighlights,
+            DiaryGameComponent component,
+            Color dialogueColor,
+            string searchQuery,
+            string searchHighlightColorHex)
         {
-            return entryCardMeasurer.CachedHeight(
-                EntryMeasureRequest(entry, entryKey, width, showLlmDebugInfo, nameHighlights),
+            float cachedHeight;
+            if (entryCardMeasurer.TryGetCachedHeight(
+                entryKey,
+                width,
+                showLlmDebugInfo,
                 token,
-                nameHighlightsVersion);
+                nameHighlightsVersion,
+                out cachedHeight))
+            {
+                return cachedHeight;
+            }
+
+            return entryCardMeasurer.MeasureAndCache(
+                EntryMeasureRequest(
+                    entry,
+                    entryKey,
+                    width,
+                    showLlmDebugInfo,
+                    nameHighlights,
+                    component,
+                    dialogueColor,
+                    searchQuery,
+                    searchHighlightColorHex));
         }
 
 

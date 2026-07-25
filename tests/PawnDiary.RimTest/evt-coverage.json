@@ -1,0 +1,184 @@
+[
+  {
+    "id": "EVT-01",
+    "testFile": "PawnDiaryEventReactionTests.cs",
+    "testMethod": "SocialPlayLogEntryCreatesLinkedPairEvent",
+    "profile": "base",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "id": "EVT-02",
+    "testFile": "PawnDiaryInteractionBatchFlowTests.cs",
+    "testMethod": "PairBatchAccumulatesThenFlushesOnePairEvent",
+    "profile": "base",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "id": "EVT-03",
+    "testFile": "PawnDiaryThoughtFlowTests.cs",
+    "testMethod": "ConfiguredThoughtCreatesSoloEvent",
+    "profile": "base",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "id": "EVT-04",
+    "testFile": "PawnDiaryThoughtProgressionFlowTests.cs",
+    "testMethod": "WorseningStageEmitsOneProgressionPage",
+    "profile": "base",
+    "evidence": "production-flow"
+  },
+  {
+    "id": "EVT-05",
+    "testFile": "PawnDiaryInspirationFlowTests.cs",
+    "testMethod": "InspirationStartCreatesSoloEvent",
+    "profile": "base",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "id": "EVT-06",
+    "testFile": "PawnDiaryAbilityFlowTests.cs",
+    "testMethod": "SuccessfulActivationRecordsSoloEventWithCasterAndTargetFacts",
+    "profile": "base",
+    "evidence": "downstream-flow"
+  },
+  {
+    "id": "EVT-07",
+    "testFile": "PawnDiaryEventReactionTests.cs",
+    "testMethod": "LoverRelationCreatesPairEvent",
+    "profile": "base",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "id": "EVT-08",
+    "testFile": "PawnDiaryEventReactionTests.cs",
+    "testMethod": "BerserkMentalStateCreatesSoloEvent",
+    "profile": "base",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "id": "EVT-09",
+    "testFile": "PawnDiaryTaleFlowTests.cs",
+    "testMethod": "SinglePawnTaleCreatesSoloEvent",
+    "profile": "base",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "id": "EVT-10",
+    "testFile": "PawnDiaryDeathFlowTests.cs",
+    "testMethod": "KillingColonistRecordsOneNeutralDeathPage",
+    "profile": "base",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "id": "EVT-11",
+    "testFile": "PawnDiaryHediffFlowTests.cs",
+    "testMethod": "AddedBodyPartCreatesImmediateSoloEvent",
+    "profile": "base",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "id": "EVT-12",
+    "testFile": "PawnDiaryWorkFlowTests.cs",
+    "testMethod": "PassionWorkEmitsSoloEventWithPassionFact",
+    "profile": "base",
+    "evidence": "production-flow"
+  },
+  {
+    "id": "EVT-13",
+    "testFile": "PawnDiaryRaidFlowTests.cs",
+    "testMethod": "RaidFanOutPerColonistRecordsSoloRaidPage",
+    "profile": "base",
+    "evidence": "downstream-flow"
+  },
+  {
+    "id": "EVT-14",
+    "testFile": "PawnDiaryMoodConditionFlowTests.cs",
+    "testMethod": "PositiveMoodConditionFansOutOnePagePerColonist",
+    "profile": "base",
+    "evidence": "production-flow"
+  },
+  {
+    "id": "EVT-15",
+    "testFile": "PawnDiaryPawnProgressionFlowTests.cs",
+    "testMethod": "UpwardSkillMilestoneEmitsOnePageWithExactContext",
+    "profile": "base",
+    "evidence": "production-flow"
+  },
+  {
+    "id": "EVT-16",
+    "testFile": "PawnDiaryQuestFlowTests.cs",
+    "testMethod": "CompletedQuestFanoutEmitsSanitizedSoloPage",
+    "profile": "base",
+    "evidence": "downstream-flow"
+  },
+  {
+    "id": "EVT-17",
+    "testFile": "PawnDiaryRitualFlowTests.cs",
+    "testMethod": "IdeologyRitualFixtureFanoutEmitsUniquePerspectivePagesOnce",
+    "profile": "ideology",
+    "evidence": "production-flow"
+  },
+  {
+    "id": "EVT-18",
+    "testFile": "PawnDiaryArrivalFlowTests.cs",
+    "testMethod": "ColonistGetsExactlyOneNeutralArrivalDescriptionWithFacts",
+    "profile": "base",
+    "evidence": "production-flow"
+  },
+  {
+    "id": "EVT-19",
+    "testFile": "PawnDiaryDayReflectionFlowTests.cs",
+    "testMethod": "SeededDayFlushesOneSoloReflectionWithHighlightContext",
+    "profile": "base",
+    "evidence": "production-flow"
+  },
+  {
+    "id": "EVT-20",
+    "testFile": "PawnDiaryArcReflectionFlowTests.cs",
+    "testMethod": "ArcReflectionEmitsSoloPageWithFilteredDedupedMemoryContext",
+    "profile": "base",
+    "evidence": "production-flow"
+  },
+  {
+    "id": "EVT-21",
+    "testFile": "PawnDiaryExternalApiFlowTests.cs",
+    "testMethod": "SubmitEventSoloRecordsAttributedEvent",
+    "profile": "base",
+    "evidence": "public-api"
+  },
+  {
+    "id": "EVT-22",
+    "testFile": "PawnDiaryEventWindowFlowTests.cs",
+    "testMethod": "WindowStartEmitsSubjectScopedStartPage",
+    "profile": "base",
+    "evidence": "production-flow"
+  },
+  {
+    "id": "EVT-23",
+    "testFile": "PawnDiaryObservedConditionFlowTests.cs",
+    "testMethod": "StartDebounceRecordsStateWithScopeIdentity",
+    "profile": "base",
+    "evidence": "production-flow"
+  },
+  {
+    "id": "EVT-24",
+    "testFile": "PawnDiaryArtImmortalizationFixtureTests.cs",
+    "testMethod": "PatchedCompArtSurfaceStillExists",
+    "profile": "base",
+    "evidence": "loaded-contract"
+  },
+  {
+    "id": "EVT-25",
+    "testFile": "PawnDiaryAnniversaryFlowTests.cs",
+    "testMethod": "BirthdayEmitsOnceWithTheExactAge",
+    "profile": "base",
+    "evidence": "production-flow"
+  },
+  {
+    "id": "EVT-26",
+    "testFile": "PawnDiaryDigestPacingFlowTests.cs",
+    "testMethod": "UnderCapLowSaliencePagesEmitAndAdvanceBothCounts",
+    "profile": "base",
+    "evidence": "production-flow"
+  }
+]

@@ -1005,6 +1005,8 @@
   <PawnDiary.Event.ArrivalLabel>Arrival</PawnDiary.Event.ArrivalLabel>
   <PawnDiary.Event.StartingArrival>{0} was one of the colony's founding colonists.</PawnDiary.Event.StartingArrival>
   <PawnDiary.Event.JoinedArrival>{0} joined the colony.</PawnDiary.Event.JoinedArrival>
+  <PawnDiary.Event.BrainwipeArrivalLabel>Amnesiac awakening</PawnDiary.Event.BrainwipeArrivalLabel>
+  <PawnDiary.Event.BrainwipeArrival>{0} awoke after a brainwipe with their former memories gone and anxiety about the blankness.</PawnDiary.Event.BrainwipeArrival>
   <PawnDiary.Event.Arrival.Backstory.DisabledWork>disabled work</PawnDiary.Event.Arrival.Backstory.DisabledWork>
   <PawnDiary.Event.Arrival.Backstory.DisabledTasks>disabled tasks</PawnDiary.Event.Arrival.Backstory.DisabledTasks>
   <PawnDiary.Event.Arrival.Backstory.DisabledWorkTags>disabled work tags</PawnDiary.Event.Arrival.Backstory.DisabledWorkTags>

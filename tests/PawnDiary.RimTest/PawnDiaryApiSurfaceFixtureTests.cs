@@ -28,6 +28,7 @@
 //
 // Coverage-matrix area (design/TEST_COVERAGE_PLAN.md §7.1): integration API surface + settings gates.
 using System;
+using System.Collections.Generic;
 using PawnDiary.Integration;
 using RimTestRedux;
 using RimWorld;
@@ -302,6 +303,97 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// §7.1. When two real, active mods use their packageIds as sourceIds, the one that loads later
+        /// owns each single-writer voice slot. The earlier mod cannot overwrite or reset that owner's
+        /// value; once the owner resets it, the earlier mod can claim the empty slot again. This is the
+        /// loaded-game counterpart to the pure arbitration-policy tests because it proves packageId
+        /// resolution against RimWorld's actual active-mod list.
+        /// </summary>
+        [Test]
+        public static void LaterLoadingActiveModOwnsExternalVoiceOverrides()
+        {
+            RequireTwoActiveModSources(out string earlierSource, out string laterSource);
+            const string laterStyleRule = "Uses a reflective cadence and concrete sensory detail.";
+            const string laterPsychotypeRule = "Looks for practical hope without ignoring present danger.";
+
+            // Both sources are registered defensively: only the current owner can clear a slot, so
+            // teardown tries the later source first and then the earlier fallback owner.
+            scope.RegisterCleanup(() =>
+            {
+                PawnDiaryApi.ResetWritingStyleOverride(eligiblePawn, laterSource);
+                PawnDiaryApi.ResetWritingStyleOverride(eligiblePawn, earlierSource);
+                PawnDiaryApi.ResetPsychotypeOverride(eligiblePawn, laterSource);
+                PawnDiaryApi.ResetPsychotypeOverride(eligiblePawn, earlierSource);
+            });
+
+            PawnDiaryRimTestScope.Require(
+                PawnDiaryApi.SetWritingStyleOverride(eligiblePawn, earlierSource, StyleRule),
+                "The earlier-loading active mod should claim an empty writing-style slot.");
+            PawnDiaryRimTestScope.Require(
+                PawnDiaryApi.SetWritingStyleOverride(eligiblePawn, laterSource, laterStyleRule),
+                "The later-loading active mod should displace the earlier writing-style owner.");
+            PawnDiaryRimTestScope.Require(
+                !PawnDiaryApi.SetWritingStyleOverride(eligiblePawn, earlierSource, StyleRule),
+                "The earlier-loading active mod must not displace the later writing-style owner.");
+            PawnDiaryRimTestScope.Require(
+                !PawnDiaryApi.ResetWritingStyleOverride(eligiblePawn, earlierSource),
+                "A non-owner must not reset the later mod's writing-style override.");
+
+            PawnDiaryRecord record = scope.RequireDiaryRecord(eligiblePawn);
+            RequireOwnedOverride(
+                record.externalWritingStyleOverrideSourceId,
+                record.externalWritingStyleOverrideRule,
+                laterSource,
+                laterStyleRule,
+                "writing-style");
+
+            PawnDiaryRimTestScope.Require(
+                PawnDiaryApi.ResetWritingStyleOverride(eligiblePawn, laterSource),
+                "The owning later mod should reset its writing-style override.");
+            PawnDiaryRimTestScope.Require(
+                PawnDiaryApi.SetWritingStyleOverride(eligiblePawn, earlierSource, StyleRule),
+                "The earlier mod should claim the writing-style slot after the owner resets it.");
+            RequireOwnedOverride(
+                record.externalWritingStyleOverrideSourceId,
+                record.externalWritingStyleOverrideRule,
+                earlierSource,
+                StyleRule,
+                "writing-style after owner reset");
+
+            PawnDiaryRimTestScope.Require(
+                PawnDiaryApi.SetPsychotypeOverride(eligiblePawn, earlierSource, PsychotypeRule),
+                "The earlier-loading active mod should claim an empty psychotype slot.");
+            PawnDiaryRimTestScope.Require(
+                PawnDiaryApi.SetPsychotypeOverride(eligiblePawn, laterSource, laterPsychotypeRule),
+                "The later-loading active mod should displace the earlier psychotype owner.");
+            PawnDiaryRimTestScope.Require(
+                !PawnDiaryApi.SetPsychotypeOverride(eligiblePawn, earlierSource, PsychotypeRule),
+                "The earlier-loading active mod must not displace the later psychotype owner.");
+            PawnDiaryRimTestScope.Require(
+                !PawnDiaryApi.ResetPsychotypeOverride(eligiblePawn, earlierSource),
+                "A non-owner must not reset the later mod's psychotype override.");
+            RequireOwnedOverride(
+                record.externalPsychotypeOverrideSourceId,
+                record.externalPsychotypeOverrideRule,
+                laterSource,
+                laterPsychotypeRule,
+                "psychotype");
+
+            PawnDiaryRimTestScope.Require(
+                PawnDiaryApi.ResetPsychotypeOverride(eligiblePawn, laterSource),
+                "The owning later mod should reset its psychotype override.");
+            PawnDiaryRimTestScope.Require(
+                PawnDiaryApi.SetPsychotypeOverride(eligiblePawn, earlierSource, PsychotypeRule),
+                "The earlier mod should claim the psychotype slot after the owner resets it.");
+            RequireOwnedOverride(
+                record.externalPsychotypeOverrideSourceId,
+                record.externalPsychotypeOverrideRule,
+                earlierSource,
+                PsychotypeRule,
+                "psychotype after owner reset");
+        }
+
+        /// <summary>
         /// §7.1. The entry-status listener registry: a blank id and a null listener are safe no-ops (no
         /// throw), and a valid register/unregister pair on the process-global registry completes cleanly.
         /// A defensive unregister cleanup is registered so the process-global registry is left exactly as
@@ -414,6 +506,69 @@ namespace PawnDiary.RimTests
             });
 
             return pawn;
+        }
+
+        /// <summary>
+        /// Selects the first and last distinct active packageIds, which guarantees the second source
+        /// loads after the first without baking any developer-specific mod names into the fixture.
+        /// </summary>
+        private static void RequireTwoActiveModSources(out string earlierSource, out string laterSource)
+        {
+            earlierSource = null;
+            laterSource = null;
+            List<ModContentPack> running = LoadedModManager.RunningModsListForReading;
+            if (running != null)
+            {
+                for (int i = 0; i < running.Count; i++)
+                {
+                    ModContentPack mod = running[i];
+                    string source = mod?.PackageId;
+                    if (string.IsNullOrWhiteSpace(source))
+                    {
+                        source = mod?.PackageIdPlayerFacing;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(source))
+                    {
+                        continue;
+                    }
+
+                    if (earlierSource == null)
+                    {
+                        earlierSource = source;
+                    }
+                    else if (!string.Equals(earlierSource, source, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Keep replacing this value so it ends as the last distinct active source.
+                        laterSource = source;
+                    }
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(earlierSource) || string.IsNullOrWhiteSpace(laterSource))
+            {
+                throw new AssertionException(
+                    "This loaded arbitration fixture requires at least two active mods with distinct packageIds.");
+            }
+        }
+
+        /// <summary>
+        /// Verifies both halves of a persisted single-writer override so a true API return cannot hide
+        /// a stale source id or rule.
+        /// </summary>
+        private static void RequireOwnedOverride(
+            string actualSource,
+            string actualRule,
+            string expectedSource,
+            string expectedRule,
+            string slotName)
+        {
+            PawnDiaryRimTestScope.Require(
+                string.Equals(actualSource, expectedSource, StringComparison.OrdinalIgnoreCase),
+                "The " + slotName + " owner should be '" + expectedSource + "', but was '" + actualSource + "'.");
+            PawnDiaryRimTestScope.Require(
+                string.Equals(actualRule, expectedRule, StringComparison.Ordinal),
+                "The " + slotName + " rule did not match the winning source's value.");
         }
     }
 }

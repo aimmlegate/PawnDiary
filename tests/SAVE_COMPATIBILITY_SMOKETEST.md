@@ -134,12 +134,14 @@ These rows are deliberately separate. A successful Anomaly-active run does not p
 and an in-process Scribe fixture does not prove a real save/load process boundary. Record the RimWorld
 build, exact mod list, language, total/pass/fail/skip counts, and relevant `Player.log` lines for each.
 
-### Active 316-fixture profile
+### Active Anomaly profile
 
 1. Enable Harmony, base RimWorld, Laboratory, RimTest Redux, Pawn Diary, and Anomaly; use a disposable
    loaded colony and disable external text generation so exact localized fallback is visible.
-2. Run the complete RimTest assembly and record the runner's exact counts. The assembly must report 316
-   discovered tests. In particular, confirm
+2. Run the complete current RimTest assembly and record the runner's exact counts. Do not reuse the
+   historical 316-fixture total: obtain the current source inventory with
+   `scripts\verify-coverage.ps1 -MatrixOnly`, then bind the loaded result to the exact commit/build and
+   mod profile. In particular, confirm
    `MissingVisibleStudyLabelUsesLocalizedNeutralSubject`, all ten other
    `PawnDiaryAnomalyStudyFlowTests`, and all ten `PawnDiaryAnomalyContainmentFlowTests` pass.
 3. Inspect the development log for Pawn Diary exceptions, raw internal study Def names in fallback text,
@@ -151,7 +153,7 @@ build, exact mod list, language, total/pass/fail/skip counts, and relevant `Play
 1. Remove Anomaly from the active mod list (do not merely avoid its content), keep Harmony, base
    RimWorld, Laboratory, RimTest Redux, and Pawn Diary, then restart RimWorld and load a disposable
    base-game-only colony.
-2. Run the complete 316-fixture assembly and record exact counts. Also run these focused rows by name:
+2. Run the complete current assembly and record exact counts. Also run these focused rows by name:
    `AnomalyEventGroupsAreLoadedAndRouteOnlyExactKinds`,
    `StudyHookRegistrationMatchesAnomalyAvailability`,
    `EscapeHookRegistrationMatchesAnomalyAvailability`, and

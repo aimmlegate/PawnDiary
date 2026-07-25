@@ -1002,6 +1002,38 @@ namespace PawnDiary
         }
     }
 
+    /// <summary>
+    /// Clears the target's personal Pawn Diary history when vanilla's Brainwipe outcome actually
+    /// erases their memories. This runs at the delayed outcome, not when the ceremony ends.
+    /// </summary>
+    [HarmonyPatch(typeof(PsychicRitualToil_Brainwipe), "ApplyOutcome")]
+    internal static class PsychicRitualBrainwipeOutcomePatch
+    {
+        /// <summary>
+        /// Harmony Postfix for the private vanilla outcome method. A Postfix ensures Pawn Diary changes
+        /// only after RimWorld has successfully applied its own brainwipe to the same target.
+        /// </summary>
+        public static void Postfix(Pawn target)
+        {
+            DiaryPatchSafety.Run("PsychicRitualBrainwipeOutcomePatch", () =>
+            {
+                if (!ModsConfig.AnomalyActive || target == null)
+                {
+                    return;
+                }
+
+                DiaryGameComponent component = DiaryGameComponent.Instance;
+                if (component == null)
+                {
+                    return;
+                }
+
+                component.ForgetDiaryHistory(target);
+                DiaryEvents.Submit(new BrainwipeArrivalSignal(target));
+            });
+        }
+    }
+
     // Fires after a pawn ability successfully activates on a local map target. Ability covers
     // Royalty psycasts/permits, Biotech/Anomaly powers, and modded abilities that use vanilla defs.
     /// <summary>

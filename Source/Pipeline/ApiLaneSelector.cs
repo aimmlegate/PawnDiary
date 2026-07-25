@@ -24,8 +24,9 @@ namespace PawnDiary
     {
         /// <summary>
         /// Returns the primary lane index. When any ready lanes exist, cooling/unready lanes are
-        /// skipped; when none are ready, selection falls back across all lanes so requests can still
-        /// make progress after every provider has backed off.
+        /// skipped; when none are ready, the selector still returns a deterministic primary so
+        /// request metadata and failover order stay stable. The transport separately refuses to
+        /// contact lanes whose cooldown has not expired.
         /// </summary>
         public static int SelectPrimaryIndex(int laneCount, ApiLaneRoutingMode mode, int selectorCounter, IList<bool> readyLanes)
         {

@@ -17,6 +17,7 @@ namespace PawnDiary
     {
         private const float DirectoryHeaderHeight = 30f;
         private const float DirectorySectionHeight = 24f;
+        private const float DirectoryPawnRowMinimumHeight = 48f;
         private const float ReaderChromePadding = 24f;
         private const string PlaceholderTexturePath = "UI/Commands/PawnDiaryOpen";
 
@@ -296,7 +297,7 @@ namespace PawnDiary
                 rect.width,
                 Mathf.Max(0f, rect.yMax - toggleRect.yMax - 4f));
             int visibleCount = showDeadPawns ? directory.Rows.Count : directory.DepartedDividerIndex;
-            float rowHeight = Mathf.Max(28f, style.readerPawnRowHeight);
+            float rowHeight = Mathf.Max(DirectoryPawnRowMinimumHeight, style.readerPawnRowHeight);
             float viewHeight = DirectorySectionHeight + directory.DepartedDividerIndex * rowHeight;
             if (showDeadPawns && directory.Rows.Count > directory.DepartedDividerIndex)
             {
@@ -417,8 +418,10 @@ namespace PawnDiary
                     Mathf.Max(0f, rect.xMax - textX - 2f))
                 : 0f;
             float textRight = rect.xMax - 2f - writingIndicatorWidth;
-            Rect nameRect = new Rect(textX, rect.y + 2f, Mathf.Max(0f, textRight - textX), 22f);
-            Rect countRect = new Rect(textX, rect.y + 23f, nameRect.width, 20f);
+            // Two safe Small-font rows exactly fill the XML-backed default 48px directory row. A 20px
+            // label clips descenders at some UI scales even though Text.LineHeight appears to fit.
+            Rect nameRect = new Rect(textX, rect.y, Mathf.Max(0f, textRight - textX), 24f);
+            Rect countRect = new Rect(textX, rect.y + 24f, nameRect.width, 24f);
             Widgets.Label(nameRect, row.Subject.DisplayName);
             Color countColor = GUI.color;
             GUI.color = new Color(countColor.r, countColor.g, countColor.b, countColor.a * 0.72f);

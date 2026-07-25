@@ -10,18 +10,6 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>
-    /// Matches the roleplay prose measurer used by the Diary tab's draw pass.
-    /// </summary>
-    internal delegate float DiaryRoleplayTextHeightCalculator(
-        string text,
-        float width,
-        string atmosphereCue,
-        bool allowDirectSpeechBlocks,
-        DiaryTextDecorationContext decorationContext,
-        int seed,
-        IEnumerable<DiaryNameHighlight> nameHighlights);
-
-    /// <summary>
     /// Explicit inputs needed to measure one expanded diary entry card.
     /// </summary>
     internal struct DiaryEntryCardMeasureRequest
@@ -29,13 +17,8 @@ namespace PawnDiary
         public string EntryKey;
         public float Width;
         public bool ShowLlmDebugInfo;
-        public string BodyText;
+        public float BodyTextHeight;
         public string DebugText;
-        public string AtmosphereCue;
-        public bool AllowDirectSpeechBlocks;
-        public DiaryTextDecorationContext DecorationContext;
-        public int TextSeed;
-        public IEnumerable<DiaryNameHighlight> NameHighlights;
         public bool HasLinkedEntry;
         public bool HasFooterLine;
         public float EntryTextTop;
@@ -45,7 +28,6 @@ namespace PawnDiary
         public float ModelNameTopPadding;
         public float ModelNameHeight;
         public float DebugTextTopPadding;
-        public DiaryRoleplayTextHeightCalculator RoleplayTextHeight;
     }
 
     /// <summary>
@@ -60,31 +42,51 @@ namespace PawnDiary
         private int cacheHighlightVersion = -1;
 
         /// <summary>
-        /// Returns the full expanded height for one entry, reusing wrapped-text measurement while the
-        /// render token, width, debug flag, and highlight set are unchanged.
+        /// Drops every session-bound measurement and its cache identity.
         /// </summary>
-        public float CachedHeight(DiaryEntryCardMeasureRequest request, DiaryRenderToken token, int highlightVersion)
+        public void Clear()
         {
-            if (request.Width != cacheWidth
-                || request.ShowLlmDebugInfo != cacheShowDebug
+            heightCache.Clear();
+            cacheWidth = -1f;
+            cacheShowDebug = false;
+            cacheToken = default(DiaryRenderToken);
+            cacheHighlightVersion = -1;
+        }
+
+        /// <summary>
+        /// Tries to reuse an expanded height while the render token, width, debug flag, and highlight
+        /// set are unchanged.
+        /// </summary>
+        public bool TryGetCachedHeight(
+            string entryKey,
+            float width,
+            bool showLlmDebugInfo,
+            DiaryRenderToken token,
+            int highlightVersion,
+            out float height)
+        {
+            if (width != cacheWidth
+                || showLlmDebugInfo != cacheShowDebug
                 || highlightVersion != cacheHighlightVersion
                 || !token.Equals(cacheToken))
             {
                 heightCache.Clear();
-                cacheWidth = request.Width;
-                cacheShowDebug = request.ShowLlmDebugInfo;
+                cacheWidth = width;
+                cacheShowDebug = showLlmDebugInfo;
                 cacheHighlightVersion = highlightVersion;
                 cacheToken = token;
             }
 
-            string key = request.EntryKey ?? string.Empty;
-            float height;
-            if (!heightCache.TryGetValue(key, out height))
-            {
-                height = MeasureExpandedHeight(request);
-                heightCache[key] = height;
-            }
+            return heightCache.TryGetValue(entryKey ?? string.Empty, out height);
+        }
 
+        /// <summary>
+        /// Measures a cache miss whose body prose has already been prepared for drawing.
+        /// </summary>
+        public float MeasureAndCache(DiaryEntryCardMeasureRequest request)
+        {
+            float height = MeasureExpandedHeight(request);
+            heightCache[request.EntryKey ?? string.Empty] = height;
             return height;
         }
 
@@ -99,10 +101,15 @@ namespace PawnDiary
             }
 
             GameFont oldFont = Text.Font;
-            Text.Font = GameFont.Tiny;
-            float height = Text.CalcHeight(debugText, width);
-            Text.Font = oldFont;
-            return height;
+            try
+            {
+                Text.Font = GameFont.Tiny;
+                return Text.CalcHeight(debugText, width);
+            }
+            finally
+            {
+                Text.Font = oldFont;
+            }
         }
 
         private static float MeasureExpandedHeight(DiaryEntryCardMeasureRequest request)
@@ -111,17 +118,7 @@ namespace PawnDiary
             // height equals what is actually rendered; a wider measure clips long entries at the bottom.
             float innerWidth = request.Width - 20f;
 
-            GameFont oldFont = Text.Font;
-            Text.Font = GameFont.Small;
-            float textHeight = request.RoleplayTextHeight(
-                request.BodyText,
-                innerWidth,
-                request.AtmosphereCue,
-                request.AllowDirectSpeechBlocks,
-                request.DecorationContext,
-                request.TextSeed,
-                request.NameHighlights);
-            Text.Font = oldFont;
+            float textHeight = request.BodyTextHeight;
 
             float height = request.EntryTextTop + textHeight + request.EntryBottomPadding;
 

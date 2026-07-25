@@ -29,21 +29,42 @@ namespace PawnDiary
         /// API key when present, and returns a sorted, deduplicated list of model IDs plus any
         /// per-model reasoning capability the provider advertised (OpenRouter and some gateways).
         /// </summary>
-        public static async Task<ModelListResult> FetchModels(string endpoint, string apiKey, ApiAuthMode authMode, string customAuthHeaderName, ApiCompatibilityMode mode, int timeoutSeconds)
+        public static Task<ModelListResult> FetchModels(string endpoint, string apiKey, ApiAuthMode authMode,
+            string customAuthHeaderName, ApiCompatibilityMode mode, int timeoutSeconds)
         {
-            using (CancellationTokenSource cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(Math.Max(5, timeoutSeconds))))
+            return FetchModels(endpoint, apiKey, authMode, customAuthHeaderName, mode, timeoutSeconds,
+                CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Fetches models with a caller-owned cancellation token in addition to the normal request
+        /// timeout. The settings controller uses this overload to stop an obsolete fetch immediately
+        /// when the player starts another fetch, removes a row, or resets connection settings.
+        /// </summary>
+        public static async Task<ModelListResult> FetchModels(string endpoint, string apiKey, ApiAuthMode authMode,
+            string customAuthHeaderName, ApiCompatibilityMode mode, int timeoutSeconds,
+            CancellationToken callerCancellation)
+        {
+            using (CancellationTokenSource timeoutCancellation =
+                new CancellationTokenSource(TimeSpan.FromSeconds(Math.Max(5, timeoutSeconds))))
+            using (CancellationTokenSource cancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                timeoutCancellation.Token, callerCancellation))
             using (HttpRequestMessage request = new HttpRequestMessage(
                 HttpMethod.Get,
                 ApiRequestAuth.ApplyQueryAuth(EndpointUtility.BuildModelsUrl(endpoint, mode), apiKey, authMode)))
             {
                 ApiRequestAuth.ApplyHeaders(request, apiKey, authMode, customAuthHeaderName);
 
-                using (HttpResponseMessage response = await Client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellation.Token))
+                using (HttpResponseMessage response = await Client.SendAsync(
+                    request, HttpCompletionOption.ResponseHeadersRead, cancellation.Token).ConfigureAwait(false))
                 {
-                    string json = await ReadCappedResponseString(response.Content, MaxModelListResponseBytes, cancellation.Token);
+                    string json = await ReadCappedResponseString(
+                        response.Content, MaxModelListResponseBytes, cancellation.Token).ConfigureAwait(false);
                     if (!response.IsSuccessStatusCode)
                     {
-                        throw new InvalidOperationException($"HTTP {(int)response.StatusCode}: {TrimForStatus(json)}");
+                        throw new InvalidOperationException(
+                            $"HTTP {(int)response.StatusCode}: "
+                            + TrimForStatus(json, apiKey, customAuthHeaderName));
                     }
 
                     return ParseModels(json);
@@ -62,14 +83,15 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            using (Stream stream = await content.ReadAsStreamAsync())
+            using (Stream stream = await content.ReadAsStreamAsync().ConfigureAwait(false))
             using (MemoryStream buffer = new MemoryStream())
             {
                 byte[] chunk = new byte[8192];
                 int total = 0;
                 while (true)
                 {
-                    int read = await stream.ReadAsync(chunk, 0, chunk.Length, cancellationToken);
+                    int read = await stream.ReadAsync(
+                        chunk, 0, chunk.Length, cancellationToken).ConfigureAwait(false);
                     if (read <= 0)
                     {
                         break;
@@ -136,8 +158,11 @@ namespace PawnDiary
             return new ModelListResult(models.Distinct().OrderBy(model => model).ToList(), capabilities);
         }
 
-        /// <summary>Redacts secrets, then truncates to 120 chars for display in error status messages.</summary>
-        private static string TrimForStatus(string value)
+        /// <summary>
+        /// Redacts generic auth patterns plus this request's exact credentials, then truncates to
+        /// 120 characters for display in error status messages.
+        /// </summary>
+        private static string TrimForStatus(string value, string apiKey, string customAuthHeaderName)
         {
             if (string.IsNullOrWhiteSpace(value))
             {
@@ -146,7 +171,7 @@ namespace PawnDiary
 
             // A model-list error body can echo the request URL (query-param key) back to us; this
             // string ends up in the settings window, so mask any secret before it is displayed.
-            value = ApiLaneLabels.RedactSecrets(value).Trim();
+            value = ApiLaneLabels.RedactSecrets(value, apiKey, customAuthHeaderName).Trim();
             return value.Length <= 120 ? value : value.Substring(0, 120) + "...";
         }
     }

@@ -1,8 +1,12 @@
-// Pure API lane identity and log-label helpers. Runtime code passes plain endpoint fields into this
-// file so gate keys, cooldown keys, failover dedupe, and settings-row stale-result checks stay in one
-// audited place without depending on RimWorld, Verse, Unity, HTTP, or saved settings objects.
+// Pure API transport helpers. Runtime code passes plain endpoint fields into this file so lane
+// identity, bounded queueing, admission, retry policy, and secret-safe labels stay in one audited
+// place without depending on RimWorld, Verse, Unity, HTTP, or saved settings objects.
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PawnDiary
 {
@@ -176,6 +180,405 @@ namespace PawnDiary
     }
 
     /// <summary>
+    /// Stable, dynamically resizable asynchronous admission gate. Unlike replacing a
+    /// <see cref="SemaphoreSlim"/> when settings change, updating this object's limit cannot create
+    /// a second set of permits while callers still hold permits from the first set.
+    /// </summary>
+    internal sealed class AsyncAdmissionGate
+    {
+        private static readonly Task CompletedWait = Task.FromResult(true);
+        private readonly object sync = new object();
+        private readonly Queue<Waiter> waiters = new Queue<Waiter>();
+        private int activeCount;
+        private int limit;
+
+        private sealed class Waiter
+        {
+            public readonly TaskCompletionSource<bool> completion = new TaskCompletionSource<bool>();
+            public CancellationTokenRegistration registration;
+            public bool hasRegistration;
+            public int state; // 0 = waiting, 1 = admitted, 2 = cancelled
+        }
+
+        /// <summary>Creates a gate with at least one available concurrent slot.</summary>
+        public AsyncAdmissionGate(int initialLimit)
+        {
+            limit = Math.Max(1, initialLimit);
+        }
+
+        /// <summary>The current configured admission limit.</summary>
+        public int Limit
+        {
+            get
+            {
+                lock (sync)
+                {
+                    return limit;
+                }
+            }
+        }
+
+        /// <summary>Number of callers that currently hold this gate.</summary>
+        public int ActiveCount
+        {
+            get
+            {
+                lock (sync)
+                {
+                    return activeCount;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Waits asynchronously until one slot is admitted. The caller must pair every successful
+        /// wait with exactly one <see cref="Release"/>.
+        /// </summary>
+        public Task WaitAsync(CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return CancelledTask();
+            }
+
+            Waiter waiter;
+            lock (sync)
+            {
+                if (activeCount < limit && waiters.Count == 0)
+                {
+                    activeCount++;
+                    return CompletedWait;
+                }
+
+                waiter = new Waiter();
+                waiters.Enqueue(waiter);
+            }
+
+            CancellationTokenRegistration registration = cancellationToken.Register(
+                () => CancelWaiter(waiter));
+            bool disposeRegistration;
+            lock (sync)
+            {
+                disposeRegistration = waiter.state != 0;
+                if (!disposeRegistration)
+                {
+                    waiter.registration = registration;
+                    waiter.hasRegistration = true;
+                }
+            }
+
+            // Admission/cancellation can win between enqueueing and registering the callback.
+            // Dispose the now-unused registration after that race rather than retaining the token.
+            if (disposeRegistration)
+            {
+                registration.Dispose();
+            }
+
+            return waiter.completion.Task;
+        }
+
+        /// <summary>
+        /// Changes the limit without replacing gate identity. Shrinks take effect as current holders
+        /// release; increases immediately admit as many queued callers as the new limit permits.
+        /// </summary>
+        public void UpdateLimit(int newLimit)
+        {
+            List<Waiter> admitted;
+            List<Waiter> discarded;
+            lock (sync)
+            {
+                limit = Math.Max(1, newLimit);
+                admitted = AdmitAvailableWaitersLocked(out discarded);
+            }
+
+            DisposeRegistrations(discarded);
+            CompleteAdmissions(admitted);
+        }
+
+        /// <summary>Releases one successfully admitted slot.</summary>
+        public void Release()
+        {
+            List<Waiter> admitted;
+            List<Waiter> discarded;
+            lock (sync)
+            {
+                if (activeCount <= 0)
+                {
+                    throw new InvalidOperationException("Cannot release an API admission gate that is not held.");
+                }
+
+                activeCount--;
+                admitted = AdmitAvailableWaitersLocked(out discarded);
+            }
+
+            DisposeRegistrations(discarded);
+            CompleteAdmissions(admitted);
+        }
+
+        private void CancelWaiter(Waiter waiter)
+        {
+            bool cancelled = false;
+            lock (sync)
+            {
+                if (waiter.state == 0)
+                {
+                    waiter.state = 2;
+                    cancelled = true;
+                }
+            }
+
+            if (cancelled)
+            {
+                waiter.completion.TrySetCanceled();
+            }
+        }
+
+        private List<Waiter> AdmitAvailableWaitersLocked(out List<Waiter> discarded)
+        {
+            List<Waiter> admitted = null;
+            discarded = null;
+            while (activeCount < limit && waiters.Count > 0)
+            {
+                Waiter waiter = waiters.Dequeue();
+                if (waiter.state != 0)
+                {
+                    if (waiter.hasRegistration)
+                    {
+                        if (discarded == null)
+                        {
+                            discarded = new List<Waiter>();
+                        }
+
+                        discarded.Add(waiter);
+                    }
+
+                    continue;
+                }
+
+                waiter.state = 1;
+                activeCount++;
+                if (admitted == null)
+                {
+                    admitted = new List<Waiter>();
+                }
+
+                admitted.Add(waiter);
+            }
+
+            return admitted;
+        }
+
+        private static void DisposeRegistrations(List<Waiter> waitersToDispose)
+        {
+            if (waitersToDispose == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < waitersToDispose.Count; i++)
+            {
+                waitersToDispose[i].registration.Dispose();
+            }
+        }
+
+        private static void CompleteAdmissions(List<Waiter> admitted)
+        {
+            if (admitted == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < admitted.Count; i++)
+            {
+                Waiter waiter = admitted[i];
+                if (waiter.hasRegistration)
+                {
+                    waiter.registration.Dispose();
+                }
+
+                // Complete outside the gate lock because a continuation is allowed to run inline.
+                waiter.completion.TrySetResult(true);
+            }
+        }
+
+        private static Task CancelledTask()
+        {
+            TaskCompletionSource<bool> completion = new TaskCompletionSource<bool>();
+            completion.TrySetCanceled();
+            return completion.Task;
+        }
+    }
+
+    /// <summary>
+    /// Lock-free bounded FIFO used by the HTTP dispatcher. Capacity is reserved before enqueueing so
+    /// a burst can never create an unbounded collection of requests or one task per request.
+    /// </summary>
+    internal sealed class BoundedTransportQueue<T>
+    {
+        private readonly ConcurrentQueue<T> queue = new ConcurrentQueue<T>();
+        private readonly int capacity;
+        private int count;
+
+        public BoundedTransportQueue(int capacity)
+        {
+            if (capacity < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(capacity));
+            }
+
+            this.capacity = capacity;
+        }
+
+        public int Capacity
+        {
+            get { return capacity; }
+        }
+
+        public int Count
+        {
+            get { return Volatile.Read(ref count); }
+        }
+
+        /// <summary>Returns false immediately when all bounded queue slots are reserved.</summary>
+        public bool TryEnqueue(T item)
+        {
+            while (true)
+            {
+                int observed = Volatile.Read(ref count);
+                if (observed >= capacity)
+                {
+                    return false;
+                }
+
+                if (Interlocked.CompareExchange(ref count, observed + 1, observed) != observed)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    queue.Enqueue(item);
+                    return true;
+                }
+                catch
+                {
+                    Interlocked.Decrement(ref count);
+                    throw;
+                }
+            }
+        }
+
+        /// <summary>Removes one item and releases its bounded queue slot.</summary>
+        public bool TryDequeue(out T item)
+        {
+            if (!queue.TryDequeue(out item))
+            {
+                return false;
+            }
+
+            Interlocked.Decrement(ref count);
+            return true;
+        }
+    }
+
+    /// <summary>Why one linked transport operation observed cancellation.</summary>
+    internal enum TransportCancellationCause
+    {
+        /// <summary>The transport cancelled independently of our caller/session/deadline tokens.</summary>
+        Transport,
+
+        /// <summary>The caller cancelled, the game session ended, or the session was replaced.</summary>
+        External,
+
+        /// <summary>Only the operation's internal wall-clock deadline fired.</summary>
+        Deadline
+    }
+
+    /// <summary>Pure HTTP transport decisions shared by runtime code and socket-free tests.</summary>
+    internal static class LlmTransportPolicy
+    {
+        public const int MinimumTimeoutSeconds = 5;
+
+        /// <summary>Clamps a configured per-lane concurrency value to its defensive bounds.</summary>
+        public static int NormalizeConcurrency(int requested, int maximum)
+        {
+            if (maximum < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maximum));
+            }
+
+            if (requested < 1)
+            {
+                return 1;
+            }
+
+            return requested > maximum ? maximum : requested;
+        }
+
+        /// <summary>Returns true only when an ordinary generation lane is not cooling.</summary>
+        public static bool MayAttemptLane(bool laneCooling)
+        {
+            return !laneCooling;
+        }
+
+        /// <summary>
+        /// Returns true when a queued request should reserve one more bounded dispatch worker. Active
+        /// work is deliberately not compared with queue length: queue length excludes dequeued work,
+        /// so one active request plus one newly queued request still needs a second worker.
+        /// </summary>
+        public static bool ShouldStartDispatchWorker(int queuedCount, int activeWorkers, int maximumWorkers)
+        {
+            return queuedCount > 0
+                && activeWorkers >= 0
+                && maximumWorkers > 0
+                && activeWorkers < maximumWorkers;
+        }
+
+        /// <summary>
+        /// Classifies a linked cancellation without inspecting exception types or live transport
+        /// objects. External cancellation wins races with the internal deadline and must never cool
+        /// a lane; a deadline-only cancellation represents a transient lane timeout.
+        /// </summary>
+        public static TransportCancellationCause ClassifyCancellation(
+            bool linkedCancellationRequested,
+            bool callerCancellationRequested,
+            bool sessionCancellationRequested,
+            bool sessionReplaced)
+        {
+            if (callerCancellationRequested || sessionCancellationRequested || sessionReplaced)
+            {
+                return TransportCancellationCause.External;
+            }
+
+            return linkedCancellationRequested
+                ? TransportCancellationCause.Deadline
+                : TransportCancellationCause.Transport;
+        }
+
+        /// <summary>HTTP 408, 429, and server-side 5xx statuses can reasonably succeed on retry.</summary>
+        public static bool IsTransientStatusCode(int statusCode)
+        {
+            return statusCode == 408 || statusCode == 429 || statusCode >= 500;
+        }
+
+        /// <summary>
+        /// Creates the total wall-clock deadline at admission time. Queue residence, gate waiting,
+        /// retries, and failover all consume the same bounded request budget.
+        /// </summary>
+        public static DateTime CreateDeadlineUtc(DateTime enqueuedUtc, int timeoutSeconds)
+        {
+            return enqueuedUtc.AddSeconds(Math.Max(MinimumTimeoutSeconds, timeoutSeconds));
+        }
+
+        /// <summary>Returns zero after a queue/request deadline has expired.</summary>
+        public static TimeSpan Remaining(DateTime deadlineUtc, DateTime nowUtc)
+        {
+            TimeSpan remaining = deadlineUtc - nowUtc;
+            return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
+        }
+    }
+
+    /// <summary>
     /// Sanitized API lane labels for debug logs and settings connection-test logs. These labels are
     /// intentionally English diagnostics and never include API keys or URL query/fragment text.
     /// </summary>
@@ -194,13 +597,21 @@ namespace PawnDiary
         /// <summary>Trims one-line log details to the shared diagnostic length cap.</summary>
         public static string TrimForLog(string value)
         {
+            return TrimForLog(value, string.Empty, string.Empty);
+        }
+
+        /// <summary>
+        /// Trims diagnostics after masking the exact configured API key and custom auth-header value.
+        /// </summary>
+        public static string TrimForLog(string value, string apiKey, string customAuthHeaderName)
+        {
             if (string.IsNullOrWhiteSpace(value))
             {
                 return string.Empty;
             }
 
             // Redact before trimming so a secret can never be the surviving prefix of a long line.
-            value = OneLine(RedactSecrets(value));
+            value = OneLine(RedactSecrets(value, apiKey, customAuthHeaderName));
             return value.Length <= 180 ? value : TextTruncation.SafePrefix(value, 180) + "...";
         }
 
@@ -225,13 +636,46 @@ namespace PawnDiary
         /// </summary>
         public static string RedactSecrets(string value)
         {
+            return RedactSecrets(value, string.Empty, string.Empty);
+        }
+
+        /// <summary>
+        /// Masks generic auth patterns plus the exact key/header configured for the request. Exact
+        /// replacement covers provider bodies that echo a bare key without a recognizable prefix.
+        /// </summary>
+        public static string RedactSecrets(string value, string apiKey, string customAuthHeaderName)
+        {
             if (string.IsNullOrEmpty(value))
             {
                 return value ?? string.Empty;
             }
 
+            if (!string.IsNullOrEmpty(apiKey)
+                && !string.Equals(apiKey, "<redacted>", StringComparison.Ordinal))
+            {
+                // Exact replacement runs first so a very short configured key cannot corrupt the
+                // "<redacted>" markers inserted by the broader pattern passes below.
+                value = value.Replace(apiKey, "<redacted>");
+            }
+
             value = QueryKeyPattern.Replace(value, "$1<redacted>");
             value = BearerPattern.Replace(value, "Bearer <redacted>");
+
+            string headerName = (customAuthHeaderName ?? string.Empty).Trim();
+            if (!string.IsNullOrEmpty(headerName))
+            {
+                // Match both HTTP-style `X-Key: value` and JSON-style `"X-Key":"value"`.
+                // An unquoted header value is consumed to a structural/line boundary rather than
+                // the first space, because proxy-normalized credentials can contain spaces.
+                string headerPattern = @"([""']?" + Regex.Escape(headerName)
+                    + @"[""']?\s*[:=]\s*)(?:""[^""]*""|'[^']*'|[^\r\n,;}\]]+)";
+                value = Regex.Replace(
+                    value,
+                    headerPattern,
+                    "$1<redacted>",
+                    RegexOptions.IgnoreCase);
+            }
+
             return value;
         }
 

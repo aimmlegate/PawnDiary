@@ -73,6 +73,23 @@ namespace PawnDiary.RimTests
         private static readonly FieldInfo WrittenDayReflectionsField =
             typeof(DiaryGameComponent).GetField("writtenDayReflections", PrivateInstance);
 
+        // Non-pawn-scoped component stores can be mutated indirectly by a production path under test.
+        // Snapshotting the whole collection is safer than relying on every suite author to remember a
+        // bespoke cleanup key. Mutable saved rows receive explicit field snapshots below; teardown copies
+        // those values back onto the ORIGINAL objects so both state and object identity are preserved.
+        private static readonly FieldInfo ActiveEventWindowsField =
+            typeof(DiaryGameComponent).GetField("activeEventWindows", PrivateInstance);
+        private static readonly FieldInfo RecentEventWindowEventsField =
+            typeof(DiaryGameComponent).GetField("recentEventWindowEvents", PrivateInstance);
+        private static readonly FieldInfo ActiveObservedConditionsField =
+            typeof(DiaryGameComponent).GetField("activeObservedConditions", PrivateInstance);
+        private static readonly FieldInfo ObservedConditionCooldownsField =
+            typeof(DiaryGameComponent).GetField("observedConditionCooldownUntilTick", PrivateInstance);
+        private static readonly FieldInfo KnownAcceptedQuestIdsField =
+            typeof(DiaryGameComponent).GetField("knownAcceptedQuestIds", PrivateInstance);
+        private static readonly FieldInfo DelayedRaidGenerationReadyTicksField =
+            typeof(DiaryGameComponent).GetField("delayedRaidGenerationReadyTicks", PrivateInstance);
+
         // Prompt Test Mode (Prefs.DevMode + settings.promptTestMode) makes QueuePrompt run the full
         // production resolution + render, stamp the assembled prompt on the event, mark it PromptOnly,
         // and return BEFORE any LlmClient.Enqueue — so a captured prompt is exactly what the runtime
@@ -95,6 +112,8 @@ namespace PawnDiary.RimTests
         // Odyssey quest arcs). Snapshot and clear the whole transient store so a second RimTest run in
         // the same loaded game cannot suppress a fixture, then restore the player's exact baseline.
         private readonly List<DictionaryEntry> originalRecentEvents = new List<DictionaryEntry>();
+        private readonly List<CollectionSnapshot> originalGlobalCollections =
+            new List<CollectionSnapshot>();
         private Dictionary<string, bool> originalGroupEnabled;
         private bool randPushed;
 
@@ -178,6 +197,12 @@ namespace PawnDiary.RimTests
             RequireReflectionField(DiariesField, "diaries");
             RequireReflectionField(DiariesByIdField, "diariesById");
             RequireReflectionField(RecentEventsField, "recentEvents");
+            RequireReflectionField(ActiveEventWindowsField, "activeEventWindows");
+            RequireReflectionField(RecentEventWindowEventsField, "recentEventWindowEvents");
+            RequireReflectionField(ActiveObservedConditionsField, "activeObservedConditions");
+            RequireReflectionField(ObservedConditionCooldownsField, "observedConditionCooldownUntilTick");
+            RequireReflectionField(KnownAcceptedQuestIdsField, "knownAcceptedQuestIds");
+            RequireReflectionField(DelayedRaidGenerationReadyTicksField, "delayedRaidGenerationReadyTicks");
 
             PawnDiaryRimTestScope scope = new PawnDiaryRimTestScope
             {
@@ -188,6 +213,7 @@ namespace PawnDiary.RimTests
                     StringComparer.OrdinalIgnoreCase),
             };
             scope.IsolateRecentEvents();
+            scope.SnapshotGlobalCollections();
 
             // Isolate the RNG BEFORE any capture runs so nothing the fired events roll (group tone
             // rotation, humor, staggered intensity) advances the player's own random stream.
@@ -898,6 +924,7 @@ namespace PawnDiary.RimTests
             TryCleanup(RemoveTestDiaryState, ref firstFailure);
             TryCleanup(RemoveTransientKeysForTestPawns, ref firstFailure);
             TryCleanup(RestoreRecentEvents, ref firstFailure);
+            TryCleanup(RestoreGlobalCollections, ref firstFailure);
             TryCleanup(RestoreGroupSettings, ref firstFailure);
             if (promptCaptureEnabled)
             {
@@ -922,6 +949,7 @@ namespace PawnDiary.RimTests
             addedPlayLogEntries.Clear();
             additionallyOwnedEventIds.Clear();
             customCleanups.Clear();
+            originalGlobalCollections.Clear();
             Component = null;
 
             if (firstFailure != null)
@@ -960,6 +988,256 @@ namespace PawnDiary.RimTests
                 recentEvents[entry.Key] = entry.Value;
             }
             originalRecentEvents.Clear();
+        }
+
+        /// <summary>
+        /// Captures component collections whose keys are map/window/quest scoped rather than pawn scoped.
+        /// A test may reach one of these stores indirectly through production code, so the shared harness
+        /// owns their baseline instead of depending on suite-specific best-effort cleanup.
+        /// </summary>
+        private void SnapshotGlobalCollections()
+        {
+            FieldInfo[] fields =
+            {
+                ActiveEventWindowsField,
+                RecentEventWindowEventsField,
+                ActiveObservedConditionsField,
+                ObservedConditionCooldownsField,
+                KnownAcceptedQuestIdsField,
+                DelayedRaidGenerationReadyTicksField
+            };
+
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+                object collection = field.GetValue(Component);
+                Require(
+                    collection != null,
+                    "Pawn Diary's " + field.Name + " store was unavailable for RimTest isolation.");
+
+                CollectionSnapshot snapshot = new CollectionSnapshot
+                {
+                    field = field,
+                    dictionaryEntries = new List<DictionaryEntrySnapshot>(),
+                    items = new List<CollectionValueSnapshot>()
+                };
+
+                IDictionary dictionary = collection as IDictionary;
+                if (dictionary != null)
+                {
+                    snapshot.isDictionary = true;
+                    foreach (DictionaryEntry entry in dictionary)
+                    {
+                        snapshot.dictionaryEntries.Add(new DictionaryEntrySnapshot
+                        {
+                            // Every dictionary in this set uses a string or int key. Both are immutable,
+                            // so only the value needs the type-aware snapshot used for list elements too.
+                            key = entry.Key,
+                            value = SnapshotCollectionValue(field, entry.Value)
+                        });
+                    }
+                }
+                else
+                {
+                    IEnumerable enumerable = collection as IEnumerable;
+                    Require(
+                        enumerable != null,
+                        "Pawn Diary's " + field.Name + " store is not an enumerable collection.");
+                    foreach (object item in enumerable)
+                    {
+                        snapshot.items.Add(SnapshotCollectionValue(field, item));
+                    }
+                }
+
+                originalGlobalCollections.Add(snapshot);
+            }
+        }
+
+        /// <summary>
+        /// Restores every non-pawn-scoped store to its exact pre-test membership. The live collection
+        /// object is retained, which is important for readonly dictionaries referenced by production code.
+        /// </summary>
+        private void RestoreGlobalCollections()
+        {
+            for (int i = 0; i < originalGlobalCollections.Count; i++)
+            {
+                CollectionSnapshot snapshot = originalGlobalCollections[i];
+                object collection = snapshot.field.GetValue(Component);
+                Require(
+                    collection != null,
+                    "Pawn Diary's " + snapshot.field.Name + " store disappeared during RimTest cleanup.");
+
+                if (snapshot.isDictionary)
+                {
+                    IDictionary dictionary = collection as IDictionary;
+                    Require(
+                        dictionary != null,
+                        "Pawn Diary's " + snapshot.field.Name + " store changed collection kind.");
+                    dictionary.Clear();
+                    for (int entryIndex = 0; entryIndex < snapshot.dictionaryEntries.Count; entryIndex++)
+                    {
+                        DictionaryEntrySnapshot entry = snapshot.dictionaryEntries[entryIndex];
+                        dictionary[entry.key] = RestoreCollectionValue(snapshot.field, entry.value);
+                    }
+
+                    Require(
+                        dictionary.Count == snapshot.dictionaryEntries.Count,
+                        "Pawn Diary's " + snapshot.field.Name + " dictionary did not restore exactly.");
+                    continue;
+                }
+
+                MethodInfo clear = collection.GetType().GetMethod(
+                    "Clear",
+                    BindingFlags.Instance | BindingFlags.Public,
+                    null,
+                    Type.EmptyTypes,
+                    null);
+                MethodInfo add = null;
+                MethodInfo[] methods = collection.GetType().GetMethods(
+                    BindingFlags.Instance | BindingFlags.Public);
+                for (int methodIndex = 0; methodIndex < methods.Length; methodIndex++)
+                {
+                    MethodInfo candidate = methods[methodIndex];
+                    if (candidate.Name == "Add" && candidate.GetParameters().Length == 1)
+                    {
+                        add = candidate;
+                        break;
+                    }
+                }
+
+                Require(
+                    clear != null && add != null,
+                    "Pawn Diary's " + snapshot.field.Name + " store lacks public Clear/Add methods.");
+                clear.Invoke(collection, null);
+                for (int itemIndex = 0; itemIndex < snapshot.items.Count; itemIndex++)
+                {
+                    add.Invoke(
+                        collection,
+                        new[] { RestoreCollectionValue(snapshot.field, snapshot.items[itemIndex]) });
+                }
+
+                int restoredCount = 0;
+                foreach (object ignored in (IEnumerable)collection)
+                {
+                    restoredCount++;
+                }
+                Require(
+                    restoredCount == snapshot.items.Count,
+                    "Pawn Diary's " + snapshot.field.Name + " collection did not restore exactly.");
+            }
+        }
+
+        /// <summary>
+        /// Captures one global-store element. Most stores contain immutable strings/ints or the
+        /// value-type RecentEventEntry, so assignment already copies them. The two saved-state lists
+        /// contain mutable reference rows and need explicit field-for-field copies.
+        /// </summary>
+        private static CollectionValueSnapshot SnapshotCollectionValue(FieldInfo field, object value)
+        {
+            CollectionValueSnapshot snapshot = new CollectionValueSnapshot
+            {
+                originalValue = value,
+                savedValue = value
+            };
+
+            if (field == ActiveEventWindowsField && value != null)
+            {
+                ActiveEventWindowState state = value as ActiveEventWindowState;
+                Require(
+                    state != null,
+                    "Pawn Diary's activeEventWindows store contained an unexpected element type.");
+                snapshot.savedValue = CloneActiveEventWindowState(state);
+            }
+            else if (field == ActiveObservedConditionsField && value != null)
+            {
+                ActiveObservedConditionState state = value as ActiveObservedConditionState;
+                Require(
+                    state != null,
+                    "Pawn Diary's activeObservedConditions store contained an unexpected element type.");
+                snapshot.savedValue = ActiveObservedConditionState.FromSnapshot(state.ToSnapshot());
+            }
+
+            return snapshot;
+        }
+
+        /// <summary>
+        /// Restores one captured element and returns the object to reinsert. Mutable rows are repaired
+        /// in place so a production reference held outside the collection cannot retain test mutations.
+        /// </summary>
+        private static object RestoreCollectionValue(FieldInfo field, CollectionValueSnapshot snapshot)
+        {
+            if (field == ActiveEventWindowsField && snapshot.originalValue != null)
+            {
+                ActiveEventWindowState original = snapshot.originalValue as ActiveEventWindowState;
+                ActiveEventWindowState saved = snapshot.savedValue as ActiveEventWindowState;
+                Require(
+                    original != null && saved != null,
+                    "Pawn Diary's activeEventWindows snapshot changed element type.");
+                CopyActiveEventWindowState(saved, original);
+                return original;
+            }
+
+            if (field == ActiveObservedConditionsField && snapshot.originalValue != null)
+            {
+                ActiveObservedConditionState original =
+                    snapshot.originalValue as ActiveObservedConditionState;
+                ActiveObservedConditionState saved =
+                    snapshot.savedValue as ActiveObservedConditionState;
+                Require(
+                    original != null && saved != null,
+                    "Pawn Diary's activeObservedConditions snapshot changed element type.");
+                original.CopyFrom(saved.ToSnapshot());
+                return original;
+            }
+
+            return snapshot.savedValue;
+        }
+
+        private static ActiveEventWindowState CloneActiveEventWindowState(
+            ActiveEventWindowState source)
+        {
+            ActiveEventWindowState clone = new ActiveEventWindowState();
+            CopyActiveEventWindowState(source, clone);
+            return clone;
+        }
+
+        private static void CopyActiveEventWindowState(
+            ActiveEventWindowState source,
+            ActiveEventWindowState destination)
+        {
+            destination.windowDefName = source.windowDefName;
+            destination.windowKey = source.windowKey;
+            destination.startedTick = source.startedTick;
+            destination.expiresTick = source.expiresTick;
+            destination.mapUniqueId = source.mapUniqueId;
+            destination.startSource = source.startSource;
+            destination.startSignal = source.startSignal;
+            destination.startDefName = source.startDefName;
+            destination.startLabel = source.startLabel;
+            destination.startSubjectPawnId = source.startSubjectPawnId;
+            destination.startSubjectLabel = source.startSubjectLabel;
+            destination.startCorrelationId = source.startCorrelationId;
+            destination.startNarrativeArcKey = source.startNarrativeArcKey;
+        }
+
+        private sealed class CollectionSnapshot
+        {
+            public FieldInfo field;
+            public bool isDictionary;
+            public List<DictionaryEntrySnapshot> dictionaryEntries;
+            public List<CollectionValueSnapshot> items;
+        }
+
+        private sealed class DictionaryEntrySnapshot
+        {
+            public object key;
+            public CollectionValueSnapshot value;
+        }
+
+        private sealed class CollectionValueSnapshot
+        {
+            public object originalValue;
+            public object savedValue;
         }
 
         // ----- assertion helper -------------------------------------------------------------------

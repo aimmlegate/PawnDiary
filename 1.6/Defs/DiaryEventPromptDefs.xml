@@ -267,6 +267,15 @@
   </PawnDiary.DiaryEventPromptDef>
 
   <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_BrainwipeArrival</defName>
+    <label>amnesiac awakening</label>
+    <eventType>PawnDiary_BrainwipeArrival</eventType>
+    <enableWhenPackageIdsLoaded><li>Ludeon.RimWorld.Anomaly</li></enableWhenPackageIdsLoaded>
+    <prompt>Write this anxious awakening after total autobiographical amnesia as a new beginning.</prompt>
+    <enhancement>The pawn knows their former memories are absent and feels anxiety about that blankness. Do not restore, summarize, or invent anything from before the brainwipe.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_Death</defName>
     <label>death</label>
     <eventType>Death</eventType>

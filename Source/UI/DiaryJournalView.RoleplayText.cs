@@ -14,16 +14,145 @@ namespace PawnDiary
     internal sealed partial class DiaryJournalView
     {
         /// <summary>
-        /// Draws generated text as light roleplay prose. Each line is formatted to rich text by
-        /// <see cref="DiaryTextFormat"/> so markdown emphasis renders, direct-speech marker blocks
-        /// become separate colored lines, and ordinary quoted speech is colored inline.
-        /// The fade-in alpha is applied through GUI.color so inline-colored spans fade with the rest.
+        /// One roleplay line after paragraph reflow, decoration, search highlighting, and measurement.
+        /// Drawing this object is paint-only: it does not repeat any string or layout work.
         /// </summary>
-        private static void DrawRoleplayText(
-            Rect rect,
+        private sealed class PreparedRoleplayBlock
+        {
+            public string richText;
+            public float y;
+            public float leftInset;
+            public float lineWidth;
+            public float textHeight;
+            public float blockHeight;
+            public FontStyle fontStyle;
+            public TextAnchor alignment;
+            public bool directSpeech;
+        }
+
+        /// <summary>
+        /// Prepared roleplay prose and its exact measured height.
+        /// </summary>
+        private sealed class PreparedRoleplayText
+        {
+            public readonly List<PreparedRoleplayBlock> blocks = new List<PreparedRoleplayBlock>();
+            public float height;
+            public Color dialogueColor;
+        }
+
+        /// <summary>
+        /// Exact inputs for one prepared entry. Entries survive across repaint frames but are replaced as
+        /// soon as any text/layout/decorating input changes, and the whole cache is reset between games.
+        /// </summary>
+        private sealed class PreparedRoleplayCacheEntry
+        {
+            public string text;
+            public float width;
+            public Color dialogueColor;
+            public string atmosphereCue;
+            public bool allowDirectSpeechBlocks;
+            public DiaryTextDecorationContext decorationContext;
+            public int seed;
+            public IEnumerable<DiaryNameHighlight> nameHighlights;
+            public int highlightVersion;
+            public string searchQuery;
+            public string searchHighlightColorHex;
+            public DiaryUiStyleDef uiStyle;
+            public PreparedRoleplayText prepared;
+
+            public bool Matches(
+                string candidateText,
+                float candidateWidth,
+                Color candidateDialogueColor,
+                string candidateAtmosphereCue,
+                bool candidateAllowDirectSpeechBlocks,
+                DiaryTextDecorationContext candidateDecorationContext,
+                int candidateSeed,
+                IEnumerable<DiaryNameHighlight> candidateNameHighlights,
+                int candidateHighlightVersion,
+                string candidateSearchQuery,
+                string candidateSearchHighlightColorHex)
+            {
+                return string.Equals(text, candidateText, StringComparison.Ordinal)
+                    && width == candidateWidth
+                    && dialogueColor.Equals(candidateDialogueColor)
+                    && string.Equals(atmosphereCue, candidateAtmosphereCue, StringComparison.Ordinal)
+                    && allowDirectSpeechBlocks == candidateAllowDirectSpeechBlocks
+                    && ReferenceEquals(decorationContext, candidateDecorationContext)
+                    && seed == candidateSeed
+                    && ReferenceEquals(nameHighlights, candidateNameHighlights)
+                    && highlightVersion == candidateHighlightVersion
+                    && string.Equals(searchQuery, candidateSearchQuery, StringComparison.Ordinal)
+                    && string.Equals(
+                        searchHighlightColorHex,
+                        candidateSearchHighlightColorHex,
+                        StringComparison.Ordinal)
+                    && ReferenceEquals(uiStyle, UiStyle);
+            }
+        }
+
+        private readonly Dictionary<string, PreparedRoleplayCacheEntry> preparedRoleplayCache =
+            new Dictionary<string, PreparedRoleplayCacheEntry>();
+        private DiaryGameComponent renderCacheComponent;
+
+        /// <summary>
+        /// Clears UI render caches that contain objects or measurements owned by a previous game.
+        /// </summary>
+        private void ResetSessionBoundUiStateIfNeeded(DiaryGameComponent component)
+        {
+            if (!DiaryUiPolicy.SessionChanged(renderCacheComponent, component))
+            {
+                return;
+            }
+
+            renderCacheComponent = component;
+            preparedRoleplayCache.Clear();
+            entryCardMeasurer.Clear();
+            entryExpansionOverrides.Clear();
+            entryExpansionBlend.Clear();
+            entryExpansionVersion++;
+            lastExpansionAnimationSeconds = 0f;
+            yearFilterPawnId = null;
+            selectedYear = UnknownYear;
+            scrollPosition = Vector2.zero;
+            cachedNameHighlightsPawn = null;
+            cachedNameHighlightsTick = -1;
+            cachedNameHighlights.Clear();
+            nameHighlightsVersion++;
+            seasonWashColor = new Color(0f, 0f, 0f, 0f);
+            seasonWashLastRealtime = -1f;
+            filterPanelPawnId = null;
+            filterFavoritesOnly = false;
+            filterActiveTags.Clear();
+            filterSearchQuery = string.Empty;
+            filterPanelScrollPosition = Vector2.zero;
+            filterTagInfoBuffer.Clear();
+            filterTagInfoSource = null;
+            filterTagInfoSourceRevision = -1;
+            filterTagInfoYear = int.MinValue;
+            journalFilterBuffer.Clear();
+            journalFilterSource = null;
+            journalFilterSourceRevision = -1;
+            journalFilterTags.Clear();
+            journalFilterVersion++;
+
+            // The visible-entry cache has its own mandatory session check. Drop any partially-built card
+            // layout too, so it cannot finish using height buffers started for the previous game.
+            cachedLayoutEntries = null;
+            cachedLayoutVisibleRevision = -1;
+            layoutBuildInProgress = false;
+            layoutBuildEntries = null;
+        }
+
+        /// <summary>
+        /// Returns prepared prose for one entry, rebuilding only when an exact rendering input changes.
+        /// </summary>
+        private PreparedRoleplayText PreparedRoleplayTextForEntry(
+            string entryKey,
+            DiaryGameComponent component,
             string text,
+            float width,
             Color dialogueColor,
-            float alpha,
             string atmosphereCue,
             bool allowDirectSpeechBlocks,
             DiaryTextDecorationContext decorationContext,
@@ -31,6 +160,157 @@ namespace PawnDiary
             IEnumerable<DiaryNameHighlight> nameHighlights,
             string searchQuery,
             string searchHighlightColorHex)
+        {
+            ResetSessionBoundUiStateIfNeeded(component);
+
+            string key = entryKey ?? string.Empty;
+            PreparedRoleplayCacheEntry cached;
+            if (preparedRoleplayCache.TryGetValue(key, out cached)
+                && cached.Matches(
+                    text,
+                    width,
+                    dialogueColor,
+                    atmosphereCue,
+                    allowDirectSpeechBlocks,
+                    decorationContext,
+                    seed,
+                    nameHighlights,
+                    nameHighlightsVersion,
+                    searchQuery,
+                    searchHighlightColorHex))
+            {
+                return cached.prepared;
+            }
+
+            // Defensive bound for a very long-lived reader. Only visible/overscan entries are prepared,
+            // so reaching this limit is rare; a wholesale clear is cheaper than maintaining another LRU.
+            if (!preparedRoleplayCache.ContainsKey(key)
+                && preparedRoleplayCache.Count >= MaxFirstSeenEntries)
+            {
+                preparedRoleplayCache.Clear();
+            }
+
+            PreparedRoleplayText prepared = BuildPreparedRoleplayText(
+                text,
+                width,
+                dialogueColor,
+                atmosphereCue,
+                allowDirectSpeechBlocks,
+                decorationContext,
+                seed,
+                nameHighlights,
+                searchQuery,
+                searchHighlightColorHex);
+            preparedRoleplayCache[key] = new PreparedRoleplayCacheEntry
+            {
+                text = text,
+                width = width,
+                dialogueColor = dialogueColor,
+                atmosphereCue = atmosphereCue,
+                allowDirectSpeechBlocks = allowDirectSpeechBlocks,
+                decorationContext = decorationContext,
+                seed = seed,
+                nameHighlights = nameHighlights,
+                highlightVersion = nameHighlightsVersion,
+                searchQuery = searchQuery,
+                searchHighlightColorHex = searchHighlightColorHex,
+                uiStyle = UiStyle,
+                prepared = prepared
+            };
+            return prepared;
+        }
+
+        /// <summary>
+        /// Reflows, decorates, highlights, and measures roleplay prose exactly once.
+        /// </summary>
+        private static PreparedRoleplayText BuildPreparedRoleplayText(
+            string text,
+            float width,
+            Color dialogueColor,
+            string atmosphereCue,
+            bool allowDirectSpeechBlocks,
+            DiaryTextDecorationContext decorationContext,
+            int seed,
+            IEnumerable<DiaryNameHighlight> nameHighlights,
+            string searchQuery,
+            string searchHighlightColorHex)
+        {
+            PreparedRoleplayText prepared = new PreparedRoleplayText
+            {
+                dialogueColor = dialogueColor
+            };
+            GameFont oldFont = Text.Font;
+            Text.Font = GameFont.Small;
+            GUIStyle style = BodyStyle();
+            FontStyle oldStyle = style.fontStyle;
+            TextAnchor oldAlignment = style.alignment;
+            float curY = 0f;
+            try
+            {
+                foreach (RoleplayLineBlock block in RoleplayBlocks(
+                    text,
+                    atmosphereCue,
+                    allowDirectSpeechBlocks))
+                {
+                    curY += block.extraTopGap;
+                    if (string.IsNullOrWhiteSpace(block.line))
+                    {
+                        curY += RoleplayParagraphGap;
+                        continue;
+                    }
+
+                    style.fontStyle = block.fontStyle;
+                    style.alignment = block.alignment;
+                    string rich = RoleplayRichText(
+                        block,
+                        dialogueColor,
+                        decorationContext,
+                        seed,
+                        style.fontSize,
+                        nameHighlights);
+                    rich = DiaryEntrySearch.HighlightRichText(
+                        rich,
+                        searchQuery,
+                        searchHighlightColorHex,
+                        UiStyle.FilterSearchMinimumCharacters);
+                    float lineWidth = Mathf.Max(80f, width - block.leftInset - block.rightInset);
+                    float textHeight = style.CalcHeight(new GUIContent(rich), lineWidth);
+                    float blockHeight = textHeight
+                        + (block.directSpeech ? SpeechBlockVerticalPadding * 2f : 0f);
+                    prepared.blocks.Add(new PreparedRoleplayBlock
+                    {
+                        richText = rich,
+                        y = curY,
+                        leftInset = block.leftInset,
+                        lineWidth = lineWidth,
+                        textHeight = textHeight,
+                        blockHeight = blockHeight,
+                        fontStyle = block.fontStyle,
+                        alignment = block.alignment,
+                        directSpeech = block.directSpeech
+                    });
+                    curY += blockHeight + RoleplayLineGap + block.extraBottomGap;
+                }
+
+                prepared.height = Mathf.Max(Text.LineHeight, curY);
+                return prepared;
+            }
+            finally
+            {
+                style.fontStyle = oldStyle;
+                style.alignment = oldAlignment;
+                Text.Font = oldFont;
+            }
+        }
+
+        /// <summary>
+        /// Paints already-prepared roleplay prose. The fade-in alpha is applied through GUI.color so
+        /// inline-colored spans fade with the rest.
+        /// </summary>
+        private static void DrawPreparedRoleplayText(
+            Rect rect,
+            PreparedRoleplayText prepared,
+            float alpha)
         {
             GameFont oldFont = Text.Font;
             Color oldColor = GUI.color;
@@ -40,53 +320,53 @@ namespace PawnDiary
             GUI.color = new Color(1f, 1f, 1f, Mathf.Clamp01(alpha));
 
             GUIStyle style = BodyStyle();
-            float curY = rect.y;
-            foreach (RoleplayLineBlock block in RoleplayBlocks(text, atmosphereCue, allowDirectSpeechBlocks))
+            FontStyle oldStyle = style.fontStyle;
+            TextAnchor oldAlignment = style.alignment;
+            try
             {
-                curY += block.extraTopGap;
-                if (string.IsNullOrWhiteSpace(block.line))
+                if (prepared == null)
                 {
-                    curY += RoleplayParagraphGap;
-                    continue;
+                    return;
                 }
 
-                FontStyle oldStyle = style.fontStyle;
-                TextAnchor oldAlignment = style.alignment;
-                style.fontStyle = block.fontStyle;
-                style.alignment = block.alignment;
-                string rich = RoleplayRichText(block, dialogueColor, decorationContext, seed, style.fontSize, nameHighlights);
-                rich = DiaryEntrySearch.HighlightRichText(
-                    rich,
-                    searchQuery,
-                    searchHighlightColorHex,
-                    UiStyle.FilterSearchMinimumCharacters);
-                float lineWidth = Mathf.Max(80f, rect.width - block.leftInset - block.rightInset);
-                float textHeight = style.CalcHeight(new GUIContent(rich), lineWidth);
-                float blockHeight = textHeight;
-                Rect labelRect = new Rect(rect.x + block.leftInset, curY, lineWidth, textHeight);
-                if (block.directSpeech)
+                for (int i = 0; i < prepared.blocks.Count; i++)
                 {
-                    blockHeight += SpeechBlockVerticalPadding * 2f;
-                    Rect speechRect = new Rect(
-                        labelRect.x - 8f,
-                        curY,
-                        lineWidth + 12f,
-                        blockHeight);
-                    Widgets.DrawBoxSolid(speechRect, SpeechBlockBgColor);
-                    Widgets.DrawBoxSolid(
-                        new Rect(speechRect.x, speechRect.y, 3f, speechRect.height),
-                        new Color(dialogueColor.r, dialogueColor.g, dialogueColor.b, UiStyle.speechBlockAccentAlpha));
-                    labelRect.y += SpeechBlockVerticalPadding;
-                }
+                    PreparedRoleplayBlock block = prepared.blocks[i];
+                    style.fontStyle = block.fontStyle;
+                    style.alignment = block.alignment;
+                    Rect labelRect = new Rect(
+                        rect.x + block.leftInset,
+                        rect.y + block.y,
+                        block.lineWidth,
+                        block.textHeight);
+                    if (block.directSpeech)
+                    {
+                        Rect speechRect = new Rect(
+                            labelRect.x - 8f,
+                            labelRect.y,
+                            block.lineWidth + 12f,
+                            block.blockHeight);
+                        Widgets.DrawBoxSolid(speechRect, SpeechBlockBgColor);
+                        Widgets.DrawBoxSolid(
+                            new Rect(speechRect.x, speechRect.y, 3f, speechRect.height),
+                            new Color(
+                                prepared.dialogueColor.r,
+                                prepared.dialogueColor.g,
+                                prepared.dialogueColor.b,
+                                UiStyle.speechBlockAccentAlpha));
+                        labelRect.y += SpeechBlockVerticalPadding;
+                    }
 
-                GUI.Label(labelRect, rich, style);
+                    GUI.Label(labelRect, block.richText, style);
+                }
+            }
+            finally
+            {
                 style.alignment = oldAlignment;
                 style.fontStyle = oldStyle;
-                curY += blockHeight + RoleplayLineGap + block.extraBottomGap;
+                GUI.color = oldColor;
+                Text.Font = oldFont;
             }
-
-            GUI.color = oldColor;
-            Text.Font = oldFont;
         }
 
         /// <summary>
@@ -114,52 +394,6 @@ namespace PawnDiary
             }
 
             GUI.color = oldColor;
-        }
-
-        /// <summary>
-        /// Measures the same roleplay lines that DrawRoleplayText renders. Uses the same rich-text
-        /// formatting and body style so the measured wrap height matches what is drawn; the dialogue
-        /// color is irrelevant to height (only the bold spans matter, and those are applied here too),
-        /// so a fixed fallback color is passed.
-        /// </summary>
-        private static float RoleplayTextHeight(
-            string text,
-            float width,
-            string atmosphereCue,
-            bool allowDirectSpeechBlocks,
-            DiaryTextDecorationContext decorationContext,
-            int seed,
-            IEnumerable<DiaryNameHighlight> nameHighlights)
-        {
-            GUIStyle style = BodyStyle();
-            float height = 0f;
-            foreach (RoleplayLineBlock block in RoleplayBlocks(text, atmosphereCue, allowDirectSpeechBlocks))
-            {
-                height += block.extraTopGap;
-                if (string.IsNullOrWhiteSpace(block.line))
-                {
-                    height += RoleplayParagraphGap;
-                    continue;
-                }
-
-                FontStyle oldStyle = style.fontStyle;
-                TextAnchor oldAlignment = style.alignment;
-                style.fontStyle = block.fontStyle;
-                style.alignment = block.alignment;
-                string rich = RoleplayRichText(block, FallbackDialogueColor, decorationContext, seed, style.fontSize, nameHighlights);
-                float lineWidth = Mathf.Max(80f, width - block.leftInset - block.rightInset);
-                float textHeight = style.CalcHeight(new GUIContent(rich), lineWidth);
-                if (block.directSpeech)
-                {
-                    textHeight += SpeechBlockVerticalPadding * 2f;
-                }
-
-                height += textHeight + RoleplayLineGap + block.extraBottomGap;
-                style.alignment = oldAlignment;
-                style.fontStyle = oldStyle;
-            }
-
-            return Mathf.Max(Text.LineHeight, height);
         }
 
         private static string RoleplayRichText(

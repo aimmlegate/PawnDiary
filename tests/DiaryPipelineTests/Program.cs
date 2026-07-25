@@ -5171,6 +5171,21 @@ namespace DiaryPipelineTests
                     "Ritual_Speech;RitualBehaviorWorker_ThroneSpeech",
                     true));
 
+            XElement arrivalGroup = FindDef(
+                groups, "PawnDiary.DiaryInteractionGroupDef", "arrival");
+            AssertTrue("brainwipe awakening uses arrival group",
+                HasListValue(arrivalGroup, "matchDefNames", "PawnDiary_BrainwipeArrival"));
+
+            XDocument eventPrompts = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryEventPromptDefs.xml"));
+            XElement brainwipeArrivalPrompt = FindDef(
+                eventPrompts, "PawnDiary.DiaryEventPromptDef", "DiaryEventPrompt_BrainwipeArrival");
+            AssertTrue("brainwipe arrival prompt exists", brainwipeArrivalPrompt != null);
+            AssertEqual("brainwipe arrival prompt exact event key",
+                "PawnDiary_BrainwipeArrival", ChildValue(brainwipeArrivalPrompt, "eventType"));
+            AssertTrue("brainwipe arrival prompt is Anomaly-gated",
+                HasListValue(brainwipeArrivalPrompt, "enableWhenPackageIdsLoaded", anomalyPackageId));
+
             XDocument windows = XDocument.Load(RepoPath("1.6", "Defs", "DiaryEventWindowDefs.xml"));
             XDocument englishWindows = XDocument.Load(RepoPath(
                 "Languages", "English", "DefInjected", "PawnDiary.DiaryEventWindowDef",
@@ -5181,6 +5196,18 @@ namespace DiaryPipelineTests
             XDocument englishKeyed = XDocument.Load(RepoPath("Languages", "English", "Keyed", "PawnDiary.xml"));
             XDocument russianKeyed = XDocument.Load(RepoPath(
                 "Languages", "Russian (Русский)", "Keyed", "PawnDiary.xml"));
+            AssertTrue("English brainwipe arrival label exists",
+                !string.IsNullOrWhiteSpace(KeyedValue(
+                    englishKeyed, "PawnDiary.Event.BrainwipeArrivalLabel")));
+            AssertTrue("English brainwipe arrival text exists",
+                !string.IsNullOrWhiteSpace(KeyedValue(
+                    englishKeyed, "PawnDiary.Event.BrainwipeArrival")));
+            AssertTrue("Russian brainwipe arrival label exists",
+                !string.IsNullOrWhiteSpace(KeyedValue(
+                    russianKeyed, "PawnDiary.Event.BrainwipeArrivalLabel")));
+            AssertTrue("Russian brainwipe arrival text exists",
+                !string.IsNullOrWhiteSpace(KeyedValue(
+                    russianKeyed, "PawnDiary.Event.BrainwipeArrival")));
 
             string[] activationWindowDefNames =
             {

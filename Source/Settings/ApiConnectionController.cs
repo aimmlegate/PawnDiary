@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 using Verse;
 
 namespace PawnDiary
@@ -25,16 +26,26 @@ namespace PawnDiary
         private int fetchTargetIndex = -1;
         // Human-readable status line shown below the Fetch button. Written only on the main thread.
         private string fetchStatus;
-        // Result handed back from the await continuation. RimWorld may resume awaits off the main
-        // thread, so the continuation must not call .Translate() or edit shared UI collections.
-        private volatile ModelFetchResult pendingFetchResult;
+        // Results handed back from await continuations. A queue is required even though the picker is
+        // single-flight: an obsolete request can finish after its replacement and must not overwrite
+        // the replacement's result before the main thread drains it.
+        private readonly ConcurrentQueue<ModelFetchResult> pendingFetchResults =
+            new ConcurrentQueue<ModelFetchResult>();
+        // Caller-owned cancellation for the current picker fetch. Replacing/cancelling UI state aborts
+        // the actual HTTP request rather than merely hiding its eventual result.
+        private CancellationTokenSource modelFetchCancellation;
 
-        // Row indices with a background capability-only refresh in flight. RefreshCapability is
-        // fire-and-forget and many rows can refresh at once (it only touches the thread-safe
-        // ModelCapabilityCache, never the single-flight picker state). The HashSet itself is guarded
-        // because await continuations may resume on a worker thread while the UI thread cancels state.
+        // Capability-only refreshes have their own session generation and cancellation source. They
+        // never touch picker/status state: background continuations publish immutable results/rerun
+        // requests to queues that ApplyPendingResults drains on the main thread.
         private readonly object capabilityRefreshLock = new object();
-        private readonly HashSet<int> capabilityRefreshInFlight = new HashSet<int>();
+        private readonly Dictionary<int, int> capabilityRefreshInFlight = new Dictionary<int, int>();
+        private readonly ConcurrentQueue<CapabilityRefreshResult> pendingCapabilityRefreshResults =
+            new ConcurrentQueue<CapabilityRefreshResult>();
+        private readonly ConcurrentQueue<CapabilityRefreshRerun> pendingCapabilityRefreshReruns =
+            new ConcurrentQueue<CapabilityRefreshRerun>();
+        private CancellationTokenSource capabilityRefreshCancellation = new CancellationTokenSource();
+        private int capabilityRefreshGeneration;
         // Rows whose connection details changed WHILE a refresh was already running. A leading-edge
         // single-flight alone would drop that later change (the player's final URL/key edit), leaving
         // the capability cache stale; this records "run once more when the in-flight fetch finishes".
@@ -141,24 +152,17 @@ namespace PawnDiary
         /// <summary>Drains all completed async results. Call this from the settings UI main thread.</summary>
         public void ApplyPendingResults()
         {
+            ApplyPendingCapabilityRefreshes();
             ApplyPendingFetchResult();
             ApplyPendingConnectionTestResult();
         }
 
-        /// <summary>Invalidates both API settings-window async operations and clears their row state.</summary>
+        /// <summary>Cancels all API settings-window operations and clears their row/session state.</summary>
         public void CancelUiState()
         {
             CancelModelFetchUiState();
             CancelConnectionTestUiState();
-            // Drop tracked in-flight capability refreshes AND any queued reruns: a removed/moved/reset
-            // row no longer maps to a valid index, so a rerun that fired after this cancel would refetch
-            // against a stale index. A landed result stays harmless (it writes only the thread-safe
-            // cache); clearing both sets also stops a post-cancel rerun from firing.
-            lock (capabilityRefreshLock)
-            {
-                capabilityRefreshInFlight.Clear();
-                capabilityRefreshPending.Clear();
-            }
+            CancelCapabilityRefreshState();
         }
 
         /// <summary>
@@ -174,6 +178,9 @@ namespace PawnDiary
             // Get-or-create this row's state and bump its per-row generation so a stale in-flight
             // result from an earlier start (or before a cancel) is rejected on drain.
             ConnectionTestRowState row = GetOrCreateConnectionTestRow(index);
+            CancellationTokenSource cancellation = new CancellationTokenSource();
+            CancelOperation(row.cancellation);
+            row.cancellation = cancellation;
             int generation = ++row.generation;
             string url = string.Empty;
             string apiKey = string.Empty;
@@ -226,13 +233,18 @@ namespace PawnDiary
                 // who tests but never clicks Fetch still gets reasoning-effort clamping.
                 RefreshCapability(index);
 
-                string sampleText = await LlmClient.TestConnection(new ApiEndpointConfig(url, apiKey, model)
-                {
-                    authMode = authMode,
-                    customAuthHeaderName = customAuthHeaderName,
-                    apiMode = apiMode,
-                    reasoningEffort = reasoningEffort
-                }, prompt, timeoutSeconds, temperature);
+                string sampleText = await LlmClient.TestConnection(
+                    new ApiEndpointConfig(url, apiKey, model)
+                    {
+                        authMode = authMode,
+                        customAuthHeaderName = customAuthHeaderName,
+                        apiMode = apiMode,
+                        reasoningEffort = reasoningEffort
+                    },
+                    prompt,
+                    timeoutSeconds,
+                    temperature,
+                    cancellation.Token).ConfigureAwait(false);
 
                 pendingConnectionTestResults.Enqueue(new ConnectionTestResult
                 {
@@ -248,6 +260,11 @@ namespace PawnDiary
                     apiMode = apiMode,
                     reasoningEffort = reasoningEffort
                 });
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+                // Restart/reset cancellation already replaced or removed the row's UI state. Do not
+                // publish a scary failure for an operation the player deliberately made obsolete.
             }
             catch (Exception ex)
             {
@@ -266,6 +283,10 @@ namespace PawnDiary
                     reasoningEffort = reasoningEffort
                 });
             }
+            finally
+            {
+                cancellation.Dispose();
+            }
         }
 
         /// <summary>Gets the per-row state object for <paramref name="index"/>, creating it if absent.</summary>
@@ -283,10 +304,14 @@ namespace PawnDiary
         /// <summary>
         /// Fetches the list of available model IDs from one API row's endpoint asynchronously,
         /// and auto-fills that row's model if it has none yet. Uses a generation counter so stale
-        /// results from earlier (or reset) requests are discarded.
+        /// results from earlier requests are discarded and cancels the previous HTTP operation.
         /// </summary>
         public async void FetchModels(int index)
         {
+            CancellationTokenSource cancellation = new CancellationTokenSource();
+            CancellationTokenSource previousCancellation =
+                Interlocked.Exchange(ref modelFetchCancellation, cancellation);
+            CancelOperation(previousCancellation);
             int generation = ++fetchGeneration;
             string url = string.Empty;
             string apiKey = string.Empty;
@@ -321,8 +346,15 @@ namespace PawnDiary
                 apiMode = endpoint.apiMode;
                 int timeoutSeconds = settings.timeoutSeconds;
 
-                ModelListResult fetchResult = await ModelListClient.FetchModels(url, apiKey, authMode, customAuthHeaderName, apiMode, timeoutSeconds);
-                pendingFetchResult = new ModelFetchResult
+                ModelListResult fetchResult = await ModelListClient.FetchModels(
+                    url,
+                    apiKey,
+                    authMode,
+                    customAuthHeaderName,
+                    apiMode,
+                    timeoutSeconds,
+                    cancellation.Token).ConfigureAwait(false);
+                pendingFetchResults.Enqueue(new ModelFetchResult
                 {
                     generation = generation,
                     targetIndex = index,
@@ -334,11 +366,16 @@ namespace PawnDiary
                     customAuthHeaderName = ApiEndpointPolicy.EffectiveAuthHeaderName(authMode, customAuthHeaderName),
                     authMode = authMode,
                     apiMode = apiMode
-                };
+                });
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+                // Starting a replacement fetch or clearing the settings UI already owns the visible
+                // state. Its generation/state update prevents a spinner from being left behind.
             }
             catch (Exception ex)
             {
-                pendingFetchResult = new ModelFetchResult
+                pendingFetchResults.Enqueue(new ModelFetchResult
                 {
                     generation = generation,
                     targetIndex = index,
@@ -349,7 +386,12 @@ namespace PawnDiary
                     customAuthHeaderName = ApiEndpointPolicy.EffectiveAuthHeaderName(authMode, customAuthHeaderName),
                     authMode = authMode,
                     apiMode = apiMode
-                };
+                });
+            }
+            finally
+            {
+                Interlocked.CompareExchange(ref modelFetchCancellation, null, cancellation);
+                cancellation.Dispose();
             }
         }
 
@@ -367,7 +409,7 @@ namespace PawnDiary
         public async void RefreshCapability(int index)
         {
             // Snapshot inputs on the main thread. After await, do not read game state or call
-            // .Translate(); only write immutable entries into the thread-safe cache.
+            // .Translate(); publish only an immutable result/rerun request for the main-thread drain.
             PawnDiarySettings settings = CurrentSettings();
             if (settings?.apiEndpoints == null || index < 0 || index >= settings.apiEndpoints.Count)
             {
@@ -383,13 +425,19 @@ namespace PawnDiary
             // Single-flight per row: if a refresh is already running (e.g. mid-keystroke on the URL or
             // key), don't start a second. Instead remember that the row changed again so the in-flight
             // fetch re-runs once when it finishes and picks up the player's final edit.
+            int generation;
+            CancellationToken cancellation;
             lock (capabilityRefreshLock)
             {
-                if (!capabilityRefreshInFlight.Add(index))
+                if (capabilityRefreshInFlight.ContainsKey(index))
                 {
                     capabilityRefreshPending.Add(index);
                     return;
                 }
+
+                generation = capabilityRefreshGeneration;
+                cancellation = capabilityRefreshCancellation.Token;
+                capabilityRefreshInFlight[index] = generation;
             }
 
             string url = endpoint.url;
@@ -402,17 +450,34 @@ namespace PawnDiary
             try
             {
                 ModelListResult fetchResult = await ModelListClient.FetchModels(
-                    url, apiKey, authMode, customAuthHeaderName, apiMode, timeoutSeconds);
+                    url,
+                    apiKey,
+                    authMode,
+                    customAuthHeaderName,
+                    apiMode,
+                    timeoutSeconds,
+                    cancellation).ConfigureAwait(false);
 
-                // Cache only the capabilities the provider actually advertised; models without a
-                // reasoning object stay absent (treated as "unknown" by readers -> graceful degrade).
-                if (fetchResult?.Capabilities != null)
+                if (!cancellation.IsCancellationRequested)
                 {
-                    foreach (KeyValuePair<string, ModelReasoningCapability> entry in fetchResult.Capabilities)
+                    pendingCapabilityRefreshResults.Enqueue(new CapabilityRefreshResult
                     {
-                        ModelCapabilityCache.Update(url, entry.Key, entry.Value);
-                    }
+                        generation = generation,
+                        targetIndex = index,
+                        capabilities = fetchResult?.Capabilities,
+                        endpointUrl = url,
+                        apiKey = apiKey,
+                        customAuthHeaderName = ApiEndpointPolicy.EffectiveAuthHeaderName(
+                            authMode, customAuthHeaderName),
+                        authMode = authMode,
+                        apiMode = apiMode
+                    });
                 }
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+                // UI reset/reorder cancellation is expected. The generation check also rejects a
+                // result that completed at the same instant cancellation was requested.
             }
             catch
             {
@@ -422,19 +487,97 @@ namespace PawnDiary
             }
             finally
             {
-                bool rerun;
+                bool rerun = false;
                 lock (capabilityRefreshLock)
                 {
-                    capabilityRefreshInFlight.Remove(index);
-                    // Release the slot first, then re-run once if the row changed during this fetch,
-                    // so the latest URL/key is what actually gets its capability cached.
-                    rerun = capabilityRefreshPending.Remove(index);
+                    if (capabilityRefreshInFlight.TryGetValue(index, out int activeGeneration)
+                        && activeGeneration == generation)
+                    {
+                        capabilityRefreshInFlight.Remove(index);
+                        // Release the slot first, then ask the main-thread drain to re-run once if
+                        // the row changed during this fetch. Never read live settings from this worker.
+                        rerun = capabilityRefreshPending.Remove(index)
+                            && generation == capabilityRefreshGeneration;
+                    }
                 }
 
                 if (rerun)
                 {
-                    RefreshCapability(index);
+                    pendingCapabilityRefreshReruns.Enqueue(new CapabilityRefreshRerun
+                    {
+                        generation = generation,
+                        targetIndex = index
+                    });
                 }
+            }
+        }
+
+        /// <summary>
+        /// Applies capability-only reruns and cache publications on the main thread. Results must
+        /// belong to the current UI generation and still match the row that requested them.
+        /// </summary>
+        private void ApplyPendingCapabilityRefreshes()
+        {
+            while (pendingCapabilityRefreshReruns.TryDequeue(out CapabilityRefreshRerun rerun))
+            {
+                if (rerun.generation == capabilityRefreshGeneration)
+                {
+                    RefreshCapability(rerun.targetIndex);
+                }
+            }
+
+            while (pendingCapabilityRefreshResults.TryDequeue(out CapabilityRefreshResult result))
+            {
+                if (result.generation != capabilityRefreshGeneration
+                    || !CapabilityRefreshTargetStillMatches(result, CurrentSettings())
+                    || result.capabilities == null)
+                {
+                    continue;
+                }
+
+                // Models without an advertised reasoning object stay absent (treated as
+                // "capability unknown"). This cache mutation now happens only on the main thread.
+                foreach (KeyValuePair<string, ModelReasoningCapability> entry in result.capabilities)
+                {
+                    ModelCapabilityCache.Update(result.endpointUrl, entry.Key, entry.Value);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Starts a fresh capability-refresh UI session and cancels every request from the previous
+        /// one. Old continuations carry the old generation and can no longer publish or schedule reruns.
+        /// </summary>
+        private void CancelCapabilityRefreshState()
+        {
+            CancellationTokenSource oldCancellation;
+            lock (capabilityRefreshLock)
+            {
+                capabilityRefreshGeneration++;
+                oldCancellation = capabilityRefreshCancellation;
+                capabilityRefreshCancellation = new CancellationTokenSource();
+                capabilityRefreshInFlight.Clear();
+                capabilityRefreshPending.Clear();
+            }
+
+            while (pendingCapabilityRefreshResults.TryDequeue(out _))
+            {
+                // Drop results already published by the invalidated UI session.
+            }
+
+            while (pendingCapabilityRefreshReruns.TryDequeue(out _))
+            {
+                // Drop reruns already published by the invalidated UI session.
+            }
+
+            CancelOperation(oldCancellation);
+            try
+            {
+                oldCancellation.Dispose();
+            }
+            catch
+            {
+                // Cancellation/disposal is best-effort UI cleanup and must never escape the draw loop.
             }
         }
 
@@ -469,24 +612,33 @@ namespace PawnDiary
             }
         }
 
-        /// <summary>Invalidates any in-flight model-list fetch and clears the per-row picker state.</summary>
+        /// <summary>Cancels any in-flight model-list fetch and clears the per-row picker state.</summary>
         public void CancelModelFetchUiState()
         {
             fetchGeneration++;
+            CancelOperation(Interlocked.Exchange(ref modelFetchCancellation, null));
             isFetchingModels = false;
             fetchTargetIndex = -1;
-            pendingFetchResult = null;
+            while (pendingFetchResults.TryDequeue(out _))
+            {
+                // Drop results already published by operations this reset invalidated.
+            }
             fetchedModels.Clear();
             fetchStatus = null;
         }
 
         /// <summary>
-        /// Invalidates every in-flight connection test and clears all per-row test state. Called on
+        /// Cancels every in-flight connection test and clears all per-row test state. Called on
         /// row remove/move and "Reset connection". Any continuation that lands afterwards finds no
         /// matching row entry on drain, so its result is discarded.
         /// </summary>
         public void CancelConnectionTestUiState()
         {
+            foreach (ConnectionTestRowState row in connectionTestRows.Values)
+            {
+                CancelOperation(row?.cancellation);
+            }
+
             connectionTestRows.Clear();
             ConnectionTestResult stale;
             while (pendingConnectionTestResults.TryDequeue(out stale))
@@ -498,6 +650,27 @@ namespace PawnDiary
         private PawnDiarySettings CurrentSettings()
         {
             return settingsProvider();
+        }
+
+        /// <summary>
+        /// Best-effort cancellation for a request whose continuation may concurrently dispose its
+        /// token source. Cancellation is UI cleanup and must never escape into RimWorld's draw loop.
+        /// </summary>
+        private static void CancelOperation(CancellationTokenSource cancellation)
+        {
+            if (cancellation == null)
+            {
+                return;
+            }
+
+            try
+            {
+                cancellation.Cancel();
+            }
+            catch
+            {
+                // A completion may have disposed the source between the caller's snapshot and Cancel.
+            }
         }
 
         private static string ConnectionTestValidationError(string url, string model)
@@ -521,18 +694,18 @@ namespace PawnDiary
         /// </summary>
         private void ApplyPendingFetchResult()
         {
-            ModelFetchResult result = pendingFetchResult;
-            if (result == null)
+            while (pendingFetchResults.TryDequeue(out ModelFetchResult result))
             {
-                return;
+                if (result.generation == fetchGeneration)
+                {
+                    ApplyFetchResult(result);
+                }
             }
+        }
 
-            pendingFetchResult = null;
-            if (result.generation != fetchGeneration)
-            {
-                return;
-            }
-
+        /// <summary>Applies one current-generation model result on the main thread.</summary>
+        private void ApplyFetchResult(ModelFetchResult result)
+        {
             isFetchingModels = false;
             PawnDiarySettings settings = CurrentSettings();
             if (!FetchTargetStillMatches(result, settings))
@@ -612,6 +785,7 @@ namespace PawnDiary
                     continue;
                 }
 
+                row.cancellation = null;
                 row.isTesting = false;
                 if (result.success)
                 {
@@ -659,6 +833,35 @@ namespace PawnDiary
                 == ApiLaneIdentity.ForConnectionTest(result.endpointUrl, result.apiKey, result.model, result.authMode, result.customAuthHeaderName, result.apiMode, result.reasoningEffort);
         }
 
+        /// <summary>Returns true when a capability-only result still belongs to the same API row.</summary>
+        private static bool CapabilityRefreshTargetStillMatches(
+            CapabilityRefreshResult result,
+            PawnDiarySettings settings)
+        {
+            if (settings?.apiEndpoints == null
+                || result == null
+                || result.targetIndex < 0
+                || result.targetIndex >= settings.apiEndpoints.Count)
+            {
+                return false;
+            }
+
+            ApiEndpointConfig endpoint = settings.apiEndpoints[result.targetIndex];
+            return endpoint != null
+                && ApiLaneIdentity.ForFetchTarget(
+                    endpoint.url,
+                    endpoint.apiKey,
+                    endpoint.authMode,
+                    endpoint.customAuthHeaderName,
+                    endpoint.apiMode)
+                == ApiLaneIdentity.ForFetchTarget(
+                    result.endpointUrl,
+                    result.apiKey,
+                    result.authMode,
+                    result.customAuthHeaderName,
+                    result.apiMode);
+        }
+
         private static string ConnectionTestLaneLabel(ConnectionTestResult result)
         {
             if (result == null)
@@ -693,8 +896,30 @@ namespace PawnDiary
             return ApiLaneLabels.TrimForLog(value);
         }
 
+        // Immutable result of one capability-only /models request. It is published from the worker
+        // continuation and validated/applied by ApplyPendingCapabilityRefreshes on the main thread.
+        private sealed class CapabilityRefreshResult
+        {
+            public int generation;
+            public int targetIndex;
+            public Dictionary<string, ModelReasoningCapability> capabilities;
+            public string endpointUrl;
+            public string apiKey;
+            public string customAuthHeaderName;
+            public ApiAuthMode authMode;
+            public ApiCompatibilityMode apiMode;
+        }
+
+        // A worker cannot safely re-read live settings to start a trailing refresh. It publishes this
+        // tiny immutable request for ApplyPendingCapabilityRefreshes to execute on the main thread.
+        private sealed class CapabilityRefreshRerun
+        {
+            public int generation;
+            public int targetIndex;
+        }
+
         // Result of one model fetch, handed from the await continuation to the main-thread draw.
-        // Never mutated after construction; assigned to pendingFetchResult as a single reference write.
+        // Never mutated after construction; publication through the concurrent queue is thread-safe.
         private sealed class ModelFetchResult
         {
             public int generation;
@@ -720,6 +945,7 @@ namespace PawnDiary
             public int generation;
             public bool isTesting;
             public string status;
+            public CancellationTokenSource cancellation;
         }
 
         // Result of one connection test, handed from the await continuation to the main-thread draw.

@@ -105,26 +105,22 @@ $xmlFiles | ForEach-Object {
     [xml](Get-Content -LiteralPath $_.FullName -Raw) | Out-Null
 }
 
+Write-Step "RimTest EVT coverage manifest"
+& (Join-Path $repoRoot "tests\PawnDiary.RimTest\verify-evt-coverage.ps1")
+
 Write-Step "Pure helper tests"
-Invoke-Native "dotnet" @("run", "--project", "tests\LlmResponseParserTests\LlmResponseParserTests.csproj")
-Invoke-Native "dotnet" @("run", "--project", "tests\DiaryPipelineTests\DiaryPipelineTests.csproj")
-Invoke-Native "dotnet" @("run", "--project", "tests\DiaryBiotechPolicyTests\DiaryBiotechPolicyTests.csproj")
-Invoke-Native "dotnet" @("run", "--project", "tests\DiaryAnomalyPolicyTests\DiaryAnomalyPolicyTests.csproj")
-Invoke-Native "dotnet" @("run", "--project", "tests\DiaryOdysseyPolicyTests\DiaryOdysseyPolicyTests.csproj")
-Invoke-Native "dotnet" @("run", "--project", "tests\NarrativeContinuityTests\NarrativeContinuityTests.csproj")
-Invoke-Native "dotnet" @("run", "--project", "tests\BeliefContextTests\BeliefContextTests.csproj")
-Invoke-Native "dotnet" @("run", "--project", "tests\PawnMemoryTests\PawnMemoryTests.csproj")
-Invoke-Native "dotnet" @("run", "--project", "tests\RoyaltyContextTests\RoyaltyContextTests.csproj")
-Invoke-Native "dotnet" @("run", "--project", "tests\DiaryTextDecorationTests\DiaryTextDecorationTests.csproj")
-Invoke-Native "dotnet" @("run", "--project", "tests\DiaryCapturePolicyTests\DiaryCapturePolicyTests.csproj")
-Invoke-Native "dotnet" @("run", "--project", "tests\PromptVariantsTests\PromptVariantsTests.csproj")
-Invoke-Native "dotnet" @("run", "--project", "tests\DiaryRetentionTests\DiaryRetentionTests.csproj")
-Invoke-Native "dotnet" @("run", "--project", "tests\DiarySaveNormalizationTests\DiarySaveNormalizationTests.csproj")
-Invoke-Native "dotnet" @("run", "--project", "tests\DiaryObservedConditionTests\DiaryObservedConditionTests.csproj")
-Invoke-Native "dotnet" @("run", "--project", "tests\DiaryReaderPolicyTests\DiaryReaderPolicyTests.csproj")
-Invoke-Native "dotnet" @("run", "--project", "tests\DiaryPatchManifestTests\DiaryPatchManifestTests.csproj")
-Invoke-Native "dotnet" @("run", "--project", "tests\DiaryRngIsolationContractTests\DiaryRngIsolationContractTests.csproj")
-Invoke-Native "dotnet" @("run", "--project", "tests\PureBoundaryContractTests\PureBoundaryContractTests.csproj")
+$pureProjects = @(
+    Get-ChildItem -Path "tests" -Filter "*.csproj" -File -Recurse |
+        Where-Object { $_.FullName -notmatch "[\\/]PawnDiary\.RimTest[\\/]" } |
+        Sort-Object FullName
+)
+if ($pureProjects.Count -eq 0) {
+    throw "No standalone pure test projects were discovered under tests/."
+}
+foreach ($project in $pureProjects) {
+    Write-Host ("  run {0}" -f $project.Name)
+    Invoke-Native "dotnet" @("run", "--project", $project.FullName, "-c", "Release")
+}
 
 Write-Step "RimWorld DLL build"
 $msbuild = Find-MSBuild

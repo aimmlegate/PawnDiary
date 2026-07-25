@@ -85,6 +85,9 @@
   <DiaryEventPrompt_Arrival.label>появление</DiaryEventPrompt_Arrival.label>
   <DiaryEventPrompt_Arrival.prompt>Напиши фактическую заметку о том, как поселенец оказался в поселении.</DiaryEventPrompt_Arrival.prompt>
   <DiaryEventPrompt_Arrival.enhancement>Покажи прибытие как переход к новой жизни: пыль, потрясение, тишина, облегчение, подозрение или первый вид убежища. Используй только факты сценария и прибытия.</DiaryEventPrompt_Arrival.enhancement>
+  <DiaryEventPrompt_BrainwipeArrival.label>пробуждение без памяти</DiaryEventPrompt_BrainwipeArrival.label>
+  <DiaryEventPrompt_BrainwipeArrival.prompt>Опиши это тревожное пробуждение после полной утраты автобиографической памяти как новое начало.</DiaryEventPrompt_BrainwipeArrival.prompt>
+  <DiaryEventPrompt_BrainwipeArrival.enhancement>Персонаж знает, что прежние воспоминания отсутствуют, и тревожится из-за этой пустоты. Не восстанавливай, не пересказывай и не выдумывай ничего из времени до стирания памяти.</DiaryEventPrompt_BrainwipeArrival.enhancement>
   <DiaryEventPrompt_Death.label>смерть</DiaryEventPrompt_Death.label>
   <DiaryEventPrompt_Death.prompt>Напиши фактическую заметку об обстоятельствах смерти поселенца.</DiaryEventPrompt_Death.prompt>
   <DiaryEventPrompt_Death.enhancement>Смерть опиши резко и точно, с одной конкретной деталью причины или места. Используй только факты о причине, части тела, оружии, состоянии и обстановке. Кратко.</DiaryEventPrompt_Death.enhancement>

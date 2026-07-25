@@ -1,8 +1,8 @@
-// Async HTTP client for the LLM endpoint. A queue + concurrency gate (SemaphoreSlim) caps how
-// many requests are in flight; each has a hard deadline that purges stuck requests; transient
-// errors retry. Finished results are drained by DiaryGameComponent.GameComponentTick. `async
-// Task` ≈ Promise and `CancellationToken` ≈ AbortSignal — see AGENTS.md ("async Task").
-// The concurrency logic below is already commented inline; start there for details.
+// Async HTTP client for the LLM endpoint. A bounded FIFO and a fixed number of dispatch workers
+// prevent one Task per diary event, while stable per-lane gates cap actual HTTP concurrency even
+// when settings change. One wall-clock deadline covers queue residence, admission, retries, and
+// failover. Finished results are drained by DiaryGameComponent.GameComponentUpdate. `async Task`
+// ≈ Promise and `CancellationToken` ≈ AbortSignal — see AGENTS.md ("async Task").
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -65,8 +65,8 @@ namespace PawnDiary
         public string reasoningTag;
 
         /// <summary>
-        /// True when XML/settings event-prompt policy asked for this primary model explicitly. Forced
-        /// primaries are attempted even if their lane is cooling; normal failover still runs on error.
+        /// True when XML/settings event-prompt policy asked for this primary model explicitly. This
+        /// preserves primary ordering only; transient cooldown remains a hard network-safety barrier.
         /// </summary>
         public bool forcePrimaryLane;
 
@@ -88,6 +88,18 @@ namespace PawnDiary
 
         /// <summary>Linked to the session cancellation source so stale requests are aborted on game load.</summary>
         public CancellationToken cancellationToken;
+
+        /// <summary>
+        /// The session-only token. Unlike <see cref="cancellationToken"/>, this does not fire when the
+        /// request's wall-clock deadline expires, so timeout failures can still be returned to the UI.
+        /// </summary>
+        public CancellationToken sessionCancellationToken;
+
+        /// <summary>
+        /// Absolute deadline stamped when the bounded queue accepts the request. Queue residence,
+        /// lane admission, retries, and failover all consume this same budget.
+        /// </summary>
+        public DateTime deadlineUtc;
 
         /// <summary>True when this is a follow-up title-generation request (not a main diary entry).
         /// The result dispatcher uses the flag to route the response to the right handler: main
@@ -194,6 +206,15 @@ namespace PawnDiary
         /// <summary>Upper bound the semaphore cannot exceed, regardless of user settings.</summary>
         private const int MaxConcurrencyCap = 16;
 
+        /// <summary>Maximum accepted generation backlog for one game session.</summary>
+        private const int MaxQueuedRequests = 256;
+
+        /// <summary>
+        /// Fixed upper bound for asynchronous dispatch loops. More than one lane can still progress
+        /// when many workers are waiting behind a busy single-concurrency local model.
+        /// </summary>
+        private const int MaxDispatchWorkers = MaxConcurrencyCap * 4;
+
         /// <summary>Hard cap for one endpoint response body, before JSON parsing or logging.</summary>
         private const int MaxResponseBytes = 1024 * 1024;
 
@@ -215,26 +236,43 @@ namespace PawnDiary
         /// </summary>
         private static volatile bool debugLoggingEnabled;
 
-        /// <summary>Tracks in-flight request keys to prevent duplicate submissions for the same event + session.</summary>
-        private static readonly ConcurrentDictionary<string, byte> PendingKeys = new ConcurrentDictionary<string, byte>();
-
         /// <summary>Shared HTTP client with no built-in timeout; deadlines are handled per-request via cancellation tokens.</summary>
         private static readonly HttpClient Client = new HttpClient
         {
             Timeout = Timeout.InfiniteTimeSpan // disable HttpClient's own timeout; we use CancellationToken deadlines instead
         };
 
-        /// <summary>Cancellation source for the current session; replaced on each <see cref="BeginSession"/> call.</summary>
-        private static CancellationTokenSource sessionCancellation = new CancellationTokenSource();
-
         /// <summary>Monotonically increasing ID so stale results from previous sessions are ignored.</summary>
         private static long currentSessionId;
 
-        // One gate per API lane (keyed by endpoint+model). Each lane caps how many of its own
-        // requests are in flight at once; lanes run independently so several APIs work in
-        // parallel. The cap per lane is `maxConcurrentRequests` (set it to 1 for a local model
-        // that serves one request at a time). Gates are created lazily and rebuilt when the limit changes.
-        private static ConcurrentDictionary<ApiLaneIdentity, SemaphoreSlim> sendGates = new ConcurrentDictionary<ApiLaneIdentity, SemaphoreSlim>();
+        /// <summary>
+        /// Everything owned by one loaded-game transport session. Replacing this object on
+        /// BeginSession/EndSession abandons the old bounded queue and gates as one unit; cancellation
+        /// wakes its workers, while the next session cannot accidentally share their permits.
+        /// </summary>
+        private sealed class LlmTransportSession
+        {
+            public readonly long Id;
+            public readonly bool AcceptsGeneration;
+            public readonly CancellationTokenSource Cancellation = new CancellationTokenSource();
+            public readonly ConcurrentDictionary<ApiLaneIdentity, AsyncAdmissionGate> SendGates =
+                new ConcurrentDictionary<ApiLaneIdentity, AsyncAdmissionGate>();
+            public readonly BoundedTransportQueue<LlmGenerationRequest> WorkQueue =
+                new BoundedTransportQueue<LlmGenerationRequest>(MaxQueuedRequests);
+            public readonly ConcurrentDictionary<string, byte> PendingKeys =
+                new ConcurrentDictionary<string, byte>();
+            public int ActiveWorkers;
+
+            public LlmTransportSession(long id, bool acceptsGeneration)
+            {
+                Id = id;
+                AcceptsGeneration = acceptsGeneration;
+            }
+        }
+
+        private static readonly object sessionTransitionLock = new object();
+        private static volatile LlmTransportSession currentSession = new LlmTransportSession(0, false);
+        private static int configuredConcurrency = 4;
 
         // Runtime-only transient-failure backoff per lane. Protected by a simple lock because the
         // main thread reads it for routing while background HTTP workers update it after failures.
@@ -254,7 +292,7 @@ namespace PawnDiary
             // ServicePointManager.DefaultConnectionLimit (default 2). Without raising it, a
             // maxConcurrentRequests above 2 has no real effect for a single endpoint — extra
             // requests queue at the transport layer behind two connections. Raise the floor so the
-            // per-lane SemaphoreSlim is the only thing limiting in-flight requests to one host.
+            // the per-lane admission gate is the only thing limiting in-flight requests to one host.
             // This is a process-global setting; we only ever raise it, never lower it, so we don't
             // shrink a limit another mod may have already widened.
             try
@@ -271,45 +309,71 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Starts a new session, cancelling all in-flight requests from the previous one
-        /// and resetting the concurrency gate and result queue. Called on game load.
+        /// Starts a new loaded-game session, cancelling all queued/in-flight requests from the
+        /// previous session and resetting its bounded queue, gates, cooldowns, and result queue.
         /// </summary>
         public static void BeginSession()
         {
             ApplyDebugLoggingSetting();
-            CancellationTokenSource oldCancellation = sessionCancellation;
-            sessionCancellation = new CancellationTokenSource();
-            sendGates = new ConcurrentDictionary<ApiLaneIdentity, SemaphoreSlim>(); // fresh per-lane gates at the current limit
+            TransitionSession(true);
+        }
+
+        /// <summary>
+        /// Ends the loaded-game session immediately. The replacement idle session still allows
+        /// explicit settings connection tests at the main menu, but accepts no diary generation.
+        /// </summary>
+        public static void EndSession()
+        {
+            TransitionSession(false);
+        }
+
+        private static void TransitionSession(bool acceptsGeneration)
+        {
+            int latestConcurrency = ResolveConcurrency();
+            Volatile.Write(ref configuredConcurrency, latestConcurrency);
+
+            LlmTransportSession oldSession;
+            lock (sessionTransitionLock)
+            {
+                long nextSessionId = Interlocked.Increment(ref currentSessionId);
+                oldSession = currentSession;
+                currentSession = new LlmTransportSession(nextSessionId, acceptsGeneration);
+            }
+
             lock (laneCooldownLock)
             {
                 laneCooldowns.Clear();
             }
-            Interlocked.Increment(ref currentSessionId); // bump so stale results are ignored
+
             ClearCompleted();
-            oldCancellation.Cancel(); // abort all in-flight requests from previous session
+            try
+            {
+                oldSession.Cancellation.Cancel();
+            }
+            catch (Exception ex)
+            {
+                // Cancellation callbacks belong to HTTP/framework internals. A misbehaving callback
+                // must not prevent a new game from loading or the old game from reaching the menu.
+                LogDebug("LLM session cancellation callback failed error=" + TrimForLog(ex.Message));
+            }
         }
 
         /// <summary>
-        /// Discards the per-lane gates so the next request rebuilds them at the latest
-        /// user limit. Safe to call at any time — in-flight workers hold their own gate
-        /// reference and release that one, so they never touch the new gates.
+        /// Applies the latest per-lane limit to the existing gates. Gate identity is deliberately
+        /// preserved so settings writes cannot create an overlapping second permit pool.
         /// </summary>
         public static void ApplyConcurrency()
         {
-            // Safe to swap at any time: in-flight workers hold their own gate reference
-            // and release that one, so they never touch these new gates.
-            sendGates = new ConcurrentDictionary<ApiLaneIdentity, SemaphoreSlim>();
+            ApplyConcurrencyToCurrentSession();
         }
 
         /// <summary>
-        /// Applies the current API lane snapshot after settings are saved. Gates are rebuilt at the
-        /// latest concurrency limit, and cooldowns for removed or reconfigured lanes are discarded.
+        /// Applies the current API lane snapshot after settings are saved. Existing gates are resized
+        /// in place, and cooldowns for removed or reconfigured lanes are discarded.
         /// </summary>
         public static void ApplyLaneConfiguration(List<ApiEndpointConfig> activeLanes)
         {
-            // Safe to swap at any time: in-flight workers hold their own gate reference
-            // and release that one, so they never touch these new gates.
-            sendGates = new ConcurrentDictionary<ApiLaneIdentity, SemaphoreSlim>();
+            ApplyConcurrencyToCurrentSession();
 
             HashSet<ApiLaneIdentity> activeKeys = BuildLaneKeySet(activeLanes);
             int removedCount = 0;
@@ -343,6 +407,18 @@ namespace PawnDiary
             }
         }
 
+        private static void ApplyConcurrencyToCurrentSession()
+        {
+            int latestConcurrency = ResolveConcurrency();
+            Volatile.Write(ref configuredConcurrency, latestConcurrency);
+
+            LlmTransportSession session = currentSession;
+            foreach (AsyncAdmissionGate gate in session.SendGates.Values)
+            {
+                gate.UpdateLimit(latestConcurrency);
+            }
+        }
+
         /// <summary>
         /// Refreshes the cached debug-log gate from settings. Call this from main-thread settings
         /// paths after the player changes the dev debug toggle.
@@ -367,7 +443,18 @@ namespace PawnDiary
         /// thread by the caller because prompt text is localized and .Translate() is not
         /// background-thread-safe.
         /// </summary>
-        public static async Task<string> TestConnection(ApiEndpointConfig endpoint, string prompt, int timeoutSeconds, float temperature)
+        public static Task<string> TestConnection(ApiEndpointConfig endpoint, string prompt, int timeoutSeconds, float temperature)
+        {
+            return TestConnection(endpoint, prompt, timeoutSeconds, temperature, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Runs the settings diagnostic with caller cancellation. The test deliberately bypasses a
+        /// runtime cooldown so the player can probe a lane, but it still shares that lane's stable
+        /// admission gate and therefore cannot exceed configured HTTP concurrency.
+        /// </summary>
+        public static async Task<string> TestConnection(ApiEndpointConfig endpoint, string prompt,
+            int timeoutSeconds, float temperature, CancellationToken callerCancellation)
         {
             if (endpoint == null)
             {
@@ -389,29 +476,59 @@ namespace PawnDiary
                 throw new InvalidOperationException("No connection test prompt was provided.");
             }
 
-            using (CancellationTokenSource cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(Math.Max(5, timeoutSeconds))))
+            LlmGenerationRequest request = new LlmGenerationRequest
             {
-                SendResponse response = await SendOnce(new LlmGenerationRequest
-                {
-                    eventId = "connection-test",
-                    povRole = "test",
-                    systemPrompt = string.Empty,
-                    rawText = prompt,
-                    endpointUrl = endpoint.url,
-                    modelName = endpoint.model,
-                    apiKey = endpoint.apiKey,
-                    authMode = PawnDiarySettings.NormalizeAuthMode(endpoint.authMode),
-                    customAuthHeaderName = endpoint.customAuthHeaderName,
-                    apiMode = endpoint.apiMode,
-                    reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort),
-                    reasoningTag = PawnDiarySettings.NormalizeReasoningTag(endpoint.reasoningTag),
-                    timeoutSeconds = timeoutSeconds,
-                    maxTokens = 32,
-                    temperature = temperature,
-                    isTitleRequest = true
-                }, cancellation.Token);
+                eventId = "connection-test",
+                povRole = "test",
+                systemPrompt = string.Empty,
+                rawText = prompt,
+                endpointUrl = endpoint.url,
+                modelName = endpoint.model,
+                apiKey = endpoint.apiKey,
+                authMode = PawnDiarySettings.NormalizeAuthMode(endpoint.authMode),
+                customAuthHeaderName = endpoint.customAuthHeaderName,
+                apiMode = endpoint.apiMode,
+                reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort),
+                reasoningTag = PawnDiarySettings.NormalizeReasoningTag(endpoint.reasoningTag),
+                timeoutSeconds = timeoutSeconds,
+                maxTokens = 32,
+                temperature = temperature,
+                isTitleRequest = true
+            };
 
-                return response.CleanText;
+            // A connection test can be the first transport action at the main menu, before any
+            // loaded-game BeginSession or settings write has refreshed the cached concurrency.
+            ApplyConcurrencyToCurrentSession();
+            LlmTransportSession session = currentSession;
+            AsyncAdmissionGate gate = GetOrCreateGate(request, session);
+            using (CancellationTokenSource cancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                session.Cancellation.Token, callerCancellation))
+            {
+                cancellation.CancelAfter(TimeSpan.FromSeconds(
+                    Math.Max(LlmTransportPolicy.MinimumTimeoutSeconds, timeoutSeconds)));
+                await gate.WaitAsync(cancellation.Token);
+                try
+                {
+                    try
+                    {
+                        SendResponse response = await SendOnce(request, cancellation.Token);
+                        // The provider controls successful sample text too. Exact-redact the actual
+                        // credentials before the controller can put this value in status UI or logs.
+                        return RedactRequestSecrets(request, response.CleanText);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidOperationException(RedactRequestSecrets(request, ex.Message));
+                    }
+                }
+                finally
+                {
+                    gate.Release();
+                }
             }
         }
 
@@ -479,19 +596,47 @@ namespace PawnDiary
                 isTitleRequest = false
             };
 
-            // Adapter work shares the same per-lane semaphore and cooldown as diary generation. Without
+            // Adapter work shares the same per-lane gate and cooldown as diary generation. Without
             // this gate, a colony-wide transform can burst one HTTP request per pawn even when the player
             // configured a single-request local model.
-            SemaphoreSlim gate = GetOrCreateGate(request);
-            CancellationToken sessionToken = sessionCancellation.Token;
+            LlmTransportSession session = currentSession;
+            if (!session.AcceptsGeneration || session.Cancellation.IsCancellationRequested)
+            {
+                throw new OperationCanceledException("There is no active loaded-game LLM session.");
+            }
+
+            AsyncAdmissionGate gate = GetOrCreateGate(request, session);
+            CancellationToken sessionToken = session.Cancellation.Token;
             using (CancellationTokenSource cancellation = CancellationTokenSource.CreateLinkedTokenSource(
                 sessionToken, callerCancellation))
             {
-                cancellation.CancelAfter(TimeSpan.FromSeconds(Math.Max(5, timeoutSeconds)));
-                await gate.WaitAsync(cancellation.Token);
+                cancellation.CancelAfter(TimeSpan.FromSeconds(
+                    Math.Max(LlmTransportPolicy.MinimumTimeoutSeconds, timeoutSeconds)));
+                if (!LlmTransportPolicy.MayAttemptLane(IsLaneCooling(LaneIdentity(request))))
+                {
+                    throw new LlmTransientException(
+                        "The selected API lane is cooling down after a recent transient failure.");
+                }
+
                 try
                 {
-                    if (IsLaneCooling(LaneIdentity(request)))
+                    await gate.WaitAsync(cancellation.Token);
+                }
+                catch (OperationCanceledException e)
+                {
+                    throw SingleCompletionCancellationException(
+                        request,
+                        session,
+                        callerCancellation,
+                        cancellation.Token,
+                        e,
+                        "Timed out waiting for an available API lane.");
+                }
+
+                try
+                {
+                    // A different request can start a cooldown while this one waits for admission.
+                    if (!LlmTransportPolicy.MayAttemptLane(IsLaneCooling(LaneIdentity(request))))
                     {
                         throw new LlmTransientException("The selected API lane is cooling down after a recent transient failure.");
                     }
@@ -499,13 +644,50 @@ namespace PawnDiary
                     try
                     {
                         SendResponse response = await SendOnce(request, cancellation.Token);
+                        if (cancellation.IsCancellationRequested
+                            || session.Cancellation.IsCancellationRequested
+                            || !ReferenceEquals(session, currentSession))
+                        {
+                            throw new OperationCanceledException(cancellation.Token);
+                        }
+
                         ClearLaneCooldown(request);
                         return response.CleanText;
                     }
                     catch (LlmTransientException e)
                     {
-                        MarkLaneCooldown(request, e.Message, e.RetryAfterSeconds);
+                        if (ReferenceEquals(session, currentSession)
+                            && !session.Cancellation.IsCancellationRequested)
+                        {
+                            MarkLaneCooldown(request, e.Message, e.RetryAfterSeconds);
+                        }
+
                         throw;
+                    }
+                    catch (OperationCanceledException e)
+                    {
+                        throw SingleCompletionCancellationException(
+                            request,
+                            session,
+                            callerCancellation,
+                            cancellation.Token,
+                            e,
+                            "Timed out waiting for the model.");
+                    }
+                    catch (Exception e) when (IsTransientException(e))
+                    {
+                        string safeError = RedactRequestSecrets(request, e.Message);
+                        if (ReferenceEquals(session, currentSession)
+                            && !session.Cancellation.IsCancellationRequested)
+                        {
+                            MarkLaneCooldown(request, safeError, 0);
+                        }
+
+                        throw new LlmTransientException(safeError);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new InvalidOperationException(RedactRequestSecrets(request, e.Message));
                     }
                 }
                 finally
@@ -513,6 +695,51 @@ namespace PawnDiary
                     gate.Release();
                 }
             }
+        }
+
+        /// <summary>
+        /// Keeps caller/session cancellation as cancellation, but converts an internal timeout (or
+        /// transport-originated cancellation) into a transient lane failure with cooldown. This
+        /// prevents obsolete caller work from poisoning the lane while still backing off a model
+        /// that consumed its full deadline.
+        /// </summary>
+        private static Exception SingleCompletionCancellationException(
+            LlmGenerationRequest request,
+            LlmTransportSession session,
+            CancellationToken callerCancellation,
+            CancellationToken linkedCancellation,
+            OperationCanceledException cancellation,
+            string deadlineMessage)
+        {
+            TransportCancellationCause cause = LlmTransportPolicy.ClassifyCancellation(
+                linkedCancellation.IsCancellationRequested,
+                callerCancellation.IsCancellationRequested,
+                session.Cancellation.IsCancellationRequested,
+                !ReferenceEquals(session, currentSession));
+            if (cause == TransportCancellationCause.External)
+            {
+                return cancellation;
+            }
+
+            string safeError = cause == TransportCancellationCause.Deadline
+                ? deadlineMessage
+                : RedactRequestSecrets(request, cancellation.Message);
+            if (string.IsNullOrWhiteSpace(safeError))
+            {
+                safeError = "The API transport cancelled the request.";
+            }
+
+            // Recheck the external sources immediately before mutating cooldown state. External
+            // cancellation wins a close race with the deadline and must remain side-effect free.
+            if (callerCancellation.IsCancellationRequested
+                || session.Cancellation.IsCancellationRequested
+                || !ReferenceEquals(session, currentSession))
+            {
+                return cancellation;
+            }
+
+            MarkLaneCooldown(request, safeError, 0);
+            return new LlmTransientException(safeError);
         }
 
         /// <summary>
@@ -583,10 +810,18 @@ namespace PawnDiary
         /// <summary>
         /// Gets the gate for a lane, creating it at the current per-lane limit on first use.
         /// </summary>
-        private static SemaphoreSlim GetOrCreateGate(LlmGenerationRequest request)
+        private static AsyncAdmissionGate GetOrCreateGate(
+            LlmGenerationRequest request,
+            LlmTransportSession session)
         {
             ApiLaneIdentity key = GateKey(request);
-            return sendGates.GetOrAdd(key, _ => new SemaphoreSlim(ResolveConcurrency(), MaxConcurrencyCap));
+            AsyncAdmissionGate gate = session.SendGates.GetOrAdd(
+                key,
+                _ => new AsyncAdmissionGate(Volatile.Read(ref configuredConcurrency)));
+            // Close the narrow race where settings update after GetOrAdd's factory reads the limit
+            // but before the new gate becomes visible to ApplyConcurrency's dictionary enumeration.
+            gate.UpdateLimit(Volatile.Read(ref configuredConcurrency));
+            return gate;
         }
 
         /// <summary>
@@ -596,12 +831,7 @@ namespace PawnDiary
         private static int ResolveConcurrency()
         {
             int requested = PawnDiaryMod.Settings != null ? PawnDiaryMod.Settings.maxConcurrentRequests : 4;
-            if (requested < 1)
-            {
-                return 1;
-            }
-
-            return requested > MaxConcurrencyCap ? MaxConcurrencyCap : requested;
+            return LlmTransportPolicy.NormalizeConcurrency(requested, MaxConcurrencyCap);
         }
 
         private static bool IsLaneCooling(ApiLaneIdentity laneKey)
@@ -618,45 +848,6 @@ namespace PawnDiary
                     && state != null
                     && state.cooldownUntilUtc > DateTime.UtcNow;
             }
-        }
-
-        private static List<bool> SnapshotLaneReadiness(List<ApiEndpointConfig> lanes)
-        {
-            List<bool> ready = new List<bool>();
-            if (lanes == null || lanes.Count == 0)
-            {
-                return ready;
-            }
-
-            foreach (ApiEndpointConfig lane in lanes)
-            {
-                ready.Add(lane != null && !IsLaneCooling(lane));
-            }
-
-            return ready;
-        }
-
-        private static bool HasReadyLane(List<bool> readiness)
-        {
-            if (readiness == null)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < readiness.Count; i++)
-            {
-                if (readiness[i])
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static bool LaneWasReady(List<bool> readiness, int index)
-        {
-            return readiness != null && index >= 0 && index < readiness.Count && readiness[index];
         }
 
         private static void MarkLaneCooldown(LlmGenerationRequest request, string error, int retryAfterSeconds)
@@ -698,7 +889,7 @@ namespace PawnDiary
                 + " lane="
                 + LaneLabel(request)
                 + " error="
-                + TrimForLog(error));
+                + TrimForLog(request, error));
         }
 
         private static void ClearLaneCooldown(LlmGenerationRequest request)
@@ -735,13 +926,13 @@ namespace PawnDiary
                 return false;
             }
 
-            long sessionId = Interlocked.Read(ref currentSessionId);
-            return PendingKeys.ContainsKey(PendingKey(eventId, povRole, sessionId, false));
+            LlmTransportSession session = currentSession;
+            return session.PendingKeys.ContainsKey(PendingKey(eventId, povRole, session.Id, false));
         }
 
         /// <summary>
-        /// Accepts a generation request, stamps it with the current session, deduplicates
-        /// it, and fires off the async send loop in the background. Returns immediately.
+        /// Accepts a generation request into the current session's bounded FIFO, stamps its total
+        /// wall-clock deadline, deduplicates it, and wakes a bounded dispatch-worker pool.
         /// </summary>
         public static void Enqueue(LlmGenerationRequest request)
         {
@@ -750,20 +941,156 @@ namespace PawnDiary
                 return;
             }
 
-            request.sessionId = Interlocked.Read(ref currentSessionId); // stamp with current session
-            request.cancellationToken = sessionCancellation.Token;
+            LlmTransportSession session = currentSession;
+            if (!session.AcceptsGeneration || session.Cancellation.IsCancellationRequested)
+            {
+                return;
+            }
+
+            request.sessionId = session.Id;
+            request.sessionCancellationToken = session.Cancellation.Token;
+            request.deadlineUtc = LlmTransportPolicy.CreateDeadlineUtc(
+                DateTime.UtcNow,
+                request.timeoutSeconds);
             string pendingKey = PendingKey(request.eventId, request.povRole, request.sessionId, request.isTitleRequest);
-            if (!PendingKeys.TryAdd(pendingKey, 0)) // deduplicate: same event+role+session+kind is already queued
+            if (!session.PendingKeys.TryAdd(pendingKey, 0)) // same event+role+session+kind is already queued
             {
                 LogDebug("Skipped duplicate queued request event=" + request.eventId + " role=" + request.povRole + " session=" + request.sessionId);
                 return;
             }
 
-            // Capture this lane's gate now so a later BeginSession/ApplyConcurrency that swaps in
-            // fresh gates can't cause this worker to release the wrong semaphore.
-            SemaphoreSlim gate = GetOrCreateGate(request);
+            if (!session.WorkQueue.TryEnqueue(request))
+            {
+                session.PendingKeys.TryRemove(pendingKey, out _);
+                Completed.Enqueue(new LlmGenerationResult
+                {
+                    eventId = request.eventId,
+                    povRole = request.povRole,
+                    sessionId = request.sessionId,
+                    success = false,
+                    error = "The LLM request queue is full. Try again after the current backlog finishes.",
+                    isTitleRequest = request.isTitleRequest
+                });
+                LogDebug("Rejected request because bounded queue is full event=" + request.eventId
+                    + " role=" + request.povRole + " capacity=" + MaxQueuedRequests);
+                return;
+            }
+
             LogDebug("Enqueued request event=" + request.eventId + " role=" + request.povRole + " primary=" + LaneLabel(request));
-            Task.Run(() => SendWithRetries(request, gate));
+            EnsureDispatchWorkers(session);
+        }
+
+        /// <summary>
+        /// Starts only as many reusable async dispatch loops as the bounded backlog needs, up to the
+        /// fixed worker cap. Requests do not create their own Task.Run.
+        /// </summary>
+        private static void EnsureDispatchWorkers(LlmTransportSession session)
+        {
+            if (session == null || session.Cancellation.IsCancellationRequested)
+            {
+                return;
+            }
+
+            while (true)
+            {
+                int active = Volatile.Read(ref session.ActiveWorkers);
+                int queued = session.WorkQueue.Count;
+                if (!LlmTransportPolicy.ShouldStartDispatchWorker(
+                    queued,
+                    active,
+                    MaxDispatchWorkers))
+                {
+                    return;
+                }
+
+                if (Interlocked.CompareExchange(ref session.ActiveWorkers, active + 1, active) != active)
+                {
+                    continue;
+                }
+
+                Task.Run(() => RunDispatchWorker(session));
+                // Every accepted enqueue calls this method, so reserve one worker per signal. Starting
+                // only one here avoids oversubscribing a one-item queue while still letting a staggered
+                // arrival progress beside a worker already blocked on another request/lane.
+                return;
+            }
+        }
+
+        private static async Task RunDispatchWorker(LlmTransportSession session)
+        {
+            try
+            {
+                LlmGenerationRequest request;
+                while (session.WorkQueue.TryDequeue(out request))
+                {
+                    if (session.Cancellation.IsCancellationRequested)
+                    {
+                        break;
+                    }
+
+                    try
+                    {
+                        TimeSpan remaining = LlmTransportPolicy.Remaining(request.deadlineUtc, DateTime.UtcNow);
+                        using (CancellationTokenSource deadline =
+                            CancellationTokenSource.CreateLinkedTokenSource(session.Cancellation.Token))
+                        {
+                            if (remaining <= TimeSpan.Zero)
+                            {
+                                deadline.Cancel();
+                            }
+                            else
+                            {
+                                deadline.CancelAfter(remaining);
+                            }
+
+                            request.cancellationToken = deadline.Token;
+                            request.sessionCancellationToken = session.Cancellation.Token;
+                            await SendWithRetries(request, session);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // SendWithRetries normally catches and reports everything itself. Keep this
+                        // narrow outer guard so deadline/CTS setup failures cannot strand a pending key.
+                        string pendingKey = PendingKey(
+                            request.eventId,
+                            request.povRole,
+                            request.sessionId,
+                            request.isTitleRequest);
+                        session.PendingKeys.TryRemove(pendingKey, out _);
+                        if (!session.Cancellation.IsCancellationRequested
+                            && request.sessionId == currentSession.Id)
+                        {
+                            Completed.Enqueue(new LlmGenerationResult
+                            {
+                                eventId = request.eventId,
+                                povRole = request.povRole,
+                                sessionId = request.sessionId,
+                                success = false,
+                                error = RedactRequestSecrets(request, ex.Message),
+                                isTitleRequest = request.isTitleRequest
+                            });
+                        }
+
+                        LogDebug("Unexpected queued-request setup error event=" + request.eventId
+                            + " role=" + request.povRole + " error=" + TrimForLog(request, ex.Message));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // A dispatcher must never leak an unobserved fire-and-forget exception. Individual
+                // requests already convert their own errors into results; this is a final safety net.
+                LogDebug("Unexpected LLM dispatch-worker error=" + TrimForLog(ex.Message));
+            }
+            finally
+            {
+                Interlocked.Decrement(ref session.ActiveWorkers);
+                if (!session.Cancellation.IsCancellationRequested && session.WorkQueue.Count > 0)
+                {
+                    EnsureDispatchWorkers(session);
+                }
+            }
         }
 
         /// <summary>
@@ -773,7 +1100,7 @@ namespace PawnDiary
         /// </summary>
         public static bool TryDequeueCompleted(out LlmGenerationResult result)
         {
-            long sessionId = Interlocked.Read(ref currentSessionId);
+            long sessionId = currentSession.Id;
             // Drain the queue entirely; stale results from older sessions are discarded
             while (Completed.TryDequeue(out result))
             {
@@ -825,7 +1152,9 @@ namespace PawnDiary
         /// transient retries, or times out hands off to the next lane. Success reports which lane
         /// actually produced the text. Only when every lane fails is a failed result reported.
         /// </summary>
-        private static async Task SendWithRetries(LlmGenerationRequest request, SemaphoreSlim primaryGate)
+        private static async Task SendWithRetries(
+            LlmGenerationRequest request,
+            LlmTransportSession session)
         {
             string pendingKey = PendingKey(request.eventId, request.povRole, request.sessionId, request.isTitleRequest);
             string lastError = null;
@@ -837,17 +1166,15 @@ namespace PawnDiary
                     "Attempt order event=" + request.eventId
                     + " role=" + request.povRole
                     + " lanes=[" + LaneList(targets) + "]");
-                List<bool> readyAtStart = SnapshotLaneReadiness(targets);
-                bool hasReadyLaneAtStart = HasReadyLane(readyAtStart);
 
                 for (int t = 0; t < targets.Count; t++)
                 {
                     // Point the request at this lane so the gate key, HTTP call, and reported
                     // result all reflect the model we are about to try.
                     ApiEndpointConfig target = targets[t];
-                    bool forcedPrimaryAttempt = request.forcePrimaryLane && t == 0;
-                    if (!forcedPrimaryAttempt && hasReadyLaneAtStart && !LaneWasReady(readyAtStart, t))
+                    if (!LlmTransportPolicy.MayAttemptLane(IsLaneCooling(target)))
                     {
+                        lastError = "The API lane is cooling down after a recent transient failure.";
                         LogDebug("Skipped cooling lane event=" + request.eventId + " role=" + request.povRole + " lane=" + LaneLabel(target));
                         continue;
                     }
@@ -863,34 +1190,53 @@ namespace PawnDiary
                     string laneLabel = LaneLabel(request);
                     ApplyPromptVariantForCurrentLane(request);
 
-                    // Reuse the gate captured at enqueue for the first lane; create per-lane gates
-                    // for failover lanes. Each is acquired and released as the same reference here.
-                    SemaphoreSlim gate = (t == 0) ? primaryGate : GetOrCreateGate(request);
+                    AsyncAdmissionGate gate = GetOrCreateGate(request, session);
 
                     try
                     {
                         // Wait our turn before touching the model, so at most N requests are ever
-                        // in flight per lane. Time spent queued here does not count against the
-                        // per-lane deadline below.
+                        // in flight per lane. This wait consumes the request's enqueue-time deadline.
                         await gate.WaitAsync(request.cancellationToken);
                     }
                     catch (OperationCanceledException)
                     {
-                        return; // session ended while queued
+                        if (request.sessionCancellationToken.IsCancellationRequested)
+                        {
+                            return; // session ended while queued
+                        }
+
+                        lastError = "Timed out waiting for an available API lane.";
+                        break;
                     }
 
                     try
                     {
                         // Drop requests whose session ended while they were queued, instead of
                         // wasting a slot on a result nobody will read.
-                        if (request.sessionId != Interlocked.Read(ref currentSessionId))
+                        if (request.sessionId != currentSession.Id)
                         {
                             LogDebug("Dropped stale request before attempt event=" + request.eventId + " role=" + request.povRole + " lane=" + laneLabel);
                             return;
                         }
 
+                        // Another request may have put this lane into cooldown while we waited for
+                        // admission. Recheck under the stable gate before touching the network.
+                        if (!LlmTransportPolicy.MayAttemptLane(IsLaneCooling(LaneIdentity(request))))
+                        {
+                            lastError = "The API lane is cooling down after a recent transient failure.";
+                            LogDebug("Skipped newly cooling lane after admission event=" + request.eventId
+                                + " role=" + request.povRole + " lane=" + laneLabel);
+                            continue;
+                        }
+
                         LogDebug("Trying lane " + (t + 1) + "/" + targets.Count + " event=" + request.eventId + " role=" + request.povRole + " lane=" + laneLabel);
                         LaneResult outcome = await TryLane(request);
+                        if (request.sessionCancellationToken.IsCancellationRequested
+                            || request.sessionId != currentSession.Id)
+                        {
+                            return;
+                        }
+
                         if (outcome.Cancelled)
                         {
                             LogDebug("Cancelled request event=" + request.eventId + " role=" + request.povRole + " lane=" + laneLabel);
@@ -927,7 +1273,7 @@ namespace PawnDiary
                             MarkLaneCooldown(request, outcome.Error, outcome.RetryAfterSeconds);
                         }
 
-                        LogDebug("Lane failed event=" + request.eventId + " role=" + request.povRole + " lane=" + laneLabel + " error=" + TrimForLog(outcome.Error));
+                        LogDebug("Lane failed event=" + request.eventId + " role=" + request.povRole + " lane=" + laneLabel + " error=" + TrimForLog(request, outcome.Error));
                     }
                     finally
                     {
@@ -936,7 +1282,8 @@ namespace PawnDiary
                 }
 
                 // Every lane failed. Drop quietly if the session ended; otherwise report the last error.
-                if (request.cancellationToken.IsCancellationRequested)
+                if (request.sessionCancellationToken.IsCancellationRequested
+                    || request.sessionId != currentSession.Id)
                 {
                     return;
                 }
@@ -949,19 +1296,18 @@ namespace PawnDiary
                     success = false,
                     // Redact: this error is stored on the event and shown in the diary tab, and a
                     // networking message can echo the key-bearing request URL (query-param auth).
-                    error = ApiLaneLabels.RedactSecrets(lastError ?? "Unknown network error."),
+                    error = RedactRequestSecrets(request, lastError ?? "Unknown network error."),
                     isTitleRequest = request.isTitleRequest
                 });
-                LogDebug("All lanes failed event=" + request.eventId + " role=" + request.povRole + " lastError=" + TrimForLog(lastError));
+                LogDebug("All lanes failed event=" + request.eventId + " role=" + request.povRole + " lastError=" + TrimForLog(request, lastError));
             }
             catch (Exception ex)
             {
-                // This runs as a fire-and-forget Task.Run, so an unexpected throw outside the per-lane
-                // handling (e.g. building the attempt list) would otherwise become an unobserved task
-                // exception and leave the entry stuck on "pending" until orphan recovery. Report it as
-                // a normal failure instead, unless the session ended (then nobody is listening).
-                if (!request.cancellationToken.IsCancellationRequested
-                    && request.sessionId == Interlocked.Read(ref currentSessionId))
+                // This runs inside a bounded async dispatch worker. Convert an unexpected throw outside
+                // per-lane handling (e.g. building the attempt list) into a normal failure so the entry
+                // cannot remain stuck on "pending" until orphan recovery.
+                if (!request.sessionCancellationToken.IsCancellationRequested
+                    && request.sessionId == currentSession.Id)
                 {
                     Completed.Enqueue(new LlmGenerationResult
                     {
@@ -969,16 +1315,16 @@ namespace PawnDiary
                         povRole = request.povRole,
                         sessionId = request.sessionId,
                         success = false,
-                        error = ApiLaneLabels.RedactSecrets(ex.Message),
+                        error = RedactRequestSecrets(request, ex.Message),
                         isTitleRequest = request.isTitleRequest
                     });
                 }
 
-                LogDebug("Unexpected send error event=" + request.eventId + " role=" + request.povRole + " error=" + TrimForLog(ex.Message));
+                LogDebug("Unexpected send error event=" + request.eventId + " role=" + request.povRole + " error=" + TrimForLog(request, ex.Message));
             }
             finally
             {
-                PendingKeys.TryRemove(pendingKey, out _);
+                session.PendingKeys.TryRemove(pendingKey, out _);
             }
         }
 
@@ -989,79 +1335,80 @@ namespace PawnDiary
         /// </summary>
         private static async Task<LaneResult> TryLane(LlmGenerationRequest request)
         {
-            // Hard deadline for this lane (across its retries). Once it fires we stop waiting on the
-            // model and free the slot, so a stuck lane can't hold up the queue — we move to the next.
-            using (CancellationTokenSource deadline = CancellationTokenSource.CreateLinkedTokenSource(request.cancellationToken))
+            string lastError = null;
+            int retryAfterSeconds = 0;
+            for (int attempt = 1; attempt <= MaxAttempts; attempt++)
             {
-                // Floor at 5s so a bad setting of "0" doesn't instantly cancel everything.
-                deadline.CancelAfter(TimeSpan.FromSeconds(Math.Max(5, request.timeoutSeconds)));
-
-                string lastError = null;
-                int retryAfterSeconds = 0;
-                for (int attempt = 1; attempt <= MaxAttempts; attempt++)
+                try
                 {
-                    try
+                    SendResponse response = await SendOnce(request, request.cancellationToken);
+                    return new LaneResult { Success = true, Text = response.CleanText, RawText = response.RawText };
+                }
+                catch (LlmPermanentException ex)
+                {
+                    return new LaneResult
                     {
-                        SendResponse response = await SendOnce(request, deadline.Token);
-                        return new LaneResult { Success = true, Text = response.CleanText, RawText = response.RawText };
+                        Success = false,
+                        Error = RedactRequestSecrets(request, ex.Message)
+                    }; // a permanent error will not improve on retry; try the next lane
+                }
+                catch (Exception ex) when (IsTransientException(ex))
+                {
+                    lastError = RedactRequestSecrets(request, ex.Message);
+                    // Queue residence, gate waiting, and previous attempts all consume the same
+                    // enqueue-time deadline. Stop immediately when that total budget is gone.
+                    if (request.cancellationToken.IsCancellationRequested)
+                    {
+                        break;
                     }
-                    catch (LlmPermanentException ex)
-                    {
-                        return new LaneResult { Success = false, Error = ex.Message }; // won't improve on retry — try the next lane
-                    }
-                    catch (Exception ex) when (IsTransientException(ex))
-                    {
-                        lastError = ex.Message;
-                        // If the deadline already fired, stop retrying this lane immediately.
-                        if (deadline.IsCancellationRequested)
-                        {
-                            break;
-                        }
 
-                        // If the server told us how long to back off (429/503 Retry-After), stop the
-                        // fast local retries: honoring the server's wait via the lane cooldown avoids
-                        // hammering a rate-limited endpoint (which can escalate the throttle/ban).
-                        int transientRetryAfter = (ex as LlmTransientException)?.RetryAfterSeconds ?? 0;
-                        if (transientRetryAfter > 0)
-                        {
-                            retryAfterSeconds = transientRetryAfter;
-                            break;
-                        }
-
-                        if (attempt < MaxAttempts)
-                        {
-                            try
-                            {
-                                await Task.Delay(500 * attempt, deadline.Token); // linear back-off: 0.5s, 1s, ...
-                            }
-                            catch (OperationCanceledException)
-                            {
-                                break; // deadline (or session) fired during back-off
-                            }
-                        }
-                    }
-                    catch (Exception ex) // unexpected / non-transient
+                    // If the server told us how long to back off (429/503 Retry-After), stop the
+                    // fast local retries: honoring the server's wait via the lane cooldown avoids
+                    // hammering a rate-limited endpoint (which can escalate the throttle/ban).
+                    int transientRetryAfter = (ex as LlmTransientException)?.RetryAfterSeconds ?? 0;
+                    if (transientRetryAfter > 0)
                     {
-                        return new LaneResult { Success = false, Error = ex.Message }; // try the next lane
+                        retryAfterSeconds = transientRetryAfter;
+                        break;
+                    }
+
+                    if (attempt < MaxAttempts)
+                    {
+                        try
+                        {
+                            await Task.Delay(500 * attempt, request.cancellationToken);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            break; // total deadline (or session) fired during back-off
+                        }
                     }
                 }
-
-                // A real session cancellation is dropped; a timeout/exhausted retries fails over.
-                if (request.cancellationToken.IsCancellationRequested)
+                catch (Exception ex) // unexpected / non-transient
                 {
-                    return new LaneResult { Cancelled = true };
+                    return new LaneResult
+                    {
+                        Success = false,
+                        Error = RedactRequestSecrets(request, ex.Message)
+                    }; // try the next lane
                 }
-
-                return new LaneResult
-                {
-                    Success = false,
-                    TransientFailure = true,
-                    RetryAfterSeconds = retryAfterSeconds,
-                    Error = deadline.IsCancellationRequested
-                        ? "Timed out waiting for the model."
-                        : (lastError ?? "Unknown network error.")
-                };
             }
+
+            // A real session cancellation is dropped; a request deadline/exhausted retries fails over.
+            if (request.sessionCancellationToken.IsCancellationRequested)
+            {
+                return new LaneResult { Cancelled = true };
+            }
+
+            return new LaneResult
+            {
+                Success = false,
+                TransientFailure = true,
+                RetryAfterSeconds = retryAfterSeconds,
+                Error = request.cancellationToken.IsCancellationRequested
+                    ? "Timed out waiting for the model."
+                    : (lastError ?? "Unknown network error.")
+            };
         }
 
         /// <summary>
@@ -1138,7 +1485,7 @@ namespace PawnDiary
                     string responseJson = await ReadCappedResponseString(response.Content, MaxResponseBytes, cancellationToken);
                     if (!response.IsSuccessStatusCode)
                     {
-                        string error = $"HTTP {(int)response.StatusCode}: {TrimForLog(responseJson)}";
+                        string error = $"HTTP {(int)response.StatusCode}: {TrimForLog(request, responseJson)}";
                         if (IsTransientStatusCode((int)response.StatusCode))
                         {
                             // Honor a 429/503 Retry-After so this lane cools for the server-dictated
@@ -1155,7 +1502,7 @@ namespace PawnDiary
                     string providerError = LlmResponseParser.ExtractProviderError(responseRoot, responseMode, !string.IsNullOrWhiteSpace(generatedText));
                     if (!string.IsNullOrWhiteSpace(providerError))
                     {
-                        throw new LlmPermanentException(providerError);
+                        throw new LlmPermanentException(RedactRequestSecrets(request, providerError));
                     }
 
                     string visibleText = LlmResponseParser.StripReasoningTextBlocks(generatedText, request.reasoningTag);
@@ -1164,7 +1511,7 @@ namespace PawnDiary
                         providerError = LlmResponseParser.ExtractProviderError(responseRoot, responseMode, false);
                         throw new LlmPermanentException(string.IsNullOrWhiteSpace(providerError)
                             ? "The endpoint returned no message content."
-                            : providerError);
+                            : RedactRequestSecrets(request, providerError));
                     }
 
                     // Some RP-tuned models ignore max_tokens and return very long entries anyway.
@@ -1325,6 +1672,34 @@ namespace PawnDiary
             return ApiLaneLabels.TrimForLog(value);
         }
 
+        /// <summary>Trims diagnostics after masking this request's exact auth material.</summary>
+        private static string TrimForLog(LlmGenerationRequest request, string value)
+        {
+            if (request == null)
+            {
+                return TrimForLog(value);
+            }
+
+            return ApiLaneLabels.TrimForLog(
+                value,
+                request.apiKey,
+                request.customAuthHeaderName);
+        }
+
+        /// <summary>Masks generic auth patterns plus the exact credentials sent by this request.</summary>
+        private static string RedactRequestSecrets(LlmGenerationRequest request, string value)
+        {
+            if (request == null)
+            {
+                return ApiLaneLabels.RedactSecrets(value);
+            }
+
+            return ApiLaneLabels.RedactSecrets(
+                value,
+                request.apiKey,
+                request.customAuthHeaderName);
+        }
+
         /// <summary>
         /// Determines whether an exception represents a transient failure that is worth
         /// retrying (network errors, timeouts, rate-limits). Non-transient exceptions
@@ -1339,12 +1714,12 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// HTTP status codes considered transient: 429 (rate-limited) and 5xx (server errors).
-        /// All others (4xx except 429) are treated as permanent client errors.
+        /// HTTP status codes considered transient: 408 (request timeout), 429 (rate-limited), and
+        /// 5xx (server errors). Other 4xx statuses are treated as permanent client errors.
         /// </summary>
         private static bool IsTransientStatusCode(int statusCode)
         {
-            return statusCode == 429 || statusCode >= 500;
+            return LlmTransportPolicy.IsTransientStatusCode(statusCode);
         }
 
         /// <summary>

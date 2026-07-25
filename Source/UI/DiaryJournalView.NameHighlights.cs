@@ -1,4 +1,5 @@
-// Pawn-name highlight collection for the Diary tab.
+// Pawn-name highlight collection for the Diary tab. Live pawn enumeration is shared with the
+// standalone reader for one frame through DiaryUiPawnSnapshot.
 //
 // This is the impure half of name highlighting: it reads live RimWorld pawn state and turns known
 // pawn names into plain DiaryNameHighlight facts. The pure string rewrite lives in
@@ -70,30 +71,10 @@ namespace PawnDiary
 
             AddPawnNameHighlight(byName, seenPawnIds, selectedPawn);
 
-            if (Find.Maps != null)
+            IReadOnlyList<WeakReference> pawns = DiaryUiPawnSnapshot.NameHighlightPawns();
+            for (int i = 0; i < pawns.Count; i++)
             {
-                for (int i = 0; i < Find.Maps.Count; i++)
-                {
-                    Map map = Find.Maps[i];
-                    if (map?.mapPawns?.AllPawns == null)
-                    {
-                        continue;
-                    }
-
-                    List<Pawn> pawns = map.mapPawns.AllPawns;
-                    for (int j = 0; j < pawns.Count; j++)
-                    {
-                        AddPawnNameHighlight(byName, seenPawnIds, pawns[j]);
-                    }
-                }
-            }
-
-            if (Find.WorldPawns?.AllPawnsAlive != null)
-            {
-                foreach (Pawn pawn in Find.WorldPawns.AllPawnsAlive)
-                {
-                    AddPawnNameHighlight(byName, seenPawnIds, pawn);
-                }
+                AddPawnNameHighlight(byName, seenPawnIds, pawns[i].Target as Pawn);
             }
 
             return new List<DiaryNameHighlight>(byName.Values);
