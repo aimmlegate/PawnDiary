@@ -94,7 +94,11 @@ owners. Both use the shared harness:
 | `PawnDiaryExternalApiFlowTests` | 21 | `PawnDiaryApi` submit solo/pair, group gate, budget, listener notify. |
 | `PawnDiaryEventWindowFlowTests` | 22 | Event-window start/end/one-shot/timeout + prompt-bias state; exact monolith ownership when Anomaly is active and inert loaded Defs when it is absent. |
 | `PawnDiaryObservedConditionFlowTests` | 23 | Observed-condition start/end debounce + scope identity + restart cooldown. |
-| `PawnDiaryRepositoryRebuildFixtureTests` | save/index | Real-Scribe event/archive/memory round trips, transient-index rebuilds, memory-row repair/removal, and first-post-load replay idempotency. |
+| `PawnDiaryArtImmortalizationFixtureTests` | 24 | Patched art/reflection surface, exact colony-wide ownership, diary fallback, and Def/localization wiring. |
+| `PawnDiaryAnniversaryFlowTests` / `PawnDiaryAnniversaryFixtureTests` | 25 | Birthday/arrival/loss/record milestones, silent baseline and ownership, save normalization, live relation ordering, and Def/localization wiring. |
+| `PawnDiaryDigestPacingFlowTests` / `PawnDiaryDigestPacingFixtureTests` | 26 | Low-salience daily allowance, pair semantics, digest buffering/consumption, rollover, save normalization, shipped classification, and tunables. |
+| `PawnDiaryRepositoryRebuildFixtureTests` | save/index | Real-Scribe event/archive/memory round trips, transient-index rebuilds, detached component re-ID/retention/reference-prune integration, memory-row repair/removal, and first-post-load replay idempotency. |
+| `PawnDiaryRngIsolationFixtureTests` | RNG boundary | Stable generation and one-shot capture adapters preserve the outer `Verse.Rand` stream; stable seeds reproduce while reroll salt can change the candidate. |
 
 The first A2.2-expanded loaded run reached 342/347. Its two production failures shared the corrected
 post-transformation subject-indexing gap; the other ghoul failures expected a pair from surgeon-only
@@ -259,15 +263,17 @@ new snapshot/restore pair in `PawnDiaryRimTestScope` — or, for one-off per-tes
 
 When the local developer script `scripts/verify-coverage.ps1` is present, it validates all XML, runs
 every standalone pure test project, builds the core mod, builds this RimTest assembly when RimTest
-Redux is available, and prints the EVT-01…EVT-23 requirement matrix.
+Redux is available, and prints the EVT-01…EVT-26 requirement matrix.
 
 ```powershell
 scripts\verify-coverage.ps1              # full audit (build + pure tests + matrix)
 scripts\verify-coverage.ps1 -MatrixOnly  # just print the EVT coverage matrix
 ```
 
-It is intentionally separate from `.githooks/verify.ps1`, which stays lean and must not depend on the
-optional Workshop RimTest Redux DLL.
+It is intentionally separate from `.githooks/verify.ps1` because it also prints the full matrix.
+Both scripts build the RimTest assembly when `RimTestRedux.dll` is available, and skip that one
+optional build only when the dependency is genuinely absent; the mandatory hook additionally
+freshness-checks the committed test DLL.
 
 ## Guarantees for every test here (plan §9)
 

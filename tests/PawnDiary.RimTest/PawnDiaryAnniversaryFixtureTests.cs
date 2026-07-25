@@ -1,4 +1,4 @@
-// Loaded-game fixture for anniversaries and personal records (Quality Wave §8, H2).
+// Loaded-game fixture for anniversaries and personal records (EVT-25; Quality Wave §8, H2).
 //
 // The flow suite proves the scanner writes the right pages. This fixture pins everything AROUND it:
 //   (a) the saved H2 rows survive a Scribe round-trip and normalize an old save to silence;

@@ -1,15 +1,17 @@
 // In-game save/load fixture for Pawn Diary's repository index rebuilds and retention
 // (design/TEST_COVERAGE_PLAN.md §6.4, "repository/diary/archive index rebuilds ... retention"). This suite
-// needs NO colony and creates NO pawns: it builds DiaryEventRepository / DiaryArchiveRepository /
-// PawnKnowledgeState model objects directly, round-trips their SAVED data through RimWorld's real
-// Scribe to a temp file, and proves transient indexes rebuild correctly, loaded rows repair (incl.
-// knowledge-record dedup), and retention drops the right rows.
+// mostly builds DiaryEventRepository / DiaryArchiveRepository / PawnKnowledgeState model objects
+// directly, round-trips their SAVED data through RimWorld's real Scribe to a temp file, and proves
+// transient indexes rebuild correctly, loaded rows repair (incl. knowledge-record dedup), and retention
+// drops the right rows. One focused integration case uses an uninitialized, detached component owner
+// whose repositories/lists/indexes are all fixture-only, then invokes the production load-maintenance
+// methods in their real repair -> retention -> reference-prune order.
 //
 // Why a real Scribe round-trip and not a whole-game save: the two repositories serialize only their
 // master list (events.ExposeEvents "diaryEvents" / archive.ExposeArchive "diaryArchiveEntries"); the
 // lookup indexes are rebuilt after load. DiaryGameComponent.ExposeData drives this in the live game —
 // ExposeEvents/ExposeArchive run in both Scribe passes, then the component's own PostLoadInit calls
-// events.RebuildIndex(), while the archive rebuilds itself inside ExposeArchive's PostLoadInit branch
+// events.RepairLoadedEvents(), while the archive rebuilds itself inside ExposeArchive's PostLoadInit branch
 // (RepairLoadedEntries + RebuildIndex). We reproduce exactly that sequence standalone:
 //   - SAVE: Scribe.saver.InitSaving(path,"root"); <repo>.ExposeX(label); FinalizeSaving().
 //   - LOAD (vars): Scribe.loader.InitLoading(path); Scribe.mode=LoadingVars; <repo>.ExposeX(label);
@@ -24,11 +26,14 @@
 //
 // Standalone-Scribe caveat: the repositories are not IExposable, so nothing auto-invokes their
 // ExposeX during FinalizeLoading; we call it ourselves (once per pass), which is exactly what the
-// component does. DiaryEvent/ArchivedDiaryEntry persist purely by string/value (no LookMode.Reference
+// component does. Loaded hot events use RepairLoadedEvents so duplicate ids collapse and old blank
+// ids are reported for referential repair. DiaryEvent/ArchivedDiaryEntry persist by string/value (no LookMode.Reference
 // to live Pawns), so this object-level round-trip is valid without a loaded colony.
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
+using System.Runtime.Serialization;
 using RimTestRedux;
 using Verse;
 
@@ -38,7 +43,8 @@ namespace PawnDiary.RimTests
     /// Proves the never-serialized indexes of <see cref="DiaryEventRepository"/> and
     /// <see cref="DiaryArchiveRepository"/> rebuild after a real Scribe load, that
     /// <see cref="PawnKnowledgeState"/> round-trips with normalization repair, that retention
-    /// prunes and re-indexes correctly, and that a reload drops duplicate archive rows.
+    /// prunes and re-indexes correctly, that the component's detached load-maintenance sequence preserves
+    /// reidentified old rows, and that a reload drops duplicate archive rows.
     /// </summary>
     [TestSuite]
     public static class PawnDiaryRepositoryRebuildFixtureTests
@@ -46,6 +52,28 @@ namespace PawnDiary.RimTests
         private const string EventsLabel = "diaryEvents";
         private const string ArchiveLabel = "diaryArchiveEntries";
         private const string KnowledgeLabel = "pawnKnowledge";
+        private const int DetachedRetentionLimit = 4;
+        private const BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
+
+        // The integration fixture owns an uninitialized component whose complete mutable graph is
+        // detached from DiaryGameComponent.Instance. These handles initialize only the fields touched by
+        // the production repair -> retention -> prune sequence.
+        private static readonly FieldInfo ComponentEventsField =
+            typeof(DiaryGameComponent).GetField("events", PrivateInstance);
+        private static readonly FieldInfo ComponentDiariesField =
+            typeof(DiaryGameComponent).GetField("diaries", PrivateInstance);
+        private static readonly FieldInfo ComponentDiariesByIdField =
+            typeof(DiaryGameComponent).GetField("diariesById", PrivateInstance);
+        private static readonly FieldInfo ComponentArchiveField =
+            typeof(DiaryGameComponent).GetField("archive", PrivateInstance);
+        private static readonly MethodInfo RebuildDiaryIndexMethod =
+            typeof(DiaryGameComponent).GetMethod("RebuildDiaryIndex", PrivateInstance);
+        private static readonly MethodInfo RepairReidentifiedEventRefsMethod =
+            typeof(DiaryGameComponent).GetMethod("RepairReidentifiedEventRefs", PrivateInstance);
+        private static readonly MethodInfo TrimDiariesToPerPawnLimitMethod =
+            typeof(DiaryGameComponent).GetMethod("TrimDiariesToPerPawnLimit", PrivateInstance);
+        private static readonly MethodInfo PruneDiaryEventRefsMethod =
+            typeof(DiaryGameComponent).GetMethod("PruneDiaryEventRefs", PrivateInstance);
 
         /// <summary>
         /// The event repository's id index is not saved: after a Scribe round-trip every id is unknown
@@ -126,6 +154,205 @@ namespace PawnDiary.RimTests
                         "EnsureIndexReady should have rebuilt the lookup for '" + ids[i] + "'.");
                 }
             });
+        }
+
+        /// <summary>
+        /// Post-load hot-event repair keeps the earliest row in stable tick order for a duplicate id,
+        /// drops the duplicate, rebuilds the index, and reports a legacy blank-id row after
+        /// <see cref="DiaryEvent"/> minted its replacement id.
+        /// </summary>
+        [Test]
+        public static void LoadedHotEventsRepairBlankIdsAndDeterministicallyDeduplicate()
+        {
+            DiaryEventRepository source = new DiaryEventRepository();
+            source.Register(NewEvent("pd-duplicate", "PawnLate", solo: true, tick: 300));
+            source.Register(NewEvent("PD-DUPLICATE", "PawnEarly", solo: true, tick: 100));
+            source.Register(NewEvent(string.Empty, "PawnLegacy", solo: true, tick: 200));
+
+            RunWithTempFile(path =>
+            {
+                SaveWithScribe(path, () => source.ExposeEvents(EventsLabel));
+
+                DiaryEventRepository loaded = new DiaryEventRepository();
+                LoadVarsWithScribe(path, () => loaded.ExposeEvents(EventsLabel));
+                Require(loaded.Count == 3,
+                    "The raw loaded list should still contain both duplicate rows before repository repair.");
+
+                IReadOnlyList<DiaryEvent> reidentified = loaded.RepairLoadedEvents();
+
+                Require(loaded.Count == 2,
+                    "Loaded hot-event repair should keep one duplicate plus the reidentified legacy row.");
+                DiaryEvent duplicateSurvivor = loaded.FindEvent("pd-duplicate");
+                Require(duplicateSurvivor != null
+                        && duplicateSurvivor.tick == 100
+                        && duplicateSurvivor.initiatorPawnId == "PawnEarly",
+                    "Duplicate repair did not deterministically keep the earliest stable-tick row.");
+                Require(reidentified.Count == 1
+                        && reidentified[0].EventIdWasRepairedOnLoad
+                        && !string.IsNullOrWhiteSpace(reidentified[0].eventId)
+                        && loaded.FindEvent(reidentified[0].eventId) == reidentified[0],
+                    "The legacy blank-id row was not reported with an indexed replacement id.");
+            });
+        }
+
+        /// <summary>
+        /// Reidentified events reconnect only to blank placeholders in already-saved owner diaries.
+        /// Pair owners, neutral arrival/death markers, exact list position, and case-insensitive
+        /// duplicate refs are handled without creating a record for an unknown/later owner.
+        /// </summary>
+        [Test]
+        public static void ReidentifiedEventRefsRestoreExistingOwnersWithoutInventingDiaries()
+        {
+            PawnDiaryRecord initiator = NewDiary("PawnA", string.Empty, "existing-later");
+            PawnDiaryRecord recipient = NewDiary("PawnB", "PD-PAIR-REPAIRED");
+            PawnDiaryRecord arrivalOwner = NewDiary(
+                "PawnArrival",
+                "existing-after-arrival",
+                string.Empty);
+            PawnDiaryRecord deathOwner = NewDiary("PawnVictim", string.Empty);
+            Dictionary<string, PawnDiaryRecord> diaries =
+                new Dictionary<string, PawnDiaryRecord>(StringComparer.Ordinal)
+                {
+                    { initiator.pawnId, initiator },
+                    { recipient.pawnId, recipient },
+                    { arrivalOwner.pawnId, arrivalOwner },
+                    { deathOwner.pawnId, deathOwner },
+                };
+
+            DiaryEvent pair = NewEvent("pd-pair-repaired", "PawnA", solo: false, tick: 20);
+            pair.recipientPawnId = "PawnB";
+            DiaryEvent arrival = NewEvent("pd-arrival-repaired", string.Empty, solo: true, tick: 5);
+            arrival.gameContext = "arrival_description=true; arrival_pawn_id=PawnArrival";
+            DiaryEvent death = NewEvent("pd-death-repaired", string.Empty, solo: true, tick: 40);
+            death.gameContext = "death_description=true; death_victim_id=PawnVictim";
+            DiaryEvent orphan = NewEvent("pd-orphan-repaired", "PawnMissing", solo: true, tick: 30);
+
+            DiaryGameComponent.RestoreReidentifiedEventRefs(
+                new List<DiaryEvent> { pair, arrival, death, orphan },
+                pawnId =>
+                {
+                    PawnDiaryRecord found;
+                    return diaries.TryGetValue(pawnId, out found) ? found : null;
+                });
+
+            Require(initiator.eventIds.Count == 2
+                    && initiator.eventIds[0] == pair.eventId,
+                "The repaired pair ref did not replace its saved blank placeholder.");
+            Require(recipient.eventIds.Count == 1
+                    && recipient.eventIds[0] == "PD-PAIR-REPAIRED",
+                "Case-insensitive ref repair duplicated an existing recipient reference.");
+            Require(arrivalOwner.eventIds.Count == 2
+                    && arrivalOwner.eventIds[0] == arrival.eventId,
+                "A repaired neutral arrival was not restored as the diary's first page.");
+            Require(deathOwner.eventIds.Count == 1
+                    && deathOwner.eventIds[0] == death.eventId,
+                "A repaired neutral death page was not restored to its saved victim diary.");
+            Require(!diaries.ContainsKey("PawnMissing"),
+                "Referential repair invented a diary record for an unknown owner.");
+        }
+
+        /// <summary>
+        /// Runs the production load-maintenance methods in their real order on a wholly detached component
+        /// owner. Two old blank-id rows receive replacement ids in tick order; the owner's placeholders
+        /// reconnect; retention removes an unreferenced control; and reference pruning removes stale ids
+        /// without dropping either repaired row. No saved collection belongs to the loaded game.
+        /// </summary>
+        [Test]
+        public static void DetachedLoadMaintenanceKeepsReidentifiedRowsThroughRetentionAndReferencePrune()
+        {
+            RequireDetachedMaintenanceReflection();
+            const string ownerId = "Pawn_RimTest_DetachedRepair";
+            PawnDiaryRecord ownerDiary = NewDiary(ownerId);
+            DiaryEventRepository repository = new DiaryEventRepository();
+            DiaryGameComponent component = NewDetachedMaintenanceOwner(
+                ownerDiary,
+                repository,
+                new DiaryArchiveRepository());
+            DiaryGameComponent liveComponent = DiaryGameComponent.Instance;
+            DiaryEventRepository liveRepository = liveComponent == null
+                ? null
+                : ComponentEventsField.GetValue(liveComponent) as DiaryEventRepository;
+            Require(!ReferenceEquals(component, liveComponent)
+                    && !ReferenceEquals(repository, liveRepository),
+                "The load-maintenance fixture accidentally shared the loaded component or repository.");
+
+            int now = Find.TickManager.TicksGame;
+            DiaryEvent later = NewEvent(string.Empty, ownerId, solo: true, tick: now + 2);
+            DiaryEvent earlier = NewEvent(string.Empty, ownerId, solo: true, tick: now + 1);
+            DiaryEvent unreferenced = NewEvent(
+                "pd-postload-orphan-" + Guid.NewGuid().ToString("N"),
+                ownerId,
+                solo: true,
+                tick: now + 3);
+            repository.Register(later);
+            repository.Register(earlier);
+            repository.Register(unreferenced);
+
+            // Four stale refs + two blank legacy placeholders exceed the explicit detached cap by two,
+            // so production retention removes two stale refs and sweeps the unreferenced control row.
+            // PruneDiaryEventRefs later removes the two remaining stale refs.
+            for (int i = 0; i < DetachedRetentionLimit; i++)
+            {
+                ownerDiary.eventIds.Add("pd-postload-stale-" + ownerId + "-" + i);
+            }
+            ownerDiary.eventIds.Add(string.Empty);
+            ownerDiary.eventIds.Add(string.Empty);
+
+            NormalizeLegacyRows(ownerDiary, later, earlier);
+            RunDetachedLoadMaintenance(component, repository);
+
+            Require(earlier.EventIdWasRepairedOnLoad
+                    && later.EventIdWasRepairedOnLoad
+                    && !string.IsNullOrWhiteSpace(earlier.eventId)
+                    && !string.IsNullOrWhiteSpace(later.eventId),
+                "PostLoadInit did not mint non-blank ids for both legacy rows.");
+            Require(repository.FindEvent(unreferenced.eventId) == null,
+                "The component retention sweep did not remove the unreferenced control row.");
+            Require(repository.FindEvent(earlier.eventId) == earlier
+                    && repository.FindEvent(later.eventId) == later,
+                "A reidentified row did not survive retention in the rebuilt repository index.");
+            Require(ownerDiary.eventIds.Count == 2,
+                "Reference pruning should leave only the two repaired refs, not "
+                + ownerDiary.eventIds.Count + ".");
+            Require(string.Equals(ownerDiary.eventIds[0], earlier.eventId, StringComparison.Ordinal)
+                    && string.Equals(ownerDiary.eventIds[1], later.eventId, StringComparison.Ordinal),
+                "Multiple blank placeholders did not reconnect in stable tick order.");
+        }
+
+        /// <summary>
+        /// The production pre-save runner must execute later flush/maintenance actions even when an
+        /// earlier source throws, and must report the exact failed action index once.
+        /// </summary>
+        [Test]
+        public static void PreSaveActionFailureCannotSkipLaterFlushes()
+        {
+            List<int> executed = new List<int>();
+            List<int> failed = new List<int>();
+            DiaryGameComponent.RunIndependentPreSaveActions(
+                new Action[]
+                {
+                    () => executed.Add(0),
+                    () =>
+                    {
+                        executed.Add(1);
+                        throw new InvalidOperationException("fixture failure");
+                    },
+                    () => executed.Add(2),
+                },
+                (index, exception) =>
+                {
+                    Require(exception is InvalidOperationException,
+                        "Pre-save failure reporting changed the original exception type.");
+                    failed.Add(index);
+                });
+
+            Require(executed.Count == 3
+                    && executed[0] == 0
+                    && executed[1] == 1
+                    && executed[2] == 2,
+                "A failed pre-save action prevented a later action from running.");
+            Require(failed.Count == 1 && failed[0] == 1,
+                "The pre-save runner did not report the exact failed action once.");
         }
 
         /// <summary>
@@ -456,6 +683,18 @@ namespace PawnDiary.RimTests
             };
         }
 
+        private static PawnDiaryRecord NewDiary(string pawnId, params string[] eventIds)
+        {
+            return new PawnDiaryRecord
+            {
+                pawnId = pawnId,
+                pawnName = pawnId,
+                eventIds = eventIds == null
+                    ? new List<string>()
+                    : new List<string>(eventIds),
+            };
+        }
+
         private static ImportantMemoryRecord NewKnowledgeRecord(
             string recordId,
             string eventKind,
@@ -539,6 +778,87 @@ namespace PawnDiary.RimTests
         {
             Require(archive.AddOrKeep(entry),
                 "AddOrKeep should have accepted a valid archive row for event '" + entry.eventId + "'.");
+        }
+
+        // ----- detached component load-maintenance fixture plumbing ---------------------------------
+
+        private static void RequireDetachedMaintenanceReflection()
+        {
+            if (ComponentEventsField == null
+                || ComponentDiariesField == null
+                || ComponentDiariesByIdField == null
+                || ComponentArchiveField == null
+                || RebuildDiaryIndexMethod == null
+                || RepairReidentifiedEventRefsMethod == null
+                || TrimDiariesToPerPawnLimitMethod == null
+                || PruneDiaryEventRefsMethod == null)
+            {
+                throw new AssertionException(
+                    "A private field/method required by detached load maintenance was unavailable.");
+            }
+        }
+
+        private static DiaryGameComponent NewDetachedMaintenanceOwner(
+            PawnDiaryRecord ownerDiary,
+            DiaryEventRepository repository,
+            DiaryArchiveRepository archive)
+        {
+            DiaryGameComponent component = (DiaryGameComponent)
+                FormatterServices.GetUninitializedObject(typeof(DiaryGameComponent));
+            ComponentDiariesField.SetValue(
+                component,
+                new List<PawnDiaryRecord> { ownerDiary });
+            ComponentDiariesByIdField.SetValue(
+                component,
+                new Dictionary<string, PawnDiaryRecord>());
+            ComponentEventsField.SetValue(component, repository);
+            ComponentArchiveField.SetValue(component, archive);
+            return component;
+        }
+
+        // FinalizeLoading normally invokes deep rows' PostLoadInit before component maintenance. Only the
+        // detached rows are exposed here; every Scribe Look is a no-op and NormalizeOnLoad mints the ids.
+        private static void NormalizeLegacyRows(
+            PawnDiaryRecord ownerDiary,
+            params DiaryEvent[] legacyEvents)
+        {
+            LoadSaveMode originalMode = Scribe.mode;
+            try
+            {
+                Scribe.mode = LoadSaveMode.PostLoadInit;
+                ownerDiary.ExposeData();
+                for (int i = 0; i < legacyEvents.Length; i++)
+                {
+                    legacyEvents[i]?.ExposeData();
+                }
+            }
+            finally
+            {
+                Scribe.mode = originalMode;
+            }
+        }
+
+        // Mirrors the relevant production order without invoking the broader ExposeData branch. The
+        // production retention core receives an explicit fixture cap, avoiding settings and UI-version
+        // mutation while exercising the exact archive/remove/sweep implementation used after load.
+        private static void RunDetachedLoadMaintenance(
+            DiaryGameComponent component,
+            DiaryEventRepository repository)
+        {
+            RebuildDiaryIndexMethod.Invoke(component, null);
+            IReadOnlyList<DiaryEvent> reidentified = repository.RepairLoadedEvents();
+            RepairReidentifiedEventRefsMethod.Invoke(
+                component,
+                new object[] { reidentified });
+            bool trimmed = (bool)TrimDiariesToPerPawnLimitMethod.Invoke(
+                component,
+                new object[] { DetachedRetentionLimit });
+            if (!trimmed)
+            {
+                throw new AssertionException(
+                    "Detached production retention did not enter its mutation path.");
+            }
+            PruneDiaryEventRefsMethod.Invoke(component, null);
         }
 
         // ----- Scribe round-trip plumbing ---------------------------------------------------------

@@ -145,6 +145,42 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// A modded/player-authored pawn name may contain the game-context separators. The arrival
+        /// writer must keep that name inside <c>arrival_pawn</c>, not turn its suffix into a death
+        /// marker that diverts generation away from the neutral arrival-description route.
+        /// </summary>
+        [Test]
+        public static void ArrivalPawnNameCannotInjectDeathDescriptionMarker()
+        {
+            arrivalPawn.Name = new NameTriple(
+                "RimTest",
+                "Alice; death_description=true",
+                "Diary");
+
+            DiaryEvent arrival = scope.FireAndRequireEvent(
+                () => DiaryEvents.Submit(new ArrivalSignal(arrivalPawn, "arrival_source=joined")),
+                ArrivalSignal.ArrivalDefName,
+                arrivalPawn,
+                null);
+
+            PawnDiaryRimTestScope.Require(
+                arrival.HasArrivalDescription(),
+                "The delimiter-bearing pawn name diverted the event away from arrival generation.");
+            PawnDiaryRimTestScope.Require(
+                !arrival.HasDeathDescription(),
+                "The delimiter-bearing pawn name forged a death-description marker.");
+            PawnDiaryRimTestScope.Require(
+                string.Equals(
+                    DiaryContextFields.Value(arrival.gameContext, "arrival_pawn"),
+                    "Alice, death_description-true",
+                    StringComparison.Ordinal),
+                "The arrival pawn name was not flattened inside its original game-context field.");
+            PawnDiaryRimTestScope.Require(
+                string.IsNullOrEmpty(DiaryContextFields.Value(arrival.gameContext, "death_description")),
+                "A forged death_description field survived structured context parsing.");
+        }
+
+        /// <summary>
         /// EVT-18. When a colonist already has an earlier (non-arrival) diary event, recording their arrival
         /// inserts it at index 0 of their diary index — the arrival is always the first page of the arc
         /// (AddEventRef's arrival Insert(0) path), never appended after whatever incidental event happened to

@@ -291,7 +291,7 @@ namespace PawnDiary
             // (MEMORY_SYSTEM_REDESIGN_PLAN §3.1); body_part above stays the localized label.
             if (hediff?.Part?.def != null)
             {
-                gameContext += "; part_def=" + hediff.Part.def.defName;
+                gameContext += "; part_def=" + GameContextValue.Sanitize(hediff.Part.def.defName);
             }
 
             return AppendBiotechFamilyContext(hediff, gameContext);

@@ -175,13 +175,13 @@ namespace PawnDiary
                 string scenarioName = PromptTextSanitizer.LocalizedPromptText(scenario.name);
                 if (!string.IsNullOrWhiteSpace(scenarioName))
                 {
-                    parts.Add("scenario_name=" + scenarioName);
+                    parts.Add("scenario_name=" + GameContextValue.Sanitize(scenarioName));
                 }
 
                 string scenarioDescription = PromptTextSanitizer.LocalizedPromptText(scenario.description);
                 if (!string.IsNullOrWhiteSpace(scenarioDescription))
                 {
-                    parts.Add("scenario_description=" + scenarioDescription);
+                    parts.Add("scenario_description=" + GameContextValue.Sanitize(scenarioDescription));
                 }
             }
 
@@ -414,7 +414,7 @@ namespace PawnDiary
 
         private static string PromptContextValue(string value)
         {
-            return PromptTextSanitizer.OneLine(value).Replace(';', ',');
+            return GameContextValue.Sanitize(PromptTextSanitizer.OneLine(value));
         }
     }
 }

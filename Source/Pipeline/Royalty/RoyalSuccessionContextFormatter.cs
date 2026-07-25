@@ -30,8 +30,7 @@ namespace PawnDiary
 
         private static string Clean(string value, int requestedCap)
         {
-            string cleaned = (value ?? string.Empty).Replace(";", ",").Replace("\r", " ")
-                .Replace("\n", " ").Trim();
+            string cleaned = GameContextValue.Sanitize(value);
             int cap = requestedCap < 1 || requestedCap > 512 ? 120 : requestedCap;
             return cleaned.Length <= cap ? cleaned : cleaned.Substring(0, cap).TrimEnd();
         }

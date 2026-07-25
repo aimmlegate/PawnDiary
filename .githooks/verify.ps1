@@ -54,6 +54,30 @@ function Find-MSBuild {
     throw "MSBuild was not found. Install Visual Studio Build Tools or add MSBuild to PATH."
 }
 
+function Get-RimTestBuildPaths {
+    param([string]$RepositoryRoot)
+
+    $rimWorldManaged = if (-not [string]::IsNullOrWhiteSpace($env:RIMWORLD_MANAGED)) {
+        $env:RIMWORLD_MANAGED
+    } else {
+        Join-Path $RepositoryRoot "..\..\RimWorldWin64_Data\Managed"
+    }
+    $rimWorldManaged = [System.IO.Path]::GetFullPath($rimWorldManaged)
+
+    $rimTestAssemblies = if (-not [string]::IsNullOrWhiteSpace($env:RIMTEST_REDUX_ASSEMBLIES)) {
+        $env:RIMTEST_REDUX_ASSEMBLIES
+    } else {
+        Join-Path $rimWorldManaged "..\..\..\..\workshop\content\294100\3762405308\1.6\Assemblies"
+    }
+    $rimTestAssemblies = [System.IO.Path]::GetFullPath($rimTestAssemblies)
+
+    return [pscustomobject]@{
+        RimWorldManaged = $rimWorldManaged
+        RimTestAssemblies = $rimTestAssemblies
+        Dependency = Join-Path $rimTestAssemblies "RimTestRedux.dll"
+    }
+}
+
 if ($env:PAWNDIARY_SKIP_VERIFY_HOOKS -eq "1") {
     Write-Host "PawnDiary verification hook skipped because PAWNDIARY_SKIP_VERIFY_HOOKS=1."
     exit 0
@@ -98,10 +122,29 @@ Invoke-Native "dotnet" @("run", "--project", "tests\DiaryRetentionTests\DiaryRet
 Invoke-Native "dotnet" @("run", "--project", "tests\DiarySaveNormalizationTests\DiarySaveNormalizationTests.csproj")
 Invoke-Native "dotnet" @("run", "--project", "tests\DiaryObservedConditionTests\DiaryObservedConditionTests.csproj")
 Invoke-Native "dotnet" @("run", "--project", "tests\DiaryReaderPolicyTests\DiaryReaderPolicyTests.csproj")
+Invoke-Native "dotnet" @("run", "--project", "tests\DiaryPatchManifestTests\DiaryPatchManifestTests.csproj")
+Invoke-Native "dotnet" @("run", "--project", "tests\DiaryRngIsolationContractTests\DiaryRngIsolationContractTests.csproj")
+Invoke-Native "dotnet" @("run", "--project", "tests\PureBoundaryContractTests\PureBoundaryContractTests.csproj")
 
 Write-Step "RimWorld DLL build"
 $msbuild = Find-MSBuild
 Invoke-Native $msbuild @("Source\PawnDiary.csproj", "/t:Build", "/p:Configuration=Debug")
+
+$rimTestPaths = Get-RimTestBuildPaths $repoRoot
+$rimTestBuilt = Test-Path -LiteralPath $rimTestPaths.Dependency
+if ($rimTestBuilt) {
+    Write-Step "RimTest DLL build"
+    Invoke-Native $msbuild @(
+        "tests\PawnDiary.RimTest\PawnDiary.RimTest.csproj",
+        "/t:Build",
+        "/p:Configuration=Debug",
+        "/p:RimWorldManaged=$($rimTestPaths.RimWorldManaged)",
+        "/p:RimTestReduxAssemblies=$($rimTestPaths.RimTestAssemblies)"
+    )
+} else {
+    Write-Step "RimTest DLL build"
+    Write-Host "Skipped: optional dependency is absent: $($rimTestPaths.Dependency)"
+}
 
 Write-Step "Committed DLL freshness check"
 # Pawn Diary must not ship Harmony — its runtime comes from the active brrainz.harmony mod. The
@@ -119,6 +162,18 @@ if (Test-Path -LiteralPath $runtimeHarmony) {
 & git diff --quiet -- "1.6/Assemblies/PawnDiary.dll"
 if ($LASTEXITCODE -ne 0) {
     throw "Build changed committed runtime DLL. Stage the rebuilt PawnDiary.dll and retry."
+}
+
+if ($rimTestBuilt) {
+    $rimTestDll = Join-Path $repoRoot "tests\PawnDiary.RimTest\Assemblies\PawnDiary.RimTest.dll"
+    if (-not (Test-Path -LiteralPath $rimTestDll)) {
+        throw "RimTest build succeeded but did not produce tests/PawnDiary.RimTest/Assemblies/PawnDiary.RimTest.dll."
+    }
+
+    & git diff --quiet -- "tests/PawnDiary.RimTest/Assemblies/PawnDiary.RimTest.dll"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Build changed committed RimTest DLL. Stage the rebuilt PawnDiary.RimTest.dll and retry."
+    }
 }
 
 Write-Host ""

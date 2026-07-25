@@ -254,10 +254,14 @@ namespace PawnDiary
 
                 // The removal channel reuses the event channel's "<def>_addedpart" suffix naming
                 // so XML rows can match structurally without enumerating every implant defName.
-                string context = "hediff=" + hediffDefName
-                    + "; label=" + (hediffLabel ?? string.Empty)
-                    + (string.IsNullOrWhiteSpace(partLabel) ? string.Empty : "; body_part=" + partLabel)
-                    + (string.IsNullOrWhiteSpace(partDefName) ? string.Empty : "; part_def=" + partDefName);
+                string context = "hediff=" + GameContextValue.Sanitize(hediffDefName)
+                    + "; label=" + GameContextValue.Sanitize(hediffLabel)
+                    + (string.IsNullOrWhiteSpace(partLabel)
+                        ? string.Empty
+                        : "; body_part=" + GameContextValue.Sanitize(partLabel))
+                    + (string.IsNullOrWhiteSpace(partDefName)
+                        ? string.Empty
+                        : "; part_def=" + GameContextValue.Sanitize(partDefName));
                 KnowledgeCaptureSignal signal = new KnowledgeCaptureSignal
                 {
                     signal = signalToken,
@@ -299,8 +303,10 @@ namespace PawnDiary
                     defName = assigned ? "PawnDiary_RoleAssigned" : "PawnDiary_RoleUnassigned",
                     tick = Find.TickManager.TicksGame,
                     dateLabel = KnowledgeDateLabelNow(pawn),
-                    gameContext = "role=" + roleLabel
-                        + (string.IsNullOrWhiteSpace(ideoName) ? string.Empty : "; ideo=" + ideoName),
+                    gameContext = "role=" + GameContextValue.Sanitize(roleLabel)
+                        + (string.IsNullOrWhiteSpace(ideoName)
+                            ? string.Empty
+                            : "; ideo=" + GameContextValue.Sanitize(ideoName)),
                     providedOwnerPawnId = diary.pawnId
                 };
                 PersistDrafts(ImportantEventClassifier.Classify(
@@ -361,9 +367,9 @@ namespace PawnDiary
                     defName = "PawnDiary_IdeoConversion",
                     tick = Find.TickManager.TicksGame,
                     dateLabel = KnowledgeDateLabelNow(pawn),
-                    gameContext = "previous_ideo=" + (previousIdeoName ?? string.Empty)
-                        + "; new_ideo=" + (newIdeoName ?? string.Empty)
-                        + "; new_culture=" + (newCultureDefName ?? string.Empty),
+                    gameContext = "previous_ideo=" + GameContextValue.Sanitize(previousIdeoName)
+                        + "; new_ideo=" + GameContextValue.Sanitize(newIdeoName)
+                        + "; new_culture=" + GameContextValue.Sanitize(newCultureDefName),
                     providedOwnerPawnId = diary.pawnId
                 };
                 PersistDrafts(ImportantEventClassifier.Classify(
@@ -402,8 +408,10 @@ namespace PawnDiary
                     string weaponLabel = dinfo.Value.Weapon != null ? dinfo.Value.Weapon.label : string.Empty;
                     EmitDeathSignal(KnowledgeTokens.SignalDeathInstigator, "PawnDiary_DeathInstigator",
                         instigator, victimId, victimName, tick, date,
-                        "victim=" + victimName
-                        + (string.IsNullOrWhiteSpace(weaponLabel) ? string.Empty : "; weapon=" + weaponLabel));
+                        "victim=" + GameContextValue.Sanitize(victimName)
+                        + (string.IsNullOrWhiteSpace(weaponLabel)
+                            ? string.Empty
+                            : "; weapon=" + GameContextValue.Sanitize(weaponLabel)));
                 }
 
                 // Close family only (§2.1). GetRelations yields the OTHER pawn's relations toward
@@ -437,7 +445,8 @@ namespace PawnDiary
 
                     EmitDeathSignal(KnowledgeTokens.SignalDeathFamily, "PawnDiary_DeathFamily",
                         other, victimId, victimName, tick, date,
-                        "victim=" + victimName + "; relation=" + relationLabel);
+                        "victim=" + GameContextValue.Sanitize(victimName)
+                        + "; relation=" + GameContextValue.Sanitize(relationLabel));
                     familyOwnersEmitted++;
                 }
             }
@@ -646,7 +655,10 @@ namespace PawnDiary
         {
             try
             {
-                KnowledgePolicySnapshot policy = DiaryKnowledgePolicy.Snapshot();
+                // Freeze the richest available relevant-past snapshot before an API lane is known.
+                // Dispatch later applies the selected lane's Full/Balanced/Compact feature policy.
+                KnowledgePolicySnapshot policy = DiaryKnowledgePolicy.Snapshot(
+                    applyGlobalMemorySetting: false);
                 if (!policy.injectionEnabled || !EventProjectsMemoryContext(diaryEvent))
                 {
                     return;

@@ -69,9 +69,9 @@ namespace PawnDiary.Capture
         /// </summary>
         public static string BuildGameContext(string defName, string label, string moodImpact)
         {
-            return "mood_event=" + defName
-                + "; label=" + label
-                + "; mood_impact=" + moodImpact;
+            return "mood_event=" + GameContextValue.Sanitize(defName)
+                + "; label=" + GameContextValue.Sanitize(label)
+                + "; mood_impact=" + GameContextValue.Sanitize(moodImpact);
         }
     }
 }

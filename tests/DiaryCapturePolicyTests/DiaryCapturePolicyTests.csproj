@@ -67,6 +67,7 @@
     <Compile Include="..\..\Source\Capture\Events\ArtImmortalizedEventData.cs" Link="Capture\Events\ArtImmortalizedEventData.cs" />
     <!-- The art payload delegates its identity/ownership contract to this pure policy. -->
     <Compile Include="..\..\Source\Pipeline\ArtImmortalizationPolicy.cs" Link="Pipeline\ArtImmortalizationPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\GameContextValue.cs" Link="Pipeline\GameContextValue.cs" />
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContracts.cs" Link="Pipeline\NarrativeContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\RoyaltyContracts.cs" Link="Pipeline\RoyaltyContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\RoyalMutationOwnershipPolicy.cs" Link="Pipeline\RoyalMutationOwnershipPolicy.cs" />

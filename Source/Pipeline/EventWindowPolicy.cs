@@ -39,6 +39,90 @@ namespace PawnDiary
     /// </summary>
     internal static class EventWindowPolicy
     {
+        /// <summary>
+        /// Immutable-source, mutable-build index for one hot event-window signal shape. Runtime builds
+        /// it once from the loaded Defs; each later lookup is a boolean check plus a hash lookup.
+        /// Token rules and source/signal-only rules set the conservative wildcard because their final
+        /// answer depends on facts that are intentionally absent from the cheap pre-check.
+        /// </summary>
+        internal sealed class DefNamePrecheckIndex
+        {
+            private readonly string source;
+            private readonly string signal;
+            private readonly HashSet<string> exactDefNames =
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            private bool couldMatchAnyDefName;
+
+            /// <summary>Creates an index for one exact runtime source/signal pair.</summary>
+            public DefNamePrecheckIndex(string source, string signal)
+            {
+                this.source = source ?? string.Empty;
+                this.signal = signal ?? string.Empty;
+            }
+
+            /// <summary>
+            /// Adds rules to the index. This is called while the lazy runtime cache is being built,
+            /// never from the per-signal hot path.
+            /// </summary>
+            public void Include(IList<EventWindowTriggerRule> rules)
+            {
+                if (couldMatchAnyDefName || rules == null)
+                {
+                    return;
+                }
+
+                for (int i = 0; i < rules.Count; i++)
+                {
+                    EventWindowTriggerRule rule = rules[i];
+                    if (rule == null
+                        || !BlankOrEquals(rule.source, source)
+                        || !BlankOrEquals(rule.signal, signal))
+                    {
+                        continue;
+                    }
+
+                    bool hasDefMatchers = HasAny(rule.matchDefNames);
+                    bool hasTokenMatchers = HasAny(rule.matchTokens);
+                    if (hasTokenMatchers
+                        || (!hasDefMatchers
+                            && (HasText(rule.source) || HasText(rule.signal))))
+                    {
+                        // Tokens can match the label/subject text, and a source/signal-only rule
+                        // accepts every defName. Neither can be rejected by an exact-name index.
+                        couldMatchAnyDefName = true;
+                        exactDefNames.Clear();
+                        return;
+                    }
+
+                    if (!hasDefMatchers)
+                    {
+                        // A completely blank trigger never matches.
+                        continue;
+                    }
+
+                    for (int nameIndex = 0; nameIndex < rule.matchDefNames.Count; nameIndex++)
+                    {
+                        string defName = rule.matchDefNames[nameIndex];
+                        if (!string.IsNullOrWhiteSpace(defName))
+                        {
+                            // Do not trim: MatchesExact intentionally compares the XML value as-is.
+                            exactDefNames.Add(defName);
+                        }
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Returns whether the full matcher could accept this defName. A false result is exact;
+            /// a true result remains a conservative "run the full matcher" answer.
+            /// </summary>
+            public bool CouldMatch(string defName)
+            {
+                return couldMatchAnyDefName
+                    || (!string.IsNullOrWhiteSpace(defName) && exactDefNames.Contains(defName));
+            }
+        }
+
         public static bool Matches(EventWindowTriggerRule rule, EventWindowSignalFacts facts)
         {
             if (rule == null || facts == null)

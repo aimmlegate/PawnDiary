@@ -247,6 +247,55 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Production adapter regression for per-lane feature layers. Event capture keeps one rich saved
+        /// snapshot; each request DTO independently projects the selected lane's level without mutating
+        /// that saved event.
+        /// </summary>
+        [Test]
+        public static void EffectiveContextLevelProjectsMemoryAndEnchantmentPerRequest()
+        {
+            const string memory = "- (yesterday) Alice survived the old raid.";
+            const string enchantment = "important context sentinel";
+            DiaryEvent diaryEvent = new DiaryEvent
+            {
+                eventId = "pawndiary-test-context-layers",
+                interactionDefName = "PawnDiaryTest_ContextLayers",
+                interactionLabel = "context layers",
+                initiatorPawnId = "PawnDiaryTest_Alice",
+                initiatorName = "Alice",
+                initiatorText = "Alice considered what happened.",
+                solo = true
+            };
+            diaryEvent.SetMemoryContext(DiaryEvent.InitiatorRole, memory);
+
+            DiaryPromptRequest full = BuildLayerRequest(
+                diaryEvent, enchantment, PromptContextDetailLevel.Full);
+            DiaryPromptRequest balanced = BuildLayerRequest(
+                diaryEvent, enchantment, PromptContextDetailLevel.Balanced);
+            DiaryPromptRequest compact = BuildLayerRequest(
+                diaryEvent, enchantment, PromptContextDetailLevel.Compact);
+
+            PawnDiaryRimTestScope.Require(
+                string.Equals(full.payload.initiator.memoryContext, memory, StringComparison.Ordinal)
+                    && string.Equals(full.promptEnchantment, enchantment, StringComparison.Ordinal),
+                "Full must retain both frozen memory and the live prompt-enchantment layer.");
+            PawnDiaryRimTestScope.Require(
+                string.IsNullOrEmpty(balanced.payload.initiator.memoryContext)
+                    && string.Equals(balanced.promptEnchantment, enchantment, StringComparison.Ordinal),
+                "Balanced must omit memory while retaining prompt enchantments.");
+            PawnDiaryRimTestScope.Require(
+                string.IsNullOrEmpty(compact.payload.initiator.memoryContext)
+                    && string.IsNullOrEmpty(compact.promptEnchantment),
+                "Compact must omit memory and prompt enchantments.");
+            PawnDiaryRimTestScope.Require(
+                string.Equals(
+                    diaryEvent.MemoryContextForRole(DiaryEvent.InitiatorRole),
+                    memory,
+                    StringComparison.Ordinal),
+                "Per-request projection must not erase the saved full context snapshot.");
+        }
+
+        /// <summary>
         /// End-to-end confirmation that the LIVE capture pipeline resolves the same policy: firing a real
         /// vanilla Berserk mental state through Pawn Diary's Harmony hook (with a generation-enabled pawn
         /// in prompt-test mode) stamps a prompt-only prompt on the solo event. The capture asserts
@@ -298,6 +347,25 @@ namespace PawnDiary.RimTests
                 null,           // entryText
                 false,          // titleRequest
                 0);             // maxTokens
+        }
+
+        private static DiaryPromptRequest BuildLayerRequest(
+            DiaryEvent diaryEvent,
+            string promptEnchantment,
+            PromptContextDetailLevel level)
+        {
+            return DiaryPipelineAdapters.BuildPromptRequest(
+                diaryEvent,
+                DiaryEvent.InitiatorRole,
+                "writing style sentinel",
+                "outlook sentinel",
+                promptEnchantment,
+                string.Empty,
+                null,
+                null,
+                false,
+                0,
+                level);
         }
 
         private static TDef RequireDef<TDef>(string defName) where TDef : Def

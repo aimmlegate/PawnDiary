@@ -54,13 +54,13 @@ namespace PawnDiary.Capture
             string defName, string categoryKey, string label, string stageIndex,
             string severity, string moodImpact, string moodOffset)
         {
-            return "thought=" + defName
-                + "; thought_progression=" + categoryKey
-                + "; label=" + label
-                + "; stage_index=" + stageIndex
-                + "; severity=" + severity
-                + "; mood_impact=" + moodImpact
-                + "; mood_offset=" + moodOffset;
+            return "thought=" + GameContextValue.Sanitize(defName)
+                + "; thought_progression=" + GameContextValue.Sanitize(categoryKey)
+                + "; label=" + GameContextValue.Sanitize(label)
+                + "; stage_index=" + GameContextValue.Sanitize(stageIndex)
+                + "; severity=" + GameContextValue.Sanitize(severity)
+                + "; mood_impact=" + GameContextValue.Sanitize(moodImpact)
+                + "; mood_offset=" + GameContextValue.Sanitize(moodOffset);
         }
     }
 }

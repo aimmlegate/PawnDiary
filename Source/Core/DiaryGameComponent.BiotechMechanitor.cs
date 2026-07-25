@@ -444,7 +444,7 @@ namespace PawnDiary
             int serviceTicks,
             bool longServing)
         {
-            return MechanitorContextKeys.MechanitorMoment + "=" + moment
+            return MechanitorContextKeys.MechanitorMoment + "=" + GameContextValue.Sanitize(moment)
                 + "; " + MechanitorContextKeys.MechId + "=" + MechanitorContextValue(mech?.mechId)
                 + "; " + MechanitorContextKeys.MechName + "=" + MechanitorContextValue(mech?.displayName)
                 + "; " + MechanitorContextKeys.MechKind + "=" + MechanitorContextValue(mech?.kindLabel)
@@ -460,7 +460,7 @@ namespace PawnDiary
             bool called,
             bool defeated)
         {
-            return MechanitorContextKeys.MechanitorMoment + "=" + moment
+            return MechanitorContextKeys.MechanitorMoment + "=" + GameContextValue.Sanitize(moment)
                 + "; " + MechanitorContextKeys.BossgroupDef + "="
                     + MechanitorContextValue(row.bossgroupDefName)
                 + "; " + MechanitorContextKeys.BossDef + "=" + MechanitorContextValue(row.bossDefName)
@@ -472,7 +472,7 @@ namespace PawnDiary
 
         private static string MechanitorContextValue(string value)
         {
-            return DiaryLineCleaner.CleanLine(value).Replace(";", ",");
+            return GameContextValue.Sanitize(DiaryLineCleaner.CleanLine(value));
         }
 
         private static void ExtractMechanitorTalePawns(Tale tale, out Pawn first, out Pawn second)

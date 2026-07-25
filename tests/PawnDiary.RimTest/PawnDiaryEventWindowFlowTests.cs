@@ -175,6 +175,27 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// EVT-22. The shipped Def set has no ThingSpawned trigger, so the production SpawnSetup postfix
+        /// must reject an ordinary pawn through its prebuilt O(1) index without entering event capture.
+        /// This is the loaded canary for the game's hottest global hook.
+        /// </summary>
+        [Test]
+        public static void ThingSpawnedPatchUsesIndexedNegativeGate()
+        {
+            string defName = firstPawn?.def?.defName;
+            PawnDiaryRimTestScope.Require(
+                !string.IsNullOrWhiteSpace(defName),
+                "Setup: the isolated test pawn has no stable ThingDef name.");
+            PawnDiaryRimTestScope.Require(
+                !DiaryGameComponent.CouldMatchThingSpawnedEventWindow(defName),
+                "The shipped event-window rules unexpectedly require full ThingSpawned matching for "
+                    + defName + ".");
+
+            scope.RequireNoNewEvent(
+                () => ThingSpawnedEventWindowPatch.Postfix(firstPawn, null, false));
+        }
+
+        /// <summary>
         /// EVT-22. A keepActive window start (ShortCircuit) opens exactly one persistent active window scoped
         /// to the signal's map (here map-agnostic, id -1) with its timeout scheduled from the def, which is
         /// the state that biases prompt enchantments while the window is open. recordStartEvent=false, so it

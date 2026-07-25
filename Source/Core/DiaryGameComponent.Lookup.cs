@@ -370,6 +370,121 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Restores per-pawn references for loaded events whose missing ids were repaired by
+        /// <see cref="DiaryEvent.NormalizeOnLoad"/>. Only already-saved diary records are eligible:
+        /// repair must reconnect existing history, never invent a new pawn diary from a corrupt row.
+        /// </summary>
+        private void RepairReidentifiedEventRefs(IReadOnlyList<DiaryEvent> reidentifiedEvents)
+        {
+            RestoreReidentifiedEventRefs(
+                reidentifiedEvents,
+                FindDiaryByPawnId);
+        }
+
+        /// <summary>
+        /// Plain saved-data repair seam used by PostLoadInit and focused fixtures. The event's two POV
+        /// owners plus neutral arrival/death owner markers are considered. A replacement happens only
+        /// where that already-saved diary still has a blank placeholder, so the repair preserves exact
+        /// membership and ordering without inventing a page for an ineligible or later-joined pawn.
+        /// </summary>
+        internal static void RestoreReidentifiedEventRefs(
+            IReadOnlyList<DiaryEvent> reidentifiedEvents,
+            Func<string, PawnDiaryRecord> findDiary)
+        {
+            if (reidentifiedEvents == null || findDiary == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < reidentifiedEvents.Count; i++)
+            {
+                DiaryEvent diaryEvent = reidentifiedEvents[i];
+                if (diaryEvent == null || string.IsNullOrWhiteSpace(diaryEvent.eventId))
+                {
+                    continue;
+                }
+
+                HashSet<string> owners = new HashSet<string>(StringComparer.Ordinal);
+                RestoreReidentifiedEventRefForOwner(
+                    diaryEvent, diaryEvent.initiatorPawnId, owners, findDiary);
+                RestoreReidentifiedEventRefForOwner(
+                    diaryEvent, diaryEvent.recipientPawnId, owners, findDiary);
+
+                string deathOwnerId = DiaryContextFields.Value(
+                    diaryEvent.gameContext,
+                    "death_victim_id");
+                if (diaryEvent.IsDeathDescriptionFor(deathOwnerId))
+                {
+                    RestoreReidentifiedEventRefForOwner(
+                        diaryEvent, deathOwnerId, owners, findDiary);
+                }
+
+                string arrivalOwnerId = DiaryContextFields.Value(
+                    diaryEvent.gameContext,
+                    "arrival_pawn_id");
+                if (diaryEvent.IsArrivalDescriptionFor(arrivalOwnerId))
+                {
+                    RestoreReidentifiedEventRefForOwner(
+                        diaryEvent, arrivalOwnerId, owners, findDiary);
+                }
+            }
+        }
+
+        private static void RestoreReidentifiedEventRefForOwner(
+            DiaryEvent diaryEvent,
+            string pawnId,
+            HashSet<string> owners,
+            Func<string, PawnDiaryRecord> findDiary)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId) || !owners.Add(pawnId))
+            {
+                return;
+            }
+
+            PawnDiaryRecord diary = findDiary(pawnId);
+            if (diary == null)
+            {
+                return;
+            }
+
+            if (diary.eventIds == null)
+            {
+                diary.eventIds = new List<string>();
+            }
+
+            int blankPlaceholder = -1;
+            for (int i = 0; i < diary.eventIds.Count; i++)
+            {
+                if (string.Equals(
+                    diary.eventIds[i],
+                    diaryEvent.eventId,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                if (blankPlaceholder < 0 && string.IsNullOrWhiteSpace(diary.eventIds[i]))
+                {
+                    blankPlaceholder = i;
+                }
+            }
+
+            if (blankPlaceholder < 0)
+            {
+                return;
+            }
+
+            if (diaryEvent.IsArrivalDescriptionFor(pawnId))
+            {
+                diary.eventIds.RemoveAt(blankPlaceholder);
+                diary.eventIds.Insert(0, diaryEvent.eventId);
+                return;
+            }
+
+            diary.eventIds[blankPlaceholder] = diaryEvent.eventId;
+        }
+
+        /// <summary>
         /// Finds where a delayed historical event belongs. A same-tick final-death page sorts after
         /// the historical event so childbirth remains visible when the birther died in vanilla's call.
         /// </summary>

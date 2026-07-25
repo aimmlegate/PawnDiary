@@ -1792,15 +1792,21 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Rebuilds the transient once-per-pawn/day guard from hot saved DayReflection events after load.
-        /// Without this, a pawn that saved while resting could write the same reflection again after
-        /// loading because the guard itself is intentionally not part of the save schema.
+        /// Rebuilds transient one-per-day guards from hot and archived saved history after load.
+        /// Reflection, ambient-interaction, and ambient-thought guards intentionally stay out of the
+        /// save schema; deriving them from pages prevents same-day duplicates after a reload while
+        /// keeping the ambient guard sets bounded to the current day.
         /// </summary>
-        private void RebuildWrittenDayReflectionsFromEvents()
+        private void RebuildWrittenDailyGuardsFromHistory()
         {
             writtenDayReflections.Clear();
             writtenQuadrumReflections.Clear();
-            IReadOnlyList<DiaryEvent> allEvents = ActiveScanEvents();
+            writtenAmbientInteractionNotes.Clear();
+            writtenAmbientThoughtNotes.Clear();
+            int currentDay = CurrentDayIndex;
+            // This is a one-time load repair, not a recurring scan. Visit every retained hot row so an
+            // unusually busy current day cannot push an ambient page outside the normal scan window.
+            IReadOnlyList<DiaryEvent> allEvents = events.AllEvents;
             for (int i = 0; i < allEvents.Count; i++)
             {
                 DiaryEvent ev = allEvents[i];
@@ -1809,35 +1815,86 @@ namespace PawnDiary
                     continue;
                 }
 
+                int eventDay = DayIndexForGameTick(ev.tick);
                 if (string.Equals(ev.interactionDefName, DayReflectionEventData.DefNameToken, StringComparison.OrdinalIgnoreCase))
                 {
-                    writtenDayReflections.Add(DaySummaryKey(ev.initiatorPawnId, DayIndexForGameTick(ev.tick)));
+                    writtenDayReflections.Add(DaySummaryKey(ev.initiatorPawnId, eventDay));
                 }
                 else if (string.Equals(ev.interactionDefName, DayReflectionEventData.QuadrumDefNameToken, StringComparison.OrdinalIgnoreCase))
                 {
-                    writtenQuadrumReflections.Add(QuadrumSummaryKey(ev.initiatorPawnId, QuadrumIndexForDay(DayIndexForGameTick(ev.tick))));
+                    writtenQuadrumReflections.Add(QuadrumSummaryKey(ev.initiatorPawnId, QuadrumIndexForDay(eventDay)));
                 }
+
+                RememberAmbientDailyGuard(
+                    ev.initiatorPawnId,
+                    ev.interactionDefName,
+                    ev.gameContext,
+                    eventDay,
+                    currentDay);
             }
 
             // Retention moves completed old pages out of the hot event store. Those archived rows are
-            // still authoritative history: forgetting one here permits a duplicate quadrum reflection
-            // after reload while the original quadrum's due window remains open.
+            // still authoritative history: forgetting one permits duplicate quadrum or same-day
+            // ambient pages after reload while the original timing window remains open.
             IReadOnlyList<ArchivedDiaryEntry> archivedEntries = archive.AllEntries;
             for (int i = 0; i < archivedEntries.Count; i++)
             {
                 ArchivedDiaryEntry entry = archivedEntries[i];
-                if (entry == null || string.IsNullOrWhiteSpace(entry.pawnId)
-                    || !string.Equals(
-                        entry.interactionDefName,
-                        DayReflectionEventData.QuadrumDefNameToken,
-                        StringComparison.OrdinalIgnoreCase))
+                if (entry == null || string.IsNullOrWhiteSpace(entry.pawnId))
                 {
                     continue;
                 }
 
-                writtenQuadrumReflections.Add(QuadrumSummaryKey(
+                int entryDay = DayIndexForGameTick(entry.tick);
+                if (string.Equals(
+                    entry.interactionDefName,
+                    DayReflectionEventData.QuadrumDefNameToken,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    writtenQuadrumReflections.Add(QuadrumSummaryKey(
+                        entry.pawnId,
+                        QuadrumIndexForDay(entryDay)));
+                }
+
+                RememberAmbientDailyGuard(
                     entry.pawnId,
-                    QuadrumIndexForDay(DayIndexForGameTick(entry.tick))));
+                    entry.interactionDefName,
+                    entry.decorationGameContext,
+                    entryDay,
+                    currentDay);
+            }
+        }
+
+        /// <summary>Adds a recognized current-day ambient history row to its exact runtime guard set.</summary>
+        private void RememberAmbientDailyGuard(
+            string pawnId,
+            string interactionDefName,
+            string gameContext,
+            int fallbackDay,
+            int currentDay)
+        {
+            string interactionKey;
+            string thoughtKey;
+            if (!DailyEmissionGuardPolicy.TryBuildCurrentDayKeys(
+                pawnId,
+                interactionDefName,
+                gameContext,
+                fallbackDay,
+                currentDay,
+                out interactionKey,
+                out thoughtKey))
+            {
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(interactionKey))
+            {
+                writtenAmbientInteractionNotes.Add(interactionKey);
+            }
+
+            if (!string.IsNullOrWhiteSpace(thoughtKey))
+            {
+                writtenAmbientThoughtNotes.Add(thoughtKey);
             }
         }
 

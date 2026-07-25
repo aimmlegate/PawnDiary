@@ -427,11 +427,12 @@ namespace PawnDiary
             string defName = AmbientDefName(note);
             string text = BuildAmbientInteractionText(note);
             string instruction = AmbientInstruction(note);
-            string gameContext = "group=" + note.GroupKey
+            string gameContext = "group=" + GameContextValue.Sanitize(note.GroupKey)
                 + "; batch=ambient_day_note"
                 + "; events=" + note.eventCount
                 + "; day=" + note.dayIndex
-                + "; participants=" + string.Join(", ", note.participantNames.ToArray())
+                + "; participants=" + GameContextValue.Sanitize(
+                    string.Join(", ", note.participantNames.ToArray()))
                 + "; first_tick=" + note.firstTick
                 + "; last_tick=" + note.lastTick;
 
@@ -501,7 +502,7 @@ namespace PawnDiary
             string initiatorText = BuildInteractionBatchText(batch, batch.initiatorLines);
             string recipientText = BuildInteractionBatchText(batch, batch.recipientLines);
             string instruction = BatchInstruction(batch);
-            string gameContext = "group=" + batch.GroupKey
+            string gameContext = "group=" + GameContextValue.Sanitize(batch.GroupKey)
                 + "; batch=interaction"
                 + "; events=" + batch.Count
                 + "; first_tick=" + batch.firstTick
@@ -683,9 +684,9 @@ namespace PawnDiary
 
         private static string StandaloneInteractionBatchContext(PendingInteractionBatch batch)
         {
-            return "def=" + DiaryLineCleaner.CleanLine(batch.firstDefName)
-                + "; label=" + DiaryLineCleaner.CleanLine(batch.firstLabel)
-                + "; group=" + batch.GroupKey
+            return "def=" + GameContextValue.Sanitize(DiaryLineCleaner.CleanLine(batch.firstDefName))
+                + "; label=" + GameContextValue.Sanitize(DiaryLineCleaner.CleanLine(batch.firstLabel))
+                + "; group=" + GameContextValue.Sanitize(batch.GroupKey)
                 + "; events=1"
                 + "; first_tick=" + batch.firstTick
                 + "; last_tick=" + batch.lastTick;
@@ -1039,7 +1040,10 @@ namespace PawnDiary
         /// </summary>
         private static string AmbientInteractionKey(DiaryInteractionGroupDef group, Pawn pawn, int dayIndex)
         {
-            return group.defName + "|ambient|" + pawn.GetUniqueLoadID() + "|" + dayIndex;
+            return DailyEmissionGuardPolicy.InteractionKey(
+                group.defName,
+                pawn.GetUniqueLoadID(),
+                dayIndex);
         }
 
         /// <summary>

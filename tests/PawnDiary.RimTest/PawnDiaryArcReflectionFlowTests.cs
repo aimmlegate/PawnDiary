@@ -21,7 +21,7 @@
 // to remove the resulting DiaryEvent + diary index, and never enables per-pawn generation, so no LLM request
 // can leave the game.
 //
-// Determinism (design/TEST_COVERAGE_PLAN.md §3): the selector is seeded with a fixed RNG seed and given candidates
+// Determinism (design/TEST_COVERAGE_PLAN.md §3): the selector receives explicit unit rolls and candidates
 // whose filtering outcome is unambiguous regardless of sample order; the schedule policy is fed an explicit
 // ArcReflectionScheduleTuning built in code (independent of XML); the arc signal is enabled by forcing
 // DiaryTuning.Current.arcReflectionEnabled, snapshotted and restored in failure-safe cleanup.
@@ -51,9 +51,6 @@ namespace PawnDiary.RimTests
         // A fixed, made-up calendar year for the pure selector/policy. The selector and policy are pure, so this
         // never has to match the loaded game's real year; a constant keeps the filtering outcome deterministic.
         private const int ArcYear = 5500;
-
-        // Fixed RNG seed for the weighted memory sampler so the selected set is reproducible.
-        private const int SelectionSeed = 1234;
 
         private static PawnDiaryRimTestScope scope;
         private static Pawn reflectingPawn;
@@ -136,11 +133,11 @@ namespace PawnDiary.RimTests
             {
                 candidates = candidates,
                 recentlyUsedEventIds = recentlyUsed,
+                selectionRolls = new List<double> { 0.25d, 0.75d },
                 currentYear = ArcYear,
                 maxMemories = 8,
                 minMemories = 1,
                 sameDomainGroupCap = 2,
-                seed = SelectionSeed,
             });
 
             // Filtering + dedup: only arc-A and arc-B survive the pool.
@@ -354,11 +351,11 @@ namespace PawnDiary.RimTests
                     NewCandidate("fresh", ArcYear, "work", "work|fresh", "Never used before"),
                 },
                 recentlyUsedEventIds = schedule.recentlyUsedEventIds,
+                selectionRolls = new List<double> { 0.5d },
                 currentYear = ArcYear,
                 maxMemories = 8,
                 minMemories = 1,
                 sameDomainGroupCap = 2,
-                seed = SelectionSeed,
             });
             PawnDiaryRimTestScope.Require(
                 selection.candidateCount == 1

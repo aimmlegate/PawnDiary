@@ -33,13 +33,14 @@ namespace PawnDiary
         /// <summary>
         /// Builds a trial prompt for this POV and, when it looks too similar to the pawn's recent
         /// prompts, rerolls the per-entry enhancements (up to the XML-tuned attempt cap) and returns
-        /// the final enchantment/humor strings the caller should dispatch with. The trial builder is
-        /// the SAME plan builder the real dispatch uses (Full detail level), so the similarity
-        /// decision is made on exactly the prompt shape that would be sent.
+        /// the final enchantment/humor strings the caller should dispatch with. Dispatch supplies the
+        /// selected lane's effective context level, so the similarity decision sees exactly the
+        /// Full/Balanced/Compact prompt shape that will be sent.
         /// </summary>
         private void ApplyPromptAntiRepeatGuard(
             DiaryEvent diaryEvent,
             string povRole,
+            PromptContextDetailLevel contextDetailLevel,
             Func<string, string, DiaryPromptPlan> trialPlanBuilder,
             Dictionary<string, Pawn> livePawnsById,
             ref string promptEnchantment,
@@ -104,7 +105,12 @@ namespace PawnDiary
                 // came from the group's variant pool.
                 diaryEvent.promptVariantRerolls++;
                 DiaryPipelineAdapters.TryRerollInstruction(diaryEvent, diaryEvent.promptVariantRerolls);
-                promptEnchantment = RerollPromptEnchantment(diaryEvent, povRole, promptEnchantment, livePawnsById);
+                promptEnchantment = RerollPromptEnchantment(
+                    diaryEvent,
+                    povRole,
+                    contextDetailLevel,
+                    promptEnchantment,
+                    livePawnsById);
                 humorCue = HumorCueFor(diaryEvent, povRole, livePawnsById);
 
                 trial = trialPlanBuilder(promptEnchantment, humorCue);
@@ -171,12 +177,22 @@ namespace PawnDiary
         /// same text is legitimately returned again (the guard's other rerolls still apply).
         /// </summary>
         private string RerollPromptEnchantment(DiaryEvent diaryEvent, string povRole,
-            string currentEnchantment, Dictionary<string, Pawn> livePawnsById)
+            PromptContextDetailLevel contextDetailLevel, string currentEnchantment,
+            Dictionary<string, Pawn> livePawnsById)
         {
+            if (!PromptContextFeaturePolicy.AllowsPromptEnchantments(contextDetailLevel))
+            {
+                return currentEnchantment;
+            }
+
             string latest = currentEnchantment;
             for (int i = 0; i < AntiRepeatEnchantmentRerollTries; i++)
             {
-                string rolled = PromptEnchantmentRuleFor(diaryEvent, povRole, livePawnsById);
+                string rolled = PromptEnchantmentRuleFor(
+                    diaryEvent,
+                    povRole,
+                    livePawnsById,
+                    contextDetailLevel);
                 latest = rolled;
                 if (!string.Equals(
                         (rolled ?? string.Empty).Trim(),

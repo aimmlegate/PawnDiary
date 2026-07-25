@@ -208,8 +208,8 @@ namespace PawnDiary.RimTests
             try
             {
                 Pawn pawn = scope.CreateAdultColonist();
-                ThingDef pistolDef = DefDatabase<ThingDef>.GetNamedSilentFail("Gun_Pistol");
-                Require(pistolDef != null, "The base-game Gun_Pistol Def was not found.");
+                ThingDef pistolDef = DefDatabase<ThingDef>.GetNamedSilentFail("Gun_Autopistol");
+                Require(pistolDef != null, "The base-game Gun_Autopistol Def was not found.");
                 ThingWithComps pistol = ThingMaker.MakeThing(pistolDef) as ThingWithComps;
                 Require(pistol != null && pawn.inventory?.innerContainer != null,
                     "The weapon/inventory RNG fixture could not be constructed.");

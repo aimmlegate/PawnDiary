@@ -226,18 +226,24 @@ namespace PawnDiary
                     avoidRelatedEventId
                 };
             }
+            int selectionSeed = ArcSelectionSeed(
+                pawnId,
+                currentYear,
+                scheduleDecision.normalizedEntriesThisYear,
+                majorEventTrigger);
             ArcMemorySelectionResult selection = ArcReflectionMemorySelector.Select(new ArcMemorySelectionRequest
             {
                 candidates = candidates,
                 recentlyUsedEventIds = excludedEventIds,
+                // Generate exactly the legacy System.Random sequence at the impure boundary. Filtering
+                // and group caps can only reduce draws, so one value per raw candidate is a strict bound.
+                selectionRolls = ArcSelectionRolls(selectionSeed, candidates.Count),
                 currentYear = currentYear,
                 maxMemories = Math.Max(1, DiaryTuning.Current.arcReflectionMaxMemories),
                 minMemories = scheduleDecision.forced
                     ? Math.Max(1, DiaryTuning.Current.arcReflectionMinMemoriesForced)
                     : Math.Max(1, DiaryTuning.Current.arcReflectionMinMemoriesPreferred),
-                sameDomainGroupCap = 2,
-                seed = ArcSelectionSeed(
-                    pawnId, currentYear, scheduleDecision.normalizedEntriesThisYear, majorEventTrigger)
+                sameDomainGroupCap = 2
             });
             if (!selection.hasEnoughMemories)
             {
@@ -565,6 +571,24 @@ namespace PawnDiary
                 hash = hash * 31 + (majorEvent ? 1 : 0);
                 return hash == int.MinValue ? 1 : Math.Abs(hash);
             }
+        }
+
+        /// <summary>
+        /// Materializes the former selector-owned <see cref="Random.NextDouble"/> sequence as a bounded
+        /// primitive list. Eagerly producing unused tail values cannot change selected memories: the
+        /// selector consumes the same prefix the former lazy loop consumed.
+        /// </summary>
+        private static List<double> ArcSelectionRolls(int seed, int maximumDraws)
+        {
+            int count = Math.Max(0, maximumDraws);
+            List<double> rolls = new List<double>(count);
+            Random random = new Random(seed);
+            for (int index = 0; index < count; index++)
+            {
+                rolls.Add(random.NextDouble());
+            }
+
+            return rolls;
         }
 
         private static int CurrentRimYear()

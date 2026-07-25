@@ -34,7 +34,8 @@ namespace PawnDiary
         /// </summary>
         private void QueuePrompt(DiaryEvent diaryEvent, string povRole, PromptPlanFactory promptPlanFactory,
             ApiEndpointConfig primaryOverride = null, Dictionary<string, DiaryBoundsCacheEntry> boundsCache = null,
-            Dictionary<string, Pawn> livePawnsById = null)
+            Dictionary<string, Pawn> livePawnsById = null,
+            Action<PromptContextDetailLevel, bool> prepareSelectedPlan = null)
         {
             if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole) || promptPlanFactory == null)
             {
@@ -61,7 +62,8 @@ namespace PawnDiary
                 return;
             }
 
-            // Build a Full plan first to resolve template choice and forced-model routing metadata.
+            // Build a read-only Full plan first to resolve template choice and forced-model routing metadata.
+            // First-person factories must not stamp voice state here: no effective API lane is known yet.
             // After lane selection we pre-render one prompt variant per effective context preset so
             // failover lanes can honor their own overrides without touching game state off-thread.
             DiaryPromptPlan routingPlan = promptPlanFactory(PromptContextDetailLevel.Full);
@@ -73,6 +75,20 @@ namespace PawnDiary
             if (PromptTestModeEnabled())
             {
                 PromptContextDetailLevel testLevel = PawnDiarySettings.NormalizeContextDetailLevel(settings.contextDetailLevel);
+                prepareSelectedPlan?.Invoke(
+                    testLevel,
+                    PromptContextFeaturePolicy.AllowsPsychotypes(testLevel));
+                if (prepareSelectedPlan != null)
+                {
+                    // The preparation hook may persist a new instruction/tone reroll. Rebuild the
+                    // routing copy so prompt-test capture sees the same final event state.
+                    routingPlan = promptPlanFactory(PromptContextDetailLevel.Full);
+                    if (routingPlan == null)
+                    {
+                        return;
+                    }
+                }
+
                 DiaryPromptPlan testPlan = testLevel == PromptContextDetailLevel.Full
                     ? routingPlan
                     : promptPlanFactory(testLevel);
@@ -108,6 +124,20 @@ namespace PawnDiary
                 routingPlan.forcedModelName, settings.apiRoutingMode, out selectionReason, out forcePrimaryLane);
             List<ApiEndpointConfig> failoverTargets = BuildFailoverTargets(targets, target);
             PromptContextDetailLevel contextDetailLevel = settings.EffectiveContextDetailLevel(target);
+            prepareSelectedPlan?.Invoke(
+                contextDetailLevel,
+                AnyPromptVariantAllowsPsychotypes(settings, target, failoverTargets));
+            if (prepareSelectedPlan != null)
+            {
+                // Anti-repeat preparation can reroll persisted instruction/tone state. Rebuild Full
+                // once so the selected and failover variants all share that final event state.
+                routingPlan = promptPlanFactory(PromptContextDetailLevel.Full);
+                if (routingPlan == null)
+                {
+                    return;
+                }
+            }
+
             DiaryPromptPlan promptPlan = PromptPlanForContextLevel(contextDetailLevel, routingPlan, promptPlanFactory);
             if (promptPlan == null)
             {
@@ -221,6 +251,47 @@ namespace PawnDiary
             }
 
             return variants;
+        }
+
+        /// <summary>
+        /// Returns whether the selected lane or any of its failovers can render the automatic psychotype
+        /// layer. Voice staging is deferred until this answer is known so an all-Compact route neither
+        /// consumes a roll nor persists a psychotype that no request variant can use.
+        /// </summary>
+        private static bool AnyPromptVariantAllowsPsychotypes(
+            PawnDiarySettings settings,
+            ApiEndpointConfig primary,
+            List<ApiEndpointConfig> failovers)
+        {
+            if (settings == null)
+            {
+                return false;
+            }
+
+            if (primary != null
+                && PromptContextFeaturePolicy.AllowsPsychotypes(
+                    settings.EffectiveContextDetailLevel(primary)))
+            {
+                return true;
+            }
+
+            if (failovers == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < failovers.Count; i++)
+            {
+                ApiEndpointConfig failover = failovers[i];
+                if (failover != null
+                    && PromptContextFeaturePolicy.AllowsPsychotypes(
+                        settings.EffectiveContextDetailLevel(failover)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool AddPromptVariant(

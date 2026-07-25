@@ -110,6 +110,38 @@ namespace PawnDiary.RimTests
         /// <summary>The active player faction the test pawns join.</summary>
         public Faction PlayerFaction { get; private set; }
 
+        /// <summary>
+        /// Returns the exact saved diary record for a test pawn. This deliberately uses the harness's
+        /// already-validated private-list handle so fixtures can assert raw compatibility state without
+        /// calling a production resolver that might normalize or lazily mutate that state.
+        /// </summary>
+        public PawnDiaryRecord RequireDiaryRecord(Pawn pawn)
+        {
+            if (pawn == null)
+            {
+                throw new AssertionException("Cannot resolve a diary record for a null test pawn.");
+            }
+
+            List<PawnDiaryRecord> records =
+                DiariesField.GetValue(Component) as List<PawnDiaryRecord>;
+            string pawnId = pawn.GetUniqueLoadID();
+            if (records != null)
+            {
+                for (int i = 0; i < records.Count; i++)
+                {
+                    PawnDiaryRecord record = records[i];
+                    if (record != null
+                        && string.Equals(record.pawnId, pawnId, StringComparison.Ordinal))
+                    {
+                        return record;
+                    }
+                }
+            }
+
+            throw new AssertionException(
+                "Pawn Diary did not retain a diary record for test pawn '" + pawnId + "'.");
+        }
+
         private PawnDiaryRimTestScope()
         {
         }

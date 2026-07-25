@@ -421,10 +421,10 @@ namespace PawnDiary
                 string passionLabel = (skill.passion == Passion.Major
                     ? "PawnDiary.Event.ProgressionPassionMajor"
                     : "PawnDiary.Event.ProgressionPassionMinor").Translate().Resolve();
-                string extraContext = "skill=" + skillLabel
+                string extraContext = "skill=" + GameContextValue.Sanitize(skillLabel)
                     + "; skill_level=" + decision.milestoneToEmit
                     + "; previous_skill_milestone=" + previous
-                    + "; passion=" + passionToken;
+                    + "; passion=" + GameContextValue.Sanitize(passionToken);
                 ProgressionEventData data = ProgressionData(
                     pawn,
                     ProgressionEventData.SkillMilestoneDefName,
@@ -510,10 +510,11 @@ namespace PawnDiary
             // is the whole point: the model writes the felt personality shift from the supplied words, so
             // any trait — vanilla or modded — works. Semicolons are flattened so the prose cannot split
             // the "; key=value" game-context string.
-            string extraContext = "trait=" + traitLabel + "; trait_def=" + traitDefName;
+            string extraContext = "trait=" + GameContextValue.Sanitize(traitLabel)
+                + "; trait_def=" + GameContextValue.Sanitize(traitDefName);
             if (!string.IsNullOrWhiteSpace(description))
             {
-                extraContext += "; trait_description=" + description.Replace(";", ",");
+                extraContext += "; trait_description=" + GameContextValue.Sanitize(description);
             }
 
             // A trait gain is an addition, not a transition from a prior value, so previous_value is left

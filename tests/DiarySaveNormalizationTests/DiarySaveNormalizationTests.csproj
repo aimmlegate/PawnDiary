@@ -15,6 +15,7 @@
          Scribe/DefDatabase code stays on DiaryEvent/ArchivedDiaryEntry and is covered by the
          tests/SAVE_COMPATIBILITY_SMOKETEST.md runbook instead. -->
     <Compile Include="..\..\Source\Pipeline\DiarySaveNormalization.cs" Link="DiarySaveNormalization.cs" />
+    <Compile Include="..\..\Source\Pipeline\GameContextValue.cs" Link="GameContextValue.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryGenerationStatus.cs" Link="DiaryGenerationStatus.cs" />
     <Compile Include="..\..\Source\Capture\Policies\AnomalyContracts.cs" Link="AnomalyContracts.cs" />
     <Compile Include="..\..\Source\Capture\Policies\AnomalyPersistencePolicy.cs" Link="AnomalyPersistencePolicy.cs" />

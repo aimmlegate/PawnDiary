@@ -142,10 +142,14 @@ namespace PawnDiary
                 try
                 {
                     harmony.CreateClassProcessor(type).Patch();
+                    string dependencyFailure = AttributePatchDependencyFailure(type);
                     DiaryPatchManifest.Report(
                         "attribute",
                         type.Name,
-                        DiaryPatchManifest.HookStatus.Applied);
+                        string.IsNullOrEmpty(dependencyFailure)
+                            ? DiaryPatchManifest.HookStatus.Applied
+                            : DiaryPatchManifest.HookStatus.Degraded,
+                        dependencyFailure);
                 }
                 catch (Exception e)
                 {
@@ -157,6 +161,30 @@ namespace PawnDiary
                         e.GetType().Name + ": " + e.Message);
                 }
             }
+        }
+
+        /// <summary>
+        /// Some attribute patches install successfully but still depend on private fields resolved by
+        /// their callback bodies. Include those handles in the same health result so Harmony target
+        /// success cannot produce a false-green startup manifest.
+        /// </summary>
+        private static string AttributePatchDependencyFailure(Type type)
+        {
+            if (type == typeof(MentalStateStartPatch)
+                && !MentalStateStartPatch.RequiredReflectionFieldsAvailable)
+            {
+                return "MentalStateHandler.pawn field not found; mental-state capture disabled";
+            }
+
+            bool isArtPatch = type == typeof(CompArtInitializeArtPatch)
+                || type == typeof(CompArtJustCreatedByPatch)
+                || type == typeof(BuildingGraveNotifyHauledToArtPatch);
+            if (isArtPatch && !DiaryArtImmortalization.RequiredReflectionFieldsAvailable)
+            {
+                return "TaleReference.tale field not found; art immortalization disabled";
+            }
+
+            return string.Empty;
         }
 
         /// <summary>

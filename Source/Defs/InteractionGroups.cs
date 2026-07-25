@@ -699,9 +699,13 @@ namespace PawnDiary
         }
 
         // Legacy signal-only Quest classifier retained for callers that have no saved root identity.
+        // Prefer an explicit lifecycle-signal row before consulting the ordinary catch-all path. A
+        // catch-all may be ordered before "completed" or "failed", but must not shadow those exact
+        // signal groups.
         public static DiaryInteractionGroupDef ClassifyQuest(string signal)
         {
-            return ClassifyIn(GroupDomain.Quest, signal);
+            DiaryInteractionGroupDef exact = ClassifyRequiredMatch(GroupDomain.Quest, signal);
+            return exact ?? ClassifyIn(GroupDomain.Quest, signal);
         }
 
         /// <summary>

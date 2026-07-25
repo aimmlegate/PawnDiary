@@ -263,6 +263,42 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// A Compact-only dispatch must not materialize an unset automatic psychotype merely because
+        /// routing probes a Full plan for metadata. The pawn is created while automatic psychotypes are
+        /// temporarily disabled, then the feature is re-enabled before a real Compact prompt is captured.
+        /// </summary>
+        [Test]
+        public static void CompactOnlyPromptDefersUnsetPsychotype()
+        {
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+            settings.contextDetailLevel = PromptContextDetailLevel.Compact;
+
+            Pawn compactPawn;
+            settings.enablePsychotypes = false;
+            try
+            {
+                compactPawn = scope.CreateGeneratingAdultColonist();
+            }
+            finally
+            {
+                settings.enablePsychotypes = true;
+            }
+
+            PawnDiaryRimTestScope.MakeCreativityInspirationEligible(compactPawn);
+            scope.SpawnAsLiveColonist(compactPawn);
+            PawnDiaryRecord record = scope.RequireDiaryRecord(compactPawn);
+            PawnDiaryRimTestScope.Require(
+                string.IsNullOrEmpty(record.psychotypeDefName),
+                "The Compact fixture must begin with an unset saved psychotype.");
+
+            string prompt = FireInspirationAndCapture(compactPawn);
+            RequireContains(prompt, DiaryPromptCapture.SystemHeader, "Compact prompt capture");
+            PawnDiaryRimTestScope.Require(
+                string.IsNullOrEmpty(record.psychotypeDefName),
+                "An all-Compact dispatch must leave an unset psychotype deferred.");
+        }
+
+        /// <summary>
         /// §5.2 neutral suppression. The neutral ArrivalDescription template opts out of the whole voice
         /// block (includePersona=false), so even when a non-empty outlook still resolves for the pawn, the
         /// captured neutral arrival prompt carries no psychotype block.
@@ -353,13 +389,18 @@ namespace PawnDiary.RimTests
         // stored for the initiator POV. The started inspiration is ended in cleanup.
         private static string FireInspirationAndCapture()
         {
+            return FireInspirationAndCapture(pawn);
+        }
+
+        private static string FireInspirationAndCapture(Pawn subject)
+        {
             InspirationDef inspirationDef = RequireDef<InspirationDef>(InspirationDefName);
-            scope.RegisterCleanup(() => EndInspirationSafely(pawn, inspirationDef));
+            scope.RegisterCleanup(() => EndInspirationSafely(subject, inspirationDef));
 
             DiaryEvent diaryEvent = scope.FireAndRequireEvent(
                 () =>
                 {
-                    bool started = pawn.mindState.inspirationHandler.TryStartInspiration(
+                    bool started = subject.mindState.inspirationHandler.TryStartInspiration(
                         inspirationDef,
                         InspirationReason,
                         // The third arg is sendLetter, not a force flag: keep it false so a real
@@ -370,7 +411,7 @@ namespace PawnDiary.RimTests
                         started, "Vanilla refused to start the inspiration.");
                 },
                 InspirationDefName,
-                pawn,
+                subject,
                 null);
 
             return scope.CapturedPrompt(diaryEvent, DiaryEvent.InitiatorRole);

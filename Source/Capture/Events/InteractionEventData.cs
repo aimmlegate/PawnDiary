@@ -123,25 +123,26 @@ namespace PawnDiary.Capture
         /// Pure assembly of the interaction game-context marker. The leading "def=" field and the
         /// optional worker/initiatorThought/recipientThought fields together let the UI recover the
         /// interaction's defName and the LLM see which thoughts the interaction granted. Mirrors the
-        /// pre-refactor DiaryContextBuilder.BuildGameContextSummary format byte-for-byte. Inputs are
-        /// pre-cleaned by the caller.
+        /// pre-refactor DiaryContextBuilder.BuildGameContextSummary field order. Values are sanitized
+        /// at this structural boundary even when the caller already cleaned them for display.
         /// </summary>
         public static string BuildGameContext(
             string defName, string cleanedLabel,
             string workerClassName, string cleanedInitiatorThoughtLabel, string cleanedRecipientThoughtLabel)
         {
-            string context = "def=" + defName + "; label=" + cleanedLabel;
+            string context = "def=" + GameContextValue.Sanitize(defName)
+                + "; label=" + GameContextValue.Sanitize(cleanedLabel);
             if (!string.IsNullOrWhiteSpace(workerClassName))
             {
-                context += "; worker=" + workerClassName;
+                context += "; worker=" + GameContextValue.Sanitize(workerClassName);
             }
             if (!string.IsNullOrWhiteSpace(cleanedInitiatorThoughtLabel))
             {
-                context += "; initiatorThought=" + cleanedInitiatorThoughtLabel;
+                context += "; initiatorThought=" + GameContextValue.Sanitize(cleanedInitiatorThoughtLabel);
             }
             if (!string.IsNullOrWhiteSpace(cleanedRecipientThoughtLabel))
             {
-                context += "; recipientThought=" + cleanedRecipientThoughtLabel;
+                context += "; recipientThought=" + GameContextValue.Sanitize(cleanedRecipientThoughtLabel);
             }
             return context;
         }

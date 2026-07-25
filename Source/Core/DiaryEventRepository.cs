@@ -7,9 +7,9 @@
 // This is plain persisted state extracted out of DiaryGameComponent (Run Card 10,
 // ARCHITECTURE_IMPROVEMENT_PLAN.md) so the event store has one clear owner. DiaryGameComponent
 // stays the only RimWorld lifecycle/save owner: it constructs this repository, delegates the saved
-// list to ExposeEvents, and rebuilds the index from its own PostLoadInit. The lookup index itself
-// is never serialized — it is rebuilt from the master list after load (RebuildIndex) and kept in
-// sync on add/remove.
+// list to ExposeEvents, and repairs/rebuilds the index from its own PostLoadInit. The lookup index
+// itself is never serialized — it is rebuilt from the master list after load (RepairLoadedEvents)
+// and kept in sync on add/remove.
 //
 // New to C#/RimWorld? See AGENTS.md ("IExposable" / Scribe). Scribe_Collections.Look is RimWorld's
 // save/load helper for collections; LookMode.Deep means "each element saves/loads itself via its own
@@ -27,7 +27,7 @@ namespace PawnDiary
     /// The saved store of every <see cref="DiaryEvent"/> across all pawns, plus the O(1) id->event
     /// lookup index that mirrors it. Constructed and owned by <see cref="DiaryGameComponent"/>, which
     /// remains the sole RimWorld lifecycle/save owner and drives serialization via
-    /// <see cref="ExposeEvents"/> and index rebuild via <see cref="RebuildIndex"/>.
+    /// <see cref="ExposeEvents"/> and loaded-list repair via <see cref="RepairLoadedEvents"/>.
     /// </summary>
     internal sealed class DiaryEventRepository
     {
@@ -35,13 +35,14 @@ namespace PawnDiary
         private List<DiaryEvent> diaryEvents = new List<DiaryEvent>();
 
         // O(1) lookup index (eventId -> DiaryEvent) mirroring diaryEvents. NOT saved: rebuilt from
-        // diaryEvents after load (RebuildIndex) and kept in sync as events are created (Register) or
+        // diaryEvents after load (RepairLoadedEvents) and kept in sync as events are created (Register) or
         // removed (RemoveEvent / RemoveEvents). FindEvent is called inside per-event loops, so the
         // index keeps those lookups constant-time instead of growing with colony history.
         // Ordinal-ignore-case so this index agrees with the retention sweep's referenced-id set
         // (CollectHotReferencedEventIds uses OrdinalIgnoreCase). Event ids are lowercase GUIDs today, so
         // this only matters defensively, but the two halves of the same lookup must use one comparer.
-        private readonly Dictionary<string, DiaryEvent> eventsById = new Dictionary<string, DiaryEvent>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, DiaryEvent> eventsById =
+            new Dictionary<string, DiaryEvent>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>The number of stored events.</summary>
         public int Count
@@ -248,6 +249,59 @@ namespace PawnDiary
                     eventsById[diaryEvent.eventId] = diaryEvent;
                 }
             }
+        }
+
+        /// <summary>
+        /// Repairs the loaded hot-event list before any retention or reference pruning runs. Null and
+        /// blank-id rows are discarded, duplicate ids collapse deterministically to the first event in
+        /// stable tick order, and the transient id index is rebuilt. Returns the surviving events whose
+        /// ids were minted by <see cref="DiaryEvent"/>'s old-save normalization so the component can
+        /// restore their per-pawn references before pruning.
+        /// </summary>
+        public IReadOnlyList<DiaryEvent> RepairLoadedEvents()
+        {
+            // Project the mutable save rows into plain facts first. Ordering/deduplication belongs to the
+            // pure policy; this repository remains responsible only for mapping its plan back to models.
+            List<LoadedEventIdentity> identities =
+                new List<LoadedEventIdentity>(diaryEvents.Count);
+            for (int i = 0; i < diaryEvents.Count; i++)
+            {
+                DiaryEvent diaryEvent = diaryEvents[i];
+                identities.Add(new LoadedEventIdentity
+                {
+                    sourceIndex = i,
+                    tick = diaryEvent == null ? int.MinValue : diaryEvent.tick,
+                    eventId = diaryEvent == null ? string.Empty : diaryEvent.eventId,
+                    eventIdWasRepairedOnLoad =
+                        diaryEvent != null && diaryEvent.EventIdWasRepairedOnLoad
+                });
+            }
+
+            LoadedEventRepairPlan repairPlan = LoadedEventRepairPolicy.Plan(identities);
+            List<DiaryEvent> retained =
+                new List<DiaryEvent>(repairPlan.retainedSourceIndexes.Count);
+            List<DiaryEvent> repairedIds =
+                new List<DiaryEvent>(repairPlan.repairedIdSourceIndexes.Count);
+            Dictionary<string, DiaryEvent> rebuiltIndex =
+                new Dictionary<string, DiaryEvent>(StringComparer.OrdinalIgnoreCase);
+
+            for (int i = 0; i < repairPlan.retainedSourceIndexes.Count; i++)
+            {
+                DiaryEvent diaryEvent = diaryEvents[repairPlan.retainedSourceIndexes[i]];
+                retained.Add(diaryEvent);
+                rebuiltIndex.Add(diaryEvent.eventId, diaryEvent);
+            }
+
+            for (int i = 0; i < repairPlan.repairedIdSourceIndexes.Count; i++)
+            {
+                repairedIds.Add(diaryEvents[repairPlan.repairedIdSourceIndexes[i]]);
+            }
+
+            // Commit only after the complete repaired list and index were built successfully. No
+            // caller can observe a half-cleared index if a corrupt row or allocation fails above.
+            diaryEvents = retained;
+            eventsById = rebuiltIndex;
+            return repairedIds;
         }
 
         /// <summary>

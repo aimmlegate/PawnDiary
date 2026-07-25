@@ -32,6 +32,26 @@ namespace PawnDiary.RimTests
                     + DiaryPatchManifest.BuildSummary());
         }
 
+        /// <summary>
+        /// Attribute-target registration alone is not enough for callbacks that later read private
+        /// fields. These assertions name the two required reflection seams directly after RimWorld loads.
+        /// </summary>
+        [Test]
+        public static void FragileAttributePatchFieldsResolved()
+        {
+            PawnDiaryRimTestScope.Require(
+                MentalStateStartPatch.RequiredReflectionFieldsAvailable,
+                "MentalStateStartPatch installed but MentalStateHandler.pawn did not resolve.");
+            PawnDiaryRimTestScope.Require(
+                DiaryArtImmortalization.RequiredReflectionFieldsAvailable,
+                "Art patches installed but TaleReference.tale did not resolve.");
+
+            RequireAppliedAttributePatch(nameof(MentalStateStartPatch));
+            RequireAppliedAttributePatch(nameof(CompArtInitializeArtPatch));
+            RequireAppliedAttributePatch(nameof(CompArtJustCreatedByPatch));
+            RequireAppliedAttributePatch(nameof(BuildingGraveNotifyHauledToArtPatch));
+        }
+
         /// <summary>Checks that the Royalty gate reports the active or inactive setup explicitly.</summary>
         [Test]
         public static void RoyaltyGateMatchesActiveDlcState()
@@ -58,6 +78,29 @@ namespace PawnDiary.RimTests
                 "Royalty is " + (ModsConfig.RoyaltyActive ? "active" : "inactive")
                     + " but the startup manifest contains no Royalty "
                     + expected + " entry. " + DiaryPatchManifest.BuildSummary());
+        }
+
+        private static void RequireAppliedAttributePatch(string target)
+        {
+            List<DiaryPatchManifest.Entry> entries = DiaryPatchManifest.Snapshot();
+            bool found = false;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                DiaryPatchManifest.Entry entry = entries[i];
+                if (entry != null
+                    && string.Equals(entry.area, "attribute", StringComparison.Ordinal)
+                    && string.Equals(entry.target, target, StringComparison.Ordinal)
+                    && entry.status == DiaryPatchManifest.HookStatus.Applied)
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            PawnDiaryRimTestScope.Require(
+                found,
+                "Startup manifest did not record required attribute patch " + target
+                    + " as applied. " + DiaryPatchManifest.BuildSummary());
         }
     }
 }

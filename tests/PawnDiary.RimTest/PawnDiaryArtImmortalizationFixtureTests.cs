@@ -1,4 +1,4 @@
-// Loaded-game fixture for art immortalization (Quality Wave §7.2, H6).
+// Loaded-game fixture for art immortalization (EVT-24; Quality Wave §7.2, H6).
 //
 // The RULES — deed-identity verification, the ownership key, deterministic per-artwork sampling, and
 // the three-tier writer order — are pure and covered headlessly by DiaryPipelineTests and

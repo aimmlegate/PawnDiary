@@ -84,7 +84,7 @@ namespace PawnDiary.Capture
                 + "; highlights=" + highlightCount
                 + "; candidates=" + candidateCount
                 + "; filler_moments=" + fillerMomentCount
-                + "; signals=" + (signalTags ?? string.Empty);
+                + "; signals=" + GameContextValue.Sanitize(signalTags);
         }
 
         public static string BuildQuadrumGameContext(int day, int quadrum, int quadrumStartDay,
@@ -97,13 +97,13 @@ namespace PawnDiary.Capture
                 + "; quadrum=" + quadrum
                 + "; quadrum_start_day=" + quadrumStartDay
                 + "; quadrum_end_day=" + quadrumEndDay
-                + "; quadrum_dates=" + (quadrumDates ?? string.Empty)
+                + "; quadrum_dates=" + GameContextValue.Sanitize(quadrumDates)
                 + "; due_day=" + dueDay
                 + "; highlights=" + highlightCount
                 + "; candidates=" + candidateCount
                 + "; important_entries=" + importantEntryCount
                 + "; filler_moments=0"
-                + "; signals=" + (signalTags ?? string.Empty);
+                + "; signals=" + GameContextValue.Sanitize(signalTags);
         }
     }
 }

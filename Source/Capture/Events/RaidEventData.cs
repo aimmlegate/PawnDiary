@@ -86,19 +86,19 @@ namespace PawnDiary.Capture
             string defName, string label, string factionDefName, string points,
             string arrivalModeDefName = null, string strategyDefName = null)
         {
-            string context = RaidContextKey + "=" + defName
-                + "; label=" + label
-                + "; " + FactionContextKey + "=" + factionDefName
-                + "; points=" + points;
+            string context = RaidContextKey + "=" + GameContextValue.Sanitize(defName)
+                + "; label=" + GameContextValue.Sanitize(label)
+                + "; " + FactionContextKey + "=" + GameContextValue.Sanitize(factionDefName)
+                + "; points=" + GameContextValue.Sanitize(points);
 
             if (!string.IsNullOrWhiteSpace(arrivalModeDefName))
             {
-                context += "; arrival_mode=" + arrivalModeDefName;
+                context += "; arrival_mode=" + GameContextValue.Sanitize(arrivalModeDefName);
             }
 
             if (!string.IsNullOrWhiteSpace(strategyDefName))
             {
-                context += "; strategy=" + strategyDefName;
+                context += "; strategy=" + GameContextValue.Sanitize(strategyDefName);
             }
 
             return context;

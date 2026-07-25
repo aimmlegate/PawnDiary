@@ -89,8 +89,7 @@ namespace PawnDiary
 
         private static void Add(List<string> parts, string key, string value, int maximumCharacters)
         {
-            string cleaned = (value ?? string.Empty).Replace('\r', ' ').Replace('\n', ' ')
-                .Replace(';', ',').Trim();
+            string cleaned = GameContextValue.Sanitize(value);
             int cap = Math.Max(1, maximumCharacters);
             if (cleaned.Length > cap) cleaned = cleaned.Substring(0, cap).TrimEnd();
             if (cleaned.Length > 0) parts.Add(key + "=" + cleaned);

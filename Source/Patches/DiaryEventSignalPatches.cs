@@ -100,6 +100,12 @@ namespace PawnDiary
         // Reflection accessor for the private MentalStateHandler.pawn field so we can read the subject pawn.
         private static readonly FieldInfo PawnField = AccessTools.Field(typeof(MentalStateHandler), "pawn");
 
+        /// <summary>
+        /// Startup-manifest and loaded-test canary for the private field this otherwise valid Harmony
+        /// patch still needs in order to identify the pawn whose mental state started.
+        /// </summary>
+        internal static bool RequiredReflectionFieldsAvailable => PawnField != null;
+
         static MentalStateStartPatch()
         {
             if (PawnField == null)
@@ -339,7 +345,11 @@ namespace PawnDiary
             // Hottest hook in the mod: SpawnSetup fires for every projectile, filth, item, and plant.
             // Cheap checks stay outside the wrapper; protected work uses the state-passing Run
             // overload so this postfix allocates nothing per call.
-            if (respawningAfterLoad || __instance == null || __instance.def == null || !DiaryGameComponent.GamePlaying)
+            if (respawningAfterLoad
+                || __instance == null
+                || __instance.def == null
+                || !DiaryGameComponent.GamePlaying
+                || !DiaryGameComponent.CouldMatchThingSpawnedEventWindow(__instance.def.defName))
             {
                 return;
             }

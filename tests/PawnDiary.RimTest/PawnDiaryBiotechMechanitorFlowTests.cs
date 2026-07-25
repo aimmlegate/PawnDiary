@@ -181,6 +181,37 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// A load/new-game lifecycle boundary must discard call-local mechanitor scopes left behind by
+        /// an interrupted Harmony call so they cannot suppress or misattribute events in the next game.
+        /// </summary>
+        [Test]
+        public static void FinalizeInitClearsMechanitorCallScopes()
+        {
+            MechanitorDeathScope.Begin(controller);
+            MechanitorBossCallCorrelation.Open(controller, null);
+            try
+            {
+                PawnDiaryRimTestScope.Require(
+                    MechanitorDeathScope.CountForTests == 1
+                        && MechanitorBossCallCorrelation.CountForTests == 1,
+                    "The fixture could not seed both mechanitor call-local scopes.");
+
+                scope.Component.FinalizeInit();
+
+                PawnDiaryRimTestScope.Require(
+                    MechanitorDeathScope.CountForTests == 0
+                        && MechanitorBossCallCorrelation.CountForTests == 0
+                        && !MechanitorDeathScope.IsDying(controller),
+                    "FinalizeInit retained mechanitor state across the lifecycle boundary.");
+            }
+            finally
+            {
+                MechanitorDeathScope.Clear();
+                MechanitorBossCallCorrelation.Clear();
+            }
+        }
+
+        /// <summary>
         /// The exact saved caller + spawned boss ownership may close one terminal chapter and queue one
         /// later non-recap major reflection; a repeated death callback cannot replay either operation.
         /// </summary>

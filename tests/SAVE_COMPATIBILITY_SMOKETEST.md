@@ -3,9 +3,10 @@
 This runbook is the **Option B** half of Plan 6 (Save And Settings Compatibility Fixtures). The
 pure post-load normalization logic (null-coalesces, cross-slot surroundings chain, neutral-text
 merge, legacy `gameContext` rebuild, year extraction, status reclassification, defensive clamps)
-is unit-tested in `tests/DiarySaveNormalizationTests/` without RimWorld. The pieces below **cannot**
-be pure-tested because they need the live RimWorld runtime, so they are covered by this repeatable
-in-game smoke procedure instead.
+is unit-tested in `tests/DiarySaveNormalizationTests/` without RimWorld. In-process Scribe and
+component/repository fixtures are automated under `tests/PawnDiary.RimTest/`. The pieces below still
+need a real process-boundary save, exit-to-menu/restart, and reload, so they remain covered by this
+repeatable manual smoke procedure.
 
 Run this whenever you touch:
 - `Source/Models/DiaryEvent.cs` (`ExposeData`, `NormalizeOnLoad`, `ScribePawnSlot`, `ScribeNeutralSlot`),
@@ -23,19 +24,20 @@ Run this whenever you touch:
 - the Scribe keys written by any of the above, or
 - `Source/Core/DiaryEventRepository.cs` / `DiaryArchiveRepository.cs` load/index paths.
 
-It is intentionally **manual**: forcing RimWorld `Scribe` into a pure test project would break the
-no-RimWorld convention every other `tests/` project follows, and `Scribe.Look` semantics differ
-between `LoadSaveMode`s in ways that only the real host exercises.
+It is intentionally **manual at the process boundary**. Standalone projects stay pure, while
+RimTest covers real initialized `Scribe` statics in process. Neither form proves that a save survives
+teardown of the game state/AppDomain-like statics and a later player-driven reload.
 
 ---
 
-## Why a runbook and not an automated Scribe test
+## Why a runbook still exists alongside automated Scribe tests
 
 `Scribe_Values.Look` / `Scribe_Collections.Look` are statics on RimWorld's `Verse.Scribe`, which is
 only usable once RimWorld has initialized its save system (cross-references resolved,
 `PostLoadInit` orderings, `DebugLoadIDsMembersShouldBeActive`, etc.). A standalone console harness
-cannot replicate that without effectively embedding the game. Plan 6 Step 4 deliberately chose this
-runbook over a RimWorld-referenced test project to keep the `tests/` tree pure-only.
+cannot replicate that without effectively embedding the game. `PawnDiaryScribeRoundTripFixtureTests`
+and the repository/component RimTest fixtures now cover that initialized in-process layer without
+polluting pure projects. This runbook covers the stronger restart/reload evidence they cannot.
 
 ---
 

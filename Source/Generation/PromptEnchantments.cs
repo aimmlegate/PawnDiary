@@ -84,9 +84,10 @@ namespace PawnDiary
             IList<PromptEnchantmentCandidate> extraCandidates = null,
             float normalCandidateWeightMultiplier = 1f,
             IList<string> suppressedHediffDefNames = null,
-            bool suppressNormalCandidates = false)
+            bool suppressNormalCandidates = false,
+            bool enabled = true)
         {
-            if (PawnDiaryMod.Settings == null || !PawnDiaryMod.Settings.enablePromptEnchantments)
+            if (!enabled)
             {
                 return string.Empty;
             }

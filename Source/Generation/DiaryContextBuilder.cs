@@ -29,24 +29,26 @@ namespace PawnDiary
 
             List<string> parts = new List<string>
             {
-                "def=" + interactionDef.defName,
-                "label=" + ExternalText(interactionLabel)
+                "def=" + GameContextValue.Sanitize(interactionDef.defName),
+                "label=" + GameContextValue.Sanitize(ExternalText(interactionLabel))
             };
 
             string worker = interactionDef.Worker?.GetType().Name;
             if (!string.IsNullOrWhiteSpace(worker))
             {
-                parts.Add("worker=" + worker);
+                parts.Add("worker=" + GameContextValue.Sanitize(worker));
             }
 
             if (interactionDef.initiatorThought != null)
             {
-                parts.Add("initiatorThought=" + ExternalText(interactionDef.initiatorThought.LabelCap.Resolve()));
+                parts.Add("initiatorThought=" + GameContextValue.Sanitize(
+                    ExternalText(interactionDef.initiatorThought.LabelCap.Resolve())));
             }
 
             if (interactionDef.recipientThought != null)
             {
-                parts.Add("recipientThought=" + ExternalText(interactionDef.recipientThought.LabelCap.Resolve()));
+                parts.Add("recipientThought=" + GameContextValue.Sanitize(
+                    ExternalText(interactionDef.recipientThought.LabelCap.Resolve())));
             }
 
             return string.Join("; ", parts.ToArray());

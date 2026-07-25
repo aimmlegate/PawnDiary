@@ -165,8 +165,10 @@ namespace PawnDiary
             }
 
             string ageText = age.ToString(CultureInfo.InvariantCulture);
-            string extraContext = AnniversaryPolicy.BirthdayAgeContextKey + "=" + ageText
-                + "; " + AnniversaryPolicy.OwnershipContextKey + "=" + ownershipKey;
+            string extraContext = AnniversaryPolicy.BirthdayAgeContextKey + "="
+                + GameContextValue.Sanitize(ageText)
+                + "; " + AnniversaryPolicy.OwnershipContextKey + "="
+                + GameContextValue.Sanitize(ownershipKey);
             EmitAnniversaryPage(
                 pawn,
                 ProgressionEventData.PawnBirthdayDefName,
@@ -324,8 +326,10 @@ namespace PawnDiary
             }
 
             string yearText = emitYear.ToString(CultureInfo.InvariantCulture);
-            string extraContext = AnniversaryPolicy.AnniversaryYearContextKey + "=" + yearText
-                + "; " + AnniversaryPolicy.OwnershipContextKey + "=" + ownershipKey;
+            string extraContext = AnniversaryPolicy.AnniversaryYearContextKey + "="
+                + GameContextValue.Sanitize(yearText)
+                + "; " + AnniversaryPolicy.OwnershipContextKey + "="
+                + GameContextValue.Sanitize(ownershipKey);
             EmitAnniversaryPage(
                 pawn,
                 ProgressionEventData.ArrivalAnniversaryDefName,
@@ -885,9 +889,12 @@ namespace PawnDiary
 
             string remembered = AnniversaryPolicy.FormatRemembered(ranked);
             string yearText = leadingYear.ToString(CultureInfo.InvariantCulture);
-            string extraContext = AnniversaryPolicy.AnniversaryYearContextKey + "=" + yearText
-                + "; " + AnniversaryPolicy.RememberedContextKey + "=" + remembered
-                + "; " + AnniversaryPolicy.OwnershipContextKey + "=" + ownershipKey;
+            string extraContext = AnniversaryPolicy.AnniversaryYearContextKey + "="
+                + GameContextValue.Sanitize(yearText)
+                + "; " + AnniversaryPolicy.RememberedContextKey + "="
+                + GameContextValue.Sanitize(remembered)
+                + "; " + AnniversaryPolicy.OwnershipContextKey + "="
+                + GameContextValue.Sanitize(ownershipKey);
             string text = ranked.Count == 1
                 ? "PawnDiary.Event.AnniversaryDeathText".Translate(
                     pawn.LabelShortCap, leadingYear, ranked[0].victimName, ranked[0].relationLabel)
@@ -1066,9 +1073,12 @@ namespace PawnDiary
             string recordLabel = AnniversaryPolicy.ContextFieldText(
                 CleanLabel(def.LabelCap.Resolve(), recordDefName));
             string thresholdText = threshold.ToString(CultureInfo.InvariantCulture);
-            string extraContext = AnniversaryPolicy.RecordNameContextKey + "=" + recordLabel
-                + "; " + AnniversaryPolicy.RecordValueContextKey + "=" + thresholdText
-                + "; " + AnniversaryPolicy.OwnershipContextKey + "=" + ownershipKey;
+            string extraContext = AnniversaryPolicy.RecordNameContextKey + "="
+                + GameContextValue.Sanitize(recordLabel)
+                + "; " + AnniversaryPolicy.RecordValueContextKey + "="
+                + GameContextValue.Sanitize(thresholdText)
+                + "; " + AnniversaryPolicy.OwnershipContextKey + "="
+                + GameContextValue.Sanitize(ownershipKey);
             EmitAnniversaryPage(
                 pawn,
                 ProgressionEventData.RecordMilestoneDefName,

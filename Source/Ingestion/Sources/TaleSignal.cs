@@ -406,15 +406,16 @@ namespace PawnDiary.Ingestion
         {
             List<string> parts = new List<string>
             {
-                "tale=" + taleDef.defName,
-                "label=" + DiaryLineCleaner.CleanLine(label),
-                "taleClass=" + tale.GetType().Name
+                "tale=" + GameContextValue.Sanitize(taleDef.defName),
+                "label=" + GameContextValue.Sanitize(DiaryLineCleaner.CleanLine(label)),
+                "taleClass=" + GameContextValue.Sanitize(tale.GetType().Name)
             };
 
             if (attachedDef != null)
             {
-                parts.Add("attachedDef=" + attachedDef.defName);
-                parts.Add("attachedLabel=" + DiaryLineCleaner.CleanLine(attachedDef.LabelCap.Resolve()));
+                parts.Add("attachedDef=" + GameContextValue.Sanitize(attachedDef.defName));
+                parts.Add("attachedLabel=" + GameContextValue.Sanitize(
+                    DiaryLineCleaner.CleanLine(attachedDef.LabelCap.Resolve())));
             }
 
             return string.Join("; ", parts.ToArray());
@@ -426,15 +427,18 @@ namespace PawnDiary.Ingestion
             {
                 gameContext,
                 "death_description=true",
-                "death_victim=" + DiaryLineCleaner.CleanLine(deathVictim.LabelShortCap),
-                "death_victim_id=" + deathVictim.GetUniqueLoadID(),
-                "death_victim_role=" + DeathVictimRole(deathVictim, firstPawn, secondPawn)
+                "death_victim=" + GameContextValue.Sanitize(
+                    DiaryLineCleaner.CleanLine(deathVictim.LabelShortCap)),
+                "death_victim_id=" + GameContextValue.Sanitize(deathVictim.GetUniqueLoadID()),
+                "death_victim_role=" + GameContextValue.Sanitize(
+                    DeathVictimRole(deathVictim, firstPawn, secondPawn))
             };
 
             Pawn otherPawn = deathVictim == firstPawn ? secondPawn : firstPawn;
             if (otherPawn != null)
             {
-                parts.Add("other_pawn=" + DiaryLineCleaner.CleanLine(otherPawn.LabelShortCap));
+                parts.Add("other_pawn=" + GameContextValue.Sanitize(
+                    DiaryLineCleaner.CleanLine(otherPawn.LabelShortCap)));
             }
 
             string deathFacts = DeathContextCache.ConsumeOrBuild(deathVictim);

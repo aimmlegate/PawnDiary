@@ -98,7 +98,7 @@ namespace PawnDiary.Capture
                 builder.Append("; ");
             }
 
-            builder.Append(key).Append("=").Append(value);
+            builder.Append(key).Append("=").Append(GameContextValue.Sanitize(value));
         }
     }
 }

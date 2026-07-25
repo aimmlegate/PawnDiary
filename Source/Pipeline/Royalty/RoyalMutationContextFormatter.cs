@@ -110,7 +110,7 @@ namespace PawnDiary
 
         private static string CleanText(string value, int requestedCap)
         {
-            string cleaned = (value ?? string.Empty).Replace(";", ",").Replace("\r", " ").Replace("\n", " ").Trim();
+            string cleaned = GameContextValue.Sanitize(value);
             int cap = requestedCap < 1 || requestedCap > 512 ? 120 : requestedCap;
             return cleaned.Length <= cap ? cleaned : cleaned.Substring(0, cap).TrimEnd();
         }
@@ -118,7 +118,9 @@ namespace PawnDiary
         private static string CleanToken(string value)
         {
             string cleaned = (value ?? string.Empty).Trim();
-            return cleaned.IndexOf(';') >= 0 || cleaned.IndexOf('|') >= 0 ? string.Empty : cleaned;
+            return cleaned.IndexOf(';') >= 0 || cleaned.IndexOf('=') >= 0 || cleaned.IndexOf('|') >= 0
+                ? string.Empty
+                : cleaned;
         }
 
         private static bool SafeId(string value)

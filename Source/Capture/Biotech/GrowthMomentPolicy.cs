@@ -689,11 +689,7 @@ namespace PawnDiary.Capture
         /// <summary>Collapses delimiters and line breaks into bounded single-line context text.</summary>
         public static string Clean(string value)
         {
-            string text = (value ?? string.Empty)
-                .Replace(";", ",")
-                .Replace("\r", " ")
-                .Replace("\n", " ")
-                .Trim();
+            string text = GameContextValue.Sanitize(value);
             while (text.Contains("  "))
             {
                 text = text.Replace("  ", " ");

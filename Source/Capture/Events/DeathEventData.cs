@@ -41,13 +41,13 @@ namespace PawnDiary.Capture
         {
             List<string> parts = new List<string>
             {
-                "tale=" + defName,
-                "label=" + label,
+                "tale=" + GameContextValue.Sanitize(defName),
+                "label=" + GameContextValue.Sanitize(label),
                 "taleClass=PawnKillFallback",
                 "death_description=true",
-                "death_victim=" + pawnLabel,
-                "death_victim_id=" + pawnLoadId,
-                "death_victim_role=" + deathVictimRole
+                "death_victim=" + GameContextValue.Sanitize(pawnLabel),
+                "death_victim_id=" + GameContextValue.Sanitize(pawnLoadId),
+                "death_victim_role=" + GameContextValue.Sanitize(deathVictimRole)
             };
 
             if (!string.IsNullOrWhiteSpace(deathFacts))

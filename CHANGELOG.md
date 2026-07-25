@@ -6,8 +6,13 @@ Companion: [repowiki/README.md](repowiki/README.md) describes the current state.
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-07-26
+
+- **Pure-boundary and RNG isolation hardening.** Added executable architecture, structured-context, and RNG contracts; extracted deterministic loaded-event repair planning; and compiled outer-stream/load-repair RimTests.
+
 ## 2026-07-25
 
+- **Non-UI runtime correctness sweep.** Escaped structured context values, repaired save identities and daily guards, isolated save flush failures, made optional prompt layers and anti-repeat lane-accurate, indexed spawn-window checks, and strengthened patch and coverage canaries.
 - **General runtime review hardening.** Isolated fragile hooks and fan-outs, restored ordered historical scans and archive guards, verified romance/dedup transitions, sanitized external context, refreshed mutable caches, preserved RNG/UTF-16/JSON correctness, repaired belief/knowledge edge cases, and added focused regressions.
 - **Live diary text search.** The shared filter panel now searches the selected year's visible titles and own-POV page text after three characters, composes with Favorites/Tags, and highlights matches without searching linked POV previews.
 - **Public wiki redesign.** Replaced the generated architecture tree with five player/advanced guides, four exhaustive source-backed test references, and a drift/link validator.

@@ -332,10 +332,10 @@ namespace PawnDiary
         {
             List<string> parts = new List<string>
             {
-                "tale=" + defName,
-                "label=" + DiaryLineCleaner.CleanLine(label),
+                "tale=" + GameContextValue.Sanitize(defName),
+                "label=" + GameContextValue.Sanitize(DiaryLineCleaner.CleanLine(label)),
                 "taleClass=TaleBatch",
-                "group=" + batch.GroupKey,
+                "group=" + GameContextValue.Sanitize(batch.GroupKey),
                 "batch=tale",
                 "events=" + batch.eventCount,
                 "day=" + CurrentDayIndex,
@@ -345,12 +345,14 @@ namespace PawnDiary
 
             if (batch.taleDefNames.Count > 0)
             {
-                parts.Add("tale_defs=" + string.Join(", ", batch.taleDefNames.ToArray()));
+                parts.Add("tale_defs=" + GameContextValue.Sanitize(
+                    string.Join(", ", batch.taleDefNames.ToArray())));
             }
 
             if (batch.participantNames.Count > 0)
             {
-                parts.Add("participants=" + string.Join(", ", batch.participantNames.ToArray()));
+                parts.Add("participants=" + GameContextValue.Sanitize(
+                    string.Join(", ", batch.participantNames.ToArray())));
             }
 
             return string.Join("; ", parts.ToArray());

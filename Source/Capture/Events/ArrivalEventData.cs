@@ -47,8 +47,8 @@ namespace PawnDiary.Capture
             List<string> parts = new List<string>
             {
                 "arrival_description=true",
-                "arrival_pawn=" + (pawnLabel ?? string.Empty),
-                "arrival_pawn_id=" + (pawnLoadId ?? string.Empty)
+                "arrival_pawn=" + GameContextValue.Sanitize(pawnLabel),
+                "arrival_pawn_id=" + GameContextValue.Sanitize(pawnLoadId)
             };
 
             if (!string.IsNullOrWhiteSpace(arrivalContext))

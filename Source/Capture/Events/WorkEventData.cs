@@ -71,9 +71,9 @@ namespace PawnDiary.Capture
         {
             List<string> parts = new List<string>
             {
-                "work=" + (workTypeDefName ?? string.Empty),
-                "work_giver=" + (workGiverDefName ?? string.Empty),
-                "mood_impact=" + (moodImpact ?? string.Empty),
+                "work=" + GameContextValue.Sanitize(workTypeDefName),
+                "work_giver=" + GameContextValue.Sanitize(workGiverDefName),
+                "mood_impact=" + GameContextValue.Sanitize(moodImpact),
                 "passion=" + (hasPassion ? "true" : "false"),
                 "low_skill=" + (hasLowSkill ? "true" : "false"),
                 "dumb_or_cleaning=" + (isNegativeChore ? "true" : "false"),

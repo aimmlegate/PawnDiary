@@ -49,9 +49,9 @@ namespace PawnDiary.Capture
         }
 
         /// <summary>
-        /// Pure assembly of the inspiration's game-context marker string. Inputs must already be
-        /// cleaned (RecordInspiration runs DiaryLineCleaner.CleanLine on the label and reason
-        /// before calling). The leading "inspiration=" marker is load-bearing: the UI uses it to
+        /// Pure assembly of the inspiration's game-context marker string. The structural writer
+        /// sanitizes values even though RecordInspiration also cleans display text. The leading
+        /// "inspiration=" marker is load-bearing: the UI uses it to
         /// classify the event into the Inspiration domain. A null/whitespace reason omits the
         /// "reason=" field entirely (matches pre-refactor behavior). Keeping this in a pure helper
         /// lets tests lock down the exact format.
@@ -59,12 +59,12 @@ namespace PawnDiary.Capture
         public static string BuildGameContext(
             string defName, string label, float durationDays, string cleanedReason)
         {
-            string context = "inspiration=" + defName
-                + "; label=" + label
+            string context = "inspiration=" + GameContextValue.Sanitize(defName)
+                + "; label=" + GameContextValue.Sanitize(label)
                 + "; duration_days=" + durationDays.ToString("F1", CultureInfo.InvariantCulture);
             if (!string.IsNullOrWhiteSpace(cleanedReason))
             {
-                context += "; reason=" + cleanedReason;
+                context += "; reason=" + GameContextValue.Sanitize(cleanedReason);
             }
             return context;
         }

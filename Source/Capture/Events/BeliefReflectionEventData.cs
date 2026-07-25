@@ -33,7 +33,8 @@ namespace PawnDiary.Capture
 
         public static string BuildGameContext(string trigger)
         {
-            return "belief_reflection=true; belief_reflection_trigger=" + (trigger ?? string.Empty);
+            return "belief_reflection=true; belief_reflection_trigger="
+                + GameContextValue.Sanitize(trigger);
         }
     }
 }

@@ -222,19 +222,19 @@ namespace PawnDiary.Capture
         {
             List<string> parts = new List<string>
             {
-                "tale=" + defName,
-                "label=" + cleanedLabel,
-                "taleClass=" + taleClassName,
+                "tale=" + GameContextValue.Sanitize(defName),
+                "label=" + GameContextValue.Sanitize(cleanedLabel),
+                "taleClass=" + GameContextValue.Sanitize(taleClassName),
             };
 
             if (!string.IsNullOrWhiteSpace(attachedDefName))
             {
-                parts.Add("attachedDef=" + attachedDefName);
+                parts.Add("attachedDef=" + GameContextValue.Sanitize(attachedDefName));
             }
 
             if (!string.IsNullOrWhiteSpace(cleanedAttachedLabel))
             {
-                parts.Add("attachedLabel=" + cleanedAttachedLabel);
+                parts.Add("attachedLabel=" + GameContextValue.Sanitize(cleanedAttachedLabel));
             }
 
             return string.Join("; ", parts.ToArray());

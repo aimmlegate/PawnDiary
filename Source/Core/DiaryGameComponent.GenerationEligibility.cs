@@ -152,19 +152,43 @@ namespace PawnDiary
         /// Effective priority is External API override &gt; pawn custom rule &gt; base type.
         /// </summary>
         private string PsychotypeRuleFor(DiaryEvent diaryEvent, string povRole,
-            Dictionary<string, Pawn> livePawnsById = null, bool ensureVoiceStage = true)
+            Dictionary<string, Pawn> livePawnsById = null, bool ensureVoiceStage = true,
+            PromptContextDetailLevel? contextDetailLevel = null)
         {
             string pawnId = PawnIdForRole(diaryEvent, povRole);
             PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
             Pawn pawn = FindLivePawnByLoadId(pawnId, livePawnsById);
+            bool automaticLayerEnabled = contextDetailLevel.HasValue
+                ? PromptContextFeaturePolicy.AllowsPsychotypes(contextDetailLevel.Value)
+                : PsychotypesEnabled;
             // Read-only callers (prompt previews) pass ensureVoiceStage:false so an inspection never rolls
             // or stamps a real pawn's saved voice.
             if (ensureVoiceStage && pawn != null && diary != null)
             {
-                EnsureVoiceStage(pawn, diary);
+                EnsureVoiceStage(pawn, diary, automaticLayerEnabled);
             }
 
-            return BuildPsychotypeResolution(diary).rule;
+            return BuildPsychotypeResolution(diary, automaticLayerEnabled).rule;
+        }
+
+        /// <summary>
+        /// Stages the saved writing voice only after dispatch knows every effective prompt variant.
+        /// Writing style is needed at every preset; the psychotype roll is enabled only when at least one
+        /// selected/failover lane can render it.
+        /// </summary>
+        private void PrepareVoiceStageForPromptVariants(
+            DiaryEvent diaryEvent,
+            string povRole,
+            Dictionary<string, Pawn> livePawnsById,
+            bool anyVariantAllowsPsychotypes)
+        {
+            string pawnId = PawnIdForRole(diaryEvent, povRole);
+            PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
+            Pawn pawn = FindLivePawnByLoadId(pawnId, livePawnsById);
+            if (pawn != null && diary != null)
+            {
+                EnsureVoiceStage(pawn, diary, anyVariantAllowsPsychotypes);
+            }
         }
 
         /// <summary>
@@ -174,8 +198,17 @@ namespace PawnDiary
         /// test (for example metalhorror suspicion) cannot bleed into later captured prompt fixtures.
         /// </summary>
         private string PromptEnchantmentRuleFor(DiaryEvent diaryEvent, string povRole,
-            Dictionary<string, Pawn> livePawnsById = null)
+            Dictionary<string, Pawn> livePawnsById = null,
+            PromptContextDetailLevel? contextDetailLevel = null)
         {
+            bool layerEnabled = contextDetailLevel.HasValue
+                ? PromptContextFeaturePolicy.AllowsPromptEnchantments(contextDetailLevel.Value)
+                : PawnDiaryMod.Settings != null && PawnDiaryMod.Settings.enablePromptEnchantments;
+            if (!layerEnabled)
+            {
+                return string.Empty;
+            }
+
             if (diaryEvent != null && DiaryContextFields.HasMarker(diaryEvent.gameContext, DevPromptSuiteMarkerKey))
             {
                 return string.Empty;
@@ -225,7 +258,8 @@ namespace PawnDiary
                 candidates,
                 eventWindowNormalMultiplier * observedConditionNormalMultiplier,
                 suppressedHediffDefNames,
-                replaceNormalCandidates);
+                replaceNormalCandidates,
+                layerEnabled);
         }
 
         /// <summary>

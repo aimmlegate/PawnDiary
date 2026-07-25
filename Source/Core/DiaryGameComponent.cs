@@ -58,6 +58,21 @@ namespace PawnDiary
         // The transient dedup dictionaries keep only recent keys. Once any dictionary crosses this
         // size, the shared gate sweeps entries outside that source's configured dedup window.
         private const int RecentEventPruneThreshold = 512;
+        // Stable diagnostic labels for the independent pre-save actions below. Keep this list aligned
+        // with RunPreSaveActions so a failure names the exact flush/maintenance step that was skipped.
+        private static readonly string[] PreSaveActionNames =
+        {
+            "royal title-thought flush",
+            "royal permit-raid flush",
+            "psychic-bond flush",
+            "deathrest flush",
+            "interaction-batch flush",
+            "tale-batch flush",
+            "ambient-thought flush",
+            "event retention",
+            "knowledge eviction",
+            "event-reference prune",
+        };
 
         // Per-pawn saved state (event references, persona, enabled flag). Persisted via ExposeData.
         private List<PawnDiaryRecord> diaries = new List<PawnDiaryRecord>();
@@ -91,11 +106,12 @@ namespace PawnDiary
         // per pawn after the configured quiet window. Transient and flushed before saving.
         private readonly Dictionary<string, PendingTaleBatch> pendingTaleBatches = new Dictionary<string, PendingTaleBatch>();
         // Prevents an ambient group from writing twice for the same pawn/day after an early save or
-        // max-count flush in the same play session.
+        // max-count flush. Transient, but rebuilt from hot/archive history after a load.
         private readonly HashSet<string> writtenAmbientInteractionNotes = new HashSet<string>();
         // Ambient temporary thoughts still accumulating into one per-pawn day memory. Not saved;
         // flushed before saving just like interaction batches.
         private readonly Dictionary<string, PendingAmbientThoughtNote> pendingAmbientThoughtNotes = new Dictionary<string, PendingAmbientThoughtNote>();
+        // Same once-per-pawn/day guard for ambient thoughts; rebuilt from saved history after load.
         private readonly HashSet<string> writtenAmbientThoughtNotes = new HashSet<string>();
 
         // Submit-bus sources share one consolidated transient store (see
@@ -220,6 +236,10 @@ namespace PawnDiary
             BiotechGeneMutationCorrelation.Clear();
             BiotechPsychicBondCorrelation.Clear();
             BiotechDeathrestCorrelation.Clear();
+            // Harmony call scopes are static too. Clear them before loaded pawn callbacks can run;
+            // FinalizeInit repeats the reset as the explicit new-game/load lifecycle boundary.
+            MechanitorDeathScope.Clear();
+            MechanitorBossCallCorrelation.Clear();
             ResetAnomalyTransientState();
             BeliefHistoryCorrelationCache.Reset();
             BeliefMutationCache.Reset();
@@ -364,7 +384,7 @@ namespace PawnDiary
             initialArrivalScanPending = AnyFreeColonistMissingArrivalPage();
             // Day-summary state is transient; clear it and let the first tick re-snapshot opinions.
             ResetDaySummaryState();
-            RebuildWrittenDayReflectionsFromEvents();
+            RebuildWrittenDailyGuardsFromHistory();
             ResetThoughtProgressionState(true);
             ResetHediffProgressionState(true);
             RunRequestedGenerationScan();
@@ -376,28 +396,7 @@ namespace PawnDiary
         {
             if (Scribe.mode == LoadSaveMode.Saving)
             {
-                // Pre-save flushing/pruning is our own bookkeeping; never let it abort the actual
-                // save (the Scribe.Look calls below) — a partial flush is far better than a lost save.
-                try
-                {
-                    // This must remain before events.ExposeEvents below: reconciliation and any
-                    // unmatched Thought release are synchronous and belong in this same save.
-                    FlushRoyalTitleThoughtsBeforeSave();
-                    FlushRoyalPermitRaidsBeforeSave();
-                    BiotechPsychicBondCorrelation.FlushPending();
-                    BiotechDeathrestCorrelation.FlushPending();
-                    FlushAllInteractionBatches();
-                    FlushAllTaleBatches();
-                    FlushAllAmbientThoughtNotes();
-                    ApplyDiaryEventLimits();
-                    ApplyKnowledgeEviction();
-                    PruneDiaryEventRefs();
-                }
-                catch (Exception e)
-                {
-                    Log.ErrorOnce("[Pawn Diary] Pre-save diary flush failed: " + e,
-                        "DiaryGameComponent.ExposeData.Save".GetHashCode());
-                }
+                RunPreSaveActions();
             }
 
             Scribe_Collections.Look(ref diaries, "diaries", LookMode.Deep);
@@ -476,16 +475,19 @@ namespace PawnDiary
                     // The pawnId->record index is not serialized; rebuild it from the loaded diaries
                     // first so the per-pawn lookups below resolve in O(1).
                     RebuildDiaryIndex();
-                    // The lookup index is not serialized; rebuild it from the loaded events so FindEvent
-                    // works immediately (the first generation scan and any UI draw run before any new
-                    // event is recorded this session).
-                    events.RebuildIndex();
+                    // Repair the loaded hot list before retention. This rebuilds the unsaved lookup
+                    // index, deterministically collapses duplicate ids, and reports old-save rows whose
+                    // missing ids were minted during DiaryEvent.PostLoadInit.
+                    IReadOnlyList<DiaryEvent> reidentifiedEvents = events.RepairLoadedEvents();
+                    // The old id could not survive in a PawnDiaryRecord ref. Reattach repaired rows to
+                    // their already-saved owners before retention/pruning can discard them as orphans.
+                    RepairReidentifiedEventRefs(reidentifiedEvents);
                     PostLoadInitKnowledge();
                     NormalizeActiveEventWindows();
                     NormalizeActiveObservedConditions();
                     NormalizeObservedConditionCooldowns();
                     ApplyDiaryEventLimits();
-                    RebuildWrittenDayReflectionsFromEvents();
+                    RebuildWrittenDailyGuardsFromHistory();
                     PruneDiaryEventRefs();
                     PruneStaleGeneratedSpeechPlayLogState();
                     RebuildCommandStatusCache();
@@ -496,6 +498,49 @@ namespace PawnDiary
                         "DiaryGameComponent.ExposeData.PostLoad".GetHashCode());
                 }
             }
+        }
+
+        /// <summary>
+        /// Runs every flush/maintenance action needed before Scribe writes the saved lists. Each action
+        /// is isolated: one failing source is logged and later sources still commit into this same save.
+        /// </summary>
+        private void RunPreSaveActions()
+        {
+            Action[] actions =
+            {
+                // These must remain before events.ExposeEvents below: reconciliation and any unmatched
+                // Thought release are synchronous and belong in this same save.
+                FlushRoyalTitleThoughtsBeforeSave,
+                FlushRoyalPermitRaidsBeforeSave,
+                BiotechPsychicBondCorrelation.FlushPending,
+                BiotechDeathrestCorrelation.FlushPending,
+                FlushAllInteractionBatches,
+                FlushAllTaleBatches,
+                FlushAllAmbientThoughtNotes,
+                ApplyDiaryEventLimits,
+                ApplyKnowledgeEviction,
+                PruneDiaryEventRefs,
+            };
+
+            RunIndependentPreSaveActions(actions, (index, exception) =>
+            {
+                string name = index >= 0 && index < PreSaveActionNames.Length
+                    ? PreSaveActionNames[index]
+                    : "unknown action " + index;
+                Log.ErrorOnce(
+                    "[Pawn Diary] Pre-save " + name + " failed; later save actions continued: " + exception,
+                    ("DiaryGameComponent.ExposeData.Save." + index).GetHashCode());
+            });
+        }
+
+        /// <summary>
+        /// Testable System-only seam for the save action isolation contract.
+        /// </summary>
+        internal static void RunIndependentPreSaveActions(
+            IReadOnlyList<Action> actions,
+            Action<int, Exception> onFailure)
+        {
+            IndependentActionRunner.RunAll(actions, onFailure);
         }
 
         /// <summary>
@@ -548,6 +593,26 @@ namespace PawnDiary
                 Log.ErrorOnce(
                     "[Pawn Diary] Odyssey transient-state reset failed: " + exception,
                     "PawnDiary.Odyssey.Reset".GetHashCode());
+            }
+            try
+            {
+                MechanitorDeathScope.Clear();
+            }
+            catch (Exception exception)
+            {
+                Log.ErrorOnce(
+                    "[Pawn Diary] Mechanitor death-scope reset failed: " + exception,
+                    "PawnDiary.Mechanitor.DeathScope.Reset".GetHashCode());
+            }
+            try
+            {
+                MechanitorBossCallCorrelation.Clear();
+            }
+            catch (Exception exception)
+            {
+                Log.ErrorOnce(
+                    "[Pawn Diary] Mechanitor boss-call reset failed: " + exception,
+                    "PawnDiary.Mechanitor.BossCall.Reset".GetHashCode());
             }
             try
             {

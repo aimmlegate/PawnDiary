@@ -124,9 +124,9 @@ namespace PawnDiary.Capture
         /// </summary>
         public static string BuildGameContext(string relationDefName, string cleanedLabel, string kindToken)
         {
-            return "romance=" + relationDefName
-                + "; label=" + cleanedLabel
-                + "; kind=" + kindToken;
+            return "romance=" + GameContextValue.Sanitize(relationDefName)
+                + "; label=" + GameContextValue.Sanitize(cleanedLabel)
+                + "; kind=" + GameContextValue.Sanitize(kindToken);
         }
     }
 }

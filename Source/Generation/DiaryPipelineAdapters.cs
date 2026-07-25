@@ -31,10 +31,23 @@ namespace PawnDiary
             DiaryEventPayload payload = ToPayload(diaryEvent);
             string normalizedRole = string.IsNullOrWhiteSpace(povRole) ? DiaryPipelineRoles.Initiator : povRole;
             PromptContextDetailLevel normalizedLevel = PromptContextSelector.Normalize(contextDetailLevel);
+
+            // Event capture intentionally freezes the richest available snapshot before an API lane is
+            // known. Apply the selected lane's feature policy here, at the save-model -> pure DTO
+            // boundary, so smaller lanes never receive Full-only memory/culture facts and a Full lane
+            // can still use them when the global default is Compact.
+            if (!PromptContextFeaturePolicy.AllowsMemoryContext(normalizedLevel))
+            {
+                ClearMemoryLayer(payload?.initiator);
+                ClearMemoryLayer(payload?.recipient);
+            }
+
             return new DiaryPromptRequest
             {
                 payload = payload,
-                policy = PolicyFor(payload),
+                // The effective lane level above now owns memory injection. Snapshot XML knowledge
+                // policy without re-applying the older global-only feature switch.
+                policy = PolicyFor(payload, applyGlobalMemorySetting: false),
                 povRole = normalizedRole,
                 titleRequest = titleRequest,
                 personaRule = personaRule,
@@ -42,14 +55,16 @@ namespace PawnDiary
                 // ride inside one combined voice block rather than separate request fields, so no
                 // planner/contract change is needed and the whole block is automatically suppressed when a
                 // template opts out of persona text (neutral death/arrival/title). Order is fixed:
-                // outlook first, then writing style, then the optional humor license. Compact omits the
-                // humor layer entirely (pure VoiceBlockPolicy decision) so the two identity layers keep
-                // the model's attention; humor selection/reroll state on the event is untouched.
+                // outlook first, then writing style, then the optional humor license. The caller already
+                // projected the psychotype for this lane (Compact retains only explicit integration
+                // overrides); Compact also omits humor through the pure VoiceBlockPolicy decision.
                 personaVoiceBlock = CombinedVoiceBlock(
                     PsychotypeLensBlock(psychotypeRule),
                     PersonaVoiceBlock(personaRule),
                     HumorVoiceBlock(VoiceBlockPolicy.IncludeHumor(normalizedLevel) ? humorCue : string.Empty)),
-                promptEnchantment = promptEnchantment,
+                promptEnchantment = PromptContextFeaturePolicy.AllowsPromptEnchantments(normalizedLevel)
+                    ? promptEnchantment
+                    : string.Empty,
                 priorInitiatorEntry = priorInitiatorEntry,
                 entryText = entryText,
                 directSpeechInstruction = titleRequest ? string.Empty : DirectSpeechInstructionFor(diaryEvent, normalizedRole),
@@ -110,13 +125,14 @@ namespace PawnDiary
             return payload;
         }
 
-        public static DiaryPolicySnapshot PolicyFor(DiaryEventPayload payload)
+        public static DiaryPolicySnapshot PolicyFor(DiaryEventPayload payload, bool applyGlobalMemorySetting = true)
         {
             // Narrative-policy prompt wording is localized through DefInjected, so capture it on the
             // main thread together with the existing template/group policy. The selected factual text
             // itself stays on DiaryEvent and is never rebuilt from live DLC state here.
             NarrativePolicySnapshot narrativePolicy = DiaryNarrativeContinuityPolicy.Snapshot();
-            KnowledgePolicySnapshot knowledgePolicy = DiaryKnowledgePolicy.Snapshot();
+            KnowledgePolicySnapshot knowledgePolicy =
+                DiaryKnowledgePolicy.Snapshot(applyGlobalMemorySetting);
             BeliefPolicySnapshot beliefPolicy = DiaryBeliefPolicy.Snapshot();
             string classifierKey = ClassifierKeyForPayload(payload);
             DiaryInteractionGroupDef group = GroupForPayload(payload, classifierKey);
@@ -180,6 +196,22 @@ namespace PawnDiary
             AddTemplate(snapshot, DiaryPipelineTemplates.ArrivalDescription);
             AddTemplate(snapshot, DiaryPipelineTemplates.Title);
             return snapshot;
+        }
+
+        /// <summary>
+        /// Removes the optional relevant-past and culture-annotation layer from one plain POV snapshot.
+        /// Other captured context remains untouched and can still be budgeted by the pure selector.
+        /// </summary>
+        private static void ClearMemoryLayer(DiaryPovPayload pov)
+        {
+            if (pov == null)
+            {
+                return;
+            }
+
+            pov.memoryContext = string.Empty;
+            pov.originCultureDefName = string.Empty;
+            pov.adoptedCultureDefName = string.Empty;
         }
 
         /// <summary>

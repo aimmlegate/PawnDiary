@@ -62,18 +62,18 @@ namespace PawnDiary
     }
 
     /// <summary>
-    /// Maps a prompt-context preset onto the three optional writing layers that used to have their own
-    /// checkboxes in mod settings: live prompt context hints, the psychotype (outlook) voice layer, and
-    /// pawn memory recall. One preset now decides all three, so this pure table is the single place
-    /// that defines the mapping — settings, UI text, and tests all read it instead of each re-deriving
-    /// the rule.
+    /// Maps one request's effective prompt-context preset onto the three optional writing layers that
+    /// used to have their own checkboxes in mod settings: live prompt context hints, the psychotype
+    /// (outlook) voice layer, and pawn memory recall. The effective preset already includes any API-lane
+    /// override, so this pure table is the single place that defines the mapping for settings, dispatch,
+    /// prompt projection, and tests.
     ///
     /// Full keeps every layer. Balanced drops only pawn memory (the largest injected block). Compact
     /// drops all three, so a small local model sees required facts and very little else.
     ///
-    /// This intentionally follows the GLOBAL setting only. A per-lane
-    /// <see cref="PromptContextDetailOverride"/> still trims that lane's rendered fields, but the three
-    /// layers are decided long before a lane is picked, so they stay tied to the global preset.
+    /// Capture adapters may collect the full snapshot before a lane is known; projection applies this
+    /// policy only after dispatch selects the lane. That separation lets a Full lane regain layers when
+    /// the global default is Compact and prevents a Compact lane from inheriting Full-only layers.
     /// </summary>
     internal static class PromptContextFeaturePolicy
     {
@@ -336,16 +336,6 @@ namespace PawnDiary
             }
 
             if (Eq(source, "DeathPawnSummary"))
-            {
-                return true;
-            }
-
-            // A non-empty frozen memory recall is required in EVERY detail preset
-            // (LORE_MEMORY_SEED_PLAN §9): recall metadata was already bumped when the memory was
-            // selected, so a late Balanced/Compact budget cut would create a phantom recall. The
-            // value stays bounded by the universal two-line/500-char memory policy, not by the
-            // preset's soft budget. Empty recall never reaches candidates (no renderable value).
-            if (Eq(source, MemoryContextPrompt.Source))
             {
                 return true;
             }

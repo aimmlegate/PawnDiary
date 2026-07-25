@@ -175,7 +175,7 @@ namespace PawnDiary
                 + "; batch=ambient_day_note"
                 + "; events=" + note.eventCount
                 + "; day=" + note.dayIndex
-                + "; mood_impact=" + moodImpact
+                + "; mood_impact=" + GameContextValue.Sanitize(moodImpact)
                 + "; mood_offset_sum=" + note.totalMoodOffset.ToString("F1", CultureInfo.InvariantCulture)
                 + "; first_tick=" + note.firstTick
                 + "; last_tick=" + note.lastTick;
@@ -281,7 +281,7 @@ namespace PawnDiary
         /// </summary>
         private static string AmbientThoughtKey(Pawn pawn, int dayIndex)
         {
-            return "thoughtAmbient|" + pawn.GetUniqueLoadID() + "|" + dayIndex;
+            return DailyEmissionGuardPolicy.ThoughtKey(pawn.GetUniqueLoadID(), dayIndex);
         }
 
         private static int AmbientThoughtWindowTicks

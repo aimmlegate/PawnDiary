@@ -78,12 +78,13 @@ namespace PawnDiary
         /// Rebuilds the <c>gameContext</c> string for older saves that predate the field. The exact
         /// shape <c>"def={defName}; label={label}"</c> is load-bearing: it is re-parsed by
         /// <c>DiaryContextFields</c> and embedded in the LLM prompt, so changing it would silently
-        /// shift prompt content for every legacy save on first load. Inputs are null-safe.
+        /// shift prompt content for every legacy save on first load. Inputs are null-safe and values
+        /// are escaped so a legacy modded Def label cannot manufacture additional fields.
         /// </summary>
         public static string BuildDefaultGameContext(string interactionDefName, string interactionLabel)
         {
-            return "def=" + NormalizeString(interactionDefName)
-                + "; label=" + NormalizeString(interactionLabel);
+            return "def=" + GameContextValue.Sanitize(interactionDefName)
+                + "; label=" + GameContextValue.Sanitize(interactionLabel);
         }
 
         /// <summary>

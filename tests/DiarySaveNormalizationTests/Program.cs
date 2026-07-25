@@ -338,6 +338,13 @@ namespace DiarySaveNormalizationTests
                 "def=; label=",
                 DiarySaveNormalization.BuildDefaultGameContext(null, null));
 
+            string injected = DiarySaveNormalization.BuildDefaultGameContext(
+                "RomanceAttempt; death_description=true",
+                "Romance; arrival_description=true");
+            AssertEqual("legacy context values cannot forge routing fields",
+                "def=RomanceAttempt, death_description-true; label=Romance, arrival_description-true",
+                injected);
+
             // Instruction falls back to the interaction label verbatim; empty when no label was saved.
             AssertEqual("instruction falls back to label",
                 "Romance attempt",

@@ -23,7 +23,7 @@ namespace DiaryPipelineTests
             TestBeliefContextPromptField();
             TestBeliefCombinedDlcPromptFixtures();
             TestMemoryContextProjectabilityAndTemplates();
-            TestMemoryContextRequiredInEveryPreset();
+            TestMemoryContextIsOptionalAndLayerControlled();
             TestQualityWavePovContextContracts();
             TestIdentitySummaryPolicy();
             TestMoodSnapshotPolicy();
@@ -34,6 +34,8 @@ namespace DiaryPipelineTests
             TestArtImmortalizationPolicy();
             TestAnniversaryPolicy();
             TestDigestPacingPolicy();
+            TestDailyEmissionGuardPolicy();
+            TestLoadedEventRepairPolicy();
             TestCheapXmlExtensionCoverage();
             TestPromptContextDetailSelection();
             TestPromptContextDetailOverrideResolution();
@@ -1607,12 +1609,11 @@ namespace DiaryPipelineTests
         }
 
         /// <summary>
-        /// LORE_MEMORY_SEED_PLAN §9: a non-empty frozen memory recall is REQUIRED context in Full,
-        /// Balanced, and Compact — a binding preset budget cuts optional fields around it but can
-        /// never cut the memory whose recall metadata was already bumped. Empty recall stays an
-        /// absent field.
+        /// The shipped memory redesign has no recall counters to bump, so a frozen memory block is
+        /// ordinary optional context. Full keeps it; budgeted presets may cut it, and the impure
+        /// adapter removes it entirely when the effective lane preset disables the memory layer.
         /// </summary>
-        private static void TestMemoryContextRequiredInEveryPreset()
+        private static void TestMemoryContextIsOptionalAndLayerControlled()
         {
             string frozenRecall = "- (a few days ago) The raid where Yorick fell.\n"
                 + "- (a couple of weeks ago) Yorick showing me his rifle collection.";
@@ -1644,15 +1645,21 @@ namespace DiaryPipelineTests
 
                 PromptContextFieldReport kept = plan.contextSelectionReport.kept
                     .FirstOrDefault(row => row.source == MemoryContextPrompt.Source);
-                AssertTrue("memory field survives " + levels[i], kept != null);
-                AssertTrue("memory field is required under " + levels[i], kept != null && kept.required);
-                AssertContains("memory lines reach the " + levels[i] + " prompt whole",
-                    plan.userPrompt, "memory: " + frozenRecall);
-                if (levels[i] != PromptContextDetailLevel.Full)
+                if (levels[i] == PromptContextDetailLevel.Full)
                 {
-                    AssertTrue("the binding " + levels[i] + " budget still cuts optional fields",
+                    AssertTrue("Full keeps the optional memory field", kept != null);
+                    AssertTrue("memory is no longer marked required", kept != null && !kept.required);
+                    AssertContains("Full prompt receives the frozen memory lines whole",
+                        plan.userPrompt, "memory: " + frozenRecall);
+                }
+                else
+                {
+                    AssertTrue(levels[i] + " may cut memory under a binding budget", kept == null);
+                    AssertTrue(levels[i] + " reports the optional memory cut",
                         plan.contextSelectionReport.cut
-                            .Any(row => row.source == "LastOpener"));
+                            .Any(row => row.source == MemoryContextPrompt.Source));
+                    AssertTrue(levels[i] + " prompt omits the cut memory block",
+                        !plan.userPrompt.Contains("memory:"));
                 }
             }
 
@@ -1710,6 +1717,42 @@ namespace DiaryPipelineTests
             AssertTrue("lane override wins",
                 PromptContextSelector.Resolve(PromptContextDetailLevel.Full, PromptContextDetailOverride.Compact)
                 == PromptContextDetailLevel.Compact);
+
+            PromptContextDetailLevel[] globals =
+            {
+                PromptContextDetailLevel.Full,
+                PromptContextDetailLevel.Balanced,
+                PromptContextDetailLevel.Compact
+            };
+            PromptContextDetailOverride[] overrides =
+            {
+                PromptContextDetailOverride.Inherit,
+                PromptContextDetailOverride.Full,
+                PromptContextDetailOverride.Balanced,
+                PromptContextDetailOverride.Compact
+            };
+            for (int globalIndex = 0; globalIndex < globals.Length; globalIndex++)
+            {
+                for (int overrideIndex = 0; overrideIndex < overrides.Length; overrideIndex++)
+                {
+                    PromptContextDetailLevel effective =
+                        PromptContextSelector.Resolve(globals[globalIndex], overrides[overrideIndex]);
+                    PromptContextDetailLevel expected = overrides[overrideIndex] == PromptContextDetailOverride.Inherit
+                        ? globals[globalIndex]
+                        : (PromptContextDetailLevel)((int)overrides[overrideIndex] - 1);
+                    string caseLabel = "global=" + globals[globalIndex] + " lane=" + overrides[overrideIndex];
+                    AssertTrue(caseLabel + " resolves the effective preset", expected == effective);
+                    AssertTrue(caseLabel + " applies enchantment policy",
+                        PromptContextFeaturePolicy.AllowsPromptEnchantments(expected)
+                        == PromptContextFeaturePolicy.AllowsPromptEnchantments(effective));
+                    AssertTrue(caseLabel + " applies psychotype policy",
+                        PromptContextFeaturePolicy.AllowsPsychotypes(expected)
+                        == PromptContextFeaturePolicy.AllowsPsychotypes(effective));
+                    AssertTrue(caseLabel + " applies memory policy",
+                        PromptContextFeaturePolicy.AllowsMemoryContext(expected)
+                        == PromptContextFeaturePolicy.AllowsMemoryContext(effective));
+                }
+            }
         }
 
         /// <summary>
@@ -4903,6 +4946,71 @@ namespace DiaryPipelineTests
                 "could-match empty rules do not match",
                 !EventWindowPolicy.CouldMatchByDefName(new List<EventWindowTriggerRule>(), "ThingSpawned", "Bullet"));
 
+            // DefNamePrecheckIndex is the one-time structural index behind the global Thing.SpawnSetup
+            // patch. These cases prove its O(1) lookup stays a strict superset of the full matcher.
+            EventWindowPolicy.DefNamePrecheckIndex exactIndex =
+                new EventWindowPolicy.DefNamePrecheckIndex("ThingSpawned", "spawned");
+            exactIndex.Include(thingExactRules);
+            AssertTrue(
+                "indexed could-match accepts an exact spawned defName case-insensitively",
+                exactIndex.CouldMatch("grayfleshsample"));
+            AssertTrue(
+                "indexed could-match rejects an unlisted spawned defName",
+                !exactIndex.CouldMatch("Bullet_Revolver"));
+
+            EventWindowPolicy.DefNamePrecheckIndex wrongSignalIndex =
+                new EventWindowPolicy.DefNamePrecheckIndex("ThingSpawned", "spawned");
+            wrongSignalIndex.Include(new List<EventWindowTriggerRule>
+            {
+                new EventWindowTriggerRule
+                {
+                    source = "ThingSpawned",
+                    signal = "despawned",
+                    matchDefNames = new List<string> { "GrayFleshSample" }
+                }
+            });
+            AssertTrue(
+                "indexed could-match rejects rules for another signal",
+                !wrongSignalIndex.CouldMatch("GrayFleshSample"));
+
+            EventWindowPolicy.DefNamePrecheckIndex blankSourceIndex =
+                new EventWindowPolicy.DefNamePrecheckIndex("ThingSpawned", "spawned");
+            blankSourceIndex.Include(blankSourceExactRules);
+            AssertTrue(
+                "indexed could-match honors a blank any-source exact rule",
+                blankSourceIndex.CouldMatch("SomeDef"));
+
+            EventWindowPolicy.DefNamePrecheckIndex tokenIndex =
+                new EventWindowPolicy.DefNamePrecheckIndex("ThingSpawned", "spawned");
+            tokenIndex.Include(new List<EventWindowTriggerRule>
+            {
+                new EventWindowTriggerRule
+                {
+                    source = "ThingSpawned",
+                    matchTokens = new List<string> { "flesh" }
+                }
+            });
+            AssertTrue(
+                "indexed could-match conservatively accepts any defName for a token rule",
+                tokenIndex.CouldMatch("Bullet_Revolver"));
+
+            EventWindowPolicy.DefNamePrecheckIndex sourceOnlyIndex =
+                new EventWindowPolicy.DefNamePrecheckIndex("ThingSpawned", "spawned");
+            sourceOnlyIndex.Include(new List<EventWindowTriggerRule>
+            {
+                new EventWindowTriggerRule { source = "ThingSpawned", signal = "spawned" }
+            });
+            AssertTrue(
+                "indexed could-match conservatively accepts any defName for a source-only rule",
+                sourceOnlyIndex.CouldMatch("AnyFutureModThing"));
+
+            EventWindowPolicy.DefNamePrecheckIndex blankIndex =
+                new EventWindowPolicy.DefNamePrecheckIndex("ThingSpawned", "spawned");
+            blankIndex.Include(new List<EventWindowTriggerRule> { new EventWindowTriggerRule() });
+            AssertTrue(
+                "indexed could-match rejects a completely blank rule",
+                !blankIndex.CouldMatch("Bullet_Revolver"));
+
             XDocument eventWindows = XDocument.Load(RepoPath("1.6", "Defs", "DiaryEventWindowDefs.xml"));
             foreach (XElement def in eventWindows.Descendants("PawnDiary.DiaryEventWindowDef"))
             {
@@ -6453,10 +6561,10 @@ namespace DiaryPipelineTests
             {
                 candidates = candidates,
                 recentlyUsedEventIds = new List<string> { "e-recent" },
+                selectionRolls = LegacyArcSelectionRolls(42, candidates.Count),
                 currentYear = 5504,
                 maxMemories = 8,
                 minMemories = 3,
-                seed = 42,
             });
             AssertEqual("arc selector filters and sorts selected ids", "e2,e3,e1",
                 JoinCandidateIds(selected.selected));
@@ -6473,10 +6581,10 @@ namespace DiaryPipelineTests
             ArcMemorySelectionResult capped = ArcReflectionMemorySelector.Select(new ArcMemorySelectionRequest
             {
                 candidates = sameGroup,
+                selectionRolls = LegacyArcSelectionRolls(7, sameGroup.Count),
                 currentYear = 5504,
                 maxMemories = 4,
                 minMemories = 1,
-                seed = 7,
             });
             AssertEqual("arc selector caps repeated domain/group", 2, capped.selected.Count);
 
@@ -6487,25 +6595,77 @@ namespace DiaryPipelineTests
                 ArcCandidate("d3", 3000, "Romance", "romance", true, false, false, "three"),
                 ArcCandidate("d4", 4000, "Quest", "quest", true, false, false, "four"),
             };
+            List<double> deterministicRolls = LegacyArcSelectionRolls(99, deterministic.Count);
             ArcMemorySelectionResult deterministicA = ArcReflectionMemorySelector.Select(new ArcMemorySelectionRequest
             {
                 candidates = deterministic,
+                selectionRolls = new List<double>(deterministicRolls),
                 currentYear = 5504,
                 maxMemories = 3,
                 minMemories = 1,
-                seed = 99,
             });
             ArcMemorySelectionResult deterministicB = ArcReflectionMemorySelector.Select(new ArcMemorySelectionRequest
             {
                 candidates = deterministic,
+                selectionRolls = new List<double>(deterministicRolls),
                 currentYear = 5504,
                 maxMemories = 3,
                 minMemories = 1,
-                seed = 99,
             });
-            AssertEqual("arc selector deterministic for fixed seed",
+            AssertEqual("arc selector deterministic for fixed rolls",
                 JoinCandidateIds(deterministicA.selected),
                 JoinCandidateIds(deterministicB.selected));
+            AssertEqual(
+                "arc selector preserves the legacy seed-99 NextDouble selection",
+                "d2,d3,d4",
+                JoinCandidateIds(deterministicA.selected));
+
+            List<ArcMemoryCandidate> rollEdges = new List<ArcMemoryCandidate>
+            {
+                ArcCandidate("r1", 1000, "Work", "work", false, false, false, "one"),
+                ArcCandidate("r2", 2000, "Raid", "raid", false, false, false, "two"),
+                ArcCandidate("r3", 3000, "Romance", "romance", false, false, false, "three"),
+            };
+            ArcMemorySelectionResult highRoll = ArcReflectionMemorySelector.Select(new ArcMemorySelectionRequest
+            {
+                candidates = rollEdges,
+                selectionRolls = new List<double> { double.PositiveInfinity },
+                currentYear = 5504,
+                maxMemories = 1,
+                minMemories = 1,
+            });
+            AssertEqual(
+                "arc selector clamps a roll above one to the final weighted bucket",
+                "r3",
+                JoinCandidateIds(highRoll.selected));
+
+            ArcMemorySelectionResult lowRoll = ArcReflectionMemorySelector.Select(new ArcMemorySelectionRequest
+            {
+                candidates = rollEdges,
+                selectionRolls = new List<double> { double.NaN },
+                currentYear = 5504,
+                maxMemories = 1,
+                minMemories = 1,
+            });
+            AssertEqual(
+                "arc selector clamps NaN to the first weighted bucket",
+                "r1",
+                JoinCandidateIds(lowRoll.selected));
+
+            ArcMemorySelectionResult exhaustedRolls = ArcReflectionMemorySelector.Select(new ArcMemorySelectionRequest
+            {
+                candidates = rollEdges,
+                // First pick clamps to the last bucket; the missing second roll falls back to zero,
+                // which picks the first remaining bucket. Chronological sorting yields r1,r3.
+                selectionRolls = new List<double> { 1d },
+                currentYear = 5504,
+                maxMemories = 2,
+                minMemories = 1,
+            });
+            AssertEqual(
+                "arc selector exhausts rolls with deterministic zero fallback",
+                "r1,r3",
+                JoinCandidateIds(exhaustedRolls.selected));
 
             ArcMemorySelectionResult empty = ArcReflectionMemorySelector.Select(new ArcMemorySelectionRequest
             {
@@ -8386,6 +8546,20 @@ namespace DiaryPipelineTests
                 progression = string.Equals(domain, "Progression", StringComparison.OrdinalIgnoreCase),
                 highStakes = string.Equals(domain, "Raid", StringComparison.OrdinalIgnoreCase),
             };
+        }
+
+        // Compatibility helper: this is the exact sequence the selector created before randomness
+        // moved to the impure adapter. Tests now pass the resulting primitive rolls explicitly.
+        private static List<double> LegacyArcSelectionRolls(int seed, int count)
+        {
+            Random random = new Random(seed);
+            List<double> rolls = new List<double>(Math.Max(0, count));
+            for (int index = 0; index < count; index++)
+            {
+                rolls.Add(random.NextDouble());
+            }
+
+            return rolls;
         }
 
         private static string JoinCandidateIds(List<ArcMemoryCandidate> values)

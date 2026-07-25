@@ -43,6 +43,15 @@ namespace PawnDiary
         /// </summary>
         internal void EnsureVoiceStage(Pawn pawn, PawnDiaryRecord diary)
         {
+            EnsureVoiceStage(pawn, diary, PsychotypesEnabled);
+        }
+
+        /// <summary>
+        /// Queue-time overload used when an API lane's effective context preset, rather than the global
+        /// default, decides whether the automatic psychotype layer is needed.
+        /// </summary>
+        private void EnsureVoiceStage(Pawn pawn, PawnDiaryRecord diary, bool psychotypesEnabled)
+        {
             if (pawn == null || diary == null)
             {
                 return;
@@ -57,7 +66,7 @@ namespace PawnDiary
                 && DiaryPersonas.ForDefName(diary.personaDefName) != null;
             // When the layer is off the psychotype is intentionally left unset (deferred), so it does not
             // keep the fast path from engaging.
-            bool psychotypeOk = !PsychotypesEnabled || psychotypeSet;
+            bool psychotypeOk = !psychotypesEnabled || psychotypeSet;
             if (bandMatches && psychotypeOk && styleSet)
             {
                 return;
@@ -69,7 +78,7 @@ namespace PawnDiary
             bool bandChanged = bandStamped && !bandMatches;
 
             // ---- Psychotype layer (only managed while the feature is enabled; otherwise deferred) ----
-            if (PsychotypesEnabled && !diary.psychotypePinned)
+            if (psychotypesEnabled && !diary.psychotypePinned)
             {
                 // Freeze an established PRE-FEATURE voice (legacy record whose band was never stamped and
                 // which already has generated prose): Neutral contributes no prompt text, so the diary the
@@ -112,7 +121,7 @@ namespace PawnDiary
             // genuine pre-feature records; it preserves the "pre-feature" signal so enabling the layer
             // later still freezes an established voice to Neutral instead of re-rolling it. Stamping
             // unconditionally would mask that and defeat the freeze across a disable->enable sequence.
-            if (PsychotypesEnabled || bandStamped)
+            if (psychotypesEnabled || bandStamped)
             {
                 diary.voiceStageBand = targetBand;
             }
@@ -439,6 +448,17 @@ namespace PawnDiary
         // blanked so no psychotype block reaches the prompt.
         private PsychotypeResolution BuildPsychotypeResolution(PawnDiaryRecord diary)
         {
+            return BuildPsychotypeResolution(diary, PsychotypesEnabled);
+        }
+
+        /// <summary>
+        /// Resolves the saved psychotype using the selected lane's automatic-layer policy. Explicit
+        /// integration overrides remain active even on Compact lanes, matching their opt-in contract.
+        /// </summary>
+        private PsychotypeResolution BuildPsychotypeResolution(
+            PawnDiaryRecord diary,
+            bool automaticLayerEnabled)
+        {
             string baseDefName = string.IsNullOrEmpty(diary?.psychotypeDefName)
                 ? DiaryPsychotypes.NeutralDefName
                 : diary.psychotypeDefName;
@@ -459,7 +479,7 @@ namespace PawnDiary
             // EXTERNAL integration override (e.g. the RimTalk bridge's persona-led voice) is an opt-in
             // signal from another mod, so it still applies — otherwise that integration would silently do
             // nothing whenever the player has the automatic psychotype layer switched off.
-            if (!PsychotypesEnabled && resolution.source != PsychotypeRuleSource.ExternalApiOverride)
+            if (!automaticLayerEnabled && resolution.source != PsychotypeRuleSource.ExternalApiOverride)
             {
                 resolution.rule = string.Empty;
             }

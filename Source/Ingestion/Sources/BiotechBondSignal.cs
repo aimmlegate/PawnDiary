@@ -259,7 +259,8 @@ namespace PawnDiary.Ingestion
             if (context == null || string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(value))
                 return;
             if (context.Length > 0) context.Append("; ");
-            context.Append(key).Append('=').Append(DiaryLineCleaner.CleanLine(value));
+            context.Append(key).Append('=').Append(
+                GameContextValue.Sanitize(DiaryLineCleaner.CleanLine(value)));
         }
     }
 }

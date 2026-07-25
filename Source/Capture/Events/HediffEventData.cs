@@ -123,36 +123,36 @@ namespace PawnDiary.Capture
             string partKindToken = null, string partTierToken = null,
             string attitudeToken = null, string causeToken = null)
         {
-            string context = "hediff=" + defName
-                + "; label=" + cleanedLabel
-                + "; source=" + sourceToken
-                + "; group=" + groupKey
-                + "; mode=" + modeToken
-                + "; severity=" + severityF2
-                + "; stage=" + stageString;
+            string context = "hediff=" + GameContextValue.Sanitize(defName)
+                + "; label=" + GameContextValue.Sanitize(cleanedLabel)
+                + "; source=" + GameContextValue.Sanitize(sourceToken)
+                + "; group=" + GameContextValue.Sanitize(groupKey)
+                + "; mode=" + GameContextValue.Sanitize(modeToken)
+                + "; severity=" + GameContextValue.Sanitize(severityF2)
+                + "; stage=" + GameContextValue.Sanitize(stageString);
             if (!string.IsNullOrWhiteSpace(cleanedStageLabel))
             {
-                context += "; stage_label=" + cleanedStageLabel;
+                context += "; stage_label=" + GameContextValue.Sanitize(cleanedStageLabel);
             }
             if (!string.IsNullOrWhiteSpace(cleanedBodyPartLabel))
             {
-                context += "; body_part=" + cleanedBodyPartLabel;
+                context += "; body_part=" + GameContextValue.Sanitize(cleanedBodyPartLabel);
             }
             if (!string.IsNullOrWhiteSpace(partKindToken))
             {
-                context += "; part_kind=" + partKindToken;
+                context += "; part_kind=" + GameContextValue.Sanitize(partKindToken);
             }
             if (!string.IsNullOrWhiteSpace(partTierToken))
             {
-                context += "; part_tier=" + partTierToken;
+                context += "; part_tier=" + GameContextValue.Sanitize(partTierToken);
             }
             if (!string.IsNullOrWhiteSpace(attitudeToken))
             {
-                context += "; body_attitude=" + attitudeToken;
+                context += "; body_attitude=" + GameContextValue.Sanitize(attitudeToken);
             }
             if (!string.IsNullOrWhiteSpace(causeToken))
             {
-                context += "; part_cause=" + causeToken;
+                context += "; part_cause=" + GameContextValue.Sanitize(causeToken);
             }
             return context;
         }

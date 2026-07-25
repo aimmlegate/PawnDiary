@@ -341,30 +341,16 @@ namespace PawnDiary
                 return;
             }
 
-            // Persona, psychotype, prompt enchantment, and humor are resolved once at queue time. The
-            // prompt may be rebuilt after API-lane selection with a different context-detail level, but
-            // these captured strings keep that rebuild from rerolling live context, style, or outlook.
-            string personaRule = PersonaRuleFor(diaryEvent, povRole, livePawnsById);
-            string psychotypeRule = PsychotypeRuleFor(diaryEvent, povRole, livePawnsById);
-            string promptEnchantment = PromptEnchantmentRuleFor(diaryEvent, povRole, livePawnsById);
-            string humorCue = HumorCueFor(diaryEvent, povRole, livePawnsById);
-            // Anti-repetition guard: if the assembled prompt is too similar to the pawn's recent
-            // prompts, reroll the variable enhancements (instruction/tone/enchantment/humor) first.
-            ApplyPromptAntiRepeatGuard(
+            // The routing probe is read-only. After dispatch knows the selected/failover presets, its
+            // preparation callback stages writing style and only rolls a psychotype when some real variant
+            // can render one. Prompt enchantment and humor remain stable across all rendered variants.
+            string personaRule = PersonaRuleFor(diaryEvent, povRole, livePawnsById, false);
+            string promptEnchantment = PromptEnchantmentRuleFor(
                 diaryEvent,
                 povRole,
-                (enchantment, humor) => DiaryPromptBuilder.BuildInteractionPromptPlan(
-                    diaryEvent,
-                    povRole,
-                    personaRule,
-                    psychotypeRule,
-                    enchantment,
-                    0,
-                    humor,
-                    PromptContextDetailLevel.Full),
                 livePawnsById,
-                ref promptEnchantment,
-                ref humorCue);
+                PromptContextDetailLevel.Full);
+            string humorCue = HumorCueFor(diaryEvent, povRole, livePawnsById);
             QueuePrompt(
                 diaryEvent,
                 povRole,
@@ -372,14 +358,39 @@ namespace PawnDiary
                     diaryEvent,
                     povRole,
                     personaRule,
-                    psychotypeRule,
+                    PsychotypeRuleFor(diaryEvent, povRole, livePawnsById, false, level),
                     promptEnchantment,
                     0,
                     humorCue,
                     level),
                 null,
                 boundsCache,
-                livePawnsById);
+                livePawnsById,
+                (level, anyVariantAllowsPsychotypes) =>
+                {
+                    PrepareVoiceStageForPromptVariants(
+                        diaryEvent,
+                        povRole,
+                        livePawnsById,
+                        anyVariantAllowsPsychotypes);
+                    personaRule = PersonaRuleFor(diaryEvent, povRole, livePawnsById, false);
+                    ApplyPromptAntiRepeatGuard(
+                        diaryEvent,
+                        povRole,
+                        level,
+                        (enchantment, humor) => DiaryPromptBuilder.BuildInteractionPromptPlan(
+                            diaryEvent,
+                            povRole,
+                            personaRule,
+                            PsychotypeRuleFor(diaryEvent, povRole, livePawnsById, false, level),
+                            enchantment,
+                            0,
+                            humor,
+                            level),
+                        livePawnsById,
+                        ref promptEnchantment,
+                        ref humorCue);
+                });
         }
 
         /// <summary>
@@ -576,27 +587,17 @@ namespace PawnDiary
             // as hidden continuity context.
             if (initiatorEnabled && diaryEvent.CanQueueGeneration(DiaryEvent.InitiatorRole))
             {
-                string personaRule = PersonaRuleFor(diaryEvent, DiaryEvent.InitiatorRole);
-                string psychotypeRule = PsychotypeRuleFor(diaryEvent, DiaryEvent.InitiatorRole);
-                string promptEnchantment = PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.InitiatorRole, livePawnsById);
-                string humorCue = HumorCueFor(diaryEvent, DiaryEvent.InitiatorRole, livePawnsById);
-                // Anti-repetition guard (see QueueLlmRewrite): reroll enhancements when this prompt
-                // echoes the initiator pawn's recent prompts.
-                ApplyPromptAntiRepeatGuard(
+                string personaRule = PersonaRuleFor(
                     diaryEvent,
                     DiaryEvent.InitiatorRole,
-                    (enchantment, humor) => DiaryPromptBuilder.BuildSequentialInteractionPromptPlan(
-                        diaryEvent,
-                        DiaryEvent.InitiatorRole,
-                        personaRule,
-                        psychotypeRule,
-                        enchantment,
-                        0,
-                        humor,
-                        PromptContextDetailLevel.Full),
                     livePawnsById,
-                    ref promptEnchantment,
-                    ref humorCue);
+                    false);
+                string promptEnchantment = PromptEnchantmentRuleFor(
+                    diaryEvent,
+                    DiaryEvent.InitiatorRole,
+                    livePawnsById,
+                    PromptContextDetailLevel.Full);
+                string humorCue = HumorCueFor(diaryEvent, DiaryEvent.InitiatorRole, livePawnsById);
                 QueuePrompt(
                     diaryEvent,
                     DiaryEvent.InitiatorRole,
@@ -604,14 +605,53 @@ namespace PawnDiary
                         diaryEvent,
                         DiaryEvent.InitiatorRole,
                         personaRule,
-                        psychotypeRule,
+                        PsychotypeRuleFor(
+                            diaryEvent,
+                            DiaryEvent.InitiatorRole,
+                            livePawnsById,
+                            false,
+                            level),
                         promptEnchantment,
                         0,
                         humorCue,
                         level),
                     null,
                     boundsCache,
-                    livePawnsById);
+                    livePawnsById,
+                    (level, anyVariantAllowsPsychotypes) =>
+                    {
+                        PrepareVoiceStageForPromptVariants(
+                            diaryEvent,
+                            DiaryEvent.InitiatorRole,
+                            livePawnsById,
+                            anyVariantAllowsPsychotypes);
+                        personaRule = PersonaRuleFor(
+                            diaryEvent,
+                            DiaryEvent.InitiatorRole,
+                            livePawnsById,
+                            false);
+                        ApplyPromptAntiRepeatGuard(
+                            diaryEvent,
+                            DiaryEvent.InitiatorRole,
+                            level,
+                            (enchantment, humor) => DiaryPromptBuilder.BuildSequentialInteractionPromptPlan(
+                                diaryEvent,
+                                DiaryEvent.InitiatorRole,
+                                personaRule,
+                                PsychotypeRuleFor(
+                                    diaryEvent,
+                                    DiaryEvent.InitiatorRole,
+                                    livePawnsById,
+                                    false,
+                                    level),
+                                enchantment,
+                                0,
+                                humor,
+                                level),
+                            livePawnsById,
+                            ref promptEnchantment,
+                            ref humorCue);
+                    });
                 return;
             }
 
@@ -645,38 +685,17 @@ namespace PawnDiary
             if (diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole))
             {
                 // Recipient prompt includes hidden initiator context only when that context exists.
-                string personaRule = PersonaRuleFor(diaryEvent, DiaryEvent.RecipientRole);
-                string psychotypeRule = PsychotypeRuleFor(diaryEvent, DiaryEvent.RecipientRole);
-                string promptEnchantment = PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.RecipientRole, livePawnsById);
-                string humorCue = HumorCueFor(diaryEvent, DiaryEvent.RecipientRole, livePawnsById);
-                // Anti-repetition guard (see QueueLlmRewrite): the trial builder mirrors the real
-                // dispatch — sequential plan when the initiator's entry rides along as hidden
-                // context, plain interaction plan otherwise.
-                ApplyPromptAntiRepeatGuard(
+                string personaRule = PersonaRuleFor(
                     diaryEvent,
                     DiaryEvent.RecipientRole,
-                    (enchantment, humor) => initiatorContextExpected
-                        ? DiaryPromptBuilder.BuildSequentialInteractionPromptPlan(
-                            diaryEvent,
-                            DiaryEvent.RecipientRole,
-                            personaRule,
-                            psychotypeRule,
-                            enchantment,
-                            0,
-                            humor,
-                            PromptContextDetailLevel.Full)
-                        : DiaryPromptBuilder.BuildInteractionPromptPlan(
-                            diaryEvent,
-                            DiaryEvent.RecipientRole,
-                            personaRule,
-                            psychotypeRule,
-                            enchantment,
-                            0,
-                            humor,
-                            PromptContextDetailLevel.Full),
                     livePawnsById,
-                    ref promptEnchantment,
-                    ref humorCue);
+                    false);
+                string promptEnchantment = PromptEnchantmentRuleFor(
+                    diaryEvent,
+                    DiaryEvent.RecipientRole,
+                    livePawnsById,
+                    PromptContextDetailLevel.Full);
+                string humorCue = HumorCueFor(diaryEvent, DiaryEvent.RecipientRole, livePawnsById);
                 QueuePrompt(
                     diaryEvent,
                     DiaryEvent.RecipientRole,
@@ -685,7 +704,12 @@ namespace PawnDiary
                             diaryEvent,
                             DiaryEvent.RecipientRole,
                             personaRule,
-                            psychotypeRule,
+                            PsychotypeRuleFor(
+                                diaryEvent,
+                                DiaryEvent.RecipientRole,
+                                livePawnsById,
+                                false,
+                                level),
                             promptEnchantment,
                             0,
                             humorCue,
@@ -694,14 +718,68 @@ namespace PawnDiary
                             diaryEvent,
                             DiaryEvent.RecipientRole,
                             personaRule,
-                            psychotypeRule,
+                            PsychotypeRuleFor(
+                                diaryEvent,
+                                DiaryEvent.RecipientRole,
+                                livePawnsById,
+                                false,
+                                level),
                             promptEnchantment,
                             0,
                             humorCue,
                             level),
                     recipientPrimaryOverride,
                     boundsCache,
-                    livePawnsById);
+                    livePawnsById,
+                    (level, anyVariantAllowsPsychotypes) =>
+                    {
+                        PrepareVoiceStageForPromptVariants(
+                            diaryEvent,
+                            DiaryEvent.RecipientRole,
+                            livePawnsById,
+                            anyVariantAllowsPsychotypes);
+                        personaRule = PersonaRuleFor(
+                            diaryEvent,
+                            DiaryEvent.RecipientRole,
+                            livePawnsById,
+                            false);
+                        ApplyPromptAntiRepeatGuard(
+                            diaryEvent,
+                            DiaryEvent.RecipientRole,
+                            level,
+                            (enchantment, humor) => initiatorContextExpected
+                                ? DiaryPromptBuilder.BuildSequentialInteractionPromptPlan(
+                                    diaryEvent,
+                                    DiaryEvent.RecipientRole,
+                                    personaRule,
+                                    PsychotypeRuleFor(
+                                        diaryEvent,
+                                        DiaryEvent.RecipientRole,
+                                        livePawnsById,
+                                        false,
+                                        level),
+                                    enchantment,
+                                    0,
+                                    humor,
+                                    level)
+                                : DiaryPromptBuilder.BuildInteractionPromptPlan(
+                                    diaryEvent,
+                                    DiaryEvent.RecipientRole,
+                                    personaRule,
+                                    PsychotypeRuleFor(
+                                        diaryEvent,
+                                        DiaryEvent.RecipientRole,
+                                        livePawnsById,
+                                        false,
+                                        level),
+                                    enchantment,
+                                    0,
+                                    humor,
+                                    level),
+                            livePawnsById,
+                            ref promptEnchantment,
+                            ref humorCue);
+                    });
             }
         }
     }

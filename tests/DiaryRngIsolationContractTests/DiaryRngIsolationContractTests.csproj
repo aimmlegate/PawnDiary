@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <!--
+    This is a source-contract test: it reads production .cs files as text and deliberately
+    references no Pawn Diary, RimWorld, Verse, Unity, or Harmony assembly.
+  -->
+</Project>

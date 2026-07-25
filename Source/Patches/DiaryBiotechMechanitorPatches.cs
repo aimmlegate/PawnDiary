@@ -38,6 +38,18 @@ namespace PawnDiary
         {
             return pawn != null && Depth.ContainsKey(pawn);
         }
+
+        /// <summary>Clears every call-local death scope at a new-game/load lifecycle boundary.</summary>
+        public static void Clear()
+        {
+            Depth.Clear();
+        }
+
+        /// <summary>Number of retained pawn scopes, exposed only for focused lifecycle fixtures.</summary>
+        internal static int CountForTests
+        {
+            get { return Depth.Count; }
+        }
     }
 
     /// <summary>Captures exact successful mechlink installation.</summary>
@@ -105,6 +117,18 @@ namespace PawnDiary
         public static void Close()
         {
             if (Scopes.Count > 0) Scopes.RemoveAt(Scopes.Count - 1);
+        }
+
+        /// <summary>Clears every call-local boss-use scope at a new-game/load lifecycle boundary.</summary>
+        public static void Clear()
+        {
+            Scopes.Clear();
+        }
+
+        /// <summary>Number of retained call scopes, exposed only for focused lifecycle fixtures.</summary>
+        internal static int CountForTests
+        {
+            get { return Scopes.Count; }
         }
     }
 

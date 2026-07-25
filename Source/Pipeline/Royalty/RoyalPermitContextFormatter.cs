@@ -36,8 +36,7 @@ namespace PawnDiary
 
         private static string Clean(string value, int cap)
         {
-            string cleaned = (value ?? string.Empty).Replace('\r', ' ').Replace('\n', ' ')
-                .Replace(';', ',').Trim();
+            string cleaned = GameContextValue.Sanitize(value);
             int maximum = Math.Max(1, cap);
             return cleaned.Length <= maximum ? cleaned : cleaned.Substring(0, maximum).TrimEnd();
         }

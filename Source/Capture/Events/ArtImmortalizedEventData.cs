@@ -121,17 +121,7 @@ namespace PawnDiary.Capture
         /// </summary>
         private static string Sanitize(string value)
         {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return string.Empty;
-            }
-
-            return value
-                .Replace('\r', ' ')
-                .Replace('\n', ' ')
-                .Replace(';', ',')
-                .Replace('=', '-')
-                .Trim();
+            return GameContextValue.Sanitize(value);
         }
     }
 }

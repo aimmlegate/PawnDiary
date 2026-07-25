@@ -363,12 +363,18 @@ namespace PawnDiary
             return cachedRulesByKind.TryGetValue(eventKind.Trim(), out found) ? found : null;
         }
 
-        /// <summary>The full pure policy snapshot: XML tuning ANDed with the player switch.</summary>
-        public static KnowledgePolicySnapshot Snapshot()
+        /// <summary>
+        /// Builds the full pure policy snapshot. Normal UI/read paths keep the historical global
+        /// memory-layer switch; event capture and per-lane prompt projection pass <c>false</c> because
+        /// the effective API-lane context level is not known until dispatch.
+        /// </summary>
+        public static KnowledgePolicySnapshot Snapshot(bool applyGlobalMemorySetting = true)
         {
             KnowledgePolicySnapshot policy = KnowledgePolicySnapshot.CreateDefault();
             DiaryKnowledgeTuningDef tuning = DefDatabase<DiaryKnowledgeTuningDef>.GetNamedSilentFail(TuningDefName);
-            bool settingEnabled = PawnDiaryMod.Settings == null || PawnDiaryMod.Settings.enableMemorySystem;
+            bool settingEnabled = !applyGlobalMemorySetting
+                || PawnDiaryMod.Settings == null
+                || PawnDiaryMod.Settings.enableMemorySystem;
             if (tuning == null)
             {
                 policy.injectionEnabled = settingEnabled;

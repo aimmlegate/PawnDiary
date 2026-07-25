@@ -80,7 +80,8 @@ namespace PawnDiary
 
             if (recruiter != null)
             {
-                parts.Add("recruiter=" + DiaryLineCleaner.CleanLine(recruiter.LabelShortCap));
+                parts.Add("recruiter=" + GameContextValue.Sanitize(
+                    DiaryLineCleaner.CleanLine(recruiter.LabelShortCap)));
             }
 
             if (DlcContext.IsCreepJoiner(pawn))
@@ -91,7 +92,7 @@ namespace PawnDiary
             string surroundings = DiaryContextBuilder.BuildSurroundingsSummary(pawn);
             if (!string.IsNullOrWhiteSpace(surroundings) && surroundings != "unknown" && surroundings != "none")
             {
-                parts.Add("arrival_surroundings=" + surroundings);
+                parts.Add("arrival_surroundings=" + GameContextValue.Sanitize(surroundings));
             }
 
             string originCulture = DlcContext.PawnIdeoCultureDefName(pawn);
@@ -142,7 +143,8 @@ namespace PawnDiary
 
             List<string> parts = new List<string>
             {
-                "arrival_source=" + (string.IsNullOrWhiteSpace(fallbackSource) ? "unknown" : fallbackSource)
+                "arrival_source=" + GameContextValue.Sanitize(
+                    string.IsNullOrWhiteSpace(fallbackSource) ? "unknown" : fallbackSource)
             };
 
             AppendPawnKind(parts, pawn);
@@ -208,7 +210,7 @@ namespace PawnDiary
 
             if (!string.IsNullOrWhiteSpace(label))
             {
-                parts.Add("priorFaction=" + label);
+                parts.Add("priorFaction=" + GameContextValue.Sanitize(label));
             }
         }
 
@@ -219,7 +221,7 @@ namespace PawnDiary
                 return;
             }
 
-            parts.Add("pawnKind=" + pawn.kindDef.defName);
+            parts.Add("pawnKind=" + GameContextValue.Sanitize(pawn.kindDef.defName));
         }
 
         private static bool IsHumanlike(Pawn pawn)

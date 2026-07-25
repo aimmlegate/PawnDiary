@@ -36,6 +36,10 @@ namespace PawnDiary
         private const string EventWindowPhaseTimeout = "timeout";
         // Structured schema token, intentionally English under the localization carve-out.
         private const string NarrativeSourceDomainEventWindow = "event_window";
+        // Defs and their trigger lists are immutable after startup. Build this structural index lazily
+        // on the first live spawn so the game's much hotter Thing.SpawnSetup path never scans every
+        // event-window Def merely to discover that no ThingSpawned rule exists.
+        private static EventWindowPolicy.DefNamePrecheckIndex thingSpawnedEventWindowIndex;
 
         /// <summary>
         /// Generic signal entry point used by Harmony patches and existing recorders.
@@ -123,7 +127,7 @@ namespace PawnDiary
             // and plant). Resolving LabelShortCap + cleaning it for every spawn is wasted work unless
             // some def could actually match this thing, so gate on the cheap pre-check first.
             if (!CanRecordGameplayEventNow()
-                || !CouldMatchEventWindow(EventWindowSourceThingSpawned, thing.def.defName))
+                || !CouldMatchThingSpawnedEventWindow(thing.def.defName))
             {
                 return;
             }
@@ -1233,14 +1237,51 @@ namespace PawnDiary
 
         private static string SafeContextValue(string value)
         {
-            return DiaryLineCleaner.CleanLine(value) ?? string.Empty;
+            return GameContextValue.Sanitize(DiaryLineCleaner.CleanLine(value));
         }
 
         /// <summary>
-        /// Cheap pre-check used by hot signal wrappers (spawned things, added hediffs) before they
+        /// O(1) negative gate for the global Thing.SpawnSetup hook. The index deliberately includes
+        /// disabled and package-gated Defs: players can toggle a Def's enabled field at runtime, so
+        /// excluding it would make a later enablement invisible. That conservative choice can only
+        /// cause an unnecessary full check; it can never suppress a newly enabled rule.
+        /// </summary>
+        internal static bool CouldMatchThingSpawnedEventWindow(string defName)
+        {
+            EventWindowPolicy.DefNamePrecheckIndex index = thingSpawnedEventWindowIndex;
+            if (index == null)
+            {
+                index = new EventWindowPolicy.DefNamePrecheckIndex(
+                    EventWindowSourceThingSpawned,
+                    EventWindowSignalSpawned);
+                List<DiaryEventWindowDef> defs =
+                    DefDatabase<DiaryEventWindowDef>.AllDefsListForReading;
+                if (defs != null)
+                {
+                    for (int i = 0; i < defs.Count; i++)
+                    {
+                        DiaryEventWindowDef def = defs[i];
+                        if (def == null)
+                        {
+                            continue;
+                        }
+
+                        index.Include(def.StartRules());
+                        index.Include(def.EndRules());
+                    }
+                }
+
+                thingSpawnedEventWindowIndex = index;
+            }
+
+            return index.CouldMatch(defName);
+        }
+
+        /// <summary>
+        /// Cheap pre-check used by lower-volume signal wrappers (currently added hediffs) before they
         /// resolve a label: returns true only when some enabled event-window def could match this
-        /// source+defName. Uses each def's cached rule projection, so it allocates nothing on the hot
-        /// path. A false result guarantees no def can match, so the caller can skip the label work.
+        /// source+defName. Uses each def's cached rule projection, so it allocates nothing while scanning.
+        /// A false result guarantees no def can match, so the caller can skip the label work.
         /// </summary>
         private static bool CouldMatchEventWindow(string source, string defName)
         {

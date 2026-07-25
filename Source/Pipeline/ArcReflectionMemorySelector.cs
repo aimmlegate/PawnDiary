@@ -39,11 +39,13 @@ namespace PawnDiary
     {
         public List<ArcMemoryCandidate> candidates = new List<ArcMemoryCandidate>();
         public List<string> recentlyUsedEventIds = new List<string>();
+        // One unit-interval roll per possible weighted pick. The impure runtime adapter creates this
+        // bounded list (at most one value per raw candidate); pure tests can pass exact values.
+        public List<double> selectionRolls = new List<double>();
         public int currentYear;
         public int maxMemories = 8;
         public int minMemories = 4;
         public int sameDomainGroupCap = 2;
-        public int seed = 1;
     }
 
     /// <summary>
@@ -61,6 +63,8 @@ namespace PawnDiary
     /// </summary>
     internal static class ArcReflectionMemorySelector
     {
+        private const double MaximumUnitRoll = 0.9999999999999999d;
+
         public static ArcMemorySelectionResult Select(ArcMemorySelectionRequest request)
         {
             request = request ?? new ArcMemorySelectionRequest();
@@ -72,12 +76,17 @@ namespace PawnDiary
 
             int max = Math.Max(1, request.maxMemories);
             int cap = Math.Max(1, request.sameDomainGroupCap);
-            Random random = new Random(request.seed);
+            int rollIndex = 0;
             Dictionary<string, int> groupCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
             while (result.selected.Count < max && pool.Count > 0)
             {
-                int picked = PickWeighted(pool, random);
+                // Every iteration removes exactly one candidate, including a candidate rejected by the
+                // group cap, so one raw-candidate-sized roll list can never be exhausted in production.
+                // A malformed/test request that supplies fewer rolls deterministically falls back to 0.
+                double unitRoll = UnitRollAt(request.selectionRolls, rollIndex);
+                rollIndex++;
+                int picked = PickWeighted(pool, unitRoll);
                 ArcMemoryCandidate candidate = pool[picked];
                 pool.RemoveAt(picked);
 
@@ -161,7 +170,7 @@ namespace PawnDiary
             return result;
         }
 
-        private static int PickWeighted(List<ArcMemoryCandidate> pool, Random random)
+        private static int PickWeighted(List<ArcMemoryCandidate> pool, double unitRoll)
         {
             int picked = pool.Count - 1;
             double total = 0;
@@ -170,7 +179,7 @@ namespace PawnDiary
                 total += Math.Max(0.0001, Weight(pool[i]));
             }
 
-            double roll = random.NextDouble() * total;
+            double roll = unitRoll * total;
             double acc = 0;
             for (int i = 0; i < pool.Count; i++)
             {
@@ -183,6 +192,26 @@ namespace PawnDiary
             }
 
             return picked;
+        }
+
+        /// <summary>
+        /// Returns one normalized unit-interval roll. Missing/NaN/negative values choose the first
+        /// weighted bucket; values at or above one clamp just below one and choose the final bucket.
+        /// </summary>
+        private static double UnitRollAt(List<double> rolls, int index)
+        {
+            if (rolls == null || index < 0 || index >= rolls.Count)
+            {
+                return 0d;
+            }
+
+            double value = rolls[index];
+            if (double.IsNaN(value) || value <= 0d)
+            {
+                return 0d;
+            }
+
+            return value >= 1d ? MaximumUnitRoll : value;
         }
 
         private static double Weight(ArcMemoryCandidate candidate)

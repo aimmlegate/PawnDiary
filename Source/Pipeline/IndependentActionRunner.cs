@@ -1,5 +1,6 @@
-// Runs a sequence of independent startup actions without letting one failure suppress later work.
-// The helper is System-only so the exception-isolation contract can be tested without RimWorld.
+// Runs a sequence of independent lifecycle actions without letting one failure suppress later work.
+// Startup patch registration and pre-save maintenance both use this System-only helper, so their
+// exception-isolation contract can be tested without RimWorld.
 using System;
 using System.Collections.Generic;
 
@@ -27,7 +28,7 @@ namespace PawnDiary
                     Action action = actions[i];
                     if (action == null)
                     {
-                        throw new InvalidOperationException("Registration action was null.");
+                        throw new InvalidOperationException("Independent action was null.");
                     }
 
                     action();
@@ -40,8 +41,8 @@ namespace PawnDiary
                     }
                     catch
                     {
-                        // Failure reporting is also optional startup work. It must not become a new
-                        // reason to skip the remaining independent actions.
+                        // Failure reporting is optional diagnostic work. It must not become a new
+                        // reason to skip the remaining independent lifecycle actions.
                     }
                 }
             }

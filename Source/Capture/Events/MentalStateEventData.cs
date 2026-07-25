@@ -164,10 +164,11 @@ namespace PawnDiary.Capture
         /// </summary>
         public static string BuildPairGameContext(string defName, string label, string cleanedReason)
         {
-            string context = "mental_state=" + defName + "; label=" + label;
+            string context = "mental_state=" + GameContextValue.Sanitize(defName)
+                + "; label=" + GameContextValue.Sanitize(label);
             if (!string.IsNullOrWhiteSpace(cleanedReason))
             {
-                context += "; reason=" + cleanedReason;
+                context += "; reason=" + GameContextValue.Sanitize(cleanedReason);
             }
             return context;
         }
@@ -181,14 +182,15 @@ namespace PawnDiary.Capture
         public static string BuildSoloGameContext(
             string defName, string label, string cleanedTargetLabel, string cleanedReason)
         {
-            string context = "mental_state=" + defName + "; label=" + label;
+            string context = "mental_state=" + GameContextValue.Sanitize(defName)
+                + "; label=" + GameContextValue.Sanitize(label);
             if (!string.IsNullOrWhiteSpace(cleanedTargetLabel))
             {
-                context += "; target=" + cleanedTargetLabel;
+                context += "; target=" + GameContextValue.Sanitize(cleanedTargetLabel);
             }
             if (!string.IsNullOrWhiteSpace(cleanedReason))
             {
-                context += "; reason=" + cleanedReason;
+                context += "; reason=" + GameContextValue.Sanitize(cleanedReason);
             }
             return context;
         }

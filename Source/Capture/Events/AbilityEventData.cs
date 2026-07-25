@@ -118,21 +118,10 @@ namespace PawnDiary.Capture
 
         private static string Clean(string value)
         {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return string.Empty;
-            }
-
             // These values come from Def labels and target display text, including content supplied by
             // other mods. Keep each value inside its own `; key=value` field: semicolons/newlines cannot
             // open another field, and equals signs cannot imitate another assignment inside the value.
-            return value
-                .Replace('\r', ' ')
-                .Replace('\n', ' ')
-                .Replace('\t', ' ')
-                .Replace(';', ',')
-                .Replace('=', '-')
-                .Trim();
+            return GameContextValue.Sanitize(value);
         }
 
         private static float Clamp01(float value)

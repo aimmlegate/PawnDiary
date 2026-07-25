@@ -165,8 +165,8 @@ namespace PawnDiary.Capture
         }
 
         /// <summary>
-        /// Pure assembly of the thought's game-context marker string. Inputs must already be cleaned
-        /// (RecordThought runs DiaryLineCleaner.CleanLine on the label before calling). The format
+        /// Pure assembly of the thought's game-context marker string. Values are sanitized again at
+        /// this structural boundary even when the caller already ran display-text cleanup. The format
         /// is load-bearing: the UI parses the leading "thought=" marker to classify the event into
         /// the Thought domain, and the LLM reads the rest as prompt evidence. Keeping the format in a
         /// pure helper means tests can lock it down — a future migration that drifts the format (e.g.
@@ -175,9 +175,9 @@ namespace PawnDiary.Capture
         public static string BuildGameContext(
             string defName, string label, string moodImpact, float moodOffset, float durationDays)
         {
-            return "thought=" + defName
-                + "; label=" + label
-                + "; mood_impact=" + moodImpact
+            return "thought=" + GameContextValue.Sanitize(defName)
+                + "; label=" + GameContextValue.Sanitize(label)
+                + "; mood_impact=" + GameContextValue.Sanitize(moodImpact)
                 + "; mood_offset=" + moodOffset.ToString("F1", CultureInfo.InvariantCulture)
                 + "; duration_days=" + durationDays.ToString("F1", CultureInfo.InvariantCulture);
         }

@@ -158,20 +158,27 @@ namespace PawnDiary.Capture
             string odysseyCategoryToken = null,
             bool odysseyMajorDestination = false)
         {
-            string context = "quest=" + defName
-                + "; signal=" + signal
-                + "; label=" + label
-                + "; faction=" + factionDefName
-                + "; rewards=" + rewards
-                + "; quest_label=" + label
-                + "; quest_signal=" + signal
-                + "; quest_faction=" + factionDefName
-                + "; quest_rewards=" + rewards;
-            string category = CleanOneLine(odysseyCategoryToken);
-            if (category.Length == 0 || category.IndexOfAny(new[] { ';', '=', '|' }) >= 0)
+            string cleanDefName = GameContextValue.Sanitize(defName);
+            string cleanSignal = GameContextValue.Sanitize(signal);
+            string cleanLabel = GameContextValue.Sanitize(label);
+            string cleanFaction = GameContextValue.Sanitize(factionDefName);
+            string cleanRewards = GameContextValue.Sanitize(rewards);
+            string context = "quest=" + cleanDefName
+                + "; signal=" + cleanSignal
+                + "; label=" + cleanLabel
+                + "; faction=" + cleanFaction
+                + "; rewards=" + cleanRewards
+                + "; quest_label=" + cleanLabel
+                + "; quest_signal=" + cleanSignal
+                + "; quest_faction=" + cleanFaction
+                + "; quest_rewards=" + cleanRewards;
+            string categoryCandidate = CleanOneLine(odysseyCategoryToken);
+            if (categoryCandidate.Length == 0
+                || categoryCandidate.IndexOfAny(new[] { ';', '=', '|' }) >= 0)
             {
                 return context;
             }
+            string category = GameContextValue.Sanitize(categoryCandidate);
 
             return context
                 + "; odyssey_quest=true"

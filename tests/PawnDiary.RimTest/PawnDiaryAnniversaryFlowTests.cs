@@ -1,4 +1,4 @@
-// Loaded-game flow for anniversaries and personal records (Quality Wave §8, H2).
+// Loaded-game flow for anniversaries and personal records (EVT-25; Quality Wave §8, H2).
 //
 // The RULES — elapsed-year arithmetic, the milestone set, the grief decay schedule, retention order,
 // and monotonic record crossings — are pure and covered headlessly in DiaryPipelineTests. What only a

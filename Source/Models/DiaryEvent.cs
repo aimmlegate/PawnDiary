@@ -159,6 +159,11 @@ namespace PawnDiary
         // ---------------------------------------------------------------------------------------------
 
         public string eventId; // unique ID for this event, stable across saves
+        // Transient load-repair marker. Older/corrupt saves can contain an event with no id; Scribe
+        // normalizes that row before the component sees it. Remembering that repair lets PostLoadInit
+        // restore the event's per-pawn references instead of pruning the newly minted id as an orphan.
+        // This is deliberately NOT scribed, so the existing save schema remains unchanged.
+        internal bool EventIdWasRepairedOnLoad { get; private set; }
         public List<int> playLogEntryIds = new List<int>(); // Verse.LogEntry ids that produced this diary event
         public int tick; // game tick when the event was recorded
         public string date; // human-readable date string at event time
@@ -325,6 +330,7 @@ namespace PawnDiary
             if (string.IsNullOrWhiteSpace(eventId))
             {
                 eventId = Guid.NewGuid().ToString("N");
+                EventIdWasRepairedOnLoad = true;
             }
 
             if (playLogEntryIds == null)

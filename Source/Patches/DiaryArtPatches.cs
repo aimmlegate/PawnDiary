@@ -83,6 +83,12 @@ namespace PawnDiary
         // fall back to matching translated art prose, which would eventually double-write a deed.
         private static readonly FieldInfo TaleField = AccessTools.Field(typeof(TaleReference), "tale");
 
+        /// <summary>
+        /// Startup-manifest and loaded-test canary for the private TaleReference field shared by all
+        /// three art hooks. Harmony can install those hooks even when this later reflection lookup fails.
+        /// </summary>
+        internal static bool RequiredReflectionFieldsAvailable => TaleField != null;
+
         public static void TryRecord(CompArt comp, Pawn sculptor)
         {
             if (!DiaryGameComponent.GamePlaying || comp == null || TaleField == null)
