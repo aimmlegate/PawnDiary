@@ -1818,6 +1818,27 @@ namespace PawnDiary
                     writtenQuadrumReflections.Add(QuadrumSummaryKey(ev.initiatorPawnId, QuadrumIndexForDay(DayIndexForGameTick(ev.tick))));
                 }
             }
+
+            // Retention moves completed old pages out of the hot event store. Those archived rows are
+            // still authoritative history: forgetting one here permits a duplicate quadrum reflection
+            // after reload while the original quadrum's due window remains open.
+            IReadOnlyList<ArchivedDiaryEntry> archivedEntries = archive.AllEntries;
+            for (int i = 0; i < archivedEntries.Count; i++)
+            {
+                ArchivedDiaryEntry entry = archivedEntries[i];
+                if (entry == null || string.IsNullOrWhiteSpace(entry.pawnId)
+                    || !string.Equals(
+                        entry.interactionDefName,
+                        DayReflectionEventData.QuadrumDefNameToken,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                writtenQuadrumReflections.Add(QuadrumSummaryKey(
+                    entry.pawnId,
+                    QuadrumIndexForDay(DayIndexForGameTick(entry.tick))));
+            }
         }
 
         /// <summary>Day index a stored game tick falls in, aligned with <see cref="CurrentDayIndex"/>.</summary>

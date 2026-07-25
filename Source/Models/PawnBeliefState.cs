@@ -216,6 +216,10 @@ namespace PawnDiary
             lastReflectionDay = normalizedDay;
             lastReflectionQuadrum = normalizedDay / GenDate.DaysPerQuadrum;
             reflectionsThisQuadrum = 0;
+            if (lastReflectedSourceIds == null)
+            {
+                lastReflectedSourceIds = new List<string>();
+            }
             lastReflectedSourceIds.Clear();
             ClearPendingCertainty();
             ClearPendingIdeologyChange();

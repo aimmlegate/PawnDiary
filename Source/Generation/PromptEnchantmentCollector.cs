@@ -378,7 +378,8 @@ namespace PawnDiary
                 PromptText("PawnDiary.Prompt.Health.Cue.LifeThreatening"));
             AppendCue(cues, hediff.Bleeding, BleedingCue(hediff));
             AppendCue(cues, hediff.PainOffset > 0.05f, PainCue(hediff));
-            AppendCue(cues, hediff.SummaryHealthPercentImpact < -0.05f,
+            AppendCue(cues, HealthImpactPolicy.IsMeaningfulHarm(
+                    hediff.SummaryHealthPercentImpact, 0.05f),
                 PromptText("PawnDiary.Prompt.Health.Cue.WeakensBody"));
             AppendCue(cues, hediff is Hediff_Addiction,
                 PromptText("PawnDiary.Prompt.Health.Cue.AddictionPressure"));
@@ -599,7 +600,7 @@ namespace PawnDiary
             }
 
             weight += Mathf.Clamp(hediff.PainOffset, 0f, 1f);
-            weight += Mathf.Clamp(-hediff.SummaryHealthPercentImpact, 0f, 1f);
+            weight += HealthImpactPolicy.NormalizedHarm(hediff.SummaryHealthPercentImpact);
             return Mathf.Max(0.1f, weight);
         }
 

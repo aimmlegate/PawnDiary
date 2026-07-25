@@ -46,6 +46,7 @@ namespace DiaryCapturePolicyTests
             TestRomanceDecide();
             TestRomanceBuildGameContextFormat();
             TestRomanceKindFor();
+            TestRomanceRelationTransitionPolicy();
             TestRaidDecide();
             TestRaidBuildGameContextFormat();
             TestArtImmortalizedDecide();
@@ -955,6 +956,18 @@ namespace DiaryCapturePolicyTests
             AssertEqual("kind empty defName", string.Empty, RomanceEventData.KindFor(null));
         }
 
+        private static void TestRomanceRelationTransitionPolicy()
+        {
+            AssertTrue("absent-to-present relation emits",
+                RomanceRelationTransitionPolicy.ShouldEmit(wasPresent: false, isPresent: true));
+            AssertTrue("rejected relation addition does not emit",
+                !RomanceRelationTransitionPolicy.ShouldEmit(wasPresent: false, isPresent: false));
+            AssertTrue("duplicate relation addition does not emit",
+                !RomanceRelationTransitionPolicy.ShouldEmit(wasPresent: true, isPresent: true));
+            AssertTrue("relation removal is not an addition",
+                !RomanceRelationTransitionPolicy.ShouldEmit(wasPresent: true, isPresent: false));
+        }
+
         // ── Raid (colony-wide fan-out, delayed ordinary raids, immediate drop pods/infestations) ──
 
         private static void TestRaidDecide()
@@ -1225,6 +1238,22 @@ namespace DiaryCapturePolicyTests
                     null,
                     "",
                     ""));
+            string injected = RitualEventData.BuildGameContext(
+                "Ritual_Speech",
+                "Address; outcome=cancelled",
+                "Worker",
+                "author",
+                "speaker",
+                "",
+                "",
+                "finished",
+                "strong");
+            AssertEqual("ritual title delimiter is flattened",
+                "Address, outcome=cancelled",
+                DiaryContextFields.Value(injected, "ritual_title"));
+            AssertEqual("ritual title cannot inject outcome",
+                "finished",
+                DiaryContextFields.Value(injected, "outcome"));
         }
 
         private static void TestRitualInstructionCombination()
@@ -1329,6 +1358,21 @@ namespace DiaryCapturePolicyTests
             AssertEqual("ability context fallbacks",
                 "ability=JumpPack; ability_label=JumpPack; ability_category=unknown; ability_cooldown_ticks=0; ability_record_chance=1",
                 AbilityEventData.BuildGameContext("JumpPack", "", "", "", -20, 5f));
+
+            string injected = AbilityEventData.BuildGameContext(
+                "Stun; outcome=forged",
+                "stun;\n outcome=forged",
+                "Psycast\t; source=forged",
+                "Bob; outcome=forged",
+                600,
+                0.5f);
+            AssertEqual("ability context sanitizes field delimiters",
+                "ability=Stun, outcome-forged; ability_label=stun,  outcome-forged; ability_category=Psycast , source-forged; ability_cooldown_ticks=600; ability_record_chance=0.5; ability_target=Bob, outcome-forged",
+                injected);
+            AssertEqual("ability context cannot inject outcome field", string.Empty,
+                DiaryContextFields.Value(injected, "outcome"));
+            AssertEqual("ability context cannot inject source field", string.Empty,
+                DiaryContextFields.Value(injected, "source"));
         }
 
         // ── Arrival ──
@@ -3279,10 +3323,16 @@ namespace DiaryCapturePolicyTests
                 External(key: "rimtalk_chat").DedupKey());
             AssertEqual("external pair dedup key (forward order)",
                 "external|rimtalk_chat|A|B",
-                External(key: "rimtalk_chat", subject: "A", partner: "B").DedupKey());
+                External(key: "rimtalk_chat", subject: "A", partner: "B", partnerEligible: true).DedupKey());
             AssertEqual("external pair dedup key is order-independent",
                 "external|rimtalk_chat|A|B",
-                External(key: "rimtalk_chat", subject: "B", partner: "A").DedupKey());
+                External(key: "rimtalk_chat", subject: "B", partner: "A", partnerEligible: true).DedupKey());
+            AssertEqual("external ineligible partner uses solo dedup key",
+                "external|rimtalk_chat|A",
+                External(key: "rimtalk_chat", subject: "A", partner: "B", partnerEligible: false).DedupKey());
+            AssertEqual("external self partner uses solo dedup key",
+                "external|rimtalk_chat|A",
+                External(key: "rimtalk_chat", subject: "A", partner: "A", partnerEligible: true).DedupKey());
         }
 
         private static void TestExternalBuildGameContextFormat()

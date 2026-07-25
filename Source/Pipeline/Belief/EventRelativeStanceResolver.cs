@@ -537,18 +537,28 @@ namespace PawnDiary
             }
             source.Sort(CompareCandidates);
 
-            HashSet<string> seenPrecepts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            HashSet<string> seenIssues = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             List<Candidate> collapsed = new List<Candidate>();
             for (int i = 0; i < source.Count; i++)
             {
                 Candidate candidate = source[i];
-                string preceptKey = StableKey(candidate.precept);
-                string issueKey = IssueKey(candidate.precept);
-                if (!seenPrecepts.Add(preceptKey)) continue;
-                if (issueKey.Length > 0 && !seenIssues.Add(issueKey)) continue;
-                collapsed.Add(candidate);
+                int redundantAt = FindRedundantCandidateIndex(collapsed, candidate);
+                if (redundantAt < 0)
+                {
+                    collapsed.Add(candidate);
+                    continue;
+                }
+
+                Candidate existing = collapsed[redundantAt];
+                // Negative/mixed mechanical evidence is the reliable representative when two
+                // variants of the same doctrine/issue came from the same exact fact. Across
+                // independent evidence keys the ordinary score-first order remains authoritative.
+                if (Same(existing.evidenceKey, candidate.evidenceKey)
+                    && CompareSameEvidenceRedundancy(candidate, existing) < 0)
+                {
+                    collapsed[redundantAt] = candidate;
+                }
             }
+            collapsed.Sort(CompareCandidates);
             if (collapsed.Count == 0) return result;
             Candidate first = PickWeighted(collapsed, request.deterministicSeed, 0);
             result.Add(first);
@@ -851,15 +861,108 @@ namespace PawnDiary
 
         private static int CompareCandidates(Candidate left, Candidate right)
         {
-            if (Same(left.evidenceKey, right.evidenceKey))
-            {
-                int byValence = ValenceRank(right.valence).CompareTo(ValenceRank(left.valence));
-                if (byValence != 0) return byValence;
-            }
-            int byScore = right.finalScore.CompareTo(left.finalScore);
+            return CompareCandidateOrder(
+                left.valence, left.finalScore, left.tie, StableKey(left.precept),
+                left.evidenceKey, left.matchedIdentity, left.relevanceSource, left.correctionKey,
+                right.valence, right.finalScore, right.tie, StableKey(right.precept),
+                right.evidenceKey, right.matchedIdentity, right.relevanceSource, right.correctionKey);
+        }
+
+        /// <summary>
+        /// Compares detached candidate sort fields through one score-first global lexicographic
+        /// order. Same-evidence valence precedence is handled during redundancy collapse instead of
+        /// turning on for selected sort pairs (which could create A &lt; B &lt; C &lt; A cycles).
+        /// </summary>
+        internal static int CompareCandidateOrder(
+            string leftValence,
+            float leftScore,
+            uint leftTie,
+            string leftStableKey,
+            string leftEvidenceKey,
+            string leftMatchedIdentity,
+            string leftRelevanceSource,
+            string leftCorrectionKey,
+            string rightValence,
+            float rightScore,
+            uint rightTie,
+            string rightStableKey,
+            string rightEvidenceKey,
+            string rightMatchedIdentity,
+            string rightRelevanceSource,
+            string rightCorrectionKey)
+        {
+            int byScore = rightScore.CompareTo(leftScore);
             if (byScore != 0) return byScore;
-            int byTie = left.tie.CompareTo(right.tie);
-            return byTie != 0 ? byTie : string.Compare(StableKey(left.precept), StableKey(right.precept), StringComparison.Ordinal);
+            int byTie = leftTie.CompareTo(rightTie);
+            if (byTie != 0) return byTie;
+            int byStableKey = string.Compare(
+                leftStableKey ?? string.Empty, rightStableKey ?? string.Empty, StringComparison.Ordinal);
+            if (byStableKey != 0) return byStableKey;
+            int byEvidence = string.Compare(
+                leftEvidenceKey ?? string.Empty, rightEvidenceKey ?? string.Empty, StringComparison.Ordinal);
+            if (byEvidence != 0) return byEvidence;
+            int byValence = ValenceRank(rightValence).CompareTo(ValenceRank(leftValence));
+            if (byValence != 0) return byValence;
+            int byIdentity = string.Compare(
+                leftMatchedIdentity ?? string.Empty, rightMatchedIdentity ?? string.Empty,
+                StringComparison.Ordinal);
+            if (byIdentity != 0) return byIdentity;
+            int bySource = string.Compare(
+                leftRelevanceSource ?? string.Empty, rightRelevanceSource ?? string.Empty,
+                StringComparison.Ordinal);
+            if (bySource != 0) return bySource;
+            return string.Compare(
+                leftCorrectionKey ?? string.Empty, rightCorrectionKey ?? string.Empty,
+                StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Chooses the representative of one redundant same-evidence doctrine group. Mechanical
+        /// valence wins here, then the ordinary deterministic score-first order breaks ties.
+        /// </summary>
+        internal static int CompareSameEvidenceRedundancy(
+            string leftValence,
+            float leftScore,
+            uint leftTie,
+            string leftStableKey,
+            string rightValence,
+            float rightScore,
+            uint rightTie,
+            string rightStableKey)
+        {
+            int byValence = ValenceRank(rightValence).CompareTo(ValenceRank(leftValence));
+            if (byValence != 0) return byValence;
+            return CompareCandidateOrder(
+                leftValence, leftScore, leftTie, leftStableKey, string.Empty, string.Empty,
+                string.Empty, string.Empty,
+                rightValence, rightScore, rightTie, rightStableKey, string.Empty, string.Empty,
+                string.Empty, string.Empty);
+        }
+
+        private static int CompareSameEvidenceRedundancy(Candidate left, Candidate right)
+        {
+            return CompareSameEvidenceRedundancy(
+                left.valence, left.finalScore, left.tie, StableKey(left.precept),
+                right.valence, right.finalScore, right.tie, StableKey(right.precept));
+        }
+
+        private static int FindRedundantCandidateIndex(List<Candidate> candidates, Candidate wanted)
+        {
+            string wantedPrecept = StableKey(wanted.precept);
+            string wantedIssue = IssueKey(wanted.precept);
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                Candidate existing = candidates[i];
+                if (string.Equals(
+                        StableKey(existing.precept), wantedPrecept, StringComparison.OrdinalIgnoreCase)
+                    || wantedIssue.Length > 0
+                    && Same(IssueKey(existing.precept), wantedIssue))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
 
         private static int ValenceRank(string value)

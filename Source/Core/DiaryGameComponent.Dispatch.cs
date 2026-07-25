@@ -23,6 +23,7 @@
 //
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 // New to C#/RimWorld? See AGENTS.md.
+using System;
 using System.Collections.Generic;
 using PawnDiary.Capture;
 using PawnDiary.Ingestion;
@@ -176,65 +177,83 @@ namespace PawnDiary
                 return;
             }
 
-            bool emittedAny = false;
-            foreach (DiarySignal child in signal.PerPawnSignals())
-            {
-                if (child == null)
+            // A colony fan-out is a set of independent pawn stories. One modded getter or one
+            // malformed child must cost only that pawn, not every sibling after it.
+            int emittedCount = FaultIsolatedItemRunner.Run(
+                signal.PerPawnSignals(),
+                TryDispatchFanoutChild,
+                (child, exception) =>
                 {
-                    continue;
-                }
+                    string childType = child?.GetType().FullName ?? "null";
+                    string errorKey = "PawnDiary.FanoutChild." + signal.GetType().FullName
+                        + "." + childType;
+                    Log.ErrorOnce(
+                        "[Pawn Diary] Skipped one fan-out child after its payload, context, or emit "
+                        + "failed; remaining pawns were still attempted: " + exception,
+                        errorKey.GetHashCode());
+                });
 
-                DiaryEventData childPayload = child.Payload;
-                if (childPayload == null)
-                {
-                    continue;
-                }
-
-                CaptureDecision decision;
-                if (!TryDecide(childPayload, child.BuildContext(), out decision))
-                {
-                    continue;
-                }
-
-                // Most fan-outs dedup only at the colony level (child.DedupKey empty); a child may add
-                // its own per-pawn window if it needs one. The short generic type key is checked after
-                // Decide, matching the solo path, because it needs the payload's event type.
-                string childKey = child.DedupKey;
-                if (!string.IsNullOrEmpty(childKey)
-                    && IsRecentlyRecorded(recentEvents, childKey, child.DedupWindowTicks))
-                {
-                    continue;
-                }
-
-                string childEventTypeKey = EventTypeDedupKeyFor(child, childPayload, decision, childKey);
-                int childEventTypeWindowTicks = child.EventTypeDedupWindowTicks;
-                if (!string.IsNullOrEmpty(childEventTypeKey)
-                    && IsRecentlyRecorded(recentEvents, childEventTypeKey, childEventTypeWindowTicks))
-                {
-                    continue;
-                }
-
-                if (!string.IsNullOrEmpty(childKey))
-                {
-                    MarkRecentlyRecorded(recentEvents, childKey, child.DedupWindowTicks);
-                }
-                if (!string.IsNullOrEmpty(childEventTypeKey))
-                {
-                    MarkRecentlyRecorded(recentEvents, childEventTypeKey, childEventTypeWindowTicks);
-                }
-
-                // The colony window closes on a CONSUMED child, not only on a visible page: a child the
-                // B6 soft cap folded into a digest was still handled, and re-running the fan-out for it
-                // would duplicate the moment. (Colony fan-outs are important groups, so in practice
-                // none of them is low-salience; this only keeps the invariant true if one ever is.)
-                EmitWithLowSaliencePacing(child, childPayload, decision);
-                emittedAny = true;
-            }
-
-            if (emittedAny && !string.IsNullOrEmpty(colonyKey))
+            if (emittedCount > 0 && !string.IsNullOrEmpty(colonyKey))
             {
                 MarkRecentlyRecorded(recentEvents, colonyKey, colonyTicks);
             }
+        }
+
+        private bool TryDispatchFanoutChild(DiarySignal child)
+        {
+            if (child == null)
+            {
+                return false;
+            }
+
+            DiaryEventData childPayload = child.Payload;
+            if (childPayload == null)
+            {
+                return false;
+            }
+
+            CaptureDecision decision;
+            if (!TryDecide(childPayload, child.BuildContext(), out decision))
+            {
+                return false;
+            }
+
+            // Most fan-outs dedup only at the colony level (child.DedupKey empty); a child may add
+            // its own per-pawn window if it needs one. The short generic type key is checked after
+            // Decide, matching the solo path, because it needs the payload's event type.
+            string childKey = child.DedupKey;
+            if (!string.IsNullOrEmpty(childKey)
+                && IsRecentlyRecorded(recentEvents, childKey, child.DedupWindowTicks))
+            {
+                return false;
+            }
+
+            string childEventTypeKey =
+                EventTypeDedupKeyFor(child, childPayload, decision, childKey);
+            int childEventTypeWindowTicks = child.EventTypeDedupWindowTicks;
+            if (!string.IsNullOrEmpty(childEventTypeKey)
+                && IsRecentlyRecorded(recentEvents, childEventTypeKey, childEventTypeWindowTicks))
+            {
+                return false;
+            }
+
+            // Preserve the ingestion pipeline's mark-before-emit contract. Emit is not atomic: a
+            // failure can occur after an event has already entered persistence, so leaving the key
+            // unmarked would let a later retry duplicate that partially completed child.
+            if (!string.IsNullOrEmpty(childKey))
+            {
+                MarkRecentlyRecorded(recentEvents, childKey, child.DedupWindowTicks);
+            }
+            if (!string.IsNullOrEmpty(childEventTypeKey))
+            {
+                MarkRecentlyRecorded(recentEvents, childEventTypeKey, childEventTypeWindowTicks);
+            }
+            EmitWithLowSaliencePacing(child, childPayload, decision);
+
+            // The colony window closes on a CONSUMED child, not only on a visible page: a child the
+            // B6 soft cap folded into a digest was still handled, and re-running the fan-out for it
+            // would duplicate the moment.
+            return true;
         }
 
         /// <summary>

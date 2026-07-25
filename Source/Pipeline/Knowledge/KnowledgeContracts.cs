@@ -435,4 +435,44 @@ namespace PawnDiary
             return new KnowledgeSubjectKeyRule { contextKey = contextKey, prefix = prefix };
         }
     }
+
+    /// <summary>
+    /// Normalizes malformed XML-owned numeric policy before it reaches eviction or prompt loops.
+    /// Positive authored values stay tunable; zero/negative values fall back to the shipped defaults.
+    /// </summary>
+    internal static class KnowledgePolicyNormalization
+    {
+        public const int DefaultEvictionScanIntervalTicks = 150000;
+
+        /// <summary>Repairs nonpositive caps on a detached policy snapshot in place.</summary>
+        public static KnowledgePolicySnapshot Normalize(KnowledgePolicySnapshot policy)
+        {
+            KnowledgePolicySnapshot effective = policy ?? KnowledgePolicySnapshot.CreateDefault();
+            KnowledgePolicySnapshot defaults = KnowledgePolicySnapshot.CreateDefault();
+            effective.maxRecordsPerPawn = PositiveOrDefault(
+                effective.maxRecordsPerPawn, defaults.maxRecordsPerPawn);
+            effective.maxRecordsGlobal = PositiveOrDefault(
+                effective.maxRecordsGlobal, defaults.maxRecordsGlobal);
+            effective.fallbackSummaryMaxChars = PositiveOrDefault(
+                effective.fallbackSummaryMaxChars, defaults.fallbackSummaryMaxChars);
+            effective.relevantPastMaxLines = PositiveOrDefault(
+                effective.relevantPastMaxLines, defaults.relevantPastMaxLines);
+            effective.relevantPastMaxChars = PositiveOrDefault(
+                effective.relevantPastMaxChars, defaults.relevantPastMaxChars);
+            effective.maxCultureTopicsPerPrompt = PositiveOrDefault(
+                effective.maxCultureTopicsPerPrompt, defaults.maxCultureTopicsPerPrompt);
+            return effective;
+        }
+
+        /// <summary>Returns a safe elapsed-time cadence for the impure knowledge scan adapter.</summary>
+        public static int EvictionScanIntervalTicks(int configured)
+        {
+            return PositiveOrDefault(configured, DefaultEvictionScanIntervalTicks);
+        }
+
+        private static int PositiveOrDefault(int value, int fallback)
+        {
+            return value > 0 ? value : fallback;
+        }
+    }
 }

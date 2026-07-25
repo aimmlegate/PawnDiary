@@ -171,6 +171,10 @@ namespace PawnDiary
             try
             {
                 info.SetValue(def, value);
+                if (def is DiaryInteractionGroupDef)
+                {
+                    InteractionGroups.InvalidateClassificationCache();
+                }
             }
             catch
             {
@@ -657,14 +661,20 @@ namespace PawnDiary
 
         /// <summary>
         /// Snapshots pristine XML defaults (once) then re-applies every stored override to its live
-        /// Def field. Safe to call repeatedly: the snapshot runs only the first time, and re-applying
-        /// the same values is idempotent. Called on settings load and at the top of the Advanced tab.
+        /// Def field. An early settings-load call defers until RimWorld has populated the required Def
+        /// databases; the startup/Advanced-tab retry then captures live XML rather than fallback objects.
         /// </summary>
         public static void EnsureApplied(TuningOverrideStore store)
         {
             EnsureBuilt();
+            bool definitionsReady = CatalogDefsReadyForSnapshot();
+            if (!snapshotted && !definitionsReady)
+            {
+                return;
+            }
+
             EnsureDynamicPromptGroups();
-            if (!snapshotted)
+            if (AdvancedSnapshotPolicy.ShouldCapture(snapshotted, definitionsReady))
             {
                 for (int i = 0; i < all.Count; i++)
                 {
@@ -694,6 +704,20 @@ namespace PawnDiary
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Checks real DefDatabase rows rather than accessor results because the accessors deliberately
+        /// return fallback Def objects while XML is unavailable. Every type below ships with this mod.
+        /// </summary>
+        private static bool CatalogDefsReadyForSnapshot()
+        {
+            return DefDatabase<DiaryTuningDef>.GetNamedSilentFail("Diary_Tuning") != null
+                && DefDatabase<DiaryPromptDef>.GetNamedSilentFail("Diary_Prompts") != null
+                && LoadedDefs<DiarySignalPolicyDef>().Count > 0
+                && LoadedDefs<DiaryContextReactionDef>().Count > 0
+                && LoadedDefs<DiaryPromptTemplateDef>().Count > 0
+                && PromptWeightDefsReady();
         }
 
         /// <summary>Restores one field's pristine XML value into the live Def (used by per-field Reset).</summary>

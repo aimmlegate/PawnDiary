@@ -114,9 +114,7 @@ namespace PawnDiary.Capture
 
         private static CaptureDecision PairOrSoloDecision(ExternalEventData data)
         {
-            bool distinctPartner = !string.IsNullOrEmpty(data.PartnerPawnId)
-                && !string.Equals(data.SubjectPawnId, data.PartnerPawnId, StringComparison.Ordinal);
-            if (distinctPartner && data.PartnerEligible)
+            if (HasEligibleDistinctPartner(data))
             {
                 return CaptureDecision.GeneratePair;
             }
@@ -132,10 +130,21 @@ namespace PawnDiary.Capture
         /// </summary>
         public string DedupKey()
         {
-            string pawnPart = string.IsNullOrEmpty(PartnerPawnId)
-                ? SubjectPawnId
-                : CanonicalPairKey(SubjectPawnId, PartnerPawnId);
+            string pawnPart = HasEligibleDistinctPartner(this)
+                ? CanonicalPairKey(SubjectPawnId, PartnerPawnId)
+                : SubjectPawnId;
             return "external|" + EventKey + "|" + pawnPart;
+        }
+
+        private static bool HasEligibleDistinctPartner(ExternalEventData data)
+        {
+            return data != null
+                && data.PartnerEligible
+                && !string.IsNullOrEmpty(data.PartnerPawnId)
+                && !string.Equals(
+                    data.SubjectPawnId,
+                    data.PartnerPawnId,
+                    StringComparison.Ordinal);
         }
 
         /// <summary>Defensive cap on a single adapter-supplied context marker value (parser safety,

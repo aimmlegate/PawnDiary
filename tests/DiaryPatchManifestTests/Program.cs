@@ -2,6 +2,7 @@
 // makes an accidental Verse, RimWorld, Unity, or Harmony dependency a compile-time failure.
 using System;
 using System.Collections.Generic;
+using System.IO;
 using PawnDiary;
 
 namespace DiaryPatchManifestTests
@@ -19,6 +20,8 @@ namespace DiaryPatchManifestTests
             TestNullSafety();
             TestCaps();
             TestResetAndSnapshotCopy();
+            TestIndependentActionsContinueAfterFailure();
+            TestLivePawnSnapshotIncludesTravellingTransporters();
             Console.WriteLine("DiaryPatchManifestTests passed " + assertions + " assertions.");
             return 0;
         }
@@ -178,6 +181,79 @@ namespace DiaryPatchManifestTests
                 "reset clears manifest",
                 0,
                 DiaryPatchManifest.Count(DiaryPatchManifest.HookStatus.Applied));
+        }
+
+        private static void TestIndependentActionsContinueAfterFailure()
+        {
+            List<int> ran = new List<int>();
+            int failedIndex = -1;
+            int reports = 0;
+            IndependentActionRunner.RunAll(
+                new Action[]
+                {
+                    () =>
+                    {
+                        ran.Add(0);
+                        throw new InvalidOperationException("expected");
+                    },
+                    () => ran.Add(1),
+                    () =>
+                    {
+                        ran.Add(2);
+                        throw new InvalidOperationException("also expected");
+                    },
+                    () => ran.Add(3),
+                },
+                (index, exception) =>
+                {
+                    reports++;
+                    if (failedIndex < 0)
+                    {
+                        failedIndex = index;
+                        throw new InvalidOperationException("reporter failure");
+                    }
+                });
+
+            AssertEqual("throwing independent action is reported", 0, failedIndex);
+            AssertEqual("all independent actions were attempted", 4, ran.Count);
+            AssertEqual("second action ran after first failed", 1, ran[1]);
+            AssertEqual("third action ran after first failed", 2, ran[2]);
+            AssertEqual("fourth action ran after reporter failed", 3, ran[3]);
+            AssertEqual("later action failures are still reported", 2, reports);
+        }
+
+        private static void TestLivePawnSnapshotIncludesTravellingTransporters()
+        {
+            string root = FindRepositoryRoot();
+            string source = File.ReadAllText(Path.Combine(
+                root,
+                "Source",
+                "Core",
+                "DiaryGameComponent.GenerationEligibility.cs"));
+            AssertContains(
+                "live pawn snapshot includes caravan and travelling transporter aggregate",
+                source,
+                "PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive");
+        }
+
+        private static string FindRepositoryRoot()
+        {
+            DirectoryInfo current = new DirectoryInfo(Directory.GetCurrentDirectory());
+            while (current != null)
+            {
+                if (File.Exists(Path.Combine(
+                    current.FullName,
+                    "Source",
+                    "PawnDiary.csproj")))
+                {
+                    return current.FullName;
+                }
+
+                current = current.Parent;
+            }
+
+            throw new InvalidOperationException(
+                "Could not locate the Pawn Diary repository root for static regression checks.");
         }
 
         private static void AssertContains(string name, string actual, string expected)

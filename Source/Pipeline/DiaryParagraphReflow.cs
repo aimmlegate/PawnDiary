@@ -319,7 +319,10 @@ namespace PawnDiary
                 int hard = LastSpaceBefore(line, cursor + 1, hardLimit);
                 if (hard <= cursor)
                 {
-                    hard = hardLimit; // one very long token: break exactly at the limit
+                    // One very long token: break at the limit, except when that index sits between
+                    // a UTF-16 surrogate pair. A two-char astral code point may exceed a one-char
+                    // cap by one because preserving a whole visible character is the safer bound.
+                    hard = SurrogateSafeHardBreak(line, cursor, hardLimit);
                 }
 
                 if (hard >= lineLength)
@@ -332,6 +335,26 @@ namespace PawnDiary
             }
 
             return splits;
+        }
+
+        private static int SurrogateSafeHardBreak(string line, int cursor, int hardLimit)
+        {
+            int hard = hardLimit;
+            if (hard > cursor && hard < line.Length
+                && char.IsHighSurrogate(line[hard - 1])
+                && char.IsLowSurrogate(line[hard]))
+            {
+                hard--;
+            }
+
+            if (hard <= cursor && cursor + 1 < line.Length
+                && char.IsHighSurrogate(line[cursor])
+                && char.IsLowSurrogate(line[cursor + 1]))
+            {
+                return cursor + 2;
+            }
+
+            return hard;
         }
 
         // Tie-breaker for two candidates equidistant from target: prefer higher priority, then the

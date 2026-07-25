@@ -18,6 +18,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Verse;
 
 namespace PawnDiary
@@ -114,7 +115,36 @@ namespace PawnDiary
                 return;
             }
 
-            diaryEvents.Add(diaryEvent);
+            // Most events arrive in chronological order and stay on the O(1) append path. Delayed
+            // historical sources (for example a birth finalized after correlation) are inserted after
+            // existing equal-tick rows so reverse scans may safely stop when they cross a time boundary.
+            int insertAt = diaryEvents.Count;
+            if (insertAt > 0)
+            {
+                DiaryEvent newest = diaryEvents[insertAt - 1];
+                if (newest != null && diaryEvent.tick < newest.tick)
+                {
+                    int low = 0;
+                    int high = diaryEvents.Count;
+                    while (low < high)
+                    {
+                        int middle = low + ((high - low) / 2);
+                        DiaryEvent existing = diaryEvents[middle];
+                        if (existing == null || existing.tick <= diaryEvent.tick)
+                        {
+                            low = middle + 1;
+                        }
+                        else
+                        {
+                            high = middle;
+                        }
+                    }
+
+                    insertAt = low;
+                }
+            }
+
+            diaryEvents.Insert(insertAt, diaryEvent);
             if (!string.IsNullOrWhiteSpace(diaryEvent.eventId) && !eventsById.ContainsKey(diaryEvent.eventId))
             {
                 eventsById[diaryEvent.eventId] = diaryEvent;
@@ -199,6 +229,11 @@ namespace PawnDiary
         /// </summary>
         public void RebuildIndex()
         {
+            // Older saves may contain delayed historical rows appended by previous builds. OrderBy is
+            // stable, so equal-tick insertion order and first-duplicate-id semantics are preserved.
+            diaryEvents = diaryEvents
+                .OrderBy(diaryEvent => diaryEvent == null ? int.MinValue : diaryEvent.tick)
+                .ToList();
             eventsById.Clear();
             for (int i = 0; i < diaryEvents.Count; i++)
             {

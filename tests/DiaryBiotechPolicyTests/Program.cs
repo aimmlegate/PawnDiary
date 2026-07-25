@@ -732,6 +732,16 @@ namespace DiaryBiotechPolicyTests
                 }, 12);
             AssertTrue("labor correlates to pregnancy object", object.ReferenceEquals(pregnancy, labor));
             AssertEqual("labor ID appended", "Hediff_2", pregnancy.laborHediffId);
+            AssertEqual("blank Hediff ID cannot claim an empty legacy arc", null,
+                FamilyArcPolicy.FindArcByHediff(new List<BiotechFamilyArcState>
+                {
+                    new BiotechFamilyArcState
+                    {
+                        familyArcId = "legacy-empty",
+                        pregnancyHediffId = string.Empty,
+                        laborHediffId = string.Empty
+                    }
+                }, "  "));
             BiotechFamilyArcState pushing = FamilyArcPolicy.ObserveFamilyHediff(arcs,
                 new FamilyHediffSnapshot
                 {

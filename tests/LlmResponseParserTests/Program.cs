@@ -23,6 +23,7 @@ namespace LlmResponseParserTests
             TestTitleFallback();
             TestSpeechMarkerConstantsMirrorDirectSpeechParser();
             TestMiniJsonRejectsMalformedNumbers();
+            TestMiniJsonPreservesIntegralPrecision();
             TestMiniJsonRejectsExcessiveDepth();
 
             Console.WriteLine("LlmResponseParserTests passed " + assertions + " assertions.");
@@ -602,6 +603,22 @@ namespace LlmResponseParserTests
             AssertThrows("missing exponent number", delegate { MiniJson.Deserialize("1e"); });
         }
 
+        private static void TestMiniJsonPreservesIntegralPrecision()
+        {
+            object exactPositive = MiniJson.Deserialize("9007199254740993");
+            AssertEqual("exact integral type", typeof(long), exactPositive.GetType());
+            AssertEqual("exact integral value", 9007199254740993L, (long)exactPositive);
+            AssertEqual("long minimum", long.MinValue, (long)MiniJson.Deserialize("-9223372036854775808"));
+            AssertEqual("long maximum", long.MaxValue, (long)MiniJson.Deserialize("9223372036854775807"));
+
+            object fraction = MiniJson.Deserialize("1.25");
+            object exponent = MiniJson.Deserialize("1e3");
+            AssertEqual("fraction remains double", typeof(double), fraction.GetType());
+            AssertEqual("exponent remains double", typeof(double), exponent.GetType());
+            AssertEqual("fraction value", 1.25d, (double)fraction);
+            AssertEqual("exponent value", 1000d, (double)exponent);
+        }
+
         private static void TestMiniJsonRejectsExcessiveDepth()
         {
             StringBuilder builder = new StringBuilder();
@@ -627,6 +644,16 @@ namespace LlmResponseParserTests
         {
             assertions++;
             if (!string.Equals(expected, actual, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    name + " failed.\nExpected: [" + expected + "]\nActual:   [" + actual + "]");
+            }
+        }
+
+        private static void AssertEqual<T>(string name, T expected, T actual)
+        {
+            assertions++;
+            if (!EqualityComparer<T>.Default.Equals(expected, actual))
             {
                 throw new InvalidOperationException(
                     name + " failed.\nExpected: [" + expected + "]\nActual:   [" + actual + "]");

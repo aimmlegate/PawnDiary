@@ -254,6 +254,20 @@ namespace PawnDiary
         private static Dictionary<string, Pawn> SnapshotLivePawnsByLoadId()
         {
             Dictionary<string, Pawn> pawnsById = new Dictionary<string, Pawn>();
+
+            // This vanilla aggregate is the only lookup that explicitly includes pawns currently
+            // travelling in caravans and transporters. The dictionary key makes overlap with the
+            // map/world scans below harmless while preserving their broader compatibility coverage.
+            IEnumerable<Pawn> travelling =
+                PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive;
+            if (travelling != null)
+            {
+                foreach (Pawn pawn in travelling)
+                {
+                    AddLivePawnToSnapshot(pawnsById, pawn);
+                }
+            }
+
             if (Find.Maps != null)
             {
                 for (int mapIndex = 0; mapIndex < Find.Maps.Count; mapIndex++)

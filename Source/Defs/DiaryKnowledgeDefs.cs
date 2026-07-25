@@ -372,7 +372,7 @@ namespace PawnDiary
             if (tuning == null)
             {
                 policy.injectionEnabled = settingEnabled;
-                return policy;
+                return KnowledgePolicyNormalization.Normalize(policy);
             }
 
             policy.injectionEnabled = tuning.enabled && settingEnabled;
@@ -421,13 +421,16 @@ namespace PawnDiary
                 }
             }
 
-            return policy;
+            return KnowledgePolicyNormalization.Normalize(policy);
         }
 
         public static int EvictionScanIntervalTicks()
         {
             DiaryKnowledgeTuningDef tuning = DefDatabase<DiaryKnowledgeTuningDef>.GetNamedSilentFail(TuningDefName);
-            return tuning != null ? tuning.evictionScanIntervalTicks : 150000;
+            int configured = tuning != null
+                ? tuning.evictionScanIntervalTicks
+                : KnowledgePolicyNormalization.DefaultEvictionScanIntervalTicks;
+            return KnowledgePolicyNormalization.EvictionScanIntervalTicks(configured);
         }
 
         /// <summary>All important-event rules (allowlist), copied once per session.</summary>

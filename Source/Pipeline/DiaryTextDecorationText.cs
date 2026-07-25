@@ -51,7 +51,11 @@ namespace PawnDiary
             int tagEnd = rich.IndexOf('>', index);
             if (tagEnd < 0)
             {
-                return false;
+                // Malformed rich text is still player-visible text. Consume the unmatched '<'
+                // literally so callers that scan until the next tag always make forward progress.
+                result.Append(rich[index]);
+                index++;
+                return true;
             }
 
             result.Append(rich, index, tagEnd - index + 1);

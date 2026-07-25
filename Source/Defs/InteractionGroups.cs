@@ -441,7 +441,9 @@ namespace PawnDiary
             {
                 for (int i = 0; i < matchTokens.Count; i++)
                 {
-                    if (defName.IndexOf(matchTokens[i], StringComparison.OrdinalIgnoreCase) >= 0)
+                    string token = matchTokens[i];
+                    if (!string.IsNullOrWhiteSpace(token)
+                        && defName.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0)
                     {
                         return true;
                     }
@@ -569,6 +571,16 @@ namespace PawnDiary
         private static readonly Dictionary<string, DiaryInteractionGroupDef> classifyByDomainName =
             new Dictionary<string, DiaryInteractionGroupDef>();
 
+        /// <summary>
+        /// Clears classifications derived from mutable matcher fields. Advanced settings writes matcher
+        /// values onto the existing Def instances, so reference identity alone cannot detect the change.
+        /// </summary>
+        internal static void InvalidateClassificationCache()
+        {
+            classifyByDef.Clear();
+            classifyByDomainName.Clear();
+        }
+
         // All groups, sorted by `order` so "first match wins" is deterministic. Cached after the
         // first call because Defs are loaded once at startup and don't change during play.
         public static List<DiaryInteractionGroupDef> All
@@ -582,8 +594,7 @@ namespace PawnDiary
                         .ToList();
                     // The classification memos are derived from this list; drop them so they
                     // repopulate against the freshly built catalog.
-                    classifyByDef.Clear();
-                    classifyByDomainName.Clear();
+                    InvalidateClassificationCache();
                 }
 
                 return cachedAll;
@@ -869,7 +880,10 @@ namespace PawnDiary
                     return group;
                 }
 
-                fallback = group;
+                if (group.catchAll)
+                {
+                    fallback = group;
+                }
             }
 
             return fallback;
@@ -897,7 +911,10 @@ namespace PawnDiary
                     return group;
                 }
 
-                fallback = group;
+                if (group.catchAll)
+                {
+                    fallback = group;
+                }
             }
 
             return fallback;
@@ -930,7 +947,10 @@ namespace PawnDiary
                     break;
                 }
 
-                fallback = group;
+                if (group.catchAll)
+                {
+                    fallback = group;
+                }
             }
 
             result = result ?? fallback;
@@ -972,7 +992,10 @@ namespace PawnDiary
                     break;
                 }
 
-                fallback = group;
+                if (group.catchAll)
+                {
+                    fallback = group;
+                }
             }
 
             result = result ?? fallback;

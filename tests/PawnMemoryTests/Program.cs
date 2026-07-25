@@ -27,6 +27,7 @@ namespace PawnMemoryTests
             shippedRules = LoadShippedImportantEventRules();
 
             TestPolicyDefaultsAndXmlParity();
+            TestMalformedPolicyNormalization();
             TestSentinelValues();
             TestClassifierPositiveCatalog();
             TestClassifierNegativeCatalog();
@@ -224,6 +225,36 @@ namespace PawnMemoryTests
             }
 
             AssertEqual("xml.query.count", policy.querySubjectKeyRules.Count, rowIndex);
+        }
+
+        private static void TestMalformedPolicyNormalization()
+        {
+            KnowledgePolicySnapshot malformed = KnowledgePolicySnapshot.CreateDefault();
+            malformed.maxRecordsPerPawn = 0;
+            malformed.maxRecordsGlobal = -1;
+            malformed.fallbackSummaryMaxChars = 0;
+            malformed.relevantPastMaxLines = -2;
+            malformed.relevantPastMaxChars = 0;
+            malformed.maxCultureTopicsPerPrompt = -3;
+
+            KnowledgePolicySnapshot normalized = KnowledgePolicyNormalization.Normalize(malformed);
+            KnowledgePolicySnapshot defaults = KnowledgePolicySnapshot.CreateDefault();
+            AssertEqual("normalize.perPawn", defaults.maxRecordsPerPawn, normalized.maxRecordsPerPawn);
+            AssertEqual("normalize.global", defaults.maxRecordsGlobal, normalized.maxRecordsGlobal);
+            AssertEqual("normalize.fallbackChars",
+                defaults.fallbackSummaryMaxChars, normalized.fallbackSummaryMaxChars);
+            AssertEqual("normalize.lines", defaults.relevantPastMaxLines, normalized.relevantPastMaxLines);
+            AssertEqual("normalize.chars", defaults.relevantPastMaxChars, normalized.relevantPastMaxChars);
+            AssertEqual("normalize.topics",
+                defaults.maxCultureTopicsPerPrompt, normalized.maxCultureTopicsPerPrompt);
+            AssertEqual("normalize.eviction.zero",
+                KnowledgePolicyNormalization.DefaultEvictionScanIntervalTicks,
+                KnowledgePolicyNormalization.EvictionScanIntervalTicks(0));
+            AssertEqual("normalize.eviction.negative",
+                KnowledgePolicyNormalization.DefaultEvictionScanIntervalTicks,
+                KnowledgePolicyNormalization.EvictionScanIntervalTicks(-25));
+            AssertEqual("normalize.eviction.valid",
+                60000, KnowledgePolicyNormalization.EvictionScanIntervalTicks(60000));
         }
 
         private static void TestSentinelValues()
@@ -486,6 +517,11 @@ namespace PawnMemoryTests
                 ImportantMemoryLineRenderer.Render(record, "  ", 240));
             AssertEqual("render.cap", "married",
                 ImportantMemoryLineRenderer.Render(record, "married {other}", 8));
+            record.fallbackSummary = "1234567\U0001F600tail";
+            string surrogateSafe = ImportantMemoryLineRenderer.Render(record, "  ", 8);
+            AssertEqual("render.surrogateSafeCap", "1234567", surrogateSafe);
+            AssertTrue("render.surrogateSafeCap.wellFormed",
+                surrogateSafe.Length == 0 || !char.IsHighSurrogate(surrogateSafe[surrogateSafe.Length - 1]));
             AssertEqual("render.null", string.Empty,
                 ImportantMemoryLineRenderer.Render(null, "x", 240));
         }

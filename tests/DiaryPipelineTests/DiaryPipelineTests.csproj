@@ -61,6 +61,8 @@
     <Compile Include="..\..\Source\Pipeline\PromptTextSanitizer.cs" Link="PromptTextSanitizer.cs" />
     <Compile Include="..\..\Source\Pipeline\PromptRedundancyPolicy.cs" Link="PromptRedundancyPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\PromptContextLines.cs" Link="PromptContextLines.cs" />
+    <Compile Include="..\..\Source\Pipeline\HealthImpactPolicy.cs" Link="HealthImpactPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\FaultIsolatedItemRunner.cs" Link="FaultIsolatedItemRunner.cs" />
     <Compile Include="..\..\Source\Pipeline\ListenerRegistry.cs" Link="ListenerRegistry.cs" />
     <Compile Include="..\..\Source\Pipeline\CaptureCapabilityRegistry.cs" Link="CaptureCapabilityRegistry.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryListText.cs" Link="DiaryListText.cs" />
@@ -83,6 +85,7 @@
     <Compile Include="..\..\Source\Pipeline\DiarySentenceExcerpt.cs" Link="DiarySentenceExcerpt.cs" />
     <Compile Include="..\..\Source\Pipeline\ExternalEventRequestText.cs" Link="ExternalEventRequestText.cs" />
     <Compile Include="..\..\Source\Pipeline\ExternalApiBudgetPolicy.cs" Link="ExternalApiBudgetPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\AdvancedSnapshotPolicy.cs" Link="AdvancedSnapshotPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\ExternalDirectEntryText.cs" Link="ExternalDirectEntryText.cs" />
     <Compile Include="..\..\Source\Pipeline\ExternalEntryAttribution.cs" Link="ExternalEntryAttribution.cs" />
     <Compile Include="..\..\Source\Pipeline\ExternalWritingStyleOverrideText.cs" Link="ExternalWritingStyleOverrideText.cs" />

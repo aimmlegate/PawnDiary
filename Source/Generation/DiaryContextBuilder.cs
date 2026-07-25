@@ -332,9 +332,10 @@ namespace PawnDiary
             return cleaned.Length <= max ? cleaned : TextTruncation.SafePrefix(cleaned, max) + "...";
         }
 
-        // Cached WeatherDef.defName -> mention chance lookup, rebuilt only when the tuning Def
-        // instance changes. The chances themselves live in DiaryTuningDef (XML-tunable).
+        // Cached WeatherDef.defName -> mention chance lookup. Advanced settings replaces the rule list
+        // on the same tuning Def, so both identities participate in cache validity.
         private static DiaryTuningDef weatherChanceTuning;
+        private static List<WeatherMentionRule> weatherChanceRules;
         private static Dictionary<string, float> weatherChanceLookup;
 
         // Rolls the per-weather chance (from DiaryTuningDef.weatherMentionChances) to decide whether
@@ -381,13 +382,15 @@ namespace PawnDiary
 
         private static Dictionary<string, float> WeatherChanceLookup(DiaryTuningDef tuning)
         {
-            if (ReferenceEquals(weatherChanceTuning, tuning) && weatherChanceLookup != null)
+            List<WeatherMentionRule> rules = tuning?.weatherMentionChances;
+            if (ReferenceEquals(weatherChanceTuning, tuning)
+                && ReferenceEquals(weatherChanceRules, rules)
+                && weatherChanceLookup != null)
             {
                 return weatherChanceLookup;
             }
 
             Dictionary<string, float> lookup = new Dictionary<string, float>();
-            List<WeatherMentionRule> rules = tuning?.weatherMentionChances;
             if (rules != null)
             {
                 for (int i = 0; i < rules.Count; i++)
@@ -401,6 +404,7 @@ namespace PawnDiary
             }
 
             weatherChanceTuning = tuning;
+            weatherChanceRules = rules;
             weatherChanceLookup = lookup;
             return lookup;
         }
@@ -881,7 +885,18 @@ namespace PawnDiary
             facts.mood = BuildMoodSummary(pawn);
             facts.health = CollectHealthFacts(pawn);
             facts.lowCapacities = BuildLowCapacitiesSummary(pawn);
-            facts.topThoughts = BuildTopThoughtsSummary(pawn);
+            // Thought flavor is cosmetic prompt context. Preserve Unity's gameplay-facing random
+            // stream exactly as CaptureMoodSnapshot does, while retaining the existing one-shot
+            // weighted choice produced from the caller's current random state.
+            UnityEngine.Random.State thoughtRandomState = UnityEngine.Random.state;
+            try
+            {
+                facts.topThoughts = BuildTopThoughtsSummary(pawn);
+            }
+            finally
+            {
+                UnityEngine.Random.state = thoughtRandomState;
+            }
             return facts;
         }
 
@@ -1007,8 +1022,19 @@ namespace PawnDiary
 
                 if (weapons.Count > 0)
                 {
-                    Thing chosen = weapons[UnityEngine.Random.Range(0, weapons.Count)];
-                    return ExternalText(chosen.LabelNoCount);
+                    // This inventory fallback is cosmetic prompt context. Keep the existing
+                    // one-shot random choice but restore Unity's global stream afterwards so
+                    // regenerating or previewing a diary does not perturb gameplay randomness.
+                    UnityEngine.Random.State randomState = UnityEngine.Random.state;
+                    try
+                    {
+                        Thing chosen = weapons[UnityEngine.Random.Range(0, weapons.Count)];
+                        return ExternalText(chosen.LabelNoCount);
+                    }
+                    finally
+                    {
+                        UnityEngine.Random.state = randomState;
+                    }
                 }
             }
 
@@ -1082,8 +1108,8 @@ namespace PawnDiary
             }
 
             foreach (string label in pawn.health.hediffSet.hediffs
-                .Where(hediff => hediff != null && hediff.Visible && (hediff.IsCurrentlyLifeThreatening || hediff.Bleeding || hediff.PainOffset > 0f || hediff.SummaryHealthPercentImpact < -0.05f))
-                .OrderByDescending(hediff => hediff.IsCurrentlyLifeThreatening ? 100f : hediff.BleedRate + hediff.PainOffset - hediff.SummaryHealthPercentImpact)
+                .Where(hediff => hediff != null && hediff.Visible && (hediff.IsCurrentlyLifeThreatening || hediff.Bleeding || hediff.PainOffset > 0f || HealthImpactPolicy.IsMeaningfulHarm(hediff.SummaryHealthPercentImpact, 0.05f)))
+                .OrderByDescending(hediff => hediff.IsCurrentlyLifeThreatening ? 100f : hediff.BleedRate + hediff.PainOffset + HealthImpactPolicy.NormalizedHarm(hediff.SummaryHealthPercentImpact))
                 .Select(hediff => ExternalText(hediff.Label))
                 .Where(label => !string.IsNullOrWhiteSpace(label))
                 .Take(2))

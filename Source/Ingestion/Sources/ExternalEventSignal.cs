@@ -131,15 +131,17 @@ namespace PawnDiary.Ingestion
 
             // Impure build: label, XML prompt instruction, event text, gameContext. The label chain
             // is adapter label -> group label -> raw eventKey, so the UI always has something.
-            string label = DiaryLineCleaner.CleanLine(request.eventLabel);
+            string label = ExternalEventRequestText.CleanEventLabel(request.eventLabel);
             if (string.IsNullOrWhiteSpace(label))
             {
-                label = group == null ? string.Empty : group.LabelCap.Resolve();
+                label = group == null
+                    ? string.Empty
+                    : ExternalEventRequestText.CleanEventLabel(group.LabelCap.Resolve());
             }
 
             if (string.IsNullOrWhiteSpace(label))
             {
-                label = payload.EventKey;
+                label = ExternalEventRequestText.CleanEventLabel(payload.EventKey);
             }
 
             string text = ExternalEventRequestText.CleanSummary(request.summaryText);

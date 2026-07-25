@@ -31,6 +31,7 @@ namespace PawnDiary
             TestBodyOrganMealRaidAndRitualScenarios();
             TestExactFoodEvidenceClient();
             TestLiveDoctrineIntersectionRedundancyAndCaps();
+            TestCandidateComparatorIsTransitive();
             TestSecondSlotIndependenceOrderingAndRepetition();
             TestCertaintyBoundariesAndTrends();
             TestFormatterBudgetsSanitationAndWorldviewFacts();
@@ -2507,6 +2508,41 @@ namespace PawnDiary
                 Resolve(Snapshot(role, ordinary), roleEvidence, BeliefPolicySnapshot.CreateDefault()), "Role_Fit");
         }
 
+        private static void TestCandidateComparatorIsTransitive()
+        {
+            // This trio formed a cycle in the old pair-dependent comparer:
+            // A beat B by same-evidence valence, B beat C by score, and C beat A by score.
+            int aAfterB = EventRelativeStanceResolver.CompareCandidateOrder(
+                BeliefValenceTokens.Negative, 1f, 3u, "A", "shared", "A", "thought", "",
+                BeliefValenceTokens.Positive, 3f, 1u, "B", "shared", "B", "thought", "");
+            int bBeforeC = EventRelativeStanceResolver.CompareCandidateOrder(
+                BeliefValenceTokens.Positive, 3f, 1u, "B", "shared", "B", "thought", "",
+                BeliefValenceTokens.Mixed, 2f, 2u, "C", "other", "C", "thought", "");
+            int cBeforeA = EventRelativeStanceResolver.CompareCandidateOrder(
+                BeliefValenceTokens.Mixed, 2f, 2u, "C", "other", "C", "thought", "",
+                BeliefValenceTokens.Negative, 1f, 3u, "A", "shared", "A", "thought", "");
+            int bBeforeA = EventRelativeStanceResolver.CompareCandidateOrder(
+                BeliefValenceTokens.Positive, 3f, 1u, "B", "shared", "B", "thought", "",
+                BeliefValenceTokens.Negative, 1f, 3u, "A", "shared", "A", "thought", "");
+
+            AssertTrue("independent candidate comparator remains score first", aAfterB > 0);
+            AssertTrue("candidate comparator orders B before C", bBeforeC < 0);
+            AssertTrue("candidate comparator orders C before A", cBeforeA < 0);
+            AssertTrue("candidate comparator is transitive for the adversarial trio", bBeforeA < 0);
+            AssertEqual("candidate comparator is antisymmetric", -cBeforeA,
+                EventRelativeStanceResolver.CompareCandidateOrder(
+                    BeliefValenceTokens.Negative, 1f, 3u, "A", "shared", "A", "thought", "",
+                    BeliefValenceTokens.Mixed, 2f, 2u, "C", "other", "C", "thought", ""));
+            AssertTrue("same-evidence redundant variants preserve negative valence precedence",
+                EventRelativeStanceResolver.CompareSameEvidenceRedundancy(
+                    BeliefValenceTokens.Negative, 1f, 3u, "A",
+                    BeliefValenceTokens.Positive, 3f, 1u, "B") < 0);
+            AssertTrue("candidate comparator stable identity breaks complete numeric ties",
+                EventRelativeStanceResolver.CompareCandidateOrder(
+                    BeliefValenceTokens.Neutral, 5f, 7u, "A", "same", "", "", "",
+                    BeliefValenceTokens.Neutral, 5f, 7u, "B", "same", "", "", "") < 0);
+        }
+
         private static void TestCertaintyBoundariesAndTrends()
         {
             BeliefPolicySnapshot policy = BeliefPolicySnapshot.CreateDefault();
@@ -2828,6 +2864,23 @@ namespace PawnDiary
                 visiblePawnIds = new List<string> { "SyntheticPawn" }
             }, 510, 3, 20);
             AssertEqual("malformed history identities fail closed", 0, buffer.Count);
+
+            buffer.Observe(new BeliefHistoryObservation
+            {
+                tick = 600,
+                historyEventDefName = "History_BeforeRollback",
+                visiblePawnIds = new List<string> { "SyntheticPawn" }
+            }, 600, 3, 20);
+            AssertEqual("tick rollback prunes future-dated history evidence", 0,
+                buffer.NearbyDefNames("SyntheticPawn", 100, 20).Count);
+            AssertEqual("tick rollback releases future-dated history storage", 0, buffer.Count);
+            buffer.Observe(new BeliefHistoryObservation
+            {
+                tick = 700,
+                historyEventDefName = "History_FutureInput",
+                visiblePawnIds = new List<string> { "SyntheticPawn" }
+            }, 650, 3, 20);
+            AssertEqual("future-dated history input is ignored", 0, buffer.Count);
         }
 
         private static void TestEvidenceRulesAndOptionalCorrections()

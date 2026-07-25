@@ -793,6 +793,11 @@ namespace PawnDiary.Capture
         private static BiotechFamilyArcState FindByHediff(List<BiotechFamilyArcState> arcs, string hediffId)
         {
             string id = Clean(hediffId);
+            if (id.Length == 0)
+            {
+                return null;
+            }
+
             for (int i = 0; i < arcs.Count; i++)
             {
                 BiotechFamilyArcState arc = arcs[i];

@@ -29,7 +29,7 @@ namespace PawnDiary
             int window = Math.Max(0, Math.Min(600, windowTicks));
             Prune(currentTick, window);
             BeliefHistoryObservation copy = Copy(observation);
-            if (copy == null) return;
+            if (copy == null || copy.tick > Math.Max(0, currentTick)) return;
 
             observations.Add(copy);
             if (observations.Count > cap)
@@ -70,7 +70,8 @@ namespace PawnDiary
             for (int i = observations.Count - 1; i >= 0; i--)
             {
                 BeliefHistoryObservation row = observations[i];
-                if (row == null || currentTick >= row.tick && currentTick - (long)row.tick > windowTicks)
+                long age = row == null ? long.MaxValue : (long)currentTick - row.tick;
+                if (row == null || age < 0 || age > windowTicks)
                     observations.RemoveAt(i);
             }
         }

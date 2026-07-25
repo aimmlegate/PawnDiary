@@ -274,8 +274,10 @@ namespace PawnDiary
                 throw new FormatException("Invalid number in JSON at position " + start + ".");
             }
 
+            bool hasFraction = false;
             if (index < json.Length && json[index] == '.')
             {
+                hasFraction = true;
                 index++;
                 int fractionStart = index;
                 while (index < json.Length && IsDigit(json[index]))
@@ -289,8 +291,10 @@ namespace PawnDiary
                 }
             }
 
+            bool hasExponent = false;
             if (index < json.Length && (json[index] == 'e' || json[index] == 'E'))
             {
+                hasExponent = true;
                 index++;
                 if (index < json.Length && (json[index] == '+' || json[index] == '-'))
                 {
@@ -310,6 +314,15 @@ namespace PawnDiary
             }
 
             string number = json.Substring(start, index - start);
+            if (!hasFraction && !hasExponent)
+            {
+                long integral;
+                if (long.TryParse(number, NumberStyles.Integer, CultureInfo.InvariantCulture, out integral))
+                {
+                    return integral;
+                }
+            }
+
             return double.Parse(number, NumberStyles.Float, CultureInfo.InvariantCulture);
         }
 

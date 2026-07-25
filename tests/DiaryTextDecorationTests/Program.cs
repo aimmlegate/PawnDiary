@@ -20,6 +20,7 @@ namespace DiaryTextDecorationTests
             TestPsychicRitualInvokerUsesFormatterWithDarkCue();
             TestNameHighlighterColorsAndBoldsKnownPawns();
             TestNameHighlighterRespectsBoundariesAndLongestName();
+            TestNameHighlighterConsumesUnclosedTag();
             TestNameHighlighterSetComparison();
             TestPawnFactSerializationRoundTrip();
             TestEventTagsFromContext();
@@ -273,6 +274,19 @@ namespace DiaryTextDecorationTests
             AssertContains("longest name wins", highlighted, "<color=#445566><b>Anna</b></color>");
             AssertContains("shorter name still matches", highlighted, "<color=#112233><b>Ann</b></color>");
             AssertTrue("does not match inside annex", highlighted.IndexOf("<b>ann</b>ex", StringComparison.OrdinalIgnoreCase) < 0);
+        }
+
+        private static void TestNameHighlighterConsumesUnclosedTag()
+        {
+            string highlighted = DiaryNameHighlighter.ApplyToRichText(
+                "Alice saw <broken Alice",
+                new List<DiaryNameHighlight>
+                {
+                    new DiaryNameHighlight { name = "Alice", colorHex = string.Empty }
+                });
+
+            AssertEqual("unclosed tag remains literal and scan terminates",
+                "<b>Alice</b> saw <broken <b>Alice</b>", highlighted);
         }
 
         // Locks the change-detection contract the Diary tab relies on: the highlight version (which

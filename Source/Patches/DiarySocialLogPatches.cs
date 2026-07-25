@@ -4,6 +4,7 @@
 using System;
 using System.Reflection;
 using HarmonyLib;
+using PawnDiary.Capture;
 using PawnDiary.Ingestion;
 using RimWorld;
 using Verse;
@@ -231,6 +232,16 @@ namespace PawnDiary
     [HarmonyPatch(typeof(Pawn_RelationsTracker), nameof(Pawn_RelationsTracker.AddDirectRelation))]
     internal static class PawnRelationAddPatch
     {
+        /// <summary>
+        /// Carries the pre-call relation state into the postfix so it can verify a real transition.
+        /// </summary>
+        public sealed class RelationAddCallState
+        {
+            public MechanitorRelationCallState mechanitor;
+            public bool canVerify;
+            public bool relationAlreadyPresent;
+        }
+
         // Reflection accessor for the private Pawn_RelationsTracker.pawn field so we can read the
         // subject pawn (the tracker's owner). Mirrors the MentalStateHandler.pawn pattern.
         private static readonly FieldInfo PawnField = AccessTools.Field(typeof(Pawn_RelationsTracker), "pawn");
@@ -249,43 +260,79 @@ namespace PawnDiary
         /// diary event when both pawns are eligible.
         /// </summary>
         public static void Prefix(Pawn_RelationsTracker __instance, PawnRelationDef def, Pawn otherPawn,
-            out MechanitorRelationCallState __state)
+            out RelationAddCallState __state)
         {
-            __state = null;
-            // C# does not allow an out Harmony state parameter inside the usual safety lambda, so
-            // this one prefix uses the equivalent inline fail-open guard.
+            __state = new RelationAddCallState();
+            Pawn pawn = null;
             try
             {
-                Pawn pawn = PawnField?.GetValue(__instance) as Pawn;
-                __state = DiaryGameComponent.Instance?.BeginMechanitorRelation(pawn, otherPawn, def);
+                pawn = PawnField?.GetValue(__instance) as Pawn;
+                bool canVerify = __instance != null && def != null && otherPawn != null
+                    && pawn != null && pawn != otherPawn;
+                if (canVerify)
+                {
+                    __state.relationAlreadyPresent =
+                        __instance.DirectRelationExists(def, otherPawn);
+                    // Set this only after the query succeeds. A failed pre-state read must fail closed
+                    // instead of pretending the relation was absent.
+                    __state.canVerify = true;
+                }
             }
             catch (Exception e)
             {
-                Log.ErrorOnce("[Pawn Diary] PawnRelationAddPatch.MechanitorPrefix failed and was skipped: " + e,
+                Log.ErrorOnce(
+                    "[Pawn Diary] PawnRelationAddPatch relation pre-state failed and was skipped: " + e,
+                    "PawnRelationAddPatch.RelationPrefix".GetHashCode());
+            }
+
+            try
+            {
+                __state.mechanitor =
+                    DiaryGameComponent.Instance?.BeginMechanitorRelation(pawn, otherPawn, def);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce(
+                    "[Pawn Diary] PawnRelationAddPatch mechanitor pre-state failed and was skipped: " + e,
                     "PawnRelationAddPatch.MechanitorPrefix".GetHashCode());
             }
         }
 
         public static void Postfix(Pawn_RelationsTracker __instance, PawnRelationDef def, Pawn otherPawn,
-            MechanitorRelationCallState __state)
+            RelationAddCallState __state)
         {
-            DiaryPatchSafety.Run("PawnRelationAddPatch", () =>
+            if (__instance == null || def == null || otherPawn == null)
             {
-                if (__instance == null || def == null || otherPawn == null)
-                {
-                    return;
-                }
+                return;
+            }
 
-                Pawn pawn = PawnField?.GetValue(__instance) as Pawn;
-                if (pawn == null)
-                {
-                    return;
-                }
+            Pawn pawn = DiaryPatchSafety.Run(
+                "PawnRelationAddPatch.ResolvePawn",
+                __instance,
+                tracker => PawnField?.GetValue(tracker) as Pawn,
+                (Pawn)null);
+            if (pawn == null)
+            {
+                return;
+            }
 
-                // Mechanitor ownership runs first: Overseer is not romance, and its exact relation
-                // must be observed before any later handler can return or mutate state.
-                DiaryGameComponent.Instance?.CompleteMechanitorRelation(__state);
-                DiaryEvents.Submit(new RomanceSignal(pawn, otherPawn, def));
+            // The two consumers are independent: an unexpected mechanitor completion failure must not
+            // suppress the verified romance transition (and vice versa).
+            DiaryPatchSafety.Run("PawnRelationAddPatch.Mechanitor", () =>
+            {
+                DiaryGameComponent.Instance?.CompleteMechanitorRelation(__state?.mechanitor);
+            });
+
+            DiaryPatchSafety.Run("PawnRelationAddPatch.Romance", () =>
+            {
+                bool relationPresent = __state != null && __state.canVerify
+                    && __instance.DirectRelationExists(def, otherPawn);
+                if (RomanceRelationTransitionPolicy.ShouldEmit(
+                    __state?.relationAlreadyPresent == true,
+                    relationPresent))
+                {
+                    DiaryEvents.Submit(new RomanceSignal(pawn, otherPawn, def));
+                }
             });
         }
     }

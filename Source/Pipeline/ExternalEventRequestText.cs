@@ -19,6 +19,7 @@ namespace PawnDiary
         public const int MaxExtraContextLines = 16;
         public const int MaxExtraContextLineChars = 200;
         public const int MaxSummaryChars = 800;
+        public const int MaxEventLabelChars = 200;
         public const int MaxPromptInstructionChars = 2000;
 
         // Absolute defensive ceiling on the number of "key=value" fields one external request can write
@@ -41,6 +42,15 @@ namespace PawnDiary
         {
             string cleaned = PromptTextSanitizer.OneLine(summary);
             return TextTruncation.SafePrefix(cleaned, MaxSummaryChars);
+        }
+
+        /// <summary>
+        /// Flattens and caps an external event label, including the raw event-key fallback. Labels are
+        /// display/prompt text, so an adapter key must not inject line or semicolon-delimited fields.
+        /// </summary>
+        public static string CleanEventLabel(string label)
+        {
+            return PromptContextLines.CleanLine(label, MaxEventLabelChars);
         }
 
         /// <summary>

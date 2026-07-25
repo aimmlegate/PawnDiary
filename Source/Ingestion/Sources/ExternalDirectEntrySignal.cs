@@ -184,13 +184,15 @@ namespace PawnDiary.Ingestion
 
         private string BuildLabel()
         {
-            string label = DiaryLineCleaner.CleanLine(request.eventLabel);
+            string label = ExternalEventRequestText.CleanEventLabel(request.eventLabel);
             if (string.IsNullOrWhiteSpace(label) && group != null)
             {
-                label = group.LabelCap.Resolve();
+                label = ExternalEventRequestText.CleanEventLabel(group.LabelCap.Resolve());
             }
 
-            return string.IsNullOrWhiteSpace(label) ? payload.EventKey : label;
+            return string.IsNullOrWhiteSpace(label)
+                ? ExternalEventRequestText.CleanEventLabel(payload.EventKey)
+                : label;
         }
 
         private bool CanWritePartnerDirectEntry(DiaryGameComponent sink)

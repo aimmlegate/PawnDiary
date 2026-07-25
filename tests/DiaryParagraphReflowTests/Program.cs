@@ -39,6 +39,7 @@ namespace DiaryParagraphReflowTests
             TestNonYearNumberDoesNotSplit();
             TestHardBreakAtSpaceWhenNoCues();
             TestHardBreakNeverSplitsMidWord();
+            TestHardBreakPreservesSurrogatePairs();
             TestMinBreakSpacingMergesTrailingStub();
             TestDisabledReturnsWholeLine();
             TestEmptyAndWhitespaceLines();
@@ -153,6 +154,20 @@ namespace DiaryParagraphReflowTests
                     True(Array.IndexOf(new[] { "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta", "iota", "kappa", "lambda" }, w) >= 0,
                         "emitted word is a whole source token: '" + w + "'");
                 }
+            }
+        }
+
+        private static void TestHardBreakPreservesSurrogatePairs()
+        {
+            string line = "\U0001F600\U0001F603\U0001F604tail";
+            List<string> chunks = DiaryParagraphReflow.ReflowLine(line, Options(1, 1));
+            Equal(line, string.Join(string.Empty, chunks), "surrogate-safe hard breaks preserve all text");
+            foreach (string chunk in chunks)
+            {
+                True(chunk.Length == 0 || !char.IsHighSurrogate(chunk[chunk.Length - 1]),
+                    "chunk never ends with a lone high surrogate");
+                True(chunk.Length == 0 || !char.IsLowSurrogate(chunk[0]),
+                    "chunk never starts with a lone low surrogate");
             }
         }
 

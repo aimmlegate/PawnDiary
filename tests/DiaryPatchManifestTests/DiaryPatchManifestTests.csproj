@@ -10,5 +10,6 @@
   <!-- Link only the Verse-free manifest. A Verse/RimWorld/Unity/Harmony dependency fails build. -->
   <ItemGroup>
     <Compile Include="..\..\Source\Patches\DiaryPatchManifest.cs" Link="DiaryPatchManifest.cs" />
+    <Compile Include="..\..\Source\Pipeline\IndependentActionRunner.cs" Link="IndependentActionRunner.cs" />
   </ItemGroup>
 </Project>

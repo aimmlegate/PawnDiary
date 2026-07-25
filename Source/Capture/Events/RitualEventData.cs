@@ -186,7 +186,13 @@ namespace PawnDiary.Capture
 
         private static string Clean(string value)
         {
-            return value == null ? string.Empty : value.Trim();
+            return value == null
+                ? string.Empty
+                : value.Replace('\r', ' ')
+                    .Replace('\n', ' ')
+                    .Replace('\t', ' ')
+                    .Replace(';', ',')
+                    .Trim();
         }
     }
 }

@@ -78,7 +78,9 @@ namespace PawnDiary
                 requestedTokens = requestedTokens
             };
 
-            if (!tuning.enabled || tuning.windowTicks <= 0 || requestedTokens <= 0)
+            // A request still consumes request-count budget when its token estimate is zero or
+            // malformed. Only token arithmetic uses the normalized nonnegative estimate.
+            if (!tuning.enabled || tuning.windowTicks <= 0)
             {
                 return decision;
             }

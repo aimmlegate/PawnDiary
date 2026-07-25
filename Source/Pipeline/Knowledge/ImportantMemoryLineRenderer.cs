@@ -40,7 +40,7 @@ namespace PawnDiary
             int bound = Math.Max(0, maxChars);
             if (bound > 0 && rendered.Length > bound)
             {
-                rendered = rendered.Substring(0, bound).TrimEnd();
+                rendered = TextTruncation.SafePrefix(rendered, bound).TrimEnd();
             }
 
             return rendered;

@@ -931,7 +931,7 @@ namespace PawnDiary
         /// event-limit pass). Elapsed-time cadence, not modulo, so dev time-skips stay safe.</summary>
         private void MaybeRunKnowledgeEvictionScan(int nowTick)
         {
-            int interval = Math.Max(1, DiaryKnowledgePolicy.EvictionScanIntervalTicks());
+            int interval = DiaryKnowledgePolicy.EvictionScanIntervalTicks();
             if (lastKnowledgeEvictionScanTick >= 0
                 && nowTick - lastKnowledgeEvictionScanTick < interval)
             {
