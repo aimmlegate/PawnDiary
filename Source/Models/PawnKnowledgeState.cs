@@ -253,11 +253,22 @@ namespace PawnDiary
         /// <summary>True when any durable record has the supplied stable event-kind token.</summary>
         public bool HasEventKind(string eventKind)
         {
+            return FirstEventKindTick(eventKind).HasValue;
+        }
+
+        /// <summary>
+        /// Returns the earliest captured tick for one stable event-kind token. Arrival lifecycle code
+        /// uses this when the player disabled the visible arrival page but durable knowledge still owns
+        /// the truthful joining boundary.
+        /// </summary>
+        public int? FirstEventKindTick(string eventKind)
+        {
             if (string.IsNullOrWhiteSpace(eventKind) || records == null)
             {
-                return false;
+                return null;
             }
 
+            int? firstTick = null;
             for (int i = 0; i < records.Count; i++)
             {
                 if (records[i] != null
@@ -266,11 +277,15 @@ namespace PawnDiary
                         eventKind,
                         System.StringComparison.Ordinal))
                 {
-                    return true;
+                    int tick = records[i].tick;
+                    if (!firstTick.HasValue || tick < firstTick.Value)
+                    {
+                        firstTick = tick;
+                    }
                 }
             }
 
-            return false;
+            return firstTick;
         }
 
         /// <summary>Pure culture mirror for the resolver/annotation planner.</summary>

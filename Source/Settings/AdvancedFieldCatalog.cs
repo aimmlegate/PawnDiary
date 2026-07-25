@@ -1313,10 +1313,12 @@ namespace PawnDiary
                 .Float("daySummaryWeightHediff", 0f, 5f, true)
                 .Float("daySummaryWeightOpinionShift", 0f, 5f, true)
                 .Float("daySummaryWeightFiller", 0f, 5f, true)
+                .Float("daySummaryWeightNews", 0f, 5f, true)
                 .StringList("daySummaryImportantSignalKinds");
 
             b.Tuning("Quadrum reflection", "PawnDiary.Settings.Adv.Group.Quadrum")
                 .Bool("quadrumReflectionEnabled")
+                .Bool("onThisDayQuadrumCallbackEnabled")
                 .Int("quadrumReflectionTimingWindowDays", 1, 15)
                 .Int("quadrumReflectionMinImportantEntries", 1, 50)
                 .Int("quadrumReflectionMaxPromptEvents", 1, 50)

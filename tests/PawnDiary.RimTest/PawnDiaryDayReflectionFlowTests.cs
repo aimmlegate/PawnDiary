@@ -9,9 +9,9 @@
 // runs the weighted highlight selection, consumes the pending evidence, and dispatches one
 // DayReflection page through the shared bus — exactly the work the sleep scan does per colonist.
 //
-// Determinism: the flush's highlight selection is weighted-random, so each test seeds exactly ONE
-// important candidate — with a single candidate the selection is forced (the only element is always
-// drawn), so the emitted page and its context are fully deterministic. The XML-backed reflection
+// Determinism: tests that dispatch a day page seed exactly ONE important candidate, forcing the
+// weighted selection. The quadrum-gate regression inspects the production opportunity before
+// dispatch, so its five candidates never enter random highlight selection. The XML-backed reflection
 // tuning that gates the flush (day-summary master switch, the important-signal-kind list, and the
 // rarer arc/quadrum reflections that would otherwise pre-empt the daily one) is snapshotted and
 // forced to known values, then restored in teardown.
@@ -53,6 +53,7 @@ namespace PawnDiary.RimTests
         private static bool savedQuadrumCallbackEnabled;
         private static bool savedArcEnabled;
         private static List<string> savedImportantKinds;
+        private static int savedQuadrumMinImportantEntries;
 
         /// <summary>
         /// Opens a fresh scope with the Reflection group enabled (the day/quadrum reflection user
@@ -338,6 +339,32 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Quality Wave H3 review regression. A disabled arrival page still leaves durable arrival
+        /// knowledge; its captured tick must bound news exactly like a visible hot/archive page.
+        /// </summary>
+        [Test]
+        public static void KnowledgeOnlyArrivalBoundaryExcludesEarlierNews()
+        {
+            int now = RequireUsableCurrentTick();
+            int day = CurrentDayIndex();
+            SeedArchiveLetter("PositiveEvent", "News from before the hidden arrival", now - 20);
+            SeedKnowledgeArrivalBoundary(now - 10);
+            SeedPendingDayHediff(day);
+            tuning.daySummaryImportantSignalKinds = new List<string> { "hediff" };
+
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => InvokeFlush(pawn),
+                "DayReflection",
+                pawn,
+                null);
+
+            PawnDiaryRimTestScope.Require(
+                (diaryEvent.gameContext ?? string.Empty)
+                    .IndexOf("news:", StringComparison.OrdinalIgnoreCase) < 0,
+                "A letter from before a knowledge-only arrival boundary leaked into the reflection.");
+        }
+
+        /// <summary>
         /// Quality Wave H3. A hot direct raid page suppresses the newer threat letter, while an older
         /// positive letter remains eligible instead of the whole colony-news collector going silent.
         /// </summary>
@@ -402,6 +429,36 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 context.IndexOf("news:threat", StringComparison.OrdinalIgnoreCase) < 0,
                 "The archived direct raid row did not suppress same-category threat news.");
+        }
+
+        /// <summary>
+        /// Quality Wave H3 review regression. Direct ownership is same-category and same-day: an older
+        /// progression page must not hide a distinct positive letter from the next quadrum day.
+        /// </summary>
+        [Test]
+        public static void DifferentDayDirectOwnerDoesNotSuppressQuadrumNews()
+        {
+            int firstDayStart = GameTickForDay(CurrentDayIndex());
+            int secondDayStart = firstDayStart + GenDate.TicksPerDay;
+            SeedArrivalBoundary(firstDayStart);
+            SeedArchivedDirectOwner(
+                "archived-positive-owner-" + Guid.NewGuid().ToString("N"),
+                firstDayStart + 10,
+                DiaryEventDomainClassifier.Progression,
+                "progression=skill");
+            SeedArchiveLetter(
+                "PositiveEvent",
+                "A distinct opportunity arrived the next day",
+                secondDayStart + 10);
+
+            List<DiaryGameComponent.QuadrumReflectionSignal> signals =
+                CollectQuadrumNews(firstDayStart, secondDayStart + 20);
+
+            PawnDiaryRimTestScope.Require(
+                signals.Count == 1
+                    && signals[0].contextTag.IndexOf(
+                        "news:positive", StringComparison.OrdinalIgnoreCase) >= 0,
+                "A previous-day direct owner incorrectly suppressed next-day positive colony news.");
         }
 
         /// <summary>
@@ -499,6 +556,80 @@ namespace PawnDiary.RimTests
                 "A first-year quadrum emitted an impossible prior-year callback.");
         }
 
+        /// <summary>
+        /// Quality Wave Phase 3 review regression. A prior-year callback is auxiliary context, so five
+        /// current important pages cannot satisfy the shipped six-entry quadrum gate.
+        /// </summary>
+        [Test]
+        public static void PriorYearCallbackCannotSatisfyCurrentQuadrumEntryGate()
+        {
+            int currentDay = CurrentDayIndex();
+            int currentQuadrum = (currentDay / GenDate.DaysPerQuadrum)
+                + QuadrumAnniversaryMemoryPolicy.QuadrumsPerYear;
+            int quadrumStartDay = currentQuadrum * GenDate.DaysPerQuadrum;
+            int dueDay = quadrumStartDay + QuadrumReflectionPolicy.DueDayInQuadrum(
+                pawn.GetUniqueLoadID(),
+                currentQuadrum,
+                GenDate.DaysPerQuadrum,
+                tuning.quadrumReflectionTimingWindowDays);
+
+            tuning.quadrumReflectionEnabled = true;
+            tuning.onThisDayQuadrumCallbackEnabled = true;
+            tuning.quadrumReflectionMinImportantEntries = 6;
+
+            DiaryEvent previousYear = scope.Component.AddSoloEvent(
+                pawn,
+                null,
+                "RaidEnemy",
+                "raid",
+                "A raid from the matching quadrum last year.",
+                "write about the raid",
+                "raid=EnemyRaid",
+                RequireUsableCurrentTick());
+            PawnDiaryRimTestScope.Require(
+                previousYear != null && previousYear.IsImportant(),
+                "Could not seed the prior-year auxiliary callback page.");
+
+            for (int i = 0; i < 5; i++)
+            {
+                DiaryEvent current = scope.Component.AddSoloEvent(
+                    pawn,
+                    null,
+                    "RaidEnemy",
+                    "raid",
+                    "Current-quadrum important event " + i,
+                    "write about the raid",
+                    "raid=EnemyRaid",
+                    GameTickForDay(quadrumStartDay) + 100 + i);
+                PawnDiaryRimTestScope.Require(
+                    current != null && current.IsImportant(),
+                    "Could not seed current-quadrum important event " + i + ".");
+            }
+
+            ReflectionOpportunity opportunity = PrepareQuadrumOpportunity(pawn, dueDay);
+            PawnDiaryRimTestScope.Require(
+                opportunity != null && !opportunity.due,
+                "The prior-year callback incorrectly lowered the six-current-entry quadrum gate.");
+            PawnDiaryRimTestScope.Require(
+                opportunity.candidateMemoryCount == 5,
+                "Auxiliary callback candidates inflated quadrum arbitration evidence.");
+        }
+
+        /// <summary>
+        /// Quality Wave Phase 3 review regression. Both XML-backed feature controls must be reachable
+        /// through the Advanced settings catalog instead of requiring a hand edit.
+        /// </summary>
+        [Test]
+        public static void Phase3TuningFieldsAreAdvancedEditable()
+        {
+            PawnDiaryRimTestScope.Require(
+                AdvancedCatalogContains("daySummaryWeightNews"),
+                "Advanced settings omitted the H3 colony-news weight.");
+            PawnDiaryRimTestScope.Require(
+                AdvancedCatalogContains("onThisDayQuadrumCallbackEnabled"),
+                "Advanced settings omitted the H5 callback toggle.");
+        }
+
         // ----- production seam invocation ---------------------------------------------------------
 
         // Invokes the retained private dev/test seam, which delegates to the same per-pawn arbitration
@@ -513,6 +644,54 @@ namespace PawnDiary.RimTests
             }
 
             flush.Invoke(scope.Component, new object[] { target });
+        }
+
+        private static List<DiaryGameComponent.QuadrumReflectionSignal> CollectQuadrumNews(
+            int startTick,
+            int endTick)
+        {
+            Type signalList = typeof(List<DiaryGameComponent.QuadrumReflectionSignal>);
+            MethodInfo method = typeof(DiaryGameComponent).GetMethod(
+                "CollectNewsSignals",
+                NonPublicInstance,
+                null,
+                new[] { typeof(Pawn), typeof(int), typeof(int), signalList },
+                null);
+            if (method == null)
+            {
+                throw new AssertionException(
+                    "Could not locate the quadrum CollectNewsSignals production overload.");
+            }
+
+            List<DiaryGameComponent.QuadrumReflectionSignal> signals =
+                new List<DiaryGameComponent.QuadrumReflectionSignal>();
+            method.Invoke(scope.Component, new object[] { pawn, startTick, endTick, signals });
+            return signals;
+        }
+
+        private static ReflectionOpportunity PrepareQuadrumOpportunity(Pawn target, int day)
+        {
+            MethodInfo method = typeof(DiaryGameComponent).GetMethod(
+                "PrepareQuadrumReflectionCandidate",
+                NonPublicInstance);
+            if (method == null)
+            {
+                throw new AssertionException(
+                    "Could not locate PrepareQuadrumReflectionCandidate.");
+            }
+
+            object runtime = method.Invoke(
+                scope.Component,
+                new object[] { target, target.GetUniqueLoadID(), day, true });
+            FieldInfo field = runtime?.GetType().GetField("opportunity");
+            ReflectionOpportunity opportunity = field?.GetValue(runtime) as ReflectionOpportunity;
+            if (opportunity == null)
+            {
+                throw new AssertionException(
+                    "Could not inspect the prepared quadrum opportunity.");
+            }
+
+            return opportunity;
         }
 
         private static PawnDiaryRecord DiaryRecord()
@@ -563,6 +742,20 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 ArchiveRepository().AddOrKeep(entry),
                 "Could not seed the H3 archived arrival boundary.");
+        }
+
+        private static void SeedKnowledgeArrivalBoundary(int tick)
+        {
+            PawnKnowledgeState knowledge = DiaryRecord().EnsureKnowledgeState();
+            string id = "quality-wave-arrival-knowledge-" + Guid.NewGuid().ToString("N");
+            knowledge.records.Add(new ImportantMemoryRecord
+            {
+                recordId = id,
+                dedupKey = id,
+                eventKind = KnowledgeTokens.EventKindFactionJoined,
+                tick = tick,
+                fallbackSummary = "test knowledge-only arrival boundary"
+            });
         }
 
         private static void SeedArchivedDirectOwner(
@@ -645,6 +838,20 @@ namespace PawnDiary.RimTests
                 Find.Archive.Add(letter),
                 "Could not seed archived letter '" + letterDefName + "'.");
             scope.RegisterCleanup(() => Find.Archive?.Remove(letter));
+        }
+
+        private static bool AdvancedCatalogContains(string fieldName)
+        {
+            IReadOnlyList<AdvancedFieldDescriptor> fields = AdvancedFieldCatalog.All;
+            for (int i = 0; i < fields.Count; i++)
+            {
+                if (string.Equals(fields[i]?.fieldName, fieldName, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         // Ordinary EVT-19 tests seed current-day evidence and expect to exercise selection immediately.
@@ -810,6 +1017,7 @@ namespace PawnDiary.RimTests
             savedQuadrumCallbackEnabled = tuning.onThisDayQuadrumCallbackEnabled;
             savedArcEnabled = tuning.arcReflectionEnabled;
             savedImportantKinds = tuning.daySummaryImportantSignalKinds;
+            savedQuadrumMinImportantEntries = tuning.quadrumReflectionMinImportantEntries;
 
             tuning.daySummaryEnabled = true;
             // Disable the rarer arc/quadrum reflections so they never pre-empt the daily one; the flush
@@ -836,6 +1044,7 @@ namespace PawnDiary.RimTests
             tuning.onThisDayQuadrumCallbackEnabled = savedQuadrumCallbackEnabled;
             tuning.arcReflectionEnabled = savedArcEnabled;
             tuning.daySummaryImportantSignalKinds = savedImportantKinds;
+            tuning.quadrumReflectionMinImportantEntries = savedQuadrumMinImportantEntries;
         }
 
         // The once-per-day / once-per-quadrum guards (writtenDayReflections / writtenQuadrumReflections)

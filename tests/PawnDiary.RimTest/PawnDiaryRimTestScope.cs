@@ -988,6 +988,13 @@ namespace PawnDiary.RimTests
             repository.RemoveEvents(eventIds);
             DiaryArchiveRepository archive = ArchiveField?.GetValue(Component) as DiaryArchiveRepository;
             archive?.RemoveForEventIds(eventIds);
+            // Compact fixtures can be archive-only and therefore have no hot event id for the removal
+            // set above. Every row for a synthetic test pawn is test-owned, so clear those rows directly
+            // before destroying the pawn rather than leaving invisible orphans in the developer's save.
+            foreach (string pawnId in pawnIds)
+            {
+                archive?.RemoveForPawn(pawnId);
+            }
 
             List<PawnDiaryRecord> diaries = DiariesField?.GetValue(Component) as List<PawnDiaryRecord>;
             if (diaries != null)
@@ -1117,6 +1124,17 @@ namespace PawnDiary.RimTests
                 {
                     throw new AssertionException(
                         "Leak audit: a test-owned diary event survived cleanup.");
+                }
+            }
+
+            DiaryArchiveRepository archive =
+                ArchiveField?.GetValue(Component) as DiaryArchiveRepository;
+            foreach (string pawnId in pawnIds)
+            {
+                if (archive != null && archive.CountForPawn(pawnId) > 0)
+                {
+                    throw new AssertionException(
+                        "Leak audit: a compact archive row for a test pawn survived cleanup.");
                 }
             }
 

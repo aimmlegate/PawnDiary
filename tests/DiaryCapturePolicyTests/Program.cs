@@ -1619,10 +1619,13 @@ namespace DiaryCapturePolicyTests
                 "day_reflection=true; day=42; highlights=1; candidates=1; filler_moments=0; signals=news:positive",
                 DayReflectionEventData.BuildGameContext(42, 1, 1, 0, "news:positive"));
             string quadrumContext = DayReflectionEventData.BuildQuadrumGameContext(
-                74, 4, 60, 74, "1 Aprimay - 15 Aprimay", 72, 2, 7, "event:Raid,memory:event-42");
+                74, 4, 60, 74, "1 Aprimay - 15 Aprimay", 72, 2, 7, 6,
+                "event:Raid,memory:event-42");
             AssertTrue("H5 memory signal tag survives quadrum capture context",
                 quadrumContext.IndexOf(
                     "signals=event:Raid,memory:event-42", StringComparison.Ordinal) >= 0);
+            AssertTrue("H5 auxiliary memory does not inflate important-entry count",
+                quadrumContext.IndexOf("candidates=7; important_entries=6", StringComparison.Ordinal) >= 0);
         }
 
         private static void TestQuadrumReflectionPolicy()
@@ -1648,7 +1651,7 @@ namespace DiaryCapturePolicyTests
         private static void TestQuadrumReflectionBuildGameContextFormat()
         {
             AssertEqual("quadrum reflection context",
-                "day_reflection=true; quadrum_reflection=true; day=44; quadrum=2; quadrum_start_day=30; quadrum_end_day=44; quadrum_dates=1st of Aprimay - 15th of Aprimay; due_day=42; highlights=6; candidates=10; important_entries=10; filler_moments=0; signals=event:raid, event:death",
+                "day_reflection=true; quadrum_reflection=true; day=44; quadrum=2; quadrum_start_day=30; quadrum_end_day=44; quadrum_dates=1st of Aprimay - 15th of Aprimay; due_day=42; highlights=6; candidates=10; important_entries=8; filler_moments=0; signals=event:raid, event:death",
                 DayReflectionEventData.BuildQuadrumGameContext(
                     44,
                     2,
@@ -1658,6 +1661,7 @@ namespace DiaryCapturePolicyTests
                     42,
                     6,
                     10,
+                    8,
                     "event:raid, event:death"));
         }
 

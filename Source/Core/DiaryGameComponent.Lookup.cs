@@ -531,6 +531,17 @@ namespace PawnDiary
                 firstArrivalTick = archivedArrivalTick;
             }
 
+            // An arrival page may be intentionally disabled while its durable knowledge record still
+            // marks the joining boundary. H3 colony news must honor that tick too, or a same-day letter
+            // from before the pawn joined can be attributed to them.
+            int? knowledgeArrivalTick = diary?.KnowledgeStateOrNull()?.FirstEventKindTick(
+                KnowledgeTokens.EventKindFactionJoined);
+            if (knowledgeArrivalTick.HasValue
+                && (!firstArrivalTick.HasValue || knowledgeArrivalTick.Value < firstArrivalTick.Value))
+            {
+                firstArrivalTick = knowledgeArrivalTick;
+            }
+
             return firstArrivalTick;
         }
 

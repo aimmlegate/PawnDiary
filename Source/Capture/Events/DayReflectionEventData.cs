@@ -84,7 +84,7 @@ namespace PawnDiary.Capture
 
         public static string BuildQuadrumGameContext(int day, int quadrum, int quadrumStartDay,
             int quadrumEndDay, string quadrumDates, int dueDay, int highlightCount,
-            int candidateCount, string signalTags)
+            int candidateCount, int importantEntryCount, string signalTags)
         {
             return "day_reflection=true"
                 + "; quadrum_reflection=true"
@@ -96,7 +96,7 @@ namespace PawnDiary.Capture
                 + "; due_day=" + dueDay
                 + "; highlights=" + highlightCount
                 + "; candidates=" + candidateCount
-                + "; important_entries=" + candidateCount
+                + "; important_entries=" + importantEntryCount
                 + "; filler_moments=0"
                 + "; signals=" + (signalTags ?? string.Empty);
         }

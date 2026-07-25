@@ -176,7 +176,8 @@ namespace PawnDiary.RimTests
             const string instruction = "Look back across the whole quadrum.";
             string gameContext = DayReflectionEventData.BuildQuadrumGameContext(
                 day: 42, quadrum: 1, quadrumStartDay: 15, quadrumEndDay: 29, quadrumDates: QuadrumDates,
-                dueDay: 28, highlightCount: 2, candidateCount: 4, signalTags: "event:Raid");
+                dueDay: 28, highlightCount: 2, candidateCount: 4, importantEntryCount: 4,
+                signalTags: "event:Raid");
             DayReflectionEventData data = new DayReflectionEventData
             {
                 PawnId = pawn.GetUniqueLoadID(),

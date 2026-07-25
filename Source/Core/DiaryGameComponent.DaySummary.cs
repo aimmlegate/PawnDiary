@@ -248,21 +248,25 @@ namespace PawnDiary
             int evidenceEndDay = Math.Min(day, quadrumStartDay + daysPerQuadrum - 1);
             List<QuadrumReflectionSignal> candidates = new List<QuadrumReflectionSignal>();
             CollectQuadrumReflectionSignals(pawnId, quadrumStartDay, evidenceEndDay, candidates);
+            int currentImportantEntryCount = candidates.Count;
+            runtime.opportunity.candidateMemoryCount = currentImportantEntryCount;
+            if (!QuadrumReflectionPolicy.HasEnoughHighValueEntries(currentImportantEntryCount,
+                DiaryTuning.QuadrumReflectionMinImportantEntries))
+            {
+                runtime.opportunity.due = false;
+                return runtime;
+            }
+
+            // H3 news and H5's prior-year callback enrich an already-earned quadrum reflection. They
+            // must never lower the current-quadrum importance gate or inflate coordinator arbitration.
+            // Waiting until after the gate also avoids repeating the year-back hot/archive scan every
+            // 250 ticks while a quiet pawn rests inside the multi-day timing window.
             CollectLastYearQuadrumMemory(pawnId, quadrum, candidates);
             CollectNewsSignals(
                 pawn,
                 GameTickForDayIndex(quadrumStartDay),
                 Math.Min(Find.TickManager.TicksGame, GameTickForDayIndex(evidenceEndDay + 1) - 1),
                 candidates);
-            if (!QuadrumReflectionPolicy.HasEnoughHighValueEntries(candidates.Count,
-                DiaryTuning.QuadrumReflectionMinImportantEntries))
-            {
-                runtime.opportunity.due = false;
-                runtime.opportunity.candidateMemoryCount = candidates.Count;
-                return runtime;
-            }
-
-            runtime.opportunity.candidateMemoryCount = candidates.Count;
             runtime.dispatch = () => DispatchPreparedQuadrumReflection(
                 pawn,
                 pawnId,
@@ -272,6 +276,7 @@ namespace PawnDiary
                 evidenceEndDay,
                 daysPerQuadrum,
                 timingWindowDays,
+                currentImportantEntryCount,
                 candidates);
             runtime.consumeAfterDispatch = () => writtenQuadrumReflections.Add(quadrumKey);
             return runtime;
@@ -286,6 +291,7 @@ namespace PawnDiary
             int evidenceEndDay,
             int daysPerQuadrum,
             int timingWindowDays,
+            int currentImportantEntryCount,
             List<QuadrumReflectionSignal> candidates)
         {
             List<QuadrumReflectionSignal> highlights =
@@ -307,7 +313,7 @@ namespace PawnDiary
                 DefName = DayReflectionEventData.QuadrumDefNameToken,
                 Day = day,
                 CandidateCount = candidates.Count,
-                ImportantCandidateCount = candidates.Count,
+                ImportantCandidateCount = currentImportantEntryCount,
                 HighlightCount = highlights.Count,
                 FillerMomentCount = 0,
                 SignalTags = signalTags,
@@ -326,6 +332,7 @@ namespace PawnDiary
                 dueDay,
                 data.HighlightCount,
                 data.CandidateCount,
+                data.ImportantCandidateCount,
                 data.SignalTags);
 
             return Dispatch(new DayReflectionSignal(data, pawn, label, text, instruction, gameContext));
@@ -718,8 +725,11 @@ namespace PawnDiary
                 }
 
                 string category = ColonyNewsPolicy.CategoryForLetter(letter.def.defName, rules);
+                int letterDay = DayIndexForGameTick(createdTick);
+                int ownerStartTick = Math.Max(startTick, GameTickForDayIndex(letterDay));
+                int ownerEndTick = Math.Min(endTick, GameTickForDayIndex(letterDay + 1) - 1);
                 if (string.IsNullOrWhiteSpace(category)
-                    || HasDirectNewsOwner(pawnId, category, startTick, endTick, rules))
+                    || HasDirectNewsOwner(pawnId, category, ownerStartTick, ownerEndTick, rules))
                 {
                     continue;
                 }
