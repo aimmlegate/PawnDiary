@@ -118,6 +118,26 @@ namespace PawnDiary.Ingestion
                 ambientSignalEnabled: true);
         }
 
+        // ── Quality Wave B6 pacing ────────────────────────────────────────────────────────────────
+        // Routine work moments are the archetypal low-value page, so they pace; a work group XML marks
+        // important (or combat) keeps writing its own entries.
+
+        public override bool IsLowSalience => group != null && !group.important && !group.combat;
+
+        public override string DigestSourceKind => DigestPacingPolicy.SourceKindWork;
+
+        /// <summary>Reuses the page's own sentence so the digest reads in the same voice.</summary>
+        public override string BuildDigestLine()
+        {
+            if (pawn == null || workTypeDef == null)
+            {
+                return string.Empty;
+            }
+
+            return DiaryLineCleaner.CleanLine(
+                WorkEventText(pawn, WorkLabel(workTypeDef, workGiverDef), moodImpact, darkStudy));
+        }
+
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)
         {
             if (decision != CaptureDecision.GenerateSolo)

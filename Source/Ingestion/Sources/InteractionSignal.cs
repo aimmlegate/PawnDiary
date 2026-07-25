@@ -9,6 +9,7 @@
 // stays on the component. Pure decision + game-context format live in
 // Source/Capture/Events/InteractionEventData.cs. New to C#/RimWorld? See AGENTS.md.
 using System;
+using System.Collections.Generic;
 using PawnDiary.Capture;
 using RimWorld;
 using Verse;
@@ -30,6 +31,7 @@ namespace PawnDiary.Ingestion
         private readonly bool initiatorEligible;
         private readonly bool recipientEligible;
         private readonly DiaryInteractionGroupDef batchGroup;
+        private readonly DiaryInteractionGroupDef classifiedGroup;
         private readonly string effectiveGroupDefName;
         private readonly InteractionEventData payload;
 
@@ -56,7 +58,8 @@ namespace PawnDiary.Ingestion
             // Freeze the exact effective group which authorized this PlayLog row. Mutation policy
             // must match this group as well as the DefName, so a later XML reorder cannot let a broad
             // conversion-looking name borrow evidence from a differently-owned route.
-            effectiveGroupDefName = InteractionGroups.Classify(interactionDef)?.defName ?? string.Empty;
+            classifiedGroup = InteractionGroups.Classify(interactionDef);
+            effectiveGroupDefName = classifiedGroup?.defName ?? string.Empty;
 
             initiatorEligible = DiaryGameComponent.IsDiaryEligible(initiator);
             recipientEligible = DiaryGameComponent.IsDiaryEligible(recipient);
@@ -113,6 +116,82 @@ namespace PawnDiary.Ingestion
         // Interaction has no detailed source-specific dedup, matching the old RecordInteraction. The
         // dispatcher still applies the short generic event-type safety window after Decide, so a fluke
         // duplicate PlayLog signal for the same pawn/type/shape does not emit twice.
+
+        // ── Quality Wave B6 pacing ────────────────────────────────────────────────────────────────
+        // Everyday chatter is exactly what the soft cap is for; a social fight or an important group
+        // stays exempt so the diary never quietly loses a real moment.
+
+        public override bool IsLowSalience =>
+            classifiedGroup != null && !classifiedGroup.important && !classifiedGroup.combat;
+
+        public override string DigestSourceKind => DigestPacingPolicy.SourceKindInteraction;
+
+        /// <summary>The initiator's side of the moment, used when there is only one perspective.</summary>
+        public override string BuildDigestLine()
+        {
+            return DigestLineFor(initiator, recipient, initiatorGameText);
+        }
+
+        /// <summary>
+        /// Each diary remembers its OWN side of a suppressed shared interaction, so neither pawn's
+        /// digest reads as if they were the other person.
+        /// </summary>
+        public override string BuildDigestLineForPawn(string pawnId)
+        {
+            if (recipient != null && string.Equals(
+                pawnId, recipient.GetUniqueLoadID(), StringComparison.Ordinal))
+            {
+                return DigestLineFor(recipient, initiator, recipientGameText);
+            }
+
+            return BuildDigestLine();
+        }
+
+        /// <summary>
+        /// A suppressed pair page belongs to both diaries, so both writers are inspected before the
+        /// cap decides; a solo page reports only its one eligible pawn.
+        /// </summary>
+        public override void CollectPacedWriters(
+            DiaryEventData eventPayload, CaptureDecision decision, List<string> writers)
+        {
+            if (writers == null || payload == null)
+            {
+                return;
+            }
+
+            if (decision == CaptureDecision.GeneratePair)
+            {
+                writers.Add(payload.InitiatorPawnId);
+                writers.Add(payload.RecipientPawnId);
+                return;
+            }
+
+            writers.Add(initiatorEligible ? payload.InitiatorPawnId : payload.RecipientPawnId);
+        }
+
+        /// <summary>
+        /// Reuses the same text the page would have carried: RimWorld's own social-log line when it
+        /// rendered one, otherwise the generic "X did Y with Z" fallback.
+        /// </summary>
+        private string DigestLineFor(Pawn pov, Pawn other, string gameText)
+        {
+            if (pov == null || interactionDef == null)
+            {
+                return string.Empty;
+            }
+
+            string line = DiaryLineCleaner.CleanLine(gameText);
+            if (!string.IsNullOrWhiteSpace(line))
+            {
+                return line;
+            }
+
+            string interactionLabel = interactionDef.LabelCap.Resolve();
+            return other == null
+                ? interactionLabel
+                : DiaryLineCleaner.CleanLine("PawnDiary.Event.Interaction".Translate(
+                    pov.LabelShortCap, interactionLabel, other.LabelShortCap));
+        }
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)
         {

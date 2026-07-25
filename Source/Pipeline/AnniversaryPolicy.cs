@@ -112,6 +112,28 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Returns the anniversary year only when <paramref name="currentDay"/> is the same calendar
+        /// day in a later year. Deaths several hours apart on one date therefore become due together,
+        /// while a scan on the following date cannot consume a missed anniversary as if it happened
+        /// today.
+        /// </summary>
+        public static int AnniversaryYearOnCalendarDay(
+            int fromDay,
+            int currentDay,
+            int daysPerYear)
+        {
+            if (daysPerYear <= 0)
+            {
+                return 0;
+            }
+
+            long span = (long)currentDay - fromDay;
+            return span >= daysPerYear && span % daysPerYear == 0
+                ? (int)(span / daysPerYear)
+                : 0;
+        }
+
+        /// <summary>
         /// True when a whole arrival year is one the player asked to hear about: any explicitly
         /// configured milestone, or — past the highest configured one — every
         /// <paramref name="recurringIntervalYears"/> step measured from that highest milestone.
@@ -504,13 +526,13 @@ namespace PawnDiary
             for (int i = 0; i < memories.Count; i++)
             {
                 BondedDeathCandidate memory = memories[i];
-                string name = SafeFieldText(memory?.victimName);
+                string name = ContextFieldText(memory?.victimName);
                 if (name.Length == 0)
                 {
                     continue;
                 }
 
-                string relation = SafeFieldText(memory.relationLabel);
+                string relation = ContextFieldText(memory.relationLabel);
                 parts.Add(relation.Length == 0 ? name : name + " (" + relation + ")");
             }
 
@@ -545,8 +567,12 @@ namespace PawnDiary
             return text;
         }
 
-        // Display text only needs the context grammar protected; commas and pipes are fine in a name.
-        private static string SafeFieldText(string value)
+        /// <summary>
+        /// Protects one display value embedded in the saved <c>"; key=value"</c> grammar. Commas and
+        /// pipes remain valid prose; semicolons and equals signs cannot be allowed to create or split
+        /// structured fields.
+        /// </summary>
+        public static string ContextFieldText(string value)
         {
             string text = (value ?? string.Empty).Trim();
             return text.Replace(';', ',').Replace('=', '-');

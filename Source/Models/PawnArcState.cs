@@ -142,11 +142,18 @@ namespace PawnDiary
         // Highest whole arrival year already evaluated (0 = none). Advanced for EVERY year the scanner
         // considers, including non-milestone ones, so year 4 cannot resurface as a page later.
         public int lastArrivalAnniversaryYear;
+        // Cached arrival boundary. The separate resolved bit distinguishes "not looked up yet" from a
+        // starting colonist who legitimately has no arrival page or durable joining record.
+        public int arrivalAnniversaryStartTick = -1;
+        public bool arrivalAnniversaryBoundaryResolved;
         // Remembered bonded deaths, strongest bond first, capped by XML (default 16).
         public List<BondedDeathMemoryState> bondedDeathMemories = new List<BondedDeathMemoryState>();
         // Death-discovery cursor over saved diary history. -1 means "never scanned". Monotonic: a
         // memory evicted by the cap is forgotten for good instead of being rediscovered every scan.
         public int lastBondedDeathDiscoveryTick = -1;
+        // Phase-6 review migration flag. Old saves receive one bounded legacy-history pass; new deaths
+        // are captured at Pawn.Kill instead of re-walking the family graph every anniversary scan.
+        public bool bondedDeathHistoryMigrationComplete;
         // Absolute world day of the pawn's most recent bonded-death page. Enforces the locked
         // "at most one combined bonded-death page per pawn per day" rule across scans.
         public int lastBondedDeathPageDay = int.MinValue;
@@ -175,8 +182,13 @@ namespace PawnDiary
             // silent state and the first scan baselines it.
             Scribe_Values.Look(ref lastObservedBiologicalAgeYears, "lastObservedBiologicalAgeYears", -1);
             Scribe_Values.Look(ref lastArrivalAnniversaryYear, "lastArrivalAnniversaryYear", 0);
+            Scribe_Values.Look(ref arrivalAnniversaryStartTick, "arrivalAnniversaryStartTick", -1);
+            Scribe_Values.Look(ref arrivalAnniversaryBoundaryResolved,
+                "arrivalAnniversaryBoundaryResolved", false);
             Scribe_Collections.Look(ref bondedDeathMemories, "bondedDeathMemories", LookMode.Deep);
             Scribe_Values.Look(ref lastBondedDeathDiscoveryTick, "lastBondedDeathDiscoveryTick", -1);
+            Scribe_Values.Look(ref bondedDeathHistoryMigrationComplete,
+                "bondedDeathHistoryMigrationComplete", false);
             Scribe_Values.Look(ref lastBondedDeathPageDay, "lastBondedDeathPageDay", int.MinValue);
             Scribe_Collections.Look(ref recordHighWater, "recordHighWater", LookMode.Deep);
             Scribe_Values.Look(ref baselineAnniversariesOnNextScan, "baselineAnniversariesOnNextScan", true);
@@ -262,6 +274,11 @@ namespace PawnDiary
         {
             lastObservedBiologicalAgeYears = Math.Max(-1, lastObservedBiologicalAgeYears);
             lastArrivalAnniversaryYear = Math.Max(0, lastArrivalAnniversaryYear);
+            arrivalAnniversaryStartTick = Math.Max(-1, arrivalAnniversaryStartTick);
+            if (arrivalAnniversaryStartTick >= 0)
+            {
+                arrivalAnniversaryBoundaryResolved = true;
+            }
             lastBondedDeathDiscoveryTick = Math.Max(-1, lastBondedDeathDiscoveryTick);
 
             if (bondedDeathMemories == null)
@@ -286,7 +303,8 @@ namespace PawnDiary
                 recordHighWater = new List<RecordHighWaterState>();
             }
 
-            HashSet<string> seenRecords = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, RecordHighWaterState> seenRecords =
+                new Dictionary<string, RecordHighWaterState>(StringComparer.OrdinalIgnoreCase);
             for (int i = 0; i < recordHighWater.Count; i++)
             {
                 RecordHighWaterState record = recordHighWater[i];
@@ -299,10 +317,21 @@ namespace PawnDiary
 
                 record.recordDefName = record.recordDefName.Trim();
                 record.highestValue = RecordHighWaterState.SafeValue(record.highestValue);
-                if (!seenRecords.Add(record.recordDefName))
+                RecordHighWaterState previous;
+                if (seenRecords.TryGetValue(record.recordDefName, out previous))
                 {
+                    // A hand-edited or interrupted save may contain duplicate rows. Preserve the
+                    // strongest monotonic claim rather than whichever duplicate happened to load first,
+                    // or a damaged save can re-award a milestone it had already reached.
+                    previous.highestValue = AnniversaryPolicy.HighestValue(
+                        previous.highestValue,
+                        record.highestValue);
                     recordHighWater.RemoveAt(i);
                     i--;
+                }
+                else
+                {
+                    seenRecords.Add(record.recordDefName, record);
                 }
             }
         }

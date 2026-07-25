@@ -297,6 +297,42 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// While a configured Biotech letter is postponed, its saved pending row owns the exact
+        /// birthday. The periodic H2 scanner must advance observation without writing a competing page.
+        /// </summary>
+        [Test]
+        public static void PendingGrowthLetterSuppressesOrdinaryBirthdayScanner()
+        {
+            if (!ModsConfig.BiotechActive)
+            {
+                Log.Message("[PawnDiary RimTest Biotech growth ownership] not applicable "
+                    + "(Biotech inactive).");
+                return;
+            }
+
+            int age = pawn.ageTracker.AgeBiologicalYears;
+            BiotechGrowthBirthdayState birthday =
+                ConfigureOwnedLetter(age, out ChoiceLetter_GrowthMoment _);
+            PawnDiaryRimTestScope.Require(
+                birthday != null && birthday.configuredLetterOwnsBirthday,
+                "The configured growth letter did not claim the birthday.");
+            PawnDiaryRimTestScope.Require(
+                PendingBiotechGrowthMomentPolicy.FindNewest(
+                    PendingGrowthRows(), pawn.GetUniqueLoadID(), age) != null,
+                "The configured growth letter did not leave a saved pending owner.");
+
+            PawnProgressionState state = scope.Component.AnniversaryStateFor(pawn);
+            state.baselineAnniversariesOnNextScan = false;
+            state.lastObservedBiologicalAgeYears = age - 1;
+            scope.RequireNoNewEvent(() => scope.Component.ScanAnniversariesForPawn(
+                pawn,
+                Find.TickManager?.TicksGame ?? 0,
+                DiaryGameComponent.SnapshotAnniversaryRecordDefs()));
+            PawnDiaryRimTestScope.Require(state.lastObservedBiologicalAgeYears == age,
+                "The suppressed birthday did not advance observation and would retry forever.");
+        }
+
+        /// <summary>
         /// The real vanilla letter boundary handles every canonical age, two simultaneous passion gains,
         /// an age-13 nickname, and newly opened responsibilities without leaving an owner or duplicate.
         /// </summary>

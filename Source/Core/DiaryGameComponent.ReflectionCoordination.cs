@@ -202,6 +202,9 @@ namespace PawnDiary
                 ConsumePawnDayFiller(pawnId, day);
             }
             pendingDayHediffs.Remove(DaySummaryKey(pawnId, day));
+            // B6 digest lines follow the same "this day is settled" release as the filler/hediff
+            // evidence, so a baselined day cannot leak yesterday's small talk into tomorrow.
+            ClearDayDigestLines(DaySummaryKey(pawnId, day));
         }
 
         /// <summary>

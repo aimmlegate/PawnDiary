@@ -33,6 +33,7 @@ namespace DiaryPipelineTests
             TestBattleBeatsPolicy();
             TestArtImmortalizationPolicy();
             TestAnniversaryPolicy();
+            TestDigestPacingPolicy();
             TestCheapXmlExtensionCoverage();
             TestPromptContextDetailSelection();
             TestPromptContextDetailOverrideResolution();
@@ -4939,11 +4940,10 @@ namespace DiaryPipelineTests
             {
                 "VoidMonolithActivation",
                 "VoidMonolithWaking",
-                "VoidMonolithGleaming",
                 "VoidMonolithVoidAwakened"
             };
-            string[] monolithLevels = { "Stirring", "Waking", "Gleaming", "VoidAwakened" };
-            string[] narrativePhases = { "stirring", "waking", "gleaming", "void_awakened" };
+            string[] monolithLevels = { "Stirring", "Waking", "VoidAwakened" };
+            string[] narrativePhases = { "stirring", "waking", "void_awakened" };
             for (int windowIndex = 0; windowIndex < activationWindowDefNames.Length; windowIndex++)
             {
                 string windowDefName = activationWindowDefNames[windowIndex];
@@ -4988,6 +4988,9 @@ namespace DiaryPipelineTests
                 AssertTrue("Russian monolith-window fallback exists: " + startTextKey,
                     !string.IsNullOrWhiteSpace(KeyedValue(russianKeyed, startTextKey)));
             }
+            AssertEqual("automatic Gleaming has no actor-owned event window",
+                0, CountMatchingEventWindowStarts(
+                    windows, "VoidMonolith", "activated", "Gleaming"));
 
             XElement monolithGroup = FindDef(
                 groups, "PawnDiary.DiaryInteractionGroupDef", "eventWindowVoidMonolith");

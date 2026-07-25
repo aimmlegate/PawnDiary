@@ -19,6 +19,11 @@ namespace PawnDiary.Capture
         public const string SignalKindFiller = "filler";
         public const string SignalKindNews = "news";
         public const string SignalKindMemory = "memory";
+        // Quality Wave B6. Deliberately absent from every "important" list: a digest line is a moment
+        // the daily soft cap folded away, so it may colour a reflection that already earned itself but
+        // must never be the reason one exists. Decide() below enforces that through
+        // ImportantCandidateCount, which the adapter never increments for this kind.
+        public const string SignalKindDigest = "digest";
 
         public override DiaryEventType EventType => DiaryEventType.DayReflection;
 

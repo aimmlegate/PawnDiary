@@ -30,6 +30,17 @@ namespace PawnDiary
         private readonly Dictionary<string, List<DayHediffRecord>> pendingDayHediffs =
             new Dictionary<string, List<DayHediffRecord>>();
 
+        // Quality Wave B6 pacing rows: one per pawn per day, holding that pawn's daily low-salience
+        // page count and the small moments the soft cap folded away. Unlike the hediff/filler stores
+        // above this one IS saved, because reloading mid-day must not hand a pawn a fresh allowance.
+        //
+        // The list is the save schema (LookMode.Deep, like activeEventWindows); the dictionary is a
+        // transient "pawnId|dayIndex" index over exactly the same objects, rebuilt after load. Rows
+        // for earlier days are dropped at the day rollover, so both stay ~one row per colonist.
+        private List<PawnDayDigestState> dayDigestStates = new List<PawnDayDigestState>();
+        private readonly Dictionary<string, PawnDayDigestState> pendingDayDigest =
+            new Dictionary<string, PawnDayDigestState>();
+
         // Each free colonist's opinion of every other, snapshotted at the start of the current day,
         // keyed "fromId|toId". Diffed at reflection time to detect a social shift. Re-snapshotted on
         // load and at day rollover (DiaryGameComponent.cs), so it is never persisted.
@@ -96,6 +107,7 @@ namespace PawnDiary
                 // The day cadence is bounded, but ambient notes stay available to the documented
                 // daySummaryEnabled=false fallback (and to the shared-policy-disabled fallback).
                 pendingDayHediffs.Remove(dayKey);
+                ClearDayDigestLines(dayKey);
             };
             if (!groupEnabled)
             {
@@ -123,6 +135,7 @@ namespace PawnDiary
             CollectOpinionSignals(pawn, candidates);
             CollectHediffSignals(dayKey, candidates);
             int fillerCount = CollectFillerSignal(pawnId, day, candidates);
+            CollectDigestSignals(pawnId, day, candidates);
             int importantCandidateCount = CountImportantSignals(candidates);
 
             runtime.opportunity.candidateMemoryCount = candidates.Count;
@@ -135,6 +148,7 @@ namespace PawnDiary
                 {
                     ConsumePawnDayFiller(pawnId, day);
                     pendingDayHediffs.Remove(dayKey);
+                    ClearDayDigestLines(dayKey);
                 };
                 return runtime;
             }
@@ -145,6 +159,7 @@ namespace PawnDiary
             {
                 ConsumePawnDayFiller(pawnId, day);
                 pendingDayHediffs.Remove(dayKey);
+                ClearDayDigestLines(dayKey);
                 writtenDayReflections.Add(dayKey);
             };
             return runtime;
@@ -158,7 +173,8 @@ namespace PawnDiary
             int fillerCount,
             int importantCandidateCount)
         {
-            List<DaySummarySignal> highlights = SelectHighlights(candidates, DaySummaryMaxHighlights);
+            List<DaySummarySignal> highlights =
+                SelectHighlightsImportantFirst(candidates, DaySummaryMaxHighlights);
             EnsureImportantHighlight(highlights, candidates);
             highlights.Sort((a, b) => b.weight.CompareTo(a.weight));
 
@@ -937,6 +953,40 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Quality Wave B6. Adds one low-weight candidate per moment the daily soft cap folded away
+        /// for this pawn today, so a quiet-but-not-empty day still reads as lived-in.
+        ///
+        /// These candidates are ALWAYS non-important, whatever the XML important-kind list says: a
+        /// digest line exists precisely because its own page was judged not worth writing, so it may
+        /// colour a reflection that already earned itself but can never create one.
+        /// </summary>
+        private void CollectDigestSignals(string pawnId, int day, List<DaySummarySignal> candidates)
+        {
+            PawnDayDigestState state;
+            if (!pendingDayDigest.TryGetValue(DaySummaryKey(pawnId, day), out state)
+                || state?.lines == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < state.lines.Count; i++)
+            {
+                DayDigestRecord record = state.lines[i];
+                string line = TruncateForEvidence(record?.line);
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    continue;
+                }
+
+                candidates.Add(new DaySummarySignal(
+                    DiaryTuning.Current.daySummaryWeightDigest,
+                    line,
+                    DaySummarySignalTag(DayReflectionEventData.SignalKindDigest, record.sourceKind),
+                    false));
+            }
+        }
+
+        /// <summary>
         /// Adds a single low-weight background signal when the day held enough small talk / passing
         /// feelings to be worth a mention. Returns the total filler-moment count for context.
         /// </summary>
@@ -955,6 +1005,40 @@ namespace PawnDiary
             }
 
             return fillerCount;
+        }
+
+        /// <summary>
+        /// Quality Wave B6. Runs the weighted rotation in two passes so priority is explicit: the
+        /// important evidence that earned this reflection selects first, and only the slots it leaves
+        /// over are offered to the background pool (news, filler, digest). Without this split, adding
+        /// up to four digest candidates would statistically crowd out the real story of the day.
+        /// </summary>
+        private static List<DaySummarySignal> SelectHighlightsImportantFirst(
+            List<DaySummarySignal> candidates, int max)
+        {
+            List<DaySummarySignal> important = new List<DaySummarySignal>();
+            List<DaySummarySignal> background = new List<DaySummarySignal>();
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                if (candidates[i].important)
+                {
+                    important.Add(candidates[i]);
+                }
+                else
+                {
+                    background.Add(candidates[i]);
+                }
+            }
+
+            List<DaySummarySignal> chosen = SelectHighlights(
+                important, DigestPacingPolicy.ImportantSelectionSlots(important.Count, max));
+            int remaining = DigestPacingPolicy.RemainingSelectionSlots(chosen.Count, max);
+            if (remaining > 0)
+            {
+                chosen.AddRange(SelectHighlights(background, remaining));
+            }
+
+            return chosen;
         }
 
         /// <summary>
@@ -1443,6 +1527,225 @@ namespace PawnDiary
 
             opinionSnapshotDay = CurrentDayIndex;
             PruneStaleDayHediffs(CurrentDayIndex);
+            // Same rollover boundary for B6: yesterday's pacing counts and unused digest lines go.
+            PruneStaleDayDigest(CurrentDayIndex);
+        }
+
+        // ── Quality Wave B6: daily pacing store ───────────────────────────────────────────────────
+        // Everything below reads or writes the saved pawn/day rows. The DECISIONS live in the pure
+        // DigestPacingPolicy; these methods only own the live lookup, the localized line, and the
+        // save/rollover bookkeeping.
+
+        /// <summary>
+        /// How many low-salience pages this pawn has already written on this day. A pawn with no row
+        /// yet has written none, which is exactly what an old save should report.
+        /// </summary>
+        internal int LowSalienceCountForDay(string pawnId, int day)
+        {
+            PawnDayDigestState state;
+            return pendingDayDigest.TryGetValue(DaySummaryKey(pawnId, day), out state) && state != null
+                ? state.lowSalienceCount
+                : 0;
+        }
+
+        /// <summary>
+        /// This pawn's saved pacing row for a day, or null when none exists yet. Production goes
+        /// through the count/line accessors around this one; this is the read seam the loaded-game
+        /// tests use to inspect a row directly.
+        /// </summary>
+        internal PawnDayDigestState DayDigestStateFor(string pawnId, int day)
+        {
+            PawnDayDigestState state;
+            return pendingDayDigest.TryGetValue(DaySummaryKey(pawnId, day), out state) ? state : null;
+        }
+
+        /// <summary>
+        /// Records that a low-salience page really was written. Called only AFTER a successful emit,
+        /// so a page the catalog or a source dropped late never consumes the pawn's daily allowance.
+        /// </summary>
+        internal void RecordLowSalienceEmission(string pawnId, int day)
+        {
+            PawnDayDigestState state = EnsureDayDigestState(pawnId, day);
+            if (state != null)
+            {
+                state.lowSalienceCount = DigestPacingPolicy.NextEmittedCount(state.lowSalienceCount);
+            }
+        }
+
+        /// <summary>
+        /// Remembers one moment the soft cap folded away, so the evening reflection can still mention
+        /// it. The pure policy owns duplicate rejection and the newest-wins eviction.
+        /// </summary>
+        internal void AddDayDigestLine(string pawnId, int day, string sourceKind, string line, int tick)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId) || string.IsNullOrWhiteSpace(line))
+            {
+                return;
+            }
+
+            PawnDayDigestState state = EnsureDayDigestState(pawnId, day);
+            if (state == null)
+            {
+                return;
+            }
+
+            List<DigestLineCandidate> buffer = DigestBuffer(state);
+            if (DigestPacingPolicy.AddLine(
+                buffer,
+                new DigestLineCandidate { tick = tick, sourceKind = sourceKind, line = line },
+                DiaryTuning.Current.dayDigestMaxLines))
+            {
+                CopyDigestBufferBack(state, buffer);
+            }
+        }
+
+        /// <summary>
+        /// Drops this pawn/day's buffered moments once the reflection has consumed (or declined) them,
+        /// mirroring the filler and hediff release paths. The pacing COUNT deliberately survives: the
+        /// day is not over, and a pawn who already wrote its quota keeps that quota after bedtime.
+        /// </summary>
+        private void ClearDayDigestLines(string dayKey)
+        {
+            PawnDayDigestState state;
+            if (pendingDayDigest.TryGetValue(dayKey, out state))
+            {
+                state?.ClearLines();
+            }
+        }
+
+        private PawnDayDigestState EnsureDayDigestState(string pawnId, int day)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId))
+            {
+                return null;
+            }
+
+            string key = DaySummaryKey(pawnId, day);
+            PawnDayDigestState state;
+            if (pendingDayDigest.TryGetValue(key, out state) && state != null)
+            {
+                return state;
+            }
+
+            state = new PawnDayDigestState { pawnId = pawnId, day = day };
+            state.Normalize();
+            dayDigestStates.Add(state);
+            pendingDayDigest[key] = state;
+            return state;
+        }
+
+        // DigestPacingPolicy is pure, so it works on plain DigestLineCandidate rows rather than on the
+        // IExposable save rows. These two helpers are the (small, bounded) translation both ways.
+        private static List<DigestLineCandidate> DigestBuffer(PawnDayDigestState state)
+        {
+            List<DigestLineCandidate> buffer = new List<DigestLineCandidate>(state.lines.Count + 1);
+            for (int i = 0; i < state.lines.Count; i++)
+            {
+                DayDigestRecord record = state.lines[i];
+                if (record != null)
+                {
+                    buffer.Add(new DigestLineCandidate
+                    {
+                        tick = record.tick,
+                        sourceKind = record.sourceKind,
+                        line = record.line
+                    });
+                }
+            }
+
+            return buffer;
+        }
+
+        private static void CopyDigestBufferBack(
+            PawnDayDigestState state, List<DigestLineCandidate> buffer)
+        {
+            List<DayDigestRecord> rebuilt = new List<DayDigestRecord>(buffer.Count);
+            for (int i = 0; i < buffer.Count; i++)
+            {
+                rebuilt.Add(new DayDigestRecord
+                {
+                    tick = buffer[i].tick,
+                    sourceKind = buffer[i].sourceKind,
+                    line = buffer[i].line
+                });
+            }
+
+            state.lines = rebuilt;
+        }
+
+        /// <summary>
+        /// Discards pacing rows from earlier days. This is the day rollover: a new day restores every
+        /// pawn's full allowance and forgets moments no reflection ever used. It also runs on load,
+        /// where a SAME-day row survives on purpose so reloading cannot reset a pawn's pacing.
+        /// </summary>
+        private void PruneStaleDayDigest(int currentDay)
+        {
+            for (int i = dayDigestStates.Count - 1; i >= 0; i--)
+            {
+                PawnDayDigestState state = dayDigestStates[i];
+                if (state == null || state.day < currentDay)
+                {
+                    dayDigestStates.RemoveAt(i);
+                }
+            }
+
+            RebuildDayDigestIndex();
+        }
+
+        /// <summary>Rebuilds the transient "pawnId|day" index over the saved rows (load + prune).</summary>
+        private void RebuildDayDigestIndex()
+        {
+            pendingDayDigest.Clear();
+            if (dayDigestStates == null)
+            {
+                dayDigestStates = new List<PawnDayDigestState>();
+                return;
+            }
+
+            for (int i = dayDigestStates.Count - 1; i >= 0; i--)
+            {
+                PawnDayDigestState state = dayDigestStates[i];
+                if (state == null || string.IsNullOrWhiteSpace(state.pawnId))
+                {
+                    dayDigestStates.RemoveAt(i);
+                    continue;
+                }
+
+                string key = DaySummaryKey(state.pawnId, state.day);
+                if (pendingDayDigest.ContainsKey(key))
+                {
+                    // A hand-edited or merged save could carry the same pawn/day twice. The scan runs
+                    // backwards (so removal is safe), which means the row nearest the END wins — the
+                    // later-written one. Either choice is arbitrary; what matters is that exactly one
+                    // row survives, or the index and the save list would disagree.
+                    dayDigestStates.RemoveAt(i);
+                    continue;
+                }
+
+                pendingDayDigest[key] = state;
+            }
+        }
+
+        /// <summary>Saves the B6 pacing rows. Additive: an old save simply loads an empty list.</summary>
+        private void ExposeDayDigestData()
+        {
+            Scribe_Collections.Look(ref dayDigestStates, "dayDigestStates", LookMode.Deep);
+            if (Scribe.mode != LoadSaveMode.PostLoadInit)
+            {
+                return;
+            }
+
+            if (dayDigestStates == null)
+            {
+                dayDigestStates = new List<PawnDayDigestState>();
+            }
+
+            for (int i = 0; i < dayDigestStates.Count; i++)
+            {
+                dayDigestStates[i]?.Normalize();
+            }
+
+            RebuildDayDigestIndex();
         }
 
         /// <summary>
@@ -1466,7 +1769,12 @@ namespace PawnDiary
             }
         }
 
-        /// <summary>Clears all transient day-summary state (on new game / load).</summary>
+        /// <summary>
+        /// Clears all transient day-summary state (on new game / load). The B6 pacing rows are NOT
+        /// cleared here: they are saved state, and wiping them on load would hand every colonist a
+        /// fresh daily allowance after a reload. The rollover prune in SnapshotDayStartOpinions is
+        /// what discards them, and it keeps a same-day row on purpose.
+        /// </summary>
         private void ResetDaySummaryState()
         {
             pendingDayHediffs.Clear();
@@ -1474,6 +1782,13 @@ namespace PawnDiary
             writtenDayReflections.Clear();
             writtenQuadrumReflections.Clear();
             opinionSnapshotDay = -1;
+        }
+
+        /// <summary>Drops every saved B6 pacing row (used when a brand-new game starts).</summary>
+        private void ResetDayDigestState()
+        {
+            dayDigestStates.Clear();
+            pendingDayDigest.Clear();
         }
 
         /// <summary>

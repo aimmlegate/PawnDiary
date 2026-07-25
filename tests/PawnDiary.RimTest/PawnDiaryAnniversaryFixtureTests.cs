@@ -10,6 +10,7 @@
 // New to C#/RimWorld? See AGENTS.md ("IExposable" for the save round-trip idiom below).
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using PawnDiary.Capture;
 using RimTestRedux;
@@ -68,6 +69,12 @@ namespace PawnDiary.RimTests
                 "An old save must load with the death-discovery cursor unset.");
             PawnDiaryRimTestScope.Require(fresh.lastArrivalAnniversaryYear == 0,
                 "An old save must load with no evaluated arrival years.");
+            PawnDiaryRimTestScope.Require(
+                fresh.arrivalAnniversaryStartTick == -1
+                    && !fresh.arrivalAnniversaryBoundaryResolved,
+                "An old save must leave the arrival boundary unresolved.");
+            PawnDiaryRimTestScope.Require(!fresh.bondedDeathHistoryMigrationComplete,
+                "An old save must receive its one legacy bonded-death migration.");
             PawnDiaryRimTestScope.Require(fresh.baselineAnniversariesOnNextScan,
                 "An old save must arm the H2 baseline flag, or it receives retroactive pages.");
             PawnDiaryRimTestScope.Require(
@@ -122,20 +129,20 @@ namespace PawnDiary.RimTests
                 "The surviving bonded-death row was not trimmed and clamped.");
             PawnDiaryRimTestScope.Require(dirty.recordHighWater.Count == 1,
                 "Only one de-duplicated record high-water row should survive normalization.");
-            PawnDiaryRimTestScope.Require(dirty.HighestRecordValue("Kills") == 0f,
-                "A negative saved record value must normalize to zero.");
-            PawnDiaryRimTestScope.Require(dirty.HighestRecordValue("kills") == 0f,
+            PawnDiaryRimTestScope.Require(dirty.HighestRecordValue("Kills") == 99f,
+                "Duplicate record rows must retain the highest monotonic claim.");
+            PawnDiaryRimTestScope.Require(dirty.HighestRecordValue("kills") == 99f,
                 "Record lookup must ignore case, matching the rest of the def-name comparisons.");
 
             // The monotonic setter is the whole no-double-award guarantee.
-            dirty.SetRecordHighWater("Kills", 50f);
-            PawnDiaryRimTestScope.Require(dirty.HighestRecordValue("Kills") == 50f,
+            dirty.SetRecordHighWater("Kills", 120f);
+            PawnDiaryRimTestScope.Require(dirty.HighestRecordValue("Kills") == 120f,
                 "The record high-water mark did not rise.");
             dirty.SetRecordHighWater("Kills", 10f);
-            PawnDiaryRimTestScope.Require(dirty.HighestRecordValue("Kills") == 50f,
+            PawnDiaryRimTestScope.Require(dirty.HighestRecordValue("Kills") == 120f,
                 "The record high-water mark must never fall.");
             dirty.SetRecordHighWater("Kills", float.NaN);
-            PawnDiaryRimTestScope.Require(dirty.HighestRecordValue("Kills") == 50f,
+            PawnDiaryRimTestScope.Require(dirty.HighestRecordValue("Kills") == 120f,
                 "A NaN record value must not corrupt the high-water mark.");
 
             // The live pawn's own row is the one that actually round-trips through Scribe.
@@ -144,15 +151,39 @@ namespace PawnDiary.RimTests
                 "The fixture pawn has no saved progression state to round-trip.");
             live.lastObservedBiologicalAgeYears = 31;
             live.lastArrivalAnniversaryYear = 5;
+            live.arrivalAnniversaryStartTick = 2222;
+            live.arrivalAnniversaryBoundaryResolved = true;
             live.lastBondedDeathDiscoveryTick = 12345;
+            live.bondedDeathHistoryMigrationComplete = true;
             live.lastBondedDeathPageDay = 678;
+            live.baselineAnniversariesOnNextScan = false;
+            live.bondedDeathMemories.Add(new BondedDeathMemoryState
+            {
+                victimId = "PawnDiaryRimTest_ScribedVictim",
+                victimName = "Ada",
+                relationDefName = "Spouse",
+                relationLabel = "wife",
+                deathTick = 3456,
+                lastProcessedAnniversaryYear = 2
+            });
             live.SetRecordHighWater("Kills", 42f);
-            live.Normalize();
+            PawnProgressionState loaded = ScribeRoundTrip(live);
+            loaded.Normalize();
             PawnDiaryRimTestScope.Require(
-                live.lastObservedBiologicalAgeYears == 31 && live.lastArrivalAnniversaryYear == 5
-                    && live.lastBondedDeathDiscoveryTick == 12345 && live.lastBondedDeathPageDay == 678
-                    && live.HighestRecordValue("Kills") == 42f,
-                "Normalization damaged legitimate saved H2 values.");
+                loaded.lastObservedBiologicalAgeYears == 31
+                    && loaded.lastArrivalAnniversaryYear == 5
+                    && loaded.arrivalAnniversaryStartTick == 2222
+                    && loaded.arrivalAnniversaryBoundaryResolved
+                    && loaded.lastBondedDeathDiscoveryTick == 12345
+                    && loaded.bondedDeathHistoryMigrationComplete
+                    && loaded.lastBondedDeathPageDay == 678
+                    && !loaded.baselineAnniversariesOnNextScan
+                    && loaded.HighestRecordValue("Kills") == 42f
+                    && loaded.bondedDeathMemories.Count == 1
+                    && loaded.bondedDeathMemories[0].victimId
+                        == "PawnDiaryRimTest_ScribedVictim"
+                    && loaded.bondedDeathMemories[0].lastProcessedAnniversaryYear == 2,
+                "A legitimate H2 row did not survive a real Scribe save/load cycle.");
         }
 
         /// <summary>
@@ -192,6 +223,12 @@ namespace PawnDiary.RimTests
                     nameof(Pawn_AgeTracker.AgeBiologicalYears),
                     BindingFlags.Instance | BindingFlags.Public) != null,
                 "Pawn_AgeTracker.AgeBiologicalYears is gone; birthdays cannot be observed.");
+            PawnDiaryRimTestScope.Require(
+                typeof(PawnsFinder).GetProperty(
+                    nameof(PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists),
+                    BindingFlags.Static | BindingFlags.Public) != null,
+                "RimWorld's canonical cross-map free-colonist population is gone; caravan "
+                + "anniversaries cannot be scanned safely.");
 
             // Every shipped record rule must resolve against BASE RimWorld, so a no-DLC install sees
             // all three. GetNamedSilentFail (never GetNamed) keeps a modded/removed record harmless.
@@ -266,6 +303,38 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(found,
                 "Pawn_RelationsTracker.RelatedPawns did not surface a directly related pawn, so "
                 + "bonded-death discovery would never see it.");
+        }
+
+        /// <summary>
+        /// A bonded animal has no humanlike death diary, so the Pawn.Kill boundary must preserve the
+        /// loss directly for its living colonist. This also proves the Harmony state crosses Kill.
+        /// </summary>
+        [Test]
+        public static void BondedAnimalDeathIsCapturedAtKillTime()
+        {
+            PawnKindDef animalKind =
+                DefDatabase<PawnKindDef>.GetNamedSilentFail("LabradorRetriever");
+            PawnDiaryRimTestScope.Require(animalKind != null,
+                "The base-game LabradorRetriever PawnKindDef is missing.");
+            scope.SpawnAsLiveColonist(pawn);
+            Pawn animal = scope.CreateTrackedPawn(animalKind, Faction.OfPlayer);
+            pawn.relations.AddDirectRelation(PawnRelationDefOf.Bond, animal);
+
+            PawnProgressionState state = scope.Component.AnniversaryStateFor(pawn);
+            state.baselineAnniversariesOnNextScan = false;
+            state.bondedDeathHistoryMigrationComplete = true;
+            int before = Find.TickManager?.TicksGame ?? 0;
+
+            animal.Kill(null);
+
+            BondedDeathMemoryState memory =
+                state.FindBondedDeathMemory(animal.GetUniqueLoadID());
+            PawnDiaryRimTestScope.Require(memory != null,
+                "Pawn.Kill did not preserve the bonded animal as a remembered loss.");
+            PawnDiaryRimTestScope.Require(
+                memory.relationDefName == PawnRelationDefOf.Bond.defName
+                    && memory.deathTick >= before,
+                "The event-time bonded-animal memory has the wrong relation or death tick.");
         }
 
         /// <summary>
@@ -444,6 +513,48 @@ namespace PawnDiary.RimTests
         }
 
         // ----- helpers ------------------------------------------------------------------------------
+
+        private static PawnProgressionState ScribeRoundTrip(PawnProgressionState original)
+        {
+            string path = Path.Combine(Path.GetTempPath(),
+                "pawndiary_anniversary_rimtest_" + Guid.NewGuid().ToString("N") + ".xml");
+            PawnProgressionState loaded = null;
+            try
+            {
+                Scribe.saver.InitSaving(path, "root");
+                PawnProgressionState saveRef = original;
+                Scribe_Deep.Look(ref saveRef, "state");
+                Scribe.saver.FinalizeSaving();
+                Scribe.loader.InitLoading(path);
+                Scribe.mode = LoadSaveMode.LoadingVars;
+                Scribe_Deep.Look(ref loaded, "state");
+                Scribe.loader.FinalizeLoading();
+            }
+            finally
+            {
+                if (Scribe.mode != LoadSaveMode.Inactive)
+                {
+                    Scribe.ForceStop();
+                }
+
+                try
+                {
+                    if (File.Exists(path)) File.Delete(path);
+                }
+                catch
+                {
+                    // Best-effort cleanup: a locked fixture file must not hide the real assertion.
+                }
+            }
+
+            if (loaded == null)
+            {
+                throw new AssertionException(
+                    "Pawn progression state did not survive the Scribe round trip.");
+            }
+
+            return loaded;
+        }
 
         /// <summary>
         /// Mirrors the scanner's own resolution: the closest relation between two pawns that the shipped

@@ -457,6 +457,13 @@ namespace PawnDiary
         public float daySummaryWeightOpinionShift = 0.6f;  // base; scaled up by swing magnitude
         public float daySummaryWeightFiller = 0.15f;       // background small talk / passing feelings
         public float daySummaryWeightNews = 0.3f;          // newest unsuperseded colony letter
+        public float daySummaryWeightDigest = 0.25f;       // one moment the soft cap folded away today
+        // How many low-value pages one pawn may write in a day before further ones fold into that
+        // pawn's digest instead. 0 disables the soft cap (every page emits, as before this feature).
+        public int lowSalienceDailySoftCap = 2;
+        // Highest number of folded-away moments remembered per pawn per day. The newest unique lines
+        // win; older ones are dropped so the saved buffer stays small.
+        public int dayDigestMaxLines = 4;
         // Rare long reflection near the end of each quadrum. The timing window spreads pawns across
         // several days, and maxPromptEvents is the prompt evidence cap so long histories stay bounded.
         public bool quadrumReflectionEnabled = true;

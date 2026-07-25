@@ -131,6 +131,30 @@ for that pawn, deduplicates their stable event identities, and wraps the maximum
 line in the localized “a year ago, same season” frame. The XML tuning switch defaults on; the callback
 is impossible during the first four absolute quadrums and its final weight is half a major event.
 
+### Daily pacing and digest lines
+
+Quality Wave B6 paces low-salience pages — those whose classified group is neither `important` nor
+`combat`, which in practice means the interaction catch-all plus the ordinary thought and work groups.
+`DiaryGameComponent.Dispatch` consults `lowSalienceDailySoftCap` immediately before `Emit`, after the
+catalog decision and dedup marking, so pacing changes only whether a page is written, never whether an
+event was captured. Batched and ambient routes are untouched because they never produced a page.
+
+A page folds away only when every diarist it belongs to is already at cap, so a shared pair page is
+never half-visible: while either POV has room the page emits for both and both counts advance. Counts
+advance only after a successful emit. A folded page instead deposits one cleaned POV-specific line in
+each writer's buffer, which keeps the `dayDigestMaxLines` newest unique rows per pawn/day.
+
+Those lines return as `digest` day-reflection candidates at weight `daySummaryWeightDigest`. They are
+always non-important regardless of `daySummaryImportantSignalKinds`, so a day of nothing but folded
+moments still writes no reflection. Highlight selection now runs important-first: the evidence that
+earned the reflection claims slots before any news, filler, or digest candidate can. The reflection's
+flush/settle/baseline paths release the buffered lines alongside filler and hediff evidence.
+
+The pacing rows are saved (`dayDigestStates`, additive; old saves load empty) because a mid-day reload
+must not hand out a fresh allowance. Rows for earlier days are discarded at the day rollover, which is
+also what resets the allowance. Pure decisions — cap arithmetic, buffer dedup/eviction, and the
+important-first slot split — live in `Source/Pipeline/DigestPacingPolicy.cs`.
+
 ## XML ownership
 
 | File | Owns |

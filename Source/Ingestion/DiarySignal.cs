@@ -68,6 +68,59 @@ namespace PawnDiary.Ingestion
         }
 
         /// <summary>
+        /// Quality Wave B6. True for everyday, low-stakes moments — the ones whose classified group is
+        /// neither important nor combat. Only these are paced by the daily soft cap; anything the
+        /// player would call a real event (a raid, a death, a mental break) always writes its page.
+        /// Each source computes this itself because each source owns its own group classification.
+        /// </summary>
+        public virtual bool IsLowSalience => false;
+
+        /// <summary>
+        /// Stable saved token naming which source a folded-away moment came from (see
+        /// <see cref="DigestPacingPolicy"/>). Empty for sources that never produce a digest line.
+        /// </summary>
+        public virtual string DigestSourceKind => string.Empty;
+
+        /// <summary>
+        /// A compact, already-localized one-liner describing this moment, recorded instead of a page
+        /// when the daily soft cap suppressed it. Null/empty simply records nothing. Impure (it
+        /// translates), so it is called only on the main thread, from the dispatcher.
+        /// </summary>
+        public virtual string BuildDigestLine()
+        {
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// POV-specific digest line. A shared pair page suppressed for BOTH pawns must give each diary
+        /// its own side of the moment; sources with a single perspective inherit the shared line.
+        /// </summary>
+        public virtual string BuildDigestLineForPawn(string pawnId)
+        {
+            return BuildDigestLine();
+        }
+
+        /// <summary>
+        /// The diarists this signal is about to write for, so the soft cap can inspect their daily
+        /// counts before the page exists. The default is the payload's single POV pawn; pair-shaped
+        /// sources override it to report both. An empty result opts the signal out of pacing.
+        /// The dispatcher passes the payload it already read, so no source re-runs a lazy capture.
+        /// </summary>
+        public virtual void CollectPacedWriters(
+            DiaryEventData payload, CaptureDecision decision, List<string> writers)
+        {
+            if (writers == null || payload == null)
+            {
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(payload.PawnId))
+            {
+                writers.Add(payload.PawnId);
+            }
+        }
+
+        /// <summary>
         /// Dedup key for this event (raw, source-prefixed, e.g. <c>"thought|pawnId|defName"</c>).
         /// Return <see cref="string.Empty"/> for sources that do not dedup. The dispatcher uses this
         /// against the shared recent-events store. Usually delegates to a pure <c>Payload.DedupKey()</c>.

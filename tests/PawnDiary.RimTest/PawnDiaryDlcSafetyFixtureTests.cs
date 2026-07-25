@@ -827,7 +827,6 @@ namespace PawnDiary.RimTests
                 { "VoidMonolithActivation", AnomalyPackageId },
                 { "VoidMonolithWaking", AnomalyPackageId },
                 { "VoidMonolithVoidAwakened", AnomalyPackageId },
-                { "VoidMonolithGleaming", AnomalyPackageId },
                 { "RoyalAscent", RoyaltyPackageId },
                 { "MechClusterLanded", RoyaltyPackageId }
             };

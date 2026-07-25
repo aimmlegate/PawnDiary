@@ -1314,6 +1314,9 @@ namespace PawnDiary
                 .Float("daySummaryWeightOpinionShift", 0f, 5f, true)
                 .Float("daySummaryWeightFiller", 0f, 5f, true)
                 .Float("daySummaryWeightNews", 0f, 5f, true)
+                .Float("daySummaryWeightDigest", 0f, 5f, true)
+                .Int("lowSalienceDailySoftCap", 0, 20)
+                .Int("dayDigestMaxLines", 0, 32)
                 .StringList("daySummaryImportantSignalKinds");
 
             b.Tuning("Quadrum reflection", "PawnDiary.Settings.Adv.Group.Quadrum")

@@ -401,6 +401,12 @@
     <daySummaryWeightOpinionShift>0.6</daySummaryWeightOpinionShift>
     <daySummaryWeightFiller>0.15</daySummaryWeightFiller>
     <daySummaryWeightNews>0.3</daySummaryWeightNews>
+    <daySummaryWeightDigest>0.25</daySummaryWeightDigest>
+    <!-- Pacing: after this many low-value pages in one day, further ones for that pawn fold into a
+         short digest the evening reflection can mention instead of becoming their own entries.
+         Set to 0 to turn the cap off. Important and combat moments are never paced. -->
+    <lowSalienceDailySoftCap>2</lowSalienceDailySoftCap>
+    <dayDigestMaxLines>4</dayDigestMaxLines>
 
     <!-- Rare quadrum reflection. Pawns are deterministically spread across the final timing window
          so a whole colony does not queue long reflections on the same night. maxPromptEvents is the

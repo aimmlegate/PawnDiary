@@ -295,6 +295,8 @@ namespace PawnDiary
             initialArrivalScanPending = true;
             // Day-summary state is transient; clear it and let the first tick re-snapshot opinions.
             ResetDaySummaryState();
+            // The B6 pacing rows ARE saved, so a brand-new game must start with none.
+            ResetDayDigestState();
             ResetThoughtProgressionState(false);
             ResetHediffProgressionState(true);
             MaybeShowErrorReportingNotice();
@@ -411,6 +413,9 @@ namespace PawnDiary
                 ref observedConditionCooldownKeys, ref observedConditionCooldownValues);
             Scribe_Values.Look(ref pollutionObservationVersion,
                 "pollutionObservationVersion", 0);
+            // Quality Wave B6: saved daily pacing counts + folded-away digest lines. Additive key;
+            // old saves load an empty list. See DiaryGameComponent.DaySummary.cs.
+            ExposeDayDigestData();
             ExposeBiotechGrowthData();
             ExposeBiotechFamilyData();
             ExposeOdysseyData();

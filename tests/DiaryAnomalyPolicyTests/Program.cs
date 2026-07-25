@@ -315,7 +315,6 @@ namespace DiaryAnomalyPolicyTests
                 "monolithStirringNarrativeFormat",
                 "monolithWakingNarrativeFormat",
                 "monolithVoidAwakenedNarrativeFormat",
-                "monolithGleamingNarrativeFormat",
                 "containmentBreachNarrativeFormat",
                 "creepJoinerSurgicalRevealNarrativeFormat",
                 "creepJoinerRejectedNarrativeFormat",
@@ -332,7 +331,7 @@ namespace DiaryAnomalyPolicyTests
                     "XML N3-A narrative format accepts its exact argument count: "
                         + narrativeFormats[i],
                     format,
-                    i < 4 ? 0 : 1);
+                    i < 3 ? 0 : 1);
             }
             AssertEqual("XML adds no terminal void narrative format", string.Empty,
                 Value(def, "voidOutcomeNarrativeFormat"));
@@ -367,8 +366,8 @@ namespace DiaryAnomalyPolicyTests
                         languages[languageIndex] + " N3-A format accepts its exact argument count: "
                             + narrativeFormats[formatIndex],
                         localizedValue,
-                        formatIndex < 4 ? 0 : 1);
-                    if (formatIndex >= 4)
+                        formatIndex < 3 ? 0 : 1);
+                    if (formatIndex >= 3)
                     {
                         AssertTrue(languages[languageIndex] + " dynamic N3-A format keeps {0}: "
                                 + narrativeFormats[formatIndex],

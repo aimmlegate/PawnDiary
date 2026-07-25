@@ -255,11 +255,10 @@ namespace PawnDiary.RimTests
             {
                 "VoidMonolithActivation",
                 "VoidMonolithWaking",
-                "VoidMonolithVoidAwakened",
-                "VoidMonolithGleaming"
+                "VoidMonolithVoidAwakened"
             };
-            string[] levelDefNames = { "Stirring", "Waking", "VoidAwakened", "Gleaming" };
-            string[] phases = { "stirring", "waking", "void_awakened", "gleaming" };
+            string[] levelDefNames = { "Stirring", "Waking", "VoidAwakened" };
+            string[] phases = { "stirring", "waking", "void_awakened" };
 
             // These XML Defs stay loaded when Anomaly is absent, but MissingRequiredPackage() makes
             // their runtime routes inert. Use the loaded-only helper so this test can exercise that
@@ -319,6 +318,10 @@ namespace PawnDiary.RimTests
                     windowDefNames[i] + " did not freeze its exact visible monolith chapter lens.");
             }
 
+            // Gleaming is advanced automatically by a quest part through SetLevel(silent:true), so
+            // there is no truthful actor to own a first-person activation page.
+            scope.RequireNoNewEvent(() => scope.Component.RecordEventWindowSignal(
+                "VoidMonolith", "Gleaming", "activated", "Gleaming", null, firstPawn));
         }
 
         // ----- test helpers -----------------------------------------------------------------------

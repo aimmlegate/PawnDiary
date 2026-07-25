@@ -22,6 +22,7 @@
     <Compile Include="..\..\Source\Pipeline\BattleBeatsPolicy.cs" Link="BattleBeatsPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\ArtImmortalizationPolicy.cs" Link="ArtImmortalizationPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\AnniversaryPolicy.cs" Link="AnniversaryPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\DigestPacingPolicy.cs" Link="DigestPacingPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryEventPromptKeys.cs" Link="DiaryEventPromptKeys.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryEntryTitleFilter.cs" Link="DiaryEntryTitleFilter.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryEntryStatsAccumulator.cs" Link="DiaryEntryStatsAccumulator.cs" />

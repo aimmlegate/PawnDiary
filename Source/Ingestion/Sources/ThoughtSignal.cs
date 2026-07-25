@@ -125,6 +125,36 @@ namespace PawnDiary.Ingestion
 
         public override int DedupWindowTicks => DiarySignalPolicies.ThoughtDedupTicks;
 
+        // ── Quality Wave B6 pacing ────────────────────────────────────────────────────────────────
+        // A passing feeling from an unimportant thought group is paced; grief, trauma, and the other
+        // important groups are not, so nothing that matters is folded away.
+
+        public override bool IsLowSalience
+        {
+            get
+            {
+                DiaryInteractionGroupDef group = thought?.def == null
+                    ? null
+                    : InteractionGroups.ClassifyThought(thought.def);
+                return group != null && !group.important && !group.combat;
+            }
+        }
+
+        public override string DigestSourceKind => DigestPacingPolicy.SourceKindThought;
+
+        /// <summary>Reuses the page's own sentence so the digest reads in the same voice.</summary>
+        public override string BuildDigestLine()
+        {
+            if (pawn == null || payload == null)
+            {
+                return string.Empty;
+            }
+
+            return DiaryLineCleaner.CleanLine(MoodImpact.PickText(payload.MoodImpact,
+                "PawnDiary.Event.ThoughtPositive", "PawnDiary.Event.ThoughtNegative", "PawnDiary.Event.Thought",
+                pawn.LabelShortCap, thoughtLabel));
+        }
+
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)
         {
             // Impure build: label, instruction. These need the live ThoughtDef (LabelCap, settings

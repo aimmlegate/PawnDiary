@@ -1,9 +1,8 @@
 // Quality Wave H2 — anniversaries and personal records. A slow scanner for the dates and totals a
 // colonist would notice about themselves: another birthday, another year since they joined, the
 // anniversary of losing someone they loved, and the moment a personal tally becomes part of who they
-// are. RimWorld gives no one-shot hook for any of these (a birthday hook exists, but the OTHER three
-// are pure elapsed-time facts), so like the skill/trait scanners this compares live state against
-// small saved bookkeeping.
+// are. Birthdays, elapsed anniversaries, and records use a slow scanner; bonded deaths are captured
+// at Pawn.Kill so animal bonds are not lost, then the scanner decides when a saved loss is due for recall.
 //
 // Three properties keep it honest, and every one of them lives in the pure AnniversaryPolicy:
 //   * Nothing is retroactive. A pawn's FIRST scan only records where they already are, so loading an
@@ -41,6 +40,21 @@ namespace PawnDiary
             public int anniversaryYear;
         }
 
+        /// <summary>
+        /// Detached-enough snapshot of one living diarist's bond to a pawn whose <c>Pawn.Kill</c> call
+        /// is in progress. The live survivor reference exists only across that synchronous Harmony
+        /// call; every value written to the save is a primitive string/int copied below.
+        /// </summary>
+        internal sealed class BondedDeathObservation
+        {
+            public Pawn survivor;
+            public string victimId;
+            public string victimName;
+            public string relationDefName;
+            public string relationLabel;
+            public int bondPriority;
+        }
+
         /// <summary>Clears the transient anniversary schedule so the next tick scans immediately.</summary>
         private void ResetAnniversaryScanSchedule()
         {
@@ -63,7 +77,10 @@ namespace PawnDiary
         /// </summary>
         private void ScanAnniversariesForDiaryEvents()
         {
-            List<Pawn> colonists = SnapshotFreeColonists();
+            // Anniversary state belongs to the pawn, not the map. Caravans and travelling transporters
+            // age, keep records, and carry grief too, so use RimWorld's canonical cross-map population.
+            List<Pawn> colonists = new List<Pawn>(
+                PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists);
             if (colonists.Count == 0)
             {
                 return;
@@ -171,6 +188,17 @@ namespace PawnDiary
         /// </summary>
         private bool HasBirthdayOwner(string pawnId, int age, string ownershipKey)
         {
+            // A configured Biotech growth letter owns its birthday before the player answers it. The
+            // postponed row is saved precisely so that ownership survives pause/save/load; waiting for
+            // its eventual page would let this scanner create a duplicate in the meantime.
+            if (PendingBiotechGrowthMomentPolicy.FindNewest(
+                pendingBiotechGrowthMoments,
+                pawnId,
+                age) != null)
+            {
+                return true;
+            }
+
             IReadOnlyList<DiaryEvent> hot = events.AllEvents;
             for (int i = hot.Count - 1; i >= 0; i--)
             {
@@ -258,17 +286,22 @@ namespace PawnDiary
             bool baseline,
             int now)
         {
-            // The pawn's arrival page is their diary's first boundary. FirstArrivalTickFor already
-            // merges hot pages, the compact archive, and the durable joining knowledge record, so a
-            // player who disabled arrival pages still has a joining date to measure from.
-            int? arrivalTick = FirstArrivalTickFor(pawn.GetUniqueLoadID(), diary);
-            if (!arrivalTick.HasValue)
+            // Resolve this immutable boundary once. Starting colonists legitimately have no arrival
+            // page; caching that miss prevents a full colony-history sweep four times per game day.
+            if (!state.arrivalAnniversaryBoundaryResolved)
+            {
+                int? resolved = FirstArrivalTickFor(pawn.GetUniqueLoadID(), diary);
+                state.arrivalAnniversaryStartTick = resolved ?? -1;
+                state.arrivalAnniversaryBoundaryResolved = true;
+            }
+
+            if (state.arrivalAnniversaryStartTick < 0)
             {
                 return;
             }
 
             int years = AnniversaryPolicy.YearsBetween(
-                arrivalTick.Value,
+                state.arrivalAnniversaryStartTick,
                 now,
                 GenDate.TicksPerYear);
             if (years <= state.lastArrivalAnniversaryYear)
@@ -356,7 +389,14 @@ namespace PawnDiary
             DiaryTuningDef tuning = DiaryTuning.Current;
             List<BondedDeathCandidate> rows = ExistingBondedDeathRows(state, tuning);
             int cursor = state.lastBondedDeathDiscoveryTick;
-            AppendNewBondedDeathRows(pawn, state, tuning, cursor, rows);
+            if (!state.bondedDeathHistoryMigrationComplete)
+            {
+                // Saves made before event-time capture get one legacy-history migration. Repeating this
+                // family-graph/history walk forever was the Phase-6 performance bug; future deaths enter
+                // through Pawn.Kill and therefore need no polling.
+                AppendNewBondedDeathRows(pawn, state, tuning, cursor, rows);
+                state.bondedDeathHistoryMigrationComplete = true;
+            }
 
             List<BondedDeathCandidate> retained = AnniversaryPolicy.RetainStrongestBonds(
                 rows,
@@ -365,6 +405,136 @@ namespace PawnDiary
             // Advance after EVERY scan, not only when something was found: that is what makes
             // eviction permanent.
             state.lastBondedDeathDiscoveryTick = Math.Max(cursor, now);
+        }
+
+        /// <summary>
+        /// Captures the colonists related to a pawn immediately before death mutates or discards that
+        /// relationship graph. Most deaths have no direct relations and return before the cross-map
+        /// colonist loop, keeping the common animal/raider kill path cheap.
+        /// </summary>
+        internal List<BondedDeathObservation> SnapshotBondedDeathObservers(Pawn victim)
+        {
+            List<BondedDeathObservation> observations = new List<BondedDeathObservation>();
+            if (!GamePlaying
+                || victim?.relations?.DirectRelations == null
+                || victim.relations.DirectRelations.Count == 0)
+            {
+                return observations;
+            }
+
+            string victimId = victim.GetUniqueLoadID();
+            if (string.IsNullOrWhiteSpace(victimId))
+            {
+                return observations;
+            }
+
+            DiaryTuningDef tuning = DiaryTuning.Current;
+            IEnumerable<Pawn> colonists =
+                PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists;
+            if (colonists == null)
+            {
+                return observations;
+            }
+
+            foreach (Pawn survivor in colonists)
+            {
+                if (survivor == null || survivor == victim || !IsDiaryEligible(survivor))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    string relationDefName = StrongestBondRelationDefName(survivor, victim, tuning);
+                    int priority = AnniversaryPolicy.BondPriority(
+                        relationDefName,
+                        tuning.bondedDeathRelationPriority);
+                    if (priority < 0)
+                    {
+                        continue;
+                    }
+
+                    observations.Add(new BondedDeathObservation
+                    {
+                        survivor = survivor,
+                        victimId = victimId,
+                        victimName = DiaryLineCleaner.CleanLine(victim.LabelShortCap),
+                        relationDefName = relationDefName,
+                        relationLabel = BondRelationLabel(survivor, victim, relationDefName),
+                        bondPriority = priority
+                    });
+                }
+                catch (Exception e)
+                {
+                    Log.WarningOnce(
+                        "[Pawn Diary] Could not snapshot one bonded-death observer: " + e,
+                        ("PawnDiary.Anniversary.DeathObserver." + e.GetType().Name).GetHashCode());
+                }
+            }
+
+            return observations;
+        }
+
+        /// <summary>
+        /// Commits pre-death relationship snapshots only after <c>Pawn.Kill</c> completed. This is the
+        /// authoritative path for new deaths, including bonded animals that never receive a diary of
+        /// their own and therefore cannot be dated from a death-description page.
+        /// </summary>
+        internal void CommitBondedDeathObservations(
+            List<BondedDeathObservation> observations,
+            int deathTick)
+        {
+            if (observations == null || observations.Count == 0)
+            {
+                return;
+            }
+
+            DiaryTuningDef tuning = DiaryTuning.Current;
+            for (int i = 0; i < observations.Count; i++)
+            {
+                BondedDeathObservation observation = observations[i];
+                if (observation?.survivor == null || !IsDiaryEligible(observation.survivor))
+                {
+                    continue;
+                }
+
+                PawnDiaryRecord diary = FindDiary(observation.survivor, true);
+                PawnProgressionState state = diary?.EnsureProgressionState();
+                if (state == null)
+                {
+                    continue;
+                }
+
+                List<BondedDeathCandidate> rows = ExistingBondedDeathRows(state, tuning);
+                for (int rowIndex = rows.Count - 1; rowIndex >= 0; rowIndex--)
+                {
+                    if (string.Equals(
+                        rows[rowIndex]?.victimId,
+                        observation.victimId,
+                        StringComparison.Ordinal))
+                    {
+                        rows.RemoveAt(rowIndex);
+                    }
+                }
+
+                rows.Add(new BondedDeathCandidate
+                {
+                    victimId = observation.victimId,
+                    victimName = observation.victimName,
+                    relationDefName = observation.relationDefName,
+                    relationLabel = observation.relationLabel,
+                    bondPriority = observation.bondPriority,
+                    deathTick = Math.Max(0, deathTick),
+                    lastProcessedAnniversaryYear = 0
+                });
+                state.bondedDeathMemories = ToBondedDeathStates(
+                    AnniversaryPolicy.RetainStrongestBonds(
+                        rows,
+                        Math.Max(0, tuning.bondedDeathMemoryCap)));
+                state.lastBondedDeathDiscoveryTick = Math.Max(
+                    state.lastBondedDeathDiscoveryTick,
+                    deathTick);
+            }
         }
 
         /// <summary>Re-ranks the already-saved memories with the current XML bond priority.</summary>
@@ -634,10 +804,10 @@ namespace PawnDiary
                     continue;
                 }
 
-                int years = AnniversaryPolicy.YearsBetween(
-                    memory.deathTick,
-                    now,
-                    GenDate.TicksPerYear);
+                int years = AnniversaryPolicy.AnniversaryYearOnCalendarDay(
+                    DayIndexForGameTick(memory.deathTick),
+                    DayIndexForGameTick(now),
+                    GenDate.DaysPerYear);
                 if (years <= 0 || years <= memory.lastProcessedAnniversaryYear)
                 {
                     continue;
@@ -893,7 +1063,8 @@ namespace PawnDiary
                 return;
             }
 
-            string recordLabel = CleanLabel(def.LabelCap.Resolve(), recordDefName);
+            string recordLabel = AnniversaryPolicy.ContextFieldText(
+                CleanLabel(def.LabelCap.Resolve(), recordDefName));
             string thresholdText = threshold.ToString(CultureInfo.InvariantCulture);
             string extraContext = AnniversaryPolicy.RecordNameContextKey + "=" + recordLabel
                 + "; " + AnniversaryPolicy.RecordValueContextKey + "=" + thresholdText

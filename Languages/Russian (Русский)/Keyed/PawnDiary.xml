@@ -808,6 +808,9 @@
   <PawnDiary.Settings.Adv.Help.daySummaryWeightHediff>Относительный вес сигнала здоровья.</PawnDiary.Settings.Adv.Help.daySummaryWeightHediff>
   <PawnDiary.Settings.Adv.Help.daySummaryWeightOpinionShift>Относительный вес сдвига отношений; масштабируется силой сдвига.</PawnDiary.Settings.Adv.Help.daySummaryWeightOpinionShift>
   <PawnDiary.Settings.Adv.Help.daySummaryWeightFiller>Относительный вес фоновой болтовни.</PawnDiary.Settings.Adv.Help.daySummaryWeightFiller>
+  <PawnDiary.Settings.Adv.Help.daySummaryWeightDigest>Относительный вес момента, который дневной лимит убрал в итог.</PawnDiary.Settings.Adv.Help.daySummaryWeightDigest>
+  <PawnDiary.Settings.Adv.Help.lowSalienceDailySoftCap>Сколько будничных записей поселенец успевает за день, прежде чем остальные сворачиваются в вечерний итог. 0 — ограничения нет.</PawnDiary.Settings.Adv.Help.lowSalienceDailySoftCap>
+  <PawnDiary.Settings.Adv.Help.dayDigestMaxLines>Сколько убранных моментов запоминать на поселенца за день.</PawnDiary.Settings.Adv.Help.dayDigestMaxLines>
   <PawnDiary.Settings.Adv.Help.quadrumReflectionEnabled>Главный переключатель редких итогов квадрума.</PawnDiary.Settings.Adv.Help.quadrumReflectionEnabled>
   <PawnDiary.Settings.Adv.Help.quadrumReflectionTimingWindowDays>Последние дни квадрума, когда можно писать длинные итоги; даты распределяются между поселенцами.</PawnDiary.Settings.Adv.Help.quadrumReflectionTimingWindowDays>
   <PawnDiary.Settings.Adv.Help.quadrumReflectionMinImportantEntries>Минимум важных записей для итога квадрума.</PawnDiary.Settings.Adv.Help.quadrumReflectionMinImportantEntries>
@@ -1134,7 +1137,6 @@
   <PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>{0}: первая настройка монолита пустоты: {1}.</PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>
   <PawnDiary.Event.EventWindow.VoidMonolithWaking.Start>{0}: дальнейшее пробуждение монолита пустоты: {1}.</PawnDiary.Event.EventWindow.VoidMonolithWaking.Start>
   <PawnDiary.Event.EventWindow.VoidMonolithVoidAwakened.Start>{0}: пробуждение пустоты через монолит: {1}.</PawnDiary.Event.EventWindow.VoidMonolithVoidAwakened.Start>
-  <PawnDiary.Event.EventWindow.VoidMonolithGleaming.Start>{0}: монолит пустоты поднят до сияющего состояния: {1}.</PawnDiary.Event.EventWindow.VoidMonolithGleaming.Start>
   <PawnDiary.Event.EventWindow.Birthday.Start>{0}: биологический возраст {1}.</PawnDiary.Event.EventWindow.Birthday.Start>
   <PawnDiary.Event.EventWindow.HeartAttack.Start>{0}: сердечный приступ: {1}.</PawnDiary.Event.EventWindow.HeartAttack.Start>
   <PawnDiary.Event.EventWindow.PrisonBreak.Start>{0}: тревога о побеге: {1}.</PawnDiary.Event.EventWindow.PrisonBreak.Start>

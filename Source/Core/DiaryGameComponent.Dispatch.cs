@@ -26,6 +26,7 @@
 using System.Collections.Generic;
 using PawnDiary.Capture;
 using PawnDiary.Ingestion;
+using Verse;
 
 namespace PawnDiary
 {
@@ -144,7 +145,7 @@ namespace PawnDiary
                 MarkRecentlyRecorded(recentEvents, eventTypeKey, eventTypeWindowTicks);
             }
 
-            signal.Emit(this, decision);
+            EmitWithLowSaliencePacing(signal, payload, decision);
             return true;
         }
 
@@ -222,13 +223,73 @@ namespace PawnDiary
                     MarkRecentlyRecorded(recentEvents, childEventTypeKey, childEventTypeWindowTicks);
                 }
 
-                child.Emit(this, decision);
+                // The colony window closes on a CONSUMED child, not only on a visible page: a child the
+                // B6 soft cap folded into a digest was still handled, and re-running the fan-out for it
+                // would duplicate the moment. (Colony fan-outs are important groups, so in practice
+                // none of them is low-salience; this only keeps the invariant true if one ever is.)
+                EmitWithLowSaliencePacing(child, childPayload, decision);
                 emittedAny = true;
             }
 
             if (emittedAny && !string.IsNullOrEmpty(colonyKey))
             {
                 MarkRecentlyRecorded(recentEvents, colonyKey, colonyTicks);
+            }
+        }
+
+        /// <summary>
+        /// Quality Wave B6. The last step before a page exists: everyday, low-stakes moments are
+        /// paced so one colonist cannot fill a day with near-identical entries.
+        ///
+        /// Nothing here changes WHETHER an event was captured — dedup is already marked and the
+        /// catalog has already decided. It only chooses between "write the page" and "remember this
+        /// as one line in tonight's reflection". A page is folded away only when it is low-salience,
+        /// the cap is on, and EVERY diarist it belongs to is already at their daily limit, so a shared
+        /// pair page is never half-visible. The count advances only after a real emit.
+        /// </summary>
+        private void EmitWithLowSaliencePacing(
+            DiarySignal signal, DiaryEventData payload, CaptureDecision decision)
+        {
+            // Cheapest gates first: the tuning read and the decision test are free, while IsLowSalience
+            // costs a (memoized) group classification on a hook that runs for every logged interaction.
+            int cap = DiaryTuning.Current.lowSalienceDailySoftCap;
+            bool paceable = DigestPacingPolicy.IsSoftCapEnabled(cap)
+                && (decision == CaptureDecision.GenerateSolo || decision == CaptureDecision.GeneratePair)
+                && signal.IsLowSalience;
+            if (!paceable)
+            {
+                // Batched/ambient routes never produced a page of their own, and important or combat
+                // moments are exempt by design, so both skip pacing entirely.
+                signal.Emit(this, decision);
+                return;
+            }
+
+            List<string> writers = new List<string>(2);
+            signal.CollectPacedWriters(payload, decision, writers);
+            int day = CurrentDayIndex;
+            List<int> counts = new List<int>(writers.Count);
+            for (int i = 0; i < writers.Count; i++)
+            {
+                counts.Add(LowSalienceCountForDay(writers[i], day));
+            }
+
+            if (!DigestPacingPolicy.ShouldSuppressPage(true, counts, cap))
+            {
+                signal.Emit(this, decision);
+                for (int i = 0; i < writers.Count; i++)
+                {
+                    RecordLowSalienceEmission(writers[i], day);
+                }
+
+                return;
+            }
+
+            int tick = Find.TickManager.TicksGame;
+            string sourceKind = signal.DigestSourceKind;
+            for (int i = 0; i < writers.Count; i++)
+            {
+                AddDayDigestLine(
+                    writers[i], day, sourceKind, signal.BuildDigestLineForPawn(writers[i]), tick);
             }
         }
 

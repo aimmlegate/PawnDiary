@@ -14,9 +14,8 @@
 // is the same method the tick loop calls — the only difference is that the harness supplies the "now"
 // tick so a whole in-game decade can be tested without advancing the developer's clock.
 //
-// NOT covered here (see tests/SAVE_COMPATIBILITY_SMOKETEST.md): live bonded-death DISCOVERY, which
-// needs a real colonist to actually die. These tests seed the saved memory rows instead, so recall,
-// aggregation, and the once-per-day guard are proven without killing anyone in the developer's colony.
+// The fixture suite separately kills an isolated test animal to prove event-time bond capture. These
+// flow tests seed saved rows so recall, aggregation, and the once-per-day guard stay deterministic.
 //
 // New to C#/RimWorld? See AGENTS.md.
 using System;
@@ -126,6 +125,11 @@ namespace PawnDiary.RimTests
                 "The birthday page did not advance the observed age, so it could repeat.");
 
             // Same age, later scan: nothing new.
+            scope.RequireNoNewEvent(() => Scan(Now()));
+
+            // Even a damaged/replayed observation cursor cannot create a second page: the page above
+            // is now the stable owner of this exact pawn/age.
+            state.lastObservedBiologicalAgeYears = age - 1;
             scope.RequireNoNewEvent(() => Scan(Now()));
         }
 
@@ -321,10 +325,11 @@ namespace PawnDiary.RimTests
         {
             PawnProgressionState state = BaselinedState();
             int deathTick = Now();
+            deathTick = deathTick - (deathTick % GenDate.TicksPerDay) + 1000;
             SeedMemory(state, "PawnDiaryRimTest_V_a", "Ada", "Spouse", "wife", deathTick);
-            SeedMemory(state, "PawnDiaryRimTest_V_b", "Brik", "Lover", "lover", deathTick);
-            SeedMemory(state, "PawnDiaryRimTest_V_c", "Cass", "Child", "son", deathTick);
-            SeedMemory(state, "PawnDiaryRimTest_V_d", "Dane", "Sibling", "brother", deathTick);
+            SeedMemory(state, "PawnDiaryRimTest_V_b", "Brik", "Lover", "lover", deathTick + 1000);
+            SeedMemory(state, "PawnDiaryRimTest_V_c", "Cass", "Child", "son", deathTick + 2000);
+            SeedMemory(state, "PawnDiaryRimTest_V_d", "Dane", "Sibling", "brother", deathTick + 3000);
 
             DiaryEvent page = scope.FireAndRequireEvent(
                 () => Scan(YearsAfter(deathTick, 1)),

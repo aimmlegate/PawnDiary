@@ -67,6 +67,20 @@ namespace DiaryPipelineTests
             // Widened arithmetic: an adversarial saved tick pair must not overflow into a negative span.
             AssertEqual("H2 extreme tick span cannot overflow",
                 0, AnniversaryPolicy.YearsBetween(int.MaxValue, int.MinValue, TicksPerYear));
+
+            const int daysPerYear = 60;
+            AssertEqual("H2 death anniversary is due on the matching calendar day",
+                1, AnniversaryPolicy.AnniversaryYearOnCalendarDay(100, 160, daysPerYear));
+            AssertEqual("H2 a later matching date reports the exact anniversary year",
+                2, AnniversaryPolicy.AnniversaryYearOnCalendarDay(100, 220, daysPerYear));
+            AssertEqual("H2 the day before a death anniversary is not due",
+                0, AnniversaryPolicy.AnniversaryYearOnCalendarDay(100, 159, daysPerYear));
+            AssertEqual("H2 the day after a death anniversary cannot consume it late",
+                0, AnniversaryPolicy.AnniversaryYearOnCalendarDay(100, 161, daysPerYear));
+            AssertEqual("H2 a much later matching date still reports its exact year",
+                5, AnniversaryPolicy.AnniversaryYearOnCalendarDay(100, 400, daysPerYear));
+            AssertEqual("H2 a nonsensical calendar year yields no anniversary",
+                0, AnniversaryPolicy.AnniversaryYearOnCalendarDay(100, 160, 0));
         }
 
         // --- The arrival milestone set, and the repeating tail above it ----------------------------
@@ -412,6 +426,9 @@ namespace DiaryPipelineTests
             AssertEqual("H2 a victim id carrying a separator is excluded from the key",
                 string.Empty,
                 AnniversaryPolicy.DeathOwnershipKey("Thing_Human1", 3, new List<string> { "V,a" }));
+            AssertEqual("H2 display fields cannot inject context separators",
+                "meals, cooked - master",
+                AnniversaryPolicy.ContextFieldText(" meals; cooked = master "));
         }
 
         // --- The shipped XML must still match the values this feature was tuned against ----------
@@ -496,6 +513,8 @@ namespace DiaryPipelineTests
                 AssertEqual("H2 " + groupDefNames[i] + " importance",
                     i == 2 ? expectedImportance[1] : expectedImportance[0],
                     ChildValue(group, "important"));
+                AssertEqual("H2 " + groupDefNames[i] + " follows the planned white cue",
+                    "white", ChildValue(group, "colorCue"));
             }
 
             // One dedicated prompt row per source, keyed to the exact source name so every other

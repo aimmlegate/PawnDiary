@@ -36,7 +36,6 @@
     <monolithStirringNarrativeFormat>the monolith visibly reached its Stirring chapter</monolithStirringNarrativeFormat>
     <monolithWakingNarrativeFormat>the monolith visibly reached its Waking chapter</monolithWakingNarrativeFormat>
     <monolithVoidAwakenedNarrativeFormat>the monolith visibly reached the Void Awakened chapter</monolithVoidAwakenedNarrativeFormat>
-    <monolithGleamingNarrativeFormat>the monolith visibly reached its Gleaming chapter</monolithGleamingNarrativeFormat>
     <containmentBreachNarrativeFormat>the visible containment breach released {0}</containmentBreachNarrativeFormat>
     <creepJoinerSurgicalRevealNarrativeFormat>{0}'s abnormal condition was visibly disclosed by the completed inspection</creepJoinerSurgicalRevealNarrativeFormat>
     <creepJoinerRejectedNarrativeFormat>{0}'s rejection became a visible outcome</creepJoinerRejectedNarrativeFormat>

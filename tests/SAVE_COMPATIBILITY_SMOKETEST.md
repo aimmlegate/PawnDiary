@@ -1037,7 +1037,7 @@ leaves a Thing plus a Tale behind, and Tale rows cannot be cleanly removed from 
 3. A sculpture about a *different* deed must still produce its own page.
 4. Art about a colonist who has since died: the page should be written by the artist instead.
 5. Buy a sculpture from a trader. Its tale is about strangers, so nothing should appear.
-6. Restore `artImmortalizationChance` to `0.35`, or set `artImmortalizationEnabled` false and confirm
+6. Restore `artImmortalizationChance` to `0.50`, or set `artImmortalizationEnabled` false and confirm
    the feature goes completely silent with no errors.
 
 ## Anniversaries and personal records (Quality Wave H2) — hands-on
@@ -1070,6 +1070,31 @@ flow tests seed the saved memory rows instead of discovering them.
    re-enabling a row later does NOT produce a catch-up page for a date that already passed.
 8. **Old save.** Load a save made before this version. The first scan must write nothing at all — no
    birthdays, anniversaries, remembered losses, or record milestones the colony already passed.
+
+## Daily pacing and digest lines (Quality Wave B6) — hands-on
+
+Automation covers the cap arithmetic, the buffer, the pair rules, the save round-trip, and that the
+digest reaches a reflection without creating one. What it cannot judge is whether the pacing FEELS
+right in a real colony and whether the folded moments read well as prose.
+
+1. **The diary gets quieter, not emptier.** Play a normal in-game day with several colonists. Each
+   should still get their real moments as pages, but the third and later everyday chats, passing
+   thoughts, and routine work entries for one colonist should stop appearing as separate pages.
+2. **The evening reflection picks them up.** That same colonist's end-of-day reflection should read as
+   if the small moments happened — referenced as background, not listed. It must never read like a
+   bullet list of chores.
+3. **A quiet day stays quiet.** A colonist whose whole day was folded-away small talk and nothing
+   important must write NO reflection at all. Digest lines are colour, never a reason.
+4. **Important moments always land.** On a day where a colonist is already over the cap, a raid, a
+   death, a mental break, a social fight, or a romance must still produce its own page immediately.
+5. **Shared moments stay whole.** When a paced interaction between two colonists is folded away, check
+   both diaries: either both have the page or neither does — never one side only.
+6. **Mid-day reload.** Once a colonist has used their allowance, save, reload, and confirm the next
+   everyday moment is still folded away rather than emitting because the count reset.
+7. **Pacing off.** Set the Advanced "low salience daily soft cap" to `0` and confirm the diary returns
+   to the previous behavior exactly — every page emits and no digest lines accumulate.
+8. **Old save.** Load a save made before this version. It must load cleanly with no pacing rows, and
+   the very first day must give every colonist a full allowance rather than treating them as capped.
 
 ## What counts as a regression
 

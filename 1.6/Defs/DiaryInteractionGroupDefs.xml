@@ -684,7 +684,6 @@
       <li>VoidMonolithActivation</li>
       <li>VoidMonolithWaking</li>
       <li>VoidMonolithVoidAwakened</li>
-      <li>VoidMonolithGleaming</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
@@ -3547,7 +3546,7 @@
       <li>settled and measuring, comparing now against the day they arrived</li>
       <li>unsettled and searching, unsure the years went where they meant them to</li>
     </tones>
-    <colorCue>quiet</colorCue>
+    <colorCue>white</colorCue>
     <matchDefNames>
       <li>ArrivalAnniversary</li>
     </matchDefNames>
@@ -3587,7 +3586,7 @@
       <li>matter-of-fact and tired, counting the cost rather than the credit</li>
       <li>quietly proud, aware the number is made of ordinary days</li>
     </tones>
-    <colorCue>quiet</colorCue>
+    <colorCue>white</colorCue>
     <matchDefNames>
       <li>RecordMilestone</li>
     </matchDefNames>

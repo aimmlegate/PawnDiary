@@ -23,6 +23,8 @@ namespace PawnDiary
         {
             public bool mechanitorScopeStarted;
             public PersonaKillCorrelationScope personaKillScope;
+            public int deathTick;
+            public List<DiaryGameComponent.BondedDeathObservation> bondedDeathObservers;
         }
 
         /// <summary>
@@ -45,16 +47,33 @@ namespace PawnDiary
                 && __instance?.RaceProps?.IsMechanoid == true;
             bool personaCandidate = ModsConfig.RoyaltyActive
                 && killer?.equipment?.bondedWeapon is ThingWithComps;
-            if (!humanlikeColonist && !mechanoidVictim && !personaCandidate)
+            List<DiaryGameComponent.BondedDeathObservation> bondedDeathObservers = null;
+            if (__instance?.relations?.DirectRelations != null
+                && __instance.relations.DirectRelations.Count > 0)
+            {
+                DiaryPatchSafety.Run(
+                    "PawnKillPatch.BondedDeathObservers",
+                    () => bondedDeathObservers =
+                        DiaryGameComponent.Instance?.SnapshotBondedDeathObservers(__instance));
+            }
+            bool bondedDeathCandidate = bondedDeathObservers != null
+                && bondedDeathObservers.Count > 0;
+            if (!humanlikeColonist && !mechanoidVictim && !personaCandidate
+                && !bondedDeathCandidate)
             {
                 __state = null;
                 return;
             }
 
             // A mechanoid victim still needs the notification below, but it does not use a scope
-            // state; allocate one only when a colonist death or persona correlation can close it.
-            KillPatchState state = humanlikeColonist || personaCandidate
-                ? new KillPatchState()
+            // state; allocate one only when a colonist death, persona correlation, or remembered bond
+            // must cross the call.
+            KillPatchState state = humanlikeColonist || personaCandidate || bondedDeathCandidate
+                ? new KillPatchState
+                {
+                    deathTick = Find.TickManager?.TicksGame ?? 0,
+                    bondedDeathObservers = bondedDeathObservers
+                }
                 : null;
             DiaryPatchSafety.Run("PawnKillPatch.Prefix", () =>
             {
@@ -86,10 +105,17 @@ namespace PawnDiary
         /// Harmony Postfix for Pawn.Kill. Records a neutral final death entry when vanilla did not
         /// emit a death Tale for this kill path, such as some condition/need deaths.
         /// </summary>
-        public static void Postfix(Pawn __instance, DamageInfo? dinfo)
+        public static void Postfix(Pawn __instance, DamageInfo? dinfo, KillPatchState __state)
         {
             DiaryPatchSafety.Run("PawnKillPatch.Postfix", () =>
             {
+                if (__instance?.Dead == true && __state?.bondedDeathObservers != null)
+                {
+                    DiaryGameComponent.Instance?.CommitBondedDeathObservations(
+                        __state.bondedDeathObservers,
+                        __state.deathTick);
+                }
+
                 // Knowledge death fan-out (MEMORY_SYSTEM_REDESIGN_PLAN §2.1): a pawn instigator
                 // and the deceased's close family keep lifelong records. Runs for ANY humanlike
                 // death — the victim may be a raider killed by a colonist — while relations are
