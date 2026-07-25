@@ -165,6 +165,12 @@ assumptions look safe and are not — each one cost a red suite on the 2026-07-2
   its own seeded label is absent, never that the page is news-free. Seed the boundary, then assert the
   production reader actually returns it (`FirstArrivalTickFor` takes the **minimum** across the hot
   events, the archive, and the knowledge record — any survivor silently widens the window).
+- **The clock does not advance while the runner works, so every letter an earlier suite raised is
+  archived at exactly the current `TicksGame`.** A real psylink gain, inspiration, or death from
+  another fixture therefore lands *newer* than any tick this run can seed, and `Archive.Add` keeps the
+  list sorted by creation tick — so a newest-first scan reaches that leftover before the seeded row.
+  A fixture that asserts *which* letter won must first lift the non-pinned letters at or after its
+  window start out of `Find.Archive` and restore them in cleanup (`ReserveNewestLetterSlot`).
 
 Related: assert optional enrichment conditionally. The N3-I narrative fact on a belief reflection only
 exists when the pawn's live ideoligion resolves a high-confidence precept stance;
