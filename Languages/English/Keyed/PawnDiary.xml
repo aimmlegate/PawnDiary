@@ -1552,6 +1552,12 @@
   <PawnDiary.Event.Odyssey.ShipFallback>the gravship</PawnDiary.Event.Odyssey.ShipFallback>
   <PawnDiary.Event.Odyssey.DestinationFallback>the landing site</PawnDiary.Event.Odyssey.DestinationFallback>
 
+  <!-- Quality Wave H6: a colony deed turned into an artwork. "artwork" rather than "sculpture"
+       because CompArt also covers engraved weapons, furniture, and sarcophagus plates. -->
+  <PawnDiary.Event.ArtImmortalizedLabel>Immortalized in art</PawnDiary.Event.ArtImmortalizedLabel>
+  <PawnDiary.Event.ArtImmortalized>{0}'s deed was immortalized in the artwork "{1}".</PawnDiary.Event.ArtImmortalized>
+  <PawnDiary.Event.ArtImmortalizedFallbackTitle>an untitled piece</PawnDiary.Event.ArtImmortalizedFallbackTitle>
+
   <!-- Royalty R2 persona-weapon lifecycle pages. -->
   <PawnDiary.Event.Persona.WeaponFallback>the persona weapon</PawnDiary.Event.Persona.WeaponFallback>
   <PawnDiary.Event.Persona.Formed.Label>Persona weapon bond formed</PawnDiary.Event.Persona.Formed.Label>

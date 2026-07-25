@@ -214,6 +214,16 @@
   </PawnDiary.DiaryEventPromptDef>
 
   <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_ArtImmortalized</defName>
+    <label>immortalized in art</label>
+    <!-- Keyed to the group defName, which the prompt lookup tries before the broad event domain, so
+         this row is used only by the H6 page and not by every Interaction event. -->
+    <eventType>artImmortalized</eventType>
+    <prompt>Write about meeting a piece of your own past as an object someone else made.</prompt>
+    <enhancement>Stay with the artwork in front of you and how it sits with you now. Do not retell the deed it depicts, and do not claim what the artist meant or what anyone else thinks of it.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_Arrival</defName>
     <label>arrival</label>
     <eventType>Arrival</eventType>

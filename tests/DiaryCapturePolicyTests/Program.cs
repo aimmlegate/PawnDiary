@@ -48,6 +48,8 @@ namespace DiaryCapturePolicyTests
             TestRomanceKindFor();
             TestRaidDecide();
             TestRaidBuildGameContextFormat();
+            TestArtImmortalizedDecide();
+            TestArtImmortalizedBuildGameContextFormat();
             TestQuestDecide();
             TestQuestBuildDisplayLabel();
             TestQuestBuildGameContextFormat();
@@ -996,6 +998,98 @@ namespace DiaryCapturePolicyTests
                 "raid=RaidEnemy; label=enemy raid; faction=Pirate; points=350; arrival_mode=CenterDrop; strategy=ImmediateAttack",
                 RaidEventData.BuildGameContext("RaidEnemy", "enemy raid", "Pirate", "350",
                     "CenterDrop", "ImmediateAttack"));
+        }
+
+        // ── Art immortalization (Quality Wave H6: a colony deed turned into an artwork) ──
+
+        private static ArtImmortalizedEventData Art(string taleIdentity = "KilledMajorThreat#42")
+        {
+            return new ArtImmortalizedEventData
+            {
+                PawnId = "Thing_Human7",
+                Tick = 1000,
+                ArtDefName = "SculptureLarge",
+                ArtThingId = "Thing_SculptureLarge12",
+                ArtTitle = "The Long Watch",
+                SculptorName = "Nell",
+                TaleDefName = "KilledMajorThreat",
+                TaleIdentity = taleIdentity
+            };
+        }
+
+        private static void TestArtImmortalizedDecide()
+        {
+            AssertEqual("art null data drops", CaptureDecision.Drop,
+                ArtImmortalizedEventData.Decide(null, Ctx()));
+            AssertEqual("art null ctx drops", CaptureDecision.Drop,
+                ArtImmortalizedEventData.Decide(Art(), null));
+
+            AssertEqual("art ineligible writer drops", CaptureDecision.Drop,
+                ArtImmortalizedEventData.Decide(Art(), Ctx(eligible: false)));
+            AssertEqual("art disabled group drops", CaptureDecision.Drop,
+                ArtImmortalizedEventData.Decide(Art(), Ctx(user: false)));
+            AssertEqual("art disabled feature drops", CaptureDecision.Drop,
+                ArtImmortalizedEventData.Decide(Art(), Ctx(signal: false)));
+            AssertEqual("art eligible records solo", CaptureDecision.GenerateSolo,
+                ArtImmortalizedEventData.Decide(Art(), Ctx()));
+
+            // Ownership must never be claimed on a key the dedup store cannot reproduce, so the
+            // decision re-checks the deed identity even though the patch already verified it.
+            AssertEqual("art unverifiable deed identity drops", CaptureDecision.Drop,
+                ArtImmortalizedEventData.Decide(Art("Killing of the pirate chief"), Ctx()));
+            AssertEqual("art missing deed identity drops", CaptureDecision.Drop,
+                ArtImmortalizedEventData.Decide(Art(null), Ctx()));
+
+            ArtImmortalizedEventData noWriter = Art();
+            noWriter.PawnId = string.Empty;
+            AssertEqual("art missing writer drops", CaptureDecision.Drop,
+                ArtImmortalizedEventData.Decide(noWriter, Ctx()));
+
+            AssertEqual("art ownership key is the prefixed deed identity",
+                "art-tale|KilledMajorThreat#42", Art().DedupKey());
+            AssertEqual("art unverifiable deed yields no ownership key",
+                string.Empty, Art("not an identity").DedupKey());
+        }
+
+        private static void TestArtImmortalizedBuildGameContextFormat()
+        {
+            // "art=" is deliberately NOT a registered domain marker, so the page classifies into the
+            // Interaction domain its XML group declares. The tale def name rides on "art_tale=" for
+            // the mirror-image reason: "tale=" IS the Tale-domain marker and would misfile the page.
+            AssertEqual("art immortalization context",
+                "art=SculptureLarge; art_thing_id=Thing_SculptureLarge12; label=The Long Watch; "
+                + "sculptor=Nell; art_tale=KilledMajorThreat; art_tale_id=KilledMajorThreat#42",
+                ArtImmortalizedEventData.BuildGameContext(
+                    "SculptureLarge", "Thing_SculptureLarge12", "The Long Watch", "Nell",
+                    "KilledMajorThreat", "KilledMajorThreat#42"));
+
+            AssertEqual("art context classifies into the Interaction domain",
+                DiaryEventDomainClassifier.Interaction,
+                DiaryEventDomainClassifier.DomainForContext(
+                    ArtImmortalizedEventData.BuildGameContext(
+                        "SculptureLarge", "Thing_SculptureLarge12", "The Long Watch", "Nell",
+                        "KilledMajorThreat", "KilledMajorThreat#42")));
+
+            // An artwork title is generated or player-authored prose, so it really can contain the
+            // context delimiters. They must be neutralized or the whole field would be unparseable.
+            string sanitized = ArtImmortalizedEventData.BuildGameContext(
+                "SculptureLarge", "Thing_SculptureLarge12", "A Title; With = Delimiters", "Nell",
+                "KilledMajorThreat", "KilledMajorThreat#42");
+            AssertEqual("art title delimiters are neutralized",
+                "A Title, With - Delimiters",
+                DiaryContextFields.Value(sanitized, "label"));
+            AssertEqual("art deed identity survives a delimiter-laden title",
+                "KilledMajorThreat#42",
+                DiaryContextFields.Value(sanitized, "art_tale_id"));
+
+            AssertEqual("art omits absent optional facts",
+                "art=SculptureLarge; art_tale=KilledMajorThreat; art_tale_id=KilledMajorThreat#42",
+                ArtImmortalizedEventData.BuildGameContext(
+                    "SculptureLarge", "  ", null, string.Empty,
+                    "KilledMajorThreat", "KilledMajorThreat#42"));
+            AssertEqual("art with no facts builds an empty context",
+                string.Empty,
+                ArtImmortalizedEventData.BuildGameContext(null, null, null, null, null, null));
         }
 
         // ── Quest (lifecycle: accepted / completed / failed) ──

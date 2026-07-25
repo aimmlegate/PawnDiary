@@ -1022,6 +1022,24 @@ combat log and every concerned pawn's records tracker, with no clean way to undo
 6. A drop-pod raid or an infestation must behave the same way (they bypass only the *anticipation*
    delay, not the beats wait).
 
+### H6 — art immortalization
+
+Automation covers the writer order, the deed-identity contract, ownership, and the Def wiring. It
+cannot craft a real sculpture: that runs RimWorld's art generator against the player's own colony and
+leaves a Thing plus a Tale behind, and Tale rows cannot be cleanly removed from a live TaleManager.
+
+1. With `artImmortalizationChance` temporarily raised to `1.0`, have a colonist craft sculptures at an
+   art bench until one gets a tale about a colonist (hover the sculpture — its description names the
+   deed). Exactly one quiet diary page should appear, in the diarist's own voice, about meeting their
+   past as an object. It must not retell the original event.
+2. Keep crafting. Further sculptures about that *same* deed must produce nothing, ever — including
+   after a save/reload, and including sculptures made by a different colonist.
+3. A sculpture about a *different* deed must still produce its own page.
+4. Art about a colonist who has since died: the page should be written by the artist instead.
+5. Buy a sculpture from a trader. Its tale is about strangers, so nothing should appear.
+6. Restore `artImmortalizationChance` to `0.35`, or set `artImmortalizationEnabled` false and confirm
+   the feature goes completely silent with no errors.
+
 ## What counts as a regression
 
 Any of:

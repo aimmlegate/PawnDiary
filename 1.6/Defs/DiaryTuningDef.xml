@@ -504,6 +504,13 @@
       <li><kind>other</kind><score>5</score></li>
     </battleBeatsScores>
 
+    <!-- Quality Wave H6. A sculpture whose art tale is about a colony deed can produce one quiet page.
+         Only one page exists per deed across every artwork that ever depicts it; this chance decides
+         whether a given artwork is the one that claims it. Sampling is deterministic per artwork, so
+         re-initializing the same sculpture never rerolls. Set enabled false to silence the feature. -->
+    <artImmortalizationEnabled>true</artImmortalizationEnabled>
+    <artImmortalizationChance>0.35</artImmortalizationChance>
+
     <!-- Output-language directive. When true, every request's system prompt ends with one localized
          line naming the active RimWorld language, so the model is told what to write in instead of
          guessing it from the prompt wording. Set false to restore the old implicit behavior. -->

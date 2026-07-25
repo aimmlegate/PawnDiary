@@ -31,6 +31,7 @@ namespace DiaryPipelineTests
             TestQuadrumAnniversaryMemoryPolicy();
             TestOnThisDayDividerPolicy();
             TestBattleBeatsPolicy();
+            TestArtImmortalizationPolicy();
             TestPromptContextDetailSelection();
             TestPromptContextDetailOverrideResolution();
             TestPromptContextFeatureLayersPerPreset();

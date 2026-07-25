@@ -443,6 +443,7 @@
       <li>WordOfJoy</li>
       <li>WordOfLove</li>
       <li>WordOfSerenity</li>
+      <li>WordOfInspiration</li>
     </matchDefNames>
     <matchTokens>
       <li>Speech</li>
@@ -818,6 +819,30 @@
     <colorCue>anomalyDeep</colorCue>
     <matchDefNames>
       <li>FleshmassHeartPresence</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Quality Wave H6. A sculpture whose generated art tale is about a colony deed. Deliberately NOT
+       important: this is a quiet, reflective aside about seeing your own past turned into an object,
+       not a headline. One page exists per deed for the whole colony, however many artworks depict it
+       (Source/Pipeline/ArtImmortalizationPolicy.cs). -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>artImmortalized</defName>
+    <label>Immortalized in art</label>
+    <order>145</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a past deed of this colony turned into an artwork; write what it is like to meet your own history as an object, without re-describing the original event or inventing what other people think of it</instruction>
+    <tone>quietly, with a little distance from your own past</tone>
+    <tones>
+      <li>wry and self-aware, half-embarrassed to be a decoration</li>
+      <li>quietly moved that anyone thought the moment worth keeping</li>
+      <li>detached, as if the figure in the piece were somebody else</li>
+    </tones>
+    <colorCue>white</colorCue>
+    <matchDefNames>
+      <li>PawnDiary_ArtImmortalized</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 

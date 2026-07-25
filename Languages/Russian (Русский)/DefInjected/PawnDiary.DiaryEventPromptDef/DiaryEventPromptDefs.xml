@@ -66,6 +66,10 @@
   <DiaryEventPrompt_BeliefReflection.label>размышление об убеждениях</DiaryEventPrompt_BeliefReflection.label>
   <DiaryEventPrompt_BeliefReflection.prompt>Напиши личное размышление о переданном переживании веры, накопившейся перемене уверенности или смене веры.</DiaryEventPrompt_BeliefReflection.prompt>
   <DiaryEventPrompt_BeliefReflection.enhancement>Оставайся в границах сохранённого контекста убеждений и точного повода. Не выдумывай учение, заповеди, ритуалы, воспоминания, прежнюю идеологию или обращение, не подтверждённое переданными фактами.</DiaryEventPrompt_BeliefReflection.enhancement>
+  <!-- Quality Wave H6. -->
+  <DiaryEventPrompt_ArtImmortalized.label>увековечено в искусстве</DiaryEventPrompt_ArtImmortalized.label>
+  <DiaryEventPrompt_ArtImmortalized.prompt>Напиши о встрече с куском собственного прошлого, ставшим вещью чужих рук.</DiaryEventPrompt_ArtImmortalized.prompt>
+  <DiaryEventPrompt_ArtImmortalized.enhancement>Оставайся при самой работе и при том, как она отзывается сейчас. Не пересказывай изображённый поступок и не приписывай мастеру замысел, а другим — мнение о ней.</DiaryEventPrompt_ArtImmortalized.enhancement>
   <DiaryEventPrompt_Arrival.label>появление</DiaryEventPrompt_Arrival.label>
   <DiaryEventPrompt_Arrival.prompt>Напиши фактическую заметку о том, как поселенец оказался в поселении.</DiaryEventPrompt_Arrival.prompt>
   <DiaryEventPrompt_Arrival.enhancement>Покажи прибытие как переход к новой жизни: пыль, потрясение, тишина, облегчение, подозрение или первый вид убежища. Используй только факты сценария и прибытия.</DiaryEventPrompt_Arrival.enhancement>

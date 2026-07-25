@@ -91,6 +91,7 @@ namespace PawnDiary.Capture
             Register(new PersonaWeaponEventSpec());
             Register(new RoyalPermitEventSpec());
             Register(new AnomalyEventSpec());
+            Register(new ArtImmortalizedEventSpec());
         }
     }
 }

@@ -1529,6 +1529,12 @@
   <PawnDiary.Event.Odyssey.ShipFallback>гравикорабля</PawnDiary.Event.Odyssey.ShipFallback>
   <PawnDiary.Event.Odyssey.DestinationFallback>месте посадки</PawnDiary.Event.Odyssey.DestinationFallback>
 
+  <!-- Quality Wave H6: подвиг колонии, увековеченный в произведении искусства. Именно «произведение»,
+       а не «скульптура»: CompArt охватывает также оружие с гравировкой, мебель и плиты саркофагов. -->
+  <PawnDiary.Event.ArtImmortalizedLabel>Увековечено в искусстве</PawnDiary.Event.ArtImmortalizedLabel>
+  <PawnDiary.Event.ArtImmortalized>Поступок {0} увековечен в произведении «{1}».</PawnDiary.Event.ArtImmortalized>
+  <PawnDiary.Event.ArtImmortalizedFallbackTitle>работа без названия</PawnDiary.Event.ArtImmortalizedFallbackTitle>
+
   <!-- Страницы жизненного цикла разумного оружия Royalty R2. -->
   <PawnDiary.Event.Persona.WeaponFallback>разумным оружием</PawnDiary.Event.Persona.WeaponFallback>
   <PawnDiary.Event.Persona.Formed.Label>Возникла связь с разумным оружием</PawnDiary.Event.Persona.Formed.Label>

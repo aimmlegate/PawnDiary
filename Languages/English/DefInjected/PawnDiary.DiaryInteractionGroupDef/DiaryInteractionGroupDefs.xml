@@ -506,6 +506,14 @@
   <observedFleshmassHeart.tones.0>sickened and practical, cutting back what keeps growing</observedFleshmassHeart.tones.0>
   <observedFleshmassHeart.tones.1>unnerved and bodily, the sound of it hard to unhear</observedFleshmassHeart.tones.1>
 
+  <!-- Quality Wave H6. Byte-identical to the base Def. -->
+  <artImmortalized.label>Immortalized in art</artImmortalized.label>
+  <artImmortalized.instruction>a past deed of this colony turned into an artwork; write what it is like to meet your own history as an object, without re-describing the original event or inventing what other people think of it</artImmortalized.instruction>
+  <artImmortalized.tone>quietly, with a little distance from your own past</artImmortalized.tone>
+  <artImmortalized.tones.0>wry and self-aware, half-embarrassed to be a decoration</artImmortalized.tones.0>
+  <artImmortalized.tones.1>quietly moved that anyone thought the moment worth keeping</artImmortalized.tones.1>
+  <artImmortalized.tones.2>detached, as if the figure in the piece were somebody else</artImmortalized.tones.2>
+
   <progressionGrowthMoment.label>Growth moment</progressionGrowthMoment.label>
   <progressionGrowthMoment.instruction>a committed childhood growth choice; center identity, changing interests, names, responsibilities, and the qualitative opportunity supplied, without quoting tiers, counts, work lists, or judging the adults who raised the child</progressionGrowthMoment.instruction>
   <progressionGrowthMoment.tone>with formative self-recognition and an uncertain view of who comes next</progressionGrowthMoment.tone>

@@ -585,6 +585,15 @@ namespace PawnDiary
                 new BattleBeatScoreRule { kind = BattleBeatsPolicy.KindOther, score = 5 },
             };
 
+        // ---- Quality Wave H6: art immortalization ----
+        // When a sculpture's generated art tale is about a colony deed, one quiet diary page may be
+        // written about it. At most one page exists per deed for the whole colony, no matter how many
+        // artworks later depict it, so this chance decides whether THIS artwork is the one that claims
+        // the deed. Each artwork samples independently and deterministically from its own stable ID
+        // plus the deed's identity, so re-initializing a sculpture can never reroll it.
+        public bool artImmortalizationEnabled = true;
+        public float artImmortalizationChance = 0.35f;
+
         // ---- Output-language directive ----
         // When true, every LLM request ends its system prompt with one localized line naming the
         // active RimWorld language ("Write the diary entry in Русский."), so the model is told the

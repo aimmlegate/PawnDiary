@@ -75,6 +75,10 @@ namespace PawnDiary.Capture
         // One shared Anomaly dispatch envelope. Separate pure/source policies still own study,
         // containment, creepjoiner, ghoul, and terminal truth; no live source is registered in A1.1.
         AnomalyEvent,
+        // A sculpture whose generated art tale is about a colony deed. At most one page per deed
+        // across every artwork that ever depicts it, written by the pawn the deed is about when they
+        // can still write and otherwise by the artist.
+        ArtImmortalized,
 
         // ── Planned future sources (placeholders only — NOT implemented yet) ──
         // No known live RecordX source remains to migrate; batch/ambient flushers are route sinks.

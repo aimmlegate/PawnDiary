@@ -65,6 +65,10 @@
   <DiaryEventPrompt_BeliefReflection.label>belief reflection</DiaryEventPrompt_BeliefReflection.label>
   <DiaryEventPrompt_BeliefReflection.prompt>Write a private reflection on the supplied belief experience, accumulated certainty change, or change of faith.</DiaryEventPrompt_BeliefReflection.prompt>
   <DiaryEventPrompt_BeliefReflection.enhancement>Stay inside the frozen belief context and exact trigger. Do not invent doctrine, commandments, rituals, memories, a former ideoligion, or a conversion that the supplied facts do not prove.</DiaryEventPrompt_BeliefReflection.enhancement>
+  <!-- Quality Wave H6. Byte-identical to the base Def. -->
+  <DiaryEventPrompt_ArtImmortalized.label>immortalized in art</DiaryEventPrompt_ArtImmortalized.label>
+  <DiaryEventPrompt_ArtImmortalized.prompt>Write about meeting a piece of your own past as an object someone else made.</DiaryEventPrompt_ArtImmortalized.prompt>
+  <DiaryEventPrompt_ArtImmortalized.enhancement>Stay with the artwork in front of you and how it sits with you now. Do not retell the deed it depicts, and do not claim what the artist meant or what anyone else thinks of it.</DiaryEventPrompt_ArtImmortalized.enhancement>
   <DiaryEventPrompt_Arrival.label>arrival</DiaryEventPrompt_Arrival.label>
   <DiaryEventPrompt_Arrival.prompt>Write a factual colony-arrival note about how this pawn joined or began here.</DiaryEventPrompt_Arrival.prompt>
   <DiaryEventPrompt_Arrival.enhancement>Make the arrival feel like a threshold: dust, shock, silence, relief, suspicion, or first sight of shelter. Use only scenario and arrival facts.</DiaryEventPrompt_Arrival.enhancement>
