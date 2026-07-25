@@ -28,10 +28,15 @@ namespace PawnDiary
         private Vector2 pawnListScroll;
         private bool showDeadPawns;
         private bool forceDirectoryRefresh = true;
+        // Remember the map selection independently from the directory selection. This lets a NEW
+        // colonist selection follow the player into the open reader without a manual directory click,
+        // while an intentional directory click remains stable until the map selection changes again.
+        private string lastObservedMapSelectionPawnId;
 
         private Dialog_DiaryReader(DiaryReaderSubject subject)
         {
             selectedSubject = subject;
+            lastObservedMapSelectionPawnId = SelectedPawnOrCorpse()?.GetUniqueLoadID();
             forcePause = false;
             draggable = true;
             resizeable = false;
@@ -115,6 +120,27 @@ namespace PawnDiary
             Find.WindowStack?.TryRemove(typeof(Dialog_DiaryReader), true);
         }
 
+        /// <summary>
+        /// Follows newly selected map colonists while the standalone reader remains open.
+        /// </summary>
+        public override void WindowUpdate()
+        {
+            base.WindowUpdate();
+
+            Pawn pawn = SelectedPawnOrCorpse();
+            string pawnId = pawn?.GetUniqueLoadID();
+            if (string.Equals(pawnId, lastObservedMapSelectionPawnId, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            lastObservedMapSelectionPawnId = pawnId;
+            if (IsCurrentLivingColonist(pawn))
+            {
+                SelectSubject(DiaryReaderSubject.FromPawn(pawn));
+            }
+        }
+
         private static Pawn SelectedPawnOrCorpse()
         {
             Pawn pawn = Find.Selector?.SingleSelectedThing as Pawn;
@@ -124,6 +150,37 @@ namespace PawnDiary
             }
 
             return (Find.Selector?.SingleSelectedThing as Corpse)?.InnerPawn;
+        }
+
+        /// <summary>
+        /// Uses RimWorld's current free-colonist roster rather than Pawn.IsColonist, because departed
+        /// world pawns can retain the player faction and still report themselves as colonists.
+        /// </summary>
+        private static bool IsCurrentLivingColonist(Pawn pawn)
+        {
+            if (pawn == null || pawn.Dead)
+            {
+                return false;
+            }
+
+            IEnumerable<Pawn> colonists =
+                PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists;
+            if (colonists == null)
+            {
+                return false;
+            }
+
+            string pawnId = pawn.GetUniqueLoadID();
+            foreach (Pawn colonist in colonists)
+            {
+                if (colonist != null
+                    && string.Equals(colonist.GetUniqueLoadID(), pawnId, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void SelectSubject(DiaryReaderSubject subject)
@@ -176,7 +233,7 @@ namespace PawnDiary
                 readerWidth,
                 inRect.height);
 
-            DrawDirectory(directoryRect, style);
+            DrawDirectory(directoryRect, style, component);
             if (directory.Rows.Count == 0)
             {
                 Widgets.Label(readerRect, "PawnDiary.Reader.NoDiaries".Translate());
@@ -218,7 +275,7 @@ namespace PawnDiary
             selectedSubject = visibleCount > 0 ? rows[0].Subject : default(DiaryReaderSubject);
         }
 
-        private void DrawDirectory(Rect rect, DiaryUiStyleDef style)
+        private void DrawDirectory(Rect rect, DiaryUiStyleDef style, DiaryGameComponent component)
         {
             bool oldShowDead = showDeadPawns;
             Rect toggleRect = new Rect(rect.x, rect.y, rect.width, DirectoryHeaderHeight);
@@ -270,7 +327,8 @@ namespace PawnDiary
                     DrawPawnRow(
                         new Rect(0f, y, viewRect.width, rowHeight),
                         directory.Rows[i],
-                        style);
+                        style,
+                        component);
                     y += rowHeight;
                 }
             }
@@ -315,7 +373,11 @@ namespace PawnDiary
             GUI.color = oldColor;
         }
 
-        private void DrawPawnRow(Rect rect, DiaryReaderPawnRow row, DiaryUiStyleDef style)
+        private void DrawPawnRow(
+            Rect rect,
+            DiaryReaderPawnRow row,
+            DiaryUiStyleDef style,
+            DiaryGameComponent component)
         {
             bool selected = string.Equals(
                 selectedSubject.PawnId,
@@ -347,13 +409,33 @@ namespace PawnDiary
             DrawPortrait(portraitRect, row.Subject.Pawn);
 
             float textX = portraitRect.xMax + 6f;
-            Rect nameRect = new Rect(textX, rect.y + 2f, Mathf.Max(0f, rect.xMax - textX - 2f), 22f);
+            bool isWriting = component != null
+                && component.IsDiaryWritingFor(row.Subject.PawnId);
+            float writingIndicatorWidth = isWriting
+                ? Mathf.Min(
+                    Mathf.Max(0f, style.statusBadgeWidth),
+                    Mathf.Max(0f, rect.xMax - textX - 2f))
+                : 0f;
+            float textRight = rect.xMax - 2f - writingIndicatorWidth;
+            Rect nameRect = new Rect(textX, rect.y + 2f, Mathf.Max(0f, textRight - textX), 22f);
             Rect countRect = new Rect(textX, rect.y + 23f, nameRect.width, 20f);
             Widgets.Label(nameRect, row.Subject.DisplayName);
             Color countColor = GUI.color;
             GUI.color = new Color(countColor.r, countColor.g, countColor.b, countColor.a * 0.72f);
             Widgets.Label(countRect, "PawnDiary.Reader.PawnRowPages".Translate(row.EntryCount));
             GUI.color = oldColor;
+
+            if (isWriting && writingIndicatorWidth > 0f)
+            {
+                float indicatorHeight = Mathf.Min(rect.height, Mathf.Max(0f, style.statusBadgeHeight));
+                Rect writingIndicatorRect = new Rect(
+                    rect.xMax - writingIndicatorWidth - 2f,
+                    rect.y + (rect.height - indicatorHeight) * 0.5f,
+                    writingIndicatorWidth,
+                    indicatorHeight);
+                DiaryJournalView.DrawWritingIndicator(writingIndicatorRect);
+                TooltipHandler.TipRegion(writingIndicatorRect, "PawnDiary.Command.WritingTip".Translate());
+            }
 
             if (Text.CalcSize(row.Subject.DisplayName).x > nameRect.width)
             {

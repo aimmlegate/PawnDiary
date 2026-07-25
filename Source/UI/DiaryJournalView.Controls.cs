@@ -427,9 +427,10 @@ namespace PawnDiary
 
 
         /// <summary>
-        /// Draws compact animated dots while hidden pending entries are being written.
+        /// Draws compact animated dots while hidden pending entries are being written. The standalone
+        /// reader also reuses this indicator beside any colonist whose diary is currently generating.
         /// </summary>
-        private static void DrawWritingIndicator(Rect rect)
+        internal static void DrawWritingIndicator(Rect rect)
         {
 
             DrawWritingDots(
