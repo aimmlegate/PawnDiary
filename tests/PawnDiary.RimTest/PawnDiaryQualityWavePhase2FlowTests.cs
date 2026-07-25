@@ -20,11 +20,18 @@ namespace PawnDiary.RimTests
         private static PawnDiaryRimTestScope scope;
         private static Pawn writer;
         private static Pawn partner;
-        private static Pawn sibling;
+        private static Pawn relative;
+
+        // A5 reserves one slot for a *named* relation. Sibling cannot be used to build that fixture:
+        // RimWorld derives it from shared parents, so Pawn_RelationsTracker.AddDirectRelation refuses
+        // every implied def with a warning and silently leaves the two pawns unrelated. Parent is a
+        // real direct relation, so one call gives the roster a guaranteed named row.
+        private static readonly PawnRelationDef ReservedRelationDef = PawnRelationDefOf.Parent;
 
         /// <summary>
-        /// Creates three live disposable colonists under prompt-test mode. The third pawn is the
-        /// writer's direct sibling, guaranteeing A5's reserved-relation slot even in a busy colony.
+        /// Creates three live disposable colonists under prompt-test mode. The third pawn holds a
+        /// direct family relation to the writer, guaranteeing A5's reserved-relation slot even in a
+        /// busy colony.
         /// </summary>
         [BeforeEach]
         public static void SetUp()
@@ -33,14 +40,14 @@ namespace PawnDiary.RimTests
             scope.EnablePromptCapture(PromptContextDetailLevel.Full);
             writer = scope.CreateGeneratingAdultColonist();
             partner = scope.CreateGeneratingAdultColonist();
-            sibling = scope.CreateAdultColonist();
+            relative = scope.CreateAdultColonist();
             writer.Name = new NameTriple("Quality", "A5 Writer", "Test");
             partner.Name = new NameTriple("Quality", "A5 Partner", "Test");
-            sibling.Name = new NameTriple("Quality", "A5 Sibling", "Test");
+            relative.Name = new NameTriple("Quality", "A5 Relative", "Test");
             scope.SpawnAsLiveColonist(writer);
             scope.SpawnAsLiveColonist(partner);
-            scope.SpawnAsLiveColonist(sibling);
-            writer.relations.AddDirectRelation(PawnRelationDefOf.Sibling, sibling);
+            scope.SpawnAsLiveColonist(relative);
+            writer.relations.AddDirectRelation(ReservedRelationDef, relative);
         }
 
         /// <summary>Restores prompt settings and destroys every disposable pawn and diary row.</summary>
@@ -56,13 +63,13 @@ namespace PawnDiary.RimTests
                 scope = null;
                 writer = null;
                 partner = null;
-                sibling = null;
+                relative = null;
             }
         }
 
         /// <summary>
         /// Fires a real DeepTalk PlayLog row, then checks the event-time initiator slot and rendered
-        /// prompt contain the sibling relation but never duplicate the current pair partner.
+        /// prompt contain the reserved family relation but never duplicate the current pair partner.
         /// </summary>
         [Test]
         public static void PairEventFreezesAndProjectsIdentitySummary()
@@ -84,16 +91,16 @@ namespace PawnDiary.RimTests
             scope.RequirePairRefs(diaryEvent, writer, partner);
 
             string summary = diaryEvent.IdentitySummaryForRole(DiaryEvent.InitiatorRole);
-            string siblingName = PromptTextSanitizer.LocalizedPromptText(sibling.LabelShortCap);
+            string relativeName = PromptTextSanitizer.LocalizedPromptText(relative.LabelShortCap);
             string partnerName = PromptTextSanitizer.LocalizedPromptText(partner.LabelShortCap);
             string relationLabel = PromptTextSanitizer.LocalizedPromptText(
-                PawnRelationDefOf.Sibling.GetGenderSpecificLabelCap(sibling));
+                ReservedRelationDef.GetGenderSpecificLabelCap(relative));
             Require(summary.StartsWith("relationships=", StringComparison.Ordinal),
                 "A5 identity summary did not use the stable structured prefix: " + summary);
-            Require(summary.IndexOf(siblingName, StringComparison.Ordinal) >= 0,
-                "A5 reserved sibling was absent from the frozen identity roster: " + summary);
+            Require(summary.IndexOf(relativeName, StringComparison.Ordinal) >= 0,
+                "A5 reserved relative was absent from the frozen identity roster: " + summary);
             Require(summary.IndexOf(relationLabel, StringComparison.Ordinal) >= 0,
-                "A5 reserved sibling relation label was absent: " + summary);
+                "A5 reserved family relation label was absent: " + summary);
             Require(summary.IndexOf(partnerName, StringComparison.Ordinal) < 0,
                 "A5 duplicated the current pair partner inside key relationships: " + summary);
             Require(summary.IndexOf("opinion=", StringComparison.OrdinalIgnoreCase) < 0,
@@ -106,7 +113,7 @@ namespace PawnDiary.RimTests
 
         /// <summary>
         /// Calls the production historical-birth overload with a non-null capture DTO. The live
-        /// sibling is deliberately visible, so empty identity slots prove the explicit chronology
+        /// relative is deliberately visible, so empty identity slots prove the explicit chronology
         /// guard rather than an empty colony roster.
         /// </summary>
         [Test]

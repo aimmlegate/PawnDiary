@@ -342,13 +342,21 @@ namespace PawnDiary.RimTests
                 (page.gameContext ?? string.Empty).IndexOf(
                     "belief_reflection=true", StringComparison.OrdinalIgnoreCase) >= 0,
                 "The dispatched page was not marked as a belief reflection.");
-            string narrativeContext = page.NarrativeContextForRole(DiaryEvent.InitiatorRole);
+            // The resolved belief block itself is guaranteed: the candidate refuses to dispatch without
+            // one. It is what the reflection is actually about, so assert it unconditionally.
             PawnDiaryRimTestScope.Require(
-                !string.IsNullOrWhiteSpace(narrativeContext),
-                "The live belief-reflection path resolved belief context but projected no N3-I narrative fact.");
+                !string.IsNullOrWhiteSpace(page.BeliefContextForRole(DiaryEvent.InitiatorRole)),
+                "The dispatched belief reflection did not freeze its resolved belief context.");
+            // The N3-I lens on top of it is optional live doctrine, not a property of this path: the
+            // adapter only freezes a narrative fact when the pawn's own ideoligion resolved a
+            // high-confidence precept interpretation, which a random colony ideoligion need not have.
+            // PawnDiaryIdeologyPhase1FixtureTests owns the deterministic source-precept coverage; here
+            // the contract is only that whatever the page did freeze reaches the captured prompt.
+            string narrativeContext = page.NarrativeContextForRole(DiaryEvent.InitiatorRole);
             string prompt = scope.CapturedPrompt(page, DiaryEvent.InitiatorRole);
             PawnDiaryRimTestScope.Require(
-                prompt.IndexOf(narrativeContext, StringComparison.Ordinal) >= 0,
+                string.IsNullOrWhiteSpace(narrativeContext)
+                    || prompt.IndexOf(narrativeContext, StringComparison.Ordinal) >= 0,
                 "The saved belief-reflection narrative fact did not reach the captured prompt.");
 
             bool repeatedDispatch = true;

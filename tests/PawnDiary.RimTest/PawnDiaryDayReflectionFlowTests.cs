@@ -104,6 +104,11 @@ namespace PawnDiary.RimTests
         public static void SeededDayFlushesOneSoloReflectionWithHighlightContext()
         {
             int day = CurrentDayIndex();
+            // This fixture asserts an exact highlight count, and the H3 collector reads the developer's
+            // real letter archive — a letter their colony filed today is a legitimate second candidate.
+            // Colony news is not what EVT-19 is about, so switch that one collector off outright rather
+            // than hoping the live archive is empty.
+            SuppressColonyNewsForThisTest();
             SeedPendingDayHediff(day);
 
             DiaryEvent diaryEvent = scope.FireAndRequireEvent(
@@ -289,9 +294,10 @@ namespace PawnDiary.RimTests
         [Test]
         public static void PostArrivalLetterAddsCategorizedNewsCandidate()
         {
-            int now = RequireUsableCurrentTick();
-            SeedArrivalBoundary(now - 100);
-            SeedArchiveLetter("PositiveEvent", "A refugee was welcomed", now - 20);
+            int arrivalTick = NewsFixtureTick(2);
+            SeedArrivalBoundary(arrivalTick);
+            RequireEffectiveArrivalTick(arrivalTick);
+            SeedArchiveLetter("PositiveEvent", "A refugee was welcomed", NewsFixtureTick(1));
             tuning.daySummaryImportantSignalKinds = new List<string> { "news" };
 
             DiaryEvent diaryEvent = scope.FireAndRequireEvent(
@@ -304,10 +310,11 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 context.IndexOf("news:positive", StringComparison.OrdinalIgnoreCase) >= 0,
                 "The allowed post-arrival letter did not reach the reflection as news:positive.");
+            string evidence = diaryEvent.initiatorText ?? string.Empty;
             PawnDiaryRimTestScope.Require(
-                (diaryEvent.initiatorText ?? string.Empty)
-                    .IndexOf("A refugee was welcomed", StringComparison.OrdinalIgnoreCase) >= 0,
-                "The selected archived letter label did not reach the frozen reflection evidence.");
+                evidence.IndexOf("A refugee was welcomed", StringComparison.OrdinalIgnoreCase) >= 0,
+                "The selected archived letter label did not reach the frozen reflection evidence: "
+                    + Describe(evidence));
         }
 
         /// <summary>
@@ -317,12 +324,13 @@ namespace PawnDiary.RimTests
         [Test]
         public static void PreArrivalAndExpiredLettersAreExcluded()
         {
-            int now = RequireUsableCurrentTick();
             int day = CurrentDayIndex();
             int dayStartTick = GameTickForDay(day);
             SeedArchiveLetter("PositiveEvent", "Yesterday's old colony news", dayStartTick - 1);
-            SeedArchiveLetter("PositiveEvent", "News from before joining", now - 20);
-            SeedArrivalBoundary(now - 10);
+            SeedArchiveLetter("PositiveEvent", "News from before joining", NewsFixtureTick(2));
+            int arrivalTick = NewsFixtureTick(1);
+            SeedArrivalBoundary(arrivalTick);
+            RequireEffectiveArrivalTick(arrivalTick);
             SeedPendingDayHediff(day);
             tuning.daySummaryImportantSignalKinds = new List<string> { "hediff" };
 
@@ -332,10 +340,12 @@ namespace PawnDiary.RimTests
                 pawn,
                 null);
 
-            PawnDiaryRimTestScope.Require(
-                (diaryEvent.gameContext ?? string.Empty)
-                    .IndexOf("news:", StringComparison.OrdinalIgnoreCase) < 0,
-                "A pre-arrival or expired archived letter leaked into the day reflection.");
+            // A letter the developer's own colony filed after this pawn joined is legitimate news, so
+            // the contract is about these two specific letters, not about the page being news-free.
+            RequireSeededLettersExcluded(
+                diaryEvent,
+                "Yesterday's old colony news",
+                "News from before joining");
         }
 
         /// <summary>
@@ -345,10 +355,12 @@ namespace PawnDiary.RimTests
         [Test]
         public static void KnowledgeOnlyArrivalBoundaryExcludesEarlierNews()
         {
-            int now = RequireUsableCurrentTick();
             int day = CurrentDayIndex();
-            SeedArchiveLetter("PositiveEvent", "News from before the hidden arrival", now - 20);
-            SeedKnowledgeArrivalBoundary(now - 10);
+            SeedArchiveLetter(
+                "PositiveEvent", "News from before the hidden arrival", NewsFixtureTick(2));
+            int arrivalTick = NewsFixtureTick(1);
+            SeedKnowledgeArrivalBoundary(arrivalTick);
+            RequireEffectiveArrivalTick(arrivalTick);
             SeedPendingDayHediff(day);
             tuning.daySummaryImportantSignalKinds = new List<string> { "hediff" };
 
@@ -358,10 +370,7 @@ namespace PawnDiary.RimTests
                 pawn,
                 null);
 
-            PawnDiaryRimTestScope.Require(
-                (diaryEvent.gameContext ?? string.Empty)
-                    .IndexOf("news:", StringComparison.OrdinalIgnoreCase) < 0,
-                "A letter from before a knowledge-only arrival boundary leaked into the reflection.");
+            RequireSeededLettersExcluded(diaryEvent, "News from before the hidden arrival");
         }
 
         /// <summary>
@@ -371,10 +380,9 @@ namespace PawnDiary.RimTests
         [Test]
         public static void HotDirectOwnerSuppressesOnlyItsNewsCategory()
         {
-            int now = RequireUsableCurrentTick();
-            SeedArrivalBoundary(now - 100);
-            SeedArchiveLetter("PositiveEvent", "A trader offered welcome news", now - 20);
-            SeedArchiveLetter("ThreatBig", "Raiders were sighted", now - 10);
+            SeedArrivalBoundary(NewsFixtureTick(3));
+            SeedArchiveLetter("PositiveEvent", "A trader offered welcome news", NewsFixtureTick(2));
+            SeedArchiveLetter("ThreatBig", "Raiders were sighted", NewsFixtureTick(1));
             scope.Component.AddSoloEvent(
                 pawn,
                 null,
@@ -406,13 +414,12 @@ namespace PawnDiary.RimTests
         [Test]
         public static void ArchivedDirectOwnerSuppressesSameCategoryNews()
         {
-            int now = RequireUsableCurrentTick();
-            SeedArrivalBoundary(now - 100);
-            SeedArchiveLetter("PositiveEvent", "A calm opportunity appeared", now - 20);
-            SeedArchiveLetter("ThreatBig", "A mech threat was announced", now - 10);
+            SeedArrivalBoundary(NewsFixtureTick(4));
+            SeedArchiveLetter("PositiveEvent", "A calm opportunity appeared", NewsFixtureTick(3));
+            SeedArchiveLetter("ThreatBig", "A mech threat was announced", NewsFixtureTick(2));
             SeedArchivedDirectOwner(
                 "archived-raid-owner-" + Guid.NewGuid().ToString("N"),
-                now - 5,
+                NewsFixtureTick(1),
                 "Raid",
                 "raid=MechCluster");
             tuning.daySummaryImportantSignalKinds = new List<string> { "news" };
@@ -468,7 +475,9 @@ namespace PawnDiary.RimTests
         [Test]
         public static void ArchiveOnlySameSeasonPageAddsMemorySignal()
         {
-            int now = RequireUsableCurrentTick();
+            // The callback looks a whole year back, so today's absolute tick is the only anchor these
+            // archive rows need — no evidence-window ladder is involved.
+            int now = Find.TickManager.TicksGame;
             int currentQuadrum = (CurrentDayIndex() / GenDate.DaysPerQuadrum)
                 + QuadrumAnniversaryMemoryPolicy.QuadrumsPerYear;
             string eventId = "quality-wave-anniversary-archive-" + Guid.NewGuid().ToString("N");
@@ -516,7 +525,7 @@ namespace PawnDiary.RimTests
         [Test]
         public static void HotArchiveOverlapDeduplicatesAndFirstYearStaysEmpty()
         {
-            int now = RequireUsableCurrentTick();
+            int now = Find.TickManager.TicksGame;
             DiaryEvent hot = scope.Component.AddSoloEvent(
                 pawn,
                 null,
@@ -585,7 +594,7 @@ namespace PawnDiary.RimTests
                 "A raid from the matching quadrum last year.",
                 "write about the raid",
                 "raid=EnemyRaid",
-                RequireUsableCurrentTick());
+                Find.TickManager.TicksGame);
             PawnDiaryRimTestScope.Require(
                 previousYear != null && previousYear.IsImportant(),
                 "Could not seed the prior-year auxiliary callback page.");
@@ -709,16 +718,120 @@ namespace PawnDiary.RimTests
 
         // ----- Quality Wave H3 archived-letter fixtures -------------------------------------------
 
-        private static int RequireUsableCurrentTick()
+        // The deepest news ladder below (arrival, two letters, one owning page) needs four ordered
+        // ticks inside today's evidence window.
+        private const int NewsFixtureTickSpan = 4;
+
+        /// <summary>
+        /// Returns a fixture tick <paramref name="stepsBeforeNow"/> ticks below the live clock.
+        /// The colony-news collector only cares about ORDER inside the pawn's evidence window, never
+        /// about distance, so the ladder is deliberately compact: it works on a colony that started
+        /// moments ago as well as on a long save, it stays inside RimWorld's newest-first archive
+        /// scan-back cap, and it keeps the developer's own letters out of the fixture's way.
+        /// </summary>
+        private static int NewsFixtureTick(int stepsBeforeNow)
         {
             int now = Find.TickManager.TicksGame;
-            if (now < 200)
+            // Below tick 0 an archived letter is unreadable, and before today's start it falls out of
+            // the daily evidence window; both would silently void the fixture instead of testing it.
+            int earliestUsableTick = Math.Max(0, GameTickForDay(CurrentDayIndex()));
+            if (now - earliestUsableTick < NewsFixtureTickSpan)
             {
                 throw new AssertionException(
-                    "Quality Wave H3 reflection fixtures require a loaded game beyond tick 200.");
+                    "Quality Wave H3 reflection fixtures need at least " + NewsFixtureTickSpan
+                    + " ticks elapsed in the current in-game day; let the colony run a moment first.");
             }
 
-            return now;
+            return now - stepsBeforeNow;
+        }
+
+        /// <summary>
+        /// Confirms the production boundary reader really sees the tick this fixture just seeded.
+        /// Without it the news window silently widens to the whole day, and every "this letter was
+        /// excluded" assertion below becomes a coin flip against the developer's own colony letters —
+        /// a confusing failure far from its cause. Fail here instead, naming the tick actually read.
+        /// </summary>
+        private static void RequireEffectiveArrivalTick(int expected)
+        {
+            int? actual = EffectiveArrivalTick();
+            PawnDiaryRimTestScope.Require(
+                actual.HasValue && actual.Value == expected,
+                "The seeded arrival boundary did not reach the production reader: expected "
+                    + expected + ", read "
+                    + (actual.HasValue ? actual.Value.ToString() : "none")
+                    + " (now=" + Find.TickManager.TicksGame + ").");
+        }
+
+        // Reads the same private boundary the H3 collector clips its news window with.
+        private static int? EffectiveArrivalTick()
+        {
+            MethodInfo findDiary = typeof(DiaryGameComponent).GetMethod("FindDiary", NonPublicInstance);
+            MethodInfo method = typeof(DiaryGameComponent).GetMethod(
+                "FirstArrivalTickFor", NonPublicInstance);
+            if (findDiary == null || method == null)
+            {
+                throw new AssertionException(
+                    "Could not locate DiaryGameComponent.FindDiary/FirstArrivalTickFor.");
+            }
+
+            object diary = findDiary.Invoke(scope.Component, new object[] { pawn, false });
+            object result = method.Invoke(
+                scope.Component, new object[] { pawn.GetUniqueLoadID(), diary });
+            return result == null ? (int?)null : (int)result;
+        }
+
+        /// <summary>
+        /// Asserts none of the named seeded letters reached the page's frozen evidence. Deliberately
+        /// checks those exact labels rather than the absence of any news: a letter the developer's own
+        /// colony filed after this pawn joined is correct news, not a leak. The seeded hediff evidence
+        /// is checked first, so an empty evidence field can never make the negative assertion vacuous.
+        /// </summary>
+        private static void RequireSeededLettersExcluded(
+            DiaryEvent diaryEvent,
+            params string[] labels)
+        {
+            string evidence = diaryEvent.initiatorText ?? string.Empty;
+            PawnDiaryRimTestScope.Require(
+                evidence.IndexOf("test affliction", StringComparison.OrdinalIgnoreCase) >= 0,
+                "The page carried no seeded hediff evidence, so the exclusion check is vacuous: "
+                    + Describe(evidence));
+            for (int i = 0; i < labels.Length; i++)
+            {
+                PawnDiaryRimTestScope.Require(
+                    evidence.IndexOf(labels[i], StringComparison.OrdinalIgnoreCase) < 0,
+                    "An out-of-window archived letter leaked into the day reflection: '"
+                        + labels[i] + "' in " + Describe(evidence));
+            }
+        }
+
+        // Compacts a multi-line evidence body into one readable line for an assertion message.
+        private static string Describe(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return "<empty>";
+            }
+
+            return "\"" + value.Replace("\n", " / ") + "\"";
+        }
+
+        /// <summary>
+        /// Turns the XML-backed colony-news collector off for the rest of this test, restoring the
+        /// shipped value in teardown. Used by fixtures whose assertions count candidates: news is the
+        /// one collector that reads live colony state the fixture cannot own.
+        /// </summary>
+        private static void SuppressColonyNewsForThisTest()
+        {
+            DiaryContextReactionDef policy =
+                DiaryContextReactions.ForKey(DiaryContextReactions.ColonyNews);
+            if (policy == null)
+            {
+                throw new AssertionException("Could not resolve the colony-news reaction policy.");
+            }
+
+            bool saved = policy.enabled;
+            policy.enabled = false;
+            scope.RegisterCleanup(() => policy.enabled = saved);
         }
 
         private static int GameTickForDay(int day)

@@ -142,6 +142,35 @@ steps and reserved save names are documented in `tests/SAVE_COMPATIBILITY_SMOKET
 run-at-startup option enters this loaded-game suite at the main menu, every runtime/phase fixture logs
 an explicit skip before dereferencing `Find` or the absent `DiaryGameComponent`.
 
+### Writing fixtures against a live colony
+
+These suites run inside whatever colony the developer loaded, at whatever tick it is paused on. Three
+assumptions look safe and are not — each one cost a red suite on the 2026-07-25 run:
+
+- **`AddDirectRelation` silently refuses implied relation defs.** Among blood relations only `Parent`
+  has `implied=false`; `Sibling`, `Child`, `Grandparent`, … are derived by workers from shared parents.
+  Passing one logs a *Warning* (which the runner does not fail on) and leaves the pawns unrelated, so
+  the test fails much later with a confusing message. Build a named-relation fixture from
+  `PawnRelationDefOf.Parent`, or give both pawns the same mother *and* father.
+- **Never assume a large `Find.TickManager.TicksGame`.** A fresh test colony can be on day 0 below tick
+  200, where `GameTickForDayIndex(today)` is at or under 0. Lay fixture ticks out as a compact ordered
+  ladder just below `now` — the collectors compare order, never distance — instead of `now - 100`. The
+  compact ladder also keeps the rows inside RimWorld's `scanBack` archive cap on a long save.
+- **The colony-news collector reads the developer's real `Find.Archive`.** The scope scrubs a fixture
+  pawn's automatic arrival page *and* its `status.faction.joined` knowledge record, so until a test
+  seeds a boundary that pawn's news window is the whole day and a letter the colony filed today becomes
+  a legitimate extra candidate. Two consequences: a test asserting an exact `highlights=`/`candidates=`
+  count must switch the collector off (`DiaryContextReactions.ForKey(ColonyNews).enabled = false`,
+  restored in cleanup) rather than hope the archive is empty; and a test about *exclusion* must assert
+  its own seeded label is absent, never that the page is news-free. Seed the boundary, then assert the
+  production reader actually returns it (`FirstArrivalTickFor` takes the **minimum** across the hot
+  events, the archive, and the knowledge record — any survivor silently widens the window).
+
+Related: assert optional enrichment conditionally. The N3-I narrative fact on a belief reflection only
+exists when the pawn's live ideoligion resolves a high-confidence precept stance;
+`PawnDiaryIdeologyPhase1FixtureTests` owns the deterministic coverage by building its own `Ideo` with a
+`PreceptComp_Thought`.
+
 ### Transport / async runtime (plan §6.3) — deferred by design
 
 The `LlmClient` queue/retry/failover/`Retry-After`/session/result-apply suite is **not** implemented here,
