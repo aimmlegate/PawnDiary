@@ -237,6 +237,11 @@
   <PawnDiary.Tab.ExpandCollapseTip>Развернуть или свернуть страницу.</PawnDiary.Tab.ExpandCollapseTip>
   <!-- Разделитель квадрума/сезона между страницами года. {0} — квадрум, {1} — сезон, {2} — год. -->
   <PawnDiary.Tab.QuadrumDivider>{0} · {1} · {2}</PawnDiary.Tab.QuadrumDivider>
+  <!-- Разделитель «в этот день»: ставится над страницей за тот же календарный день прошлых лет,
+       когда открыт год старше текущего. {0} — сколько полных лет назад (всегда 2 и больше).
+       Сокращение «г.» подходит ко всем формам числа, поэтому одна строка покрывает 2, 3, 5 лет. -->
+  <PawnDiary.Tab.OnThisDay>В этот день · {0} г. назад</PawnDiary.Tab.OnThisDay>
+  <PawnDiary.Tab.OnThisDayOneYear>В этот день · год назад</PawnDiary.Tab.OnThisDayOneYear>
   <PawnDiary.Tab.CopyEntry>Копировать страницу</PawnDiary.Tab.CopyEntry>
   <PawnDiary.Tab.CopyEntryTip>Скопировать текст страницы в буфер обмена.</PawnDiary.Tab.CopyEntryTip>
   <PawnDiary.Tab.CopyEntryCopied>Текст страницы скопирован.</PawnDiary.Tab.CopyEntryCopied>

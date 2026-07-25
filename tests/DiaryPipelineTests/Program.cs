@@ -29,6 +29,7 @@ namespace DiaryPipelineTests
             TestMoodSnapshotPolicy();
             TestColonyNewsPolicy();
             TestQuadrumAnniversaryMemoryPolicy();
+            TestOnThisDayDividerPolicy();
             TestPromptContextDetailSelection();
             TestPromptContextDetailOverrideResolution();
             TestPromptContextFeatureLayersPerPreset();

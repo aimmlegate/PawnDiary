@@ -977,6 +977,27 @@ player-facing evidence in a real colony; automated agents must not run the game.
 3. On a colony still inside its first four absolute quadrums, trigger every eligible quadrum
    reflection window. No `memory:` cue or last-year framing should appear.
 
+## Quality Wave Phase 4 — hands-on rows
+
+Automation covers the placement rules, the fail-closed variants, the reserved row height, and the live
+clock/label wiring. These rows verify how the divider actually looks and scrolls in a real journal;
+automated agents must not run the game.
+
+### H5-UI — "On this day" divider
+
+1. Open the Diary tab on a colony at least one year old, page back to an older year, and scroll to
+   today's calendar day. Exactly one `On this day · …` row should appear, directly above the newest
+   page from that day, with the divider hairlines but no season glyph. Cards must not overlap it, and
+   the scroll height must have room for it (no clipped last card).
+2. Page to the current year and to the `Undated` page. No callback row anywhere in either.
+3. Land the callback on a page that also opens a quadrum group: the season header stays on top, the
+   callback row sits between it and the card, and neither row is flush against the other.
+4. With the tab still open on the older year, let the in-game day roll over (or dev-skip a day). The
+   callback should move to the new day's page — or disappear when that day has no page — without a
+   duplicate row left behind.
+5. Dev mode: run "Fill mock entries" on a pawn, page through the fabricated years, and confirm no
+   callback row ever appears on mock history (its dates are fake, its ticks are not).
+
 ## What counts as a regression
 
 Any of:

@@ -18,6 +18,7 @@
     <Compile Include="..\..\Source\Pipeline\MoodSnapshotPolicy.cs" Link="MoodSnapshotPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\ColonyNewsPolicy.cs" Link="ColonyNewsPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\QuadrumAnniversaryMemoryPolicy.cs" Link="QuadrumAnniversaryMemoryPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\OnThisDayDividerPolicy.cs" Link="OnThisDayDividerPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryEventPromptKeys.cs" Link="DiaryEventPromptKeys.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryEntryTitleFilter.cs" Link="DiaryEntryTitleFilter.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryEntryStatsAccumulator.cs" Link="DiaryEntryStatsAccumulator.cs" />

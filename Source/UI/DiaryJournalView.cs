@@ -33,6 +33,10 @@ namespace PawnDiary
         // drawn just above the card. Filled during the same layout pass that computes row offsets so
         // the reserved divider space and the drawn divider can never disagree.
         private string[] dividerLabelsBuffer = new string[0];
+        // Non-null for the single entry that opens the "On this day" callback row: the page from this
+        // same calendar day in an earlier year. Filled by the same layout pass as the quadrum labels
+        // above, for the same reason — reserved space and drawn row must never disagree.
+        private string[] onThisDayLabelsBuffer = new string[0];
 
         // Virtualized scroll layout for the selected year. The ordered entry List is reused by
         // DiaryJournalVisibleEntriesCache, so the cache key includes its revision/year in addition to the
@@ -65,6 +69,14 @@ namespace PawnDiary
         // Quadrum key of the previously laid-out row, carried across sliced layout frames so a divider
         // is placed exactly at each quadrum change even when the build spans several frames.
         private int layoutBuildPrevQuadrumKey = DiaryQuadrumDivider.UndatedKey;
+        // "On this day" callback state, also carried across sliced layout frames: the scan remembers
+        // whether the one allowed divider has been placed, and the frozen tick offset / day stamp keep
+        // every frame of one build agreeing on what "today" means. The stamp is part of the layout
+        // identity below, so an in-game day rollover with the tab left open re-places the divider.
+        private readonly OnThisDayDividerScan onThisDayScan = new OnThisDayDividerScan();
+        private int layoutBuildOnThisDayTickOffset;
+        private int layoutBuildOnThisDayStamp = DiaryOnThisDayDivider.Invalid;
+        private int cachedLayoutOnThisDayStamp = DiaryOnThisDayDivider.Invalid;
 
         // Cached full (expanded) card heights. The helper owns the measured-height dictionary, while
         // this tab still decides when rows exist, whether they are expanded, and where they sit in the
@@ -528,10 +540,32 @@ namespace PawnDiary
 
                     // Season/quadrum divider sits in the reserved space just above this card. Drawn in
                     // scroll-view coordinates (outside the per-card group) so it spans the full width.
+                    // When this row also opens the "On this day" callback, the two share that space:
+                    // the callback row sits closest to the card it introduces, with the quadrum header
+                    // pushed above it. Both geometries come from the same helper the layout pass used.
                     string dividerLabel = i < dividerLabelsBuffer.Length ? dividerLabelsBuffer[i] : null;
+                    string onThisDayLabel = i < onThisDayLabelsBuffer.Length ? onThisDayLabelsBuffer[i] : null;
+                    float onThisDayBand = OnThisDayDividerPolicy.ReservedHeight(
+                        !string.IsNullOrEmpty(onThisDayLabel),
+                        !string.IsNullOrEmpty(dividerLabel),
+                        i == 0,
+                        QuadrumDividerHeight,
+                        QuadrumDividerTopGap);
+                    if (onThisDayBand > 0f)
+                    {
+                        Rect onThisDayRect = new Rect(0f, curY - QuadrumDividerHeight, viewRect.width, QuadrumDividerHeight);
+                        // Season.Undefined resolves to no glyph, so the callback reuses the divider's
+                        // hairline/label style without claiming a season of its own.
+                        DrawQuadrumDivider(onThisDayRect, onThisDayLabel, Season.Undefined);
+                    }
+
                     if (!string.IsNullOrEmpty(dividerLabel))
                     {
-                        Rect dividerRect = new Rect(0f, curY - QuadrumDividerHeight, viewRect.width, QuadrumDividerHeight);
+                        Rect dividerRect = new Rect(
+                            0f,
+                            curY - onThisDayBand - QuadrumDividerHeight,
+                            viewRect.width,
+                            QuadrumDividerHeight);
                         // Season derived from the same entry the label came from, so the glyph always
                         // matches the "· season ·" text. Cheap: only visible divider rows resolve it.
                         DrawQuadrumDivider(dividerRect, dividerLabel, DiaryQuadrumDivider.SeasonFor(entry));
@@ -638,6 +672,11 @@ namespace PawnDiary
             {
                 Array.Resize(ref dividerLabelsBuffer, count);
             }
+
+            if (onThisDayLabelsBuffer.Length < count)
+            {
+                Array.Resize(ref onThisDayLabelsBuffer, count);
+            }
         }
 
         /// <summary>
@@ -674,9 +713,16 @@ namespace PawnDiary
             // rebuilt ordered list (new visibleRevision), which listDirty already catches — so the
             // token term is redundant as well as harmful. (The cachedLayoutToken field is still
             // recorded for diagnostics; it just no longer drives the dirty decision.)
+            //
+            // "On this day" stamp: today's day of year while this page could show the callback, and
+            // the invalid sentinel otherwise. On a current-year page it never changes, so the common
+            // case adds no rebuilds; on an older page it changes once per in-game day, which is
+            // exactly when the divider has to move.
+            int onThisDayStamp = DiaryOnThisDayDivider.LayoutDayStamp(selectedYear, selectedYear != UnknownYear);
             bool visualLayoutDirty = cachedLayoutViewWidth != viewWidth
                 || cachedLayoutShowDebug != showLlmDebugInfo
-                || cachedLayoutHighlightVersion != nameHighlightsVersion;
+                || cachedLayoutHighlightVersion != nameHighlightsVersion
+                || cachedLayoutOnThisDayStamp != onThisDayStamp;
             bool expansionLayoutDirty = cachedLayoutExpansionVersion != entryExpansionVersion
                 || !cachedLayoutAnimationSettled;
             bool bufferDirty = entryOffsetsBuffer.Length < count || heightsBuffer.Length < count;
@@ -696,7 +742,7 @@ namespace PawnDiary
                 // The selected year's data is already visible. Rebuild offsets immediately so scroll,
                 // collapse/expand, highlight refreshes, and quiet entry updates never swap the list for
                 // the blocking loading panel. Cold loads and explicit year changes still use slices.
-                BeginEntryLayoutBuild(ordered, visibleRevision, pawnId, viewWidth, showLlmDebugInfo, token, count);
+                BeginEntryLayoutBuild(ordered, visibleRevision, pawnId, viewWidth, showLlmDebugInfo, token, count, onThisDayStamp);
                 ProcessEntryLayoutSlice(
                     ordered,
                     viewWidth,
@@ -727,9 +773,10 @@ namespace PawnDiary
                 || layoutBuildViewWidth != viewWidth
                 || layoutBuildShowDebug != showLlmDebugInfo
                 || layoutBuildHighlightVersion != nameHighlightsVersion
-                || layoutBuildExpansionVersion != entryExpansionVersion)
+                || layoutBuildExpansionVersion != entryExpansionVersion
+                || layoutBuildOnThisDayStamp != onThisDayStamp)
             {
-                BeginEntryLayoutBuild(ordered, visibleRevision, pawnId, viewWidth, showLlmDebugInfo, token, count);
+                BeginEntryLayoutBuild(ordered, visibleRevision, pawnId, viewWidth, showLlmDebugInfo, token, count, onThisDayStamp);
             }
 
             ProcessEntryLayoutSlice(ordered, viewWidth, showLlmDebugInfo, token, nameHighlights, animationDelta, count, false, false);
@@ -745,7 +792,8 @@ namespace PawnDiary
             float viewWidth,
             bool showLlmDebugInfo,
             DiaryRenderToken token,
-            int count)
+            int count,
+            int onThisDayStamp)
         {
             EnsureEntryMeasurementBufferCapacity(count);
             layoutBuildInProgress = true;
@@ -762,6 +810,11 @@ namespace PawnDiary
             layoutBuildCurY = 0f;
             layoutBuildAnimationSettled = true;
             layoutBuildPrevQuadrumKey = DiaryQuadrumDivider.UndatedKey;
+            // Freeze the callback's inputs for the whole build: one tick offset, one "today", and a
+            // fresh scan so a restarted build can never leave a divider placed twice.
+            layoutBuildOnThisDayStamp = onThisDayStamp;
+            layoutBuildOnThisDayTickOffset = DiaryOnThisDayDivider.TickOffset();
+            DiaryOnThisDayDivider.Begin(onThisDayScan, selectedYear, selectedYear != UnknownYear);
         }
 
         private void ProcessEntryLayoutSlice(
@@ -827,6 +880,30 @@ namespace PawnDiary
                     layoutBuildCurY += QuadrumDividerHeight + (i == 0 ? 0f : QuadrumDividerTopGap);
                 }
 
+                // "On this day": on a page from an earlier year, the first row whose own tick lands on
+                // today's calendar day gets one extra divider row, just below any quadrum header and
+                // directly above its card. The scan short-circuits once placed (and never arms at all
+                // on the current year), so ordinary pages pay nothing here. Every row assigns its slot
+                // unconditionally — a stale label from a previous year's build would draw a second
+                // divider over a card that reserved no space for it.
+                string onThisDayLabel = null;
+                if (onThisDayScan.WantsMore
+                    && onThisDayScan.Accept(
+                        DiaryOnThisDayDivider.EntryYear(entry, layoutBuildOnThisDayTickOffset),
+                        DiaryOnThisDayDivider.EntryDayOfYear(entry, layoutBuildOnThisDayTickOffset),
+                        DiaryOnThisDayDivider.GameContextOf(entry)))
+                {
+                    onThisDayLabel = DiaryOnThisDayDivider.Label(onThisDayScan.YearsAgo);
+                }
+
+                onThisDayLabelsBuffer[i] = onThisDayLabel;
+                layoutBuildCurY += OnThisDayDividerPolicy.ReservedHeight(
+                    !string.IsNullOrEmpty(onThisDayLabel),
+                    !string.IsNullOrEmpty(dividerLabelsBuffer[i]),
+                    i == 0,
+                    QuadrumDividerHeight,
+                    QuadrumDividerTopGap);
+
                 entryKeysBuffer[i] = entryKey;
                 expandedTargetsBuffer[i] = expanded;
                 expansionBlendsBuffer[i] = expansionBlend;
@@ -864,6 +941,7 @@ namespace PawnDiary
             cachedLayoutHighlightVersion = layoutBuildHighlightVersion;
             cachedLayoutExpansionVersion = layoutBuildExpansionVersion;
             cachedLayoutAnimationSettled = layoutBuildAnimationSettled;
+            cachedLayoutOnThisDayStamp = layoutBuildOnThisDayStamp;
             cachedLayoutViewHeight = layoutBuildCurY + 12f; // includes bottom padding
             layoutBuildInProgress = false;
         }
