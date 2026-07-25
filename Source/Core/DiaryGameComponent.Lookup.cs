@@ -1033,8 +1033,15 @@ namespace PawnDiary
                 psychotypeDefName = PsychotypesEnabled ? RollPsychotypeFor(pawn, band, null, pawnId) : string.Empty,
                 voiceStageBand = band,
                 diaryGenerationEnabled = true,
-                // This record was created under N4, so it has no historical cadence debt to baseline.
-                reflectionState = new PawnReflectionState { baselineOnNextOpportunity = false }
+                // This record was created under the current N4 coordinator, so neither the original
+                // cadence baseline nor N4.2's later linked-memory baseline has historical debt to absorb.
+                // Missing state on an OLD save still keeps both safe default-true markers in
+                // EnsureReflectionState; only a genuinely new diary record starts fully baselined.
+                reflectionState = new PawnReflectionState
+                {
+                    baselineOnNextOpportunity = false,
+                    linkedBaselineOnNextOpportunity = false
+                }
             };
             diaries.Add(diary);
             IndexDiaryRecord(diary);

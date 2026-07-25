@@ -88,9 +88,6 @@ namespace DiaryPipelineTests
                 !DigestPacingPolicy.AddLine(buffer, null, 4));
             AssertTrue("a null buffer is a no-op",
                 !DigestPacingPolicy.AddLine(null, DigestLine("anything"), 4));
-            AssertTrue("a zero-size buffer refuses every line",
-                !DigestPacingPolicy.AddLine(buffer, DigestLine("dropped"), 0));
-            AssertEqual("only the one usable line was kept", 1, buffer.Count);
 
             // Exact duplicates are one memory, not two — including a whitespace-padded repeat.
             AssertTrue("an exact duplicate is rejected",
@@ -115,6 +112,28 @@ namespace DiaryPipelineTests
             DigestPacingPolicy.AddLine(buffer, DigestLine("chatted again", "interaction", 5), 2);
             AssertEqual("a smaller cap trims the buffer on the next add", 2, buffer.Count);
             AssertEqual("trimming keeps the newest lines", "chatted again", buffer[1].line);
+
+            // A live tuning reduction is state normalization, independent of candidate acceptance.
+            // Blank/duplicate attempts must still trim old saved rows, and zero must clear them.
+            AssertTrue("a blank attempt still applies a lowered live cap",
+                DigestPacingPolicy.AddLine(buffer, DigestLine("   "), 1));
+            AssertEqual("blank-attempt normalization keeps only the newest row", 1, buffer.Count);
+            AssertEqual("blank-attempt normalization kept the newest row", "chatted again", buffer[0].line);
+            AssertTrue("disabling the buffer clears already-saved rows",
+                DigestPacingPolicy.AddLine(buffer, DigestLine("dropped"), 0));
+            AssertEqual("a zero-size buffer converges to empty immediately", 0, buffer.Count);
+            AssertTrue("an already-empty disabled buffer is unchanged",
+                !DigestPacingPolicy.AddLine(buffer, DigestLine("still dropped"), 0));
+
+            List<DigestLineCandidate> duplicateTrim = new List<DigestLineCandidate>
+            {
+                DigestLine("oldest", tick: 1),
+                DigestLine("newest", tick: 2)
+            };
+            AssertTrue("a duplicate attempt still applies a lowered live cap",
+                DigestPacingPolicy.AddLine(duplicateTrim, DigestLine("newest", tick: 3), 1));
+            AssertEqual("duplicate-attempt normalization keeps one row", 1, duplicateTrim.Count);
+            AssertEqual("duplicate-attempt normalization kept the newest row", "newest", duplicateTrim[0].line);
 
             // The source token is normalized so the saved gameContext tag stays clean.
             List<DigestLineCandidate> tokens = new List<DigestLineCandidate>();

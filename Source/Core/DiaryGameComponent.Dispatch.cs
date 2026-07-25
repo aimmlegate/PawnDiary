@@ -255,7 +255,12 @@ namespace PawnDiary
             int cap = DiaryTuning.Current.lowSalienceDailySoftCap;
             bool paceable = DigestPacingPolicy.IsSoftCapEnabled(cap)
                 && (decision == CaptureDecision.GenerateSolo || decision == CaptureDecision.GeneratePair)
-                && signal.IsLowSalience;
+                && signal.IsLowSalience
+                // A folded page has value only when the daily-reflection route can consume its digest.
+                // If the player disables that route, preserve the ordinary page instead of silently
+                // clearing the buffered moment through the disabled-reflection settlement path.
+                && DiaryTuning.Current.daySummaryEnabled
+                && IsReflectionGroupEnabled(DayReflectionEventData.DefNameToken);
             if (!paceable)
             {
                 // Batched/ambient routes never produced a page of their own, and important or combat

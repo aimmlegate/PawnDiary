@@ -123,16 +123,31 @@ namespace PawnDiary
             DigestLineCandidate candidate,
             int maxLines)
         {
-            int limit = ClampMaxLines(maxLines);
-            if (buffer == null || limit == 0 || candidate == null)
+            if (buffer == null)
             {
                 return false;
+            }
+
+            int limit = ClampMaxLines(maxLines);
+            bool changed = false;
+            while (buffer.Count > limit)
+            {
+                buffer.RemoveAt(0);
+                changed = true;
+            }
+
+            // Existing rows must converge to a newly lowered XML limit even when buffering is now
+            // disabled or this particular candidate is unusable. The caller copies the normalized
+            // buffer back whenever this method reports any change.
+            if (limit == 0 || candidate == null)
+            {
+                return changed;
             }
 
             string line = (candidate.line ?? string.Empty).Trim();
             if (line.Length == 0)
             {
-                return false;
+                return changed;
             }
 
             candidate.line = line;
@@ -142,7 +157,7 @@ namespace PawnDiary
                 DigestLineCandidate existing = buffer[i];
                 if (existing != null && string.Equals(existing.line, line, StringComparison.Ordinal))
                 {
-                    return false;
+                    return changed;
                 }
             }
 

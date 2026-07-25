@@ -55,6 +55,11 @@ namespace PawnDiary.RimTests
             scope = PawnDiaryRimTestScope.Begin("heartfelt", "reflection", "dayreflection");
             firstPawn = scope.CreateAdultColonist();
             secondPawn = scope.CreateAdultColonist();
+            // The pair-POV assertion needs distinct rendered names. Generated names are random and can
+            // collide, so give these test-owned pawns deterministic nicknames instead of accepting a
+            // one-in-many-runs fixture failure.
+            firstPawn.Name = new NameTriple("Pacing", "Pacing Alpha", "Fixture");
+            secondPawn.Name = new NameTriple("Pacing", "Pacing Beta", "Fixture");
 
             heartfeltGroup = RequireGroup("heartfelt");
             ForceLowSalienceGroup(heartfeltGroup);
@@ -202,6 +207,27 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// EVT-26. Disabling the only route that can consume digest evidence disables pacing too:
+        /// an over-cap moment must remain an ordinary page, never a silently discarded buffer row.
+        /// </summary>
+        [Test]
+        public static void DisabledDayReflectionRouteEmitsOverCapPage()
+        {
+            int day = CurrentDayIndex();
+            SetCount(firstPawn, day, TestSoftCap);
+            SetCount(secondPawn, day, TestSoftCap);
+            PawnDiaryMod.Settings.SetGroupEnabled("dayreflection", false);
+
+            scope.FireAndRequireEvent(
+                () => AddDeepTalkRow(firstPawn, secondPawn), "DeepTalk", firstPawn, secondPawn);
+
+            PawnDiaryRimTestScope.Require(DigestLineCount(firstPawn, day) == 0,
+                "A disabled Day Reflection route must not accept a folded-away page.");
+            PawnDiaryRimTestScope.Require(DigestLineCount(secondPawn, day) == 0,
+                "A disabled Day Reflection route must not accept the recipient's folded-away POV.");
+        }
+
+        /// <summary>
         /// EVT-26. The buffer keeps the four newest UNIQUE lines: an exact repeat is one memory, and a
         /// fifth distinct moment evicts the oldest rather than growing the save.
         /// </summary>
@@ -239,6 +265,8 @@ namespace PawnDiary.RimTests
             scope.Component.AddDayDigestLine(pawnId, day, "interaction", "traded a quiet joke", 1);
 
             scope.RequireNoNewEvent(() => InvokeDayFlush(firstPawn));
+            PawnDiaryRimTestScope.Require(DigestLineCount(firstPawn, day) == 0,
+                "The approved no-reflection settlement must consume low-value digest evidence.");
         }
 
         /// <summary>
@@ -252,6 +280,7 @@ namespace PawnDiary.RimTests
             int day = CurrentDayIndex();
             string pawnId = firstPawn.GetUniqueLoadID();
             ForceDeterministicReflectionTuning();
+            SetCount(firstPawn, day, TestSoftCap + 1);
             SeedImportantDayEvidence(day);
             scope.Component.AddDayDigestLine(pawnId, day, "work", "hauled steel all morning", 1);
 
@@ -264,7 +293,7 @@ namespace PawnDiary.RimTests
                 "The reflection did not carry the buffered digest moment. Context: " + context);
             PawnDiaryRimTestScope.Require(DigestLineCount(firstPawn, day) == 0,
                 "The flush must consume the digest lines, or they leak into another day.");
-            RequireCount(firstPawn, day, 0,
+            RequireCount(firstPawn, day, TestSoftCap + 1,
                 "Writing the evening reflection must NOT reset the day's pacing count.");
         }
 
