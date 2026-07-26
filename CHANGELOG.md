@@ -8,6 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-07-26
 
+- **Quiet bounded generation recovery.** Failed main-page requests now retry automatically up to an XML-owned limit, then retire to one warning without failed-page cards, failure badges, or manual retry prompts in production UI.
 - **Event-window expiry safety.** Persistent atmosphere windows now require a finite XML timeout, repair legacy missing or overlong saved deadlines, and stop influencing prompts immediately at expiry.
 - **Loaded RimTest gap closure.** Added reversible coverage for reader/export, runtime diagnostics, Brainwipe boundaries, ambient/Tale/raid/hediff/lifecycle flows, the public API facade, and a catalog-derived 30-source coverage guard.
 - **Diary reader navigation and visible generation health.** Added pawn search/sorting, unread and last-page row metadata, per-pawn view-state memory, actionable empty/error states, retryable failed pages, and safe standalone-menu activity badges.

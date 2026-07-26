@@ -892,6 +892,8 @@
   <PawnDiary.Settings.Adv.Help.previousEntryEndingSentenceCount>How many final sentences from the previous diary page are sent to the next first-person prompt.</PawnDiary.Settings.Adv.Help.previousEntryEndingSentenceCount>
   <PawnDiary.Settings.Adv.Help.previousEntryEndingMaxChars>Maximum length of the previous-page ending sent to the next first-person prompt.</PawnDiary.Settings.Adv.Help.previousEntryEndingMaxChars>
   <PawnDiary.Settings.Adv.Help.activeScanEventWindow>Newest colony-wide diary events kept 'hot' for background scans and prompt continuity.</PawnDiary.Settings.Adv.Help.activeScanEventWindow>
+  <PawnDiary.Settings.Adv.Field.automaticGenerationRetryLimit>Automatic generation retries</PawnDiary.Settings.Adv.Field.automaticGenerationRetryLimit>
+  <PawnDiary.Settings.Adv.Help.automaticGenerationRetryLimit>Fresh background generation requests queued after the initial request exhausts every API lane. After this many retries, the page is skipped with a warning in the log.</PawnDiary.Settings.Adv.Help.automaticGenerationRetryLimit>
   <PawnDiary.Settings.Adv.Help.archivedFallbackTitleWords>Word count of the date-line fallback title for never-generated archived entries.</PawnDiary.Settings.Adv.Help.archivedFallbackTitleWords>
   <PawnDiary.Settings.Adv.Help.archivedFallbackTextMaxChars>Max length of the prompt-fact fallback body for archived entries.</PawnDiary.Settings.Adv.Help.archivedFallbackTextMaxChars>
   <PawnDiary.Settings.Adv.Help.uiHistoryScanMaxEventsPerFrame>Max events the Diary UI may index in one frame.</PawnDiary.Settings.Adv.Help.uiHistoryScanMaxEventsPerFrame>

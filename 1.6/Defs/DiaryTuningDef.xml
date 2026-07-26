@@ -165,6 +165,9 @@
          prompt continuity. Older entries remain saved and visible as archive history. This is a
          global count across all pawns; the per-pawn retention cap lives in mod settings. -->
     <activeScanEventWindow>1000</activeScanEventWindow>
+    <!-- Fresh full-generation requests queued after the initial request exhausts every API lane.
+         Exhausted pages are skipped with one warning and never become player-facing error cards. -->
+    <automaticGenerationRetryLimit>3</automaticGenerationRetryLimit>
     <!-- Display-only fallback for archived pending entries that are no longer retried. They show
          prompt facts instead of an endless writing indicator. -->
     <archivedFallbackTitleWords>6</archivedFallbackTitleWords>

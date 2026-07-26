@@ -110,6 +110,7 @@ namespace PawnDiary
             public string rawResponse;
             public string status;
             public string error;
+            public int automaticGenerationRetryAttempts;
             public string llmEndpoint;
             public string llmModel;
             public string title;
@@ -429,6 +430,8 @@ namespace PawnDiary
             Scribe_Values.Look(ref slot.rawResponse, prefix + "RawResponse");
             Scribe_Values.Look(ref slot.status, prefix + "Status");
             Scribe_Values.Look(ref slot.error, prefix + "Error");
+            Scribe_Values.Look(ref slot.automaticGenerationRetryAttempts,
+                prefix + "AutomaticGenerationRetryAttempts", 0);
             Scribe_Values.Look(ref slot.llmEndpoint, prefix + "LlmEndpoint");
             Scribe_Values.Look(ref slot.llmModel, prefix + "LlmModel");
             Scribe_Values.Look(ref slot.title, prefix + "Title");
@@ -478,6 +481,8 @@ namespace PawnDiary
             Scribe_Values.Look(ref slot.rawResponse, "neutralRawResponse");
             Scribe_Values.Look(ref slot.status, "neutralStatus");
             Scribe_Values.Look(ref slot.error, "neutralError");
+            Scribe_Values.Look(ref slot.automaticGenerationRetryAttempts,
+                "neutralAutomaticGenerationRetryAttempts", 0);
             Scribe_Values.Look(ref slot.llmEndpoint, "neutralLlmEndpoint");
             Scribe_Values.Look(ref slot.llmModel, "neutralLlmModel");
             Scribe_Values.Look(ref slot.title, "neutralTitle");
@@ -508,8 +513,10 @@ namespace PawnDiary
             slot.titleError = DiarySaveNormalization.NormalizeString(slot.titleError);
             // Normalize statuses: treat stale "pending" or empty as not_generated, and upgrade to
             // "complete" if generated text/title is already present.
-            slot.status = DiaryGenerationStatus.NormalizeLoadedMainStatus(slot.status, slot.generatedText);
+            slot.status = DiaryGenerationStatus.NormalizeLoadedRetryableMainStatus(slot.status, slot.generatedText);
             slot.titleStatus = DiaryGenerationStatus.NormalizeLoadedTitleStatus(slot.titleStatus, slot.title);
+            slot.automaticGenerationRetryAttempts =
+                DiaryGenerationStatus.NormalizeAutomaticRetryAttempts(slot.automaticGenerationRetryAttempts);
 
             if (!hasPawnFields)
             {
@@ -777,6 +784,20 @@ namespace PawnDiary
         /// </summary>
         public void PrepareForRegeneration(string povRole)
         {
+            PrepareForRegeneration(povRole, true);
+        }
+
+        /// <summary>
+        /// Prepares a failed POV for an automatic background retry while preserving the saved retry
+        /// counter that enforces the XML-owned exhaustion limit.
+        /// </summary>
+        internal void PrepareForAutomaticRegeneration(string povRole)
+        {
+            PrepareForRegeneration(povRole, false);
+        }
+
+        private void PrepareForRegeneration(string povRole, bool resetAutomaticRetryAttempts)
+        {
             if (string.IsNullOrWhiteSpace(povRole))
             {
                 return;
@@ -793,6 +814,31 @@ namespace PawnDiary
             slot.title = string.Empty;
             slot.titleStatus = NotGeneratedStatus;
             slot.titleError = null;
+            if (resetAutomaticRetryAttempts)
+            {
+                slot.automaticGenerationRetryAttempts = 0;
+            }
+        }
+
+        /// <summary>
+        /// Returns how many automatic regenerations have already been scheduled for this POV.
+        /// </summary>
+        internal int AutomaticGenerationRetryAttemptsForRole(string povRole)
+        {
+            return DiaryGenerationStatus.NormalizeAutomaticRetryAttempts(
+                SlotFor(povRole).automaticGenerationRetryAttempts);
+        }
+
+        /// <summary>
+        /// Records one newly scheduled automatic regeneration and returns the normalized count.
+        /// </summary>
+        internal int RecordAutomaticGenerationRetry(string povRole)
+        {
+            ref PovSlot slot = ref SlotFor(povRole);
+            slot.automaticGenerationRetryAttempts =
+                DiaryGenerationStatus.NormalizeAutomaticRetryAttempts(
+                    slot.automaticGenerationRetryAttempts + 1);
+            return slot.automaticGenerationRetryAttempts;
         }
 
         /// <summary>
@@ -841,6 +887,7 @@ namespace PawnDiary
             slot.prompt = string.Empty;
             slot.status = CompleteStatus;
             slot.error = null;
+            slot.automaticGenerationRetryAttempts = 0;
             slot.llmEndpoint = string.Empty;
             slot.llmModel = string.Empty;
         }
@@ -2060,6 +2107,7 @@ namespace PawnDiary
                 slot.rawResponse = TrimPersistedRawResponse(result.rawResponse);
                 slot.status = CompleteStatus;
                 slot.error = null;
+                slot.automaticGenerationRetryAttempts = 0;
             }
             else
             {

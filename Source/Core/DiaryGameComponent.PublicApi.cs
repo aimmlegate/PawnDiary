@@ -503,10 +503,11 @@ namespace PawnDiary
                     // the same page from surfacing as a duplicate while the hot ref still exists.
                     hotDisplayKeys.Add(ArchivedDiaryEntry.BuildArchiveKey(diaryEvent.eventId, pawnId, povRole));
 
+                    // Failed/stale generation attempts are diagnostics, not diary pages. Production
+                    // UI shows only completed prose; the explicit developer debug toggle can still
+                    // inspect raw/pending/failed state when troubleshooting.
                     bool visible = showLlmDebugInfo
                         || hasGeneratedText
-                        || archivedGenerationStale
-                        || failed
                         || (showGeneratingEntries && generating)
                         || (showPromptOnlyEntries && promptOnly);
                     if (visible)
@@ -547,7 +548,9 @@ namespace PawnDiary
                 }
 
                 bool hasGeneratedText = archivedEntry.HasGeneratedText;
-                bool visible = showLlmDebugInfo || hasGeneratedText || archivedEntry.archivedGenerationStale;
+                // Compact failed/stale rows remain available to developer diagnostics but are not
+                // player-facing diary pages.
+                bool visible = showLlmDebugInfo || hasGeneratedText;
                 if (!visible)
                 {
                     // A generated archive row is always visible (hasGeneratedText feeds `visible`), so a

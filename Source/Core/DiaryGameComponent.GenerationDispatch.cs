@@ -369,13 +369,19 @@ namespace PawnDiary
                 return DiaryTelemetryOutcome.LlmTitleResultApplied;
             }
 
-            if (result.success && result.sentRawText != null)
+            if (!result.success)
+            {
+                HandleFailedMainGeneration(diaryEvent, result);
+                return DiaryTelemetryOutcome.LlmResultApplied;
+            }
+
+            if (result.sentRawText != null)
             {
                 diaryEvent.SetPrompt(result.povRole, result.sentRawText);
             }
 
             diaryEvent.ApplyLlmResult(result);
-            if (result.success && !string.IsNullOrWhiteSpace(result.generatedText))
+            if (!string.IsNullOrWhiteSpace(result.generatedText))
             {
                 MarkGeneratedEntryUnread(diaryEvent, result.povRole);
             }
@@ -384,7 +390,7 @@ namespace PawnDiary
             // the primary lane chosen at queue time, so updating it here keeps the debug block
             // accurate and lets a paired recipient pin to the model the initiator really used.
             ApiEndpointConfig successfulLane = SuccessfulLaneFromResult(result);
-            if (result.success && !string.IsNullOrWhiteSpace(result.endpointUrl) && !string.IsNullOrWhiteSpace(result.modelName))
+            if (!string.IsNullOrWhiteSpace(result.endpointUrl) && !string.IsNullOrWhiteSpace(result.modelName))
             {
                 diaryEvent.SetLlmMeta(result.povRole, EndpointUtility.BuildGenerationUrl(result.endpointUrl, result.apiMode), result.modelName);
             }
@@ -400,8 +406,7 @@ namespace PawnDiary
             // Title follow-up: if Generate LLM titles is on and the main entry produced text
             // but the role has no stored title yet, queue a small title call. The title is tiny,
             // and the request is capped to TitleMaxTokens.
-            if (result.success
-                && PawnDiaryMod.Settings != null
+            if (PawnDiaryMod.Settings != null
                 && PawnDiaryMod.Settings.generateTitles
                 && !string.IsNullOrWhiteSpace(result.generatedText)
                 && string.IsNullOrWhiteSpace(diaryEvent.TitleForRole(result.povRole)))
@@ -409,6 +414,59 @@ namespace PawnDiary
                 QueueTitleRequest(diaryEvent, result.povRole, successfulLane);
             }
             return DiaryTelemetryOutcome.LlmResultApplied;
+        }
+
+        /// <summary>
+        /// Keeps a failed main-entry request out of player UI. A bounded number of fresh requests are
+        /// queued through the normal background pipeline; exhaustion becomes a hidden skipped state
+        /// plus one warning in the RimWorld log.
+        /// </summary>
+        private void HandleFailedMainGeneration(DiaryEvent diaryEvent, LlmGenerationResult result)
+        {
+            int retryLimit = DiaryGenerationStatus.NormalizeAutomaticRetryLimit(
+                DiaryTuning.Current.automaticGenerationRetryLimit);
+            int attemptsAlreadyScheduled =
+                diaryEvent.AutomaticGenerationRetryAttemptsForRole(result.povRole);
+            if (DiaryGenerationStatus.CanScheduleAutomaticRetry(attemptsAlreadyScheduled, retryLimit))
+            {
+                int retryNumber = diaryEvent.RecordAutomaticGenerationRetry(result.povRole);
+                diaryEvent.PrepareForAutomaticRegeneration(result.povRole);
+                NotifyEntryStatusChanged(diaryEvent, result.povRole);
+                EnsureGenerationQueued(diaryEvent, result.povRole);
+                LogApiDebug(
+                    "Automatically requeued failed generation event=" + diaryEvent.eventId
+                    + " role=" + result.povRole
+                    + " retry=" + retryNumber + "/" + retryLimit);
+                return;
+            }
+
+            string error = string.IsNullOrWhiteSpace(result.error)
+                ? "Unknown generation error."
+                : result.error;
+            diaryEvent.MarkSkipped(result.povRole, error);
+            NotifyEntryStatusChanged(diaryEvent, result.povRole);
+
+            // A sequential recipient cannot be written without the initiator page as context. Mark it
+            // skipped too so a later load/catch-up scan does not revive half of an exhausted pair.
+            if (!diaryEvent.solo
+                && DiaryEvent.RoleEquals(result.povRole, DiaryEvent.InitiatorRole)
+                && diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole))
+            {
+                diaryEvent.MarkSkipped(
+                    DiaryEvent.RecipientRole,
+                    "PawnDiary.Error.SkippedInitiatorFailed".Translate());
+                NotifyEntryStatusChanged(diaryEvent, DiaryEvent.RecipientRole);
+            }
+
+            string warningError = TextTruncation.SafePrefix(
+                error.Replace('\r', ' ').Replace('\n', ' '),
+                500);
+            Log.Warning(
+                "[Pawn Diary] Gave up diary generation after "
+                + attemptsAlreadyScheduled + " automatic regeneration attempt(s)"
+                + " event=" + diaryEvent.eventId
+                + " role=" + result.povRole
+                + " lastError=" + warningError);
         }
 
         /// <summary>

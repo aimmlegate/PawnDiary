@@ -218,6 +218,10 @@ namespace PawnDiary
         // is not retried or backfilled by catch-up scanners. This is a global count across all pawns;
         // the per-pawn hot and archived history caps are mod settings.
         public int activeScanEventWindow = 1000;
+        // Number of fresh full-generation requests queued after the initial request exhausts all API
+        // lanes. Failed pages remain background state; after this many regenerations they are skipped
+        // with one warning instead of becoming player-facing error cards.
+        public int automaticGenerationRetryLimit = 3;
         // Archived pending entries fall back to a prompt-fact card instead of an endless "writing..."
         // indicator. These tune the generated display-only fallback.
         public int archivedFallbackTitleWords = 6;

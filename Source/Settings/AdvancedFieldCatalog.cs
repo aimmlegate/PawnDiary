@@ -1374,6 +1374,7 @@ namespace PawnDiary
                 .Int("previousEntryEndingSentenceCount", 1, 6)
                 .Int("previousEntryEndingMaxChars", 40, 2000)
                 .Int("activeScanEventWindow", 1, 100000)
+                .Int("automaticGenerationRetryLimit", 0, 10)
                 .Int("archivedFallbackTitleWords", 1, 50)
                 .Int("archivedFallbackTextMaxChars", 1, 2000)
                 .Int("uiHistoryScanMaxEventsPerFrame", 1, 1000)

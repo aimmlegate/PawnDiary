@@ -9,6 +9,9 @@ namespace PawnDiary
     /// </summary>
     internal static class DiaryGenerationStatus
     {
+        // Defensive ceiling for malformed XML/save values. The authored limit remains XML-owned.
+        private const int MaximumAutomaticRetryLimit = 10;
+
         public const string NotGenerated = "not_generated";
         public const string Pending = "pending";
         public const string Complete = "complete";
@@ -33,6 +36,53 @@ namespace PawnDiary
             }
 
             return status;
+        }
+
+        /// <summary>
+        /// Normalizes a live (non-archived) entry after load. Unlike compact archive rows, a failed
+        /// live entry is still eligible for the background generation scan, so it becomes
+        /// not-generated and can rejoin its bounded retry sequence after the game reloads.
+        /// </summary>
+        public static string NormalizeLoadedRetryableMainStatus(string status, string generatedText)
+        {
+            string normalized = NormalizeLoadedMainStatus(status, generatedText);
+            return StatusEquals(normalized, Failed) ? NotGenerated : normalized;
+        }
+
+        /// <summary>
+        /// Clamps the XML-owned number of automatic regenerations to a defensive runtime range.
+        /// </summary>
+        public static int NormalizeAutomaticRetryLimit(int configuredLimit)
+        {
+            if (configuredLimit <= 0)
+            {
+                return 0;
+            }
+
+            return Math.Min(configuredLimit, MaximumAutomaticRetryLimit);
+        }
+
+        /// <summary>
+        /// Clamps a saved automatic-regeneration counter so corrupt data cannot bypass the limit.
+        /// </summary>
+        public static int NormalizeAutomaticRetryAttempts(int attempts)
+        {
+            if (attempts <= 0)
+            {
+                return 0;
+            }
+
+            return Math.Min(attempts, MaximumAutomaticRetryLimit);
+        }
+
+        /// <summary>
+        /// True when another automatic regeneration may be scheduled after a failed full request.
+        /// The counter is the number of regenerations already scheduled, not the initial request.
+        /// </summary>
+        public static bool CanScheduleAutomaticRetry(int attemptsAlreadyScheduled, int configuredLimit)
+        {
+            return NormalizeAutomaticRetryAttempts(attemptsAlreadyScheduled)
+                < NormalizeAutomaticRetryLimit(configuredLimit);
         }
 
         /// <summary>

@@ -14,7 +14,6 @@ namespace PawnDiary
         private struct DiaryReaderActivity
         {
             public int pendingCount;
-            public int failedCount;
             public bool hasLatestEntry;
             public int latestEntryTick;
             public string latestEntryDate;
@@ -25,7 +24,6 @@ namespace PawnDiary
         private int readerActivityStateVersion = -1;
         private int readerActivityDataCount = -1;
         private int readerGlobalPendingCount;
-        private int readerGlobalFailedCount;
         // Unread acknowledgement does not mutate a DiaryEvent, so it has its own cheap change token.
         // DiaryReaderPawnDirectory watches it in addition to DiaryStateVersion when unread sorting is on.
         private int readerUnreadStateVersion;
@@ -65,7 +63,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns the cached unread/pending/failure status for one reader subject.
+        /// Returns the cached unread/pending status for one reader subject. Failed requests are
+        /// background diagnostics and deliberately never become player-facing activity badges.
         /// </summary>
         internal DiaryCommandStatus ReaderStatusForId(string pawnId)
         {
@@ -81,7 +80,7 @@ namespace PawnDiary
             if (readerActivityByPawnId.TryGetValue(pawnId, out activity))
             {
                 status.pendingCount = activity.pendingCount;
-                status.failedCount = activity.failedCount;
+                status.failedCount = 0;
             }
             else
             {
@@ -101,7 +100,7 @@ namespace PawnDiary
             DiaryCommandStatus status = new DiaryCommandStatus
             {
                 pendingCount = readerGlobalPendingCount,
-                failedCount = readerGlobalFailedCount
+                failedCount = 0
             };
 
             foreach (KeyValuePair<string, DiaryCommandStatus> pair in commandStatusByPawnId)
@@ -122,9 +121,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Rebuilds pending/failure/latest-page metadata after rendered event state changes. Archive rows
-        /// participate only in latest-page metadata; archived failures are not retryable and therefore do
-        /// not leave a permanent global error badge.
+        /// Rebuilds pending/latest-page metadata after rendered event state changes. Failed requests
+        /// never count as activity or as the latest readable page.
         /// </summary>
         private void RefreshReaderActivity()
         {
@@ -137,7 +135,6 @@ namespace PawnDiary
 
             readerActivityByPawnId.Clear();
             readerGlobalPendingCount = 0;
-            readerGlobalFailedCount = 0;
             if (diaries != null)
             {
                 HashSet<string> activeEventIds = ActiveScanEventIds();
@@ -185,12 +182,7 @@ namespace PawnDiary
                                 activity.pendingCount++;
                                 readerGlobalPendingCount++;
                             }
-                            if (failed)
-                            {
-                                activity.failedCount++;
-                                readerGlobalFailedCount++;
-                            }
-                            if (hasGeneratedText || archivedGenerationStale || failed)
+                            if (hasGeneratedText)
                             {
                                 UpdateLatestEntry(
                                     ref activity,

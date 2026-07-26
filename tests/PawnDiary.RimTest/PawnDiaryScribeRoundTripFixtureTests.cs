@@ -209,11 +209,12 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
-        /// A failed POV keeps its "failed" status (it is neither pending nor blank, and has no generated
-        /// text to upgrade it), so background sweeps do not silently retry a genuinely failed page.
+        /// A failed POV has no persisted in-flight request, so PostLoadInit resets it to
+        /// "not_generated". The hot-window scanner can then resume automatic recovery after a reload,
+        /// while the captured prompt still survives for the replacement request.
         /// </summary>
         [Test]
-        public static void FailedEventRoundTripsFailedStatus()
+        public static void FailedEventNormalizesToNotGeneratedOnLoad()
         {
             DiaryEvent original = new DiaryEvent
             {
@@ -232,7 +233,10 @@ namespace PawnDiary.RimTests
 
             DiaryEvent loaded = ScribeRoundTrip(original);
 
-            AssertStr(DiaryEvent.FailedStatus, loaded.initiatorStatus, "failed status should survive load");
+            AssertStr(
+                DiaryEvent.NotGeneratedStatus,
+                loaded.initiatorStatus,
+                "failed status should normalize to not_generated on load");
             AssertStr(
                 "failed-prompt",
                 PromptFor(loaded, DiaryEvent.InitiatorRole),

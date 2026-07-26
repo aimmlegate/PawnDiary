@@ -606,7 +606,10 @@ namespace PawnDiary
             return entry != null
                 && !entry.Archived
                 && !IsGenerating(entry)
-                && !IsPromptOnly(entry);
+                && !IsPromptOnly(entry)
+                // Failed diagnostic rows no longer offer a player-facing manual retry. Completed
+                // pages keep the rewrite action for players who intentionally want new prose.
+                && !string.IsNullOrWhiteSpace(entry.GeneratedText);
         }
 
         // Small gap between the muted date segment and the stronger title segment in a card header.

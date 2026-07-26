@@ -1277,6 +1277,11 @@ namespace PawnDiary
                         {
                             ClearLaneCooldown(request);
                             LogDebug("Lane succeeded event=" + request.eventId + " role=" + request.povRole + " lane=" + laneLabel);
+                            // Publish only after releasing this request's dedup key. The main-thread
+                            // result handler may immediately queue the same event+role for an automatic
+                            // regeneration after a failure; success follows the same deterministic
+                            // completion ordering.
+                            session.PendingKeys.TryRemove(pendingKey, out _);
                             Completed.Enqueue(new LlmGenerationResult
                             {
                                     eventId = request.eventId,
@@ -1318,14 +1323,19 @@ namespace PawnDiary
                     return;
                 }
 
+                // Release the dedup key before publishing. Otherwise the main thread can observe this
+                // failure, request an automatic regeneration, and have Enqueue reject it as a duplicate
+                // while this worker is still crossing into its finally block.
+                session.PendingKeys.TryRemove(pendingKey, out _);
                 Completed.Enqueue(new LlmGenerationResult
                 {
                     eventId = request.eventId,
                     povRole = request.povRole,
                     sessionId = request.sessionId,
                     success = false,
-                    // Redact: this error is stored on the event and shown in the diary tab, and a
-                    // networking message can echo the key-bearing request URL (query-param auth).
+                    // Redact: the main-thread retry/exhaustion handler can persist this diagnostic
+                    // and write it to the log, and a networking message can echo the key-bearing
+                    // request URL (query-param auth).
                     error = RedactRequestSecrets(request, lastError ?? "Unknown network error."),
                     isTitleRequest = request.isTitleRequest
                 });
@@ -1339,6 +1349,7 @@ namespace PawnDiary
                 if (!request.sessionCancellationToken.IsCancellationRequested
                     && request.sessionId == currentSession.Id)
                 {
+                    session.PendingKeys.TryRemove(pendingKey, out _);
                     Completed.Enqueue(new LlmGenerationResult
                     {
                         eventId = request.eventId,

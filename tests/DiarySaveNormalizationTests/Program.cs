@@ -30,7 +30,8 @@ namespace DiarySaveNormalizationTests
             TestPreTitleEntryClearsStalePendingTitleStatus();
 
             // Fixture: "Failed entry".
-            TestFailedEntryStatusIsPreservedWithoutGeneratedText();
+            TestFailedEntryStatusReloadBehavior();
+            TestAutomaticGenerationRetryLimit();
 
             // Fixture: "Pending archived fallback candidate".
             TestPendingArchivedFallbackCandidateReclassifyAndStaleFlag();
@@ -139,23 +140,52 @@ namespace DiarySaveNormalizationTests
         }
 
         // ------------------------------------------------------------------------------------------
-        // Fixture: failed entry. A page that permanently failed must keep its failed status on reload
-        // (so it is not retried every scan), unless generated text somehow exists.
+        // Fixture: failed entry. Compact archive rows preserve their historical diagnostic status,
+        // while live failed entries become re-queueable once after reload. Exhausted live rows are
+        // saved as skipped, so this migration cannot create an endless retry loop.
         // ------------------------------------------------------------------------------------------
 
-        private static void TestFailedEntryStatusIsPreservedWithoutGeneratedText()
+        private static void TestFailedEntryStatusReloadBehavior()
         {
-            AssertEqual("failed main entry without text stays failed",
+            AssertEqual("archived failed entry without text stays failed",
                 DiaryGenerationStatus.Failed,
                 DiaryGenerationStatus.NormalizeLoadedMainStatus(DiaryGenerationStatus.Failed, string.Empty));
 
+            AssertEqual("live failed entry without text becomes re-queueable",
+                DiaryGenerationStatus.NotGenerated,
+                DiaryGenerationStatus.NormalizeLoadedRetryableMainStatus(
+                    DiaryGenerationStatus.Failed,
+                    string.Empty));
+
             AssertEqual("failed main entry with stray text upgrades to complete",
                 DiaryGenerationStatus.Complete,
-                DiaryGenerationStatus.NormalizeLoadedMainStatus(DiaryGenerationStatus.Failed, "We fought off the raid."));
+                DiaryGenerationStatus.NormalizeLoadedRetryableMainStatus(
+                    DiaryGenerationStatus.Failed,
+                    "We fought off the raid."));
 
             AssertEqual("skipped main entry stays skipped (not retried)",
                 DiaryGenerationStatus.Skipped,
-                DiaryGenerationStatus.NormalizeLoadedMainStatus(DiaryGenerationStatus.Skipped, string.Empty));
+                DiaryGenerationStatus.NormalizeLoadedRetryableMainStatus(
+                    DiaryGenerationStatus.Skipped,
+                    string.Empty));
+        }
+
+        private static void TestAutomaticGenerationRetryLimit()
+        {
+            AssertTrue("first automatic retry is allowed",
+                DiaryGenerationStatus.CanScheduleAutomaticRetry(0, 3));
+            AssertTrue("last configured automatic retry is allowed",
+                DiaryGenerationStatus.CanScheduleAutomaticRetry(2, 3));
+            AssertTrue("configured automatic retry limit is terminal",
+                !DiaryGenerationStatus.CanScheduleAutomaticRetry(3, 3));
+            AssertTrue("zero disables automatic regeneration",
+                !DiaryGenerationStatus.CanScheduleAutomaticRetry(0, 0));
+            AssertEqual("negative saved retry count normalizes to zero",
+                0,
+                DiaryGenerationStatus.NormalizeAutomaticRetryAttempts(-12));
+            AssertEqual("malformed XML retry limit is defensively capped",
+                10,
+                DiaryGenerationStatus.NormalizeAutomaticRetryLimit(999));
         }
 
         // ------------------------------------------------------------------------------------------

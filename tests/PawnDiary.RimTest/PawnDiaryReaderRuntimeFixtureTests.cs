@@ -106,8 +106,9 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
-        /// ReaderStatusForId and GlobalReaderStatus combine saved unread counts with live pending and
-        /// failed POV slots, then refresh immediately when those slots become complete.
+        /// ReaderStatusForId and GlobalReaderStatus combine saved unread counts with live pending
+        /// slots while keeping failed generation diagnostics out of player-facing badges and
+        /// latest-page metadata.
         /// </summary>
         [Test]
         public static void ReaderActivityAggregatesAndInvalidatesLifecycleState()
@@ -140,18 +141,18 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 perPawn.unacknowledgedCount == 2
                     && perPawn.pendingCount == 1
-                    && perPawn.failedCount == 1
+                    && perPawn.failedCount == 0
                     && perPawn.HasNewPages
                     && perPawn.IsWriting
-                    && perPawn.HasFailures,
-                "The per-pawn reader status did not merge unread, pending, and failed state.");
+                    && !perPawn.HasFailures,
+                "The per-pawn reader status exposed failed generation diagnostics.");
 
             DiaryGameComponent.DiaryCommandStatus global = scope.Component.GlobalReaderStatus();
             PawnDiaryRimTestScope.Require(
                 global.unacknowledgedCount >= 2
                     && global.pendingCount >= 1
-                    && global.failedCount >= 1,
-                "The global reader status omitted the test pawn's activity.");
+                    && global.failedCount == 0,
+                "The global reader status exposed failed generation diagnostics.");
 
             List<DiaryGameComponent.DiaryReaderPawnInfo> rows =
                 new List<DiaryGameComponent.DiaryReaderPawnInfo>();
@@ -162,9 +163,9 @@ namespace PawnDiary.RimTests
                 info.hotEntryCount == 3
                     && info.unreadCount == 2
                     && info.hasLatestEntry
-                    && info.latestEntryTick == 30
-                    && string.Equals(info.latestEntryDate, failed.date, StringComparison.Ordinal),
-                "The saved reader projection did not expose exact count/unread/latest metadata.");
+                    && info.latestEntryTick == 10
+                    && string.Equals(info.latestEntryDate, completed.date, StringComparison.Ordinal),
+                "The reader projection treated a failed request as the latest readable page.");
 
             pending.MarkInjectedTextComplete(DiaryEvent.InitiatorRole, "The pending page finished.");
             failed.MarkInjectedTextComplete(DiaryEvent.InitiatorRole, "The failed page was regenerated.");
