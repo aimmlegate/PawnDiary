@@ -341,17 +341,24 @@ namespace PawnDiary
         /// separately (see the <c>isTitleRequest</c> branch) so they never reach the main-entry
         /// applier.
         /// </summary>
-        private void ApplyLlmResult(LlmGenerationResult result)
+        private DiaryTelemetryOutcome ApplyLlmResult(LlmGenerationResult result)
         {
             if (result == null || string.IsNullOrWhiteSpace(result.eventId))
             {
-                return;
+                return DiaryTelemetryOutcome.LlmResultInvalid;
             }
 
             DiaryEvent diaryEvent = events.FindEvent(result.eventId);
             if (diaryEvent == null)
             {
-                return;
+                return DiaryTelemetryOutcome.LlmResultMissingEvent;
+            }
+
+            if (!DiaryEvent.RoleEquals(result.povRole, DiaryEvent.InitiatorRole)
+                && !DiaryEvent.RoleEquals(result.povRole, DiaryEvent.RecipientRole)
+                && !DiaryEvent.RoleEquals(result.povRole, DiaryEvent.NeutralRole))
+            {
+                return DiaryTelemetryOutcome.LlmResultInvalid;
             }
 
             // Title follow-up: never call ApplyLlmResult (which is the main-entry applier) —
@@ -359,7 +366,7 @@ namespace PawnDiary
             if (result.isTitleRequest)
             {
                 ApplyTitleResult(diaryEvent, result);
-                return;
+                return DiaryTelemetryOutcome.LlmTitleResultApplied;
             }
 
             if (result.success && result.sentRawText != null)
@@ -401,6 +408,7 @@ namespace PawnDiary
             {
                 QueueTitleRequest(diaryEvent, result.povRole, successfulLane);
             }
+            return DiaryTelemetryOutcome.LlmResultApplied;
         }
 
         /// <summary>

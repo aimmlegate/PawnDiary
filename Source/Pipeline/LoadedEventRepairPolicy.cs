@@ -22,6 +22,24 @@ namespace PawnDiary
     {
         public readonly List<int> retainedSourceIndexes = new List<int>();
         public readonly List<int> repairedIdSourceIndexes = new List<int>();
+
+        /// <summary>Null rows, out-of-range source indexes, and blank event ids discarded.</summary>
+        public int invalidRowCount;
+
+        /// <summary>Rows discarded because an earlier stable-tick row already owned that event id.</summary>
+        public int duplicateEventIdCount;
+
+        /// <summary>Rows discarded because the same source index appeared more than once.</summary>
+        public int duplicateSourceIndexCount;
+
+        /// <summary>Total rows rejected by the repair plan.</summary>
+        public int DiscardedRowCount
+        {
+            get
+            {
+                return invalidRowCount + duplicateEventIdCount + duplicateSourceIndexCount;
+            }
+        }
     }
 
     /// <summary>
@@ -48,6 +66,10 @@ namespace PawnDiary
                 {
                     ordered.Add(identity);
                 }
+                else
+                {
+                    plan.invalidRowCount++;
+                }
             }
 
             // List<T>.Sort is not stable. The source index is the explicit tie-breaker that preserves
@@ -61,10 +83,21 @@ namespace PawnDiary
                 LoadedEventIdentity identity = ordered[i];
                 if (identity.sourceIndex < 0
                     || identity.sourceIndex >= identities.Count
-                    || string.IsNullOrWhiteSpace(identity.eventId)
-                    || seenSourceIndexes.Contains(identity.sourceIndex)
-                    || seenIds.Contains(identity.eventId))
+                    || string.IsNullOrWhiteSpace(identity.eventId))
                 {
+                    plan.invalidRowCount++;
+                    continue;
+                }
+
+                if (seenSourceIndexes.Contains(identity.sourceIndex))
+                {
+                    plan.duplicateSourceIndexCount++;
+                    continue;
+                }
+
+                if (seenIds.Contains(identity.eventId))
+                {
+                    plan.duplicateEventIdCount++;
                     continue;
                 }
 

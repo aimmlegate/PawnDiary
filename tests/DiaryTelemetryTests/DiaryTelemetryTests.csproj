@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <!-- Pure diagnostics only: no RimWorld/Verse/Unity references are allowed in this project. -->
+  <ItemGroup>
+    <Compile Include="..\..\Source\Diagnostics\Pure\DiaryTelemetry.cs" Link="DiaryTelemetry.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryIntegrityPolicy.cs" Link="DiaryIntegrityPolicy.cs" />
+  </ItemGroup>
+</Project>

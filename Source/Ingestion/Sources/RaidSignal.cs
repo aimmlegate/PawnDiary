@@ -201,12 +201,25 @@ namespace PawnDiary.Ingestion
                 if (!RoyalPermitPolicy.MatchesRecentOwner(
                     recentOwners[i], snapshot, policy.quickAidCorrelationTicks)) continue;
                 recentOwners.RemoveAt(i);
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.CorrelationReverseOrderMatched,
+                    "correlation.quick_aid",
+                    "raid",
+                    null,
+                    now);
                 return true;
             }
 
             int cap = Clamp(policy.maximumPendingQuickAid, 1, 256, 32);
-            while (pending.Count >= cap) FlushOldest();
+            while (pending.Count >= cap)
+                FlushOldest(DiaryTelemetryOutcome.CorrelationOverflowReleased);
             pending.Add(new PendingRaid { snapshot = snapshot, signal = signal });
+            DiaryTelemetry.Record(
+                DiaryTelemetryOutcome.CorrelationSignalStaged,
+                "correlation.quick_aid",
+                "raid",
+                null,
+                now);
             return true;
         }
 
@@ -231,12 +244,33 @@ namespace PawnDiary.Ingestion
                 if (!RoyalPermitPolicy.MatchesQuickAid(
                     pending[i].snapshot, use, now, policy.quickAidCorrelationTicks)) continue;
                 pending.RemoveAt(i);
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.CorrelationCommitted,
+                    "correlation.quick_aid",
+                    "raid",
+                    null,
+                    now);
                 return true;
             }
 
             int cap = Clamp(policy.maximumRecentQuickAidOwners, 1, 256, 32);
-            while (recentOwners.Count >= cap) recentOwners.RemoveAt(0);
+            while (recentOwners.Count >= cap)
+            {
+                recentOwners.RemoveAt(0);
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.CorrelationOverflowReleased,
+                    "correlation.quick_aid",
+                    "permit_owner",
+                    null,
+                    now);
+            }
             recentOwners.Add(use);
+            DiaryTelemetry.Record(
+                DiaryTelemetryOutcome.CorrelationSignalStaged,
+                "correlation.quick_aid",
+                "permit_owner",
+                null,
+                now);
             return false;
         }
 
@@ -257,6 +291,13 @@ namespace PawnDiary.Ingestion
             if (expired != null)
             {
                 expired.Sort(ComparePending);
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.CorrelationExpired,
+                    "correlation.quick_aid",
+                    "raid",
+                    null,
+                    now,
+                    expired.Count);
                 for (int i = 0; i < expired.Count; i++) DispatchFallback(expired[i].signal);
             }
             for (int i = recentOwners.Count - 1; i >= 0; i--)
@@ -270,13 +311,34 @@ namespace PawnDiary.Ingestion
         /// <summary>Flushes every staged raid before save so transient state never loses a story.</summary>
         public static void FlushAll()
         {
-            while (pending.Count > 0) FlushOldest();
+            while (pending.Count > 0)
+                FlushOldest(DiaryTelemetryOutcome.CorrelationReleased);
+            if (recentOwners.Count > 0)
+            {
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.CorrelationReleased,
+                    "correlation.quick_aid",
+                    "permit_owner",
+                    null,
+                    -1,
+                    recentOwners.Count);
+            }
             recentOwners.Clear();
         }
 
         /// <summary>Drops cross-game state after a new-game/load/menu lifecycle boundary.</summary>
         public static void Reset()
         {
+            if (pending.Count > 0)
+            {
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.CorrelationResetDropped,
+                    "correlation.quick_aid",
+                    "raid",
+                    null,
+                    -1,
+                    pending.Count);
+            }
             pending.Clear();
             recentOwners.Clear();
             nextCorrelationId = 0;
@@ -296,7 +358,7 @@ namespace PawnDiary.Ingestion
             dispatchOverrideForTests = callback;
         }
 
-        private static void FlushOldest()
+        private static void FlushOldest(DiaryTelemetryOutcome outcome)
         {
             if (pending.Count == 0) return;
             int oldest = 0;
@@ -308,8 +370,15 @@ namespace PawnDiary.Ingestion
                             pending[i].snapshot.correlationId,
                             pending[oldest].snapshot.correlationId) < 0)) oldest = i;
             }
+            int tick = pending[oldest].snapshot.tick;
             RaidFanoutSignal signal = pending[oldest].signal;
             pending.RemoveAt(oldest);
+            DiaryTelemetry.Record(
+                outcome,
+                "correlation.quick_aid",
+                "raid",
+                null,
+                tick);
             DispatchFallback(signal);
         }
 

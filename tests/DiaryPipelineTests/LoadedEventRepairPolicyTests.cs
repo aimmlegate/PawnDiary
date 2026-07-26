@@ -31,6 +31,10 @@ namespace DiaryPipelineTests
                 "loaded repair reports only retained rows whose IDs were minted on load",
                 new[] { 4, 6, 0 },
                 plan.repairedIdSourceIndexes);
+            AssertEqual("loaded repair counts null/blank invalid rows", 2, plan.invalidRowCount);
+            AssertEqual("loaded repair counts duplicate event ids", 1, plan.duplicateEventIdCount);
+            AssertEqual("loaded repair has no duplicate source index in first fixture",
+                0, plan.duplicateSourceIndexCount);
 
             plan = LoadedEventRepairPolicy.Plan(
                 new List<LoadedEventIdentity>
@@ -43,6 +47,7 @@ namespace DiaryPipelineTests
                 "equal-tick rows retain original source order",
                 new[] { 0, 1, 2 },
                 plan.retainedSourceIndexes);
+            AssertEqual("healthy repair discards no rows", 0, plan.DiscardedRowCount);
 
             plan = LoadedEventRepairPolicy.Plan(null);
             AssertEqual(
@@ -53,6 +58,7 @@ namespace DiaryPipelineTests
                 "null loaded identity input yields an empty repaired-id plan",
                 0,
                 plan.repairedIdSourceIndexes.Count);
+            AssertEqual("null input reports no discarded rows", 0, plan.DiscardedRowCount);
 
             plan = LoadedEventRepairPolicy.Plan(
                 new List<LoadedEventIdentity>
@@ -67,6 +73,11 @@ namespace DiaryPipelineTests
                 "invalid, out-of-range, and repeated source indexes plus blank IDs are rejected",
                 new[] { 3 },
                 plan.retainedSourceIndexes);
+            AssertEqual("invalid source/blank rows are counted", 3, plan.invalidRowCount);
+            AssertEqual("repeated source indexes are counted separately",
+                1, plan.duplicateSourceIndexCount);
+            AssertEqual("second invalid fixture has no duplicate event id",
+                0, plan.duplicateEventIdCount);
         }
 
         private static LoadedEventIdentity Row(

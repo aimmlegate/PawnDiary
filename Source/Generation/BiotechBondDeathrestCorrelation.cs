@@ -119,6 +119,12 @@ namespace PawnDiary
                 epoch = snapshot.bondEpoch
             };
             Scopes.Add(root);
+            DiaryTelemetry.Record(
+                DiaryTelemetryOutcome.CorrelationScopeStarted,
+                "correlation.psychic_bond",
+                "canonical",
+                null,
+                snapshot.observedTick);
             return new BiotechBondCallState
             {
                 scope = root,
@@ -133,6 +139,13 @@ namespace PawnDiary
         {
             if (state?.scope == null || !state.isRoot) return;
             state.scope.committed = true;
+            DiaryTelemetry.Record(
+                DiaryTelemetryOutcome.CorrelationCommitted,
+                "correlation.psychic_bond",
+                "canonical",
+                null,
+                tick,
+                Math.Max(1, state.scope.stagedSignals.Count));
             state.scope.stagedSignals.Clear();
         }
 
@@ -214,6 +227,19 @@ namespace PawnDiary
 
         internal static void Clear()
         {
+            int dropped = 0;
+            for (int i = 0; i < Scopes.Count; i++)
+                dropped += Scopes[i].stagedSignals.Count;
+            if (dropped > 0)
+            {
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.CorrelationResetDropped,
+                    "correlation.psychic_bond",
+                    "nested_signal",
+                    null,
+                    -1,
+                    dropped);
+            }
             Scopes.Clear();
             BiotechPsychicBondGeneRemovalScope.Clear();
         }
@@ -254,11 +280,27 @@ namespace PawnDiary
             if (signal == null) return;
             signal.PreserveHistoricalOrdering(signal.Payload?.Tick ?? Math.Max(0, tick));
             destination.Add(signal);
+            DiaryTelemetry.Record(
+                DiaryTelemetryOutcome.CorrelationSignalStaged,
+                "correlation.psychic_bond",
+                signal.GetType().Name,
+                null,
+                tick);
         }
 
         private static void Release(List<DiarySignal> staged)
         {
             if (staged == null) return;
+            if (staged.Count > 0)
+            {
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.CorrelationReleased,
+                    "correlation.psychic_bond",
+                    "nested_signal",
+                    null,
+                    -1,
+                    staged.Count);
+            }
             for (int i = 0; i < staged.Count; i++)
             {
                 DiarySignal signal = staged[i];
@@ -285,6 +327,12 @@ namespace PawnDiary
                 pawnId = snapshot.pawnId
             };
             Scopes.Add(scope);
+            DiaryTelemetry.Record(
+                DiaryTelemetryOutcome.CorrelationScopeStarted,
+                "correlation.deathrest",
+                "canonical",
+                null,
+                snapshot.observedTick);
             return new BiotechDeathrestCallState { pawn = pawn, snapshot = snapshot, scope = scope };
         }
 
@@ -302,6 +350,12 @@ namespace PawnDiary
                 if (Scopes[i].pawnId != pawnId) continue;
                 signal.PreserveHistoricalOrdering(signal.Payload?.Tick ?? Math.Max(0, tick));
                 Scopes[i].stagedSignals.Add(signal);
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.CorrelationSignalStaged,
+                    "correlation.deathrest",
+                    signal.GetType().Name,
+                    null,
+                    tick);
                 return true;
             }
             return false;
@@ -314,6 +368,13 @@ namespace PawnDiary
         {
             if (state?.scope == null) return;
             state.scope.committed = true;
+            DiaryTelemetry.Record(
+                DiaryTelemetryOutcome.CorrelationCommitted,
+                "correlation.deathrest",
+                "canonical",
+                null,
+                tick,
+                Math.Max(1, state.scope.stagedSignals.Count));
             state.scope.stagedSignals.Clear();
         }
 
@@ -323,6 +384,16 @@ namespace PawnDiary
             Scopes.Remove(state.scope);
             if (!state.scope.committed)
             {
+                if (state.scope.stagedSignals.Count > 0)
+                {
+                    DiaryTelemetry.Record(
+                        DiaryTelemetryOutcome.CorrelationReleased,
+                        "correlation.deathrest",
+                        "nested_signal",
+                        null,
+                        -1,
+                        state.scope.stagedSignals.Count);
+                }
                 for (int i = 0; i < state.scope.stagedSignals.Count; i++)
                 {
                     DiarySignal signal = state.scope.stagedSignals[i];
@@ -342,6 +413,19 @@ namespace PawnDiary
 
         internal static void Clear()
         {
+            int dropped = 0;
+            for (int i = 0; i < Scopes.Count; i++)
+                dropped += Scopes[i].stagedSignals.Count;
+            if (dropped > 0)
+            {
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.CorrelationResetDropped,
+                    "correlation.deathrest",
+                    "nested_signal",
+                    null,
+                    -1,
+                    dropped);
+            }
             Scopes.Clear();
         }
     }

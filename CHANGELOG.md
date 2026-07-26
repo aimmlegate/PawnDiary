@@ -8,6 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-07-26
 
+- **Runtime event telemetry and integrity auditing.** Added bounded privacy-safe outcome counters, exception fingerprints, queue/result and correlation lifecycle breadcrumbs, duplicate/partial-commit detection, load/save repository audits, and developer-export diagnostics.
 - **Anomaly Brainwipe memory reset.** The delayed outcome clears the target's personal diary pages and narrative memories, then starts a new arrival-style history with an anxious amnesiac awakening while preserving player-configured voice and generation settings.
 - **UI, transport, and verification hardening.** Bounded and cancelled LLM work, preserved cooldown/concurrency contracts, made diary layouts and caches session-safe and narrow-screen friendly, and added socket-free networking/UI tests plus explicit loaded-test evidence.
 - **Pure-boundary and RNG isolation hardening.** Added executable architecture, structured-context, and RNG contracts; extracted deterministic loaded-event repair planning; and compiled outer-stream/load-repair RimTests.

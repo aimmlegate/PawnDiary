@@ -23,6 +23,15 @@ using Verse;
 
 namespace PawnDiary
 {
+    /// <summary>Result of trying to insert one newly created event into the hot repository.</summary>
+    internal enum DiaryEventRegistrationOutcome
+    {
+        Registered,
+        InvalidEvent,
+        InvalidEventId,
+        DuplicateEventId
+    }
+
     /// <summary>
     /// The saved store of every <see cref="DiaryEvent"/> across all pawns, plus the O(1) id->event
     /// lookup index that mirrors it. Constructed and owned by <see cref="DiaryGameComponent"/>, which
@@ -49,6 +58,13 @@ namespace PawnDiary
         {
             get { return diaryEvents.Count; }
         }
+
+        /// <summary>
+        /// Monotonic count of successful runtime registrations. Dispatch compares this around Emit so
+        /// an exception after persistence began is distinguishable even when retention keeps Count flat.
+        /// Transient and intentionally not serialized.
+        /// </summary>
+        public long RegistrationVersion { get; private set; }
 
         /// <summary>
         /// Read-only view of the master list in tick/insertion order. Use this for scans that need
@@ -105,15 +121,28 @@ namespace PawnDiary
 
         /// <summary>
         /// Adds a freshly created event to both the master list and the lookup index, keeping the two
-        /// in sync. Null events are ignored. First registration of an id wins (matching the old
-        /// load behavior); ids are GUIDs, so duplicate ids are not expected, but keeping the first
-        /// preserves the previous semantics if any ever occur.
+        /// in sync. Invalid rows and duplicate ids are rejected before the list changes; callers can
+        /// surface that impossible runtime state instead of silently leaving a duplicate list row whose
+        /// lookup resolves to some other event.
         /// </summary>
-        public void Register(DiaryEvent diaryEvent)
+        public DiaryEventRegistrationOutcome Register(DiaryEvent diaryEvent)
         {
             if (diaryEvent == null)
             {
-                return;
+                return DiaryEventRegistrationOutcome.InvalidEvent;
+            }
+
+            if (string.IsNullOrWhiteSpace(diaryEvent.eventId))
+            {
+                return DiaryEventRegistrationOutcome.InvalidEventId;
+            }
+
+            // Ordinarily PostLoadInit already rebuilt the index. This guard covers a modded callback
+            // that attempts registration unusually early during load without permitting a duplicate.
+            EnsureIndexReady();
+            if (eventsById.ContainsKey(diaryEvent.eventId))
+            {
+                return DiaryEventRegistrationOutcome.DuplicateEventId;
             }
 
             // Most events arrive in chronological order and stay on the O(1) append path. Delayed
@@ -146,10 +175,9 @@ namespace PawnDiary
             }
 
             diaryEvents.Insert(insertAt, diaryEvent);
-            if (!string.IsNullOrWhiteSpace(diaryEvent.eventId) && !eventsById.ContainsKey(diaryEvent.eventId))
-            {
-                eventsById[diaryEvent.eventId] = diaryEvent;
-            }
+            eventsById[diaryEvent.eventId] = diaryEvent;
+            RegistrationVersion++;
+            return DiaryEventRegistrationOutcome.Registered;
         }
 
         /// <summary>
@@ -260,6 +288,16 @@ namespace PawnDiary
         /// </summary>
         public IReadOnlyList<DiaryEvent> RepairLoadedEvents()
         {
+            LoadedEventRepairPlan ignored;
+            return RepairLoadedEvents(out ignored);
+        }
+
+        /// <summary>
+        /// Repair overload that also returns identifier-free discard/re-identification counts for
+        /// telemetry. The returned plan contains source indexes only and never leaves this load path.
+        /// </summary>
+        public IReadOnlyList<DiaryEvent> RepairLoadedEvents(out LoadedEventRepairPlan repairPlan)
+        {
             // Project the mutable save rows into plain facts first. Ordering/deduplication belongs to the
             // pure policy; this repository remains responsible only for mapping its plan back to models.
             List<LoadedEventIdentity> identities =
@@ -277,7 +315,7 @@ namespace PawnDiary
                 });
             }
 
-            LoadedEventRepairPlan repairPlan = LoadedEventRepairPolicy.Plan(identities);
+            repairPlan = LoadedEventRepairPolicy.Plan(identities);
             List<DiaryEvent> retained =
                 new List<DiaryEvent>(repairPlan.retainedSourceIndexes.Count);
             List<DiaryEvent> repairedIds =

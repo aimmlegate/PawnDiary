@@ -938,12 +938,20 @@ namespace PawnDiary
         {
             if (request == null || string.IsNullOrWhiteSpace(request.eventId) || string.IsNullOrWhiteSpace(request.povRole))
             {
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.LlmQueueInvalid,
+                    "llm.enqueue",
+                    RequestKind(request));
                 return;
             }
 
             LlmTransportSession session = currentSession;
             if (!session.AcceptsGeneration || session.Cancellation.IsCancellationRequested)
             {
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.LlmQueueInactive,
+                    "llm.enqueue",
+                    RequestKind(request));
                 return;
             }
 
@@ -955,6 +963,10 @@ namespace PawnDiary
             string pendingKey = PendingKey(request.eventId, request.povRole, request.sessionId, request.isTitleRequest);
             if (!session.PendingKeys.TryAdd(pendingKey, 0)) // same event+role+session+kind is already queued
             {
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.LlmQueueDuplicate,
+                    "llm.enqueue",
+                    RequestKind(request));
                 LogDebug("Skipped duplicate queued request event=" + request.eventId + " role=" + request.povRole + " session=" + request.sessionId);
                 return;
             }
@@ -962,6 +974,10 @@ namespace PawnDiary
             if (!session.WorkQueue.TryEnqueue(request))
             {
                 session.PendingKeys.TryRemove(pendingKey, out _);
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.LlmQueueFull,
+                    "llm.enqueue",
+                    RequestKind(request));
                 Completed.Enqueue(new LlmGenerationResult
                 {
                     eventId = request.eventId,
@@ -976,8 +992,22 @@ namespace PawnDiary
                 return;
             }
 
+            DiaryTelemetry.Record(
+                DiaryTelemetryOutcome.LlmQueueAccepted,
+                "llm.enqueue",
+                RequestKind(request));
             LogDebug("Enqueued request event=" + request.eventId + " role=" + request.povRole + " primary=" + LaneLabel(request));
             EnsureDispatchWorkers(session);
+        }
+
+        private static string RequestKind(LlmGenerationRequest request)
+        {
+            if (request == null)
+            {
+                return "unknown";
+            }
+
+            return request.isTitleRequest ? "title" : "main";
         }
 
         /// <summary>

@@ -39,6 +39,10 @@ namespace PawnDiary
         // cannot evict a still-live long-window key (see RecentEventExpiry). Not saved; cleared on
         // StartedNewGame/LoadedGame alongside the other transient state.
         private readonly Dictionary<string, RecentEventEntry> recentEvents = new Dictionary<string, RecentEventEntry>();
+        // Enum.ToString allocates on every candidate. Cache the stable event-type labels once because
+        // telemetry runs on the same high-frequency path as dedup and catalog selection.
+        private static readonly string[] TelemetryEventTypeNames =
+            BuildTelemetryEventTypeNames();
 
         /// <summary>
         /// Runs one captured event through the shared pipeline. Called by
@@ -55,13 +59,59 @@ namespace PawnDiary
         /// </returns>
         internal bool Dispatch(DiarySignal signal)
         {
+            string source = SignalTypeName(signal);
+            long registrationBefore = events.RegistrationVersion;
+            try
+            {
+                return DispatchCore(signal, source);
+            }
+            catch (Exception exception)
+            {
+                bool committed = events.RegistrationVersion > registrationBefore;
+                DiaryTelemetryOutcome outcome = committed
+                    ? DiaryTelemetryOutcome.DispatchExceptionAfterCommit
+                    : DiaryTelemetryOutcome.DispatchException;
+                string fingerprint = DiaryTelemetryReporter.RecordException(
+                    outcome,
+                    "dispatch",
+                    source,
+                    null,
+                    exception,
+                    DiaryTelemetryReporter.CurrentGameTick());
+                Log.ErrorOnce(
+                    "[Pawn Diary] " + source + " dispatch failed and was skipped"
+                    + (committed ? " after event persistence began" : string.Empty)
+                    + ": " + exception,
+                    DiaryTelemetryReporter.ErrorOnceKey(
+                        "PawnDiary.Dispatch." + source,
+                        fingerprint));
+                if (committed)
+                {
+                    RunDiaryIntegrityAudit("dispatch_exception", true);
+                }
+                return false;
+            }
+        }
+
+        private bool DispatchCore(DiarySignal signal, string source)
+        {
             if (signal == null || !CanRecordGameplayEventNow())
             {
+                RecordSignalOutcome(
+                    DiaryTelemetryOutcome.DispatchNotReady,
+                    "dispatch.guard",
+                    signal,
+                    null);
                 return false;
             }
 
             if (!EnsureStartingArrivalsBefore(signal))
             {
+                RecordSignalOutcome(
+                    DiaryTelemetryOutcome.StartingArrivalBlocked,
+                    "dispatch.arrival_bootstrap",
+                    signal,
+                    null);
                 return false;
             }
 
@@ -82,6 +132,11 @@ namespace PawnDiary
                 && !string.IsNullOrEmpty(key)
                 && IsRecentlyRecorded(recentEvents, key, windowTicks))
             {
+                RecordSignalOutcome(
+                    DiaryTelemetryOutcome.SourceDuplicate,
+                    "dispatch.source_dedup",
+                    signal,
+                    null);
                 return false;
             }
 
@@ -94,6 +149,11 @@ namespace PawnDiary
             DiaryEventData payload = signal.Payload;
             if (payload == null)
             {
+                RecordSignalOutcome(
+                    DiaryTelemetryOutcome.PayloadUnavailable,
+                    "dispatch.payload",
+                    signal,
+                    null);
                 return false;
             }
 
@@ -103,14 +163,25 @@ namespace PawnDiary
                 decision = ForcedDecisionFor(payload);
                 if (decision == CaptureDecision.Drop)
                 {
+                    RecordSignalOutcome(
+                        DiaryTelemetryOutcome.ForcedSignalUnsupported,
+                        "dispatch.decision",
+                        signal,
+                        payload);
                     return false;
                 }
             }
             else
             {
                 CaptureContext context = signal.BuildContext();
-                if (!TryDecide(payload, context, out decision))
+                DiaryTelemetryOutcome dropOutcome;
+                if (!TryDecide(payload, context, out decision, out dropOutcome))
                 {
+                    RecordSignalOutcome(
+                        dropOutcome,
+                        "dispatch.decision",
+                        signal,
+                        payload);
                     // Page policy and knowledge policy are intentionally independent, but semantic
                     // rejection still applies to both. Relax only page switches and re-run the pure
                     // reducer before invoking an allowlisted signal's no-page adapter. This prevents
@@ -119,6 +190,11 @@ namespace PawnDiary
                     if (DiaryKnowledgeCapturePolicy.ShouldCaptureWithoutPage(payload, context))
                     {
                         signal.CaptureKnowledgeWithoutPage(this);
+                        RecordSignalOutcome(
+                            DiaryTelemetryOutcome.KnowledgeCapturedWithoutPage,
+                            "dispatch.knowledge_only",
+                            signal,
+                            payload);
                     }
 
                     return false;
@@ -131,6 +207,11 @@ namespace PawnDiary
                 && !string.IsNullOrEmpty(eventTypeKey)
                 && IsRecentlyRecorded(recentEvents, eventTypeKey, eventTypeWindowTicks))
             {
+                RecordSignalOutcome(
+                    DiaryTelemetryOutcome.EventTypeDuplicate,
+                    "dispatch.event_type_dedup",
+                    signal,
+                    payload);
                 return false;
             }
 
@@ -146,7 +227,35 @@ namespace PawnDiary
                 MarkRecentlyRecorded(recentEvents, eventTypeKey, eventTypeWindowTicks);
             }
 
-            EmitWithLowSaliencePacing(signal, payload, decision);
+            long registrationBeforeEmit = events.RegistrationVersion;
+            DiaryTelemetryOutcome emitOutcome =
+                EmitWithLowSaliencePacing(signal, payload, decision);
+            long registrations = events.RegistrationVersion - registrationBeforeEmit;
+            if (emitOutcome == DiaryTelemetryOutcome.EventRecorded && registrations == 0)
+            {
+                RecordSignalOutcome(
+                    DiaryTelemetryOutcome.EmitCompletedWithoutEvent,
+                    "dispatch.emit",
+                    signal,
+                    payload);
+            }
+            else if (registrations > 1)
+            {
+                RecordSignalOutcome(
+                    DiaryTelemetryOutcome.EmitCreatedMultipleEvents,
+                    "dispatch.emit",
+                    signal,
+                    payload,
+                    registrations);
+            }
+            else
+            {
+                RecordSignalOutcome(
+                    emitOutcome,
+                    "dispatch.emit",
+                    signal,
+                    payload);
+            }
             return true;
         }
 
@@ -159,13 +268,60 @@ namespace PawnDiary
         /// </summary>
         internal void Dispatch(DiaryFanoutSignal signal)
         {
+            string source = signal?.GetType().Name ?? "null";
+            long registrationBefore = events.RegistrationVersion;
+            try
+            {
+                DispatchFanoutCore(signal, source);
+            }
+            catch (Exception exception)
+            {
+                bool committed = events.RegistrationVersion > registrationBefore;
+                DiaryTelemetryOutcome outcome = committed
+                    ? DiaryTelemetryOutcome.DispatchExceptionAfterCommit
+                    : DiaryTelemetryOutcome.DispatchException;
+                string fingerprint = DiaryTelemetryReporter.RecordException(
+                    outcome,
+                    "fanout.dispatch",
+                    source,
+                    null,
+                    exception,
+                    DiaryTelemetryReporter.CurrentGameTick());
+                Log.ErrorOnce(
+                    "[Pawn Diary] " + source + " fan-out dispatch failed"
+                    + (committed ? " after event persistence began" : string.Empty)
+                    + ": " + exception,
+                    DiaryTelemetryReporter.ErrorOnceKey(
+                        "PawnDiary.Fanout." + source,
+                        fingerprint));
+                if (committed)
+                {
+                    RunDiaryIntegrityAudit("fanout_dispatch_exception", true);
+                }
+            }
+        }
+
+        private void DispatchFanoutCore(DiaryFanoutSignal signal, string source)
+        {
             if (signal == null || !CanRecordGameplayEventNow())
             {
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.DispatchNotReady,
+                    "fanout.guard",
+                    source,
+                    null,
+                    DiaryTelemetryReporter.CurrentGameTick());
                 return;
             }
 
             if (!EnsureStartingArrivalsBefore(signal))
             {
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.StartingArrivalBlocked,
+                    "fanout.arrival_bootstrap",
+                    source,
+                    null,
+                    DiaryTelemetryReporter.CurrentGameTick());
                 return;
             }
 
@@ -174,6 +330,12 @@ namespace PawnDiary
             if (!string.IsNullOrEmpty(colonyKey)
                 && IsRecentlyRecorded(recentEvents, colonyKey, colonyTicks))
             {
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.SourceDuplicate,
+                    "fanout.colony_dedup",
+                    source,
+                    null,
+                    DiaryTelemetryReporter.CurrentGameTick());
                 return;
             }
 
@@ -187,34 +349,89 @@ namespace PawnDiary
                     string childType = child?.GetType().FullName ?? "null";
                     string errorKey = "PawnDiary.FanoutChild." + signal.GetType().FullName
                         + "." + childType;
+                    string fingerprint = DiaryTelemetryReporter.FingerprintException(
+                        "fanout.child",
+                        childType,
+                        null,
+                        exception);
                     Log.ErrorOnce(
                         "[Pawn Diary] Skipped one fan-out child after its payload, context, or emit "
                         + "failed; remaining pawns were still attempted: " + exception,
-                        errorKey.GetHashCode());
+                        DiaryTelemetryReporter.ErrorOnceKey(errorKey, fingerprint));
                 });
 
             if (emittedCount > 0 && !string.IsNullOrEmpty(colonyKey))
             {
                 MarkRecentlyRecorded(recentEvents, colonyKey, colonyTicks);
             }
+            DiaryTelemetry.Record(
+                DiaryTelemetryOutcome.FanoutCompleted,
+                "fanout.dispatch",
+                source,
+                null,
+                DiaryTelemetryReporter.CurrentGameTick());
         }
 
         private bool TryDispatchFanoutChild(DiarySignal child)
         {
+            string source = SignalTypeName(child);
+            long registrationBefore = events.RegistrationVersion;
+            try
+            {
+                return TryDispatchFanoutChildCore(child);
+            }
+            catch (Exception exception)
+            {
+                bool committed = events.RegistrationVersion > registrationBefore;
+                DiaryTelemetryReporter.RecordException(
+                    committed
+                        ? DiaryTelemetryOutcome.FanoutChildExceptionAfterCommit
+                        : DiaryTelemetryOutcome.FanoutChildException,
+                    "fanout.child",
+                    source,
+                    null,
+                    exception,
+                    DiaryTelemetryReporter.CurrentGameTick());
+                if (committed)
+                {
+                    RunDiaryIntegrityAudit("fanout_child_exception", true);
+                }
+                throw;
+            }
+        }
+
+        private bool TryDispatchFanoutChildCore(DiarySignal child)
+        {
             if (child == null)
             {
+                RecordSignalOutcome(
+                    DiaryTelemetryOutcome.PayloadUnavailable,
+                    "fanout.child",
+                    null,
+                    null);
                 return false;
             }
 
             DiaryEventData childPayload = child.Payload;
             if (childPayload == null)
             {
+                RecordSignalOutcome(
+                    DiaryTelemetryOutcome.PayloadUnavailable,
+                    "fanout.payload",
+                    child,
+                    null);
                 return false;
             }
 
             CaptureDecision decision;
-            if (!TryDecide(childPayload, child.BuildContext(), out decision))
+            DiaryTelemetryOutcome dropOutcome;
+            if (!TryDecide(childPayload, child.BuildContext(), out decision, out dropOutcome))
             {
+                RecordSignalOutcome(
+                    dropOutcome,
+                    "fanout.decision",
+                    child,
+                    childPayload);
                 return false;
             }
 
@@ -225,6 +442,11 @@ namespace PawnDiary
             if (!string.IsNullOrEmpty(childKey)
                 && IsRecentlyRecorded(recentEvents, childKey, child.DedupWindowTicks))
             {
+                RecordSignalOutcome(
+                    DiaryTelemetryOutcome.SourceDuplicate,
+                    "fanout.source_dedup",
+                    child,
+                    childPayload);
                 return false;
             }
 
@@ -234,6 +456,11 @@ namespace PawnDiary
             if (!string.IsNullOrEmpty(childEventTypeKey)
                 && IsRecentlyRecorded(recentEvents, childEventTypeKey, childEventTypeWindowTicks))
             {
+                RecordSignalOutcome(
+                    DiaryTelemetryOutcome.EventTypeDuplicate,
+                    "fanout.event_type_dedup",
+                    child,
+                    childPayload);
                 return false;
             }
 
@@ -248,7 +475,35 @@ namespace PawnDiary
             {
                 MarkRecentlyRecorded(recentEvents, childEventTypeKey, childEventTypeWindowTicks);
             }
-            EmitWithLowSaliencePacing(child, childPayload, decision);
+            long registrationBeforeEmit = events.RegistrationVersion;
+            DiaryTelemetryOutcome emitOutcome =
+                EmitWithLowSaliencePacing(child, childPayload, decision);
+            long registrations = events.RegistrationVersion - registrationBeforeEmit;
+            if (emitOutcome == DiaryTelemetryOutcome.EventRecorded && registrations == 0)
+            {
+                RecordSignalOutcome(
+                    DiaryTelemetryOutcome.EmitCompletedWithoutEvent,
+                    "fanout.emit",
+                    child,
+                    childPayload);
+            }
+            else if (registrations > 1)
+            {
+                RecordSignalOutcome(
+                    DiaryTelemetryOutcome.EmitCreatedMultipleEvents,
+                    "fanout.emit",
+                    child,
+                    childPayload,
+                    registrations);
+            }
+            else
+            {
+                RecordSignalOutcome(
+                    emitOutcome,
+                    "fanout.emit",
+                    child,
+                    childPayload);
+            }
 
             // The colony window closes on a CONSUMED child, not only on a visible page: a child the
             // B6 soft cap folded into a digest was still handled, and re-running the fan-out for it
@@ -266,7 +521,7 @@ namespace PawnDiary
         /// the cap is on, and EVERY diarist it belongs to is already at their daily limit, so a shared
         /// pair page is never half-visible. The count advances only after a real emit.
         /// </summary>
-        private void EmitWithLowSaliencePacing(
+        private DiaryTelemetryOutcome EmitWithLowSaliencePacing(
             DiarySignal signal, DiaryEventData payload, CaptureDecision decision)
         {
             // Cheapest gates first: the tuning read and the decision test are free, while IsLowSalience
@@ -285,7 +540,7 @@ namespace PawnDiary
                 // Batched/ambient routes never produced a page of their own, and important or combat
                 // moments are exempt by design, so both skip pacing entirely.
                 signal.Emit(this, decision);
-                return;
+                return TelemetryOutcomeForDecision(decision);
             }
 
             List<string> writers = new List<string>(2);
@@ -305,7 +560,7 @@ namespace PawnDiary
                     RecordLowSalienceEmission(writers[i], day);
                 }
 
-                return;
+                return DiaryTelemetryOutcome.EventRecorded;
             }
 
             int tick = Find.TickManager.TicksGame;
@@ -315,6 +570,7 @@ namespace PawnDiary
                 AddDayDigestLine(
                     writers[i], day, sourceKind, signal.BuildDigestLineForPawn(writers[i]), tick);
             }
+            return DiaryTelemetryOutcome.FoldedIntoDayDigest;
         }
 
         /// <summary>
@@ -427,22 +683,97 @@ namespace PawnDiary
         /// pure Decide. Returns false (and a Drop decision) when the payload is missing, no Spec is
         /// registered, or the decision is Drop — the three cases where the caller should stop.
         /// </summary>
-        private static bool TryDecide(DiaryEventData payload, CaptureContext ctx, out CaptureDecision decision)
+        private static bool TryDecide(
+            DiaryEventData payload,
+            CaptureContext ctx,
+            out CaptureDecision decision,
+            out DiaryTelemetryOutcome dropOutcome)
         {
             decision = CaptureDecision.Drop;
+            dropOutcome = DiaryTelemetryOutcome.PolicyDropped;
             if (payload == null)
             {
+                dropOutcome = DiaryTelemetryOutcome.PayloadUnavailable;
                 return false;
             }
 
             DiaryEventSpec spec = DiaryEventCatalog.Get(payload.EventType);
             if (spec == null)
             {
+                dropOutcome = DiaryTelemetryOutcome.CatalogMissing;
                 return false;
             }
 
             decision = spec.Decide(payload, ctx);
             return decision != CaptureDecision.Drop;
+        }
+
+        private static DiaryTelemetryOutcome TelemetryOutcomeForDecision(CaptureDecision decision)
+        {
+            switch (decision)
+            {
+                case CaptureDecision.RouteBatch:
+                    return DiaryTelemetryOutcome.RoutedBatch;
+                case CaptureDecision.RouteAmbient:
+                    return DiaryTelemetryOutcome.RoutedAmbient;
+                case CaptureDecision.RouteDayReflection:
+                    return DiaryTelemetryOutcome.RoutedDayReflection;
+                default:
+                    return DiaryTelemetryOutcome.EventRecorded;
+            }
+        }
+
+        private static void RecordSignalOutcome(
+            DiaryTelemetryOutcome outcome,
+            string stage,
+            DiarySignal signal,
+            DiaryEventData payload,
+            long count = 1)
+        {
+            DiaryTelemetry.Record(
+                outcome,
+                stage,
+                SignalTypeName(signal),
+                TelemetryEventTypeName(payload),
+                payload?.Tick ?? -1,
+                count);
+        }
+
+        private static string SignalTypeName(DiarySignal signal)
+        {
+            return signal?.GetType().Name ?? "null";
+        }
+
+        private static string TelemetryEventTypeName(DiaryEventData payload)
+        {
+            if (payload == null)
+            {
+                return null;
+            }
+
+            int index = (int)payload.EventType;
+            return index >= 0 && index < TelemetryEventTypeNames.Length
+                && TelemetryEventTypeNames[index] != null
+                ? TelemetryEventTypeNames[index]
+                : "unknown";
+        }
+
+        private static string[] BuildTelemetryEventTypeNames()
+        {
+            DiaryEventType[] values =
+                (DiaryEventType[])Enum.GetValues(typeof(DiaryEventType));
+            int maximum = 0;
+            for (int i = 0; i < values.Length; i++)
+            {
+                maximum = Math.Max(maximum, (int)values[i]);
+            }
+
+            string[] names = new string[maximum + 1];
+            for (int i = 0; i < values.Length; i++)
+            {
+                names[(int)values[i]] = values[i].ToString();
+            }
+            return names;
         }
     }
 }

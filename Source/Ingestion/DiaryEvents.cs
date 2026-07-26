@@ -21,10 +21,24 @@ namespace PawnDiary.Ingestion
         {
             if (signal == null)
             {
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.SubmitNull,
+                    "submit.solo",
+                    "null");
                 return;
             }
 
-            DiaryGameComponent.Instance?.Dispatch(signal);
+            DiaryGameComponent component = DiaryGameComponent.Instance;
+            if (component == null)
+            {
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.SubmitWithoutGame,
+                    "submit.solo",
+                    signal.GetType().Name);
+                return;
+            }
+
+            component.Dispatch(signal);
         }
 
         /// <summary>Submits a colony-wide event that fans out to one entry per eligible colonist.</summary>
@@ -32,10 +46,24 @@ namespace PawnDiary.Ingestion
         {
             if (signal == null)
             {
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.SubmitNull,
+                    "submit.fanout",
+                    "null");
                 return;
             }
 
-            DiaryGameComponent.Instance?.Dispatch(signal);
+            DiaryGameComponent component = DiaryGameComponent.Instance;
+            if (component == null)
+            {
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.SubmitWithoutGame,
+                    "submit.fanout",
+                    signal.GetType().Name);
+                return;
+            }
+
+            component.Dispatch(signal);
         }
     }
 }

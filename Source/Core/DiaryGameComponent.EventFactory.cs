@@ -251,9 +251,10 @@ namespace PawnDiary
                 initiatorCapture?.textDecorationFacts ?? PawnFactCapture.TextDecorationFacts(initiator));
             diaryEvent.SetTextDecorationFacts(DiaryEvent.RecipientRole,
                 recipientCapture?.textDecorationFacts ?? PawnFactCapture.TextDecorationFacts(recipient));
-            events.Register(diaryEvent);
+            RegisterNewEventOrThrow(diaryEvent);
             AddEventRef(initiator, diaryEvent.eventId, historicalTick >= 0);
             AddEventRef(recipient, diaryEvent.eventId, historicalTick >= 0);
+            ValidateNewEventCommit(diaryEvent);
             ApplyDiaryEventLimits();
             // Retrieval runs BEFORE capture so this event can never surface the very record it is
             // about to deposit (belt-and-braces beside the selector's self-echo guard).
@@ -457,8 +458,9 @@ namespace PawnDiary
                 pawnCapture?.staggeredIntensity ?? PawnFactCapture.StaggeredIntensity(pawn));
             diaryEvent.SetTextDecorationFacts(DiaryEvent.InitiatorRole,
                 pawnCapture?.textDecorationFacts ?? PawnFactCapture.TextDecorationFacts(pawn));
-            events.Register(diaryEvent);
+            RegisterNewEventOrThrow(diaryEvent);
             AddEventRef(pawn, diaryEvent.eventId, historicalTick >= 0);
+            ValidateNewEventCommit(diaryEvent);
             ApplyDiaryEventLimits();
             // Retrieval runs BEFORE capture so this event can never surface the very record it is
             // about to deposit (belt-and-braces beside the selector's self-echo guard).

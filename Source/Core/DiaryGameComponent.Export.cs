@@ -66,6 +66,7 @@ namespace PawnDiary
 
             AppendPawnDiaryExports(sb);
             AppendEventRecordExports(sb, allEvents);
+            AppendRuntimeDiagnosticsExport(sb);
             return sb.ToString();
         }
 

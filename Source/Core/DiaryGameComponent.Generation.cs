@@ -234,6 +234,12 @@ namespace PawnDiary
                 diaryEvent.ResetPendingToNotGenerated(povRole);
                 NotifyEntryStatusChanged(diaryEvent, povRole);
                 RequestGenerationScan();
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.LlmPendingRecovered,
+                    "llm.orphan_recovery",
+                    povRole,
+                    diaryEvent.interactionDefName,
+                    diaryEvent.tick);
                 LogApiDebug("Recovered orphaned pending generation event=" + diaryEvent.eventId + " role=" + povRole);
             }
             else

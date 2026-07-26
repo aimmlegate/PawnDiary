@@ -15,9 +15,9 @@ namespace PawnDiary
     internal static class DiaryPatchSafety
     {
         /// <summary>
-        /// Runs a void prefix/postfix body. Any exception is logged once (keyed on <paramref name="context"/>,
-        /// so a recurring failure reports a single time instead of spamming) and swallowed, leaving the
-        /// vanilla method's own result untouched.
+        /// Runs a void prefix/postfix body. Any exception is logged once per context + exception
+        /// fingerprint (so recurring failures do not spam but distinct failures remain visible) and
+        /// swallowed, leaving the vanilla method's own result untouched.
         /// </summary>
         public static void Run(string context, Action body)
         {
@@ -94,9 +94,18 @@ namespace PawnDiary
 
         private static void LogFailure(string context, Exception e)
         {
-            // GetHashCode is deterministic within a session, which is all Log.ErrorOnce needs to dedup;
-            // one report per patch keeps a persistent failure from flooding the log.
-            Log.ErrorOnce("[Pawn Diary] " + context + " failed and was skipped: " + e, context.GetHashCode());
+            // Distinct exception paths at the same patch must remain distinguishable. The old context-only
+            // key hid a second failure mode after the first one had claimed ErrorOnce for that patch.
+            string fingerprint = DiaryTelemetryReporter.RecordException(
+                DiaryTelemetryOutcome.PatchException,
+                "harmony.patch",
+                context,
+                null,
+                e,
+                -1);
+            Log.ErrorOnce(
+                "[Pawn Diary] " + context + " failed and was skipped: " + e,
+                DiaryTelemetryReporter.ErrorOnceKey(context, fingerprint));
         }
     }
 }

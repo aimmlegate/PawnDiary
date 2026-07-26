@@ -250,6 +250,10 @@ namespace PawnDiary
             // TicksGame can repeat across different games, so drop the per-tick free-colonist snapshot
             // here (every Game construction) rather than risk reusing the previous game's list.
             ResetFreeColonistSnapshot();
+            // Runtime telemetry is also per loaded Game. Reset after old cross-game correlation state
+            // was cleared, then replay the startup hook manifest (patching ran before a Game existed).
+            DiaryTelemetry.ResetSession();
+            DiaryTelemetryReporter.RecordHookManifestForSession();
         }
 
         internal static DiaryGameComponent Instance
@@ -397,6 +401,7 @@ namespace PawnDiary
             if (Scribe.mode == LoadSaveMode.Saving)
             {
                 RunPreSaveActions();
+                RunDiaryIntegrityAudit("pre_save", true);
             }
 
             Scribe_Collections.Look(ref diaries, "diaries", LookMode.Deep);
@@ -478,10 +483,16 @@ namespace PawnDiary
                     // Repair the loaded hot list before retention. This rebuilds the unsaved lookup
                     // index, deterministically collapses duplicate ids, and reports old-save rows whose
                     // missing ids were minted during DiaryEvent.PostLoadInit.
-                    IReadOnlyList<DiaryEvent> reidentifiedEvents = events.RepairLoadedEvents();
+                    LoadedEventRepairPlan repairPlan;
+                    IReadOnlyList<DiaryEvent> reidentifiedEvents =
+                        events.RepairLoadedEvents(out repairPlan);
+                    RecordLoadedEventRepair(repairPlan);
                     // The old id could not survive in a PawnDiaryRecord ref. Reattach repaired rows to
                     // their already-saved owners before retention/pruning can discard them as orphans.
                     RepairReidentifiedEventRefs(reidentifiedEvents);
+                    // Preserve evidence of what was loaded before the normal cleanup removes dangling
+                    // refs/orphans. This stage is local-only; only issues that survive cleanup report.
+                    RunDiaryIntegrityAudit("post_load_before_cleanup", false);
                     PostLoadInitKnowledge();
                     NormalizeActiveEventWindows();
                     NormalizeActiveObservedConditions();
@@ -491,6 +502,7 @@ namespace PawnDiary
                     PruneDiaryEventRefs();
                     PruneStaleGeneratedSpeechPlayLogState();
                     RebuildCommandStatusCache();
+                    RunDiaryIntegrityAudit("post_load", true);
                 }
                 catch (Exception e)
                 {
@@ -527,9 +539,18 @@ namespace PawnDiary
                 string name = index >= 0 && index < PreSaveActionNames.Length
                     ? PreSaveActionNames[index]
                     : "unknown action " + index;
+                string fingerprint = DiaryTelemetryReporter.RecordException(
+                    DiaryTelemetryOutcome.PreSaveActionException,
+                    "pre_save." + name,
+                    "DiaryGameComponent",
+                    null,
+                    exception,
+                    DiaryTelemetryReporter.CurrentGameTick());
                 Log.ErrorOnce(
                     "[Pawn Diary] Pre-save " + name + " failed; later save actions continued: " + exception,
-                    ("DiaryGameComponent.ExposeData.Save." + index).GetHashCode());
+                    DiaryTelemetryReporter.ErrorOnceKey(
+                        "DiaryGameComponent.ExposeData.Save." + index,
+                        fingerprint));
             });
         }
 
@@ -922,7 +943,33 @@ namespace PawnDiary
             LlmGenerationResult result;
             while (LlmClient.TryDequeueCompleted(out result))
             {
-                ApplyLlmResult(result);
+                string resultKind = result?.isTitleRequest == true ? "title" : "main";
+                try
+                {
+                    DiaryTelemetryOutcome outcome = ApplyLlmResult(result);
+                    DiaryTelemetry.Record(
+                        outcome,
+                        "llm.result",
+                        resultKind,
+                        null,
+                        DiaryTelemetryReporter.CurrentGameTick());
+                }
+                catch (Exception exception)
+                {
+                    string fingerprint = DiaryTelemetryReporter.RecordException(
+                        DiaryTelemetryOutcome.LlmResultApplyException,
+                        "llm.result",
+                        resultKind,
+                        null,
+                        exception,
+                        DiaryTelemetryReporter.CurrentGameTick());
+                    Log.ErrorOnce(
+                        "[Pawn Diary] One completed LLM result failed while applying; later results "
+                        + "were still attempted: " + exception,
+                        DiaryTelemetryReporter.ErrorOnceKey(
+                            "PawnDiary.LlmResultApply." + resultKind,
+                            fingerprint));
+                }
             }
 
             // Background send workers can't call Log.Message safely (it's main-thread only), so they
