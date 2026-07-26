@@ -1,6 +1,6 @@
-// Loaded-game regression fixtures for the reusable journal's session-only filter lifecycle. These tests do
-// not draw Unity GUI: reflection invokes the exact private lifecycle seams with a hidden panel rect,
-// which is enough to prove pawn/year changes cannot leave invisible filters active.
+// Loaded-game regression fixtures for the reusable journal's per-pawn filter lifecycle. These tests do
+// not draw Unity GUI: reflection invokes the exact private state-transition seams, which is enough to
+// prove a first visit starts clean and year changes cannot leave invisible filters active.
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -15,16 +15,16 @@ namespace PawnDiary.RimTests
     public static class PawnDiaryDiaryTabFilterFixtureTests
     {
         private const BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
-        private static readonly FieldInfo FilterPawnIdField =
-            typeof(DiaryJournalView).GetField("filterPanelPawnId", PrivateInstance);
+        private static readonly FieldInfo ActivePawnIdField =
+            typeof(DiaryJournalView).GetField("activePawnUiStateId", PrivateInstance);
         private static readonly FieldInfo FavoritesOnlyField =
             typeof(DiaryJournalView).GetField("filterFavoritesOnly", PrivateInstance);
         private static readonly FieldInfo ActiveTagsField =
             typeof(DiaryJournalView).GetField("filterActiveTags", PrivateInstance);
         private static readonly FieldInfo SelectedYearField =
             typeof(DiaryJournalView).GetField("selectedYear", PrivateInstance);
-        private static readonly MethodInfo DrawFilterPanelMethod =
-            typeof(DiaryJournalView).GetMethod("DrawFilterPanel", PrivateInstance);
+        private static readonly MethodInfo ActivatePawnStateMethod =
+            typeof(DiaryJournalView).GetMethod("ActivatePawnUiState", PrivateInstance);
         private static readonly MethodInfo SelectYearMethod =
             typeof(DiaryJournalView).GetMethod("SelectYear", PrivateInstance);
 
@@ -56,29 +56,21 @@ namespace PawnDiary.RimTests
             }
         }
 
-        /// <summary>A zero-width/hidden panel must still reset the shared tab when its pawn changes.</summary>
+        /// <summary>A first visit to another pawn starts with clean filters even before any geometry draw.</summary>
         [Test]
         public static void HiddenPanelResetsFiltersBeforeGeometryReturn()
         {
             DiaryJournalView journal = new DiaryJournalView();
-            FilterPawnIdField.SetValue(journal, firstPawn.GetUniqueLoadID());
+            ActivatePawnStateMethod.Invoke(journal, new object[] { firstPawn.GetUniqueLoadID() });
             FavoritesOnlyField.SetValue(journal, true);
             ActiveTags(journal).Add("Social");
 
-            DrawFilterPanelMethod.Invoke(journal, new object[]
-            {
-                new Rect(0f, 0f, 0f, 100f),
-                DiaryReaderSubject.FromPawn(secondPawn),
-                scope.Component,
-                null,
-                null,
-                null
-            });
+            ActivatePawnStateMethod.Invoke(journal, new object[] { secondPawn.GetUniqueLoadID() });
 
             PawnDiaryRimTestScope.Require(
-                string.Equals(FilterPawnIdField.GetValue(journal) as string,
+                string.Equals(ActivePawnIdField.GetValue(journal) as string,
                     secondPawn.GetUniqueLoadID(), StringComparison.Ordinal),
-                "The hidden Diary filter panel did not advance its pawn lifecycle key.");
+                "The Diary journal did not advance its active per-pawn state key.");
             PawnDiaryRimTestScope.Require(!(bool)FavoritesOnlyField.GetValue(journal)
                     && ActiveTags(journal).Count == 0,
                 "The hidden Diary filter panel leaked the previous pawn's active filters.");
@@ -110,9 +102,9 @@ namespace PawnDiary.RimTests
 
         private static void RequireReflectionSeams()
         {
-            PawnDiaryRimTestScope.Require(FilterPawnIdField != null && FavoritesOnlyField != null
+            PawnDiaryRimTestScope.Require(ActivePawnIdField != null && FavoritesOnlyField != null
                     && ActiveTagsField != null && SelectedYearField != null
-                    && DrawFilterPanelMethod != null && SelectYearMethod != null,
+                    && ActivatePawnStateMethod != null && SelectYearMethod != null,
                 "The Diary filter fixture could not resolve one or more private lifecycle seams.");
         }
     }

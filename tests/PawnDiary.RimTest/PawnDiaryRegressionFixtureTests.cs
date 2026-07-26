@@ -263,7 +263,7 @@ namespace PawnDiary.RimTests
             FieldInfo guardField =
                 typeof(DiaryGameComponent).GetField("writtenQuadrumReflections", PrivateInstance);
             MethodInfo rebuild = typeof(DiaryGameComponent).GetMethod(
-                "RebuildWrittenDayReflectionsFromEvents",
+                "RebuildWrittenDailyGuardsFromHistory",
                 PrivateInstance);
             Require(archiveField != null && guardField != null && rebuild != null,
                 "Quadrum reflection archive/guard seams were not found.");

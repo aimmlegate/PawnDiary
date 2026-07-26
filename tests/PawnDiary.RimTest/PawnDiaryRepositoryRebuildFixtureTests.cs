@@ -60,6 +60,8 @@ namespace PawnDiary.RimTests
         // the production repair -> retention -> prune sequence.
         private static readonly FieldInfo ComponentEventsField =
             typeof(DiaryGameComponent).GetField("events", PrivateInstance);
+        private static readonly FieldInfo RepositoryEventsField =
+            typeof(DiaryEventRepository).GetField("diaryEvents", PrivateInstance);
         private static readonly FieldInfo ComponentDiariesField =
             typeof(DiaryGameComponent).GetField("diaries", PrivateInstance);
         private static readonly FieldInfo ComponentDiariesByIdField =
@@ -164,10 +166,10 @@ namespace PawnDiary.RimTests
         [Test]
         public static void LoadedHotEventsRepairBlankIdsAndDeterministicallyDeduplicate()
         {
-            DiaryEventRepository source = new DiaryEventRepository();
-            source.Register(NewEvent("pd-duplicate", "PawnLate", solo: true, tick: 300));
-            source.Register(NewEvent("PD-DUPLICATE", "PawnEarly", solo: true, tick: 100));
-            source.Register(NewEvent(string.Empty, "PawnLegacy", solo: true, tick: 200));
+            DiaryEventRepository source = RepositoryWithLoadedRows(
+                NewEvent("pd-duplicate", "PawnLate", solo: true, tick: 300),
+                NewEvent("PD-DUPLICATE", "PawnEarly", solo: true, tick: 100),
+                NewEvent(string.Empty, "PawnLegacy", solo: true, tick: 200));
 
             RunWithTempFile(path =>
             {
@@ -284,9 +286,9 @@ namespace PawnDiary.RimTests
                 ownerId,
                 solo: true,
                 tick: now + 3);
-            repository.Register(later);
-            repository.Register(earlier);
-            repository.Register(unreferenced);
+            RepositoryEventsField.SetValue(
+                repository,
+                new List<DiaryEvent> { later, earlier, unreferenced });
 
             // Four stale refs + two blank legacy placeholders exceed the explicit detached cap by two,
             // so production retention removes two stale refs and sweeps the unreferenced control row.
@@ -785,6 +787,7 @@ namespace PawnDiary.RimTests
         private static void RequireDetachedMaintenanceReflection()
         {
             if (ComponentEventsField == null
+                || RepositoryEventsField == null
                 || ComponentDiariesField == null
                 || ComponentDiariesByIdField == null
                 || ComponentArchiveField == null
@@ -814,6 +817,21 @@ namespace PawnDiary.RimTests
             ComponentEventsField.SetValue(component, repository);
             ComponentArchiveField.SetValue(component, archive);
             return component;
+        }
+
+        private static DiaryEventRepository RepositoryWithLoadedRows(params DiaryEvent[] rows)
+        {
+            if (RepositoryEventsField == null)
+            {
+                throw new AssertionException(
+                    "DiaryEventRepository.diaryEvents was unavailable to the loaded-save fixture.");
+            }
+
+            DiaryEventRepository repository = new DiaryEventRepository();
+            RepositoryEventsField.SetValue(
+                repository,
+                rows == null ? new List<DiaryEvent>() : new List<DiaryEvent>(rows));
+            return repository;
         }
 
         // FinalizeLoading normally invokes deep rows' PostLoadInit before component maintenance. Only the

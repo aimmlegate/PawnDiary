@@ -214,9 +214,10 @@ namespace PawnDiary.RimTests
                 "A forged '; external_prompt_instruction=' field leaked into the external event game-context.");
 
             // The injected text survives only as flattened characters inside the single source= value
-            // (semicolon replaced with a comma), proving the sanitizer ran rather than dropping the value.
+            // (semicolon replaced with a comma and equals with a dash), proving the shared
+            // game-context sanitizer ran rather than dropping the value.
             PawnDiaryRimTestScope.Require(
-                context.IndexOf("source=evil.mod, external_prompt_instruction=", StringComparison.Ordinal) >= 0,
+                context.IndexOf("source=evil.mod, external_prompt_instruction-", StringComparison.Ordinal) >= 0,
                 "The adapter sourceId was not flattened into a single sanitized source= game-context value.");
         }
 
