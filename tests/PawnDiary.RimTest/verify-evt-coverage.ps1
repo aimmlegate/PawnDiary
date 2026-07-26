@@ -1,12 +1,19 @@
-# Validates the tracked EVT-01..EVT-26 coverage manifest against real RimTest methods.
+# Validates both tracked coverage manifests against real RimTest methods.
 #
-# This intentionally checks source structure, not loaded-run pass totals. Every manifest row must
-# name one concrete line-anchored [Test] method plus its required mod profile and evidence level, so
-# a requirement token in a comment or exception message cannot masquerade as coverage.
+# EVT-01..EVT-26 remain the numbered acceptance matrix. The supplemental runtime-source manifest
+# must also match every "Runtime source" heading in the Event Catalog, so catalog-level routes
+# cannot silently appear or disappear without an explicit, honestly classified RimTest mapping.
+#
+# This intentionally checks source structure, not loaded-run pass totals. Every row must name one
+# concrete line-anchored [Test] method plus its required mod profile and evidence level, so a token
+# in a comment or exception message cannot masquerade as coverage.
 $ErrorActionPreference = "Stop"
 
 $rimTestRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$manifestPath = Join-Path $rimTestRoot "evt-coverage.json"
+$evtManifestPath = Join-Path $rimTestRoot "evt-coverage.json"
+$runtimeSourceManifestPath = Join-Path $rimTestRoot "runtime-source-coverage.json"
+$eventCatalogPath = [System.IO.Path]::GetFullPath(
+    (Join-Path $rimTestRoot "..\..\repowiki\en\reference\Event-Catalog.md"))
 $expectedIds = @(1..26 | ForEach-Object { "EVT-{0:D2}" -f $_ })
 $allowedEvidence = @(
     "vanilla-trigger",
@@ -499,66 +506,260 @@ function Assert-CSharpCoverageScanner {
     }
 }
 
-if (-not (Test-Path -LiteralPath $manifestPath)) {
-    throw "Missing EVT coverage manifest: $manifestPath"
-}
+function Read-CoverageManifestRows {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Description
+    )
 
-$definedSymbols = @(Get-RimTestDefinedSymbols)
-Assert-CSharpCoverageScanner $definedSymbols
-
-$parsedRows = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
-# Windows PowerShell 5.1 returns a top-level JSON array as one Object[] pipeline item. A foreach
-# explicitly unwraps it so the validator behaves the same under Windows PowerShell and PowerShell 7.
-$rows = @()
-foreach ($parsedRow in $parsedRows) {
-    $rows += $parsedRow
-}
-if ($rows.Count -eq 0) {
-    throw "EVT coverage manifest is empty: $manifestPath"
-}
-
-foreach ($id in $expectedIds) {
-    $matches = @($rows | Where-Object { [string]$_.id -eq $id })
-    if ($matches.Count -ne 1) {
-        throw "$id must have exactly one manifest row; found $($matches.Count)."
+    if (-not (Test-Path -LiteralPath $Path)) {
+        throw "Missing $Description coverage manifest: $Path"
     }
 
-    $row = $matches[0]
-    $testFile = [string]$row.testFile
-    $testMethod = [string]$row.testMethod
-    $profile = [string]$row.profile
-    $evidence = [string]$row.evidence
+    $parsedRows = Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json
+    # Windows PowerShell 5.1 returns a top-level JSON array as one Object[] pipeline item. A foreach
+    # explicitly unwraps it so the validator behaves the same under Windows PowerShell and PowerShell 7.
+    $rows = @()
+    foreach ($parsedRow in $parsedRows) {
+        $rows += $parsedRow
+    }
+    if ($rows.Count -eq 0) {
+        throw "$Description coverage manifest is empty: $Path"
+    }
+    return $rows
+}
+
+function Assert-CoverageRowBinding {
+    param(
+        [Parameter(Mandatory = $true)][string]$CoverageKey,
+        [Parameter(Mandatory = $true)]$Row,
+        [Parameter(Mandatory = $true)][string[]]$DefinedSymbols
+    )
+
+    $testFile = [string]$Row.testFile
+    $testMethod = [string]$Row.testMethod
+    $profile = [string]$Row.profile
+    $evidence = [string]$Row.evidence
 
     if ([string]::IsNullOrWhiteSpace($testFile) -or
         [System.IO.Path]::GetFileName($testFile) -ne $testFile -or
         -not $testFile.EndsWith(".cs", [StringComparison]::OrdinalIgnoreCase)) {
-        throw "$id has an invalid testFile '$testFile'; use one .cs filename in this directory."
+        throw "$CoverageKey has an invalid testFile '$testFile'; use one .cs filename in this directory."
     }
     if ($testMethod -notmatch "^[A-Za-z_][A-Za-z0-9_]*$") {
-        throw "$id has an invalid testMethod '$testMethod'."
+        throw "$CoverageKey has an invalid testMethod '$testMethod'."
     }
     if ([string]::IsNullOrWhiteSpace($profile)) {
-        throw "$id does not declare its required mod profile."
+        throw "$CoverageKey does not declare its required mod profile."
     }
     if ($allowedEvidence -notcontains $evidence) {
-        throw "$id has unsupported evidence '$evidence'."
+        throw "$CoverageKey has unsupported evidence '$evidence'."
     }
 
     $testPath = Join-Path $rimTestRoot $testFile
     if (-not (Test-Path -LiteralPath $testPath)) {
-        throw "$id references missing test file '$testFile'."
+        throw "$CoverageKey references missing test file '$testFile'."
     }
 
     $source = Get-Content -LiteralPath $testPath -Raw
-    if (-not (Test-CSharpTestMethodBinding $source $testMethod $definedSymbols)) {
-        throw "$id does not bind to [Test] method '${testFile}::$testMethod'."
+    if (-not (Test-CSharpTestMethodBinding $source $testMethod $DefinedSymbols)) {
+        throw "$CoverageKey does not bind to [Test] method '${testFile}::$testMethod'."
     }
 }
 
-$unknownRows = @($rows | Where-Object { $expectedIds -notcontains [string]$_.id })
+function Get-EventCatalogRuntimeSources {
+    param(
+        [Parameter(Mandatory = $true)][string]$Markdown,
+        [Parameter(Mandatory = $true)][string]$CatalogLabel
+    )
+
+    $headingLines = [regex]::Matches(
+        $Markdown,
+        '(?m)^## Runtime source:[^\r\n]*\r?$')
+    $headingMatches = [regex]::Matches(
+        $Markdown,
+        '(?m)^## Runtime source:\s+`(?<source>[^`\r\n]+)`\s*$')
+    if ($headingLines.Count -ne $headingMatches.Count) {
+        throw "$CatalogLabel contains a malformed '## Runtime source: ``Name``' heading."
+    }
+    if ($headingMatches.Count -eq 0) {
+        throw "$CatalogLabel contains no runtime-source headings."
+    }
+
+    $sources = @()
+    $seen = New-Object "System.Collections.Generic.HashSet[string]" ([StringComparer]::Ordinal)
+    foreach ($match in $headingMatches) {
+        $source = $match.Groups["source"].Value
+        if ($source -notmatch "^[A-Za-z_][A-Za-z0-9_]*$") {
+            throw "$CatalogLabel has invalid runtime-source identifier '$source'."
+        }
+        if (-not $seen.Add($source)) {
+            throw "$CatalogLabel contains duplicate runtime-source heading '$source'."
+        }
+        $sources += $source
+    }
+    return $sources
+}
+
+function Assert-RuntimeSourceRowSet {
+    param(
+        [Parameter(Mandatory = $true)][string[]]$RuntimeSources,
+        [Parameter(Mandatory = $true)][object[]]$Rows,
+        [Parameter(Mandatory = $true)][string]$ManifestLabel
+    )
+
+    $duplicateGroups = @(
+        $Rows |
+            Group-Object { ([string]$_.runtimeSource).ToUpperInvariant() } |
+            Where-Object { $_.Count -gt 1 }
+    )
+    if ($duplicateGroups.Count -gt 0) {
+        $duplicateSources = @(
+            $duplicateGroups |
+                ForEach-Object { [string]$_.Group[0].runtimeSource }
+        )
+        throw "$ManifestLabel contains duplicate rows: $($duplicateSources -join ', ')."
+    }
+
+    $missingSources = @(
+        $RuntimeSources |
+            Where-Object {
+                $expected = $_
+                @($Rows | Where-Object {
+                    [string]$_.runtimeSource -ceq $expected
+                }).Count -ne 1
+            }
+    )
+    if ($missingSources.Count -gt 0) {
+        throw "$ManifestLabel is missing exact rows: $($missingSources -join ', ')."
+    }
+
+    $extraRows = @(
+        $Rows |
+            Where-Object { $RuntimeSources -cnotcontains [string]$_.runtimeSource }
+    )
+    if ($extraRows.Count -gt 0) {
+        $extraSources = @(
+            $extraRows |
+                ForEach-Object { [string]$_.runtimeSource }
+        )
+        throw "$ManifestLabel contains extra rows: $($extraSources -join ', ')."
+    }
+}
+
+function Assert-EventCatalogRuntimeSourceScanner {
+    $validFixture = @'
+<!-- ## Runtime source: `CommentOnly` -->
+## Runtime source: `Thought`
+
+### Runtime source: `NestedHeading`
+## Runtime source: `Tale`
+'@
+    $sources = @(Get-EventCatalogRuntimeSources $validFixture "runtime-source scanner fixture")
+    if ($sources.Count -ne 2 -or $sources[0] -cne "Thought" -or $sources[1] -cne "Tale") {
+        throw "Runtime-source catalog scanner self-check failed for exact headings."
+    }
+
+    $duplicateRejected = $false
+    try {
+        $null = @(Get-EventCatalogRuntimeSources (
+            "## Runtime source: ``Thought```n## Runtime source: ``Thought``") "duplicate fixture")
+    } catch {
+        $duplicateRejected = $true
+    }
+    if (-not $duplicateRejected) {
+        throw "Runtime-source catalog scanner self-check accepted a duplicate heading."
+    }
+
+    $malformedRejected = $false
+    try {
+        $null = @(Get-EventCatalogRuntimeSources (
+            "## Runtime source: Thought") "malformed fixture")
+    } catch {
+        $malformedRejected = $true
+    }
+    if (-not $malformedRejected) {
+        throw "Runtime-source catalog scanner self-check accepted a malformed heading."
+    }
+
+    $expectedRows = @("Thought", "Tale")
+    $validRows = @(
+        [pscustomobject]@{ runtimeSource = "Thought" },
+        [pscustomobject]@{ runtimeSource = "Tale" }
+    )
+    Assert-RuntimeSourceRowSet $expectedRows $validRows "runtime-source row fixture"
+
+    $invalidRowFixtures = @(
+        [pscustomobject]@{
+            Name = "missing row"
+            Rows = @([pscustomobject]@{ runtimeSource = "Thought" })
+        },
+        [pscustomobject]@{
+            Name = "extra row"
+            Rows = @(
+                [pscustomobject]@{ runtimeSource = "Thought" },
+                [pscustomobject]@{ runtimeSource = "Tale" },
+                [pscustomobject]@{ runtimeSource = "Arrival" }
+            )
+        },
+        [pscustomobject]@{
+            Name = "case-duplicate row"
+            Rows = @(
+                [pscustomobject]@{ runtimeSource = "Thought" },
+                [pscustomobject]@{ runtimeSource = "thought" },
+                [pscustomobject]@{ runtimeSource = "Tale" }
+            )
+        }
+    )
+    foreach ($fixture in $invalidRowFixtures) {
+        $rejected = $false
+        try {
+            Assert-RuntimeSourceRowSet $expectedRows $fixture.Rows $fixture.Name
+        } catch {
+            $rejected = $true
+        }
+        if (-not $rejected) {
+            throw "Runtime-source row-set self-check accepted a $($fixture.Name)."
+        }
+    }
+}
+
+$definedSymbols = @(Get-RimTestDefinedSymbols)
+Assert-CSharpCoverageScanner $definedSymbols
+Assert-EventCatalogRuntimeSourceScanner
+
+$evtRows = @(Read-CoverageManifestRows $evtManifestPath "EVT")
+foreach ($id in $expectedIds) {
+    $matches = @($evtRows | Where-Object { [string]$_.id -eq $id })
+    if ($matches.Count -ne 1) {
+        throw "$id must have exactly one manifest row; found $($matches.Count)."
+    }
+
+    Assert-CoverageRowBinding $id $matches[0] $definedSymbols
+}
+
+$unknownRows = @($evtRows | Where-Object { $expectedIds -notcontains [string]$_.id })
 if ($unknownRows.Count -gt 0) {
     $unknownIds = @($unknownRows | ForEach-Object { [string]$_.id })
     throw "EVT coverage manifest contains unknown rows: $($unknownIds -join ', ')."
 }
 
 Write-Host "EVT coverage manifest valid: $($expectedIds.Count)/$($expectedIds.Count)."
+
+if (-not (Test-Path -LiteralPath $eventCatalogPath)) {
+    throw "Missing Event Catalog: $eventCatalogPath"
+}
+$catalogMarkdown = Get-Content -LiteralPath $eventCatalogPath -Raw
+$runtimeSources = @(Get-EventCatalogRuntimeSources $catalogMarkdown $eventCatalogPath)
+$runtimeRows = @(Read-CoverageManifestRows $runtimeSourceManifestPath "runtime-source")
+Assert-RuntimeSourceRowSet $runtimeSources $runtimeRows "Runtime-source coverage manifest"
+
+foreach ($runtimeSource in $runtimeSources) {
+    $matches = @(
+        $runtimeRows |
+            Where-Object { [string]$_.runtimeSource -ceq $runtimeSource }
+    )
+    Assert-CoverageRowBinding "Runtime source '$runtimeSource'" $matches[0] $definedSymbols
+}
+
+Write-Host "Runtime-source coverage manifest valid: $($runtimeSources.Count)/$($runtimeSources.Count)."

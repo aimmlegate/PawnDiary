@@ -29,6 +29,30 @@ namespace PawnDiary
             out int pageCount,
             out string error)
         {
+            return TryExportPawnDiaryMarkdown(
+                pawnId,
+                pawnName,
+                pawnAliveForBounds,
+                null,
+                out filePath,
+                out pageCount,
+                out error);
+        }
+
+        /// <summary>
+        /// Writes the completed pages selected by the current reader view. The request is a plain UI
+        /// snapshot: its year and entry keys apply the live filters, while its metadata records that
+        /// context in the document header.
+        /// </summary>
+        internal bool TryExportPawnDiaryMarkdown(
+            string pawnId,
+            string pawnName,
+            bool pawnAliveForBounds,
+            DiaryMarkdownExportRequest request,
+            out string filePath,
+            out int pageCount,
+            out string error)
+        {
             filePath = string.Empty;
             pageCount = 0;
             error = string.Empty;
@@ -48,6 +72,7 @@ namespace PawnDiary
                     pawnId,
                     displayName,
                     pawnAliveForBounds,
+                    request,
                     out pageCount);
 
                 string exportFolder = Path.Combine(GenFilePaths.SaveDataFolderPath, PlayerExportFolderName);
@@ -74,6 +99,7 @@ namespace PawnDiary
             string pawnId,
             string displayName,
             bool pawnAliveForBounds,
+            DiaryMarkdownExportRequest request,
             out int pageCount)
         {
             DiaryMarkdownDocument document = new DiaryMarkdownDocument
@@ -82,8 +108,21 @@ namespace PawnDiary
                 dateLabel = "PawnDiary.Export.DateLabel".Translate().Resolve(),
                 categoryLabel = "PawnDiary.Export.CategoryLabel".Translate().Resolve(),
                 untitledEntryLabel = "PawnDiary.Export.UntitledEntry".Translate().Resolve(),
-                emptyDiaryText = "PawnDiary.Export.EmptyDiary".Translate().Resolve()
+                emptyDiaryText = (request == null
+                    ? "PawnDiary.Export.EmptyDiary"
+                    : "PawnDiary.Export.EmptyFilteredDiary").Translate().Resolve()
             };
+            if (request != null)
+            {
+                for (int i = 0; i < request.metadata.Count; i++)
+                {
+                    DiaryMarkdownMetadata item = request.metadata[i];
+                    if (item != null)
+                    {
+                        document.metadata.Add(item);
+                    }
+                }
+            }
 
             // The normal-play flags deliberately exclude pending, prompt-only, and raw debug pages.
             // Running the existing index builder to completion also preserves archive de-duplication and
@@ -100,16 +139,35 @@ namespace PawnDiary
             }
 
             List<DiaryEntryView> views = new List<DiaryEntryView>();
-            for (int i = 0; i < build.index.years.Count; i++)
+            if (request == null)
             {
-                build.index.AppendEntriesForYear(views, pawnId, build.index.years[i]);
+                for (int i = 0; i < build.index.years.Count; i++)
+                {
+                    build.index.AppendEntriesForYear(views, pawnId, build.index.years[i]);
+                }
+            }
+            else
+            {
+                // The year is an applied reader filter, not merely display metadata. Materialize only
+                // that page before intersecting it with the search/favorite/tag result keys below.
+                build.index.AppendEntriesForYear(views, pawnId, request.selectedYear);
+            }
+
+            HashSet<string> includedEntryKeys = null;
+            if (request != null)
+            {
+                includedEntryKeys = new HashSet<string>(
+                    request.includedEntryKeys,
+                    StringComparer.Ordinal);
             }
 
             for (int i = 0; i < views.Count; i++)
             {
                 DiaryEntryView view = views[i];
                 string body = view?.DisplayText;
-                if (view == null || string.IsNullOrWhiteSpace(body))
+                if (view == null
+                    || string.IsNullOrWhiteSpace(body)
+                    || (includedEntryKeys != null && !includedEntryKeys.Contains(view.EntryKey)))
                 {
                     continue;
                 }

@@ -1,0 +1,212 @@
+[
+  {
+    "runtimeSource": "Thought",
+    "testFile": "PawnDiaryThoughtFlowTests.cs",
+    "testMethod": "ConfiguredThoughtCreatesSoloEvent",
+    "profile": "base",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "runtimeSource": "Inspiration",
+    "testFile": "PawnDiaryInspirationFlowTests.cs",
+    "testMethod": "InspirationStartCreatesSoloEvent",
+    "profile": "base",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "runtimeSource": "MoodEvent",
+    "testFile": "PawnDiaryMoodConditionFlowTests.cs",
+    "testMethod": "PositiveMoodConditionFansOutOnePagePerColonist",
+    "profile": "base",
+    "evidence": "production-flow"
+  },
+  {
+    "runtimeSource": "MentalState",
+    "testFile": "PawnDiaryEventReactionTests.cs",
+    "testMethod": "BerserkMentalStateCreatesSoloEvent",
+    "profile": "base",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "runtimeSource": "Tale",
+    "testFile": "PawnDiaryTaleFlowTests.cs",
+    "testMethod": "SinglePawnTaleCreatesSoloEvent",
+    "profile": "base",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "runtimeSource": "Hediff",
+    "testFile": "PawnDiaryHediffFlowTests.cs",
+    "testMethod": "AddedBodyPartCreatesImmediateSoloEvent",
+    "profile": "base",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "runtimeSource": "Interaction",
+    "testFile": "PawnDiaryEventReactionTests.cs",
+    "testMethod": "SocialPlayLogEntryCreatesLinkedPairEvent",
+    "profile": "base",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "runtimeSource": "Arrival",
+    "testFile": "PawnDiaryTopLevelLifecycleFlowTests.cs",
+    "testMethod": "RealSetFactionCreatesArrivalThroughHarmony",
+    "profile": "base",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "runtimeSource": "Death",
+    "testFile": "PawnDiaryDeathFlowTests.cs",
+    "testMethod": "KillingColonistRecordsOneNeutralDeathPage",
+    "profile": "base",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "runtimeSource": "Work",
+    "testFile": "PawnDiaryTopLevelLifecycleFlowTests.cs",
+    "testMethod": "TopLevelWorkScannerDispatchesItsCachedFixtureColonist",
+    "profile": "base",
+    "evidence": "production-flow"
+  },
+  {
+    "runtimeSource": "ThoughtProgression",
+    "testFile": "PawnDiaryThoughtProgressionFlowTests.cs",
+    "testMethod": "WorseningStageEmitsOneProgressionPage",
+    "profile": "base",
+    "evidence": "production-flow"
+  },
+  {
+    "runtimeSource": "DayReflection",
+    "testFile": "PawnDiaryDayReflectionFlowTests.cs",
+    "testMethod": "SeededDayFlushesOneSoloReflectionWithHighlightContext",
+    "profile": "base",
+    "evidence": "production-flow"
+  },
+  {
+    "runtimeSource": "Progression",
+    "testFile": "PawnDiaryPawnProgressionFlowTests.cs",
+    "testMethod": "UpwardSkillMilestoneEmitsOnePageWithExactContext",
+    "profile": "base",
+    "evidence": "production-flow"
+  },
+  {
+    "runtimeSource": "ArcReflection",
+    "testFile": "PawnDiaryArcReflectionFlowTests.cs",
+    "testMethod": "ArcReflectionEmitsSoloPageWithFilteredDedupedMemoryContext",
+    "profile": "base",
+    "evidence": "production-flow"
+  },
+  {
+    "runtimeSource": "BeliefReflection",
+    "testFile": "PawnDiaryReflectionTemplateFixtureTests.cs",
+    "testMethod": "BeliefReflectionResolvesItsTemplateAndDrivesThePolicyTokenCap",
+    "profile": "ideology",
+    "evidence": "downstream-flow"
+  },
+  {
+    "runtimeSource": "Romance",
+    "testFile": "PawnDiaryEventReactionTests.cs",
+    "testMethod": "LoverRelationCreatesPairEvent",
+    "profile": "base",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "runtimeSource": "Raid",
+    "testFile": "PawnDiaryRaidFlowTests.cs",
+    "testMethod": "RaidFanOutPerColonistRecordsSoloRaidPage",
+    "profile": "base",
+    "evidence": "downstream-flow"
+  },
+  {
+    "runtimeSource": "Quest",
+    "testFile": "PawnDiaryTopLevelLifecycleFlowTests.cs",
+    "testMethod": "RealQuestAcceptUpdatesBookkeepingThroughHarmony",
+    "profile": "base",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "runtimeSource": "Ritual",
+    "testFile": "PawnDiaryRitualFlowTests.cs",
+    "testMethod": "IdeologyRitualFixtureFanoutEmitsUniquePerspectivePagesOnce",
+    "profile": "ideology",
+    "evidence": "production-flow"
+  },
+  {
+    "runtimeSource": "Ability",
+    "testFile": "PawnDiaryTopLevelLifecycleFlowTests.cs",
+    "testMethod": "RealLocalAbilityActivateCrossesHarmonyBoundary",
+    "profile": "base",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "runtimeSource": "External",
+    "testFile": "PawnDiaryExternalApiFlowTests.cs",
+    "testMethod": "SubmitEventSoloRecordsAttributedEvent",
+    "profile": "base",
+    "evidence": "public-api"
+  },
+  {
+    "runtimeSource": "GrowthMoment",
+    "testFile": "PawnDiaryBiotechGrowthFlowTests.cs",
+    "testMethod": "VanillaGrowthLetterHooksClaimAndCompleteNoTraitChoice",
+    "profile": "biotech",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "runtimeSource": "FamilyBirth",
+    "testFile": "PawnDiaryBiotechBirthFlowTests.cs",
+    "testMethod": "CanonicalBirthCreatesOnePairPageWithEvidence",
+    "profile": "biotech",
+    "evidence": "production-flow"
+  },
+  {
+    "runtimeSource": "BiotechBond",
+    "testFile": "PawnDiaryBiotechBondDeathrestFlowTests.cs",
+    "testMethod": "RealPsychicBondFormationAndRuptureEmitOneCanonicalPairEach",
+    "profile": "biotech",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "runtimeSource": "GravshipJourney",
+    "testFile": "PawnDiaryOdysseyRuntimeLifecycleTests.cs",
+    "testMethod": "RealHarmonyLifecycleTravelsAndLandsExactlyOnce",
+    "profile": "odyssey",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "runtimeSource": "OdysseyEvent",
+    "testFile": "PawnDiaryOdysseyMechhiveFlowTests.cs",
+    "testMethod": "DestroyCreatesExactlyOneTerminalPage",
+    "profile": "odyssey",
+    "evidence": "downstream-flow"
+  },
+  {
+    "runtimeSource": "PersonaWeapon",
+    "testFile": "PawnDiaryRoyaltyFlowTests.cs",
+    "testMethod": "RealMajorThreatKillCreatesOneCanonicalMilestone",
+    "profile": "royalty",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "runtimeSource": "RoyalPermit",
+    "testFile": "PawnDiaryRoyaltyPermitFlowTests.cs",
+    "testMethod": "RealSuccessfulUsesEmitEveryDramaticFamily",
+    "profile": "royalty",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "runtimeSource": "AnomalyEvent",
+    "testFile": "PawnDiaryAnomalyStudyFlowTests.cs",
+    "testMethod": "OneThresholdCreatesExactResearcherPage",
+    "profile": "anomaly",
+    "evidence": "vanilla-trigger"
+  },
+  {
+    "runtimeSource": "ArtImmortalized",
+    "testFile": "PawnDiaryArtImmortalizationFixtureTests.cs",
+    "testMethod": "PatchedCompArtSurfaceStillExists",
+    "profile": "base",
+    "evidence": "loaded-contract"
+  }
+]

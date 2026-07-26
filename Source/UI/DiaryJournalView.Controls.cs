@@ -14,23 +14,36 @@ namespace PawnDiary
     internal sealed partial class DiaryJournalView
     {
         /// <summary>
-        /// Draws the normal-play header action that exports the current subject's complete diary as
-        /// Markdown. The same quiet/hover treatment as the neighboring writing-style icon keeps the
-        /// action readable without competing with the pawn's name.
+        /// Draws the filter-panel action that exports the current subject's applied reader view as
+        /// Markdown. It remains disabled until the selected year's entry list has finished loading.
         /// </summary>
-        private static void DrawMarkdownExportHeaderIcon(
-            Rect rect,
+        private void DrawMarkdownExportButton(
+            Listing_Standard listing,
             DiaryReaderSubject subject,
-            DiaryGameComponent component)
+            DiaryGameComponent component,
+            List<DiaryEntryView> orderedEntries,
+            int visibleRevision,
+            bool showLlmDebugInfo,
+            bool exportReady)
         {
+            Rect rect = listing.GetRect(ControlLineHeight);
             string displayName = string.IsNullOrWhiteSpace(subject.DisplayName)
                 ? "PawnDiary.Reader.UnknownPawn".Translate().ToString()
                 : subject.DisplayName;
-            Color baseColor = new Color(1f, 1f, 1f, Mathf.Clamp01(WritingStyleIconAlpha));
-            Color hoverColor = new Color(1f, 1f, 1f, Mathf.Clamp01(WritingStyleIconHoverAlpha));
-            if (Widgets.ButtonImage(rect, DiaryButtonTextures.Export, baseColor, hoverColor))
+            bool active = exportReady && subject.IsValid && component != null;
+            if (Widgets.ButtonText(
+                rect,
+                "PawnDiary.Export.Button".Translate(),
+                true,
+                true,
+                active))
             {
-                HandleMarkdownExport(subject, component);
+                HandleMarkdownExport(
+                    subject,
+                    component,
+                    orderedEntries,
+                    visibleRevision,
+                    showLlmDebugInfo);
             }
 
             TooltipHandler.TipRegion(
@@ -39,18 +52,31 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Runs the per-pawn export on the main thread, reports a normal player message, and copies the
-        /// resulting path so the file is easy to find without exposing OS-specific folder controls.
+        /// Snapshots the selected year plus every live filter, runs the export on the main thread, reports
+        /// a normal player message, and copies the resulting path for easy discovery.
         /// </summary>
-        private static void HandleMarkdownExport(
+        private void HandleMarkdownExport(
             DiaryReaderSubject subject,
-            DiaryGameComponent component)
+            DiaryGameComponent component,
+            List<DiaryEntryView> orderedEntries,
+            int visibleRevision,
+            bool showLlmDebugInfo)
         {
             if (!subject.IsValid || component == null)
             {
                 return;
             }
 
+            List<DiaryEntryView> includedEntries = orderedEntries;
+            if (JournalFiltersActive && orderedEntries != null)
+            {
+                includedEntries = EnsureFilteredJournalEntries(
+                    orderedEntries,
+                    visibleRevision,
+                    showLlmDebugInfo);
+            }
+
+            DiaryMarkdownExportRequest request = BuildMarkdownExportRequest(includedEntries);
             string displayName = string.IsNullOrWhiteSpace(subject.DisplayName)
                 ? "PawnDiary.Reader.UnknownPawn".Translate().ToString()
                 : subject.DisplayName;
@@ -61,6 +87,7 @@ namespace PawnDiary
                 subject.PawnId,
                 displayName,
                 subject.Alive,
+                request,
                 out filePath,
                 out pageCount,
                 out error))
@@ -77,6 +104,88 @@ namespace PawnDiary
                 "PawnDiary.Export.Failed".Translate(displayName, error),
                 MessageTypeDefOf.RejectInput,
                 false);
+        }
+
+        /// <summary>
+        /// Converts the current UI state into a plain export request. Entry keys preserve the exact
+        /// search/favorite/tag result, and selectedYear remains explicit so year paging is a real filter.
+        /// </summary>
+        private DiaryMarkdownExportRequest BuildMarkdownExportRequest(List<DiaryEntryView> includedEntries)
+        {
+            DiaryMarkdownExportRequest request = new DiaryMarkdownExportRequest
+            {
+                selectedYear = selectedYear
+            };
+
+            if (includedEntries != null)
+            {
+                for (int i = 0; i < includedEntries.Count; i++)
+                {
+                    DiaryEntryView entry = includedEntries[i];
+                    if (entry != null && !string.IsNullOrWhiteSpace(entry.EntryKey))
+                    {
+                        request.includedEntryKeys.Add(entry.EntryKey);
+                    }
+                }
+            }
+
+            request.metadata.Add(new DiaryMarkdownMetadata
+            {
+                label = "PawnDiary.Export.GameTimeLabel".Translate().Resolve(),
+                value = CurrentMarkdownExportGameTime()
+            });
+            request.metadata.Add(new DiaryMarkdownMetadata
+            {
+                label = "PawnDiary.Export.FiltersLabel".Translate().Resolve(),
+                value = MarkdownExportFilterSummary()
+            });
+            return request;
+        }
+
+        /// <summary>
+        /// Formats the applied reader filters for the Markdown header. A short, inactive search query is
+        /// omitted because it does not narrow the cards; the selected year is always recorded.
+        /// </summary>
+        private string MarkdownExportFilterSummary()
+        {
+            List<string> filters = new List<string>();
+            string yearValue = selectedYear == UnknownYear
+                ? "PawnDiary.Tab.UnknownYear".Translate().Resolve()
+                : selectedYear.ToString();
+            filters.Add("PawnDiary.Export.FilterYear".Translate(yearValue).Resolve());
+
+            if (JournalSearchActive)
+            {
+                filters.Add(
+                    "PawnDiary.Export.FilterSearch".Translate(ActiveJournalSearchQuery).Resolve());
+            }
+
+            if (filterFavoritesOnly)
+            {
+                filters.Add("PawnDiary.Tab.FilterFavoritesOnly".Translate().Resolve());
+            }
+
+            if (filterActiveTags.Count > 0)
+            {
+                List<string> tags = filterActiveTags.ToList();
+                tags.Sort(StringComparer.CurrentCultureIgnoreCase);
+                filters.Add(
+                    "PawnDiary.Export.FilterTags".Translate(DiaryListText.JoinComma(tags)).Resolve());
+            }
+
+            return string.Join("; ", filters.ToArray());
+        }
+
+        /// <summary>
+        /// Returns RimWorld's own localized date-and-hour string at the same nominal longitude used by
+        /// saved diary dates. The fallback keeps the metadata row present during unusual teardown states.
+        /// </summary>
+        private static string CurrentMarkdownExportGameTime()
+        {
+            TickManager ticks = Find.TickManager;
+            return ticks == null
+                ? "PawnDiary.Export.UnknownGameTime".Translate().Resolve()
+                : GenDate.DateFullStringWithHourAt(ticks.TicksAbs, Vector2.zero);
         }
 
         /// <summary>

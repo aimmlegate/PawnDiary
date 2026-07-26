@@ -13,17 +13,18 @@
 // test pawn: DiaryEvents.Submit(new RaidPawnSignal(fanout, pawn, id)). That is what PerPawnSignals() produces
 // for each eligible colonist, kept to a single test-owned pawn so the harness can clean it.
 //
-// Coverage split (all deterministic, no random loops, no LLM — generation stays disabled on the test pawn):
+// Coverage split (all deterministic, no random loops, and no network):
 //   (a) per-colonist fan-out product: the per-pawn signal records one solo raid page with the raid context;
 //   (b) colony dedup: the colony dedup key is stable + XML-tuned, an off-map (caravan/world) raid is excluded
 //       and consumes no window, and a repeat raid whose colony window is already open emits nothing;
-//   (c) bypass classes: drop-pod raids and infestations bypass the ordinary generation delay (pure
-//       ShouldDelayGeneration) and classify to their own distinct groups rather than the raid catch-all.
+//   (c) generation scheduling: an ordinary raid stays pending while its positive anticipation marker is
+//       early, releases exactly once at the ready boundary, and a drop-pod threat queues immediately.
 //
 // The per-pawn Emit routes through DelaySolo when raidGenerationDelayTicks > 0, which stamps the transient
-// delayedRaidGenerationReadyTicks store (keyed by eventId, NOT pawn id — the shared harness cannot scrub it).
-// SetUp forces raidGenerationDelayTicks = 0 so every emitted raid page takes the proven-safe QueueSolo path
-// (the same path the other suites exercise), never touching that store. New to C#/RimWorld? See AGENTS.md.
+// delayedRaidGenerationReadyTicks store. The shared harness now snapshots that whole store exactly. SetUp
+// still forces the delay to 0 for unrelated cases; the scheduling fixture opts into prompt-test mode,
+// restores a positive delay, and safely renders prompts without sending an LLM request.
+// New to C#/RimWorld? See AGENTS.md.
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -55,6 +56,8 @@ namespace PawnDiary.RimTests
             typeof(DiaryGameComponent).GetField("recentEvents", PrivateInstance);
         private static readonly FieldInfo EventsField =
             typeof(DiaryGameComponent).GetField("events", PrivateInstance);
+        private static readonly FieldInfo DelayedRaidGenerationReadyTicksField =
+            typeof(DiaryGameComponent).GetField("delayedRaidGenerationReadyTicks", PrivateInstance);
         private static readonly MethodInfo MarkRecentlyRecordedMethod =
             typeof(DiaryGameComponent).GetMethod("MarkRecentlyRecorded", PrivateInstance);
 
@@ -74,7 +77,7 @@ namespace PawnDiary.RimTests
         [BeforeEach]
         public static void SetUp()
         {
-            scope = PawnDiaryRimTestScope.Begin("raid");
+            scope = PawnDiaryRimTestScope.Begin("raid", "raidDropPod");
             raidPawn = scope.CreateAdultColonist();
 
             tuningDef = DiaryTuning.Current;
@@ -235,28 +238,109 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
-        /// EVT-13. Documented bypass: an ordinary approaching raid waits out the XML anticipation delay, while
-        /// the immediate-threat classes (infestations, drop-pod arrivals, drop strategies) and a non-positive
-        /// delay all bypass the wait. This is the pure ShouldDelayGeneration policy the raid Emit consults.
+        /// EVT-13. Loaded generation scheduling: an ordinary approaching raid writes its saved page
+        /// immediately but keeps that page pending before the exact anticipation-ready tick. At the boundary
+        /// the normal QueueSolo funnel renders it exactly once under prompt-test mode. A drop-pod raid, driven
+        /// through the same per-pawn Emit path with the same positive tuning, bypasses the marker and renders
+        /// immediately. No full colony fan-out is invoked.
         /// </summary>
         [Test]
-        public static void ImmediateThreatRaidsBypassTheGenerationDelay()
+        public static void PositiveDelayReleasesOnceAndImmediateThreatBypasses()
         {
+            const int positiveDelayTicks = 2500;
+            Map map = RequireCurrentMap();
+            IncidentDef raidEnemy = RequireIncident("RaidEnemy");
+
+            scope.EnablePromptCapture();
+            scope.SpawnAsLiveColonist(raidPawn);
+            scope.Component.SetDiaryGenerationEnabled(raidPawn, true);
+            tuningDef.raidGenerationDelayTicks = positiveDelayTicks;
+
+            // Battle-beat mining has its own later retry marker. Turn it off for this fixture so this
+            // assertion isolates only the raid-anticipation marker, then restore the player's Def value.
+            bool originalBattleBeatsEnabled = tuningDef.battleBeatsEnabled;
+            tuningDef.battleBeatsEnabled = false;
+            scope.RegisterCleanup(() => tuningDef.battleBeatsEnabled = originalBattleBeatsEnabled);
+
+            RaidFanoutSignal ordinary = BuildRaidFanout(raidEnemy, map, 240f);
             PawnDiaryRimTestScope.Require(
-                RaidEventData.ShouldDelayGeneration("RaidEnemy", "EdgeWalkIn", null, 2500),
-                "An ordinary edge-walk-in raid with a positive delay should wait before generating.");
+                ordinary.DelayGeneration,
+                "The loaded ordinary RaidEnemy fixture did not select the positive anticipation delay.");
+            DiaryEvent delayedPage = scope.FireAndRequireEvent(
+                () => DiaryEvents.Submit(
+                    new RaidPawnSignal(ordinary, raidPawn, raidPawn.GetUniqueLoadID())),
+                "RaidEnemy",
+                raidPawn,
+                null);
+
+            IDictionary readyTicks = DelayedGenerationReadyTicks();
+            string delayedKey = DelayedGenerationKey(delayedPage);
             PawnDiaryRimTestScope.Require(
-                !RaidEventData.ShouldDelayGeneration("Infestation", null, null, 2500),
-                "An infestation is an immediate internal threat and must bypass the generation delay.");
+                readyTicks.Contains(delayedKey)
+                    && (int)readyTicks[delayedKey] == ordinary.GenerationReadyTick
+                    && ordinary.GenerationReadyTick > Find.TickManager.TicksGame,
+                "The ordinary raid page did not retain its exact XML-derived generation-ready tick.");
             PawnDiaryRimTestScope.Require(
-                !RaidEventData.ShouldDelayGeneration("RaidEnemy", "EdgeDrop", null, 2500),
-                "A drop-pod-arrival raid lands inside the colony and must bypass the generation delay.");
+                string.Equals(
+                    delayedPage.StatusForRole(DiaryEvent.InitiatorRole),
+                    DiaryEvent.PendingStatus,
+                    StringComparison.Ordinal)
+                    && string.IsNullOrEmpty(
+                        delayedPage.PromptForRole(DiaryEvent.InitiatorRole)),
+                "An ordinary raid rendered a prompt before its positive anticipation delay elapsed.");
+
+            // QueueSolo is the production funnel both the immediate Emit path and the pending-generation
+            // scanner use. While the marker is early, it must leave both the marker and page untouched.
+            scope.Component.QueueSolo(delayedPage, DiaryEvent.InitiatorRole);
             PawnDiaryRimTestScope.Require(
-                !RaidEventData.ShouldDelayGeneration("RaidEnemy", null, "StageThenAttackDrop", 2500),
-                "A drop-pod strategy must bypass the generation delay.");
+                readyTicks.Contains(delayedKey)
+                    && string.Equals(
+                        delayedPage.StatusForRole(DiaryEvent.InitiatorRole),
+                        DiaryEvent.PendingStatus,
+                        StringComparison.Ordinal)
+                    && string.IsNullOrEmpty(
+                        delayedPage.PromptForRole(DiaryEvent.InitiatorRole)),
+                "An early generation scan consumed the raid marker or rendered the page.");
+
+            // The game clock does not advance while RimTest executes. Move only this harness-owned marker
+            // to the current tick, which is exactly the boundary IsGenerationDelayed compares against.
+            readyTicks[delayedKey] = Find.TickManager.TicksGame;
+            scope.Component.QueueSolo(delayedPage, DiaryEvent.InitiatorRole);
+            string releasedPrompt = scope.CapturedPrompt(
+                delayedPage, DiaryEvent.InitiatorRole);
             PawnDiaryRimTestScope.Require(
-                !RaidEventData.ShouldDelayGeneration("RaidEnemy", "EdgeWalkIn", null, 0),
-                "A non-positive delay tuning disables the anticipation wait entirely.");
+                !readyTicks.Contains(delayedKey),
+                "The exact ready scan rendered the raid page but left its transient marker behind.");
+
+            // A second production queue attempt must be a no-op: PromptOnly is no longer queueable and the
+            // already-consumed marker cannot be recreated.
+            scope.Component.QueueSolo(delayedPage, DiaryEvent.InitiatorRole);
+            PawnDiaryRimTestScope.Require(
+                !readyTicks.Contains(delayedKey)
+                    && string.Equals(
+                        releasedPrompt,
+                        delayedPage.PromptForRole(DiaryEvent.InitiatorRole),
+                        StringComparison.Ordinal),
+                "The released ordinary raid page queued more than once.");
+
+            Pawn immediatePawn = scope.CreateGeneratingAdultColonist();
+            scope.SpawnAsLiveColonist(immediatePawn);
+            PawnsArrivalModeDef edgeDrop = RequireArrivalMode("EdgeDrop");
+            RaidFanoutSignal immediate = BuildRaidFanout(
+                raidEnemy, map, 260f, edgeDrop);
+            PawnDiaryRimTestScope.Require(
+                !immediate.DelayGeneration,
+                "The loaded EdgeDrop raid did not bypass the positive anticipation delay.");
+            DiaryEvent immediatePage = scope.FireAndRequireEvent(
+                () => DiaryEvents.Submit(
+                    new RaidPawnSignal(immediate, immediatePawn, immediatePawn.GetUniqueLoadID())),
+                "RaidEnemy",
+                immediatePawn,
+                null);
+            scope.CapturedPrompt(immediatePage, DiaryEvent.InitiatorRole);
+            PawnDiaryRimTestScope.Require(
+                !readyTicks.Contains(DelayedGenerationKey(immediatePage)),
+                "The immediate drop-pod raid incorrectly stamped a delayed-generation marker.");
         }
 
         /// <summary>
@@ -289,10 +373,37 @@ namespace PawnDiary.RimTests
         /// (the source substitutes its English "unknown" sentinel) and no arrival mode/strategy is supplied,
         /// so an ordinary RaidEnemy classifies to the catch-all "raid" group.
         /// </summary>
-        private static RaidFanoutSignal BuildRaidFanout(IncidentDef incidentDef, Map map, float points)
+        private static RaidFanoutSignal BuildRaidFanout(
+            IncidentDef incidentDef,
+            Map map,
+            float points,
+            PawnsArrivalModeDef arrivalMode = null)
         {
-            IncidentParms parms = new IncidentParms { target = map, points = points };
+            IncidentParms parms = new IncidentParms
+            {
+                target = map,
+                points = points,
+                raidArrivalMode = arrivalMode
+            };
             return new RaidFanoutSignal(parms, incidentDef);
+        }
+
+        private static IDictionary DelayedGenerationReadyTicks()
+        {
+            IDictionary readyTicks =
+                DelayedRaidGenerationReadyTicksField?.GetValue(scope.Component) as IDictionary;
+            if (readyTicks == null)
+            {
+                throw new AssertionException(
+                    "Pawn Diary raid test could not locate delayedRaidGenerationReadyTicks.");
+            }
+
+            return readyTicks;
+        }
+
+        private static string DelayedGenerationKey(DiaryEvent diaryEvent)
+        {
+            return diaryEvent.eventId + "|" + DiaryEvent.InitiatorRole;
         }
 
         private static void InstallOnlyIssueStance(Pawn pawn, string preceptDefName)
@@ -373,6 +484,19 @@ namespace PawnDiary.RimTests
             if (def == null)
             {
                 throw new AssertionException("Required vanilla IncidentDef '" + defName + "' was not loaded.");
+            }
+
+            return def;
+        }
+
+        private static PawnsArrivalModeDef RequireArrivalMode(string defName)
+        {
+            PawnsArrivalModeDef def =
+                DefDatabase<PawnsArrivalModeDef>.GetNamedSilentFail(defName);
+            if (def == null)
+            {
+                throw new AssertionException(
+                    "Required vanilla PawnsArrivalModeDef '" + defName + "' was not loaded.");
             }
 
             return def;

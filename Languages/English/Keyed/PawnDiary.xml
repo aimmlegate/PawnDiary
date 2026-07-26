@@ -428,15 +428,23 @@
   <PawnDiary.Settings.ExportAllDiariesDone>Exported diary pages to {0}. Path copied to clipboard.</PawnDiary.Settings.ExportAllDiariesDone>
   <PawnDiary.Settings.ExportAllDiariesFailed>Diary export failed: {0}</PawnDiary.Settings.ExportAllDiariesFailed>
   <PawnDiary.Settings.ExportAllDiariesNoGame>Start or load a game before exporting diary pages.</PawnDiary.Settings.ExportAllDiariesNoGame>
-  <PawnDiary.Export.ButtonTip>Export {0}'s complete diary as a formatted Markdown file.</PawnDiary.Export.ButtonTip>
-  <PawnDiary.Export.Done>Exported {0}'s diary ({1} pages) to {2}. Path copied to clipboard.</PawnDiary.Export.Done>
+  <PawnDiary.Export.Button>Export current view</PawnDiary.Export.Button>
+  <PawnDiary.Export.ButtonTip>Export {0}'s selected year with the currently applied search, favorite, and tag filters.</PawnDiary.Export.ButtonTip>
+  <PawnDiary.Export.Done>Exported {0}'s filtered diary ({1} pages) to {2}. Path copied to clipboard.</PawnDiary.Export.Done>
   <PawnDiary.Export.Failed>Could not export {0}'s diary: {1}</PawnDiary.Export.Failed>
   <PawnDiary.Export.InvalidSubject>Could not identify the pawn whose diary should be exported.</PawnDiary.Export.InvalidSubject>
   <PawnDiary.Export.MarkdownTitle>{0}'s Diary</PawnDiary.Export.MarkdownTitle>
+  <PawnDiary.Export.GameTimeLabel>Game time</PawnDiary.Export.GameTimeLabel>
+  <PawnDiary.Export.UnknownGameTime>Unknown</PawnDiary.Export.UnknownGameTime>
+  <PawnDiary.Export.FiltersLabel>Filters</PawnDiary.Export.FiltersLabel>
+  <PawnDiary.Export.FilterYear>Year: {0}</PawnDiary.Export.FilterYear>
+  <PawnDiary.Export.FilterSearch>Search: {0}</PawnDiary.Export.FilterSearch>
+  <PawnDiary.Export.FilterTags>Tags: {0}</PawnDiary.Export.FilterTags>
   <PawnDiary.Export.DateLabel>Date</PawnDiary.Export.DateLabel>
   <PawnDiary.Export.CategoryLabel>Category</PawnDiary.Export.CategoryLabel>
   <PawnDiary.Export.UntitledEntry>Untitled entry</PawnDiary.Export.UntitledEntry>
   <PawnDiary.Export.EmptyDiary>No completed diary pages have been recorded yet.</PawnDiary.Export.EmptyDiary>
+  <PawnDiary.Export.EmptyFilteredDiary>No completed diary pages match these filters.</PawnDiary.Export.EmptyFilteredDiary>
   <PawnDiary.Settings.Temperature>LLM temperature: {0}</PawnDiary.Settings.Temperature>
   <PawnDiary.Settings.TemperatureHelp>Controls model randomness for diary and title requests. Lower values are steadier and more literal; higher values are more varied and atmospheric but can drift from supplied facts.</PawnDiary.Settings.TemperatureHelp>
   <PawnDiary.Settings.TimeoutSeconds>Request timeout: {0}s</PawnDiary.Settings.TimeoutSeconds>

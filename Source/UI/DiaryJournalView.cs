@@ -390,21 +390,6 @@ namespace PawnDiary
                 headerRight = writingStyleIconRect.x - Mathf.Max(0f, WritingStyleIconRightGap);
             }
 
-            // Player-facing Markdown export is available for every valid reader subject, including an
-            // archive-only pawn whose live Pawn object no longer exists. It sits left of the other
-            // header actions and exports the whole diary, independent of the selected year or filters.
-            if (component != null)
-            {
-                float iconSize = Mathf.Max(1f, WritingStyleIconSize);
-                Rect exportIconRect = new Rect(
-                    headerRight - iconSize,
-                    journalRect.y + Mathf.Max(0f, (headerRect.height - iconSize) * 0.5f),
-                    iconSize,
-                    iconSize);
-                DrawMarkdownExportHeaderIcon(exportIconRect, subject, component);
-                headerRight = exportIconRect.x - Mathf.Max(0f, WritingStyleIconRightGap);
-            }
-
             headerRect.width = Mathf.Max(0f, headerRight - journalRect.x);
 
             Text.Font = GameFont.Medium;
@@ -437,7 +422,16 @@ namespace PawnDiary
                 && years.Count > 0
                 && visibleEntriesCache.TryGetOrderedEntriesForSelectedYear(subject.PawnId, selectedYear, out ordered);
 
-            DrawFilterPanel(filterPanelRect, subject, component, years, visibleEntriesCache, haveOrdered ? ordered : null);
+            bool exportReady = !indexLoading && (years.Count == 0 || haveOrdered);
+            DrawFilterPanel(
+                filterPanelRect,
+                subject,
+                component,
+                years,
+                visibleEntriesCache,
+                haveOrdered ? ordered : null,
+                showLlmDebugInfo,
+                exportReady);
 
             // Keep every year reachable when the player hides the sidebar or the host is too narrow to
             // draw it. The same year control is reused inline, immediately above the scroll viewport.

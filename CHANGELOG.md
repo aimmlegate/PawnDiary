@@ -8,8 +8,9 @@ pre-release version ladder for project history.
 
 ## 2026-07-26
 
+- **Loaded RimTest gap closure.** Added reversible coverage for reader/export, runtime diagnostics, Brainwipe boundaries, ambient/Tale/raid/hediff/lifecycle flows, the public API facade, and a catalog-derived 30-source coverage guard.
 - **Diary reader navigation and visible generation health.** Added pawn search/sorting, unread and last-page row metadata, per-pawn view-state memory, actionable empty/error states, retryable failed pages, and safe standalone-menu activity badges.
-- **Per-pawn Markdown export.** Added a normal-play diary header action that writes one pawn's completed pages as a clean localized Markdown document while keeping the full developer export intact.
+- **Per-pawn Markdown export.** Added a filter-panel action that writes the selected year and applied filters as localized Markdown, recording the filter summary and current game time while keeping the full developer export intact.
 - **Runtime event telemetry and integrity auditing.** Added bounded privacy-safe outcome counters, exception fingerprints, queue/result and correlation lifecycle breadcrumbs, duplicate/partial-commit detection, load/save repository audits, and developer-export diagnostics.
 - **Anomaly Brainwipe memory reset.** The delayed outcome clears the target's personal diary pages and narrative memories, then starts a new arrival-style history with an anxious amnesiac awakening while preserving player-configured voice and generation settings.
 - **UI, transport, and verification hardening.** Bounded and cancelled LLM work, preserved cooldown/concurrency contracts, made diary layouts and caches session-safe and narrow-screen friendly, and added socket-free networking/UI tests plus explicit loaded-test evidence.

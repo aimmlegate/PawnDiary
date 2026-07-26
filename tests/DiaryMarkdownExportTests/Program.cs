@@ -10,9 +10,11 @@ namespace DiaryMarkdownExportTests
         private static int Main()
         {
             FormatsLocalizedMetadataAndNewestFirstOrdering();
+            FormatsDocumentLevelExportContext();
             UsesLifeBoundaryRankAndStableSourceOrderForTickTies();
             UsesUntitledFallbackAndPreservesBodyMarkdown();
             OmitsBlankPagesAndFormatsAnEmptyDiary();
+            KeepsExportContextWhenFiltersMatchNoPages();
             NullDocumentReturnsEmptyText();
 
             Console.WriteLine("DiaryMarkdownExportTests passed " + assertions + " assertions.");
@@ -72,6 +74,40 @@ namespace DiaryMarkdownExportTests
             AssertTrue("arrival boundary sorts last", second < arrival);
         }
 
+        private static void FormatsDocumentLevelExportContext()
+        {
+            DiaryMarkdownDocument document = Document();
+            document.metadata.Add(new DiaryMarkdownMetadata
+            {
+                label = "Game\ntime",
+                value = "13h,\n4th of Aprimay, 5500"
+            });
+            document.metadata.Add(new DiaryMarkdownMetadata
+            {
+                label = "Filters",
+                value = "Year: 5500; Favorites only; Tags: Colony life"
+            });
+            document.metadata.Add(new DiaryMarkdownMetadata
+            {
+                label = " ",
+                value = "This blank-labeled row must be omitted."
+            });
+            document.entries.Add(Entry(100, 0, "Filtered page"));
+
+            string markdown = Normalize(DiaryMarkdownFormatter.Format(document));
+
+            AssertContains(
+                "game time and filters precede entries",
+                markdown,
+                "# Mira's Diary\n\n"
+                + "**Game time:** 13h, 4th of Aprimay, 5500\n"
+                + "**Filters:** Year: 5500; Favorites only; Tags: Colony life\n\n"
+                + "## Filtered page");
+            AssertFalse(
+                "blank document metadata is omitted",
+                markdown.Contains("This blank-labeled row", StringComparison.Ordinal));
+        }
+
         private static void UsesUntitledFallbackAndPreservesBodyMarkdown()
         {
             DiaryMarkdownDocument document = Document();
@@ -108,6 +144,25 @@ namespace DiaryMarkdownExportTests
             AssertEqual(
                 "empty diary output",
                 "# Mira's Diary\n\nNo completed pages yet.\n",
+                markdown);
+        }
+
+        private static void KeepsExportContextWhenFiltersMatchNoPages()
+        {
+            DiaryMarkdownDocument document = Document();
+            document.metadata.Add(new DiaryMarkdownMetadata
+            {
+                label = "Filters",
+                value = "Year: 5501; Search: raid"
+            });
+
+            string markdown = Normalize(DiaryMarkdownFormatter.Format(document));
+
+            AssertEqual(
+                "empty filtered view keeps its context",
+                "# Mira's Diary\n\n"
+                + "**Filters:** Year: 5501; Search: raid\n\n"
+                + "No completed pages yet.\n",
                 markdown);
         }
 

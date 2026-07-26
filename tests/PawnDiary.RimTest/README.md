@@ -38,8 +38,8 @@ finds RimTest Redux relative to `RimWorldManaged`; if the framework lives elsewh
    asks the game to load RimTest Redux first; it is not a player dependency).
 2. Launch RimWorld. Open **Mod Options → RimTest Redux → Open Test Runner**.
 3. `PawnDiaryDefSmokeTests` is read-only and can run at the **main menu**.
-4. `PawnDiaryEventReactionTests` needs a **loaded game** — start or load any colony (a throwaway one is
-   fine; the suite never touches the player's colonists) and run it there.
+4. Every other suite needs a **loaded game**. Use a disposable colony for the suites called out below,
+   then rerun the guarded DLC rows under each applicable DLC-on/off profile.
 
 ## Suites
 
@@ -53,15 +53,17 @@ owners. Both use the shared harness:
 | `PawnDiaryQualityWavePhase2FlowTests` | Quality Wave A5 | Event-time per-POV identity context, prompt projection, partner exclusion, and historical-boundary safety. |
 | `PawnDiaryQualityWaveMoodFlowTests` | Quality Wave B2 | Eligible event-time mood capture and real SoloInternalState prompt projection. |
 | `PawnDiaryInteractionBatchFlowTests` | 02 / Quality Wave B2 | Interaction batch/ambient accumulation + flush and most-extreme event-time mood retention. |
-| `PawnDiaryThoughtFlowTests` | 03 | Thought memory immediate/ambient route. |
+| `PawnDiaryThoughtFlowTests` | 03 | Thought memory immediate route, magnitude gate, and source dedup. |
+| `PawnDiaryAmbientThoughtFlowTests` | 03 | Real ambient memory accumulation, no-premature page, flush, pawn/day guard, below-minimum drop, and immediate fallback when ambient routing is disabled. |
 | `PawnDiaryThoughtProgressionFlowTests` | 04 | Thought-stage progression baseline/worsen/repeat. |
 | `PawnDiaryInspirationFlowTests` | 05 | Inspiration solo page + group gate. |
 | `PawnDiaryAbilityFlowTests` | 06 | Ability activation caster/target facts + chance gate + dedup. |
-| `PawnDiaryTaleFlowTests` | 09 | Tale single/pair shape + participant extraction + group toggle. |
+| `PawnDiaryTopLevelLifecycleFlowTests` | 06/12/16/18 | Real local/global Ability, component Work scan, unregistered Quest acceptance bookkeeping, and `Pawn.SetFaction` Arrival boundaries with reversible state and a narrowly scoped Arrival transport guard. |
+| `PawnDiaryTaleFlowTests` | 09 | Tale single/pair shape, participant extraction, group toggle, and real combat-Tale accumulation/dedup/one-time flush. |
 | `PawnDiaryDeathFlowTests` | 10 | Neutral death page + cross-source dedup. |
-| `PawnDiaryHediffFlowTests` | 11 | Hediff immediate vs day-signal + body-part markers. |
+| `PawnDiaryHediffFlowTests` | 11 | Hediff immediate vs day-signal, body-part markers, and top-level scanner baseline/progression/replay/removal. |
 | `PawnDiaryWorkFlowTests` | 12 | Work passion/chore/dark-study facts + same-work suppression. |
-| `PawnDiaryRaidFlowTests` | 13 | Raid per-colonist fan-out + colony dedup + bypass classes. |
+| `PawnDiaryRaidFlowTests` | 13 | Raid fan-out contract, colony dedup, exact positive-delay release, one-shot replay, and immediate-threat bypass. |
 | `PawnDiaryMoodConditionFlowTests` | 14 | GameCondition mood fan-out + classification + group gate. |
 | `PawnDiaryPawnProgressionFlowTests` | 15 | Skill/trait milestone baseline + upward-only + arc request; installed-Royalty psylink/title scanners; guarded/versioned Biotech gene projection, rich fallback, real implant/reimplant hooks, same-call Ability ownership, replay silence, and the N3-B salient identity lens/stable repetition key. |
 | `PawnDiaryBiotechMechanitorFlowTests` | B6 | Real spawned mechlink install/removal pages, silent unspawned starting-state callbacks, vanilla mech-side Overseer ownership, combat gating, and Harmony registration audits for mechlink, relation, Tale, pre-cleanup death, boss call, and boss defeat seams. |
@@ -75,6 +77,7 @@ owners. Both use the shared harness:
 | `PawnDiaryBiotechComponentStateFixtureTests` | B1 | Real-Scribe component keys, old/malformed/oversized rows, hard ceiling, and pre-cap admission recovery. |
 | `PawnDiaryBiotechDlcOffMaintenanceTests` | B1 | Base-only loaded maintenance of frozen growth/birth owners, ordinary Birthday/canonical birth release, pruning, and replay silence. |
 | `PawnDiaryAnomalyStateFixtureTests` | A1.1/A2.0 save | Actual seven-key component Scribe round-trip, missing-key legacy defaults, independent deep monolith/creepjoiner rows, guarded active-DLC baselines, DLC-off deferral, and transient load reset. |
+| `PawnDiaryBrainwipeFlowTests` | Anomaly Brainwipe | Full personal-history reset with shared-page survival, digest/index cleanup, culture/voice preservation, new amnesiac arrival boundary, and guarded patch-adapter behavior. |
 | `PawnDiaryCreepJoinerFlowTests` | A2.0/A2.1 | Exact optional hook registration, canonical/repeated arrival continuity, real rejection/aggression/departure and surgical-inspection calls, exact Tale ownership, writer roles, repeat/no-op silence, and lifecycle reset. |
 | `PawnDiaryGhoulTransformationFlowTests` | A2.2 | Exact optional recipe registration/no-DLC gate, real successful/failed infusion, already-ghoul and disabled-output fallback, exact pair/solo POVs and preverified diary refs, exception/unscoped Tale release, A2.1 scope exclusion, save/no-replay, and later ordinary injury batching. |
 | `PawnDiaryRimTalkBridgeRuntimeTests` | B1 adapter | Reflection-only smoke against the actually loaded RimTalk + bridge assemblies: registered context-variable resolution, active-preset auto-entry attachment, and pair-owned growth/birth-linked shared memory without duplicate or recursive Pawn Diary submission. |
@@ -87,17 +90,20 @@ owners. Both use the shared harness:
 | `PawnDiaryIdeologyPhase2InfrastructureTests` | Ideology P2 | Real mutation hooks/cache, exact conversion/reassurance/crisis consumers, both deterministic real Counsel success subbranches plus failure, one-page ability/thought ownership and RNG preservation, XML context/prompt selection, legacy-setting inheritance, failure isolation, and DLC-off ordinary fallback. |
 | `PawnDiaryIdeologyPhase3BeliefStateTests` | Ideology P3 | Page-silent first baseline, real tracker certainty accumulation, XML scan work cap, inactive-Ideology reset, and dev-safe mechanical diagnostics. |
 | `PawnDiaryDiaryTabFilterFixtureTests` | UI lifecycle | Hidden-panel pawn reset and year-specific tag reset without invoking immediate-mode rendering. |
+| `PawnDiaryReaderRuntimeFixtureTests` | UI/export | Live/departed directory merge, status-cache invalidation, main-button visibility and singleton window lifecycle, real gizmo routing, and exact visible-page Markdown export. |
 | `PawnDiaryOnThisDayDividerFixtureTests` | UI lifecycle / Quality Wave H5-UI | "On this day" divider against the live clock: `DayIndexForGameTick` offset semantics, tick/printed-date year agreement, anniversary match plus fail-closed dev-mock/corrupt-tick/wrong-year variants, current-year and undated gating, and both localized label forms. |
 | `PawnDiaryArrivalFlowTests` | 18 | Neutral arrival page + first-ordering + bootstrap resilience. |
 | `PawnDiaryDayReflectionFlowTests` | 19 / Quality Wave H3 + H5-prompt | Day/quadrum reflection highlight, once-per-day guard, evidence consumption, arrival-bounded colony-news ownership, and deduplicated same-season memory across hot/archive history. |
 | `PawnDiaryArcReflectionFlowTests` | 20 | Arc reflection year/gap limits + memory filter/dedup + backoff. |
 | `PawnDiaryExternalApiFlowTests` | 21 | `PawnDiaryApi` submit solo/pair, group gate, budget, listener notify. |
+| `PawnDiaryPublicApiGapFlowTests` | public API | Handle/prompt/direct submission, status/snapshot/query/stats/context/catalog exports, reversible style/filter writes, setup snapshot privacy, and deterministic prompt enchantment. |
 | `PawnDiaryEventWindowFlowTests` | 22 | Event-window start/end/one-shot/timeout + prompt-bias state; exact monolith ownership when Anomaly is active and inert loaded Defs when it is absent. |
 | `PawnDiaryObservedConditionFlowTests` | 23 | Observed-condition start/end debounce + scope identity + restart cooldown. |
 | `PawnDiaryArtImmortalizationFixtureTests` | 24 | Patched art/reflection surface, exact colony-wide ownership, diary fallback, and Def/localization wiring. |
 | `PawnDiaryAnniversaryFlowTests` / `PawnDiaryAnniversaryFixtureTests` | 25 | Birthday/arrival/loss/record milestones, silent baseline and ownership, save normalization, live relation ordering, and Def/localization wiring. |
 | `PawnDiaryDigestPacingFlowTests` / `PawnDiaryDigestPacingFixtureTests` | 26 | Low-salience daily allowance, pair semantics, digest buffering/consumption, rollover, save normalization, shipped classification, and tunables. |
 | `PawnDiaryRepositoryRebuildFixtureTests` | save/index | Real-Scribe event/archive/memory round trips, transient-index rebuilds, detached component re-ID/retention/reference-prune integration, memory-row repair/removal, and first-post-load replay idempotency. |
+| `PawnDiaryRuntimeDiagnosticsFixtureTests` | telemetry/integrity | Loaded hook-manifest replay, real outcome telemetry and privacy-safe export, live integrity detection/repair, duplicate-ID rejection, and exception fingerprint redaction. |
 | `PawnDiaryRngIsolationFixtureTests` | RNG boundary | Stable generation and one-shot capture adapters preserve the outer `Verse.Rand` stream; stable seeds reproduce while reroll salt can change the candidate. |
 
 The first A2.2-expanded loaded run reached 342/347. Its two production failures shared the corrected
@@ -148,6 +154,19 @@ suite refuses to compete with an active or parked player gravship. Its Phase A/B
 steps and reserved save names are documented in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`. If RimTest's
 run-at-startup option enters this loaded-game suite at the main menu, every runtime/phase fixture logs
 an explicit skip before dereferencing `Find` or the absent `DiaryGameComponent`.
+
+The remaining manual boundaries are intentional:
+
+- RimTest Redux 0.1.1 exposes only synchronous, unordered, no-argument tests, so a true
+  save/quit/reload continuation remains the documented disposable-save procedure.
+- Immediate-mode layout and pixel quality still need visual inspection. Loaded tests cover reader
+  state, singleton window lifecycle, command routing, and export bytes without calling `DoWindowContents`.
+- Real incidents, registered quests, map-affecting conditions, effectful abilities, full live-colony
+  raid fan-out, art creation, and the actual Brainwipe ritual outcome would irreversibly alter the
+  loaded colony. Reversible fixtures cross their safe Harmony/production seams; those destructive
+  originals remain manual disposable-colony checks.
+- DLC-off and each DLC-on branch need separate runner profiles. RimTest Redux has no skip result, so
+  an inapplicable guarded test returning early is not proof of the opposite profile.
 
 ### Writing fixtures against a live colony
 
@@ -268,8 +287,9 @@ Extend the no-leak audit at the same time and keep test bodies assertion-only.
 
 When the local developer script `scripts/verify-coverage.ps1` is present, it validates all XML, runs
 every standalone pure test project, builds the core mod, builds this RimTest assembly when RimTest
-Redux is available, and validates the EVT-01…EVT-26 manifest. Each row names a real source file,
-`[Test]` method, mod profile, and evidence level; a requirement token in a comment cannot satisfy it.
+Redux is available, and validates both the EVT-01…EVT-26 manifest and the catalog-derived 30-source
+runtime manifest. Each row names a real source file, `[Test]` method, mod profile, and evidence level;
+a requirement token in a comment cannot satisfy it.
 
 ```powershell
 scripts\verify-coverage.ps1              # full audit (build + pure tests + matrix)

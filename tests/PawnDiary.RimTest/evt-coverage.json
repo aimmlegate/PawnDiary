@@ -36,10 +36,10 @@
   },
   {
     "id": "EVT-06",
-    "testFile": "PawnDiaryAbilityFlowTests.cs",
-    "testMethod": "SuccessfulActivationRecordsSoloEventWithCasterAndTargetFacts",
+    "testFile": "PawnDiaryTopLevelLifecycleFlowTests.cs",
+    "testMethod": "RealLocalAbilityActivateCrossesHarmonyBoundary",
     "profile": "base",
-    "evidence": "downstream-flow"
+    "evidence": "vanilla-trigger"
   },
   {
     "id": "EVT-07",
@@ -78,8 +78,8 @@
   },
   {
     "id": "EVT-12",
-    "testFile": "PawnDiaryWorkFlowTests.cs",
-    "testMethod": "PassionWorkEmitsSoloEventWithPassionFact",
+    "testFile": "PawnDiaryTopLevelLifecycleFlowTests.cs",
+    "testMethod": "TopLevelWorkScannerDispatchesItsCachedFixtureColonist",
     "profile": "base",
     "evidence": "production-flow"
   },
@@ -120,10 +120,10 @@
   },
   {
     "id": "EVT-18",
-    "testFile": "PawnDiaryArrivalFlowTests.cs",
-    "testMethod": "ColonistGetsExactlyOneNeutralArrivalDescriptionWithFacts",
+    "testFile": "PawnDiaryTopLevelLifecycleFlowTests.cs",
+    "testMethod": "RealSetFactionCreatesArrivalThroughHarmony",
     "profile": "base",
-    "evidence": "production-flow"
+    "evidence": "vanilla-trigger"
   },
   {
     "id": "EVT-19",

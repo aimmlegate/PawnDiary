@@ -6,11 +6,12 @@
 // a trigger, asserts the outcome, and registers cleanup for the one thing the harness does not own: the
 // historical Tale that RecordTale adds to Find.TaleManager.
 //
-// Coverage-matrix ID (design/TEST_COVERAGE_PLAN.md §3): EVT-09 Tale. This suite covers the non-combat, non-death
-// slice — single-pawn shape, two-pawn shape + participant extraction, and the XML group toggle. Combat
-// batching and death tales belong to EVT-10 and are intentionally out of scope here.
+// Coverage-matrix ID (design/TEST_COVERAGE_PLAN.md §3): EVT-09 Tale. This suite covers single-pawn shape,
+// two-pawn shape + participant extraction, the XML group toggle, and the base-game positive combat-batch
+// route (accumulate, source-dedup, flush exactly once). Death tales remain in EVT-10.
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 using RimWorld;
 using RimTestRedux;
@@ -27,6 +28,15 @@ namespace PawnDiary.RimTests
     [TestSuite]
     public static class PawnDiaryTaleFlowTests
     {
+        private const BindingFlags PrivateInstance =
+            BindingFlags.Instance | BindingFlags.NonPublic;
+        private static readonly FieldInfo EventsField =
+            typeof(DiaryGameComponent).GetField("events", PrivateInstance);
+        private static readonly FieldInfo PendingTaleBatchesField =
+            typeof(DiaryGameComponent).GetField("pendingTaleBatches", PrivateInstance);
+        private static readonly MethodInfo FlushAllTaleBatchesMethod =
+            typeof(DiaryGameComponent).GetMethod("FlushAllTaleBatches", PrivateInstance);
+
         private static PawnDiaryRimTestScope scope;
         private static Pawn firstPawn;
         private static Pawn secondPawn;
@@ -39,7 +49,7 @@ namespace PawnDiary.RimTests
         [BeforeEach]
         public static void SetUp()
         {
-            scope = PawnDiaryRimTestScope.Begin("talequiet", "talelife");
+            scope = PawnDiaryRimTestScope.Begin("talequiet", "talelife", "talecombat");
             firstPawn = scope.CreateAdultColonist();
             secondPawn = scope.CreateAdultColonist();
         }
@@ -156,6 +166,85 @@ namespace PawnDiary.RimTests
                 () => { recordedTale = TaleRecorder.RecordTale(taleDef, firstPawn); });
         }
 
+        /// <summary>
+        /// EVT-09. Two reversible base-game combat Tales accumulate into one pending per-pawn batch.
+        /// Replaying the exact first Tale inside the source dedup window does not inflate that batch.
+        /// An explicit production flush creates one combined solo page with both distinct sources, and
+        /// repeating the flush creates nothing. Only removable TaleManager rows are used: no battle,
+        /// injury, death, corpse, combat log, or pawn record is created.
+        /// </summary>
+        [Test]
+        public static void CombatTalesAccumulateDedupAndFlushExactlyOnce()
+        {
+            TaleDef wasOnFire = RequireDef<TaleDef>("WasOnFire");
+            TaleDef collapseDodged = RequireDef<TaleDef>("CollapseDodged");
+            PawnDiaryRimTestScope.Require(
+                DiaryGameComponent.TaleBatchGroupFor(wasOnFire)?.defName == "talecombat"
+                    && DiaryGameComponent.TaleBatchGroupFor(collapseDodged)?.defName == "talecombat",
+                "The reversible base-game Tales no longer classify to the shipped talecombat batch.");
+
+            // WasOnFire normally has a 50% vanilla ignore chance. Pin both definitions to an accepted
+            // RecordTale call and restore the loaded Defs even when a later assertion fails.
+            float originalWasOnFireIgnoreChance = wasOnFire.ignoreChance;
+            float originalCollapseDodgedIgnoreChance = collapseDodged.ignoreChance;
+            wasOnFire.ignoreChance = 0f;
+            collapseDodged.ignoreChance = 0f;
+            scope.RegisterCleanup(() =>
+            {
+                wasOnFire.ignoreChance = originalWasOnFireIgnoreChance;
+                collapseDodged.ignoreChance = originalCollapseDodgedIgnoreChance;
+            });
+
+            // FlushAllTaleBatches is intentionally broad because production calls it before save. Isolate
+            // the dictionary first so this fixture cannot flush a real pending batch from the loaded colony.
+            IsolatePendingTaleBatches();
+
+            List<Tale> recordedTales = new List<Tale>();
+            scope.RegisterCleanup(() =>
+            {
+                for (int i = 0; i < recordedTales.Count; i++)
+                {
+                    RemoveRecordedTale(recordedTales[i]);
+                }
+            });
+
+            int before = TotalEventCount();
+            scope.RequireNoNewEvent(() =>
+            {
+                recordedTales.Add(TaleRecorder.RecordTale(wasOnFire, firstPawn));
+                recordedTales.Add(TaleRecorder.RecordTale(wasOnFire, firstPawn));
+                recordedTales.Add(TaleRecorder.RecordTale(collapseDodged, firstPawn));
+            });
+            PawnDiaryRimTestScope.Require(
+                recordedTales.Count == 3
+                    && recordedTales[0] is Tale_SinglePawn
+                    && recordedTales[1] is Tale_SinglePawn
+                    && recordedTales[2] is Tale_SinglePawn,
+                "Vanilla did not accept all three reversible TaleRecorder calls.");
+            PawnDiaryRimTestScope.Require(
+                TotalEventCount() == before,
+                "A combat Tale wrote a page before its pending batch flushed.");
+
+            DiaryEvent batchPage = scope.FireAndRequireEvent(
+                FlushAllTaleBatches,
+                "TaleCombatBatch",
+                firstPawn,
+                null);
+            scope.RequireSoloRef(batchPage, firstPawn);
+            RequireContextContains(batchPage, "batch=tale");
+            RequireContextContains(batchPage, "group=talecombat");
+            RequireContextContains(batchPage, "events=2");
+            RequireContextContains(
+                batchPage, "tale_defs=WasOnFire, CollapseDodged");
+
+            // The first replay was source-deduped, so the batch is now gone and neither another page nor
+            // another flushable batch remains.
+            scope.RequireNoNewEvent(FlushAllTaleBatches);
+            PawnDiaryRimTestScope.Require(
+                TotalEventCount() == before + 1,
+                "The completed Tale batch did not remain a single durable page.");
+        }
+
         // ----- helpers ---------------------------------------------------------------------------
 
         // Verse.TaleManager exposes no public single-tale removal (volatile tales normally expire on
@@ -191,6 +280,73 @@ namespace PawnDiary.RimTests
 
             IList tales = TalesListField.GetValue(Find.TaleManager) as IList;
             tales?.Remove(tale);
+        }
+
+        /// <summary>
+        /// Temporarily owns the entire transient Tale-batch dictionary. This mirrors the shared harness's
+        /// collection snapshots: player rows are retained by reference, removed while the test runs, and
+        /// restored exactly after every fixture-owned row has been discarded.
+        /// </summary>
+        private static void IsolatePendingTaleBatches()
+        {
+            IDictionary batches =
+                PendingTaleBatchesField?.GetValue(scope.Component) as IDictionary;
+            if (batches == null)
+            {
+                throw new AssertionException(
+                    "Pawn Diary Tale test could not locate pendingTaleBatches.");
+            }
+
+            List<DictionaryEntry> original = new List<DictionaryEntry>();
+            foreach (DictionaryEntry entry in batches)
+            {
+                original.Add(entry);
+            }
+
+            scope.RegisterCleanup(() =>
+            {
+                batches.Clear();
+                for (int i = 0; i < original.Count; i++)
+                {
+                    batches[original[i].Key] = original[i].Value;
+                }
+            });
+            batches.Clear();
+        }
+
+        private static void FlushAllTaleBatches()
+        {
+            if (FlushAllTaleBatchesMethod == null)
+            {
+                throw new AssertionException(
+                    "Pawn Diary Tale test could not locate FlushAllTaleBatches.");
+            }
+
+            FlushAllTaleBatchesMethod.Invoke(scope.Component, null);
+        }
+
+        private static int TotalEventCount()
+        {
+            DiaryEventRepository repository =
+                EventsField?.GetValue(scope.Component) as DiaryEventRepository;
+            if (repository == null)
+            {
+                throw new AssertionException(
+                    "Pawn Diary Tale test could not locate the event repository.");
+            }
+
+            return repository.AllEvents.Count;
+        }
+
+        private static void RequireContextContains(
+            DiaryEvent diaryEvent,
+            string expectedFragment)
+        {
+            PawnDiaryRimTestScope.Require(
+                diaryEvent?.gameContext != null
+                    && diaryEvent.gameContext.IndexOf(
+                        expectedFragment, StringComparison.Ordinal) >= 0,
+                "The Tale batch context did not contain '" + expectedFragment + "'.");
         }
 
         private static TDef RequireDef<TDef>(string defName) where TDef : Def

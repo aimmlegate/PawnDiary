@@ -220,7 +220,9 @@ namespace PawnDiary
             DiaryGameComponent component,
             List<int> years,
             DiaryJournalVisibleEntriesCache entriesCache,
-            List<DiaryEntryView> orderedForTags)
+            List<DiaryEntryView> orderedForTags,
+            bool showLlmDebugInfo,
+            bool exportReady)
         {
             if (panelRect.width <= 1f || panelRect.height <= 1f)
             {
@@ -253,8 +255,12 @@ namespace PawnDiary
                 DrawFilterYearSection(listing, years, entriesCache);
                 DrawJournalFilterSection(
                     listing,
+                    subject,
+                    component,
                     orderedForTags,
-                    entriesCache == null ? -1 : entriesCache.VisibleRevision);
+                    entriesCache == null ? -1 : entriesCache.VisibleRevision,
+                    showLlmDebugInfo,
+                    exportReady);
                 if (Prefs.DevMode)
                 {
                     listing.GapLine();
@@ -311,8 +317,12 @@ namespace PawnDiary
         /// </summary>
         private void DrawJournalFilterSection(
             Listing_Standard listing,
+            DiaryReaderSubject subject,
+            DiaryGameComponent component,
             List<DiaryEntryView> orderedForTags,
-            int visibleRevision)
+            int visibleRevision,
+            bool showLlmDebugInfo,
+            bool exportReady)
         {
             // No umbrella "Filters" header: search, the favorites star, and tag chips are self-labeling,
             // and an extra title only adds clutter above them.
@@ -350,6 +360,16 @@ namespace PawnDiary
                 filterActiveTags.Clear();
                 filterSearchQuery = string.Empty;
             }
+
+            listing.Gap(8f);
+            DrawMarkdownExportButton(
+                listing,
+                subject,
+                component,
+                orderedForTags,
+                visibleRevision,
+                showLlmDebugInfo,
+                exportReady);
         }
 
         /// <summary>

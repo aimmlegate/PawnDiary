@@ -19,7 +19,17 @@ namespace PawnDiary
         public string categoryLabel;
         public string untitledEntryLabel;
         public string emptyDiaryText;
+        public readonly List<DiaryMarkdownMetadata> metadata = new List<DiaryMarkdownMetadata>();
         public readonly List<DiaryMarkdownEntry> entries = new List<DiaryMarkdownEntry>();
+    }
+
+    /// <summary>
+    /// One localized document-level fact shown below the export title, such as game time or filters.
+    /// </summary>
+    internal sealed class DiaryMarkdownMetadata
+    {
+        public string label;
+        public string value;
     }
 
     /// <summary>
@@ -60,6 +70,21 @@ namespace PawnDiary
             StringBuilder markdown = new StringBuilder();
             markdown.Append("# ").AppendLine(SingleLine(document.title));
             markdown.AppendLine();
+
+            bool wroteDocumentMetadata = false;
+            for (int i = 0; i < document.metadata.Count; i++)
+            {
+                DiaryMarkdownMetadata item = document.metadata[i];
+                if (item != null && AppendMetadata(markdown, item.label, item.value))
+                {
+                    wroteDocumentMetadata = true;
+                }
+            }
+
+            if (wroteDocumentMetadata)
+            {
+                markdown.AppendLine();
+            }
 
             List<OrderedEntry> ordered = OrderedUsableEntries(document.entries);
             if (ordered.Count == 0)
@@ -138,19 +163,20 @@ namespace PawnDiary
             return byBoundary != 0 ? byBoundary : left.sourceIndex.CompareTo(right.sourceIndex);
         }
 
-        private static void AppendMetadata(StringBuilder markdown, string label, string value)
+        private static bool AppendMetadata(StringBuilder markdown, string label, string value)
         {
             string cleanLabel = SingleLine(label);
             string cleanValue = SingleLine(value);
             if (string.IsNullOrEmpty(cleanLabel) || string.IsNullOrEmpty(cleanValue))
             {
-                return;
+                return false;
             }
 
             markdown.Append("**")
                 .Append(cleanLabel)
                 .Append(":** ")
                 .AppendLine(cleanValue);
+            return true;
         }
 
         /// <summary>

@@ -66,6 +66,10 @@ namespace PawnDiary.RimTests
             typeof(DiaryGameComponent).GetField("pendingAmbientInteractionNotes", PrivateInstance);
         private static readonly FieldInfo WrittenAmbientNotesField =
             typeof(DiaryGameComponent).GetField("writtenAmbientInteractionNotes", PrivateInstance);
+        private static readonly FieldInfo PendingAmbientThoughtNotesField =
+            typeof(DiaryGameComponent).GetField("pendingAmbientThoughtNotes", PrivateInstance);
+        private static readonly FieldInfo WrittenAmbientThoughtNotesField =
+            typeof(DiaryGameComponent).GetField("writtenAmbientThoughtNotes", PrivateInstance);
         private static readonly FieldInfo ActiveThoughtProgressionsField =
             typeof(DiaryGameComponent).GetField("activeThoughtProgressions", PrivateInstance);
         private static readonly FieldInfo PendingDayHediffsField =
@@ -73,10 +77,11 @@ namespace PawnDiary.RimTests
         private static readonly FieldInfo WrittenDayReflectionsField =
             typeof(DiaryGameComponent).GetField("writtenDayReflections", PrivateInstance);
 
-        // Non-pawn-scoped component stores can be mutated indirectly by a production path under test.
-        // Snapshotting the whole collection is safer than relying on every suite author to remember a
-        // bespoke cleanup key. Mutable saved rows receive explicit field snapshots below; teardown copies
-        // those values back onto the ORIGINAL objects so both state and object identity are preserved.
+        // Component stores that production paths can mutate indirectly need exact whole-collection
+        // snapshots. Most are map/window/quest scoped; the ambient-thought stores are pawn scoped but must
+        // also be emptied because their real pre-save flush would otherwise publish a player's pending
+        // note. Mutable saved rows receive explicit field snapshots below; teardown copies those values
+        // back onto the ORIGINAL objects so both state and object identity are preserved.
         private static readonly FieldInfo ActiveEventWindowsField =
             typeof(DiaryGameComponent).GetField("activeEventWindows", PrivateInstance);
         private static readonly FieldInfo RecentEventWindowEventsField =
@@ -203,6 +208,8 @@ namespace PawnDiary.RimTests
             RequireReflectionField(ObservedConditionCooldownsField, "observedConditionCooldownUntilTick");
             RequireReflectionField(KnownAcceptedQuestIdsField, "knownAcceptedQuestIds");
             RequireReflectionField(DelayedRaidGenerationReadyTicksField, "delayedRaidGenerationReadyTicks");
+            RequireReflectionField(PendingAmbientThoughtNotesField, "pendingAmbientThoughtNotes");
+            RequireReflectionField(WrittenAmbientThoughtNotesField, "writtenAmbientThoughtNotes");
 
             PawnDiaryRimTestScope scope = new PawnDiaryRimTestScope
             {
@@ -214,6 +221,7 @@ namespace PawnDiary.RimTests
             };
             scope.IsolateRecentEvents();
             scope.SnapshotGlobalCollections();
+            scope.IsolateAmbientThoughtCollections();
 
             // Isolate the RNG BEFORE any capture runs so nothing the fired events roll (group tone
             // rotation, humor, staggered intensity) advances the player's own random stream.
@@ -903,6 +911,41 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Asserts the two private ambient-thought stores for one fixture pawn. The pending dictionary
+        /// and written-day set both use keys containing the pawn load id; counting those keys proves
+        /// accumulation and the one-page-per-day guard without exposing production's private note type.
+        /// </summary>
+        public void RequireAmbientThoughtState(
+            Pawn pawn,
+            int expectedPendingKeys,
+            int expectedWrittenKeys)
+        {
+            if (pawn == null)
+            {
+                throw new AssertionException("RequireAmbientThoughtState needs a test pawn.");
+            }
+
+            HashSet<string> pawnIds = new HashSet<string>(StringComparer.Ordinal)
+            {
+                pawn.GetUniqueLoadID()
+            };
+            int pendingKeys = CountDictionaryKeysContaining(
+                PendingAmbientThoughtNotesField.GetValue(Component) as IDictionary,
+                pawnIds);
+            int writtenKeys = CountHashSetEntriesContaining(
+                WrittenAmbientThoughtNotesField.GetValue(Component) as HashSet<string>,
+                pawnIds);
+            Require(
+                pendingKeys == expectedPendingKeys,
+                "Expected " + expectedPendingKeys + " pending ambient-thought key(s), but found "
+                + pendingKeys + ".");
+            Require(
+                writtenKeys == expectedWrittenKeys,
+                "Expected " + expectedWrittenKeys + " written ambient-thought key(s), but found "
+                + writtenKeys + ".");
+        }
+
+        /// <summary>
         /// Restores every mutation this scope made and then audits that no test-owned state survived.
         /// Every step runs even if an earlier one throws; the first failure is re-thrown at the end so
         /// RimTest reports it, but only after all cleanup has been attempted.
@@ -991,9 +1034,9 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
-        /// Captures component collections whose keys are map/window/quest scoped rather than pawn scoped.
-        /// A test may reach one of these stores indirectly through production code, so the shared harness
-        /// owns their baseline instead of depending on suite-specific best-effort cleanup.
+        /// Captures component collections that need an exact membership baseline. A test may reach the
+        /// map/window/quest stores indirectly; the ambient-thought stores are later emptied so a real
+        /// flush cannot touch the player's pending note or written-day guards.
         /// </summary>
         private void SnapshotGlobalCollections()
         {
@@ -1004,7 +1047,9 @@ namespace PawnDiary.RimTests
                 ActiveObservedConditionsField,
                 ObservedConditionCooldownsField,
                 KnownAcceptedQuestIdsField,
-                DelayedRaidGenerationReadyTicksField
+                DelayedRaidGenerationReadyTicksField,
+                PendingAmbientThoughtNotesField,
+                WrittenAmbientThoughtNotesField
             };
 
             for (int i = 0; i < fields.Length; i++)
@@ -1054,8 +1099,26 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
-        /// Restores every non-pawn-scoped store to its exact pre-test membership. The live collection
-        /// object is retained, which is important for readonly dictionaries referenced by production code.
+        /// Gives ambient-thought tests empty batching/day-guard stores after their exact live-game
+        /// baselines have been snapshotted. This protects a player's pending note from a fixture that
+        /// deliberately invokes the production "flush all before save" path.
+        /// </summary>
+        private void IsolateAmbientThoughtCollections()
+        {
+            IDictionary pending =
+                PendingAmbientThoughtNotesField.GetValue(Component) as IDictionary;
+            HashSet<string> written =
+                WrittenAmbientThoughtNotesField.GetValue(Component) as HashSet<string>;
+            Require(
+                pending != null && written != null,
+                "Pawn Diary's ambient-thought stores were unavailable for RimTest isolation.");
+            pending.Clear();
+            written.Clear();
+        }
+
+        /// <summary>
+        /// Restores every captured store to its exact pre-test membership. The live collection object is
+        /// retained, which is important for readonly dictionaries referenced by production code.
         /// </summary>
         private void RestoreGlobalCollections()
         {
@@ -1380,9 +1443,11 @@ namespace PawnDiary.RimTests
             // Pawn-scoped accumulator stores (all keyed by a string embedding the pawn id).
             RemoveDictionaryKeysContaining(PendingInteractionBatchesField?.GetValue(Component) as IDictionary, pawnIds);
             RemoveDictionaryKeysContaining(PendingAmbientNotesField?.GetValue(Component) as IDictionary, pawnIds);
+            RemoveDictionaryKeysContaining(PendingAmbientThoughtNotesField?.GetValue(Component) as IDictionary, pawnIds);
             RemoveDictionaryKeysContaining(ActiveThoughtProgressionsField?.GetValue(Component) as IDictionary, pawnIds);
             RemoveDictionaryKeysContaining(PendingDayHediffsField?.GetValue(Component) as IDictionary, pawnIds);
             RemoveHashSetEntriesContaining(WrittenAmbientNotesField?.GetValue(Component) as HashSet<string>, pawnIds);
+            RemoveHashSetEntriesContaining(WrittenAmbientThoughtNotesField?.GetValue(Component) as HashSet<string>, pawnIds);
             RemoveHashSetEntriesContaining(WrittenDayReflectionsField?.GetValue(Component) as HashSet<string>, pawnIds);
         }
 
@@ -1526,13 +1591,15 @@ namespace PawnDiary.RimTests
 
             if (DictionaryHasKeyContaining(PendingInteractionBatchesField?.GetValue(Component) as IDictionary, pawnIds)
                 || DictionaryHasKeyContaining(PendingAmbientNotesField?.GetValue(Component) as IDictionary, pawnIds)
+                || DictionaryHasKeyContaining(PendingAmbientThoughtNotesField?.GetValue(Component) as IDictionary, pawnIds)
                 || DictionaryHasKeyContaining(ActiveThoughtProgressionsField?.GetValue(Component) as IDictionary, pawnIds)
                 || DictionaryHasKeyContaining(PendingDayHediffsField?.GetValue(Component) as IDictionary, pawnIds)
                 || HashSetHasEntryContaining(WrittenAmbientNotesField?.GetValue(Component) as HashSet<string>, pawnIds)
+                || HashSetHasEntryContaining(WrittenAmbientThoughtNotesField?.GetValue(Component) as HashSet<string>, pawnIds)
                 || HashSetHasEntryContaining(WrittenDayReflectionsField?.GetValue(Component) as HashSet<string>, pawnIds))
             {
                 throw new AssertionException(
-                    "Leak audit: a pending interaction-batch / thought-progression / day-hediff / day-reflection key for a test pawn survived cleanup.");
+                    "Leak audit: a pending interaction/ambient-thought / thought-progression / day-hediff / day-reflection key for a test pawn survived cleanup.");
             }
         }
 
@@ -1627,6 +1694,27 @@ namespace PawnDiary.RimTests
             return false;
         }
 
+        private static int CountDictionaryKeysContaining(
+            IDictionary dictionary,
+            HashSet<string> pawnIds)
+        {
+            if (dictionary == null || dictionary.Count == 0)
+            {
+                return 0;
+            }
+
+            int count = 0;
+            foreach (object key in dictionary.Keys)
+            {
+                if (KeyContainsAnyPawnId(key as string, pawnIds))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
         private static void RemoveHashSetEntriesContaining(HashSet<string> set, HashSet<string> pawnIds)
         {
             set?.RemoveWhere(entry => KeyContainsAnyPawnId(entry, pawnIds));
@@ -1648,6 +1736,27 @@ namespace PawnDiary.RimTests
             }
 
             return false;
+        }
+
+        private static int CountHashSetEntriesContaining(
+            HashSet<string> set,
+            HashSet<string> pawnIds)
+        {
+            if (set == null || set.Count == 0)
+            {
+                return 0;
+            }
+
+            int count = 0;
+            foreach (string entry in set)
+            {
+                if (KeyContainsAnyPawnId(entry, pawnIds))
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         private static bool KeyContainsAnyPawnId(string key, HashSet<string> pawnIds)
