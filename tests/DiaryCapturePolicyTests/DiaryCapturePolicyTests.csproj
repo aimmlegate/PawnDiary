@@ -23,6 +23,7 @@
     <Compile Include="..\..\Source\Capture\ThoughtCapturePolicy.cs" Link="Capture\ThoughtCapturePolicy.cs" />
     <Compile Include="..\..\Source\Capture\GroupNameMatcher.cs" Link="Capture\GroupNameMatcher.cs" />
     <Compile Include="..\..\Source\Capture\BodyPartEventPolicy.cs" Link="Capture\BodyPartEventPolicy.cs" />
+    <Compile Include="..\..\Source\Generation\PermanentBodyChangeGenerationPolicy.cs" Link="Generation\PermanentBodyChangeGenerationPolicy.cs" />
     <Compile Include="..\..\Source\Capture\TraitProgressionPolicy.cs" Link="Capture\TraitProgressionPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Policies\AnomalyContracts.cs" Link="Capture\Policies\AnomalyContracts.cs" />
     <Compile Include="..\..\Source\Capture\Biotech\BiotechContracts.cs" Link="Capture\Biotech\BiotechContracts.cs" />

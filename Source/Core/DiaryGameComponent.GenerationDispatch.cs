@@ -587,7 +587,9 @@ namespace PawnDiary
                 return false;
             }
 
-            if (ShouldSkipFirstPersonGenerationForIncapacitation(FindLivePawnByLoadId(PawnIdForRole(diaryEvent, povRole), livePawnsById)))
+            if (ShouldSkipFirstPersonGenerationForIncapacitation(
+                    diaryEvent,
+                    FindLivePawnByLoadId(PawnIdForRole(diaryEvent, povRole), livePawnsById)))
             {
                 return false;
             }

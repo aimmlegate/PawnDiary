@@ -157,11 +157,17 @@ namespace PawnDiary
         public int promptEnchantmentMaxImpactCues = PromptEnchantmentTuning.DefaultMaxImpactCues;
 
         // ---- Consciousness: first-person generation gate ----
-        // Pawns below this Consciousness level do not write first-person entries. Events still
-        // record and neutral death/arrival descriptions still generate; only non-neutral LLM work
-        // waits until the pawn is conscious enough again. Kept separate from the display staggering
-        // thresholds below because this gate is about prompt authorship, not typography.
+        // Pawns below this Consciousness level normally do not write first-person entries. Events still
+        // record and neutral death/arrival descriptions still generate. Permanent body changes can
+        // bypass the floor through the policy below because anesthesia or the change's own coma must not
+        // erase the page. Kept separate from display staggering: this is eligibility, not typography.
         public float minimumConsciousnessForFirstPersonGeneration = 0.11f;
+        // Master switch plus exact fallback event names for permanent body changes. Source-specific
+        // semantic context (gene identity, part_kind, mechlink, ghoul transformation) is recognized too.
+        // Plain strings keep absent DLC content inert and safe.
+        public bool generatePermanentBodyChangesWhileIncapacitated = true;
+        public List<string> permanentBodyChangeDefNames =
+            PermanentBodyChangeGenerationPolicy.CreateDefaultDefNames();
 
         // ---- Display staggering: low-consciousness handwriting distortion ----
         // The 0..4 "staggered handwriting" intensity saved on each DiaryEvent POV. A pawn whose

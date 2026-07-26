@@ -40,6 +40,7 @@ namespace DiaryCapturePolicyTests
             TestBodyPartClassifierKey();
             TestBodyPartTierPolicy();
             TestBodyPartAttitudePolicy();
+            TestPermanentBodyChangeGenerationPolicy();
             TestBodyPartCueKeys();
             TestInteractionDecide();
             TestInteractionBuildGameContextFormat();
@@ -786,6 +787,65 @@ namespace DiaryCapturePolicyTests
                 BodyPartEventPolicy.CauseToken(true, "Cut"));
             AssertEqual("old loss cause unknown", "unknown",
                 BodyPartEventPolicy.CauseToken(false, "Cut"));
+        }
+
+        private static void TestPermanentBodyChangeGenerationPolicy()
+        {
+            List<string> defaults = PermanentBodyChangeGenerationPolicy.CreateDefaultDefNames();
+            AssertTrue("gene identity exact event bypasses incapacity",
+                PermanentBodyChangeGenerationPolicy.AllowsGenerationWhileIncapacitated(
+                    "GeneIdentityChanged", "", true, defaults));
+            AssertTrue("legacy xenotype exact event bypasses incapacity",
+                PermanentBodyChangeGenerationPolicy.AllowsGenerationWhileIncapacitated(
+                    "xenotypechanged", "", true, defaults));
+            AssertTrue("psylink implantation bypasses incapacity",
+                PermanentBodyChangeGenerationPolicy.AllowsGenerationWhileIncapacitated(
+                    "PsylinkLevel", "", true, defaults));
+            AssertTrue("mechlink install bypasses incapacity",
+                PermanentBodyChangeGenerationPolicy.AllowsGenerationWhileIncapacitated(
+                    "BiotechMechlinkInstalled", "", true, defaults));
+            AssertTrue("mechlink removal bypasses incapacity",
+                PermanentBodyChangeGenerationPolicy.AllowsGenerationWhileIncapacitated(
+                    "BiotechMechlinkRemoved", "", true, defaults));
+            AssertTrue("ghoul transformation bypasses incapacity",
+                PermanentBodyChangeGenerationPolicy.AllowsGenerationWhileIncapacitated(
+                    "PawnDiary_GhoulTransformation", "", true, defaults));
+            AssertTrue("semantic gene marker bypasses for modded event",
+                PermanentBodyChangeGenerationPolicy.AllowsGenerationWhileIncapacitated(
+                    "ModdedGeneRewrite", "gene_identity_transition=true", true, defaults));
+            AssertTrue("semantic xenotype progression bypasses for old context",
+                PermanentBodyChangeGenerationPolicy.AllowsGenerationWhileIncapacitated(
+                    "OldProgression", "progression_kind=xenotype", true, defaults));
+            AssertTrue("artificial added part bypasses incapacity",
+                PermanentBodyChangeGenerationPolicy.AllowsGenerationWhileIncapacitated(
+                    "BionicArm", "part_kind=addedpart", true, defaults));
+            AssertTrue("anomalous organic part bypasses incapacity",
+                PermanentBodyChangeGenerationPolicy.AllowsGenerationWhileIncapacitated(
+                    "Tentacle", "part_kind=addedpart_organicpart", true, defaults));
+            AssertTrue("natural part loss bypasses incapacity",
+                PermanentBodyChangeGenerationPolicy.AllowsGenerationWhileIncapacitated(
+                    "MissingBodyPart", "part_kind=missingpart", true, defaults));
+            AssertTrue("semantic mechlink install bypasses for modded event",
+                PermanentBodyChangeGenerationPolicy.AllowsGenerationWhileIncapacitated(
+                    "ModdedMechanitor", "mechanitor_moment=mechlink_installed", true, defaults));
+            AssertTrue("semantic ghoul transformation bypasses for modded event",
+                PermanentBodyChangeGenerationPolicy.AllowsGenerationWhileIncapacitated(
+                    "ModdedGhoul", "anomaly_kind=ghoul_transformation", true, defaults));
+            AssertTrue("false gene marker is not a body change",
+                !PermanentBodyChangeGenerationPolicy.AllowsGenerationWhileIncapacitated(
+                    "OrdinaryProgression", "gene_identity_transition=false", true, defaults));
+            AssertTrue("ordinary hediff remains consciousness-gated",
+                !PermanentBodyChangeGenerationPolicy.AllowsGenerationWhileIncapacitated(
+                    "Flu", "hediff=Flu; severity=0.75", true, defaults));
+            AssertTrue("ordinary injury remains consciousness-gated",
+                !PermanentBodyChangeGenerationPolicy.AllowsGenerationWhileIncapacitated(
+                    "Cut", "part_kind=; severity=0.40", true, defaults));
+            AssertTrue("master switch disables exact and semantic bypasses",
+                !PermanentBodyChangeGenerationPolicy.AllowsGenerationWhileIncapacitated(
+                    "GeneIdentityChanged", "part_kind=addedpart", false, defaults));
+            AssertTrue("custom XML exact event name is honored",
+                PermanentBodyChangeGenerationPolicy.AllowsGenerationWhileIncapacitated(
+                    "ModdedPermanentForm", "", true, new List<string> { "ModdedPermanentForm" }));
         }
 
         private static void TestBodyPartCueKeys()

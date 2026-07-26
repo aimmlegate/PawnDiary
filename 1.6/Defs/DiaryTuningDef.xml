@@ -115,10 +115,21 @@
     <promptEnchantmentBarelyConsciousBelow>0.20</promptEnchantmentBarelyConsciousBelow>
     <promptEnchantmentMaxImpactCues>3</promptEnchantmentMaxImpactCues>
 
-    <!-- Consciousness: first-person generation gate. Pawns below this level still record events,
-         but non-neutral LLM generation waits until they are conscious enough again. Separate from
-         the display-staggering thresholds below (this is about authorship, not typography). -->
+    <!-- Consciousness: first-person generation gate. Ordinary pages for pawns below this level are
+         skipped, while permanent body changes can bypass the floor because anesthesia, coma, or the
+         transformation itself must not erase the lasting event. Separate from display staggering. -->
     <minimumConsciousnessForFirstPersonGeneration>0.11</minimumConsciousnessForFirstPersonGeneration>
+    <generatePermanentBodyChangesWhileIncapacitated>true</generatePermanentBodyChangesWhileIncapacitated>
+    <!-- Exact fallback event defNames; semantic gene/body-part/mechlink/ghoul context is recognized too.
+         Plain strings are DLC-safe: names for absent content simply never occur. -->
+    <permanentBodyChangeDefNames>
+      <li>XenotypeChanged</li>
+      <li>GeneIdentityChanged</li>
+      <li>PsylinkLevel</li>
+      <li>BiotechMechlinkInstalled</li>
+      <li>BiotechMechlinkRemoved</li>
+      <li>PawnDiary_GhoulTransformation</li>
+    </permanentBodyChangeDefNames>
 
     <!-- Display staggering: low-consciousness handwriting distortion (0..4 intensity). A pawn whose
          Consciousness level is below a band gets at least that intensity; the first matching band

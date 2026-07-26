@@ -778,6 +778,28 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Resets only a terminal skipped POV whose saved reason exactly matches the supplied reason.
+        /// This narrow migration seam lets a changed eligibility rule recover its own old rows without
+        /// reviving prompt-only pages or LLM work that exhausted its retry budget.
+        /// </summary>
+        internal bool TryResetSkippedForReason(string povRole, string expectedReason)
+        {
+            ref PovSlot slot = ref SlotFor(povRole);
+            if (!RoleEquals(slot.status, SkippedStatus)
+                || string.IsNullOrWhiteSpace(expectedReason)
+                || !string.Equals(slot.error, expectedReason, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            DiaryStateVersion.Bump();
+            slot.status = NotGeneratedStatus;
+            slot.error = null;
+            slot.automaticGenerationRetryAttempts = 0;
+            return true;
+        }
+
+        /// <summary>
         /// Prepares an existing POV to be written again from the current prompt/model settings.
         /// The old generated page is kept visible until a new result replaces it; transient request
         /// metadata, raw response, error, and title fields are cleared so the fresh run is honest.

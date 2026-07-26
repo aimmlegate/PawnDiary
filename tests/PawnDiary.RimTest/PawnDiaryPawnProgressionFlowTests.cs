@@ -367,6 +367,9 @@ namespace PawnDiary.RimTests
                 "gene_change_cause=" + GeneChangeCauseTokens.XenogermImplant);
             RequireContextContains(diaryEvent, "gene_identity_transition=true");
             RequireContextContains(diaryEvent, "narrative_facets=identity_transition");
+            PawnDiaryRimTestScope.Require(
+                !diaryEvent.IsSkipped(DiaryEvent.InitiatorRole),
+                "The exact implant page was skipped because its own coma lowered Consciousness.");
             string leadingTheme = DiaryContextFields.Value(diaryEvent.gameContext, "gene_theme_1");
             string narrative = diaryEvent.NarrativeContextForRole(DiaryEvent.InitiatorRole);
             PawnDiaryRimTestScope.Require(

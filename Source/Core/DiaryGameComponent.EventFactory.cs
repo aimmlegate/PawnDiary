@@ -690,7 +690,8 @@ namespace PawnDiary
                 return;
             }
 
-            if (captured.skipFirstPersonGeneration)
+            if (captured.skipFirstPersonGeneration
+                && !PermanentBodyChangeAllowsGenerationWhileIncapacitated(diaryEvent))
             {
                 diaryEvent.MarkSkipped(povRole, IncapacitatedSkipReason());
             }

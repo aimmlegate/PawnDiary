@@ -98,12 +98,16 @@ namespace PawnDiary
                     continue;
                 }
 
+                TryRestorePermanentBodyChangeIncapacitationSkip(
+                    diaryEvent, DiaryEvent.InitiatorRole);
                 if (diaryEvent.CanQueueGeneration(DiaryEvent.InitiatorRole)
                     && !EventFallsOutsideDiaryBoundsForPawn(diaryEvent, diaryEvent.initiatorPawnId, boundsCache, livePawnsById))
                 {
                     EnsureGenerationQueued(diaryEvent, DiaryEvent.InitiatorRole, boundsCache, livePawnsById);
                 }
 
+                TryRestorePermanentBodyChangeIncapacitationSkip(
+                    diaryEvent, DiaryEvent.RecipientRole);
                 if (!diaryEvent.solo
                     && diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole)
                     && !EventFallsOutsideDiaryBoundsForPawn(diaryEvent, diaryEvent.recipientPawnId, boundsCache, livePawnsById))

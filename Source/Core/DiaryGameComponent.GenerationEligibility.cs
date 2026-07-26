@@ -1,9 +1,9 @@
 // Generation gates and rule resolution. DiaryGenerationEnabledFor answers "should this POV
 // generate at all" (diary enabled, in-bounds, not waiting on the arrival scan). The
-// incapacitation helpers skip first-person generation for pawns below the XML-tuned Consciousness
-// floor. PersonaRuleFor / PromptEnchantmentRuleFor / HumorCueFor resolve the per-POV writing-style,
-// enchantment, and humor text the prompt planner folds in. The live-pawn snapshot/lookup helpers
-// here back all of those checks.
+// incapacitation helpers skip ordinary first-person generation for pawns below the XML-tuned
+// Consciousness floor, while permanent body changes bypass that temporary state. PersonaRuleFor /
+// PromptEnchantmentRuleFor / HumorCueFor resolve the per-POV writing-style, enchantment, and humor
+// text the prompt planner folds in. The live-pawn snapshot/lookup helpers back all of those checks.
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
 using System.Collections.Generic;
@@ -16,9 +16,10 @@ namespace PawnDiary
     public partial class DiaryGameComponent
     {
         // Pawns below the XML-tuned Consciousness floor (DiaryTuningDef.minimumConsciousnessForFirstPersonGeneration,
-        // default 0.11) should not write first-person entries. Events still record, and neutral
-        // death/arrival descriptions still generate, but non-neutral LLM work waits until the pawn
-        // is conscious enough again. Read via DiaryTuning.Current so it can be retuned in XML.
+        // default 0.11) normally should not write first-person entries. Events still record, and
+        // neutral death/arrival descriptions still generate. Permanent body changes bypass this gate
+        // because anesthesia, xenogermation coma, or the transformation itself is temporary while the
+        // recorded change is not. Read via DiaryTuning.Current so policy remains XML-tunable.
 
         /// <summary>
         /// Checks whether the pawn for a given POV role in an event has diary generation enabled,
@@ -72,14 +73,19 @@ namespace PawnDiary
             Dictionary<string, Pawn> livePawnsById = null)
         {
             if (diaryEvent == null
-                || !DiaryEvent.RoleIsInitiatorOrRecipient(povRole)
-                || !diaryEvent.CanQueueGeneration(povRole))
+                || !DiaryEvent.RoleIsInitiatorOrRecipient(povRole))
+            {
+                return false;
+            }
+
+            TryRestorePermanentBodyChangeIncapacitationSkip(diaryEvent, povRole);
+            if (!diaryEvent.CanQueueGeneration(povRole))
             {
                 return false;
             }
 
             Pawn pawn = FindLivePawnByLoadId(PawnIdForRole(diaryEvent, povRole), livePawnsById);
-            if (!ShouldSkipFirstPersonGenerationForIncapacitation(pawn))
+            if (!ShouldSkipFirstPersonGenerationForIncapacitation(diaryEvent, pawn))
             {
                 return false;
             }
@@ -100,15 +106,68 @@ namespace PawnDiary
                 return;
             }
 
-            if (ShouldSkipFirstPersonGenerationForIncapacitation(pawn))
+            if (ShouldSkipFirstPersonGenerationForIncapacitation(diaryEvent, pawn))
             {
                 diaryEvent.MarkSkipped(povRole, IncapacitatedSkipReason());
             }
         }
 
+        private static bool ShouldSkipFirstPersonGenerationForIncapacitation(
+            DiaryEvent diaryEvent,
+            Pawn pawn)
+        {
+            return pawn != null
+                && !PawnConsciousEnoughForGeneration(pawn)
+                && !PermanentBodyChangeAllowsGenerationWhileIncapacitated(diaryEvent);
+        }
+
+        /// <summary>
+        /// Pre-event eligibility overload for callers such as the integration budget and captured birth
+        /// snapshot, where no classified DiaryEvent exists yet and therefore no body-change bypass can
+        /// be proven.
+        /// </summary>
         private static bool ShouldSkipFirstPersonGenerationForIncapacitation(Pawn pawn)
         {
-            return pawn != null && !PawnConsciousEnoughForGeneration(pawn);
+            return ShouldSkipFirstPersonGenerationForIncapacitation(null, pawn);
+        }
+
+        /// <summary>
+        /// Recognizes event-level permanent body changes. The same answer applies to either POV: a
+        /// conscious surgeon still writes normally, while an anesthetized subject is no longer skipped.
+        /// </summary>
+        private static bool PermanentBodyChangeAllowsGenerationWhileIncapacitated(
+            DiaryEvent diaryEvent)
+        {
+            DiaryTuningDef tuning = DiaryTuning.Current;
+            return diaryEvent != null
+                && PermanentBodyChangeGenerationPolicy.AllowsGenerationWhileIncapacitated(
+                    diaryEvent.interactionDefName,
+                    diaryEvent.gameContext,
+                    tuning.generatePermanentBodyChangesWhileIncapacitated,
+                    tuning.permanentBodyChangeDefNames);
+        }
+
+        /// <summary>
+        /// Repairs an older permanent-change POV that this exact Consciousness rule already skipped.
+        /// Other skipped states (prompt-only or exhausted LLM work) remain terminal.
+        /// </summary>
+        private bool TryRestorePermanentBodyChangeIncapacitationSkip(
+            DiaryEvent diaryEvent,
+            string povRole)
+        {
+            // The recurring generation scan visits every hot event, so reject the overwhelmingly
+            // common non-skipped case before parsing any saved context fields.
+            if (diaryEvent == null
+                || !DiaryEvent.RoleIsInitiatorOrRecipient(povRole)
+                || !diaryEvent.IsSkipped(povRole)
+                || !PermanentBodyChangeAllowsGenerationWhileIncapacitated(diaryEvent)
+                || !diaryEvent.TryResetSkippedForReason(povRole, IncapacitatedSkipReason()))
+            {
+                return false;
+            }
+
+            NotifyEntryStatusChanged(diaryEvent, povRole);
+            return true;
         }
 
         private static string IncapacitatedSkipReason()
