@@ -95,6 +95,78 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Dev-only destructive reset for the selected pawn's visible diary history. Active references,
+        /// compact archive rows, favorites, and unread counters are removed; writing style, generation
+        /// preference, progression baselines, and narrative knowledge remain intact. A shared hot event
+        /// stays in the repository while any other pawn's diary still references it.
+        /// </summary>
+        internal int PurgeDiaryHistoryForPawnForDev(Pawn pawn)
+        {
+            if (!Prefs.DevMode || pawn == null)
+            {
+                return 0;
+            }
+
+            string pawnId = pawn.GetUniqueLoadID();
+            PawnDiaryRecord diary = FindDiary(pawn, false);
+            HashSet<string> removedHotEventIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (diary?.eventIds != null)
+            {
+                for (int i = 0; i < diary.eventIds.Count; i++)
+                {
+                    string eventId = diary.eventIds[i];
+                    if (!string.IsNullOrWhiteSpace(eventId))
+                    {
+                        removedHotEventIds.Add(eventId);
+                    }
+                }
+
+                diary.eventIds.Clear();
+                diary.favoriteEntryKeys?.Clear();
+                diary.acknowledgedGeneratedEntryCount = 0;
+                diary.unreadGeneratedEntryCount = 0;
+                diary.hasUnreadGeneratedEntry = false;
+            }
+
+            int archivedRemoved = archive.RemoveForPawn(pawnId);
+            if (removedHotEventIds.Count > 0)
+            {
+                // A pair event can still back another pawn's hot page. Remove only master rows that
+                // became genuinely unreferenced after clearing the selected pawn's diary index.
+                HashSet<string> orphanedEventIds = new HashSet<string>(
+                    removedHotEventIds,
+                    StringComparer.OrdinalIgnoreCase);
+                if (diaries != null)
+                {
+                    for (int i = 0; i < diaries.Count && orphanedEventIds.Count > 0; i++)
+                    {
+                        PawnDiaryRecord otherDiary = diaries[i];
+                        if (otherDiary == null || ReferenceEquals(otherDiary, diary)
+                            || otherDiary.eventIds == null)
+                        {
+                            continue;
+                        }
+
+                        for (int j = 0; j < otherDiary.eventIds.Count; j++)
+                        {
+                            orphanedEventIds.Remove(otherDiary.eventIds[j]);
+                        }
+                    }
+                }
+
+                events.RemoveEvents(orphanedEventIds);
+            }
+
+            int removed = removedHotEventIds.Count + archivedRemoved;
+            if (removed > 0)
+            {
+                DiaryStateVersion.Bump();
+            }
+
+            return removed;
+        }
+
+        /// <summary>
         /// Dev-only snapshot of currently active event windows, for the "Force-close active event
         /// window" debug action. Returns an empty list when dev mode is off or there are none, so the
         /// caller can iterate unguarded. The list is a shallow copy so the picker is not aliasing the

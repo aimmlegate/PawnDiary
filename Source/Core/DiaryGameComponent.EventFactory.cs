@@ -39,6 +39,36 @@ namespace PawnDiary
                 null);
         }
 
+        /// <summary>
+        /// Dev prompt-selector variant: keeps pair context but owns the page only from the selected
+        /// initiator's diary. The partner is evidence, never a second test-page owner.
+        /// </summary>
+        internal DiaryEvent AddPairwiseEventForInitiatorDiaryForDev(
+            Pawn initiator,
+            Pawn recipient,
+            string defName,
+            string label,
+            string initiatorText,
+            string recipientText,
+            string instruction,
+            string gameContext)
+        {
+            return AddPairwiseEventCore(
+                initiator,
+                recipient,
+                defName,
+                label,
+                initiatorText,
+                recipientText,
+                instruction,
+                gameContext,
+                null,
+                -1,
+                null,
+                null,
+                includeRecipientDiaryRef: false);
+        }
+
         /// <summary>Creates a pair page and decorates each eligible POV from one plain evidence row.</summary>
         internal DiaryEvent AddPairwiseEvent(Pawn initiator, Pawn recipient, string defName, string label,
             string initiatorText, string recipientText, string instruction, string gameContext,
@@ -148,7 +178,8 @@ namespace PawnDiary
             BeliefContextBuildResult preparedInitiatorBelief,
             MoodSnapshotCandidate frozenInitiatorMood = null,
             MoodSnapshotCandidate frozenRecipientMood = null,
-            bool useFrozenMood = false)
+            bool useFrozenMood = false,
+            bool includeRecipientDiaryRef = true)
         {
             IReadOnlyList<DiaryEvent> activeEvents = ActiveScanEvents();
             string initiatorId = initiator.GetUniqueLoadID();
@@ -236,6 +267,12 @@ namespace PawnDiary
                 diaryEvent, DiaryEvent.InitiatorRole, initiator, initiatorCapture);
             ApplyCapturedOrLiveGenerationEligibility(
                 diaryEvent, DiaryEvent.RecipientRole, recipient, recipientCapture);
+            if (!includeRecipientDiaryRef)
+            {
+                // The dev prompt selector previews the selected pawn's POV only. Mark the unused partner
+                // role terminal before registration so ordinary pending-generation scans never queue it.
+                diaryEvent.MarkSkipped(DiaryEvent.RecipientRole, string.Empty);
+            }
             ApplyBeliefContext(diaryEvent, DiaryEvent.InitiatorRole, initiator,
                 beliefEvidence, preparedInitiatorBelief);
             ApplyBeliefContext(diaryEvent, DiaryEvent.RecipientRole, recipient,
@@ -253,19 +290,25 @@ namespace PawnDiary
                 recipientCapture?.textDecorationFacts ?? PawnFactCapture.TextDecorationFacts(recipient));
             RegisterNewEventOrThrow(diaryEvent);
             AddEventRef(initiator, diaryEvent.eventId, historicalTick >= 0);
-            AddEventRef(recipient, diaryEvent.eventId, historicalTick >= 0);
-            ValidateNewEventCommit(diaryEvent);
+            if (includeRecipientDiaryRef)
+            {
+                AddEventRef(recipient, diaryEvent.eventId, historicalTick >= 0);
+            }
+            ValidateNewEventCommit(diaryEvent, includeRecipientDiaryRef);
             ApplyDiaryEventLimits();
             // Retrieval runs BEFORE capture so this event can never surface the very record it is
             // about to deposit (belt-and-braces beside the selector's self-echo guard).
             ApplyRelevantPastForEvent(diaryEvent);
-            CaptureKnowledgeForEvent(diaryEvent, initiator, recipient);
+            if (includeRecipientDiaryRef)
+            {
+                CaptureKnowledgeForEvent(diaryEvent, initiator, recipient);
+            }
             if (diaryEvent.IsSkipped(DiaryEvent.InitiatorRole))
             {
                 NotifyEntryStatusChanged(diaryEvent, DiaryEvent.InitiatorRole);
             }
 
-            if (diaryEvent.IsSkipped(DiaryEvent.RecipientRole))
+            if (includeRecipientDiaryRef && diaryEvent.IsSkipped(DiaryEvent.RecipientRole))
             {
                 NotifyEntryStatusChanged(diaryEvent, DiaryEvent.RecipientRole);
             }

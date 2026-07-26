@@ -86,7 +86,7 @@ namespace PawnDiary
         private const float EventPromptTextAreaHeight = 88f;
         private const float SystemPromptTextAreaHeight = 138f;
         private const float PersonaRuleTextAreaHeight = 96f;
-        private const float RequestTuningBlockHeight = 198f;
+        private const float RequestTuningBlockHeight = 260f;
         private const string PromptStudioSystemPrefix = "system:";
         private const string PromptStudioEventPrefix = "event:";
         private const string ApiMoveUpSymbol = "↑";

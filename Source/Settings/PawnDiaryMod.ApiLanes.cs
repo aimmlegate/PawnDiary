@@ -191,6 +191,25 @@ namespace PawnDiary
             Settings.timeoutSeconds = Mathf.RoundToInt(DrawSliderRow(timeoutRect, "PawnDiary.Settings.TimeoutSeconds".Translate(Settings.timeoutSeconds), Settings.timeoutSeconds, 5f, 300f));
             y += rowHeight + gap;
 
+            Rect retryAttemptsRect = new Rect(innerRect.x, y, innerRect.width, rowHeight);
+            Settings.retryAttempts = Mathf.RoundToInt(DrawSliderRow(
+                retryAttemptsRect,
+                "PawnDiary.Settings.RetryAttempts".Translate(Settings.retryAttempts),
+                Settings.retryAttempts,
+                LlmTransportPolicy.MinimumRetryAttempts,
+                LlmTransportPolicy.MaximumRetryAttempts));
+            y += rowHeight + gap;
+
+            Rect retryDelayRect = new Rect(innerRect.x, y, innerRect.width, rowHeight);
+            Settings.retryBaseDelaySeconds = DrawSliderRow(
+                retryDelayRect,
+                "PawnDiary.Settings.RetryBaseDelaySeconds".Translate(
+                    Settings.retryBaseDelaySeconds.ToString("0.0")),
+                Settings.retryBaseDelaySeconds,
+                (float)LlmTransportPolicy.MinimumRetryDelaySeconds,
+                (float)LlmTransportPolicy.MaximumRetryDelaySeconds);
+            y += rowHeight + gap;
+
             Rect tokensRect = new Rect(innerRect.x, y, innerRect.width, rowHeight);
             Settings.maxTokens = Mathf.RoundToInt(DrawSliderRow(tokensRect, "PawnDiary.Settings.MaxTokens".Translate(Settings.maxTokens), Settings.maxTokens, 32f, 2048f));
             y += rowHeight + gap;

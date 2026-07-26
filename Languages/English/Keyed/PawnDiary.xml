@@ -47,7 +47,12 @@
   <PawnDiary.Tab.PurgeArchivedEntriesTip>Dev-only: removes this pawn's compact archived pages without touching active hot diary pages.</PawnDiary.Tab.PurgeArchivedEntriesTip>
   <PawnDiary.Tab.ArchivedEntriesPurged>Removed {0} archived page(s) for {1}.</PawnDiary.Tab.ArchivedEntriesPurged>
   <PawnDiary.Tab.GeneratePromptSuite>Prompt suite</PawnDiary.Tab.GeneratePromptSuite>
-  <PawnDiary.Tab.GeneratePromptSuiteTip>Dev-only: turns on prompt test mode and opens a dropdown of event categories. Pick one to capture a single prompt-only page for that category (plain, no decoration); picking another replaces it. Pair categories need a second colonist.</PawnDiary.Tab.GeneratePromptSuiteTip>
+  <PawnDiary.Tab.GeneratePromptSuiteTip>Dev-only: turns on prompt test mode and opens a dropdown of event categories. Pick one to capture a single prompt-only page for the current pawn (plain, no decoration); picking another replaces it. Pair categories use a second colonist as context but add no page to that colonist's diary.</PawnDiary.Tab.GeneratePromptSuiteTip>
+  <PawnDiary.Tab.PurgeDiaryHistory>Purge diary history</PawnDiary.Tab.PurgeDiaryHistory>
+  <PawnDiary.Tab.PurgeDiaryHistoryTip>Dev-only: permanently removes every active and archived page from {0}'s diary. A confirmation is required.</PawnDiary.Tab.PurgeDiaryHistoryTip>
+  <PawnDiary.Tab.PurgeDiaryHistoryTitle>Purge {0}'s diary?</PawnDiary.Tab.PurgeDiaryHistoryTitle>
+  <PawnDiary.Tab.PurgeDiaryHistoryConfirm>This permanently deletes every active and archived page from {0}'s diary. Shared events remain in other pawns' diaries. This cannot be undone.</PawnDiary.Tab.PurgeDiaryHistoryConfirm>
+  <PawnDiary.Tab.DiaryHistoryPurged>Purged {0} page(s) from {1}'s diary.</PawnDiary.Tab.DiaryHistoryPurged>
   <PawnDiary.Tab.ClearPromptSuite>Clear test prompts</PawnDiary.Tab.ClearPromptSuite>
   <PawnDiary.Tab.ClearPromptSuiteTip>Dev-only: delete every prompt-test entry from all colonists' diaries.</PawnDiary.Tab.ClearPromptSuiteTip>
   <PawnDiary.Tab.PromptSuiteShown>Captured a prompt-test page for {0}: {1}.</PawnDiary.Tab.PromptSuiteShown>
@@ -448,6 +453,8 @@
   <PawnDiary.Settings.TemperatureHelp>Controls model randomness for diary and title requests. Lower values are steadier and more literal; higher values are more varied and atmospheric but can drift from supplied facts.</PawnDiary.Settings.TemperatureHelp>
   <PawnDiary.Settings.TimeoutSeconds>Request timeout: {0}s</PawnDiary.Settings.TimeoutSeconds>
   <PawnDiary.Settings.TimeoutSecondsHelp>Maximum seconds to wait for one API lane before failing over or marking the request failed. Slow local models may need more than the default 30 seconds.</PawnDiary.Settings.TimeoutSecondsHelp>
+  <PawnDiary.Settings.RetryAttempts>Attempts per API lane: {0}</PawnDiary.Settings.RetryAttempts>
+  <PawnDiary.Settings.RetryBaseDelaySeconds>Base retry delay: {0}s</PawnDiary.Settings.RetryBaseDelaySeconds>
   <PawnDiary.Settings.MaxTokens>Max response tokens: {0}</PawnDiary.Settings.MaxTokens>
   <PawnDiary.Settings.MaxTokensHelp>Upper token cap for diary responses before local sentence-aware cleanup. Higher values allow longer pages but slow generation and can make entries less concise.</PawnDiary.Settings.MaxTokensHelp>
   <PawnDiary.Settings.ContextDetail>Context detail</PawnDiary.Settings.ContextDetail>

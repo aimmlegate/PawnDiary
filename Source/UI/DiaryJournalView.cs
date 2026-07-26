@@ -97,9 +97,6 @@ namespace PawnDiary
         private static float SpeechBlockVerticalPadding => UiStyle.speechBlockVerticalPadding;
         private static float EntryGap => UiStyle.entryGap;
         private static int AutoExpandedEntryCount => UiStyle.autoExpandedEntryCount;
-        private const int DevMockDiaryTargetYears = 3;
-        private const int DevMockDiaryEntriesPerYear = 2000;
-        private const int DevMockDiaryTargetCount = DevMockDiaryTargetYears * DevMockDiaryEntriesPerYear;
         private static float CollapsedEntryHeight => UiStyle.CollapsedEntryHeight;
         private static float ExpansionAnimationSpeed => UiStyle.expansionAnimationSpeed;
         private static float LinkedEntryPadding => UiStyle.linkedEntryPadding;
@@ -119,11 +116,13 @@ namespace PawnDiary
         private const float HeaderCloseButtonClearance = 34f;
         private static float WritingStyleIconAlpha => UiStyle.writingStyleIconAlpha;
         private static float WritingStyleIconHoverAlpha => UiStyle.writingStyleIconHoverAlpha;
-        // Stable display-only estimate of the dev block height (4 toggle rows + 3 full-width fixture
-        // buttons + the 3-column preview grid). It only needs to be an upper bound: the filter panel
-        // scrolls, so a little slack just adds scroll space, while under-reserving would clip the last
-        // preview row. Keep this in step with DrawPawnControls + DrawDevPreviewButtons if they change.
-        private const float DevControlsHeight = 360f;
+        // Display-only upper bound for four checkbox rows plus the prompt-selector and destructive
+        // purge buttons. The text measurement follows RimWorld's current accessibility font size.
+        private static float DevControlsHeight =>
+            4f * Mathf.Ceil(Text.LineHeight + 2f)
+            + 2f * ControlLineHeight
+            + ControlGap
+            + 12f;
         private static float YearButtonWidth => UiStyle.yearButtonWidth;
         private static float ModelNameTopPadding => UiStyle.modelNameTopPadding;
         private static float ModelNameHeight => UiStyle.modelNameHeight;

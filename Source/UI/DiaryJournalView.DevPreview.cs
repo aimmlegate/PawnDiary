@@ -1,5 +1,5 @@
-// Dev-only transient diary preview controls. These buttons render fake DiaryEntryView objects through
-// the normal card path so formatting can be checked without writing mock events into the save.
+// Dev-only transient diary previews requested from RimWorld's Debug Actions. They render fake
+// DiaryEntryView objects through the normal card path without writing mock events into the save.
 using System.Collections.Generic;
 using RimWorld;
 using UnityEngine;
@@ -62,108 +62,6 @@ namespace PawnDiary
             }
 
             DiaryUiRouter.OpenDiaryFor(pawn);
-        }
-
-        // The 14 transient formatting previews, in display order. Rendered as a 3-column grid (below)
-        // so the labels stay readable inside the narrow filter panel; the old 7-per-row layout clipped
-        // them to unreadable slivers. Keys and kinds are parallel arrays — keep them in step.
-        private static readonly string[] DevPreviewButtonKeys =
-        {
-            "PawnDiary.Tab.DevPreviewPlain",
-            "PawnDiary.Tab.DevPreviewMarkdown",
-            "PawnDiary.Tab.DevPreviewSpeech",
-            "PawnDiary.Tab.DevPreviewStaggered",
-            "PawnDiary.Tab.DevPreviewCombat",
-            "PawnDiary.Tab.DevPreviewSocialFight",
-            "PawnDiary.Tab.DevPreviewDeath",
-            "PawnDiary.Tab.DevPreviewMental",
-            "PawnDiary.Tab.DevPreviewDark",
-            "PawnDiary.Tab.DevPreviewStrange",
-            "PawnDiary.Tab.DevPreviewLinked",
-            "PawnDiary.Tab.DevPreviewWriting",
-            "PawnDiary.Tab.DevPreviewTitle",
-            "PawnDiary.Tab.DevPreviewClear",
-        };
-
-        private static readonly DevDiaryPreviewKind[] DevPreviewButtonKinds =
-        {
-            DevDiaryPreviewKind.Plain,
-            DevDiaryPreviewKind.Markdown,
-            DevDiaryPreviewKind.Speech,
-            DevDiaryPreviewKind.Staggered,
-            DevDiaryPreviewKind.Combat,
-            DevDiaryPreviewKind.SocialFight,
-            DevDiaryPreviewKind.Death,
-            DevDiaryPreviewKind.Mental,
-            DevDiaryPreviewKind.Dark,
-            DevDiaryPreviewKind.Strange,
-            DevDiaryPreviewKind.Linked,
-            DevDiaryPreviewKind.Writing,
-            DevDiaryPreviewKind.TitlePending,
-            DevDiaryPreviewKind.None,
-        };
-
-        private const int DevPreviewButtonColumns = 3;
-
-        /// <summary>
-        /// Height the preview grid reserves, so the dev-block height estimate can stay honest.
-        /// </summary>
-        private static float DevPreviewButtonsHeight()
-        {
-            int rows = Mathf.CeilToInt(DevPreviewButtonKeys.Length / (float)DevPreviewButtonColumns);
-            return rows * ControlLineHeight + Mathf.Max(0, rows - 1) * ControlGap;
-        }
-
-        /// <summary>
-        /// Draws the transient formatting-preview buttons as a compact 3-column grid in the small Tiny
-        /// font, so every label fits inside the narrow filter panel.
-        /// </summary>
-        private void DrawDevPreviewButtons(Listing_Standard listing, Pawn pawn)
-        {
-            int count = DevPreviewButtonKeys.Length;
-            int cols = DevPreviewButtonColumns;
-            float gap = 4f;
-            Rect block = listing.GetRect(DevPreviewButtonsHeight());
-            float colWidth = (block.width - gap * (cols - 1)) / cols;
-
-            GameFont oldFont = Text.Font;
-            Text.Font = GameFont.Tiny;
-            for (int i = 0; i < count; i++)
-            {
-                int row = i / cols;
-                int col = i % cols;
-                Rect buttonRect = new Rect(
-                    block.x + col * (colWidth + gap),
-                    block.y + row * (ControlLineHeight + ControlGap),
-                    colWidth,
-                    ControlLineHeight);
-                DrawDevPreviewButton(
-                    buttonRect,
-                    DevPreviewButtonKeys[i],
-                    DevPreviewButtonKinds[i],
-                    DevPreviewButtonEnabled(DevPreviewButtonKinds[i]),
-                    pawn);
-            }
-            Text.Font = oldFont;
-
-            TooltipHandler.TipRegion(block, "PawnDiary.Tab.DevPreviewTip".Translate());
-        }
-
-        private bool DevPreviewButtonEnabled(DevDiaryPreviewKind kind)
-        {
-            return kind != DevDiaryPreviewKind.None || devPreviewKind != DevDiaryPreviewKind.None;
-        }
-
-        private void DrawDevPreviewButton(Rect rect, string labelKey, DevDiaryPreviewKind kind, bool enabled, Pawn pawn)
-        {
-            bool oldEnabled = GUI.enabled;
-            GUI.enabled = enabled;
-            if (Widgets.ButtonText(rect, labelKey.Translate()))
-            {
-                SetDevPreviewKind(kind, pawn);
-            }
-
-            GUI.enabled = oldEnabled;
         }
 
         private void SetDevPreviewKind(DevDiaryPreviewKind kind, Pawn pawn)

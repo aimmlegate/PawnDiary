@@ -1,6 +1,7 @@
 // Loaded-game regression fixtures for the reusable journal's per-pawn filter lifecycle. These tests do
 // not draw Unity GUI: reflection invokes the exact private state-transition seams, which is enough to
-// prove a first visit starts clean and year changes cannot leave invisible filters active.
+// prove a first visit starts clean, year changes cannot leave invisible filters active, and the
+// filter-panel prompt selector never adds its pair fixture to the context partner's diary.
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -95,9 +96,88 @@ namespace PawnDiary.RimTests
                 "Changing years unexpectedly cleared the independent favorites-only filter.");
         }
 
+        /// <summary>
+        /// A pair fixture may read the second pawn for realistic context, but the filter selector owns
+        /// and queues the prompt only for the pawn whose diary is currently open.
+        /// </summary>
+        [Test]
+        public static void PromptSelectorPairFixtureAddsOnlyTheSelectedPawnDiaryReference()
+        {
+            scope.EnablePromptCapture();
+            scope.Component.SetDiaryGenerationEnabled(firstPawn, true);
+            scope.Component.SetDiaryGenerationEnabled(secondPawn, true);
+
+            DiaryGameComponent.DevPromptSuiteEntry pairEntry = FirstPairEntry();
+            PawnDiaryRimTestScope.Require(pairEntry != null,
+                "The prompt-suite catalog did not expose a pair fixture.");
+            bool shown = scope.Component.ShowPromptSuiteEntryForCurrentPawnForDev(
+                firstPawn,
+                pairEntry,
+                secondPawn);
+
+            PawnDiaryRimTestScope.Require(shown,
+                "The current-pawn prompt selector did not build its pair fixture.");
+            PawnDiaryRimTestScope.Require(
+                scope.RequireDiaryRecord(firstPawn).eventIds.Count == 1,
+                "The selected pawn did not receive exactly one prompt-fixture diary reference.");
+            PawnDiaryRimTestScope.Require(
+                scope.RequireDiaryRecord(secondPawn).eventIds.Count == 0,
+                "The context partner incorrectly received the selected pawn's prompt fixture.");
+        }
+
+        /// <summary>
+        /// Purging one pawn removes that pawn's diary reference while preserving a shared pair page still
+        /// owned by the other pawn.
+        /// </summary>
+        [Test]
+        public static void PurgeHistoryAffectsOnlyTheSelectedPawn()
+        {
+            scope.EnablePromptCapture();
+            scope.Component.SetDiaryGenerationEnabled(firstPawn, true);
+            scope.Component.SetDiaryGenerationEnabled(secondPawn, true);
+
+            DiaryGameComponent.DevPromptSuiteEntry pairEntry = FirstPairEntry();
+            PawnDiaryRimTestScope.Require(pairEntry != null,
+                "The prompt-suite catalog did not expose a pair fixture.");
+            bool shown = scope.Component.ShowPromptSuiteEntryForDev(
+                firstPawn,
+                pairEntry,
+                secondPawn);
+            PawnDiaryRimTestScope.Require(shown
+                    && scope.RequireDiaryRecord(firstPawn).eventIds.Count == 1
+                    && scope.RequireDiaryRecord(secondPawn).eventIds.Count == 1,
+                "The shared pair fixture did not establish both pre-purge diary references.");
+
+            int removed = scope.Component.PurgeDiaryHistoryForPawnForDev(firstPawn);
+
+            PawnDiaryRimTestScope.Require(removed == 1,
+                "The purge did not report the selected pawn's single removed page.");
+            PawnDiaryRimTestScope.Require(
+                scope.RequireDiaryRecord(firstPawn).eventIds.Count == 0,
+                "The purge left a page in the selected pawn's diary.");
+            PawnDiaryRimTestScope.Require(
+                scope.RequireDiaryRecord(secondPawn).eventIds.Count == 1,
+                "The purge incorrectly removed the other pawn's shared pair page.");
+        }
+
         private static HashSet<string> ActiveTags(DiaryJournalView journal)
         {
             return ActiveTagsField.GetValue(journal) as HashSet<string>;
+        }
+
+        private static DiaryGameComponent.DevPromptSuiteEntry FirstPairEntry()
+        {
+            IReadOnlyList<DiaryGameComponent.DevPromptSuiteEntry> entries =
+                DiaryGameComponent.AllSuiteEntries;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                if (entries[i]?.pair == true)
+                {
+                    return entries[i];
+                }
+            }
+
+            return null;
         }
 
         private static void RequireReflectionSeams()

@@ -91,6 +91,21 @@ namespace LlmTransportPolicyTests
             AssertEqual("concurrency floors at one", 1, LlmTransportPolicy.NormalizeConcurrency(0, 16));
             AssertEqual("concurrency preserves configured value", 7, LlmTransportPolicy.NormalizeConcurrency(7, 16));
             AssertEqual("concurrency clamps to cap", 16, LlmTransportPolicy.NormalizeConcurrency(99, 16));
+            AssertEqual("retry attempts floor at one", 1, LlmTransportPolicy.NormalizeRetryAttempts(0));
+            AssertEqual("retry attempts preserve configured value", 5, LlmTransportPolicy.NormalizeRetryAttempts(5));
+            AssertEqual("retry attempts clamp to cap", 10, LlmTransportPolicy.NormalizeRetryAttempts(99));
+            AssertEqual(
+                "invalid retry delay uses defensive floor",
+                LlmTransportPolicy.MinimumRetryDelaySeconds,
+                LlmTransportPolicy.NormalizeRetryDelaySeconds(double.NaN));
+            AssertEqual(
+                "first retry waits one base interval",
+                TimeSpan.FromSeconds(0.5d),
+                LlmTransportPolicy.ProgressiveRetryDelay(1, 0.5d));
+            AssertEqual(
+                "later retries wait progressively longer",
+                TimeSpan.FromSeconds(2d),
+                LlmTransportPolicy.ProgressiveRetryDelay(4, 0.5d));
             AssertFalse("cooling generation lane is never attempted", LlmTransportPolicy.MayAttemptLane(true));
             AssertTrue("ready generation lane may be attempted", LlmTransportPolicy.MayAttemptLane(false));
             AssertTrue(

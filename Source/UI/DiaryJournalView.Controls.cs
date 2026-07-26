@@ -331,67 +331,10 @@ namespace PawnDiary
 
 
 
-            // Three dev fixtures, each on its own full-width row so the labels aren't clipped in the
-            // narrow filter panel: mock-page filler (long-history scrolling), the prompt suite (opens a
-            // dropdown of event categories; selecting one shows a single prompt-only card for that
-            // category), and a clear button that deletes every prompt-test entry.
-
-            Rect mockButtonRect = listing.GetRect(ControlLineHeight);
-
+            // Keep the pawn filter focused: one prompt-fixture selector and one explicitly confirmed
+            // destructive history reset. Broader mock/formatting test grids remain in Debug Actions.
             Rect promptSuiteButtonRect = listing.GetRect(ControlLineHeight);
-
-            Rect clearPromptSuiteButtonRect = listing.GetRect(ControlLineHeight);
-
-            if (Widgets.ButtonText(mockButtonRect, "PawnDiary.Tab.FillMockEntries".Translate(DevMockDiaryTargetCount)))
-            {
-
-                int added = component.FillMockDiaryEntriesForDev(
-                    pawn,
-                    DevMockDiaryTargetCount,
-                    DevMockDiaryTargetYears);
-
-                if (added > 0)
-                {
-
-                    Messages.Message(
-
-                        "PawnDiary.Tab.MockEntriesAdded".Translate(added, pawn.LabelShortCap),
-
-                        MessageTypeDefOf.PositiveEvent,
-
-                        false);
-
-                }
-
-                else
-
-                {
-
-                    Messages.Message(
-
-                        "PawnDiary.Tab.MockEntriesAlreadyFilled".Translate(DevMockDiaryTargetCount, pawn.LabelShortCap),
-
-                        MessageTypeDefOf.NeutralEvent,
-
-                        false);
-
-                }
-
-            }
-
-
-
-            TooltipHandler.TipRegion(
-
-                mockButtonRect,
-
-                "PawnDiary.Tab.FillMockEntriesTip".Translate(
-                    DevMockDiaryTargetCount,
-                    DevMockDiaryTargetYears,
-                    DevMockDiaryEntriesPerYear));
-
-
-
+            Rect purgeHistoryButtonRect = listing.GetRect(ControlLineHeight);
             if (Widgets.ButtonText(promptSuiteButtonRect, "PawnDiary.Tab.GeneratePromptSuite".Translate()))
             {
 
@@ -409,23 +352,19 @@ namespace PawnDiary
 
 
 
-            if (Widgets.ButtonText(clearPromptSuiteButtonRect, "PawnDiary.Tab.ClearPromptSuite".Translate()))
+            if (Widgets.ButtonText(
+                purgeHistoryButtonRect,
+                "PawnDiary.Tab.PurgeDiaryHistory".Translate()))
             {
-
-                HandleClearPromptSuite(pawn, component);
-
+                HandlePurgeDiaryHistory(pawn, component);
             }
 
 
 
             TooltipHandler.TipRegion(
 
-                clearPromptSuiteButtonRect,
-
-                "PawnDiary.Tab.ClearPromptSuiteTip".Translate());
-
-
-            DrawDevPreviewButtons(listing, pawn);
+                purgeHistoryButtonRect,
+                "PawnDiary.Tab.PurgeDiaryHistoryTip".Translate(pawn.LabelShortCap));
 
 
 
@@ -766,7 +705,9 @@ namespace PawnDiary
                 options.Add(new FloatMenuOption(entryLabel, delegate
                 {
 
-                    bool shown = component.ShowPromptSuiteEntryForDev(selectedPawn, captured);
+                    bool shown = component.ShowPromptSuiteEntryForCurrentPawnForDev(
+                        selectedPawn,
+                        captured);
 
                     Messages.Message(
 
@@ -791,13 +732,13 @@ namespace PawnDiary
 
 
         /// <summary>
-        /// Dev-only handler for the "Clear test prompts" button: deletes every prompt-test entry from
-        /// all colonists' diaries and reports how many were removed.
+        /// Opens RimWorld's destructive confirmation modal, then purges only the diary currently being
+        /// viewed and posts a completion notification. No mutation occurs before the player confirms.
         /// </summary>
-        private void HandleClearPromptSuite(Pawn pawn, DiaryGameComponent component)
+        private void HandlePurgeDiaryHistory(Pawn pawn, DiaryGameComponent component)
         {
 
-            if (component == null)
+            if (pawn == null || component == null || !Prefs.DevMode)
             {
 
                 return;
@@ -806,15 +747,21 @@ namespace PawnDiary
 
 
 
-            int removed = component.ClearPromptSuiteForDev();
-
-            Messages.Message(
-
-                "PawnDiary.Tab.PromptSuiteCleared".Translate(removed),
-
-                MessageTypeDefOf.NeutralEvent,
-
-                false);
+            string pawnName = pawn.LabelShortCap;
+            Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation(
+                "PawnDiary.Tab.PurgeDiaryHistoryConfirm".Translate(pawnName),
+                delegate
+                {
+                    int removed = component.PurgeDiaryHistoryForPawnForDev(pawn);
+                    Messages.Message(
+                        "PawnDiary.Tab.DiaryHistoryPurged".Translate(removed, pawnName),
+                        removed > 0
+                            ? MessageTypeDefOf.PositiveEvent
+                            : MessageTypeDefOf.NeutralEvent,
+                        false);
+                },
+                true,
+                "PawnDiary.Tab.PurgeDiaryHistoryTitle".Translate(pawnName).Resolve()));
 
         }
 

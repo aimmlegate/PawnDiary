@@ -80,6 +80,12 @@ namespace PawnDiary
         /// <summary>Per-request wall-clock timeout in seconds. Also used as an overall deadline across retries.</summary>
         public int timeoutSeconds;
 
+        /// <summary>Enqueue-time snapshot of the configured per-lane transient-attempt limit.</summary>
+        public int retryAttempts;
+
+        /// <summary>Enqueue-time snapshot of the first retry delay; later waits grow progressively.</summary>
+        public double retryBaseDelaySeconds;
+
         /// <summary>Maximum number of tokens the model may generate in its response.</summary>
         public int maxTokens;
 
@@ -200,9 +206,6 @@ namespace PawnDiary
     /// </summary>
     internal static class LlmClient
     {
-        /// <summary>Maximum retry attempts for a single request before giving up.</summary>
-        private const int MaxAttempts = 3;
-
         /// <summary>Upper bound the semaphore cannot exceed, regardless of user settings.</summary>
         private const int MaxConcurrencyCap = 16;
 
@@ -960,6 +963,13 @@ namespace PawnDiary
             request.deadlineUtc = LlmTransportPolicy.CreateDeadlineUtc(
                 DateTime.UtcNow,
                 request.timeoutSeconds);
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+            request.retryAttempts = LlmTransportPolicy.NormalizeRetryAttempts(
+                settings == null ? PawnDiarySettings.DefaultRetryAttempts : settings.retryAttempts);
+            request.retryBaseDelaySeconds = LlmTransportPolicy.NormalizeRetryDelaySeconds(
+                settings == null
+                    ? PawnDiarySettings.DefaultRetryBaseDelaySeconds
+                    : settings.retryBaseDelaySeconds);
             string pendingKey = PendingKey(request.eventId, request.povRole, request.sessionId, request.isTitleRequest);
             if (!session.PendingKeys.TryAdd(pendingKey, 0)) // same event+role+session+kind is already queued
             {
@@ -1378,7 +1388,8 @@ namespace PawnDiary
         {
             string lastError = null;
             int retryAfterSeconds = 0;
-            for (int attempt = 1; attempt <= MaxAttempts; attempt++)
+            int retryAttempts = LlmTransportPolicy.NormalizeRetryAttempts(request.retryAttempts);
+            for (int attempt = 1; attempt <= retryAttempts; attempt++)
             {
                 try
                 {
@@ -1413,11 +1424,14 @@ namespace PawnDiary
                         break;
                     }
 
-                    if (attempt < MaxAttempts)
+                    if (attempt < retryAttempts)
                     {
                         try
                         {
-                            await Task.Delay(500 * attempt, request.cancellationToken);
+                            TimeSpan delay = LlmTransportPolicy.ProgressiveRetryDelay(
+                                attempt,
+                                request.retryBaseDelaySeconds);
+                            await Task.Delay(delay, request.cancellationToken);
                         }
                         catch (OperationCanceledException)
                         {

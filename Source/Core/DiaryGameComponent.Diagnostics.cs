@@ -45,7 +45,7 @@ namespace PawnDiary
         /// Checks the narrow post-commit invariant for a freshly created event. Callers run this after
         /// adding every initial owner reference and before retention is allowed to transform those refs.
         /// </summary>
-        private void ValidateNewEventCommit(DiaryEvent diaryEvent)
+        private void ValidateNewEventCommit(DiaryEvent diaryEvent, bool includeRecipientOwner = true)
         {
             if (diaryEvent == null || string.IsNullOrWhiteSpace(diaryEvent.eventId))
             {
@@ -73,7 +73,10 @@ namespace PawnDiary
 
             HashSet<string> owners = new HashSet<string>(StringComparer.Ordinal);
             AddExpectedOwner(owners, diaryEvent.initiatorPawnId);
-            AddExpectedOwner(owners, diaryEvent.recipientPawnId);
+            if (includeRecipientOwner)
+            {
+                AddExpectedOwner(owners, diaryEvent.recipientPawnId);
+            }
 
             int missing = 0;
             foreach (string owner in owners)

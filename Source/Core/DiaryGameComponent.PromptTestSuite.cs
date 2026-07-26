@@ -524,6 +524,29 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Dev diary-filter selector variant: replaces the current fixture with one prompt-only page
+        /// owned exclusively by the selected pawn. Pair fixtures may read a partner for realistic
+        /// context, but never add a page or queue a recipient prompt in that partner's diary.
+        /// </summary>
+        internal bool ShowPromptSuiteEntryForCurrentPawnForDev(
+            Pawn pawn,
+            DevPromptSuiteEntry entry,
+            Pawn explicitPartner = null)
+        {
+            if (!CanUsePromptSuiteForDev(pawn) || entry == null)
+            {
+                return false;
+            }
+
+            ClearPromptSuiteForDev();
+            return AppendPromptSuiteEntryForDev(
+                pawn,
+                entry,
+                explicitPartner,
+                currentPawnOnly: true);
+        }
+
+        /// <summary>
         /// Dev-only batch helper for the RimWorld debug-action panel: replaces current test entries
         /// with every requested fixture that is buildable for the selected pawn. The caller supplies
         /// the already-filtered list so the panel can support checkboxes as well as "all".
@@ -558,7 +581,8 @@ namespace PawnDiary
         private bool AppendPromptSuiteEntryForDev(
             Pawn pawn,
             DevPromptSuiteEntry entry,
-            Pawn explicitPartner = null)
+            Pawn explicitPartner = null,
+            bool currentPawnOnly = false)
         {
             if (!CanUsePromptSuiteForDev(pawn) || entry == null)
             {
@@ -575,14 +599,15 @@ namespace PawnDiary
                 }
             }
 
-            DiaryEvent diaryEvent = BuildSuiteEvent(entry, pawn, partner);
+            DiaryEvent diaryEvent = BuildSuiteEvent(entry, pawn, partner, currentPawnOnly);
             if (diaryEvent == null)
             {
                 return false;
             }
 
             // Capture the prompt immediately. In prompt test mode QueuePrompt is synchronous (it stamps
-            // prompt_only and returns), so both POVs of a pair event are captured on this call.
+            // prompt_only and returns). The filter-panel selector captures only the selected pawn;
+            // the full debug-action suite keeps its existing two-POV pair coverage.
             Dictionary<string, Pawn> livePawnsById = SnapshotLivePawnsByLoadId();
             if (diaryEvent.HasArrivalDescription() || diaryEvent.HasDeathDescription())
             {
@@ -591,7 +616,7 @@ namespace PawnDiary
             }
 
             EnsureGenerationQueued(diaryEvent, DiaryEvent.InitiatorRole, null, livePawnsById);
-            if (!diaryEvent.solo)
+            if (!diaryEvent.solo && !currentPawnOnly)
             {
                 EnsureGenerationQueued(diaryEvent, DiaryEvent.RecipientRole, null, livePawnsById);
             }
@@ -604,7 +629,11 @@ namespace PawnDiary
         /// then neutralizes captured decoration so the prompt renders as plain prose (no atmosphere,
         /// staggered speech, or category page wash) — the user wants test prompts shown undecorated.
         /// </summary>
-        private DiaryEvent BuildSuiteEvent(DevPromptSuiteEntry entry, Pawn pawn, Pawn partner)
+        private DiaryEvent BuildSuiteEvent(
+            DevPromptSuiteEntry entry,
+            Pawn pawn,
+            Pawn partner,
+            bool currentPawnOnly)
         {
             string label = SuiteLabel(entry.labelKey);
             string instruction = SuiteInstruction();
@@ -615,7 +644,25 @@ namespace PawnDiary
             {
                 string initiatorText = SuiteText(entry.initiatorTextKey, partner.LabelShortCap);
                 string recipientText = SuiteText(entry.recipientTextKey, pawn.LabelShortCap);
-                diaryEvent = AddPairwiseEvent(pawn, partner, entry.eventDefName, label, initiatorText, recipientText, instruction, context);
+                diaryEvent = currentPawnOnly
+                    ? AddPairwiseEventForInitiatorDiaryForDev(
+                        pawn,
+                        partner,
+                        entry.eventDefName,
+                        label,
+                        initiatorText,
+                        recipientText,
+                        instruction,
+                        context)
+                    : AddPairwiseEvent(
+                        pawn,
+                        partner,
+                        entry.eventDefName,
+                        label,
+                        initiatorText,
+                        recipientText,
+                        instruction,
+                        context);
             }
             else
             {

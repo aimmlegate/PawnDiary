@@ -105,6 +105,10 @@ namespace PawnDiary
 
         // Per-request timeout in seconds before the request is cancelled.
         public int timeoutSeconds = 30;
+        // Maximum attempts made against one API lane after transient transport failures.
+        public int retryAttempts = DefaultRetryAttempts;
+        // Delay before the first retry. Later waits grow linearly from this base interval.
+        public float retryBaseDelaySeconds = DefaultRetryBaseDelaySeconds;
         // Maximum number of in-flight LLM requests to avoid overwhelming local servers.
         public int maxConcurrentRequests = 4;
         // Token cap on each completion response to keep diary entries concise.
@@ -253,6 +257,8 @@ namespace PawnDiary
         // Sentinel value stored in settings to mean "use built-in reasoning-tag detection". Any
         // other known tag adds that wrapper to the stripper's tag list (see ApiEndpointPolicy).
         public const string DefaultReasoningTag = ApiEndpointPolicy.DefaultReasoningTag;
+        public const int DefaultRetryAttempts = 5;
+        public const float DefaultRetryBaseDelaySeconds = 0.5f;
         // Per-pawn hot diary-history retention cap. Hot rows keep full generation/retry state, so keep
         // this deliberately small and let older displayable pages compact into the archive.
         public const int DefaultMaxActiveDiaryEvents = 100;
@@ -273,6 +279,8 @@ namespace PawnDiary
             Scribe_Collections.Look(ref apiEndpoints, "apiEndpoints", LookMode.Deep);
             Scribe_Values.Look(ref apiRoutingMode, "apiRoutingMode", ApiLaneRoutingMode.Balanced);
             Scribe_Values.Look(ref timeoutSeconds, "timeoutSeconds", 30);
+            Scribe_Values.Look(ref retryAttempts, "retryAttempts", DefaultRetryAttempts);
+            Scribe_Values.Look(ref retryBaseDelaySeconds, "retryBaseDelaySeconds", DefaultRetryBaseDelaySeconds);
             Scribe_Values.Look(ref maxConcurrentRequests, "maxConcurrentRequests", 4);
             Scribe_Values.Look(ref maxTokens, "maxTokens", 100);
             Scribe_Values.Look(ref temperature, "temperature", 0.8f);
@@ -1018,6 +1026,10 @@ namespace PawnDiary
 
             apiRoutingMode = NormalizeRoutingMode(apiRoutingMode);
             timeoutSeconds = Mathf.Clamp(timeoutSeconds, 5, 300);
+            retryAttempts = LlmTransportPolicy.NormalizeRetryAttempts(retryAttempts);
+            retryBaseDelaySeconds = float.IsNaN(retryBaseDelaySeconds)
+                ? DefaultRetryBaseDelaySeconds
+                : (float)LlmTransportPolicy.NormalizeRetryDelaySeconds(retryBaseDelaySeconds);
             maxConcurrentRequests = Mathf.Clamp(maxConcurrentRequests, 1, 16);
             maxTokens = Mathf.Clamp(maxTokens, 32, 2048);
             temperature = Mathf.Clamp(temperature, 0f, 2f);

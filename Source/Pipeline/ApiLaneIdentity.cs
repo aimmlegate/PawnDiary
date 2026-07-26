@@ -498,6 +498,10 @@ namespace PawnDiary
     internal static class LlmTransportPolicy
     {
         public const int MinimumTimeoutSeconds = 5;
+        public const int MinimumRetryAttempts = 1;
+        public const int MaximumRetryAttempts = 10;
+        public const double MinimumRetryDelaySeconds = 0.1d;
+        public const double MaximumRetryDelaySeconds = 10d;
 
         /// <summary>Clamps a configured per-lane concurrency value to its defensive bounds.</summary>
         public static int NormalizeConcurrency(int requested, int maximum)
@@ -513,6 +517,44 @@ namespace PawnDiary
             }
 
             return requested > maximum ? maximum : requested;
+        }
+
+        /// <summary>Clamps how many times one API lane may be attempted for a transient failure.</summary>
+        public static int NormalizeRetryAttempts(int requested)
+        {
+            if (requested < MinimumRetryAttempts)
+            {
+                return MinimumRetryAttempts;
+            }
+
+            return requested > MaximumRetryAttempts ? MaximumRetryAttempts : requested;
+        }
+
+        /// <summary>Clamps the configurable first retry delay to a bounded positive duration.</summary>
+        public static double NormalizeRetryDelaySeconds(double requested)
+        {
+            if (double.IsNaN(requested) || double.IsInfinity(requested)
+                || requested < MinimumRetryDelaySeconds)
+            {
+                return MinimumRetryDelaySeconds;
+            }
+
+            return requested > MaximumRetryDelaySeconds
+                ? MaximumRetryDelaySeconds
+                : requested;
+        }
+
+        /// <summary>
+        /// Returns a linear progressive backoff: after failure 1 wait one base interval, after failure
+        /// 2 wait two intervals, and so on. The total request deadline remains the hard outer bound.
+        /// </summary>
+        public static TimeSpan ProgressiveRetryDelay(int failedAttemptNumber, double baseDelaySeconds)
+        {
+            int safeAttempt = failedAttemptNumber < 1
+                ? 1
+                : Math.Min(failedAttemptNumber, MaximumRetryAttempts);
+            double safeBaseDelay = NormalizeRetryDelaySeconds(baseDelaySeconds);
+            return TimeSpan.FromSeconds(safeBaseDelay * safeAttempt);
         }
 
         /// <summary>Returns true only when an ordinary generation lane is not cooling.</summary>
