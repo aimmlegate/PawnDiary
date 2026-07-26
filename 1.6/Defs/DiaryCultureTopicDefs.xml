@@ -2,9 +2,10 @@
 <!--
   The fourteen cultural interpretation topics (design/MEMORY_SYSTEM_REDESIGN_PLAN.md §4.2), based
   on the installed vanilla CultureDefs and the official Royalty/Biotech/Anomaly/Odyssey feature
-  scopes. Detection (§4.3) is STRUCTURED ONLY: stable defNames, gameContext keys, "key=value"
-  token pairs, and schema markers embedded in field text ("xenotype=") - never localized word
-  forms, so detection is identical in every language.
+  scopes. Detection (§4.3) prefers stable defNames, gameContext keys, "key=value" token pairs,
+  and schema markers embedded in field text ("xenotype="). Localized natural-language terms add
+  coverage when a selected prompt field carries only prose. Terms use Unicode word boundaries;
+  a trailing '*' on an individual word covers plurals and grammatical inflection.
 
   triggerDefNames match the PROMPT payload defName, whose vocabulary varies by capture funnel:
   synthetic PawnDiary_* names, progression constants (XenotypeChanged), relation defNames
@@ -33,6 +34,13 @@
     <triggerContextPairs>
       <li>faction=Mechanoid</li>
     </triggerContextPairs>
+    <triggerTextTerms>
+      <li>mechanoid*</li>
+      <li>mechanitor*</li>
+      <li>mechlink*</li>
+      <li>mech cluster*</li>
+      <li>war machine*</li>
+    </triggerTextTerms>
   </PawnDiary.DiaryCultureTopicDef>
 
   <PawnDiary.DiaryCultureTopicDef>
@@ -46,6 +54,13 @@
     <triggerContextPairs>
       <li>part_tier=archotech</li>
     </triggerContextPairs>
+    <triggerTextTerms>
+      <li>archotech*</li>
+      <li>archotechnology</li>
+      <li>ancient* complex*</li>
+      <li>ancient* danger*</li>
+      <li>archite* gene*</li>
+    </triggerTextTerms>
   </PawnDiary.DiaryCultureTopicDef>
 
   <PawnDiary.DiaryCultureTopicDef>
@@ -67,6 +82,16 @@
     <triggerValueMarkers>
       <li>psylink_level=</li>
     </triggerValueMarkers>
+    <triggerTextTerms>
+      <li>psychic*</li>
+      <li>psycast*</li>
+      <li>psylink*</li>
+      <li>psy link*</li>
+      <li>anima tree*</li>
+      <li>anima linking</li>
+      <li>psychic* bond*</li>
+      <li>psychic* drone*</li>
+    </triggerTextTerms>
   </PawnDiary.DiaryCultureTopicDef>
 
   <PawnDiary.DiaryCultureTopicDef>
@@ -90,6 +115,15 @@
     <triggerValueMarkers>
       <li>title=</li>
     </triggerValueMarkers>
+    <triggerTextTerms>
+      <li>empire</li>
+      <li>imperial*</li>
+      <li>royal* title*</li>
+      <li>royal* ascent</li>
+      <li>bestowing ceremon*</li>
+      <li>noble* rank*</li>
+      <li>stellarch*</li>
+    </triggerTextTerms>
   </PawnDiary.DiaryCultureTopicDef>
 
   <!-- Genetic subspecies only: bionics/surgery moved to Diary_CultureTopic_Body (part_kind
@@ -106,6 +140,18 @@
     <triggerValueMarkers>
       <li>xenotype=</li>
     </triggerValueMarkers>
+    <triggerTextTerms>
+      <li>xenohuman*</li>
+      <li>xenotype*</li>
+      <li>geneline*</li>
+      <li>germline*</li>
+      <li>gene</li>
+      <li>genes</li>
+      <li>genetic*</li>
+      <li>xenogene*</li>
+      <li>endogene*</li>
+      <li>gene pack*</li>
+    </triggerTextTerms>
   </PawnDiary.DiaryCultureTopicDef>
 
   <PawnDiary.DiaryCultureTopicDef>
@@ -131,6 +177,17 @@
     <triggerContextPairs>
       <li>part_tier=anomalous</li>
     </triggerContextPairs>
+    <triggerTextTerms>
+      <li>void</li>
+      <li>anomaly</li>
+      <li>anomalous</li>
+      <li>monolith*</li>
+      <li>creepjoiner*</li>
+      <li>ghoul*</li>
+      <li>dark study</li>
+      <li>containment breach*</li>
+      <li>void touch*</li>
+    </triggerTextTerms>
   </PawnDiary.DiaryCultureTopicDef>
 
   <PawnDiary.DiaryCultureTopicDef>
@@ -147,6 +204,17 @@
     <triggerContextKeys>
       <li>odyssey_journey</li>
     </triggerContextKeys>
+    <triggerTextTerms>
+      <li>glitterworld*</li>
+      <li>cryptosleep*</li>
+      <li>gravship*</li>
+      <li>spaceship*</li>
+      <li>starship*</li>
+      <li>space travel</li>
+      <li>outer space</li>
+      <li>orbit</li>
+      <li>orbital*</li>
+    </triggerTextTerms>
   </PawnDiary.DiaryCultureTopicDef>
 
   <PawnDiary.DiaryCultureTopicDef>
@@ -165,6 +233,18 @@
     <triggerContextKeys>
       <li>raid</li>
     </triggerContextKeys>
+    <triggerTextTerms>
+      <li>outsider*</li>
+      <li>stranger*</li>
+      <li>visitor*</li>
+      <li>refugee*</li>
+      <li>raider*</li>
+      <li>prisoner*</li>
+      <li>other* faction*</li>
+      <li>foreign* faction*</li>
+      <li>guest*</li>
+      <li>hostile* faction*</li>
+    </triggerTextTerms>
   </PawnDiary.DiaryCultureTopicDef>
 
   <!-- ===== Common everyday topics (order 90+): they yield to the exotic lenses above when
@@ -183,6 +263,19 @@
     <triggerContextPairs>
       <li>ritual=Funeral</li>
     </triggerContextPairs>
+    <triggerTextTerms>
+      <li>death</li>
+      <li>dead</li>
+      <li>died</li>
+      <li>killed</li>
+      <li>slain</li>
+      <li>deceased</li>
+      <li>corpse*</li>
+      <li>funeral*</li>
+      <li>grave*</li>
+      <li>burial*</li>
+      <li>cremation</li>
+    </triggerTextTerms>
   </PawnDiary.DiaryCultureTopicDef>
 
   <!-- Owns the part_kind context key (addedpart/organicpart/missingpart) formerly on the
@@ -198,6 +291,22 @@
     <triggerContextKeys>
       <li>part_kind</li>
     </triggerContextKeys>
+    <triggerTextTerms>
+      <li>body</li>
+      <li>wound</li>
+      <li>wounds</li>
+      <li>wounded</li>
+      <li>injur*</li>
+      <li>scar*</li>
+      <li>bionic*</li>
+      <li>prosthetic*</li>
+      <li>implant*</li>
+      <li>surgery</li>
+      <li>surgical*</li>
+      <li>amputation</li>
+      <li>missing* limb*</li>
+      <li>organ* transplant*</li>
+    </triggerTextTerms>
   </PawnDiary.DiaryCultureTopicDef>
 
   <PawnDiary.DiaryCultureTopicDef>
@@ -215,6 +324,25 @@
       <li>BabyBorn</li>
       <li>BiotechGrowthMoment</li>
     </triggerDefNames>
+    <triggerTextTerms>
+      <li>family</li>
+      <li>marriage</li>
+      <li>married</li>
+      <li>spouse*</li>
+      <li>fiance*</li>
+      <li>fiancé*</li>
+      <li>lover*</li>
+      <li>parent*</li>
+      <li>child</li>
+      <li>children</li>
+      <li>childbirth</li>
+      <li>baby</li>
+      <li>babies</li>
+      <li>pregnan*</li>
+      <li>sibling*</li>
+      <li>brother*</li>
+      <li>sister*</li>
+    </triggerTextTerms>
   </PawnDiary.DiaryCultureTopicDef>
 
   <PawnDiary.DiaryCultureTopicDef>
@@ -225,6 +353,19 @@
     <triggerValueMarkers>
       <li>mental_state=</li>
     </triggerValueMarkers>
+    <triggerTextTerms>
+      <li>mental* break*</li>
+      <li>mental* breakdown*</li>
+      <li>berserk*</li>
+      <li>murderous rage</li>
+      <li>tantrum*</li>
+      <li>psychotic*</li>
+      <li>insanity</li>
+      <li>insane</li>
+      <li>catatonic*</li>
+      <li>daze*</li>
+      <li>madness</li>
+    </triggerTextTerms>
   </PawnDiary.DiaryCultureTopicDef>
 
   <PawnDiary.DiaryCultureTopicDef>
@@ -241,6 +382,18 @@
       <li>ManhunterPackPurple</li>
       <li>AnimalInsanityMassPurple</li>
     </triggerDefNames>
+    <triggerTextTerms>
+      <li>animal*</li>
+      <li>beast*</li>
+      <li>wildlife</li>
+      <li>wild* animal*</li>
+      <li>pet</li>
+      <li>pets</li>
+      <li>tame*</li>
+      <li>nuzzle*</li>
+      <li>manhunter*</li>
+      <li>herd*</li>
+    </triggerTextTerms>
   </PawnDiary.DiaryCultureTopicDef>
 
   <PawnDiary.DiaryCultureTopicDef>
@@ -262,6 +415,26 @@
       <li>VEE_Earthquake</li>
       <li>VEE_MeteoriteShower</li>
     </triggerDefNames>
+    <triggerTextTerms>
+      <li>disaster*</li>
+      <li>calamity</li>
+      <li>calamities</li>
+      <li>catastrophe*</li>
+      <li>toxic* fallout</li>
+      <li>volcanic* winter</li>
+      <li>cold snap</li>
+      <li>heat wave</li>
+      <li>solar flare</li>
+      <li>flashstorm*</li>
+      <li>blight*</li>
+      <li>earthquake*</li>
+      <li>meteorite* shower*</li>
+      <li>unnatural* darkness</li>
+      <li>volcanic* ash</li>
+      <li>short circuit</li>
+      <li>wildfire*</li>
+      <li>heatwave*</li>
+    </triggerTextTerms>
   </PawnDiary.DiaryCultureTopicDef>
 
 </Defs>

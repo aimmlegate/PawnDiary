@@ -1564,6 +1564,57 @@
   <PawnDiary.Voice.Reset>Голос сброшен — манера письма и мироощущение снова подбираются автоматически.</PawnDiary.Voice.Reset>
   <PawnDiary.WritingStyle.SaveFailed>Этот поселенец больше не может вести дневник, поэтому манера письма не сохранена.</PawnDiary.WritingStyle.SaveFailed>
 
+  <!-- Просмотр и правка важных воспоминаний в режиме разработчика. -->
+  <PawnDiary.Dev.Memory.SectionTitle>Сохранённые воспоминания (режим разработчика) — {0}</PawnDiary.Dev.Memory.SectionTitle>
+  <PawnDiary.Dev.Memory.Empty>У этого поселенца нет сохранённых важных воспоминаний.</PawnDiary.Dev.Memory.Empty>
+  <PawnDiary.Dev.Memory.Older>Старее</PawnDiary.Dev.Memory.Older>
+  <PawnDiary.Dev.Memory.Newer>Новее</PawnDiary.Dev.Memory.Newer>
+  <PawnDiary.Dev.Memory.Selector>Воспоминание {0} / {1}</PawnDiary.Dev.Memory.Selector>
+  <PawnDiary.Dev.Memory.Metadata>Дата: {0} · тип: {1} · тема: {2}</PawnDiary.Dev.Memory.Metadata>
+  <PawnDiary.Dev.Memory.TextLabel>Текст воспоминания для будущих обращений</PawnDiary.Dev.Memory.TextLabel>
+  <PawnDiary.Dev.Memory.EditLabel>Изменить текст воспоминания — {0}/{1}</PawnDiary.Dev.Memory.EditLabel>
+  <PawnDiary.Dev.Memory.EditLabelUnlimited>Изменить текст воспоминания — {0} символов</PawnDiary.Dev.Memory.EditLabelUnlimited>
+  <PawnDiary.Dev.Memory.Edit>Изменить</PawnDiary.Dev.Memory.Edit>
+  <PawnDiary.Dev.Memory.Save>Сохранить</PawnDiary.Dev.Memory.Save>
+  <PawnDiary.Dev.Memory.Cancel>Отмена</PawnDiary.Dev.Memory.Cancel>
+  <PawnDiary.Dev.Memory.Remove>Удалить</PawnDiary.Dev.Memory.Remove>
+  <PawnDiary.Dev.Memory.RemoveTitle>Удалить воспоминание</PawnDiary.Dev.Memory.RemoveTitle>
+  <PawnDiary.Dev.Memory.RemoveConfirm>Удалить это воспоминание навсегда?\n\n{0}\n\nЭто повлияет только на будущие обращения; уже созданные события дневника сохранят свой контекст.</PawnDiary.Dev.Memory.RemoveConfirm>
+  <PawnDiary.Dev.Memory.Saved>Текст воспоминания сохранён. Он будет использоваться при будущих обращениях.</PawnDiary.Dev.Memory.Saved>
+  <PawnDiary.Dev.Memory.Removed>Воспоминание удалено.</PawnDiary.Dev.Memory.Removed>
+  <PawnDiary.Dev.Memory.OperationFailed>Не удалось изменить воспоминание. Возможно, режим разработчика выключен или запись уже не существует.</PawnDiary.Dev.Memory.OperationFailed>
+  <PawnDiary.Dev.Memory.Option>{0} — {1}</PawnDiary.Dev.Memory.Option>
+  <PawnDiary.Dev.Memory.Unknown>неизвестно</PawnDiary.Dev.Memory.Unknown>
+  <PawnDiary.Dev.Memory.RenderedEmpty>(пустой текст воспоминания)</PawnDiary.Dev.Memory.RenderedEmpty>
+
+  <!-- Просмотр культурной памяти перед редактором важных воспоминаний в режиме разработчика. -->
+  <PawnDiary.Dev.Lore.SectionTitle>Культурная память (режим разработчика) — тем: {0}</PawnDiary.Dev.Lore.SectionTitle>
+  <PawnDiary.Dev.Lore.Unavailable>Культурная память недоступна: нет поселенца или компонента дневника.</PawnDiary.Dev.Lore.Unavailable>
+  <PawnDiary.Dev.Lore.NoTopics>Темы культуры не загружены.</PawnDiary.Dev.Lore.NoTopics>
+  <PawnDiary.Dev.Lore.StatePresent>сохранено</PawnDiary.Dev.Lore.StatePresent>
+  <PawnDiary.Dev.Lore.StateMissing>не сохранено</PawnDiary.Dev.Lore.StateMissing>
+  <PawnDiary.Dev.Lore.InjectionEnabled>включено</PawnDiary.Dev.Lore.InjectionEnabled>
+  <PawnDiary.Dev.Lore.InjectionDisabled>выключено</PawnDiary.Dev.Lore.InjectionDisabled>
+  <PawnDiary.Dev.Lore.State>Состояние знаний: {0} · добавление культуры: {1}\nИсходная: {2}\nПринятая: {3}</PawnDiary.Dev.Lore.State>
+  <PawnDiary.Dev.Lore.Profile>культура={0} · источник={1} · профиль={2}</PawnDiary.Dev.Lore.Profile>
+  <PawnDiary.Dev.Lore.ProfileWithoutSource>культура={0} · профиль={1}</PawnDiary.Dev.Lore.ProfileWithoutSource>
+  <PawnDiary.Dev.Lore.ProfileFound>найден ({0})</PawnDiary.Dev.Lore.ProfileFound>
+  <PawnDiary.Dev.Lore.ProfileFallback>резервный ({0})</PawnDiary.Dev.Lore.ProfileFallback>
+  <PawnDiary.Dev.Lore.ProfileMissing>отсутствует</PawnDiary.Dev.Lore.ProfileMissing>
+  <PawnDiary.Dev.Lore.ProfileNotApplicable>не применимо</PawnDiary.Dev.Lore.ProfileNotApplicable>
+  <PawnDiary.Dev.Lore.None>нет</PawnDiary.Dev.Lore.None>
+  <PawnDiary.Dev.Lore.Previous>Назад</PawnDiary.Dev.Lore.Previous>
+  <PawnDiary.Dev.Lore.Next>Вперёд</PawnDiary.Dev.Lore.Next>
+  <PawnDiary.Dev.Lore.Selector>{0} · {1}/{2}</PawnDiary.Dev.Lore.Selector>
+  <PawnDiary.Dev.Lore.TopicDetails>Предания и условия выбранной темы</PawnDiary.Dev.Lore.TopicDetails>
+  <PawnDiary.Dev.Lore.OriginClause>Исходный взгляд: {0}</PawnDiary.Dev.Lore.OriginClause>
+  <PawnDiary.Dev.Lore.AdoptedClause>Принятый взгляд: {0}</PawnDiary.Dev.Lore.AdoptedClause>
+  <PawnDiary.Dev.Lore.TextTriggers>Локализованные слова и фразы: {0}</PawnDiary.Dev.Lore.TextTriggers>
+  <PawnDiary.Dev.Lore.StructuredTriggers>Структурные условия: {0}</PawnDiary.Dev.Lore.StructuredTriggers>
+  <PawnDiary.Dev.Lore.NoClause>(в выбранном профиле нет такого взгляда)</PawnDiary.Dev.Lore.NoClause>
+  <PawnDiary.Dev.Lore.LastMatchNone>Последнее совпадение: после загрузки запросов не было.</PawnDiary.Dev.Lore.LastMatchNone>
+  <PawnDiary.Dev.Lore.LastMatch>Темы последнего запроса: {0}\nПоля с добавленным взглядом: {1}</PawnDiary.Dev.Lore.LastMatch>
+
   <!-- Слой психотипа (взгляда): линза характера поселенца, правится в том же окне, что и манера
        письма. Ярлык психотипа — только текст выбора; модель его никогда не видит. -->
   <PawnDiary.Psychotype.SectionTitle>Психотип (взгляд на мир)</PawnDiary.Psychotype.SectionTitle>

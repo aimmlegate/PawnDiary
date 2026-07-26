@@ -1,9 +1,9 @@
 // CultureAnnotationPlanner.cs — pure planning of inline culture annotations
 // (design/MEMORY_SYSTEM_REDESIGN_PLAN.md §4.3). Runs AFTER prompt-detail field selection and
 // BEFORE final assembly: it looks only at fields that survived selection, detects at most two
-// distinct topics from STRUCTURED data (context keys, stable schema markers, event defNames —
-// never localized word forms), and appends one parenthetical annotation to the end of the first
-// rendered field that triggered each topic.
+// distinct topics from structured data (context keys, stable schema markers, event defNames) or
+// localized XML-owned natural-language terms, and appends one parenthetical annotation to the end
+// of the first rendered field that triggered each topic.
 //
 // Recursion/robustness guarantees:
 //  - the planner runs exactly once per prompt, on pre-annotation values, so an annotation can
@@ -14,6 +14,7 @@
 // New to C#/RimWorld? See AGENTS.md ("architecture barriers"). No Verse/Unity/Def/settings here.
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace PawnDiary
 {
@@ -110,8 +111,8 @@ namespace PawnDiary
         /// <summary>
         /// The first surviving field (template order) whose structured data triggers the topic:
         /// a GameContext field rendering one of the trigger context keys, any scannable field whose
-        /// value carries a stable "marker=" schema token, or — for event-defName triggers — the
-        /// first scannable field of the prompt (the event itself has no field of its own).
+        /// value carries a stable "marker=" schema token or localized XML-owned text term, or — for
+        /// event-defName triggers — the first scannable field (the event itself has no field).
         /// </summary>
         private static int FirstTriggeringFieldIndex(
             CultureTopicRule topic, List<AnnotationFieldView> scannable, string eventDefName)
@@ -121,7 +122,8 @@ namespace PawnDiary
                 AnnotationFieldView field = scannable[i];
                 if (TriggersByContextKey(topic, field)
                     || TriggersByContextPair(topic, field)
-                    || TriggersByValueMarker(topic, field))
+                    || TriggersByValueMarker(topic, field)
+                    || TriggersByTextTerm(topic, field))
                 {
                     return field.index;
                 }
@@ -220,6 +222,30 @@ namespace PawnDiary
                 if (!string.IsNullOrWhiteSpace(marker)
                     && field.resolvedValue.IndexOf(marker.Trim(),
                         StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Matches localized XML terms against the already-localized selected field. Unlike stable
+        /// schema-marker matching, this is word-boundary-aware: "empire" does not match "vampire".
+        /// Individual pattern words may end in '*' to cover ordinary inflection and plurals.
+        /// </summary>
+        private static bool TriggersByTextTerm(CultureTopicRule topic, AnnotationFieldView field)
+        {
+            if (topic.triggerTextTerms == null || string.IsNullOrWhiteSpace(field.resolvedValue))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < topic.triggerTextTerms.Count; i++)
+            {
+                if (CultureTextTermMatcher.Matches(
+                    field.resolvedValue, topic.triggerTextTerms[i]))
                 {
                     return true;
                 }
@@ -330,6 +356,156 @@ namespace PawnDiary
             {
                 return first ?? string.Empty;
             }
+        }
+    }
+
+    /// <summary>
+    /// Pure, allocation-bounded lexical matcher for localized culture-topic terms. Text and patterns
+    /// are split into Unicode letter/digit words, so punctuation and hyphens are harmless separators.
+    /// A trailing '*' makes only that pattern word a prefix match; phrases remain contiguous.
+    /// </summary>
+    internal static class CultureTextTermMatcher
+    {
+        private sealed class PatternWord
+        {
+            public string text = string.Empty;
+            public bool prefix;
+        }
+
+        /// <summary>True when one localized word/phrase pattern occurs in the supplied text.</summary>
+        public static bool Matches(string text, string pattern)
+        {
+            if (string.IsNullOrWhiteSpace(text) || string.IsNullOrWhiteSpace(pattern))
+            {
+                return false;
+            }
+
+            bool valid;
+            List<PatternWord> patternWords = ParsePattern(pattern, out valid);
+            if (!valid || patternWords.Count == 0)
+            {
+                return false;
+            }
+
+            List<string> textWords = Words(text);
+            if (textWords.Count < patternWords.Count)
+            {
+                return false;
+            }
+
+            int lastStart = textWords.Count - patternWords.Count;
+            for (int start = 0; start <= lastStart; start++)
+            {
+                bool allMatch = true;
+                for (int offset = 0; offset < patternWords.Count; offset++)
+                {
+                    PatternWord expected = patternWords[offset];
+                    string actual = textWords[start + offset];
+                    bool matches = expected.prefix
+                        ? actual.StartsWith(expected.text, StringComparison.OrdinalIgnoreCase)
+                        : string.Equals(actual, expected.text, StringComparison.OrdinalIgnoreCase);
+                    if (!matches)
+                    {
+                        allMatch = false;
+                        break;
+                    }
+                }
+
+                if (allMatch)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Valid patterns contain at least one word. '*' is allowed only immediately after a word of
+        /// three or more characters; this prevents dangerously broad authoring such as "a*".
+        /// </summary>
+        public static bool IsValidPattern(string pattern)
+        {
+            bool valid;
+            List<PatternWord> words = ParsePattern(pattern, out valid);
+            return valid && words.Count > 0;
+        }
+
+        private static List<PatternWord> ParsePattern(string pattern, out bool valid)
+        {
+            List<PatternWord> words = new List<PatternWord>();
+            StringBuilder current = new StringBuilder();
+            valid = !string.IsNullOrWhiteSpace(pattern);
+            if (!valid)
+            {
+                return words;
+            }
+
+            for (int i = 0; i < pattern.Length; i++)
+            {
+                char c = pattern[i];
+                if (char.IsLetterOrDigit(c))
+                {
+                    current.Append(c);
+                    continue;
+                }
+
+                if (c == '*')
+                {
+                    if (current.Length < 3
+                        || (i + 1 < pattern.Length && char.IsLetterOrDigit(pattern[i + 1])))
+                    {
+                        valid = false;
+                        return words;
+                    }
+
+                    AddPatternWord(words, current, true);
+                    continue;
+                }
+
+                AddPatternWord(words, current, false);
+            }
+
+            AddPatternWord(words, current, false);
+            return words;
+        }
+
+        private static void AddPatternWord(
+            List<PatternWord> words, StringBuilder current, bool prefix)
+        {
+            if (current.Length == 0)
+            {
+                return;
+            }
+
+            words.Add(new PatternWord { text = current.ToString(), prefix = prefix });
+            current.Length = 0;
+        }
+
+        private static List<string> Words(string text)
+        {
+            List<string> words = new List<string>();
+            StringBuilder current = new StringBuilder();
+            for (int i = 0; i < text.Length; i++)
+            {
+                char c = text[i];
+                if (char.IsLetterOrDigit(c))
+                {
+                    current.Append(c);
+                }
+                else if (current.Length > 0)
+                {
+                    words.Add(current.ToString());
+                    current.Length = 0;
+                }
+            }
+
+            if (current.Length > 0)
+            {
+                words.Add(current.ToString());
+            }
+
+            return words;
         }
     }
 }

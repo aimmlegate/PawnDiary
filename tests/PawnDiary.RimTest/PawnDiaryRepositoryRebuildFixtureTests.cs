@@ -359,8 +359,9 @@ namespace PawnDiary.RimTests
 
         /// <summary>
         /// The per-pawn knowledge state (MEMORY_SYSTEM_REDESIGN_PLAN §2.2, §4.1) round-trips
-        /// through real Scribe preserving culture provenance and important-event records, and
-        /// Normalize() repairs a hand-edited save: null lists heal, parallel fact lists realign,
+        /// through real Scribe preserving culture provenance, important-event records, and a
+        /// developer-authored memory-text override. Normalize() repairs a hand-edited save:
+        /// null lists/text heal, parallel fact lists realign,
         /// and duplicated dedup keys collapse to one record.
         /// </summary>
         [Test]
@@ -373,7 +374,9 @@ namespace PawnDiary.RimTests
                 originCultureSource = "captured",
                 adoptedCultureDefName = "Corunan",
             };
-            source.records.Add(NewKnowledgeRecord("rec-1", "relation.spouse.gained", 200));
+            ImportantMemoryRecord overridden = NewKnowledgeRecord("rec-1", "relation.spouse.gained", 200);
+            overridden.manualTextOverride = "Brik and I chose each other beneath the stars.";
+            source.records.Add(overridden);
             source.records.Add(NewKnowledgeRecord("rec-2", "body.part.lost", 300));
 
             RunWithTempFile(path =>
@@ -395,6 +398,8 @@ namespace PawnDiary.RimTests
                 ImportantMemoryRecord first = loaded.records[0];
                 Require(first.eventKind == "relation.spouse.gained" && first.tick == 200,
                     "Record kind/tick must survive the round trip.");
+                Require(first.manualTextOverride == "Brik and I chose each other beneath the stars.",
+                    "The developer-authored memory-text override must survive the round trip.");
                 Require(first.participantIds.Count == 1 && first.participantNames[0] == "Brik",
                     "Participant ids and saved display names must survive.");
                 Require(first.subjectKeys.Count == 1 && first.factKeys.Count == first.factValues.Count,
@@ -404,7 +409,14 @@ namespace PawnDiary.RimTests
 
                 // Hand-edited save repair: a duplicated dedup key collapses, null lists heal.
                 loaded.records.Add(NewKnowledgeRecord("rec-1", "relation.spouse.gained", 200));
-                loaded.records.Add(new ImportantMemoryRecord { recordId = "rec-3", dedupKey = "d3", participantIds = null, factKeys = null });
+                loaded.records.Add(new ImportantMemoryRecord
+                {
+                    recordId = "rec-3",
+                    dedupKey = "d3",
+                    participantIds = null,
+                    factKeys = null,
+                    manualTextOverride = null,
+                });
                 loaded.Normalize();
                 Require(loaded.records.Count == 3,
                     "Normalize must drop the duplicated dedup key (2 originals + repaired rec-3), got "
@@ -412,6 +424,8 @@ namespace PawnDiary.RimTests
                 ImportantMemoryRecord repaired = loaded.records[2];
                 Require(repaired.participantIds != null && repaired.factKeys != null,
                     "Normalize must heal null record lists.");
+                Require(repaired.manualTextOverride == string.Empty,
+                    "Normalize must heal a null memory-text override to an empty string.");
             });
         }
 

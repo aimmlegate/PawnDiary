@@ -4,8 +4,9 @@
 // (mirroring beliefState), so it saves/loads with the diary and survives the pawn's death for
 // resurrection.
 //
-// The record stores gameplay facts only — never a generated diary entry or an LLM summary.
-// Everything here is strings/scalars/bounded lists; no live Pawn/Def references are retained.
+// The record stores gameplay facts plus an optional developer-authored prompt/display override —
+// never a generated diary entry or an LLM summary. Everything here is strings/scalars/bounded
+// lists; no live Pawn/Def references are retained.
 //
 // New to C#/RimWorld? See AGENTS.md ("IExposable"): ExposeData is called for BOTH save and load;
 // Scribe_* mirrors each field to XML. PostLoadInit-style repair lives in Normalize(), called by
@@ -37,6 +38,11 @@ namespace PawnDiary
         public List<string> factValues = new List<string>();
         /// <summary>Bounded capture-time summary used when the event Def is missing.</summary>
         public string fallbackSummary = string.Empty;
+        /// <summary>
+        /// Optional developer-authored replacement for the rendered memory line. Stable identity,
+        /// matching keys, and structured facts remain untouched; only prompt/display prose changes.
+        /// </summary>
+        public string manualTextOverride = string.Empty;
 
         public void ExposeData()
         {
@@ -53,6 +59,7 @@ namespace PawnDiary
             Scribe_Collections.Look(ref factKeys, "factKeys", LookMode.Value);
             Scribe_Collections.Look(ref factValues, "factValues", LookMode.Value);
             Scribe_Values.Look(ref fallbackSummary, "fallback");
+            Scribe_Values.Look(ref manualTextOverride, "manualTextOverride");
         }
 
         /// <summary>Repairs nulls and keeps the parallel lists aligned after a hand-edited save.</summary>
@@ -65,6 +72,7 @@ namespace PawnDiary
             topicKey = topicKey ?? string.Empty;
             dateLabel = dateLabel ?? string.Empty;
             fallbackSummary = fallbackSummary ?? string.Empty;
+            manualTextOverride = manualTextOverride ?? string.Empty;
             participantIds = participantIds ?? new List<string>();
             participantNames = participantNames ?? new List<string>();
             subjectKeys = subjectKeys ?? new List<string>();
@@ -99,7 +107,8 @@ namespace PawnDiary
                 topicKey = snapshot.topicKey ?? string.Empty,
                 tick = snapshot.tick,
                 dateLabel = snapshot.dateLabel ?? string.Empty,
-                fallbackSummary = snapshot.fallbackSummary ?? string.Empty
+                fallbackSummary = snapshot.fallbackSummary ?? string.Empty,
+                manualTextOverride = snapshot.manualTextOverride ?? string.Empty
             };
             if (snapshot.participants != null)
             {
@@ -148,7 +157,8 @@ namespace PawnDiary
                 topicKey = topicKey ?? string.Empty,
                 tick = tick,
                 dateLabel = dateLabel ?? string.Empty,
-                fallbackSummary = fallbackSummary ?? string.Empty
+                fallbackSummary = fallbackSummary ?? string.Empty,
+                manualTextOverride = manualTextOverride ?? string.Empty
             };
             for (int i = 0; i < participantIds.Count; i++)
             {

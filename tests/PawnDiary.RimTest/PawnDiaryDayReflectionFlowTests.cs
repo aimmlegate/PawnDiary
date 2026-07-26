@@ -297,7 +297,7 @@ namespace PawnDiary.RimTests
             int arrivalTick = NewsFixtureTick(2);
             SeedArrivalBoundary(arrivalTick);
             RequireEffectiveArrivalTick(arrivalTick);
-            ReserveNewestLetterSlot(arrivalTick);
+            ReserveNewestArchiveSlots(arrivalTick);
             SeedArchiveLetter("PositiveEvent", "A refugee was welcomed", NewsFixtureTick(1));
             tuning.daySummaryImportantSignalKinds = new List<string> { "news" };
 
@@ -383,7 +383,7 @@ namespace PawnDiary.RimTests
         {
             int arrivalTick = NewsFixtureTick(3);
             SeedArrivalBoundary(arrivalTick);
-            ReserveNewestLetterSlot(arrivalTick);
+            ReserveNewestArchiveSlots(arrivalTick);
             SeedArchiveLetter("PositiveEvent", "A trader offered welcome news", NewsFixtureTick(2));
             SeedArchiveLetter("ThreatBig", "Raiders were sighted", NewsFixtureTick(1));
             scope.Component.AddSoloEvent(
@@ -419,7 +419,7 @@ namespace PawnDiary.RimTests
         {
             int arrivalTick = NewsFixtureTick(4);
             SeedArrivalBoundary(arrivalTick);
-            ReserveNewestLetterSlot(arrivalTick);
+            ReserveNewestArchiveSlots(arrivalTick);
             SeedArchiveLetter("PositiveEvent", "A calm opportunity appeared", NewsFixtureTick(3));
             SeedArchiveLetter("ThreatBig", "A mech threat was announced", NewsFixtureTick(2));
             SeedArchivedDirectOwner(
@@ -821,18 +821,17 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
-        /// Lifts every already-archived colony letter at or after <paramref name="fromTick"/> out of
-        /// RimWorld's archive for the rest of this test, then puts them back in teardown.
+        /// Lifts every already-archived row at or after <paramref name="fromTick"/> out of RimWorld's
+        /// archive for the rest of this test, then puts it back in teardown.
         ///
-        /// The game clock does not advance while the test runner works, so every letter raised by an
-        /// earlier suite in the same run — a real psylink gain, an inspiration, a death — is archived at
-        /// exactly the current TicksGame. That is permanently newer than any tick this fixture can seed
-        /// and sits inside its own evidence window, so the newest-first collector would rank a leftover
-        /// letter ahead of the seeded one and the assertion would describe another suite's letter.
-        /// Pinned letters are left alone: those are a deliberate player action, and one pinned at this
-        /// exact tick is not a case worth trading save fidelity for.
+        /// The game clock does not advance while the test runner works, so rows raised by earlier suites
+        /// are archived at exactly the current TicksGame. The production collector's bounded scan counts
+        /// every archive row, even non-letters, before it type-narrows. Enough same-tick rows can therefore
+        /// hide the fixture letter beyond the scan cap on a repeat run. Pinned rows are left alone: those
+        /// are a deliberate player action, and one pinned at this exact tick is not a case worth trading
+        /// save fidelity for.
         /// </summary>
-        private static void ReserveNewestLetterSlot(int fromTick)
+        private static void ReserveNewestArchiveSlots(int fromTick)
         {
             if (Find.Archive == null)
             {
@@ -843,12 +842,20 @@ namespace PawnDiary.RimTests
             IReadOnlyList<IArchivable> archivables = Find.Archive.ArchivablesListForReading;
             for (int i = 0; i < archivables.Count; i++)
             {
-                Letter letter = archivables[i] as Letter;
-                if (letter != null
-                    && letter.arrivalTick >= fromTick
-                    && !Find.Archive.IsPinned(letter))
+                IArchivable archivable = archivables[i];
+                int createdTick;
+                try
                 {
-                    displaced.Add(letter);
+                    createdTick = archivable?.CreatedTicksGame ?? -1;
+                }
+                catch
+                {
+                    continue;
+                }
+
+                if (createdTick >= fromTick && !Find.Archive.IsPinned(archivable))
+                {
+                    displaced.Add(archivable);
                 }
             }
 

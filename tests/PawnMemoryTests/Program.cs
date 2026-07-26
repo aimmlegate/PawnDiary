@@ -1,13 +1,14 @@
 // Standalone, no-RimWorld checks for the deterministic pawn-knowledge system
 // (design/MEMORY_SYSTEM_REDESIGN_PLAN.md §8): important-event classification against the shipped
 // XML allowlist (positives, owners, dedup, and explicit negatives), localized line rendering with
-// fallbacks, deterministic retrieval (participant/exact-key eligibility, tier ranking, stable
+// prompt-safe manual overrides and fallbacks, deterministic retrieval (participant/exact-key
+// eligibility, tier ranking, stable
 // ties, the two-record cap, and proof that broad topic overlap alone can never recall), culture
 // resolution (ideology/faction paths, legacy inference, conversion replacement, unknown
-// cultures), field-aware topic annotation (caps, origin/adopted, master switch, recursion
-// prevention), defensive-cap eviction planning, and shipped-XML contract checks incl. Russian
-// parity. The project links only pure source, so any accidental Verse/Unity dependency is a
-// compile-time failure.
+// cultures), field-aware topic annotation (structured and localized-text detection, caps,
+// origin/adopted, master switch, recursion prevention), defensive-cap eviction planning, and
+// shipped-XML contract checks incl. Russian parity. The project links only pure source, so any
+// accidental Verse/Unity dependency is a compile-time failure.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -53,6 +54,7 @@ namespace PawnMemoryTests
             TestCultureConversionReplacement();
             TestFamilyRelationDirection();
             TestAnnotationTopicDetectionPerField();
+            TestAnnotationLocalizedTextTerms();
             TestAnnotationCapsAndPriority();
             TestAnnotationOriginAdoptedRendering();
             TestAnnotationMasterSwitchAndScannableSources();
@@ -515,6 +517,29 @@ namespace PawnMemoryTests
                 ImportantMemoryLineRenderer.Render(record, "became {new_value}", 240));
             AssertEqual("render.blankTemplate", "captured fallback",
                 ImportantMemoryLineRenderer.Render(record, "  ", 240));
+
+            record.manualTextOverride = "developer-authored memory";
+            AssertEqual("render.manualOverride.precedence", "developer-authored memory",
+                ImportantMemoryLineRenderer.Render(record, "married {other}", 240));
+
+            record.manualTextOverride = " \r\n\t ";
+            AssertEqual("render.manualOverride.blankFallsBack", "married Brik",
+                ImportantMemoryLineRenderer.Render(record, "married {other}", 240));
+
+            AssertEqual("render.manualOverride.sanitized", "kept as memory",
+                ImportantMemoryLineRenderer.CleanManualOverride(
+                    "  <b>kept</b>\r\n\t as   <color=red>memory</color>  ", 240));
+            AssertEqual("render.manualOverride.cap", "12345678",
+                ImportantMemoryLineRenderer.CleanManualOverride("123456789tail", 8));
+
+            string manualSurrogateSafe = ImportantMemoryLineRenderer.CleanManualOverride(
+                "1234567\U0001F600tail", 8);
+            AssertEqual("render.manualOverride.surrogateSafeCap", "1234567", manualSurrogateSafe);
+            AssertTrue("render.manualOverride.surrogateSafeCap.wellFormed",
+                manualSurrogateSafe.Length == 0
+                || !char.IsHighSurrogate(manualSurrogateSafe[manualSurrogateSafe.Length - 1]));
+
+            record.manualTextOverride = string.Empty;
             AssertEqual("render.cap", "married",
                 ImportantMemoryLineRenderer.Render(record, "married {other}", 8));
             record.fallbackSummary = "1234567\U0001F600tail";
@@ -996,6 +1021,73 @@ namespace PawnMemoryTests
             AssertEqual("detect.defName.field", 3, plan.entries[0].fieldIndex);
         }
 
+        private static void TestAnnotationLocalizedTextTerms()
+        {
+            CultureTopicRule mechanoids = Topic("mechanoids", 10);
+            mechanoids.triggerTextTerms.Add("mechanoid*");
+            CultureProfile profile = Profile("Astropolitan",
+                "mechanoids", "hardware, not spirits");
+            KnowledgePolicySnapshot policy = KnowledgePolicySnapshot.CreateDefault();
+
+            CultureAnnotationPlan plan = CultureAnnotationPlanner.Plan(
+                new List<AnnotationFieldView>
+                {
+                    Field(0, "PovText", "They talked about mechanoids.")
+                },
+                "Chitchat", new List<CultureTopicRule> { mechanoids },
+                profile, null, policy);
+            AssertEqual("detect.text.userCase.count", 1, plan.entries.Count);
+            AssertEqual("detect.text.userCase.topic", "mechanoids", plan.matchedTopics[0]);
+            AssertEqual("detect.text.userCase.field", 0, plan.entries[0].fieldIndex);
+
+            // Prefix terms cover grammatical inflection without falling back to substring matching.
+            CultureTopicRule russianMechanoids = Topic("mechanoids", 10);
+            russianMechanoids.triggerTextTerms.Add("механоид*");
+            plan = CultureAnnotationPlanner.Plan(
+                new List<AnnotationFieldView>
+                {
+                    Field(0, "PovText", "Они говорили о механоидах.")
+                },
+                "Chitchat", new List<CultureTopicRule> { russianMechanoids },
+                profile, null, policy);
+            AssertEqual("detect.text.russianInflection", 1, plan.entries.Count);
+
+            // Each word in a phrase can opt into suffix matching.
+            CultureTopicRule archotech = Topic("archotech", 20);
+            archotech.triggerTextTerms.Add("ancient* complex*");
+            CultureProfile archotechProfile = Profile("Astropolitan",
+                "archotech", "engineering beyond human scale");
+            plan = CultureAnnotationPlanner.Plan(
+                new List<AnnotationFieldView>
+                {
+                    Field(2, "NeutralText", "They searched the ancient complexes.")
+                },
+                "Chitchat", new List<CultureTopicRule> { archotech },
+                archotechProfile, null, policy);
+            AssertEqual("detect.text.phrasePrefix", 1, plan.entries.Count);
+
+            // Whole-word matching prevents the old substring-classifier failure mode.
+            CultureTopicRule empire = Topic("empire", 30);
+            empire.triggerTextTerms.Add("empire");
+            CultureProfile empireProfile = Profile("Astropolitan",
+                "empire", "one polity among many");
+            plan = CultureAnnotationPlanner.Plan(
+                new List<AnnotationFieldView>
+                {
+                    Field(0, "PovText", "A vampire bat crossed the yard.")
+                },
+                "Chitchat", new List<CultureTopicRule> { empire },
+                empireProfile, null, policy);
+            AssertEqual("detect.text.wordBoundary", 0, plan.entries.Count);
+
+            AssertEqual("detect.text.invalidBareWildcard", false,
+                CultureTextTermMatcher.IsValidPattern("*"));
+            AssertEqual("detect.text.invalidShortPrefix", false,
+                CultureTextTermMatcher.IsValidPattern("a*"));
+            AssertEqual("detect.text.validUnicodePrefix", true,
+                CultureTextTermMatcher.IsValidPattern("механоид*"));
+        }
+
         private static void TestAnnotationCapsAndPriority()
         {
             CultureTopicRule low = Topic("psychic", 10);
@@ -1081,6 +1173,7 @@ namespace PawnMemoryTests
             // Past-memory text, already-generated narrative/belief layers, and prior entries are
             // structurally unscannable: their sources are absent from the allowlist, so composition
             // cannot feed generated interpretation back into a second culture annotation.
+            topic.triggerTextTerms.Add("xenohuman*");
             KnowledgePolicySnapshot policy = KnowledgePolicySnapshot.CreateDefault();
             List<AnnotationFieldView> excluded = new List<AnnotationFieldView>
             {
@@ -1088,7 +1181,8 @@ namespace PawnMemoryTests
                 Field(1, "BeliefContext", "xenotype=Hussar is current doctrine"),
                 Field(2, "NarrativeContext", "xenotype=Hussar is a selected shared lens"),
                 Field(3, "EntryText", "yesterday xenotype=Hussar"),
-                Field(4, "HiddenInitiatorEntry", "xenotype=Hussar")
+                Field(4, "HiddenInitiatorEntry", "xenotype=Hussar"),
+                Field(5, "MemoryContext", "they remembered the xenohumans")
             };
             AssertEqual("sources.excluded", 0,
                 CultureAnnotationPlanner.Plan(excluded, "X", topics, profile, null, policy).entries.Count);
@@ -1102,9 +1196,8 @@ namespace PawnMemoryTests
 
         private static void TestAnnotationRecursionPrevention()
         {
-            // The planner runs once, pre-annotation; an annotation-shaped string in a scannable
-            // field only triggers when it carries a REAL structured marker — the parenthetical
-            // format itself is inert.
+            // The planner runs once, pre-annotation. The parenthetical format itself is inert:
+            // this topic has one structured marker and no authored lexical terms that occur here.
             CultureTopicRule topic = Topic("void", 10);
             topic.triggerValueMarkers.Add("dark_study=");
             List<CultureTopicRule> topics = new List<CultureTopicRule> { topic };
@@ -1164,11 +1257,33 @@ namespace PawnMemoryTests
             XDocument topicsDoc = XDocument.Load(Path.Combine(root, "1.6", "Defs", "DiaryCultureTopicDefs.xml"));
             XDocument profilesDoc = XDocument.Load(Path.Combine(root, "1.6", "Defs", "DiaryCultureProfileDefs.xml"));
 
-            List<string> topicKeys = topicsDoc.Root.Elements("PawnDiary.DiaryCultureTopicDef")
+            List<XElement> topicDefs = topicsDoc.Root
+                .Elements("PawnDiary.DiaryCultureTopicDef").ToList();
+            List<string> topicKeys = topicDefs
                 .Select(def => (string)def.Element("topicKey")).ToList();
             AssertEqual("cultureXml.topicCount", 14, topicKeys.Count);
             AssertEqual("cultureXml.topicUnique", 14,
                 new HashSet<string>(topicKeys, StringComparer.OrdinalIgnoreCase).Count);
+
+            string ruTopicPath = Path.Combine(root, "Languages", "Russian (Русский)",
+                "DefInjected", "PawnDiary.DiaryCultureTopicDef", "DiaryCultureTopicDefs.xml");
+            XDocument ruTopics = XDocument.Load(ruTopicPath);
+            foreach (XElement topicDef in topicDefs)
+            {
+                string defName = (string)topicDef.Element("defName");
+                List<string> terms = ListItems(topicDef, "triggerTextTerms").ToList();
+                AssertTrue("cultureXml." + defName + ".textTerms", terms.Count > 0);
+                for (int i = 0; i < terms.Count; i++)
+                {
+                    AssertTrue("cultureXml." + defName + ".textTerm." + i,
+                        CultureTextTermMatcher.IsValidPattern(terms[i]));
+                    string tag = defName + ".triggerTextTerms." + i;
+                    XElement translated = ruTopics.Root.Element(tag);
+                    AssertTrue("cultureXml.ru." + tag,
+                        translated != null
+                        && CultureTextTermMatcher.IsValidPattern(translated.Value));
+                }
+            }
 
             List<XElement> profiles = profilesDoc.Root
                 .Elements("PawnDiary.DiaryCultureProfileDef").ToList();

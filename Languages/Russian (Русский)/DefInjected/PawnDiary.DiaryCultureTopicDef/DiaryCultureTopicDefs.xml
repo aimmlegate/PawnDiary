@@ -1,20 +1,177 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Русские названия культурных тем (видны в dev-инструментах; в промпт не попадают). -->
+<!-- Русские названия тем и поисковые термины для локализованного текста промпта. -->
 <LanguageData>
 
   <Diary_CultureTopic_Mechanoids.label>механоиды и механиторы</Diary_CultureTopic_Mechanoids.label>
+  <Diary_CultureTopic_Mechanoids.triggerTextTerms.0>механоид*</Diary_CultureTopic_Mechanoids.triggerTextTerms.0>
+  <Diary_CultureTopic_Mechanoids.triggerTextTerms.1>механитор*</Diary_CultureTopic_Mechanoids.triggerTextTerms.1>
+  <Diary_CultureTopic_Mechanoids.triggerTextTerms.2>мехлинк*</Diary_CultureTopic_Mechanoids.triggerTextTerms.2>
+  <Diary_CultureTopic_Mechanoids.triggerTextTerms.3>кластер* механоид*</Diary_CultureTopic_Mechanoids.triggerTextTerms.3>
+  <Diary_CultureTopic_Mechanoids.triggerTextTerms.4>боев* машин*</Diary_CultureTopic_Mechanoids.triggerTextTerms.4>
+
   <Diary_CultureTopic_Archotech.label>архотех и древние комплексы</Diary_CultureTopic_Archotech.label>
+  <Diary_CultureTopic_Archotech.triggerTextTerms.0>архотех*</Diary_CultureTopic_Archotech.triggerTextTerms.0>
+  <Diary_CultureTopic_Archotech.triggerTextTerms.1>архотехнолог*</Diary_CultureTopic_Archotech.triggerTextTerms.1>
+  <Diary_CultureTopic_Archotech.triggerTextTerms.2>древн* комплекс*</Diary_CultureTopic_Archotech.triggerTextTerms.2>
+  <Diary_CultureTopic_Archotech.triggerTextTerms.3>древн* опасност*</Diary_CultureTopic_Archotech.triggerTextTerms.3>
+  <Diary_CultureTopic_Archotech.triggerTextTerms.4>архит* ген*</Diary_CultureTopic_Archotech.triggerTextTerms.4>
+
   <Diary_CultureTopic_Psychic.label>пси-способности, древо души и псионика</Diary_CultureTopic_Psychic.label>
+  <Diary_CultureTopic_Psychic.triggerTextTerms.0>псионическ*</Diary_CultureTopic_Psychic.triggerTextTerms.0>
+  <Diary_CultureTopic_Psychic.triggerTextTerms.1>пси способност*</Diary_CultureTopic_Psychic.triggerTextTerms.1>
+  <Diary_CultureTopic_Psychic.triggerTextTerms.2>пси связ*</Diary_CultureTopic_Psychic.triggerTextTerms.2>
+  <Diary_CultureTopic_Psychic.triggerTextTerms.3>пси связ*</Diary_CultureTopic_Psychic.triggerTextTerms.3>
+  <Diary_CultureTopic_Psychic.triggerTextTerms.4>древ* душ*</Diary_CultureTopic_Psychic.triggerTextTerms.4>
+  <Diary_CultureTopic_Psychic.triggerTextTerms.5>связ* с древ* душ*</Diary_CultureTopic_Psychic.triggerTextTerms.5>
+  <Diary_CultureTopic_Psychic.triggerTextTerms.6>псионическ* связ*</Diary_CultureTopic_Psychic.triggerTextTerms.6>
+  <Diary_CultureTopic_Psychic.triggerTextTerms.7>псионическ* гул*</Diary_CultureTopic_Psychic.triggerTextTerms.7>
+
   <Diary_CultureTopic_Empire.label>Империя, титулы и иерархия</Diary_CultureTopic_Empire.label>
+  <Diary_CultureTopic_Empire.triggerTextTerms.0>импери*</Diary_CultureTopic_Empire.triggerTextTerms.0>
+  <Diary_CultureTopic_Empire.triggerTextTerms.1>имперск*</Diary_CultureTopic_Empire.triggerTextTerms.1>
+  <Diary_CultureTopic_Empire.triggerTextTerms.2>королевск* титул*</Diary_CultureTopic_Empire.triggerTextTerms.2>
+  <Diary_CultureTopic_Empire.triggerTextTerms.3>королевск* вознесени*</Diary_CultureTopic_Empire.triggerTextTerms.3>
+  <Diary_CultureTopic_Empire.triggerTextTerms.4>церемони* даровани*</Diary_CultureTopic_Empire.triggerTextTerms.4>
+  <Diary_CultureTopic_Empire.triggerTextTerms.5>дворянск* ранг*</Diary_CultureTopic_Empire.triggerTextTerms.5>
+  <Diary_CultureTopic_Empire.triggerTextTerms.6>стелларх*</Diary_CultureTopic_Empire.triggerTextTerms.6>
+
   <Diary_CultureTopic_Xenohumans.label>ксенолюди и гены</Diary_CultureTopic_Xenohumans.label>
+  <Diary_CultureTopic_Xenohumans.triggerTextTerms.0>ксенолюд*</Diary_CultureTopic_Xenohumans.triggerTextTerms.0>
+  <Diary_CultureTopic_Xenohumans.triggerTextTerms.1>ксенотип*</Diary_CultureTopic_Xenohumans.triggerTextTerms.1>
+  <Diary_CultureTopic_Xenohumans.triggerTextTerms.2>генолини*</Diary_CultureTopic_Xenohumans.triggerTextTerms.2>
+  <Diary_CultureTopic_Xenohumans.triggerTextTerms.3>наследственн* лини*</Diary_CultureTopic_Xenohumans.triggerTextTerms.3>
+  <Diary_CultureTopic_Xenohumans.triggerTextTerms.4>ген</Diary_CultureTopic_Xenohumans.triggerTextTerms.4>
+  <Diary_CultureTopic_Xenohumans.triggerTextTerms.5>гены</Diary_CultureTopic_Xenohumans.triggerTextTerms.5>
+  <Diary_CultureTopic_Xenohumans.triggerTextTerms.6>генетическ*</Diary_CultureTopic_Xenohumans.triggerTextTerms.6>
+  <Diary_CultureTopic_Xenohumans.triggerTextTerms.7>ксеноген*</Diary_CultureTopic_Xenohumans.triggerTextTerms.7>
+  <Diary_CultureTopic_Xenohumans.triggerTextTerms.8>эндоген*</Diary_CultureTopic_Xenohumans.triggerTextTerms.8>
+  <Diary_CultureTopic_Xenohumans.triggerTextTerms.9>генн* пакет*</Diary_CultureTopic_Xenohumans.triggerTextTerms.9>
+
   <Diary_CultureTopic_Void.label>Пустота и необъяснимые сущности</Diary_CultureTopic_Void.label>
+  <Diary_CultureTopic_Void.triggerTextTerms.0>пустот*</Diary_CultureTopic_Void.triggerTextTerms.0>
+  <Diary_CultureTopic_Void.triggerTextTerms.1>аномали*</Diary_CultureTopic_Void.triggerTextTerms.1>
+  <Diary_CultureTopic_Void.triggerTextTerms.2>аномальн*</Diary_CultureTopic_Void.triggerTextTerms.2>
+  <Diary_CultureTopic_Void.triggerTextTerms.3>монолит*</Diary_CultureTopic_Void.triggerTextTerms.3>
+  <Diary_CultureTopic_Void.triggerTextTerms.4>жутк* присоединивш*</Diary_CultureTopic_Void.triggerTextTerms.4>
+  <Diary_CultureTopic_Void.triggerTextTerms.5>упыр*</Diary_CultureTopic_Void.triggerTextTerms.5>
+  <Diary_CultureTopic_Void.triggerTextTerms.6>тёмн* изучени*</Diary_CultureTopic_Void.triggerTextTerms.6>
+  <Diary_CultureTopic_Void.triggerTextTerms.7>прорыв* содержани*</Diary_CultureTopic_Void.triggerTextTerms.7>
+  <Diary_CultureTopic_Void.triggerTextTerms.8>тронут* пустот*</Diary_CultureTopic_Void.triggerTextTerms.8>
+
   <Diary_CultureTopic_Space.label>глиттермиры, криптосон, гравикорабли и космос</Diary_CultureTopic_Space.label>
+  <Diary_CultureTopic_Space.triggerTextTerms.0>глиттермир*</Diary_CultureTopic_Space.triggerTextTerms.0>
+  <Diary_CultureTopic_Space.triggerTextTerms.1>криптосон*</Diary_CultureTopic_Space.triggerTextTerms.1>
+  <Diary_CultureTopic_Space.triggerTextTerms.2>гравикорабл*</Diary_CultureTopic_Space.triggerTextTerms.2>
+  <Diary_CultureTopic_Space.triggerTextTerms.3>космическ* корабл*</Diary_CultureTopic_Space.triggerTextTerms.3>
+  <Diary_CultureTopic_Space.triggerTextTerms.4>звездолёт*</Diary_CultureTopic_Space.triggerTextTerms.4>
+  <Diary_CultureTopic_Space.triggerTextTerms.5>космическ* путешестви*</Diary_CultureTopic_Space.triggerTextTerms.5>
+  <Diary_CultureTopic_Space.triggerTextTerms.6>открыт* космос*</Diary_CultureTopic_Space.triggerTextTerms.6>
+  <Diary_CultureTopic_Space.triggerTextTerms.7>орбит*</Diary_CultureTopic_Space.triggerTextTerms.7>
+  <Diary_CultureTopic_Space.triggerTextTerms.8>орбитальн*</Diary_CultureTopic_Space.triggerTextTerms.8>
+
   <Diary_CultureTopic_Outsiders.label>чужаки, фракции и доверие</Diary_CultureTopic_Outsiders.label>
+  <Diary_CultureTopic_Outsiders.triggerTextTerms.0>чужак*</Diary_CultureTopic_Outsiders.triggerTextTerms.0>
+  <Diary_CultureTopic_Outsiders.triggerTextTerms.1>незнаком*</Diary_CultureTopic_Outsiders.triggerTextTerms.1>
+  <Diary_CultureTopic_Outsiders.triggerTextTerms.2>посетител*</Diary_CultureTopic_Outsiders.triggerTextTerms.2>
+  <Diary_CultureTopic_Outsiders.triggerTextTerms.3>бежен*</Diary_CultureTopic_Outsiders.triggerTextTerms.3>
+  <Diary_CultureTopic_Outsiders.triggerTextTerms.4>рейдер*</Diary_CultureTopic_Outsiders.triggerTextTerms.4>
+  <Diary_CultureTopic_Outsiders.triggerTextTerms.5>пленн*</Diary_CultureTopic_Outsiders.triggerTextTerms.5>
+  <Diary_CultureTopic_Outsiders.triggerTextTerms.6>друг* фракци*</Diary_CultureTopic_Outsiders.triggerTextTerms.6>
+  <Diary_CultureTopic_Outsiders.triggerTextTerms.7>иностранн* фракци*</Diary_CultureTopic_Outsiders.triggerTextTerms.7>
+  <Diary_CultureTopic_Outsiders.triggerTextTerms.8>гост*</Diary_CultureTopic_Outsiders.triggerTextTerms.8>
+  <Diary_CultureTopic_Outsiders.triggerTextTerms.9>враждебн* фракци*</Diary_CultureTopic_Outsiders.triggerTextTerms.9>
+
   <Diary_CultureTopic_Death.label>смерть и мёртвые</Diary_CultureTopic_Death.label>
+  <Diary_CultureTopic_Death.triggerTextTerms.0>смерт*</Diary_CultureTopic_Death.triggerTextTerms.0>
+  <Diary_CultureTopic_Death.triggerTextTerms.1>мёртв*</Diary_CultureTopic_Death.triggerTextTerms.1>
+  <Diary_CultureTopic_Death.triggerTextTerms.2>погиб*</Diary_CultureTopic_Death.triggerTextTerms.2>
+  <Diary_CultureTopic_Death.triggerTextTerms.3>убит*</Diary_CultureTopic_Death.triggerTextTerms.3>
+  <Diary_CultureTopic_Death.triggerTextTerms.4>павш*</Diary_CultureTopic_Death.triggerTextTerms.4>
+  <Diary_CultureTopic_Death.triggerTextTerms.5>покойн*</Diary_CultureTopic_Death.triggerTextTerms.5>
+  <Diary_CultureTopic_Death.triggerTextTerms.6>труп*</Diary_CultureTopic_Death.triggerTextTerms.6>
+  <Diary_CultureTopic_Death.triggerTextTerms.7>похорон*</Diary_CultureTopic_Death.triggerTextTerms.7>
+  <Diary_CultureTopic_Death.triggerTextTerms.8>могил*</Diary_CultureTopic_Death.triggerTextTerms.8>
+  <Diary_CultureTopic_Death.triggerTextTerms.9>погребени*</Diary_CultureTopic_Death.triggerTextTerms.9>
+  <Diary_CultureTopic_Death.triggerTextTerms.10>кремац*</Diary_CultureTopic_Death.triggerTextTerms.10>
+
   <Diary_CultureTopic_Body.label>тело, раны и лечение</Diary_CultureTopic_Body.label>
+  <Diary_CultureTopic_Body.triggerTextTerms.0>тело</Diary_CultureTopic_Body.triggerTextTerms.0>
+  <Diary_CultureTopic_Body.triggerTextTerms.1>рана</Diary_CultureTopic_Body.triggerTextTerms.1>
+  <Diary_CultureTopic_Body.triggerTextTerms.2>раны</Diary_CultureTopic_Body.triggerTextTerms.2>
+  <Diary_CultureTopic_Body.triggerTextTerms.3>ранен*</Diary_CultureTopic_Body.triggerTextTerms.3>
+  <Diary_CultureTopic_Body.triggerTextTerms.4>травм*</Diary_CultureTopic_Body.triggerTextTerms.4>
+  <Diary_CultureTopic_Body.triggerTextTerms.5>шрам*</Diary_CultureTopic_Body.triggerTextTerms.5>
+  <Diary_CultureTopic_Body.triggerTextTerms.6>бионик*</Diary_CultureTopic_Body.triggerTextTerms.6>
+  <Diary_CultureTopic_Body.triggerTextTerms.7>протез*</Diary_CultureTopic_Body.triggerTextTerms.7>
+  <Diary_CultureTopic_Body.triggerTextTerms.8>имплант*</Diary_CultureTopic_Body.triggerTextTerms.8>
+  <Diary_CultureTopic_Body.triggerTextTerms.9>операци*</Diary_CultureTopic_Body.triggerTextTerms.9>
+  <Diary_CultureTopic_Body.triggerTextTerms.10>хирургическ*</Diary_CultureTopic_Body.triggerTextTerms.10>
+  <Diary_CultureTopic_Body.triggerTextTerms.11>ампутац*</Diary_CultureTopic_Body.triggerTextTerms.11>
+  <Diary_CultureTopic_Body.triggerTextTerms.12>потерянн* конечност*</Diary_CultureTopic_Body.triggerTextTerms.12>
+  <Diary_CultureTopic_Body.triggerTextTerms.13>пересадк* орган*</Diary_CultureTopic_Body.triggerTextTerms.13>
+
   <Diary_CultureTopic_Kinship.label>родство, брак и дети</Diary_CultureTopic_Kinship.label>
+  <Diary_CultureTopic_Kinship.triggerTextTerms.0>семья</Diary_CultureTopic_Kinship.triggerTextTerms.0>
+  <Diary_CultureTopic_Kinship.triggerTextTerms.1>брак*</Diary_CultureTopic_Kinship.triggerTextTerms.1>
+  <Diary_CultureTopic_Kinship.triggerTextTerms.2>женил*</Diary_CultureTopic_Kinship.triggerTextTerms.2>
+  <Diary_CultureTopic_Kinship.triggerTextTerms.3>супруг*</Diary_CultureTopic_Kinship.triggerTextTerms.3>
+  <Diary_CultureTopic_Kinship.triggerTextTerms.4>жених*</Diary_CultureTopic_Kinship.triggerTextTerms.4>
+  <Diary_CultureTopic_Kinship.triggerTextTerms.5>невест*</Diary_CultureTopic_Kinship.triggerTextTerms.5>
+  <Diary_CultureTopic_Kinship.triggerTextTerms.6>любовник*</Diary_CultureTopic_Kinship.triggerTextTerms.6>
+  <Diary_CultureTopic_Kinship.triggerTextTerms.7>родител*</Diary_CultureTopic_Kinship.triggerTextTerms.7>
+  <Diary_CultureTopic_Kinship.triggerTextTerms.8>ребёнок</Diary_CultureTopic_Kinship.triggerTextTerms.8>
+  <Diary_CultureTopic_Kinship.triggerTextTerms.9>дети</Diary_CultureTopic_Kinship.triggerTextTerms.9>
+  <Diary_CultureTopic_Kinship.triggerTextTerms.10>роды</Diary_CultureTopic_Kinship.triggerTextTerms.10>
+  <Diary_CultureTopic_Kinship.triggerTextTerms.11>младенец</Diary_CultureTopic_Kinship.triggerTextTerms.11>
+  <Diary_CultureTopic_Kinship.triggerTextTerms.12>младенц*</Diary_CultureTopic_Kinship.triggerTextTerms.12>
+  <Diary_CultureTopic_Kinship.triggerTextTerms.13>беремен*</Diary_CultureTopic_Kinship.triggerTextTerms.13>
+  <Diary_CultureTopic_Kinship.triggerTextTerms.14>родн* брат* сестр*</Diary_CultureTopic_Kinship.triggerTextTerms.14>
+  <Diary_CultureTopic_Kinship.triggerTextTerms.15>брат*</Diary_CultureTopic_Kinship.triggerTextTerms.15>
+  <Diary_CultureTopic_Kinship.triggerTextTerms.16>сестр*</Diary_CultureTopic_Kinship.triggerTextTerms.16>
+
   <Diary_CultureTopic_Madness.label>срывы и помрачения</Diary_CultureTopic_Madness.label>
+  <Diary_CultureTopic_Madness.triggerTextTerms.0>психическ* срыв*</Diary_CultureTopic_Madness.triggerTextTerms.0>
+  <Diary_CultureTopic_Madness.triggerTextTerms.1>нервн* срыв*</Diary_CultureTopic_Madness.triggerTextTerms.1>
+  <Diary_CultureTopic_Madness.triggerTextTerms.2>берсерк*</Diary_CultureTopic_Madness.triggerTextTerms.2>
+  <Diary_CultureTopic_Madness.triggerTextTerms.3>убийственн* ярост*</Diary_CultureTopic_Madness.triggerTextTerms.3>
+  <Diary_CultureTopic_Madness.triggerTextTerms.4>истерик*</Diary_CultureTopic_Madness.triggerTextTerms.4>
+  <Diary_CultureTopic_Madness.triggerTextTerms.5>психотическ*</Diary_CultureTopic_Madness.triggerTextTerms.5>
+  <Diary_CultureTopic_Madness.triggerTextTerms.6>безуми*</Diary_CultureTopic_Madness.triggerTextTerms.6>
+  <Diary_CultureTopic_Madness.triggerTextTerms.7>безумен</Diary_CultureTopic_Madness.triggerTextTerms.7>
+  <Diary_CultureTopic_Madness.triggerTextTerms.8>кататони*</Diary_CultureTopic_Madness.triggerTextTerms.8>
+  <Diary_CultureTopic_Madness.triggerTextTerms.9>помрачен*</Diary_CultureTopic_Madness.triggerTextTerms.9>
+  <Diary_CultureTopic_Madness.triggerTextTerms.10>сумасшестви*</Diary_CultureTopic_Madness.triggerTextTerms.10>
+
   <Diary_CultureTopic_Beasts.label>звери и земля</Diary_CultureTopic_Beasts.label>
+  <Diary_CultureTopic_Beasts.triggerTextTerms.0>животн*</Diary_CultureTopic_Beasts.triggerTextTerms.0>
+  <Diary_CultureTopic_Beasts.triggerTextTerms.1>звер*</Diary_CultureTopic_Beasts.triggerTextTerms.1>
+  <Diary_CultureTopic_Beasts.triggerTextTerms.2>дик* природ*</Diary_CultureTopic_Beasts.triggerTextTerms.2>
+  <Diary_CultureTopic_Beasts.triggerTextTerms.3>дик* животн*</Diary_CultureTopic_Beasts.triggerTextTerms.3>
+  <Diary_CultureTopic_Beasts.triggerTextTerms.4>питомец</Diary_CultureTopic_Beasts.triggerTextTerms.4>
+  <Diary_CultureTopic_Beasts.triggerTextTerms.5>питомц*</Diary_CultureTopic_Beasts.triggerTextTerms.5>
+  <Diary_CultureTopic_Beasts.triggerTextTerms.6>прируч*</Diary_CultureTopic_Beasts.triggerTextTerms.6>
+  <Diary_CultureTopic_Beasts.triggerTextTerms.7>приласк*</Diary_CultureTopic_Beasts.triggerTextTerms.7>
+  <Diary_CultureTopic_Beasts.triggerTextTerms.8>людоед*</Diary_CultureTopic_Beasts.triggerTextTerms.8>
+  <Diary_CultureTopic_Beasts.triggerTextTerms.9>стад*</Diary_CultureTopic_Beasts.triggerTextTerms.9>
+
   <Diary_CultureTopic_Disasters.label>бедствия и катаклизмы</Diary_CultureTopic_Disasters.label>
+  <Diary_CultureTopic_Disasters.triggerTextTerms.0>бедств*</Diary_CultureTopic_Disasters.triggerTextTerms.0>
+  <Diary_CultureTopic_Disasters.triggerTextTerms.1>катаклизм*</Diary_CultureTopic_Disasters.triggerTextTerms.1>
+  <Diary_CultureTopic_Disasters.triggerTextTerms.2>бедствия</Diary_CultureTopic_Disasters.triggerTextTerms.2>
+  <Diary_CultureTopic_Disasters.triggerTextTerms.3>катастроф*</Diary_CultureTopic_Disasters.triggerTextTerms.3>
+  <Diary_CultureTopic_Disasters.triggerTextTerms.4>токсическ* осадк*</Diary_CultureTopic_Disasters.triggerTextTerms.4>
+  <Diary_CultureTopic_Disasters.triggerTextTerms.5>вулканическ* зим*</Diary_CultureTopic_Disasters.triggerTextTerms.5>
+  <Diary_CultureTopic_Disasters.triggerTextTerms.6>похолодани*</Diary_CultureTopic_Disasters.triggerTextTerms.6>
+  <Diary_CultureTopic_Disasters.triggerTextTerms.7>теплов* волн*</Diary_CultureTopic_Disasters.triggerTextTerms.7>
+  <Diary_CultureTopic_Disasters.triggerTextTerms.8>солнечн* вспышк*</Diary_CultureTopic_Disasters.triggerTextTerms.8>
+  <Diary_CultureTopic_Disasters.triggerTextTerms.9>гроза</Diary_CultureTopic_Disasters.triggerTextTerms.9>
+  <Diary_CultureTopic_Disasters.triggerTextTerms.10>гибел* растени*</Diary_CultureTopic_Disasters.triggerTextTerms.10>
+  <Diary_CultureTopic_Disasters.triggerTextTerms.11>землетрясени*</Diary_CultureTopic_Disasters.triggerTextTerms.11>
+  <Diary_CultureTopic_Disasters.triggerTextTerms.12>метеоритн* дожд*</Diary_CultureTopic_Disasters.triggerTextTerms.12>
+  <Diary_CultureTopic_Disasters.triggerTextTerms.13>неестественн* тьм*</Diary_CultureTopic_Disasters.triggerTextTerms.13>
+  <Diary_CultureTopic_Disasters.triggerTextTerms.14>вулканическ* пеп*</Diary_CultureTopic_Disasters.triggerTextTerms.14>
+  <Diary_CultureTopic_Disasters.triggerTextTerms.15>коротк* замыкан*</Diary_CultureTopic_Disasters.triggerTextTerms.15>
+  <Diary_CultureTopic_Disasters.triggerTextTerms.16>природн* пожар*</Diary_CultureTopic_Disasters.triggerTextTerms.16>
+  <Diary_CultureTopic_Disasters.triggerTextTerms.17>жара</Diary_CultureTopic_Disasters.triggerTextTerms.17>
 
 </LanguageData>

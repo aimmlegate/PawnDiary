@@ -169,7 +169,9 @@ namespace PawnDiary
         public string nameContextKey;
     }
 
-    /// <summary>One cultural interpretation topic (§4.2) with structured triggers (§4.3).</summary>
+    /// <summary>
+    /// One cultural interpretation topic (§4.2) with structured and localized text triggers (§4.3).
+    /// </summary>
     public class DiaryCultureTopicDef : Def
     {
         public string topicKey;
@@ -180,6 +182,11 @@ namespace PawnDiary
         public List<string> triggerContextPairs = new List<string>();
         /// <summary>Stable schema markers ("xenotype=") searched in scannable field text.</summary>
         public List<string> triggerValueMarkers = new List<string>();
+        /// <summary>
+        /// Localized natural-language words/phrases. Terms use word boundaries; a trailing '*' on
+        /// an individual word permits inflected suffixes. DefInjected translates list entries.
+        /// </summary>
+        public List<string> triggerTextTerms = new List<string>();
         public List<string> triggerDefNames = new List<string>();
 
         public override IEnumerable<string> ConfigErrors()
@@ -192,6 +199,20 @@ namespace PawnDiary
             if (string.IsNullOrWhiteSpace(topicKey))
             {
                 yield return "topicKey must be a stable non-blank token.";
+            }
+
+            if (triggerTextTerms != null)
+            {
+                for (int i = 0; i < triggerTextTerms.Count; i++)
+                {
+                    string term = triggerTextTerms[i];
+                    if (!string.IsNullOrWhiteSpace(term)
+                        && !CultureTextTermMatcher.IsValidPattern(term))
+                    {
+                        yield return "triggerTextTerms[" + i + "] is malformed; use words or "
+                            + "phrases, with '*' only after a word of at least three characters.";
+                    }
+                }
             }
         }
 
@@ -206,6 +227,7 @@ namespace PawnDiary
             DiaryImportantEventDef.CopyStrings(triggerContextKeys, rule.triggerContextKeys);
             DiaryImportantEventDef.CopyStrings(triggerContextPairs, rule.triggerContextPairs);
             DiaryImportantEventDef.CopyStrings(triggerValueMarkers, rule.triggerValueMarkers);
+            DiaryImportantEventDef.CopyStrings(triggerTextTerms, rule.triggerTextTerms);
             DiaryImportantEventDef.CopyStrings(triggerDefNames, rule.triggerDefNames);
             return rule;
         }

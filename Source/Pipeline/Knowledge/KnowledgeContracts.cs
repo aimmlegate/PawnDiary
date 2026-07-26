@@ -79,8 +79,8 @@ namespace PawnDiary
     }
 
     /// <summary>
-    /// Pure mirror of one saved ImportantMemoryRecord (§2.2). Gameplay facts only — never a
-    /// generated diary entry or LLM summary.
+    /// Pure mirror of one saved ImportantMemoryRecord (§2.2). Gameplay facts plus an optional
+    /// developer-authored prose override — never a generated diary entry or LLM summary.
     /// </summary>
     internal sealed class ImportantMemoryRecordSnapshot
     {
@@ -102,6 +102,11 @@ namespace PawnDiary
         /// <summary>Bounded, capture-time-localized one-line summary used when the event Def is
         /// missing (mod removed). Stable IDs/tokens above remain authoritative (§5).</summary>
         public string fallbackSummary = string.Empty;
+        /// <summary>
+        /// Optional developer-authored replacement for the rendered line. Retrieval identity and
+        /// structured facts stay authoritative; this changes only the prose sent to the writer.
+        /// </summary>
+        public string manualTextOverride = string.Empty;
     }
 
     /// <summary>Rule for extracting a stable subject key from a gameContext value:
@@ -233,8 +238,8 @@ namespace PawnDiary
         public List<KnowledgeCandidateReport> report = new List<KnowledgeCandidateReport>();
     }
 
-    /// <summary>Pure copy of one DiaryCultureTopicDef: a cultural interpretation topic (§4.2) and
-    /// its structured triggers (§4.3). Detection never matches localized word forms.</summary>
+    /// <summary>Pure copy of one DiaryCultureTopicDef: a cultural interpretation topic (§4.2),
+    /// its structured triggers, and its localized natural-language terms (§4.3).</summary>
     internal sealed class CultureTopicRule
     {
         public string topicKey = string.Empty;
@@ -248,6 +253,11 @@ namespace PawnDiary
         public List<string> triggerContextPairs = new List<string>();
         /// <summary>Stable schema markers ("xenotype=") searched inside scannable field values.</summary>
         public List<string> triggerValueMarkers = new List<string>();
+        /// <summary>
+        /// Localized words or phrases searched with Unicode word boundaries. A trailing '*' on an
+        /// individual word matches inflected suffixes, for example "mechanoid*" or "механоид*".
+        /// </summary>
+        public List<string> triggerTextTerms = new List<string>();
         /// <summary>Exact event defNames (interactionDefName) that trigger the topic.</summary>
         public List<string> triggerDefNames = new List<string>();
     }

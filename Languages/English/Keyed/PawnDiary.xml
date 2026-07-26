@@ -1618,6 +1618,57 @@
   <PawnDiary.Voice.Reset>Voice reset — writing style and outlook are managed automatically again.</PawnDiary.Voice.Reset>
   <PawnDiary.WritingStyle.SaveFailed>This pawn can no longer keep a diary, so the writing style was not saved.</PawnDiary.WritingStyle.SaveFailed>
 
+  <!-- Developer-only important-memory browser/editor appended to the per-pawn voice window. -->
+  <PawnDiary.Dev.Memory.SectionTitle>Stored memories (developer mode) — {0}</PawnDiary.Dev.Memory.SectionTitle>
+  <PawnDiary.Dev.Memory.Empty>No stored important memories for this pawn.</PawnDiary.Dev.Memory.Empty>
+  <PawnDiary.Dev.Memory.Older>Older</PawnDiary.Dev.Memory.Older>
+  <PawnDiary.Dev.Memory.Newer>Newer</PawnDiary.Dev.Memory.Newer>
+  <PawnDiary.Dev.Memory.Selector>Memory {0} / {1}</PawnDiary.Dev.Memory.Selector>
+  <PawnDiary.Dev.Memory.Metadata>Date: {0} · kind: {1} · topic: {2}</PawnDiary.Dev.Memory.Metadata>
+  <PawnDiary.Dev.Memory.TextLabel>Memory text used for future recall</PawnDiary.Dev.Memory.TextLabel>
+  <PawnDiary.Dev.Memory.EditLabel>Edit memory text — {0}/{1}</PawnDiary.Dev.Memory.EditLabel>
+  <PawnDiary.Dev.Memory.EditLabelUnlimited>Edit memory text — {0} characters</PawnDiary.Dev.Memory.EditLabelUnlimited>
+  <PawnDiary.Dev.Memory.Edit>Edit</PawnDiary.Dev.Memory.Edit>
+  <PawnDiary.Dev.Memory.Save>Save</PawnDiary.Dev.Memory.Save>
+  <PawnDiary.Dev.Memory.Cancel>Cancel</PawnDiary.Dev.Memory.Cancel>
+  <PawnDiary.Dev.Memory.Remove>Remove</PawnDiary.Dev.Memory.Remove>
+  <PawnDiary.Dev.Memory.RemoveTitle>Remove memory</PawnDiary.Dev.Memory.RemoveTitle>
+  <PawnDiary.Dev.Memory.RemoveConfirm>Remove this memory permanently?\n\n{0}\n\nOnly future recalls are affected; already-created diary events keep their frozen context.</PawnDiary.Dev.Memory.RemoveConfirm>
+  <PawnDiary.Dev.Memory.Saved>Memory text saved. Future recalls will use it.</PawnDiary.Dev.Memory.Saved>
+  <PawnDiary.Dev.Memory.Removed>Memory removed.</PawnDiary.Dev.Memory.Removed>
+  <PawnDiary.Dev.Memory.OperationFailed>The memory could not be changed. Dev mode may have been disabled or the record no longer exists.</PawnDiary.Dev.Memory.OperationFailed>
+  <PawnDiary.Dev.Memory.Option>{0} — {1}</PawnDiary.Dev.Memory.Option>
+  <PawnDiary.Dev.Memory.Unknown>unknown</PawnDiary.Dev.Memory.Unknown>
+  <PawnDiary.Dev.Memory.RenderedEmpty>(empty memory text)</PawnDiary.Dev.Memory.RenderedEmpty>
+
+  <!-- Developer-only culture-lore inspector appended before the important-memory editor. -->
+  <PawnDiary.Dev.Lore.SectionTitle>Lore memory (developer mode) — {0} topics</PawnDiary.Dev.Lore.SectionTitle>
+  <PawnDiary.Dev.Lore.Unavailable>Lore memory is unavailable because the pawn or diary component is missing.</PawnDiary.Dev.Lore.Unavailable>
+  <PawnDiary.Dev.Lore.NoTopics>No culture topics are loaded.</PawnDiary.Dev.Lore.NoTopics>
+  <PawnDiary.Dev.Lore.StatePresent>saved</PawnDiary.Dev.Lore.StatePresent>
+  <PawnDiary.Dev.Lore.StateMissing>not saved</PawnDiary.Dev.Lore.StateMissing>
+  <PawnDiary.Dev.Lore.InjectionEnabled>enabled</PawnDiary.Dev.Lore.InjectionEnabled>
+  <PawnDiary.Dev.Lore.InjectionDisabled>disabled</PawnDiary.Dev.Lore.InjectionDisabled>
+  <PawnDiary.Dev.Lore.State>Knowledge state: {0} · culture injection: {1}\nOrigin: {2}\nAdopted: {3}</PawnDiary.Dev.Lore.State>
+  <PawnDiary.Dev.Lore.Profile>culture={0} · source={1} · profile={2}</PawnDiary.Dev.Lore.Profile>
+  <PawnDiary.Dev.Lore.ProfileWithoutSource>culture={0} · profile={1}</PawnDiary.Dev.Lore.ProfileWithoutSource>
+  <PawnDiary.Dev.Lore.ProfileFound>found ({0})</PawnDiary.Dev.Lore.ProfileFound>
+  <PawnDiary.Dev.Lore.ProfileFallback>fallback ({0})</PawnDiary.Dev.Lore.ProfileFallback>
+  <PawnDiary.Dev.Lore.ProfileMissing>missing</PawnDiary.Dev.Lore.ProfileMissing>
+  <PawnDiary.Dev.Lore.ProfileNotApplicable>n/a</PawnDiary.Dev.Lore.ProfileNotApplicable>
+  <PawnDiary.Dev.Lore.None>none</PawnDiary.Dev.Lore.None>
+  <PawnDiary.Dev.Lore.Previous>Previous</PawnDiary.Dev.Lore.Previous>
+  <PawnDiary.Dev.Lore.Next>Next</PawnDiary.Dev.Lore.Next>
+  <PawnDiary.Dev.Lore.Selector>{0} · {1}/{2}</PawnDiary.Dev.Lore.Selector>
+  <PawnDiary.Dev.Lore.TopicDetails>Selected topic lore and matchers</PawnDiary.Dev.Lore.TopicDetails>
+  <PawnDiary.Dev.Lore.OriginClause>Origin clause: {0}</PawnDiary.Dev.Lore.OriginClause>
+  <PawnDiary.Dev.Lore.AdoptedClause>Adopted clause: {0}</PawnDiary.Dev.Lore.AdoptedClause>
+  <PawnDiary.Dev.Lore.TextTriggers>Localized text triggers: {0}</PawnDiary.Dev.Lore.TextTriggers>
+  <PawnDiary.Dev.Lore.StructuredTriggers>Structured triggers: {0}</PawnDiary.Dev.Lore.StructuredTriggers>
+  <PawnDiary.Dev.Lore.NoClause>(no clause in the resolved profile)</PawnDiary.Dev.Lore.NoClause>
+  <PawnDiary.Dev.Lore.LastMatchNone>Last prompt match: none since load.</PawnDiary.Dev.Lore.LastMatchNone>
+  <PawnDiary.Dev.Lore.LastMatch>Last prompt matched topics: {0}\nAnnotated fields: {1}</PawnDiary.Dev.Lore.LastMatch>
+
   <!-- Psychotype (outlook) layer: the pawn's temperament lens, edited from the same per-pawn dialog
        as the writing style. The psychotype label is picker text only; it is never shown to the model. -->
   <PawnDiary.Psychotype.SectionTitle>Psychotype (outlook)</PawnDiary.Psychotype.SectionTitle>

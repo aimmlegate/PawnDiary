@@ -1,8 +1,9 @@
 // Player-facing dialog for editing one pawn's VOICE from the Diary tab: the writing style (sentence
 // mechanics) and the psychotype (outlook/temperament). Both layers are edited here in one window, each
 // with a base picker, a read-only base preview, an editable pawn-specific custom rule, and a prominent
-// status panel that always identifies which layer currently wins. A
-// manual pick / custom edit / re-roll pins the layer so it is not auto-re-rolled when the pawn grows up.
+// status panel that always identifies which layer currently wins. A manual pick / custom edit / re-roll
+// pins the layer so it is not auto-re-rolled when the pawn grows up. Developer mode appends isolated
+// sections for inspecting cultural lore and editing/removing this pawn's durable important memories.
 //
 // RimWorld IMGUI draws this window repeatedly, so editable buffers live as fields and are only flushed
 // to the diary record through explicit Save/Reset button clicks — never during a draw pass. The whole
@@ -22,7 +23,7 @@ namespace PawnDiary
     /// Modal window for inspecting and editing one pawn's writing style and psychotype. Writes only the
     /// pawn-specific custom rules, selected base defs, and pin flags — never the global catalog or XML Defs.
     /// </summary>
-    internal sealed class Dialog_PawnWritingStyle : Window
+    internal sealed partial class Dialog_PawnWritingStyle : Window
     {
         // ---- Writing-style editing state ----
         private string customRuleBuffer;
@@ -126,6 +127,15 @@ namespace PawnDiary
             PsychotypeResolution psychotypeResolution = component == null
                 ? PsychotypeResolutionPolicy.Resolve(null, null, null, null)
                 : component.ResolvePsychotypeForDisplay(pawn);
+            bool showDeveloperKnowledge = Prefs.DevMode;
+            LoreMemorySnapshotForDev loreMemory = showDeveloperKnowledge
+                && component != null
+                ? component.LoreMemoryForDev(pawn)
+                : null;
+            IReadOnlyList<ImportantMemoryRecord> importantMemories = showDeveloperKnowledge
+                && component != null
+                ? component.ImportantMemoriesForDev(pawn)
+                : null;
 
             Rect buttonRow = new Rect(inRect.x, inRect.yMax - ButtonHeight - Padding, inRect.width, ButtonHeight);
             Rect scrollOuter = new Rect(
@@ -135,13 +145,24 @@ namespace PawnDiary
                 buttonRow.y - FieldGap - (inRect.y + HeaderHeight + FieldGap));
 
             float innerWidth = Mathf.Max(1f, scrollOuter.width - 16f); // reserve scrollbar width
-            float contentHeight = MeasureContentHeight(innerWidth, styleResolution, psychotypeResolution);
+            float contentHeight = MeasureContentHeight(
+                innerWidth,
+                styleResolution,
+                psychotypeResolution,
+                showDeveloperKnowledge,
+                loreMemory,
+                importantMemories);
             Rect contentRect = new Rect(0f, 0f, innerWidth, contentHeight);
 
             Widgets.BeginScrollView(scrollOuter, ref contentScroll, contentRect);
             float y = 0f;
             DrawStyleSection(contentRect.x, innerWidth, ref y, styleResolution);
             DrawPsychotypeSection(contentRect.x, innerWidth, ref y, psychotypeResolution);
+            if (showDeveloperKnowledge)
+            {
+                DrawLoreMemorySection(contentRect.x, innerWidth, ref y, loreMemory);
+                DrawMemorySection(contentRect.x, innerWidth, ref y, importantMemories);
+            }
             Widgets.EndScrollView();
 
             DrawButtons(buttonRow);
@@ -455,8 +476,13 @@ namespace PawnDiary
         }
 
         // Total height of the scrolling content, so the scroll view is sized before drawing.
-        private float MeasureContentHeight(float width, WritingStyleResolution styleResolution,
-            PsychotypeResolution psychotypeResolution)
+        private float MeasureContentHeight(
+            float width,
+            WritingStyleResolution styleResolution,
+            PsychotypeResolution psychotypeResolution,
+            bool showDeveloperKnowledge,
+            LoreMemorySnapshotForDev loreMemory,
+            IReadOnlyList<ImportantMemoryRecord> importantMemories)
         {
             float h = 0f;
 
@@ -498,6 +524,12 @@ namespace PawnDiary
                 width,
                 SmallPromptHeight) + FieldGap;
             h += MessagePanelHeight(PsychotypeHintMessage(psychotypeResolution), width);
+
+            if (showDeveloperKnowledge)
+            {
+                h += LoreMemorySectionHeight(width, loreMemory);
+                h += MemorySectionHeight(width, importantMemories);
+            }
 
             return h;
         }

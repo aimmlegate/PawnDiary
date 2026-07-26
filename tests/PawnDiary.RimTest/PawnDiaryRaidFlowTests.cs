@@ -283,11 +283,11 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 string.Equals(
                     delayedPage.StatusForRole(DiaryEvent.InitiatorRole),
-                    DiaryEvent.PendingStatus,
+                    DiaryEvent.NotGeneratedStatus,
                     StringComparison.Ordinal)
                     && string.IsNullOrEmpty(
                         delayedPage.PromptForRole(DiaryEvent.InitiatorRole)),
-                "An ordinary raid rendered a prompt before its positive anticipation delay elapsed.");
+                "An ordinary raid changed generation state or rendered a prompt before its positive anticipation delay elapsed.");
 
             // QueueSolo is the production funnel both the immediate Emit path and the pending-generation
             // scanner use. While the marker is early, it must leave both the marker and page untouched.
@@ -296,7 +296,7 @@ namespace PawnDiary.RimTests
                 readyTicks.Contains(delayedKey)
                     && string.Equals(
                         delayedPage.StatusForRole(DiaryEvent.InitiatorRole),
-                        DiaryEvent.PendingStatus,
+                        DiaryEvent.NotGeneratedStatus,
                         StringComparison.Ordinal)
                     && string.IsNullOrEmpty(
                         delayedPage.PromptForRole(DiaryEvent.InitiatorRole)),

@@ -23,6 +23,10 @@
 //  11. Defensive caps: the per-pawn record cap drops the oldest records at insert (§2.3).
 //  12. Annotation: a themed prompt carries the pawn's culture clause inline; an ordinary chat
 //      prompt does not carry that clause (§4.3).
+//  13. Developer editor endpoints stay hidden/disabled outside Dev Mode, update only rendered
+//      prose, and remove exactly the addressed record without touching another pawn's memory.
+//  14. The same developer window receives a detached lore view with culture provenance, resolved
+//      clauses, lexical/structured matchers, and the active injection-switch state.
 //
 // All fragile scaffolding — isolated pawns, settings snapshot/restore, event/diary cleanup —
 // lives in the shared PawnDiaryRimTestScope harness. The save round-trip half of the plan's
@@ -218,6 +222,148 @@ namespace PawnDiary.RimTests
                 "At most two relevant-past lines may be injected (§3.2), got: " + block);
             Require(block.IndexOf(pawnB.LabelShort, StringComparison.OrdinalIgnoreCase) >= 0,
                 "The marriage line must reference the partner by saved name; got: " + block);
+        }
+
+        /// <summary>
+        /// The Writing Style window's memory endpoints enforce Dev Mode independently of UI
+        /// visibility. Editing replaces only rendered prose; removing uses the stable record id and
+        /// cannot disturb the partner's copy of the same relationship event.
+        /// </summary>
+        [Test]
+        public static void DevMemoryEditorGuardsEditsAndRemovesExactRecord()
+        {
+            PawnKnowledgeState stateA = KnowledgeFor(pawnA);
+            PawnKnowledgeState stateB = KnowledgeFor(pawnB);
+            AddRomancePairEvent(pawnA, pawnB, "Spouse", "married");
+            ImportantMemoryRecord target = LastOfKind(stateA, "relation.spouse.gained");
+            string recordId = target.recordId;
+            string dedupKey = target.dedupKey;
+            string eventKind = target.eventKind;
+            int tick = target.tick;
+            int beforeCountA = stateA.records.Count;
+            int beforeCountB = stateB.records.Count;
+            int versionBefore = DiaryStateVersion.Current;
+            bool originalDevMode = Prefs.DevMode;
+
+            try
+            {
+                Prefs.DevMode = false;
+                Require(scope.Component.ImportantMemoriesForDev(pawnA).Count == 0,
+                    "The developer memory list must be hidden outside Dev Mode.");
+                Require(!scope.Component.TrySetImportantMemoryTextForDev(
+                        pawnA, recordId, "must not save"),
+                    "The memory editor must reject text changes outside Dev Mode.");
+                Require(!scope.Component.TryRemoveImportantMemoryForDev(pawnA, recordId),
+                    "The memory editor must reject removal outside Dev Mode.");
+                Require(string.IsNullOrEmpty(target.manualTextOverride)
+                        && stateA.records.Count == beforeCountA
+                        && DiaryStateVersion.Current == versionBefore,
+                    "Rejected developer operations must not mutate memory state or its version.");
+
+                Prefs.DevMode = true;
+                Require(scope.Component.ImportantMemoriesForDev(pawnA).Count == beforeCountA,
+                    "Dev Mode must expose the pawn's existing memory list.");
+
+                const string editedInput = "  <b>I remember</b>\r\n\tthis exactly.  ";
+                const string editedText = "I remember this exactly.";
+                Require(scope.Component.TrySetImportantMemoryTextForDev(
+                        pawnA, recordId, editedInput),
+                    "The developer memory text edit was rejected.");
+                Require(target.manualTextOverride == editedText,
+                    "The editor must save one prompt-safe line, got '"
+                    + target.manualTextOverride + "'.");
+                Require(target.recordId == recordId
+                        && target.dedupKey == dedupKey
+                        && target.eventKind == eventKind
+                        && target.tick == tick,
+                    "Editing prose must preserve stable memory identity and retrieval metadata.");
+
+                ImportantEventRule rule = DiaryKnowledgePolicy.RuleForKind(target.eventKind);
+                Require(ImportantMemoryLineRenderer.Render(
+                        target.ToSnapshot(), rule?.lineTemplate, 240) == editedText,
+                    "The normal renderer must prefer the saved developer text override.");
+                Require(DiaryStateVersion.Current > versionBefore,
+                    "A successful memory edit must invalidate rendered-state caches.");
+
+                int versionAfterEdit = DiaryStateVersion.Current;
+                Require(!scope.Component.TrySetImportantMemoryTextForDev(
+                        pawnA, "missing-record", "no"),
+                    "An unknown memory id must be rejected.");
+                Require(DiaryStateVersion.Current == versionAfterEdit,
+                    "A rejected unknown-id edit must not invalidate state.");
+
+                Require(scope.Component.TryRemoveImportantMemoryForDev(pawnA, recordId),
+                    "The developer memory removal was rejected.");
+                Require(stateA.records.Count == beforeCountA - 1
+                        && !ContainsRecordId(stateA, recordId),
+                    "Removal must delete exactly the addressed memory.");
+                Require(stateB.records.Count == beforeCountB
+                        && CountKind(stateB, "relation.spouse.gained") > 0,
+                    "Removing one pawn's memory must preserve the partner's independent record.");
+                Require(!scope.Component.TryRemoveImportantMemoryForDev(pawnA, recordId),
+                    "Removing the same record twice must be rejected.");
+            }
+            finally
+            {
+                Prefs.DevMode = originalDevMode;
+            }
+        }
+
+        /// <summary>
+        /// The lore-memory endpoint is guarded by Dev Mode and exposes the current XML policy as a
+        /// detached view: profile status, clauses, and the localized prose terms developers need
+        /// to diagnose why a topic did or did not annotate a prompt.
+        /// </summary>
+        [Test]
+        public static void DevLoreMemoryShowsCultureProfilesAndTopicMatchers()
+        {
+            PawnKnowledgeState state = KnowledgeFor(pawnA);
+            state.originCultureDefName = "Astropolitan";
+            state.originCultureSource = KnowledgeTokens.CultureSourceCaptured;
+            state.adoptedCultureDefName = "Corunan";
+            bool originalDevMode = Prefs.DevMode;
+
+            try
+            {
+                Prefs.DevMode = false;
+                Require(scope.Component.LoreMemoryForDev(pawnA) == null,
+                    "The developer lore snapshot must be unavailable outside Dev Mode.");
+
+                Prefs.DevMode = true;
+                LoreMemorySnapshotForDev lore = scope.Component.LoreMemoryForDev(pawnA);
+                Require(lore != null && lore.hasKnowledgeState,
+                    "Dev Mode must expose the pawn's existing lore-memory state.");
+                Require(lore.originCultureSource == KnowledgeTokens.CultureSourceCaptured,
+                    "The lore view must preserve captured/inferred provenance.");
+                Require(lore.originProfile.requestedCultureDefName == "Astropolitan"
+                        && lore.originProfile.resolvedCultureDefName == "Astropolitan"
+                        && lore.originProfile.authored,
+                    "The lore view did not resolve the authored origin profile.");
+                Require(lore.adoptedProfile.requestedCultureDefName == "Corunan"
+                        && lore.adoptedProfile.resolvedCultureDefName == "Corunan"
+                        && lore.adoptedProfile.authored,
+                    "The lore view did not resolve the authored adopted profile.");
+
+                LoreMemoryTopicForDev mechanoids = FindLoreTopicForDev(
+                    lore, "mechanoids");
+                Require(mechanoids != null,
+                    "The loaded lore view must include the mechanoids topic.");
+                Require(!string.IsNullOrWhiteSpace(mechanoids.originClause)
+                        && !string.IsNullOrWhiteSpace(mechanoids.adoptedClause),
+                    "The lore view must expose both culture clauses for a converted pawn.");
+                Require(mechanoids.triggerTextTerms.Exists(
+                        term => string.Equals(
+                            term, "mechanoid*", StringComparison.OrdinalIgnoreCase)),
+                    "The lore view must expose the localized prose matcher used by the planner.");
+                Require(mechanoids.triggerContextPairs.Exists(
+                        pair => string.Equals(
+                            pair, "faction=Mechanoid", StringComparison.OrdinalIgnoreCase)),
+                    "The lore view must also expose structured topic matchers.");
+            }
+            finally
+            {
+                Prefs.DevMode = originalDevMode;
+            }
         }
 
         // ── 4: culture resolution at capture ─────────────────────────────────────────────────────────
@@ -658,6 +804,48 @@ namespace PawnDiary.RimTests
             }
 
             return count;
+        }
+
+        private static bool ContainsRecordId(PawnKnowledgeState state, string recordId)
+        {
+            for (int i = 0; i < state.records.Count; i++)
+            {
+                if (state.records[i] != null
+                    && string.Equals(
+                        state.records[i].recordId,
+                        recordId,
+                        StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static LoreMemoryTopicForDev FindLoreTopicForDev(
+            LoreMemorySnapshotForDev lore,
+            string topicKey)
+        {
+            if (lore?.topics == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < lore.topics.Count; i++)
+            {
+                LoreMemoryTopicForDev topic = lore.topics[i];
+                if (topic != null
+                    && string.Equals(
+                        topic.topicKey,
+                        topicKey,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return topic;
+                }
+            }
+
+            return null;
         }
 
         private static ImportantMemoryRecord LastOfKind(PawnKnowledgeState state, string eventKind)

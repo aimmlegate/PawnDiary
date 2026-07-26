@@ -95,14 +95,17 @@
     <PropertyGroup>
       <_ModVersion>@(_AboutModVersion)</_ModVersion>
       <_ModVersion Condition="'$(_ModVersion)' == ''">0.0.0</_ModVersion>
+      <!-- CLR assembly/file versions accept numeric components only. Keep the exact release label
+           for AssemblyInformationalVersion while mapping a trailing ".rc" to its numeric core. -->
+      <_ClrModVersion>$([System.Text.RegularExpressions.Regex]::Replace('$(_ModVersion)', '\.rc$', ''))</_ClrModVersion>
       <_VersionSourceFile>$(IntermediateOutputPath)PawnDiaryVersion.g.cs</_VersionSourceFile>
     </PropertyGroup>
     <ItemGroup>
       <_VersionAttribute Include="System.Reflection.AssemblyVersionAttribute">
-        <_Parameter1>$(_ModVersion)</_Parameter1>
+        <_Parameter1>$(_ClrModVersion)</_Parameter1>
       </_VersionAttribute>
       <_VersionAttribute Include="System.Reflection.AssemblyFileVersionAttribute">
-        <_Parameter1>$(_ModVersion)</_Parameter1>
+        <_Parameter1>$(_ClrModVersion)</_Parameter1>
       </_VersionAttribute>
       <_VersionAttribute Include="System.Reflection.AssemblyInformationalVersionAttribute">
         <_Parameter1>$(_ModVersion)</_Parameter1>
