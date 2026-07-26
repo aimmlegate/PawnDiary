@@ -443,6 +443,14 @@ namespace PawnDiary
                     continue;
                 }
 
+                // Recompute a finite deadline every scan. This repairs legacy expiresTick=-1 rows and
+                // clamps hand-edited/old deadlines to the current XML timeout without extending an
+                // already-earlier saved deadline.
+                active.expiresTick = EventWindowExpiryPolicy.ResolveDeadline(
+                    active.startedTick,
+                    active.expiresTick,
+                    def.EffectiveTimeoutTicks());
+
                 // Still-present probe: an optional XML-declared check that closes the window EARLY when
                 // its spawning threat is no longer on the window's map (see stillPresentThingDefNames /
                 // stillPresentFactionDefNames). This keeps a timeout-bounded dread window (e.g.
@@ -459,7 +467,7 @@ namespace PawnDiary
                     }
                 }
 
-                if (active.expiresTick < 0 || now < active.expiresTick)
+                if (!EventWindowExpiryPolicy.IsExpired(now, active.expiresTick))
                 {
                     continue;
                 }
@@ -586,6 +594,18 @@ namespace PawnDiary
 
                 DiaryEventWindowDef def = EventWindowDefFor(active);
                 if (def == null || !def.enabled || def.MissingRequiredPackage() || !def.promptEnabled)
+                {
+                    continue;
+                }
+
+                // Timeout cleanup runs on a short periodic cadence, but prompt generation can happen
+                // between scans (or immediately after loading/time-skipping). Never let an already-expired
+                // saved row color another prompt while it waits for the cleanup pass.
+                active.expiresTick = EventWindowExpiryPolicy.ResolveDeadline(
+                    active.startedTick,
+                    active.expiresTick,
+                    def.EffectiveTimeoutTicks());
+                if (EventWindowExpiryPolicy.IsExpired(now, active.expiresTick))
                 {
                     continue;
                 }
@@ -1321,7 +1341,10 @@ namespace PawnDiary
             active.windowDefName = def.defName;
             active.windowKey = def.EffectiveWindowKey();
             active.startedTick = now;
-            active.expiresTick = def.timeoutTicks > 0 ? now + def.timeoutTicks : -1;
+            active.expiresTick = EventWindowExpiryPolicy.ResolveDeadline(
+                now,
+                -1,
+                def.EffectiveTimeoutTicks());
             active.mapUniqueId = mapUniqueId;
             active.startSource = facts.source ?? string.Empty;
             active.startSignal = facts.signal ?? string.Empty;
@@ -1422,6 +1445,13 @@ namespace PawnDiary
                 {
                     active.windowKey = def.EffectiveWindowKey();
                 }
+
+                // expiresTick was optional in older saves. Repair it from the stable start tick and the
+                // current Def policy so load cannot resurrect an immortal atmosphere window.
+                active.expiresTick = EventWindowExpiryPolicy.ResolveDeadline(
+                    active.startedTick,
+                    active.expiresTick,
+                    def.EffectiveTimeoutTicks());
 
                 active.startSubjectPawnId = active.startSubjectPawnId ?? string.Empty;
                 active.startSubjectLabel = active.startSubjectLabel ?? string.Empty;

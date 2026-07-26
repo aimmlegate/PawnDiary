@@ -35,6 +35,48 @@ namespace PawnDiary
     }
 
     /// <summary>
+    /// Pure deadline policy for persistent event windows. XML owns each intended timeout; the fallback
+    /// exists only so a malformed third-party Def or legacy save row can never make prompt atmosphere
+    /// immortal when its expected end signal is missed.
+    /// </summary>
+    internal static class EventWindowExpiryPolicy
+    {
+        // Defensive fallback only. Shipped persistent windows all provide an explicit XML timeout.
+        public const int DefaultPersistentTimeoutTicks = 60000;
+
+        /// <summary>Returns a finite positive timeout even when XML is missing or malformed.</summary>
+        public static int EffectiveTimeoutTicks(int configuredTimeoutTicks)
+        {
+            return configuredTimeoutTicks > 0
+                ? configuredTimeoutTicks
+                : DefaultPersistentTimeoutTicks;
+        }
+
+        /// <summary>
+        /// Resolves the saved deadline without ever extending it past the current Def policy. An earlier
+        /// saved deadline remains authoritative, while a missing or overlong legacy value is repaired.
+        /// </summary>
+        public static int ResolveDeadline(int startedTick, int savedExpiresTick, int configuredTimeoutTicks)
+        {
+            int timeoutTicks = EffectiveTimeoutTicks(configuredTimeoutTicks);
+            long configuredDeadline = (long)Math.Max(0, startedTick) + timeoutTicks;
+            int boundedConfiguredDeadline = configuredDeadline >= int.MaxValue
+                ? int.MaxValue
+                : (int)configuredDeadline;
+
+            return savedExpiresTick >= 0 && savedExpiresTick < boundedConfiguredDeadline
+                ? savedExpiresTick
+                : boundedConfiguredDeadline;
+        }
+
+        /// <summary>True at and after the resolved finite deadline.</summary>
+        public static bool IsExpired(int nowTick, int deadlineTick)
+        {
+            return deadlineTick >= 0 && nowTick >= deadlineTick;
+        }
+    }
+
+    /// <summary>
     /// Stateless trigger matching for event windows.
     /// </summary>
     internal static class EventWindowPolicy

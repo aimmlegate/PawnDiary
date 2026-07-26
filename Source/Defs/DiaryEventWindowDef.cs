@@ -82,7 +82,9 @@ namespace PawnDiary
         public List<DiaryEventWindowTriggerDef> startSignals = new List<DiaryEventWindowTriggerDef>();
         public List<DiaryEventWindowTriggerDef> endSignals = new List<DiaryEventWindowTriggerDef>();
 
-        // -1 means no timeout. Positive values are game ticks; 60000 ticks is one RimWorld day.
+        // One-shot windows may leave this at -1. Persistent windows must provide a positive XML timeout;
+        // runtime also applies EventWindowExpiryPolicy's defensive fallback so malformed third-party Defs
+        // and legacy saves cannot leave prompt atmosphere active forever.
         public int timeoutTicks = -1;
         public int dedupTicks = 2500;
         public bool restartOnStart = false;
@@ -168,6 +170,14 @@ namespace PawnDiary
             return dedupTicks < 0 ? 0 : dedupTicks;
         }
 
+        /// <summary>
+        /// Returns the XML timeout, or a finite defensive fallback for malformed persistent Defs.
+        /// </summary>
+        public int EffectiveTimeoutTicks()
+        {
+            return EventWindowExpiryPolicy.EffectiveTimeoutTicks(timeoutTicks);
+        }
+
         // Cached pure-rule projections of the XML triggers. Built once on first use and reused: the
         // signal path is hot (Thing.SpawnSetup fires for every projectile/filth/item), so converting
         // the XML triggers into matcher DTOs on every signal would allocate a List plus one rule per
@@ -208,8 +218,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Load-time validation for active windows. A persistent window must have some way to close, or
-        /// its prompt context can survive forever after save/load.
+        /// Load-time validation for active windows. End signals may close a window early, but every
+        /// persistent window also needs a finite fallback timeout in case that signal never arrives.
         /// </summary>
         public override IEnumerable<string> ConfigErrors()
         {
@@ -218,10 +228,10 @@ namespace PawnDiary
                 yield return error;
             }
 
-            if (keepActive && timeoutTicks <= 0 && !HasAnyTrigger(endSignals))
+            if (keepActive && timeoutTicks <= 0)
             {
-                yield return "keepActive=true requires timeoutTicks > 0 or at least one usable endSignals trigger; "
-                    + "otherwise prompt context can stay active forever.";
+                yield return "keepActive=true requires timeoutTicks > 0 even when endSignals are configured; "
+                    + "the timeout is the fallback cleanup when no end signal arrives.";
             }
 
             // A still-present probe only does anything for a persistent window (a one-shot
@@ -261,33 +271,6 @@ namespace PawnDiary
                     yield return "narrativeEvidence.salience must be one of the frozen Narrative Continuity salience tokens.";
                 }
             }
-        }
-
-        private static bool HasAnyTrigger(List<DiaryEventWindowTriggerDef> triggers)
-        {
-            if (triggers == null)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < triggers.Count; i++)
-            {
-                DiaryEventWindowTriggerDef trigger = triggers[i];
-                if (trigger == null)
-                {
-                    continue;
-                }
-
-                if (!string.IsNullOrWhiteSpace(trigger.source)
-                    || !string.IsNullOrWhiteSpace(trigger.signal)
-                    || HasAnyText(trigger.matchDefNames)
-                    || HasAnyText(trigger.matchTokens))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private static bool HasAnyText(List<string> values)

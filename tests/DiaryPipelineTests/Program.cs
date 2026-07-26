@@ -4691,6 +4691,33 @@ namespace DiaryPipelineTests
 
         private static void TestEventWindowPolicy()
         {
+            AssertEqual(
+                "event-window expiry uses explicit XML timeout",
+                1250,
+                EventWindowExpiryPolicy.EffectiveTimeoutTicks(1250));
+            AssertEqual(
+                "event-window expiry gives malformed persistent defs a finite fallback",
+                EventWindowExpiryPolicy.DefaultPersistentTimeoutTicks,
+                EventWindowExpiryPolicy.EffectiveTimeoutTicks(-1));
+            AssertEqual(
+                "event-window expiry repairs missing saved deadline",
+                61000,
+                EventWindowExpiryPolicy.ResolveDeadline(1000, -1, 60000));
+            AssertEqual(
+                "event-window expiry clamps overlong saved deadline",
+                61000,
+                EventWindowExpiryPolicy.ResolveDeadline(1000, 999999, 60000));
+            AssertEqual(
+                "event-window expiry preserves an earlier saved cleanup deadline",
+                50000,
+                EventWindowExpiryPolicy.ResolveDeadline(1000, 50000, 60000));
+            AssertTrue(
+                "event-window expiry closes exactly on the deadline",
+                EventWindowExpiryPolicy.IsExpired(61000, 61000));
+            AssertTrue(
+                "event-window expiry stays active immediately before the deadline",
+                !EventWindowExpiryPolicy.IsExpired(60999, 61000));
+
             EventWindowSignalFacts grayFlesh = new EventWindowSignalFacts
             {
                 source = "ThingSpawned",
@@ -5011,22 +5038,31 @@ namespace DiaryPipelineTests
                 "indexed could-match rejects a completely blank rule",
                 !blankIndex.CouldMatch("Bullet_Revolver"));
 
-            XDocument eventWindows = XDocument.Load(RepoPath("1.6", "Defs", "DiaryEventWindowDefs.xml"));
-            foreach (XElement def in eventWindows.Descendants("PawnDiary.DiaryEventWindowDef"))
+            string[] eventWindowDefFiles =
             {
-                string defName = ChildValue(def, "defName");
-                string keepActiveText = ChildValue(def, "keepActive");
-                bool keepActive = string.IsNullOrWhiteSpace(keepActiveText)
-                    || string.Equals(keepActiveText, "true", StringComparison.OrdinalIgnoreCase);
-                int timeoutTicks;
-                if (!int.TryParse(ChildValue(def, "timeoutTicks"), out timeoutTicks))
+                RepoPath("1.6", "Defs", "DiaryEventWindowDefs.xml"),
+                RepoPath("1.6", "Defs", "Compat", "DiaryEventWindows_VEE.xml"),
+                RepoPath("1.6", "Defs", "Compat", "DiaryEventWindows_Hospitality.xml")
+            };
+            for (int fileIndex = 0; fileIndex < eventWindowDefFiles.Length; fileIndex++)
+            {
+                XDocument eventWindows = XDocument.Load(eventWindowDefFiles[fileIndex]);
+                foreach (XElement def in eventWindows.Descendants("PawnDiary.DiaryEventWindowDef"))
                 {
-                    timeoutTicks = -1;
-                }
+                    string defName = ChildValue(def, "defName");
+                    string keepActiveText = ChildValue(def, "keepActive");
+                    bool keepActive = string.IsNullOrWhiteSpace(keepActiveText)
+                        || string.Equals(keepActiveText, "true", StringComparison.OrdinalIgnoreCase);
+                    int timeoutTicks;
+                    if (!int.TryParse(ChildValue(def, "timeoutTicks"), out timeoutTicks))
+                    {
+                        timeoutTicks = -1;
+                    }
 
-                AssertTrue(
-                    "active event window has a close path: " + defName,
-                    !keepActive || timeoutTicks > 0 || HasUsableEventWindowTrigger(def.Element("endSignals")));
+                    AssertTrue(
+                        "active event window has a finite fallback timeout: " + defName,
+                        !keepActive || timeoutTicks > 0);
+                }
             }
         }
 
