@@ -1053,6 +1053,7 @@ namespace PawnDiary.RimTests
                 favoriteEntryKeys = new List<string> { "evt_a|initiator", "evt_c|recipient" },
                 diaryGenerationEnabled = false, // non-default, must round-trip
                 hasUnreadGeneratedEntry = true,
+                unreadGeneratedEntryCount = 3,
                 customWritingStyleRule = "Terse and grim.",
                 progressionState = progression,
                 arcSchedule = arc,
@@ -1066,6 +1067,7 @@ namespace PawnDiary.RimTests
             AssertStr(original.pawnName, loaded.pawnName, "record pawnName");
             Require(!loaded.diaryGenerationEnabled, "record diaryGenerationEnabled=false should survive load.");
             Require(loaded.hasUnreadGeneratedEntry, "record hasUnreadGeneratedEntry=true should survive load.");
+            AssertInt(3, loaded.unreadGeneratedEntryCount, "record unreadGeneratedEntryCount");
 
             AssertStrList(original.eventIds, loaded.eventIds, "record eventIds");
             AssertStrList(original.favoriteEntryKeys, loaded.favoriteEntryKeys, "record favoriteEntryKeys");

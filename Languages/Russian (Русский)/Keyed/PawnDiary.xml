@@ -398,6 +398,15 @@
   <PawnDiary.Settings.ExportAllDiariesDone>Страницы дневника экспортированы: {0}. Путь скопирован в буфер обмена.</PawnDiary.Settings.ExportAllDiariesDone>
   <PawnDiary.Settings.ExportAllDiariesFailed>Не удалось экспортировать дневник: {0}</PawnDiary.Settings.ExportAllDiariesFailed>
   <PawnDiary.Settings.ExportAllDiariesNoGame>Начните или загрузите игру, чтобы экспортировать дневник.</PawnDiary.Settings.ExportAllDiariesNoGame>
+  <PawnDiary.Export.ButtonTip>Экспортировать весь дневник персонажа {0} в форматированный файл Markdown.</PawnDiary.Export.ButtonTip>
+  <PawnDiary.Export.Done>Дневник персонажа {0} экспортирован ({1} стр.): {2}. Путь скопирован в буфер обмена.</PawnDiary.Export.Done>
+  <PawnDiary.Export.Failed>Не удалось экспортировать дневник персонажа {0}: {1}</PawnDiary.Export.Failed>
+  <PawnDiary.Export.InvalidSubject>Не удалось определить персонажа, чей дневник нужно экспортировать.</PawnDiary.Export.InvalidSubject>
+  <PawnDiary.Export.MarkdownTitle>Дневник — {0}</PawnDiary.Export.MarkdownTitle>
+  <PawnDiary.Export.DateLabel>Дата</PawnDiary.Export.DateLabel>
+  <PawnDiary.Export.CategoryLabel>Категория</PawnDiary.Export.CategoryLabel>
+  <PawnDiary.Export.UntitledEntry>Запись без заголовка</PawnDiary.Export.UntitledEntry>
+  <PawnDiary.Export.EmptyDiary>В дневнике пока нет готовых страниц.</PawnDiary.Export.EmptyDiary>
   <PawnDiary.Settings.Temperature>Температура модели: {0}</PawnDiary.Settings.Temperature>
   <PawnDiary.Settings.TemperatureHelp>Случайность модели для дневника и заголовков. Ниже — ровнее и буквальнее; выше — разнообразнее и атмосфернее, но риск отхода от фактов больше.</PawnDiary.Settings.TemperatureHelp>
   <PawnDiary.Settings.TimeoutSeconds>Ожидание ответа: {0} с</PawnDiary.Settings.TimeoutSeconds>

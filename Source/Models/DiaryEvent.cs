@@ -1068,13 +1068,15 @@ namespace PawnDiary
             out bool archivedGenerationStale,
             out bool generating,
             out bool promptOnly,
-            out bool titlePending)
+            out bool titlePending,
+            out bool failed)
         {
             hasGeneratedText = false;
             archivedGenerationStale = false;
             generating = false;
             promptOnly = false;
             titlePending = false;
+            failed = false;
 
             if (!TryGetDisplayRoleForPawn(pawnId, out povRole))
             {
@@ -1091,6 +1093,7 @@ namespace PawnDiary
                 PromptFor(povRole));
             generating = RoleEquals(status, PendingStatus) && !archivedGenerationStale;
             promptOnly = RoleEquals(status, PromptOnlyStatus);
+            failed = RoleEquals(status, FailedStatus);
             titlePending = !archivedForScans
                 && string.IsNullOrWhiteSpace(TitleForRole(povRole))
                 && IsTitlePending(povRole);

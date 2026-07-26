@@ -163,9 +163,6 @@ namespace PawnDiary
         /// </summary>
         private sealed class DiaryCommand_Action : Command_Action
         {
-            private const float WritingDotSize = 4f;
-            private const float WritingDotGap = 3f;
-
             private readonly Pawn diaryPawn;
 
             public DiaryCommand_Action(Pawn diaryPawn)
@@ -198,8 +195,9 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.DiaryCommandStatus status = component.CommandStatusFor(diaryPawn);
-                if (!status.HasNewPages && !status.IsWriting)
+                DiaryGameComponent.DiaryCommandStatus status =
+                    component.ReaderStatusForId(diaryPawn.GetUniqueLoadID());
+                if (!status.HasNewPages && !status.IsWriting && !status.HasFailures)
                 {
                     return;
                 }
@@ -207,7 +205,7 @@ namespace PawnDiary
                 Rect buttonRect = new Rect(topLeft.x, topLeft.y, GetWidth(maxWidth), 75f);
                 if (status.HasNewPages)
                 {
-                    DrawNewPageUnderline(new Rect(
+                    DiaryStatusOverlay.DrawUnreadUnderline(new Rect(
                         buttonRect.x + 11f,
                         buttonRect.yMax - 7f,
                         Mathf.Max(0f, buttonRect.width - 22f),
@@ -216,36 +214,15 @@ namespace PawnDiary
 
                 if (status.IsWriting)
                 {
-                    DrawWritingBadge(new Rect(buttonRect.x + 7f, buttonRect.y + 7f, 28f, 14f));
+                    DiaryStatusOverlay.DrawWritingBadge(
+                        new Rect(buttonRect.x + 7f, buttonRect.y + 7f, 28f, 14f));
                 }
-            }
-
-            private static void DrawNewPageUnderline(Rect rect)
-            {
-                Color oldColor = GUI.color;
-                Widgets.DrawBoxSolid(rect, new Color(0.62f, 0.56f, 0.43f, 0.42f));
-                GUI.color = oldColor;
-
-                TooltipHandler.TipRegion(rect, "PawnDiary.Command.NewPagesTip".Translate());
-            }
-
-            private static void DrawWritingBadge(Rect rect)
-            {
-                Color oldColor = GUI.color;
-                Widgets.DrawBoxSolid(rect, new Color(0.06f, 0.08f, 0.06f, 0.72f));
-                GUI.color = Color.white;
-
-                float pulse = (Mathf.Sin(Time.realtimeSinceStartup * 5.2f) + 1f) * 0.5f;
-                Color dotColor = Color.Lerp(new Color(0.46f, 0.78f, 0.46f), new Color(0.84f, 1f, 0.76f), pulse);
-                for (int i = 0; i < 3; i++)
+                if (status.HasFailures)
                 {
-                    float x = rect.x + 5f + i * (WritingDotSize + WritingDotGap);
-                    float y = rect.y + rect.height * 0.5f - WritingDotSize * 0.5f;
-                    Widgets.DrawBoxSolid(new Rect(x, y, WritingDotSize, WritingDotSize), dotColor);
+                    DiaryStatusOverlay.DrawFailureBadge(
+                        new Rect(buttonRect.xMax - 35f, buttonRect.y + 7f, 28f, 14f),
+                        status.failedCount);
                 }
-
-                GUI.color = oldColor;
-                TooltipHandler.TipRegion(rect, "PawnDiary.Command.WritingTip".Translate());
             }
         }
     }

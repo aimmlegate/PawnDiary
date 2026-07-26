@@ -91,9 +91,6 @@ namespace PawnDiary
         private static float EntryTitleHeight => UiStyle.entryTitleHeight;
         private static float EntryTextTop => UiStyle.entryTextTop;
         private static float EntryBottomPadding => UiStyle.entryBottomPadding;
-        private static float StatusBadgeWidth => UiStyle.statusBadgeWidth;
-        private static float StatusBadgeHeight => UiStyle.statusBadgeHeight;
-        private static float StatusBadgeRightPadding => UiStyle.statusBadgeRightPadding;
         private static float RoleplayLineGap => UiStyle.roleplayLineGap;
         private static float RoleplayParagraphGap => UiStyle.roleplayParagraphGap;
         private static float SpeechBlockLeftInset => UiStyle.speechBlockLeftInset;
@@ -260,6 +257,40 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Explains why the selected pawn has no visible pages and names the next useful action.
+        /// </summary>
+        private static void DrawActionableEmptyState(
+            Rect rect,
+            DiaryReaderSubject subject,
+            DiaryGameComponent component,
+            int pendingCount,
+            bool showLlmDebugInfo)
+        {
+            if (pendingCount > 0)
+            {
+                Widgets.Label(
+                    rect,
+                    "PawnDiary.Tab.NoEntriesPending".Translate(pendingCount));
+                return;
+            }
+
+            if (subject.Alive
+                && subject.Pawn != null
+                && component != null
+                && !component.DiaryGenerationEnabledFor(subject.Pawn))
+            {
+                Widgets.Label(rect, "PawnDiary.Tab.NoEntriesGenerationDisabled".Translate());
+                return;
+            }
+
+            Widgets.Label(
+                rect,
+                (showLlmDebugInfo
+                    ? "PawnDiary.Tab.NoEntriesAction"
+                    : "PawnDiary.Tab.NoGeneratedEntriesAction").Translate());
+        }
+
+        /// <summary>
         /// Draws the journal into a host-provided rectangle. Called every frame; the whole UI is
         /// rebuilt from current state each time.
         /// </summary>
@@ -271,6 +302,7 @@ namespace PawnDiary
             }
 
             ResetSessionBoundUiStateIfNeeded(component);
+            ActivatePawnUiState(subject.PawnId);
             Pawn pawn = subject.Pawn;
             // Seasonal background wash (experimental, off by default) — global for the whole window:
             // painted first, edge to edge, so it sits behind the header, the journal, and the right-hand
@@ -304,7 +336,7 @@ namespace PawnDiary
                 showPromptOnlyEntries,
                 devPreviewKind,
                 out token);
-            int generatingCount = visibleEntriesCache.GeneratingCount;
+            int pendingCount = visibleEntriesCache.PendingCount;
 
             // Two-column layout: the journal (virtualized cards) on the left, and an independent,
             // non-virtualized filter/controls panel on the right. The panel hosts the year selector,
@@ -358,28 +390,27 @@ namespace PawnDiary
                 headerRight = writingStyleIconRect.x - Mathf.Max(0f, WritingStyleIconRightGap);
             }
 
+            // Player-facing Markdown export is available for every valid reader subject, including an
+            // archive-only pawn whose live Pawn object no longer exists. It sits left of the other
+            // header actions and exports the whole diary, independent of the selected year or filters.
+            if (component != null)
+            {
+                float iconSize = Mathf.Max(1f, WritingStyleIconSize);
+                Rect exportIconRect = new Rect(
+                    headerRight - iconSize,
+                    journalRect.y + Mathf.Max(0f, (headerRect.height - iconSize) * 0.5f),
+                    iconSize,
+                    iconSize);
+                DrawMarkdownExportHeaderIcon(exportIconRect, subject, component);
+                headerRight = exportIconRect.x - Mathf.Max(0f, WritingStyleIconRightGap);
+            }
+
             headerRect.width = Mathf.Max(0f, headerRight - journalRect.x);
 
             Text.Font = GameFont.Medium;
             string headerLabel = "PawnDiary.Tab.DiaryHeader".Translate(subject.DisplayName);
             Widgets.Label(headerRect, headerLabel);
-            float headerLabelWidth = Text.CalcSize(headerLabel).x;
             Text.Font = GameFont.Small;
-
-            // "Writing pages..." indicator now sits just after the title on the LEFT, so it never crowds
-            // the top-right icon cluster or the window close button. Clamped to stay left of the icons.
-            if (generatingCount > 0)
-            {
-                float indicatorX = Mathf.Max(
-                    journalRect.x,
-                    Mathf.Min(journalRect.x + headerLabelWidth + 12f, headerRight - StatusBadgeWidth - 4f));
-                Rect writingIndicatorRect = new Rect(
-                    indicatorX,
-                    journalRect.y + Mathf.Max(0f, (headerRect.height - StatusBadgeHeight) * 0.5f),
-                    StatusBadgeWidth,
-                    StatusBadgeHeight);
-                DrawWritingIndicator(writingIndicatorRect);
-            }
 
             // The normal journal column opens directly under the header (a fixed 36px title row plus the
             // usual gap). A narrow-layout year selector may advance this below after years are resolved.
@@ -429,7 +460,12 @@ namespace PawnDiary
 
             if (years.Count == 0)
             {
-                Widgets.Label(outRect, (showLlmDebugInfo ? "PawnDiary.Tab.NoEntries" : "PawnDiary.Tab.NoGeneratedEntries").Translate());
+                DrawActionableEmptyState(
+                    outRect,
+                    subject,
+                    component,
+                    pendingCount,
+                    showLlmDebugInfo);
                 return;
             }
 
@@ -441,7 +477,12 @@ namespace PawnDiary
 
             if (ordered.Count == 0)
             {
-                Widgets.Label(outRect, (showLlmDebugInfo ? "PawnDiary.Tab.NoEntries" : "PawnDiary.Tab.NoGeneratedEntries").Translate());
+                DrawActionableEmptyState(
+                    outRect,
+                    subject,
+                    component,
+                    pendingCount,
+                    showLlmDebugInfo);
                 return;
             }
 

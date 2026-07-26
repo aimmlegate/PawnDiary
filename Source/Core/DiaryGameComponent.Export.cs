@@ -102,6 +102,7 @@ namespace PawnDiary
                 AppendField(sb, "Writing style def", SafeText(diary.personaDefName));
                 AppendField(sb, "Generation enabled", diary.diaryGenerationEnabled.ToString(CultureInfo.InvariantCulture));
                 AppendField(sb, "Unread generated entry", diary.hasUnreadGeneratedEntry.ToString(CultureInfo.InvariantCulture));
+                AppendField(sb, "Unread generated entry count", diary.unreadGeneratedEntryCount.ToString(CultureInfo.InvariantCulture));
                 int hotCount = diary.eventIds != null ? diary.eventIds.Count : 0;
                 IReadOnlyList<ArchivedDiaryEntry> archivedEntries = archive.EntriesForPawn(diary.pawnId);
                 AppendField(sb, "Hot event references", hotCount.ToString(CultureInfo.InvariantCulture));

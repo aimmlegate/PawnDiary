@@ -31,6 +31,7 @@ namespace PawnDiary
             diary.eventIds?.Clear();
             diary.favoriteEntryKeys?.Clear();
             diary.hasUnreadGeneratedEntry = false;
+            diary.unreadGeneratedEntryCount = 0;
             diary.acknowledgedGeneratedEntryCount = 0;
 
             // Culture provenance describes identity rather than an episodic memory, so retain it while
@@ -47,7 +48,7 @@ namespace PawnDiary
             archive.RemoveForPawn(pawnId);
             RemovePendingDayDigestForPawn(pawnId);
             events.RetainOnly(CollectHotReferencedEventIds());
-            SetCachedCommandStatus(pawnId, 0, 0, false);
+            SetCachedCommandStatus(pawnId, 0, 0, 0);
             DiaryStateVersion.Bump();
         }
 

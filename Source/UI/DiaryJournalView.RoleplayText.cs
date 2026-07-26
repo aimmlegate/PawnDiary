@@ -106,6 +106,7 @@ namespace PawnDiary
             }
 
             renderCacheComponent = component;
+            ClearPawnUiStatesForSession();
             preparedRoleplayCache.Clear();
             entryCardMeasurer.Clear();
             entryExpansionOverrides.Clear();
@@ -121,7 +122,6 @@ namespace PawnDiary
             nameHighlightsVersion++;
             seasonWashColor = new Color(0f, 0f, 0f, 0f);
             seasonWashLastRealtime = -1f;
-            filterPanelPawnId = null;
             filterFavoritesOnly = false;
             filterActiveTags.Clear();
             filterSearchQuery = string.Empty;
@@ -380,7 +380,7 @@ namespace PawnDiary
             DrawWritingDots(dotsRect, textColor, 0.4f);
         }
 
-        private static void DrawWritingDots(Rect rect, Color color, float phaseOffset)
+        internal static void DrawWritingDots(Rect rect, Color color, float phaseOffset)
         {
             Color oldColor = GUI.color;
             for (int i = 0; i < 3; i++)

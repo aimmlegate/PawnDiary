@@ -17,6 +17,7 @@ Icon mapping (shipped file <- CoreUI source):
   Filter.png        <- cil-filter
   Favorite.png      <- cil-star
   Copy.png          <- cil-copy
+  Export.png        <- cil-data-transfer-down
   Regenerate.png    <- cil-reload
   WritingStyle.png  <- cil-contact
   SeasonSummer.png  <- cil-sun

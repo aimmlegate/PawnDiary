@@ -15,9 +15,8 @@ namespace PawnDiary
     /// </summary>
     internal sealed class Dialog_DiaryReader : Window
     {
-        private const float DirectoryHeaderHeight = 30f;
         private const float DirectorySectionHeight = 24f;
-        private const float DirectoryPawnRowMinimumHeight = 48f;
+        private const float DirectoryPawnRowMinimumHeight = 64f;
         private const float ReaderChromePadding = 24f;
         private const string PlaceholderTexturePath = "UI/Commands/PawnDiaryOpen";
 
@@ -25,9 +24,12 @@ namespace PawnDiary
 
         private readonly DiaryJournalView journalView = new DiaryJournalView();
         private readonly DiaryReaderPawnDirectory directory = new DiaryReaderPawnDirectory();
+        private readonly List<DiaryReaderPawnRow> visibleRows = new List<DiaryReaderPawnRow>();
         private DiaryReaderSubject selectedSubject;
         private Vector2 pawnListScroll;
         private bool showDeadPawns;
+        private DiaryReaderSortMode sortMode = DiaryReaderSortMode.NewestPage;
+        private string searchQuery = string.Empty;
         private bool forceDirectoryRefresh = true;
         // Remember the map selection independently from the directory selection. This lets a NEW
         // colonist selection follow the player into the open reader without a manual directory click,
@@ -206,6 +208,8 @@ namespace PawnDiary
             directory.RefreshIfNeeded(
                 component,
                 "PawnDiary.Reader.UnknownPawn".Translate().ToString(),
+                sortMode,
+                searchQuery,
                 forceDirectoryRefresh);
             forceDirectoryRefresh = false;
             EnsureSelectionVisible();
@@ -235,9 +239,10 @@ namespace PawnDiary
                 inRect.height);
 
             DrawDirectory(directoryRect, style, component);
-            if (directory.Rows.Count == 0)
+            DiaryReaderDirectoryEmptyReason emptyReason = CurrentDirectoryEmptyReason();
+            if (emptyReason != DiaryReaderDirectoryEmptyReason.None)
             {
-                Widgets.Label(readerRect, "PawnDiary.Reader.NoDiaries".Translate());
+                DrawReaderEmptyState(readerRect, emptyReason);
             }
             else if (!selectedSubject.IsValid)
             {
@@ -272,14 +277,67 @@ namespace PawnDiary
                 }
             }
 
-            int visibleCount = showDeadPawns ? rows.Count : directory.DepartedDividerIndex;
-            selectedSubject = visibleCount > 0 ? rows[0].Subject : default(DiaryReaderSubject);
+            for (int i = 0; i < rows.Count; i++)
+            {
+                if (showDeadPawns || !rows[i].Departed)
+                {
+                    selectedSubject = rows[i].Subject;
+                    return;
+                }
+            }
+
+            selectedSubject = default(DiaryReaderSubject);
         }
 
         private void DrawDirectory(Rect rect, DiaryUiStyleDef style, DiaryGameComponent component)
         {
+            float controlHeight = Mathf.Max(24f, style.readerDirectoryControlHeight);
+            float controlGap = Mathf.Max(0f, style.readerDirectoryControlGap);
+            float searchLabelHeight = Mathf.Max(20f, style.readerDirectorySearchLabelHeight);
+            float y = rect.y;
+
+            Rect searchLabelRect = new Rect(rect.x, y, rect.width, searchLabelHeight);
+            Widgets.Label(searchLabelRect, "PawnDiary.Reader.SearchLabel".Translate());
+            y = searchLabelRect.yMax + controlGap;
+
+            Rect searchRowRect = new Rect(rect.x, y, rect.width, controlHeight);
+            float clearWidth = controlHeight;
+            Rect searchRect = new Rect(
+                searchRowRect.x,
+                searchRowRect.y,
+                Mathf.Max(0f, searchRowRect.width - clearWidth - controlGap),
+                searchRowRect.height);
+            Rect clearRect = new Rect(searchRect.xMax + controlGap, searchRowRect.y, clearWidth, searchRowRect.height);
+            string previousSearch = searchQuery ?? string.Empty;
+            string editedSearch = Widgets.TextField(searchRect, previousSearch);
+            TooltipHandler.TipRegion(searchRect, "PawnDiary.Reader.SearchTip".Translate());
+            if (!string.Equals(previousSearch, editedSearch, StringComparison.Ordinal))
+            {
+                SetDirectorySearch(editedSearch);
+            }
+
+            bool oldEnabled = GUI.enabled;
+            GUI.enabled = !string.IsNullOrEmpty(searchQuery);
+            if (Widgets.ButtonText(clearRect, "×"))
+            {
+                SetDirectorySearch(string.Empty);
+            }
+            GUI.enabled = oldEnabled;
+            TooltipHandler.TipRegion(clearRect, "PawnDiary.Reader.ClearSearchTip".Translate());
+            y = searchRowRect.yMax + controlGap;
+
+            Rect sortRect = new Rect(rect.x, y, rect.width, controlHeight);
+            if (Widgets.ButtonText(
+                sortRect,
+                "PawnDiary.Reader.SortButton".Translate(SortModeLabel(sortMode))))
+            {
+                ShowSortMenu();
+            }
+            TooltipHandler.TipRegion(sortRect, "PawnDiary.Reader.SortTip".Translate());
+            y = sortRect.yMax + controlGap;
+
             bool oldShowDead = showDeadPawns;
-            Rect toggleRect = new Rect(rect.x, rect.y, rect.width, DirectoryHeaderHeight);
+            Rect toggleRect = new Rect(rect.x, y, rect.width, controlHeight);
             Widgets.CheckboxLabeled(
                 toggleRect,
                 "PawnDiary.Reader.ShowDeadPawns".Translate(),
@@ -290,53 +348,171 @@ namespace PawnDiary
                 selectedSubject = default(DiaryReaderSubject);
                 EnsureSelectionVisible();
             }
+            if (oldShowDead != showDeadPawns)
+            {
+                pawnListScroll.y = 0f;
+            }
 
             Rect outRect = new Rect(
                 rect.x,
-                toggleRect.yMax + 4f,
+                toggleRect.yMax + controlGap,
                 rect.width,
-                Mathf.Max(0f, rect.yMax - toggleRect.yMax - 4f));
-            int visibleCount = showDeadPawns ? directory.Rows.Count : directory.DepartedDividerIndex;
-            float rowHeight = Mathf.Max(DirectoryPawnRowMinimumHeight, style.readerPawnRowHeight);
-            float viewHeight = DirectorySectionHeight + directory.DepartedDividerIndex * rowHeight;
-            if (showDeadPawns && directory.Rows.Count > directory.DepartedDividerIndex)
+                Mathf.Max(0f, rect.yMax - toggleRect.yMax - controlGap));
+            RebuildVisibleRows();
+            if (visibleRows.Count == 0)
             {
-                viewHeight += DirectorySectionHeight
-                    + (directory.Rows.Count - directory.DepartedDividerIndex) * rowHeight;
+                Widgets.Label(outRect, DirectoryEmptyText(CurrentDirectoryEmptyReason()));
+                return;
             }
 
+            float rowHeight = Mathf.Max(DirectoryPawnRowMinimumHeight, style.readerPawnRowHeight);
+            int sectionCount = 1;
+            if (directory.GroupedByDeparture)
+            {
+                bool hasLiving = false;
+                bool hasDeparted = false;
+                for (int i = 0; i < visibleRows.Count; i++)
+                {
+                    hasDeparted |= visibleRows[i].Departed;
+                    hasLiving |= !visibleRows[i].Departed;
+                }
+
+                sectionCount = (hasLiving ? 1 : 0) + (hasDeparted ? 1 : 0);
+            }
+
+            float viewHeight = sectionCount * DirectorySectionHeight + visibleRows.Count * rowHeight;
             Rect viewRect = new Rect(0f, 0f, Mathf.Max(0f, outRect.width - 16f), Mathf.Max(outRect.height, viewHeight));
             Widgets.BeginScrollView(outRect, ref pawnListScroll, viewRect);
             try
             {
-                float y = 0f;
-                DrawSectionHeader(
-                    new Rect(0f, y, viewRect.width, DirectorySectionHeight),
-                    "PawnDiary.Reader.LivingPawnsHeader".Translate());
-                y += DirectorySectionHeight;
-
-                for (int i = 0; i < visibleCount; i++)
+                float listY = 0f;
+                bool departedHeaderDrawn = false;
+                if (!directory.GroupedByDeparture)
                 {
-                    if (showDeadPawns && i == directory.DepartedDividerIndex)
+                    DrawSectionHeader(
+                        new Rect(0f, listY, viewRect.width, DirectorySectionHeight),
+                        "PawnDiary.Reader.AllPawnsHeader".Translate());
+                    listY += DirectorySectionHeight;
+                }
+
+                for (int i = 0; i < visibleRows.Count; i++)
+                {
+                    DiaryReaderPawnRow row = visibleRows[i];
+                    if (directory.GroupedByDeparture)
                     {
-                        DrawSectionHeader(
-                            new Rect(0f, y, viewRect.width, DirectorySectionHeight),
-                            "PawnDiary.Reader.DepartedPawnsHeader".Translate());
-                        y += DirectorySectionHeight;
+                        if (row.Departed && !departedHeaderDrawn)
+                        {
+                            DrawSectionHeader(
+                                new Rect(0f, listY, viewRect.width, DirectorySectionHeight),
+                                "PawnDiary.Reader.DepartedPawnsHeader".Translate());
+                            listY += DirectorySectionHeight;
+                            departedHeaderDrawn = true;
+                        }
+                        else if (!row.Departed && i == 0)
+                        {
+                            DrawSectionHeader(
+                                new Rect(0f, listY, viewRect.width, DirectorySectionHeight),
+                                "PawnDiary.Reader.LivingPawnsHeader".Translate());
+                            listY += DirectorySectionHeight;
+                        }
                     }
 
                     DrawPawnRow(
-                        new Rect(0f, y, viewRect.width, rowHeight),
-                        directory.Rows[i],
+                        new Rect(0f, listY, viewRect.width, rowHeight),
+                        row,
                         style,
                         component);
-                    y += rowHeight;
+                    listY += rowHeight;
                 }
             }
             finally
             {
                 Widgets.EndScrollView();
             }
+        }
+
+        private void SetDirectorySearch(string value)
+        {
+            searchQuery = value ?? string.Empty;
+            pawnListScroll.y = 0f;
+            forceDirectoryRefresh = true;
+        }
+
+        private void ShowSortMenu()
+        {
+            List<FloatMenuOption> options = new List<FloatMenuOption>();
+            AddSortOption(options, DiaryReaderSortMode.NewestPage);
+            AddSortOption(options, DiaryReaderSortMode.UnreadCount);
+            AddSortOption(options, DiaryReaderSortMode.Name);
+            AddSortOption(options, DiaryReaderSortMode.LivingDeparted);
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void AddSortOption(List<FloatMenuOption> options, DiaryReaderSortMode mode)
+        {
+            options.Add(new FloatMenuOption(SortModeLabel(mode), delegate
+            {
+                sortMode = mode;
+                pawnListScroll.y = 0f;
+                forceDirectoryRefresh = true;
+            }));
+        }
+
+        private static string SortModeLabel(DiaryReaderSortMode mode)
+        {
+            switch (mode)
+            {
+                case DiaryReaderSortMode.UnreadCount:
+                    return "PawnDiary.Reader.SortUnread".Translate();
+                case DiaryReaderSortMode.Name:
+                    return "PawnDiary.Reader.SortName".Translate();
+                case DiaryReaderSortMode.LivingDeparted:
+                    return "PawnDiary.Reader.SortLivingDeparted".Translate();
+                default:
+                    return "PawnDiary.Reader.SortNewest".Translate();
+            }
+        }
+
+        private void RebuildVisibleRows()
+        {
+            visibleRows.Clear();
+            IReadOnlyList<DiaryReaderPawnRow> rows = directory.Rows;
+            for (int i = 0; i < rows.Count; i++)
+            {
+                if (showDeadPawns || !rows[i].Departed)
+                {
+                    visibleRows.Add(rows[i]);
+                }
+            }
+        }
+
+        private DiaryReaderDirectoryEmptyReason CurrentDirectoryEmptyReason()
+        {
+            RebuildVisibleRows();
+            return DiaryReaderEmptyStatePolicy.DirectoryReason(
+                directory.EligibleRowCount,
+                directory.Rows.Count,
+                visibleRows.Count,
+                DiaryReaderListPolicy.IsSearchActive(searchQuery),
+                showDeadPawns);
+        }
+
+        private TaggedString DirectoryEmptyText(DiaryReaderDirectoryEmptyReason reason)
+        {
+            switch (reason)
+            {
+                case DiaryReaderDirectoryEmptyReason.SearchNoMatch:
+                    return "PawnDiary.Reader.NoSearchMatches".Translate((searchQuery ?? string.Empty).Trim());
+                case DiaryReaderDirectoryEmptyReason.DepartedHidden:
+                    return "PawnDiary.Reader.DepartedHidden".Translate();
+                default:
+                    return "PawnDiary.Reader.NoPawns".Translate();
+            }
+        }
+
+        private void DrawReaderEmptyState(Rect rect, DiaryReaderDirectoryEmptyReason reason)
+        {
+            Widgets.Label(rect, DirectoryEmptyText(reason));
         }
 
         /// <summary>
@@ -410,40 +586,80 @@ namespace PawnDiary
             DrawPortrait(portraitRect, row.Subject.Pawn);
 
             float textX = portraitRect.xMax + 6f;
-            bool isWriting = component != null
-                && component.IsDiaryWritingFor(row.Subject.PawnId);
-            float writingIndicatorWidth = isWriting
+            DiaryGameComponent.DiaryCommandStatus status = component == null
+                ? default(DiaryGameComponent.DiaryCommandStatus)
+                : component.ReaderStatusForId(row.Subject.PawnId);
+            bool hasStatus = status.HasNewPages || status.IsWriting || status.HasFailures;
+            float statusColumnWidth = hasStatus
                 ? Mathf.Min(
-                    Mathf.Max(0f, style.statusBadgeWidth),
+                    Mathf.Max(24f, style.statusBadgeWidth),
                     Mathf.Max(0f, rect.xMax - textX - 2f))
                 : 0f;
-            float textRight = rect.xMax - 2f - writingIndicatorWidth;
-            // Two safe Small-font rows exactly fill the XML-backed default 48px directory row. A 20px
-            // label clips descenders at some UI scales even though Text.LineHeight appears to fit.
-            Rect nameRect = new Rect(textX, rect.y, Mathf.Max(0f, textRight - textX), 24f);
-            Rect countRect = new Rect(textX, rect.y + 24f, nameRect.width, 24f);
+            float textRight = rect.xMax - 2f - statusColumnWidth;
+            float textWidth = Mathf.Max(0f, textRight - textX);
+            float nameHeight = 24f;
+            float metadataHeight = Mathf.Max(20f, (rect.height - nameHeight - 2f) * 0.5f);
+            Rect nameRect = new Rect(textX, rect.y, textWidth, nameHeight);
+            Rect countRect = new Rect(textX, nameRect.yMax, textWidth, metadataHeight);
+            Rect dateRect = new Rect(textX, countRect.yMax, textWidth, metadataHeight);
             Widgets.Label(nameRect, row.Subject.DisplayName);
+
+            GameFont oldFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            string countLabel = "PawnDiary.Reader.PawnRowPages".Translate(row.EntryCount);
+            string dateLabel = row.HasLatestEntry && !string.IsNullOrWhiteSpace(row.LatestEntryDate)
+                ? "PawnDiary.Reader.PawnRowLastEntry".Translate(row.LatestEntryDate)
+                : "PawnDiary.Reader.PawnRowNoFinishedEntry".Translate();
             Color countColor = GUI.color;
             GUI.color = new Color(countColor.r, countColor.g, countColor.b, countColor.a * 0.72f);
-            Widgets.Label(countRect, "PawnDiary.Reader.PawnRowPages".Translate(row.EntryCount));
+            Widgets.LabelFit(countRect, countLabel);
+            Widgets.LabelFit(dateRect, dateLabel);
             GUI.color = oldColor;
+            Text.Font = oldFont;
 
-            if (isWriting && writingIndicatorWidth > 0f)
+            if (hasStatus && statusColumnWidth > 0f)
             {
-                float indicatorHeight = Mathf.Min(rect.height, Mathf.Max(0f, style.statusBadgeHeight));
-                Rect writingIndicatorRect = new Rect(
-                    rect.xMax - writingIndicatorWidth - 2f,
-                    rect.y + (rect.height - indicatorHeight) * 0.5f,
-                    writingIndicatorWidth,
-                    indicatorHeight);
-                DiaryJournalView.DrawWritingIndicator(writingIndicatorRect);
-                TooltipHandler.TipRegion(writingIndicatorRect, "PawnDiary.Command.WritingTip".Translate());
+                float badgeWidth = Mathf.Max(20f, statusColumnWidth - 4f);
+                float badgeHeight = Mathf.Min(18f, Mathf.Max(14f, rect.height / 3f - 3f));
+                float badgeX = rect.xMax - badgeWidth - 2f;
+                if (status.HasNewPages)
+                {
+                    DiaryStatusOverlay.DrawUnreadCountBadge(
+                        new Rect(badgeX, rect.y + 2f, badgeWidth, badgeHeight),
+                        status.unacknowledgedCount);
+                }
+                if (status.IsWriting)
+                {
+                    DiaryStatusOverlay.DrawWritingBadge(
+                        new Rect(
+                            badgeX,
+                            rect.y + (rect.height - badgeHeight) * 0.5f,
+                            badgeWidth,
+                            badgeHeight));
+                }
+                if (status.HasFailures)
+                {
+                    DiaryStatusOverlay.DrawFailureBadge(
+                        new Rect(badgeX, rect.yMax - badgeHeight - 2f, badgeWidth, badgeHeight),
+                        status.failedCount);
+                }
             }
 
             if (Text.CalcSize(row.Subject.DisplayName).x > nameRect.width)
             {
                 TooltipHandler.TipRegion(nameRect, row.Subject.DisplayName);
             }
+            GameFont tooltipMeasureFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            if (Text.CalcSize(countLabel).x > countRect.width)
+            {
+                TooltipHandler.TipRegion(countRect, countLabel);
+            }
+            if (Text.CalcSize(dateLabel).x > dateRect.width)
+            {
+                TooltipHandler.TipRegion(dateRect, dateLabel);
+            }
+            Text.Font = tooltipMeasureFont;
 
             if (Widgets.ButtonInvisible(rect, false))
             {

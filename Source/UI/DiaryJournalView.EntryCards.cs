@@ -43,6 +43,11 @@ namespace PawnDiary
                 return entry.DisplayText;
             }
 
+            if (IsFailed(entry) && string.IsNullOrWhiteSpace(entry.GeneratedText))
+            {
+                return "PawnDiary.Tab.GenerationFailedBody".Translate();
+            }
+
             return entry.GeneratedText;
         }
 
@@ -543,6 +548,12 @@ namespace PawnDiary
             return entry != null && entry.LlmStatus == DiaryEvent.PendingStatus && !entry.ArchivedGenerationStale;
         }
 
+        /// <summary>True when the most recent main-page generation attempt failed.</summary>
+        private static bool IsFailed(DiaryEntryView entry)
+        {
+            return entry != null && DiaryEvent.RoleEquals(entry.LlmStatus, DiaryEvent.FailedStatus);
+        }
+
         /// <summary>
         /// True for archived pending entries that are no longer in the hot retry/title/orphan scan
         /// window. They render as failed archive fallbacks, not active writing jobs.
@@ -896,8 +907,15 @@ namespace PawnDiary
         /// </summary>
         private static Color EntryAccentColor(DiaryEntryView entry)
         {
-            return entry == null
-                ? UiStyle.DefaultCueColor
+            if (entry == null)
+            {
+                return UiStyle.DefaultCueColor;
+            }
+
+            // A failed retry may still have older generated text, so the red spine remains the compact,
+            // always-visible indication even when the body can continue showing that previous page.
+            return IsFailed(entry)
+                ? UiStyle.DevDangerButtonColor
                 : ColorForCue(entry.ColorCue, entry.Important);
         }
 
@@ -1124,6 +1142,10 @@ namespace PawnDiary
             if (IsArchivedGenerationFallback(entry))
             {
                 note = "PawnDiary.Tab.ArchivedGenerationFailedFooter".Translate();
+            }
+            else if (IsFailed(entry))
+            {
+                note = "PawnDiary.Tab.GenerationFailedFooter".Translate();
             }
             else
             {

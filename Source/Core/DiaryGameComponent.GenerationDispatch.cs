@@ -430,8 +430,12 @@ namespace PawnDiary
             PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
             if (diary != null)
             {
+                if (diary.unreadGeneratedEntryCount < int.MaxValue)
+                {
+                    diary.unreadGeneratedEntryCount++;
+                }
                 diary.hasUnreadGeneratedEntry = true;
-                SetCachedCommandUnreadFlag(pawnId, true);
+                SetCachedCommandUnreadCount(pawnId, diary.unreadGeneratedEntryCount);
             }
         }
 

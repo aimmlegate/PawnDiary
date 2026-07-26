@@ -149,9 +149,8 @@ namespace PawnDiary
         private Dictionary<int, string> generatedSpeechPlayLogTexts = new Dictionary<int, string>();
         private List<int> generatedSpeechPlayLogTextKeys;
         private List<string> generatedSpeechPlayLogTextValues;
-        // Transient closed-window badge cache keyed by pawn id. Inspect-tab/gizmo drawing reads only
-        // this dictionary, never the saved diary lists, so selecting a pawn with thousands of pages
-        // cannot start a diary-record lookup or history scan.
+        // Transient last-index/unread cache keyed by pawn id. Live GUI badges combine its unread count
+        // with the separately versioned activity snapshot, so repeated drawing never rescans history.
         private readonly Dictionary<string, DiaryCommandStatus> commandStatusByPawnId = new Dictionary<string, DiaryCommandStatus>();
 
         // How often (in ticks) GameComponentTick rescans saved events to (re)queue any pending

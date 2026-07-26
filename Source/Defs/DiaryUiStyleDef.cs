@@ -107,7 +107,7 @@ namespace PawnDiary
     }
 
     /// <summary>
-    /// Display-only style Def for the Diary inspector tab.
+    /// Display-only style Def shared by the Diary tab, standalone reader, and status overlays.
     /// </summary>
     public class DiaryUiStyleDef : Def
     {
@@ -125,8 +125,11 @@ namespace PawnDiary
         public float readerCompactThreshold = 1360f;
         public float readerPaneGap = 12f;
         public float readerBookWidth = 850f;
-        public float readerPawnRowHeight = 48f;
-        public float readerPortraitSize = 40f;
+        public float readerDirectorySearchLabelHeight = 22f;
+        public float readerDirectoryControlHeight = 28f;
+        public float readerDirectoryControlGap = 4f;
+        public float readerPawnRowHeight = 68f;
+        public float readerPortraitSize = 44f;
         public float readerMaxWidth = 1460f;
         public float readerMaxHeight = 940f;
         public float readerMinWidth = 760f;
@@ -152,6 +155,7 @@ namespace PawnDiary
         public float statusBadgeWidth = 34f;
         public float statusBadgeHeight = 24f;
         public float statusBadgeRightPadding = 24f;
+        public float statusUnreadUnderlineAlpha = 0.72f;
         public float entryGap = 8f;
         public int autoExpandedEntryCount = 3;
         public float collapsedEntryChromePadding = 2f;

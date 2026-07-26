@@ -1,4 +1,4 @@
-﻿// Dev controls and per-pawn setting helpers for the Diary tab. Split from ITab_Pawn_Diary.cs with no behavior change.
+﻿// Player actions, dev controls, and per-pawn setting helpers for the Diary tab.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +13,72 @@ namespace PawnDiary
     /// </summary>
     internal sealed partial class DiaryJournalView
     {
+        /// <summary>
+        /// Draws the normal-play header action that exports the current subject's complete diary as
+        /// Markdown. The same quiet/hover treatment as the neighboring writing-style icon keeps the
+        /// action readable without competing with the pawn's name.
+        /// </summary>
+        private static void DrawMarkdownExportHeaderIcon(
+            Rect rect,
+            DiaryReaderSubject subject,
+            DiaryGameComponent component)
+        {
+            string displayName = string.IsNullOrWhiteSpace(subject.DisplayName)
+                ? "PawnDiary.Reader.UnknownPawn".Translate().ToString()
+                : subject.DisplayName;
+            Color baseColor = new Color(1f, 1f, 1f, Mathf.Clamp01(WritingStyleIconAlpha));
+            Color hoverColor = new Color(1f, 1f, 1f, Mathf.Clamp01(WritingStyleIconHoverAlpha));
+            if (Widgets.ButtonImage(rect, DiaryButtonTextures.Export, baseColor, hoverColor))
+            {
+                HandleMarkdownExport(subject, component);
+            }
+
+            TooltipHandler.TipRegion(
+                rect,
+                "PawnDiary.Export.ButtonTip".Translate(displayName).Resolve());
+        }
+
+        /// <summary>
+        /// Runs the per-pawn export on the main thread, reports a normal player message, and copies the
+        /// resulting path so the file is easy to find without exposing OS-specific folder controls.
+        /// </summary>
+        private static void HandleMarkdownExport(
+            DiaryReaderSubject subject,
+            DiaryGameComponent component)
+        {
+            if (!subject.IsValid || component == null)
+            {
+                return;
+            }
+
+            string displayName = string.IsNullOrWhiteSpace(subject.DisplayName)
+                ? "PawnDiary.Reader.UnknownPawn".Translate().ToString()
+                : subject.DisplayName;
+            string filePath;
+            string error;
+            int pageCount;
+            if (component.TryExportPawnDiaryMarkdown(
+                subject.PawnId,
+                displayName,
+                subject.Alive,
+                out filePath,
+                out pageCount,
+                out error))
+            {
+                GUIUtility.systemCopyBuffer = filePath;
+                Messages.Message(
+                    "PawnDiary.Export.Done".Translate(displayName, pageCount, filePath),
+                    MessageTypeDefOf.PositiveEvent,
+                    false);
+                return;
+            }
+
+            Messages.Message(
+                "PawnDiary.Export.Failed".Translate(displayName, error),
+                MessageTypeDefOf.RejectInput,
+                false);
+        }
+
         /// <summary>
         /// Returns the height needed for per-pawn dev controls above the diary list. The player-facing
         /// Writing style opener lives in the header icon, so normal play reserves no extra row.
@@ -425,23 +491,6 @@ namespace PawnDiary
         }
 
 
-
-        /// <summary>
-        /// Draws compact animated dots while hidden pending entries are being written. The standalone
-        /// reader also reuses this indicator beside any colonist whose diary is currently generating.
-        /// </summary>
-        internal static void DrawWritingIndicator(Rect rect)
-        {
-
-            DrawWritingDots(
-
-                new Rect(rect.x + rect.width * 0.5f - 10f, rect.y + rect.height * 0.5f - 2f, 24f, 8f),
-
-                new Color(0.78f, 0.95f, 0.78f),
-
-                0f);
-
-        }
 
         /// <summary>
         /// Shows while the Diary tab is indexing a very large saved history over several frames.

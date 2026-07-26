@@ -19,12 +19,16 @@
   <PawnDiaryTabLabel>Diary</PawnDiaryTabLabel>
   <PawnDiary.Command.OpenDiaryDesc>Open or close this pawn's diary.</PawnDiary.Command.OpenDiaryDesc>
   <PawnDiary.Command.NewPagesTip>New diary pages are waiting.</PawnDiary.Command.NewPagesTip>
-  <PawnDiary.Command.WritingTip>Diary page is being written.</PawnDiary.Command.WritingTip>
+  <PawnDiary.Command.WritingTip>Diary pages are being written.</PawnDiary.Command.WritingTip>
 
   <!-- ===== Diary tab UI ===== -->
   <PawnDiary.Tab.DiaryHeader>{0}'s Diary</PawnDiary.Tab.DiaryHeader>
   <PawnDiary.Tab.NoEntries>No pages have been written yet.</PawnDiary.Tab.NoEntries>
   <PawnDiary.Tab.NoGeneratedEntries>No finished pages yet.</PawnDiary.Tab.NoGeneratedEntries>
+  <PawnDiary.Tab.NoEntriesAction>No diary events are available for this pawn yet. Keep playing; noteworthy events will be recorded here.</PawnDiary.Tab.NoEntriesAction>
+  <PawnDiary.Tab.NoGeneratedEntriesAction>No finished pages yet. Pages appear after noteworthy events once an LLM connection is configured in Pawn Diary's mod settings.</PawnDiary.Tab.NoGeneratedEntriesAction>
+  <PawnDiary.Tab.NoEntriesPending>Page requests currently being written: {0}. They will appear here when ready.</PawnDiary.Tab.NoEntriesPending>
+  <PawnDiary.Tab.NoEntriesGenerationDisabled>Diary generation is paused for this pawn. Re-enable it before future events can become finished pages.</PawnDiary.Tab.NoEntriesGenerationDisabled>
   <PawnDiary.Tab.LoadingHistory>Loading diary pages...</PawnDiary.Tab.LoadingHistory>
   <PawnDiary.Tab.LoadingHistoryProgress>Loading diary pages... {0}/{1}</PawnDiary.Tab.LoadingHistoryProgress>
   <PawnDiary.Tab.GenerateForPawn>Write diary pages for this pawn</PawnDiary.Tab.GenerateForPawn>
@@ -263,7 +267,7 @@
   <PawnDiary.Tab.FilterNoTags>No tags in this year.</PawnDiary.Tab.FilterNoTags>
   <PawnDiary.Tab.FilterClear>Clear</PawnDiary.Tab.FilterClear>
   <PawnDiary.Tab.NoEntriesMatchFilters>No pages match the current filters. Clear the filters in the filters panel to see the whole year.</PawnDiary.Tab.NoEntriesMatchFilters>
-  <PawnDiary.Tab.NoEntriesMatchSearch>No pages match the search and selected filters in this year.</PawnDiary.Tab.NoEntriesMatchSearch>
+  <PawnDiary.Tab.NoEntriesMatchSearch>No pages match the search and selected filters in this year. Clear or broaden the search to see more pages.</PawnDiary.Tab.NoEntriesMatchSearch>
   <PawnDiary.Tab.FilterDevHeader>Dev tools</PawnDiary.Tab.FilterDevHeader>
   <!-- Header toggle button that shows/hides the right-hand filter panel. -->
   <PawnDiary.Tab.ShowFilterPanel>Show the filters panel.</PawnDiary.Tab.ShowFilterPanel>
@@ -274,6 +278,8 @@
   <PawnDiary.Tab.ArchivedGenerationFallback>You see that: {0}</PawnDiary.Tab.ArchivedGenerationFallback>
   <PawnDiary.Tab.ArchivedGenerationFallbackUnknown>something happened, but the prompt details were not saved</PawnDiary.Tab.ArchivedGenerationFallbackUnknown>
   <PawnDiary.Tab.ArchivedGenerationFailedFooter>failed to generate</PawnDiary.Tab.ArchivedGenerationFailedFooter>
+  <PawnDiary.Tab.GenerationFailedBody>Writing this page failed. Check the LLM connection in Pawn Diary's mod settings, then click the retry arrow below.</PawnDiary.Tab.GenerationFailedBody>
+  <PawnDiary.Tab.GenerationFailedFooter>writing failed — retry available</PawnDiary.Tab.GenerationFailedFooter>
   <PawnDiary.Tab.ExternalSourceFooter>external source: {0}</PawnDiary.Tab.ExternalSourceFooter>
   <PawnDiary.Tab.ExternalSourceWithFooterNote>external source: {0} | {1}</PawnDiary.Tab.ExternalSourceWithFooterNote>
   <PawnDiary.Persona.DefaultLabel>default</PawnDiary.Persona.DefaultLabel>
@@ -284,6 +290,9 @@
   <PawnDiary.Status.GenerationFailed>writing failed</PawnDiary.Status.GenerationFailed>
   <PawnDiary.Status.Skipped>writing skipped</PawnDiary.Status.Skipped>
   <PawnDiary.Status.PromptOnly>prompt captured</PawnDiary.Status.PromptOnly>
+  <PawnDiary.Status.UnreadPagesTip>Unread diary pages are waiting.</PawnDiary.Status.UnreadPagesTip>
+  <PawnDiary.Status.UnreadCountTip>Unread pages: {0}.</PawnDiary.Status.UnreadCountTip>
+  <PawnDiary.Status.FailuresTip>Failed page requests: {0}. Open the affected pawn's diary and use the retry arrow.</PawnDiary.Status.FailuresTip>
   <!-- Dev-only LLM debug block field labels (shown in the diary tab when debug info is on). -->
   <PawnDiary.Debug.Header>LLM debug</PawnDiary.Debug.Header>
   <PawnDiary.Debug.Event>Event</PawnDiary.Debug.Event>
@@ -377,11 +386,26 @@
   <PawnDiary.Settings.UseDiaryReaderWindowTip>Alternative reading mode: diaries open in a large three-pane window (pawn list, journal, filters) opened from a button on the bottom bar. The inspect tab and the pawn's Diary button are hidden while this is on.</PawnDiary.Settings.UseDiaryReaderWindowTip>
   <PawnDiary.Reader.LivingPawnsHeader>Colonists</PawnDiary.Reader.LivingPawnsHeader>
   <PawnDiary.Reader.DepartedPawnsHeader>Dead and departed</PawnDiary.Reader.DepartedPawnsHeader>
+  <PawnDiary.Reader.AllPawnsHeader>Pawns</PawnDiary.Reader.AllPawnsHeader>
+  <PawnDiary.Reader.SearchLabel>Search pawns</PawnDiary.Reader.SearchLabel>
+  <PawnDiary.Reader.SearchTip>Search the directory by pawn name.</PawnDiary.Reader.SearchTip>
+  <PawnDiary.Reader.ClearSearchTip>Clear the pawn search.</PawnDiary.Reader.ClearSearchTip>
+  <PawnDiary.Reader.SortButton>Sort: {0}</PawnDiary.Reader.SortButton>
+  <PawnDiary.Reader.SortTip>Choose how pawn rows are ordered.</PawnDiary.Reader.SortTip>
+  <PawnDiary.Reader.SortNewest>Newest page</PawnDiary.Reader.SortNewest>
+  <PawnDiary.Reader.SortUnread>Unread pages</PawnDiary.Reader.SortUnread>
+  <PawnDiary.Reader.SortName>Name</PawnDiary.Reader.SortName>
+  <PawnDiary.Reader.SortLivingDeparted>Living / departed</PawnDiary.Reader.SortLivingDeparted>
   <PawnDiary.Reader.ShowDeadPawns>Show dead and departed</PawnDiary.Reader.ShowDeadPawns>
   <PawnDiary.Reader.ShowDeadPawnsTip>Include pawns who died or left the colony but still have diary pages.</PawnDiary.Reader.ShowDeadPawnsTip>
-  <PawnDiary.Reader.NoDiaries>No diaries yet.</PawnDiary.Reader.NoDiaries>
+  <PawnDiary.Reader.NoDiaries>Diary data is unavailable. Load or start a game, then reopen the reader.</PawnDiary.Reader.NoDiaries>
+  <PawnDiary.Reader.NoPawns>No eligible pawns yet. Recruit a colonist; noteworthy events will create their first diary pages.</PawnDiary.Reader.NoPawns>
+  <PawnDiary.Reader.NoSearchMatches>No pawns match “{0}”. Clear the search or include dead and departed pawns.</PawnDiary.Reader.NoSearchMatches>
+  <PawnDiary.Reader.DepartedHidden>Only dead or departed diaries match. Enable “Show dead and departed” to list them.</PawnDiary.Reader.DepartedHidden>
   <PawnDiary.Reader.UnknownPawn>Unknown pawn</PawnDiary.Reader.UnknownPawn>
   <PawnDiary.Reader.PawnRowPages>{0} pages</PawnDiary.Reader.PawnRowPages>
+  <PawnDiary.Reader.PawnRowLastEntry>Last: {0}</PawnDiary.Reader.PawnRowLastEntry>
+  <PawnDiary.Reader.PawnRowNoFinishedEntry>No finished page yet</PawnDiary.Reader.PawnRowNoFinishedEntry>
   <PawnDiary.Reader.SelectPawnHint>Select a pawn on the left to read their diary.</PawnDiary.Reader.SelectPawnHint>
   <PawnDiary.Settings.AllowExternalIntegrations>Allow external mod integrations</PawnDiary.Settings.AllowExternalIntegrations>
   <PawnDiary.Settings.AllowExternalIntegrationsTip>When enabled, other mods can submit diary events, read public diary snapshots, and add compact pawn context lines through the public integration API.</PawnDiary.Settings.AllowExternalIntegrationsTip>
@@ -404,6 +428,15 @@
   <PawnDiary.Settings.ExportAllDiariesDone>Exported diary pages to {0}. Path copied to clipboard.</PawnDiary.Settings.ExportAllDiariesDone>
   <PawnDiary.Settings.ExportAllDiariesFailed>Diary export failed: {0}</PawnDiary.Settings.ExportAllDiariesFailed>
   <PawnDiary.Settings.ExportAllDiariesNoGame>Start or load a game before exporting diary pages.</PawnDiary.Settings.ExportAllDiariesNoGame>
+  <PawnDiary.Export.ButtonTip>Export {0}'s complete diary as a formatted Markdown file.</PawnDiary.Export.ButtonTip>
+  <PawnDiary.Export.Done>Exported {0}'s diary ({1} pages) to {2}. Path copied to clipboard.</PawnDiary.Export.Done>
+  <PawnDiary.Export.Failed>Could not export {0}'s diary: {1}</PawnDiary.Export.Failed>
+  <PawnDiary.Export.InvalidSubject>Could not identify the pawn whose diary should be exported.</PawnDiary.Export.InvalidSubject>
+  <PawnDiary.Export.MarkdownTitle>{0}'s Diary</PawnDiary.Export.MarkdownTitle>
+  <PawnDiary.Export.DateLabel>Date</PawnDiary.Export.DateLabel>
+  <PawnDiary.Export.CategoryLabel>Category</PawnDiary.Export.CategoryLabel>
+  <PawnDiary.Export.UntitledEntry>Untitled entry</PawnDiary.Export.UntitledEntry>
+  <PawnDiary.Export.EmptyDiary>No completed diary pages have been recorded yet.</PawnDiary.Export.EmptyDiary>
   <PawnDiary.Settings.Temperature>LLM temperature: {0}</PawnDiary.Settings.Temperature>
   <PawnDiary.Settings.TemperatureHelp>Controls model randomness for diary and title requests. Lower values are steadier and more literal; higher values are more varied and atmospheric but can drift from supplied facts.</PawnDiary.Settings.TemperatureHelp>
   <PawnDiary.Settings.TimeoutSeconds>Request timeout: {0}s</PawnDiary.Settings.TimeoutSeconds>

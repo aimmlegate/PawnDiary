@@ -17,6 +17,8 @@ namespace PawnDiary
     {
         public DiaryReaderSubject Subject;
         public int EntryCount;
+        public bool HasLatestEntry;
+        public string LatestEntryDate;
         public bool Departed;
     }
 
@@ -38,10 +40,15 @@ namespace PawnDiary
             new Dictionary<string, DiaryReaderListRow>(StringComparer.Ordinal);
         private readonly List<DiaryReaderPawnRow> rows = new List<DiaryReaderPawnRow>();
 
-        private int departedDividerIndex;
+        private int eligibleRowCount;
+        private bool groupedByDeparture;
         private int lastDataCount = -1;
+        private int lastDiaryStateVersion = -1;
+        private int lastUnreadStateVersion = -1;
         private int lastBuildTick = int.MinValue;
         private float lastBuildRealtime = -1f;
+        private DiaryReaderSortMode lastSortMode = DiaryReaderSortMode.NewestPage;
+        private string lastSearchQuery = string.Empty;
         private Game cachedGame;
         private DiaryGameComponent cachedComponent;
 
@@ -50,18 +57,25 @@ namespace PawnDiary
             get { return rows; }
         }
 
-        public int DepartedDividerIndex
+        public int EligibleRowCount
         {
-            get { return departedDividerIndex; }
+            get { return eligibleRowCount; }
+        }
+
+        public bool GroupedByDeparture
+        {
+            get { return groupedByDeparture; }
         }
 
         /// <summary>
-        /// Rebuilds when the game/component session changes, saved-data count changes, or the
-        /// bounded world-resolution cadence expires.
+        /// Rebuilds when the session, saved data, activity/unread state, or search/sort controls change,
+        /// and periodically refreshes live pawn resolution on a bounded cadence.
         /// </summary>
         public void RefreshIfNeeded(
             DiaryGameComponent component,
             string unknownName,
+            DiaryReaderSortMode sortMode,
+            string searchQuery,
             bool force)
         {
             Game game = Current.Game;
@@ -84,21 +98,37 @@ namespace PawnDiary
             }
 
             int dataCount = component.DiaryReaderDirectoryDataCount;
+            int diaryStateVersion = DiaryStateVersion.Current;
+            int unreadStateVersion = component.DiaryReaderUnreadStateVersion;
             int nowTick = Find.TickManager?.TicksGame ?? 0;
             float nowRealtime = Time.realtimeSinceStartup;
             bool dataChanged = dataCount != lastDataCount;
+            bool stateChanged = diaryStateVersion != lastDiaryStateVersion
+                || unreadStateVersion != lastUnreadStateVersion;
+            string normalizedSearch = searchQuery ?? string.Empty;
+            bool controlsChanged = sortMode != lastSortMode
+                || !string.Equals(normalizedSearch, lastSearchQuery, StringComparison.Ordinal);
             bool tickElapsed = lastBuildTick == int.MinValue || nowTick - lastBuildTick >= RefreshTicks;
             bool realtimeElapsed = lastBuildRealtime < 0f
                 || nowRealtime - lastBuildRealtime >= RefreshRealtimeSeconds;
-            if (!force && !sessionChanged && !dataChanged && !(tickElapsed && realtimeElapsed))
+            if (!force
+                && !sessionChanged
+                && !dataChanged
+                && !stateChanged
+                && !controlsChanged
+                && !(tickElapsed && realtimeElapsed))
             {
                 return;
             }
 
-            Rebuild(component, unknownName);
+            Rebuild(component, unknownName, sortMode, normalizedSearch);
             lastDataCount = dataCount;
+            lastDiaryStateVersion = diaryStateVersion;
+            lastUnreadStateVersion = unreadStateVersion;
             lastBuildTick = nowTick;
             lastBuildRealtime = nowRealtime;
+            lastSortMode = sortMode;
+            lastSearchQuery = normalizedSearch;
         }
 
         private void ResetForSession(Game game, DiaryGameComponent component)
@@ -110,13 +140,22 @@ namespace PawnDiary
             currentLivingColonistIds.Clear();
             policyRowsByPawnId.Clear();
             rows.Clear();
-            departedDividerIndex = 0;
+            eligibleRowCount = 0;
+            groupedByDeparture = false;
             lastDataCount = -1;
+            lastDiaryStateVersion = -1;
+            lastUnreadStateVersion = -1;
             lastBuildTick = int.MinValue;
             lastBuildRealtime = -1f;
+            lastSortMode = DiaryReaderSortMode.NewestPage;
+            lastSearchQuery = string.Empty;
         }
 
-        private void Rebuild(DiaryGameComponent component, string unknownName)
+        private void Rebuild(
+            DiaryGameComponent component,
+            string unknownName,
+            DiaryReaderSortMode sortMode,
+            string searchQuery)
         {
             resolvedPawns.Clear();
             CollectResolvedPawns();
@@ -153,6 +192,10 @@ namespace PawnDiary
                 }
 
                 row.entryCount = info.EntryCount;
+                row.unreadCount = info.unreadCount;
+                row.hasLatestEntry = info.hasLatestEntry;
+                row.latestEntryTick = info.latestEntryTick;
+                row.latestEntryDate = info.latestEntryDate;
                 if (string.IsNullOrWhiteSpace(row.name))
                 {
                     row.name = info.cachedName;
@@ -161,9 +204,12 @@ namespace PawnDiary
 
             DiaryReaderListResult ordered = DiaryReaderListPolicy.Order(
                 policyRowsByPawnId.Values,
-                unknownName);
+                unknownName,
+                sortMode,
+                searchQuery);
             rows.Clear();
-            departedDividerIndex = ordered.departedDividerIndex;
+            eligibleRowCount = ordered.eligibleRowCount;
+            groupedByDeparture = ordered.groupedByDeparture;
             for (int i = 0; i < ordered.rows.Count; i++)
             {
                 DiaryReaderListRow policyRow = ordered.rows[i];
@@ -179,7 +225,9 @@ namespace PawnDiary
                         Alive = policyRow.alive
                     },
                     EntryCount = policyRow.entryCount,
-                    Departed = i >= departedDividerIndex
+                    HasLatestEntry = policyRow.hasLatestEntry,
+                    LatestEntryDate = policyRow.latestEntryDate ?? string.Empty,
+                    Departed = DiaryReaderListPolicy.IsDeparted(policyRow)
                 });
             }
         }

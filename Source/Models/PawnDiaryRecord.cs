@@ -62,13 +62,18 @@ namespace PawnDiary
         // Per-pawn toggle: when false, this pawn is skipped during diary generation.
         public bool diaryGenerationEnabled = true;
 
-        // Legacy unread-count baseline from older saves. Current builds use hasUnreadGeneratedEntry
-        // below so the inspect command never has to count historical pages during pawn selection.
+        // Legacy completed-page acknowledgement baseline retained for save compatibility. Current
+        // badges use the exact unread counter below and never derive unread state by scanning history.
         public int acknowledgedGeneratedEntryCount;
 
-        // Cheap badge flag: set when a new main diary page finishes generation, cleared when this
-        // pawn's Diary tab opens. This avoids scanning or counting saved entries just to draw a gizmo.
+        // Compatibility badge flag mirrored from unreadGeneratedEntryCount. Older builds and saves
+        // knew only this one-bit value, so it remains serialized during the additive count migration.
         public bool hasUnreadGeneratedEntry;
+
+        // Exact unread-page count used by the reader directory and global main-button badge. The older
+        // boolean above remains saved for compatibility; old saves with only that flag migrate to one
+        // unread page, while new completions increment this count until the diary is opened.
+        public int unreadGeneratedEntryCount;
 
         // Ordered list of DiaryEvent IDs this pawn appears in.
         public List<string> eventIds = new List<string>();
@@ -125,6 +130,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref diaryGenerationEnabled, "diaryGenerationEnabled", true);
             Scribe_Values.Look(ref acknowledgedGeneratedEntryCount, "acknowledgedGeneratedEntryCount", -1);
             Scribe_Values.Look(ref hasUnreadGeneratedEntry, "hasUnreadGeneratedEntry", false);
+            Scribe_Values.Look(ref unreadGeneratedEntryCount, "unreadGeneratedEntryCount", 0);
             Scribe_Collections.Look(ref eventIds, "eventIds", LookMode.Value);
             Scribe_Collections.Look(ref favoriteEntryKeys, "favoriteEntryKeys", LookMode.Value);
             Scribe_Deep.Look(ref progressionState, "progressionState");
@@ -182,6 +188,18 @@ namespace PawnDiary
                 {
                     eventIds = new List<string>();
                 }
+
+                // Additive migration: the legacy flag could only say "one or more." Preserve that
+                // information as a minimum count of one, then keep both fields in sync for older builds.
+                if (unreadGeneratedEntryCount < 0)
+                {
+                    unreadGeneratedEntryCount = 0;
+                }
+                if (hasUnreadGeneratedEntry && unreadGeneratedEntryCount == 0)
+                {
+                    unreadGeneratedEntryCount = 1;
+                }
+                hasUnreadGeneratedEntry = unreadGeneratedEntryCount > 0;
 
                 // A hand-edited/interrupted save can contain duplicates, blanks, or an extreme list.
                 // Normalize through the pure O(n) policy so loading remains bounded before the UI ever

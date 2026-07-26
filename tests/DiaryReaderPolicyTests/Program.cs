@@ -17,6 +17,11 @@ namespace DiaryReaderPolicyTests
             TestLivingNonColonistIsDeparted();
             TestOffRosterPlayerPawnIsExcludedWithoutPages();
             TestStablePawnIdTiebreak();
+            TestSearchMatchesPawnNames();
+            TestSortsByNewestPage();
+            TestSortsByUnreadCount();
+            TestSortsByNameWithoutStatusPartition();
+            TestDirectoryEmptyReasons();
             TestResponsiveWindowGeometry();
 
             Console.WriteLine("DiaryReaderPolicyTests passed: " + assertions + " assertions.");
@@ -102,6 +107,100 @@ namespace DiaryReaderPolicyTests
             Equal("pawn-z", result.rows[1].pawnId, "pawn ID tiebreak is stable");
         }
 
+        private static void TestSearchMatchesPawnNames()
+        {
+            DiaryReaderListResult result = DiaryReaderListPolicy.Order(
+                new[]
+                {
+                    Row("ada", "Ada Lovelace", true, true, 2),
+                    Row("bea", "Beatrice", true, true, 3)
+                },
+                "Unknown pawn",
+                DiaryReaderSortMode.Name,
+                "  LOVE ");
+
+            Equal(2, result.eligibleRowCount, "search keeps the pre-filter eligible count");
+            Equal(1, result.rows.Count, "search narrows rows by pawn name");
+            Equal("ada", result.rows[0].pawnId, "search is trimmed and case-insensitive");
+        }
+
+        private static void TestSortsByNewestPage()
+        {
+            DiaryReaderListResult result = DiaryReaderListPolicy.Order(
+                new[]
+                {
+                    Row("none", "No page", true, true, 0),
+                    Row("older", "Older", true, true, 1, latestEntryTick: 100, hasLatestEntry: true),
+                    Row("newer", "Newer", false, false, 2, latestEntryTick: 300, hasLatestEntry: true)
+                },
+                "Unknown pawn",
+                DiaryReaderSortMode.NewestPage,
+                string.Empty);
+
+            Equal("newer", result.rows[0].pawnId, "newest page sorts first across status groups");
+            Equal("older", result.rows[1].pawnId, "older page follows newest");
+            Equal("none", result.rows[2].pawnId, "pawn without a finished page sorts last");
+        }
+
+        private static void TestSortsByUnreadCount()
+        {
+            DiaryReaderListResult result = DiaryReaderListPolicy.Order(
+                new[]
+                {
+                    Row("read", "Read", true, true, 4, unreadCount: 0, latestEntryTick: 500, hasLatestEntry: true),
+                    Row("one", "One", true, true, 3, unreadCount: 1, latestEntryTick: 300, hasLatestEntry: true),
+                    Row("three", "Three", true, true, 2, unreadCount: 3, latestEntryTick: 100, hasLatestEntry: true)
+                },
+                "Unknown pawn",
+                DiaryReaderSortMode.UnreadCount,
+                string.Empty);
+
+            Equal("three", result.rows[0].pawnId, "largest unread count sorts first");
+            Equal("one", result.rows[1].pawnId, "smaller unread count follows");
+            Equal("read", result.rows[2].pawnId, "read pawn sorts after unread pawns");
+        }
+
+        private static void TestSortsByNameWithoutStatusPartition()
+        {
+            DiaryReaderListResult result = DiaryReaderListPolicy.Order(
+                new[]
+                {
+                    Row("living", "Zoe", true, true, 1),
+                    Row("departed", "Ada", false, false, 1)
+                },
+                "Unknown pawn",
+                DiaryReaderSortMode.Name,
+                string.Empty);
+
+            Equal(false, result.groupedByDeparture, "name mode does not claim grouped sections");
+            Equal("departed", result.rows[0].pawnId, "name mode may place departed pawn before living pawn");
+            Equal("living", result.rows[1].pawnId, "name mode orders the whole visible directory");
+        }
+
+        private static void TestDirectoryEmptyReasons()
+        {
+            Equal(
+                DiaryReaderDirectoryEmptyReason.None,
+                DiaryReaderEmptyStatePolicy.DirectoryReason(3, 2, 1, true, false),
+                "a visible result needs no empty state");
+            Equal(
+                DiaryReaderDirectoryEmptyReason.DepartedHidden,
+                DiaryReaderEmptyStatePolicy.DirectoryReason(3, 1, 0, true, false),
+                "a matching departed row explains the hidden partition");
+            Equal(
+                DiaryReaderDirectoryEmptyReason.SearchNoMatch,
+                DiaryReaderEmptyStatePolicy.DirectoryReason(3, 0, 0, true, true),
+                "an empty search result explains how to recover");
+            Equal(
+                DiaryReaderDirectoryEmptyReason.NoPawns,
+                DiaryReaderEmptyStatePolicy.DirectoryReason(0, 0, 0, false, false),
+                "an actually empty directory explains the onboarding state");
+            Equal(
+                DiaryReaderDirectoryEmptyReason.NoPawns,
+                DiaryReaderEmptyStatePolicy.DirectoryReason(0, 0, 0, true, false),
+                "a stale search cannot disguise an actually empty directory");
+        }
+
         private static void TestResponsiveWindowGeometry()
         {
             DiaryReaderWindowSize fullHd = DiaryReaderLayoutPolicy.WindowSize(
@@ -131,7 +230,10 @@ namespace DiaryReaderPolicyTests
             string name,
             bool alive,
             bool isCurrentColonist,
-            int entryCount)
+            int entryCount,
+            int unreadCount = 0,
+            int latestEntryTick = 0,
+            bool hasLatestEntry = false)
         {
             return new DiaryReaderListRow
             {
@@ -139,7 +241,10 @@ namespace DiaryReaderPolicyTests
                 name = name,
                 alive = alive,
                 isCurrentColonist = isCurrentColonist,
-                entryCount = entryCount
+                entryCount = entryCount,
+                unreadCount = unreadCount,
+                latestEntryTick = latestEntryTick,
+                hasLatestEntry = hasLatestEntry
             };
         }
 

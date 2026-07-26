@@ -8,11 +8,27 @@ namespace PawnDiary
 {
     public partial class DiaryGameComponent
     {
-        // The reader draws every pawn row several times per frame. Re-scan hot event references only
-        // when DiaryEvent setters bump the shared render-state version, then answer each row in O(1).
-        private readonly HashSet<string> readerWritingPawnIds =
-            new HashSet<string>(StringComparer.Ordinal);
-        private int readerWritingStateVersion = -1;
+        // One cached, render-ready activity row per diary subject. The bottom-menu button and reader
+        // directory draw several times per frame, so saved events are scanned only when their shared
+        // render-state version or structural count changes; all per-row reads after that are O(1).
+        private struct DiaryReaderActivity
+        {
+            public int pendingCount;
+            public int failedCount;
+            public bool hasLatestEntry;
+            public int latestEntryTick;
+            public string latestEntryDate;
+        }
+
+        private readonly Dictionary<string, DiaryReaderActivity> readerActivityByPawnId =
+            new Dictionary<string, DiaryReaderActivity>(StringComparer.Ordinal);
+        private int readerActivityStateVersion = -1;
+        private int readerActivityDataCount = -1;
+        private int readerGlobalPendingCount;
+        private int readerGlobalFailedCount;
+        // Unread acknowledgement does not mutate a DiaryEvent, so it has its own cheap change token.
+        // DiaryReaderPawnDirectory watches it in addition to DiaryStateVersion when unread sorting is on.
+        private int readerUnreadStateVersion;
 
         /// <summary>
         /// Compact saved-data row for one pawn known to diary storage.
@@ -23,6 +39,10 @@ namespace PawnDiary
             public string cachedName;
             public int hotEntryCount;
             public int archivedEntryCount;
+            public int unreadCount;
+            public bool hasLatestEntry;
+            public int latestEntryTick;
+            public string latestEntryDate;
 
             public int EntryCount
             {
@@ -38,32 +58,86 @@ namespace PawnDiary
             get { return (diaries?.Count ?? 0) + archive.Count; }
         }
 
-        /// <summary>
-        /// Returns whether this pawn has a main page or follow-up title currently being generated.
-        /// </summary>
-        internal bool IsDiaryWritingFor(string pawnId)
+        /// <summary>Unread-only change token for the throttled pawn-directory projection.</summary>
+        internal int DiaryReaderUnreadStateVersion
         {
-            if (string.IsNullOrWhiteSpace(pawnId))
-            {
-                return false;
-            }
-
-            RefreshReaderWritingPawnIds();
-            return readerWritingPawnIds.Contains(pawnId);
+            get { return readerUnreadStateVersion; }
         }
 
         /// <summary>
-        /// Rebuilds the standalone reader's pending-pawn snapshot after any rendered event state changes.
+        /// Returns the cached unread/pending/failure status for one reader subject.
         /// </summary>
-        private void RefreshReaderWritingPawnIds()
+        internal DiaryCommandStatus ReaderStatusForId(string pawnId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId))
+            {
+                return default(DiaryCommandStatus);
+            }
+
+            RefreshReaderActivity();
+            DiaryCommandStatus status;
+            commandStatusByPawnId.TryGetValue(pawnId, out status);
+            DiaryReaderActivity activity;
+            if (readerActivityByPawnId.TryGetValue(pawnId, out activity))
+            {
+                status.pendingCount = activity.pendingCount;
+                status.failedCount = activity.failedCount;
+            }
+            else
+            {
+                status.pendingCount = 0;
+                status.failedCount = 0;
+            }
+
+            return status;
+        }
+
+        /// <summary>
+        /// Aggregates the cached activity snapshot for the standalone Diary bottom-menu button.
+        /// </summary>
+        internal DiaryCommandStatus GlobalReaderStatus()
+        {
+            RefreshReaderActivity();
+            DiaryCommandStatus status = new DiaryCommandStatus
+            {
+                pendingCount = readerGlobalPendingCount,
+                failedCount = readerGlobalFailedCount
+            };
+
+            foreach (KeyValuePair<string, DiaryCommandStatus> pair in commandStatusByPawnId)
+            {
+                int unread = Math.Max(0, pair.Value.unacknowledgedCount);
+                status.unacknowledgedCount = unread > int.MaxValue - status.unacknowledgedCount
+                    ? int.MaxValue
+                    : status.unacknowledgedCount + unread;
+            }
+
+            return status;
+        }
+
+        /// <summary>Marks the exact-unread projection as changed without invalidating entry-card caches.</summary>
+        private void NotifyReaderUnreadStateChanged()
+        {
+            readerUnreadStateVersion++;
+        }
+
+        /// <summary>
+        /// Rebuilds pending/failure/latest-page metadata after rendered event state changes. Archive rows
+        /// participate only in latest-page metadata; archived failures are not retryable and therefore do
+        /// not leave a permanent global error badge.
+        /// </summary>
+        private void RefreshReaderActivity()
         {
             int stateVersion = DiaryStateVersion.Current;
-            if (readerWritingStateVersion == stateVersion)
+            int dataCount = DiaryReaderDirectoryDataCount;
+            if (readerActivityStateVersion == stateVersion && readerActivityDataCount == dataCount)
             {
                 return;
             }
 
-            readerWritingPawnIds.Clear();
+            readerActivityByPawnId.Clear();
+            readerGlobalPendingCount = 0;
+            readerGlobalFailedCount = 0;
             if (diaries != null)
             {
                 HashSet<string> activeEventIds = ActiveScanEventIds();
@@ -92,6 +166,7 @@ namespace PawnDiary
                         bool generating;
                         bool promptOnly;
                         bool titlePending;
+                        bool failed;
                         if (diaryEvent.TryGetTabStateForPawn(
                                 diary.pawnId,
                                 archivedForScans,
@@ -100,17 +175,66 @@ namespace PawnDiary
                                 out archivedGenerationStale,
                                 out generating,
                                 out promptOnly,
-                                out titlePending)
-                            && (generating || titlePending))
+                                out titlePending,
+                                out failed))
                         {
-                            readerWritingPawnIds.Add(diary.pawnId);
-                            break;
+                            DiaryReaderActivity activity;
+                            readerActivityByPawnId.TryGetValue(diary.pawnId, out activity);
+                            if (generating || titlePending)
+                            {
+                                activity.pendingCount++;
+                                readerGlobalPendingCount++;
+                            }
+                            if (failed)
+                            {
+                                activity.failedCount++;
+                                readerGlobalFailedCount++;
+                            }
+                            if (hasGeneratedText || archivedGenerationStale || failed)
+                            {
+                                UpdateLatestEntry(
+                                    ref activity,
+                                    diaryEvent.tick,
+                                    diaryEvent.date);
+                            }
+                            readerActivityByPawnId[diary.pawnId] = activity;
                         }
                     }
                 }
             }
 
-            readerWritingStateVersion = stateVersion;
+            IReadOnlyList<ArchivedDiaryEntry> archivedEntries = archive.AllEntries;
+            for (int i = 0; i < archivedEntries.Count; i++)
+            {
+                ArchivedDiaryEntry entry = archivedEntries[i];
+                if (entry == null || string.IsNullOrWhiteSpace(entry.pawnId))
+                {
+                    continue;
+                }
+
+                DiaryReaderActivity activity;
+                readerActivityByPawnId.TryGetValue(entry.pawnId, out activity);
+                UpdateLatestEntry(ref activity, entry.tick, entry.date);
+                readerActivityByPawnId[entry.pawnId] = activity;
+            }
+
+            readerActivityStateVersion = stateVersion;
+            readerActivityDataCount = dataCount;
+        }
+
+        private static void UpdateLatestEntry(
+            ref DiaryReaderActivity activity,
+            int tick,
+            string date)
+        {
+            if (activity.hasLatestEntry && tick <= activity.latestEntryTick)
+            {
+                return;
+            }
+
+            activity.hasLatestEntry = true;
+            activity.latestEntryTick = tick;
+            activity.latestEntryDate = date ?? string.Empty;
         }
 
         /// <summary>
@@ -124,6 +248,7 @@ namespace PawnDiary
             }
 
             output.Clear();
+            RefreshReaderActivity();
             HashSet<string> coveredPawnIds = new HashSet<string>(StringComparer.Ordinal);
             if (diaries != null)
             {
@@ -136,12 +261,19 @@ namespace PawnDiary
                         continue;
                     }
 
+                    DiaryReaderActivity activity;
+                    readerActivityByPawnId.TryGetValue(record.pawnId, out activity);
+                    DiaryCommandStatus status = ReaderStatusForId(record.pawnId);
                     output.Add(new DiaryReaderPawnInfo
                     {
                         pawnId = record.pawnId,
                         cachedName = record.pawnName ?? string.Empty,
                         hotEntryCount = record.eventIds?.Count ?? 0,
-                        archivedEntryCount = archive.CountForPawn(record.pawnId)
+                        archivedEntryCount = archive.CountForPawn(record.pawnId),
+                        unreadCount = status.unacknowledgedCount,
+                        hasLatestEntry = activity.hasLatestEntry,
+                        latestEntryTick = activity.latestEntryTick,
+                        latestEntryDate = activity.latestEntryDate ?? string.Empty
                     });
                 }
             }
@@ -155,12 +287,18 @@ namespace PawnDiary
                     continue;
                 }
 
+                DiaryReaderActivity activity;
+                readerActivityByPawnId.TryGetValue(pawnId, out activity);
                 output.Add(new DiaryReaderPawnInfo
                 {
                     pawnId = pawnId,
                     cachedName = string.Empty,
                     hotEntryCount = 0,
-                    archivedEntryCount = archive.CountForPawn(pawnId)
+                    archivedEntryCount = archive.CountForPawn(pawnId),
+                    unreadCount = ReaderStatusForId(pawnId).unacknowledgedCount,
+                    hasLatestEntry = activity.hasLatestEntry,
+                    latestEntryTick = activity.latestEntryTick,
+                    latestEntryDate = activity.latestEntryDate ?? string.Empty
                 });
             }
         }

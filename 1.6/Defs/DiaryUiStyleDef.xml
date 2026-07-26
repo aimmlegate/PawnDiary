@@ -35,8 +35,11 @@
     <readerCompactThreshold>1360</readerCompactThreshold>
     <readerPaneGap>12</readerPaneGap>
     <readerBookWidth>850</readerBookWidth>
-    <readerPawnRowHeight>48</readerPawnRowHeight>
-    <readerPortraitSize>40</readerPortraitSize>
+    <readerDirectorySearchLabelHeight>22</readerDirectorySearchLabelHeight>
+    <readerDirectoryControlHeight>28</readerDirectoryControlHeight>
+    <readerDirectoryControlGap>4</readerDirectoryControlGap>
+    <readerPawnRowHeight>68</readerPawnRowHeight>
+    <readerPortraitSize>44</readerPortraitSize>
     <readerMaxWidth>1460</readerMaxWidth>
     <readerMaxHeight>940</readerMaxHeight>
     <readerMinWidth>760</readerMinWidth>
@@ -59,6 +62,7 @@
     <statusBadgeWidth>34</statusBadgeWidth>
     <statusBadgeHeight>24</statusBadgeHeight>
     <statusBadgeRightPadding>24</statusBadgeRightPadding>
+    <statusUnreadUnderlineAlpha>0.72</statusUnreadUnderlineAlpha>
     <entryGap>8</entryGap>
     <autoExpandedEntryCount>3</autoExpandedEntryCount>
     <collapsedEntryChromePadding>2</collapsedEntryChromePadding>

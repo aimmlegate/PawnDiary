@@ -13,14 +13,15 @@ namespace PawnDiary
     public partial class DiaryGameComponent
     {
         /// <summary>
-        /// Compact status snapshot for the selected-pawn Diary command. It keeps the gizmo out of the
-        /// saved event internals while still showing whether pages are being written or newly ready.
+        /// Compact status snapshot for Diary UI badges. It keeps gizmos and the standalone menu button
+        /// out of saved event internals while exposing new, pending, and failed page counts.
         /// </summary>
         internal struct DiaryCommandStatus
         {
             public int completedCount;
             public int unacknowledgedCount;
             public int pendingCount;
+            public int failedCount;
 
             public bool HasNewPages
             {
@@ -30,6 +31,11 @@ namespace PawnDiary
             public bool IsWriting
             {
                 get { return pendingCount > 0; }
+            }
+
+            public bool HasFailures
+            {
+                get { return failedCount > 0; }
             }
         }
 
@@ -149,7 +155,13 @@ namespace PawnDiary
                     : candidate.diaryEvent?.ToViewFor(pawnId, candidate.archivedForScans);
             }
 
-            internal void Add(DiaryEvent diaryEvent, int year, bool archivedForScans, bool hasGeneratedText, bool generating, bool titlePending)
+            internal void Add(
+                DiaryEvent diaryEvent,
+                int year,
+                bool archivedForScans,
+                bool hasGeneratedText,
+                bool generating,
+                bool titlePending)
             {
                 AddCandidate(new Candidate
                 {
@@ -169,7 +181,12 @@ namespace PawnDiary
                 }, archivedEntry?.eventId, hasGeneratedText, false, false);
             }
 
-            private void AddCandidate(Candidate candidate, string eventId, bool hasGeneratedText, bool generating, bool titlePending)
+            private void AddCandidate(
+                Candidate candidate,
+                string eventId,
+                bool hasGeneratedText,
+                bool generating,
+                bool titlePending)
             {
                 int candidateIndex = candidates.Count;
                 candidates.Add(candidate);
@@ -469,6 +486,7 @@ namespace PawnDiary
                 bool generating;
                 bool promptOnly;
                 bool titlePending;
+                bool failed;
                 if (diaryEvent.TryGetTabStateForPawn(
                     pawnId,
                     archivedForScans,
@@ -477,7 +495,8 @@ namespace PawnDiary
                     out archivedGenerationStale,
                     out generating,
                     out promptOnly,
-                    out titlePending))
+                    out titlePending,
+                    out failed))
                 {
                     // Claim this exact POV key even when the hot event is currently hidden (e.g.
                     // mid-regeneration with "show generating" off): it stops a leftover archive row for
@@ -487,6 +506,7 @@ namespace PawnDiary
                     bool visible = showLlmDebugInfo
                         || hasGeneratedText
                         || archivedGenerationStale
+                        || failed
                         || (showGeneratingEntries && generating)
                         || (showPromptOnlyEntries && promptOnly);
                     if (visible)
@@ -681,13 +701,13 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns the current completed/pending counts for the selected-pawn Diary command badge.
-        /// Opening the Diary tab calls <see cref="AcknowledgeGeneratedEntriesFor"/>; this reader only
-        /// checks an in-memory per-pawn status cache, never saved diary records or event history.
+        /// Returns the last tab-index counts plus unread state kept in the selected-pawn command cache.
+        /// Opening the Diary tab calls <see cref="AcknowledgeGeneratedEntriesFor"/> to refresh these
+        /// counts and clear that pawn's unread state.
         /// </summary>
         /// <remarks>
-        /// Per-frame caller: the optional command overlay calls this from GUI draw. A
-        /// cache miss returns an empty status rather than touching saved diary state during selection.
+        /// This compatibility-facing snapshot never scans saved diary state. Live UI overlays that need
+        /// failures or closed-window activity use the separately versioned reader-activity projection.
         /// </remarks>
         internal DiaryCommandStatus CommandStatusFor(Pawn pawn)
         {
@@ -696,9 +716,11 @@ namespace PawnDiary
                 return default(DiaryCommandStatus);
             }
 
-            DiaryCommandStatus status = default(DiaryCommandStatus);
+            DiaryCommandStatus status;
             string pawnId = pawn.GetUniqueLoadID();
-            return commandStatusByPawnId.TryGetValue(pawnId, out status) ? status : default(DiaryCommandStatus);
+            return commandStatusByPawnId.TryGetValue(pawnId, out status)
+                ? status
+                : default(DiaryCommandStatus);
         }
 
         /// <summary>
@@ -728,12 +750,13 @@ namespace PawnDiary
                 return;
             }
 
-            SetCachedCommandStatus(pawnId, completedCount, pendingCount, false);
+            SetCachedCommandStatus(pawnId, completedCount, pendingCount, 0);
 
             PawnDiaryRecord diary = LookupDiaryByPawnId(pawnId);
             if (diary != null)
             {
                 diary.hasUnreadGeneratedEntry = false;
+                diary.unreadGeneratedEntryCount = 0;
             }
         }
 
@@ -763,12 +786,13 @@ namespace PawnDiary
             }
 
             diary.hasUnreadGeneratedEntry = false;
-            SetCachedCommandUnreadFlag(diary.pawnId, false);
+            diary.unreadGeneratedEntryCount = 0;
+            SetCachedCommandUnreadCount(diary.pawnId, 0);
         }
 
         /// <summary>
-        /// Rebuilds the closed-window badge cache after save load. This is the only place old saved
-        /// unread flags are copied into the selection-time dictionary.
+        /// Rebuilds the closed-window badge cache after save load. This copies exact unread counts and
+        /// the legacy one-bit fallback into the selection-time dictionary without scanning history.
         /// </summary>
         private void RebuildCommandStatusCache()
         {
@@ -781,16 +805,28 @@ namespace PawnDiary
             for (int i = 0; i < diaries.Count; i++)
             {
                 PawnDiaryRecord diary = diaries[i];
-                if (diary == null || string.IsNullOrWhiteSpace(diary.pawnId) || !diary.hasUnreadGeneratedEntry)
+                if (diary == null || string.IsNullOrWhiteSpace(diary.pawnId))
                 {
                     continue;
                 }
 
-                SetCachedCommandUnreadFlag(diary.pawnId, true);
+                int unreadCount = Math.Max(0, diary.unreadGeneratedEntryCount);
+                if (diary.hasUnreadGeneratedEntry && unreadCount == 0)
+                {
+                    unreadCount = 1;
+                }
+                if (unreadCount > 0)
+                {
+                    SetCachedCommandUnreadCount(diary.pawnId, unreadCount);
+                }
             }
         }
 
-        private void SetCachedCommandStatus(string pawnId, int completedCount, int pendingCount, bool hasUnread)
+        private void SetCachedCommandStatus(
+            string pawnId,
+            int completedCount,
+            int pendingCount,
+            int unreadCount)
         {
             if (string.IsNullOrWhiteSpace(pawnId))
             {
@@ -800,18 +836,11 @@ namespace PawnDiary
             DiaryCommandStatus status = default(DiaryCommandStatus);
             status.completedCount = Math.Max(0, completedCount);
             status.pendingCount = Math.Max(0, pendingCount);
-            status.unacknowledgedCount = hasUnread ? 1 : 0;
-
-            if (status.completedCount <= 0 && status.pendingCount <= 0 && status.unacknowledgedCount <= 0)
-            {
-                commandStatusByPawnId.Remove(pawnId);
-                return;
-            }
-
-            commandStatusByPawnId[pawnId] = status;
+            status.unacknowledgedCount = Math.Max(0, unreadCount);
+            StoreCachedCommandStatus(pawnId, status);
         }
 
-        private void SetCachedCommandUnreadFlag(string pawnId, bool hasUnread)
+        private void SetCachedCommandUnreadCount(string pawnId, int unreadCount)
         {
             if (string.IsNullOrWhiteSpace(pawnId))
             {
@@ -820,15 +849,38 @@ namespace PawnDiary
 
             DiaryCommandStatus status;
             commandStatusByPawnId.TryGetValue(pawnId, out status);
-            status.unacknowledgedCount = hasUnread ? 1 : 0;
+            status.unacknowledgedCount = Math.Max(0, unreadCount);
+            StoreCachedCommandStatus(pawnId, status);
+        }
 
-            if (status.completedCount <= 0 && status.pendingCount <= 0 && status.unacknowledgedCount <= 0)
+        // Kept as a narrow compatibility seam for the existing RimTest fixture and older reflection-
+        // based diagnostics. Runtime code uses the exact-count setter above.
+        private void SetCachedCommandUnreadFlag(string pawnId, bool hasUnread)
+        {
+            SetCachedCommandUnreadCount(pawnId, hasUnread ? 1 : 0);
+        }
+
+        private void StoreCachedCommandStatus(string pawnId, DiaryCommandStatus status)
+        {
+            DiaryCommandStatus previous;
+            commandStatusByPawnId.TryGetValue(pawnId, out previous);
+
+            if (status.completedCount <= 0
+                && status.pendingCount <= 0
+                && status.unacknowledgedCount <= 0
+                && status.failedCount <= 0)
             {
                 commandStatusByPawnId.Remove(pawnId);
-                return;
+            }
+            else
+            {
+                commandStatusByPawnId[pawnId] = status;
             }
 
-            commandStatusByPawnId[pawnId] = status;
+            if (previous.unacknowledgedCount != status.unacknowledgedCount)
+            {
+                NotifyReaderUnreadStateChanged();
+            }
         }
 
         /// <summary>

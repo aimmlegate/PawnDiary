@@ -30,6 +30,7 @@ namespace PawnDiary
         private static Texture2D filter;
         private static Texture2D favorite;
         private static Texture2D copy;
+        private static Texture2D export;
         private static Texture2D regenerate;
         private static Texture2D writingStyle;
         private static Texture2D seasonSpring;
@@ -45,6 +46,9 @@ namespace PawnDiary
 
         /// <summary>Stacked-pages glyph for the "Copy entry" action (cil-copy).</summary>
         public static Texture2D Copy => copy ?? (copy = Load("Copy", TexButton.Copy));
+
+        /// <summary>Downward transfer glyph for the per-pawn Markdown export (cil-data-transfer-down).</summary>
+        public static Texture2D Export => export ?? (export = Load("Export", TexButton.Copy));
 
         /// <summary>Circular-arrow glyph for the "Regenerate entry" action (cil-reload).</summary>
         public static Texture2D Regenerate => regenerate ?? (regenerate = Load("Regenerate", TexButton.Reload));

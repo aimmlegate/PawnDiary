@@ -32,10 +32,8 @@ namespace PawnDiary
         private float filterPanelContentHeight;
 
         // ---- Journal filter state ----
-        // The player's current filter selections. The pawn id lets the panel reset its state when the
-        // tab (a shared singleton) switches pawns, so one pawn's toggles/scroll don't bleed onto the
-        // next. The selections feed the journal through EnsureFilteredJournalEntries (FillTab).
-        private string filterPanelPawnId;
+        // The player's current filter selections. DiaryJournalView.PawnState snapshots and restores
+        // these when the shared renderer switches pawns.
         private bool filterFavoritesOnly;
         private readonly HashSet<string> filterActiveTags = new HashSet<string>();
         // Live query typed in the panel. It is session-only UI state and resets with the shown pawn,
@@ -224,9 +222,6 @@ namespace PawnDiary
             DiaryJournalVisibleEntriesCache entriesCache,
             List<DiaryEntryView> orderedForTags)
         {
-            // This lifecycle reset must run even when the panel is hidden. FillTab still applies active
-            // filters in that state, so returning first would leak the previous pawn's selections.
-            ResetFilterStateOnPawnChange(subject.PawnId);
             if (panelRect.width <= 1f || panelRect.height <= 1f)
             {
                 return;
@@ -441,27 +436,6 @@ namespace PawnDiary
             GUI.color = UiStyle.EntryDateColor;
             listing.Label(label);
             GUI.color = oldColor;
-        }
-
-        /// <summary>
-        /// Clears the journal filter selections and panel scroll when the shown pawn changes, so state
-        /// does not carry across pawns on this shared tab instance.
-        /// </summary>
-        private void ResetFilterStateOnPawnChange(string pawnId)
-        {
-            if (string.Equals(pawnId, filterPanelPawnId, StringComparison.Ordinal))
-            {
-                return;
-            }
-
-            filterPanelPawnId = pawnId;
-            filterFavoritesOnly = false;
-            filterActiveTags.Clear();
-            filterSearchQuery = string.Empty;
-            filterPanelScrollPosition = Vector2.zero;
-            filterTagInfoSource = null;
-            filterTagInfoSourceRevision = -1;
-            filterTagInfoYear = int.MinValue;
         }
 
         /// <summary>
