@@ -467,18 +467,19 @@ namespace PawnDiary.Ingestion
                 ModsConfig.IdeologyActive,
                 DiaryBeliefPolicy.Snapshot());
 
-            DiaryEvent raidEvent = sink.AddSoloEvent(pawn, null, raid.IncidentDefName, raid.CleanedLabel,
-                text, raid.Instruction, perPawnContext, beliefEvidence);
+            DiaryEvent raidEvent = raid.DelayGeneration
+                ? sink.AddDelayedSoloEvent(
+                    pawn, null, raid.IncidentDefName, raid.CleanedLabel, text, raid.Instruction,
+                    perPawnContext, beliefEvidence, raid.GenerationReadyTick)
+                : sink.AddSoloEvent(
+                    pawn, null, raid.IncidentDefName, raid.CleanedLabel, text, raid.Instruction,
+                    perPawnContext, beliefEvidence);
             if (raidEvent == null)
             {
                 return;
             }
 
-            if (raid.DelayGeneration)
-            {
-                sink.DelaySolo(raidEvent, DiaryEvent.InitiatorRole, raid.GenerationReadyTick);
-            }
-            else
+            if (!raid.DelayGeneration)
             {
                 sink.QueueSolo(raidEvent, DiaryEvent.InitiatorRole);
             }

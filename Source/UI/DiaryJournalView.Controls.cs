@@ -14,11 +14,11 @@ namespace PawnDiary
     internal sealed partial class DiaryJournalView
     {
         /// <summary>
-        /// Draws the filter-panel action that exports the current subject's applied reader view as
-        /// Markdown. It remains disabled until the selected year's entry list has finished loading.
+        /// Draws the filter-panel export glyph for the current subject's applied reader view. It remains
+        /// visibly disabled until the selected year's entry list has finished loading.
         /// </summary>
         private void DrawMarkdownExportButton(
-            Listing_Standard listing,
+            Rect rect,
             DiaryReaderSubject subject,
             DiaryGameComponent component,
             List<DiaryEntryView> orderedEntries,
@@ -26,17 +26,19 @@ namespace PawnDiary
             bool showLlmDebugInfo,
             bool exportReady)
         {
-            Rect rect = listing.GetRect(ControlLineHeight);
             string displayName = string.IsNullOrWhiteSpace(subject.DisplayName)
                 ? "PawnDiary.Reader.UnknownPawn".Translate().ToString()
                 : subject.DisplayName;
             bool active = exportReady && subject.IsValid && component != null;
-            if (Widgets.ButtonText(
+            float baseAlpha = active ? WritingStyleIconAlpha : WritingStyleIconAlpha * 0.4f;
+            float hoverAlpha = active ? WritingStyleIconHoverAlpha : baseAlpha;
+            bool clicked = Widgets.ButtonImage(
                 rect,
-                "PawnDiary.Export.Button".Translate(),
-                true,
-                true,
-                active))
+                DiaryButtonTextures.Export,
+                new Color(1f, 1f, 1f, Mathf.Clamp01(baseAlpha)),
+                new Color(1f, 1f, 1f, Mathf.Clamp01(hoverAlpha)),
+                active);
+            if (active && clicked)
             {
                 HandleMarkdownExport(
                     subject,

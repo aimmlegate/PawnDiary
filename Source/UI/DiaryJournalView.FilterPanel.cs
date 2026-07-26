@@ -352,8 +352,19 @@ namespace PawnDiary
 
             listing.Gap(8f);
             // Clear resets every filter selection, including live search; the journal re-filters on the
-            // next frame. There is deliberately no Apply/Search button: every edit applies immediately.
-            Rect clearRect = listing.GetRect(ControlLineHeight);
+            // next frame. The export glyph shares this action row and snapshots the already-applied view.
+            Rect actionRow = listing.GetRect(ControlLineHeight);
+            float exportIconSize = Mathf.Min(actionRow.height, Mathf.Max(1f, WritingStyleIconSize));
+            Rect exportRect = new Rect(
+                actionRow.xMax - exportIconSize,
+                actionRow.y + (actionRow.height - exportIconSize) * 0.5f,
+                exportIconSize,
+                exportIconSize);
+            Rect clearRect = new Rect(
+                actionRow.x,
+                actionRow.y,
+                Mathf.Max(0f, actionRow.width - exportIconSize - FilterPanelButtonGap),
+                actionRow.height);
             if (Widgets.ButtonText(clearRect, "PawnDiary.Tab.FilterClear".Translate()))
             {
                 filterFavoritesOnly = false;
@@ -361,9 +372,8 @@ namespace PawnDiary
                 filterSearchQuery = string.Empty;
             }
 
-            listing.Gap(8f);
             DrawMarkdownExportButton(
-                listing,
+                exportRect,
                 subject,
                 component,
                 orderedForTags,

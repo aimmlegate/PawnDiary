@@ -428,7 +428,6 @@
   <PawnDiary.Settings.ExportAllDiariesDone>Exported diary pages to {0}. Path copied to clipboard.</PawnDiary.Settings.ExportAllDiariesDone>
   <PawnDiary.Settings.ExportAllDiariesFailed>Diary export failed: {0}</PawnDiary.Settings.ExportAllDiariesFailed>
   <PawnDiary.Settings.ExportAllDiariesNoGame>Start or load a game before exporting diary pages.</PawnDiary.Settings.ExportAllDiariesNoGame>
-  <PawnDiary.Export.Button>Export current view</PawnDiary.Export.Button>
   <PawnDiary.Export.ButtonTip>Export {0}'s selected year with the currently applied search, favorite, and tag filters.</PawnDiary.Export.ButtonTip>
   <PawnDiary.Export.Done>Exported {0}'s filtered diary ({1} pages) to {2}. Path copied to clipboard.</PawnDiary.Export.Done>
   <PawnDiary.Export.Failed>Could not export {0}'s diary: {1}</PawnDiary.Export.Failed>

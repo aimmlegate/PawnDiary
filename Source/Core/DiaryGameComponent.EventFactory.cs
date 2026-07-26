@@ -292,6 +292,18 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Creates a solo page whose generation delay is installed before the page becomes visible
+        /// to pending-generation scans.
+        /// </summary>
+        internal DiaryEvent AddDelayedSoloEvent(Pawn pawn, Pawn otherPawn, string defName, string label,
+            string text, string instruction, string gameContext, BeliefEventEvidence beliefEvidence,
+            int generationReadyTick)
+        {
+            return AddSoloEventCore(pawn, otherPawn, defName, label, text, instruction, gameContext,
+                null, -1, beliefEvidence, null, null, false, generationReadyTick);
+        }
+
+        /// <summary>
         /// Creates a solo page with an already-evaluated result. Body-mod capture uses this seam so
         /// the same resolver pass supplies both its legacy attitude token and its saved prompt source.
         /// </summary>
@@ -394,7 +406,8 @@ namespace PawnDiary
             BeliefEventEvidence beliefEvidence,
             BeliefContextBuildResult preparedBelief,
             MoodSnapshotCandidate frozenMood = null,
-            bool useFrozenMood = false)
+            bool useFrozenMood = false,
+            int generationReadyTick = -1)
         {
             IReadOnlyList<DiaryEvent> activeEvents = ActiveScanEvents();
             string pawnId = pawn.GetUniqueLoadID();
@@ -458,6 +471,14 @@ namespace PawnDiary
                 pawnCapture?.staggeredIntensity ?? PawnFactCapture.StaggeredIntensity(pawn));
             diaryEvent.SetTextDecorationFacts(DiaryEvent.InitiatorRole,
                 pawnCapture?.textDecorationFacts ?? PawnFactCapture.TextDecorationFacts(pawn));
+            if (generationReadyTick >= 0)
+            {
+                // Install the transient marker before repository registration. Registration can make
+                // this page eligible for an already-requested scan in the same update/frame.
+                DelayGenerationUntil(
+                    diaryEvent, DiaryEvent.InitiatorRole, generationReadyTick);
+            }
+
             RegisterNewEventOrThrow(diaryEvent);
             AddEventRef(pawn, diaryEvent.eventId, historicalTick >= 0);
             ValidateNewEventCommit(diaryEvent);
