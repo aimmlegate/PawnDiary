@@ -451,12 +451,13 @@ namespace PawnDiary
 
         /// <summary>
         /// Dev-only: deletes every prompt-test entry (any event tagged <c>dev_prompt_suite</c>) from
-        /// the master event list, the O(1) lookup index, and every pawn's diary ref list. Returns the
-        /// number removed. Safe to call when there are none.
+        /// the master event list, the O(1) lookup index, every pawn's diary ref list, and any exact
+        /// source-event knowledge records left by an older fixture build. Returns the number removed.
+        /// Safe to call when there are none.
         /// </summary>
         internal int ClearPromptSuiteForDev()
         {
-            if (!Prefs.DevMode || events.Count == 0)
+            if (!Prefs.DevMode)
             {
                 return 0;
             }
@@ -466,9 +467,31 @@ namespace PawnDiary
             for (int i = 0; i < allEvents.Count; i++)
             {
                 DiaryEvent diaryEvent = allEvents[i];
-                if (diaryEvent != null && DiaryContextFields.HasMarker(diaryEvent.gameContext, DevPromptSuiteMarkerKey))
+                if (diaryEvent != null
+                    && !string.IsNullOrWhiteSpace(diaryEvent.eventId)
+                    && DiaryContextFields.HasMarker(diaryEvent.gameContext, DevPromptSuiteMarkerKey))
                 {
                     toRemove.Add(diaryEvent.eventId);
+                }
+            }
+
+            // A completed fixture can already have compacted out of the hot repository. Archive rows keep
+            // the original decoration context specifically so cleanup can still recognize the fixture
+            // after its full DiaryEvent master row has been swept.
+            IReadOnlyList<ArchivedDiaryEntry> archivedEntries = archive?.AllEntries;
+            if (archivedEntries != null)
+            {
+                for (int i = 0; i < archivedEntries.Count; i++)
+                {
+                    ArchivedDiaryEntry archivedEntry = archivedEntries[i];
+                    if (archivedEntry != null
+                        && !string.IsNullOrWhiteSpace(archivedEntry.eventId)
+                        && DiaryContextFields.HasMarker(
+                            archivedEntry.decorationGameContext,
+                            DevPromptSuiteMarkerKey))
+                    {
+                        toRemove.Add(archivedEntry.eventId);
+                    }
                 }
             }
 
@@ -493,11 +516,64 @@ namespace PawnDiary
                     {
                         diary.eventIds.RemoveAll(id => toRemove.Contains(id));
                     }
+
+                    if (diary?.favoriteEntryKeys != null)
+                    {
+                        diary.favoriteEntryKeys.RemoveAll(
+                            key => PromptSuiteFavoriteBelongsToRemovedEvent(key, toRemove));
+                    }
+
+                    // Prompt-suite events are synthetic evidence. Current-only fixtures no longer
+                    // capture knowledge, but saves made by older builds may already contain records.
+                    // sourceEventId is an exact persisted key, so this removes only fixture-owned rows.
+                    if (diary?.knowledgeState?.records != null)
+                    {
+                        diary.knowledgeState.records.RemoveAll(record => record != null
+                            && toRemove.Contains(record.sourceEventId));
+                    }
+                }
+            }
+
+            // The inspector caches the latest retrieval explanation per pawn. If that explanation was
+            // produced for a fixture we just deleted, remove it too so the debug UI cannot keep showing
+            // a synthetic query after its page and exact knowledge provenance are gone.
+            if (knowledgeReportsByPawnId.Count > 0)
+            {
+                List<string> reportPawnIdsToRemove = new List<string>();
+                foreach (KeyValuePair<string, KnowledgeDebugReport> pair in knowledgeReportsByPawnId)
+                {
+                    if (pair.Value != null && toRemove.Contains(pair.Value.eventId))
+                    {
+                        reportPawnIdsToRemove.Add(pair.Key);
+                    }
+                }
+
+                for (int i = 0; i < reportPawnIdsToRemove.Count; i++)
+                {
+                    knowledgeReportsByPawnId.Remove(reportPawnIdsToRemove[i]);
                 }
             }
 
             DiaryStateVersion.Bump();
             return toRemove.Count;
+        }
+
+        private static bool PromptSuiteFavoriteBelongsToRemovedEvent(
+            string favoriteEntryKey,
+            HashSet<string> removedEventIds)
+        {
+            if (string.IsNullOrWhiteSpace(favoriteEntryKey)
+                || removedEventIds == null
+                || removedEventIds.Count == 0)
+            {
+                return false;
+            }
+
+            // Entry keys are exactly "eventId|povRole". Split at the separator instead of StartsWith,
+            // which would wrongly remove an unrelated event "abc2" while clearing event "abc".
+            int separator = favoriteEntryKey.IndexOf('|');
+            return separator > 0
+                && removedEventIds.Contains(favoriteEntryKey.Substring(0, separator));
         }
 
         /// <summary>
@@ -616,11 +692,34 @@ namespace PawnDiary
             }
 
             EnsureGenerationQueued(diaryEvent, DiaryEvent.InitiatorRole, null, livePawnsById);
+            if (currentPawnOnly && !diaryEvent.solo)
+            {
+                DetachCurrentPawnFixturePartnerAfterPromptCapture(diaryEvent);
+            }
             if (!diaryEvent.solo && !currentPawnOnly)
             {
                 EnsureGenerationQueued(diaryEvent, DiaryEvent.RecipientRole, null, livePawnsById);
             }
             return true;
+        }
+
+        /// <summary>
+        /// Converts the filter selector's already-captured pair prompt into a one-owner saved fixture.
+        /// The partner's name/text remain frozen prompt evidence, but its pawn ID and linked-card shape
+        /// are removed so repository-wide history scans cannot treat the synthetic row as their event.
+        /// </summary>
+        private static void DetachCurrentPawnFixturePartnerAfterPromptCapture(DiaryEvent diaryEvent)
+        {
+            if (diaryEvent == null || diaryEvent.solo)
+            {
+                return;
+            }
+
+            diaryEvent.MarkSkipped(DiaryEvent.RecipientRole, string.Empty);
+            diaryEvent.recipientTitleStatus = DiaryEvent.SkippedStatus;
+            diaryEvent.recipientPawnId = string.Empty;
+            diaryEvent.solo = true;
+            DiaryStateVersion.Bump();
         }
 
         /// <summary>
@@ -654,7 +753,7 @@ namespace PawnDiary
                         recipientText,
                         instruction,
                         context)
-                    : AddPairwiseEvent(
+                    : AddPairwiseEventForPromptSuiteForDev(
                         pawn,
                         partner,
                         entry.eventDefName,
@@ -681,7 +780,7 @@ namespace PawnDiary
                     preparedBelief = BeliefContextBuilder.BuildSyntheticPreview(
                         snapshot, beliefEvidence, entry.id + "|" + pawnId + "|" + tick, pawnId, policy);
                 }
-                diaryEvent = AddSoloEvent(
+                diaryEvent = AddSoloEventForPromptSuiteForDev(
                     pawn, null, entry.eventDefName, label, text, instruction, context,
                     beliefEvidence, preparedBelief);
             }

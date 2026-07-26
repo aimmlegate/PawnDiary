@@ -533,8 +533,7 @@ namespace PawnDiary
         /// <summary>Clamps the configurable first retry delay to a bounded positive duration.</summary>
         public static double NormalizeRetryDelaySeconds(double requested)
         {
-            if (double.IsNaN(requested) || double.IsInfinity(requested)
-                || requested < MinimumRetryDelaySeconds)
+            if (double.IsNaN(requested) || requested < MinimumRetryDelaySeconds)
             {
                 return MinimumRetryDelaySeconds;
             }
@@ -542,6 +541,74 @@ namespace PawnDiary
             return requested > MaximumRetryDelaySeconds
                 ? MaximumRetryDelaySeconds
                 : requested;
+        }
+
+        /// <summary>
+        /// Returns true only when one transient failure should schedule another physical HTTP attempt.
+        /// A request deadline, a shared lane cooldown, a server Retry-After, or an exhausted attempt
+        /// budget all stop the local retry loop.
+        /// </summary>
+        public static bool ShouldRetryTransientFailure(
+            int failedAttemptNumber,
+            int requestedAttempts,
+            bool cancellationRequested,
+            bool laneCooling,
+            int retryAfterSeconds)
+        {
+            return !cancellationRequested
+                && !laneCooling
+                && retryAfterSeconds <= 0
+                && Math.Max(1, failedAttemptNumber) < NormalizeRetryAttempts(requestedAttempts);
+        }
+
+        /// <summary>
+        /// Returns true when a terminal transient failure should install or extend shared cooldown
+        /// state. An overlapping local failure reuses an active cooldown, while a provider-directed
+        /// Retry-After may still extend it.
+        /// </summary>
+        public static bool ShouldInstallTransientCooldown(bool laneCooling, int retryAfterSeconds)
+        {
+            return !laneCooling || retryAfterSeconds > 0;
+        }
+
+        /// <summary>
+        /// Converts a parsed Retry-After duration to non-negative whole seconds without overflowing
+        /// when a provider sends an extreme future HTTP date. The downstream cooldown policy applies
+        /// its much smaller operational cap.
+        /// </summary>
+        public static int NormalizeRetryAfterSeconds(double seconds)
+        {
+            if (double.IsNaN(seconds) || seconds <= 0d)
+            {
+                return 0;
+            }
+
+            if (double.IsPositiveInfinity(seconds) || seconds >= int.MaxValue)
+            {
+                return int.MaxValue;
+            }
+
+            return (int)Math.Ceiling(seconds);
+        }
+
+        /// <summary>
+        /// A success may clear only a cooldown that had already expired when that success completed.
+        /// This prevents an older in-flight request from erasing a newer sibling's Retry-After.
+        /// </summary>
+        public static bool ShouldClearCooldownAfterSuccess(DateTime cooldownUntilUtc, DateTime succeededUtc)
+        {
+            return cooldownUntilUtc <= succeededUtc;
+        }
+
+        /// <summary>
+        /// Returns true when a lane can be tried at an immediate failover handoff. The transport does
+        /// not wait for a cooling failover lane, so a future expiry cannot reserve retry-delay budget.
+        /// </summary>
+        public static bool CanLaneRunAtImmediateHandoff(
+            DateTime cooldownUntilUtc,
+            DateTime nowUtc)
+        {
+            return cooldownUntilUtc <= nowUtc;
         }
 
         /// <summary>
@@ -555,6 +622,34 @@ namespace PawnDiary
                 : Math.Min(failedAttemptNumber, MaximumRetryAttempts);
             double safeBaseDelay = NormalizeRetryDelaySeconds(baseDelaySeconds);
             return TimeSpan.FromSeconds(safeBaseDelay * safeAttempt);
+        }
+
+        /// <summary>
+        /// Returns true only when a local retry delay fits inside its fair share of the remaining
+        /// request deadline. Each downstream failover lane reserves one equal share; a single-lane
+        /// request may use the full remainder. The strict comparison leaves nonzero time for the
+        /// physical retry after its delay completes.
+        /// </summary>
+        public static bool CanScheduleRetryDelay(
+            TimeSpan retryDelay,
+            DateTime deadlineUtc,
+            DateTime nowUtc,
+            int remainingFailoverLanes)
+        {
+            if (retryDelay <= TimeSpan.Zero)
+            {
+                return false;
+            }
+
+            TimeSpan remaining = Remaining(deadlineUtc, nowUtc);
+            if (remaining <= TimeSpan.Zero)
+            {
+                return false;
+            }
+
+            long shareCount = Math.Max(0L, (long)remainingFailoverLanes) + 1L;
+            long currentLaneDelayBudgetTicks = remaining.Ticks / shareCount;
+            return retryDelay.Ticks < currentLaneDelayBudgetTicks;
         }
 
         /// <summary>Returns true only when an ordinary generation lane is not cooling.</summary>

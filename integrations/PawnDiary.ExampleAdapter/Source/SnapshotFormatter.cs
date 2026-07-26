@@ -377,6 +377,8 @@ namespace PawnDiaryExampleAdapter
             sb.Append("DiaryApiSetupSnapshot\n");
             sb.Append("  routingMode = ").Append(NullEscape(s.routingMode)).Append('\n');
             sb.Append("  temperature = ").Append(s.temperature).Append('\n');
+            sb.Append("  retry attempts / base delay = ")
+              .Append(s.retryAttempts).Append(" / ").Append(s.retryBaseDelaySeconds).Append("s\n");
             sb.Append("  timeout / maxTokens / concurrency = ")
               .Append(s.timeoutSeconds).Append(" / ").Append(s.maxTokens).Append(" / ").Append(s.maxConcurrentRequests).Append('\n');
             sb.Append("  lanes = ").Append(s.laneCount).Append(" (active ").Append(s.activeLaneCount).Append(")\n");

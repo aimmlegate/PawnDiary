@@ -1007,25 +1007,31 @@ namespace PawnDiary
             {
                 string otherRole = RoleEquals(povRole, InitiatorRole) ? RecipientRole : InitiatorRole;
                 string otherPawnId = RoleEquals(otherRole, InitiatorRole) ? initiatorPawnId : recipientPawnId;
-                string otherPawnName = RoleEquals(otherRole, InitiatorRole) ? initiatorName : recipientName;
-                string otherGeneratedText = GeneratedTextFor(otherRole);
-                bool otherGenerated = !string.IsNullOrWhiteSpace(otherGeneratedText);
-                string truncated = TruncateForPreview(otherGenerated
-                    ? otherGeneratedText
-                    : TextFor(otherRole));
+                // A dev-history purge can retain this pair for the surviving pawn while severing the
+                // purged role's owner ID. Preserve the surviving page, but never draw a dead linked card
+                // whose click target can no longer resolve to a diary owner.
+                if (!string.IsNullOrWhiteSpace(otherPawnId))
+                {
+                    string otherPawnName = RoleEquals(otherRole, InitiatorRole) ? initiatorName : recipientName;
+                    string otherGeneratedText = GeneratedTextFor(otherRole);
+                    bool otherGenerated = !string.IsNullOrWhiteSpace(otherGeneratedText);
+                    string truncated = TruncateForPreview(otherGenerated
+                        ? otherGeneratedText
+                        : TextFor(otherRole));
 
-                // Title for the OTHER pawn's POV, mirrored onto the linked preview when the
-                // title-generation follow-up has stored one.
-                string otherTitle = TitleForRole(otherRole);
+                    // Title for the OTHER pawn's POV, mirrored onto the linked preview when the
+                    // title-generation follow-up has stored one.
+                    string otherTitle = TitleForRole(otherRole);
 
-                linkedEntry = new LinkedEntryView(
-                    otherPawnId,
-                    otherPawnName ?? string.Empty,
-                    otherRole,
-                    eventId,
-                    truncated,
-                    otherGenerated,
-                    otherTitle);
+                    linkedEntry = new LinkedEntryView(
+                        otherPawnId,
+                        otherPawnName ?? string.Empty,
+                        otherRole,
+                        eventId,
+                        truncated,
+                        otherGenerated,
+                        otherTitle);
+                }
             }
 
                 return new DiaryEntryView(

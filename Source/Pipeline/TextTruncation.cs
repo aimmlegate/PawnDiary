@@ -40,6 +40,34 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Returns a display-safe prefix whose total UTF-16 length, including its trailing ellipsis,
+        /// never exceeds <paramref name="maxChars"/>. The original string is returned unchanged when it
+        /// already fits. A cut never splits a surrogate pair, and whitespace immediately before the
+        /// ellipsis is removed so compact UI labels do not end with an awkward visible gap.
+        /// </summary>
+        public static string EllipsizedPrefix(string value, int maxChars)
+        {
+            if (string.IsNullOrEmpty(value) || maxChars <= 0)
+            {
+                return string.Empty;
+            }
+
+            if (value.Length <= maxChars)
+            {
+                return value;
+            }
+
+            const string Ellipsis = "\u2026";
+            if (maxChars == 1)
+            {
+                return Ellipsis;
+            }
+
+            string prefix = SafePrefix(value, maxChars - Ellipsis.Length).TrimEnd();
+            return prefix + Ellipsis;
+        }
+
+        /// <summary>
         /// Returns the last <paramref name="maxChars"/> characters of <paramref name="value"/> without
         /// slicing through a surrogate pair. Returns the whole string when it already fits, and an empty
         /// string for null/empty input or a non-positive cap. Callers add their own leading ellipsis.

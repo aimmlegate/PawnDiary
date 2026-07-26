@@ -9175,6 +9175,24 @@ namespace DiaryPipelineTests
             AssertEqual("suffix cut between surrogates starts after pair", "ab", suffixCapped);
             AssertTrue("suffix result never starts on a lone low surrogate",
                 suffixCapped.Length == 0 || !char.IsLowSurrogate(suffixCapped[0]));
+
+            AssertEqual("ellipsized prefix leaves fitting text unchanged",
+                "short title", TextTruncation.EllipsizedPrefix("short title", 11));
+            AssertEqual("ellipsized prefix includes ellipsis inside cap",
+                "abcd\u2026", TextTruncation.EllipsizedPrefix("abcdef", 5));
+            AssertEqual("ellipsized prefix removes whitespace before ellipsis",
+                "abcd\u2026", TextTruncation.EllipsizedPrefix("abcd efgh", 6));
+            AssertEqual("single-character cap returns only ellipsis",
+                "\u2026", TextTruncation.EllipsizedPrefix("long", 1));
+            AssertEqual("non-positive ellipsized cap yields empty",
+                string.Empty, TextTruncation.EllipsizedPrefix("long", 0));
+
+            string emojiEllipsized = TextTruncation.EllipsizedPrefix("ab" + emoji + "cd", 4);
+            AssertEqual("ellipsized cut backs off before split surrogate", "ab\u2026", emojiEllipsized);
+            AssertTrue("ellipsized result stays within requested cap", emojiEllipsized.Length <= 4);
+            AssertTrue("ellipsized result has no lone high surrogate before suffix",
+                emojiEllipsized.Length < 2
+                    || !char.IsHighSurrogate(emojiEllipsized[emojiEllipsized.Length - 2]));
         }
 
         private static void TestExternalDirectEntryText()

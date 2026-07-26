@@ -622,12 +622,23 @@ namespace PawnDiary
                 return string.Empty;
             }
 
+            string title;
             if (!string.IsNullOrWhiteSpace(entry.Title))
             {
-                return entry.Title;
+                title = entry.Title;
+            }
+            else
+            {
+                title = IsArchivedGenerationFallback(entry)
+                    ? ArchivedGenerationFallbackTitle(entry)
+                    : string.Empty;
             }
 
-            return IsArchivedGenerationFallback(entry) ? ArchivedGenerationFallbackTitle(entry) : string.Empty;
+            // This is intentionally the final UI boundary: persistence, exports, integration snapshots,
+            // and search continue to see the complete title while card headers stay readable.
+            return TextTruncation.EllipsizedPrefix(
+                (title ?? string.Empty).Trim(),
+                UiStyle.EntryTitleMaxCharacters);
         }
 
         /// <summary>

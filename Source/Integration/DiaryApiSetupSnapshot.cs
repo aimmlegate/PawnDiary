@@ -24,6 +24,12 @@ namespace PawnDiary.Integration
         /// <summary>Global per-request timeout in seconds.</summary>
         public int timeoutSeconds;
 
+        /// <summary>Total transient attempts allowed for each API lane.</summary>
+        public int retryAttempts;
+
+        /// <summary>Delay in seconds before the first transient retry on an API lane.</summary>
+        public double retryBaseDelaySeconds;
+
         /// <summary>Global max response tokens requested per generation.</summary>
         public int maxTokens;
 

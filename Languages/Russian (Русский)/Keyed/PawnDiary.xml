@@ -37,7 +37,7 @@
   <PawnDiary.Tab.PurgeArchivedEntriesTip>Только для разработки: удаляет сжатые архивные страницы этого поселенца, не трогая активные свежие страницы дневника.</PawnDiary.Tab.PurgeArchivedEntriesTip>
   <PawnDiary.Tab.ArchivedEntriesPurged>Удалено архивных страниц для {1}: {0}.</PawnDiary.Tab.ArchivedEntriesPurged>
   <PawnDiary.Tab.GeneratePromptSuite>Тестовый промпт</PawnDiary.Tab.GeneratePromptSuite>
-  <PawnDiary.Tab.GeneratePromptSuiteTip>Только для разработчиков. Открывает список тестовых событий: выбранный промпт появится отдельной страницей в дневнике открытого персонажа, а следующий выбор заменит предыдущий. В парных событиях второй персонаж нужен лишь для контекста — его дневник не меняется.</PawnDiary.Tab.GeneratePromptSuiteTip>
+  <PawnDiary.Tab.GeneratePromptSuiteTip>Только для разработчиков. Включает режим проверки промптов и открывает список тестовых событий: выбранный промпт появится отдельной страницей без оформления в дневнике открытого персонажа, а следующий выбор заменит предыдущий. В парных событиях второй персонаж нужен лишь для контекста — его дневник не меняется.</PawnDiary.Tab.GeneratePromptSuiteTip>
   <PawnDiary.Tab.PurgeDiaryHistory>Очистить дневник</PawnDiary.Tab.PurgeDiaryHistory>
   <PawnDiary.Tab.PurgeDiaryHistoryTip>Только для разработчиков. Безвозвратно удаляет все обычные и архивные страницы из дневника персонажа {0}. Перед удалением потребуется подтверждение.</PawnDiary.Tab.PurgeDiaryHistoryTip>
   <PawnDiary.Tab.PurgeDiaryHistoryTitle>Удалить все записи из дневника персонажа {0}?</PawnDiary.Tab.PurgeDiaryHistoryTitle>

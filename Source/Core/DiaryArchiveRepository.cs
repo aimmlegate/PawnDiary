@@ -253,6 +253,41 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Severs compact linked-entry previews whose click target is one exact pawn, while preserving
+        /// every surviving archive row and its own body/owner. Full-history purge calls this after
+        /// removing the target pawn's rows; the separate archive-only dev action deliberately does not.
+        /// </summary>
+        public int ClearLinksToPawn(string pawnId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId) || archiveEntries.Count == 0)
+            {
+                return 0;
+            }
+
+            int changed = 0;
+            for (int i = 0; i < archiveEntries.Count; i++)
+            {
+                ArchivedDiaryEntry entry = archiveEntries[i];
+                if (entry == null
+                    || !string.Equals(entry.linkedPawnId, pawnId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                entry.linkedPawnId = string.Empty;
+                entry.linkedPawnName = string.Empty;
+                entry.linkedRole = string.Empty;
+                entry.linkedPreviewText = string.Empty;
+                entry.linkedGenerated = false;
+                entry.linkedTitle = string.Empty;
+                changed++;
+            }
+
+            // Link fields are not repository keys, so no index rebuild is needed.
+            return changed;
+        }
+
+        /// <summary>
         /// Caps each pawn's compact archive to its newest <paramref name="perPawnLimit"/> rows. The
         /// pawn indexes are already in saved/archive order, oldest first, so the shared retention plan can
         /// decide the survivor keys without this repository mutating while it is planning.

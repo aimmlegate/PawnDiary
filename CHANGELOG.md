@@ -8,7 +8,8 @@ pre-release version ladder for project history.
 
 ## 2026-07-26
 
-- **Configurable LLM retry backoff and safer diary dev tools.** API lanes now default to five configurable attempts with progressive waits; the Diary filter keeps only the current-pawn prompt selector plus a confirmed, notified history purge.
+- **Bounded diary headers.** Card titles now receive an XML-tunable, ellipsized display cap without altering their saved, searchable, or exported text.
+- **Configurable LLM retry backoff and safer diary dev tools.** API lanes now use configurable, deadline-aware attempts with fair admission and race-safe cooldowns for diary and adapter requests; prompt fixtures stay isolated and cleanable, while the current-pawn selector and confirmed history purge preserve unrelated diaries.
 - **Permanent body-change coma bypass.** Gene/xenotype and psylink changes, mechlink lifecycle, ghoul transformation, added parts, and natural part loss now generate through anesthesia or coma and recover matching older incapacity-skipped pages.
 - **Localized culture-topic recall from prose.** All 14 culture lenses can now recognize XML-authored English/Russian words and phrases in selected prompt text, using Unicode word boundaries and explicit inflection prefixes while retaining the existing structured triggers and recursion exclusions.
 - **Quiet bounded generation recovery.** Failed main-page requests now retry automatically up to an XML-owned limit, then retire to one warning without failed-page cards, failure badges, or manual retry prompts in production UI.

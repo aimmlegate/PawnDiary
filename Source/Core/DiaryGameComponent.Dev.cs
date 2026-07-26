@@ -110,60 +110,172 @@ namespace PawnDiary
             string pawnId = pawn.GetUniqueLoadID();
             PawnDiaryRecord diary = FindDiary(pawn, false);
             HashSet<string> removedHotEventIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (diary?.eventIds != null)
+            HashSet<string> purgedEventIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            bool stateChanged = false;
+            if (diary != null)
             {
-                for (int i = 0; i < diary.eventIds.Count; i++)
+                if (diary.eventIds != null)
                 {
-                    string eventId = diary.eventIds[i];
-                    if (!string.IsNullOrWhiteSpace(eventId))
+                    for (int i = 0; i < diary.eventIds.Count; i++)
                     {
-                        removedHotEventIds.Add(eventId);
+                        string eventId = diary.eventIds[i];
+                        if (!string.IsNullOrWhiteSpace(eventId))
+                        {
+                            removedHotEventIds.Add(eventId);
+                            purgedEventIds.Add(eventId);
+                        }
                     }
+
+                    stateChanged |= diary.eventIds.Count > 0;
+                    diary.eventIds.Clear();
                 }
 
-                diary.eventIds.Clear();
+                stateChanged |= diary.favoriteEntryKeys != null && diary.favoriteEntryKeys.Count > 0;
                 diary.favoriteEntryKeys?.Clear();
+                stateChanged |= diary.acknowledgedGeneratedEntryCount != 0
+                    || diary.unreadGeneratedEntryCount != 0
+                    || diary.hasUnreadGeneratedEntry;
                 diary.acknowledgedGeneratedEntryCount = 0;
                 diary.unreadGeneratedEntryCount = 0;
                 diary.hasUnreadGeneratedEntry = false;
             }
 
-            int archivedRemoved = archive.RemoveForPawn(pawnId);
-            if (removedHotEventIds.Count > 0)
+            // Snapshot compact-page event IDs before removing those rows. One POV may already be cold
+            // while the partner still hot-owns the shared master event, so the hot diary index alone is
+            // not a complete record of roles this full-history purge must retire.
+            IReadOnlyList<ArchivedDiaryEntry> archivedEntries = archive.EntriesForPawn(pawnId);
+            for (int i = 0; i < archivedEntries.Count; i++)
             {
-                // A pair event can still back another pawn's hot page. Remove only master rows that
-                // became genuinely unreferenced after clearing the selected pawn's diary index.
-                HashSet<string> orphanedEventIds = new HashSet<string>(
-                    removedHotEventIds,
-                    StringComparer.OrdinalIgnoreCase);
-                if (diaries != null)
+                string eventId = archivedEntries[i]?.eventId;
+                if (!string.IsNullOrWhiteSpace(eventId))
                 {
-                    for (int i = 0; i < diaries.Count && orphanedEventIds.Count > 0; i++)
-                    {
-                        PawnDiaryRecord otherDiary = diaries[i];
-                        if (otherDiary == null || ReferenceEquals(otherDiary, diary)
-                            || otherDiary.eventIds == null)
-                        {
-                            continue;
-                        }
+                    purgedEventIds.Add(eventId);
+                }
+            }
 
-                        for (int j = 0; j < otherDiary.eventIds.Count; j++)
-                        {
-                            orphanedEventIds.Remove(otherDiary.eventIds[j]);
-                        }
+            int archivedRemoved = archive.RemoveForPawn(pawnId);
+            stateChanged |= archivedRemoved > 0;
+            // A fully compacted pair has no hot master row, but the surviving partner archive row still
+            // contains a clickable preview. Clear only links targeting this exact purged pawn; keep the
+            // partner's archive page, prose, owner, and every unrelated link intact.
+            stateChanged |= archive.ClearLinksToPawn(pawnId) > 0;
+
+            // Repair any pre-existing index asymmetry too. A corrupt/old state may still contain a master
+            // naming this pawn even when neither its hot ref nor its archive row survived. Full purge's
+            // postcondition is stronger than those indexes: no remaining hot master role identifies the
+            // purged pawn merely because another diary owns the partner page.
+            IReadOnlyList<DiaryEvent> allEvents = events.AllEvents;
+            for (int i = 0; i < allEvents.Count; i++)
+            {
+                DiaryEvent diaryEvent = allEvents[i];
+                if (diaryEvent != null
+                    && !string.IsNullOrWhiteSpace(diaryEvent.eventId)
+                    && DiaryEvent.RoleIsInitiatorOrRecipient(diaryEvent.RoleForPawn(pawnId)))
+                {
+                    purgedEventIds.Add(diaryEvent.eventId);
+                }
+            }
+
+            if (purgedEventIds.Count > 0)
+            {
+                HashSet<string> hotReferencedEventIds = CollectHotReferencedEventIds();
+                HashSet<string> orphanedEventIds =
+                    new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (string eventId in purgedEventIds)
+                {
+                    DiaryEvent diaryEvent = events.FindEvent(eventId);
+                    if (diaryEvent == null
+                        || !DiaryEvent.RoleIsInitiatorOrRecipient(diaryEvent.RoleForPawn(pawnId)))
+                    {
+                        continue;
+                    }
+
+                    if (hotReferencedEventIds.Contains(eventId))
+                    {
+                        stateChanged |= DetachPurgedSharedRoleForDev(diaryEvent, pawnId);
+                    }
+                    else
+                    {
+                        orphanedEventIds.Add(eventId);
                     }
                 }
 
-                events.RemoveEvents(orphanedEventIds);
+                if (orphanedEventIds.Count > 0)
+                {
+                    // No hot diary can reach these full master rows anymore. Compact archive rows are
+                    // display-only and deliberately never keep generation state alive.
+                    events.RemoveEvents(orphanedEventIds);
+                    stateChanged = true;
+                }
             }
 
+            bool hadCachedCommandStatus = commandStatusByPawnId.ContainsKey(pawnId);
+            SetCachedCommandStatus(pawnId, 0, 0, 0);
+            stateChanged |= hadCachedCommandStatus;
+
             int removed = removedHotEventIds.Count + archivedRemoved;
-            if (removed > 0)
+            if (stateChanged)
             {
                 DiaryStateVersion.Bump();
             }
 
             return removed;
+        }
+
+        /// <summary>
+        /// Retires only the selected pawn's role on a shared event. The other role and all frozen text
+        /// stay intact for its surviving diary page; clearing this role's owner ID makes late results
+        /// harmless and prevents global history scans from treating the purged pawn as still involved.
+        /// </summary>
+        private bool DetachPurgedSharedRoleForDev(DiaryEvent diaryEvent, string pawnId)
+        {
+            if (diaryEvent == null || string.IsNullOrWhiteSpace(pawnId))
+            {
+                return false;
+            }
+
+            string povRole = diaryEvent.RoleForPawn(pawnId);
+            if (!DiaryEvent.RoleIsInitiatorOrRecipient(povRole))
+            {
+                return false;
+            }
+
+            bool purgedInitiator = DiaryEvent.RoleEquals(povRole, DiaryEvent.InitiatorRole);
+            diaryEvent.MarkSkipped(povRole, string.Empty);
+            if (purgedInitiator)
+            {
+                diaryEvent.initiatorTitleStatus = DiaryEvent.SkippedStatus;
+            }
+            else
+            {
+                diaryEvent.recipientTitleStatus = DiaryEvent.SkippedStatus;
+            }
+
+            // Publish the terminal state while the old owner ID still exists, then sever ownership.
+            NotifyEntryStatusChanged(diaryEvent, povRole);
+            if (purgedInitiator)
+            {
+                diaryEvent.initiatorPawnId = string.Empty;
+            }
+            else
+            {
+                diaryEvent.recipientPawnId = string.Empty;
+            }
+
+            string workKey = diaryEvent.eventId + "|" + povRole;
+            delayedRaidGenerationReadyTicks.Remove(workKey);
+            orphanCandidatesLastScan.Remove(workKey);
+            DiaryStateVersion.Bump();
+
+            // Sequential pairs normally wait for the initiator result before queueing the recipient.
+            // Purge may cancel or discard that result, so release the surviving recipient immediately;
+            // CanQueueGeneration keeps this harmless when it was already queued or completed.
+            if (purgedInitiator && !diaryEvent.solo)
+            {
+                QueueSequentialPairwiseRewrite(diaryEvent);
+            }
+
+            return true;
         }
 
         /// <summary>

@@ -361,6 +361,24 @@ namespace PawnDiary
                 return DiaryTelemetryOutcome.LlmResultInvalid;
             }
 
+            // A dev-history purge can retain a shared master event for its other pawn while severing
+            // ownership of only the purged first-person role. Ignore any result that was already in
+            // flight for that now-ownerless role: it must not overwrite the terminal tombstone, retry,
+            // create unread state, or queue a title. If the detached role was the pair initiator, still
+            // re-evaluate the surviving recipient so it can write from the base pair prompt.
+            if (DiaryEvent.RoleIsInitiatorOrRecipient(result.povRole)
+                && string.IsNullOrWhiteSpace(diaryEvent.PawnIdForRole(result.povRole)))
+            {
+                if (!result.isTitleRequest
+                    && DiaryEvent.RoleEquals(result.povRole, DiaryEvent.InitiatorRole)
+                    && !diaryEvent.solo)
+                {
+                    QueueSequentialPairwiseRewrite(diaryEvent, SuccessfulLaneFromResult(result));
+                }
+
+                return DiaryTelemetryOutcome.LlmResultApplied;
+            }
+
             // Title follow-up: never call ApplyLlmResult (which is the main-entry applier) —
             // the title is a separate, smaller request that lives on its own per-POV fields.
             if (result.isTitleRequest)

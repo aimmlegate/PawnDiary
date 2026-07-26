@@ -452,6 +452,14 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 setup.laneCount == setup.lanes.Count,
                 "GetApiSetup laneCount did not match the copied lane list.");
+            PawnDiaryRimTestScope.Require(
+                setup.retryAttempts
+                    == LlmTransportPolicy.NormalizeRetryAttempts(settings.retryAttempts)
+                    && Math.Abs(
+                        setup.retryBaseDelaySeconds
+                        - LlmTransportPolicy.NormalizeRetryDelaySeconds(
+                            settings.retryBaseDelaySeconds)) < 0.0001d,
+                "GetApiSetup did not expose the effective global retry policy.");
 
             int countedActive = 0;
             for (int i = 0; i < setup.lanes.Count; i++)

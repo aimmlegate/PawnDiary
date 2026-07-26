@@ -95,17 +95,162 @@ namespace LlmTransportPolicyTests
             AssertEqual("retry attempts preserve configured value", 5, LlmTransportPolicy.NormalizeRetryAttempts(5));
             AssertEqual("retry attempts clamp to cap", 10, LlmTransportPolicy.NormalizeRetryAttempts(99));
             AssertEqual(
+                "retry attempts handle minimum integer",
+                LlmTransportPolicy.MinimumRetryAttempts,
+                LlmTransportPolicy.NormalizeRetryAttempts(int.MinValue));
+            AssertEqual(
+                "retry attempts handle maximum integer",
+                LlmTransportPolicy.MaximumRetryAttempts,
+                LlmTransportPolicy.NormalizeRetryAttempts(int.MaxValue));
+            AssertEqual(
                 "invalid retry delay uses defensive floor",
                 LlmTransportPolicy.MinimumRetryDelaySeconds,
                 LlmTransportPolicy.NormalizeRetryDelaySeconds(double.NaN));
+            AssertEqual(
+                "negative infinity retry delay uses defensive floor",
+                LlmTransportPolicy.MinimumRetryDelaySeconds,
+                LlmTransportPolicy.NormalizeRetryDelaySeconds(double.NegativeInfinity));
+            AssertEqual(
+                "positive infinity retry delay uses defensive ceiling",
+                LlmTransportPolicy.MaximumRetryDelaySeconds,
+                LlmTransportPolicy.NormalizeRetryDelaySeconds(double.PositiveInfinity));
+            AssertEqual(
+                "oversized retry delay clamps to ceiling",
+                LlmTransportPolicy.MaximumRetryDelaySeconds,
+                LlmTransportPolicy.NormalizeRetryDelaySeconds(999d));
             AssertEqual(
                 "first retry waits one base interval",
                 TimeSpan.FromSeconds(0.5d),
                 LlmTransportPolicy.ProgressiveRetryDelay(1, 0.5d));
             AssertEqual(
+                "invalid failure number still waits one interval",
+                TimeSpan.FromSeconds(0.5d),
+                LlmTransportPolicy.ProgressiveRetryDelay(int.MinValue, 0.5d));
+            AssertEqual(
                 "later retries wait progressively longer",
                 TimeSpan.FromSeconds(2d),
                 LlmTransportPolicy.ProgressiveRetryDelay(4, 0.5d));
+            AssertEqual(
+                "retry multiplier is defensively capped",
+                TimeSpan.FromSeconds(5d),
+                LlmTransportPolicy.ProgressiveRetryDelay(int.MaxValue, 0.5d));
+            DateTime retryBudgetNow = new DateTime(2026, 7, 27, 1, 0, 0, DateTimeKind.Utc);
+            AssertFalse(
+                "ten-second backoff cannot consume a five-second failover deadline",
+                LlmTransportPolicy.CanScheduleRetryDelay(
+                    TimeSpan.FromSeconds(10),
+                    retryBudgetNow.AddSeconds(5),
+                    retryBudgetNow,
+                    1));
+            AssertTrue(
+                "short backoff fits the current lane's fair share before one failover",
+                LlmTransportPolicy.CanScheduleRetryDelay(
+                    TimeSpan.FromSeconds(2),
+                    retryBudgetNow.AddSeconds(5),
+                    retryBudgetNow,
+                    1));
+            AssertTrue(
+                "single-lane adapter may use the full remaining retry-delay budget",
+                LlmTransportPolicy.CanScheduleRetryDelay(
+                    TimeSpan.FromSeconds(4),
+                    retryBudgetNow.AddSeconds(5),
+                    retryBudgetNow,
+                    0));
+            AssertFalse(
+                "three-second backoff does not fit when one immediately runnable failover reserves a share",
+                LlmTransportPolicy.CanScheduleRetryDelay(
+                    TimeSpan.FromSeconds(3),
+                    retryBudgetNow.AddSeconds(5),
+                    retryBudgetNow,
+                    1));
+            int readyFailoverCountAtAttemptStart =
+                LlmTransportPolicy.CanLaneRunAtImmediateHandoff(
+                    retryBudgetNow,
+                    retryBudgetNow)
+                    ? 1
+                    : 0;
+            AssertEqual(
+                "ready failover initially reserves one retry-delay share",
+                1,
+                readyFailoverCountAtAttemptStart);
+            int refreshedFailoverCountAfterConcurrentCooldown =
+                LlmTransportPolicy.CanLaneRunAtImmediateHandoff(
+                    retryBudgetNow.AddSeconds(4),
+                    retryBudgetNow)
+                    ? 1
+                    : 0;
+            AssertEqual(
+                "fresh retry-decision snapshot drops a failover that became cooling in flight",
+                0,
+                refreshedFailoverCountAfterConcurrentCooldown);
+            AssertTrue(
+                "three-second primary retry survives a downstream lane cooling during the first send",
+                LlmTransportPolicy.CanScheduleRetryDelay(
+                    TimeSpan.FromSeconds(3),
+                    retryBudgetNow.AddSeconds(5),
+                    retryBudgetNow,
+                    refreshedFailoverCountAfterConcurrentCooldown));
+            AssertTrue(
+                "lane whose cooldown has expired can reserve an immediate failover share",
+                LlmTransportPolicy.CanLaneRunAtImmediateHandoff(
+                    retryBudgetNow,
+                    retryBudgetNow));
+            AssertFalse(
+                "lane with any future cooldown cannot reserve an immediate failover share",
+                LlmTransportPolicy.CanLaneRunAtImmediateHandoff(
+                    retryBudgetNow.AddTicks(1),
+                    retryBudgetNow));
+            AssertTrue(
+                "transient failure below attempt limit schedules retry",
+                LlmTransportPolicy.ShouldRetryTransientFailure(4, 5, false, false, 0));
+            AssertFalse(
+                "attempt limit counts the original send without off-by-one retry",
+                LlmTransportPolicy.ShouldRetryTransientFailure(5, 5, false, false, 0));
+            AssertFalse(
+                "request cancellation stops retry",
+                LlmTransportPolicy.ShouldRetryTransientFailure(1, 5, true, false, 0));
+            AssertFalse(
+                "shared lane cooldown stops retry",
+                LlmTransportPolicy.ShouldRetryTransientFailure(1, 5, false, true, 0));
+            AssertFalse(
+                "server Retry-After stops local retry",
+                LlmTransportPolicy.ShouldRetryTransientFailure(1, 5, false, false, 60));
+            AssertFalse(
+                "defensive attempt floor still permits only one send",
+                LlmTransportPolicy.ShouldRetryTransientFailure(1, int.MinValue, false, false, 0));
+            AssertTrue(
+                "first terminal failure installs lane cooldown",
+                LlmTransportPolicy.ShouldInstallTransientCooldown(false, 0));
+            AssertFalse(
+                "overlapping local failure reuses active cooldown",
+                LlmTransportPolicy.ShouldInstallTransientCooldown(true, 0));
+            AssertTrue(
+                "provider Retry-After may extend active cooldown",
+                LlmTransportPolicy.ShouldInstallTransientCooldown(true, 60));
+            AssertEqual(
+                "fractional Retry-After rounds up",
+                2,
+                LlmTransportPolicy.NormalizeRetryAfterSeconds(1.01d));
+            AssertEqual(
+                "extreme Retry-After saturates before integer conversion",
+                int.MaxValue,
+                LlmTransportPolicy.NormalizeRetryAfterSeconds(double.MaxValue));
+            DateTime cooldownNow = new DateTime(2026, 7, 27, 0, 0, 0, DateTimeKind.Utc);
+            AssertFalse(
+                "older in-flight success preserves active sibling cooldown",
+                LlmTransportPolicy.ShouldClearCooldownAfterSuccess(
+                    cooldownNow.AddSeconds(30),
+                    cooldownNow));
+            AssertTrue(
+                "success may clear cooldown exactly at expiry",
+                LlmTransportPolicy.ShouldClearCooldownAfterSuccess(
+                    cooldownNow,
+                    cooldownNow));
+            AssertTrue(
+                "success clears already expired cooldown history",
+                LlmTransportPolicy.ShouldClearCooldownAfterSuccess(
+                    cooldownNow.AddSeconds(-1),
+                    cooldownNow));
             AssertFalse("cooling generation lane is never attempted", LlmTransportPolicy.MayAttemptLane(true));
             AssertTrue("ready generation lane may be attempted", LlmTransportPolicy.MayAttemptLane(false));
             AssertTrue(

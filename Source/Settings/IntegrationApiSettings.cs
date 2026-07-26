@@ -45,6 +45,10 @@ namespace PawnDiary
             snapshot.routingMode = ApiLaneImport.RoutingModeToken(settings.apiRoutingMode);
             snapshot.temperature = settings.temperature;
             snapshot.timeoutSeconds = settings.timeoutSeconds;
+            snapshot.retryAttempts =
+                LlmTransportPolicy.NormalizeRetryAttempts(settings.retryAttempts);
+            snapshot.retryBaseDelaySeconds =
+                LlmTransportPolicy.NormalizeRetryDelaySeconds(settings.retryBaseDelaySeconds);
             snapshot.maxTokens = settings.maxTokens;
             snapshot.maxConcurrentRequests = settings.maxConcurrentRequests;
 

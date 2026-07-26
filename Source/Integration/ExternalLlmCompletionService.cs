@@ -113,6 +113,9 @@ namespace PawnDiary.Integration
             int maxTokens = Clamp(request.maxTokens, MinMaxTokens, MaxMaxTokens);
             int timeoutSeconds = settings.timeoutSeconds;
             float temperature = settings.temperature;
+            int retryAttempts = LlmTransportPolicy.NormalizeRetryAttempts(settings.retryAttempts);
+            double retryBaseDelaySeconds =
+                LlmTransportPolicy.NormalizeRetryDelaySeconds(settings.retryBaseDelaySeconds);
 
             int handle;
             CancellationTokenSource cancellation = new CancellationTokenSource();
@@ -129,7 +132,16 @@ namespace PawnDiary.Integration
                 cancellations[handle] = cancellation;
             }
 
-            RunAsync(handle, laneSnapshot, systemPrompt, userText, maxTokens, timeoutSeconds, temperature,
+            RunAsync(
+                handle,
+                laneSnapshot,
+                systemPrompt,
+                userText,
+                maxTokens,
+                timeoutSeconds,
+                temperature,
+                retryAttempts,
+                retryBaseDelaySeconds,
                 cancellation.Token);
             return handle;
         }
@@ -214,12 +226,14 @@ namespace PawnDiary.Integration
         // and the outcome is written into the slot for the poller to pick up.
         private static async void RunAsync(int handle, ApiEndpointConfig endpoint, string systemPrompt,
             string userText, int maxTokens, int timeoutSeconds, float temperature,
+            int retryAttempts, double retryBaseDelaySeconds,
             CancellationToken cancellationToken)
         {
             try
             {
                 string text = await LlmClient.SendSingleCompletion(endpoint, systemPrompt, userText,
-                    maxTokens, timeoutSeconds, temperature, cancellationToken);
+                    maxTokens, timeoutSeconds, temperature, retryAttempts, retryBaseDelaySeconds,
+                    cancellationToken);
                 Complete(handle, LlmCompletionStatus.Succeeded, text, string.Empty);
             }
             catch (Exception e)

@@ -41,7 +41,8 @@ namespace PawnDiary
 
         /// <summary>
         /// Dev prompt-selector variant: keeps pair context but owns the page only from the selected
-        /// initiator's diary. The partner is evidence, never a second test-page owner.
+        /// initiator's diary. The partner is evidence, never a second test-page owner. Synthetic previews
+        /// also skip immediate retention so opening one cannot compact a real page at the configured cap.
         /// </summary>
         internal DiaryEvent AddPairwiseEventForInitiatorDiaryForDev(
             Pawn initiator,
@@ -66,7 +67,40 @@ namespace PawnDiary
                 -1,
                 null,
                 null,
-                includeRecipientDiaryRef: false);
+                includeRecipientDiaryRef: false,
+                captureKnowledge: false,
+                applyDiaryEventLimits: false);
+        }
+
+        /// <summary>
+        /// Dev prompt-suite variant: creates both pair pages for prompt coverage without teaching either
+        /// pawn that the synthetic fixture was a real lifelong event or applying real-history retention.
+        /// </summary>
+        internal DiaryEvent AddPairwiseEventForPromptSuiteForDev(
+            Pawn initiator,
+            Pawn recipient,
+            string defName,
+            string label,
+            string initiatorText,
+            string recipientText,
+            string instruction,
+            string gameContext)
+        {
+            return AddPairwiseEventCore(
+                initiator,
+                recipient,
+                defName,
+                label,
+                initiatorText,
+                recipientText,
+                instruction,
+                gameContext,
+                null,
+                -1,
+                null,
+                null,
+                captureKnowledge: false,
+                applyDiaryEventLimits: false);
         }
 
         /// <summary>Creates a pair page and decorates each eligible POV from one plain evidence row.</summary>
@@ -179,7 +213,9 @@ namespace PawnDiary
             MoodSnapshotCandidate frozenInitiatorMood = null,
             MoodSnapshotCandidate frozenRecipientMood = null,
             bool useFrozenMood = false,
-            bool includeRecipientDiaryRef = true)
+            bool includeRecipientDiaryRef = true,
+            bool captureKnowledge = true,
+            bool applyDiaryEventLimits = true)
         {
             IReadOnlyList<DiaryEvent> activeEvents = ActiveScanEvents();
             string initiatorId = initiator.GetUniqueLoadID();
@@ -295,11 +331,14 @@ namespace PawnDiary
                 AddEventRef(recipient, diaryEvent.eventId, historicalTick >= 0);
             }
             ValidateNewEventCommit(diaryEvent, includeRecipientDiaryRef);
-            ApplyDiaryEventLimits();
+            if (applyDiaryEventLimits)
+            {
+                ApplyDiaryEventLimits();
+            }
             // Retrieval runs BEFORE capture so this event can never surface the very record it is
             // about to deposit (belt-and-braces beside the selector's self-echo guard).
             ApplyRelevantPastForEvent(diaryEvent);
-            if (includeRecipientDiaryRef)
+            if (captureKnowledge)
             {
                 CaptureKnowledgeForEvent(diaryEvent, initiator, recipient);
             }
@@ -356,6 +395,38 @@ namespace PawnDiary
         {
             return AddSoloEventCore(pawn, otherPawn, defName, label, text, instruction, gameContext,
                 null, -1, beliefEvidence, preparedBelief);
+        }
+
+        /// <summary>
+        /// Dev prompt-selector variant: builds the same synthetic solo page and belief preview as the
+        /// normal factory, but never deposits that made-up event into lifelong knowledge or lets the
+        /// temporary preview evict a real page through immediate retention.
+        /// </summary>
+        internal DiaryEvent AddSoloEventForPromptSuiteForDev(
+            Pawn pawn,
+            Pawn otherPawn,
+            string defName,
+            string label,
+            string text,
+            string instruction,
+            string gameContext,
+            BeliefEventEvidence beliefEvidence,
+            BeliefContextBuildResult preparedBelief)
+        {
+            return AddSoloEventCore(
+                pawn,
+                otherPawn,
+                defName,
+                label,
+                text,
+                instruction,
+                gameContext,
+                null,
+                -1,
+                beliefEvidence,
+                preparedBelief,
+                captureKnowledge: false,
+                applyDiaryEventLimits: false);
         }
 
         /// <summary>
@@ -450,7 +521,9 @@ namespace PawnDiary
             BeliefContextBuildResult preparedBelief,
             MoodSnapshotCandidate frozenMood = null,
             bool useFrozenMood = false,
-            int generationReadyTick = -1)
+            int generationReadyTick = -1,
+            bool captureKnowledge = true,
+            bool applyDiaryEventLimits = true)
         {
             IReadOnlyList<DiaryEvent> activeEvents = ActiveScanEvents();
             string pawnId = pawn.GetUniqueLoadID();
@@ -525,11 +598,17 @@ namespace PawnDiary
             RegisterNewEventOrThrow(diaryEvent);
             AddEventRef(pawn, diaryEvent.eventId, historicalTick >= 0);
             ValidateNewEventCommit(diaryEvent);
-            ApplyDiaryEventLimits();
+            if (applyDiaryEventLimits)
+            {
+                ApplyDiaryEventLimits();
+            }
             // Retrieval runs BEFORE capture so this event can never surface the very record it is
             // about to deposit (belt-and-braces beside the selector's self-echo guard).
             ApplyRelevantPastForEvent(diaryEvent);
-            CaptureKnowledgeForEvent(diaryEvent, pawn, otherPawn);
+            if (captureKnowledge)
+            {
+                CaptureKnowledgeForEvent(diaryEvent, pawn, otherPawn);
+            }
             if (diaryEvent.IsSkipped(DiaryEvent.InitiatorRole))
             {
                 NotifyEntryStatusChanged(diaryEvent, DiaryEvent.InitiatorRole);

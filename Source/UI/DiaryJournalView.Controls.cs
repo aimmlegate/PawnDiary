@@ -194,9 +194,42 @@ namespace PawnDiary
         /// Returns the height needed for per-pawn dev controls above the diary list. The player-facing
         /// Writing style opener lives in the header icon, so normal play reserves no extra row.
         /// </summary>
-        private static float PawnControlsHeight()
+        private static float PawnControlsHeight(float availableWidth)
         {
-            return Prefs.DevMode ? DevControlsHeight : 0f;
+            if (!Prefs.DevMode)
+            {
+                return 0f;
+            }
+
+            float width = Mathf.Max(1f, availableWidth);
+            float height = DevCheckboxRowHeight(
+                "PawnDiary.Tab.GenerateForPawn".Translate(),
+                width);
+            if (PawnDiaryMod.Settings != null)
+            {
+                height += DevCheckboxRowHeight(
+                    "PawnDiary.Tab.ShowPersonaSettings".Translate(),
+                    width);
+                height += DevCheckboxRowHeight(
+                    "PawnDiary.Tab.ShowLlmDebugInfo".Translate(),
+                    width);
+                height += DevCheckboxRowHeight(
+                    "PawnDiary.Tab.ShowGeneratingEntries".Translate(),
+                    width);
+            }
+
+            // The three action buttons use explicit fixed-height Listing rows below.
+            return height + 3f * ControlLineHeight;
+        }
+
+        /// <summary>
+        /// Mirrors Listing_Standard.CheckboxLabeled's wrapped-label measurement plus its default
+        /// two-pixel vertical spacing. Measuring against the actual filter width prevents translated
+        /// dev labels from pushing the final safety buttons outside their reserved rectangle.
+        /// </summary>
+        private static float DevCheckboxRowHeight(string label, float availableWidth)
+        {
+            return Mathf.Max(Text.LineHeight, Text.CalcHeight(label ?? string.Empty, availableWidth)) + 2f;
         }
 
 
@@ -331,9 +364,11 @@ namespace PawnDiary
 
 
 
-            // Keep the pawn filter focused: one prompt-fixture selector and one explicitly confirmed
-            // destructive history reset. Broader mock/formatting test grids remain in Debug Actions.
+            // Keep the pawn filter focused: one prompt-fixture selector, a safe way to remove only
+            // those fixtures, and one explicitly confirmed destructive full-history reset. Broader
+            // mock/formatting test grids remain in Debug Actions.
             Rect promptSuiteButtonRect = listing.GetRect(ControlLineHeight);
+            Rect clearPromptSuiteButtonRect = listing.GetRect(ControlLineHeight);
             Rect purgeHistoryButtonRect = listing.GetRect(ControlLineHeight);
             if (Widgets.ButtonText(promptSuiteButtonRect, "PawnDiary.Tab.GeneratePromptSuite".Translate()))
             {
@@ -349,6 +384,21 @@ namespace PawnDiary
                 promptSuiteButtonRect,
 
                 "PawnDiary.Tab.GeneratePromptSuiteTip".Translate());
+
+
+
+            if (Widgets.ButtonText(
+                clearPromptSuiteButtonRect,
+                "PawnDiary.Tab.ClearPromptSuite".Translate()))
+            {
+                HandleClearPromptSuite(component);
+            }
+
+
+
+            TooltipHandler.TipRegion(
+                clearPromptSuiteButtonRect,
+                "PawnDiary.Tab.ClearPromptSuiteTip".Translate());
 
 
 
@@ -763,6 +813,26 @@ namespace PawnDiary
                 true,
                 "PawnDiary.Tab.PurgeDiaryHistoryTitle".Translate(pawnName).Resolve()));
 
+        }
+
+
+
+        /// <summary>
+        /// Removes only synthetic prompt-suite pages. This gives dev users a non-destructive escape
+        /// hatch beside the full diary-history purge.
+        /// </summary>
+        private static void HandleClearPromptSuite(DiaryGameComponent component)
+        {
+            if (component == null)
+            {
+                return;
+            }
+
+            int removed = component.ClearPromptSuiteForDev();
+            Messages.Message(
+                "PawnDiary.Tab.PromptSuiteCleared".Translate(removed),
+                MessageTypeDefOf.NeutralEvent,
+                false);
         }
 
 

@@ -111,6 +111,8 @@ namespace PawnDiary
     /// </summary>
     public class DiaryUiStyleDef : Def
     {
+        private const int FallbackEntryTitleMaxCharacters = 72;
+
         // ---- Tab window ----
         // Default width now includes the right-hand filter/controls panel (filterPanelWidth +
         // filterPanelGap) on top of the ~696px journal column, so the journal keeps its familiar width.
@@ -150,6 +152,9 @@ namespace PawnDiary
         public float controlLineHeight = 28f;
         public float controlGap = 2f;
         public float entryTitleHeight = 28f;
+        // Display-only cap. Generated/saved titles retain their full text for export, integration, and
+        // filtering; the shared journal renderer shortens only the visible card header.
+        public int entryTitleMaxCharacters = FallbackEntryTitleMaxCharacters;
         public float entryTextTop = 42f;
         public float entryBottomPadding = 10f;
         public float statusBadgeWidth = 34f;
@@ -421,6 +426,9 @@ namespace PawnDiary
         // string, so it lives here only to keep this list and the XML spelling in sync.
         private const string QuadrumReflectionColorCue = "quadrumReflection";
 
+        public int EntryTitleMaxCharacters => entryTitleMaxCharacters > 0
+            ? entryTitleMaxCharacters
+            : FallbackEntryTitleMaxCharacters;
         public float CollapsedEntryHeight => entryTitleHeight + collapsedEntryChromePadding;
         public float VirtualizedEntryOverscanHeight => virtualizedEntryOverscanHeight > 0f && !float.IsNaN(virtualizedEntryOverscanHeight) ? virtualizedEntryOverscanHeight : 0f;
         public Color QuietTextColor => quietTextColor.ToColor(new Color(0.42f, 0.48f, 0.52f));

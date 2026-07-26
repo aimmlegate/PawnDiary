@@ -57,6 +57,8 @@
     <controlLineHeight>28</controlLineHeight>
     <controlGap>2</controlGap>
     <entryTitleHeight>28</entryTitleHeight>
+    <!-- Display-only character cap; the trailing ellipsis counts toward this value. -->
+    <entryTitleMaxCharacters>72</entryTitleMaxCharacters>
     <entryTextTop>42</entryTextTop>
     <entryBottomPadding>10</entryBottomPadding>
     <statusBadgeWidth>34</statusBadgeWidth>

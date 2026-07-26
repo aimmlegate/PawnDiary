@@ -447,7 +447,7 @@ namespace PawnDiary
         private void DrawFilterDevSection(Listing_Standard listing, Pawn pawn, DiaryGameComponent component)
         {
             DrawFilterSectionHeader(listing, "PawnDiary.Tab.FilterDevHeader".Translate());
-            float devHeight = PawnControlsHeight();
+            float devHeight = PawnControlsHeight(listing.ColumnWidth);
             if (devHeight <= 0f)
             {
                 return;

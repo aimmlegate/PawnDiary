@@ -107,8 +107,8 @@ namespace PawnDiary
         private static float YearFilterGap => UiStyle.yearFilterGap;
 
         // Player-facing writing-style opener in the Diary header. Layout values come from XML via
-        // UiStyle (DiaryUiStyleDef). DevControlsHeight is a stable display-only estimate of the dev
-        // block (mock/prompt-suite/dev-preview rows) so PawnControlsHeight can reserve its space.
+        // UiStyle (DiaryUiStyleDef). The dev-control block measures its translated labels against the
+        // live filter width in DiaryJournalView.Controls.cs.
         private static float WritingStyleIconSize => UiStyle.writingStyleIconSize;
         private static float WritingStyleIconRightGap => UiStyle.writingStyleIconRightGap;
         // Horizontal clearance kept between the header's rightmost icon and the window's right edge, so
@@ -116,13 +116,6 @@ namespace PawnDiary
         private const float HeaderCloseButtonClearance = 34f;
         private static float WritingStyleIconAlpha => UiStyle.writingStyleIconAlpha;
         private static float WritingStyleIconHoverAlpha => UiStyle.writingStyleIconHoverAlpha;
-        // Display-only upper bound for four checkbox rows plus the prompt-selector and destructive
-        // purge buttons. The text measurement follows RimWorld's current accessibility font size.
-        private static float DevControlsHeight =>
-            4f * Mathf.Ceil(Text.LineHeight + 2f)
-            + 2f * ControlLineHeight
-            + ControlGap
-            + 12f;
         private static float YearButtonWidth => UiStyle.yearButtonWidth;
         private static float ModelNameTopPadding => UiStyle.modelNameTopPadding;
         private static float ModelNameHeight => UiStyle.modelNameHeight;
