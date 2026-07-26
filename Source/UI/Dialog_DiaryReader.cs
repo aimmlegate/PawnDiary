@@ -13,6 +13,9 @@ namespace PawnDiary
     /// <summary>
     /// Standalone reader for all pawn diaries in the current game.
     /// </summary>
+    // The placeholder texture remains lazy-loaded from DrawPortrait on the UI thread. This marker
+    // tells RimWorld the Texture2D-holding type participates in its main-thread startup contract.
+    [StaticConstructorOnStartup]
     internal sealed class Dialog_DiaryReader : Window
     {
         private const float DirectorySectionHeight = 24f;
