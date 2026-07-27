@@ -508,6 +508,36 @@ namespace DiaryCapturePolicyTests
             AssertEqual("Odyssey TileSettled no-pawn Tale stays unowned", CaptureDecision.Drop,
                 TaleEventData.Decide(new TaleEventData { DefName = "TileSettled" }, Ctx()));
 
+            // RimWorld keeps IsColonist true on dead colonists. VisitedGrave therefore needs an
+            // explicit life-state gate so its CORPSE slot remains narrative context, not a second POV.
+            bool graveVisitorEligible = TaleEventData.IsPovEligible(
+                diaryEligible: true,
+                pawnDead: false,
+                isDeathDescriptionVictim: false);
+            bool graveCorpseEligible = TaleEventData.IsPovEligible(
+                diaryEligible: true,
+                pawnDead: true,
+                isDeathDescriptionVictim: false);
+            AssertTrue("tale living ordinary participant is POV-eligible", graveVisitorEligible);
+            AssertTrue("VisitedGrave corpse is not POV-eligible", !graveCorpseEligible);
+            AssertTrue("tale ineligible living participant stays ineligible",
+                !TaleEventData.IsPovEligible(false, false, false));
+            AssertTrue("exact death-description victim remains eligible after death",
+                TaleEventData.IsPovEligible(false, true, true));
+
+            TaleEventData visitedGrave = Tale(
+                "VisitedGrave",
+                firstEligible: graveVisitorEligible,
+                secondEligible: graveCorpseEligible);
+            CaptureDecision visitedGraveDecision = TaleEventData.Decide(visitedGrave, Ctx());
+            TaleEventData.TaleEmitPlan visitedGravePlan =
+                TaleEventData.PlanEmit(visitedGraveDecision, visitedGrave.FirstEligible);
+            AssertEqual("VisitedGrave routes to a solo visitor page",
+                CaptureDecision.GenerateSolo, visitedGraveDecision);
+            AssertEqual("VisitedGrave emit shape is solo",
+                TaleEventData.TaleEmitShape.Solo, visitedGravePlan.Shape);
+            AssertTrue("VisitedGrave solo POV is the living visitor", visitedGravePlan.PovIsFirstPawn);
+
             // Final shape: single eligible pawn → solo.
             AssertEqual("tale first-only eligible generates solo", CaptureDecision.GenerateSolo,
                 TaleEventData.Decide(Tale("KilledColonist", firstEligible: true), Ctx()));

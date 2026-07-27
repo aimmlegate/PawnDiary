@@ -67,8 +67,18 @@ namespace PawnDiary.Ingestion
             deathVictim = DeathVictimForTale(taleDef, firstPawn, secondPawn);
             deathDescription = DiaryGameComponent.IsDeathDescriptionEligible(deathVictim);
 
-            firstEligible = DiaryGameComponent.IsDiaryEligible(firstPawn) || (deathDescription && firstPawn == deathVictim);
-            secondEligible = DiaryGameComponent.IsDiaryEligible(secondPawn) || (deathDescription && secondPawn == deathVictim);
+            // Pawn.IsColonist stays true after death. Without the explicit dead snapshot below,
+            // VisitedGrave's CORPSE slot becomes a second diary POV: the event is registered as a pair,
+            // then its post-death owner reference is correctly rejected, leaving a half-committed page.
+            // Only the exact victim of a real death-description Tale may write after death.
+            firstEligible = TaleEventData.IsPovEligible(
+                DiaryGameComponent.IsDiaryEligible(firstPawn),
+                firstPawn?.Dead ?? false,
+                deathDescription && ReferenceEquals(firstPawn, deathVictim));
+            secondEligible = TaleEventData.IsPovEligible(
+                DiaryGameComponent.IsDiaryEligible(secondPawn),
+                secondPawn?.Dead ?? false,
+                deathDescription && ReferenceEquals(secondPawn, deathVictim));
 
             string killerRole;
             string victimRole;

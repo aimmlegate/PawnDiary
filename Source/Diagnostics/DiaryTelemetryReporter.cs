@@ -51,9 +51,10 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Records an identifier-free invariant summary and sends it through the existing opt-in,
-        /// scrubbed, deduplicated error channel. Use only for impossible persistence/lifecycle states,
-        /// not ordinary policy drops.
+        /// Records an identifier-free invariant summary, then writes it to RimWorld's local error log.
+        /// The log-report postfix observes that same entry for optional remote delivery, so telemetry can
+        /// never be the only place the error appears. Use only for impossible persistence/lifecycle
+        /// states, not ordinary policy drops.
         /// </summary>
         public static void ReportInvariant(
             DiaryTelemetryOutcome outcome,
@@ -70,22 +71,35 @@ namespace PawnDiary
                     + (source ?? string.Empty) + "\n" + (eventType ?? string.Empty) + "\n"
                     + (safeSummary ?? string.Empty);
                 string fingerprint = ErrorFingerprint.Compute(identity);
-                DiaryTelemetry.Record(
-                    outcome,
-                    stage,
-                    source,
-                    eventType,
-                    tick,
-                    count,
-                    safeSummary,
-                    fingerprint);
-
-                DiaryErrorReporter.Report(
+                string message =
                     "[Pawn Diary] Diagnostic invariant: outcome=" + outcome
                     + " stage=" + (stage ?? string.Empty)
                     + " source=" + (source ?? string.Empty)
                     + " event_type=" + (eventType ?? string.Empty)
-                    + " summary=" + (safeSummary ?? string.Empty));
+                    + " summary=" + (safeSummary ?? string.Empty);
+
+                // Keep the ledger and local log independent. A telemetry-ledger failure must never hide
+                // the actionable console error that explains the broken invariant.
+                try
+                {
+                    DiaryTelemetry.Record(
+                        outcome,
+                        stage,
+                        source,
+                        eventType,
+                        tick,
+                        count,
+                        safeSummary,
+                        fingerprint);
+                }
+                catch
+                {
+                    // The local error below remains authoritative.
+                }
+
+                Log.ErrorOnce(
+                    message,
+                    ErrorOnceKey("diagnostic invariant", fingerprint));
             }
             catch
             {
@@ -120,12 +134,15 @@ namespace PawnDiary
 
                 if (!DiaryPatchManifest.AllHealthy())
                 {
-                    // BuildDetail contains only code target names and registrar errors; the reporter
-                    // still runs its normal path/secret/name scrub before optional network delivery.
-                    DiaryErrorReporter.Report(
+                    // BuildDetail contains only code target names and registrar errors. Log locally first;
+                    // the error postfix owns optional scrubbed network delivery.
+                    string message =
                         "[Pawn Diary] Hook manifest unhealthy: "
                         + DiaryPatchManifest.BuildSummary() + " "
-                        + DiaryPatchManifest.BuildDetail());
+                        + DiaryPatchManifest.BuildDetail();
+                    Log.ErrorOnce(
+                        message,
+                        ErrorOnceKey("hook manifest unhealthy", ErrorFingerprint.Compute(message)));
                 }
             }
             catch

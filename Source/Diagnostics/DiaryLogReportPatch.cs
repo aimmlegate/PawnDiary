@@ -1,9 +1,13 @@
-// Capture hook for the error reporter. A Harmony postfix on Verse.Log.Error / Log.ErrorOnce sees
+// Capture hook for the error reporter. A Harmony postfix on Verse.Log.Error sees
 // every error the game logs, but we forward ONLY the ones the Pawn Diary mod family raised — the main
 // mod AND its first-party integration submods (the bridges), which all log through Verse.Log — so this
 // one global postfix captures them all. The "is this one of ours?" test is the pure, unit-tested
 // ModErrorPrefixPolicy (it matches each family log prefix); other mods' and the base game's errors are
 // never reported.
+//
+// Verse.Log.ErrorOnce delegates accepted first occurrences to Verse.Log.Error. Patching only Error
+// therefore observes exactly the entries RimWorld actually emits and does not mistake a suppressed
+// duplicate ErrorOnce call for a new local error.
 //
 // Two safety rails, because Log.Error is a shared, hot-ish choke point on any thread:
 //   * A [ThreadStatic] re-entrancy flag: if reporting ever triggers a Log.Error, we must not capture
@@ -29,8 +33,8 @@ namespace PawnDiary
         private static bool capturing;
 
         /// <summary>
-        /// Postfixes <c>Log.Error(string)</c> and <c>Log.ErrorOnce(string, int)</c> so raised errors
-        /// flow to the reporter. No-ops cleanly if either method can't be found on this RimWorld build.
+        /// Postfixes <c>Log.Error(string)</c> so locally raised errors flow to the reporter. No-ops
+        /// cleanly if the method cannot be found on this RimWorld build.
         /// </summary>
         public static void TryRegister(Harmony harmony)
         {
@@ -61,24 +65,6 @@ namespace PawnDiary
                         DiaryPatchManifest.HookStatus.Degraded,
                         "target not found; errors will not be reported");
                 }
-
-                MethodBase errorOnce = AccessTools.Method(typeof(Log), "ErrorOnce", new[] { typeof(string), typeof(int) });
-                if (errorOnce != null)
-                {
-                    harmony.Patch(errorOnce, postfix: postfix);
-                    DiaryPatchManifest.Report(
-                        "Diagnostics",
-                        "Log.ErrorOnce(string, int)",
-                        DiaryPatchManifest.HookStatus.Applied);
-                }
-                else
-                {
-                    DiaryPatchManifest.Report(
-                        "Diagnostics",
-                        "Log.ErrorOnce(string, int)",
-                        DiaryPatchManifest.HookStatus.Degraded,
-                        "target not found; ErrorOnce messages will not be reported");
-                }
             }
             catch (Exception e)
             {
@@ -93,8 +79,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Harmony postfix shared by both targets. The parameter name <c>text</c> matches the argument
-        /// name on both <c>Log.Error</c> and <c>Log.ErrorOnce</c>, so Harmony injects the logged text.
+        /// Harmony postfix for <c>Log.Error</c>. The parameter name <c>text</c> matches the target
+        /// argument, so Harmony injects the exact text RimWorld already accepted for local logging.
         /// </summary>
         public static void Postfix(string text)
         {

@@ -22,6 +22,7 @@ namespace DiaryPatchManifestTests
             TestResetAndSnapshotCopy();
             TestIndependentActionsContinueAfterFailure();
             TestLivePawnSnapshotIncludesTravellingTransporters();
+            TestErrorTransportCannotBypassLocalLog();
             Console.WriteLine("DiaryPatchManifestTests passed " + assertions + " assertions.");
             return 0;
         }
@@ -234,6 +235,58 @@ namespace DiaryPatchManifestTests
                 "live pawn snapshot includes caravan and travelling transporter aggregate",
                 source,
                 "PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive");
+        }
+
+        private static void TestErrorTransportCannotBypassLocalLog()
+        {
+            string root = FindRepositoryRoot();
+            string sourceRoot = Path.Combine(root, "Source");
+            string[] files = Directory.GetFiles(sourceRoot, "*.cs", SearchOption.AllDirectories);
+            List<string> directReporterCallers = new List<string>();
+            const string directCall = "DiaryErrorReporter.Report(";
+
+            for (int i = 0; i < files.Length; i++)
+            {
+                string source = File.ReadAllText(files[i]);
+                if (source.IndexOf(directCall, StringComparison.Ordinal) >= 0)
+                {
+                    directReporterCallers.Add(Path.GetFileName(files[i]));
+                }
+            }
+
+            AssertEqual(
+                "remote error transport has one local-log observer",
+                1,
+                directReporterCallers.Count);
+            AssertEqual(
+                "only the Log.Error postfix may call remote transport",
+                "DiaryLogReportPatch.cs",
+                directReporterCallers.Count == 1
+                    ? directReporterCallers[0]
+                    : string.Empty);
+
+            string telemetryReporter = File.ReadAllText(Path.Combine(
+                sourceRoot,
+                "Diagnostics",
+                "DiaryTelemetryReporter.cs"));
+            AssertContains(
+                "diagnostic invariants enter RimWorld's local error log",
+                telemetryReporter,
+                "Log.ErrorOnce(");
+
+            string logPatch = File.ReadAllText(Path.Combine(
+                sourceRoot,
+                "Diagnostics",
+                "DiaryLogReportPatch.cs"));
+            AssertContains(
+                "error transport observes the non-suppressing postfix path",
+                logPatch,
+                "harmony.Patch(error, postfix: postfix);");
+            AssertTrue(
+                "suppressed ErrorOnce duplicates are not reported remotely",
+                logPatch.IndexOf(
+                    "harmony.Patch(errorOnce",
+                    StringComparison.Ordinal) < 0);
         }
 
         private static string FindRepositoryRoot()

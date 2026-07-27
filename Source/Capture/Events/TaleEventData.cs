@@ -90,6 +90,21 @@ namespace PawnDiary.Capture
         };
 
         /// <summary>
+        /// Decides whether one captured Tale participant may own a first-person diary page.
+        /// RimWorld's <c>Pawn.IsColonist</c> remains true for a dead colonist, so ordinary eligibility
+        /// alone is not enough: a corpse carried by a Tale such as VisitedGrave is context, not a
+        /// second writer. The one exception is the exact victim of a death-description Tale, whose
+        /// final neutral page is deliberately allowed after death.
+        /// </summary>
+        public static bool IsPovEligible(
+            bool diaryEligible,
+            bool pawnDead,
+            bool isDeathDescriptionVictim)
+        {
+            return isDeathDescriptionVictim || (diaryEligible && !pawnDead);
+        }
+
+        /// <summary>
         /// Pure decision for a Tale event. Returns Drop when ANY of:
         ///   - the defName is covered by a narrower hook (covered-elsewhere),
         ///   - the defName is also a GameConditionDef (MoodEvent owns it),
