@@ -108,7 +108,7 @@
   <PawnDiary.DiaryHumorCueDef>
     <defName>DiaryHumorCue_AnywayPivot</defName>
     <label>anyway-pivot</label>
-    <rule>Use "Anyway" once, not as the opening word, to pivot from a reaction back to one supplied practical fact. Omit the device if no such fact fits.</rule>
+    <rule>Use the requested output language's natural equivalent of "Anyway" once, not as the opening word, to pivot from a reaction back to one supplied practical fact. Omit the device if no such fact fits.</rule>
     <tier>Light</tier>
     <weight>1</weight>
   </PawnDiary.DiaryHumorCueDef>
@@ -116,7 +116,7 @@
   <PawnDiary.DiaryHumorCueDef>
     <defName>DiaryHumorCue_ISupposeHedge</defName>
     <label>I-suppose-hedge</label>
-    <rule>Use "I suppose" once to soften one interpretation, never to cast doubt on a supplied fact. Omit the device if no interpretation fits.</rule>
+    <rule>Use the requested output language's natural equivalent of "I suppose" once to soften one interpretation, never to cast doubt on a supplied fact. Omit the device if no interpretation fits.</rule>
     <tier>Light</tier>
     <weight>1</weight>
   </PawnDiary.DiaryHumorCueDef>
@@ -124,7 +124,7 @@
   <PawnDiary.DiaryHumorCueDef>
     <defName>DiaryHumorCue_ForTheRecord</defName>
     <label>for-the-record</label>
-    <rule>Use "For the record" once before one concrete supplied detail. Do not add a new detail; omit the device if none fits.</rule>
+    <rule>Use the requested output language's natural equivalent of "For the record" once before one concrete supplied detail. Do not add a new detail; omit the device if none fits.</rule>
     <tier>Light</tier>
     <weight>1</weight>
   </PawnDiary.DiaryHumorCueDef>
@@ -132,7 +132,7 @@
   <PawnDiary.DiaryHumorCueDef>
     <defName>DiaryHumorCue_SelfCorrection</defName>
     <label>self-correction</label>
-    <rule>Correct one interpretation once with "No—that is not quite true," or a natural equivalent, then replace only that interpretation. Never revise supplied facts; omit the device if no honest correction fits.</rule>
+    <rule>Correct one interpretation once with the requested output language's natural equivalent of "No—that is not quite true", then replace only that interpretation. Never revise supplied facts; omit the device if no honest correction fits.</rule>
     <tier>Light</tier>
     <weight>1</weight>
   </PawnDiary.DiaryHumorCueDef>
@@ -222,7 +222,7 @@
   <PawnDiary.DiaryHumorCueDef>
     <defName>DiaryHumorCue_CouldHaveBeenWorse</defName>
     <label>could-have-been-worse</label>
-    <rule>Use "Could have been worse" once as defensive understatement. Never invent or imply an unsupplied worse event; omit the device if it would distort the supplied facts.</rule>
+    <rule>Use the requested output language's natural equivalent of "Could have been worse" once as defensive understatement. Never invent or imply an unsupplied worse event; omit the device if it would distort the supplied facts.</rule>
     <tier>Gallows</tier>
     <weight>1</weight>
   </PawnDiary.DiaryHumorCueDef>
@@ -230,7 +230,7 @@
   <PawnDiary.DiaryHumorCueDef>
     <defName>DiaryHumorCue_EnoughForNow</defName>
     <label>enough-for-now</label>
-    <rule>Close once with "That is enough for now" or a natural equivalent, and add nothing after it. Omit the device if the ending conflicts with the writing style or tone.</rule>
+    <rule>Close once with the requested output language's natural equivalent of "That is enough for now" and add nothing after it. Omit the device if the ending conflicts with the writing style or tone.</rule>
     <tier>Gallows</tier>
     <weight>1</weight>
   </PawnDiary.DiaryHumorCueDef>

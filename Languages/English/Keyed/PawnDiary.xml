@@ -909,6 +909,7 @@
   <PawnDiary.Settings.Adv.Help.uiHistoryScanFrameBudgetSeconds>Wall-clock budget per frame for sliced Diary UI history indexing.</PawnDiary.Settings.Adv.Help.uiHistoryScanFrameBudgetSeconds>
   <PawnDiary.Settings.Adv.Help.minimumFirstPersonAgeYears>Minimum biological age for first-person diary ownership.</PawnDiary.Settings.Adv.Help.minimumFirstPersonAgeYears>
   <PawnDiary.Settings.Adv.Help.humorChance>Base probability an eligible entry gets one structural humor cue.</PawnDiary.Settings.Adv.Help.humorChance>
+  <PawnDiary.Settings.Adv.Help.humorCueRepertoireSize>Number of stable optional voice cues assigned to each identified writer in each stakes tier.</PawnDiary.Settings.Adv.Help.humorCueRepertoireSize>
   <PawnDiary.Settings.Adv.Help.humorElevatedChanceMultiplier>Flat, non-cumulative multiplier on humorChance for a writer with an upbeat temperament or a Social passion.</PawnDiary.Settings.Adv.Help.humorElevatedChanceMultiplier>
   <PawnDiary.Settings.Adv.Help.humorReducedChanceMultiplier>Flat, non-cumulative multiplier (below 1) on humorChance for a writer with a dour, anxious, or unfeeling temperament.</PawnDiary.Settings.Adv.Help.humorReducedChanceMultiplier>
   <PawnDiary.Settings.Adv.Help.enabled>Master toggle for this source.</PawnDiary.Settings.Adv.Help.enabled>

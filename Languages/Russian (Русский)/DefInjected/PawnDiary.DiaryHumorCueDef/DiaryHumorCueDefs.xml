@@ -21,13 +21,13 @@
   <DiaryHumorCue_ShrugCloser.label>ну и ладно</DiaryHumorCue_ShrugCloser.label>
   <DiaryHumorCue_ShrugCloser.rule>Если тон события это допускает, один раз закончи короткой фразой, будто оно едва стоит записи, не противореча переданным фактам. Иначе не используй этот приём.</DiaryHumorCue_ShrugCloser.rule>
   <DiaryHumorCue_AnywayPivot.label>поворот «как бы там ни было»</DiaryHumorCue_AnywayPivot.label>
-  <DiaryHumorCue_AnywayPivot.rule>Один раз, но не первым словом записи, используй «Как бы там ни было», чтобы перейти от реакции к одному переданному практическому факту. Если такой факт не подходит, не используй этот приём.</DiaryHumorCue_AnywayPivot.rule>
+  <DiaryHumorCue_AnywayPivot.rule>Один раз, но не первым словом записи, используй естественный эквивалент «Как бы там ни было» на требуемом языке записи, чтобы перейти от реакции к одному переданному практическому факту. Если такой факт не подходит, не используй этот приём.</DiaryHumorCue_AnywayPivot.rule>
   <DiaryHumorCue_ISupposeHedge.label>оговорка «пожалуй»</DiaryHumorCue_ISupposeHedge.label>
-  <DiaryHumorCue_ISupposeHedge.rule>Один раз используй «пожалуй», чтобы смягчить одно толкование, но не ставить под сомнение переданный факт. Если подходящего толкования нет, не используй этот приём.</DiaryHumorCue_ISupposeHedge.rule>
+  <DiaryHumorCue_ISupposeHedge.rule>Один раз используй естественный эквивалент «пожалуй» на требуемом языке записи, чтобы смягчить одно толкование, но не ставить под сомнение переданный факт. Если подходящего толкования нет, не используй этот приём.</DiaryHumorCue_ISupposeHedge.rule>
   <DiaryHumorCue_ForTheRecord.label>для протокола</DiaryHumorCue_ForTheRecord.label>
-  <DiaryHumorCue_ForTheRecord.rule>Один раз поставь «Для протокола» перед одной конкретной переданной деталью. Не добавляй новую деталь; если подходящей нет, не используй этот приём.</DiaryHumorCue_ForTheRecord.rule>
+  <DiaryHumorCue_ForTheRecord.rule>Один раз поставь естественный эквивалент «Для протокола» на требуемом языке записи перед одной конкретной переданной деталью. Не добавляй новую деталь; если подходящей нет, не используй этот приём.</DiaryHumorCue_ForTheRecord.rule>
   <DiaryHumorCue_SelfCorrection.label>самоисправление</DiaryHumorCue_SelfCorrection.label>
-  <DiaryHumorCue_SelfCorrection.rule>Один раз поправь толкование фразой «Нет, это не совсем так» или естественным аналогом, затем замени только это толкование. Не исправляй переданные факты; если честная поправка не подходит, не используй этот приём.</DiaryHumorCue_SelfCorrection.rule>
+  <DiaryHumorCue_SelfCorrection.rule>Один раз поправь толкование естественным эквивалентом «Нет, это не совсем так» на требуемом языке записи, затем замени только это толкование. Не исправляй переданные факты; если честная поправка не подходит, не используй этот приём.</DiaryHumorCue_SelfCorrection.rule>
   <DiaryHumorCue_RoutineTerrible.label>ужас по расписанию</DiaryHumorCue_RoutineTerrible.label>
   <DiaryHumorCue_RoutineTerrible.rule>Если подходит переданный тяжёлый факт, один раз изложи его ровным голосом хозяйственной работы. Не добавляй время, обстоятельства или последствия; иначе не используй этот приём.</DiaryHumorCue_RoutineTerrible.rule>
   <DiaryHumorCue_HouseholdMaintenance.label>хозяйственный ужас</DiaryHumorCue_HouseholdMaintenance.label>
@@ -49,9 +49,9 @@
   <DiaryHumorCue_EvenMeasure.label>баланс сошёлся</DiaryHumorCue_EvenMeasure.label>
   <DiaryHumorCue_EvenMeasure.rule>Только если переданы и серьёзная потеря, и мелкая выгода, один раз поставь их рядом и сухо сочти равными в одном предложении. Иначе не используй этот приём.</DiaryHumorCue_EvenMeasure.rule>
   <DiaryHumorCue_CouldHaveBeenWorse.label>могло быть хуже</DiaryHumorCue_CouldHaveBeenWorse.label>
-  <DiaryHumorCue_CouldHaveBeenWorse.rule>Один раз используй «Могло быть хуже» как защитное преуменьшение. Не выдумывай и не подразумевай не переданное худшее событие; не используй приём, если он исказит факты.</DiaryHumorCue_CouldHaveBeenWorse.rule>
+  <DiaryHumorCue_CouldHaveBeenWorse.rule>Один раз используй естественный эквивалент «Могло быть хуже» на требуемом языке записи как защитное преуменьшение. Не выдумывай и не подразумевай не переданное худшее событие; не используй приём, если он исказит факты.</DiaryHumorCue_CouldHaveBeenWorse.rule>
   <DiaryHumorCue_EnoughForNow.label>на сегодня хватит</DiaryHumorCue_EnoughForNow.label>
-  <DiaryHumorCue_EnoughForNow.rule>Один раз закончи фразой «На сегодня хватит» или естественным аналогом и ничего не добавляй после неё. Не используй приём, если концовка противоречит манере или тону.</DiaryHumorCue_EnoughForNow.rule>
+  <DiaryHumorCue_EnoughForNow.rule>Один раз закончи естественным эквивалентом «На сегодня хватит» на требуемом языке записи и ничего не добавляй после него. Не используй приём, если концовка противоречит манере или тону.</DiaryHumorCue_EnoughForNow.rule>
   <DiaryHumorCue_NotWritingThatDown.label>об этом не писать</DiaryHumorCue_NotWritingThatDown.label>
   <DiaryHumorCue_NotWritingThatDown.rule>Один раз коротко откажись записывать чувство, прямо названное в переданном контексте, но всё равно изложи переданные факты события. Если чувство не передано, не используй этот приём.</DiaryHumorCue_NotWritingThatDown.rule>
   <DiaryHumorCue_OldWordsReturn.label>возвращение старых слов</DiaryHumorCue_OldWordsReturn.label>

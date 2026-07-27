@@ -861,6 +861,7 @@
   <PawnDiary.Settings.Adv.Help.uiHistoryScanFrameBudgetSeconds>Допустимое время кадра для поэтапной индексации истории в интерфейсе дневника.</PawnDiary.Settings.Adv.Help.uiHistoryScanFrameBudgetSeconds>
   <PawnDiary.Settings.Adv.Help.minimumFirstPersonAgeYears>Минимальный биологический возраст для личного дневника от первого лица.</PawnDiary.Settings.Adv.Help.minimumFirstPersonAgeYears>
   <PawnDiary.Settings.Adv.Help.humorChance>Базовая вероятность, что подходящая запись получит структурный юмористический намёк.</PawnDiary.Settings.Adv.Help.humorChance>
+  <PawnDiary.Settings.Adv.Help.humorCueRepertoireSize>Количество стабильных необязательных речевых приёмов, закреплённых за каждым известным автором отдельно для каждого уровня серьёзности событий.</PawnDiary.Settings.Adv.Help.humorCueRepertoireSize>
   <PawnDiary.Settings.Adv.Help.humorElevatedChanceMultiplier>Прямой множитель к humorChance для автора с позитивным нравом или страстью к социальному навыку. Не суммируется при совпадении нескольких условий.</PawnDiary.Settings.Adv.Help.humorElevatedChanceMultiplier>
   <PawnDiary.Settings.Adv.Help.humorReducedChanceMultiplier>Прямой множитель (меньше 1) к humorChance для автора с угрюмым, тревожным или бесчувственным нравом. Не суммируется при совпадении нескольких условий.</PawnDiary.Settings.Adv.Help.humorReducedChanceMultiplier>
   <PawnDiary.Settings.Adv.Help.enabled>Главный переключатель этого источника.</PawnDiary.Settings.Adv.Help.enabled>
