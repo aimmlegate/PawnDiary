@@ -268,23 +268,24 @@ namespace PawnDiary
             if (source == null) return result;
             foreach (DiarySocialReflectionChanceBandDef row in source)
             {
-                if (row == null || row.minimumAbsoluteOpinion < 0
-                    || row.maximumAbsoluteOpinion < row.minimumAbsoluteOpinion
-                    || row.maximumAbsoluteOpinion > 100
-                    || float.IsNaN(row.chance) || float.IsInfinity(row.chance))
+                if (row == null)
                 {
-                    continue;
+                    return new List<SocialReflectionChanceBand>();
                 }
 
                 result.Add(new SocialReflectionChanceBand
                 {
                     minimumAbsoluteOpinion = row.minimumAbsoluteOpinion,
                     maximumAbsoluteOpinion = row.maximumAbsoluteOpinion,
-                    chance = Math.Max(0f, Math.Min(1f, row.chance))
+                    chance = row.chance
                 });
             }
 
-            return result.OrderBy(row => row.minimumAbsoluteOpinion).ToList();
+            List<SocialReflectionChanceBand> ordered =
+                result.OrderBy(row => row.minimumAbsoluteOpinion).ToList();
+            return SocialReflectionPolicy.HasCompleteChanceCoverage(ordered)
+                ? ordered
+                : new List<SocialReflectionChanceBand>();
         }
 
         private static List<SocialReflectionStyle> CopyStyles(

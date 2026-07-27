@@ -162,6 +162,14 @@ namespace PawnDiary
         public const string NeutralPolarity = "neutral";
         public const string NegativePolarity = "negative";
 
+        // These compact prose abbreviations do not end a sentence when more text follows. Keeping
+        // the parser vocabulary here is stable punctuation policy, not player-facing prompt prose.
+        private static readonly HashSet<string> NonTerminalPeriodWords =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "mr", "mrs", "ms", "dr", "prof", "sr", "jr", "st", "vs", "etc", "e.g", "i.e"
+            };
+
         /// <summary>
         /// Stable source identity. Length prefixes keep opaque load IDs and modded defNames from
         /// colliding even when they contain punctuation used by ordinary compound keys.
@@ -217,6 +225,55 @@ namespace PawnDiary
             }
 
             return 0f;
+        }
+
+        /// <summary>
+        /// True only when a detached XML chance table is finite, non-overlapping, and covers every
+        /// clamped absolute-opinion value from 0 through 100. Invalid tables must retain defaults
+        /// rather than silently turning an uncovered opinion range into a zero-percent chance.
+        /// </summary>
+        public static bool HasCompleteChanceCoverage(
+            IEnumerable<SocialReflectionChanceBand> bands)
+        {
+            if (bands == null)
+            {
+                return false;
+            }
+
+            List<SocialReflectionChanceBand> ordered =
+                new List<SocialReflectionChanceBand>();
+            foreach (SocialReflectionChanceBand band in bands)
+            {
+                if (band == null
+                    || band.minimumAbsoluteOpinion < 0
+                    || band.maximumAbsoluteOpinion < band.minimumAbsoluteOpinion
+                    || band.maximumAbsoluteOpinion > 100
+                    || float.IsNaN(band.chance)
+                    || float.IsInfinity(band.chance)
+                    || band.chance < 0f
+                    || band.chance > 1f)
+                {
+                    return false;
+                }
+
+                ordered.Add(band);
+            }
+
+            ordered.Sort((left, right) =>
+                left.minimumAbsoluteOpinion.CompareTo(right.minimumAbsoluteOpinion));
+            int expectedMinimum = 0;
+            for (int index = 0; index < ordered.Count; index++)
+            {
+                SocialReflectionChanceBand band = ordered[index];
+                if (band.minimumAbsoluteOpinion != expectedMinimum)
+                {
+                    return false;
+                }
+
+                expectedMinimum = band.maximumAbsoluteOpinion + 1;
+            }
+
+            return ordered.Count > 0 && expectedMinimum == 101;
         }
 
         /// <summary>
@@ -501,7 +558,18 @@ namespace PawnDiary
                     continue;
                 }
 
+                if (value == '.'
+                    && (IsDecimalPoint(text, index)
+                        || IsNonTerminalAbbreviation(text, index)))
+                {
+                    continue;
+                }
+
+                // An ellipsis or emphatic run such as "...", "?!", or "!!" is one terminator,
+                // not several one-character sentences. Include closing quotes/brackets too.
                 int end = index + 1;
+                while (end < text.Length && IsSentencePunctuation(text[end])) end++;
+                while (end < text.Length && IsSentenceCloser(text[end])) end++;
                 string sentence = text.Substring(start, end - start).Trim();
                 if (sentence.Length > 0)
                 {
@@ -520,6 +588,70 @@ namespace PawnDiary
             }
 
             return result;
+        }
+
+        private static bool IsDecimalPoint(string text, int index)
+        {
+            return index > 0
+                && index + 1 < text.Length
+                && char.IsDigit(text[index - 1])
+                && char.IsDigit(text[index + 1]);
+        }
+
+        private static bool IsNonTerminalAbbreviation(string text, int periodIndex)
+        {
+            int next = periodIndex + 1;
+            while (next < text.Length && char.IsWhiteSpace(text[next])) next++;
+            if (next >= text.Length)
+            {
+                return false;
+            }
+
+            int start = periodIndex - 1;
+            while (start >= 0
+                && (char.IsLetter(text[start]) || text[start] == '.'))
+            {
+                start--;
+            }
+
+            string token = text.Substring(start + 1, periodIndex - start - 1).Trim('.');
+            if (token.Length == 0)
+            {
+                return false;
+            }
+
+            if (NonTerminalPeriodWords.Contains(token)
+                || (token.Length == 1 && char.IsLetter(token[0])))
+            {
+                return true;
+            }
+
+            string[] initials = token.Split('.');
+            if (initials.Length <= 1)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < initials.Length; index++)
+            {
+                if (initials[index].Length != 1 || !char.IsLetter(initials[index][0]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool IsSentencePunctuation(char value)
+        {
+            return value == '.' || value == '!' || value == '?';
+        }
+
+        private static bool IsSentenceCloser(char value)
+        {
+            return value == '"' || value == '\'' || value == ')'
+                || value == ']' || value == '}';
         }
 
         private static uint StableHash(string value, uint seed)

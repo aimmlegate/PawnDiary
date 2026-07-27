@@ -382,29 +382,52 @@ namespace PawnDiary
                     continue;
                 }
 
-                Pawn writer;
-                Pawn subject;
-                livePawnsById.TryGetValue(row.writerPawnId ?? string.Empty, out writer);
-                livePawnsById.TryGetValue(row.subjectPawnId ?? string.Empty, out subject);
-                if (!IsDiaryEligible(writer) || !IsDiaryEligible(subject))
+                // One malformed modded thought, label, or synchronous dispatch callback must not leave
+                // this already-due row at the head of the queue forever. Remember whether registration
+                // began so cleanup preserves the same terminal ownership rule as ordinary emission.
+                long registrationBefore = events.RegistrationVersion;
+                try
                 {
-                    CancelPendingSocialReflection(row, false);
-                    continue;
-                }
+                    Pawn writer;
+                    Pawn subject;
+                    livePawnsById.TryGetValue(row.writerPawnId ?? string.Empty, out writer);
+                    livePawnsById.TryGetValue(row.subjectPawnId ?? string.Empty, out subject);
+                    if (!IsDiaryEligible(writer) || !IsDiaryEligible(subject))
+                    {
+                        CancelPendingSocialReflection(row, false);
+                        continue;
+                    }
 
-                SocialReflectionSourceResolution source =
-                    ResolveSocialReflectionSource(row, policy);
-                if (source.state == SocialReflectionSourceState.Retry
-                    && now < row.deadlineTick)
+                    SocialReflectionSourceResolution source =
+                        ResolveSocialReflectionSource(row, policy);
+                    if (source.state == SocialReflectionSourceState.Retry
+                        && now < row.deadlineTick)
+                    {
+                        row.nextAttemptTick = Math.Min(
+                            row.deadlineTick,
+                            SocialReflectionSafeAdd(now, row.retryIntervalTicks));
+                        continue;
+                    }
+
+                    EmitPendingSocialReflection(
+                        row, writer, subject, source, policy, now);
+                }
+                catch (Exception exception)
                 {
-                    row.nextAttemptTick = Math.Min(
-                        row.deadlineTick,
-                        SocialReflectionSafeAdd(now, row.retryIntervalTicks));
-                    continue;
+                    bool eventWasRegistered =
+                        events.RegistrationVersion > registrationBefore;
+                    // CancelPendingSocialReflection is safe both before and after Emit removed the row.
+                    // It releases owned pacing only when no event registered, while the handled-source
+                    // row remains the terminal once-per-source owner in either case.
+                    CancelPendingSocialReflection(row, eventWasRegistered);
+                    Type exceptionType = exception.GetType();
+                    Log.WarningOnce(
+                        "[Pawn Diary] A delayed social reflection failed and was cancelled; later "
+                            + "scheduled reflections will continue: " + exceptionType.FullName + ": "
+                            + exception.Message,
+                        ("PawnDiary.SocialReflection.RowFailure."
+                            + exceptionType.FullName).GetHashCode());
                 }
-
-                EmitPendingSocialReflection(
-                    row, writer, subject, source, policy, now);
             }
 
             RecalculateNextSocialReflectionTick(now);
@@ -801,6 +824,43 @@ namespace PawnDiary
                     pendingSocialReflections[i], false);
             }
             nextSocialReflectionSchedulerTick = 0;
+        }
+
+        /// <summary>
+        /// Cancels only reflections owned by one writer. Brainwipe and the full-history dev purge erase
+        /// that pawn's future autobiographical work, while subject-only rows remain another pawn's memory.
+        /// Accepted source keys stay handled so an erased interaction can never reroll.
+        /// </summary>
+        private bool CancelPendingSocialReflectionsForWriter(string writerPawnId)
+        {
+            if (string.IsNullOrWhiteSpace(writerPawnId))
+            {
+                return false;
+            }
+
+            EnsureSocialReflectionLists();
+            bool removed = false;
+            for (int i = pendingSocialReflections.Count - 1; i >= 0; i--)
+            {
+                PendingSocialReflectionState row = pendingSocialReflections[i];
+                if (row != null
+                    && string.Equals(
+                        row.writerPawnId,
+                        writerPawnId,
+                        StringComparison.Ordinal))
+                {
+                    CancelPendingSocialReflection(row, false);
+                    removed = true;
+                }
+            }
+
+            if (removed)
+            {
+                int now = Find.TickManager == null ? 0 : Find.TickManager.TicksGame;
+                RecalculateNextSocialReflectionTick(now);
+            }
+
+            return removed;
         }
 
         private void CancelPendingSocialReflection(

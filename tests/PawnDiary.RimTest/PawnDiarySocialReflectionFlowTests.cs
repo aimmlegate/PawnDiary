@@ -1113,7 +1113,215 @@ namespace PawnDiary.RimTests
                 "A pre-H7 save with missing keys did not normalize to safe empty stores.");
         }
 
+        /// <summary>
+        /// A hostile modded social-thought getter can fail while H7 snapshots one due writer. That row
+        /// is terminally quarantined, its unregistered reservations release, and the next due writer still
+        /// registers in the same bounded scheduler pass.
+        /// </summary>
+        [Test]
+        public static void FaultedDueRowIsQuarantinedAndLaterRowStillEmits()
+        {
+            Pawn laterSubject = scope.CreateAdultColonist();
+            laterSubject.Name = new NameTriple(
+                "LaterSubjectFirst",
+                "H7LaterSubject",
+                "Fixture");
+            scope.SpawnAsLiveColonist(laterSubject);
+
+            int now = Find.TickManager.TicksGame;
+            PendingSocialReflectionState faulted = SchedulePendingReflection(
+                writer,
+                subject,
+                1900000701,
+                now,
+                "the faulted writer's source");
+            PendingSocialReflectionState later = SchedulePendingReflection(
+                subject,
+                laterSubject,
+                1900000702,
+                now,
+                "the later writer's source");
+            faulted.sourceProseUnavailable = true;
+            faulted.dueTick = now;
+            faulted.nextAttemptTick = now;
+            faulted.deadlineTick = now + 100;
+            later.sourceProseUnavailable = true;
+            later.dueTick = now + 1;
+            later.nextAttemptTick = now + 1;
+            later.deadlineTick = now + 101;
+
+            ThrowingSocialThought fault = new ThrowingSocialThought
+            {
+                otherPawn = subject
+            };
+            List<Thought_Memory> memories =
+                writer.needs.mood.thoughts.memories.Memories;
+            memories.Insert(0, fault);
+            scope.RegisterCleanup(() => memories.Remove(fault));
+            NextSchedulerTickField.SetValue(scope.Component, 0);
+
+            DiaryEvent reflection = scope.FireAndRequireEvent(
+                () => InvokeTick(now + 1),
+                SocialReflectionEventData.DefNameToken,
+                subject,
+                null);
+
+            Require(string.Equals(
+                    DiaryContextFields.Value(
+                        reflection.gameContext,
+                        SocialReflectionEventData.SourceKeyContextKey),
+                    later.sourceKey,
+                    StringComparison.Ordinal),
+                "The scheduler did not continue from the quarantined row to the later due writer.");
+            Require(PendingRows().Count == 0,
+                "The faulted due H7 row remained pending and could fail again on the next tick.");
+            Require(WriterCooldownRows().Count == 1
+                    && WriterCooldownRows()[0].writerPawnId
+                        == subject.GetUniqueLoadID()
+                    && PairCooldownRows().Count == 1
+                    && PairCooldownRows()[0].pairKey == later.pairKey,
+                "Fault quarantine did not release only the unregistered row's pacing reservations.");
+            SocialReflectionHandledSourceState faultedHandled = HandledRows()
+                .FirstOrDefault(row => row != null && row.sourceKey == faulted.sourceKey);
+            SocialReflectionHandledSourceState laterHandled = HandledRows()
+                .FirstOrDefault(row => row != null && row.sourceKey == later.sourceKey);
+            Require(HandledRows().Count == 2
+                    && faultedHandled != null
+                    && string.IsNullOrWhiteSpace(faultedHandled.reflectionEventId)
+                    && laterHandled != null
+                    && laterHandled.reflectionEventId == reflection.eventId,
+                "Fault quarantine lost accepted-source ownership or the later event's terminal link.");
+            scope.RequireNoNewEvent(() => InvokeTick(now + 2));
+        }
+
+        /// <summary>
+        /// Brainwipe drops only the wiped pawn's future autobiographical H7 row. A row owned by another
+        /// writer about that pawn remains the other writer's memory, and both accepted sources stay handled.
+        /// </summary>
+        [Test]
+        public static void BrainwipeCancelsOnlyWriterOwnedPendingReflection()
+        {
+            RequireWriterResetCancelsOnlyOwnedReflection(
+                pawn => scope.Component.ForgetDiaryHistory(pawn),
+                "Brainwipe",
+                1900000711);
+        }
+
+        /// <summary>
+        /// The full dev history purge has the same writer-only boundary, preventing a delayed old-source
+        /// page from appearing after the purge without deleting another pawn's subject-only schedule.
+        /// </summary>
+        [Test]
+        public static void DevPurgeCancelsOnlyWriterOwnedPendingReflection()
+        {
+            Require(Prefs.DevMode,
+                "The loaded RimTest profile must keep dev mode enabled for the dev-purge contract.");
+            RequireWriterResetCancelsOnlyOwnedReflection(
+                pawn => scope.Component.PurgeDiaryHistoryForPawnForDev(pawn),
+                "The full dev history purge",
+                1900000721);
+        }
+
         // ---- fixture builders and actual-component Scribe adapter ---------------------------------
+
+        private static PendingSocialReflectionState SchedulePendingReflection(
+            Pawn rowWriter,
+            Pawn rowSubject,
+            int playLogEntryId,
+            int tick,
+            string sourceText)
+        {
+            InteractionDef deepTalk = RequireDef<InteractionDef>("DeepTalk");
+            DiaryInteractionGroupDef heartfelt = InteractionGroups.ByKey("heartfelt");
+            Require(heartfelt != null && heartfelt.socialReflectionEligible,
+                "DeepTalk did not resolve to the H7-eligible heartfelt group.");
+            string sourceKey = scope.Component.TryScheduleSocialReflection(
+                rowWriter,
+                rowSubject,
+                deepTalk,
+                heartfelt,
+                sourceText,
+                playLogEntryId,
+                tick);
+            PendingSocialReflectionState pending = PendingRows()
+                .FirstOrDefault(row => row != null && row.sourceKey == sourceKey);
+            Require(!string.IsNullOrWhiteSpace(sourceKey) && pending != null,
+                "The H7 fixture could not establish its pending reflection row.");
+            return pending;
+        }
+
+        private static void RequireWriterResetCancelsOnlyOwnedReflection(
+            Action<Pawn> reset,
+            string boundaryName,
+            int firstPlayLogEntryId)
+        {
+            Pawn otherWriter = scope.CreateAdultColonist();
+            otherWriter.Name = new NameTriple(
+                "OtherWriterFirst",
+                "H7OtherWriter",
+                "Fixture");
+            scope.SpawnAsLiveColonist(otherWriter);
+
+            int now = Find.TickManager.TicksGame;
+            PendingSocialReflectionState owned = SchedulePendingReflection(
+                writer,
+                subject,
+                firstPlayLogEntryId,
+                now,
+                boundaryName + " owned source");
+            PendingSocialReflectionState subjectOnly = SchedulePendingReflection(
+                otherWriter,
+                writer,
+                firstPlayLogEntryId + 1,
+                now,
+                boundaryName + " subject-only source");
+            owned.nextAttemptTick = now + 100;
+            owned.dueTick = owned.nextAttemptTick;
+            subjectOnly.nextAttemptTick = now + 200;
+            subjectOnly.dueTick = subjectOnly.nextAttemptTick;
+            NextSchedulerTickField.SetValue(
+                scope.Component,
+                owned.nextAttemptTick);
+
+            reset(writer);
+
+            Require(PendingRows().Count == 1
+                    && ReferenceEquals(PendingRows()[0], subjectOnly)
+                    && subjectOnly.writerPawnId == otherWriter.GetUniqueLoadID()
+                    && subjectOnly.subjectPawnId == writer.GetUniqueLoadID(),
+                boundaryName + " removed another writer's memory or retained the reset writer's row.");
+            Require(WriterCooldownRows().Count == 1
+                    && WriterCooldownRows()[0].writerPawnId
+                        == otherWriter.GetUniqueLoadID()
+                    && PairCooldownRows().Count == 1
+                    && PairCooldownRows()[0].pairKey == subjectOnly.pairKey,
+                boundaryName + " did not release only the reset writer's owned reservations.");
+            Require(HandledRows().Count == 2
+                    && HandledRows().Any(row => row != null && row.sourceKey == owned.sourceKey)
+                    && HandledRows().Any(row => row != null && row.sourceKey == subjectOnly.sourceKey),
+                boundaryName + " released accepted once-per-source ownership.");
+            Require((int)NextSchedulerTickField.GetValue(scope.Component)
+                    == subjectOnly.nextAttemptTick,
+                boundaryName + " left the scheduler wake hint pointing at the cancelled row.");
+        }
+
+        private sealed class ExpectedSocialReflectionFault : Exception
+        {
+            public ExpectedSocialReflectionFault()
+                : base("intentional H7 per-row fault")
+            {
+            }
+        }
+
+        private sealed class ThrowingSocialThought : Thought_MemorySocial
+        {
+            public override string LabelCap => "intentional H7 fault";
+
+            public override float OpinionOffset()
+            {
+                throw new ExpectedSocialReflectionFault();
+            }
+        }
 
         private static DiaryEvent CompletedPairSource(
             string eventId,

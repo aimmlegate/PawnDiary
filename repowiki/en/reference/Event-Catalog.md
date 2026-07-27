@@ -1,6 +1,6 @@
 # Event catalog
 
-This is the searchable manual test matrix for two different inventories: **30 runtime event-source routes** and **119 core XML classification groups**. A runtime route proves that a signal can reach the common dispatcher. A group proves how a reached signal is classified. Neither count substitutes for the other.
+This is the searchable manual test matrix for two different inventories: **31 runtime event-source routes** and **120 core XML classification groups**. A runtime route proves that a signal can reach the common dispatcher. A group proves how a reached signal is classified. Neither count substitutes for the other.
 
 Use prompt-test mode when you need to inspect the selected template, model lane, or final prompt without sending a request. “Admitted” below means pawn eligibility, player settings, chance, deduplication, pacing, and route-specific semantic checks all passed.
 
@@ -23,6 +23,7 @@ Use prompt-test mode when you need to inspect the selected template, model lane,
 | `Progression` | Birthdays, skills, titles, genes, records, and anniversaries | scheduled state check | Base game; individual subroutes may need DLC | One solo milestone page, subject to the exact progression policy. |
 | `ArcReflection` | Year and narrative-arc reflections | scheduled state check | Base game | One longer solo arc-reflection page. |
 | `BeliefReflection` | Belief reflections | scheduled state check | Ideology | One solo belief-reflection page. |
+| `SocialReflection` | Delayed social reflections | scheduled state check | Base game | One initiator-only solo reflection page for an admitted meaningful interaction. |
 | `Romance` | Relationship milestones | immediate notification | Base game | Two independent POV pages when both pawns are eligible; otherwise the eligible POV only. |
 | `Raid` | Raids and infestations | immediate notification | Base game or matching DLC/mod incident | One solo page per admitted colonist on the target map. |
 | `Quest` | Quest lifecycle | immediate notification | Base game or matching DLC/mod quest | All-eligible fan-out or one deterministic map witness, as the group policy specifies. |
@@ -249,6 +250,20 @@ Use prompt-test mode when you need to inspect the selected template, model lane,
 | Classification mapping | The `reflectionBelief` group. |
 | Source | [Source/Ingestion/Sources/BeliefReflectionSignal.cs](../../../Source/Ingestion/Sources/BeliefReflectionSignal.cs) — `BeliefReflectionSignal` |
 
+<!-- repowiki:runtime {"id":"SocialReflection"} -->
+## Runtime source: `SocialReflection`
+
+| Test field | Source-verified expectation |
+|---|---|
+| Player-visible family | Delayed social reflections |
+| Capture mechanism | scheduled state check |
+| Prerequisite | Base game |
+| Reproducible setup/trigger | Let two diary-eligible colonists complete an interaction in a group marked `socialReflectionEligible`, then wait for the admitted deterministic delay. |
+| Expected signal route | Accepted InteractionSignal -> saved pending row -> delayed scheduler -> SocialReflectionSignal -> dispatcher. |
+| Expected outcome/evidence | One initiator-only solo reflection page at most once for the claimed source interaction. |
+| Classification mapping | The `socialReflection` group. |
+| Source | [Source/Ingestion/Sources/SocialReflectionSignal.cs](../../../Source/Ingestion/Sources/SocialReflectionSignal.cs) — `SocialReflectionSignal` |
+
 <!-- repowiki:runtime {"id":"Romance"} -->
 ## Runtime source: `Romance`
 
@@ -461,7 +476,7 @@ Use prompt-test mode when you need to inspect the selected template, model lane,
 
 ## Core interaction-group index
 
-The core catalog currently contains **119 groups** and **729 explicit matcher tuples**. The tuple count includes exact, ordinal-exact, prefix, suffix, segment, substring-token, and package-ID items; catch-alls and synthetic batch names are reported separately.
+The core catalog currently contains **120 groups** and **731 explicit matcher tuples**. The tuple count includes exact, ordinal-exact, prefix, suffix, segment, substring-token, and package-ID items; catch-alls and synthetic batch names are reported separately.
 
 | Group ID | Settings label | Domain | Default | Behavior | Matchers |
 |---|---|---|---:|---|---:|
@@ -480,7 +495,7 @@ The core catalog currently contains **119 groups** and **729 explicit matcher tu
 | `heartfelt` | Heartfelt talk | `Interaction` | yes | paired first-person pages when two eligible POVs exist; otherwise the route-specific solo page | 10 |
 | `teaching` | Teaching & lessons | `Interaction` | yes | batched ambient note, normally one solo note per pawn/day | 5 |
 | `smalltalk` | Small talk | `Interaction` | yes | batched ambient note, normally one solo note per pawn/day | 15 |
-| `arrival` | Arrival | `Interaction` | yes | paired first-person pages when two eligible POVs exist; otherwise the route-specific solo page | 1 |
+| `arrival` | Arrival | `Interaction` | yes | paired first-person pages when two eligible POVs exist; otherwise the route-specific solo page | 2 |
 | `eventWindowVoidMonolith` | Void monolith | `Interaction` | yes | paired first-person pages when two eligible POVs exist; otherwise the route-specific solo page | 4 |
 | `eventWindowHeartAttack` | Heart attack | `Interaction` | yes | paired first-person pages when two eligible POVs exist; otherwise the route-specific solo page | 1 |
 | `eventWindowBirthday` | Birthday | `Interaction` | yes | paired first-person pages when two eligible POVs exist; otherwise the route-specific solo page | 1 |
@@ -495,6 +510,7 @@ The core catalog currently contains **119 groups** and **729 explicit matcher tu
 | `dayreflection` | Day's reflection | `Reflection` | yes | scheduled reflection page | 1 |
 | `quadrumreflection` | Quadrum reflection | `Reflection` | yes | scheduled reflection page | 1 |
 | `reflectionBelief` | Belief reflection | `Reflection` | yes | scheduled reflection page | 1 |
+| `socialReflection` | Social reflection | `Reflection` | yes | scheduled reflection page | 1 |
 | `reflection` | Reflection | `Reflection` | yes | scheduled reflection page | 1 |
 | `beliefCrisis` | Crisis of belief | `MentalState` | yes | immediate solo or route-owned page when the source is admitted | 1 |
 | `socialfight` | Social fights | `MentalState` | yes | immediate solo or route-owned page when the source is admitted | 1 |
@@ -982,7 +998,7 @@ Matcher inventory (first matching group by XML order wins):
 
 Source: [1.6/Defs/DiaryInteractionGroupDefs.xml](../../../1.6/Defs/DiaryInteractionGroupDefs.xml) — `smalltalk`
 
-<!-- repowiki:group {"defName":"arrival","domain":"Interaction","defaultEnabled":true,"important":true,"combat":false,"batchEnabled":false,"batchMode":"none","batchScope":"","batchSyntheticDefName":"","batchWindowTicks":0,"batchMaxEvents":0,"catchAll":false,"matchDefNames":["PawnDiary_Arrival"],"matchOrdinalDefNames":[],"matchPrefixes":[],"matchSuffixes":[],"matchSegments":[],"matchTokens":[],"matchPackageIds":[],"enableWhenPackageIdsLoaded":[],"disableWhenPackageIdsLoaded":[],"disableWhenCaptureCapabilitiesReady":[]} -->
+<!-- repowiki:group {"defName":"arrival","domain":"Interaction","defaultEnabled":true,"important":true,"combat":false,"batchEnabled":false,"batchMode":"none","batchScope":"","batchSyntheticDefName":"","batchWindowTicks":0,"batchMaxEvents":0,"catchAll":false,"matchDefNames":["PawnDiary_Arrival","PawnDiary_BrainwipeArrival"],"matchOrdinalDefNames":[],"matchPrefixes":[],"matchSuffixes":[],"matchSegments":[],"matchTokens":[],"matchPackageIds":[],"enableWhenPackageIdsLoaded":[],"disableWhenPackageIdsLoaded":[],"disableWhenCaptureCapabilitiesReady":[]} -->
 ## Group: `arrival` — Arrival
 
 | Policy field | Expected value |
@@ -997,7 +1013,7 @@ Source: [1.6/Defs/DiaryInteractionGroupDefs.xml](../../../1.6/Defs/DiaryInteract
 
 Matcher inventory (first matching group by XML order wins):
 
-- Exact names: `PawnDiary_Arrival`
+- Exact names: `PawnDiary_Arrival`, `PawnDiary_BrainwipeArrival`
 - Ordinal exact names: —
 - Prefixes: —
 - Suffixes: —
@@ -1371,6 +1387,32 @@ Matcher inventory (first matching group by XML order wins):
 - Catch-all: no
 
 Source: [1.6/Defs/DiaryInteractionGroupDefs.xml](../../../1.6/Defs/DiaryInteractionGroupDefs.xml) — `reflectionBelief`
+
+<!-- repowiki:group {"defName":"socialReflection","domain":"Reflection","defaultEnabled":true,"important":true,"combat":false,"batchEnabled":false,"batchMode":"none","batchScope":"","batchSyntheticDefName":"","batchWindowTicks":0,"batchMaxEvents":0,"catchAll":false,"matchDefNames":["PawnDiary_SocialReflection"],"matchOrdinalDefNames":[],"matchPrefixes":[],"matchSuffixes":[],"matchSegments":[],"matchTokens":[],"matchPackageIds":[],"enableWhenPackageIdsLoaded":[],"disableWhenPackageIdsLoaded":[],"disableWhenCaptureCapabilitiesReady":[]} -->
+## Group: `socialReflection` — Social reflection
+
+| Policy field | Expected value |
+|---|---|
+| Domain | `Reflection` |
+| Prerequisite | Base game |
+| Default enabled | yes; an existing player override still wins |
+| Important / combat | yes / no |
+| Page/batch/reflection behavior | scheduled reflection page |
+| Setup/trigger cue | Complete an interaction in a group marked `socialReflectionEligible`, pass its deterministic chance and cooldown checks, and wait for the delayed follow-up. |
+| Expected evidence | The initiator-only page uses the **Social reflection** group label and the dedicated social-reflection prompt boundary. |
+
+Matcher inventory (first matching group by XML order wins):
+
+- Exact names: `PawnDiary_SocialReflection`
+- Ordinal exact names: —
+- Prefixes: —
+- Suffixes: —
+- Whole segments: —
+- Substring tokens: —
+- Source package IDs: —
+- Catch-all: no
+
+Source: [1.6/Defs/DiaryInteractionGroupDefs.xml](../../../1.6/Defs/DiaryInteractionGroupDefs.xml) — `socialReflection`
 
 <!-- repowiki:group {"defName":"reflection","domain":"Reflection","defaultEnabled":true,"important":true,"combat":false,"batchEnabled":false,"batchMode":"none","batchScope":"","batchSyntheticDefName":"","batchWindowTicks":0,"batchMaxEvents":0,"catchAll":false,"matchDefNames":["PawnArcReflection"],"matchOrdinalDefNames":[],"matchPrefixes":[],"matchSuffixes":[],"matchSegments":[],"matchTokens":[],"matchPackageIds":[],"enableWhenPackageIdsLoaded":[],"disableWhenPackageIdsLoaded":[],"disableWhenCaptureCapabilitiesReady":[]} -->
 ## Group: `reflection` — Reflection

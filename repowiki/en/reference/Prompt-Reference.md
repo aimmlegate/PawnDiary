@@ -1,6 +1,6 @@
 # Prompt reference
 
-This is the exhaustive prompt-test companion: **15 template shapes**, **70 event-prompt policies**, and **52 live-context prompt enchantments**. The template field tables preserve XML order. “Required when present” is the current context-budget classification; every field is still omitted when disabled, blank, or equal to `none`, `n/a`, or `unknown`.
+This is the exhaustive prompt-test companion: **16 template shapes**, **72 event-prompt policies**, and **52 live-context prompt enchantments**. The template field tables preserve XML order. “Required when present” is the current context-budget classification; every field is still omitted when disabled, blank, or equal to `none`, `n/a`, or `unknown`.
 
 ## Template index
 
@@ -18,6 +18,7 @@ This is the exhaustive prompt-test companion: **15 template shapes**, **70 event
 | `SoloQuadrumReflection` | `DiaryPromptTemplate_SoloQuadrumReflection` | Quadrum reflection boundary. | 16 | yes | 350 |
 | `SoloArcReflection` | `DiaryPromptTemplate_SoloArcReflection` | Year/arc reflection boundary. | 19 | yes | 420 |
 | `SoloBeliefReflection` | `DiaryPromptTemplate_SoloBeliefReflection` | Ideology belief-reflection boundary. | 15 | yes | 360 |
+| `SoloSocialReflection` | `DiaryPromptTemplate_SoloSocialReflection` | Delayed initiator-only reflection on a meaningful social interaction. | 21 | yes | 200 |
 | `DeathDescription` | `DiaryPromptTemplate_DeathDescription` | Neutral death-description request. | 15 | no | 0 |
 | `ArrivalDescription` | `DiaryPromptTemplate_ArrivalDescription` | Neutral arrival-description request. | 8 | no | 0 |
 | `Title` | `DiaryPromptTemplate_Title` | Separate bounded title request after a main page succeeds. | 1 | no | 0 |
@@ -813,6 +814,46 @@ Source: [1.6/Defs/DiaryPromptTemplateDefs.xml](../../../1.6/Defs/DiaryPromptTemp
 
 Source: [1.6/Defs/DiaryPromptTemplateDefs.xml](../../../1.6/Defs/DiaryPromptTemplateDefs.xml) — `DiaryPromptTemplate_SoloBeliefReflection`
 
+<!-- repowiki:template {"defName":"DiaryPromptTemplate_SoloSocialReflection","templateKey":"SoloSocialReflection","includePersona":true,"includePromptEnchantment":true,"appendDirectSpeechInstruction":false,"maxTokens":200,"systemPromptSource":"xml","finalInstructionSource":"xml","recipientFinalInstructionSource":"fallback","fields":[{"enabled":true,"label":"event","source":"EventNoun","contextKey":""},{"enabled":true,"label":"pov","source":"PovName","contextKey":""},{"enabled":true,"label":"instruction","source":"Instruction","contextKey":""},{"enabled":true,"label":"you","source":"PawnSummary","contextKey":""},{"enabled":true,"label":"source interaction","source":"GameContext","contextKey":"social_reflection_source_facts"},{"enabled":true,"label":"source entry title","source":"GameContext","contextKey":"social_reflection_source_title"},{"enabled":true,"label":"source entry ending","source":"GameContext","contextKey":"social_reflection_source_ending"},{"enabled":true,"label":"subject","source":"GameContext","contextKey":"social_reflection_subject_name"},{"enabled":true,"label":"subject age","source":"GameContext","contextKey":"social_reflection_subject_age"},{"enabled":true,"label":"subject life stage","source":"GameContext","contextKey":"social_reflection_subject_life_stage"},{"enabled":true,"label":"subject appearance","source":"GameContext","contextKey":"social_reflection_subject_appearance"},{"enabled":true,"label":"primary relation","source":"GameContext","contextKey":"social_reflection_relation"},{"enabled":true,"label":"current sentiment","source":"GameContext","contextKey":"social_reflection_sentiment"},{"enabled":true,"label":"remembered reasons","source":"GameContext","contextKey":"social_reflection_reasons"},{"enabled":true,"label":"relevant past","source":"MemoryContext","contextKey":""},{"enabled":true,"label":"setting","source":"Setting","contextKey":""},{"enabled":true,"label":"tone","source":"Tone","contextKey":""},{"enabled":true,"label":"event prompt","source":"EventPrompt","contextKey":""},{"enabled":true,"label":"event enhancement","source":"EventEnhancement","contextKey":""},{"enabled":true,"label":"my last opening line (do not reuse)","source":"LastOpener","contextKey":""},{"enabled":true,"label":"how my previous entry ended (continuity; do not retell it)","source":"PreviousEntryEnding","contextKey":""}]} -->
+## Template: `SoloSocialReflection`
+
+| Contract | Value |
+|---|---|
+| Def | `DiaryPromptTemplate_SoloSocialReflection` |
+| Selection | Delayed initiator-only reflection on a meaningful social interaction. |
+| Persona/style block | yes |
+| Live prompt enchantment allowed | yes |
+| Direct-speech instruction appended | no |
+| System prompt source | `xml` (XML text when present; otherwise the matching shared defensive fallback) |
+| Final instruction source | `xml`; paired-recipient source `fallback` |
+| Lane/title behavior | One main request uses the selected active lane and this template's cap (0 inherits the normal cap). After a successful non-title page, a separate bounded `Title` request may follow when titles are enabled. |
+
+| # | Label | Source | Context key | Enabled | Budget class |
+|---:|---|---|---|---:|---|
+| 1 | event | `EventNoun` | — | yes | required when present |
+| 2 | pov | `PovName` | — | yes | required when present |
+| 3 | instruction | `Instruction` | — | yes | required when present |
+| 4 | you | `PawnSummary` | — | yes | optional/budgeted |
+| 5 | source interaction | `GameContext` | `social_reflection_source_facts` | yes | required when present |
+| 6 | source entry title | `GameContext` | `social_reflection_source_title` | yes | optional/budgeted |
+| 7 | source entry ending | `GameContext` | `social_reflection_source_ending` | yes | optional/budgeted |
+| 8 | subject | `GameContext` | `social_reflection_subject_name` | yes | required when present |
+| 9 | subject age | `GameContext` | `social_reflection_subject_age` | yes | optional/budgeted |
+| 10 | subject life stage | `GameContext` | `social_reflection_subject_life_stage` | yes | optional/budgeted |
+| 11 | subject appearance | `GameContext` | `social_reflection_subject_appearance` | yes | optional/budgeted |
+| 12 | primary relation | `GameContext` | `social_reflection_relation` | yes | required when present |
+| 13 | current sentiment | `GameContext` | `social_reflection_sentiment` | yes | required when present |
+| 14 | remembered reasons | `GameContext` | `social_reflection_reasons` | yes | required when present |
+| 15 | relevant past | `MemoryContext` | — | yes | optional/budgeted |
+| 16 | setting | `Setting` | — | yes | optional/budgeted |
+| 17 | tone | `Tone` | — | yes | optional/budgeted |
+| 18 | event prompt | `EventPrompt` | — | yes | required when present |
+| 19 | event enhancement | `EventEnhancement` | — | yes | optional/budgeted |
+| 20 | my last opening line (do not reuse) | `LastOpener` | — | yes | optional/budgeted |
+| 21 | how my previous entry ended (continuity; do not retell it) | `PreviousEntryEnding` | — | yes | optional/budgeted |
+
+Source: [1.6/Defs/DiaryPromptTemplateDefs.xml](../../../1.6/Defs/DiaryPromptTemplateDefs.xml) — `DiaryPromptTemplate_SoloSocialReflection`
+
 <!-- repowiki:template {"defName":"DiaryPromptTemplate_DeathDescription","templateKey":"DeathDescription","includePersona":false,"includePromptEnchantment":false,"appendDirectSpeechInstruction":false,"maxTokens":0,"systemPromptSource":"fallback","finalInstructionSource":"fallback","recipientFinalInstructionSource":"fallback","fields":[{"enabled":true,"label":"event","source":"EventNoun","contextKey":""},{"enabled":true,"label":"event prompt","source":"EventPrompt","contextKey":""},{"enabled":true,"label":"event enhancement","source":"EventEnhancement","contextKey":""},{"enabled":true,"label":"deceased","source":"DeathVictim","contextKey":""},{"enabled":true,"label":"what happened","source":"NeutralText","contextKey":""},{"enabled":true,"label":"death facts","source":"DeathFacts","contextKey":""},{"enabled":true,"label":"deceased pawn","source":"DeathPawnSummary","contextKey":""},{"enabled":true,"label":"setting","source":"DeathSetting","contextKey":""},{"enabled":true,"label":"persona weapon","source":"GameContext","contextKey":"persona_weapon_name"},{"enabled":true,"label":"persona milestone","source":"GameContext","contextKey":"persona_milestone"},{"enabled":true,"label":"previous bond state","source":"GameContext","contextKey":"bond_previous_state"},{"enabled":true,"label":"new bond state","source":"GameContext","contextKey":"bond_new_state"},{"enabled":true,"label":"bond ending cause","source":"GameContext","contextKey":"bond_end_cause"},{"enabled":true,"label":"persona trait 1","source":"GameContext","contextKey":"persona_trait_1"},{"enabled":true,"label":"persona trait 2","source":"GameContext","contextKey":"persona_trait_2"}]} -->
 ## Template: `DeathDescription`
 
@@ -924,8 +965,10 @@ Source: [1.6/Defs/DiaryPromptTemplateDefs.xml](../../../1.6/Defs/DiaryPromptTemp
 | `DiaryEventPrompt_RecordMilestone` | `RecordMilestone` | Base game | — |
 | `DiaryEventPrompt_ArcReflection` | `ArcReflection` | Base game | — |
 | `DiaryEventPrompt_BeliefReflection` | `BeliefReflection` | Ideology (`Ludeon.RimWorld.Ideology`) | — |
+| `DiaryEventPrompt_SocialReflection` | `PawnDiary_SocialReflection` | Base game | — |
 | `DiaryEventPrompt_ArtImmortalized` | `artImmortalized` | Base game | — |
 | `DiaryEventPrompt_Arrival` | `Arrival` | Base game | — |
+| `DiaryEventPrompt_BrainwipeArrival` | `PawnDiary_BrainwipeArrival` | Anomaly (`Ludeon.RimWorld.Anomaly`) | — |
 | `DiaryEventPrompt_Death` | `Death` | Base game | — |
 | `DiaryEventPrompt_PersonaWeapon` | `PersonaWeapon` | Royalty (`Ludeon.RimWorld.Royalty`) | — |
 | `DiaryEventPrompt_RoyalAscent` | `questRoyalAscent` | Royalty (`Ludeon.RimWorld.Royalty`) | — |
@@ -1281,6 +1324,18 @@ Source: [1.6/Defs/DiaryPromptTemplateDefs.xml](../../../1.6/Defs/DiaryPromptTemp
 | Model preference | No shipped forced model. A player Prompt Studio override may still request a configured model; unknown model text falls back to normal lane routing. |
 | Source | [1.6/Defs/DiaryEventPromptDefs.xml](../../../1.6/Defs/DiaryEventPromptDefs.xml) — `DiaryEventPrompt_BeliefReflection` |
 
+<!-- repowiki:event-policy {"defName":"DiaryEventPrompt_SocialReflection","eventType":"PawnDiary_SocialReflection","enableWhenPackageIdsLoaded":[],"forcedModel":"","guidanceHash":"9fb14e75a2eec7e88f4759b20d6caaa93d288a646a64e05e844dbacb4d76e20c"} -->
+## Event policy: `DiaryEventPrompt_SocialReflection` — social reflection
+
+| Contract | Value |
+|---|---|
+| Selector/classifier mapping | `PawnDiary_SocialReflection`; lookup accepts this selector or the Def name. |
+| Availability | Base game |
+| Prompt guidance | Write a later private reflection about the supplied interaction partner and what the earlier exchange now means to the writer. |
+| Enhancement | Use the source interaction and subject facts as boundaries. The writer may interpret their own feelings, but must not invent the subject's private thoughts, motives, attraction, hatred, intentions, or words. |
+| Model preference | No shipped forced model. A player Prompt Studio override may still request a configured model; unknown model text falls back to normal lane routing. |
+| Source | [1.6/Defs/DiaryEventPromptDefs.xml](../../../1.6/Defs/DiaryEventPromptDefs.xml) — `DiaryEventPrompt_SocialReflection` |
+
 <!-- repowiki:event-policy {"defName":"DiaryEventPrompt_ArtImmortalized","eventType":"artImmortalized","enableWhenPackageIdsLoaded":[],"forcedModel":"","guidanceHash":"2359d890a3fa103b95105859e822c870840e0097da405842b5a9346d505c914c"} -->
 ## Event policy: `DiaryEventPrompt_ArtImmortalized` — immortalized in art
 
@@ -1304,6 +1359,18 @@ Source: [1.6/Defs/DiaryPromptTemplateDefs.xml](../../../1.6/Defs/DiaryPromptTemp
 | Enhancement | Make the arrival feel like a threshold: dust, shock, silence, relief, suspicion, or first sight of shelter. Use only scenario and arrival facts. |
 | Model preference | No shipped forced model. A player Prompt Studio override may still request a configured model; unknown model text falls back to normal lane routing. |
 | Source | [1.6/Defs/DiaryEventPromptDefs.xml](../../../1.6/Defs/DiaryEventPromptDefs.xml) — `DiaryEventPrompt_Arrival` |
+
+<!-- repowiki:event-policy {"defName":"DiaryEventPrompt_BrainwipeArrival","eventType":"PawnDiary_BrainwipeArrival","enableWhenPackageIdsLoaded":["Ludeon.RimWorld.Anomaly"],"forcedModel":"","guidanceHash":"c9d681a6904e85c32f46aca87a78a1d3966e2da64bf2ad930d05cce679854341"} -->
+## Event policy: `DiaryEventPrompt_BrainwipeArrival` — amnesiac awakening
+
+| Contract | Value |
+|---|---|
+| Selector/classifier mapping | `PawnDiary_BrainwipeArrival`; lookup accepts this selector or the Def name. |
+| Availability | Anomaly (`Ludeon.RimWorld.Anomaly`) |
+| Prompt guidance | Write this anxious awakening after total autobiographical amnesia as a new beginning. |
+| Enhancement | The pawn knows their former memories are absent and feels anxiety about that blankness. Do not restore, summarize, or invent anything from before the brainwipe. |
+| Model preference | No shipped forced model. A player Prompt Studio override may still request a configured model; unknown model text falls back to normal lane routing. |
+| Source | [1.6/Defs/DiaryEventPromptDefs.xml](../../../1.6/Defs/DiaryEventPromptDefs.xml) — `DiaryEventPrompt_BrainwipeArrival` |
 
 <!-- repowiki:event-policy {"defName":"DiaryEventPrompt_Death","eventType":"Death","enableWhenPackageIdsLoaded":[],"forcedModel":"","guidanceHash":"b1f442887b6dd96d72a8b0486b954b9b84293ebc22a66365bad1ade64a7492ab"} -->
 ## Event policy: `DiaryEventPrompt_Death` — death

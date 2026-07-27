@@ -111,7 +111,9 @@ namespace PawnDiary
             PawnDiaryRecord diary = FindDiary(pawn, false);
             HashSet<string> removedHotEventIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             HashSet<string> purgedEventIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            bool stateChanged = false;
+            // Prevent delayed autobiographical work sourced from the just-purged history from adding a
+            // new page afterward. Subject-only rows remain owned by their other, unpurged writer.
+            bool stateChanged = CancelPendingSocialReflectionsForWriter(pawnId);
             if (diary != null)
             {
                 if (diary.eventIds != null)

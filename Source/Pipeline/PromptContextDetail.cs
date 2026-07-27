@@ -352,6 +352,8 @@ namespace PawnDiary
                     || Eq(contextKey, "quadrum_dates")
                     || Eq(contextKey, "arc_year")
                     || Eq(contextKey, "belief_reflection_trigger")
+                    || (Eq(templateKey, DiaryPipelineTemplates.SoloSocialReflection)
+                        && IsRequiredSocialReflectionContextKey(contextKey))
                     || IsRequiredQuestContextKey(contextKey)
                     || IsRequiredBiotechContextKey(contextKey)
                     || IsRequiredPollutionContextKey(contextKey)
@@ -362,6 +364,21 @@ namespace PawnDiary
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Keeps the minimum frozen H7 truth in every detail preset. The source interaction identifies
+        /// what the delayed page is about; the subject, relationship, sentiment, and remembered reasons
+        /// bound what the model may say about the other pawn. Optional source-page prose, age, life stage,
+        /// and appearance remain budgetable supporting detail.
+        /// </summary>
+        private static bool IsRequiredSocialReflectionContextKey(string contextKey)
+        {
+            return Eq(contextKey, "social_reflection_source_facts")
+                || Eq(contextKey, "social_reflection_subject_name")
+                || Eq(contextKey, "social_reflection_relation")
+                || Eq(contextKey, "social_reflection_sentiment")
+                || Eq(contextKey, "social_reflection_reasons");
         }
 
         /// <summary>
@@ -606,6 +623,33 @@ namespace PawnDiary
         private static int ScoreContextKey(string contextKey, bool quest, bool progression, bool ability,
             bool ritual, bool combat, bool persona, PromptContextDetailLevel level, out string reason)
         {
+            // H7 owns a namespaced context family. Classify it before the broad progression matcher:
+            // social_reflection_source_title is source-page color, not a royal/progression title.
+            if (Eq(contextKey, "social_reflection_source_title"))
+            {
+                reason = "optional social-reflection source title";
+                return 38;
+            }
+
+            if (Eq(contextKey, "social_reflection_source_ending"))
+            {
+                reason = "optional social-reflection source excerpt";
+                return 58;
+            }
+
+            if (Eq(contextKey, "social_reflection_subject_appearance"))
+            {
+                reason = "optional social-reflection subject appearance";
+                return 46;
+            }
+
+            if (Eq(contextKey, "social_reflection_subject_age")
+                || Eq(contextKey, "social_reflection_subject_life_stage"))
+            {
+                reason = "optional social-reflection subject detail";
+                return 34;
+            }
+
             if (StartsWithAny(contextKey, "permit_") || Eq(contextKey, "used_during_cooldown"))
             {
                 reason = Eq(contextKey, "permit_setting")
@@ -737,7 +781,8 @@ namespace PawnDiary
             bool reflection = Eq(templateKey, DiaryPipelineTemplates.SoloDayReflection)
                 || Eq(templateKey, DiaryPipelineTemplates.SoloQuadrumReflection)
                 || Eq(templateKey, DiaryPipelineTemplates.SoloArcReflection)
-                || Eq(templateKey, DiaryPipelineTemplates.SoloBeliefReflection);
+                || Eq(templateKey, DiaryPipelineTemplates.SoloBeliefReflection)
+                || Eq(templateKey, DiaryPipelineTemplates.SoloSocialReflection);
             bool neutral = Eq(templateKey, DiaryPipelineTemplates.DeathDescription)
                 || Eq(templateKey, DiaryPipelineTemplates.ArrivalDescription);
             if (level == PromptContextDetailLevel.Balanced)
@@ -803,7 +848,7 @@ namespace PawnDiary
         {
             for (int i = 0; i < markers.Length; i++)
             {
-                if (Contains(text, markers[i]))
+                if (HasMarkerAtContextBoundary(text, markers[i]))
                 {
                     return true;
                 }
@@ -814,7 +859,58 @@ namespace PawnDiary
 
         private static bool ContainsAny(string text, params string[] markers)
         {
-            return HasAnyMarker(text, markers);
+            for (int i = 0; i < markers.Length; i++)
+            {
+                if (Contains(text, markers[i]))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Matches a game-context key/value marker only at the start of a field. This prevents a
+        /// namespaced key such as social_reflection_source_title from impersonating the root title key.
+        /// Whitespace after the semicolon is tolerated for older or hand-authored context strings.
+        /// </summary>
+        private static bool HasMarkerAtContextBoundary(string text, string marker)
+        {
+            if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(marker))
+            {
+                return false;
+            }
+
+            int searchFrom = 0;
+            while (searchFrom <= text.Length - marker.Length)
+            {
+                int index = text.IndexOf(marker, searchFrom, StringComparison.OrdinalIgnoreCase);
+                if (index < 0)
+                {
+                    return false;
+                }
+
+                if (index == 0)
+                {
+                    return true;
+                }
+
+                int previous = index - 1;
+                while (previous >= 0 && char.IsWhiteSpace(text[previous]))
+                {
+                    previous--;
+                }
+
+                if (previous < 0 || text[previous] == ';')
+                {
+                    return true;
+                }
+
+                searchFrom = index + 1;
+            }
+
+            return false;
         }
 
         private static bool StartsWithAny(string text, params string[] prefixes)

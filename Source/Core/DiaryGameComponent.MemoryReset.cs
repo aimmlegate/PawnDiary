@@ -22,6 +22,10 @@ namespace PawnDiary
             }
 
             string pawnId = pawn.GetUniqueLoadID();
+            // A row may be accepted before its source page creates a diary record, so cancel the wiped
+            // pawn's future autobiographical reflection before the missing-diary early return below.
+            // Rows where this pawn is only the subject belong to another pawn and intentionally survive.
+            CancelPendingSocialReflectionsForWriter(pawnId);
             PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
             if (diary == null)
             {

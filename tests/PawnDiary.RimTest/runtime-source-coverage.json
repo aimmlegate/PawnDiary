@@ -105,6 +105,13 @@
     "evidence": "downstream-flow"
   },
   {
+    "runtimeSource": "SocialReflection",
+    "testFile": "PawnDiarySocialReflectionFlowTests.cs",
+    "testMethod": "DispatchFoldMarksFactsOnlyAndEmitsAtOrdinaryDue",
+    "profile": "base",
+    "evidence": "production-flow"
+  },
+  {
     "runtimeSource": "Romance",
     "testFile": "PawnDiaryEventReactionTests.cs",
     "testMethod": "LoverRelationCreatesPairEvent",

@@ -16,6 +16,7 @@ namespace DiaryPipelineTests
         private static void TestSocialReflectionPolicy()
         {
             TestSocialReflectionChanceBoundaries();
+            TestSocialReflectionChanceCoverage();
             TestSocialReflectionDeterminismAndDelay();
             TestSocialReflectionPairAndRelationIdentity();
             TestSocialReflectionAdmissionAndReplacement();
@@ -86,6 +87,64 @@ namespace DiaryPipelineTests
                 !SocialReflectionPolicy.PassesChance("stable-source", 100, never));
         }
 
+        private static void TestSocialReflectionChanceCoverage()
+        {
+            List<SocialReflectionChanceBand> valid =
+                SocialReflectionPolicySnapshot.CreateDefault().chanceBands;
+            AssertTrue(
+                "social reflection default chance bands cover zero through one hundred",
+                SocialReflectionPolicy.HasCompleteChanceCoverage(valid));
+            AssertTrue(
+                "social reflection reordered complete chance bands remain valid",
+                SocialReflectionPolicy.HasCompleteChanceCoverage(
+                    new List<SocialReflectionChanceBand>
+                    {
+                        ChanceBand(75, 100, 0.60f),
+                        ChanceBand(0, 24, 0.05f),
+                        ChanceBand(50, 74, 0.35f),
+                        ChanceBand(25, 49, 0.15f)
+                    }));
+            AssertTrue(
+                "social reflection chance bands reject a coverage gap",
+                !SocialReflectionPolicy.HasCompleteChanceCoverage(
+                    new List<SocialReflectionChanceBand>
+                    {
+                        ChanceBand(0, 24, 0.05f),
+                        ChanceBand(26, 100, 0.60f)
+                    }));
+            AssertTrue(
+                "social reflection chance bands reject an overlap",
+                !SocialReflectionPolicy.HasCompleteChanceCoverage(
+                    new List<SocialReflectionChanceBand>
+                    {
+                        ChanceBand(0, 50, 0.05f),
+                        ChanceBand(50, 100, 0.60f)
+                    }));
+            AssertTrue(
+                "social reflection chance bands reject partial coverage",
+                !SocialReflectionPolicy.HasCompleteChanceCoverage(
+                    new List<SocialReflectionChanceBand>
+                    {
+                        ChanceBand(25, 100, 0.60f)
+                    }));
+            AssertTrue(
+                "social reflection chance bands reject invalid probability",
+                !SocialReflectionPolicy.HasCompleteChanceCoverage(
+                    new List<SocialReflectionChanceBand>
+                    {
+                        ChanceBand(0, 100, 1.5f)
+                    }));
+            AssertTrue(
+                "social reflection chance bands reject null rows",
+                !SocialReflectionPolicy.HasCompleteChanceCoverage(
+                    new List<SocialReflectionChanceBand>
+                    {
+                        ChanceBand(0, 49, 0.15f),
+                        null,
+                        ChanceBand(50, 100, 0.60f)
+                    }));
+        }
+
         private static void TestSocialReflectionDeterminismAndDelay()
         {
             string sourceKey = SocialReflectionPolicy.SourceKey(
@@ -123,16 +182,45 @@ namespace DiaryPipelineTests
                 "social reflection delay stays in the inclusive six-to-twenty-four-hour window",
                 firstDelay >= 15000 && firstDelay <= 60000);
 
+            HashSet<double> sampledRolls = new HashSet<double>();
+            HashSet<int> sampledDelays = new HashSet<int>();
+            bool sawIntermediatePass = false;
+            bool sawIntermediateFailure = false;
+            List<SocialReflectionChanceBand> halfChance =
+                new List<SocialReflectionChanceBand>
+                {
+                    ChanceBand(0, 100, 0.5f)
+                };
             for (int index = 0; index < 64; index++)
             {
+                string sampledSource = "source-" + index;
+                sampledRolls.Add(SocialReflectionPolicy.DeterministicRoll(sampledSource));
                 int delay = SocialReflectionPolicy.DelayTicks(
-                    "source-" + index,
+                    sampledSource,
                     15000,
                     60000);
+                sampledDelays.Add(delay);
+                if (SocialReflectionPolicy.PassesChance(sampledSource, 0, halfChance))
+                {
+                    sawIntermediatePass = true;
+                }
+                else
+                {
+                    sawIntermediateFailure = true;
+                }
                 AssertTrue(
                     "social reflection delay range sample " + index,
                     delay >= 15000 && delay <= 60000);
             }
+            AssertTrue(
+                "social reflection deterministic rolls vary across source identities",
+                sampledRolls.Count > 1);
+            AssertTrue(
+                "social reflection deterministic delays vary across source identities",
+                sampledDelays.Count > 1);
+            AssertTrue(
+                "social reflection intermediate chance produces both outcomes",
+                sawIntermediatePass && sawIntermediateFailure);
 
             AssertEqual(
                 "social reflection malformed delay window collapses to safe minimum",
@@ -361,6 +449,34 @@ namespace DiaryPipelineTests
                 "social reflection excerpt zero character cap is empty",
                 string.Empty,
                 SocialReflectionPolicy.SourceExcerpt("One. Two.", 2, 0));
+            AssertEqual(
+                "social reflection excerpt keeps an ellipsis as one terminator",
+                "I waited...",
+                SocialReflectionPolicy.SourceExcerpt(
+                    "Earlier thought. I waited...",
+                    1,
+                    400));
+            AssertEqual(
+                "social reflection excerpt keeps abbreviations inside a sentence",
+                "I met Dr. Smith. We talked.",
+                SocialReflectionPolicy.SourceExcerpt(
+                    "I met Dr. Smith. We talked.",
+                    2,
+                    400));
+            AssertEqual(
+                "social reflection excerpt keeps decimal points inside a sentence",
+                "The reading was 3.5 volts. It held.",
+                SocialReflectionPolicy.SourceExcerpt(
+                    "The reading was 3.5 volts. It held.",
+                    2,
+                    400));
+            AssertEqual(
+                "social reflection excerpt includes a closing quote with its sentence",
+                "\"We talked.\" Then I left.",
+                SocialReflectionPolicy.SourceExcerpt(
+                    "Earlier. \"We talked.\" Then I left.",
+                    2,
+                    400));
 
             string longExcerpt = SocialReflectionPolicy.SourceExcerpt(
                 new string('A', 250) + ". " + new string('B', 250) + "?",
@@ -533,6 +649,19 @@ namespace DiaryPipelineTests
                 ownerPawnId = ownerPawnId,
                 otherPawnId = otherPawnId,
                 relationDefName = relationDefName
+            };
+        }
+
+        private static SocialReflectionChanceBand ChanceBand(
+            int minimum,
+            int maximum,
+            float chance)
+        {
+            return new SocialReflectionChanceBand
+            {
+                minimumAbsoluteOpinion = minimum,
+                maximumAbsoluteOpinion = maximum,
+                chance = chance
             };
         }
 

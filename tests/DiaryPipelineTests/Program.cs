@@ -1450,6 +1450,117 @@ namespace DiaryPipelineTests
                 "psylink level: 2");
             AssertTrue("compact removes optional royal duty prose first",
                 !royaltyCompact.userPrompt.Contains("new royal duties:"));
+
+            TestSocialReflectionContextDetailSelection();
+        }
+
+        /// <summary>
+        /// H7 is a reflection prompt family, and its frozen interaction/subject truth must survive both
+        /// budgeted presets. The source-page title is supporting color, never royal-title progression.
+        /// </summary>
+        private static void TestSocialReflectionContextDetailSelection()
+        {
+            DiaryEventPayload payload = SoloPayload(
+                "e-context-social-reflection",
+                "social reflection",
+                "Alice thought back to her exchange with Mira.");
+            payload.domain = DiaryEventDomainClassifier.Reflection;
+            payload.socialReflection = true;
+            payload.instruction = "Reflect on Mira and the earlier exchange.";
+            payload.gameContext =
+                "social_reflection=true; "
+                + "social_reflection_source_facts=Alice and Mira discussed the broken greenhouse; "
+                + "social_reflection_source_title=Under cracked glass; "
+                + "social_reflection_source_ending=The rain kept tapping; "
+                + "social_reflection_subject_name=Mira; "
+                + "social_reflection_subject_age=27; "
+                + "social_reflection_subject_life_stage=adult; "
+                + "social_reflection_subject_appearance=ordinary-looking; "
+                + "social_reflection_relation=friend; "
+                + "social_reflection_sentiment=neutral; "
+                + "social_reflection_reasons=worked together";
+
+            PromptContextDetailLevel[] levels =
+            {
+                PromptContextDetailLevel.Balanced,
+                PromptContextDetailLevel.Compact
+            };
+            int[] expectedBudgets = { 1000, 600 };
+            string[] requiredKeys =
+            {
+                "social_reflection_source_facts",
+                "social_reflection_subject_name",
+                "social_reflection_relation",
+                "social_reflection_sentiment",
+                "social_reflection_reasons"
+            };
+            string[] requiredRenderedText =
+            {
+                "source interaction: Alice and Mira discussed the broken greenhouse",
+                "subject: Mira",
+                "primary relation: friend",
+                "current sentiment: neutral",
+                "remembered reasons: worked together"
+            };
+
+            for (int levelIndex = 0; levelIndex < levels.Length; levelIndex++)
+            {
+                DiaryPromptPlan plan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+                {
+                    payload = payload,
+                    policy = Policy(combat: false, important: true),
+                    povRole = DiaryPipelineRoles.Initiator,
+                    contextDetailLevel = levels[levelIndex]
+                });
+
+                AssertEqual(levels[levelIndex] + " H7 uses reflection budget",
+                    expectedBudgets[levelIndex], plan.contextSelectionReport.budgetChars);
+                AssertEqual(levels[levelIndex] + " H7 routes to its exact template",
+                    DiaryPipelineTemplates.SoloSocialReflection, plan.templateKey);
+
+                for (int keyIndex = 0; keyIndex < requiredKeys.Length; keyIndex++)
+                {
+                    PromptContextFieldReport report = plan.contextSelectionReport.kept
+                        .FirstOrDefault(row => row.contextKey == requiredKeys[keyIndex]);
+                    AssertTrue(
+                        levels[levelIndex] + " H7 keeps required " + requiredKeys[keyIndex],
+                        report != null && report.required && report.score == 1000);
+                    AssertContains(
+                        levels[levelIndex] + " H7 renders required " + requiredKeys[keyIndex],
+                        plan.userPrompt,
+                        requiredRenderedText[keyIndex]);
+                }
+
+                PromptContextFieldReport sourceTitle = plan.contextSelectionReport.kept
+                    .Concat(plan.contextSelectionReport.cut)
+                    .FirstOrDefault(row => row.contextKey == "social_reflection_source_title");
+                AssertTrue(
+                    levels[levelIndex] + " H7 source title has its optional social score",
+                    sourceTitle != null
+                        && !sourceTitle.required
+                        && sourceTitle.score == 38
+                        && sourceTitle.reason == "optional social-reflection source title");
+            }
+
+            // The gameContext marker matcher must examine field boundaries. Before H7, the embedded
+            // "_source_title=" substring made every unrelated title-like key score as active progression.
+            const string boundaryContext =
+                "social_reflection_source_title=Under cracked glass; unrelated_title_note=ordinary";
+            PromptContextSelectionResult boundarySelection = PromptContextSelector.Select(
+                DiaryPipelineTemplates.SoloSocialReflection,
+                Fields(ContextField("unrelated title note", "unrelated_title_note")),
+                new PromptValues { gameContext = boundaryContext },
+                DiaryEventDomainClassifier.Reflection,
+                boundaryContext,
+                PromptContextDetailLevel.Balanced,
+                new PromptContextBudgets { balancedReflection = 1000 });
+            PromptContextFieldReport boundaryProbe = boundarySelection.report.kept
+                .FirstOrDefault(row => row.contextKey == "unrelated_title_note");
+            AssertTrue(
+                "namespaced H7 source title does not activate progression scoring",
+                boundaryProbe != null
+                    && boundaryProbe.score == 45
+                    && boundaryProbe.reason == "progression context");
         }
 
         private static void TestBeliefContextPromptField()
@@ -1558,7 +1669,7 @@ namespace DiaryPipelineTests
 
         /// <summary>
         /// LORE_MEMORY_SEED_PLAN §9: the central projectability decision plus the shipped-XML
-        /// contract — all 11 first-person templates (now including the three reflections) declare
+        /// contract — every first-person template, including all five reflection shapes, declares
         /// MemoryContext exactly once; neutral death/arrival and title templates never do.
         /// </summary>
         private static void TestMemoryContextProjectabilityAndTemplates()
@@ -1586,7 +1697,7 @@ namespace DiaryPipelineTests
                 "PairDefault", "PairImportant", "PairCombat", "PairBatched",
                 "SoloDefault", "SoloImportant", "SoloInternalState", "SoloBatched",
                 "SoloDayReflection", "SoloQuadrumReflection", "SoloArcReflection",
-                "SoloBeliefReflection"
+                "SoloBeliefReflection", "SoloSocialReflection"
             };
             for (int i = 0; i < firstPersonTemplates.Length; i++)
             {
@@ -8377,6 +8488,7 @@ namespace DiaryPipelineTests
             AddTemplate(policy, DiaryPipelineTemplates.SoloQuadrumReflection, includePersona: true);
             AddTemplate(policy, DiaryPipelineTemplates.SoloArcReflection, includePersona: true);
             AddTemplate(policy, DiaryPipelineTemplates.SoloBeliefReflection, includePersona: true);
+            AddTemplate(policy, DiaryPipelineTemplates.SoloSocialReflection, includePersona: true);
             AddTemplate(policy, DiaryPipelineTemplates.DeathDescription, includePersona: false);
             AddTemplate(policy, DiaryPipelineTemplates.ArrivalDescription, includePersona: false);
             AddTemplate(policy, DiaryPipelineTemplates.Title, includePersona: false);
@@ -8420,6 +8532,34 @@ namespace DiaryPipelineTests
                     Field("arrival facts", "ArrivalFacts"),
                     Field("colonist pawn", "PawnSummary"),
                     Field("setting", "Setting"));
+            }
+            else if (key == DiaryPipelineTemplates.SoloSocialReflection)
+            {
+                // Keep this pure fixture byte-for-byte aligned with the shipped 21-field H7 shape.
+                // A dedicated shape makes budget/priority tests exercise the real namespaced keys.
+                fields = Fields(
+                    Field("event", "EventNoun"),
+                    Field("pov", "PovName"),
+                    Field("instruction", "Instruction"),
+                    Field("you", "PawnSummary"),
+                    ContextField("source interaction", "social_reflection_source_facts"),
+                    ContextField("source entry title", "social_reflection_source_title"),
+                    ContextField("source entry ending", "social_reflection_source_ending"),
+                    ContextField("subject", "social_reflection_subject_name"),
+                    ContextField("subject age", "social_reflection_subject_age"),
+                    ContextField("subject life stage", "social_reflection_subject_life_stage"),
+                    ContextField("subject appearance", "social_reflection_subject_appearance"),
+                    ContextField("primary relation", "social_reflection_relation"),
+                    ContextField("current sentiment", "social_reflection_sentiment"),
+                    ContextField("remembered reasons", "social_reflection_reasons"),
+                    Field("relevant past", MemoryContextPrompt.Source),
+                    Field("setting", "Setting"),
+                    Field("tone", "Tone"),
+                    Field("event prompt", "EventPrompt"),
+                    Field("event enhancement", "EventEnhancement"),
+                    Field("my last opening line (do not reuse)", "LastOpener"),
+                    Field("how my previous entry ended (continuity; do not retell it)",
+                        "PreviousEntryEnding"));
             }
             else
             {
@@ -8554,10 +8694,12 @@ namespace DiaryPipelineTests
                 includePromptEnchantment = key != DiaryPipelineTemplates.Title,
                 appendDirectSpeechInstruction = key != DiaryPipelineTemplates.Title
                     && key != DiaryPipelineTemplates.SoloArcReflection
-                    && key != DiaryPipelineTemplates.SoloBeliefReflection,
+                    && key != DiaryPipelineTemplates.SoloBeliefReflection
+                    && key != DiaryPipelineTemplates.SoloSocialReflection,
                 maxTokens = key == DiaryPipelineTemplates.SoloQuadrumReflection ? 350
                     : key == DiaryPipelineTemplates.SoloArcReflection ? 420
-                    : key == DiaryPipelineTemplates.SoloBeliefReflection ? 360 : 0,
+                    : key == DiaryPipelineTemplates.SoloBeliefReflection ? 360
+                    : key == DiaryPipelineTemplates.SoloSocialReflection ? 200 : 0,
                 fields = fields
             };
             policy.templates.Add(template);
