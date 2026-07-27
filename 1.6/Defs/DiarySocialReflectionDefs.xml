@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- Quality Wave H7. All behavioral knobs and prompt-facing appearance/style text live here.
+       C# copies this Def into a plain policy snapshot before pure chance, delay, cooldown,
+       classification, and formatting code runs. -->
+  <PawnDiary.DiarySocialReflectionDef>
+    <defName>Diary_SocialReflection</defName>
+    <enabled>true</enabled>
+
+    <!-- RimWorld uses 60,000 ticks per day and 2,500 ticks per in-game hour. -->
+    <pairCooldownTicks>900000</pairCooldownTicks>
+    <writerCooldownTicks>180000</writerCooldownTicks>
+    <minimumDelayTicks>15000</minimumDelayTicks>
+    <maximumDelayTicks>60000</maximumDelayTicks>
+    <retryIntervalTicks>2500</retryIntervalTicks>
+    <proseGraceTicks>60000</proseGraceTicks>
+
+    <!-- Defensive save/runtime bounds. A writer and unordered pair may own only one pending row. -->
+    <maximumPendingRows>128</maximumPendingRows>
+    <maximumPairCooldownRows>512</maximumPairCooldownRows>
+    <maximumWriterCooldownRows>512</maximumWriterCooldownRows>
+    <maximumHandledSourceRows>2048</maximumHandledSourceRows>
+    <maximumProcessedPerTick>4</maximumProcessedPerTick>
+    <maximumSourceLookupRows>256</maximumSourceLookupRows>
+
+    <!-- Frozen prompt-context bounds. -->
+    <maximumSourceLabelCharacters>120</maximumSourceLabelCharacters>
+    <sourceExcerptSentenceCount>2</sourceExcerptSentenceCount>
+    <sourceExcerptMaximumCharacters>400</sourceExcerptMaximumCharacters>
+    <maximumOpinionReasons>3</maximumOpinionReasons>
+    <maximumMemoryLines>2</maximumMemoryLines>
+
+    <!-- PawnBeauty bands: <= -1.5, <= -0.5, ordinary middle, >= 0.5, >= 1.5. -->
+    <veryUnattractiveMaximum>-1.5</veryUnattractiveMaximum>
+    <unattractiveMaximum>-0.5</unattractiveMaximum>
+    <attractiveMinimum>0.5</attractiveMinimum>
+    <veryAttractiveMinimum>1.5</veryAttractiveMinimum>
+    <veryUnattractiveLabel>very unattractive</veryUnattractiveLabel>
+    <unattractiveLabel>unattractive</unattractiveLabel>
+    <ordinaryAppearanceLabel>ordinary-looking</ordinaryAppearanceLabel>
+    <attractiveLabel>attractive</attractiveLabel>
+    <veryAttractiveLabel>very attractive</veryAttractiveLabel>
+
+    <!-- Opinion polarity chooses the frozen prompt tone and UI cue. -->
+    <negativeOpinionMaximum>-1</negativeOpinionMaximum>
+    <positiveOpinionMinimum>1</positiveOpinionMinimum>
+
+    <chanceBands>
+      <li>
+        <minimumAbsoluteOpinion>0</minimumAbsoluteOpinion>
+        <maximumAbsoluteOpinion>24</maximumAbsoluteOpinion>
+        <chance>0.05</chance>
+      </li>
+      <li>
+        <minimumAbsoluteOpinion>25</minimumAbsoluteOpinion>
+        <maximumAbsoluteOpinion>49</maximumAbsoluteOpinion>
+        <chance>0.15</chance>
+      </li>
+      <li>
+        <minimumAbsoluteOpinion>50</minimumAbsoluteOpinion>
+        <maximumAbsoluteOpinion>74</maximumAbsoluteOpinion>
+        <chance>0.35</chance>
+      </li>
+      <li>
+        <minimumAbsoluteOpinion>75</minimumAbsoluteOpinion>
+        <maximumAbsoluteOpinion>100</maximumAbsoluteOpinion>
+        <chance>0.60</chance>
+      </li>
+    </chanceBands>
+
+    <styles>
+      <li>
+        <polarity>negative</polarity>
+        <tone>hurt, guarded, or angry, weighing the relationship without softening it</tone>
+        <colorCue>socialFight</colorCue>
+      </li>
+      <li>
+        <polarity>neutral</polarity>
+        <tone>quietly curious and measured, noticing what this person has come to mean</tone>
+        <colorCue>quiet</colorCue>
+      </li>
+      <li>
+        <polarity>positive</polarity>
+        <tone>warm and open, lingering on affection, trust, or gratitude without assuming it is returned</tone>
+        <colorCue>white</colorCue>
+      </li>
+    </styles>
+  </PawnDiary.DiarySocialReflectionDef>
+
+</Defs>

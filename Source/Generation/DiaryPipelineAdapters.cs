@@ -91,6 +91,8 @@ namespace PawnDiary
                 };
             }
 
+            bool socialReflection = DiaryContextFields.IsTrue(
+                diaryEvent.gameContext, "social_reflection");
             DiaryEventPayload payload = new DiaryEventPayload
             {
                 eventId = diaryEvent.eventId,
@@ -112,12 +114,21 @@ namespace PawnDiary
                 quadrumReflection = diaryEvent.IsQuadrumReflection(),
                 arcReflection = diaryEvent.IsArcReflection(),
                 beliefReflection = diaryEvent.IsBeliefReflection(),
+                socialReflection = socialReflection,
                 supportsDirectSpeechInstruction = IsInteractionPrompt(diaryEvent),
                 initiator = PovFor(diaryEvent, DiaryPipelineRoles.Initiator),
                 recipient = PovFor(diaryEvent, DiaryPipelineRoles.Recipient),
                 display = new DiaryDisplayPayload
                 {
-                    colorCue = DiaryEvent.ResolveColorCue(diaryEvent.interactionDefName, diaryEvent.gameContext),
+                    // H7 freezes a polarity-specific cue on the event. Regeneration must keep that
+                    // saved decision instead of re-deriving the social-reflection group's quiet
+                    // fallback (or reading later XML changes).
+                    colorCue = socialReflection
+                            && !string.IsNullOrWhiteSpace(diaryEvent.colorCue)
+                        ? diaryEvent.colorCue
+                        : DiaryEvent.ResolveColorCue(
+                            diaryEvent.interactionDefName,
+                            diaryEvent.gameContext),
                     important = diaryEvent.IsImportant()
                 }
             };
@@ -176,7 +187,7 @@ namespace PawnDiary
                     important = payload?.display == null || payload.display.important,
                     combat = GroupCombat(payload, group),
                     colorCue = payload?.display?.colorCue,
-                    tone = ToneFor(group, payload?.eventId, payload == null ? 0 : payload.variantRerolls)
+                    tone = ToneForPayload(payload, group)
                 }
             };
 
@@ -192,6 +203,7 @@ namespace PawnDiary
             AddTemplate(snapshot, DiaryPipelineTemplates.SoloQuadrumReflection);
             AddTemplate(snapshot, DiaryPipelineTemplates.SoloArcReflection);
             AddTemplate(snapshot, DiaryPipelineTemplates.SoloBeliefReflection);
+            AddTemplate(snapshot, DiaryPipelineTemplates.SoloSocialReflection);
             AddTemplate(snapshot, DiaryPipelineTemplates.DeathDescription);
             AddTemplate(snapshot, DiaryPipelineTemplates.ArrivalDescription);
             AddTemplate(snapshot, DiaryPipelineTemplates.Title);
@@ -343,6 +355,10 @@ namespace PawnDiary
             else if (maxTokens <= 0 && string.Equals(templateKey, DiaryPipelineTemplates.SoloBeliefReflection, StringComparison.OrdinalIgnoreCase))
             {
                 maxTokens = Math.Max(1, DiaryBeliefPolicy.Snapshot().beliefReflectionMaxTokens);
+            }
+            else if (maxTokens <= 0 && string.Equals(templateKey, DiaryPipelineTemplates.SoloSocialReflection, StringComparison.OrdinalIgnoreCase))
+            {
+                maxTokens = 200;
             }
 
             snapshot.templates.Add(new DiaryTemplatePolicy
@@ -551,6 +567,31 @@ namespace PawnDiary
             return group != null && group.combat;
         }
 
+        /// <summary>
+        /// Uses H7's already-localized, event-time polarity tone when present. The XML group tone
+        /// remains the fail-soft fallback for old or incomplete events, while ordinary event kinds
+        /// continue through the established deterministic group-variant picker.
+        /// </summary>
+        private static string ToneForPayload(
+            DiaryEventPayload payload,
+            DiaryInteractionGroupDef group)
+        {
+            if (payload != null && payload.socialReflection)
+            {
+                string frozen = DiaryContextFields.Value(
+                    payload.gameContext, "social_reflection_tone");
+                if (!string.IsNullOrWhiteSpace(frozen))
+                {
+                    return frozen;
+                }
+            }
+
+            return ToneFor(
+                group,
+                payload?.eventId,
+                payload == null ? 0 : payload.variantRerolls);
+        }
+
         // One tone wording for the group, or empty. When the group has a `tones` variant pool, a
         // wording is picked deterministically by the event id so the same entry keeps the same tone
         // across save/load and regeneration; the singular `tone` is the fallback. Seeding keeps the
@@ -664,6 +705,11 @@ namespace PawnDiary
             if (payload.hasArrivalDescription)
             {
                 return "Arrival";
+            }
+
+            if (payload.socialReflection)
+            {
+                return "SocialReflection";
             }
 
             if (payload.quadrumReflection)

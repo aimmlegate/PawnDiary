@@ -1513,6 +1513,10 @@ namespace PawnDiary
                 .LongText("systemPrompt").LongText("finalInstruction")
                 .Bool("includePromptEnchantment").Bool("includePersona").Bool("appendDirectSpeechInstruction")
                 .Int("maxTokens", 0, 4000).CustomLongText("fields", FormatPromptFields, ParsePromptFields);
+            b.Template(DiaryPromptTemplates.SoloSocialReflection, "PawnDiary.Settings.Adv.Group.TmplSocialReflection")
+                .LongText("systemPrompt").LongText("finalInstruction")
+                .Bool("includePromptEnchantment").Bool("includePersona").Bool("appendDirectSpeechInstruction")
+                .Int("maxTokens", 0, 4000).CustomLongText("fields", FormatPromptFields, ParsePromptFields);
             b.Template(DiaryPromptTemplates.DeathDescription, "PawnDiary.Settings.Adv.Group.TmplDeath")
                 .LongText("systemPrompt").LongText("finalInstruction")
                 .Bool("includePromptEnchantment").Bool("includePersona").Bool("appendDirectSpeechInstruction")

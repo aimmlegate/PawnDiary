@@ -68,6 +68,28 @@ namespace PawnDiary.Ingestion
         }
 
         /// <summary>
+        /// Optional side effect that runs after the catalog and both dedup gates accepted this source,
+        /// but before B6 may fold a low-salience page into a digest. H7 uses it to reserve a delayed
+        /// reflection from the canonical interaction even when that source page is intentionally folded.
+        /// Implementations must not create the current source event; <see cref="Emit"/> still owns it.
+        /// </summary>
+        public virtual void OnAccepted(DiaryGameComponent sink, CaptureDecision decision)
+        {
+        }
+
+        /// <summary>
+        /// Optional accepted-source callback after B6 pacing and synchronous emission complete. The
+        /// boolean proves whether this source registered a canonical page whose prose may later finish.
+        /// H7 uses a false value to freeze facts-only fallback for ambient or folded interactions.
+        /// </summary>
+        public virtual void OnAcceptedEmissionCompleted(
+            DiaryGameComponent sink,
+            CaptureDecision decision,
+            bool sourceEventRegistered)
+        {
+        }
+
+        /// <summary>
         /// Quality Wave B6. True for everyday, low-stakes moments — the ones whose classified group is
         /// neither important nor combat. Only these are paced by the daily soft cap; anything the
         /// player would call a real event (a raid, a death, a mental break) always writes its page.

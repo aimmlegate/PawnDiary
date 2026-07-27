@@ -249,6 +249,15 @@
   </PawnDiary.DiaryEventPromptDef>
 
   <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_SocialReflection</defName>
+    <label>social reflection</label>
+    <!-- Exact saved H7 defName wins before the group/domain fallback keys. -->
+    <eventType>PawnDiary_SocialReflection</eventType>
+    <prompt>Write a later private reflection about the supplied interaction partner and what the earlier exchange now means to the writer.</prompt>
+    <enhancement>Use the source interaction and subject facts as boundaries. The writer may interpret their own feelings, but must not invent the subject's private thoughts, motives, attraction, hatred, intentions, or words.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_ArtImmortalized</defName>
     <label>immortalized in art</label>
     <!-- Keyed to the group defName, which the prompt lookup tries before the broad event domain, so

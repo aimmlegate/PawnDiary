@@ -6,6 +6,10 @@ Companion: [repowiki/README.md](repowiki/README.md) describes the current state.
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-07-27
+
+- **Quality Wave H7 — social reflections.** Meaningful two-colonist interactions can now prompt a delayed, initiator-only reflection with deterministic emotion-weighted chance, saved pair/writer pacing, exact source and live subject facts, subject-only memories, an independent toggle, EN/RU prompt policy, and reflection-recursion safeguards.
+
 ## 2026-07-26
 
 - **Bounded diary headers.** Card titles now receive an XML-tunable, ellipsized display cap without altering their saved, searchable, or exported text.

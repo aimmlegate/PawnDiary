@@ -664,6 +664,7 @@
   <PawnDiary.Settings.Adv.Group.TmplQuadrumReflection>Template: Quadrum reflection</PawnDiary.Settings.Adv.Group.TmplQuadrumReflection>
   <PawnDiary.Settings.Adv.Group.TmplArcReflection>Template: Arc reflection</PawnDiary.Settings.Adv.Group.TmplArcReflection>
   <PawnDiary.Settings.Adv.Group.TmplBeliefReflection>Template: Belief reflection</PawnDiary.Settings.Adv.Group.TmplBeliefReflection>
+  <PawnDiary.Settings.Adv.Group.TmplSocialReflection>Template: Social reflection</PawnDiary.Settings.Adv.Group.TmplSocialReflection>
   <PawnDiary.Settings.Adv.Group.TmplDeath>Template: Death description</PawnDiary.Settings.Adv.Group.TmplDeath>
   <PawnDiary.Settings.Adv.Group.TmplArrival>Template: Arrival description</PawnDiary.Settings.Adv.Group.TmplArrival>
   <PawnDiary.Settings.Adv.Group.TmplTitle>Template: Title</PawnDiary.Settings.Adv.Group.TmplTitle>
@@ -795,6 +796,7 @@
   <PawnDiary.Settings.Adv.GroupHelp.TmplQuadrumReflection>Prompt template for the end-of-quadrum reflection.</PawnDiary.Settings.Adv.GroupHelp.TmplQuadrumReflection>
   <PawnDiary.Settings.Adv.GroupHelp.TmplArcReflection>Prompt template for the yearly arc reflection.</PawnDiary.Settings.Adv.GroupHelp.TmplArcReflection>
   <PawnDiary.Settings.Adv.GroupHelp.TmplBeliefReflection>Prompt template for an Ideology belief reflection.</PawnDiary.Settings.Adv.GroupHelp.TmplBeliefReflection>
+  <PawnDiary.Settings.Adv.GroupHelp.TmplSocialReflection>Prompt template for a delayed private reflection about one interaction partner.</PawnDiary.Settings.Adv.GroupHelp.TmplSocialReflection>
   <PawnDiary.Settings.Adv.GroupHelp.TmplDeath>Prompt template for the neutral death description.</PawnDiary.Settings.Adv.GroupHelp.TmplDeath>
   <PawnDiary.Settings.Adv.GroupHelp.TmplArrival>Prompt template for the neutral arrival description.</PawnDiary.Settings.Adv.GroupHelp.TmplArrival>
   <PawnDiary.Settings.Adv.GroupHelp.TmplTitle>Prompt template for generating a short page title.</PawnDiary.Settings.Adv.GroupHelp.TmplTitle>
@@ -1539,6 +1541,11 @@
   <PawnDiary.Event.BeliefReflectionLabel>Belief reflection</PawnDiary.Event.BeliefReflectionLabel>
   <PawnDiary.Event.BeliefReflectionText>{0} pauses to consider what belief, doubt, or changed conviction now means.</PawnDiary.Event.BeliefReflectionText>
   <PawnDiary.Event.BeliefReflectionInstruction>a private belief reflection for {0}; stay inside the frozen belief facts and do not invent doctrine or conversion</PawnDiary.Event.BeliefReflectionInstruction>
+  <PawnDiary.Event.SocialReflection.Label>Reflection on {0}</PawnDiary.Event.SocialReflection.Label>
+  <PawnDiary.Event.SocialReflection.Text>{0} pauses later to reflect on {1} and their earlier exchange.</PawnDiary.Event.SocialReflection.Text>
+  <PawnDiary.Event.SocialReflection.Instruction>a later private reflection for {0} about {1}; use only the supplied interaction and subject facts, and do not invent {1}&apos;s inner state or words</PawnDiary.Event.SocialReflection.Instruction>
+  <PawnDiary.Prompt.SocialReflection.SystemFallback>Write 2-5 first-person diary sentences: a later private reflection about one real interaction partner, in the colonist&apos;s writing style. Write as the POV pawn using &quot;I&quot;. Use only supplied interaction, subject, and memory facts. The writer may express their own emotion, but must not invent the subject&apos;s private thoughts, motives, attraction, hatred, intentions, or words. Output only the diary entry.</PawnDiary.Prompt.SocialReflection.SystemFallback>
+  <PawnDiary.Prompt.SocialReflection.InstructionFallback>Write 2-5 first-person sentences reflecting on this person and the earlier interaction. Use only supplied facts and do not invent the subject&apos;s inner state or words. Output only the entry.</PawnDiary.Prompt.SocialReflection.InstructionFallback>
 
   <PawnDiary.Ctx.Opinion>opinion {0}</PawnDiary.Ctx.Opinion>
   <PawnDiary.Ctx.Because>because {0}</PawnDiary.Ctx.Because>

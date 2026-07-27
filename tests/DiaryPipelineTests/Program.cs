@@ -36,6 +36,7 @@ namespace DiaryPipelineTests
             TestDigestPacingPolicy();
             TestDailyEmissionGuardPolicy();
             TestLoadedEventRepairPolicy();
+            TestSocialReflectionPolicy();
             TestCheapXmlExtensionCoverage();
             TestPromptContextDetailSelection();
             TestPromptContextDetailOverrideResolution();
@@ -1293,7 +1294,7 @@ namespace DiaryPipelineTests
 
             AssertEqual("all applicable templates retain NarrativeContext source rows", 12,
                 narrativeFields);
-            AssertEqual("all applicable templates retain MemoryContext source rows", 12,
+            AssertEqual("all applicable templates retain MemoryContext source rows", 13,
                 memoryFields);
             AssertEqual("NarrativeContext remains an English structured schema token",
                 "NarrativeContext", NarrativeContextPrompt.Source);

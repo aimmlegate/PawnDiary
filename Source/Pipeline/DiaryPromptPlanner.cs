@@ -247,6 +247,11 @@ namespace PawnDiary
                 return important ? DiaryPipelineTemplates.PairImportant : DiaryPipelineTemplates.PairDefault;
             }
 
+            if (payload.socialReflection)
+            {
+                return DiaryPipelineTemplates.SoloSocialReflection;
+            }
+
             if (payload.arcReflection)
             {
                 return DiaryPipelineTemplates.SoloArcReflection;

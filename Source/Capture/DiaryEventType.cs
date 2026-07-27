@@ -79,6 +79,9 @@ namespace PawnDiary.Capture
         // across every artwork that ever depicts it, written by the pawn the deed is about when they
         // can still write and otherwise by the artist.
         ArtImmortalized,
+        // H7: a delayed, initiator-only reflection about one meaningful social interaction. Keep new
+        // values appended so older enum ordinals remain stable for external diagnostic tooling.
+        SocialReflection,
 
         // ── Planned future sources (placeholders only — NOT implemented yet) ──
         // No known live RecordX source remains to migrate; batch/ambient flushers are route sinks.

@@ -550,6 +550,7 @@ namespace DiaryPipelineTests
                 { "SoloQuadrumReflection", "16|" },
                 { "SoloArcReflection", "19|" },
                 { "SoloBeliefReflection", "15|" },
+                { "SoloSocialReflection", "21|" },
                 { "DeathDescription", "15|" },
                 { "ArrivalDescription", "8|" },
                 { "Title", "1|" }

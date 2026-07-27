@@ -57,6 +57,16 @@ namespace PawnDiary
                     continue;
                 }
 
+                // A delayed derivative page (currently H7 social reflection) has a different ID
+                // from the direct page that caused it. The caller supplies that original source ID
+                // explicitly so it cannot be presented as an older memory about the same event.
+                if (!string.IsNullOrWhiteSpace(record.sourceEventId)
+                    && ContainsIgnoreCase(query.excludedSourceEventIds, record.sourceEventId))
+                {
+                    report.rejectReason = KnowledgeRejectReasons.ExcludedSource;
+                    continue;
+                }
+
                 report.sharedParticipant = SharesParticipant(query.participantIds, record.participants);
                 report.sharedSubject = SharesSubjectKey(query.subjectKeys, record.subjectKeys);
                 report.sharedTopic = !string.IsNullOrWhiteSpace(record.topicKey)
@@ -64,7 +74,10 @@ namespace PawnDiary
 
                 // Eligibility (§3.1): a concrete participant OR an exact subject/entity key.
                 // Topic overlap alone is a ranking tier, never an eligibility door.
-                if (!report.sharedParticipant && !report.sharedSubject)
+                if ((query.requireParticipantOverlap && !report.sharedParticipant)
+                    || (!query.requireParticipantOverlap
+                        && !report.sharedParticipant
+                        && !report.sharedSubject))
                 {
                     report.rejectReason = KnowledgeRejectReasons.NoOverlap;
                     continue;

@@ -356,6 +356,45 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Creates an H7 solo page while deliberately skipping important-memory capture. The reflection
+        /// may read bounded subject memory, but it is never allowed to become new evidence for another
+        /// reflection. The opinion-dependent cue is frozen on the event after ordinary construction.
+        /// </summary>
+        internal DiaryEvent AddSocialReflectionEvent(
+            Pawn writer,
+            Pawn subject,
+            string defName,
+            string label,
+            string text,
+            string instruction,
+            string gameContext,
+            string colorCue)
+        {
+            DiaryEvent diaryEvent = AddSoloEventCore(
+                writer,
+                subject,
+                defName,
+                label,
+                text,
+                instruction,
+                gameContext,
+                null,
+                -1,
+                null,
+                null,
+                null,
+                false,
+                -1,
+                false);
+            if (diaryEvent != null && !string.IsNullOrWhiteSpace(colorCue))
+            {
+                diaryEvent.colorCue = colorCue.Trim();
+            }
+
+            return diaryEvent;
+        }
+
+        /// <summary>
         /// Creates a solo DiaryEvent (single-POV, e.g. a mental break) with no recipient role.
         /// </summary>
         internal DiaryEvent AddSoloEvent(Pawn pawn, Pawn otherPawn, string defName, string label,

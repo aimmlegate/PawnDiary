@@ -292,6 +292,7 @@ namespace PawnDiary
             archive.Clear();
             ResetBiotechGrowthForNewGame();
             ResetBiotechFamilyForNewGame();
+            ResetSocialReflectionForNewGame();
             pollutionObservationVersion = CurrentPollutionObservationVersion;
             ResetOdysseyForNewGame();
             ResetAnomalyForNewGame();
@@ -346,6 +347,7 @@ namespace PawnDiary
             ResetBiotechGrowthTransientState();
             ResetBiotechFamilyTransientState();
             nextBiotechBirthNamingPollTick = 0;
+            ResetSocialReflectionTransientState();
             BootstrapBiotechFamilyArcsForLoadedSave();
             BaselineBiotechPsychicBondsOnLoad();
             // Pollution uses the ordinary activeObservedConditions rows. Old saves migrate current tile
@@ -419,6 +421,7 @@ namespace PawnDiary
             // Quality Wave B6: saved daily pacing counts + folded-away digest lines. Additive key;
             // old saves load an empty list. See DiaryGameComponent.DaySummary.cs.
             ExposeDayDigestData();
+            ExposeSocialReflectionData();
             ExposeBiotechGrowthData();
             ExposeBiotechFamilyData();
             ExposeOdysseyData();
@@ -809,6 +812,7 @@ namespace PawnDiary
             FlushReadyTaleBatches();
             FlushReadyAmbientThoughtNotes();
             TickPendingBiotechBirths(now);
+            TickSocialReflections(now);
 
             // Re-baseline each colonist's opinions at the start of every new day, so the reflection
             // can measure how feelings shifted over the day. Cheap: a no-op comparison most ticks.

@@ -227,10 +227,41 @@ namespace PawnDiary
                 MarkRecentlyRecorded(recentEvents, eventTypeKey, eventTypeWindowTicks);
             }
 
+            // Some accepted sources have delayed secondary bookkeeping even when B6 folds the source
+            // page into a digest. Keep that hook outside EmitWithLowSaliencePacing, and isolate it so an
+            // optional scheduler failure can never suppress the canonical gameplay event itself.
+            try
+            {
+                signal.OnAccepted(this, decision);
+            }
+            catch (Exception exception)
+            {
+                Log.WarningOnce(
+                    "[Pawn Diary] " + source + " accepted-source follow-up failed; the source event "
+                    + "will continue normally: " + exception,
+                    ("PawnDiary.Dispatch.AcceptedFollowUp." + source
+                        + "." + exception.GetType().FullName).GetHashCode());
+            }
+
             long registrationBeforeEmit = events.RegistrationVersion;
             DiaryTelemetryOutcome emitOutcome =
                 EmitWithLowSaliencePacing(signal, payload, decision);
             long registrations = events.RegistrationVersion - registrationBeforeEmit;
+            try
+            {
+                signal.OnAcceptedEmissionCompleted(
+                    this,
+                    decision,
+                    registrations > 0);
+            }
+            catch (Exception exception)
+            {
+                Log.WarningOnce(
+                    "[Pawn Diary] " + source + " post-emission follow-up failed; the source event "
+                    + "will remain recorded: " + exception,
+                    ("PawnDiary.Dispatch.PostEmissionFollowUp." + source
+                        + "." + exception.GetType().FullName).GetHashCode());
+            }
             if (emitOutcome == DiaryTelemetryOutcome.EventRecorded && registrations == 0)
             {
                 RecordSignalOutcome(

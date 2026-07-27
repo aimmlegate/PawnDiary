@@ -98,6 +98,7 @@
     <order>20</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
+    <socialReflectionEligible>true</socialReflectionEligible>
     <instruction>a spark between two people—an advance, a stolen glance, a whispered promise, or a heart breaking</instruction>
     <instructions>
       <li>romance — use body cues already supplied or clearly implied: distance, breath, hesitation, or touch if stated</li>
@@ -160,6 +161,7 @@
     <order>30</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
+    <socialReflectionEligible>true</socialReflectionEligible>
     <instruction>the dance of captor and captive—building rapport, breaking will, or planting seeds of rebellion</instruction>
     <tone>with measured, calculating tension</tone>
     <tones>
@@ -190,6 +192,7 @@
     <order>40</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
+    <socialReflectionEligible>true</socialReflectionEligible>
     <instruction>the weight of chains—suppression by an overseer or the first spark of defiance</instruction>
     <tone>with grim, heavy unease</tone>
     <tones>
@@ -215,6 +218,7 @@
     <order>45</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
+    <socialReflectionEligible>true</socialReflectionEligible>
     <enableWhenPackageIdsLoaded>
       <li>Ludeon.RimWorld.Ideology</li>
     </enableWhenPackageIdsLoaded>
@@ -237,6 +241,7 @@
     <order>50</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
+    <socialReflectionEligible>true</socialReflectionEligible>
     <instruction>a battle of belief—conversion, preaching, or the pressure of faith on faith</instruction>
     <tone>with fervent, pressing conviction</tone>
     <tones>
@@ -268,6 +273,7 @@
     <order>60</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
+    <socialReflectionEligible>true</socialReflectionEligible>
     <instruction>the weight of judgment—an accusation hurled, a defense mounted, before watching eyes</instruction>
     <tone>with tense, formal pressure</tone>
     <tones>
@@ -290,6 +296,7 @@
     <order>68</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
+    <socialReflectionEligible>true</socialReflectionEligible>
     <important>true</important>
     <instruction>something wrong in ordinary conversation--a strange chat that leaves unease lingering. Don't explain it away</instruction>
     <instructions>
@@ -340,6 +347,7 @@
     <order>70</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
+    <socialReflectionEligible>true</socialReflectionEligible>
     <instruction>something wrong in an ordinary exchange: a voice, phrase, look, or silence leaves unease lingering. Keep it close to the pawn's senses and don't explain it away</instruction>
     <tone>with crawling, skin-prickling wrongness; ordinary details feel unsafe</tone>
     <tones>
@@ -372,6 +380,7 @@
     <order>80</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
+    <socialReflectionEligible>true</socialReflectionEligible>
     <combat>true</combat>
     <colorCue>socialFight</colorCue>
     <batch>
@@ -503,6 +512,7 @@
     <order>110</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
+    <socialReflectionEligible>true</socialReflectionEligible>
     <instruction>warmth exchanged—a deep talk, kind words, or a gentle hand steadying someone</instruction>
     <instructions>
       <li>warmth between people — write the specific gesture from the notes and the guard it lowered</li>
@@ -989,6 +999,24 @@
          (DiaryGameComponent.BeliefReflection.cs). -->
     <matchDefNames>
       <li>PawnBeliefReflection</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Quality Wave H7. This is an independent player toggle for delayed, initiator-only
+       reflections about a meaningful interaction partner. The quiet cue/tone are fail-soft
+       fallbacks; accepted rows freeze their XML-selected polarity cue and localized tone. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>socialReflection</defName>
+    <label>Social reflection</label>
+    <order>156</order>
+    <domain>Reflection</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a later private reflection on one real social partner and the interaction that prompted it</instruction>
+    <tone>quietly inward, weighing what this person and the earlier exchange mean now</tone>
+    <colorCue>quiet</colorCue>
+    <matchDefNames>
+      <li>PawnDiary_SocialReflection</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 

@@ -110,8 +110,14 @@ namespace PawnDiary
         /// </summary>
         private void CaptureKnowledgeForEvent(DiaryEvent diaryEvent, Pawn initiator, Pawn recipient)
         {
-            if (diaryEvent == null)
+            if (diaryEvent == null
+                || string.Equals(
+                    diaryEvent.interactionDefName,
+                    SocialReflectionEventData.DefNameToken,
+                    StringComparison.OrdinalIgnoreCase))
             {
+                // H7 may consume at most two subject-specific memories, but can never deposit itself
+                // as new durable evidence for H7/day/quadrum/arc recursion.
                 return;
             }
 
@@ -709,6 +715,31 @@ namespace PawnDiary
             string otherPawnId = povRole == DiaryEvent.RecipientRole
                 ? diaryEvent.initiatorPawnId
                 : diaryEvent.recipientPawnId;
+            bool socialReflection = string.Equals(
+                diaryEvent.interactionDefName,
+                SocialReflectionEventData.DefNameToken,
+                StringComparison.OrdinalIgnoreCase);
+            int relevantPastMaxLines = policy.relevantPastMaxLines;
+            KnowledgePolicySnapshot selectionPolicy = policy;
+            if (socialReflection)
+            {
+                // H7 is a solo event structurally, so its subject is carried in frozen context rather
+                // than recipientPawnId. Require exact participant overlap and exclude the canonical
+                // source page: neither a broad entity key nor the interaction being reflected on may
+                // masquerade as an older memory about this pawn.
+                otherPawnId = DiaryContextFields.Value(
+                    diaryEvent.gameContext,
+                    SocialReflectionEventData.SubjectIdContextKey);
+                SocialReflectionPolicySnapshot reflectionPolicy =
+                    DiarySocialReflectionPolicy.Snapshot();
+                relevantPastMaxLines = Math.Max(
+                    0,
+                    Math.Min(
+                        policy.relevantPastMaxLines,
+                        reflectionPolicy.maximumMemoryLines));
+                selectionPolicy = CopyKnowledgePolicyWithLineCap(
+                    policy, relevantPastMaxLines);
+            }
             KnowledgeQuery query = ImportantMemorySelector.BuildQuery(
                 diaryEvent.eventId,
                 pawnId,
@@ -717,9 +748,20 @@ namespace PawnDiary
                 diaryEvent.gameContext,
                 diaryEvent.interactionDefName,
                 DiaryKnowledgePolicy.ImportantEventRules(),
-                policy);
+                selectionPolicy);
+            if (socialReflection)
+            {
+                query.requireParticipantOverlap = true;
+                string sourceEventId = DiaryContextFields.Value(
+                    diaryEvent.gameContext,
+                    SocialReflectionEventData.SourceEventIdContextKey);
+                if (!string.IsNullOrWhiteSpace(sourceEventId))
+                {
+                    query.excludedSourceEventIds.Add(sourceEventId.Trim());
+                }
+            }
             KnowledgeSelectionResult result = ImportantMemorySelector.Select(
-                query, state.ToRecordSnapshots(), policy);
+                query, state.ToRecordSnapshots(), selectionPolicy);
 
             // Dev report (§7) — stored even when nothing selected so "why not" stays inspectable.
             KnowledgeDebugReport report = new KnowledgeDebugReport
@@ -762,11 +804,44 @@ namespace PawnDiary
             }
 
             string block = ImportantMemoryLineRenderer.ComposeBlock(
-                lines, policy.relevantPastMaxLines, policy.relevantPastMaxChars);
+                lines, relevantPastMaxLines, policy.relevantPastMaxChars);
             if (!string.IsNullOrWhiteSpace(block))
             {
                 diaryEvent.SetMemoryContext(povRole, block);
             }
+        }
+
+        /// <summary>
+        /// Makes a detached retrieval-only policy with a stricter line cap. List values are read-only
+        /// during selection, so shallow list copies preserve the loaded XML policy without mutating it.
+        /// </summary>
+        private static KnowledgePolicySnapshot CopyKnowledgePolicyWithLineCap(
+            KnowledgePolicySnapshot source,
+            int lineCap)
+        {
+            KnowledgePolicySnapshot safe =
+                source ?? KnowledgePolicySnapshot.CreateDefault();
+            return new KnowledgePolicySnapshot
+            {
+                injectionEnabled = safe.injectionEnabled,
+                maxRecordsPerPawn = safe.maxRecordsPerPawn,
+                maxRecordsGlobal = safe.maxRecordsGlobal,
+                fallbackSummaryMaxChars = safe.fallbackSummaryMaxChars,
+                relevantPastMaxLines = Math.Max(0, lineCap),
+                relevantPastMaxChars = safe.relevantPastMaxChars,
+                relevantPastLineFormat = safe.relevantPastLineFormat,
+                relevantPastInstruction = safe.relevantPastInstruction,
+                maxCultureTopicsPerPrompt = safe.maxCultureTopicsPerPrompt,
+                annotationSingleFormat = safe.annotationSingleFormat,
+                annotationDualFormat = safe.annotationDualFormat,
+                scannableSources = safe.scannableSources == null
+                    ? new List<string>()
+                    : new List<string>(safe.scannableSources),
+                querySubjectKeyRules = safe.querySubjectKeyRules == null
+                    ? new List<KnowledgeSubjectKeyRule>()
+                    : new List<KnowledgeSubjectKeyRule>(
+                        safe.querySubjectKeyRules)
+            };
         }
 
         private static string SafeLineFormat(string format, string date, string fact)

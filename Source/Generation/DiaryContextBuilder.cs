@@ -156,10 +156,25 @@ namespace PawnDiary
         // errors while the diary is only trying to build prompt context.
         private static string BuildSocialThoughtsSummary(Pawn povPawn, Pawn otherPawn)
         {
+            return string.Join(", ", BuildSocialThoughtReasons(povPawn, otherPawn, 3).ToArray());
+        }
+
+        /// <summary>
+        /// Returns the strongest stored social-memory reasons about one exact pawn, already localized
+        /// and qualitative. H7 reuses this list directly so it never recalculates situational thoughts
+        /// or copies the aggregation rules into its live-state adapter.
+        /// </summary>
+        internal static List<string> BuildSocialThoughtReasons(
+            Pawn povPawn,
+            Pawn otherPawn,
+            int maximumReasons)
+        {
+            List<string> result = new List<string>();
             List<Thought_Memory> memories = povPawn?.needs?.mood?.thoughts?.memories?.Memories;
-            if (memories == null)
+            int cap = Math.Max(0, maximumReasons);
+            if (memories == null || cap == 0)
             {
-                return string.Empty;
+                return result;
             }
 
             Dictionary<string, float> byLabel = new Dictionary<string, float>();
@@ -182,12 +197,13 @@ namespace PawnDiary
                 byLabel[label] = (byLabel.TryGetValue(label, out float existing) ? existing : 0f) + offset;
             }
 
-            return string.Join(", ", byLabel
+            result.AddRange(byLabel
                 .Where(pair => Mathf.Abs(pair.Value) >= 1f)
                 .OrderByDescending(pair => Mathf.Abs(pair.Value))
-                .Take(3)
+                .Take(cap)
                 .Select(pair => pair.Key + " (" + DiaryBuckets.EffectBucket(pair.Value) + ")")
                 .ToArray());
+            return result;
         }
 
         private static string LatestDiaryLineAbout(string pawnId, string otherPawnId, IReadOnlyList<DiaryEvent> events)

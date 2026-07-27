@@ -188,6 +188,7 @@ namespace PawnDiary
         public const string SoloQuadrumReflection = "SoloQuadrumReflection";
         public const string SoloArcReflection = "SoloArcReflection";
         public const string SoloBeliefReflection = "SoloBeliefReflection";
+        public const string SoloSocialReflection = "SoloSocialReflection";
         public const string DeathDescription = "DeathDescription";
         public const string ArrivalDescription = "ArrivalDescription";
         public const string Title = "Title";
@@ -263,6 +264,11 @@ namespace PawnDiary
                     : PawnDiaryMod.Settings.EffectiveNeutralSystemPrompt();
             }
 
+            if (string.Equals(templateKey, SoloSocialReflection, StringComparison.OrdinalIgnoreCase))
+            {
+                return "PawnDiary.Prompt.SocialReflection.SystemFallback".Translate().Resolve();
+            }
+
             if (string.Equals(templateKey, SoloDayReflection, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(templateKey, SoloQuadrumReflection, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(templateKey, SoloArcReflection, StringComparison.OrdinalIgnoreCase)
@@ -306,6 +312,11 @@ namespace PawnDiary
             if (string.Equals(templateKey, ArrivalDescription, StringComparison.OrdinalIgnoreCase))
             {
                 return DiaryPrompts.Current.arrivalDescriptionInstruction;
+            }
+
+            if (string.Equals(templateKey, SoloSocialReflection, StringComparison.OrdinalIgnoreCase))
+            {
+                return "PawnDiary.Prompt.SocialReflection.InstructionFallback".Translate().Resolve();
             }
 
             return DiaryPrompts.Current.singlePovInstruction;
@@ -427,6 +438,32 @@ namespace PawnDiary
                     Field("belief context", BeliefContextPrompt.Source),
                     ContextField("belief trigger", "belief_reflection_trigger"),
                     Field("setting", "Setting"),
+                    Field("my last opener (not repeat)", "LastOpener"),
+                    Field("previous diary ending (continue from this)", "PreviousEntryEnding"));
+            }
+
+            if (string.Equals(templateKey, SoloSocialReflection, StringComparison.OrdinalIgnoreCase))
+            {
+                return Fields(
+                    Field("event", "EventNoun"),
+                    Field("pov", "PovName"),
+                    Field("instruction", "Instruction"),
+                    Field("you", "PawnSummary"),
+                    ContextField("source interaction", "social_reflection_source_facts"),
+                    ContextField("source entry title", "social_reflection_source_title"),
+                    ContextField("source entry ending", "social_reflection_source_ending"),
+                    ContextField("subject", "social_reflection_subject_name"),
+                    ContextField("subject age", "social_reflection_subject_age"),
+                    ContextField("subject life stage", "social_reflection_subject_life_stage"),
+                    ContextField("subject appearance", "social_reflection_subject_appearance"),
+                    ContextField("primary relation", "social_reflection_relation"),
+                    ContextField("current sentiment", "social_reflection_sentiment"),
+                    ContextField("remembered reasons", "social_reflection_reasons"),
+                    Field("relevant past", MemoryContextPrompt.Source),
+                    Field("setting", "Setting"),
+                    Field("tone", "Tone"),
+                    Field("event prompt", "EventPrompt"),
+                    Field("event enhancement", "EventEnhancement"),
                     Field("my last opener (not repeat)", "LastOpener"),
                     Field("previous diary ending (continue from this)", "PreviousEntryEnding"));
             }

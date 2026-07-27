@@ -247,6 +247,11 @@ namespace PawnDiary
         // text instead.
         public bool captureRenderedGameText = true;
 
+        // Quality Wave H7 opt-in. Only two-pawn interaction groups that deliberately enable this
+        // flag may offer a later initiator-only social reflection. False keeps existing and modded
+        // groups inert until their XML author explicitly accepts that secondary-page behavior.
+        public bool socialReflectionEligible = false;
+
         // Package IDs that suppress this group while any listed mod is loaded. Use this for
         // compatibility where another mod supplies a richer replacement for a built-in low-value
         // group, while keeping the original group active in ordinary mod lists.

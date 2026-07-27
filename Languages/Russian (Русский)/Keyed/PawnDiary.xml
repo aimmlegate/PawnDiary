@@ -625,6 +625,7 @@
   <PawnDiary.Settings.Adv.Group.TmplQuadrumReflection>Шаблон: итог квадрума</PawnDiary.Settings.Adv.Group.TmplQuadrumReflection>
   <PawnDiary.Settings.Adv.Group.TmplArcReflection>Шаблон: годовое размышление</PawnDiary.Settings.Adv.Group.TmplArcReflection>
   <PawnDiary.Settings.Adv.Group.TmplBeliefReflection>Шаблон: размышление об убеждениях</PawnDiary.Settings.Adv.Group.TmplBeliefReflection>
+  <PawnDiary.Settings.Adv.Group.TmplSocialReflection>Шаблон: размышление об отношениях</PawnDiary.Settings.Adv.Group.TmplSocialReflection>
   <PawnDiary.Settings.Adv.Group.TmplDeath>Шаблон: смерть</PawnDiary.Settings.Adv.Group.TmplDeath>
   <PawnDiary.Settings.Adv.Group.TmplArrival>Шаблон: прибытие</PawnDiary.Settings.Adv.Group.TmplArrival>
   <PawnDiary.Settings.Adv.Group.TmplTitle>Шаблон: заголовок</PawnDiary.Settings.Adv.Group.TmplTitle>
@@ -750,6 +751,7 @@
   <PawnDiary.Settings.Adv.GroupHelp.TmplQuadrumReflection>Шаблон итога квадрума.</PawnDiary.Settings.Adv.GroupHelp.TmplQuadrumReflection>
   <PawnDiary.Settings.Adv.GroupHelp.TmplArcReflection>Шаблон годового размышления.</PawnDiary.Settings.Adv.GroupHelp.TmplArcReflection>
   <PawnDiary.Settings.Adv.GroupHelp.TmplBeliefReflection>Шаблон размышления об убеждениях из «Идеологии».</PawnDiary.Settings.Adv.GroupHelp.TmplBeliefReflection>
+  <PawnDiary.Settings.Adv.GroupHelp.TmplSocialReflection>Шаблон более позднего личного размышления об одном собеседнике.</PawnDiary.Settings.Adv.GroupHelp.TmplSocialReflection>
   <PawnDiary.Settings.Adv.GroupHelp.TmplDeath>Шаблон нейтрального описания смерти.</PawnDiary.Settings.Adv.GroupHelp.TmplDeath>
   <PawnDiary.Settings.Adv.GroupHelp.TmplArrival>Шаблон нейтрального описания прибытия.</PawnDiary.Settings.Adv.GroupHelp.TmplArrival>
   <PawnDiary.Settings.Adv.GroupHelp.TmplTitle>Шаблон короткого заголовка страницы.</PawnDiary.Settings.Adv.GroupHelp.TmplTitle>
@@ -1090,6 +1092,11 @@
   <PawnDiary.Event.BeliefReflectionLabel>Размышление об убеждениях</PawnDiary.Event.BeliefReflectionLabel>
   <PawnDiary.Event.BeliefReflectionText>{0} останавливается, чтобы понять, что теперь значат вера, сомнение или изменившаяся убеждённость.</PawnDiary.Event.BeliefReflectionText>
   <PawnDiary.Event.BeliefReflectionInstruction>личное размышление об убеждениях {0}; оставайся в границах сохранённых фактов и не выдумывай учение или обращение</PawnDiary.Event.BeliefReflectionInstruction>
+  <PawnDiary.Event.SocialReflection.Label>Размышление о {0}</PawnDiary.Event.SocialReflection.Label>
+  <PawnDiary.Event.SocialReflection.Text>{0} позже останавливается, чтобы подумать о {1} и прежнем разговоре.</PawnDiary.Event.SocialReflection.Text>
+  <PawnDiary.Event.SocialReflection.Instruction>более позднее личное размышление {0} о {1}; используй только переданные факты разговора и собеседника, не выдумывая внутреннее состояние или слова {1}</PawnDiary.Event.SocialReflection.Instruction>
+  <PawnDiary.Prompt.SocialReflection.SystemFallback>Напиши 2–5 предложений от первого лица: более позднее личное размышление об одном настоящем собеседнике в манере письма поселенца. Пиши от лица персонажа точки зрения, используя «я». Опирайся только на переданные факты разговора, собеседника и памяти. Пишущий может выражать собственные чувства, но не должен выдумывать чужие мысли, мотивы, влечение, ненависть, намерения или слова. Выведи только текст дневника.</PawnDiary.Prompt.SocialReflection.SystemFallback>
+  <PawnDiary.Prompt.SocialReflection.InstructionFallback>Напиши 2–5 предложений от первого лица, размышляя об этом человеке и прежнем разговоре. Используй только переданные факты и не выдумывай внутреннее состояние или слова собеседника. Выведи только запись.</PawnDiary.Prompt.SocialReflection.InstructionFallback>
 
   <!-- Тестовые записи режима разработки: только для кнопки нагрузочного теста вкладки «Дневник». -->
   <PawnDiary.Dev.MockLabel>Тест интерфейса дневника</PawnDiary.Dev.MockLabel>

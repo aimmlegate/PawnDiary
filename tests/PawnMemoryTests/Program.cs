@@ -41,11 +41,14 @@ namespace PawnMemoryTests
             TestLineRendererTemplatesAndFallback();
             TestComposeBlockCaps();
             TestSelectorEligibilityDoors();
+            TestSelectorRequiredParticipantDoor();
             TestSelectorRankingAndStableTies();
             TestSelectorTwoRecordCapAndReports();
             TestSelectorSelfEcho();
+            TestSelectorExcludedSourceEvents();
             TestSelectorBroadTopicNeverRecalls();
             TestQueryBuildFromRulesAndPolicy();
+            TestSocialReflectionNeverClassifiesAsKnowledge();
             TestEvictionPerPawnCap();
             TestEvictionGlobalCapAbsentFirst();
             TestEvictionDeterminismAndNoMutation();
@@ -646,6 +649,39 @@ namespace PawnMemoryTests
             AssertEqual("doors.subject.noSubstring", 0, result.selected.Count);
         }
 
+        private static void TestSelectorRequiredParticipantDoor()
+        {
+            List<ImportantMemoryRecordSnapshot> records = new List<ImportantMemoryRecordSnapshot>
+            {
+                Record("participant", 100, participantId: "p2"),
+                Record("subjectKeyOnly", 300, subjectKey: "pawn:P2"),
+                Record("wrongParticipant", 200, participantId: "P9", subjectKey: "pawn:P2")
+            };
+
+            // Ordinary retrieval keeps its established participant-OR-exact-subject behavior.
+            KnowledgeQuery ordinary = Query(subjectKey: "pawn:P2");
+            KnowledgeSelectionResult result = ImportantMemorySelector.Select(
+                ordinary, records, KnowledgePolicySnapshot.CreateDefault());
+            AssertEqual("requiredParticipant.ordinarySubjectCount", 2, result.selected.Count);
+
+            // H7 retrieval is stricter: only a record that actually names the reflected-on pawn is
+            // eligible. Matching remains case-insensitive, like every other stable pawn-ID seam.
+            KnowledgeQuery subjectOnly = Query(participantId: "P2", subjectKey: "pawn:P2");
+            subjectOnly.requireParticipantOverlap = true;
+            result = ImportantMemorySelector.Select(
+                subjectOnly, records, KnowledgePolicySnapshot.CreateDefault());
+            AssertEqual("requiredParticipant.strictCount", 1, result.selected.Count);
+            AssertEqual("requiredParticipant.strictPick", "participant", result.selected[0].recordId);
+            AssertEqual(
+                "requiredParticipant.subjectKeyRejected",
+                KnowledgeRejectReasons.NoOverlap,
+                result.report.First(row => row.recordId == "subjectKeyOnly").rejectReason);
+            AssertEqual(
+                "requiredParticipant.wrongPawnRejected",
+                KnowledgeRejectReasons.NoOverlap,
+                result.report.First(row => row.recordId == "wrongParticipant").rejectReason);
+        }
+
         private static void TestSelectorRankingAndStableTies()
         {
             List<ImportantMemoryRecordSnapshot> records = new List<ImportantMemoryRecordSnapshot>
@@ -707,6 +743,32 @@ namespace PawnMemoryTests
                 result.report.First(r => r.recordId == "fromThisEvent").rejectReason);
         }
 
+        private static void TestSelectorExcludedSourceEvents()
+        {
+            List<ImportantMemoryRecordSnapshot> records = new List<ImportantMemoryRecordSnapshot>
+            {
+                Record("canonicalSource", 300, participantId: "P2", sourceEventId: "Source-42"),
+                Record("currentReflection", 200, participantId: "P2", sourceEventId: "h7-event"),
+                Record("olderSubjectMemory", 100, participantId: "P2", sourceEventId: "older-event")
+            };
+            KnowledgeQuery query = Query(participantId: "P2", eventId: "H7-EVENT");
+            query.requireParticipantOverlap = true;
+            query.excludedSourceEventIds.Add(" source-42 ");
+
+            KnowledgeSelectionResult result = ImportantMemorySelector.Select(
+                query, records, KnowledgePolicySnapshot.CreateDefault());
+            AssertEqual("excludedSource.count", 1, result.selected.Count);
+            AssertEqual("excludedSource.pick", "olderSubjectMemory", result.selected[0].recordId);
+            AssertEqual(
+                "excludedSource.reason",
+                KnowledgeRejectReasons.ExcludedSource,
+                result.report.First(row => row.recordId == "canonicalSource").rejectReason);
+            AssertEqual(
+                "excludedSource.selfEchoStillWins",
+                KnowledgeRejectReasons.SelfEcho,
+                result.report.First(row => row.recordId == "currentReflection").rejectReason);
+        }
+
         private static void TestSelectorBroadTopicNeverRecalls()
         {
             // §8 proof: broad mood/social/body/danger domains — modeled as topic-family overlap —
@@ -744,6 +806,18 @@ namespace PawnMemoryTests
                 "progression=RoyalTitlePromoted; previous_value=Knight; new_value=Praetor",
                 "RoyalTitlePromoted", shippedRules, policy);
             AssertContains("query.title.constant", query.subjectKeys, "title");
+        }
+
+        private static void TestSocialReflectionNeverClassifiesAsKnowledge()
+        {
+            // H7 pages are important in the diary UI but deliberately absent from the durable-memory
+            // allowlist. Otherwise one reflection could become evidence for the next reflection.
+            List<ImportantMemoryDraft> drafts = Classify(EventSignal(
+                "PawnDiary_SocialReflection",
+                "social_reflection=true; social_reflection_subject_id=P2; "
+                    + "social_reflection_source_event_id=source-42; relation=Spouse",
+                "P1"));
+            AssertEqual("socialReflection.notKnowledge", 0, drafts.Count);
         }
 
         // ── Defensive caps (§2.3) ────────────────────────────────────────────────────────────────────

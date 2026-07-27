@@ -52,6 +52,7 @@
     <Compile Include="..\..\Source\Capture\Events\QuadrumReflectionPolicy.cs" Link="Capture\Events\QuadrumReflectionPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Events\ArcReflectionEventData.cs" Link="Capture\Events\ArcReflectionEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\BeliefReflectionEventData.cs" Link="Capture\Events\BeliefReflectionEventData.cs" />
+    <Compile Include="..\..\Source\Capture\Events\SocialReflectionEventData.cs" Link="Capture\Events\SocialReflectionEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\RaidEventData.cs" Link="Capture\Events\RaidEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\QuestEventData.cs" Link="Capture\Events\QuestEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\RitualEventData.cs" Link="Capture\Events\RitualEventData.cs" />
@@ -69,6 +70,8 @@
     <!-- The art payload delegates its identity/ownership contract to this pure policy. -->
     <Compile Include="..\..\Source\Pipeline\ArtImmortalizationPolicy.cs" Link="Pipeline\ArtImmortalizationPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\GameContextValue.cs" Link="Pipeline\GameContextValue.cs" />
+    <Compile Include="..\..\Source\Pipeline\SocialReflectionPolicy.cs" Link="Pipeline\SocialReflectionPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\SocialReflectionContextFormatter.cs" Link="Pipeline\SocialReflectionContextFormatter.cs" />
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContracts.cs" Link="Pipeline\NarrativeContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\RoyaltyContracts.cs" Link="Pipeline\RoyaltyContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\RoyalMutationOwnershipPolicy.cs" Link="Pipeline\RoyalMutationOwnershipPolicy.cs" />
@@ -100,6 +103,7 @@
     <Compile Include="..\..\Source\Capture\Specs\DayReflectionEventSpec.cs" Link="Capture\Specs\DayReflectionEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\ArcReflectionEventSpec.cs" Link="Capture\Specs\ArcReflectionEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\BeliefReflectionEventSpec.cs" Link="Capture\Specs\BeliefReflectionEventSpec.cs" />
+    <Compile Include="..\..\Source\Capture\Specs\SocialReflectionEventSpec.cs" Link="Capture\Specs\SocialReflectionEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\RaidEventSpec.cs" Link="Capture\Specs\RaidEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\QuestEventSpec.cs" Link="Capture\Specs\QuestEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\RitualEventSpec.cs" Link="Capture\Specs\RitualEventSpec.cs" />

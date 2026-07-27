@@ -76,6 +76,7 @@ namespace PawnDiary.Capture
             Register(new ProgressionEventSpec());
             Register(new ArcReflectionEventSpec());
             Register(new BeliefReflectionEventSpec());
+            Register(new SocialReflectionEventSpec());
             Register(new RomanceEventSpec());
             Register(new RaidEventSpec());
             Register(new QuestEventSpec());

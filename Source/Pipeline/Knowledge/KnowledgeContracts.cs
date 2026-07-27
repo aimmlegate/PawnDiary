@@ -201,6 +201,18 @@ namespace PawnDiary
         public string eventId = string.Empty;
         public string ownerPawnId = string.Empty;
         public int currentTick;
+        /// <summary>
+        /// When true, an exact subject-key match is not enough: a record must name one of the
+        /// concrete pawns in <see cref="participantIds"/>. Delayed social reflections use this so a
+        /// broad entity key cannot pull in a memory that was not actually about their subject.
+        /// </summary>
+        public bool requireParticipantOverlap;
+        /// <summary>
+        /// Source event IDs that are canonical evidence for the current page and therefore must not
+        /// be echoed back as "earlier" memory. Kept separate from <see cref="eventId"/> because a
+        /// delayed derivative page has its own ID as well as the original source page's ID.
+        /// </summary>
+        public List<string> excludedSourceEventIds = new List<string>();
         /// <summary>Concrete other pawns of the current event.</summary>
         public List<string> participantIds = new List<string>();
         /// <summary>Exact subject keys extracted from the current event's context.</summary>
@@ -213,6 +225,7 @@ namespace PawnDiary
     internal static class KnowledgeRejectReasons
     {
         public const string SelfEcho = "self_echo";
+        public const string ExcludedSource = "excluded_source_event";
         public const string NoOverlap = "no_shared_participant_or_subject";
         public const string OverCap = "ranked_below_line_cap";
         public const string Blank = "blank_record";

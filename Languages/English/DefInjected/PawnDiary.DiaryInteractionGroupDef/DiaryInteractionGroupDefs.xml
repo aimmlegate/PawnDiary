@@ -74,6 +74,10 @@
   <reflectionBelief.tone>with private reflection and continuity</reflectionBelief.tone>
   <reflectionBelief.tones.0>reflective and personal, connecting memory to change over time</reflectionBelief.tones.0>
   <reflectionBelief.tones.1>quietly inward, weighing what the remembered moments meant</reflectionBelief.tones.1>
+  <!-- Quality Wave H7. Byte-identical to the base Def. -->
+  <socialReflection.label>Social reflection</socialReflection.label>
+  <socialReflection.instruction>a later private reflection on one real social partner and the interaction that prompted it</socialReflection.instruction>
+  <socialReflection.tone>quietly inward, weighing what this person and the earlier exchange mean now</socialReflection.tone>
   <arrival.label>Arrival</arrival.label>
   <other.label>A quiet day</other.label>
   <other.instruction>a social interaction between the pawns</other.instruction>

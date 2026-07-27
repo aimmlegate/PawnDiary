@@ -390,6 +390,32 @@
   <DiaryPromptTemplate_SoloBeliefReflection.fields.11.label>обстановка</DiaryPromptTemplate_SoloBeliefReflection.fields.11.label>
   <DiaryPromptTemplate_SoloBeliefReflection.fields.12.label>моё последнее начало (не повторять)</DiaryPromptTemplate_SoloBeliefReflection.fields.12.label>
   <DiaryPromptTemplate_SoloBeliefReflection.fields.13.label>конец моей прошлой записи (для продолжения; не пересказывать)</DiaryPromptTemplate_SoloBeliefReflection.fields.13.label>
+  <!-- Quality Wave H7. Индексы этого нового списка закреплены с первого выпуска. -->
+  <DiaryPromptTemplate_SoloSocialReflection.systemPrompt>Напиши 2–5 предложений от первого лица: более позднее личное размышление об одном настоящем собеседнике в манере письма поселенца. Ты — поселенец из поля «точка зрения»; пиши от «я» и не называй себя по имени.
+Считай исходный разговор, необязательный отрывок исходной записи, факты о собеседнике и сведения из прошлого границами фактов. Пишущий может выражать свои чувства и толкование, но не должен утверждать, будто знает чужие мысли, мотивы, влечение, ненависть или намерения, если переданные факты этого не устанавливают.
+Если используешь прямую речь, цитируй только переданные слова персонажа точки зрения; не выдумывай реплик собеседника. Не пиши отчёт или сводку отношений. Выведи только текст дневника и закончи обычной пунктуацией.</DiaryPromptTemplate_SoloSocialReflection.systemPrompt>
+  <DiaryPromptTemplate_SoloSocialReflection.finalInstruction>Напиши 2–5 предложений от первого лица, размышляя об этом человеке и прежнем разговоре. Используй только переданные факты. Выражай собственные чувства пишущего, не выдумывая внутреннее состояние или слова собеседника. Выведи только запись.</DiaryPromptTemplate_SoloSocialReflection.finalInstruction>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.0.label>событие</DiaryPromptTemplate_SoloSocialReflection.fields.0.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.1.label>точка зрения</DiaryPromptTemplate_SoloSocialReflection.fields.1.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.2.label>инструкция</DiaryPromptTemplate_SoloSocialReflection.fields.2.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.3.label>ты</DiaryPromptTemplate_SoloSocialReflection.fields.3.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.4.label>исходный разговор</DiaryPromptTemplate_SoloSocialReflection.fields.4.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.5.label>заголовок исходной записи</DiaryPromptTemplate_SoloSocialReflection.fields.5.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.6.label>конец исходной записи</DiaryPromptTemplate_SoloSocialReflection.fields.6.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.7.label>собеседник</DiaryPromptTemplate_SoloSocialReflection.fields.7.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.8.label>возраст собеседника</DiaryPromptTemplate_SoloSocialReflection.fields.8.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.9.label>этап жизни собеседника</DiaryPromptTemplate_SoloSocialReflection.fields.9.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.10.label>внешность собеседника</DiaryPromptTemplate_SoloSocialReflection.fields.10.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.11.label>основная связь</DiaryPromptTemplate_SoloSocialReflection.fields.11.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.12.label>нынешнее отношение</DiaryPromptTemplate_SoloSocialReflection.fields.12.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.13.label>запомнившиеся причины</DiaryPromptTemplate_SoloSocialReflection.fields.13.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.14.label>из прошлого</DiaryPromptTemplate_SoloSocialReflection.fields.14.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.15.label>обстановка</DiaryPromptTemplate_SoloSocialReflection.fields.15.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.16.label>тон</DiaryPromptTemplate_SoloSocialReflection.fields.16.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.17.label>указание для события</DiaryPromptTemplate_SoloSocialReflection.fields.17.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.18.label>дополнительное указание для события</DiaryPromptTemplate_SoloSocialReflection.fields.18.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.19.label>моё последнее начало (не повторять)</DiaryPromptTemplate_SoloSocialReflection.fields.19.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.20.label>конец моей прошлой записи (для продолжения; не пересказывать)</DiaryPromptTemplate_SoloSocialReflection.fields.20.label>
   <DiaryPromptTemplate_DeathDescription.fields.0.label>событие</DiaryPromptTemplate_DeathDescription.fields.0.label>
   <DiaryPromptTemplate_DeathDescription.fields.1.label>указание для события</DiaryPromptTemplate_DeathDescription.fields.1.label>
   <DiaryPromptTemplate_DeathDescription.fields.2.label>дополнительное указание для события</DiaryPromptTemplate_DeathDescription.fields.2.label>

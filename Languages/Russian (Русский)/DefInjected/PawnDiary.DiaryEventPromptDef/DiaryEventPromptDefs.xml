@@ -78,6 +78,10 @@
   <DiaryEventPrompt_BeliefReflection.label>размышление об убеждениях</DiaryEventPrompt_BeliefReflection.label>
   <DiaryEventPrompt_BeliefReflection.prompt>Напиши личное размышление о переданном переживании веры, накопившейся перемене уверенности или смене веры.</DiaryEventPrompt_BeliefReflection.prompt>
   <DiaryEventPrompt_BeliefReflection.enhancement>Оставайся в границах сохранённого контекста убеждений и самого повода. Не выдумывай учение, заповеди, ритуалы, воспоминания, прежнюю идеологию или обращение, не подтверждённое переданными фактами.</DiaryEventPrompt_BeliefReflection.enhancement>
+  <!-- Quality Wave H7. -->
+  <DiaryEventPrompt_SocialReflection.label>размышление об отношениях</DiaryEventPrompt_SocialReflection.label>
+  <DiaryEventPrompt_SocialReflection.prompt>Напиши более позднее личное размышление о переданном собеседнике и о том, что теперь значит для пишущего прежний разговор.</DiaryEventPrompt_SocialReflection.prompt>
+  <DiaryEventPrompt_SocialReflection.enhancement>Оставайся в границах исходного разговора и фактов о собеседнике. Пишущий может толковать собственные чувства, но не должен выдумывать чужие мысли, мотивы, влечение, ненависть, намерения или слова.</DiaryEventPrompt_SocialReflection.enhancement>
   <!-- Quality Wave H6. -->
   <DiaryEventPrompt_ArtImmortalized.label>увековечено в искусстве</DiaryEventPrompt_ArtImmortalized.label>
   <DiaryEventPrompt_ArtImmortalized.prompt>Напиши о встрече с куском собственного прошлого, ставшим вещью чужих рук.</DiaryEventPrompt_ArtImmortalized.prompt>

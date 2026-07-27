@@ -34,6 +34,7 @@ namespace PawnDiary.Ingestion
         private readonly DiaryInteractionGroupDef classifiedGroup;
         private readonly string effectiveGroupDefName;
         private readonly InteractionEventData payload;
+        private string socialReflectionSourceKey;
 
         public InteractionSignal(Pawn initiator, Pawn recipient, InteractionDef interactionDef,
             string initiatorGameText, string recipientGameText, int playLogEntryId)
@@ -103,6 +104,57 @@ namespace PawnDiary.Ingestion
         }
 
         public override DiaryEventData Payload => payload;
+
+        /// <summary>
+        /// Reserves H7 from the accepted interaction before B6 can fold its ordinary page. The component
+        /// rechecks the strict two-pawn eligibility, allowlist, chance, and saved cooldown invariants.
+        /// </summary>
+        public override void OnAccepted(DiaryGameComponent sink, CaptureDecision decision)
+        {
+            if (sink == null || payload == null || decision == CaptureDecision.Drop)
+            {
+                return;
+            }
+
+            socialReflectionSourceKey = sink.TryScheduleSocialReflection(
+                initiator,
+                recipient,
+                interactionDef,
+                classifiedGroup,
+                initiatorGameText,
+                playLogEntryId,
+                payload.Tick);
+            if (decision == CaptureDecision.RouteAmbient)
+            {
+                // Ambient routing cannot own a canonical pair page, and its later batching adapter may
+                // throw. Freeze facts-only at acceptance so the delayed row never waits for absent prose.
+                sink.MarkSocialReflectionSourceProseUnavailable(
+                    socialReflectionSourceKey);
+            }
+        }
+
+        /// <summary>
+        /// Freezes facts-only source handling when ambient routing or B6 pacing produced no canonical
+        /// interaction page. This prevents an expected no-prose source from consuming the 24-hour retry
+        /// grace after its reflection is due.
+        /// </summary>
+        public override void OnAcceptedEmissionCompleted(
+            DiaryGameComponent sink,
+            CaptureDecision decision,
+            bool sourceEventRegistered)
+        {
+            InteractionEventData.InteractionEmitShape shape =
+                InteractionEventData.PlanEmit(decision);
+            bool directPage = shape == InteractionEventData.InteractionEmitShape.Solo
+                || shape == InteractionEventData.InteractionEmitShape.Pair;
+            bool factsOnlySource = decision == CaptureDecision.RouteAmbient
+                || (directPage && !sourceEventRegistered);
+            if (sink != null && factsOnlySource)
+            {
+                sink.MarkSocialReflectionSourceProseUnavailable(
+                    socialReflectionSourceKey);
+            }
+        }
 
         public override CaptureContext BuildContext()
         {
@@ -227,6 +279,8 @@ namespace PawnDiary.Ingestion
                 DiaryEvent soloEvent = sink.AddSoloEvent(eligiblePawn, otherPawn, interactionDef.defName, interactionLabel,
                     eligibleText, InteractionGroups.InstructionFor(interactionDef), gameContext, beliefEvidence);
                 soloEvent.AddPlayLogEntryId(playLogEntryId);
+                sink.AttachSocialReflectionSourceEvent(
+                    socialReflectionSourceKey, soloEvent.eventId);
                 sink.QueueSolo(soloEvent, DiaryEvent.InitiatorRole);
                 return;
             }
@@ -265,6 +319,8 @@ namespace PawnDiary.Ingestion
                 pairBeliefEvidence);
             diaryEvent.playLogInteractionDefName = interactionDef.defName;
             diaryEvent.AddPlayLogEntryId(playLogEntryId);
+            sink.AttachSocialReflectionSourceEvent(
+                socialReflectionSourceKey, diaryEvent.eventId);
             sink.QueuePair(diaryEvent);
         }
 

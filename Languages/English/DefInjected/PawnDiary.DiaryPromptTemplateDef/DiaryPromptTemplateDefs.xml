@@ -340,6 +340,32 @@ Do not write a report, sermon, doctrine summary, or list. Output only the diary 
   <DiaryPromptTemplate_SoloBeliefReflection.fields.11.label>setting</DiaryPromptTemplate_SoloBeliefReflection.fields.11.label>
   <DiaryPromptTemplate_SoloBeliefReflection.fields.12.label>my last opening line (do not reuse)</DiaryPromptTemplate_SoloBeliefReflection.fields.12.label>
   <DiaryPromptTemplate_SoloBeliefReflection.fields.13.label>how my previous entry ended (continuity; do not retell it)</DiaryPromptTemplate_SoloBeliefReflection.fields.13.label>
+  <!-- Quality Wave H7. This new field list is index-pinned from its first release. -->
+  <DiaryPromptTemplate_SoloSocialReflection.systemPrompt>Write 2-5 first-person diary sentences: a later private reflection about one real interaction partner, in the colonist&apos;s writing style. You are the colonist named in &quot;pov&quot;; write as &quot;I&quot;, never your name.
+Treat the source interaction, optional source entry excerpt, subject facts, and relevant past as factual boundaries. The writer may express their own emotion and interpretation, but must not claim the subject&apos;s private thoughts, motives, attraction, hatred, or intentions unless supplied facts establish them.
+If using direct speech, quote only words supplied for the POV pawn; never invent words for the subject. Do not write a report or relationship summary. Output only the diary entry. End with normal punctuation.</DiaryPromptTemplate_SoloSocialReflection.systemPrompt>
+  <DiaryPromptTemplate_SoloSocialReflection.finalInstruction>Write 2-5 first-person sentences reflecting on this person and the earlier interaction. Use only supplied facts. Express the writer&apos;s own feelings without inventing the subject&apos;s inner state or words. Output only the entry.</DiaryPromptTemplate_SoloSocialReflection.finalInstruction>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.0.label>event</DiaryPromptTemplate_SoloSocialReflection.fields.0.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.1.label>pov</DiaryPromptTemplate_SoloSocialReflection.fields.1.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.2.label>instruction</DiaryPromptTemplate_SoloSocialReflection.fields.2.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.3.label>you</DiaryPromptTemplate_SoloSocialReflection.fields.3.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.4.label>source interaction</DiaryPromptTemplate_SoloSocialReflection.fields.4.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.5.label>source entry title</DiaryPromptTemplate_SoloSocialReflection.fields.5.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.6.label>source entry ending</DiaryPromptTemplate_SoloSocialReflection.fields.6.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.7.label>subject</DiaryPromptTemplate_SoloSocialReflection.fields.7.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.8.label>subject age</DiaryPromptTemplate_SoloSocialReflection.fields.8.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.9.label>subject life stage</DiaryPromptTemplate_SoloSocialReflection.fields.9.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.10.label>subject appearance</DiaryPromptTemplate_SoloSocialReflection.fields.10.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.11.label>primary relation</DiaryPromptTemplate_SoloSocialReflection.fields.11.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.12.label>current sentiment</DiaryPromptTemplate_SoloSocialReflection.fields.12.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.13.label>remembered reasons</DiaryPromptTemplate_SoloSocialReflection.fields.13.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.14.label>relevant past</DiaryPromptTemplate_SoloSocialReflection.fields.14.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.15.label>setting</DiaryPromptTemplate_SoloSocialReflection.fields.15.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.16.label>tone</DiaryPromptTemplate_SoloSocialReflection.fields.16.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.17.label>event prompt</DiaryPromptTemplate_SoloSocialReflection.fields.17.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.18.label>event enhancement</DiaryPromptTemplate_SoloSocialReflection.fields.18.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.19.label>my last opening line (do not reuse)</DiaryPromptTemplate_SoloSocialReflection.fields.19.label>
+  <DiaryPromptTemplate_SoloSocialReflection.fields.20.label>how my previous entry ended (continuity; do not retell it)</DiaryPromptTemplate_SoloSocialReflection.fields.20.label>
   <DiaryPromptTemplate_DeathDescription.fields.0.label>event</DiaryPromptTemplate_DeathDescription.fields.0.label>
   <DiaryPromptTemplate_DeathDescription.fields.1.label>event prompt</DiaryPromptTemplate_DeathDescription.fields.1.label>
   <DiaryPromptTemplate_DeathDescription.fields.2.label>event enhancement</DiaryPromptTemplate_DeathDescription.fields.2.label>

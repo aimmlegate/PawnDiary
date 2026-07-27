@@ -623,6 +623,10 @@
   <reflectionBelief.tone>лично и вдумчиво, сохраняя связь между событиями</reflectionBelief.tone>
   <reflectionBelief.tones.0>лично и вдумчиво, связывая воспоминания с переменами во времени</reflectionBelief.tones.0>
   <reflectionBelief.tones.1>тихо и сокровенно, размышляя о значении памятных мгновений</reflectionBelief.tones.1>
+  <!-- Quality Wave H7. -->
+  <socialReflection.label>Размышление об отношениях</socialReflection.label>
+  <socialReflection.instruction>более позднее личное размышление об одном настоящем собеседнике и разговоре, который к нему подтолкнул</socialReflection.instruction>
+  <socialReflection.tone>тихо и сокровенно, взвешивая, что теперь значат этот человек и прежний разговор</socialReflection.tone>
 
   <eventWindowMechCluster.label>Кластер механоидов</eventWindowMechCluster.label>
   <eventWindowMechCluster.instruction>рядом собрались спящие боевые машины; пиши ожидание, наблюдение и подготовку — холодную механическую угрозу, которая ещё не сдвинулась с места, и никогда не выдумывай бой</eventWindowMechCluster.instruction>

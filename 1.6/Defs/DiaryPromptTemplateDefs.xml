@@ -891,6 +891,43 @@ Do not write a report, sermon, doctrine summary, or list. Output only the diary 
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
+  <!-- Quality Wave H7. Every subject/source value is frozen before registration so regeneration
+       never rereads a changed relationship, appearance, memory, or source page. Hidden identity
+       keys stay in gameContext but are deliberately absent from this field list. -->
+  <PawnDiary.DiaryPromptTemplateDef>
+    <defName>DiaryPromptTemplate_SoloSocialReflection</defName>
+    <templateKey>SoloSocialReflection</templateKey>
+    <maxTokens>200</maxTokens>
+    <appendDirectSpeechInstruction>false</appendDirectSpeechInstruction>
+    <systemPrompt>Write 2-5 first-person diary sentences: a later private reflection about one real interaction partner, in the colonist's writing style. You are the colonist named in "pov"; write as "I", never your name.
+Treat the source interaction, optional source entry excerpt, subject facts, and relevant past as factual boundaries. The writer may express their own emotion and interpretation, but must not claim the subject's private thoughts, motives, attraction, hatred, or intentions unless supplied facts establish them.
+If using direct speech, quote only words supplied for the POV pawn; never invent words for the subject. Do not write a report or relationship summary. Output only the diary entry. End with normal punctuation.</systemPrompt>
+    <finalInstruction>Write 2-5 first-person sentences reflecting on this person and the earlier interaction. Use only supplied facts. Express the writer's own feelings without inventing the subject's inner state or words. Output only the entry.</finalInstruction>
+    <fields>
+      <li><label>event</label><source>EventNoun</source></li>
+      <li><label>pov</label><source>PovName</source></li>
+      <li><label>instruction</label><source>Instruction</source></li>
+      <li><label>you</label><source>PawnSummary</source></li>
+      <li><label>source interaction</label><source>GameContext</source><contextKey>social_reflection_source_facts</contextKey></li>
+      <li><label>source entry title</label><source>GameContext</source><contextKey>social_reflection_source_title</contextKey></li>
+      <li><label>source entry ending</label><source>GameContext</source><contextKey>social_reflection_source_ending</contextKey></li>
+      <li><label>subject</label><source>GameContext</source><contextKey>social_reflection_subject_name</contextKey></li>
+      <li><label>subject age</label><source>GameContext</source><contextKey>social_reflection_subject_age</contextKey></li>
+      <li><label>subject life stage</label><source>GameContext</source><contextKey>social_reflection_subject_life_stage</contextKey></li>
+      <li><label>subject appearance</label><source>GameContext</source><contextKey>social_reflection_subject_appearance</contextKey></li>
+      <li><label>primary relation</label><source>GameContext</source><contextKey>social_reflection_relation</contextKey></li>
+      <li><label>current sentiment</label><source>GameContext</source><contextKey>social_reflection_sentiment</contextKey></li>
+      <li><label>remembered reasons</label><source>GameContext</source><contextKey>social_reflection_reasons</contextKey></li>
+      <li><label>relevant past</label><source>MemoryContext</source></li>
+      <li><label>setting</label><source>Setting</source></li>
+      <li><label>tone</label><source>Tone</source></li>
+      <li><label>event prompt</label><source>EventPrompt</source></li>
+      <li><label>event enhancement</label><source>EventEnhancement</source></li>
+      <li><label>my last opening line (do not reuse)</label><source>LastOpener</source></li>
+      <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
+    </fields>
+  </PawnDiary.DiaryPromptTemplateDef>
+
   <PawnDiary.DiaryPromptTemplateDef>
     <defName>DiaryPromptTemplate_DeathDescription</defName>
     <templateKey>DeathDescription</templateKey>

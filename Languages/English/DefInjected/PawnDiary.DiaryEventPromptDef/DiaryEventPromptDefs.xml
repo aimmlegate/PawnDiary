@@ -77,6 +77,10 @@
   <DiaryEventPrompt_BeliefReflection.label>belief reflection</DiaryEventPrompt_BeliefReflection.label>
   <DiaryEventPrompt_BeliefReflection.prompt>Write a private reflection on the supplied belief experience, accumulated certainty change, or change of faith.</DiaryEventPrompt_BeliefReflection.prompt>
   <DiaryEventPrompt_BeliefReflection.enhancement>Stay inside the frozen belief context and exact trigger. Do not invent doctrine, commandments, rituals, memories, a former ideoligion, or a conversion that the supplied facts do not prove.</DiaryEventPrompt_BeliefReflection.enhancement>
+  <!-- Quality Wave H7. Byte-identical to the base Def. -->
+  <DiaryEventPrompt_SocialReflection.label>social reflection</DiaryEventPrompt_SocialReflection.label>
+  <DiaryEventPrompt_SocialReflection.prompt>Write a later private reflection about the supplied interaction partner and what the earlier exchange now means to the writer.</DiaryEventPrompt_SocialReflection.prompt>
+  <DiaryEventPrompt_SocialReflection.enhancement>Use the source interaction and subject facts as boundaries. The writer may interpret their own feelings, but must not invent the subject&apos;s private thoughts, motives, attraction, hatred, intentions, or words.</DiaryEventPrompt_SocialReflection.enhancement>
   <!-- Quality Wave H6. Byte-identical to the base Def. -->
   <DiaryEventPrompt_ArtImmortalized.label>immortalized in art</DiaryEventPrompt_ArtImmortalized.label>
   <DiaryEventPrompt_ArtImmortalized.prompt>Write about meeting a piece of your own past as an object someone else made.</DiaryEventPrompt_ArtImmortalized.prompt>
