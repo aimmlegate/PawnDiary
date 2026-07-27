@@ -93,8 +93,8 @@ namespace PawnDiary.RimTests
             string[] expectedEligible =
             {
                 "anomaly",
-                "counsel",
                 "conversion",
+                "counsel",
                 "heartfelt",
                 "insults",
                 "recruit",
