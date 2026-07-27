@@ -3338,6 +3338,8 @@ namespace DiaryPipelineTests
             AssertEqual("humor seed is deterministic",
                 HumorChancePolicy.StableSeed("event", "pawn"),
                 HumorChancePolicy.StableSeed("event", "pawn"));
+            AssertEqual("humor legacy seed golden vector", 1241578879,
+                HumorChancePolicy.StableSeed("event", "pawn"));
             AssertTrue("humor seed separates POV writers",
                 HumorChancePolicy.StableSeed("event", "pawn-a")
                     != HumorChancePolicy.StableSeed("event", "pawn-b"));
@@ -3355,6 +3357,131 @@ namespace DiaryPipelineTests
             AssertEqual("humor salted seed is deterministic",
                 HumorChancePolicy.StableSeed("event", "pawn", 2),
                 HumorChancePolicy.StableSeed("event", "pawn", 2));
+            AssertEqual("humor salted seed golden vector", 285273041,
+                HumorChancePolicy.StableSeed("event", "pawn", 2));
+
+            List<string> candidateKeys = new List<string>
+            {
+                "Alpha",
+                "Bravo",
+                "Charlie",
+                "Delta",
+                "Echo",
+                "Foxtrot",
+            };
+
+            // Literal vectors pin the compatibility contract: length-framed fields, exact canonical
+            // key casing, unsigned descending FNV-1a rank, and ordinal return order. Event ID,
+            // localized label/rule prose, and reroll salt cannot affect ownership because the pure API
+            // intentionally accepts none of them.
+            AssertEqual("humor repertoire golden Light vector",
+                "Alpha|Charlie",
+                string.Join("|", HumorChancePolicy.StableRepertoire(
+                    candidateKeys, "Pawn_42", "Light", 2)));
+            AssertEqual("humor repertoire golden Gallows vector",
+                "Alpha|Delta",
+                string.Join("|", HumorChancePolicy.StableRepertoire(
+                    candidateKeys, "Pawn_42", "Gallows", 2)));
+            AssertEqual("humor repertoire golden second-writer vector",
+                "Alpha|Foxtrot",
+                string.Join("|", HumorChancePolicy.StableRepertoire(
+                    candidateKeys, "Pawn_99", "Light", 2)));
+            AssertEqual("humor repertoire repeats exactly",
+                "Alpha|Charlie",
+                string.Join("|", HumorChancePolicy.StableRepertoire(
+                    candidateKeys, "Pawn_42", "Light", 2)));
+
+            List<string> reversedKeys = new List<string>(candidateKeys);
+            reversedKeys.Reverse();
+            AssertEqual("humor repertoire ignores XML order",
+                "Alpha|Charlie",
+                string.Join("|", HumorChancePolicy.StableRepertoire(
+                    reversedKeys, "Pawn_42", "Light", 2)));
+
+            // These pairs collapse under bare concatenation or a single '|' separator. Their literal
+            // expected sets prove that every tuple field is framed independently before hashing.
+            AssertEqual("humor repertoire frames delimiter-bearing tuple A",
+                "bc|c|ef",
+                string.Join("|", HumorChancePolicy.StableRepertoire(
+                    new List<string> { "a", "bc", "ab", "c", "d", "ef", "f" },
+                    "a|b", "c", 3)));
+            AssertEqual("humor repertoire frames delimiter-bearing tuple B",
+                "ab|bc|ef",
+                string.Join("|", HumorChancePolicy.StableRepertoire(
+                    new List<string> { "a", "bc", "ab", "c", "d", "ef", "f" },
+                    "a", "b|c", 3)));
+
+            AssertEqual("humor repertoire canonicalizes case-insensitive duplicates",
+                "CUE|other",
+                string.Join("|", HumorChancePolicy.StableRepertoire(
+                    new List<string> { "cue", "Cue", "CUE", "other", "", "   ", null },
+                    "Pawn_42", "Light", 8)));
+
+            // K1rnw and Kipba deliberately collide under the locked framed FNV-1a score for this
+            // writer/tier. The ordinal-smaller canonical key must win the final tie-break.
+            AssertEqual("humor repertoire collision uses ordinal key tie-break",
+                "K1rnw",
+                string.Join("|", HumorChancePolicy.StableRepertoire(
+                    new List<string> { "Kipba", "K1rnw" },
+                    "CollisionWriter", "Light", 1)));
+
+            AssertEqual("humor repertoire blank writer preserves broad pool",
+                "Alpha|Bravo|Charlie|Delta|Echo|Foxtrot",
+                string.Join("|", HumorChancePolicy.StableRepertoire(
+                    reversedKeys, "   ", "Light", 2)));
+            AssertEqual("humor repertoire null writer preserves broad pool",
+                "Alpha|Bravo|Charlie|Delta|Echo|Foxtrot",
+                string.Join("|", HumorChancePolicy.StableRepertoire(
+                    reversedKeys, null, "Light", 2)));
+            AssertEqual("humor repertoire nonpositive maximum preserves broad pool",
+                "Alpha|Bravo|Charlie|Delta|Echo|Foxtrot",
+                string.Join("|", HumorChancePolicy.StableRepertoire(
+                    reversedKeys, "Pawn_42", "Light", 0)));
+            AssertEqual("humor repertoire oversized maximum returns all",
+                "Alpha|Bravo|Charlie|Delta|Echo|Foxtrot",
+                string.Join("|", HumorChancePolicy.StableRepertoire(
+                    reversedKeys, "Pawn_42", "Light", 64)));
+            AssertEqual("humor repertoire empty input is safe",
+                string.Empty,
+                string.Join("|", HumorChancePolicy.StableRepertoire(
+                    new List<string>(), "Pawn_42", "Light", 2)));
+            AssertEqual("humor repertoire null input is safe",
+                string.Empty,
+                string.Join("|", HumorChancePolicy.StableRepertoire(
+                    null, "Pawn_42", "Light", 2)));
+            AssertEqual("humor repertoire singleton is preserved",
+                "Only",
+                string.Join("|", HumorChancePolicy.StableRepertoire(
+                    new List<string> { "Only" }, "Pawn_42", "Light", 2)));
+
+            List<string> baseRepertoire = HumorChancePolicy.StableRepertoire(
+                new List<string> { "Alpha", "Bravo", "Charlie", "Delta", "Echo" },
+                "Pawn_42", "Light", 2);
+            List<string> grownRepertoire = HumorChancePolicy.StableRepertoire(
+                candidateKeys, "Pawn_42", "Light", 2);
+            AssertTrue("humor repertoire growth displaces at most one member",
+                baseRepertoire.Intersect(grownRepertoire, StringComparer.Ordinal).Count() >= 1);
+
+            string unownedKey = candidateKeys.First(
+                key => !grownRepertoire.Contains(key, StringComparer.Ordinal));
+            List<string> withoutUnowned = candidateKeys
+                .Where(key => !string.Equals(key, unownedKey, StringComparison.Ordinal))
+                .ToList();
+            AssertEqual("humor repertoire removing unowned key changes nothing",
+                string.Join("|", grownRepertoire),
+                string.Join("|", HumorChancePolicy.StableRepertoire(
+                    withoutUnowned, "Pawn_42", "Light", 2)));
+
+            string removedOwned = grownRepertoire[0];
+            string preservedOwned = grownRepertoire[1];
+            List<string> withoutOwned = candidateKeys
+                .Where(key => !string.Equals(key, removedOwned, StringComparison.Ordinal))
+                .ToList();
+            List<string> refilled = HumorChancePolicy.StableRepertoire(
+                withoutOwned, "Pawn_42", "Light", 2);
+            AssertTrue("humor repertoire removing owned key preserves the other member",
+                refilled.Contains(preservedOwned, StringComparer.Ordinal));
+            AssertEqual("humor repertoire removing owned key only fills vacancy", 2, refilled.Count);
         }
 
         private static void TestPromptSimilarity()

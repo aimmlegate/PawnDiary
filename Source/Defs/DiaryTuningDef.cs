@@ -513,10 +513,13 @@ namespace PawnDiary
             "PrisonBreak",
         };
 
-        // ---- Humor cues (always-on; XML-authored and visible in the Advanced tuning editor) ----
-        // Base probability (0..1) that an eligible first-person entry gets one structural humor
-        // cue appended to its prompt. Flavor (Light vs Gallows) is chosen separately by event stakes.
+        // ---- Optional voice cues (historical "humor" names retained for XML/mod compatibility) ----
+        // Base probability (0..1) that an eligible first-person entry gets one structural voice cue
+        // appended to its prompt. Flavor (Light vs Gallows) is chosen separately by event stakes.
         public float humorChance = 0.20f;
+        // Number of stable cue Defs each identified writer owns per tier. Membership is pure and
+        // unweighted; each entry's existing weighted roll then chooses among that small repertoire.
+        public int humorCueRepertoireSize = 2;
         // Flat multiplier on humorChance for a writer with an upbeat temperament (Optimist, Sanguine,
         // or Anomaly's Joyous trait) or a Social skill passion (minor or burning). Not cumulative:
         // matching several of those qualifiers still applies this multiplier once, never stacked. See
@@ -731,6 +734,30 @@ namespace PawnDiary
                 }
 
                 return value;
+            }
+        }
+
+        private const int DefaultHumorCueRepertoireSize = 2;
+        private const int MaximumHumorCueRepertoireSize = 64;
+
+        /// <summary>
+        /// XML-tuned maximum number of optional voice cues one identified writer owns in each stakes
+        /// tier. Invalid/nonpositive values use the safe default; oversized modded values are capped
+        /// defensively while still allowing substantially larger catalogues than the shipped one.
+        /// </summary>
+        public static int HumorCueRepertoireSize
+        {
+            get
+            {
+                int value = Current.humorCueRepertoireSize;
+                if (value < 1)
+                {
+                    return DefaultHumorCueRepertoireSize;
+                }
+
+                return value > MaximumHumorCueRepertoireSize
+                    ? MaximumHumorCueRepertoireSize
+                    : value;
             }
         }
 

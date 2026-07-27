@@ -459,10 +459,12 @@
       <li>PrisonBreak</li>
     </arcReflectionHighStakesDefNameTokens>
 
-    <!-- Humor cues (always-on). Base probability an eligible first-person entry gets one structural
-         humor cue appended to its prompt. These XML values are also available in Advanced tuning;
-         there is no separate player-facing humor toggle. See DiaryHumorCueDefs.xml for cue text. -->
+    <!-- Optional voice cues (historical "humor" names retained for compatibility). Base probability
+         an eligible first-person entry gets one structural cue appended to its prompt. These XML
+         values are available in Advanced tuning; there is no ordinary player-facing toggle. -->
     <humorChance>0.20</humorChance>
+    <!-- Stable unweighted cue repertoire owned by each identified writer, independently per tier. -->
+    <humorCueRepertoireSize>2</humorCueRepertoireSize>
     <!-- Flat multiplier on humorChance for a writer with an upbeat temperament (Optimist, Sanguine,
          or Anomaly's Joyous trait) or a Social skill passion (minor or burning). Not cumulative:
          matching several qualifiers still applies this multiplier once, never stacked. -->

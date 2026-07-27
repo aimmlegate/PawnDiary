@@ -1,4 +1,5 @@
-// XML-backed humor-cue Defs and selection helpers for subtle prompt voice variations.
+// XML-backed optional voice-cue Defs and selection helpers. Historical "humor" type/field names are
+// retained for save, XML, translation, settings, and mod-patch compatibility.
 using System;
 using System.Collections.Generic;
 using Verse;
@@ -6,19 +7,14 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>
-    /// XML-backed **humor cue**: a per-entry, structural writing license appended to the
-    /// first-person system prompt. These are deliberately *not* "be funny" instructions — each
-    /// <see cref="rule"/> is a single sentence-shape constraint (an understatement coda, a flat
-    /// inventory, a misplaced priority) that lets a small model produce a subtly droll or deadpan
-    /// entry without ever naming comedy, jokes, punchlines, or comic dialogue.
+    /// XML-backed optional **voice cue**: a per-entry structural device appended to the first-person
+    /// system prompt. These are deliberately *not* "be funny" instructions — each <see cref="rule"/>
+    /// authorizes one concrete, factual sentence habit or familiar phrase.
     ///
-    /// The feature is **hidden and always-on**: there is no settings field, no UI toggle, and no
-    /// player-facing label. The single tunable base rate lives in XML
-    /// (<c>DiaryTuningDef.humorChance</c>, see <see cref="DiaryTuning"/>); selection is a weighted
-    /// random pick over these defs. Flavor is chosen by event stakes: mundane events draw from the
-    /// **Light** tier (dry/absurdist), high-stakes events (combat, raids, death, mental breaks)
-    /// draw from the **Gallows** tier (dark/deadpan). Both tiers are always eligible; the tier
-    /// only picks the flavor.
+    /// The feature has no ordinary player-facing toggle. XML/Advanced tuning owns its base chance and
+    /// stable per-writer repertoire size (see <see cref="DiaryTuning"/>). Mundane events draw from the
+    /// **Light** tier; high-stakes events draw from **Gallows**. A stable hash assigns a small repertoire
+    /// in each tier, then the existing event seed makes one weighted pick inside that repertoire.
     ///
     /// A cue rides into the prompt folded inside the same voice block as the writing style (see
     /// <see cref="PawnDiary"/>.<c>DiaryPipelineAdapters.HumorVoiceBlock</c>), so it is automatically
@@ -27,10 +23,10 @@ namespace PawnDiary
     /// </summary>
     public class DiaryHumorCueDef : Def
     {
-        // The cue text injected into the prompt. Localized via DefInjected
+        // The optional device injected into the prompt. Localized via DefInjected
         // (Languages/English/DefInjected/PawnDiary.DiaryHumorCueDef/DiaryHumorCueDefs.xml); the def
-        // XML holds the English default copy. Each rule is one concrete sentence-shape constraint,
-        // never a request to "be funny".
+        // XML holds the English default copy. Each rule authorizes one concrete factual device,
+        // never a request to "be funny" or invent missing context.
         public string rule;
 
         // Internal stakes-flavor keyword: "Light" (dry/absurdist, mundane events) or "Gallows"
@@ -39,7 +35,7 @@ namespace PawnDiary
         // an untagged def still participates in the mundane pool.
         public string tier = DiaryHumorCues.TierLight;
 
-        // Relative weight for the weighted-random pick within the chosen tier. 1 = even with peers.
+        // Relative weight for the event-time pick within the writer's owned tier repertoire.
         public float weight = 1f;
     }
 
@@ -79,6 +75,17 @@ namespace PawnDiary
         {
             return def != null
                 && string.Equals(def.tier, TierGallows, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Returns true only for the two supported internal tier tokens. Malformed modded rows are
+        /// rejected instead of silently entering the Light pool.
+        /// </summary>
+        public static bool HasRecognizedTier(DiaryHumorCueDef def)
+        {
+            return def != null
+                && (string.Equals(def.tier, TierLight, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(def.tier, TierGallows, StringComparison.OrdinalIgnoreCase));
         }
     }
 }

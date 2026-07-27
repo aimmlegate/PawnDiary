@@ -8,6 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-07-27
 
+- **Signature voice cues.** Optional Light/Gallows devices now recur from stable two-cue per-pawn repertoires, with deterministic isolated selection, Advanced XML tuning, factual EN/RU rules, and no new saved state.
 - **Dead Tale POV safety.** Ordinary Tales now keep dead participants such as VisitedGrave corpses as context-only, preventing partial pair commits and downstream dispatch failures while preserving canonical death-description pages.
 - **Local-first diagnostics.** Invariant and hook-health errors now always enter RimWorld's local error log before the optional telemetry observer, which no longer captures suppressed `ErrorOnce` duplicates.
 - **Quality Wave H7 — social reflections.** Meaningful two-colonist interactions can now prompt a delayed, initiator-only reflection with deterministic emotion-weighted chance, saved pair/writer pacing, exact source and live subject facts, subject-only memories, an independent toggle, EN/RU prompt policy, and reflection-recursion safeguards.

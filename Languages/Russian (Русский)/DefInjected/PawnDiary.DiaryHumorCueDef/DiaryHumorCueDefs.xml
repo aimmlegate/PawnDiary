@@ -1,43 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
   <DiaryHumorCue_UnderstatementCoda.label>тихое преуменьшение</DiaryHumorCue_UnderstatementCoda.label>
-  <DiaryHumorCue_UnderstatementCoda.rule>Заверши запись коротким бытовым преуменьшением, где серьёзное звучит как обычная неприятность. Без готовой пословицы, шутки и подмигивания.</DiaryHumorCue_UnderstatementCoda.rule>
+  <DiaryHumorCue_UnderstatementCoda.rule>Если это допускает один из переданных фактов, один раз закончи запись спокойным преуменьшением реакции рассказчика, но не самого события. Иначе не используй этот приём.</DiaryHumorCue_UnderstatementCoda.rule>
   <DiaryHumorCue_AbsurdDetail.label>нелепая мелочь</DiaryHumorCue_AbsurdDetail.label>
-  <DiaryHumorCue_AbsurdDetail.rule>Вставь одну правдивую нелепую мелочь из быта поселения: предмет, позу, пятно, запах или звук. Назови её сухо и не поясняй, почему это смешно.</DiaryHumorCue_AbsurdDetail.rule>
+  <DiaryHumorCue_AbsurdDetail.rule>Если среди переданных фактов есть одна небольшая нелепая, но правдивая деталь, один раз назови её прямо и продолжай без комментария. Иначе не используй этот приём.</DiaryHumorCue_AbsurdDetail.rule>
   <DiaryHumorCue_PettyComplaint.label>бытовое ворчание</DiaryHumorCue_PettyComplaint.label>
-  <DiaryHumorCue_PettyComplaint.rule>Подай событие через тихое бытовое ворчание о вещи, грязи, сквозняке, еде или погоде. Главное событие не искажай и не превращай в анекдот.</DiaryHumorCue_PettyComplaint.rule>
+  <DiaryHumorCue_PettyComplaint.rule>Если в переданных фактах есть предмет или деталь о погоде, один раз поворчи об этом, не меняя факты события. Иначе не используй этот приём.</DiaryHumorCue_PettyComplaint.rule>
   <DiaryHumorCue_MisplacedPriority.label>неуместный приоритет</DiaryHumorCue_MisplacedPriority.label>
-  <DiaryHumorCue_MisplacedPriority.rule>Выдвинь на первый план мелкую неудобную деталь, будто именно она испортила день. Несоразмерность должна читаться сама, без объяснений.</DiaryHumorCue_MisplacedPriority.rule>
+  <DiaryHumorCue_MisplacedPriority.rule>Если в переданных фактах есть мелкое неудобство, один раз упомяни его как самое важное, не меняя факты события. Иначе не используй этот приём.</DiaryHumorCue_MisplacedPriority.rule>
   <DiaryHumorCue_DeadpanInventory.label>сухая опись</DiaryHumorCue_DeadpanInventory.label>
-  <DiaryHumorCue_DeadpanInventory.rule>Сведи случившееся к мелким тратам и мелкой прибыли, но обычными фразами, а не описью. Без эмоциональных слов. Например: «Крыша отняла полдня и вернула сухую койку».</DiaryHumorCue_DeadpanInventory.rule>
+  <DiaryHumorCue_DeadpanInventory.rule>Если в переданных фактах есть и конкретная трата или потеря, и приобретение или результат, один раз сопоставь их обычным предложением, не списком. Иначе не используй этот приём.</DiaryHumorCue_DeadpanInventory.rule>
   <DiaryHumorCue_PoliteRegret.label>чрезмерная вежливость</DiaryHumorCue_PoliteRegret.label>
-  <DiaryHumorCue_PoliteRegret.rule>Закончи нарочито вежливым сожалением о пустяке, как в записке соседям или объяснительной. Тон сдержанный, без издёвки.</DiaryHumorCue_PoliteRegret.rule>
+  <DiaryHumorCue_PoliteRegret.rule>Если в переданных фактах есть мелкое неудобство, один раз закончи чрезмерно официальным сожалением о нём. Иначе не используй этот приём.</DiaryHumorCue_PoliteRegret.rule>
   <DiaryHumorCue_SidewaysObservation.label>побочная деталь</DiaryHumorCue_SidewaysObservation.label>
-  <DiaryHumorCue_SidewaysObservation.rule>Добавь одно боковое наблюдение о соседней бытовой детали и остановись. Оно должно стоять рядом с событием странно, но правдоподобно.</DiaryHumorCue_SidewaysObservation.rule>
+  <DiaryHumorCue_SidewaysObservation.rule>Если переданный контекст содержит постороннюю деталь поблизости, один раз сухо упомяни её и остановись. Иначе не используй этот приём.</DiaryHumorCue_SidewaysObservation.rule>
   <DiaryHumorCue_ConditionalCopOut.label>авось пройдёт</DiaryHumorCue_ConditionalCopOut.label>
-  <DiaryHumorCue_ConditionalCopOut.rule>Закончи спокойной условной фразой в духе «авось обойдётся», но своими словами: будто всё ещё может обойтись без худшего. Не раздувай тревогу.</DiaryHumorCue_ConditionalCopOut.rule>
+  <DiaryHumorCue_ConditionalCopOut.rule>Если исход по переданным фактам действительно не решён, один раз закончи спокойным условным оборотом. Не выдумывай неопределённость; иначе не используй этот приём.</DiaryHumorCue_ConditionalCopOut.rule>
   <DiaryHumorCue_RenamedThing.label>возвышенное название</DiaryHumorCue_RenamedThing.label>
-  <DiaryHumorCue_RenamedThing.rule>Один раз назови обычную вещь слишком торжественно или канцелярски, будто это важный объект хозяйства. Не объясняй переименование.</DiaryHumorCue_RenamedThing.rule>
+  <DiaryHumorCue_RenamedThing.rule>Если переданные факты называют обычный предмет, один раз назови его слегка чересчур торжественно, но узнаваемо. Иначе не используй этот приём.</DiaryHumorCue_RenamedThing.rule>
   <DiaryHumorCue_ShrugCloser.label>ну и ладно</DiaryHumorCue_ShrugCloser.label>
-  <DiaryHumorCue_ShrugCloser.rule>Закончи одной короткой фразой равнодушного принятия: будто рассказчик устал удивляться и просто записал факт. Без грубости и кривляния.</DiaryHumorCue_ShrugCloser.rule>
+  <DiaryHumorCue_ShrugCloser.rule>Если тон события это допускает, один раз закончи короткой фразой, будто оно едва стоит записи, не противореча переданным фактам. Иначе не используй этот приём.</DiaryHumorCue_ShrugCloser.rule>
+  <DiaryHumorCue_AnywayPivot.label>поворот «как бы там ни было»</DiaryHumorCue_AnywayPivot.label>
+  <DiaryHumorCue_AnywayPivot.rule>Один раз, но не первым словом записи, используй «Как бы там ни было», чтобы перейти от реакции к одному переданному практическому факту. Если такой факт не подходит, не используй этот приём.</DiaryHumorCue_AnywayPivot.rule>
+  <DiaryHumorCue_ISupposeHedge.label>оговорка «пожалуй»</DiaryHumorCue_ISupposeHedge.label>
+  <DiaryHumorCue_ISupposeHedge.rule>Один раз используй «пожалуй», чтобы смягчить одно толкование, но не ставить под сомнение переданный факт. Если подходящего толкования нет, не используй этот приём.</DiaryHumorCue_ISupposeHedge.rule>
+  <DiaryHumorCue_ForTheRecord.label>для протокола</DiaryHumorCue_ForTheRecord.label>
+  <DiaryHumorCue_ForTheRecord.rule>Один раз поставь «Для протокола» перед одной конкретной переданной деталью. Не добавляй новую деталь; если подходящей нет, не используй этот приём.</DiaryHumorCue_ForTheRecord.rule>
+  <DiaryHumorCue_SelfCorrection.label>самоисправление</DiaryHumorCue_SelfCorrection.label>
+  <DiaryHumorCue_SelfCorrection.rule>Один раз поправь толкование фразой «Нет, это не совсем так» или естественным аналогом, затем замени только это толкование. Не исправляй переданные факты; если честная поправка не подходит, не используй этот приём.</DiaryHumorCue_SelfCorrection.rule>
   <DiaryHumorCue_RoutineTerrible.label>ужас по расписанию</DiaryHumorCue_RoutineTerrible.label>
-  <DiaryHumorCue_RoutineTerrible.rule>Самое страшное скажи тем же ровным голосом, каким говорят о работе по хозяйству, одной обычной фразой. Без героизма, жалости и громких слов. Например: «Похоронили его раньше, чем сварился суп».</DiaryHumorCue_RoutineTerrible.rule>
+  <DiaryHumorCue_RoutineTerrible.rule>Если подходит переданный тяжёлый факт, один раз изложи его ровным голосом хозяйственной работы. Не добавляй время, обстоятельства или последствия; иначе не используй этот приём.</DiaryHumorCue_RoutineTerrible.rule>
   <DiaryHumorCue_HouseholdMaintenance.label>хозяйственный ужас</DiaryHumorCue_HouseholdMaintenance.label>
-  <DiaryHumorCue_HouseholdMaintenance.rule>Заверши тихой бытовой строкой, будто после ужаса осталось обычное хозяйственное дело: убрать, отмыть, починить, перенести или закрыть дверь.</DiaryHumorCue_HouseholdMaintenance.rule>
+  <DiaryHumorCue_HouseholdMaintenance.rule>Если в переданных фактах есть задача по уборке, ремонту, лечению или погребению, один раз закончи, представив её обычной хозяйственной работой. Не выдумывай задачу; иначе не используй этот приём.</DiaryHumorCue_HouseholdMaintenance.rule>
   <DiaryHumorCue_UnacknowledgedDark.label>тьма мимоходом</DiaryHumorCue_UnacknowledgedDark.label>
-  <DiaryHumorCue_UnacknowledgedDark.rule>Оставь одну мрачную деталь почти незамеченной, как будто рассказчик привык к такому порядку вещей. Не реагируй на неё отдельно.</DiaryHumorCue_UnacknowledgedDark.rule>
+  <DiaryHumorCue_UnacknowledgedDark.rule>Если одна переданная деталь мрачна, один раз изложи её прямо и без реакции. Не добавляй более мрачную деталь; иначе не используй этот приём.</DiaryHumorCue_UnacknowledgedDark.rule>
   <DiaryHumorCue_DryTallyOfLoss.label>канцелярский ущерб</DiaryHumorCue_DryTallyOfLoss.label>
-  <DiaryHumorCue_DryTallyOfLoss.rule>Назови потерянных людей и вещи ровным канцелярским тоном, но внутри обычных предложений, а не ведомостью. Например: «Двое с северного края не вернулись, и сарай пропал вместе с ними».</DiaryHumorCue_DryTallyOfLoss.rule>
+  <DiaryHumorCue_DryTallyOfLoss.rule>Один раз назови ровным канцелярским тоном только переданных потерянных людей или вещи, внутри обычных предложений. Если потери не переданы, не используй этот приём.</DiaryHumorCue_DryTallyOfLoss.rule>
   <DiaryHumorCue_GrimUnderstatement.label>скромная катастрофа</DiaryHumorCue_GrimUnderstatement.label>
-  <DiaryHumorCue_GrimUnderstatement.rule>Сожми бедствие до спокойной фразы, будто это неприятность среднего размера. Тон искренний и усталый, не язвительный.</DiaryHumorCue_GrimUnderstatement.rule>
+  <DiaryHumorCue_GrimUnderstatement.rule>Один раз спокойным преуменьшением ослабь реакцию рассказчика, но не масштаб или правдивость переданных фактов. Иначе не используй этот приём.</DiaryHumorCue_GrimUnderstatement.rule>
   <DiaryHumorCue_MatterOfFactMortality.label>будничная смертность</DiaryHumorCue_MatterOfFactMortality.label>
-  <DiaryHumorCue_MatterOfFactMortality.rule>Упомяни смерть или увечье сухо, рядом с погодой, работой или уборкой, и сразу продолжи. Никакой сентиментальности и никакого веселья.</DiaryHumorCue_MatterOfFactMortality.rule>
+  <DiaryHumorCue_MatterOfFactMortality.rule>Только если переданные факты упоминают смерть или ранение, один раз скажи об этом будничным тоном и сразу продолжи. Иначе не используй этот приём.</DiaryHumorCue_MatterOfFactMortality.rule>
   <DiaryHumorCue_QueuedForLater.label>отложить на потом</DiaryHumorCue_QueuedForLater.label>
-  <DiaryHumorCue_QueuedForLater.rule>Отнесись к тяжёлому событию как к делу, которое придётся разобрать позже, когда будет свет, время или свободные руки.</DiaryHumorCue_QueuedForLater.rule>
+  <DiaryHumorCue_QueuedForLater.rule>Если переданные факты содержат незавершённые последствия или названную задачу, один раз упомяни, что к ней вернутся позже. Не выдумывай обязанность или срок; иначе не используй этот приём.</DiaryHumorCue_QueuedForLater.rule>
   <DiaryHumorCue_ProfessionalDetachment.label>служебный тон</DiaryHumorCue_ProfessionalDetachment.label>
-  <DiaryHumorCue_ProfessionalDetachment.rule>Опиши последствия как короткое служебное донесение: факт, ущерб, дальнейшие действия. Не добавляй жалоб и морали.</DiaryHumorCue_ProfessionalDetachment.rule>
+  <DiaryHumorCue_ProfessionalDetachment.rule>Один раз опиши только переданные последствия отстранённым тоном обычного служебного отчёта. Если последствия не переданы, не используй этот приём.</DiaryHumorCue_ProfessionalDetachment.rule>
   <DiaryHumorCue_GrimPracticality.label>дело прежде всего</DiaryHumorCue_GrimPracticality.label>
-  <DiaryHumorCue_GrimPracticality.rule>Сразу перейди к ближайшей практической задаче, будто переживать некогда: надо тушить, чинить, лечить, тащить, мыть или считать.</DiaryHumorCue_GrimPracticality.rule>
+  <DiaryHumorCue_GrimPracticality.rule>Если переданные факты называют следующую практическую задачу, один раз сразу перейди к ней, будто событие уже решено. Не выдумывай задачу или исход; иначе не используй этот приём.</DiaryHumorCue_GrimPracticality.rule>
   <DiaryHumorCue_EvenMeasure.label>баланс сошёлся</DiaryHumorCue_EvenMeasure.label>
-  <DiaryHumorCue_EvenMeasure.rule>Поставь рядом серьёзную потерю и ничтожную выгоду и сухо сочти, что вышло поровну, одной фразой. Например: «Теплицы нет, зато ящик с семенами цел, будем считать, что квиты».</DiaryHumorCue_EvenMeasure.rule>
+  <DiaryHumorCue_EvenMeasure.rule>Только если переданы и серьёзная потеря, и мелкая выгода, один раз поставь их рядом и сухо сочти равными в одном предложении. Иначе не используй этот приём.</DiaryHumorCue_EvenMeasure.rule>
+  <DiaryHumorCue_CouldHaveBeenWorse.label>могло быть хуже</DiaryHumorCue_CouldHaveBeenWorse.label>
+  <DiaryHumorCue_CouldHaveBeenWorse.rule>Один раз используй «Могло быть хуже» как защитное преуменьшение. Не выдумывай и не подразумевай не переданное худшее событие; не используй приём, если он исказит факты.</DiaryHumorCue_CouldHaveBeenWorse.rule>
+  <DiaryHumorCue_EnoughForNow.label>на сегодня хватит</DiaryHumorCue_EnoughForNow.label>
+  <DiaryHumorCue_EnoughForNow.rule>Один раз закончи фразой «На сегодня хватит» или естественным аналогом и ничего не добавляй после неё. Не используй приём, если концовка противоречит манере или тону.</DiaryHumorCue_EnoughForNow.rule>
+  <DiaryHumorCue_NotWritingThatDown.label>об этом не писать</DiaryHumorCue_NotWritingThatDown.label>
+  <DiaryHumorCue_NotWritingThatDown.rule>Один раз коротко откажись записывать чувство, прямо названное в переданном контексте, но всё равно изложи переданные факты события. Если чувство не передано, не используй этот приём.</DiaryHumorCue_NotWritingThatDown.rule>
+  <DiaryHumorCue_OldWordsReturn.label>возвращение старых слов</DiaryHumorCue_OldWordsReturn.label>
+  <DiaryHumorCue_OldWordsReturn.rule>Если передан конец предыдущей записи, один раз повтори из него обычное слово или короткую фразу с иным эмоциональным весом. Не пересказывай прошлую запись; иначе не используй этот приём.</DiaryHumorCue_OldWordsReturn.rule>
 </LanguageData>

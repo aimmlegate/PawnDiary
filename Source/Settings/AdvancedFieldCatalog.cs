@@ -1381,6 +1381,7 @@ namespace PawnDiary
                 .Float("uiHistoryScanFrameBudgetSeconds", 0f, 0.01f, true)
                 .Int("minimumFirstPersonAgeYears", 0, 100)
                 .Float("humorChance", 0f, 1f, true)
+                .Int("humorCueRepertoireSize", 1, 64)
                 .Float("humorElevatedChanceMultiplier", 0f, 5f, true)
                 .Float("humorReducedChanceMultiplier", 0f, 1f, true)
                 .StringList("humorElevatedTraitKeys")

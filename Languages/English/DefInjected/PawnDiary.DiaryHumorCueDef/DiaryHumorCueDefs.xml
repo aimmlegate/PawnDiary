@@ -1,43 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
   <DiaryHumorCue_UnderstatementCoda.label>understatement-coda</DiaryHumorCue_UnderstatementCoda.label>
-  <DiaryHumorCue_UnderstatementCoda.rule>End the entry with one flat understatement that shrinks what happened. No exaggeration, no punchline, no reaction.</DiaryHumorCue_UnderstatementCoda.rule>
+  <DiaryHumorCue_UnderstatementCoda.rule>If one supplied fact supports it, end once with a flat understatement that shrinks the narrator's reaction, not what happened. Otherwise omit this device.</DiaryHumorCue_UnderstatementCoda.rule>
   <DiaryHumorCue_AbsurdDetail.label>absurd-detail</DiaryHumorCue_AbsurdDetail.label>
-  <DiaryHumorCue_AbsurdDetail.rule>Include exactly one small absurd-but-true detail. State it plainly, then continue without commenting on it.</DiaryHumorCue_AbsurdDetail.rule>
+  <DiaryHumorCue_AbsurdDetail.rule>If the supplied facts include one small incongruous but true detail, state it plainly once, then continue without comment. Otherwise omit this device.</DiaryHumorCue_AbsurdDetail.rule>
   <DiaryHumorCue_PettyComplaint.label>petty-complaint</DiaryHumorCue_PettyComplaint.label>
-  <DiaryHumorCue_PettyComplaint.rule>Frame the event as a petty complaint about one object or the weather. Keep the facts accurate.</DiaryHumorCue_PettyComplaint.rule>
+  <DiaryHumorCue_PettyComplaint.rule>If the supplied facts include an object or weather detail, complain about it once without changing the event facts. Otherwise omit this device.</DiaryHumorCue_PettyComplaint.rule>
   <DiaryHumorCue_MisplacedPriority.label>misplaced-priority</DiaryHumorCue_MisplacedPriority.label>
-  <DiaryHumorCue_MisplacedPriority.rule>Mention one small inconvenience as if it mattered more than the event itself. Do not explain the mismatch.</DiaryHumorCue_MisplacedPriority.rule>
+  <DiaryHumorCue_MisplacedPriority.rule>If the supplied facts include a small inconvenience, mention it once as if it mattered most without changing the event facts. Otherwise omit this device.</DiaryHumorCue_MisplacedPriority.rule>
   <DiaryHumorCue_DeadpanInventory.label>deadpan-inventory</DiaryHumorCue_DeadpanInventory.label>
-  <DiaryHumorCue_DeadpanInventory.rule>Account for the day in small losses and gains, in ordinary sentences and never as a list. No emotion words. For example: "The roof cost an afternoon and gave back a dry bunk."</DiaryHumorCue_DeadpanInventory.rule>
+  <DiaryHumorCue_DeadpanInventory.rule>If supplied facts include both a concrete cost or loss and a gain or result, set them together once in an ordinary sentence, never a list. Otherwise omit this device.</DiaryHumorCue_DeadpanInventory.rule>
   <DiaryHumorCue_PoliteRegret.label>polite-regret</DiaryHumorCue_PoliteRegret.label>
-  <DiaryHumorCue_PoliteRegret.rule>Close with one over-formal, slightly too-polite regret about something trivial.</DiaryHumorCue_PoliteRegret.rule>
+  <DiaryHumorCue_PoliteRegret.rule>If the supplied facts include a trivial inconvenience, close once with an over-formal regret about it. Otherwise omit this device.</DiaryHumorCue_PoliteRegret.rule>
   <DiaryHumorCue_SidewaysObservation.label>sideways-observation</DiaryHumorCue_SidewaysObservation.label>
-  <DiaryHumorCue_SidewaysObservation.rule>Add one observation about an unrelated detail nearby, then stop. It should sit oddly beside the event.</DiaryHumorCue_SidewaysObservation.rule>
+  <DiaryHumorCue_SidewaysObservation.rule>If supplied context includes an unrelated nearby detail, mention it plainly once, then stop. Otherwise omit this device.</DiaryHumorCue_SidewaysObservation.rule>
   <DiaryHumorCue_ConditionalCopOut.label>conditional-cop-out</DiaryHumorCue_ConditionalCopOut.label>
-  <DiaryHumorCue_ConditionalCopOut.rule>End on a flat conditional like it could go either way, with no real concern.</DiaryHumorCue_ConditionalCopOut.rule>
+  <DiaryHumorCue_ConditionalCopOut.rule>If the supplied facts leave an outcome genuinely unsettled, end once with a flat conditional. Never invent uncertainty; otherwise omit this device.</DiaryHumorCue_ConditionalCopOut.rule>
   <DiaryHumorCue_RenamedThing.label>renamed-thing</DiaryHumorCue_RenamedThing.label>
-  <DiaryHumorCue_RenamedThing.rule>Call one ordinary object by a slightly wrong dignified name, once, without explaining.</DiaryHumorCue_RenamedThing.rule>
+  <DiaryHumorCue_RenamedThing.rule>If the supplied facts name an ordinary object, refer to it once by a slightly over-dignified but recognizable name. Otherwise omit this device.</DiaryHumorCue_RenamedThing.rule>
   <DiaryHumorCue_ShrugCloser.label>shrug-closer</DiaryHumorCue_ShrugCloser.label>
-  <DiaryHumorCue_ShrugCloser.rule>Close with one short line that treats the whole event as barely worth noting.</DiaryHumorCue_ShrugCloser.rule>
+  <DiaryHumorCue_ShrugCloser.rule>If the event tone supports it, close once with a short line treating it as barely worth noting without contradicting any supplied fact. Otherwise omit this device.</DiaryHumorCue_ShrugCloser.rule>
+  <DiaryHumorCue_AnywayPivot.label>anyway-pivot</DiaryHumorCue_AnywayPivot.label>
+  <DiaryHumorCue_AnywayPivot.rule>Use "Anyway" once, not as the opening word, to pivot from a reaction back to one supplied practical fact. Omit the device if no such fact fits.</DiaryHumorCue_AnywayPivot.rule>
+  <DiaryHumorCue_ISupposeHedge.label>I-suppose-hedge</DiaryHumorCue_ISupposeHedge.label>
+  <DiaryHumorCue_ISupposeHedge.rule>Use "I suppose" once to soften one interpretation, never to cast doubt on a supplied fact. Omit the device if no interpretation fits.</DiaryHumorCue_ISupposeHedge.rule>
+  <DiaryHumorCue_ForTheRecord.label>for-the-record</DiaryHumorCue_ForTheRecord.label>
+  <DiaryHumorCue_ForTheRecord.rule>Use "For the record" once before one concrete supplied detail. Do not add a new detail; omit the device if none fits.</DiaryHumorCue_ForTheRecord.rule>
+  <DiaryHumorCue_SelfCorrection.label>self-correction</DiaryHumorCue_SelfCorrection.label>
+  <DiaryHumorCue_SelfCorrection.rule>Correct one interpretation once with "No—that is not quite true," or a natural equivalent, then replace only that interpretation. Never revise supplied facts; omit the device if no honest correction fits.</DiaryHumorCue_SelfCorrection.rule>
   <DiaryHumorCue_RoutineTerrible.label>routine-terrible</DiaryHumorCue_RoutineTerrible.label>
-  <DiaryHumorCue_RoutineTerrible.rule>State the worst part in the flat voice used for chores, as one ordinary sentence. No drama, no reflection, no pity. For example: "We buried him before the soup was done."</DiaryHumorCue_RoutineTerrible.rule>
+  <DiaryHumorCue_RoutineTerrible.rule>If a severe supplied fact fits, state it once in the flat voice used for chores. Add no timing, circumstance, or consequence; otherwise omit this device.</DiaryHumorCue_RoutineTerrible.rule>
   <DiaryHumorCue_HouseholdMaintenance.label>household-maintenance</DiaryHumorCue_HouseholdMaintenance.label>
-  <DiaryHumorCue_HouseholdMaintenance.rule>End with one quiet line that treats the terrible thing as ordinary household maintenance.</DiaryHumorCue_HouseholdMaintenance.rule>
+  <DiaryHumorCue_HouseholdMaintenance.rule>If supplied facts include a cleanup, repair, treatment, or burial task, close once by treating that task as ordinary maintenance. Never invent a task; otherwise omit this device.</DiaryHumorCue_HouseholdMaintenance.rule>
   <DiaryHumorCue_UnacknowledgedDark.label>unacknowledged-dark</DiaryHumorCue_UnacknowledgedDark.label>
-  <DiaryHumorCue_UnacknowledgedDark.rule>Let one detail be darker than the narrator acknowledges. They do not react to it at all.</DiaryHumorCue_UnacknowledgedDark.rule>
+  <DiaryHumorCue_UnacknowledgedDark.rule>If one supplied detail is dark, state it plainly once without reacting to it. Never add a darker detail; otherwise omit this device.</DiaryHumorCue_UnacknowledgedDark.rule>
   <DiaryHumorCue_DryTallyOfLoss.label>dry-tally-of-loss</DiaryHumorCue_DryTallyOfLoss.label>
-  <DiaryHumorCue_DryTallyOfLoss.rule>Name who or what was lost in a flat, clerical tone, inside normal sentences rather than a tally. For example: "Two of the north team did not come back, and the shed went with them."</DiaryHumorCue_DryTallyOfLoss.rule>
+  <DiaryHumorCue_DryTallyOfLoss.rule>Name only supplied people or things that were lost, once, in a flat clerical tone inside normal sentences. If no loss is supplied, omit this device.</DiaryHumorCue_DryTallyOfLoss.rule>
   <DiaryHumorCue_GrimUnderstatement.label>grim-understatement</DiaryHumorCue_GrimUnderstatement.label>
-  <DiaryHumorCue_GrimUnderstatement.rule>Reduce the scale of the disaster with one calm understatement. Sincerity, not sarcasm.</DiaryHumorCue_GrimUnderstatement.rule>
+  <DiaryHumorCue_GrimUnderstatement.rule>Use one calm understatement to reduce the narrator's reaction, never the scale or truth of supplied facts. Otherwise omit this device.</DiaryHumorCue_GrimUnderstatement.rule>
   <DiaryHumorCue_MatterOfFactMortality.label>matter-of-fact-mortality</DiaryHumorCue_MatterOfFactMortality.label>
-  <DiaryHumorCue_MatterOfFactMortality.rule>Mention death or injury the way one mentions the weather. Move straight on.</DiaryHumorCue_MatterOfFactMortality.rule>
+  <DiaryHumorCue_MatterOfFactMortality.rule>Only if supplied facts mention death or injury, mention it once in a matter-of-fact tone and move straight on. Otherwise omit this device.</DiaryHumorCue_MatterOfFactMortality.rule>
   <DiaryHumorCue_QueuedForLater.label>queued-for-later</DiaryHumorCue_QueuedForLater.label>
-  <DiaryHumorCue_QueuedForLater.rule>Treat the terrible event as an item deferred to a more convenient day.</DiaryHumorCue_QueuedForLater.rule>
+  <DiaryHumorCue_QueuedForLater.rule>If supplied facts include unresolved aftermath or a named task, refer once to addressing it later. Never invent an obligation or timing; otherwise omit this device.</DiaryHumorCue_QueuedForLater.rule>
   <DiaryHumorCue_ProfessionalDetachment.label>professional-detachment</DiaryHumorCue_ProfessionalDetachment.label>
-  <DiaryHumorCue_ProfessionalDetachment.rule>Describe the aftermath with the detached tone of a routine work report.</DiaryHumorCue_ProfessionalDetachment.rule>
+  <DiaryHumorCue_ProfessionalDetachment.rule>Describe only supplied aftermath facts once in the detached tone of a routine work report. If no aftermath is supplied, omit this device.</DiaryHumorCue_ProfessionalDetachment.rule>
   <DiaryHumorCue_GrimPracticality.label>grim-practicality</DiaryHumorCue_GrimPracticality.label>
-  <DiaryHumorCue_GrimPracticality.rule>Pivot immediately to one practical next task, as if the event were already settled.</DiaryHumorCue_GrimPracticality.rule>
+  <DiaryHumorCue_GrimPracticality.rule>If supplied facts name a practical next task, pivot to it once as if the event were settled. Never invent a task or outcome; otherwise omit this device.</DiaryHumorCue_GrimPracticality.rule>
   <DiaryHumorCue_EvenMeasure.label>even-measure</DiaryHumorCue_EvenMeasure.label>
-  <DiaryHumorCue_EvenMeasure.rule>Set the day's loss beside some trivial gain and call it even, flatly, in one sentence. For example: "Lost the greenhouse, kept the seed box, so call it even."</DiaryHumorCue_EvenMeasure.rule>
+  <DiaryHumorCue_EvenMeasure.rule>Only if supplied facts include both a serious loss and a trivial gain, set them together once and call it even in one flat sentence. Otherwise omit this device.</DiaryHumorCue_EvenMeasure.rule>
+  <DiaryHumorCue_CouldHaveBeenWorse.label>could-have-been-worse</DiaryHumorCue_CouldHaveBeenWorse.label>
+  <DiaryHumorCue_CouldHaveBeenWorse.rule>Use "Could have been worse" once as defensive understatement. Never invent or imply an unsupplied worse event; omit the device if it would distort the supplied facts.</DiaryHumorCue_CouldHaveBeenWorse.rule>
+  <DiaryHumorCue_EnoughForNow.label>enough-for-now</DiaryHumorCue_EnoughForNow.label>
+  <DiaryHumorCue_EnoughForNow.rule>Close once with "That is enough for now" or a natural equivalent, and add nothing after it. Omit the device if the ending conflicts with the writing style or tone.</DiaryHumorCue_EnoughForNow.rule>
+  <DiaryHumorCue_NotWritingThatDown.label>not-writing-that-down</DiaryHumorCue_NotWritingThatDown.label>
+  <DiaryHumorCue_NotWritingThatDown.rule>Briefly refuse once to write down one feeling named in the supplied context, while still stating the supplied event facts. Omit the device if no feeling is supplied.</DiaryHumorCue_NotWritingThatDown.rule>
+  <DiaryHumorCue_OldWordsReturn.label>old-words-return</DiaryHumorCue_OldWordsReturn.label>
+  <DiaryHumorCue_OldWordsReturn.rule>If a previous ending is supplied, echo once one ordinary word or short phrase from it with changed emotional weight. Never retell it; otherwise omit this device.</DiaryHumorCue_OldWordsReturn.rule>
 </LanguageData>

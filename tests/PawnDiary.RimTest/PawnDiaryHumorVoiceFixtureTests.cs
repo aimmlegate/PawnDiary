@@ -1,12 +1,13 @@
 // Prompt-capture fixture for Pawn Diary's §5.3 HUMOR cue system (design/TEST_COVERAGE_PLAN.md §5).
 //
-// Humor is a hidden, always-on feature: on some fraction of eligible first-person entries the
-// production pipeline folds ONE structural "writing-license" sentence (a humor cue) into the same
+// Optional voice cues are a hidden feature: on some fraction of eligible first-person entries the
+// production pipeline folds ONE structural sentence device (historically a humor cue) into the same
 // voice block as the psychotype/writing-style text (DiaryPipelineAdapters.CombinedVoiceBlock ->
 // HumorVoiceBlock, wrapped by the localized "PawnDiary.Prompt.HumorVoice" frame). The selector
 // (Source/Generation/HumorCues.CueFor) rolls a stable per-event+POV seed against an effective chance
 // of DiaryTuning.HumorChance * a non-cumulative temperament multiplier, then weighted-picks a cue
-// from the Light (mundane) or Gallows (high-stakes) tier. This suite drives that end to end under
+// from the writer's stable Light (mundane) or Gallows (high-stakes) repertoire. This suite drives it
+// end to end under
 // Prompt Test Mode, which renders and STORES the exact prompt and stops before any LlmClient.Enqueue,
 // so nothing leaves the game.
 //
@@ -59,6 +60,7 @@ namespace PawnDiary.RimTests
         // Snapshot of the humor tuning fields this suite mutates, captured per test in SetUp and
         // restored in teardown so the developer's real tuning is untouched after the suite.
         private static float originalHumorChance;
+        private static int originalHumorCueRepertoireSize;
         private static float originalElevatedMultiplier;
         private static float originalReducedMultiplier;
         private static List<string> originalElevatedTraitKeys;
@@ -210,6 +212,69 @@ namespace PawnDiary.RimTests
                 "The ArrivalDescription template must set includePersona=false so no humor/voice block reaches the model.");
         }
 
+        /// <summary>
+        /// Compact prompts retain psychotype/style guidance but intentionally omit the optional cue
+        /// layer through VoiceBlockPolicy.IncludeHumor.
+        /// </summary>
+        [Test]
+        public static void CompactPromptSuppressesHumorCue()
+        {
+            SetHumorTuning(1f, 1f, 1f, null, null);
+            PawnDiaryMod.Settings.contextDetailLevel = PromptContextDetailLevel.Compact;
+
+            string prompt = FireInspirationAndCapture(pawn);
+            RequireExcludesHumorFrame(prompt, "a Compact first-person prompt");
+        }
+
+        /// <summary>
+        /// Audits the loaded XML contract used by repertoire ownership and weighted moment selection.
+        /// </summary>
+        [Test]
+        public static void LoadedCatalogHasValidUniqueCuesAndBothTiersExceedDefaultRepertoire()
+        {
+            HashSet<string> defNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            int lightCount = 0;
+            int gallowsCount = 0;
+            IReadOnlyList<DiaryHumorCueDef> all = DiaryHumorCues.All;
+            for (int i = 0; i < all.Count; i++)
+            {
+                DiaryHumorCueDef def = all[i];
+                PawnDiaryRimTestScope.Require(def != null, "The loaded optional-cue catalog contained a null Def.");
+                PawnDiaryRimTestScope.Require(
+                    !string.IsNullOrWhiteSpace(def.defName),
+                    "A loaded optional-cue Def had a blank defName.");
+                PawnDiaryRimTestScope.Require(
+                    defNames.Add(def.defName),
+                    "Optional-cue defName '" + def.defName + "' was duplicated case-insensitively.");
+                PawnDiaryRimTestScope.Require(
+                    !string.IsNullOrWhiteSpace(def.rule),
+                    "Optional cue '" + def.defName + "' had a blank localized rule.");
+                PawnDiaryRimTestScope.Require(
+                    DiaryHumorCues.HasRecognizedTier(def),
+                    "Optional cue '" + def.defName + "' had unknown tier '" + def.tier + "'.");
+                PawnDiaryRimTestScope.Require(
+                    def.weight > 0f && !float.IsNaN(def.weight) && !float.IsInfinity(def.weight),
+                    "Optional cue '" + def.defName + "' had a nonpositive or non-finite weight.");
+
+                if (DiaryHumorCues.IsGallows(def))
+                {
+                    gallowsCount++;
+                }
+                else
+                {
+                    lightCount++;
+                }
+            }
+
+            int repertoireSize = DiaryTuning.HumorCueRepertoireSize;
+            PawnDiaryRimTestScope.Require(
+                lightCount > repertoireSize,
+                "The loaded Light catalog must contain more candidates than the default repertoire.");
+            PawnDiaryRimTestScope.Require(
+                gallowsCount > repertoireSize,
+                "The loaded Gallows catalog must contain more candidates than the default repertoire.");
+        }
+
         // ----- helpers -------------------------------------------------------------------------------
 
         // Fires one real inspiration on the given writer and returns the prompt the runtime rendered and
@@ -245,10 +310,14 @@ namespace PawnDiary.RimTests
         private static void RequireContainsHumorFrame(string prompt, string forWhat)
         {
             string marker = HumorFrameMarker();
+            int first = prompt.IndexOf(marker, StringComparison.Ordinal);
             PawnDiaryRimTestScope.Require(
-                prompt.IndexOf(marker, StringComparison.Ordinal) >= 0,
+                first >= 0,
                 "Expected a humor cue in the prompt for " + forWhat + ", but the humor-cue frame ('"
                 + marker + "') was absent.");
+            PawnDiaryRimTestScope.Require(
+                prompt.IndexOf(marker, first + marker.Length, StringComparison.Ordinal) < 0,
+                "Expected at most one optional-cue frame in the prompt for " + forWhat + ".");
         }
 
         // Asserts the captured prompt does NOT contain the humor-cue frame.
@@ -320,15 +389,18 @@ namespace PawnDiary.RimTests
         {
             DiaryTuningDef tuning = DiaryTuning.Current;
             originalHumorChance = tuning.humorChance;
+            originalHumorCueRepertoireSize = tuning.humorCueRepertoireSize;
             originalElevatedMultiplier = tuning.humorElevatedChanceMultiplier;
             originalReducedMultiplier = tuning.humorReducedChanceMultiplier;
             originalElevatedTraitKeys = tuning.humorElevatedTraitKeys;
             originalReducedTraitKeys = tuning.humorReducedTraitKeys;
+            tuning.humorCueRepertoireSize = 2;
 
             scope.RegisterCleanup(() =>
             {
                 DiaryTuningDef current = DiaryTuning.Current;
                 current.humorChance = originalHumorChance;
+                current.humorCueRepertoireSize = originalHumorCueRepertoireSize;
                 current.humorElevatedChanceMultiplier = originalElevatedMultiplier;
                 current.humorReducedChanceMultiplier = originalReducedMultiplier;
                 current.humorElevatedTraitKeys = originalElevatedTraitKeys;

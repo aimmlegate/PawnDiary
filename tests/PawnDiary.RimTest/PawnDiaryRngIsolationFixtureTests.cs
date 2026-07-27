@@ -5,9 +5,9 @@
 // untouched control sequence.
 //
 // The stable-path fixture also verifies the user-visible contract behind Regenerate: identical
-// (eventId, writerId, salt) inputs reproduce the same humor cue, while advancing the persisted
-// reroll salt can reach a different loaded candidate. No prompt is queued and no event is persisted;
-// these are narrow adapter tests over the already-loaded Def catalog.
+// (eventId, writerId, salt) inputs reproduce the same optional voice cue, while event IDs and reroll
+// salts can only choose inside the writer's stable tier repertoire. No prompt is queued and no event
+// is persisted; these are narrow adapter tests over the already-loaded Def catalog.
 using System;
 using System.Collections.Generic;
 using RimTestRedux;
@@ -29,6 +29,7 @@ namespace PawnDiary.RimTests
         private const int SaltSearchLimit = 128;
 
         private static float originalHumorChance;
+        private static int originalHumorCueRepertoireSize;
         private static bool humorTuningSnapshotted;
 
         /// <summary>
@@ -42,8 +43,10 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(tuning != null, "The Pawn Diary tuning Def was not loaded.");
 
             originalHumorChance = tuning.humorChance;
+            originalHumorCueRepertoireSize = tuning.humorCueRepertoireSize;
             humorTuningSnapshotted = true;
             tuning.humorChance = 1f;
+            tuning.humorCueRepertoireSize = 2;
         }
 
         /// <summary>Restores the developer's real humor tuning even when an assertion fails.</summary>
@@ -56,6 +59,7 @@ namespace PawnDiary.RimTests
             }
 
             DiaryTuning.Current.humorChance = originalHumorChance;
+            DiaryTuning.Current.humorCueRepertoireSize = originalHumorCueRepertoireSize;
             humorTuningSnapshotted = false;
         }
 
@@ -118,6 +122,39 @@ namespace PawnDiary.RimTests
         {
             DiaryEvent diaryEvent = StableEvent();
             int seed = HumorChancePolicy.StableSeed(EventId, WriterId, 0);
+            List<DiaryHumorCueDef> candidates = EligibleCandidates(true);
+            List<string> candidateKeys = new List<string>();
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                candidateKeys.Add(candidates[i].defName);
+            }
+
+            List<string> repertoireKeys = HumorChancePolicy.StableRepertoire(
+                candidateKeys,
+                WriterId,
+                DiaryHumorCues.TierGallows,
+                DiaryTuning.HumorCueRepertoireSize);
+            PawnDiaryRimTestScope.Require(
+                repertoireKeys.Count == 2,
+                "The forced fixture writer did not receive the expected two-cue Gallows repertoire.");
+
+            HashSet<string> repertoireRules = new HashSet<string>(StringComparer.Ordinal);
+            for (int keyIndex = 0; keyIndex < repertoireKeys.Count; keyIndex++)
+            {
+                for (int candidateIndex = 0; candidateIndex < candidates.Count; candidateIndex++)
+                {
+                    DiaryHumorCueDef candidate = candidates[candidateIndex];
+                    if (string.Equals(candidate.defName, repertoireKeys[keyIndex], StringComparison.Ordinal))
+                    {
+                        repertoireRules.Add(candidate.rule);
+                        break;
+                    }
+                }
+            }
+
+            PawnDiaryRimTestScope.Require(
+                repertoireRules.Count == 2,
+                "The loaded two-cue repertoire did not expose two distinct rules for selection.");
 
             PawnDiaryRimTestScope.Require(
                 seed == HumorChancePolicy.StableSeed(EventId, WriterId, 0),
@@ -132,6 +169,9 @@ namespace PawnDiary.RimTests
                 !string.IsNullOrWhiteSpace(original),
                 "Forced-on humor selection returned no loaded candidate.");
             PawnDiaryRimTestScope.Require(
+                repertoireRules.Contains(original),
+                "The original stable selection escaped the writer's Gallows repertoire.");
+            PawnDiaryRimTestScope.Require(
                 string.Equals(original, replay, StringComparison.Ordinal),
                 "Identical event/writer/salt inputs selected different humor cues.");
 
@@ -139,6 +179,9 @@ namespace PawnDiary.RimTests
             for (int salt = 1; salt <= SaltSearchLimit; salt++)
             {
                 string rerolled = HumorCues.CueFor(diaryEvent, null, WriterId, salt);
+                PawnDiaryRimTestScope.Require(
+                    repertoireRules.Contains(rerolled),
+                    "Reroll salt " + salt + " selected outside the writer's stable repertoire.");
                 if (!string.Equals(original, rerolled, StringComparison.Ordinal))
                 {
                     changedAtSalt = salt;
@@ -151,18 +194,62 @@ namespace PawnDiary.RimTests
                 "Advancing the stable reroll salt through " + SaltSearchLimit
                 + " values never selected another loaded humor cue. The loaded catalog may have "
                 + "collapsed to one usable candidate, or the adapter may no longer consume the salt.");
+
+            DiaryEvent otherEvent = StableEvent(EventId + "_Other");
+            for (int salt = 0; salt < 16; salt++)
+            {
+                string selected = HumorCues.CueFor(otherEvent, null, WriterId, salt);
+                PawnDiaryRimTestScope.Require(
+                    repertoireRules.Contains(selected),
+                    "A different event ID selected outside the writer's stable Gallows repertoire.");
+            }
+
+            List<string> replayedRepertoire = HumorChancePolicy.StableRepertoire(
+                candidateKeys,
+                WriterId,
+                DiaryHumorCues.TierGallows,
+                DiaryTuning.HumorCueRepertoireSize);
+            PawnDiaryRimTestScope.Require(
+                string.Equals(
+                    string.Join("|", repertoireKeys),
+                    string.Join("|", replayedRepertoire),
+                    StringComparison.Ordinal),
+                "Re-evaluating moment seeds changed the writer's stable repertoire keys.");
         }
 
         // Builds a minimal high-stakes event. An unknown group is conservatively important, so the real
         // selector uses the loaded Gallows tier without needing to create or mutate any game object.
-        private static DiaryEvent StableEvent()
+        private static DiaryEvent StableEvent(string eventId = EventId)
         {
             return new DiaryEvent
             {
-                eventId = EventId,
+                eventId = eventId,
                 interactionDefName = "RimTest_RngIsolation",
                 gameContext = "event=RimTest_RngIsolation"
             };
+        }
+
+        private static List<DiaryHumorCueDef> EligibleCandidates(bool gallows)
+        {
+            List<DiaryHumorCueDef> result = new List<DiaryHumorCueDef>();
+            IReadOnlyList<DiaryHumorCueDef> all = DiaryHumorCues.All;
+            for (int i = 0; i < all.Count; i++)
+            {
+                DiaryHumorCueDef def = all[i];
+                if (def != null
+                    && !string.IsNullOrWhiteSpace(def.defName)
+                    && !string.IsNullOrWhiteSpace(def.rule)
+                    && DiaryHumorCues.HasRecognizedTier(def)
+                    && DiaryHumorCues.IsGallows(def) == gallows
+                    && def.weight > 0f
+                    && !float.IsNaN(def.weight)
+                    && !float.IsInfinity(def.weight))
+                {
+                    result.Add(def);
+                }
+            }
+
+            return result;
         }
 
         // Compares two draws rather than one to catch both an advanced state and an incorrectly restored

@@ -1,14 +1,12 @@
-// Humor cue selector: the hidden, always-on engine that occasionally injects one structural
-// writing-license sentence into a first-person diary prompt. This is IMPURE (RNG + DefDatabase +
-// tuning read), so it lives here in Source/Generation next to PromptEnchantments — the pure
-// pipeline never touches it. The chosen cue's rule text is folded into the persona voice block at
-// the adapter, so no planner or assembler change is needed.
+// Optional voice-cue selector (historical "HumorCues" name retained for compatibility). It
+// occasionally injects one structural sentence device into a first-person prompt. This is IMPURE
+// (RNG + DefDatabase + tuning read), so it lives in Source/Generation; stable repertoire ownership
+// stays in the pure HumorChancePolicy. The selected rule is folded into the existing persona voice
+// block, so no planner, saved state, or prompt-field change is needed.
 //
-// Why "structural cue" and not "be funny": small local models latch onto any mention of humor and
-// produce stale standup. Each cue instead names a concrete sentence shape (a flat understatement, a
-// dry inventory, a clerical tally) that yields a subtly droll or deadpan entry without ever naming
-// comedy. Flavor matches stakes: Light (dry/absurdist) for mundane events, Gallows (dark/deadpan)
-// for high-stakes events. At most one cue per entry, and only on ~humorChance of eligible entries.
+// Each identified writer owns a small stable repertoire in each stakes tier. Light covers mundane
+// events and Gallows covers high-stakes events; the existing event/writer/salt seed chooses one
+// weighted rule from the owned tier after the existing chance gate. At most one cue reaches an entry.
 //
 // Hidden temperament bias: who the writer is nudges how often humor fires. An upbeat temperament
 // (Optimist/Sanguine — both degrees of NaturalMood — or Anomaly's Joyous) or a passion (minor or
@@ -17,7 +15,7 @@
 // This is deliberately NOT cumulative: within a direction several qualifiers still count once, and a
 // writer who somehow qualifies for both directions (say a Sanguine psychopath) offsets back to the
 // plain base rate. Rates and trait-key lists are XML-authored and available in Advanced tuning; the
-// cue itself stays hidden and always enabled rather than becoming an ordinary gameplay toggle.
+// cue itself stays out of ordinary settings rather than becoming a gameplay toggle.
 using System;
 using System.Collections.Generic;
 using RimWorld;
@@ -65,15 +63,19 @@ namespace PawnDiary
                 bool isGallows = IsHighStakes(diaryEvent);
 
                 List<DiaryHumorCueDef> candidates = null;
-                float totalWeight = 0f;
+                List<string> candidateKeys = null;
                 IReadOnlyList<DiaryHumorCueDef> all = DiaryHumorCues.All;
                 for (int i = 0; i < all.Count; i++)
                 {
                     DiaryHumorCueDef def = all[i];
                     if (def == null
+                        || string.IsNullOrWhiteSpace(def.defName)
+                        || !DiaryHumorCues.HasRecognizedTier(def)
                         || DiaryHumorCues.IsGallows(def) != isGallows
                         || string.IsNullOrWhiteSpace(def.rule)
-                        || def.weight <= 0f)
+                        || def.weight <= 0f
+                        || float.IsNaN(def.weight)
+                        || float.IsInfinity(def.weight))
                     {
                         continue;
                     }
@@ -81,18 +83,58 @@ namespace PawnDiary
                     if (candidates == null)
                     {
                         candidates = new List<DiaryHumorCueDef>();
+                        candidateKeys = new List<string>();
                     }
 
                     candidates.Add(def);
-                    totalWeight += def.weight;
+                    candidateKeys.Add(def.defName);
                 }
 
-                if (candidates == null || candidates.Count == 0 || totalWeight <= 0f)
+                if (candidates == null || candidates.Count == 0)
                 {
                     return string.Empty;
                 }
 
-                return PickWeighted(candidates, totalWeight).rule;
+                List<string> repertoireKeys = HumorChancePolicy.StableRepertoire(
+                    candidateKeys,
+                    writerStableId,
+                    isGallows ? DiaryHumorCues.TierGallows : DiaryHumorCues.TierLight,
+                    DiaryTuning.HumorCueRepertoireSize);
+                if (repertoireKeys.Count == 0)
+                {
+                    return string.Empty;
+                }
+
+                // StableRepertoire returns ordinal key order. Map in that order rather than filtering
+                // the DefDatabase list, whose XML order must not change the same event's weighted pick.
+                List<DiaryHumorCueDef> repertoire = new List<DiaryHumorCueDef>(repertoireKeys.Count);
+                float totalWeight = 0f;
+                for (int keyIndex = 0; keyIndex < repertoireKeys.Count; keyIndex++)
+                {
+                    string key = repertoireKeys[keyIndex];
+                    for (int candidateIndex = 0; candidateIndex < candidates.Count; candidateIndex++)
+                    {
+                        DiaryHumorCueDef candidate = candidates[candidateIndex];
+                        if (!string.Equals(candidate.defName, key, StringComparison.Ordinal))
+                        {
+                            continue;
+                        }
+
+                        repertoire.Add(candidate);
+                        totalWeight += candidate.weight;
+                        break;
+                    }
+                }
+
+                if (repertoire.Count == 0
+                    || totalWeight <= 0f
+                    || float.IsNaN(totalWeight)
+                    || float.IsInfinity(totalWeight))
+                {
+                    return string.Empty;
+                }
+
+                return PickWeighted(repertoire, totalWeight).rule;
             }
             finally
             {
