@@ -217,15 +217,15 @@ namespace PawnDiary.RimTests
                 "Re-evaluating moment seeds changed the writer's stable repertoire keys.");
         }
 
-        // Builds a minimal high-stakes event. An unknown group is conservatively important, so the real
-        // selector uses the loaded Gallows tier without needing to create or mutate any game object.
+        // Builds a minimal high-stakes event. The explicit Raid marker makes the real selector use the
+        // loaded Gallows tier without relying on the Interaction catch-all's importance policy.
         private static DiaryEvent StableEvent(string eventId = EventId)
         {
             return new DiaryEvent
             {
                 eventId = eventId,
                 interactionDefName = "RimTest_RngIsolation",
-                gameContext = "event=RimTest_RngIsolation"
+                gameContext = "raid=RimTest_RngIsolation"
             };
         }
 

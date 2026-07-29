@@ -5,6 +5,7 @@ bin/
 *.suo
 .vs/
 *.pdb
+__pycache__/
 
 # OS cruft
 Thumbs.db
@@ -35,6 +36,9 @@ prompt-lab/
 /.zcode/
 .foglamp/
 .qoder/
+tools
+rimworldwiki-text
+HelpfulTextEngine
 
 # Local adversarial-review/build crash artifacts
 /build_output.txt
@@ -49,6 +53,9 @@ prompt-lab/results/
 
 # Clean Workshop payload produced by scripts/publish.ps1
 dist/
+
+# Local, generated plain-text mirror created by tools/rimworldwiki_to_text.py
+rimworldwiki-text/
 
 # Steam Workshop item id (account/local-specific; publish.ps1 copies it into dist/ regardless)
 About/PublishedFileId.txt

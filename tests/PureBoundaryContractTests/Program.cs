@@ -163,18 +163,26 @@ namespace PureBoundaryContractTests
         }
 
         /// <summary>
-        /// Scans every test project except exact, documented loaded-game projects. Default inclusion is
-        /// intentional: adding a new standalone project automatically places it under this contract.
+        /// Scans every test project, including isolated monorepo modules, except exact documented
+        /// loaded-game projects. Default inclusion keeps new pure projects under this contract.
         /// </summary>
         private static ProjectAuditResult AuditPureProjects(
             string root,
             List<Violation> violations)
         {
             string testsRoot = Path.Combine(root, "tests");
-            string[] projectPaths = Directory.GetFiles(
+            List<string> projectPaths = Directory.GetFiles(
                 testsRoot,
                 "*.csproj",
-                SearchOption.AllDirectories);
+                SearchOption.AllDirectories).ToList();
+            string helpfulTextTests = Path.Combine(root, "HelpfulTextEngine", "tests");
+            if (Directory.Exists(helpfulTextTests))
+            {
+                projectPaths.AddRange(Directory.GetFiles(
+                    helpfulTextTests,
+                    "*.csproj",
+                    SearchOption.AllDirectories));
+            }
             HashSet<string> productionFiles =
                 new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             int auditedProjects = 0;

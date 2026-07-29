@@ -11,8 +11,13 @@ pre-release version ladder for project history.
 - **Runtime integrity fault isolation.** Prevented dead delayed writers and age-ineligible death pages from producing partial commits, swept under-cap orphan rows, isolated malformed death relations and unloadable foreign Odyssey types, and clarified expected RimTest injection logs.
 - **Proximity-letter performance.** Replaced per-tick discovery polling with a one-shot `CompProximityLetter.SendLetter(Pawn)` hook that records vanilla's actual triggering pawn.
 
+## 2026-07-28
+
+- **Offline help-fact authoring pipeline.** Added deterministic Learning Helper/wiki extraction, provisional topic tagging, review reports, approved-fact export, and source-free runtime boundaries without LLM or network use.
+
 ## 2026-07-27
 
+- **Helpful Text Engine core proof of concept.** Added an isolated normalized-data-only C# engine with strict atomic compilation, typed facets, deterministic rendezvous selection, helpfulness deferrals, hard novelty, exact rendering/composition, dual-runtime golden simulations, an embedded real-dataset contract, and a 100,001-template indexed-scale proof.
 - **Signature voice cues.** Optional Light/Gallows devices now recur from stable two-cue per-pawn repertoires, with deterministic isolated selection, Advanced XML tuning, factual EN/RU rules, and no new saved state.
 - **Dead Tale POV safety.** Ordinary Tales now keep dead participants such as VisitedGrave corpses as context-only, preventing partial pair commits and downstream dispatch failures while preserving canonical death-description pages.
 - **Local-first diagnostics.** Invariant and hook-health errors now always enter RimWorld's local error log before the optional telemetry observer, which no longer captures suppressed `ErrorOnce` duplicates.

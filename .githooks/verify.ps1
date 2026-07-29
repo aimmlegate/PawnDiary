@@ -99,7 +99,8 @@ if ($HookName -eq "pre-commit") {
 Write-Step "XML well-formed check"
 $xmlRoots = @("About", "1.6", "Languages") | Where-Object { Test-Path -LiteralPath $_ }
 $xmlFiles = @(Get-ChildItem -Path $xmlRoots -Filter "*.xml" -File -Recurse)
-$projectRoots = @("Source", "tests") | Where-Object { Test-Path -LiteralPath $_ }
+$projectRoots = @("Source", "tests", "HelpfulTextEngine") |
+    Where-Object { Test-Path -LiteralPath $_ }
 $xmlFiles += Get-ChildItem -Path $projectRoots -Filter "*.csproj" -File -Recurse
 $xmlFiles | ForEach-Object {
     [xml](Get-Content -LiteralPath $_.FullName -Raw) | Out-Null
@@ -109,8 +110,10 @@ Write-Step "RimTest EVT coverage manifest"
 & (Join-Path $repoRoot "tests\PawnDiary.RimTest\verify-evt-coverage.ps1")
 
 Write-Step "Pure helper tests"
+$pureProjectRoots = @("tests", "HelpfulTextEngine\tests") |
+    Where-Object { Test-Path -LiteralPath $_ }
 $pureProjects = @(
-    Get-ChildItem -Path "tests" -Filter "*.csproj" -File -Recurse |
+    Get-ChildItem -Path $pureProjectRoots -Filter "*.csproj" -File -Recurse |
         Where-Object { $_.FullName -notmatch "[\\/]PawnDiary\.RimTest[\\/]" } |
         Sort-Object FullName
 )
@@ -118,12 +121,35 @@ if ($pureProjects.Count -eq 0) {
     throw "No standalone pure test projects were discovered under tests/."
 }
 foreach ($project in $pureProjects) {
+    if ($project.Name -eq "HelpfulTextEngineTests.csproj") {
+        foreach ($framework in @("net472", "net10.0")) {
+            Write-Host ("  run {0} ({1})" -f $project.Name, $framework)
+            Invoke-Native "dotnet" @(
+                "run",
+                "--project",
+                $project.FullName,
+                "-c",
+                "Release",
+                "--framework",
+                $framework
+            )
+        }
+        continue
+    }
+
     Write-Host ("  run {0}" -f $project.Name)
     Invoke-Native "dotnet" @("run", "--project", $project.FullName, "-c", "Release")
 }
 
-Write-Step "RimWorld DLL build"
 $msbuild = Find-MSBuild
+Write-Step "Helpful Text Engine .NET Framework build"
+Invoke-Native $msbuild @(
+    "HelpfulTextEngine\HelpfulTextEngine.csproj",
+    "/t:Build",
+    "/p:Configuration=Debug"
+)
+
+Write-Step "RimWorld DLL build"
 Invoke-Native $msbuild @("Source\PawnDiary.csproj", "/t:Build", "/p:Configuration=Debug")
 
 $rimTestPaths = Get-RimTestBuildPaths $repoRoot
