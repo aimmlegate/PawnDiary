@@ -6,6 +6,10 @@ Companion: [repowiki/README.md](repowiki/README.md) describes the current state.
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-07-29
+
+- **Proximity-letter performance.** Replaced per-tick discovery polling with a one-shot `CompProximityLetter.SendLetter(Pawn)` hook that records vanilla's actual triggering pawn.
+
 ## 2026-07-27
 
 - **Signature voice cues.** Optional Light/Gallows devices now recur from stable two-cue per-pawn repertoires, with deterministic isolated selection, Advanced XML tuning, factual EN/RU rules, and no new saved state.

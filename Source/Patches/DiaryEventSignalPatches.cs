@@ -443,18 +443,14 @@ namespace PawnDiary
     {
         private const string TargetTypeName = "RimWorld.CompProximityLetter";
         private const string PropsTypeName = "RimWorld.CompProperties_ProximityLetter";
-        private const string TargetMethodName = "CompTick";
-        private const string LetterSentFieldName = "letterSent";
+        private const string TargetMethodName = "SendLetter";
         private const string LetterLabelFieldName = "letterLabel";
-        private const string RadiusFieldName = "radius";
-        private const float FallbackRadius = 8f;
 
-        private static FieldInfo LetterSentField;
         private static FieldInfo LetterLabelField;
-        private static FieldInfo RadiusField;
 
         /// <summary>
-        /// Registers the patch only when RimWorld exposes CompProximityLetter.CompTick in this build.
+        /// Registers the patch only when RimWorld exposes CompProximityLetter.SendLetter(Pawn) in
+        /// this build.
         /// </summary>
         public static void TryRegister(Harmony harmony)
         {
@@ -463,7 +459,7 @@ namespace PawnDiary
                 return;
             }
 
-            const string targetLabel = "CompProximityLetter.CompTick";
+            const string targetLabel = "CompProximityLetter.SendLetter(Pawn)";
             Type targetType = AccessTools.TypeByName(TargetTypeName);
             if (targetType == null)
             {
@@ -476,79 +472,55 @@ namespace PawnDiary
                 return;
             }
 
-            MethodBase target = AccessTools.DeclaredMethod(targetType, TargetMethodName);
+            MethodBase target = AccessTools.DeclaredMethod(
+                targetType,
+                TargetMethodName,
+                new[] { typeof(Pawn) });
             Type propsType = AccessTools.TypeByName(PropsTypeName);
-            LetterSentField = AccessTools.Field(targetType, LetterSentFieldName);
             LetterLabelField = AccessTools.Field(propsType, LetterLabelFieldName);
-            RadiusField = AccessTools.Field(propsType, RadiusFieldName);
 
-            if (target == null || LetterSentField == null)
+            if (target == null)
             {
-                Log.Warning("[Pawn Diary] Could not find CompProximityLetter.CompTick; proximity-letter event windows will not be captured.");
+                Log.Warning("[Pawn Diary] Could not find CompProximityLetter.SendLetter(Pawn); proximity-letter event windows will not be captured.");
                 DiaryPatchManifest.Report(
                     "EventWindow",
                     targetLabel,
                     DiaryPatchManifest.HookStatus.Degraded,
-                    "method or letterSent field not found; proximity-letter windows disabled");
+                    "method not found; proximity-letter windows disabled");
                 return;
             }
 
             harmony.Patch(
                 target,
-                prefix: new HarmonyMethod(typeof(ProximityLetterEventWindowPatch), nameof(Prefix)),
                 postfix: new HarmonyMethod(typeof(ProximityLetterEventWindowPatch), nameof(Postfix)));
             DiaryPatchManifest.Report(
                 "EventWindow", targetLabel, DiaryPatchManifest.HookStatus.Applied);
         }
 
         /// <summary>
-        /// Saves the pre-tick state so the postfix can see exactly when the letter was first sent.
+        /// Forwards the proximity letter after vanilla has accepted it, using the exact pawn that
+        /// passed vanilla's awake, sight-capacity, player-control, and line-of-sight checks.
         /// </summary>
-        private static void Prefix(object __instance, ref ProximityLetterState __state)
+        private static void Postfix(object __instance, Pawn triggerer)
         {
-            ProximityLetterState state = null;
-            DiaryPatchSafety.Run("ProximityLetterEventWindowPatch.Prefix", () =>
+            if (__instance == null || triggerer == null || !DiaryGameComponent.GamePlaying)
             {
-                if (__instance == null || LetterSent(__instance))
+                return;
+            }
+
+            // SendLetter is a one-shot event boundary rather than a per-tick poll, but keep its
+            // adapter allocation-free anyway so modded callers can invoke it without GC pressure.
+            DiaryPatchSafety.Run(
+                "ProximityLetterEventWindowPatch.Postfix",
+                (instance: __instance, triggerer: triggerer),
+                state =>
                 {
-                    return;
-                }
-
-                ThingComp comp = __instance as ThingComp;
-                Thing parent = comp?.parent;
-                state = new ProximityLetterState
-                {
-                    label = LetterLabel(comp),
-                    subjectPawn = SubjectPawnNear(parent, Radius(comp))
-                };
-            });
-            __state = state;
-        }
-
-        /// <summary>
-        /// Forwards the proximity letter after vanilla marks it sent.
-        /// </summary>
-        private static void Postfix(object __instance, ProximityLetterState __state)
-        {
-            DiaryPatchSafety.Run("ProximityLetterEventWindowPatch.Postfix", () =>
-            {
-                if (__state == null || __instance == null || !LetterSent(__instance))
-                {
-                    return;
-                }
-
-                ThingComp comp = __instance as ThingComp;
-                DiaryGameComponent.Instance?.RecordEventWindowProximityLetter(
-                    comp?.parent,
-                    __state.label,
-                    __state.subjectPawn);
-            });
-        }
-
-        private static bool LetterSent(object comp)
-        {
-            object value = LetterSentField?.GetValue(comp);
-            return value is bool && (bool)value;
+                    ThingComp comp = state.instance as ThingComp;
+                    DiaryGameComponent.Instance?.RecordEventWindowProximityLetter(
+                        comp?.parent,
+                        LetterLabel(comp),
+                        state.triggerer);
+                });
         }
 
         private static string LetterLabel(ThingComp comp)
@@ -561,49 +533,6 @@ namespace PawnDiary
             }
 
             return comp?.parent == null ? string.Empty : comp.parent.LabelShortCap;
-        }
-
-        private static float Radius(ThingComp comp)
-        {
-            object value = RadiusField?.GetValue(comp?.props);
-            if (value is float)
-            {
-                return (float)value;
-            }
-
-            if (value is int)
-            {
-                return (int)value;
-            }
-
-            return FallbackRadius;
-        }
-
-        private static Pawn SubjectPawnNear(Thing thing, float radius)
-        {
-            Map map = thing?.Map;
-            if (thing == null || map?.mapPawns == null)
-            {
-                return null;
-            }
-
-            List<Pawn> colonists = map.mapPawns.FreeColonists;
-            for (int i = 0; i < colonists.Count; i++)
-            {
-                Pawn pawn = colonists[i];
-                if (pawn != null && pawn.Spawned && pawn.Position.InHorDistOf(thing.Position, radius))
-                {
-                    return pawn;
-                }
-            }
-
-            return null;
-        }
-
-        private sealed class ProximityLetterState
-        {
-            public string label;
-            public Pawn subjectPawn;
         }
     }
 
