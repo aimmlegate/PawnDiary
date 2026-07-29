@@ -1652,7 +1652,8 @@ namespace PawnDiary.RimTests
 
         private static bool ThrowMutationProjection()
         {
-            throw new InvalidOperationException("Synthetic Ideology mutation projection failure.");
+            throw new InvalidOperationException(
+                "EXPECTED RimTest fault injection: synthetic Ideology mutation projection failure.");
         }
 
         private static bool ThrowBeliefEvidenceSelection()

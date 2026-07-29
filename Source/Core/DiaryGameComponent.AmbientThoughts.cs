@@ -159,7 +159,9 @@ namespace PawnDiary
         {
             pendingAmbientThoughtNotes.Remove(key);
 
-            if (note == null || note.pawn == null || !IsDiaryEligible(note.pawn))
+            // The writer may die after the thought was sampled but before this delayed note flushes.
+            if (note == null || note.pawn == null || note.pawn.Dead
+                || !IsDiaryEligible(note.pawn))
             {
                 return;
             }

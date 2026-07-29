@@ -322,6 +322,44 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Reference maintenance must remove an unowned master event even when every diary is below its
+        /// retention cap. Previously only the over-cap retention path happened to sweep these rows.
+        /// </summary>
+        [Test]
+        public static void ReferencePruneSweepsUnderCapOrphanMasterRows()
+        {
+            RequireDetachedMaintenanceReflection();
+            const string ownerId = "Pawn_RimTest_UnderCapOrphan";
+            PawnDiaryRecord ownerDiary = NewDiary(ownerId);
+            DiaryEvent referenced = NewEvent(
+                "pd-under-cap-owned-" + Guid.NewGuid().ToString("N"),
+                ownerId,
+                solo: true,
+                tick: Find.TickManager.TicksGame);
+            DiaryEvent orphan = NewEvent(
+                "pd-under-cap-orphan-" + Guid.NewGuid().ToString("N"),
+                ownerId,
+                solo: true,
+                tick: Find.TickManager.TicksGame + 1);
+            ownerDiary.eventIds.Add(referenced.eventId);
+
+            DiaryEventRepository repository = RepositoryWithLoadedRows(referenced, orphan);
+            DiaryGameComponent component = NewDetachedMaintenanceOwner(
+                ownerDiary,
+                repository,
+                new DiaryArchiveRepository());
+
+            PruneDiaryEventRefsMethod.Invoke(component, null);
+
+            Require(repository.FindEvent(referenced.eventId) == referenced,
+                "Reference maintenance removed the under-cap event that still had a diary owner.");
+            Require(repository.FindEvent(orphan.eventId) == null,
+                "Reference maintenance left an under-cap orphan master row behind.");
+            Require(ownerDiary.eventIds.Count == 1 && ownerDiary.eventIds[0] == referenced.eventId,
+                "Under-cap orphan cleanup changed the surviving diary reference.");
+        }
+
+        /// <summary>
         /// The production pre-save runner must execute later flush/maintenance actions even when an
         /// earlier source throws, and must report the exact failed action index once.
         /// </summary>

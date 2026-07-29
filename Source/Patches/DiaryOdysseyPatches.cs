@@ -211,17 +211,16 @@ namespace PawnDiary
             }
 
             int patched = 0;
+            int uninspectable = 0;
             foreach (Type type in GenTypes.AllTypes)
             {
-                if (type == null || type.IsAbstract || type == typeof(LandingOutcomeWorker)
-                    || !typeof(LandingOutcomeWorker).IsAssignableFrom(type))
+                MethodBase target;
+                Exception inspectionFailure;
+                if (!TryResolveApplyOutcomeOverride(type, out target, out inspectionFailure))
                 {
+                    if (inspectionFailure != null) uninspectable++;
                     continue;
                 }
-
-                MethodBase target = AccessTools.DeclaredMethod(
-                    type, nameof(LandingOutcomeWorker.ApplyOutcome), new[] { typeof(Gravship) });
-                if (target == null) continue;
                 try
                 {
                     harmony.Patch(target, postfix: new HarmonyMethod(postfix));
@@ -241,7 +240,10 @@ namespace PawnDiary
                     "Odyssey",
                     targetLabel,
                     DiaryPatchManifest.HookStatus.Applied,
-                    "patched " + patched + " overrides");
+                    "patched " + patched + " overrides"
+                        + (uninspectable > 0
+                            ? "; ignored " + uninspectable + " unloadable types"
+                            : string.Empty));
             }
             else
             {
@@ -252,6 +254,43 @@ namespace PawnDiary
                     targetLabel,
                     DiaryPatchManifest.HookStatus.Degraded,
                     "no concrete override found");
+            }
+        }
+
+        /// <summary>
+        /// Resolves one concrete outcome override without letting an unrelated unloadable mod type abort
+        /// the rest of the global type scan. Mono may throw while merely reading Type metadata because
+        /// that operation can force vtable setup.
+        /// </summary>
+        internal static bool TryResolveApplyOutcomeOverride(
+            Type type,
+            out MethodBase target,
+            out Exception inspectionFailure)
+        {
+            target = null;
+            inspectionFailure = null;
+            if (type == null) return false;
+
+            try
+            {
+                if (type.IsAbstract || type == typeof(LandingOutcomeWorker)
+                    || !typeof(LandingOutcomeWorker).IsAssignableFrom(type))
+                {
+                    return false;
+                }
+
+                target = AccessTools.DeclaredMethod(
+                    type, nameof(LandingOutcomeWorker.ApplyOutcome), new[] { typeof(Gravship) });
+                return target != null;
+            }
+            catch (Exception exception)
+            {
+                // A foreign assembly can contain a type whose vtable cannot be constructed (for
+                // example, an optional-mod compatibility class compiled against a missing base).
+                // That says nothing about the remaining vanilla/modded landing outcome workers.
+                target = null;
+                inspectionFailure = exception;
+                return false;
             }
         }
 

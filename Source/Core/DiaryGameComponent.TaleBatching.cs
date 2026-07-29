@@ -194,7 +194,10 @@ namespace PawnDiary
         {
             pendingTaleBatches.Remove(key);
 
-            if (batch == null || batch.pawn == null || batch.eventCount == 0 || !IsDiaryEligible(batch.pawn))
+            // IsDiaryEligible intentionally does not encode life-state for every boundary path. A pawn
+            // can die while this delayed batch waits for its quiet window or a pre-save flush.
+            if (batch == null || batch.pawn == null || batch.pawn.Dead
+                || batch.eventCount == 0 || !IsDiaryEligible(batch.pawn))
             {
                 return;
             }

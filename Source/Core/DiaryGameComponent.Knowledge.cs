@@ -420,29 +420,52 @@ namespace PawnDiary
                             : "; weapon=" + GameContextValue.Sanitize(weaponLabel)));
                 }
 
-                // Close family only (§2.1). GetRelations yields the OTHER pawn's relations toward
-                // the victim, so "Parent" means "other is the victim's parent". The relation FACT
-                // stored on the record is the victim's role from the owner's view (their spouse,
-                // their child…), so we label the inverse pair member.
+                // Close family only (§2.1). PotentiallyRelatedPawns gives us candidates without first
+                // asking every relation worker to evaluate them. That distinction matters when another
+                // mod leaves one malformed direct-relation row: RelatedPawns would throw before we could
+                // isolate the bad candidate and would prevent healthy family owners later in the list
+                // from receiving their record.
                 if (victim.relations == null)
                 {
                     return;
                 }
 
                 int familyOwnersEmitted = 0;
-                foreach (Pawn other in victim.relations.RelatedPawns)
+                foreach (Pawn other in victim.relations.PotentiallyRelatedPawns)
                 {
                     if (!KnowledgeRelationPolicy.CanEmitDeathFamilyOwner(familyOwnersEmitted))
                     {
                         break;
                     }
 
-                    if (other == null || other == victim || other == instigator)
+                    if (other == null || other == victim || other == instigator
+                        || !IsDiaryEligible(other))
                     {
                         continue;
                     }
 
-                    string relationLabel = CloseFamilyRelationLabel(victim, other);
+                    string relationLabel;
+                    try
+                    {
+                        // GetRelations yields the OTHER pawn's relations toward the victim, so
+                        // "Parent" means "other is the victim's parent". The saved fact is the
+                        // victim's role from that owner's view, hence CloseFamilyRelationLabel
+                        // inverts parent/child after choosing the strongest close-family relation.
+                        relationLabel = CloseFamilyRelationLabel(victim, other);
+                    }
+                    catch (Exception exception)
+                    {
+                        // A broken relation graph belongs to one candidate, not to the whole death.
+                        // Do not include pawn names here: this is a structural diagnostic, and the
+                        // exception type is enough to group repeated reports without log spam.
+                        Log.WarningOnce(
+                            "[Pawn Diary] Skipped one malformed family relation while capturing death knowledge: "
+                            + exception,
+                            ("PawnDiary.Knowledge.Death.RelationProjection."
+                                + exception.GetType().FullName).GetHashCode());
+                        continue;
+                    }
+
                     if (string.IsNullOrWhiteSpace(relationLabel)
                         || EnsureKnowledgeOwner(other) == null)
                     {

@@ -73,6 +73,31 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// A foreign type whose metadata cannot be inspected must be classified as one skipped candidate,
+        /// after which a healthy vanilla landing worker still resolves normally.
+        /// </summary>
+        [Test]
+        public static void LandingOutcomeScanIsolatesOneUnloadableForeignType()
+        {
+            MethodBase target;
+            Exception failure;
+            bool resolved = OdysseyLandingOutcomePatch.TryResolveApplyOutcomeOverride(
+                new ThrowingTypeDelegator(),
+                out target,
+                out failure);
+            Require(!resolved && target == null && failure is TypeLoadException,
+                "An unloadable foreign type escaped the per-candidate Odyssey scan guard.");
+
+            resolved = OdysseyLandingOutcomePatch.TryResolveApplyOutcomeOverride(
+                typeof(LandingOutcomeWorker_MinorGravshipCrash),
+                out target,
+                out failure);
+            Require(resolved && target != null && failure == null
+                    && target.DeclaringType == typeof(LandingOutcomeWorker_MinorGravshipCrash),
+                "The guarded scan failed to resolve a healthy vanilla landing outcome override.");
+        }
+
+        /// <summary>
         /// Proves the O2 seasonal-flood settings row is absent without Odyssey and loaded with its
         /// exact Thing matcher when Odyssey is active. Grav nausea is string-matched, so its harmless
         /// enchantment policy may load in either case and simply finds no hediff without the DLC.
@@ -1270,6 +1295,23 @@ namespace PawnDiary.RimTests
             IEnumerable<Patch> rows = prefix ? patches.Prefixes : patches.Postfixes;
             return rows.Any(row => row.owner == "aimml.pawndiary"
                 && row.PatchMethod?.DeclaringType == patchType);
+        }
+
+        /// <summary>
+        /// Mimics a compatibility type whose vtable cannot be constructed because one of its optional
+        /// dependencies is absent. Type.IsAbstract reaches this override and throws deterministically.
+        /// </summary>
+        private sealed class ThrowingTypeDelegator : TypeDelegator
+        {
+            public ThrowingTypeDelegator()
+                : base(typeof(LandingOutcomeWorker_MinorGravshipCrash))
+            {
+            }
+
+            protected override TypeAttributes GetAttributeFlagsImpl()
+            {
+                throw new TypeLoadException("Expected RimTest unloadable-type fixture.");
+            }
         }
 
         /// <summary>Mirrors the component's two exact O1.2 Look calls without constructing another component.</summary>

@@ -11,6 +11,8 @@
 //   (c) cross-source dedup: once a death page exists, a further death source for the same pawn (here a
 //       redundant DeathFallbackSignal) is dropped by the shared DeathDescriptionKey / HasExistingDeath
 //       guard — the Tale death route and the Pawn.Kill fallback can never both write a page.
+//   (d) a death-description victim below the first-person age threshold receives the event reference
+//       during the factory commit itself, before the Tale route's later idempotent repair call.
 //
 // All the fragile scaffolding — isolated non-generating pawns, snapshots, RNG isolation, and
 // failure-safe teardown — lives in the shared PawnDiaryRimTestScope harness. The one thing the harness
@@ -125,6 +127,48 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 scope.Component.HasDeathDescriptionFor(victim),
                 "The killed colonist's diary did not reference a neutral death description.");
+        }
+
+        /// <summary>
+        /// A KilledChild-style pair page has an ordinary eligible killer plus a death-description victim
+        /// who may be below the first-person age threshold. Both references must exist when the factory
+        /// validates its commit; AddDeathEventRef later in TaleSignal is only an idempotent safety net.
+        /// </summary>
+        [Test]
+        public static void AgeIneligibleDeathVictimIsReferencedDuringInitialCommit()
+        {
+            DiaryTuningDef tuning = DiaryTuning.Current;
+            int originalMinimumAge = tuning.minimumFirstPersonAgeYears;
+            int youngerAge = Math.Max(13, originalMinimumAge);
+            Pawn youngerVictim = scope.CreateColonistAtBiologicalAge(youngerAge);
+            Pawn killer = scope.CreateColonistAtBiologicalAge(youngerAge + 10);
+
+            scope.RegisterCleanup(() => tuning.minimumFirstPersonAgeYears = originalMinimumAge);
+            tuning.minimumFirstPersonAgeYears = youngerAge + 1;
+
+            PawnDiaryRimTestScope.Require(
+                DiaryGameComponent.IsDiaryEligible(killer)
+                    && !DiaryGameComponent.IsDiaryEligible(youngerVictim)
+                    && DiaryGameComponent.IsDeathDescriptionEligible(youngerVictim),
+                "The death-owner fixture did not isolate ordinary and death-description eligibility.");
+
+            string victimId = youngerVictim.GetUniqueLoadID();
+            DiaryEvent deathEvent = scope.Component.AddPairwiseEvent(
+                killer,
+                youngerVictim,
+                "KilledChild",
+                "killed child",
+                "killer account",
+                "neutral victim account",
+                string.Empty,
+                "tale=KilledChild; death_description=true; death_victim_id="
+                    + GameContextValue.Sanitize(victimId)
+                    + "; death_victim_role=recipient");
+
+            scope.RequirePairRefs(deathEvent, killer, youngerVictim);
+            PawnDiaryRimTestScope.Require(
+                deathEvent.IsDeathDescriptionFor(victimId),
+                "The factory fixture did not preserve semantic death-description ownership.");
         }
 
         /// <summary>

@@ -8,6 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-07-29
 
+- **Runtime integrity fault isolation.** Prevented dead delayed writers and age-ineligible death pages from producing partial commits, swept under-cap orphan rows, isolated malformed death relations and unloadable foreign Odyssey types, and clarified expected RimTest injection logs.
 - **Proximity-letter performance.** Replaced per-tick discovery polling with a one-shot `CompProximityLetter.SendLetter(Pawn)` hook that records vanilla's actual triggering pawn.
 
 ## 2026-07-27

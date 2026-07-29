@@ -413,7 +413,9 @@ namespace PawnDiary
         {
             pendingAmbientInteractionNotes.Remove(key);
 
-            if (note == null || note.pawn == null || !IsDiaryEligible(note.pawn))
+            // The writer may die after the interaction was captured but before this delayed note flushes.
+            if (note == null || note.pawn == null || note.pawn.Dead
+                || !IsDiaryEligible(note.pawn))
             {
                 return;
             }
@@ -482,8 +484,10 @@ namespace PawnDiary
                 return;
             }
 
-            bool initiatorEligible = IsDiaryEligible(batch.initiator);
-            bool recipientEligible = IsDiaryEligible(batch.recipient);
+            // Freeze prose/mood at capture, but decide final ownership at flush: either participant may
+            // have died while the batch waited, in which case the living side can still receive a solo.
+            bool initiatorEligible = !batch.initiator.Dead && IsDiaryEligible(batch.initiator);
+            bool recipientEligible = !batch.recipient.Dead && IsDiaryEligible(batch.recipient);
 
             if (!initiatorEligible && !recipientEligible)
             {

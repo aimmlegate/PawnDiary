@@ -316,8 +316,22 @@ namespace PawnDiary
             bool insertChronologically,
             bool eligibilityAlreadyVerified)
         {
-            if (pawn == null || string.IsNullOrWhiteSpace(eventId)
-                || (!eligibilityAlreadyVerified && !IsDiaryEligible(pawn)))
+            if (pawn == null || string.IsNullOrWhiteSpace(eventId))
+            {
+                return;
+            }
+
+            string pawnId = pawn.GetUniqueLoadID();
+            DiaryEvent diaryEvent = events.FindEvent(eventId);
+            // Neutral final pages deliberately belong to young/dead colonists who cannot own ordinary
+            // first-person pages. Recognize that semantic owner now, before commit validation; the Tale
+            // adapter's later AddDeathEventRef call remains an idempotent recovery rail.
+            bool deathDescriptionEligible = diaryEvent != null
+                && diaryEvent.IsDeathDescriptionFor(pawnId)
+                && IsDeathDescriptionEligible(pawn);
+            if (!eligibilityAlreadyVerified
+                && !IsDiaryEligible(pawn)
+                && !deathDescriptionEligible)
             {
                 return;
             }
@@ -328,8 +342,6 @@ namespace PawnDiary
                 return;
             }
 
-            string pawnId = pawn.GetUniqueLoadID();
-            DiaryEvent diaryEvent = events.FindEvent(eventId);
             if (EventFallsOutsideDiaryBounds(diaryEvent, pawnId, diary, PawnAliveForDiaryBounds(pawn)))
             {
                 return;
@@ -973,9 +985,9 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Removes blank, duplicate, and dangling event references from per-pawn diary indexes. The
-        /// saved event list is the source of truth; records should not keep pointing at events that no
-        /// longer exist or were corrupted out of a save.
+        /// Reconciles both halves of saved event ownership: removes blank, duplicate, and dangling IDs
+        /// from per-pawn diary indexes, then removes master event rows that no diary references. This runs
+        /// only during post-load/pre-save maintenance, never on the hot capture path.
         /// </summary>
         private void PruneDiaryEventRefs()
         {
@@ -1021,6 +1033,12 @@ namespace PawnDiary
                     }
                 }
             }
+
+            // References and master rows are two halves of one persistence invariant. The loop above
+            // removes refs to missing rows; this reverse sweep removes rows that no diary owns. Keep it
+            // in save/load maintenance rather than the hot event path, where the O(n) reconciliation
+            // would be unnecessary work for every capture.
+            events.RetainOnly(CollectHotReferencedEventIds());
         }
 
         /// <summary>

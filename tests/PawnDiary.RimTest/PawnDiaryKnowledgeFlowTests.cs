@@ -16,7 +16,8 @@
 //   7. Status family keys: title events share the constant "title" entity key, so a demotion
 //      recalls the original investiture (§3.1 "title/status family").
 //   8. Death fan-out via a real Pawn.Kill: the killer and the spouse each keep one record;
-//      an unrelated bystander keeps none (§2.1).
+//      an unrelated bystander keeps none (§2.1), and one malformed relation candidate cannot block
+//      a later healthy family owner.
 //   9. Conversion channel: adopted culture REPLACES on each conversion and each conversion is
 //      recorded (§4.1).
 //  10. Role channel: an ideological role change is remembered WITHOUT creating a diary page.
@@ -604,6 +605,49 @@ namespace PawnDiary.RimTests
 
             Require(bystanderState.records.Count == bystanderBefore,
                 "An unrelated bystander must keep no death record.");
+        }
+
+        /// <summary>
+        /// A third-party mod can leave a null pawn in one direct-relation row. Projecting that candidate
+        /// through vanilla's parent workers throws, but the bad candidate must not abort death-family
+        /// capture for a healthy spouse elsewhere in the same graph.
+        /// </summary>
+        [Test]
+        public static void MalformedRelationCandidateDoesNotBlockHealthyFamilyOwner()
+        {
+            Pawn victim = scope.CreateAdultColonist();
+            Pawn malformedCandidate = scope.CreateAdultColonist();
+            Pawn spouse = scope.CreateAdultColonist();
+            PawnKnowledgeState malformedState = KnowledgeFor(malformedCandidate);
+            PawnKnowledgeState spouseState = KnowledgeFor(spouse);
+
+            // Add the malformed candidate first so the old RelatedPawns implementation would throw
+            // before reaching the valid spouse.
+            victim.relations.AddDirectRelation(PawnRelationDefOf.ExLover, malformedCandidate);
+            victim.relations.AddDirectRelation(PawnRelationDefOf.Spouse, spouse);
+            DirectPawnRelation malformed = new DirectPawnRelation(
+                PawnRelationDefOf.Parent,
+                null,
+                0);
+            malformedCandidate.relations.DirectRelations.Add(malformed);
+
+            int malformedBefore = CountKind(malformedState, "death.family");
+            int spouseBefore = CountKind(spouseState, "death.family");
+            try
+            {
+                scope.Component.CaptureDeathKnowledge(victim, null);
+            }
+            finally
+            {
+                // Remove the intentionally corrupt row before shared fixture teardown asks RimWorld to
+                // clean relation trackers. The test must never leak malformed state into the loaded game.
+                malformedCandidate.relations.DirectRelations.Remove(malformed);
+            }
+
+            Require(CountKind(malformedState, "death.family") == malformedBefore,
+                "The malformed non-family candidate unexpectedly received a death-family record.");
+            Require(CountKind(spouseState, "death.family") == spouseBefore + 1,
+                "One malformed relation candidate blocked the healthy spouse's death-family record.");
         }
 
         // ── 9 + 10: conversion and role channels ─────────────────────────────────────────────────────

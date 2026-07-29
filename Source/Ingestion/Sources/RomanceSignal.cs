@@ -53,8 +53,10 @@ namespace PawnDiary.Ingestion
                 DefName = relationDef.defName,
                 FirstPawnId = pawn.GetUniqueLoadID(),
                 SecondPawnId = otherPawn.GetUniqueLoadID(),
-                FirstEligible = DiaryGameComponent.IsDiaryEligible(pawn),
-                SecondEligible = DiaryGameComponent.IsDiaryEligible(otherPawn),
+                // IsColonist can remain true after death; romance pages must never reopen a dead
+                // participant's diary beyond its final death boundary.
+                FirstEligible = !pawn.Dead && DiaryGameComponent.IsDiaryEligible(pawn),
+                SecondEligible = !otherPawn.Dead && DiaryGameComponent.IsDiaryEligible(otherPawn),
             };
         }
 
