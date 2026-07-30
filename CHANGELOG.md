@@ -6,6 +6,10 @@ Companion: [repowiki/README.md](repowiki/README.md) describes the current state.
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-07-30
+
+- **Atomic event ownership commits.** Rejected diary-owner references now roll back the new event row, preventing `missing_owner_refs` and persistent orphan events.
+
 ## 2026-07-29
 
 - **Runtime integrity fault isolation.** Prevented dead delayed writers and age-ineligible death pages from producing partial commits, swept under-cap orphan rows, isolated malformed death relations and unloadable foreign Odyssey types, and clarified expected RimTest injection logs.

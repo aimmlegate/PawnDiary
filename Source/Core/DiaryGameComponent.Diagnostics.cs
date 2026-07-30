@@ -42,6 +42,69 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Atomically registers a new event and all diary owners required by that page. A life-boundary
+        /// or eligibility change may legitimately reject a reference after capture; in that case this
+        /// rolls back the master row and any first owner already added, so no orphan can reach generation
+        /// or persistence.
+        /// </summary>
+        private bool TryCommitNewEvent(
+            DiaryEvent diaryEvent,
+            Pawn initiator,
+            Pawn recipient,
+            bool includeRecipientOwner,
+            bool insertChronologically)
+        {
+            RegisterNewEventOrThrow(diaryEvent);
+
+            bool initiatorCommitted =
+                AddEventRef(initiator, diaryEvent.eventId, insertChronologically);
+            bool recipientCommitted = !includeRecipientOwner
+                || AddEventRef(recipient, diaryEvent.eventId, insertChronologically);
+            if (initiatorCommitted && recipientCommitted)
+            {
+                ValidateNewEventCommit(diaryEvent, includeRecipientOwner);
+                return true;
+            }
+
+            RollBackNewEventCommit(diaryEvent.eventId);
+            return false;
+        }
+
+        /// <summary>Removes both halves of a newly rejected event commit.</summary>
+        private void RollBackNewEventCommit(string eventId)
+        {
+            if (string.IsNullOrWhiteSpace(eventId))
+            {
+                return;
+            }
+
+            if (diaries != null)
+            {
+                for (int i = 0; i < diaries.Count; i++)
+                {
+                    List<string> eventIds = diaries[i]?.eventIds;
+                    if (eventIds == null)
+                    {
+                        continue;
+                    }
+
+                    for (int j = eventIds.Count - 1; j >= 0; j--)
+                    {
+                        if (string.Equals(
+                            eventIds[j],
+                            eventId,
+                            StringComparison.OrdinalIgnoreCase))
+                        {
+                            eventIds.RemoveAt(j);
+                        }
+                    }
+                }
+            }
+
+            events.RemoveEvent(eventId);
+        }
+
+        /// <summary>
         /// Checks the narrow post-commit invariant for a freshly created event. Callers run this after
         /// adding every initial owner reference and before retention is allowed to transform those refs.
         /// </summary>

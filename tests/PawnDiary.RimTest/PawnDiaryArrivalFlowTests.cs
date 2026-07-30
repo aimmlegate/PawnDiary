@@ -230,6 +230,39 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// A page older than the pawn's arrival boundary cannot belong to that diary. The factory must
+        /// reject the whole commit instead of leaving a master event row with no owner reference.
+        /// </summary>
+        [Test]
+        public static void EventBeforeArrivalBoundaryRollsBackItsRepositoryRow()
+        {
+            DiaryEvent arrival = scope.FireAndRequireEvent(
+                () => DiaryEvents.Submit(
+                    new ArrivalSignal(arrivalPawn, BuildStartingArrivalContext(arrivalPawn))),
+                ArrivalSignal.ArrivalDefName,
+                arrivalPawn,
+                null);
+
+            DiaryEvent rejected = null;
+            scope.RequireNoNewEvent(() =>
+            {
+                rejected = scope.Component.AddSoloEvent(
+                    arrivalPawn,
+                    null,
+                    "Downed",
+                    "downed",
+                    "historical boundary probe",
+                    string.Empty,
+                    string.Empty,
+                    arrival.tick - 1);
+            });
+
+            PawnDiaryRimTestScope.Require(
+                rejected == null,
+                "The factory returned a page whose owner rejected its diary reference.");
+        }
+
+        /// <summary>
         /// EVT-18. A malformed arrival unit (a null pawn, which yields a null payload) is dropped by the
         /// capture pipeline without throwing and without creating an event — the per-unit fault isolation the
         /// founding-arrival bootstrap relies on so one bad colonist cannot wedge the whole scan (the

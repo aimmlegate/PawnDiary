@@ -324,13 +324,15 @@ namespace PawnDiary
                 initiatorCapture?.textDecorationFacts ?? PawnFactCapture.TextDecorationFacts(initiator));
             diaryEvent.SetTextDecorationFacts(DiaryEvent.RecipientRole,
                 recipientCapture?.textDecorationFacts ?? PawnFactCapture.TextDecorationFacts(recipient));
-            RegisterNewEventOrThrow(diaryEvent);
-            AddEventRef(initiator, diaryEvent.eventId, historicalTick >= 0);
-            if (includeRecipientDiaryRef)
+            if (!TryCommitNewEvent(
+                diaryEvent,
+                initiator,
+                recipient,
+                includeRecipientDiaryRef,
+                historicalTick >= 0))
             {
-                AddEventRef(recipient, diaryEvent.eventId, historicalTick >= 0);
+                return null;
             }
-            ValidateNewEventCommit(diaryEvent, includeRecipientDiaryRef);
             if (applyDiaryEventLimits)
             {
                 ApplyDiaryEventLimits();
@@ -634,9 +636,15 @@ namespace PawnDiary
                     diaryEvent, DiaryEvent.InitiatorRole, generationReadyTick);
             }
 
-            RegisterNewEventOrThrow(diaryEvent);
-            AddEventRef(pawn, diaryEvent.eventId, historicalTick >= 0);
-            ValidateNewEventCommit(diaryEvent);
+            if (!TryCommitNewEvent(
+                diaryEvent,
+                pawn,
+                null,
+                includeRecipientOwner: false,
+                insertChronologically: historicalTick >= 0))
+            {
+                return null;
+            }
             if (applyDiaryEventLimits)
             {
                 ApplyDiaryEventLimits();

@@ -286,9 +286,13 @@ namespace PawnDiary
         /// <summary>
         /// Adds an event ID to a pawn's diary, creating the diary record if necessary.
         /// </summary>
-        private void AddEventRef(Pawn pawn, string eventId, bool insertChronologically = false)
+        private bool AddEventRef(Pawn pawn, string eventId, bool insertChronologically = false)
         {
-            AddEventRef(pawn, eventId, insertChronologically, eligibilityAlreadyVerified: false);
+            return AddEventRef(
+                pawn,
+                eventId,
+                insertChronologically,
+                eligibilityAlreadyVerified: false);
         }
 
         /// <summary>
@@ -310,7 +314,7 @@ namespace PawnDiary
             AddEventRef(pawn, eventId, insertChronologically, eligibilityAlreadyVerified: true);
         }
 
-        private void AddEventRef(
+        private bool AddEventRef(
             Pawn pawn,
             string eventId,
             bool insertChronologically,
@@ -318,7 +322,7 @@ namespace PawnDiary
         {
             if (pawn == null || string.IsNullOrWhiteSpace(eventId))
             {
-                return;
+                return false;
             }
 
             string pawnId = pawn.GetUniqueLoadID();
@@ -333,18 +337,18 @@ namespace PawnDiary
                 && !IsDiaryEligible(pawn)
                 && !deathDescriptionEligible)
             {
-                return;
+                return false;
             }
 
             PawnDiaryRecord diary = FindDiary(pawn, true);
             if (diary == null)
             {
-                return;
+                return false;
             }
 
             if (EventFallsOutsideDiaryBounds(diaryEvent, pawnId, diary, PawnAliveForDiaryBounds(pawn)))
             {
-                return;
+                return false;
             }
 
             diary.pawnName = pawn.LabelShortCap;
@@ -379,6 +383,8 @@ namespace PawnDiary
                     diary.eventIds.Add(eventId);
                 }
             }
+
+            return ContainsEventId(diary.eventIds, eventId);
         }
 
         /// <summary>
