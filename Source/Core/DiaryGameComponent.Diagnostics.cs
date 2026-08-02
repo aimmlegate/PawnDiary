@@ -52,14 +52,23 @@ namespace PawnDiary
             Pawn initiator,
             Pawn recipient,
             bool includeRecipientOwner,
-            bool insertChronologically)
+            bool insertChronologically,
+            bool initiatorEligibilityAlreadyVerified,
+            bool recipientEligibilityAlreadyVerified)
         {
             RegisterNewEventOrThrow(diaryEvent);
 
-            bool initiatorCommitted =
-                AddEventRef(initiator, diaryEvent.eventId, insertChronologically);
+            bool initiatorCommitted = AddEventRef(
+                initiator,
+                diaryEvent.eventId,
+                insertChronologically,
+                initiatorEligibilityAlreadyVerified);
             bool recipientCommitted = !includeRecipientOwner
-                || AddEventRef(recipient, diaryEvent.eventId, insertChronologically);
+                || AddEventRef(
+                    recipient,
+                    diaryEvent.eventId,
+                    insertChronologically,
+                    recipientEligibilityAlreadyVerified);
             if (initiatorCommitted && recipientCommitted)
             {
                 ValidateNewEventCommit(diaryEvent, includeRecipientOwner);

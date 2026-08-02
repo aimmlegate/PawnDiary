@@ -92,7 +92,7 @@ namespace PawnDiary.Ingestion
             bool pair = decision == CaptureDecision.GeneratePair && writers.Count > 1;
             if (pair)
             {
-                CreatedEvent = CreatePairwiseEvent(
+                CreatedEvent = CreatePreverifiedPairwiseEvent(
                     sink,
                     writers[0],
                     writers[1],
@@ -113,7 +113,7 @@ namespace PawnDiary.Ingestion
             Pawn writer = writers[0];
             Pawn other = selected.roleToken == AnomalyWitnessRoleTokens.Surgeon
                 ? subject : surgeon;
-            CreatedEvent = CreateSoloEvent(
+            CreatedEvent = CreatePreverifiedSoloEvent(
                 sink,
                 writer,
                 ReferenceEquals(writer, other) ? null : other,
@@ -129,8 +129,8 @@ namespace PawnDiary.Ingestion
         }
 
         /// <summary>
-        /// Restores exact preverified diary references and starts generation after the durable page
-        /// exists. A follow-up failure must not release a second generic surgery owner.
+        /// Adds exact narrative evidence and starts generation after the preverified owners and durable
+        /// page were committed atomically. A follow-up failure must not release a second generic owner.
         /// </summary>
         private void FinishCreatedEvent(
             DiaryGameComponent sink,
@@ -140,11 +140,6 @@ namespace PawnDiary.Ingestion
         {
             try
             {
-                // The subject is no longer a normal colonist after vanilla returns. The pure plan
-                // already froze each exact writer's eligibility before that irreversible change.
-                sink.AddPreverifiedEventRef(firstWriter, CreatedEvent.eventId, true);
-                if (secondWriter != null)
-                    sink.AddPreverifiedEventRef(secondWriter, CreatedEvent.eventId, true);
                 AnomalyNarrativeContextAdapter.ApplyGhoulTransformation(
                     sink, CreatedEvent, firstWriter, DiaryEvent.InitiatorRole,
                     facts, plan, plan.selectedWriters[0]);

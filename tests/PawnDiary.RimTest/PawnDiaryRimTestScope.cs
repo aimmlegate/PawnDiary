@@ -191,6 +191,11 @@ namespace PawnDiary.RimTests
                     "Pawn Diary's game component and settings must be loaded before this suite runs.");
             }
 
+            // Some failure-isolation fixtures deliberately trip a production patch circuit. Each test
+            // is a separate synthetic transaction, and teardown must also leave the developer's loaded
+            // game healthy after the suite finishes.
+            DiaryPatchSafety.ResetSession();
+
             Faction playerFaction = Faction.OfPlayerSilentFail;
             if (playerFaction == null)
             {
@@ -219,6 +224,7 @@ namespace PawnDiary.RimTests
                     PawnDiaryMod.Settings.groupEnabled,
                     StringComparer.OrdinalIgnoreCase),
             };
+            scope.RegisterCleanup(DiaryPatchSafety.ResetSession);
             scope.IsolateRecentEvents();
             scope.SnapshotGlobalCollections();
             scope.IsolateAmbientThoughtCollections();

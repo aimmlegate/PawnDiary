@@ -79,7 +79,7 @@ namespace PawnDiary.Ingestion
             string label = string.IsNullOrWhiteSpace(group.label)
                 ? "PawnDiary.Event.Odyssey.Mechhive.Label".Translate().Resolve()
                 : group.LabelCap.Resolve();
-            CreatedEvent = CreateSoloEvent(
+            CreatedEvent = CreatePreverifiedSoloEvent(
                 sink,
                 actor,
                 null,
@@ -144,7 +144,6 @@ namespace PawnDiary.Ingestion
         {
             try
             {
-                sink.AddPreverifiedEventRef(actor, CreatedEvent.eventId, true);
                 sink.QueueSolo(CreatedEvent, DiaryEvent.InitiatorRole);
             }
             catch (Exception exception)

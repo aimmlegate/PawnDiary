@@ -221,6 +221,31 @@ namespace PawnDiary.Ingestion
         }
 
         /// <summary>
+        /// Atomically creates a solo page from exact writer eligibility frozen before an irreversible
+        /// vanilla transition. Specialized boundary signals must prove that eligibility before calling.
+        /// </summary>
+        protected DiaryEvent CreatePreverifiedSoloEvent(
+            DiaryGameComponent sink,
+            Pawn pawn,
+            Pawn otherPawn,
+            string defName,
+            string label,
+            string text,
+            string instruction,
+            string gameContext)
+        {
+            return sink.AddPreverifiedSoloEvent(
+                pawn,
+                otherPawn,
+                defName,
+                label,
+                text,
+                instruction,
+                gameContext,
+                historicalEventTick);
+        }
+
+        /// <summary>
         /// Binary-compatible pre-Phase-1 pair factory. It forwards to the evidence-aware overload
         /// without re-evaluating or changing capture policy.
         /// </summary>
@@ -275,6 +300,33 @@ namespace PawnDiary.Ingestion
                     instruction,
                     gameContext,
                     beliefEvidence);
+        }
+
+        /// <summary>
+        /// Atomically creates a pair page from exact writer eligibility frozen before an irreversible
+        /// vanilla transition. Specialized boundary signals must prove both writers before calling.
+        /// </summary>
+        protected DiaryEvent CreatePreverifiedPairwiseEvent(
+            DiaryGameComponent sink,
+            Pawn initiator,
+            Pawn recipient,
+            string defName,
+            string label,
+            string initiatorText,
+            string recipientText,
+            string instruction,
+            string gameContext)
+        {
+            return sink.AddPreverifiedPairwiseEvent(
+                initiator,
+                recipient,
+                defName,
+                label,
+                initiatorText,
+                recipientText,
+                instruction,
+                gameContext,
+                historicalEventTick);
         }
 
         /// <summary>

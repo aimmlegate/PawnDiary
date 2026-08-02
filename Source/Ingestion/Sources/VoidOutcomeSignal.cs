@@ -83,7 +83,7 @@ namespace PawnDiary.Ingestion
                 : group.LabelCap.Resolve();
             string instruction = InteractionGroups.InstructionForGroup(group);
             string context = VoidOutcomeContextFormatter.Format(facts, plan);
-            CreatedEvent = CreateSoloEvent(
+            CreatedEvent = CreatePreverifiedSoloEvent(
                 sink,
                 actor,
                 null,
@@ -144,15 +144,13 @@ namespace PawnDiary.Ingestion
         }
 
         /// <summary>
-        /// Restores the preverified diary reference and starts generation after the durable page
-        /// exists. The choosing pawn may already be despawned into the closed metal hell, so the
-        /// reference is inserted from the exact frozen event-time eligibility rather than live state.
+        /// Starts generation after the preverified owner and durable page were committed atomically. The
+        /// choosing pawn may already be despawned into the closed metal hell after the vanilla boundary.
         /// </summary>
         private void FinishCreatedEvent(DiaryGameComponent sink, Pawn writer)
         {
             try
             {
-                sink.AddPreverifiedEventRef(writer, CreatedEvent.eventId, true);
                 sink.QueueSolo(CreatedEvent, DiaryEvent.InitiatorRole);
             }
             catch (Exception exception)

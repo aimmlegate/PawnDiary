@@ -12,7 +12,7 @@ pre-release version ladder for project history.
 
 ## 2026-07-30
 
-- **Atomic event ownership commits.** Rejected diary-owner references now roll back the new event row, preventing `missing_owner_refs` and persistent orphan events.
+- **Atomic event ownership commits.** Rejected diary-owner references now roll back the new event row, while exact pre-transition writers commit from frozen eligibility without creating `missing_owner_refs` or orphan events.
 
 ## 2026-07-29
 

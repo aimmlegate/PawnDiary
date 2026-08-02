@@ -40,6 +40,38 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Atomically creates a pair page for exact writers whose diary eligibility was frozen before an
+        /// irreversible vanilla transition. The caller must supply only writers selected by that capture.
+        /// </summary>
+        internal DiaryEvent AddPreverifiedPairwiseEvent(
+            Pawn initiator,
+            Pawn recipient,
+            string defName,
+            string label,
+            string initiatorText,
+            string recipientText,
+            string instruction,
+            string gameContext,
+            int historicalTick)
+        {
+            return AddPairwiseEventCore(
+                initiator,
+                recipient,
+                defName,
+                label,
+                initiatorText,
+                recipientText,
+                instruction,
+                gameContext,
+                null,
+                historicalTick,
+                null,
+                null,
+                initiatorEligibilityAlreadyVerified: true,
+                recipientEligibilityAlreadyVerified: true);
+        }
+
+        /// <summary>
         /// Dev prompt-selector variant: keeps pair context but owns the page only from the selected
         /// initiator's diary. The partner is evidence, never a second test-page owner. Synthetic previews
         /// also skip immediate retention so opening one cannot compact a real page at the configured cap.
@@ -215,7 +247,9 @@ namespace PawnDiary
             bool useFrozenMood = false,
             bool includeRecipientDiaryRef = true,
             bool captureKnowledge = true,
-            bool applyDiaryEventLimits = true)
+            bool applyDiaryEventLimits = true,
+            bool initiatorEligibilityAlreadyVerified = false,
+            bool recipientEligibilityAlreadyVerified = false)
         {
             IReadOnlyList<DiaryEvent> activeEvents = ActiveScanEvents();
             string initiatorId = initiator.GetUniqueLoadID();
@@ -329,7 +363,9 @@ namespace PawnDiary
                 initiator,
                 recipient,
                 includeRecipientDiaryRef,
-                historicalTick >= 0))
+                historicalTick >= 0,
+                initiatorEligibilityAlreadyVerified,
+                recipientEligibilityAlreadyVerified))
             {
                 return null;
             }
@@ -404,6 +440,35 @@ namespace PawnDiary
         {
             return AddSoloEventCore(
                 pawn, otherPawn, defName, label, text, instruction, gameContext, null, -1, null, null);
+        }
+
+        /// <summary>
+        /// Atomically creates a solo page for an exact writer whose diary eligibility was frozen before
+        /// an irreversible vanilla transition. The caller must supply only that captured writer.
+        /// </summary>
+        internal DiaryEvent AddPreverifiedSoloEvent(
+            Pawn pawn,
+            Pawn otherPawn,
+            string defName,
+            string label,
+            string text,
+            string instruction,
+            string gameContext,
+            int historicalTick)
+        {
+            return AddSoloEventCore(
+                pawn,
+                otherPawn,
+                defName,
+                label,
+                text,
+                instruction,
+                gameContext,
+                null,
+                historicalTick,
+                null,
+                null,
+                initiatorEligibilityAlreadyVerified: true);
         }
 
         /// <summary>Creates a solo page with one plain event-relative belief evidence row.</summary>
@@ -564,7 +629,8 @@ namespace PawnDiary
             bool useFrozenMood = false,
             int generationReadyTick = -1,
             bool captureKnowledge = true,
-            bool applyDiaryEventLimits = true)
+            bool applyDiaryEventLimits = true,
+            bool initiatorEligibilityAlreadyVerified = false)
         {
             IReadOnlyList<DiaryEvent> activeEvents = ActiveScanEvents();
             string pawnId = pawn.GetUniqueLoadID();
@@ -641,7 +707,9 @@ namespace PawnDiary
                 pawn,
                 null,
                 includeRecipientOwner: false,
-                insertChronologically: historicalTick >= 0))
+                insertChronologically: historicalTick >= 0,
+                initiatorEligibilityAlreadyVerified: initiatorEligibilityAlreadyVerified,
+                recipientEligibilityAlreadyVerified: false))
             {
                 return null;
             }

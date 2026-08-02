@@ -81,7 +81,9 @@ namespace PawnDiary.Ingestion
                 : group.LabelCap.Resolve();
             string text = FallbackText();
             Pawn otherPawn = ReferenceEquals(writer, subject) ? null : subject;
-            CreatedEvent = CreateSoloEvent(
+            // The selected writer came from the exact pre-transition snapshot. A departure can make
+            // that pawn live-ineligible before this postfix emits, so commit the frozen owner directly.
+            CreatedEvent = CreatePreverifiedSoloEvent(
                 sink,
                 writer,
                 otherPawn,

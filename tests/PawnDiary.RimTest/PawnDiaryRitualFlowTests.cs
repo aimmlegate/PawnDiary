@@ -917,10 +917,26 @@ namespace PawnDiary.RimTests
 
         private static void AssignExactLeader(Ideo ideology, Pawn pawn)
         {
+            PreceptDef leaderDef = DefDatabase<PreceptDef>.GetNamedSilentFail("IdeoRole_Leader");
             Precept_Role leader = ideology?.RolesListForReading.FirstOrDefault(role =>
-                role?.def?.defName == "IdeoRole_Leader"
-                    && role.ChosenPawnSingle() == null && role.RequirementsMet(pawn));
-            PawnDiaryRimTestScope.Require(leader != null,
+                role?.def == leaderDef && role.ChosenPawnSingle() == null);
+            if (leader == null && ideology != null && leaderDef != null)
+            {
+                // IdeoGenerator is allowed to vary its generated special-precept set. This positive
+                // authority fixture needs the exact installed role, so establish it explicitly.
+                leader = PreceptMaker.MakePrecept(leaderDef) as Precept_Role;
+                if (leader != null)
+                    ideology.AddPrecept(leader, false, Faction.OfPlayer.def, null);
+            }
+
+            if (leader != null)
+            {
+                // Generated roles may randomly restrict assignment to the Ideology's preferred gender.
+                // The disposable fixture tests speech enrichment, not that unrelated random restriction.
+                leader.restrictToSupremeGender = false;
+            }
+
+            PawnDiaryRimTestScope.Require(leader != null && leader.RequirementsMet(pawn),
                 "The registered authority-speech Ideology exposed no assignable leader role.");
             leader.Assign(pawn, false);
             scope.RegisterCleanup(() =>
