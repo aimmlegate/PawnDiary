@@ -3,6 +3,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using PawnDiary;
 
 namespace DiaryPatchManifestTests
@@ -20,6 +22,7 @@ namespace DiaryPatchManifestTests
             TestNullSafety();
             TestCaps();
             TestResetAndSnapshotCopy();
+            TestPatchCircuitBreaker();
             TestIndependentActionsContinueAfterFailure();
             TestLivePawnSnapshotIncludesTravellingTransporters();
             TestErrorTransportCannotBypassLocalLog();
@@ -182,6 +185,32 @@ namespace DiaryPatchManifestTests
                 "reset clears manifest",
                 0,
                 DiaryPatchManifest.Count(DiaryPatchManifest.HookStatus.Applied));
+        }
+
+        private static void TestPatchCircuitBreaker()
+        {
+            PatchCircuitBreaker breaker = new PatchCircuitBreaker();
+            AssertTrue("new patch context is active", !breaker.IsDisabled("hot-hook"));
+            AssertTrue("first fault opens circuit", breaker.Disable("hot-hook"));
+            AssertTrue("faulted patch context is disabled", breaker.IsDisabled("hot-hook"));
+            AssertTrue("repeat fault does not reopen circuit", !breaker.Disable("hot-hook"));
+            AssertTrue("other patch context remains active", !breaker.IsDisabled("other-hook"));
+
+            int firstTransitions = 0;
+            Parallel.For(0, 64, delegate(int ignored)
+            {
+                if (breaker.Disable("parallel-hook"))
+                {
+                    Interlocked.Increment(ref firstTransitions);
+                }
+            });
+            AssertEqual("parallel fault has one first transition", 1, firstTransitions);
+
+            AssertTrue("null context can be disabled", breaker.Disable(null));
+            AssertTrue("null context lookup is safe", breaker.IsDisabled(null));
+            breaker.Reset();
+            AssertTrue("session reset re-enables named context", !breaker.IsDisabled("hot-hook"));
+            AssertTrue("session reset re-enables null context", !breaker.IsDisabled(null));
         }
 
         private static void TestIndependentActionsContinueAfterFailure()

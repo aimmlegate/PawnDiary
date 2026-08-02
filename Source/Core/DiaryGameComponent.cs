@@ -228,6 +228,9 @@ namespace PawnDiary
             // Reset the error reporter's per-session dedupe/caps alongside the LLM session. Statics
             // leak across exit-to-menu + load, so clearing here keeps each loaded game's reporting fresh.
             DiaryErrorReporter.ResetSession();
+            // A compatibility fault disables only its failing Harmony observation for one loaded Game.
+            // Give the next game a clean attempt instead of leaking that circuit-breaker state.
+            DiaryPatchSafety.ResetSession();
             DeathContextCache.Clear();
             ArrivalContextCache.Clear();
             ResetBiotechGrowthTransientState();

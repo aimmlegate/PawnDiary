@@ -1,8 +1,9 @@
 // One defensive choke point for Harmony patch bodies. Our prefixes/postfixes run *inside* the
 // vanilla method we hooked, so an exception escaping one of them propagates into that game method
 // and breaks the mechanic (death, recruitment, incidents, social logging, ...) for the whole game.
-// These helpers run a patch body, and on any failure log it once and let vanilla continue as if the
-// diary hook were not there. See AGENTS.md ("Harmony patches").
+// These helpers run a patch body, and on the first failure disable that exact observation context,
+// warn once, and let vanilla continue as if the diary hook were not there. See AGENTS.md
+// ("Harmony patches").
 using System;
 using Verse;
 
@@ -14,13 +15,28 @@ namespace PawnDiary
     /// </summary>
     internal static class DiaryPatchSafety
     {
+        private static readonly PatchCircuitBreaker CircuitBreaker = new PatchCircuitBreaker();
+
         /// <summary>
-        /// Runs a void prefix/postfix body. Any exception is logged once per context + exception
-        /// fingerprint (so recurring failures do not spam but distinct failures remain visible) and
-        /// swallowed, leaving the vanilla method's own result untouched.
+        /// Re-enables contexts disabled by a previous loaded game. Static state otherwise survives an
+        /// exit to the menu and could unnecessarily disable a healthy hook in the next session.
+        /// </summary>
+        public static void ResetSession()
+        {
+            CircuitBreaker.Reset();
+        }
+
+        /// <summary>
+        /// Runs a void prefix/postfix body. The first exception warns and disables this exact context
+        /// for the loaded game; later calls skip it, leaving the vanilla method's result untouched.
         /// </summary>
         public static void Run(string context, Action body)
         {
+            if (CircuitBreaker.IsDisabled(context))
+            {
+                return;
+            }
+
             try
             {
                 body();
@@ -42,6 +58,11 @@ namespace PawnDiary
         /// </summary>
         public static void Run<TState>(string context, TState state, Action<TState> body)
         {
+            if (CircuitBreaker.IsDisabled(context))
+            {
+                return;
+            }
+
             try
             {
                 body(state);
@@ -63,6 +84,11 @@ namespace PawnDiary
             Func<TState, TResult> body,
             TResult fallback)
         {
+            if (CircuitBreaker.IsDisabled(context))
+            {
+                return fallback;
+            }
+
             try
             {
                 return body(state);
@@ -81,6 +107,11 @@ namespace PawnDiary
         /// </summary>
         public static bool RunPrefix(string context, bool fallback, Func<bool> body)
         {
+            if (CircuitBreaker.IsDisabled(context))
+            {
+                return fallback;
+            }
+
             try
             {
                 return body();
@@ -94,18 +125,24 @@ namespace PawnDiary
 
         private static void LogFailure(string context, Exception e)
         {
-            // Distinct exception paths at the same patch must remain distinguishable. The old context-only
-            // key hid a second failure mode after the first one had claimed ErrorOnce for that patch.
-            string fingerprint = DiaryTelemetryReporter.RecordException(
+            // Disable before diagnostics: a second callback on another thread must already see the open
+            // circuit, and a diagnostics failure must never leave a hot path retrying broken code.
+            if (!CircuitBreaker.Disable(context))
+            {
+                return;
+            }
+
+            DiaryTelemetryReporter.RecordException(
                 DiaryTelemetryOutcome.PatchException,
                 "harmony.patch",
                 context,
                 null,
                 e,
                 -1);
-            Log.ErrorOnce(
-                "[Pawn Diary] " + context + " failed and was skipped: " + e,
-                DiaryTelemetryReporter.ErrorOnceKey(context, fingerprint));
+            Log.Warning(
+                "[Pawn Diary] " + (context ?? string.Empty)
+                    + " failed and its diary hook was disabled for the rest of this game session; "
+                    + "vanilla behavior will continue: " + e);
         }
     }
 }

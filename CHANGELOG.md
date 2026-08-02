@@ -6,6 +6,10 @@ Companion: [repowiki/README.md](repowiki/README.md) describes the current state.
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-08-02
+
+- **Runtime hook circuit breaker.** A failing diary Harmony context now emits one warning and disables itself for the loaded game, preventing compatibility faults from flooding logs or repeatedly taxing vanilla hot paths.
+
 ## 2026-07-30
 
 - **Atomic event ownership commits.** Rejected diary-owner references now roll back the new event row, preventing `missing_owner_refs` and persistent orphan events.
