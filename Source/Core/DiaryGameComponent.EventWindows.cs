@@ -202,7 +202,7 @@ namespace PawnDiary
                 return;
             }
 
-            string label = DiaryLineCleaner.CleanLine(hediff.LabelCap);
+            string label = DiaryLineCleaner.CleanLine(HediffLabelCapture.ReadLabelCap(hediff));
             if (string.IsNullOrWhiteSpace(label))
             {
                 label = DiaryLineCleaner.CleanLine(hediff.def.LabelCap.Resolve());

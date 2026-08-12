@@ -502,14 +502,30 @@ namespace PawnDiary
                             continue;
                         }
 
-                        string label = DiaryLineCleaner.CleanLine(hediff.LabelCap);
-                        if (!MatchesObservedConditionDef(def, hediff.def.defName, label))
+                        string defName = hediff.def.defName;
+                        bool matchedByDefName = MatchesObservedConditionDef(
+                            def,
+                            defName,
+                            string.Empty);
+                        bool canMatchByLabel = !IsMatcherListEmpty(def.matchLabels);
+                        if (!matchedByDefName && !canMatchByLabel)
+                        {
+                            continue;
+                        }
+
+                        // Exact/name-substring matches need display text only when evidence is enabled.
+                        // Label-only compatibility matchers still get one guarded virtual getter read.
+                        string label = def.maxEvidenceLabels > 0 || !matchedByDefName
+                            ? DiaryLineCleaner.CleanLine(HediffLabelCapture.ReadLabelCap(hediff))
+                            : string.Empty;
+                        if (!matchedByDefName
+                            && !MatchesObservedConditionDef(def, defName, label))
                         {
                             continue;
                         }
 
                         observations.Add(NewObservation(def, -1, pawn.GetUniqueLoadID(),
-                            hediff.def.defName, label, 1));
+                            defName, label, 1));
                         break; // one observation per pawn.
                     }
                 }
@@ -624,7 +640,10 @@ namespace PawnDiary
 
                         // NOTE: deliberately no hediff.Visible gate — this observer's contract is to sense
                         // hidden state. Reveal-protection lives at the evidence-label level (empty here).
-                        if (MatchesObservedConditionDef(def, hediff.def.defName, hediff.LabelCap))
+                        // Hidden observers intentionally record presence only. Do not evaluate the
+                        // live label: besides risking a third-party virtual getter, doing so could
+                        // reveal the diagnosis that this observer's evidence contract suppresses.
+                        if (MatchesObservedConditionDef(def, hediff.def.defName, string.Empty))
                         {
                             anyInfected = true;
                             break;

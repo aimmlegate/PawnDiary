@@ -618,12 +618,12 @@ namespace PawnDiary
 
         private static string HediffDefName(Hediff hediff)
         {
-            return hediff?.def?.defName ?? hediff?.Label ?? string.Empty;
+            return hediff?.def?.defName ?? HediffLabelCapture.ReadLabel(hediff);
         }
 
         private static string HediffLabel(Hediff hediff)
         {
-            string label = DiaryLineCleaner.CleanLine(hediff?.LabelCap);
+            string label = DiaryLineCleaner.CleanLine(HediffLabelCapture.ReadLabelCap(hediff));
             if (!string.IsNullOrWhiteSpace(label))
             {
                 return label;

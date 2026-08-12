@@ -357,7 +357,8 @@ namespace PawnDiary
                 return PromptText(def.conditionKey);
             }
 
-            string condition = PromptTextSanitizer.LocalizedPromptText(hediff.LabelCap);
+            string condition = PromptTextSanitizer.LocalizedPromptText(
+                HediffLabelCapture.ReadLabelCap(hediff));
             if (string.IsNullOrWhiteSpace(condition))
             {
                 condition = PromptTextSanitizer.LocalizedPromptText(hediff.def?.label);

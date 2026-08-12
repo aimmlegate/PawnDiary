@@ -276,7 +276,8 @@ namespace PawnDiary
                     continue;
                 }
 
-                string label = GameContextValue.Sanitize(DiaryLineCleaner.CleanLine(hediff.LabelCap));
+                string label = GameContextValue.Sanitize(
+                    DiaryLineCleaner.CleanLine(HediffLabelCapture.ReadLabelCap(hediff)));
                 if (hediff.Part != null)
                 {
                     label += " (" + GameContextValue.Sanitize(

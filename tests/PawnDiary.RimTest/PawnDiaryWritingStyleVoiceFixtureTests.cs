@@ -187,6 +187,31 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// A broken optional-mod label getter on one earlier hediff cannot prevent a later valid hediff
+        /// from selecting its writing style. This mirrors compatibility failures where a HediffComp
+        /// throws while RimWorld assembles <see cref="Hediff.Label"/>.
+        /// </summary>
+        [Test]
+        public static void ThrowingHediffLabelDoesNotBlockLaterOverride()
+        {
+            Hediff broken = AddThrowingLabelHediff();
+            AddDrunkHediff();
+
+            WritingStyleResolution resolution = scope.Component.ResolveWritingStyleFor(pawn);
+            PawnDiaryRimTestScope.Require(
+                resolution.source == WritingStyleRuleSource.HediffOverride
+                    && string.Equals(
+                        resolution.hediffStyleDefName,
+                        DrunkPersonaDefName,
+                        StringComparison.Ordinal),
+                "A throwing earlier Hediff.Label prevented the later AlcoholHigh override.");
+
+            // Keep the synthetic hediff's lifetime as short as possible; cleanup remains registered
+            // as a failure-safe fallback when an assertion above aborts the test.
+            RemoveHediffDirectly(pawn, broken);
+        }
+
+        /// <summary>
         /// §5.2. Removing the active hediff promotes the saved pawn-custom prompt to effective — the
         /// resolution flips to PawnCustom and the custom sentinel reaches the prompt — while the saved base
         /// picker is untouched.
@@ -340,6 +365,20 @@ namespace PawnDiary.RimTests
             return hediff;
         }
 
+        private static Hediff AddThrowingLabelHediff()
+        {
+            ThrowingLabelHediff hediff = new ThrowingLabelHediff
+            {
+                def = RequireDef<HediffDef>("Bruise"),
+                pawn = pawn
+            };
+            // Insert directly so vanilla AddHediff setup cannot inspect the intentionally broken
+            // display label before the production persona adapter gets its turn.
+            pawn.health.hediffSet.hediffs.Insert(0, hediff);
+            scope.RegisterCleanup(() => RemoveHediffDirectly(pawn, hediff));
+            return hediff;
+        }
+
         private static void RestoreBasePicker()
         {
             // Both the record and these edits are removed at teardown; restoring is defensive so no test
@@ -421,6 +460,24 @@ namespace PawnDiary.RimTests
                 && subject.health.hediffSet.hediffs.Contains(hediff))
             {
                 subject.health.RemoveHediff(hediff);
+            }
+        }
+
+        private static void RemoveHediffDirectly(Pawn subject, Hediff hediff)
+        {
+            subject?.health?.hediffSet?.hediffs?.Remove(hediff);
+        }
+
+        private sealed class ThrowingLabelHediff : Hediff
+        {
+            public override string Label
+            {
+                get
+                {
+                    throw new TypeInitializationException(
+                        "OptionalMod.BrokenInitializer",
+                        new InvalidOperationException("intentional writing-style regression-test fault"));
+                }
             }
         }
 

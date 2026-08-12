@@ -118,9 +118,10 @@ namespace PawnDiary
                 return new HediffPersonaOverrideSelection();
             }
 
+            List<HediffPersonaOverrideRule> rules = RulesFor(defs);
             HediffPersonaOverrideSelection selected = HediffPersonaOverridePolicy.SelectOverride(
-                RulesFor(defs),
-                FactsFor(pawn));
+                rules,
+                FactsFor(pawn, AnyRuleMatchesLabels(rules)));
             return DiaryPersonas.ForDefName(selected.personaDefName) == null
                 ? new HediffPersonaOverrideSelection()
                 : selected;
@@ -147,7 +148,34 @@ namespace PawnDiary
             return rules;
         }
 
-        private static List<HediffPersonaOverrideFact> FactsFor(Pawn pawn)
+        private static bool AnyRuleMatchesLabels(List<HediffPersonaOverrideRule> rules)
+        {
+            if (rules == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < rules.Count; i++)
+            {
+                List<string> labels = rules[i]?.hediffLabelContains;
+                if (labels == null)
+                {
+                    continue;
+                }
+
+                for (int j = 0; j < labels.Count; j++)
+                {
+                    if (!string.IsNullOrWhiteSpace(labels[j]))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static List<HediffPersonaOverrideFact> FactsFor(Pawn pawn, bool includeLabels)
         {
             List<HediffPersonaOverrideFact> facts = new List<HediffPersonaOverrideFact>();
             List<Hediff> hediffs = pawn?.health?.hediffSet?.hediffs;
@@ -167,7 +195,11 @@ namespace PawnDiary
                 facts.Add(new HediffPersonaOverrideFact
                 {
                     defName = hediff.def?.defName ?? string.Empty,
-                    label = DiaryLineCleaner.CleanLine(hediff.Label),
+                    // Most rules use stable defNames, so avoid the virtual getter entirely unless a
+                    // loaded compatibility Def explicitly asks for label matching.
+                    label = includeLabels
+                        ? DiaryLineCleaner.CleanLine(HediffLabelCapture.ReadLabel(hediff))
+                        : string.Empty,
                     severity = hediff.Severity,
                     visible = hediff.Visible
                 });

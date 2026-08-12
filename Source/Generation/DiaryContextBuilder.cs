@@ -1128,7 +1128,7 @@ namespace PawnDiary
             foreach (string label in pawn.health.hediffSet.hediffs
                 .Where(hediff => hediff != null && hediff.Visible && (hediff.IsCurrentlyLifeThreatening || hediff.Bleeding || hediff.PainOffset > 0f || HealthImpactPolicy.IsMeaningfulHarm(hediff.SummaryHealthPercentImpact, 0.05f)))
                 .OrderByDescending(hediff => hediff.IsCurrentlyLifeThreatening ? 100f : hediff.BleedRate + hediff.PainOffset + HealthImpactPolicy.NormalizedHarm(hediff.SummaryHealthPercentImpact))
-                .Select(hediff => ExternalText(hediff.Label))
+                .Select(hediff => ExternalText(HediffLabelCapture.ReadLabel(hediff)))
                 .Where(label => !string.IsNullOrWhiteSpace(label))
                 .Take(2))
             {

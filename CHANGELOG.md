@@ -6,6 +6,10 @@ Companion: [repowiki/README.md](repowiki/README.md) describes the current state.
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-08-13
+
+- **Third-party hediff label isolation.** Broken optional-mod label getters now degrade to fallback text without aborting diary dispatch or observed-condition ticks.
+
 ## 2026-08-02
 
 - **Runtime hook circuit breaker.** A failing diary Harmony context now emits one warning and disables itself for the loaded game, preventing compatibility faults from flooding logs or repeatedly taxing vanilla hot paths.
