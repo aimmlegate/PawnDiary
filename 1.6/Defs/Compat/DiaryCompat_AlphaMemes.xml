@@ -19,6 +19,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>alphamemes_funeral</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Alpha Memes funerals</label>
     <order>766</order>
     <domain>Ritual</domain>
@@ -62,6 +63,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>alphamemes_rituals</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Alpha Memes rituals</label>
     <order>767</order>
     <domain>Ritual</domain>
@@ -91,6 +93,7 @@
        flood guard, so this group intentionally has no batch policy. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>alphamemes_thoughts</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Alpha Memes aftereffects</label>
     <order>486</order>
     <domain>Thought</domain>
@@ -116,6 +119,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>alphamemes_baptism</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Baptism speeches</label>
     <order>19</order>
     <domain>Interaction</domain>
@@ -142,6 +146,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>alphamemes_hediffs</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Ritual fervor</label>
     <order>656</order>
     <domain>Hediff</domain>

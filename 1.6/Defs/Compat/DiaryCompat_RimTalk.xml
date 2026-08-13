@@ -7,6 +7,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>rimtalk_chatter</defName>
+    <frequencyTier>ambient</frequencyTier>
     <label>RimTalk conversations</label>
     <order>17</order>
     <domain>Interaction</domain>

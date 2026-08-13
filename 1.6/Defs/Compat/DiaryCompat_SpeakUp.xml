@@ -8,6 +8,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>speakup_chitchat</defName>
+    <frequencyTier>ambient</frequencyTier>
     <label>SpeakUp chatter</label>
     <order>18</order>
     <domain>Interaction</domain>

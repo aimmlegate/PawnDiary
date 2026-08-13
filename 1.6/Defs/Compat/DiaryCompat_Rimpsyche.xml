@@ -9,6 +9,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>rimpsyche_chatter</defName>
+    <frequencyTier>ambient</frequencyTier>
     <label>Rimpsyche conversations</label>
     <order>12</order>
     <domain>Interaction</domain>
@@ -63,6 +64,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>rimpsyche_afterfeel</defName>
+    <frequencyTier>ambient</frequencyTier>
     <label>conversation afterfeel</label>
     <order>482</order>
     <domain>Thought</domain>

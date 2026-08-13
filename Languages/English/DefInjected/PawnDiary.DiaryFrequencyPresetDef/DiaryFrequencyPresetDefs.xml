@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <PawnDiary_Frequency_Lite.label>Lite</PawnDiary_Frequency_Lite.label>
+  <PawnDiary_Frequency_Lite.description>Writes major milestones reliably while sharply reducing routine, ambient, and long-form pages.</PawnDiary_Frequency_Lite.description>
+  <PawnDiary_Frequency_Standard.label>Standard</PawnDiary_Frequency_Standard.label>
+  <PawnDiary_Frequency_Standard.description>Preserves Pawn Diary&apos;s existing default event frequency.</PawnDiary_Frequency_Standard.description>
+  <PawnDiary_Frequency_Frequent.label>Frequent</PawnDiary_Frequency_Frequent.label>
+  <PawnDiary_Frequency_Frequent.description>Raises existing sampling chances for more everyday pages without inventing or duplicating events.</PawnDiary_Frequency_Frequent.description>
+</LanguageData>

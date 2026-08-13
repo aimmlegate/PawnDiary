@@ -15,6 +15,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>vte_thoughts</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Trait-shaped memories</label>
     <order>489</order>
     <domain>Thought</domain>
@@ -52,6 +53,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>vte_mentalbreaks</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Trait-driven mental breaks</label>
     <order>198</order>
     <domain>MentalState</domain>

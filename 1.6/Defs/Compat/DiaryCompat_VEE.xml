@@ -32,6 +32,7 @@
        batched, so there is intentionally no <batch> block. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>vee_raids</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>VEE purple raids</label>
     <order>704</order>
     <domain>Raid</domain>
@@ -66,6 +67,7 @@
        condition tints rather than a dead Thought-domain group. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>vee_hediffs</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>VEE ambient conditions</label>
     <order>655</order>
     <domain>Hediff</domain>

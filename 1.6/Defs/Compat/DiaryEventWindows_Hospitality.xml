@@ -83,6 +83,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>eventWindowHospitalityGuestsArrived</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Guests arrived</label>
     <order>148</order>
     <domain>Interaction</domain>
@@ -105,6 +106,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>eventWindowHospitalityGuestJoined</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>A guest asked to join</label>
     <order>149</order>
     <domain>Interaction</domain>

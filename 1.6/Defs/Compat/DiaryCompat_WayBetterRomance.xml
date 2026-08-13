@@ -14,6 +14,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>wbr_hookup</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Hookup attempts</label>
     <order>15</order>
     <domain>Interaction</domain>
@@ -41,6 +42,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>wbr_askedout</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Date and hangout invitations</label>
     <order>16</order>
     <domain>Interaction</domain>
@@ -95,6 +97,7 @@
        saved pages classified, while package matching covers new WBR memories in live capture. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>wbr_thoughts</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Romantic aftermath</label>
     <order>488</order>
     <domain>Thought</domain>

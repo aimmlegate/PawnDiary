@@ -66,6 +66,166 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Proves RimWorld's real XML loader can instantiate all three frequency presets and retains
+        /// an explicit supported tier on every shipped player-facing interaction group.
+        /// </summary>
+        [Test]
+        public static void FrequencyPresetsAndGroupTiersAreLoaded()
+        {
+            DiaryFrequencyPresetDef lite =
+                RequireDef<DiaryFrequencyPresetDef>(DiaryFrequencyPresets.LiteDefName);
+            DiaryFrequencyPresetDef standard =
+                RequireDef<DiaryFrequencyPresetDef>(DiaryFrequencyPresets.StandardDefName);
+            RequireDef<DiaryFrequencyPresetDef>(DiaryFrequencyPresets.FrequentDefName);
+
+            DiaryFrequencyPresetSnapshot liteSnapshot = DiaryFrequencyPresets.Snapshot(lite);
+            DiaryFrequencyPresetSnapshot standardSnapshot = DiaryFrequencyPresets.Snapshot(standard);
+            Assert.That(liteSnapshot.tierMultipliers[DiaryFrequencyTiers.Essential] == 1f);
+            Assert.That(liteSnapshot.tierMultipliers[DiaryFrequencyTiers.Ambient] == 0.15f);
+
+            // DefDatabase contains rows from every active mod, including third-party extensions of
+            // our public Def type. modContentPack.PackageId is RimWorld's ownership marker; anchor
+            // the filter to one required Pawn Diary Def so release/development package ids both work.
+            string pawnDiaryPackageId = standard.modContentPack?.PackageId ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(pawnDiaryPackageId))
+            {
+                throw new AssertionException(
+                    "The Standard frequency preset has no owning modContentPack package id.");
+            }
+
+            List<DiaryInteractionGroupDef> groups =
+                DefDatabase<DiaryInteractionGroupDef>.AllDefsListForReading;
+            int controlled = 0;
+            int external = 0;
+            for (int i = 0; i < groups.Count; i++)
+            {
+                DiaryInteractionGroupDef group = groups[i];
+                string ownerPackageId = group?.modContentPack?.PackageId ?? string.Empty;
+                if (!string.Equals(
+                    ownerPackageId,
+                    pawnDiaryPackageId,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (group.domain == GroupDomain.External)
+                {
+                    external++;
+                    continue;
+                }
+
+                controlled++;
+                if (!DiaryFrequencyTiers.IsKnown(group.frequencyTier))
+                {
+                    throw new AssertionException(
+                        "Frequency-controlled group '" + group.defName
+                        + "' loaded without a supported frequencyTier.");
+                }
+
+                Assert.That(DiaryFrequencyPolicy.ResolvePresetMultiplier(
+                    standardSnapshot,
+                    group.defName,
+                    group.frequencyTier) == 1f);
+            }
+
+            Assert.That(controlled == 147);
+            Assert.That(external == 1);
+        }
+
+        /// <summary>
+        /// Exercises malformed and partial frequency Defs at the impure XML-to-pure-snapshot edge.
+        /// The pure policy has broader arithmetic coverage; these cases prove the RimWorld adapter
+        /// trims stable keys, copies rows, ignores unknown rows, and retains safe fallback behavior.
+        /// </summary>
+        [Test]
+        public static void FrequencyPresetAdapterHandlesPartialAndMalformedDefs()
+        {
+            DiaryFrequencyPresetSnapshot nullSnapshot =
+                DiaryFrequencyPresets.Snapshot((DiaryFrequencyPresetDef)null);
+            Assert.That(nullSnapshot.presetKey == DiaryFrequencyPresets.StandardDefName);
+            Assert.That(nullSnapshot.tierMultipliers[DiaryFrequencyTiers.Essential] == 1f);
+            Assert.That(nullSnapshot.tierMultipliers[DiaryFrequencyTiers.Significant] == 1f);
+            Assert.That(nullSnapshot.tierMultipliers[DiaryFrequencyTiers.Routine] == 1f);
+            Assert.That(nullSnapshot.tierMultipliers[DiaryFrequencyTiers.Ambient] == 1f);
+
+            // A partially loaded third-party Def is still a real preset snapshot. Missing lists and
+            // missing tier rows inherit the pure policy's Standard 1x corruption fallback.
+            DiaryFrequencyPresetDef partial = new DiaryFrequencyPresetDef
+            {
+                defName = "PawnDiary_RimTest_PartialFrequency"
+            };
+            DiaryFrequencyPresetSnapshot partialSnapshot = DiaryFrequencyPresets.Snapshot(partial);
+            Assert.That(partialSnapshot.presetKey == partial.defName);
+            Assert.That(DiaryFrequencyPolicy.ResolvePresetMultiplier(
+                partialSnapshot,
+                "thirdPartyGroup",
+                DiaryFrequencyTiers.Routine) == 1f);
+
+            DiaryFrequencyPresetDef malformed = new DiaryFrequencyPresetDef
+            {
+                defName = "PawnDiary_RimTest_MalformedFrequency",
+                tierMultipliers = new List<DiaryFrequencyTierMultiplier>
+                {
+                    null,
+                    new DiaryFrequencyTierMultiplier { tier = " ROUTINE ", multiplier = 0.25f },
+                    new DiaryFrequencyTierMultiplier { tier = "routine", multiplier = 0.75f },
+                    new DiaryFrequencyTierMultiplier { tier = "SIGNIFICANT", multiplier = float.NaN },
+                    new DiaryFrequencyTierMultiplier { tier = "future-tier", multiplier = 0.2f },
+                    new DiaryFrequencyTierMultiplier { tier = " ", multiplier = 0.2f }
+                },
+                groupOverrides = new List<DiaryFrequencyGroupMultiplier>
+                {
+                    null,
+                    new DiaryFrequencyGroupMultiplier { groupKey = " dayreflection ", multiplier = 0.4f },
+                    new DiaryFrequencyGroupMultiplier { groupKey = "DAYREFLECTION", multiplier = 0.8f },
+                    new DiaryFrequencyGroupMultiplier
+                    {
+                        groupKey = "brokenGroup",
+                        multiplier = float.PositiveInfinity
+                    },
+                    new DiaryFrequencyGroupMultiplier { groupKey = " ", multiplier = 0.2f }
+                }
+            };
+
+            DiaryFrequencyPresetSnapshot malformedSnapshot =
+                DiaryFrequencyPresets.Snapshot(malformed);
+            Assert.That(malformedSnapshot.tierMultipliers.Count == 2);
+            Assert.That(malformedSnapshot.groupOverrides.Count == 2);
+            Assert.That(DiaryFrequencyPolicy.ResolvePresetMultiplier(
+                malformedSnapshot,
+                "ordinaryGroup",
+                "RoUtInE") == 0.25f);
+            Assert.That(DiaryFrequencyPolicy.ResolvePresetMultiplier(
+                malformedSnapshot,
+                "DAYREFLECTION",
+                DiaryFrequencyTiers.Ambient) == 0.4f);
+            Assert.That(DiaryFrequencyPolicy.ResolvePresetMultiplier(
+                malformedSnapshot,
+                "brokenGroup",
+                DiaryFrequencyTiers.Routine) == 0.25f);
+            Assert.That(DiaryFrequencyPolicy.ResolvePresetMultiplier(
+                malformedSnapshot,
+                "ordinaryGroup",
+                DiaryFrequencyTiers.Significant) == 1f);
+
+            // Snapshot rows are detached values. Later XML-Def mutation must not reinterpret a
+            // pending/runtime request that already froze its selected preset.
+            malformed.tierMultipliers[1].multiplier = 0.9f;
+            malformed.groupOverrides[1].multiplier = 0.9f;
+            Assert.That(malformedSnapshot.tierMultipliers[DiaryFrequencyTiers.Routine] == 0.25f);
+            Assert.That(malformedSnapshot.groupOverrides["dayreflection"] == 0.4f);
+
+            DiaryFrequencyPresetSnapshot unknownSnapshot =
+                DiaryFrequencyPresets.Snapshot("  PawnDiary_RimTest_MissingFrequencyPreset  ");
+            Assert.That(unknownSnapshot.presetKey == DiaryFrequencyPresets.StandardDefName);
+            Assert.That(DiaryFrequencyPolicy.ResolvePresetMultiplier(
+                unknownSnapshot,
+                "unknownGroup",
+                DiaryFrequencyTiers.Ambient) == 1f);
+        }
+
+        /// <summary>
         /// Verifies that Phase 7's Royal Ascent Def family loaded and root-first Quest routing owns
         /// only the exact Royalty quest. Package gates decide runtime availability separately.
         /// </summary>

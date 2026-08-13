@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <PawnDiary_Frequency_Lite.label>Редко</PawnDiary_Frequency_Lite.label>
+  <PawnDiary_Frequency_Lite.description>Надёжно сохраняет главные вехи, значительно сокращая число повседневных, фоновых и длинных записей.</PawnDiary_Frequency_Lite.description>
+  <PawnDiary_Frequency_Standard.label>Стандартно</PawnDiary_Frequency_Standard.label>
+  <PawnDiary_Frequency_Standard.description>Сохраняет прежнюю стандартную частоту событий Pawn Diary.</PawnDiary_Frequency_Standard.description>
+  <PawnDiary_Frequency_Frequent.label>Часто</PawnDiary_Frequency_Frequent.label>
+  <PawnDiary_Frequency_Frequent.description>Повышает существующие шансы выборки для большего числа повседневных записей, не создавая и не дублируя события.</PawnDiary_Frequency_Frequent.description>
+</LanguageData>

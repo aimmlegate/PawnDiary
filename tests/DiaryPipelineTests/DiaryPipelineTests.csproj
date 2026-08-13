@@ -26,6 +26,7 @@
     <Compile Include="..\..\Source\Pipeline\SocialReflectionContextFormatter.cs" Link="SocialReflectionContextFormatter.cs" />
     <Compile Include="..\..\Source\Pipeline\DigestPacingPolicy.cs" Link="DigestPacingPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\DailyEmissionGuardPolicy.cs" Link="DailyEmissionGuardPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryFrequencyPolicy.cs" Link="DiaryFrequencyPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\LoadedEventRepairPolicy.cs" Link="LoadedEventRepairPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryEventPromptKeys.cs" Link="DiaryEventPromptKeys.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryEntryTitleFilter.cs" Link="DiaryEntryTitleFilter.cs" />

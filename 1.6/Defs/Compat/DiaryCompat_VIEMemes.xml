@@ -15,6 +15,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>viememes_darkrites</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>VIE dark rites</label>
     <order>764</order>
     <domain>Ritual</domain>
@@ -45,6 +46,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>viememes_rituals</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>VIE festivals and rites</label>
     <order>765</order>
     <domain>Ritual</domain>
@@ -72,6 +74,7 @@
   <!-- Thought groups theme eligible memories only; global mood thresholds remain the flood guard. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>viememes_thoughts</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>VIE ritual aftereffects</label>
     <order>487</order>
     <domain>Thought</domain>
@@ -97,6 +100,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>viememes_interrogation</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Interrogations</label>
     <order>22</order>
     <domain>Interaction</domain>

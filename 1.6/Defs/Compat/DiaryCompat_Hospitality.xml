@@ -21,6 +21,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>hospitality_guestwork</defName>
+    <frequencyTier>ambient</frequencyTier>
     <label>Hosting guests</label>
     <order>21</order>
     <domain>Interaction</domain>
@@ -74,6 +75,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>hospitality_scrounge</defName>
+    <frequencyTier>ambient</frequencyTier>
     <label>Guests scrounging food</label>
     <order>23</order>
     <domain>Interaction</domain>

@@ -168,6 +168,7 @@
        deterministic and harmless. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>eventWindowVeeEarthquake</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Earthquake</label>
     <order>145</order>
     <domain>Interaction</domain>
@@ -194,6 +195,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>eventWindowVeeMeteoriteShower</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Meteorite shower</label>
     <order>145</order>
     <domain>Interaction</domain>
@@ -220,6 +222,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>eventWindowVeeSpaceBattle</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Orbital disaster</label>
     <order>146</order>
     <domain>Interaction</domain>
@@ -247,6 +250,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>eventWindowVeeStampede</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Mass animal attack</label>
     <order>147</order>
     <domain>Interaction</domain>

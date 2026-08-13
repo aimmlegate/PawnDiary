@@ -35,6 +35,7 @@ namespace DiaryPipelineTests
             TestAnniversaryPolicy();
             TestDigestPacingPolicy();
             TestDailyEmissionGuardPolicy();
+            TestDiaryFrequencyPolicy();
             TestLoadedEventRepairPolicy();
             TestSocialReflectionPolicy();
             TestCheapXmlExtensionCoverage();

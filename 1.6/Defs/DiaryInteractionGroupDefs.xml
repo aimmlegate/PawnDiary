@@ -16,6 +16,8 @@
                      defNames like RaidEnemy), Quest (matches the lifecycle signal: accepted,
                      completed, failed), or Ritual (matches Precept_Ritual defNames)
     defaultEnabled - whether events in this group are recorded by default
+    frequencyTier  - preset policy bucket: essential, significant, routine, or ambient. Every
+                     non-External shipped row must choose one explicitly; missing/unknown is safe 1x.
     important      - whether entries in this group get the strong importance marker in the Diary tab
     combat         - whether events in this group are combat-related (adds the equipped weapon to the prompt)
     captureRenderedGameText
@@ -94,6 +96,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>romance</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Romance &amp; dating</label>
     <order>20</order>
     <domain>Interaction</domain>
@@ -131,6 +134,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>romance_relation</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Romance milestones</label>
     <order>20</order>
     <domain>Romance</domain>
@@ -157,6 +161,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>recruit</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Recruitment &amp; prison</label>
     <order>30</order>
     <domain>Interaction</domain>
@@ -188,6 +193,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>slavery</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Slavery</label>
     <order>40</order>
     <domain>Interaction</domain>
@@ -214,6 +220,7 @@
        Ideology is absent; no broad token matcher may claim a modded counseling interaction. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>counsel</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Counsel</label>
     <order>45</order>
     <domain>Interaction</domain>
@@ -236,6 +243,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>conversion</defName>
+    <frequencyTier>significant</frequencyTier>
     <colorCue>ideologyBright</colorCue>
     <label>Ideology &amp; conversion</label>
     <order>50</order>
@@ -269,6 +277,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>trial</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Trials &amp; accusations</label>
     <order>60</order>
     <domain>Interaction</domain>
@@ -292,6 +301,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>strangechat</defName>
+    <frequencyTier>ambient</frequencyTier>
     <label>Strange chat</label>
     <order>68</order>
     <domain>Interaction</domain>
@@ -343,6 +353,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>anomaly</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Anomaly &amp; dark</label>
     <order>70</order>
     <domain>Interaction</domain>
@@ -376,6 +387,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>insults</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Insults &amp; fights</label>
     <order>80</order>
     <domain>Interaction</domain>
@@ -425,6 +437,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritual</defName>
+    <frequencyTier>significant</frequencyTier>
     <colorCue>ideology</colorCue>
     <label>Rituals &amp; speeches</label>
     <order>90</order>
@@ -463,6 +476,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>animal</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Animal handling</label>
     <order>100</order>
     <domain>Interaction</domain>
@@ -508,6 +522,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>heartfelt</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Heartfelt talk</label>
     <order>110</order>
     <domain>Interaction</domain>
@@ -544,6 +559,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>teaching</defName>
+    <frequencyTier>ambient</frequencyTier>
     <label>Teaching &amp; lessons</label>
     <order>120</order>
     <domain>Interaction</domain>
@@ -588,6 +604,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>smalltalk</defName>
+    <frequencyTier>ambient</frequencyTier>
     <label>Small talk</label>
     <order>130</order>
     <domain>Interaction</domain>
@@ -661,6 +678,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>arrival</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Arrival</label>
     <order>136</order>
     <domain>Interaction</domain>
@@ -675,6 +693,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>eventWindowVoidMonolith</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Void monolith</label>
     <order>137</order>
     <domain>Interaction</domain>
@@ -700,6 +719,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>eventWindowHeartAttack</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Heart attack</label>
     <order>138</order>
     <domain>Interaction</domain>
@@ -719,6 +739,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>eventWindowBirthday</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Birthday</label>
     <order>139</order>
     <domain>Interaction</domain>
@@ -738,6 +759,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>eventWindowAncientDanger</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Ancient danger</label>
     <order>140</order>
     <domain>Interaction</domain>
@@ -757,6 +779,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>eventWindowPrisonBreak</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Prison break</label>
     <order>141</order>
     <domain>Interaction</domain>
@@ -781,6 +804,7 @@
        the window/condition Def itself. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>eventWindowMechCluster</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Mech cluster</label>
     <order>142</order>
     <domain>Interaction</domain>
@@ -800,6 +824,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>observedPitGate</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Pit gate</label>
     <order>143</order>
     <domain>Interaction</domain>
@@ -819,6 +844,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>observedFleshmassHeart</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Fleshmass heart</label>
     <order>144</order>
     <domain>Interaction</domain>
@@ -842,6 +868,7 @@
        (Source/Pipeline/ArtImmortalizationPolicy.cs). -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>artImmortalized</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Immortalized in art</label>
     <order>145</order>
     <domain>Interaction</domain>
@@ -862,6 +889,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>observedBiotechPollution</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Colony pollution</label>
     <order>146</order>
     <domain>Interaction</domain>
@@ -886,6 +914,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>other</defName>
+    <frequencyTier>ambient</frequencyTier>
     <label>A quiet day</label>
     <order>150</order>
     <domain>Interaction</domain>
@@ -917,6 +946,7 @@
        neutral cue of its own is designed. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>dayreflection</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Day's reflection</label>
     <order>150</order>
     <domain>Reflection</domain>
@@ -944,6 +974,7 @@
        in the wrong domain — the cold pale blue shipped 2026-06-30 and has never rendered. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>quadrumreflection</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Quadrum reflection</label>
     <order>151</order>
     <domain>Reflection</domain>
@@ -980,6 +1011,7 @@
        preceding it. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>reflectionBelief</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Belief reflection</label>
     <order>155</order>
     <domain>Reflection</domain>
@@ -1007,6 +1039,7 @@
        fallbacks; accepted rows freeze their XML-selected polarity cue and localized tone. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>socialReflection</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Social reflection</label>
     <order>156</order>
     <domain>Reflection</domain>
@@ -1029,6 +1062,7 @@
        row above it) a colorCue when that colour is chosen. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>reflection</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Reflection</label>
     <order>160</order>
     <domain>Reflection</domain>
@@ -1052,6 +1086,7 @@
        a plain string and the package gate keeps the row invisible in a no-Ideology game. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>beliefCrisis</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Crisis of belief</label>
     <order>199</order>
     <domain>MentalState</domain>
@@ -1070,6 +1105,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>socialfight</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Social fights</label>
     <order>200</order>
     <domain>MentalState</domain>
@@ -1094,6 +1130,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>insultspree</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Insult sprees</label>
     <order>205</order>
     <domain>MentalState</domain>
@@ -1112,6 +1149,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>mentalbreakViolent</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Violent breaks</label>
     <order>206</order>
     <domain>MentalState</domain>
@@ -1148,6 +1186,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>mentalbreakEscape</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Withdrawal breaks</label>
     <order>207</order>
     <domain>MentalState</domain>
@@ -1179,6 +1218,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>mentalbreakIndulgent</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Compulsive breaks</label>
     <order>208</order>
     <domain>MentalState</domain>
@@ -1210,6 +1250,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>mentalbreak</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Mental breaks</label>
     <order>210</order>
     <domain>MentalState</domain>
@@ -1237,6 +1278,7 @@
        those of the existing Tale owner; the package gate keeps it inert without Royalty. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>personaWeaponMilestone</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Persona weapon milestones</label>
     <order>299</order>
     <domain>Tale</domain>
@@ -1260,6 +1302,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>talecombat</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Combat, injuries &amp; death</label>
     <order>300</order>
     <domain>Tale</domain>
@@ -1326,6 +1369,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>talehealth</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Health &amp; medicine</label>
     <order>310</order>
     <domain>Tale</domain>
@@ -1356,6 +1400,7 @@
   <!-- Biotech B1 canonical birth owner, submitted only after exact ApplyBirthOutcome completion. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>biotechFamilyBirth</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Family birth</label>
     <order>315</order>
     <domain>Tale</domain>
@@ -1378,6 +1423,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>talelife</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Life milestones</label>
     <order>320</order>
     <domain>Tale</domain>
@@ -1408,6 +1454,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>talequality</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Masterworks &amp; legendary crafts</label>
     <order>325</order>
     <domain>Tale</domain>
@@ -1430,6 +1477,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>talework</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Work &amp; achievements</label>
     <order>330</order>
     <domain>Tale</domain>
@@ -1458,6 +1506,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>taleanomaly</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Anomaly horror</label>
     <order>335</order>
     <domain>Tale</domain>
@@ -1483,6 +1532,9 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>taleincident</defName>
+    <!-- This mixed Tale group uniquely owns ship launch/escape. Keep it Essential until those
+         endgame milestones can move to their own settings-visible group without changing saves. -->
+    <frequencyTier>essential</frequencyTier>
     <label>Raids, disasters &amp; colony events</label>
     <order>340</order>
     <domain>Tale</domain>
@@ -1535,6 +1587,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>talequiet</defName>
+    <frequencyTier>ambient</frequencyTier>
     <label>Quiet personal moments</label>
     <order>350</order>
     <domain>Tale</domain>
@@ -1571,6 +1624,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>taleother</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>A notable day</label>
     <order>390</order>
     <domain>Tale</domain>
@@ -1589,6 +1643,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>moodeventPositive</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Positive mood events</label>
     <order>400</order>
     <domain>MoodEvent</domain>
@@ -1615,6 +1670,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>moodeventWeatherHardship</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Climate hardship</label>
     <order>402</order>
     <domain>MoodEvent</domain>
@@ -1645,6 +1701,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>moodeventStormDanger</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Sky violence</label>
     <order>403</order>
     <domain>MoodEvent</domain>
@@ -1673,6 +1730,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>moodeventNegative</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Negative mood events</label>
     <order>410</order>
     <domain>MoodEvent</domain>
@@ -1703,6 +1761,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>moodeventMixed</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Situationally mixed mood events</label>
     <order>405</order>
     <domain>MoodEvent</domain>
@@ -1732,6 +1791,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>moodeventOther</defName>
+    <frequencyTier>ambient</frequencyTier>
     <label>Passing moods</label>
     <order>420</order>
     <domain>MoodEvent</domain>
@@ -1745,6 +1805,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>thoughtPregnancyFamily</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Pregnancy memories</label>
     <order>490</order>
     <domain>Thought</domain>
@@ -1767,6 +1828,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>thoughtPositive</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Positive thoughts</label>
     <order>500</order>
     <domain>Thought</domain>
@@ -1907,6 +1969,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>thoughtNegative</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Negative thoughts</label>
     <order>510</order>
     <domain>Thought</domain>
@@ -2160,6 +2223,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>thoughtOther</defName>
+    <frequencyTier>ambient</frequencyTier>
     <label>Passing thoughts</label>
     <order>520</order>
     <domain>Thought</domain>
@@ -2183,6 +2247,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>inspiration</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Inspirations</label>
     <order>550</order>
     <domain>Inspiration</domain>
@@ -2215,6 +2280,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>workDarkStudy</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Dark study work</label>
     <order>600</order>
     <domain>Work</domain>
@@ -2234,6 +2300,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>workPassion</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Passionate work</label>
     <order>610</order>
     <domain>Work</domain>
@@ -2257,6 +2324,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>workStrain</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Straining work</label>
     <order>620</order>
     <domain>Work</domain>
@@ -2280,6 +2348,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>workRoutine</defName>
+    <frequencyTier>ambient</frequencyTier>
     <label>Routine work</label>
     <order>630</order>
     <domain>Work</domain>
@@ -2305,6 +2374,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>hediffPartGainedAnomalous</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Anomalous body changes</label>
     <order>660</order>
     <domain>Hediff</domain>
@@ -2340,6 +2410,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>hediffPartGainedArtificial</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Artificial body parts</label>
     <order>665</order>
     <domain>Hediff</domain>
@@ -2369,6 +2440,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>hediffPartLostNatural</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Lost body parts</label>
     <order>670</order>
     <domain>Hediff</domain>
@@ -2399,6 +2471,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>hediffPregnancy</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Pregnancy</label>
     <order>680</order>
     <domain>Hediff</domain>
@@ -2431,6 +2504,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>hediffLabor</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Labor</label>
     <order>685</order>
     <domain>Hediff</domain>
@@ -2461,6 +2535,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>hediffAnomalyCompulsion</defName>
+    <frequencyTier>significant</frequencyTier>
     <colorCue>anomalyDeep</colorCue>
     <label>Anomaly compulsions</label>
     <order>690</order>
@@ -2498,6 +2573,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>hediffMajorHealth</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Major health changes</label>
     <order>700</order>
     <domain>Hediff</domain>
@@ -2543,6 +2619,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>raidFriendly</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Friendly arrivals &amp; raids</label>
     <order>705</order>
     <domain>Raid</domain>
@@ -2566,6 +2643,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>raidDropPod</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Drop-pod raids</label>
     <order>706</order>
     <domain>Raid</domain>
@@ -2589,6 +2667,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>raidInfestation</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Infestations</label>
     <order>707</order>
     <domain>Raid</domain>
@@ -2615,6 +2694,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>raidAnomalyEntities</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Entity attacks</label>
     <order>708</order>
     <domain>Raid</domain>
@@ -2653,6 +2733,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>raid</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Raids</label>
     <order>710</order>
     <domain>Raid</domain>
@@ -2684,6 +2765,7 @@
        Quest pages use one deterministic witness instead of an all-colonist fanout. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>questRoyalAscent</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Royal Ascent</label>
     <order>745</order>
     <domain>Quest</domain>
@@ -2707,6 +2789,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>questAccepted</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Quest accepted</label>
     <order>750</order>
     <domain>Quest</domain>
@@ -2725,6 +2808,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>questCompleted</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Quest completed</label>
     <order>755</order>
     <domain>Quest</domain>
@@ -2743,6 +2827,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>questFailed</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Quest failed</label>
     <order>760</order>
     <domain>Quest</domain>
@@ -2769,6 +2854,7 @@
        identities before any mechanical facts are attached. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritualConversion</defName>
+    <frequencyTier>significant</frequencyTier>
     <colorCue>ideologyBright</colorCue>
     <label>Conversion rituals</label>
     <order>759</order>
@@ -2791,6 +2877,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritualRoyal</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Royal rituals</label>
     <order>760</order>
     <domain>Ritual</domain>
@@ -2818,6 +2905,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritualChildbirth</defName>
+    <frequencyTier>essential</frequencyTier>
     <colorCue>biotechBright</colorCue>
     <label>Childbirth ritual</label>
     <order>762</order>
@@ -2838,6 +2926,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritualGravship</defName>
+    <frequencyTier>essential</frequencyTier>
     <colorCue>odyssey</colorCue>
     <label>Gravship launch</label>
     <order>764</order>
@@ -2864,6 +2953,7 @@
        through this group. The package gate hides the setting and keeps capture inert without DLC. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>personaWeaponLifecycle</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Persona weapon bonds</label>
     <order>768</order>
     <domain>PersonaWeapon</domain>
@@ -2891,6 +2981,7 @@
        labor, trade, aerodrone, and unknown modded permits cannot fall through to this group. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>royalPermitDramatic</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Dramatic royal permits</label>
     <order>769</order>
     <domain>RoyalPermit</domain>
@@ -2918,6 +3009,7 @@
        this exact synthetic Def is emitted once after vanilla LandingEnded returns successfully. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>odysseyGravshipLanding</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Gravship landing</label>
     <order>766</order>
     <domain>GravshipJourney</domain>
@@ -2942,6 +3034,7 @@
        this row cannot claim the generic Quest completion unless actor, policy, and group gates pass. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>odysseyMechhiveOutcome</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Fate of the Mechhive</label>
     <order>66</order>
     <domain>Interaction</domain>
@@ -2968,6 +3061,7 @@
        a missing/unknown Anomaly source. No live A1 source is registered in this phase. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>anomalyStudyBreakthrough</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Anomaly study breakthroughs</label>
     <order>61</order>
     <domain>Interaction</domain>
@@ -2990,6 +3084,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>anomalyContainmentBreach</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Anomaly containment breaches</label>
     <order>62</order>
     <domain>Interaction</domain>
@@ -3012,6 +3107,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>anomalyCreepJoinerOutcome</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Visible strange-arrival outcomes</label>
     <order>63</order>
     <domain>Interaction</domain>
@@ -3034,6 +3130,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>anomalyGhoulTransformation</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Ghoul transformations</label>
     <order>64</order>
     <domain>Interaction</domain>
@@ -3056,6 +3153,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>anomalyVoidOutcome</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Answer to the void</label>
     <order>65</order>
     <domain>Interaction</domain>
@@ -3081,6 +3179,7 @@
        Package gates hide these settings and keep classification inert when Anomaly is not active. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritualAnomalyInvitation</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Anomaly invitations</label>
     <order>770</order>
     <domain>Ritual</domain>
@@ -3105,6 +3204,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritualAnomalyFleshAndWeather</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Flesh and hostile weather rituals</label>
     <order>771</order>
     <domain>Ritual</domain>
@@ -3130,6 +3230,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritualAnomalyPredation</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Predatory psychic rituals</label>
     <order>772</order>
     <domain>Ritual</domain>
@@ -3154,6 +3255,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritualAnomalyMind</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Mind-altering psychic rituals</label>
     <order>773</order>
     <domain>Ritual</domain>
@@ -3178,6 +3280,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritualAnomalyAbduction</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Skip abduction rituals</label>
     <order>774</order>
     <domain>Ritual</domain>
@@ -3201,6 +3304,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritualAnomalyDeathRefusal</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Death-refusal ritual</label>
     <order>775</order>
     <domain>Ritual</domain>
@@ -3223,6 +3327,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritualAnomalyPsychic</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Psychic rituals</label>
     <order>776</order>
     <domain>Ritual</domain>
@@ -3245,6 +3350,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritualFinished</defName>
+    <frequencyTier>significant</frequencyTier>
     <colorCue>ideology</colorCue>
     <label>Rituals</label>
     <order>780</order>
@@ -3266,6 +3372,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>abilityPsycast</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Psycasts</label>
     <order>790</order>
     <domain>Ability</domain>
@@ -3285,6 +3392,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>abilityHostile</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Combat abilities</label>
     <order>792</order>
     <domain>Ability</domain>
@@ -3304,6 +3412,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>abilityUsed</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Abilities</label>
     <order>799</order>
     <domain>Ability</domain>
@@ -3323,6 +3432,7 @@
   <!-- Biotech Phase 8 canonical recursive owner for psychic-bond formation and rupture. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>biotechPsychicBondLifecycle</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Psychic-bond lifecycle</label>
     <order>796</order>
     <domain>Progression</domain>
@@ -3347,6 +3457,7 @@
   <!-- Biotech Phase 8 first severe interrupted deathrest; completed wakes remain silent. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>biotechDeathrestInterrupted</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Interrupted deathrest</label>
     <order>797</order>
     <domain>Progression</domain>
@@ -3370,6 +3481,7 @@
   <!-- Biotech Phase 6 canonical controller POV for mechanitor lifecycle chapters. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>progressionMechanitorLifecycle</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Mechanitor lifecycle</label>
     <order>798</order>
     <domain>Progression</domain>
@@ -3400,6 +3512,7 @@
        releases the mature Birthday route whenever canonical capture cannot truthfully complete. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>progressionGrowthMoment</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Growth moment</label>
     <order>800</order>
     <domain>Progression</domain>
@@ -3422,6 +3535,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>progressionSkillPassion</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Passion skill milestone</label>
     <order>805</order>
     <domain>Progression</domain>
@@ -3441,6 +3555,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>progressionPsylink</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Psylink gained</label>
     <order>810</order>
     <domain>Progression</domain>
@@ -3463,6 +3578,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>progressionXenotype</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Gene identity changed</label>
     <order>815</order>
     <domain>Progression</domain>
@@ -3486,6 +3602,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>progressionRoyalTitle</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>Royal rank and succession</label>
     <order>820</order>
     <domain>Progression</domain>
@@ -3514,6 +3631,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>progressionTraitGained</defName>
+    <frequencyTier>essential</frequencyTier>
     <label>New trait</label>
     <order>825</order>
     <domain>Progression</domain>
@@ -3542,6 +3660,7 @@
        should never outrank a real event in a reflection. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>progressionBirthday</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Birthday</label>
     <order>830</order>
     <domain>Progression</domain>
@@ -3564,6 +3683,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>progressionArrivalAnniversary</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Colony anniversary</label>
     <order>835</order>
     <domain>Progression</domain>
@@ -3583,6 +3703,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>progressionDeathAnniversary</defName>
+    <frequencyTier>significant</frequencyTier>
     <label>Remembered loss</label>
     <order>840</order>
     <domain>Progression</domain>
@@ -3604,6 +3725,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>progressionRecordMilestone</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Personal record</label>
     <order>845</order>
     <domain>Progression</domain>
@@ -3623,6 +3745,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>progressionOther</defName>
+    <frequencyTier>routine</frequencyTier>
     <label>Progression</label>
     <order>899</order>
     <domain>Progression</domain>

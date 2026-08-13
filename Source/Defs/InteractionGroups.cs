@@ -220,9 +220,9 @@ namespace PawnDiary
     }
 
     // A themed bucket of events, loaded from XML as a RimWorld Def. Each group is one row in
-    // settings: an enable toggle (is it recorded?) plus a single diary-prompt instruction shared by
-    // every event in it. To add or retune a group, edit
-    // 1.6/Defs/DiaryInteractionGroupDefs.xml — no code change needed.
+    // settings: an enable toggle, a frequency tier, and a single diary-prompt instruction shared by
+    // every event in it. The core catalog lives in 1.6/Defs/DiaryInteractionGroupDefs.xml and
+    // compatibility catalogs live below 1.6/Defs/Compat; no code change is needed to retune a row.
     //
     // `Def` (the base class) already supplies two fields we rely on:
     //   - defName : the stable key (e.g. "romance"). Settings store per-group overrides under it,
@@ -232,6 +232,11 @@ namespace PawnDiary
     {
         // Whether events in this group are recorded by default (a player can override per-save).
         public bool defaultEnabled = true;
+
+        // Stable XML policy tier used by frequency presets. Empty is deliberate: shipped rows must
+        // opt in explicitly (coverage tests catch omissions), while an old/third-party partial Def
+        // safely resolves to Standard 1x instead of being unexpectedly thinned by Lite.
+        public string frequencyTier = string.Empty;
 
         // Whether entries from this group should be visually marked as important in the Diary tab.
         // Low-stakes groups can set this false in XML without changing save data or code.
