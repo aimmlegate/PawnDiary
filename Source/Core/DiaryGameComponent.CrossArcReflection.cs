@@ -79,8 +79,8 @@ namespace PawnDiary
             }
 
             runtime.dispatch = () => DispatchPreparedCrossArcReflection(pawn, pawnId, nowTick, selection);
-            // The shared adapter records lastCrossArcTick only after Dispatch succeeds. There is no
-            // separate pending row to mutate here; the source pages remain factual history.
+            // The shared adapter records lastCrossArcTick after a page or a deliberate frequency skip.
+            // There is no separate pending row to mutate here; the source pages remain factual history.
             runtime.consumeAfterDispatch = () => { };
             return runtime;
         }
@@ -264,7 +264,7 @@ namespace PawnDiary
             };
         }
 
-        private bool DispatchPreparedCrossArcReflection(
+        private DiaryDispatchOutcome DispatchPreparedCrossArcReflection(
             Pawn pawn,
             string pawnId,
             int nowTick,
@@ -317,7 +317,8 @@ namespace PawnDiary
                 + "; candidate_memories=" + selection.candidateCount
                 + "; linked_memories=" + selection.linkedMemoryCount
                 + "; distinct_phases=" + selection.distinctPhaseCount;
-            return Dispatch(new ArcReflectionSignal(data, pawn, label, text, instruction, gameContext));
+            return DispatchWithOutcome(
+                new ArcReflectionSignal(data, pawn, label, text, instruction, gameContext));
         }
 
         private static string CrossArcImportance(List<CrossArcMemoryCandidate> selected)

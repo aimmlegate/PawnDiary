@@ -53,7 +53,9 @@ namespace PawnDiary.Ingestion
                 eligible: payload.PawnEligible,
                 userEnabled: enabled,
                 signalEnabled: ModsConfig.RoyaltyActive && policy.enabled,
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                frequencyGroup: group,
+                nativeCaptureChance: 1f);
         }
 
         public override string DedupKey => payload.DedupKey();

@@ -118,25 +118,35 @@ namespace PawnDiary
                 return;
             }
 
-            // Sample before the ownership scan: the roll is a few dozen arithmetic ops and rejects
-            // most artworks, while the scan walks the hot store and the archive.
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyDefName(
+                GroupDomain.Interaction, ArtImmortalizedEventData.ArtImmortalizedDefName);
+            if (group == null)
+            {
+                return;
+            }
+
+            // Art owns a stable upstream native gate, so combine the profile multiplier with that
+            // chance before comparing its deterministic artwork/deed sample. The accepted signal then
+            // bypasses central admission; otherwise Lite would sample it twice and Frequent could not
+            // raise the native chance.
             string artworkId = artwork.GetUniqueLoadID();
-            if (!ArtImmortalizationPolicy.ShouldWrite(
-                ArtImmortalizationPolicy.DeterministicRoll(artworkId, taleIdentity),
-                tuning.artImmortalizationChance))
+            float effectiveChance;
+            float frequencyMultiplier = PawnDiaryMod.Settings == null
+                ? DiaryFrequencyPolicy.StandardMultiplier
+                : PawnDiaryMod.Settings.RuntimeGroupFrequencyMultiplier(group);
+            if (!DiaryFrequencyPolicy.TryCalculateEffectiveChance(
+                    tuning.artImmortalizationChance,
+                    frequencyMultiplier,
+                    out effectiveChance)
+                || !ArtImmortalizationPolicy.ShouldWrite(
+                    ArtImmortalizationPolicy.DeterministicRoll(artworkId, taleIdentity),
+                    effectiveChance))
             {
                 return;
             }
 
             DiaryGameComponent component = DiaryGameComponent.Instance;
             if (component == null || component.HasArtImmortalizationFor(taleIdentity))
-            {
-                return;
-            }
-
-            DiaryInteractionGroupDef group = InteractionGroups.ClassifyDefName(
-                GroupDomain.Interaction, ArtImmortalizedEventData.ArtImmortalizedDefName);
-            if (group == null)
             {
                 return;
             }

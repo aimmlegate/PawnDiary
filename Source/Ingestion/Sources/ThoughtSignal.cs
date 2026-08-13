@@ -25,6 +25,7 @@ namespace PawnDiary.Ingestion
         private readonly Thought_Memory thought;
         private readonly float moodOffset;
         private readonly ThoughtEventData payload;
+        private readonly DiaryInteractionGroupDef group;
         private readonly string biotechFamilyContext;
         private readonly string thoughtLabel;
         private readonly BeliefEventEvidence beliefEvidence;
@@ -68,6 +69,7 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
+            group = InteractionGroups.ClassifyThought(thought.def);
             moodOffset = thought.MoodOffset();
             biotechFamilyContext = BiotechBirthCorrelation.MiscarriageContext(pawn, thought.def.defName);
             string downstreamGroup = string.Empty;
@@ -118,7 +120,9 @@ namespace PawnDiary.Ingestion
                 eligible: DiaryGameComponent.IsDiaryEligible(pawn),
                 userEnabled: PawnDiaryMod.Settings != null && PawnDiaryMod.Settings.IsThoughtEnabled(thought.def),
                 signalEnabled: DiarySignalPolicies.Enabled(DiarySignalPolicies.Thought),
-                ambientSignalEnabled: DiarySignalPolicies.Enabled(DiarySignalPolicies.AmbientThought));
+                ambientSignalEnabled: DiarySignalPolicies.Enabled(DiarySignalPolicies.AmbientThought),
+                frequencyGroup: group,
+                nativeCaptureChance: 1f);
         }
 
         public override string DedupKey => payload != null ? payload.DedupKey() : string.Empty;
@@ -133,9 +137,6 @@ namespace PawnDiary.Ingestion
         {
             get
             {
-                DiaryInteractionGroupDef group = thought?.def == null
-                    ? null
-                    : InteractionGroups.ClassifyThought(thought.def);
                 return group != null && !group.important && !group.combat;
             }
         }

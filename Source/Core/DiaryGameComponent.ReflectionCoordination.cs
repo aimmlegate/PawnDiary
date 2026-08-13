@@ -1,11 +1,13 @@
 // Runtime adapter for N4 reflection arbitration. It collects plain opportunities from the existing
 // arc/quadrum/day sources, asks the assembly-free ReflectionCoordinator for one winner, dispatches
-// only that source's existing signal, and acknowledges cadence state only after Dispatch succeeds.
+// only that source's existing signal, and acknowledges cadence state after either a page is written
+// or frequency policy deliberately settles the opportunity without a page.
 //
 // New to C#/RimWorld? See AGENTS.md ("persistence & ticking" and "architecture barriers").
 using System;
 using System.Collections.Generic;
 using PawnDiary.Capture;
+using PawnDiary.Ingestion;
 using Verse;
 
 namespace PawnDiary
@@ -19,14 +21,16 @@ namespace PawnDiary
         private sealed class ReflectionRuntimeCandidate
         {
             public ReflectionOpportunity opportunity;
-            public Func<bool> dispatch;
+            public Func<DiaryDispatchOutcome> dispatch;
             public Action consumeAfterDispatch;
             public Action advanceDisabledDebt;
             public Action settleIneligible;
 
-            public bool Dispatch()
+            public DiaryDispatchOutcome Dispatch()
             {
-                return dispatch != null && dispatch();
+                return dispatch == null
+                    ? DiaryDispatchOutcome.Rejected
+                    : dispatch();
             }
 
             public void ConsumeAfterDispatch()
@@ -159,15 +163,20 @@ namespace PawnDiary
             }
 
             ReflectionRuntimeCandidate selected = FindRuntimeCandidate(runtimeCandidates, plan.selectedOpportunity);
-            bool dispatched = selected != null && selected.Dispatch();
-            if (!ReflectionCoordinator.CanConsumeAfterDispatch(plan, dispatched))
+            DiaryDispatchOutcome outcome = selected == null
+                ? DiaryDispatchOutcome.Rejected
+                : selected.Dispatch();
+            bool settled = DiaryDispatchOutcomePolicy.SettlesSource(outcome);
+            if (!ReflectionCoordinator.CanConsumeAfterDispatch(plan, settled))
             {
                 return false;
             }
 
             selected.ConsumeAfterDispatch();
             state.MarkWritten(plan.selectedOpportunity.kind, nowTick);
-            return true;
+            // A frequency skip consumes this selected opportunity and its cooldown exactly once. Report
+            // true only for a real page so callers do not mistake state settlement for visible output.
+            return DiaryDispatchOutcomePolicy.PageRegistered(outcome);
         }
 
         /// <summary>

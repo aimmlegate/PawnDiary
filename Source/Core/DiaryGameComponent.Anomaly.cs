@@ -221,11 +221,12 @@ namespace PawnDiary
                 AnomalyEventDefNames.StudyBreakthrough);
             AnomalyStudySignal signal = new AnomalyStudySignal(
                 studier, facts, plan, policy, group);
-            Dispatch(signal);
-            if (signal.CreatedEvent == null) return;
+            DiaryDispatchOutcome outcome = DispatchWithOutcome(signal);
+            if (!DiaryDispatchOutcomePolicy.PageRegistered(outcome)) return;
 
-            // Ownership begins only after the dedicated page exists. A disabled/missing group or a
-            // failed dispatcher therefore leaves vanilla's generic StudiedEntity Tale available.
+            // Ownership begins only after the dedicated page is registered. An exception after the
+            // repository commit still owns this source, while an ordinary rejection leaves vanilla's
+            // generic StudiedEntity Tale available.
             AnomalyStudySuppressionCache.Register(
                 new AnomalyStudyTaleClaim
                 {
@@ -354,12 +355,14 @@ namespace PawnDiary
             CreepJoinerSurgicalDisclosureSignal signal =
                 new CreepJoinerSurgicalDisclosureSignal(
                     facts, plan, policy, group, writers, subject, surgeon);
-            Dispatch(signal);
-            if (signal.CreatedEvent == null) return plan;
+            DiaryDispatchOutcome outcome = DispatchWithOutcome(signal);
+            dedicatedEventCreated = DiaryDispatchOutcomePolicy.PageRegistered(outcome);
+            if (!dedicatedEventCreated) return plan;
 
-            // The dedicated page already owns this source even if the defensive state re-read below
-            // cannot attach its event ID. Releasing the deferred Tale here would create a double page.
-            dedicatedEventCreated = true;
+            // Page registration already owns this source even if a post-commit exception prevented
+            // CreatedEvent assignment. CreatedEvent is consulted only for optional ID bookkeeping.
+            DiaryEvent createdEvent = signal.CreatedEvent;
+            if (createdEvent == null) return plan;
 
             // The same seven-field row records the dedicated event only after creation. The row stays
             // non-terminal so later visible lifecycle methods remain eligible to close the arc.
@@ -368,7 +371,7 @@ namespace PawnDiary
                 afterEvent.creepJoinerArcs, facts.subjectPawnId);
             if (arc == null || arc.terminal
                 || arc.lastVisiblePhase != AnomalyOutcomeTokens.SurgicalReveal) return plan;
-            arc.lastVisibleEventId = signal.CreatedEvent.eventId ?? string.Empty;
+            arc.lastVisibleEventId = createdEvent.eventId ?? string.Empty;
             ReplaceCreepJoinerArc(afterEvent.creepJoinerArcs, arc);
             ApplyAnomalyState(afterEvent);
             return plan;
@@ -405,8 +408,8 @@ namespace PawnDiary
                 AnomalyEventDefNames.GhoulTransformation);
             GhoulTransformationSignal signal = new GhoulTransformationSignal(
                 facts, plan, policy, group, writers, subject, surgeon);
-            Dispatch(signal);
-            dedicatedEventCreated = signal.CreatedEvent != null;
+            DiaryDispatchOutcome outcome = DispatchWithOutcome(signal);
+            dedicatedEventCreated = DiaryDispatchOutcomePolicy.PageRegistered(outcome);
             return plan;
         }
 
@@ -458,9 +461,14 @@ namespace PawnDiary
             DiaryInteractionGroupDef group = InteractionGroups.ClassifyAnomalyEvent(
                 AnomalyEventDefNames.VoidOutcome);
             VoidOutcomeSignal signal = new VoidOutcomeSignal(facts, plan, policy, group, writer);
-            Dispatch(signal);
-            if (signal.CreatedEvent == null) return plan;
-            dedicatedEventCreated = true;
+            DiaryDispatchOutcome outcome = DispatchWithOutcome(signal);
+            dedicatedEventCreated = DiaryDispatchOutcomePolicy.PageRegistered(outcome);
+            if (!dedicatedEventCreated) return plan;
+
+            // Source ownership is already frozen by the typed outcome. The event object is optional
+            // bookkeeping only: a post-commit exception must not release the deferred terminal Tale.
+            DiaryEvent createdEvent = signal.CreatedEvent;
+            if (createdEvent == null) return plan;
 
             try
             {
@@ -472,7 +480,7 @@ namespace PawnDiary
                     && string.Equals(
                         afterEvent.terminalActorPawnId, committedActorId, StringComparison.Ordinal))
                 {
-                    afterEvent.terminalEventId = signal.CreatedEvent.eventId ?? string.Empty;
+                    afterEvent.terminalEventId = createdEvent.eventId ?? string.Empty;
                     ApplyAnomalyState(afterEvent);
                 }
 
@@ -483,7 +491,7 @@ namespace PawnDiary
                 // write.
                 ConsiderArcReflectionAfterTerminalEvent(
                     writer,
-                    signal.CreatedEvent,
+                    createdEvent,
                     DiaryEvent.InitiatorRole,
                     new TerminalReflectionContract
                     {

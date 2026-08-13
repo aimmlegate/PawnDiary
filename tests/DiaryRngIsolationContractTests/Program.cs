@@ -66,17 +66,11 @@ namespace DiaryRngIsolationContractTests
                 "Range",
                 "chosen instruction variant is frozen in the captured event payload"),
             OneShot(
-                "Source/Ingestion/Sources/AbilitySignal.cs",
-                "Payload",
-                MemberKind.Property,
-                "Value",
-                "lazy post-dedup chance roll is frozen in AbilityEventData.Roll"),
-            OneShot(
-                "Source/Ingestion/Sources/WorkSignal.cs",
-                "WorkSignal",
+                "Source/Core/DiaryGameComponent.Dispatch.cs",
+                "DecideFrequency",
                 MemberKind.Method,
                 "Value",
-                "capture gate is frozen by the emitted-or-omitted persisted event"),
+                "shared post-semantic frequency admission is frozen by the emitted-or-omitted event"),
             Stable(
                 "Source/Generation/DiaryContextBuilder.cs",
                 "ShouldMentionWeather",
@@ -155,6 +149,12 @@ namespace DiaryRngIsolationContractTests
                 MemberKind.Method,
                 "Chance",
                 "promotion route is frozen by the emitted event payload"),
+            OneShot(
+                "Source/Core/DiaryGameComponent.InteractionBatching.cs",
+                "FreezeInteractionAggregateFrequency",
+                MemberKind.Method,
+                "Value",
+                "one aggregate admission result is frozen in its pending batch or pawn/day note"),
         };
 
         private static readonly UnityDrawContract[] UnityInventory =
@@ -206,13 +206,8 @@ namespace DiaryRngIsolationContractTests
                 MemberKind.Method,
                 @"\bRand\s*\.\s*Range\s*\("),
             OneShotGuard(
-                "Source/Ingestion/Sources/AbilitySignal.cs",
-                "Payload",
-                MemberKind.Property,
-                @"\bRand\s*\.\s*Value\b"),
-            OneShotGuard(
-                "Source/Ingestion/Sources/WorkSignal.cs",
-                "WorkSignal",
+                "Source/Core/DiaryGameComponent.Dispatch.cs",
+                "DecideFrequency",
                 MemberKind.Method,
                 @"\bRand\s*\.\s*Value\b"),
             StableGuard(
@@ -257,6 +252,11 @@ namespace DiaryRngIsolationContractTests
                 "ShouldPromoteInteraction",
                 MemberKind.Method,
                 @"\bRand\s*\.\s*Chance\s*\("),
+            OneShotGuard(
+                "Source/Core/DiaryGameComponent.InteractionBatching.cs",
+                "FreezeInteractionAggregateFrequency",
+                MemberKind.Method,
+                @"\bRand\s*\.\s*Value\b"),
         };
 
         private static readonly UnityGuardContract[] UnityGuards =
@@ -360,6 +360,7 @@ namespace DiaryRngIsolationContractTests
             TestScannerIgnoresCommentsAndStrings();
             TestForbiddenRngUsingFormsFailClosed();
             TestProductionHasNoRngUsingBypasses(corpus);
+            TestInteractionFrequencyOwnership(corpus);
             TestManifestMetadata(corpus);
             TestDrawInventory(corpus);
             TestVerseRestorationScopes(corpus);
@@ -463,6 +464,41 @@ namespace DiaryRngIsolationContractTests
                 "production source has no static RNG imports or RNG type aliases"
                     + FormatForbiddenUsings(forbidden, corpus),
                 forbidden.Count == 0);
+        }
+
+        private static void TestInteractionFrequencyOwnership(SourceCorpus corpus)
+        {
+            SourceFile batching = corpus.File(
+                "Source/Core/DiaryGameComponent.InteractionBatching.cs");
+            string promotion = corpus.Member(
+                batching.Path,
+                "ShouldPromoteInteraction",
+                MemberKind.Method).Text(batching.Sanitized);
+            AssertTrue(
+                "interaction promotion is native routing, not the retired global weight",
+                promotion.IndexOf("generationChanceWeight", StringComparison.Ordinal) < 0
+                    && promotion.IndexOf(
+                        "ClampGenerationChanceWeight", StringComparison.Ordinal) < 0);
+
+            SourceFile signal = corpus.File(
+                "Source/Ingestion/Sources/InteractionSignal.cs");
+            string context = corpus.Member(
+                signal.Path,
+                "BuildContext",
+                MemberKind.Method).Text(signal.Sanitized);
+            AssertTrue(
+                "interaction context names the classified frequency group",
+                Regex.IsMatch(context, @"frequencyGroup\s*:\s*classifiedGroup"));
+            AssertTrue(
+                "interaction context defers aggregate contributor admission",
+                Regex.IsMatch(context, @"bypassFrequency\s*:\s*deferredAggregate"));
+
+            AssertTrue(
+                "pair and ambient pending state freeze exact aggregate admission",
+                Regex.Matches(
+                    batching.Sanitized,
+                    @"frequencyAdmissionAccepted\s*=\s*FreezeInteractionAggregateFrequency\s*\(")
+                    .Count == 2);
         }
 
         private static void TestManifestMetadata(SourceCorpus corpus)

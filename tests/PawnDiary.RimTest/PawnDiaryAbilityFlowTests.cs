@@ -7,7 +7,8 @@
 // target and — for every non-base-game power — an active DLC. So instead of casting an ability, these
 // tests drive the identical entry point the patch drives: they build a real RimWorld Ability and hand
 // its AbilitySignal to DiaryEvents.Submit. That exercises the whole capture path (eligibility → group
-// classification → cooldown-weighted sampling → dedup → AddSoloEvent) with no map and no DLC.
+// classification → source dedup → semantic decision → shared frequency admission → AddSoloEvent)
+// with no map and no DLC.
 //
 // To stay base-game-safe and fully deterministic the caster's ability is a synthetic AbilityDef built
 // in code (never registered in DefDatabase, so nothing to leak). It is a plain non-psycast, non-hostile
@@ -15,15 +16,15 @@
 // a valid verbProperties + empty comps list because RimWorld's Ability.Initialize builds the primary
 // verb and enumerates comps during construction; a null comps list or a missing verb would NullRef.
 //
-// Determinism (design/TEST_COVERAGE_PLAN.md §3, "inject a known seed or set effective chance to 0/1"): the
-// sampled record chance is CooldownWeightedChance(cooldown, min, max, ref) * generationChanceWeight.
-// SetUp pins generationChanceWeight to 1 and each test pins the tuning min/max chance to 0 or 1, so the
-// gate is forced without any retry-until-random loop. Originals are restored in failure-safe cleanup.
+// Determinism (design/TEST_COVERAGE_PLAN.md §3, "inject a known seed or set effective chance to 0/1"):
+// SetUp pins this group's shared multiplier to 1, and each test pins the native tuning min/max chance
+// to 0 or 1. The shared gate is therefore forced without retry loops; cleanup restores every value.
 //
 // New to C#/RimWorld? See AGENTS.md. Everything the tests mutate is snapshot/restored by the shared
 // PawnDiaryRimTestScope harness or by a RegisterCleanup below, so a failed assertion leaves no trace.
 using System;
 using System.Collections.Generic;
+using PawnDiary.Capture;
 using PawnDiary.Ingestion;
 using RimTestRedux;
 using RimWorld;
@@ -34,8 +35,8 @@ namespace PawnDiary.RimTests
     /// <summary>
     /// Proves that a successful ability activation reaches Pawn Diary's persisted event store as one
     /// solo page carrying the caster and target facts, that the cooldown-weighted sampling gate drops
-    /// an activation when its effective chance is zero, and that same-tick duplicate activations dedup
-    /// down to a single event. Requires a loaded game because capture is a no-op at the main menu.
+    /// an activation when its effective chance is zero, that frequency rejection remains retryable,
+    /// and that same-tick duplicate activations dedup down to a single event. Requires a loaded game.
     /// </summary>
     [TestSuite]
     public static class PawnDiaryAbilityFlowTests
@@ -54,7 +55,7 @@ namespace PawnDiary.RimTests
         private static DiaryTuningDef tuningDef;
         private static float originalMinChance;
         private static float originalMaxChance;
-        private static float originalGenerationChanceWeight;
+        private static Dictionary<string, float> originalFrequencyOverrides;
 
         // The stable defName the AbilitySignal stamps onto the DiaryEvent (Emit passes the AbilityDef's
         // defName straight to AddSoloEvent as interactionDefName — verified against production).
@@ -62,8 +63,8 @@ namespace PawnDiary.RimTests
 
         /// <summary>
         /// Opens a scope with the Ability catch-all group enabled, creates an isolated caster and target,
-        /// builds the synthetic ability, and forces deterministic sampling (generation weight 1, tuning
-        /// chances restored in cleanup).
+        /// builds the synthetic ability, and forces deterministic shared admission (group multiplier 1,
+        /// native tuning chances restored in cleanup).
         /// </summary>
         [BeforeEach]
         public static void SetUp()
@@ -75,11 +76,12 @@ namespace PawnDiary.RimTests
 
             abilityDef = BuildSyntheticAbilityDef();
 
-            // Pin the shared generation weight so RecordChance == the tuning chance, not chance * weight.
-            // The harness does not own this setting, so snapshot + restore it ourselves.
-            originalGenerationChanceWeight = PawnDiaryMod.Settings.generationChanceWeight;
-            PawnDiaryMod.Settings.generationChanceWeight = 1f;
-
+            // The shared harness snapshots enable toggles, not the new per-group frequency map. Freeze
+            // this exact group at 1x so native 0/1 chances remain deterministic under any player preset.
+            Dictionary<string, float> currentOverrides = PawnDiaryMod.Settings.groupFrequencyOverrides;
+            originalFrequencyOverrides = currentOverrides == null
+                ? new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, float>(currentOverrides, StringComparer.OrdinalIgnoreCase);
             tuningDef = DiaryTuning.Current;
             originalMinChance = tuningDef.abilityUseMinChance;
             originalMaxChance = tuningDef.abilityUseMaxChance;
@@ -94,9 +96,13 @@ namespace PawnDiary.RimTests
 
                 if (PawnDiaryMod.Settings != null)
                 {
-                    PawnDiaryMod.Settings.generationChanceWeight = originalGenerationChanceWeight;
+                    PawnDiaryMod.Settings.groupFrequencyOverrides = new Dictionary<string, float>(
+                        originalFrequencyOverrides,
+                    StringComparer.OrdinalIgnoreCase);
                 }
             });
+
+            PawnDiaryMod.Settings.SetGroupFrequencyOverride("abilityUsed", 1f);
         }
 
         /// <summary>
@@ -117,6 +123,7 @@ namespace PawnDiary.RimTests
                 target = null;
                 abilityDef = null;
                 tuningDef = null;
+                originalFrequencyOverrides = null;
             }
         }
 
@@ -171,6 +178,50 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// The signal must pass its exact classified group and unmodified cooldown chance into the
+        /// shared gate, and a frequency miss must not consume its source dedup window.
+        /// </summary>
+        [Test]
+        public static void SignalCarriesExactFrequencyContextAndRetryContract()
+        {
+            ForceEffectiveChance(0.25f);
+            Ability ability = new Ability(caster, abilityDef);
+            AbilitySignal signal = new AbilitySignal(
+                ability, new LocalTargetInfo(target), LocalTargetInfo.Invalid);
+            CaptureContext context = signal.BuildContext();
+
+            PawnDiaryRimTestScope.Require(context != null
+                    && context.FrequencyGroupKey == "abilityUsed"
+                    && context.FrequencyTier == "routine"
+                    && Math.Abs(context.NativeCaptureChance - 0.25f) < 0.0001f,
+                "AbilitySignal did not preserve its exact group and native cooldown chance.");
+            PawnDiaryRimTestScope.Require(!signal.FrequencyRejectionConsumesDedup,
+                "Ability frequency rejection unexpectedly consumes its dedup window.");
+        }
+
+        /// <summary>
+        /// A zero-chance miss followed by a one-chance retry in the same tick must still record. If the
+        /// first frequency rejection marked dedup, the second signal would be rejected as a duplicate.
+        /// </summary>
+        [Test]
+        public static void FrequencyRejectionCanRetryWithinSameDedupWindow()
+        {
+            Ability ability = new Ability(caster, abilityDef);
+            ForceEffectiveChance(0f);
+            scope.RequireNoNewEvent(() => DiaryEvents.Submit(
+                new AbilitySignal(ability, new LocalTargetInfo(target), LocalTargetInfo.Invalid)));
+
+            ForceEffectiveChance(1f);
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => DiaryEvents.Submit(
+                    new AbilitySignal(ability, new LocalTargetInfo(target), LocalTargetInfo.Invalid)),
+                AbilityDefName,
+                caster,
+                null);
+            scope.RequireSoloRef(diaryEvent, caster);
+        }
+
+        /// <summary>
         /// EVT-06. Two identical activations in the same tick share the ability dedup key, so the second
         /// is dropped before it can record: the pair collapses to exactly one solo diary event.
         /// </summary>
@@ -201,9 +252,8 @@ namespace PawnDiary.RimTests
 
         /// <summary>
         /// Pins the ability sampling chance deterministically. CooldownWeightedChance collapses to the
-        /// shared value when min == max, so the cooldown length no longer matters and (with the
-        /// generation weight pinned to 1 in SetUp) the effective RecordChance is exactly <paramref
-        /// name="chance"/>.
+        /// shared value when min == max, so the cooldown length no longer matters. With the exact
+        /// group multiplier pinned to 1 in SetUp, shared admission receives <paramref name="chance"/>.
         /// </summary>
         private static void ForceEffectiveChance(float chance)
         {

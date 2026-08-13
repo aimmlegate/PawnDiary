@@ -130,10 +130,35 @@ namespace PawnDiary
 
             int opinion;
             if (!admission.accepted
-                || !TryReadOpinion(initiator, recipient, out opinion)
-                || !SocialReflectionPolicy.PassesChance(
-                    sourceKey, opinion, policy.chanceBands))
+                || !TryReadOpinion(initiator, recipient, out opinion))
             {
+                return string.Empty;
+            }
+
+            DiaryInteractionGroupDef frequencyGroup =
+                InteractionGroups.ByKey("socialReflection");
+            float frequencyMultiplier = PawnDiaryMod.Settings
+                .RuntimeGroupFrequencyMultiplier(frequencyGroup);
+            if (!SocialReflectionPolicy.PassesChance(
+                sourceKey,
+                opinion,
+                policy.chanceBands,
+                frequencyMultiplier))
+            {
+                // This exact source has now made its one deterministic admission decision. Persist a
+                // bounded terminal owner before returning so a later preset change cannot reinterpret
+                // the same interaction and manufacture a delayed reflection.
+                AddHandledSocialReflectionSource(
+                    sourceKey,
+                    string.Empty,
+                    now,
+                    policy.maximumHandledSourceRows);
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.FrequencyRejected,
+                    "social_reflection.frequency",
+                    nameof(SocialReflectionSignal),
+                    frequencyGroup?.defName,
+                    now);
                 return string.Empty;
             }
 
@@ -479,13 +504,14 @@ namespace PawnDiary
                 formatted.colorCue,
                 now,
                 true);
-            Dispatch(signal);
-            bool registered = events.RegistrationVersion > registrationBefore;
-            if (registered)
+            DiaryDispatchOutcome outcome = DispatchWithOutcome(signal);
+            bool registered = DiaryDispatchOutcomePolicy.PageRegistered(outcome)
+                && events.RegistrationVersion > registrationBefore;
+            if (DiaryDispatchOutcomePolicy.SettlesSource(outcome))
             {
                 AddHandledSocialReflectionSource(
                     row.sourceKey,
-                    signal.CreatedEvent?.eventId ?? string.Empty,
+                    registered ? signal.CreatedEvent?.eventId ?? string.Empty : string.Empty,
                     now,
                     policy.maximumHandledSourceRows);
                 return;

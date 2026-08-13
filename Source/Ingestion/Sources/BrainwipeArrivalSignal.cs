@@ -50,14 +50,16 @@ namespace PawnDiary.Ingestion
                 userEnabled: arrivalGroup == null
                     || PawnDiaryMod.Settings.IsGroupEnabled(arrivalGroup.defName),
                 signalEnabled: true,
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                frequencyGroup: arrivalGroup,
+                nativeCaptureChance: 1f);
         }
 
-        public override void CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
+        public override bool CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
         {
             if (payload == null)
             {
-                return;
+                return false;
             }
 
             sink.CaptureEventKnowledgeWithoutPage(
@@ -67,6 +69,7 @@ namespace PawnDiary.Ingestion
                 ArrivalEventData.BuildGameContext(
                     payload.PawnLabel, payload.PawnLoadId, payload.ArrivalContext),
                 payload.Tick);
+            return true;
         }
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)

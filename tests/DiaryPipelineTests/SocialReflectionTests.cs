@@ -85,6 +85,24 @@ namespace DiaryPipelineTests
             AssertTrue(
                 "social reflection zero chance never passes",
                 !SocialReflectionPolicy.PassesChance("stable-source", 100, never));
+            AssertTrue(
+                "zero frequency multiplier closes an otherwise certain social reflection",
+                !SocialReflectionPolicy.PassesChance("stable-source", 0, always, 0f));
+            AssertTrue(
+                "frequency multiplier preserves the deterministic strict boundary",
+                SocialReflectionPolicy.PassesChance("stable-source", 0, always, 0.25f)
+                    == (SocialReflectionPolicy.DeterministicRoll("stable-source") < 0.25d));
+            AssertTrue(
+                "increased frequency clamps an otherwise certain social reflection at one",
+                SocialReflectionPolicy.PassesChance("stable-source", 0, always, 5f));
+            AssertTrue(
+                "frequency cannot invent a reflection from a zero native chance",
+                !SocialReflectionPolicy.PassesChance("stable-source", 0, never, 5f));
+            AssertTrue(
+                "corrupt frequency multiplier falls back to Standard behavior",
+                SocialReflectionPolicy.PassesChance(
+                    "stable-source", 0, always, float.NaN)
+                    == SocialReflectionPolicy.PassesChance("stable-source", 0, always));
         }
 
         private static void TestSocialReflectionChanceCoverage()

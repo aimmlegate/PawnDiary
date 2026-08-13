@@ -69,7 +69,8 @@ namespace PawnDiary
 
         /// <summary>
         /// Collects the ordinary daily reflection without consuming its filler/hediff batches. The
-        /// selected runtime candidate acknowledges those batches only after Dispatch succeeds.
+        /// selected runtime candidate acknowledges those batches only after dispatch writes a page or
+        /// frequency policy deliberately settles the opportunity without one.
         /// </summary>
         private ReflectionRuntimeCandidate PrepareDayReflectionCandidate(
             Pawn pawn,
@@ -165,7 +166,7 @@ namespace PawnDiary
             return runtime;
         }
 
-        private bool DispatchPreparedDayReflection(
+        private DiaryDispatchOutcome DispatchPreparedDayReflection(
             Pawn pawn,
             string pawnId,
             int day,
@@ -208,7 +209,8 @@ namespace PawnDiary
             string gameContext = DayReflectionEventData.BuildGameContext(
                 data.Day, data.HighlightCount, data.CandidateCount, data.FillerMomentCount, data.SignalTags);
 
-            return Dispatch(new DayReflectionSignal(data, pawn, label, text, instruction, gameContext));
+            return DispatchWithOutcome(
+                new DayReflectionSignal(data, pawn, label, text, instruction, gameContext));
         }
 
         /// <summary>Collects one detached quadrum opportunity without advancing its once-per-window guard.</summary>
@@ -298,7 +300,7 @@ namespace PawnDiary
             return runtime;
         }
 
-        private bool DispatchPreparedQuadrumReflection(
+        private DiaryDispatchOutcome DispatchPreparedQuadrumReflection(
             Pawn pawn,
             string pawnId,
             int day,
@@ -314,7 +316,7 @@ namespace PawnDiary
                 SelectQuadrumHighlights(candidates, QuadrumReflectionMaxPromptEvents);
             if (highlights.Count == 0)
             {
-                return false;
+                return DiaryDispatchOutcome.Rejected;
             }
             highlights.Sort((left, right) => left.tick.CompareTo(right.tick));
             string signalTags = QuadrumSignalTags(highlights);
@@ -351,7 +353,8 @@ namespace PawnDiary
                 data.ImportantCandidateCount,
                 data.SignalTags);
 
-            return Dispatch(new DayReflectionSignal(data, pawn, label, text, instruction, gameContext));
+            return DispatchWithOutcome(
+                new DayReflectionSignal(data, pawn, label, text, instruction, gameContext));
         }
 
         /// <summary>
@@ -1805,6 +1808,14 @@ namespace PawnDiary
             writtenAmbientInteractionNotes.Clear();
             writtenAmbientThoughtNotes.Clear();
             int currentDay = CurrentDayIndex;
+            NormalizeRejectedAmbientInteractionFrequencyKeys(currentDay);
+            for (int rejectedIndex = 0;
+                rejectedIndex < rejectedAmbientInteractionFrequencyKeys.Count;
+                rejectedIndex++)
+            {
+                writtenAmbientInteractionNotes.Add(
+                    rejectedAmbientInteractionFrequencyKeys[rejectedIndex]);
+            }
             // This is a one-time load repair, not a recurring scan. Visit every retained hot row so an
             // unusually busy current day cannot push an ambient page outside the normal scan window.
             IReadOnlyList<DiaryEvent> allEvents = events.AllEvents;
@@ -1864,6 +1875,48 @@ namespace PawnDiary
                     entryDay,
                     currentDay);
             }
+        }
+
+        /// <summary>Persists one no-page ambient settlement and activates its in-session guard.</summary>
+        private void RememberRejectedAmbientInteractionFrequencyKey(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return;
+            }
+
+            if (rejectedAmbientInteractionFrequencyKeys == null)
+            {
+                rejectedAmbientInteractionFrequencyKeys = new List<string>();
+            }
+            if (!rejectedAmbientInteractionFrequencyKeys.Contains(key))
+            {
+                rejectedAmbientInteractionFrequencyKeys.Add(key);
+            }
+            writtenAmbientInteractionNotes.Add(key);
+        }
+
+        /// <summary>Keeps the additive saved rejection list bounded to this one in-game day.</summary>
+        private void NormalizeRejectedAmbientInteractionFrequencyKeys(int currentDay)
+        {
+            if (rejectedAmbientInteractionFrequencyKeys == null)
+            {
+                rejectedAmbientInteractionFrequencyKeys = new List<string>();
+                return;
+            }
+
+            HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
+            List<string> normalized = new List<string>();
+            for (int i = 0; i < rejectedAmbientInteractionFrequencyKeys.Count; i++)
+            {
+                string key = rejectedAmbientInteractionFrequencyKeys[i];
+                if (DailyEmissionGuardPolicy.IsInteractionKeyForDay(key, currentDay)
+                    && seen.Add(key))
+                {
+                    normalized.Add(key);
+                }
+            }
+            rejectedAmbientInteractionFrequencyKeys = normalized;
         }
 
         /// <summary>Adds a recognized current-day ambient history row to its exact runtime guard set.</summary>

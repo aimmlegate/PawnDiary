@@ -21,6 +21,8 @@
 // New to C#/RimWorld? See AGENTS.md and tests/PawnDiary.RimTest/README.md.
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using PawnDiary.Ingestion;
 using PawnDiary.Integration;
 using RimWorld;
 using RimTestRedux;
@@ -207,6 +209,58 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 string.Equals(snapshot.title, DirectTitle, StringComparison.Ordinal),
                 "The direct entry snapshot did not retain the caller-authored title.");
+        }
+
+        /// <summary>
+        /// A post-commit dispatch fault still reports durable recording even when the signal never
+        /// receives the saved event object. Both handle-result paths must preserve that truth without
+        /// inventing an event id that callers could mistake for a resolvable handle.
+        /// </summary>
+        [Test]
+        public static void PostCommitSubmissionResultStaysRecordedWithoutFabricatedHandles()
+        {
+            bool pageRegistered = DiaryDispatchOutcomePolicy.PageRegistered(
+                DiaryDispatchOutcome.ExceptionAfterCommit);
+            PawnDiaryRimTestScope.Require(
+                pageRegistered,
+                "ExceptionAfterCommit must remain a page-registered public API outcome.");
+
+            int checkedFactories = 0;
+            MethodInfo[] methods = typeof(PawnDiaryApi).GetMethods(
+                BindingFlags.NonPublic | BindingFlags.Static);
+            for (int i = 0; i < methods.Length; i++)
+            {
+                MethodInfo method = methods[i];
+                ParameterInfo[] parameters = method.GetParameters();
+                if (!string.Equals(method.Name, "SubmissionResultFor", StringComparison.Ordinal)
+                    || parameters.Length != 4
+                    || parameters[0].ParameterType != typeof(string)
+                    || parameters[1].ParameterType != typeof(string)
+                    || parameters[2].ParameterType != typeof(bool))
+                {
+                    continue;
+                }
+
+                const string eventKey = "pawndiary_rimtest_post_commit";
+                DiaryEventSubmissionResult result = method.Invoke(
+                    null,
+                    new object[] { TestSourceId, eventKey, pageRegistered, null })
+                    as DiaryEventSubmissionResult;
+                PawnDiaryRimTestScope.Require(
+                    result != null
+                        && result.recorded
+                        && !result.pairwise
+                        && result.primary == null
+                        && result.partner == null
+                        && string.Equals(result.sourceId, TestSourceId, StringComparison.Ordinal)
+                        && string.Equals(result.eventKey, eventKey, StringComparison.Ordinal),
+                    "A page-registered post-commit result lost its recorded state or fabricated a handle.");
+                checkedFactories++;
+            }
+
+            PawnDiaryRimTestScope.Require(
+                checkedFactories == 2,
+                "The post-commit contract must cover generated/prompt and direct-entry result factories.");
         }
 
         /// <summary>
@@ -431,6 +485,195 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// API v9 exposes the selected frequency preset once, enriches the existing filter rows without
+        /// changing enable semantics, and round-trips sparse frequency writes independently. Invalid
+        /// future tokens and corrupt numbers fail without mutating the player's settings.
+        /// </summary>
+        [Test]
+        public static void EventFrequencySnapshotSetResetAndPresetSelectionAreAdditive()
+        {
+            int originalFrequencySchemaVersion = settings.frequencySettingsSchemaVersion;
+            string originalPreset = settings.frequencyPresetDefName;
+            bool originalMigrationNoticePending = settings.frequencyMigrationNoticePending;
+            Dictionary<string, float> originalFrequencyOverrides = settings.groupFrequencyOverrides == null
+                ? new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, float>(
+                    settings.groupFrequencyOverrides,
+                    StringComparer.OrdinalIgnoreCase);
+            scope.RegisterCleanup(() =>
+            {
+                settings.frequencySettingsSchemaVersion = originalFrequencySchemaVersion;
+                settings.frequencyPresetDefName = originalPreset;
+                settings.frequencyMigrationNoticePending = originalMigrationNoticePending;
+                if (settings.groupFrequencyOverrides == null)
+                {
+                    settings.groupFrequencyOverrides = new Dictionary<string, float>(
+                        StringComparer.OrdinalIgnoreCase);
+                }
+
+                settings.groupFrequencyOverrides.Clear();
+                foreach (KeyValuePair<string, float> pair in originalFrequencyOverrides)
+                {
+                    settings.groupFrequencyOverrides[pair.Key] = pair.Value;
+                }
+
+                settings.Write();
+            });
+
+            PawnDiaryRimTestScope.Require(
+                PawnDiaryApi.ApiVersion >= 9,
+                "The additive event-frequency API requires contract version 9 or newer.");
+
+            DiaryEventFrequencySettingsSnapshot initial = PawnDiaryApi.GetEventFrequencySettings();
+            List<DiaryEventFilterSnapshot> legacyRows = PawnDiaryApi.GetEventFilters();
+            PawnDiaryRimTestScope.Require(
+                initial != null
+                    && initial.filters != null
+                    && initial.filters.Count == legacyRows.Count
+                    && string.Equals(
+                        initial.selectedPresetDefName,
+                        settings.FrequencyPresetSnapshot().presetKey,
+                        StringComparison.Ordinal),
+                "The frequency settings snapshot did not expose the selected preset and legacy row set.");
+
+            DiaryEventFrequencySettingsSnapshot detachedProbe =
+                PawnDiaryApi.GetEventFrequencySettings();
+            string detachedFirstKey = detachedProbe.filters[0].key;
+            detachedProbe.selectedPresetDefName = "mutated_snapshot_only";
+            detachedProbe.filters[0].key = "mutated_row_only";
+            detachedProbe.filters.Clear();
+            DiaryEventFrequencySettingsSnapshot afterDetachedMutation =
+                PawnDiaryApi.GetEventFrequencySettings();
+            PawnDiaryRimTestScope.Require(
+                string.Equals(
+                    afterDetachedMutation.selectedPresetDefName,
+                    initial.selectedPresetDefName,
+                    StringComparison.Ordinal)
+                    && afterDetachedMutation.filters.Count == initial.filters.Count
+                    && string.Equals(
+                        afterDetachedMutation.filters[0].key,
+                        detachedFirstKey,
+                        StringComparison.Ordinal),
+                "Mutating the returned DTO changed live settings instead of remaining detached.");
+
+            for (int i = 0; i < initial.filters.Count; i++)
+            {
+                DiaryEventFilterSnapshot row = initial.filters[i];
+                DiaryEventFilterSnapshot legacyRow = legacyRows[i];
+                DiaryInteractionGroupDef group = InteractionGroups.ByKey(row?.key);
+                PawnDiaryRimTestScope.Require(
+                    row != null
+                        && legacyRow != null
+                        && group != null
+                        && string.Equals(row.key, legacyRow.key, StringComparison.Ordinal)
+                        && row.enabled == legacyRow.enabled
+                        && row.defaultEnabled == legacyRow.defaultEnabled
+                        && row.hasOverride == legacyRow.hasOverride
+                        && string.Equals(
+                            row.frequencyTier,
+                            DiaryFrequencyTiers.Normalize(group.frequencyTier),
+                            StringComparison.Ordinal)
+                        && Math.Abs(
+                            row.presetFrequencyMultiplier
+                            - settings.PresetGroupFrequencyMultiplier(group)) < 0.0001f
+                        && Math.Abs(
+                            row.effectiveFrequencyMultiplier
+                            - settings.EffectiveGroupFrequencyMultiplier(group)) < 0.0001f
+                        && row.hasFrequencyOverride
+                            == settings.HasGroupFrequencyOverride(group.defName),
+                    "Frequency snapshot row " + i + " disagreed with the saved settings policy.");
+            }
+
+            DiaryEventFilterSnapshot original = SelectOrdinaryFilter(initial.filters);
+            string key = original.key;
+            bool originalEnabled = original.enabled;
+            bool originalEnableOverride = original.hasOverride;
+            float customMultiplier = Math.Abs(original.presetFrequencyMultiplier) > 0.0001f
+                ? 0f
+                : 1f;
+
+            PawnDiaryRimTestScope.Require(
+                PawnDiaryApi.SetEventFrequencyMultiplier(key, customMultiplier),
+                "SetEventFrequencyMultiplier rejected a valid settings-visible group and multiplier.");
+            DiaryEventFrequencySettingsSnapshot customized = PawnDiaryApi.GetEventFrequencySettings();
+            DiaryEventFilterSnapshot customRow = FindFilter(customized.filters, key);
+            PawnDiaryRimTestScope.Require(
+                customized.hasCustomOverrides
+                    && customRow != null
+                    && customRow.hasFrequencyOverride
+                    && Math.Abs(customRow.effectiveFrequencyMultiplier - customMultiplier) < 0.0001f
+                    && customRow.enabled == originalEnabled
+                    && customRow.hasOverride == originalEnableOverride,
+                "A frequency override did not remain independent from the existing enable setting.");
+
+            PawnDiaryRimTestScope.Require(
+                PawnDiaryApi.ResetEventFrequencyMultiplier(key),
+                "ResetEventFrequencyMultiplier rejected a valid settings-visible group.");
+            DiaryEventFilterSnapshot reset = FindFilter(
+                PawnDiaryApi.GetEventFrequencySettings().filters,
+                key);
+            PawnDiaryRimTestScope.Require(
+                reset != null
+                    && !reset.hasFrequencyOverride
+                    && Math.Abs(
+                        reset.effectiveFrequencyMultiplier
+                        - reset.presetFrequencyMultiplier) < 0.0001f
+                    && reset.enabled == originalEnabled
+                    && reset.hasOverride == originalEnableOverride,
+                "Resetting frequency did not restore preset inheritance independently of enable state.");
+
+            string selectedBeforeInvalidWrites =
+                PawnDiaryApi.GetEventFrequencySettings().selectedPresetDefName;
+            int overridesBeforeInvalidWrites = settings.GroupFrequencyOverrideCount();
+            PawnDiaryRimTestScope.Require(
+                !PawnDiaryApi.SetEventFrequencyPreset("PawnDiary_Frequency_Future")
+                    && !PawnDiaryApi.SetEventFrequencyMultiplier(
+                        "pawndiary_rimtest_unknown_filter",
+                        1f)
+                    && !PawnDiaryApi.ResetEventFrequencyMultiplier(
+                        "pawndiary_rimtest_unknown_filter")
+                    && !PawnDiaryApi.SetEventFrequencyMultiplier(key, float.NaN)
+                    && !PawnDiaryApi.SetEventFrequencyMultiplier(key, float.PositiveInfinity)
+                    && !PawnDiaryApi.SetEventFrequencyMultiplier(key, -0.01f)
+                    && !PawnDiaryApi.SetEventFrequencyMultiplier(
+                        key,
+                        DiaryFrequencyPolicy.MaximumMultiplier + 0.01f)
+                    && string.Equals(
+                        PawnDiaryApi.GetEventFrequencySettings().selectedPresetDefName,
+                        selectedBeforeInvalidWrites,
+                        StringComparison.Ordinal)
+                    && settings.GroupFrequencyOverrideCount() == overridesBeforeInvalidWrites,
+                "Unknown frequency tokens or corrupt multipliers should fail without mutation.");
+
+            PawnDiaryRimTestScope.Require(
+                PawnDiaryApi.SetEventFrequencyMultiplier(key, customMultiplier),
+                "Could not seed the preset-clear independence check.");
+            string alternatePreset = string.Equals(
+                selectedBeforeInvalidWrites,
+                DiaryFrequencyPresets.LiteDefName,
+                StringComparison.Ordinal)
+                    ? DiaryFrequencyPresets.StandardDefName
+                    : DiaryFrequencyPresets.LiteDefName;
+            PawnDiaryRimTestScope.Require(
+                PawnDiaryApi.SetEventFrequencyPreset(alternatePreset.ToLowerInvariant()),
+                "SetEventFrequencyPreset rejected a loaded shipped preset.");
+            DiaryEventFrequencySettingsSnapshot changedPreset =
+                PawnDiaryApi.GetEventFrequencySettings();
+            DiaryEventFilterSnapshot presetRow = FindFilter(changedPreset.filters, key);
+            PawnDiaryRimTestScope.Require(
+                string.Equals(
+                    changedPreset.selectedPresetDefName,
+                    alternatePreset,
+                    StringComparison.Ordinal)
+                    && !changedPreset.hasCustomOverrides
+                    && presetRow != null
+                    && !presetRow.hasFrequencyOverride
+                    && presetRow.enabled == originalEnabled
+                    && presetRow.hasOverride == originalEnableOverride,
+                "Preset selection did not clear only frequency overrides while preserving enable state.");
+        }
+
+        /// <summary>
         /// GetApiSetup returns a self-consistent lane snapshot and withholds every raw key unless the
         /// player's separate key-sharing opt-in is enabled; the test never logs or copies a real key.
         /// </summary>
@@ -618,8 +861,15 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 PawnDiaryApi.GetApiSetup() == null
                     && PawnDiaryApi.GetEventFilters().Count == 0
+                    && PawnDiaryApi.GetEventFrequencySettings() == null
                     && !PawnDiaryApi.IsEventFilterEnabled(realFilterKey)
-                    && !PawnDiaryApi.SetEventFilterEnabled(realFilterKey, true),
+                    && !PawnDiaryApi.SetEventFilterEnabled(realFilterKey, true)
+                    && !PawnDiaryApi.SetEventFrequencyPreset(
+                        filtersBeforeGate[0].hasFrequencyOverride
+                            ? DiaryFrequencyPresets.StandardDefName
+                            : DiaryFrequencyPresets.LiteDefName)
+                    && !PawnDiaryApi.SetEventFrequencyMultiplier(realFilterKey, 0.5f)
+                    && !PawnDiaryApi.ResetEventFrequencyMultiplier(realFilterKey),
                 "The master switch did not gate global setup/event-filter access.");
             PawnDiaryRimTestScope.Require(
                 !PawnDiaryApi.SetWritingStyleOverride(

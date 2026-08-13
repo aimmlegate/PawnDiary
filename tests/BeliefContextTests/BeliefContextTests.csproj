@@ -10,6 +10,7 @@
   <!-- Link only plain source. This project must compile with no RimWorld, Verse, Unity, or DLC assembly. -->
   <ItemGroup>
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContracts.cs" Link="NarrativeContracts.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryFrequencyPolicy.cs" Link="DiaryFrequencyPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefContracts.cs" Link="BeliefContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefAutomaticCoverageDiagnostics.cs" Link="BeliefAutomaticCoverageDiagnostics.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefLexicalMatcher.cs" Link="BeliefLexicalMatcher.cs" />

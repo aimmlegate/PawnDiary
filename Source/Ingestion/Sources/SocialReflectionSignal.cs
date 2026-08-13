@@ -65,7 +65,8 @@ namespace PawnDiary.Ingestion
                 eligible: bothEligible,
                 userEnabled: payload != null && payload.FeatureEnabled,
                 signalEnabled: true,
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                bypassFrequency: true);
         }
 
         public override string DedupKey => string.IsNullOrWhiteSpace(sourceKey)

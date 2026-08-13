@@ -56,7 +56,8 @@ namespace PawnDiary.Ingestion
                 eligible: true,
                 userEnabled: userEnabled,
                 signalEnabled: DiaryTuning.Current.daySummaryEnabled,
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                frequencyGroup: group);
         }
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)

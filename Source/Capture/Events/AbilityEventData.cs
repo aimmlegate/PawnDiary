@@ -1,7 +1,7 @@
 // Payload + pure decision for a pawn using a RimWorld Ability. The live hook supplies primitive
-// facts from Ability.Activate; this class owns the cooldown-weighted sampling decision and context
-// string format so ability spam and exact downstream-owned routes can be filtered without touching
-// RimWorld state in tests.
+// facts from Ability.Activate; this class owns cooldown-weighted native-chance math, semantic
+// downstream ownership, and context formatting without touching RimWorld state in tests. The shared
+// dispatcher owns the final frequency sample after this reducer accepts the event.
 using System;
 using System.Globalization;
 
@@ -20,12 +20,11 @@ namespace PawnDiary.Capture
         public string TargetLabel;
         public int CooldownTicks;
         public float RecordChance;
-        public float Roll;
         public bool DownstreamCovered;
 
         /// <summary>
-        /// Pure decision for one ability use. Callers precompute the cooldown-weighted chance and a
-        /// random roll because randomness and Def access belong at the game edge.
+        /// Pure semantic decision for one ability use. Callers precompute the cooldown-weighted native
+        /// chance for the shared frequency gate because randomness and Def access belong at the game edge.
         /// </summary>
         public static CaptureDecision Decide(AbilityEventData data, CaptureContext ctx)
         {
@@ -39,14 +38,9 @@ namespace PawnDiary.Capture
                 return CaptureDecision.Drop;
             }
 
-            // Exact XML policy proves that a later visible downstream event already owns this
-            // event. Drop before sampling so a redundant route does not advance the global RNG.
+            // Exact XML policy proves that a later visible downstream event already owns this event.
+            // Drop here so the dispatcher never reaches its isolated shared frequency draw.
             if (data.DownstreamCovered)
-            {
-                return CaptureDecision.Drop;
-            }
-
-            if (data.Roll > Clamp01(data.RecordChance))
             {
                 return CaptureDecision.Drop;
             }

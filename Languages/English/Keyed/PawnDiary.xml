@@ -595,12 +595,60 @@
   <PawnDiary.Settings.Adv.LockedHelp>Advanced contains experimental XML Def overrides for low-level tuning and prompt policy. Enable them only when testing raw settings; leave them off for normal play.</PawnDiary.Settings.Adv.LockedHelp>
   <PawnDiary.Settings.EventFilters.Title>Automatic event filters</PawnDiary.Settings.EventFilters.Title>
   <PawnDiary.Settings.EventFilters.Summary>{0} of {1} automatic event type(s) disabled.</PawnDiary.Settings.EventFilters.Summary>
-  <PawnDiary.Settings.EventFilters.Help>Disable an event type to stop Pawn Diary's own game listeners from creating entries for it. External mod API submissions can still create their own entries.</PawnDiary.Settings.EventFilters.Help>
+  <PawnDiary.Settings.EventFilters.Help>The checkbox is a hard on/off switch. Frequency controls how often an enabled event becomes a page. External mod API submissions keep their own policies.</PawnDiary.Settings.EventFilters.Help>
   <PawnDiary.Settings.EventFilters.EnableAll>Enable all</PawnDiary.Settings.EventFilters.EnableAll>
-  <PawnDiary.Settings.EventFilters.EnableAllTip>Enable every event type currently shown in this list.</PawnDiary.Settings.EventFilters.EnableAllTip>
+  <PawnDiary.Settings.EventFilters.EnableAllTip>Enable every available event type, regardless of search or collapsed domains.</PawnDiary.Settings.EventFilters.EnableAllTip>
   <PawnDiary.Settings.EventFilters.Changed>changed</PawnDiary.Settings.EventFilters.Changed>
   <PawnDiary.Settings.EventFilters.RowTip>Automatic capture group: {0}. Disabled groups do not auto-trigger from RimWorld gameplay, but external API requests are not blocked by this filter. The Reflection row controls day, quadrum, and life-arc reflection pages.</PawnDiary.Settings.EventFilters.RowTip>
   <PawnDiary.Settings.EventFilters.None>No automatic event groups are available.</PawnDiary.Settings.EventFilters.None>
+  <PawnDiary.Settings.EventFilters.FrequencyTitle>Diary frequency</PawnDiary.Settings.EventFilters.FrequencyTitle>
+  <PawnDiary.Settings.EventFilters.ResetToPreset>Reset to preset</PawnDiary.Settings.EventFilters.ResetToPreset>
+  <PawnDiary.Settings.EventFilters.ResetToPresetTip>Clear {0} custom frequency choice(s). Enable and disable choices are not changed.</PawnDiary.Settings.EventFilters.ResetToPresetTip>
+  <PawnDiary.Settings.EventFilters.ResetToPresetEmptyTip>Every event type currently inherits the selected preset.</PawnDiary.Settings.EventFilters.ResetToPresetEmptyTip>
+  <PawnDiary.Settings.EventFilters.ResetToPresetTitle>Reset diary frequency</PawnDiary.Settings.EventFilters.ResetToPresetTitle>
+  <PawnDiary.Settings.EventFilters.ResetToPresetConfirm>Clear {1} custom frequency choice(s) and return every event type to the {0} preset? Enable and disable choices will stay unchanged.</PawnDiary.Settings.EventFilters.ResetToPresetConfirm>
+  <PawnDiary.Settings.EventFilters.SelectPresetTitle>Select {0}</PawnDiary.Settings.EventFilters.SelectPresetTitle>
+  <PawnDiary.Settings.EventFilters.SelectPresetConfirm>Switch to the {0} preset and clear {1} custom frequency choice(s)? Enable and disable choices will stay unchanged.</PawnDiary.Settings.EventFilters.SelectPresetConfirm>
+  <PawnDiary.Settings.EventFilters.PresetStatusInherited>Using {0}; every event type inherits the preset.</PawnDiary.Settings.EventFilters.PresetStatusInherited>
+  <PawnDiary.Settings.EventFilters.PresetStatusCustom>Custom based on {0}: {1} event type(s) overridden.</PawnDiary.Settings.EventFilters.PresetStatusCustom>
+  <PawnDiary.Settings.EventFilters.PresetStatusMigrated>Custom (migrated) based on {0}: {1} event type(s) overridden.</PawnDiary.Settings.EventFilters.PresetStatusMigrated>
+  <PawnDiary.Settings.EventFilters.PresetStatusHiddenOverrides>Using {0}; {1} saved add-on event choice(s) are currently hidden.</PawnDiary.Settings.EventFilters.PresetStatusHiddenOverrides>
+  <PawnDiary.Settings.EventFilters.PresetFallback>Standard</PawnDiary.Settings.EventFilters.PresetFallback>
+  <PawnDiary.Settings.EventFilters.MigrationNotice>Your previous chance setting was converted only for the event types it affected. Interaction routing cannot be reproduced exactly, so review the migrated Custom choices.</PawnDiary.Settings.EventFilters.MigrationNotice>
+  <PawnDiary.Settings.EventFilters.MigrationNoticeCompact>Previous chance settings were migrated. Review the Custom frequency choices.</PawnDiary.Settings.EventFilters.MigrationNoticeCompact>
+  <PawnDiary.Settings.EventFilters.MigrationDismiss>Got it</PawnDiary.Settings.EventFilters.MigrationDismiss>
+  <PawnDiary.Settings.EventFilters.Search>Search</PawnDiary.Settings.EventFilters.Search>
+  <PawnDiary.Settings.EventFilters.NoSearchResults>No event types match this search.</PawnDiary.Settings.EventFilters.NoSearchResults>
+  <PawnDiary.Settings.EventFilters.DomainHeading>{0} {1} ({2})</PawnDiary.Settings.EventFilters.DomainHeading>
+  <PawnDiary.Settings.EventFilters.DomainHeadingSearch>{0} {1} ({2}/{3})</PawnDiary.Settings.EventFilters.DomainHeadingSearch>
+  <PawnDiary.Settings.EventFilters.ExpandDomainTip>Show this event domain.</PawnDiary.Settings.EventFilters.ExpandDomainTip>
+  <PawnDiary.Settings.EventFilters.CollapseDomainTip>Hide this event domain. Searching temporarily expands matching domains.</PawnDiary.Settings.EventFilters.CollapseDomainTip>
+  <PawnDiary.Settings.EventFilters.SearchDomainTip>Matching domains stay expanded until the search is cleared.</PawnDiary.Settings.EventFilters.SearchDomainTip>
+  <PawnDiary.Settings.EventFilters.FrequencyExact>{0}x</PawnDiary.Settings.EventFilters.FrequencyExact>
+  <PawnDiary.Settings.EventFilters.FrequencyButtonCustom>{0} *</PawnDiary.Settings.EventFilters.FrequencyButtonCustom>
+  <PawnDiary.Settings.EventFilters.UsePresetChoice>Use {0} ({1}x)</PawnDiary.Settings.EventFilters.UsePresetChoice>
+  <PawnDiary.Settings.EventFilters.UsePresetChoiceTip>Remove this row's custom frequency so it follows the selected preset.</PawnDiary.Settings.EventFilters.UsePresetChoiceTip>
+  <PawnDiary.Settings.EventFilters.FrequencyChoiceEntry>{0} ({1}x)</PawnDiary.Settings.EventFilters.FrequencyChoiceEntry>
+  <PawnDiary.Settings.EventFilters.FrequencyTipCustom>{0} ({1}x), set as a custom choice for {2}. A disabled checkbox still prevents automatic capture.</PawnDiary.Settings.EventFilters.FrequencyTipCustom>
+  <PawnDiary.Settings.EventFilters.FrequencyTipInherited>{0} ({1}x), inherited from {2} for {3}. A disabled checkbox still prevents automatic capture.</PawnDiary.Settings.EventFilters.FrequencyTipInherited>
+  <PawnDiary.Settings.EventFilters.Domain.Interaction>Social interactions</PawnDiary.Settings.EventFilters.Domain.Interaction>
+  <PawnDiary.Settings.EventFilters.Domain.MentalState>Mental states</PawnDiary.Settings.EventFilters.Domain.MentalState>
+  <PawnDiary.Settings.EventFilters.Domain.Tale>Life events</PawnDiary.Settings.EventFilters.Domain.Tale>
+  <PawnDiary.Settings.EventFilters.Domain.MoodEvent>Colony conditions</PawnDiary.Settings.EventFilters.Domain.MoodEvent>
+  <PawnDiary.Settings.EventFilters.Domain.Thought>Thoughts</PawnDiary.Settings.EventFilters.Domain.Thought>
+  <PawnDiary.Settings.EventFilters.Domain.Inspiration>Inspirations</PawnDiary.Settings.EventFilters.Domain.Inspiration>
+  <PawnDiary.Settings.EventFilters.Domain.Romance>Relationships</PawnDiary.Settings.EventFilters.Domain.Romance>
+  <PawnDiary.Settings.EventFilters.Domain.Work>Work</PawnDiary.Settings.EventFilters.Domain.Work>
+  <PawnDiary.Settings.EventFilters.Domain.Hediff>Health</PawnDiary.Settings.EventFilters.Domain.Hediff>
+  <PawnDiary.Settings.EventFilters.Domain.Raid>Raids and threats</PawnDiary.Settings.EventFilters.Domain.Raid>
+  <PawnDiary.Settings.EventFilters.Domain.Quest>Quests</PawnDiary.Settings.EventFilters.Domain.Quest>
+  <PawnDiary.Settings.EventFilters.Domain.Ritual>Rituals</PawnDiary.Settings.EventFilters.Domain.Ritual>
+  <PawnDiary.Settings.EventFilters.Domain.Ability>Abilities</PawnDiary.Settings.EventFilters.Domain.Ability>
+  <PawnDiary.Settings.EventFilters.Domain.Progression>Progression</PawnDiary.Settings.EventFilters.Domain.Progression>
+  <PawnDiary.Settings.EventFilters.Domain.Reflection>Reflections</PawnDiary.Settings.EventFilters.Domain.Reflection>
+  <PawnDiary.Settings.EventFilters.Domain.GravshipJourney>Gravship journeys</PawnDiary.Settings.EventFilters.Domain.GravshipJourney>
+  <PawnDiary.Settings.EventFilters.Domain.PersonaWeapon>Persona weapons</PawnDiary.Settings.EventFilters.Domain.PersonaWeapon>
+  <PawnDiary.Settings.EventFilters.Domain.RoyalPermit>Royal permits</PawnDiary.Settings.EventFilters.Domain.RoyalPermit>
   <PawnDiary.Settings.Adv.OverrideInherited>Using XML/default; no override set.</PawnDiary.Settings.Adv.OverrideInherited>
   <PawnDiary.Settings.Adv.EffectivePreview>Effective: {0} - {1}</PawnDiary.Settings.Adv.EffectivePreview>
   <PawnDiary.Settings.Adv.Source.Override>override</PawnDiary.Settings.Adv.Source.Override>

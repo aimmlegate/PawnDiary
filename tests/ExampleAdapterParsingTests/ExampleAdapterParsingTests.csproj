@@ -10,5 +10,8 @@
     <!-- Pure helpers only. The explorer's IMGUI code lives in the adapter project; this test project
          must compile without RimWorld/Verse/Unity assemblies (AGENTS.md / SKILL.md rule). -->
     <Compile Include="..\..\integrations\PawnDiary.ExampleAdapter\Source\ExplorerParsing.cs" Link="ExplorerParsing.cs" />
+    <Compile Include="..\..\integrations\PawnDiary.ExampleAdapter\Source\LoadedApiVersionProbe.cs" Link="LoadedApiVersionProbe.cs" />
+    <Compile Include="..\..\integrations\PawnDiary.ExampleAdapter\Source\AdapterEventFrequencySettingsSnapshot.cs" Link="AdapterEventFrequencySettingsSnapshot.cs" />
+    <Compile Include="..\..\integrations\PawnDiary.ExampleAdapter\Source\FrequencyApiV9Shim.cs" Link="FrequencyApiV9Shim.cs" />
   </ItemGroup>
 </Project>

@@ -388,9 +388,11 @@ namespace PawnDiary
             string duration = PersonaLifecycleDuration(previous, lifecycle.nextState, lifecycle.narrativePhase, now);
             PersonaWeaponSignal signal = new PersonaWeaponSignal(
                 pawn, weapon, previous, lifecycle, selected, duration, policy, group, now);
-            bool dispatched = Dispatch(signal);
-            bool accepted = dispatched && signal.CreatedEvent != null;
-            if (separationAwaitsPageAcceptance && accepted)
+            DiaryDispatchOutcome outcome = DispatchWithOutcome(signal);
+            bool accepted = DiaryDispatchOutcomePolicy.PageRegistered(outcome)
+                && signal.CreatedEvent != null;
+            if (separationAwaitsPageAcceptance
+                && DiaryDispatchOutcomePolicy.SettlesSource(outcome))
                 MarkRoyaltyPersonaSeparationAccepted(
                     lifecycle.nextState.weaponThingId, lifecycle.nextState.bondEpoch);
             return accepted;

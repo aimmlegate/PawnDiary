@@ -445,7 +445,7 @@ namespace PawnDiary
             __state = captured;
         }
 
-        /// <summary>Verifies the committed branch and owns Quest success only after page creation.</summary>
+        /// <summary>Verifies the committed branch and owns Quest success only after page registration.</summary>
         private static void Postfix(
             object __instance,
             OdysseyMechhiveOutcomeCapture __state)

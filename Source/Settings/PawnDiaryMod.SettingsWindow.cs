@@ -201,18 +201,9 @@ namespace PawnDiary
                         "PawnDiary.Settings.ShowDiaryInspectTabTip".Translate());
                 }
 
-                // How much gets written. Page titles and rare atmosphere formatting are always on and
-                // the experimental seasonal tint is always off (PawnDiarySettings.ApplyForcedFeatureSwitches),
-                // so this group is the frequency dial only.
-                SectionTitle(listing, "PawnDiary.Settings.GenerationHeader".Translate());
-                listing.Label("PawnDiary.Settings.GenerationChanceWeight".Translate(Settings.generationChanceWeight.ToString("0.##")));
-                Settings.generationChanceWeight = listing.Slider(
-                    Settings.generationChanceWeight,
-                    PawnDiarySettings.MinGenerationChanceWeight,
-                    PawnDiarySettings.MaxGenerationChanceWeight);
-
-                // The preset block also owns live context hints, psychotypes, and pawn memory, which is
-                // why those three no longer have checkboxes of their own.
+                // Event frequency now lives beside the per-event switches on the Events tab. The
+                // context preset below owns live hints, psychotypes, and pawn memory, which is why
+                // those three no longer have checkboxes of their own.
                 DrawContextDetailSection(listing);
 
                 SectionTitle(listing, "PawnDiary.Settings.StorageHeader".Translate());

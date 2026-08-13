@@ -31,6 +31,7 @@ namespace PawnDiary.Ingestion
         private readonly bool valid;
         private readonly string colonyDedupKey;
         private readonly PsychicRitualRoleAssignments assignments;
+        private readonly DiaryInteractionGroupDef frequencyGroup;
         private readonly Pawn invoker;
         private readonly Pawn targetPawn;
         private readonly List<Pawn> fixtureParticipants;
@@ -61,6 +62,7 @@ namespace PawnDiary.Ingestion
             {
                 return;
             }
+            frequencyGroup = group;
 
             // Keep the XML ritual theme reachable without consuming the simulation RNG. The per-pawn
             // child appends its localized invoker/target/participant/spectator guidance at emit time.
@@ -135,6 +137,8 @@ namespace PawnDiary.Ingestion
             Label = string.IsNullOrWhiteSpace(label) ? defName : label;
             Quality = RitualEventData.QualityLabel(progress, DiaryTuning.Current.ritualQualityBands);
             GroupInstruction = groupInstruction ?? string.Empty;
+            frequencyGroup = InteractionGroups.ClassifyRitual(
+                PsychicRitualClassifierKey(defName));
             int tick = Find.TickManager == null ? 0 : Find.TickManager.TicksGame;
             colonyDedupKey = "psychic_ritual_fixture|" + defName + "|" + PawnKey(invoker) + "|"
                 + PawnKey(targetPawn) + "|" + tick;
@@ -144,6 +148,16 @@ namespace PawnDiary.Ingestion
         public override string ColonyDedupKey => valid ? colonyDedupKey : string.Empty;
 
         public override int ColonyDedupTicks => DiaryTuning.Current.ritualDedupTicks;
+
+        public override CaptureContext BuildFrequencyContext()
+        {
+            return DiaryGameComponent.BuildCaptureContext(
+                eligible: valid,
+                userEnabled: true,
+                signalEnabled: true,
+                ambientSignalEnabled: true,
+                frequencyGroup: frequencyGroup);
+        }
 
         public override IEnumerable<DiarySignal> PerPawnSignals()
         {
@@ -314,7 +328,8 @@ namespace PawnDiary.Ingestion
         public override CaptureContext BuildContext()
         {
             return DiaryGameComponent.BuildCaptureContext(
-                eligible: true, userEnabled: true, signalEnabled: true, ambientSignalEnabled: true);
+                eligible: true, userEnabled: true, signalEnabled: true, ambientSignalEnabled: true,
+                bypassFrequency: true);
         }
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)

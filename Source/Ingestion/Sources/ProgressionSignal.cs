@@ -22,10 +22,12 @@ namespace PawnDiary.Ingestion
         private readonly bool eligible;
         private readonly bool userEnabled;
         private readonly bool signalEnabled;
+        private readonly DiaryInteractionGroupDef group;
         private readonly string dedupKey;
         private readonly int dedupWindowTicks;
         private readonly List<NarrativeEvidence> narrativeEvidence;
         private readonly BiotechNarrativeSnapshot biotechNarrative;
+        private readonly bool bypassFrequency;
 
         /// <summary>Non-null only after this signal actually created its canonical progression page.</summary>
         internal DiaryEvent CreatedEvent { get; private set; }
@@ -34,7 +36,8 @@ namespace PawnDiary.Ingestion
             string instruction, string gameContext, bool eligible, bool userEnabled, bool signalEnabled,
             string dedupKey = null, int dedupWindowTicks = 0,
             List<NarrativeEvidence> narrativeEvidence = null,
-            BiotechNarrativeSnapshot biotechNarrative = null)
+            BiotechNarrativeSnapshot biotechNarrative = null,
+            bool bypassFrequency = false)
         {
             this.payload = payload;
             this.pawn = pawn;
@@ -45,10 +48,12 @@ namespace PawnDiary.Ingestion
             this.eligible = eligible;
             this.userEnabled = userEnabled;
             this.signalEnabled = signalEnabled;
+            group = InteractionGroups.ClassifyProgression(payload?.DefName);
             this.dedupKey = dedupKey;
             this.dedupWindowTicks = dedupWindowTicks;
             this.narrativeEvidence = narrativeEvidence;
             this.biotechNarrative = biotechNarrative;
+            this.bypassFrequency = bypassFrequency;
         }
 
         public override DiaryEventData Payload => payload;
@@ -59,7 +64,10 @@ namespace PawnDiary.Ingestion
                 eligible: eligible,
                 userEnabled: userEnabled,
                 signalEnabled: signalEnabled,
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                frequencyGroup: group,
+                nativeCaptureChance: 1f,
+                bypassFrequency: bypassFrequency);
         }
 
         // Scalar progression kinds (skill, psylink, xenotype, royal title) emit at most one page per
@@ -71,13 +79,15 @@ namespace PawnDiary.Ingestion
 
         public override int DedupWindowTicks => dedupWindowTicks;
 
-        public override void CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
+        public override bool CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
         {
             if (payload != null)
             {
                 sink.CaptureEventKnowledgeWithoutPage(
                     pawn, null, payload.DefName, gameContext, payload.Tick);
+                return true;
             }
+            return false;
         }
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)

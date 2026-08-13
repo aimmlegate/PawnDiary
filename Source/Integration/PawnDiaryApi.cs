@@ -28,7 +28,7 @@ namespace PawnDiary.Integration
     /// wrapped prompt-entry submissions, read-only snapshots/status reads, single-entry reads, cheap
     /// entry stats, compact prose context bundles, prompt fragments/enchantment candidates on
     /// external events, pawn-context providers for prompt-summary context, LLM API setup reads
-    /// plus add-lane writes, automatic-capture event-filter reads plus per-group toggles, editable
+    /// plus add-lane writes, automatic-capture event-filter/frequency reads and writes, editable
     /// base/custom psychotype setters, one-shot LLM completions on a chosen lane, and an external
     /// psychotype-generator hook that gives the voice editor a Regenerate button + loading status,
     /// and thread-safe integration capture-capability health reporting for XML fallbacks.
@@ -40,7 +40,10 @@ namespace PawnDiary.Integration
         /// members never change behavior incompatibly. Adapters that need a newer member can check
         /// this at load time and degrade gracefully on older Pawn Diary builds.
         /// </summary>
-        public const int ApiVersion = 8;
+        // Keep this const for metadata compatibility with adapters compiled against earlier Pawn Diary
+        // versions. Adapters that need a runtime feature gate must inspect this field through reflection:
+        // a direct C# read is substituted with the build-time value and does not see the loaded DLL.
+        public const int ApiVersion = 9;
 
         /// <summary>
         /// True while a game is loaded and the diary component is alive — the only time
@@ -338,8 +341,10 @@ namespace PawnDiary.Integration
                 // outcome distinguishes "dispatched and recorded" from "handed to the pipeline, which
                 // then declined it (dedup / pawn state)" — the latter mirrors
                 // SubmitEventWithHandle's recorded=false branch.
-                bool emitted = DiaryGameComponent.Instance.Dispatch(new ExternalEventSignal(request));
-                if (!emitted)
+                DiaryDispatchOutcome dispatchOutcome = DiaryGameComponent.Instance.DispatchWithOutcome(
+                    new ExternalEventSignal(request));
+                bool recorded = DiaryDispatchOutcomePolicy.PageRegistered(dispatchOutcome);
+                if (!recorded)
                 {
                     DiaryGameComponent.Instance.ReleaseExternalApiBudgetReservation(reservation);
                     outcome = SubmitEventOutcome.DroppedByPipeline;
@@ -371,7 +376,9 @@ namespace PawnDiary.Integration
         /// <summary>
         /// Submits one external event and returns stable handles when the pipeline actually creates an
         /// entry. Unlike <see cref="SubmitEvent"/>, a valid-but-deduped or policy-dropped request
-        /// returns a result with <c>recorded=false</c> instead of only saying it was handed off.
+        /// returns a result with <c>recorded=false</c> instead of only saying it was handed off. After
+        /// a rare post-commit fault, <c>recorded</c> remains true even when no safe handle is available;
+        /// the API never fabricates an event id.
         /// </summary>
         public static DiaryEventSubmissionResult SubmitEventWithHandle(ExternalEventRequest request)
         {
@@ -394,13 +401,15 @@ namespace PawnDiary.Integration
                 }
 
                 ExternalEventSignal signal = new ExternalEventSignal(request);
-                bool emitted = DiaryGameComponent.Instance.Dispatch(signal);
-                if (!emitted)
+                DiaryDispatchOutcome dispatchOutcome =
+                    DiaryGameComponent.Instance.DispatchWithOutcome(signal);
+                bool recorded = DiaryDispatchOutcomePolicy.PageRegistered(dispatchOutcome);
+                if (!recorded)
                 {
                     DiaryGameComponent.Instance.ReleaseExternalApiBudgetReservation(reservation);
                 }
 
-                return SubmissionResultFor(sourceId, eventKey, emitted, signal);
+                return SubmissionResultFor(sourceId, eventKey, recorded, signal);
             }
             catch (Exception e)
             {
@@ -417,6 +426,8 @@ namespace PawnDiary.Integration
         /// Submits one wrapped prompt-entry request and returns stable handles when the pipeline
         /// actually creates an entry. This queues normal Pawn Diary generation with the supplied
         /// instruction placed inside protected prompt context; it is not a raw system-prompt escape.
+        /// A rare post-commit fault can report <c>recorded=true</c> with null handles rather than
+        /// inventing an event id.
         /// </summary>
         public static DiaryEventSubmissionResult SubmitPromptEntry(ExternalPromptEntryRequest request)
         {
@@ -439,13 +450,15 @@ namespace PawnDiary.Integration
                 }
 
                 ExternalEventSignal signal = new ExternalEventSignal(request, false);
-                bool emitted = DiaryGameComponent.Instance.Dispatch(signal);
-                if (!emitted)
+                DiaryDispatchOutcome dispatchOutcome =
+                    DiaryGameComponent.Instance.DispatchWithOutcome(signal);
+                bool recorded = DiaryDispatchOutcomePolicy.PageRegistered(dispatchOutcome);
+                if (!recorded)
                 {
                     DiaryGameComponent.Instance.ReleaseExternalApiBudgetReservation(reservation);
                 }
 
-                return SubmissionResultFor(sourceId, eventKey, emitted, signal);
+                return SubmissionResultFor(sourceId, eventKey, recorded, signal);
             }
             catch (Exception e)
             {
@@ -461,7 +474,8 @@ namespace PawnDiary.Integration
         /// <summary>
         /// Submits caller-authored final diary prose and returns handles when an entry was actually
         /// saved. This does not queue the main LLM rewrite; optional title generation may still run
-        /// when requested and enabled by the player.
+        /// when requested and enabled by the player. A rare post-commit fault can report
+        /// <c>recorded=true</c> with null handles rather than inventing an event id.
         /// </summary>
         public static DiaryEventSubmissionResult SubmitDirectEntry(ExternalDirectEntryRequest request)
         {
@@ -484,13 +498,15 @@ namespace PawnDiary.Integration
                 }
 
                 ExternalDirectEntrySignal signal = new ExternalDirectEntrySignal(request);
-                bool emitted = DiaryGameComponent.Instance.Dispatch(signal);
-                if (!emitted)
+                DiaryDispatchOutcome dispatchOutcome =
+                    DiaryGameComponent.Instance.DispatchWithOutcome(signal);
+                bool recorded = DiaryDispatchOutcomePolicy.PageRegistered(dispatchOutcome);
+                if (!recorded)
                 {
                     DiaryGameComponent.Instance.ReleaseExternalApiBudgetReservation(reservation);
                 }
 
-                return SubmissionResultFor(sourceId, eventKey, emitted, signal);
+                return SubmissionResultFor(sourceId, eventKey, recorded, signal);
             }
             catch (Exception e)
             {
@@ -1805,7 +1821,8 @@ namespace PawnDiary.Integration
         /// groups), in the same order, each with its current saved state. Like the other settings reads
         /// this does NOT require a loaded game; it is gated by the main thread and the master integration
         /// toggle. Returns an empty list — never throws — off the main thread, when the master toggle is
-        /// off, or when settings are unavailable. Side-effect free.
+        /// off, or when settings are unavailable. It never persists settings or captures gameplay;
+        /// the first post-Def read may complete one-time in-memory settings normalization.
         /// </summary>
         public static List<DiaryEventFilterSnapshot> GetEventFilters()
         {
@@ -1833,6 +1850,42 @@ namespace PawnDiary.Integration
                     "[Pawn Diary] Integration API: GetEventFilters failed: " + e,
                     "PawnDiary.Api.GetEventFilters.Exception".GetHashCode());
                 return new List<DiaryEventFilterSnapshot>();
+            }
+        }
+
+        /// <summary>
+        /// Returns the selected global diary-frequency preset together with the same enriched event
+        /// rows as <see cref="GetEventFilters"/>. This keeps the global preset in one place instead of
+        /// repeating it on every row. Returns null — never throws — off the main thread, when the
+        /// integration master switch is off, or when settings are unavailable. Does not require a
+        /// loaded game and never persists settings or captures gameplay; the first post-Def read may
+        /// complete one-time in-memory settings normalization.
+        /// </summary>
+        public static DiaryEventFrequencySettingsSnapshot GetEventFrequencySettings()
+        {
+            try
+            {
+                if (!UnityData.IsInMainThread)
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: GetEventFrequencySettings was called off the main thread; the call was ignored.",
+                        "PawnDiary.Api.GetEventFrequencySettings.OffThread".GetHashCode());
+                    return null;
+                }
+
+                if (!ExternalIntegrationsAllowed || PawnDiaryMod.Settings == null)
+                {
+                    return null;
+                }
+
+                return IntegrationApiSettings.BuildEventFrequencySettingsSnapshot(PawnDiaryMod.Settings);
+            }
+            catch (Exception e)
+            {
+                ApiLogErrorOnce(
+                    "[Pawn Diary] Integration API: GetEventFrequencySettings failed: " + e,
+                    "PawnDiary.Api.GetEventFrequencySettings.Exception".GetHashCode());
+                return null;
             }
         }
 
@@ -1906,6 +1959,130 @@ namespace PawnDiary.Integration
                 ApiLogErrorOnce(
                     "[Pawn Diary] Integration API: SetEventFilterEnabled for '" + keyForLog + "' failed: " + e,
                     ("PawnDiary.Api.SetEventFilterEnabled.Exception." + keyForLog).GetHashCode());
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Selects a loaded global diary-frequency preset and clears per-group frequency overrides,
+        /// matching a confirmed preset selection in the Events tab. Enable/disable choices are never
+        /// changed. Returns false — never throws and never mutates — for an unknown preset defName,
+        /// an off-thread call, the integration master switch being off, or unavailable settings.
+        /// </summary>
+        public static bool SetEventFrequencyPreset(string presetDefName)
+        {
+            try
+            {
+                if (!UnityData.IsInMainThread)
+                {
+                    string keyForLog = string.IsNullOrWhiteSpace(presetDefName)
+                        ? "unknown-preset"
+                        : presetDefName.Trim();
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: SetEventFrequencyPreset for '" + keyForLog
+                        + "' was called off the main thread; the call was ignored.",
+                        ("PawnDiary.Api.SetEventFrequencyPreset.OffThread." + keyForLog).GetHashCode());
+                    return false;
+                }
+
+                if (!ExternalIntegrationsAllowed || PawnDiaryMod.Settings == null)
+                {
+                    return false;
+                }
+
+                return IntegrationApiSettings.TrySetEventFrequencyPreset(
+                    PawnDiaryMod.Settings,
+                    presetDefName);
+            }
+            catch (Exception e)
+            {
+                string keyForLog = string.IsNullOrWhiteSpace(presetDefName)
+                    ? "unknown-preset"
+                    : presetDefName.Trim();
+                ApiLogErrorOnce(
+                    "[Pawn Diary] Integration API: SetEventFrequencyPreset for '" + keyForLog
+                    + "' failed: " + e,
+                    ("PawnDiary.Api.SetEventFrequencyPreset.Exception." + keyForLog).GetHashCode());
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Sets one settings-visible event group's frequency multiplier without changing its separate
+        /// enable/disable flag. A value equal to the selected preset is stored sparsely as inheritance.
+        /// Returns false — never throws and never mutates — for an unknown group, a non-finite or
+        /// out-of-range multiplier, an off-thread call, the master switch being off, or no settings.
+        /// </summary>
+        public static bool SetEventFrequencyMultiplier(string key, float multiplier)
+        {
+            try
+            {
+                if (!UnityData.IsInMainThread)
+                {
+                    string keyForLog = string.IsNullOrWhiteSpace(key) ? "unknown-key" : key.Trim();
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: SetEventFrequencyMultiplier for '" + keyForLog
+                        + "' was called off the main thread; the call was ignored.",
+                        ("PawnDiary.Api.SetEventFrequencyMultiplier.OffThread." + keyForLog).GetHashCode());
+                    return false;
+                }
+
+                if (!ExternalIntegrationsAllowed || PawnDiaryMod.Settings == null)
+                {
+                    return false;
+                }
+
+                return IntegrationApiSettings.TrySetEventFrequencyMultiplier(
+                    PawnDiaryMod.Settings,
+                    key,
+                    multiplier);
+            }
+            catch (Exception e)
+            {
+                string keyForLog = string.IsNullOrWhiteSpace(key) ? "unknown-key" : key.Trim();
+                ApiLogErrorOnce(
+                    "[Pawn Diary] Integration API: SetEventFrequencyMultiplier for '" + keyForLog
+                    + "' failed: " + e,
+                    ("PawnDiary.Api.SetEventFrequencyMultiplier.Exception." + keyForLog).GetHashCode());
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Removes one settings-visible event group's saved frequency override so it inherits the
+        /// selected global preset again. Its enable/disable setting is untouched. Returns false —
+        /// never throws — for an unknown group or a call that is not currently allowed.
+        /// </summary>
+        public static bool ResetEventFrequencyMultiplier(string key)
+        {
+            try
+            {
+                if (!UnityData.IsInMainThread)
+                {
+                    string keyForLog = string.IsNullOrWhiteSpace(key) ? "unknown-key" : key.Trim();
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: ResetEventFrequencyMultiplier for '" + keyForLog
+                        + "' was called off the main thread; the call was ignored.",
+                        ("PawnDiary.Api.ResetEventFrequencyMultiplier.OffThread." + keyForLog).GetHashCode());
+                    return false;
+                }
+
+                if (!ExternalIntegrationsAllowed || PawnDiaryMod.Settings == null)
+                {
+                    return false;
+                }
+
+                return IntegrationApiSettings.TryResetEventFrequencyMultiplier(
+                    PawnDiaryMod.Settings,
+                    key);
+            }
+            catch (Exception e)
+            {
+                string keyForLog = string.IsNullOrWhiteSpace(key) ? "unknown-key" : key.Trim();
+                ApiLogErrorOnce(
+                    "[Pawn Diary] Integration API: ResetEventFrequencyMultiplier for '" + keyForLog
+                    + "' failed: " + e,
+                    ("PawnDiary.Api.ResetEventFrequencyMultiplier.Exception." + keyForLog).GetHashCode());
                 return false;
             }
         }
@@ -2114,13 +2291,22 @@ namespace PawnDiary.Integration
         private static DiaryEventSubmissionResult SubmissionResultFor(
             string sourceId,
             string eventKey,
-            bool emitted,
+            bool pageRegistered,
             ExternalEventSignal signal)
         {
             DiaryEventSubmissionResult result = EmptySubmissionResult(sourceId, eventKey);
-            DiaryEvent diaryEvent = signal?.CreatedEvent;
-            if (!emitted || diaryEvent == null)
+            result.recorded = pageRegistered;
+            if (!pageRegistered)
             {
+                return result;
+            }
+
+            DiaryEvent diaryEvent = signal?.CreatedEvent;
+            if (diaryEvent == null)
+            {
+                // ExceptionAfterCommit means persistence began even when the throwing adapter never
+                // returned the DiaryEvent to its signal. Preserve that durable truth, but never invent
+                // an event id merely to manufacture a handle.
                 return result;
             }
 
@@ -2130,7 +2316,6 @@ namespace PawnDiary.Integration
                 result.partner = DiaryGameComponent.BuildEntryHandle(diaryEvent, DiaryEvent.RecipientRole);
             }
 
-            result.recorded = result.primary != null;
             result.pairwise = result.partner != null;
             return result;
         }
@@ -2138,13 +2323,21 @@ namespace PawnDiary.Integration
         private static DiaryEventSubmissionResult SubmissionResultFor(
             string sourceId,
             string eventKey,
-            bool emitted,
+            bool pageRegistered,
             ExternalDirectEntrySignal signal)
         {
             DiaryEventSubmissionResult result = EmptySubmissionResult(sourceId, eventKey);
-            DiaryEvent diaryEvent = signal?.CreatedEvent;
-            if (!emitted || diaryEvent == null)
+            result.recorded = pageRegistered;
+            if (!pageRegistered)
             {
+                return result;
+            }
+
+            DiaryEvent diaryEvent = signal?.CreatedEvent;
+            if (diaryEvent == null)
+            {
+                // Match the generated-entry path: a committed page stays recorded even when its
+                // post-commit fault prevents safe handle construction.
                 return result;
             }
 
@@ -2154,7 +2347,6 @@ namespace PawnDiary.Integration
                 result.partner = DiaryGameComponent.BuildEntryHandle(diaryEvent, DiaryEvent.RecipientRole);
             }
 
-            result.recorded = result.primary != null;
             result.pairwise = result.partner != null;
             return result;
         }

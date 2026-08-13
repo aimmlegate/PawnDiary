@@ -1,8 +1,9 @@
 // Copyable Pawn Diary integration layer for the example adapter.
 //
-// This is the only file in the example adapter that calls PawnDiaryApi directly. If you are writing
-// a real adapter, start here: copy this file, change SourceId / ExampleEventKey, keep the status
-// checks, and replace the demo hook callbacks with hooks from your target mod.
+// This facade owns the example adapter's direct PawnDiaryApi calls. Optional API-v9 frequency
+// members go through FrequencyApiV9Shim instead, so the adapter still type-loads beside API v8. If
+// you are writing a real adapter, start here: copy this file plus the compatibility helpers, change
+// SourceId / ExampleEventKey, keep the status checks, and replace the demo callbacks with your hooks.
 //
 // The rest of the API Explorer is UI/test harness code. Keeping every core API touch in this file
 // makes the contract easy to audit and gives other mod authors one clear example to copy.
@@ -45,12 +46,20 @@ namespace PawnDiaryExampleAdapter
         private static bool hooksRegistered;
 
         /// <summary>
-        /// Gets the public Pawn Diary integration API version.
+        /// Gets the version exposed by the Pawn Diary assembly actually loaded by RimWorld. This uses
+        /// reflection because a direct read of the core's const field would be inlined when this
+        /// adapter compiles and could keep reporting that old build-time value after an upgrade.
         /// </summary>
-        /// <returns>The integer contract version exposed by Pawn Diary.</returns>
+        /// <returns>The positive loaded contract version, or zero when the field cannot be read.</returns>
         public static int ApiVersion
         {
-            get { return PawnDiaryApi.ApiVersion; }
+            get { return LoadedApiVersionProbe.Read(typeof(PawnDiaryApi)); }
+        }
+
+        /// <summary>Whether the loaded core advertises the optional event-frequency API.</summary>
+        public static bool SupportsEventFrequencyApi
+        {
+            get { return FrequencyApiV9Shim.IsSupported(typeof(PawnDiaryApi)); }
         }
 
         /// <summary>
@@ -664,6 +673,17 @@ namespace PawnDiaryExampleAdapter
         }
 
         /// <summary>
+        /// Reads the selected global frequency preset together with the current event-filter rows.
+        /// </summary>
+        /// <returns>
+        /// An adapter-owned detached snapshot, or null on API v8 and when the v9 call is not allowed.
+        /// </returns>
+        public static AdapterEventFrequencySettingsSnapshot GetEventFrequencySettings()
+        {
+            return FrequencyApiV9Shim.GetEventFrequencySettings(typeof(PawnDiaryApi));
+        }
+
+        /// <summary>
         /// Reads whether Pawn Diary currently captures one event kind, by event-filter group defName.
         /// </summary>
         /// <param name="key">Event-filter group defName (from <see cref="GetEventFilters"/>).</param>
@@ -683,6 +703,31 @@ namespace PawnDiaryExampleAdapter
         public static bool SetEventFilterEnabled(string key, bool enabled)
         {
             return PawnDiaryApi.SetEventFilterEnabled(key, enabled);
+        }
+
+        /// <summary>Selects one loaded global frequency preset and clears per-group frequency overrides.</summary>
+        /// <param name="presetDefName">Stable preset Def name from the frequency settings snapshot.</param>
+        /// <returns>True when applied; false for an unknown preset or a call that is not allowed.</returns>
+        public static bool SetEventFrequencyPreset(string presetDefName)
+        {
+            return FrequencyApiV9Shim.SetEventFrequencyPreset(typeof(PawnDiaryApi), presetDefName);
+        }
+
+        /// <summary>Sets one event group's frequency multiplier without changing its enable flag.</summary>
+        /// <param name="key">Event-filter group defName.</param>
+        /// <param name="multiplier">Finite multiplier in Pawn Diary's supported range.</param>
+        /// <returns>True when applied; false for invalid input or a call that is not allowed.</returns>
+        public static bool SetEventFrequencyMultiplier(string key, float multiplier)
+        {
+            return FrequencyApiV9Shim.SetEventFrequencyMultiplier(typeof(PawnDiaryApi), key, multiplier);
+        }
+
+        /// <summary>Returns one event group's frequency to the selected preset.</summary>
+        /// <param name="key">Event-filter group defName.</param>
+        /// <returns>True when applied; false for an unknown key or a call that is not allowed.</returns>
+        public static bool ResetEventFrequencyMultiplier(string key)
+        {
+            return FrequencyApiV9Shim.ResetEventFrequencyMultiplier(typeof(PawnDiaryApi), key);
         }
     }
 }

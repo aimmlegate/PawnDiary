@@ -27,6 +27,7 @@ namespace PawnDiary.Ingestion
         private readonly bool valid;
         private readonly Map map;
         private readonly string colonyDedupKey;
+        private readonly DiaryInteractionGroupDef frequencyGroup;
 
         // Shared raid facts copied onto each per-pawn payload + read by each child's Emit.
         internal string IncidentDefName { get; }
@@ -67,6 +68,7 @@ namespace PawnDiary.Ingestion
             {
                 return;
             }
+            frequencyGroup = group;
 
             // Raids target a single map; caravan/world raids have no FreeColonists list to fan out to.
             map = parms.target as Map;
@@ -105,6 +107,16 @@ namespace PawnDiary.Ingestion
         public override string ColonyDedupKey => valid ? colonyDedupKey : string.Empty;
 
         public override int ColonyDedupTicks => DiaryTuning.Current.raidDedupTicks;
+
+        public override CaptureContext BuildFrequencyContext()
+        {
+            return DiaryGameComponent.BuildCaptureContext(
+                eligible: valid,
+                userEnabled: true,
+                signalEnabled: true,
+                ambientSignalEnabled: true,
+                frequencyGroup: frequencyGroup);
+        }
 
         public override IEnumerable<DiarySignal> PerPawnSignals()
         {
@@ -435,7 +447,8 @@ namespace PawnDiary.Ingestion
         public override CaptureContext BuildContext()
         {
             return DiaryGameComponent.BuildCaptureContext(
-                eligible: true, userEnabled: true, signalEnabled: true, ambientSignalEnabled: true);
+                eligible: true, userEnabled: true, signalEnabled: true, ambientSignalEnabled: true,
+                bypassFrequency: true);
         }
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)

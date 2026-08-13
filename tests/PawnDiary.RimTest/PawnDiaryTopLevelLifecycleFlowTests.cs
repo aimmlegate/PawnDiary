@@ -36,7 +36,7 @@ namespace PawnDiary.RimTests
         private const BindingFlags PrivateStatic =
             BindingFlags.Static | BindingFlags.NonPublic;
 
-        private const float ForcedWorkPassChance = 1000000f;
+        private const float ForcedWorkPassChance = 1f;
         private const string LocalAbilityDefName =
             "PawnDiary_RimTest_TopLevelLocalAbility";
         private const string GlobalAbilityDefName =
@@ -70,6 +70,7 @@ namespace PawnDiary.RimTests
                 "workStrain",
                 "questAccepted",
                 "arrival");
+            ForceFrequencyToOne("abilityUsed", "workStrain");
             SuppressErrorReporting();
         }
 
@@ -267,18 +268,14 @@ namespace PawnDiary.RimTests
             DiaryTuningDef tuning = DiaryTuning.Current;
             float originalMinChance = tuning.abilityUseMinChance;
             float originalMaxChance = tuning.abilityUseMaxChance;
-            PawnDiarySettings settings = PawnDiaryMod.Settings;
-            float originalWeight = settings.generationChanceWeight;
             scope.RegisterCleanup(() =>
             {
                 tuning.abilityUseMinChance = originalMinChance;
                 tuning.abilityUseMaxChance = originalMaxChance;
-                settings.generationChanceWeight = originalWeight;
             });
 
             tuning.abilityUseMinChance = 1f;
             tuning.abilityUseMaxChance = 1f;
-            settings.generationChanceWeight = 1f;
         }
 
         private static void SetCurrentWork(Pawn pawn, WorkTypeDef workType)
@@ -326,8 +323,6 @@ namespace PawnDiary.RimTests
             int originalSameTypeCooldown =
                 policy.sameTypeCooldownTicks;
             int originalLowSkillThreshold = policy.lowSkillThreshold;
-            PawnDiarySettings settings = PawnDiaryMod.Settings;
-            float originalWeight = settings.generationChanceWeight;
 
             scope.RegisterCleanup(() =>
             {
@@ -344,7 +339,6 @@ namespace PawnDiary.RimTests
                 policy.sameTypeCooldownTicks =
                     originalSameTypeCooldown;
                 policy.lowSkillThreshold = originalLowSkillThreshold;
-                settings.generationChanceWeight = originalWeight;
             });
 
             policy.enabled = true;
@@ -355,7 +349,31 @@ namespace PawnDiary.RimTests
             policy.recentDifferentTypeMultiplier = 1f;
             policy.sameTypeCooldownTicks = 0;
             policy.lowSkillThreshold = 0;
-            settings.generationChanceWeight = 1f;
+        }
+
+        /// <summary>
+        /// Pins only the frequency rows exercised by this suite, then restores the exact sparse map.
+        /// This keeps the boundary tests deterministic under any developer-selected preset or overrides.
+        /// </summary>
+        private static void ForceFrequencyToOne(params string[] groupKeys)
+        {
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+            Dictionary<string, float> original = settings.groupFrequencyOverrides == null
+                ? new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, float>(
+                    settings.groupFrequencyOverrides,
+                    StringComparer.OrdinalIgnoreCase);
+            scope.RegisterCleanup(() =>
+            {
+                settings.groupFrequencyOverrides = new Dictionary<string, float>(
+                    original,
+                    StringComparer.OrdinalIgnoreCase);
+            });
+
+            for (int i = 0; i < groupKeys.Length; i++)
+            {
+                settings.SetGroupFrequencyOverride(groupKeys[i], 1f);
+            }
         }
 
         private static void IsolateFreeColonistCacheTo(Pawn pawn)

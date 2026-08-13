@@ -261,7 +261,8 @@ namespace PawnDiary
             RoyalMutationBatchSnapshot batch = TitleBatch(
                 pawn, mutation.previousTitle, mutation.newTitle,
                 RoyalMutationCauseTokens.Unknown, now);
-            if (EmitRoyalTitleTransition(pawn, batch, decision)) ClaimRoyalTitleThoughts(batch, now, policy);
+            ProgressionDispatchResult dispatch = EmitRoyalTitleTransition(pawn, batch, decision);
+            if (dispatch.SettlesSource) ClaimRoyalTitleThoughts(batch, now, policy);
         }
 
         private Pawn FindLiveRoyaltyPawn(string pawnId)

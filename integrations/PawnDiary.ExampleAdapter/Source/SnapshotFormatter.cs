@@ -3,15 +3,16 @@
 // (English by design — these are schema labels, the same carve-out as the prompt-schema labels in
 // AGENTS.md §12). Values come straight from the API and are already localized by PawnDiary.
 //
-// Why not pure-test these? The DTOs live in PawnDiary.dll, which references RimWorld — pulling them
-// into a console test project would drag RimWorld/Unity in transitively, breaking the "pure tests
-// compile without RimWorld" rule. The logic here is straightforward field emission; the load-bearing
-// parsing edge cases live in ExplorerParsing, which IS pure-tested.
+// Most DTOs live in PawnDiary.dll, which references RimWorld, so this formatter remains adapter
+// glue. API-v9 frequency values are different: FrequencyApiV9Shim first copies them into plain,
+// adapter-owned DTOs, and the pure console harness tests that compatibility/detachment boundary.
 //
 // New to C#? See AGENTS.md.
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using PawnDiary.Integration;
+using Verse;
 
 namespace PawnDiaryExampleAdapter
 {
@@ -450,11 +451,82 @@ namespace PawnDiaryExampleAdapter
             return sb.ToString();
         }
 
+        public static string Format(AdapterEventFrequencySettingsSnapshot snapshot)
+        {
+            if (snapshot == null)
+            {
+                return "PawnDiaryExampleAdapter.Result.Frequency.Unavailable".Translate().Resolve();
+            }
+
+            StringBuilder sb = new StringBuilder();
+            sb.Append("PawnDiaryExampleAdapter.Result.Frequency.Header".Translate().Resolve()).Append('\n');
+            sb.Append("PawnDiaryExampleAdapter.Result.Frequency.Preset".Translate(
+                NullEscape(snapshot.selectedPresetDefName),
+                NullEscape(snapshot.selectedPresetLabel)).Resolve()).Append('\n');
+            sb.Append("PawnDiaryExampleAdapter.Result.Frequency.Custom".Translate(
+                LocalizedBool(snapshot.hasCustomOverrides)).Resolve()).Append('\n');
+            sb.Append("PawnDiaryExampleAdapter.Result.Frequency.GroupCount".Translate(
+                snapshot.filters == null ? 0 : snapshot.filters.Count).Resolve());
+
+            if (snapshot.filters == null)
+            {
+                return sb.ToString();
+            }
+
+            for (int i = 0; i < snapshot.filters.Count; i++)
+            {
+                AdapterEventFrequencyFilterSnapshot filter = snapshot.filters[i];
+                if (filter == null)
+                {
+                    continue;
+                }
+
+                string state = (filter.enabled
+                    ? "PawnDiaryExampleAdapter.Result.Frequency.Enabled"
+                    : "PawnDiaryExampleAdapter.Result.Frequency.Disabled").Translate().Resolve();
+                string enableOverride = filter.hasOverride
+                    ? "PawnDiaryExampleAdapter.Result.Frequency.EnableOverride".Translate().Resolve()
+                    : string.Empty;
+                string frequencyOverride = filter.hasFrequencyOverride
+                    ? "PawnDiaryExampleAdapter.Result.Frequency.MultiplierOverride".Translate().Resolve()
+                    : string.Empty;
+
+                sb.Append('\n').Append("PawnDiaryExampleAdapter.Result.Frequency.Row".Translate(
+                    state,
+                    NullEscape(filter.key),
+                    NullEscape(filter.domain),
+                    filter.effectiveFrequencyMultiplier.ToString("0.###", CultureInfo.InvariantCulture),
+                    filter.presetFrequencyMultiplier.ToString("0.###", CultureInfo.InvariantCulture),
+                    NullEscape(filter.frequencyTier),
+                    enableOverride,
+                    frequencyOverride,
+                    NullEscape(filter.label)).Resolve());
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>Formats one optional frequency write with localized outcome text.</summary>
+        public static string FormatFrequencyMutation(string methodName, string target, bool applied)
+        {
+            return "PawnDiaryExampleAdapter.Result.Frequency.Mutation".Translate(
+                methodName,
+                NullEscape(target),
+                LocalizedBool(applied)).Resolve();
+        }
+
         // ---- helpers ------------------------------------------------------------
 
         private static string NullEscape(string s)
         {
             return string.IsNullOrEmpty(s) ? "(empty)" : s;
+        }
+
+        private static string LocalizedBool(bool value)
+        {
+            return (value
+                ? "PawnDiaryExampleAdapter.Result.Yes"
+                : "PawnDiaryExampleAdapter.Result.No").Translate().Resolve();
         }
 
         private static string JoinList(IReadOnlyList<string> list)

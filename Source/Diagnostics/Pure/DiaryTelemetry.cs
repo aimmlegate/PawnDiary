@@ -30,6 +30,7 @@ namespace PawnDiary
         ForcedSignalUnsupported,
         CatalogMissing,
         PolicyDropped,
+        FrequencyRejected,
         KnowledgeCapturedWithoutPage,
         EventTypeDuplicate,
         EventRecorded,

@@ -4,10 +4,10 @@ Pawn Diary's settings follow the five tabs shown in the mod settings window. Mos
 
 | Tab | What it controls |
 |---|---|
-| Main | API lanes, routing, reading mode, generation frequency, context detail, storage, integrations, and optional error reporting |
+| Main | API lanes, routing, reading mode, context detail, storage, integrations, and optional error reporting |
 | Prompts | shared system prompts plus event-specific prompt, enhancement, and model overrides |
 | Styles | writing-style and psychotype presets |
-| Events | automatic-capture group toggles |
+| Events | automatic-capture toggles plus frequency presets and per-group choices |
 | Tuning | experimental low-level overrides, visible only after its opt-in gate is enabled |
 
 ## Main
@@ -38,10 +38,6 @@ Each lane can inherit the global preset or select its own override. “Use globa
 
 Required event facts do not become optional merely because Compact is selected. Blank and sentinel-valued fields are still omitted in every preset.
 
-### Generation frequency
-
-Generation frequency is a multiplier on configured event chances. Raising it makes eligible probabilistic routes more likely; lowering it makes them less likely. It is not a guarantee that every noticed event becomes a page: group enablement, semantic checks, duplicates, daily pacing, batching, lane readiness, and response failure still apply.
-
 ### Retention
 
 The active-page limit controls how many recent pages remain in the main diary collection. Older pages can move into the archive. The archived-page limit then bounds that collection as well. These are storage policies, not generation quotas, and changing them can prune older retained pages when the limits are applied.
@@ -64,7 +60,13 @@ Writing-style presets shape prose direction. Psychotypes shape the pawn's broade
 
 ## Events
 
-Each row represents one XML classification group, not one individual matcher. Disabling a group prevents its automatic capture policy from admitting new events. Defaults come from XML, but once a player saves an explicit override that saved choice wins over a later XML default change.
+Each row represents one XML classification group, not one individual matcher. Disabling a group prevents its automatic capture policy from admitting new events. Defaults come from XML, but once a player saves an explicit enable/disable override that saved choice wins over a later XML default change.
+
+Lite, Standard, and Frequent select XML-owned frequency profiles. Standard preserves the original default frequency. Lite keeps essential milestones at full frequency while reducing significant, routine, ambient, and long-form pages. Frequent raises existing sampling chances, but it never invents a second copy of a deterministic event such as a birth, death, or raid.
+
+The named choice on each row is an absolute multiplier for that event group. Rare, Reduced, Normal, and Increased create a sparse custom profile; **Use preset** removes only that row's custom frequency and restores inheritance. **Reset to preset** clears frequency choices but leaves every enable/disable choice unchanged. A disabled row remains disabled regardless of its frequency value.
+
+Frequency is still not a guarantee that every noticed event becomes a page: semantic checks, duplicates, daily pacing, batching, lane readiness, and response failure also apply. Shared colony events draw once for the occurrence, and delayed batches freeze their decision when the candidate opens rather than rerolling after a settings change.
 
 Quest acceptance is off by default; completion and failure are on. Optional DLC and mod-aware groups remain harmless when their required content is absent.
 
@@ -88,7 +90,7 @@ Check, in this order:
 
 1. The pawn is a humanlike colonist, inside the valid diary lifetime and age rules, and has generation enabled.
 2. The matching Events group is enabled and any DLC/mod prerequisite is present.
-3. Chance, generation frequency, semantic eligibility, duplicate suppression, or daily pacing did not reject the moment.
+3. Native chance, the selected Events frequency profile, semantic eligibility, duplicate suppression, or daily pacing did not reject the moment.
 4. At least one enabled API lane has both a URL and model, and any forced model can be resolved.
 5. The selected lane is not unavailable from cooldown, concurrency pressure, authentication failure, timeout, or exhausted failover.
 6. The route is not waiting for a batch flush or saving the fact as reflection evidence.

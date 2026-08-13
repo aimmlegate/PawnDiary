@@ -105,7 +105,8 @@ namespace PawnDiary.Ingestion
                 // are governed by the integration master switch, validation, budget, and pawn gates.
                 userEnabled: true,
                 signalEnabled: true,
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                bypassFrequency: true);
         }
 
         // Keep the same dedup namespace as external LLM-queued events, so an adapter can safely choose

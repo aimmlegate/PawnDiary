@@ -195,24 +195,27 @@ namespace PawnDiary
             state.lastObservedXenotypeLabel = after.xenotypeLabel ?? string.Empty;
             if (!decision.HasAnyChange) return false;
 
-            bool emitted = EmitGeneIdentityTransition(
+            ProgressionDispatchResult dispatch = EmitGeneIdentityTransition(
                 call.recipient,
                 call.before,
                 after,
                 decision,
                 call.causeToken,
                 call.otherPawn);
-            if (emitted && string.Equals(
+            if (dispatch.SettlesSource && string.Equals(
                 call.causeToken,
                 GeneChangeCauseTokens.XenogermReimplant,
                 StringComparison.Ordinal))
             {
+                // A central frequency skip still settles the exact xenogerm occurrence. Claim the
+                // surrounding ability scope so its generic AbilitySignal cannot reroll the same
+                // action through a second provider. The public return below remains page-only.
                 BiotechGeneMutationCorrelation.ClaimCurrentAbility(call.recipient);
             }
-            return emitted;
+            return dispatch.PageRegistered;
         }
 
-        private bool EmitGeneIdentityTransition(
+        private ProgressionDispatchResult EmitGeneIdentityTransition(
             Pawn pawn,
             GeneIdentitySnapshot before,
             GeneIdentitySnapshot after,
@@ -220,7 +223,8 @@ namespace PawnDiary
             string causeToken,
             Pawn otherPawn)
         {
-            if (pawn == null || decision == null || !decision.HasAnyChange) return false;
+            if (pawn == null || decision == null || !decision.HasAnyChange)
+                return default(ProgressionDispatchResult);
             BiotechPolicySnapshot biotechPolicy = DiaryBiotechPolicy.Snapshot();
             GeneSaliencePolicySnapshot policy = biotechPolicy.geneSalience;
             bool major = IsMajorArcXenotype(after?.xenotypeDefName);
@@ -275,7 +279,7 @@ namespace PawnDiary
                     sourceDefName = ProgressionEventData.GeneIdentityChangedDefName
                 }
             };
-            return DispatchProgression(
+            return DispatchProgressionWithResult(
                 pawn,
                 data,
                 label,
@@ -608,11 +612,66 @@ namespace PawnDiary
             return cleaned;
         }
 
+        /// <summary>
+        /// Keeps page visibility separate from source settlement. Frequency rejection, pacing that
+        /// consumes a source without a page, and an exception after repository commit all settle the
+        /// exact occurrence even though only a registered page should satisfy outward page booleans.
+        /// </summary>
+        private struct ProgressionDispatchResult
+        {
+            public ProgressionDispatchResult(
+                DiaryDispatchOutcome outcome,
+                bool pageRegistered)
+            {
+                Outcome = outcome;
+                PageRegistered = pageRegistered;
+            }
+
+            public DiaryDispatchOutcome Outcome { get; private set; }
+
+            public bool PageRegistered { get; private set; }
+
+            public bool SettlesSource => DiaryDispatchOutcomePolicy.SettlesSource(Outcome);
+        }
+
+        /// <summary>Dispatches one progression and reports only whether its page was registered.</summary>
         private bool DispatchProgression(Pawn pawn, ProgressionEventData data, string label, string text,
             bool majorArcCandidate, string dedupKey = null, int dedupWindowTicks = 0,
             List<NarrativeEvidence> narrativeEvidence = null,
             BiotechNarrativeSnapshot biotechNarrative = null,
-            TerminalReflectionContract terminalReflection = null)
+            TerminalReflectionContract terminalReflection = null,
+            bool bypassFrequency = false)
+        {
+            return DispatchProgressionWithResult(
+                pawn,
+                data,
+                label,
+                text,
+                majorArcCandidate,
+                dedupKey,
+                dedupWindowTicks,
+                narrativeEvidence,
+                biotechNarrative,
+                terminalReflection,
+                bypassFrequency).PageRegistered;
+        }
+
+        /// <summary>
+        /// Dispatches one progression while retaining the typed settlement outcome for richer-source
+        /// owners that must suppress a less precise fallback even when no page was produced.
+        /// </summary>
+        private ProgressionDispatchResult DispatchProgressionWithResult(
+            Pawn pawn,
+            ProgressionEventData data,
+            string label,
+            string text,
+            bool majorArcCandidate,
+            string dedupKey = null,
+            int dedupWindowTicks = 0,
+            List<NarrativeEvidence> narrativeEvidence = null,
+            BiotechNarrativeSnapshot biotechNarrative = null,
+            TerminalReflectionContract terminalReflection = null,
+            bool bypassFrequency = false)
         {
             DiaryInteractionGroupDef group = InteractionGroups.ClassifyProgression(data.DefName);
             bool userEnabled = group != null && PawnDiaryMod.Settings != null
@@ -639,9 +698,12 @@ namespace PawnDiary
                 dedupKey,
                 dedupWindowTicks,
                 narrativeEvidence,
-                biotechNarrative);
-            bool emitted = Dispatch(progressionSignal);
-            if (emitted && terminalReflection != null)
+                biotechNarrative,
+                bypassFrequency: bypassFrequency);
+            DiaryDispatchOutcome outcome = DispatchWithOutcome(progressionSignal);
+            bool pageRegistered = DiaryDispatchOutcomePolicy.PageRegistered(outcome)
+                && progressionSignal.CreatedEvent != null;
+            if (pageRegistered && terminalReflection != null)
             {
                 ConsiderArcReflectionAfterTerminalEvent(
                     pawn,
@@ -649,12 +711,12 @@ namespace PawnDiary
                     DiaryEvent.InitiatorRole,
                     terminalReflection);
             }
-            else if (emitted && majorArcCandidate)
+            else if (pageRegistered && majorArcCandidate)
             {
                 ConsiderArcReflectionAfterMajorEvent(pawn);
             }
 
-            return emitted;
+            return new ProgressionDispatchResult(outcome, pageRegistered);
         }
 
         private static ProgressionEventData ProgressionData(Pawn pawn, string defName, string kind,

@@ -287,7 +287,7 @@ namespace PawnDiary
             return runtime;
         }
 
-        private bool DispatchPreparedArcReflection(
+        private DiaryDispatchOutcome DispatchPreparedArcReflection(
             Pawn pawn,
             string pawnId,
             int nowTick,
@@ -319,7 +319,8 @@ namespace PawnDiary
                 selection.candidateCount,
                 scheduleDecision.normalizedEntriesThisYear);
 
-            return Dispatch(new ArcReflectionSignal(data, pawn, label, text, instruction, gameContext));
+            return DispatchWithOutcome(
+                new ArcReflectionSignal(data, pawn, label, text, instruction, gameContext));
         }
 
         private List<ArcMemoryCandidate> CollectArcMemoryCandidates(PawnDiaryRecord diary, string pawnId,

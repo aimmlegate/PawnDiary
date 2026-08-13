@@ -16,6 +16,7 @@ namespace PawnDiary.Ingestion
         private readonly PsychicBondMutationSnapshot mutation;
         private readonly Pawn firstPawn;
         private readonly Pawn secondPawn;
+        private readonly DiaryInteractionGroupDef group;
 
         internal BiotechBondSignal(
             BiotechBondEventData payload,
@@ -27,13 +28,13 @@ namespace PawnDiary.Ingestion
             this.mutation = mutation;
             this.firstPawn = firstPawn;
             this.secondPawn = secondPawn;
+            group = InteractionGroups.ByKey(GroupKey);
         }
 
         public override DiaryEventData Payload => payload;
 
         public override CaptureContext BuildContext()
         {
-            DiaryInteractionGroupDef group = InteractionGroups.ByKey(GroupKey);
             bool enabled = group != null
                 && PawnDiaryMod.Settings != null
                 && PawnDiaryMod.Settings.IsGroupEnabled(group.defName);
@@ -42,7 +43,9 @@ namespace PawnDiary.Ingestion
                     && (payload.FirstPawnEligible || payload.SecondPawnEligible),
                 userEnabled: enabled,
                 signalEnabled: DiarySignalPolicies.Enabled(DiarySignalPolicies.Progression),
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                frequencyGroup: group,
+                nativeCaptureChance: 1f);
         }
 
         public override string DedupKey => payload?.DedupKey() ?? string.Empty;
@@ -50,13 +53,15 @@ namespace PawnDiary.Ingestion
         public override int DedupWindowTicks =>
             DiaryBiotechPolicy.Snapshot().bondDeathrest.psychicBondCorrelationExpiryTicks;
 
-        public override void CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
+        public override bool CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
         {
             if (payload != null && mutation != null)
             {
                 sink.CaptureEventKnowledgeWithoutPage(
                     firstPawn, secondPawn, payload.DefName, BuildGameContext(), payload.Tick);
+                return true;
             }
+            return false;
         }
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)
@@ -69,7 +74,6 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
-            DiaryInteractionGroupDef group = InteractionGroups.ByKey(GroupKey);
             string label = group == null || string.IsNullOrWhiteSpace(group.label)
                 ? LabelKey().Translate().Resolve()
                 : group.LabelCap.Resolve();

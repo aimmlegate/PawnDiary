@@ -61,7 +61,9 @@ namespace PawnDiary.Ingestion
                 signalEnabled: ModsConfig.OdysseyActive
                     && policy.enabled
                     && policy.mechhiveOutcomePageEnabled,
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                frequencyGroup: group,
+                nativeCaptureChance: 1f);
         }
 
         public override string DedupKey => payload.DedupKey();

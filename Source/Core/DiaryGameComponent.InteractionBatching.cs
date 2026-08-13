@@ -35,10 +35,12 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Weighted-random gate: returns true when this otherwise-batched moment should "win"
+        /// Native weighted-random gate: returns true when this otherwise-batched moment should "win"
         /// promotion to its own immediate pairwise diary event instead of being merged into the
         /// group's batch. Higher odds when the pair's feelings are intense/lopsided or when a pawn
-        /// is in an extreme need/mood state. No-op (false) for groups without a promotion policy.
+        /// is in an extreme need/mood state. Frequency settings do not alter this routing decision;
+        /// the promoted page receives the shared group admission afterward. No-op (false) for groups
+        /// without a promotion policy.
         /// </summary>
         internal static bool ShouldPromoteInteraction(DiaryInteractionGroupDef group, Pawn initiator, Pawn recipient)
         {
@@ -47,20 +49,85 @@ namespace PawnDiary
                 return false;
             }
 
-            float weight = PawnDiarySettings.ClampGenerationChanceWeight(
-                PawnDiaryMod.Settings?.generationChanceWeight ?? PawnDiarySettings.DefaultGenerationChanceWeight);
             // The route is frozen into the capture payload. Isolate this one-shot diary decision so
             // it cannot advance the global seeded RNG used by RimWorld gameplay.
             Rand.PushState();
             try
             {
-                return Rand.Chance(
-                    Mathf.Clamp01(PromotionChance(group.promotion, initiator, recipient) * weight));
+                return Rand.Chance(PromotionChance(group.promotion, initiator, recipient));
             }
             finally
             {
                 Rand.PopState();
             }
+        }
+
+        /// <summary>
+        /// Freezes the one frequency result owned by a newly-opened delayed interaction page. The
+        /// pending aggregate keeps this bool until every flush route settles it, so a settings change,
+        /// quiet-window flush, save flush, or one-pawn fallback can never reroll the same candidate.
+        /// </summary>
+        private static bool FreezeInteractionAggregateFrequency(
+            DiaryInteractionGroupDef group)
+        {
+            if (group == null || string.IsNullOrWhiteSpace(group.defName))
+            {
+                return false;
+            }
+
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+            float playerOverride = DiaryFrequencyPolicy.StandardMultiplier;
+            bool hasOverride = settings != null
+                && settings.TryGetRuntimeGroupFrequencyOverride(
+                    group.defName,
+                    out playerOverride);
+            DiaryFrequencyPresetSnapshot preset = settings?.RuntimeFrequencyPresetSnapshot();
+            float multiplier = DiaryFrequencyPolicy.ResolveEffectiveMultiplier(
+                preset,
+                group.defName,
+                group.frequencyTier,
+                hasOverride,
+                playerOverride);
+
+            float effectiveChance;
+            bool validChance = DiaryFrequencyPolicy.TryCalculateEffectiveChance(
+                1f,
+                multiplier,
+                out effectiveChance);
+            float roll = float.NaN;
+            if (validChance && effectiveChance > 0f && effectiveChance < 1f)
+            {
+                // This is a one-shot cosmetic choice whose result lives in the pending object. Keep it
+                // isolated from RimWorld's seeded gameplay stream exactly like direct-page admission.
+                Rand.PushState();
+                try
+                {
+                    roll = Rand.Value;
+                }
+                finally
+                {
+                    Rand.PopState();
+                }
+            }
+            else if (validChance)
+            {
+                // Deterministic 0x/1x settings do not need even an isolated draw. The pure policy owns
+                // the inclusive boundary and explicitly closes zero probability.
+                roll = effectiveChance <= 0f ? 0f : 1f;
+            }
+
+            return DiaryFrequencyPolicy.Decide(new DiaryFrequencyRequest
+            {
+                groupKey = group.defName,
+                frequencyTier = group.frequencyTier,
+                nativeCaptureChance = 1f,
+                preset = preset,
+                hasPlayerOverride = hasOverride,
+                playerOverride = playerOverride,
+                enabled = true,
+                bypassFrequency = false,
+                roll = roll
+            }).Accepted;
         }
 
         /// <summary>
@@ -163,6 +230,9 @@ namespace PawnDiary
                 {
                     group = group,
                     policy = group.batch,
+                    frequencyGroupKey = group.defName ?? string.Empty,
+                    frequencyTier = group.frequencyTier ?? string.Empty,
+                    frequencyAdmissionAccepted = FreezeInteractionAggregateFrequency(group),
                     initiator = initiator,
                     recipient = recipient,
                     initiatorPawnId = initiator.GetUniqueLoadID(),
@@ -289,6 +359,9 @@ namespace PawnDiary
                     key = key,
                     group = group,
                     policy = group.batch,
+                    frequencyGroupKey = group.defName ?? string.Empty,
+                    frequencyTier = group.frequencyTier ?? string.Empty,
+                    frequencyAdmissionAccepted = FreezeInteractionAggregateFrequency(group),
                     pawn = pawn,
                     pawnId = pawn.GetUniqueLoadID(),
                     dayIndex = CurrentDayIndex,
@@ -413,8 +486,22 @@ namespace PawnDiary
         {
             pendingAmbientInteractionNotes.Remove(key);
 
+            if (note == null)
+            {
+                return;
+            }
+
+            // A rejected aggregate still settles its pawn/day occurrence. In particular, a pre-save
+            // flush must not clear the pending object and then let a later row reopen and reroll the
+            // same day's page after saving.
+            if (!note.frequencyAdmissionAccepted)
+            {
+                RememberRejectedAmbientInteractionFrequencyKey(key);
+                return;
+            }
+
             // The writer may die after the interaction was captured but before this delayed note flushes.
-            if (note == null || note.pawn == null || note.pawn.Dead
+            if (note.pawn == null || note.pawn.Dead
                 || !IsDiaryEligible(note.pawn))
             {
                 return;
@@ -480,6 +567,13 @@ namespace PawnDiary
             pendingInteractionBatches.Remove(key);
 
             if (batch == null || batch.initiator == null || batch.recipient == null || batch.Count == 0)
+            {
+                return;
+            }
+
+            // The pending page already paid its one admission decision when the batch opened. Every
+            // output shape below (standalone, solo survivor, or combined pair) honors that same result.
+            if (!batch.frequencyAdmissionAccepted)
             {
                 return;
             }
@@ -1128,6 +1222,10 @@ namespace PawnDiary
         {
             public DiaryInteractionGroupDef group;
             public InteractionBatchPolicy policy;
+            // Exact group identity and the one aggregate admission result are frozen at open time.
+            public string frequencyGroupKey;
+            public string frequencyTier;
+            public bool frequencyAdmissionAccepted = true;
             // Live Pawn references — only valid during the current game session (not saved).
             public Pawn initiator;
             public Pawn recipient;
@@ -1160,7 +1258,9 @@ namespace PawnDiary
             {
                 get
                 {
-                    return group == null ? "unknown" : group.defName;
+                    return string.IsNullOrWhiteSpace(frequencyGroupKey)
+                        ? (group == null ? "unknown" : group.defName)
+                        : frequencyGroupKey;
                 }
             }
 
@@ -1182,6 +1282,10 @@ namespace PawnDiary
             public string key;
             public DiaryInteractionGroupDef group;
             public InteractionBatchPolicy policy;
+            // Exact group identity and the one pawn/day admission result are frozen at open time.
+            public string frequencyGroupKey;
+            public string frequencyTier;
+            public bool frequencyAdmissionAccepted = true;
             public Pawn pawn;
             public string pawnId;
             public int dayIndex;
@@ -1200,7 +1304,9 @@ namespace PawnDiary
             {
                 get
                 {
-                    return group == null ? "unknown" : group.defName;
+                    return string.IsNullOrWhiteSpace(frequencyGroupKey)
+                        ? (group == null ? "unknown" : group.defName)
+                        : frequencyGroupKey;
                 }
             }
         }

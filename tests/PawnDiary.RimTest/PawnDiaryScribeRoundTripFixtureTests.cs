@@ -1323,6 +1323,343 @@ namespace PawnDiary.RimTests
                 "a populated legacy progression row invented a current gene baseline.");
         }
 
+        // ---- Global settings round-trip ------------------------------------------------------------
+
+        /// <summary>
+        /// Proves the new frequency schema, selected preset, sparse known/future rows, notice state,
+        /// survive RimWorld's real settings serialization while the retired scalar stays neutral.
+        /// </summary>
+        [Test]
+        public static void FrequencySettingsRoundTripWithoutDoubleApplyingLegacyBridge()
+        {
+            Require(new PawnDiarySettings().frequencySettingsSchemaVersion
+                    == PawnDiarySettings.CurrentFrequencySettingsSchemaVersion,
+                "a fresh settings object would save as legacy schema zero.");
+
+            PawnDiarySettings original = new PawnDiarySettings
+            {
+                frequencySettingsSchemaVersion =
+                    PawnDiarySettings.CurrentFrequencySettingsSchemaVersion,
+                frequencyPresetDefName = DiaryFrequencyPresets.LiteDefName,
+                frequencyMigrationNoticePending = true,
+                generationChanceWeight = 0.4f,
+                groupFrequencyOverrides = new Dictionary<string, float>(
+                    StringComparer.OrdinalIgnoreCase)
+                {
+                    { "smalltalk", 0.2f },
+                    { "FutureAddonFrequencyGroup", 2.75f }
+                }
+            };
+
+            PawnDiarySettings loaded = ScribeRoundTrip(original);
+
+            Require(loaded.frequencySettingsSchemaVersion
+                    == PawnDiarySettings.CurrentFrequencySettingsSchemaVersion,
+                "frequency settings schema version did not survive round-trip.");
+            AssertStr(DiaryFrequencyPresets.LiteDefName, loaded.frequencyPresetDefName,
+                "frequencyPresetDefName");
+            Require(loaded.frequencyMigrationNoticePending,
+                "migration notice state did not survive round-trip.");
+            Require(Math.Abs(loaded.generationChanceWeight - 1f) < 0.0001f,
+                "a current frequency schema retained the retired runtime scalar.");
+            Require(loaded.groupFrequencyOverrides != null
+                    && loaded.groupFrequencyOverrides.Count == 2,
+                "frequency override dictionary did not round-trip sparsely.");
+            Require(Math.Abs(loaded.groupFrequencyOverrides["smalltalk"] - 0.2f) < 0.0001f,
+                "known frequency override did not survive round-trip.");
+            Require(Math.Abs(
+                    loaded.groupFrequencyOverrides["FutureAddonFrequencyGroup"] - 2.75f)
+                    < 0.0001f,
+                "unknown future-group frequency override was not preserved.");
+            Require(loaded.HasCustomFrequencyOverrides(),
+                "known sparse override was not detected as Custom after load.");
+        }
+
+        /// <summary>
+        /// Loads the exact pre-schema Work/Social XML shape. Work and promotion rows retain their
+        /// separate old intent, Ability receives the former compatibility average, and the old merged
+        /// scalar is neutralized after its intent has been projected.
+        /// </summary>
+        [Test]
+        public static void LegacySplitFrequencySettingsMigrateOnceThroughScribe()
+        {
+            using (new FrequencyPromotionPolicyFixtureScope("smalltalk", "hospitality_guestwork"))
+            {
+                LegacyFrequencySettingsAdapter loaded = ScribeRoundTrip(
+                    new LegacyFrequencySettingsAdapter
+                    {
+                        hasWork = true,
+                        work = 0.2f,
+                        hasSocial = true,
+                        social = 1.8f
+                    });
+                PawnDiarySettings settings = loaded.settings;
+                Require(settings != null, "legacy split frequency settings loaded no settings object.");
+                Require(settings.frequencySettingsSchemaVersion
+                        == PawnDiarySettings.CurrentFrequencySettingsSchemaVersion,
+                    "legacy split frequency settings did not advance the schema.");
+                AssertStr(DiaryFrequencyPresets.StandardDefName, settings.frequencyPresetDefName,
+                    "migrated split frequency preset");
+                Require(settings.frequencyMigrationNoticePending,
+                    "non-default legacy split intent did not schedule its one-time notice.");
+                Require(Math.Abs(settings.generationChanceWeight - 1f) < 0.0001f,
+                    "legacy split migration did not neutralize the retired scalar.");
+
+                float value;
+                Require(settings.TryGetGroupFrequencyOverride("workRoutine", out value)
+                        && Math.Abs(value - 0.2f) < 0.0001f,
+                    "legacy Work intent did not map to Work groups.");
+                Require(settings.TryGetGroupFrequencyOverride("smalltalk", out value)
+                        && Math.Abs(value - 1.8f) < 0.0001f,
+                    "legacy Social intent did not map to promotion groups.");
+                Require(settings.TryGetGroupFrequencyOverride("hospitality_guestwork", out value)
+                        && Math.Abs(value - 1.8f) < 0.0001f,
+                    "legacy Social intent did not map to a dormant compatibility promotion group.");
+                Require(!settings.HasGroupFrequencyOverride("abilityUsed"),
+                    "a Standard compatibility average should remain sparse for Ability groups.");
+
+                // A second save/load carries schema 1, so migration cannot reinterpret or duplicate rows.
+                PawnDiarySettings reloaded = ScribeRoundTrip(settings);
+                Require(reloaded.frequencySettingsSchemaVersion
+                        == PawnDiarySettings.CurrentFrequencySettingsSchemaVersion,
+                    "migrated schema regressed after its first current-format save.");
+                Require(reloaded.GroupFrequencyOverrideCount()
+                        == settings.GroupFrequencyOverrideCount(),
+                    "frequency migration applied twice after a current-format round-trip.");
+                Require(Math.Abs(reloaded.generationChanceWeight - 1f) < 0.0001f,
+                    "current-format round-trip revived the retired runtime scalar.");
+            }
+        }
+
+        /// <summary>
+        /// Legacy Social intent follows the promotion policy after saved Advanced overrides are
+        /// applied. Disabling one promotion row must exclude it from migration while other promotion
+        /// rows retain the old Social multiplier.
+        /// </summary>
+        [Test]
+        public static void LegacySocialMigrationUsesSavedAdvancedPromotionPolicy()
+        {
+            using (new FrequencyPromotionPolicyFixtureScope("smalltalk", "hospitality_guestwork"))
+            {
+                LegacyFrequencySettingsAdapter loaded = ScribeRoundTrip(
+                    new LegacyFrequencySettingsAdapter
+                    {
+                        hasSocial = true,
+                        social = 0.4f,
+                        advancedOverrideKey = "smalltalk.promotion.enabled",
+                        advancedOverrideValue = "false"
+                    });
+                PawnDiarySettings settings = loaded.settings;
+                Require(settings != null,
+                    "Advanced promotion migration fixture loaded no settings object.");
+                Require(!settings.HasGroupFrequencyOverride("smalltalk"),
+                    "legacy Social intent migrated onto a promotion row disabled by saved Advanced settings.");
+                float value;
+                Require(settings.TryGetGroupFrequencyOverride("hospitality_guestwork", out value)
+                        && Math.Abs(value - 0.4f) < 0.0001f,
+                    "disabling one promotion row suppressed migration for unrelated promotion groups.");
+            }
+        }
+
+        /// <summary>The newer retired unified key wins over older split keys and stays scoped.</summary>
+        [Test]
+        public static void LegacyUnifiedFrequencySettingsTakeMigrationPrecedence()
+        {
+            using (new FrequencyPromotionPolicyFixtureScope("smalltalk"))
+            {
+                LegacyFrequencySettingsAdapter loaded = ScribeRoundTrip(
+                    new LegacyFrequencySettingsAdapter
+                    {
+                        hasUnified = true,
+                        unified = 0.4f,
+                        hasWork = true,
+                        work = 2f,
+                        hasSocial = true,
+                        social = 3f
+                    });
+                PawnDiarySettings settings = loaded.settings;
+                Require(settings != null, "legacy unified frequency settings loaded no settings object.");
+
+                float value;
+                Require(settings.TryGetGroupFrequencyOverride("workRoutine", out value)
+                        && Math.Abs(value - 0.4f) < 0.0001f,
+                    "unified frequency intent did not win for Work.");
+                Require(settings.TryGetGroupFrequencyOverride("abilityUsed", out value)
+                        && Math.Abs(value - 0.4f) < 0.0001f,
+                    "unified frequency intent did not win for Ability.");
+                Require(settings.TryGetGroupFrequencyOverride("smalltalk", out value)
+                        && Math.Abs(value - 0.4f) < 0.0001f,
+                    "unified frequency intent did not win for promotion routing.");
+                Require(!settings.HasGroupFrequencyOverride("raid"),
+                    "unified legacy intent leaked onto an historically unaffected group.");
+                Require(Math.Abs(settings.generationChanceWeight - 1f) < 0.0001f,
+                    "unified legacy migration did not neutralize the retired scalar.");
+            }
+        }
+
+        /// <summary>
+        /// An explicitly saved unified 1x key still outranks stale split keys. This looks equivalent
+        /// to a missing key numerically, so the fixture force-saves the old element and locks down the
+        /// presence-sensitive migration contract used by pre-Def constructor writes.
+        /// </summary>
+        [Test]
+        public static void ExplicitDefaultUnifiedFrequencyKeyStillWinsOverSplitKeys()
+        {
+            PawnDiarySettings settings = ScribeRoundTrip(
+                new LegacyFrequencySettingsAdapter
+                {
+                    hasUnified = true,
+                    unified = 1f,
+                    hasWork = true,
+                    work = 0.25f,
+                    hasSocial = true,
+                    social = 1.75f
+                }).settings;
+
+            Require(settings != null,
+                "explicit-default unified frequency fixture loaded no settings object.");
+            Require(settings.GroupFrequencyOverrideCount() == 0,
+                "explicit unified Standard intent did not outrank stale split keys.");
+            Require(!settings.frequencyMigrationNoticePending,
+                "explicit unified Standard intent invented a migration notice.");
+            Require(Math.Abs(settings.generationChanceWeight - 1f) < 0.0001f,
+                "explicit unified Standard intent revived the retired runtime scalar.");
+        }
+
+        /// <summary>
+        /// Drives the production deferred-write branch used when the mod constructor persists an
+        /// install id before Def binding. Even a default-valued unified key must be emitted, because
+        /// its presence suppresses stale split keys after a restart during that narrow startup window.
+        /// </summary>
+        [Test]
+        public static void DeferredEarlyWritePreservesExplicitUnifiedKeyPresence()
+        {
+            PawnDiarySettings deferred = new PawnDiarySettings
+            {
+                frequencySettingsSchemaVersion = 0,
+                generationChanceWeight = 1f
+            };
+            Type legacyType = typeof(PawnDiarySettings).Assembly.GetType(
+                "PawnDiary.DiaryFrequencyLegacySettingsSnapshot",
+                throwOnError: true);
+            object legacy = Activator.CreateInstance(legacyType, nonPublic: true);
+            legacyType.GetField("hasGenerationChanceWeight").SetValue(legacy, true);
+            legacyType.GetField("generationChanceWeight").SetValue(legacy, 1f);
+            legacyType.GetField("hasWorkGenerationWeight").SetValue(legacy, true);
+            legacyType.GetField("workGenerationWeight").SetValue(legacy, 0.25f);
+            legacyType.GetField("hasSocialGenerationWeight").SetValue(legacy, true);
+            legacyType.GetField("socialGenerationWeight").SetValue(legacy, 1.75f);
+            typeof(PawnDiarySettings).GetField(
+                    "pendingLegacyFrequencyMigration",
+                    BindingFlags.Instance | BindingFlags.NonPublic)
+                .SetValue(deferred, legacy);
+
+            PawnDiarySettings reloaded = ScribeRoundTrip(deferred);
+            Require(reloaded.GroupFrequencyOverrideCount() == 0,
+                "the deferred early write dropped unified-key presence and migrated stale split intent.");
+            Require(!reloaded.frequencyMigrationNoticePending,
+                "the deferred early write invented a migrated Custom notice from stale split keys.");
+        }
+
+        /// <summary>Corrupt legacy numeric values converge to safe bridge and sparse-map bounds.</summary>
+        [Test]
+        public static void CorruptLegacyFrequencyValuesNormalizeSafely()
+        {
+            PawnDiarySettings infinite = ScribeRoundTrip(
+                new LegacyFrequencySettingsAdapter
+                {
+                    hasUnified = true,
+                    unified = float.PositiveInfinity
+                }).settings;
+            Require(infinite != null
+                    && Math.Abs(infinite.generationChanceWeight - 1f) < 0.0001f,
+                "positive-infinite legacy migration did not neutralize the retired scalar.");
+            float value;
+            Require(infinite.TryGetGroupFrequencyOverride("workRoutine", out value)
+                    && Math.Abs(value - 5f) < 0.0001f,
+                "positive-infinite legacy group intent did not clamp to 5x.");
+
+            PawnDiarySettings notANumber = ScribeRoundTrip(
+                new LegacyFrequencySettingsAdapter
+                {
+                    hasUnified = true,
+                    unified = float.NaN
+                }).settings;
+            Require(notANumber != null
+                    && Math.Abs(notANumber.generationChanceWeight - 1f) < 0.0001f,
+                "NaN legacy migration did not leave the retired scalar at Standard 1x.");
+            Require(notANumber.GroupFrequencyOverrideCount() == 0
+                    && !notANumber.frequencyMigrationNoticePending,
+                "NaN legacy intent invented a Custom frequency profile.");
+        }
+
+        /// <summary>
+        /// Test-only old settings envelope. Saving writes only retired keys; loading invokes the real
+        /// current PawnDiarySettings.ExposeData against the same XML parent.
+        /// </summary>
+        private sealed class LegacyFrequencySettingsAdapter : IExposable
+        {
+            public bool hasUnified;
+            public float unified;
+            public bool hasWork;
+            public float work;
+            public bool hasSocial;
+            public float social;
+            public string advancedOverrideKey;
+            public string advancedOverrideValue;
+            public PawnDiarySettings settings;
+
+            public void ExposeData()
+            {
+                if (Scribe.mode == LoadSaveMode.Saving)
+                {
+                    if (hasUnified)
+                    {
+                        Scribe_Values.Look(
+                            ref unified,
+                            "generationChanceWeight",
+                            1f,
+                            forceSave: true);
+                    }
+
+                    if (hasWork)
+                    {
+                        Scribe_Values.Look(
+                            ref work,
+                            "workGenerationWeight",
+                            1f,
+                            forceSave: true);
+                    }
+
+                    if (hasSocial)
+                    {
+                        Scribe_Values.Look(
+                            ref social,
+                            "socialGenerationWeight",
+                            1f,
+                            forceSave: true);
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(advancedOverrideKey))
+                    {
+                        TuningOverrideStore store =
+                            new TuningOverrideStore("advancedTuningOverrides");
+                        store.Set(advancedOverrideKey, advancedOverrideValue);
+                        store.ExposeData();
+                    }
+
+                    return;
+                }
+
+                if (Scribe.mode == LoadSaveMode.LoadingVars)
+                {
+                    settings = new PawnDiarySettings();
+                }
+
+                settings?.ExposeData();
+            }
+        }
+
         // ---- Scribe round-trip machinery -----------------------------------------------------------
 
         /// <summary>

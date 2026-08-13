@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Russian strings introduced for the optional API-v9 event-frequency explorer surface. Missing
+     older explorer keys intentionally fall back to the adapter's complete English catalog. -->
+<LanguageData>
+
+  <PawnDiaryExampleAdapter.Category.Events>События</PawnDiaryExampleAdapter.Category.Events>
+
+  <PawnDiaryExampleAdapter.Summary.GetEventFrequencySettings>Показывает выбранный общий профиль частоты и итоговый множитель каждой группы событий (API v9+).</PawnDiaryExampleAdapter.Summary.GetEventFrequencySettings>
+  <PawnDiaryExampleAdapter.Summary.SetEventFrequencyPreset>Выбирает загруженный профиль частоты и очищает отдельные переопределения групп (API v9+).</PawnDiaryExampleAdapter.Summary.SetEventFrequencyPreset>
+  <PawnDiaryExampleAdapter.Summary.SetEventFrequencyMultiplier>Задаёт множитель одной группы событий, не меняя её переключатель (API v9+).</PawnDiaryExampleAdapter.Summary.SetEventFrequencyMultiplier>
+  <PawnDiaryExampleAdapter.Summary.ResetEventFrequencyMultiplier>Возвращает группе множитель, унаследованный от выбранного профиля (API v9+).</PawnDiaryExampleAdapter.Summary.ResetEventFrequencyMultiplier>
+
+  <PawnDiaryExampleAdapter.Field.FrequencyPresetDefName>defName профиля частоты</PawnDiaryExampleAdapter.Field.FrequencyPresetDefName>
+  <PawnDiaryExampleAdapter.Field.FrequencyGroupKey>ключ группы событий</PawnDiaryExampleAdapter.Field.FrequencyGroupKey>
+  <PawnDiaryExampleAdapter.Field.FrequencyMultiplier>множитель частоты (0–5)</PawnDiaryExampleAdapter.Field.FrequencyMultiplier>
+
+  <PawnDiaryExampleAdapter.Help.FrequencyPresetDefName>Стабильное имя DiaryFrequencyPresetDef из GetEventFrequencySettings. В комплекте: PawnDiary_Frequency_Lite, PawnDiary_Frequency_Standard и PawnDiary_Frequency_Frequent.</PawnDiaryExampleAdapter.Help.FrequencyPresetDefName>
+  <PawnDiaryExampleAdapter.Help.FrequencyGroupKey>defName видимой в настройках группы из снимка частоты, например smalltalk.</PawnDiaryExampleAdapter.Help.FrequencyGroupKey>
+  <PawnDiaryExampleAdapter.Help.FrequencyMultiplier>Конечный множитель от 0 до 5. Значение выбранного профиля удаляет разреженное переопределение.</PawnDiaryExampleAdapter.Help.FrequencyMultiplier>
+
+  <PawnDiaryExampleAdapter.Result.Yes>да</PawnDiaryExampleAdapter.Result.Yes>
+  <PawnDiaryExampleAdapter.Result.No>нет</PawnDiaryExampleAdapter.Result.No>
+  <PawnDiaryExampleAdapter.Result.Frequency.Unavailable>Настройки частоты событий недоступны (требуется API v9; также нужны главный переключатель, основной поток и настройки).</PawnDiaryExampleAdapter.Result.Frequency.Unavailable>
+  <PawnDiaryExampleAdapter.Result.Frequency.Header>Настройки частоты событий</PawnDiaryExampleAdapter.Result.Frequency.Header>
+  <PawnDiaryExampleAdapter.Result.Frequency.Preset>Профиль: {0} ({1})</PawnDiaryExampleAdapter.Result.Frequency.Preset>
+  <PawnDiaryExampleAdapter.Result.Frequency.Custom>Отдельные переопределения: {0}</PawnDiaryExampleAdapter.Result.Frequency.Custom>
+  <PawnDiaryExampleAdapter.Result.Frequency.GroupCount>Групп событий: {0}</PawnDiaryExampleAdapter.Result.Frequency.GroupCount>
+  <PawnDiaryExampleAdapter.Result.Frequency.Enabled>включено</PawnDiaryExampleAdapter.Result.Frequency.Enabled>
+  <PawnDiaryExampleAdapter.Result.Frequency.Disabled>выключено</PawnDiaryExampleAdapter.Result.Frequency.Disabled>
+  <PawnDiaryExampleAdapter.Result.Frequency.EnableOverride> [переопределено включение]</PawnDiaryExampleAdapter.Result.Frequency.EnableOverride>
+  <PawnDiaryExampleAdapter.Result.Frequency.MultiplierOverride> [переопределена частота]</PawnDiaryExampleAdapter.Result.Frequency.MultiplierOverride>
+  <PawnDiaryExampleAdapter.Result.Frequency.Row>  {0} {1} ({2}) — {3}× (профиль {4}×), уровень {5}{6}{7}; {8}</PawnDiaryExampleAdapter.Result.Frequency.Row>
+  <PawnDiaryExampleAdapter.Result.Frequency.OneLine>профиль={0}; групп={1}</PawnDiaryExampleAdapter.Result.Frequency.OneLine>
+  <PawnDiaryExampleAdapter.Result.Frequency.MultiplierTarget>{0}: {1}×</PawnDiaryExampleAdapter.Result.Frequency.MultiplierTarget>
+  <PawnDiaryExampleAdapter.Result.Frequency.Mutation>{0}: цель={1}; применено={2}</PawnDiaryExampleAdapter.Result.Frequency.Mutation>
+
+</LanguageData>

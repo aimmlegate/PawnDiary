@@ -1,6 +1,7 @@
 // Ideology Phase 4 / Narrative N4 rest-time reflection adapter. Phase 3 owns passive saved belief
 // observations; this file converts that detached debt (or one recent event-time belief block) into a
-// coordinator opportunity and consumes it only after the catalog creates a page.
+// coordinator opportunity and consumes it only after the catalog creates a page or frequency policy
+// deliberately settles that opportunity without one.
 using System;
 using System.Collections.Generic;
 using PawnDiary.Capture;
@@ -36,9 +37,20 @@ namespace PawnDiary
                 belief = diary.EnsureBeliefState();
             }
             belief?.Normalize(nowTick, policy);
+            // Belief reflection has a dedicated settings row. Resolve it by its stable key rather than
+            // falling back to the generic reflection row, because the quiet upstream sampler must use
+            // this exact row's preset tier/override.
+            DiaryInteractionGroupDef frequencyGroup =
+                InteractionGroups.ByKey(BeliefReflectionEventData.FrequencyGroupKey);
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
             bool groupEnabled = ideologyActive
                 && policy.enabled
-                && IsReflectionGroupEnabled(BeliefReflectionEventData.DefNameToken);
+                && frequencyGroup != null
+                && settings != null
+                && settings.IsGroupEnabled(frequencyGroup.defName);
+            float quietFrequencyMultiplier = settings == null
+                ? DiaryFrequencyPolicy.StandardMultiplier
+                : settings.RuntimeGroupFrequencyMultiplier(frequencyGroup);
             ReflectionRuntimeCandidate runtime = new ReflectionRuntimeCandidate
             {
                 opportunity = new ReflectionOpportunity
@@ -93,7 +105,8 @@ namespace PawnDiary
                     recentSourceAlreadyReflected = false,
                     hasPendingCertaintyDrift = belief.hasPendingCertainty,
                     allowQuietReflection = true,
-                    quietRoll = StableBeliefQuietRoll(pawnId, day)
+                    quietRoll = StableBeliefQuietRoll(pawnId, day),
+                    quietFrequencyMultiplier = quietFrequencyMultiplier
                 },
                 policy);
             runtime.opportunity.due = decision.allowed;
@@ -178,7 +191,7 @@ namespace PawnDiary
             return best;
         }
 
-        private bool DispatchPreparedBeliefReflection(
+        private DiaryDispatchOutcome DispatchPreparedBeliefReflection(
             Pawn pawn,
             string pawnId,
             int nowTick,
@@ -199,8 +212,15 @@ namespace PawnDiary
             string instruction = "PawnDiary.Event.BeliefReflectionInstruction"
                 .Translate(pawn.LabelShortCap).Resolve();
             string context = BeliefReflectionEventData.BuildGameContext(decision.trigger);
-            return Dispatch(new BeliefReflectionSignal(
-                data, pawn, label, text, instruction, context, prepared));
+            return DispatchWithOutcome(new BeliefReflectionSignal(
+                data,
+                pawn,
+                label,
+                text,
+                instruction,
+                context,
+                prepared,
+                decision.frequencySettledUpstream));
         }
 
         private static float StableBeliefQuietRoll(string pawnId, int day)

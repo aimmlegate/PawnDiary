@@ -32,6 +32,7 @@ namespace PawnDiary.Ingestion
         private readonly bool deathDescription;
         private readonly bool routesDeathDescription;
         private readonly DiaryInteractionGroupDef batchGroup;
+        private readonly DiaryInteractionGroupDef frequencyGroup;
         private readonly DiaryInteractionGroupDef personaMilestoneGroup;
         private readonly Pawn personaKiller;
         private readonly Pawn personaVictim;
@@ -137,6 +138,9 @@ namespace PawnDiary.Ingestion
             batchGroup = routesDeathDescription || personaMilestone != null
                 ? null
                 : DiaryGameComponent.TaleBatchGroupFor(taleDef);
+            frequencyGroup = personaMilestoneGroup
+                ?? batchGroup
+                ?? InteractionGroups.ClassifyTale(taleDef);
 
             payload = new TaleEventData
             {
@@ -191,14 +195,17 @@ namespace PawnDiary.Ingestion
                     ? PawnDiaryMod.Settings.IsGroupEnabled(personaMilestoneGroup.defName)
                     : PawnDiaryMod.Settings.IsTaleEnabled(taleDef),
                 signalEnabled: true,
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                frequencyGroup: frequencyGroup,
+                nativeCaptureChance: 1f,
+                bypassFrequency: batchGroup != null);
         }
 
         public override string DedupKey => payload != null ? payload.DedupKey() : string.Empty;
 
         public override int DedupWindowTicks => DiaryTuning.Current.taleDedupTicks;
 
-        public override void CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
+        public override bool CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
         {
             if (payload != null && tale != null && taleDef != null)
             {
@@ -208,7 +215,9 @@ namespace PawnDiary.Ingestion
                     payload.DefName,
                     BuildKnowledgeGameContext(),
                     payload.Tick);
+                return true;
             }
+            return false;
         }
 
         public override string EventTypeDedupKey(DiaryEventData payload, CaptureDecision decision)

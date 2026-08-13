@@ -185,6 +185,40 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Frequency policy may deliberately skip the selected page, but that still settles today's
+        /// reflection opportunity. Its evidence, once-per-day guard, and shared cadence advance exactly
+        /// once, while the flush truthfully reports no new page to its caller.
+        /// </summary>
+        [Test]
+        public static void FrequencyRejectedDayReflectionSettlesWithoutRetryingOrWritingPage()
+        {
+            int day = CurrentDayIndex();
+            int nowTick = Find.TickManager.TicksGame;
+            string dayKey = DaySummaryKey(pawn, day);
+            ForceFrequencyRejection("dayreflection");
+            SeedPendingDayHediff(day);
+
+            scope.RequireNoNewEvent(() => InvokeFlush(pawn));
+
+            PawnReflectionState state = DiaryRecord().EnsureReflectionState();
+            PawnDiaryRimTestScope.Require(
+                !PendingDayHediffContains(dayKey)
+                    && GuardSetContains("writtenDayReflections", dayKey),
+                "A frequency-rejected day reflection did not consume its evidence and close its day guard.");
+            PawnDiaryRimTestScope.Require(
+                state.lastDayTick == nowTick && state.lastReflectionTick == nowTick,
+                "A frequency-rejected day reflection did not advance its kind and global cadence ticks.");
+
+            // A later scan must observe the closed opportunity, not reroll it. Fresh same-day evidence is
+            // deliberately left alone because the already-written guard returns before collection.
+            SeedPendingDayHediff(day);
+            scope.RequireNoNewEvent(() => InvokeFlush(pawn));
+            PawnDiaryRimTestScope.Require(
+                PendingDayHediffContains(dayKey),
+                "A settled frequency skip retried and consumed fresh evidence from the same day.");
+        }
+
+        /// <summary>
         /// N4. A disabled Reflection group advances the current day window without creating a page.
         /// Re-enabling in that same window cannot dump the evidence accumulated while disabled.
         /// </summary>
@@ -1237,6 +1271,41 @@ namespace PawnDiary.RimTests
             FieldInfo field = typeof(DiaryGameComponent).GetField(fieldName, NonPublicInstance);
             HashSet<string> set = field?.GetValue(scope.Component) as HashSet<string>;
             set?.RemoveWhere(key => key != null && key.IndexOf(pawnId, StringComparison.Ordinal) >= 0);
+        }
+
+        private static bool GuardSetContains(string fieldName, string key)
+        {
+            FieldInfo field = typeof(DiaryGameComponent).GetField(fieldName, NonPublicInstance);
+            HashSet<string> set = field?.GetValue(scope.Component) as HashSet<string>;
+            return set != null && set.Contains(key);
+        }
+
+        private static void ForceFrequencyRejection(string groupKey)
+        {
+            DiaryInteractionGroupDef group = InteractionGroups.ByKey(groupKey);
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+            if (group == null || settings?.groupFrequencyOverrides == null)
+            {
+                throw new AssertionException(
+                    "Could not configure the reflection frequency-rejection fixture for '"
+                    + groupKey + "'.");
+            }
+
+            float savedValue;
+            bool hadSavedValue = settings.groupFrequencyOverrides.TryGetValue(
+                group.defName, out savedValue);
+            settings.groupFrequencyOverrides[group.defName] = 0f;
+            scope.RegisterCleanup(() =>
+            {
+                if (hadSavedValue)
+                {
+                    settings.groupFrequencyOverrides[group.defName] = savedValue;
+                }
+                else
+                {
+                    settings.groupFrequencyOverrides.Remove(group.defName);
+                }
+            });
         }
     }
 }

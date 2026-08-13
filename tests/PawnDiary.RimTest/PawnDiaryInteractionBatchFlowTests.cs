@@ -20,6 +20,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using PawnDiary.Capture;
+using PawnDiary.Ingestion;
 using RimWorld;
 using RimTestRedux;
 using Verse;
@@ -55,13 +57,18 @@ namespace PawnDiary.RimTests
         [BeforeEach]
         public static void SetUp()
         {
-            scope = PawnDiaryRimTestScope.Begin("insults", "smalltalk");
+            scope = PawnDiaryRimTestScope.Begin("insults", "smalltalk", "heartfelt");
             firstPawn = scope.CreateAdultColonist();
             secondPawn = scope.CreateAdultColonist();
 
             // Force deterministic count-based flushing on both groups (restored in teardown).
             ForceBatchThreshold(RequireGroup("insults"), BatchFlushThreshold);
             ForceBatchThreshold(RequireGroup("smalltalk"), BatchFlushThreshold);
+
+            // These fixtures prove batching behavior, not probabilistic volume. Force both eventual
+            // aggregate pages to deterministic 1x and restore the player's sparse overrides exactly.
+            ForceFrequencyMultiplier(RequireGroup("insults"), 1f);
+            ForceFrequencyMultiplier(RequireGroup("smalltalk"), 1f);
 
             // Disable smalltalk's per-row promotion roll so every Chitchat row deterministically routes
             // to the ambient batch instead of a random escape to its own pairwise page.
@@ -364,6 +371,91 @@ namespace PawnDiary.RimTests
                 "A disabled group must not accumulate any pending interaction batch for the test pawns.");
         }
 
+        /// <summary>
+        /// Direct and promotion-winning interactions carry their exact group into shared admission,
+        /// while delayed pair/ambient contributors defer that decision to the aggregate they open.
+        /// </summary>
+        [Test]
+        public static void InteractionSignalCarriesDirectAndDeferredFrequencyOwnership()
+        {
+            InteractionDef deepTalk = RequireDef<InteractionDef>("DeepTalk");
+            CaptureContext direct = new InteractionSignal(
+                firstPawn, secondPawn, deepTalk, "direct", "direct", -1).BuildContext();
+            RequireFrequencyContext(direct, "heartfelt", false);
+
+            DiaryInteractionGroupDef smalltalk = RequireGroup("smalltalk");
+            InteractionDef chitchat = RequireDef<InteractionDef>("Chitchat");
+            CaptureContext deferred = new InteractionSignal(
+                firstPawn, secondPawn, chitchat, "deferred", "deferred", -1).BuildContext();
+            RequireFrequencyContext(deferred, "smalltalk", true);
+
+            ForcePromotionAlways(smalltalk);
+            CaptureContext promoted = new InteractionSignal(
+                firstPawn, secondPawn, chitchat, "promoted", "promoted", -1).BuildContext();
+            RequireFrequencyContext(promoted, "smalltalk", false);
+        }
+
+        /// <summary>
+        /// A pair batch freezes its admission when the first row opens it. Raising frequency before
+        /// the threshold cannot reroll the same candidate; rejection clears the aggregate with no page.
+        /// </summary>
+        [Test]
+        public static void PairBatchFreezesRejectedFrequencyUntilSettlement()
+        {
+            DiaryInteractionGroupDef group = RequireGroup("insults");
+            InteractionDef insult = RequireDef<InteractionDef>("Insult");
+            string label = insult.LabelCap.Resolve();
+            ForceFrequencyMultiplier(group, 0f);
+
+            scope.RequireNoNewEvent(() => scope.Component.RecordBatchedInteraction(
+                group, firstPawn, secondPawn, insult, label, "first", "first", 930001));
+            RequirePendingFrequency(
+                scope.Component, "pendingInteractionBatches", firstPawn, secondPawn, "insults", false);
+
+            // The open batch owns the old rejection. This affects only later candidates, not this one.
+            PawnDiaryMod.Settings.SetGroupFrequencyOverride(group.defName, 1f);
+            scope.RequireNoNewEvent(() => scope.Component.RecordBatchedInteraction(
+                group, firstPawn, secondPawn, insult, label, "second", "second", 930002));
+            scope.RequireNoNewEvent(() => scope.Component.RecordBatchedInteraction(
+                group, firstPawn, secondPawn, insult, label, "third", "third", 930003));
+
+            PawnDiaryRimTestScope.Require(
+                !HasPendingBatchStateForPawns(scope.Component, firstPawn, secondPawn),
+                "A frequency-rejected pair aggregate did not settle and clear at its normal threshold.");
+        }
+
+        /// <summary>
+        /// Each pawn/day ambient note freezes its own admission. A rejected note settles at the normal
+        /// threshold and writes the day guard, so later chatter cannot reopen and reroll that page.
+        /// </summary>
+        [Test]
+        public static void AmbientNoteFreezesRejectedFrequencyAndMarksDayWritten()
+        {
+            DiaryInteractionGroupDef group = RequireGroup("smalltalk");
+            InteractionDef chitchat = RequireDef<InteractionDef>("Chitchat");
+            string label = chitchat.LabelCap.Resolve();
+            ForceFrequencyMultiplier(group, 0f);
+
+            scope.RequireNoNewEvent(() => scope.Component.RecordBatchedInteraction(
+                group, firstPawn, secondPawn, chitchat, label, "first", "first", 940001));
+            RequirePendingFrequency(
+                scope.Component, "pendingAmbientInteractionNotes", firstPawn, secondPawn, "smalltalk", false);
+
+            PawnDiaryMod.Settings.SetGroupFrequencyOverride(group.defName, 1f);
+            scope.RequireNoNewEvent(() => scope.Component.RecordBatchedInteraction(
+                group, firstPawn, secondPawn, chitchat, label, "second", "second", 940002));
+            scope.RequireNoNewEvent(() => scope.Component.RecordBatchedInteraction(
+                group, firstPawn, secondPawn, chitchat, label, "third", "third", 940003));
+
+            PawnDiaryRimTestScope.Require(
+                !HasPendingBatchStateForPawns(scope.Component, firstPawn, secondPawn),
+                "A frequency-rejected ambient aggregate did not settle at its normal threshold.");
+            RequireSetContainsPawnKey(
+                scope.Component, "writtenAmbientInteractionNotes", firstPawn);
+            RequireSetContainsPawnKey(
+                scope.Component, "writtenAmbientInteractionNotes", secondPawn);
+        }
+
         // ----- helpers ---------------------------------------------------------------------------
 
         /// <summary>
@@ -396,9 +488,135 @@ namespace PawnDiary.RimTests
                     "Group '" + group.defName + "' has no <batch> policy for the EVT-02 batch test.");
             }
 
+            bool originalEnabled = group.batch.enabled;
             int original = group.batch.maxEvents;
+            group.batch.enabled = true;
             group.batch.maxEvents = threshold;
-            scope.RegisterCleanup(() => group.batch.maxEvents = original);
+            scope.RegisterCleanup(() =>
+            {
+                group.batch.enabled = originalEnabled;
+                group.batch.maxEvents = original;
+            });
+        }
+
+        /// <summary>Forces one exact frequency multiplier and restores its prior sparse state.</summary>
+        private static void ForceFrequencyMultiplier(
+            DiaryInteractionGroupDef group,
+            float multiplier)
+        {
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+            float previous;
+            bool hadOverride = settings.TryGetGroupFrequencyOverride(group.defName, out previous);
+            float inherited = settings.PresetGroupFrequencyMultiplier(group);
+            settings.SetGroupFrequencyOverride(group.defName, multiplier);
+            scope.RegisterCleanup(() => settings.SetGroupFrequencyOverride(
+                group.defName,
+                hadOverride ? previous : inherited));
+        }
+
+        /// <summary>Forces the native promotion route to win and restores every touched policy field.</summary>
+        private static void ForcePromotionAlways(DiaryInteractionGroupDef group)
+        {
+            InteractionPromotionPolicy promotion = group?.promotion;
+            if (promotion == null)
+            {
+                throw new AssertionException(
+                    "Group '" + group?.defName + "' has no promotion policy for this fixture.");
+            }
+
+            bool originalEnabled = promotion.enabled;
+            float originalBaseChance = promotion.baseChance;
+            float originalMaximumChance = promotion.maxChance;
+            promotion.enabled = true;
+            promotion.baseChance = 1f;
+            promotion.maxChance = 1f;
+            scope.RegisterCleanup(() =>
+            {
+                promotion.enabled = originalEnabled;
+                promotion.baseChance = originalBaseChance;
+                promotion.maxChance = originalMaximumChance;
+            });
+        }
+
+        private static void RequireFrequencyContext(
+            CaptureContext context,
+            string groupKey,
+            bool bypass)
+        {
+            PawnDiaryRimTestScope.Require(
+                context != null
+                    && string.Equals(context.FrequencyGroupKey, groupKey, StringComparison.Ordinal)
+                    && Math.Abs(context.NativeCaptureChance - 1f) < 0.0001f
+                    && context.BypassFrequency == bypass,
+                "Interaction frequency ownership was not frozen as group='" + groupKey
+                    + "', native=1, bypass=" + bypass + ".");
+        }
+
+        /// <summary>Asserts all test-pawn pending rows carry one exact frozen frequency result.</summary>
+        private static void RequirePendingFrequency(
+            DiaryGameComponent component,
+            string fieldName,
+            Pawn a,
+            Pawn b,
+            string groupKey,
+            bool accepted)
+        {
+            IDictionary dictionary = ReadDictionaryField(component, fieldName);
+            HashSet<string> ids = PawnIdSet(a, b);
+            int matching = 0;
+            foreach (DictionaryEntry entry in dictionary)
+            {
+                if (!KeyReferencesAnyId(entry.Key as string, ids))
+                {
+                    continue;
+                }
+
+                object pending = entry.Value;
+                Type pendingType = pending?.GetType();
+                FieldInfo keyField = pendingType?.GetField(
+                    "frequencyGroupKey", BindingFlags.Instance | BindingFlags.Public);
+                FieldInfo acceptedField = pendingType?.GetField(
+                    "frequencyAdmissionAccepted", BindingFlags.Instance | BindingFlags.Public);
+                PawnDiaryRimTestScope.Require(
+                    keyField != null
+                        && acceptedField != null
+                        && string.Equals(keyField.GetValue(pending) as string, groupKey,
+                            StringComparison.Ordinal)
+                        && (bool)acceptedField.GetValue(pending) == accepted,
+                    "Pending interaction aggregate did not retain its exact frozen group/result.");
+                matching++;
+            }
+
+            PawnDiaryRimTestScope.Require(
+                matching > 0,
+                "No test-owned pending aggregate was available for frequency inspection.");
+        }
+
+        private static void RequireSetContainsPawnKey(
+            DiaryGameComponent component,
+            string fieldName,
+            Pawn pawn)
+        {
+            FieldInfo field = typeof(DiaryGameComponent).GetField(fieldName, PrivateInstance);
+            HashSet<string> values = field?.GetValue(component) as HashSet<string>;
+            string pawnId = pawn?.GetUniqueLoadID();
+            bool found = false;
+            if (values != null && !string.IsNullOrEmpty(pawnId))
+            {
+                foreach (string value in values)
+                {
+                    if (!string.IsNullOrEmpty(value)
+                        && value.IndexOf(pawnId, StringComparison.Ordinal) >= 0)
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            PawnDiaryRimTestScope.Require(
+                found,
+                "Rejected ambient frequency did not settle the pawn/day written guard for '"
+                    + pawnId + "'.");
         }
 
         /// <summary>

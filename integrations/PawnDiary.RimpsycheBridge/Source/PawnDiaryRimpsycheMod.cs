@@ -12,7 +12,7 @@
 // New to C#/RimWorld? See AGENTS.md and docs/lore/build.md (Mod constructors run during long-event load).
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.Reflection;
 using HarmonyLib;
 using PawnDiary.Integration;
 using UnityEngine;
@@ -169,13 +169,37 @@ namespace PawnDiaryRimpsyche
         }
 
         /// <summary>
-        /// Runtime feature gate for additive Pawn Diary API members. Kept behind a method so the C#
-        /// compiler does not fold today's const ApiVersion and erase the older-version fallback branch.
+        /// Runtime feature gate for additive Pawn Diary API members. Reflection reads the field from
+        /// the Pawn Diary assembly RimWorld actually loaded; a direct const reference would be folded
+        /// into this bridge at compile time, and NoInlining cannot undo that substitution.
         /// </summary>
-        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static bool SupportsApiVersion(int requiredVersion)
         {
-            return PawnDiaryApi.ApiVersion >= requiredVersion;
+            return LoadedApiVersion() >= requiredVersion;
+        }
+
+        private static int LoadedApiVersion()
+        {
+            try
+            {
+                FieldInfo field = typeof(PawnDiaryApi).GetField(
+                    "ApiVersion",
+                    BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+                if (field == null || field.FieldType != typeof(int))
+                {
+                    return 0;
+                }
+
+                object raw = field.IsLiteral
+                    ? field.GetRawConstantValue()
+                    : field.GetValue(null);
+                int version = raw is int ? (int)raw : 0;
+                return version > 0 ? version : 0;
+            }
+            catch
+            {
+                return 0;
+            }
         }
 
         /// <summary>Label shown in RimWorld's Mod Settings list.</summary>

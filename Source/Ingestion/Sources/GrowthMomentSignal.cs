@@ -16,6 +16,7 @@ namespace PawnDiary.Ingestion
         private readonly Pawn supporter;
         private readonly GrowthMomentMutation mutation;
         private readonly BiotechFamilyArcState familyArc;
+        private readonly DiaryInteractionGroupDef group;
 
         public GrowthMomentSignal(
             GrowthMomentEventData payload,
@@ -29,6 +30,7 @@ namespace PawnDiary.Ingestion
             this.supporter = supporter;
             this.mutation = mutation;
             this.familyArc = familyArc;
+            group = InteractionGroups.ClassifyProgression(GrowthMomentEventData.DefName);
         }
 
         public override DiaryEventData Payload => payload;
@@ -41,18 +43,20 @@ namespace PawnDiary.Ingestion
                 eligible: payload != null && (payload.ChildEligible || payload.SupporterEligible),
                 userEnabled: enabled,
                 signalEnabled: DiarySignalPolicies.Enabled(DiarySignalPolicies.Progression),
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                frequencyGroup: group,
+                nativeCaptureChance: 1f);
         }
 
         public override string DedupKey => mutation?.correlationId ?? string.Empty;
 
         public override int DedupWindowTicks => DiaryBiotechPolicy.Snapshot().growthPendingExpiryTicks;
 
-        public override void CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
+        public override bool CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
         {
             if (sink == null || child == null || mutation == null || payload == null)
             {
-                return;
+                return false;
             }
 
             GrowthWriterShape shape = GrowthWriterPolicy.Decide(
@@ -63,7 +67,7 @@ namespace PawnDiary.Ingestion
                 || (shape == GrowthWriterShape.Pair && supporter == null)
                 || (shape == GrowthWriterShape.SupporterSolo && supporter == null))
             {
-                return;
+                return false;
             }
 
             BiotechPolicySnapshot policy = DiaryBiotechPolicy.Snapshot();
@@ -85,6 +89,7 @@ namespace PawnDiary.Ingestion
                 : shape == GrowthWriterShape.SupporterSolo ? child : supporter;
             sink.CaptureEventKnowledgeWithoutPage(
                 writer, partner, GrowthMomentEventData.DefName, context, payload.Tick);
+            return true;
         }
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)
@@ -107,7 +112,6 @@ namespace PawnDiary.Ingestion
             }
 
             BiotechPolicySnapshot policy = DiaryBiotechPolicy.Snapshot();
-            DiaryInteractionGroupDef group = InteractionGroups.ClassifyProgression(GrowthMomentEventData.DefName);
             string label = group == null || string.IsNullOrWhiteSpace(group.label)
                 ? "PawnDiary.Event.Biotech.Growth.Label".Translate().Resolve()
                 : group.LabelCap.Resolve();

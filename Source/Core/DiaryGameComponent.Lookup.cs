@@ -198,7 +198,13 @@ namespace PawnDiary
         /// consistent snapshot. internal so signals in PawnDiary.Ingestion can reuse it.
         /// </summary>
         internal static CaptureContext BuildCaptureContext(
-            bool eligible, bool userEnabled, bool signalEnabled, bool ambientSignalEnabled)
+            bool eligible,
+            bool userEnabled,
+            bool signalEnabled,
+            bool ambientSignalEnabled,
+            DiaryInteractionGroupDef frequencyGroup = null,
+            float nativeCaptureChance = 1f,
+            bool bypassFrequency = false)
         {
             return new CaptureContext
             {
@@ -207,6 +213,10 @@ namespace PawnDiary
                 SignalEnabled = signalEnabled,
                 AmbientSignalEnabled = ambientSignalEnabled,
                 Now = Find.TickManager.TicksGame,
+                FrequencyGroupKey = frequencyGroup?.defName ?? string.Empty,
+                FrequencyTier = frequencyGroup?.frequencyTier ?? string.Empty,
+                NativeCaptureChance = nativeCaptureChance,
+                BypassFrequency = bypassFrequency,
             };
         }
 

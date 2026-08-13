@@ -72,7 +72,9 @@ namespace PawnDiary.Ingestion
                 eligible: payload.FirstWriterEligible || payload.SecondWriterEligible,
                 userEnabled: enabled,
                 signalEnabled: true,
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                frequencyGroup: group,
+                nativeCaptureChance: 1f);
         }
 
         public override string DedupKey => payload.DedupKey();

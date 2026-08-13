@@ -16,6 +16,7 @@ namespace PawnDiary.Ingestion
         private readonly string instruction;
         private readonly string gameContext;
         private readonly BeliefContextBuildResult preparedBelief;
+        private readonly bool frequencySettledUpstream;
 
         public BeliefReflectionSignal(
             BeliefReflectionEventData payload,
@@ -24,7 +25,8 @@ namespace PawnDiary.Ingestion
             string text,
             string instruction,
             string gameContext,
-            BeliefContextBuildResult preparedBelief)
+            BeliefContextBuildResult preparedBelief,
+            bool frequencySettledUpstream = false)
         {
             this.payload = payload;
             this.pawn = pawn;
@@ -33,14 +35,15 @@ namespace PawnDiary.Ingestion
             this.instruction = instruction;
             this.gameContext = gameContext;
             this.preparedBelief = preparedBelief;
+            this.frequencySettledUpstream = frequencySettledUpstream;
         }
 
         public override DiaryEventData Payload => payload;
 
         public override CaptureContext BuildContext()
         {
-            DiaryInteractionGroupDef group = InteractionGroups.ClassifyDefName(
-                GroupDomain.Reflection, payload.DefName);
+            DiaryInteractionGroupDef group =
+                InteractionGroups.ByKey(BeliefReflectionEventData.FrequencyGroupKey);
             bool userEnabled = group != null
                 && PawnDiaryMod.Settings != null
                 && PawnDiaryMod.Settings.IsGroupEnabled(group.defName);
@@ -48,7 +51,9 @@ namespace PawnDiary.Ingestion
                 eligible: DiaryGameComponent.IsDiaryEligible(pawn),
                 userEnabled: userEnabled,
                 signalEnabled: ModsConfig.IdeologyActive && DiaryBeliefPolicy.Snapshot().enabled,
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                frequencyGroup: group,
+                bypassFrequency: frequencySettledUpstream);
         }
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)

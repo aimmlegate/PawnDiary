@@ -4,6 +4,13 @@
 // rejection such as a duplicate arrival, an already-recorded birth, or an unverified mutation.
 namespace PawnDiary.Capture
 {
+    /// <summary>Why an otherwise valid diary page was rejected.</summary>
+    internal enum DiaryKnowledgePageRejectionReason
+    {
+        PagePolicy = 0,
+        Frequency = 1
+    }
+
     /// <summary>Decides whether an otherwise dropped event remains valid with page gates relaxed.</summary>
     internal static class DiaryKnowledgeCapturePolicy
     {
@@ -15,13 +22,40 @@ namespace PawnDiary.Capture
         /// </summary>
         public static bool ShouldCaptureWithoutPage(DiaryEventData payload, CaptureContext context)
         {
+            return ShouldCaptureWithoutPage(
+                payload,
+                context,
+                DiaryKnowledgePageRejectionReason.PagePolicy);
+        }
+
+        /// <summary>
+        /// Frequency rejection happens after the ordinary catalog accepted, while a page-policy
+        /// rejection must become accepted only after its soft switches are relaxed. Both retain every
+        /// source-specific semantic/eligibility check.
+        /// </summary>
+        public static bool ShouldCaptureWithoutPage(
+            DiaryEventData payload,
+            CaptureContext context,
+            DiaryKnowledgePageRejectionReason rejectionReason)
+        {
             if (payload == null || context == null)
             {
                 return false;
             }
 
             DiaryEventSpec spec = DiaryEventCatalog.Get(payload.EventType);
-            if (spec == null || spec.Decide(payload, context) != CaptureDecision.Drop)
+            if (spec == null)
+            {
+                return false;
+            }
+
+            CaptureDecision ordinary = spec.Decide(payload, context);
+            if (rejectionReason == DiaryKnowledgePageRejectionReason.Frequency)
+            {
+                return ordinary != CaptureDecision.Drop;
+            }
+
+            if (ordinary != CaptureDecision.Drop)
             {
                 return false;
             }
@@ -32,7 +66,11 @@ namespace PawnDiary.Capture
                 UserEnabled = true,
                 SignalEnabled = true,
                 AmbientSignalEnabled = true,
-                Now = context.Now
+                Now = context.Now,
+                FrequencyGroupKey = context.FrequencyGroupKey,
+                FrequencyTier = context.FrequencyTier,
+                NativeCaptureChance = context.NativeCaptureChance,
+                BypassFrequency = context.BypassFrequency
             };
             return spec.Decide(payload, withoutPagePolicy) != CaptureDecision.Drop;
         }

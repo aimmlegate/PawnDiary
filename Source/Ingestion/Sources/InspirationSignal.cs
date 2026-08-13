@@ -17,6 +17,7 @@ namespace PawnDiary.Ingestion
         private readonly Pawn pawn;
         private readonly InspirationDef inspirationDef;
         private readonly string reason;
+        private readonly DiaryInteractionGroupDef group;
         private readonly InspirationEventData payload;
 
         public InspirationSignal(Pawn pawn, InspirationDef inspirationDef, string reason)
@@ -32,6 +33,7 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
+            group = InteractionGroups.ClassifyInspiration(inspirationDef);
             payload = new InspirationEventData
             {
                 PawnId = pawn.GetUniqueLoadID(),
@@ -50,7 +52,9 @@ namespace PawnDiary.Ingestion
                 eligible: DiaryGameComponent.IsDiaryEligible(pawn),
                 userEnabled: PawnDiaryMod.Settings.IsInspirationEnabled(inspirationDef),
                 signalEnabled: true,
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                frequencyGroup: group,
+                nativeCaptureChance: 1f);
         }
 
         // Inspiration has no dedup today (DedupKey empty → dispatcher skips the dedup gate).

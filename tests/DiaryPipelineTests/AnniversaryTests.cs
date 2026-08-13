@@ -264,6 +264,20 @@ namespace DiaryPipelineTests
             AssertTrue("H2 an out-of-range roll never recalls",
                 !AnniversaryPolicy.ShouldRecall(1f, 1f));
 
+            float effectiveChance;
+            AssertTrue("H2 native recall chance combines with a reduced group multiplier",
+                DiaryFrequencyPolicy.TryCalculateEffectiveChance(0.60f, 0.50f, out effectiveChance));
+            AssertNear("H2 reduced frequency is folded into the upstream recall chance",
+                0.30f, effectiveChance);
+            AssertTrue("H2 the combined chance keeps the strict half-open acceptance boundary",
+                AnniversaryPolicy.ShouldRecall(0.299f, effectiveChance));
+            AssertTrue("H2 equality with the combined chance is still rejected",
+                !AnniversaryPolicy.ShouldRecall(0.30f, effectiveChance));
+            AssertTrue("H2 an increased group multiplier remains bounded",
+                DiaryFrequencyPolicy.TryCalculateEffectiveChance(0.60f, 2f, out effectiveChance));
+            AssertNear("H2 an increased group multiplier clamps the combined chance",
+                1f, effectiveChance);
+
             // Deterministic sampling: the same triple always answers the same way, and every part of
             // the triple changes the answer.
             float roll = AnniversaryPolicy.DeterministicRoll("Thing_Human1", "Thing_Human2", 5);

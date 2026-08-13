@@ -816,7 +816,7 @@ namespace PawnDiary
                 HasValidSnapshot = true,
                 AlreadyRecorded = HasRecordedBiotechBirth(snapshot.familyArcId, snapshot.childId)
             };
-            return Dispatch(new FamilyBirthSignal(
+            DiaryDispatchOutcome outcome = DispatchWithOutcome(new FamilyBirthSignal(
                 payload,
                 snapshot,
                 writers,
@@ -828,6 +828,7 @@ namespace PawnDiary
                     writerPawns,
                     child),
                 enabledAtBirth));
+            return DiaryDispatchOutcomePolicy.SettlesSource(outcome);
         }
 
         /// <summary>

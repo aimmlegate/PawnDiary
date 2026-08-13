@@ -194,7 +194,8 @@ namespace PawnDiary
             if (!decision.shouldEmit) return;
             RoyalMutationBatchSnapshot batch = TitleBatch(
                 pawn, previous, current, RoyalMutationCauseTokens.Unknown, now);
-            if (EmitRoyalTitleTransition(pawn, batch, decision))
+            ProgressionDispatchResult dispatch = EmitRoyalTitleTransition(pawn, batch, decision);
+            if (dispatch.SettlesSource)
                 ClaimRoyalTitleThoughts(batch, now, policy);
         }
 
@@ -255,7 +256,8 @@ namespace PawnDiary
                 RoyalMutationBatchSnapshot batch = TitleBatch(
                     pawn, mutation.previousTitle, mutation.newTitle,
                     RoyalMutationCauseTokens.Unknown, now);
-                if (EmitRoyalTitleTransition(pawn, batch, decision))
+                ProgressionDispatchResult dispatch = EmitRoyalTitleTransition(pawn, batch, decision);
+                if (dispatch.SettlesSource)
                     ClaimRoyalTitleThoughts(batch, now, policy);
             }
         }
@@ -510,10 +512,11 @@ namespace PawnDiary
             {
                 RoyalTitleTransitionDecision decision = RoyalTitleTransitionPolicy.Classify(
                     title.previousTitle, title.newTitle, false, true, effective);
-                bool emitted = EmitRoyalTitleTransition(pawn, batch, decision);
-                if (emitted) ClaimRoyalTitleThoughts(batch, Find.TickManager?.TicksGame ?? 0,
+                ProgressionDispatchResult titleDispatch = EmitRoyalTitleTransition(pawn, batch, decision);
+                if (titleDispatch.SettlesSource)
+                    ClaimRoyalTitleThoughts(batch, Find.TickManager?.TicksGame ?? 0,
                     effective);
-                return emitted;
+                return titleDispatch.PageRegistered;
             }
             if (selectedKind != RoyalMutationKindTokens.Psylink) return false;
             RoyalPsychicMutationSnapshot psylink = batch.psylinkMutation;
@@ -533,28 +536,30 @@ namespace PawnDiary
                 context);
             string text = "PawnDiary.Event.ProgressionPsylinkText"
                 .Translate(pawn.LabelShortCap, psylink.newPsylinkLevel).Resolve();
-            bool emittedPsylink = DispatchProgression(
+            ProgressionDispatchResult psylinkDispatch = DispatchProgressionWithResult(
                 pawn, data, label, text,
                 majorArcCandidate: IsMajorArcPsylinkLevel(psylink.newPsylinkLevel),
                 dedupKey: "royalty-psylink|" + pawn.GetUniqueLoadID() + "|" + batch.openedTick,
                 dedupWindowTicks: DiaryTuning.Current.genericEventTypeDedupTicks);
-            if (emittedPsylink && title != null)
+            if (psylinkDispatch.SettlesSource && title != null)
             {
                 // A combined batch can legitimately select psylink when its title route is disabled.
-                // The page still owns the whole exact action, so consume the title memory too.
+                // A settled attempt owns the whole exact action, so consume the title memory too even
+                // when central admission intentionally produced no page.
                 ClaimRoyalTitleThoughts(
                     batch, Find.TickManager?.TicksGame ?? 0, effective);
             }
-            return emittedPsylink;
+            return psylinkDispatch.PageRegistered;
         }
 
-        private bool EmitRoyalTitleTransition(
+        private ProgressionDispatchResult EmitRoyalTitleTransition(
             Pawn pawn,
             RoyalMutationBatchSnapshot batch,
             RoyalTitleTransitionDecision decision)
         {
             if (pawn == null || batch?.titleMutation == null || decision == null
-                || !RoyalTitleTransitionTokens.IsNarrative(decision.transitionToken)) return false;
+                || !RoyalTitleTransitionTokens.IsNarrative(decision.transitionToken))
+                return default(ProgressionDispatchResult);
             RoyalTitleSnapshot before = batch.titleMutation.previousTitle;
             RoyalTitleSnapshot after = batch.titleMutation.newTitle;
             RoyalTitleSnapshot identity = after ?? before;
@@ -577,7 +582,7 @@ namespace PawnDiary
             string label = RoyalTitleLabelForUi(decision.transitionToken, labelTitle, factionName);
             string text = RoyalTitleTextForUi(
                 decision.transitionToken, pawn.LabelShortCap, previousLabel, currentLabel, factionName);
-            return DispatchProgression(
+            return DispatchProgressionWithResult(
                 pawn, data, label, text,
                 majorArcCandidate: decision.transitionToken == RoyalTitleTransitionTokens.Loss,
                 dedupKey: RoyalTitleTransitionPolicy.BuildEventDedupKey(

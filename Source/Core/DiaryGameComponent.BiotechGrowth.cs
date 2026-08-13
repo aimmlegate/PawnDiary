@@ -502,7 +502,7 @@ namespace PawnDiary
                 return;
             }
 
-            bool emitted = false;
+            bool settled = false;
             if (mutation != null)
             {
                 GrowthMomentEventData payload = new GrowthMomentEventData
@@ -516,19 +516,20 @@ namespace PawnDiary
                     HasVerifiedMutation = true,
                     AlreadyRecorded = false
                 };
-                emitted = Dispatch(new GrowthMomentSignal(
+                DiaryDispatchOutcome outcome = DispatchWithOutcome(new GrowthMomentSignal(
                     payload,
                     pawn,
                     supporterPawn,
                     mutation,
                     familyArc));
+                settled = DiaryDispatchOutcomePolicy.SettlesSource(outcome);
                 // Settings can suppress the page, but the canonical birthday still consumes the
                 // current upbringing interval so the same lesson history is not narrated at age 10/13.
                 MarkBiotechGrowthFamilySummarized(familyArc, birthdayAge);
             }
 
             ConsumeBiotechGrowthProgression(pawn, before, after, birthdayAge);
-            if (!emitted)
+            if (!settled)
             {
                 // RecordEventWindowBirthday owns the legacy setting and silently no-ops when that row
                 // is disabled, unavailable, or the child is not an eligible diary writer.

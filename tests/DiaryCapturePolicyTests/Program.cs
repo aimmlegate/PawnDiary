@@ -1414,13 +1414,10 @@ namespace DiaryCapturePolicyTests
                 AbilityEventData.Decide(Ability(), Ctx(user: false)));
             AssertEqual("ability signal disabled drops", CaptureDecision.Drop,
                 AbilityEventData.Decide(Ability(), Ctx(signal: false)));
-            AssertEqual("ability roll above chance drops", CaptureDecision.Drop,
-                AbilityEventData.Decide(Ability(chance: 0.25f, roll: 0.251f), Ctx()));
-            AssertEqual("ability roll at chance records solo", CaptureDecision.GenerateSolo,
-                AbilityEventData.Decide(Ability(chance: 0.25f, roll: 0.25f), Ctx()));
-            AssertEqual("ability chance clamps high", CaptureDecision.GenerateSolo,
-                AbilityEventData.Decide(Ability(chance: 2f, roll: 1f), Ctx()));
-            AbilityEventData covered = Ability(chance: 1f, roll: 0f);
+            AssertEqual("ability native chance is deferred to shared frequency admission",
+                CaptureDecision.GenerateSolo,
+                AbilityEventData.Decide(Ability(chance: 0f), Ctx()));
+            AbilityEventData covered = Ability(chance: 1f);
             covered.DownstreamCovered = true;
             AssertEqual("downstream-covered ability drops before sampling", CaptureDecision.Drop,
                 AbilityEventData.Decide(covered, Ctx()));
@@ -1503,6 +1500,27 @@ namespace DiaryCapturePolicyTests
                 DiaryKnowledgeCapturePolicy.ShouldCaptureWithoutPage(
                     Arrival(existing: true),
                     Ctx(user: false)));
+            AssertEqual(
+                "frequency-rejected valid arrival still permits knowledge",
+                true,
+                DiaryKnowledgeCapturePolicy.ShouldCaptureWithoutPage(
+                    Arrival(),
+                    Ctx(),
+                    DiaryKnowledgePageRejectionReason.Frequency));
+            AssertEqual(
+                "frequency branch cannot relax a disabled page policy",
+                false,
+                DiaryKnowledgeCapturePolicy.ShouldCaptureWithoutPage(
+                    Arrival(),
+                    Ctx(user: false),
+                    DiaryKnowledgePageRejectionReason.Frequency));
+            AssertEqual(
+                "frequency branch preserves arrival duplicate semantics",
+                false,
+                DiaryKnowledgeCapturePolicy.ShouldCaptureWithoutPage(
+                    Arrival(existing: true),
+                    Ctx(),
+                    DiaryKnowledgePageRejectionReason.Frequency));
 
             GrowthMomentEventData growth = new GrowthMomentEventData
             {
@@ -1532,6 +1550,13 @@ namespace DiaryCapturePolicyTests
                 DiaryKnowledgeCapturePolicy.ShouldCaptureWithoutPage(
                     growth,
                     Ctx(signal: false)));
+            AssertEqual(
+                "frequency branch preserves invalid growth semantics",
+                false,
+                DiaryKnowledgeCapturePolicy.ShouldCaptureWithoutPage(
+                    growth,
+                    Ctx(),
+                    DiaryKnowledgePageRejectionReason.Frequency));
         }
 
         private static void TestArrivalBuildGameContextFormat()
@@ -1659,8 +1684,6 @@ namespace DiaryCapturePolicyTests
                 WorkEventData.Decide(Work(ignored: true), Ctx()));
             AssertEqual("work same-type cooldown drops", CaptureDecision.Drop,
                 WorkEventData.Decide(Work(cooldownClear: false), Ctx()));
-            AssertEqual("work failed chance roll drops", CaptureDecision.Drop,
-                WorkEventData.Decide(Work(passedChance: false), Ctx()));
             AssertEqual("work valid signal records", CaptureDecision.GenerateSolo,
                 WorkEventData.Decide(Work(), Ctx()));
         }
@@ -3195,8 +3218,7 @@ namespace DiaryCapturePolicyTests
 
         private static AbilityEventData Ability(
             string defName = "Stun",
-            float chance = 1f,
-            float roll = 0f)
+            float chance = 1f)
         {
             return new AbilityEventData
             {
@@ -3208,7 +3230,6 @@ namespace DiaryCapturePolicyTests
                 TargetLabel = "Bob",
                 CooldownTicks = 600,
                 RecordChance = chance,
-                Roll = roll,
             };
         }
 
@@ -3247,8 +3268,7 @@ namespace DiaryCapturePolicyTests
             string defName = WorkEventData.RoutineDefName,
             bool hasCurrentWork = true,
             bool ignored = false,
-            bool cooldownClear = true,
-            bool passedChance = true)
+            bool cooldownClear = true)
         {
             return new WorkEventData
             {
@@ -3261,7 +3281,6 @@ namespace DiaryCapturePolicyTests
                 HasCurrentWork = hasCurrentWork,
                 IgnoredWorkType = ignored,
                 SameWorkCooldownClear = cooldownClear,
-                PassedChanceRoll = passedChance,
             };
         }
 

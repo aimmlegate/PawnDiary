@@ -2,7 +2,7 @@
 // is no one-shot Harmony hook for work (jobs are long-running), so the component's periodic scan
 // (ScanPawnWorkForDiaryEvents) samples each colonist and submits a WorkSignal. This replaces the old
 // DiaryGameComponent.TryRecordCurrentWork: the scan still picks WHO to sample, but the per-pawn
-// snapshot (work type, mood classification, persistent cooldowns, weighted roll) and emit now live
+// snapshot (work type, mood classification, persistent cooldowns, native chance) and emit now live
 // here, and the Decide/route runs through the shared dispatcher like every other source.
 //
 // Cooldowns read saved diary history through DiaryGameComponent.Instance.HasRecentWorkEvent. Pure
@@ -17,8 +17,9 @@ using Verse.AI;
 namespace PawnDiary.Ingestion
 {
     /// <summary>
-    /// Captures one colonist's current work moment and, if the weighted roll passes, emits a solo work
-    /// entry. Built by the component's work scan and submitted via <see cref="DiaryEvents.Submit(DiarySignal)"/>.
+    /// Captures one colonist's current work moment and supplies its native chance to the shared
+    /// frequency gate before emitting a solo work entry. Built by the component's work scan and
+    /// submitted via <see cref="DiaryEvents.Submit(DiarySignal)"/>.
     /// </summary>
     internal sealed class WorkSignal : DiarySignal
     {
@@ -32,6 +33,7 @@ namespace PawnDiary.Ingestion
         private readonly bool eligible;
         private readonly bool userEnabled;
         private readonly bool signalEnabled;
+        private readonly float nativeCaptureChance;
         private readonly WorkEventData payload;
 
         public WorkSignal(Pawn pawn)
@@ -56,35 +58,26 @@ namespace PawnDiary.Ingestion
             eligible = DiaryGameComponent.IsDiaryEligible(pawn);
             userEnabled = group != null && PawnDiaryMod.Settings.IsWorkEnabled(group);
             signalEnabled = DiarySignalPolicies.Enabled(DiarySignalPolicies.Work);
-            bool canRollWorkEvent = eligible && userEnabled && signalEnabled && !ignoredWorkType;
+            bool canEvaluateWorkEvent = eligible && userEnabled && signalEnabled && !ignoredWorkType;
 
             int cooldownTicks = Math.Max(0, DiarySignalPolicies.WorkSameTypeCooldownTicks);
             bool sameWorkCooldownClear = false;
-            if (canRollWorkEvent)
+            if (canEvaluateWorkEvent)
             {
                 sameWorkCooldownClear = !(DiaryGameComponent.Instance?.HasRecentWorkEvent(pawn, workTypeDef.defName, cooldownTicks, true) ?? false);
             }
 
-            bool passedChanceRoll = false;
-            if (canRollWorkEvent && sameWorkCooldownClear)
+            if (canEvaluateWorkEvent && sameWorkCooldownClear)
             {
-                float chance = WorkDiaryChance(pawn, workTypeDef, mood);
+                float chance = WorkDiaryChance(mood);
                 if (DiaryGameComponent.Instance?.HasRecentWorkEvent(pawn, workTypeDef.defName, cooldownTicks, false) ?? false)
                 {
                     chance *= Math.Max(0f, DiarySignalPolicies.WorkRecentDifferentTypeMultiplier);
                 }
 
-                // The pass/fail result is persisted in the payload, so isolate this one-shot diary
-                // gate from the global seeded stream that drives RimWorld's simulation.
-                Rand.PushState();
-                try
-                {
-                    passedChanceRoll = Rand.Value <= Math.Min(1f, Math.Max(0f, chance));
-                }
-                finally
-                {
-                    Rand.PopState();
-                }
+                // Do not clamp before the shared gate: a native value above 1 may intentionally be
+                // reduced by the selected frequency preset before the final probability is clamped.
+                nativeCaptureChance = Math.Max(0f, chance);
             }
 
             moodImpact = mood.IsPositive ? MoodImpact.Positive : mood.IsNegative ? MoodImpact.Negative : MoodImpact.Neutral;
@@ -99,7 +92,6 @@ namespace PawnDiary.Ingestion
                 HasCurrentWork = true,
                 IgnoredWorkType = ignoredWorkType,
                 SameWorkCooldownClear = sameWorkCooldownClear,
-                PassedChanceRoll = passedChanceRoll,
                 HasPassion = mood.HasPassion,
                 HasLowSkill = mood.HasLowSkill,
                 IsNegativeChore = mood.IsNegativeChore,
@@ -115,8 +107,15 @@ namespace PawnDiary.Ingestion
                 eligible: eligible,
                 userEnabled: userEnabled,
                 signalEnabled: signalEnabled,
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                frequencyGroup: group,
+                nativeCaptureChance: nativeCaptureChance);
         }
+
+        /// <summary>
+        /// A frequency miss is a sampling miss, not a consumed work occurrence; a later scan may retry.
+        /// </summary>
+        public override bool FrequencyRejectionConsumesDedup => false;
 
         // ── Quality Wave B6 pacing ────────────────────────────────────────────────────────────────
         // Routine work moments are the archetypal low-value page, so they pace; a work group XML marks
@@ -213,7 +212,7 @@ namespace PawnDiary.Ingestion
             return WorkEventData.EventDefName(mood.IsDarkStudy, mood.IsPositive, mood.IsNegative);
         }
 
-        private static float WorkDiaryChance(Pawn pawn, WorkTypeDef workTypeDef, WorkMood mood)
+        private static float WorkDiaryChance(WorkMood mood)
         {
             float chance = Math.Max(0f, DiarySignalPolicies.WorkBaseChance);
             if (mood.HasPassion)
@@ -231,9 +230,7 @@ namespace PawnDiary.Ingestion
                 chance *= Math.Max(0f, DiarySignalPolicies.WorkDarkStudyChanceMultiplier);
             }
 
-            float weight = PawnDiarySettings.ClampGenerationChanceWeight(
-                PawnDiaryMod.Settings?.generationChanceWeight ?? PawnDiarySettings.DefaultGenerationChanceWeight);
-            return chance * weight;
+            return chance;
         }
 
         private static bool HasPassionForWork(Pawn pawn, WorkTypeDef workTypeDef)

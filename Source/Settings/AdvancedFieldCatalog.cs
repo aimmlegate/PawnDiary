@@ -707,6 +707,16 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// True after every shipped Def family used by Advanced settings was available and its
+        /// pristine XML values were captured. Deferred settings migrations use this to avoid running
+        /// in the middle of Def loading with only a partial override catalog.
+        /// </summary>
+        internal static bool DefaultsCaptured
+        {
+            get { return snapshotted; }
+        }
+
+        /// <summary>
         /// Checks real DefDatabase rows rather than accessor results because the accessors deliberately
         /// return fallback Def objects while XML is unavailable. Every type below ships with this mod.
         /// </summary>

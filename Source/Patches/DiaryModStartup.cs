@@ -58,11 +58,28 @@ namespace PawnDiary
 
             try
             {
+                // Promotion membership is an Advanced-overridable XML field. Apply those saved values
+                // before translating the retired Social slider so migration mirrors the rows it
+                // actually affected in the player's previous configuration.
                 AdvancedFieldCatalog.EnsureApplied(PawnDiaryMod.Settings?.advancedOverrides);
             }
             catch (Exception e)
             {
                 Log.Error("[Pawn Diary] Advanced settings override application failed: " + e);
+            }
+
+            try
+            {
+                if (PawnDiaryMod.Settings != null
+                    && !PawnDiaryMod.Settings.TryFinalizeFrequencySettingsAfterDefsLoaded())
+                {
+                    Log.Warning("[Pawn Diary] Frequency settings migration is still waiting for XML Defs; "
+                        + "safe Standard fallbacks remain active.");
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Error("[Pawn Diary] Frequency settings post-Def initialization failed: " + e);
             }
 
             // Keep the literal "[Pawn Diary] Loaded." prefix — it is a long-standing grep target.

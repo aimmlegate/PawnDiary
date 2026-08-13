@@ -798,6 +798,10 @@ namespace PawnDiary
             }
 
             DiaryTuningDef tuning = DiaryTuning.Current;
+            DiaryInteractionGroupDef frequencyGroup = InteractionGroups.ClassifyProgression(
+                ProgressionEventData.BondedDeathAnniversaryDefName);
+            float frequencyMultiplier = PawnDiaryMod.Settings?.RuntimeGroupFrequencyMultiplier(
+                frequencyGroup) ?? DiaryFrequencyPolicy.StandardMultiplier;
             string pawnId = pawn.GetUniqueLoadID();
             List<DueBondedDeath> due = new List<DueBondedDeath>();
             for (int i = 0; i < state.bondedDeathMemories.Count; i++)
@@ -817,14 +821,24 @@ namespace PawnDiary
                     continue;
                 }
 
-                bool recall = !baseline && AnniversaryPolicy.ShouldRecall(
-                    AnniversaryPolicy.DeterministicRoll(pawnId, memory.victimId, years),
-                    AnniversaryPolicy.RecallChance(
-                        years,
-                        tuning.bondedDeathGuaranteedYears,
-                        tuning.bondedDeathFirstDecayChance,
-                        tuning.bondedDeathDecayMultiplier,
-                        tuning.bondedDeathFloorChance));
+                // This observer must decide once before it marks the anniversary year handled. Fold
+                // the exact group's frequency multiplier into the existing strict deterministic roll;
+                // an accepted signal bypasses the dispatcher's later random sampling so it is not
+                // multiplied a second time.
+                float effectiveChance;
+                bool recall = !baseline
+                    && DiaryFrequencyPolicy.TryCalculateEffectiveChance(
+                        AnniversaryPolicy.RecallChance(
+                            years,
+                            tuning.bondedDeathGuaranteedYears,
+                            tuning.bondedDeathFirstDecayChance,
+                            tuning.bondedDeathDecayMultiplier,
+                            tuning.bondedDeathFloorChance),
+                        frequencyMultiplier,
+                        out effectiveChance)
+                    && AnniversaryPolicy.ShouldRecall(
+                        AnniversaryPolicy.DeterministicRoll(pawnId, memory.victimId, years),
+                        effectiveChance);
                 // Mark the year processed either way. Skipped intermediate years are marked too: an
                 // anniversary that has already passed must not be written on the wrong date later.
                 memory.lastProcessedAnniversaryYear = years;
@@ -914,7 +928,8 @@ namespace PawnDiary
                 extraContext,
                 "PawnDiary.Event.AnniversaryDeathLabel".Translate(ranked[0].victimName).Resolve(),
                 text,
-                "anniversary-death|" + pawnId + "|" + ownershipKey);
+                "anniversary-death|" + pawnId + "|" + ownershipKey,
+                bypassFrequency: true);
             if (emitted)
             {
                 state.lastBondedDeathPageDay = day;
@@ -1110,7 +1125,8 @@ namespace PawnDiary
             string extraContext,
             string displayLabel,
             string text,
-            string dedupKey)
+            string dedupKey,
+            bool bypassFrequency = false)
         {
             ProgressionEventData data = ProgressionData(
                 pawn,
@@ -1127,7 +1143,8 @@ namespace PawnDiary
                 text,
                 majorArcCandidate: false,
                 dedupKey: dedupKey,
-                dedupWindowTicks: DiaryTuning.Current.genericEventTypeDedupTicks);
+                dedupWindowTicks: DiaryTuning.Current.genericEventTypeDedupTicks,
+                bypassFrequency: bypassFrequency);
         }
     }
 }

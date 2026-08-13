@@ -27,6 +27,7 @@ namespace PawnDiary.Ingestion
         private readonly string reason;
         private readonly string otherPawnLabel;
         private readonly bool isPair;
+        private readonly DiaryInteractionGroupDef group;
         private readonly string effectiveGroupDefName = string.Empty;
         private readonly MentalStateEventData payload;
 
@@ -50,8 +51,8 @@ namespace PawnDiary.Ingestion
             // Freeze the exact group which authorized this mental-state page. The evidence adapter
             // requires both exact IdeoChange and exact group ownership, so broad/modded states cannot
             // borrow a nearby belief mutation.
-            effectiveGroupDefName = InteractionGroups.ClassifyMentalState(stateDef)?.defName
-                ?? string.Empty;
+            group = InteractionGroups.ClassifyMentalState(stateDef);
+            effectiveGroupDefName = group?.defName ?? string.Empty;
 
             payload = new MentalStateEventData
             {
@@ -73,7 +74,9 @@ namespace PawnDiary.Ingestion
                 eligible: DiaryGameComponent.IsDiaryEligible(pawn),
                 userEnabled: PawnDiaryMod.Settings != null && PawnDiaryMod.Settings.IsMentalStateEnabled(stateDef),
                 signalEnabled: true,
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                frequencyGroup: group,
+                nativeCaptureChance: 1f);
         }
 
         public override string DedupKey => payload != null ? payload.DedupKey() : string.Empty;

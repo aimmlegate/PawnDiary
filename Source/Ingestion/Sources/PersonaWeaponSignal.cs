@@ -68,18 +68,20 @@ namespace PawnDiary.Ingestion
                 eligible: payload.PawnEligible,
                 userEnabled: enabled,
                 signalEnabled: ModsConfig.RoyaltyActive,
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                frequencyGroup: group,
+                nativeCaptureChance: 1f);
         }
 
         public override string DedupKey => payload.DedupKey();
 
         public override int DedupWindowTicks => Math.Max(1, policy.separationThresholdTicks);
 
-        public override void CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
+        public override bool CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
         {
             if (payload == null || weapon == null || lifecycle == null)
             {
-                return;
+                return false;
             }
 
             sink.CaptureEventKnowledgeWithoutPage(
@@ -89,6 +91,7 @@ namespace PawnDiary.Ingestion
                 PersonaWeaponContextFormatter.Format(
                     weapon, previous, lifecycle, selectedTraits, localizedDuration, policy),
                 payload.Tick);
+            return true;
         }
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)

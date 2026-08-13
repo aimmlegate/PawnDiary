@@ -60,7 +60,9 @@ namespace PawnDiary.Ingestion
                 eligible: DiaryGameComponent.IsDeathDescriptionEligible(pawn),
                 userEnabled: group != null && PawnDiaryMod.Settings.IsGroupEnabled(group.defName),
                 signalEnabled: true,
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                frequencyGroup: group,
+                nativeCaptureChance: 1f);
         }
 
         public override string EventTypeDedupKey(DiaryEventData payload, CaptureDecision decision)

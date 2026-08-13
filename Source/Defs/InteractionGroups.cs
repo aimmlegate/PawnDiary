@@ -580,6 +580,7 @@ namespace PawnDiary
             new Dictionary<Def, DiaryInteractionGroupDef>();
         private static readonly Dictionary<string, DiaryInteractionGroupDef> classifyByDomainName =
             new Dictionary<string, DiaryInteractionGroupDef>();
+        private static int mutationRevision;
 
         /// <summary>
         /// Clears classifications derived from mutable matcher fields. Advanced settings writes matcher
@@ -589,6 +590,20 @@ namespace PawnDiary
         {
             classifyByDef.Clear();
             classifyByDomainName.Clear();
+            unchecked
+            {
+                mutationRevision++;
+            }
+        }
+
+        /// <summary>
+        /// Changes when Advanced settings mutate any group Def field. UI projections use this broader
+        /// signal because package/capability gate lists can change settings-list membership as well as
+        /// classification results.
+        /// </summary>
+        internal static int MutationRevision
+        {
+            get { return mutationRevision; }
         }
 
         // All groups, sorted by `order` so "first match wins" is deterministic. Cached after the

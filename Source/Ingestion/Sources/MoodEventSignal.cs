@@ -23,6 +23,7 @@ namespace PawnDiary.Ingestion
     {
         private readonly bool valid;
         private readonly string colonyDedupKey;
+        private readonly DiaryInteractionGroupDef frequencyGroup;
 
         internal GameCondition Condition { get; }
         internal string ConditionDefName { get; }
@@ -39,10 +40,12 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
-            if (!PawnDiaryMod.Settings.IsMoodEventEnabled(condition.def))
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyMoodEvent(condition.def);
+            if (group == null || !PawnDiaryMod.Settings.IsGroupEnabled(group.defName))
             {
                 return;
             }
+            frequencyGroup = group;
 
             Condition = condition;
             GameConditionDef conditionDef = condition.def;
@@ -57,6 +60,16 @@ namespace PawnDiary.Ingestion
         public override string ColonyDedupKey => valid ? colonyDedupKey : string.Empty;
 
         public override int ColonyDedupTicks => DiaryTuning.Current.moodEventDedupTicks;
+
+        public override CaptureContext BuildFrequencyContext()
+        {
+            return DiaryGameComponent.BuildCaptureContext(
+                eligible: valid,
+                userEnabled: true,
+                signalEnabled: true,
+                ambientSignalEnabled: true,
+                frequencyGroup: frequencyGroup);
+        }
 
         public override IEnumerable<DiarySignal> PerPawnSignals()
         {
@@ -134,7 +147,8 @@ namespace PawnDiary.Ingestion
         public override CaptureContext BuildContext()
         {
             return DiaryGameComponent.BuildCaptureContext(
-                eligible: true, userEnabled: true, signalEnabled: true, ambientSignalEnabled: true);
+                eligible: true, userEnabled: true, signalEnabled: true, ambientSignalEnabled: true,
+                bypassFrequency: true);
         }
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)

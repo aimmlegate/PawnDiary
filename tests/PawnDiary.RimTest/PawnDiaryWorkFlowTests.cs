@@ -8,12 +8,12 @@
 // scan does for each colonist. This needs no map, matching how the reaction suite fires unspawned pawns.
 //
 // The WorkSignal constructor reads the pawn's CURRENT job (pawn.CurJob.workGiverDef.workType), classifies
-// its mood (passion / negative chore / dark study), runs the persistent same-work cooldown check and a
-// weighted chance roll, and only a passing roll becomes a solo work page. To make the chance/cooldown
-// deterministic these tests force the XML-backed Work signal policy (baseChance clamps to 1, a long
-// same-type cooldown) instead of looping until a random roll passes; every mutation is restored in
-// teardown. Work state is injected by setting the pawn's current job to one whose fabricated WorkGiverDef
-// points at a chosen WorkTypeDef, so the exact production reader (TryGetCurrentWork) sees it.
+// its mood (passion / negative chore / dark study), runs the persistent same-work cooldown check, and
+// passes its native chance to shared frequency admission. To make admission deterministic these tests
+// force the XML-backed Work signal policy, pin the exact group multipliers to 1, and use a long
+// same-type cooldown; every mutation is restored in teardown. Work state is injected by setting the
+// pawn's current job to one whose fabricated WorkGiverDef points at a chosen WorkTypeDef, so the exact
+// production reader (TryGetCurrentWork) sees it.
 //
 // Coverage-matrix ID (design/TEST_COVERAGE_PLAN.md §3): EVT-12 Work.
 using System;
@@ -37,9 +37,9 @@ namespace PawnDiary.RimTests
     [TestSuite]
     public static class PawnDiaryWorkFlowTests
     {
-        // A large, deterministic base chance so the weighted roll always clamps to 1 (passes), and a long
-        // same-type cooldown so a freshly recorded work page reliably suppresses the next same-work roll.
-        private const float ForcedPassChance = 1000000f;
+        // A deterministic native chance and exact 1x group override force shared admission to pass. A
+        // long same-type cooldown makes a freshly recorded work page suppress the next same-work scan.
+        private const float ForcedPassChance = 1f;
         private const int ForcedSameTypeCooldownTicks = 600000;
 
         private static PawnDiaryRimTestScope scope;
@@ -47,8 +47,8 @@ namespace PawnDiary.RimTests
 
         /// <summary>
         /// Opens a fresh scope, enables every Work-domain group this suite drives, creates one isolated
-        /// generation-disabled colonist, and forces the Work signal policy + generation-chance weight to
-        /// deterministic values (restored in teardown) so the chance/cooldown gates are not random.
+        /// generation-disabled colonist, and forces native Work policy + exact group frequency to
+        /// deterministic values (restored in teardown) so admission and cooldown behavior are stable.
         /// </summary>
         [BeforeEach]
         public static void SetUp()
@@ -177,13 +177,58 @@ namespace PawnDiary.RimTests
             scope.RequireNoNewEvent(() => DiaryEvents.Submit(new WorkSignal(workerPawn)));
         }
 
+        /// <summary>
+        /// The signal must pass its exact classified work group and unmodified native chance into the
+        /// shared gate, and frequency rejection must remain retryable for the periodic scanner.
+        /// </summary>
+        [Test]
+        public static void SignalCarriesExactFrequencyContextAndRetryContract()
+        {
+            WorkTypeDef routineWork = MakeWorkType(
+                "PawnDiaryTest_RoutineWork", WorkTags.None, null);
+            SetCurrentWork(workerPawn, routineWork, "checking stores");
+            WorkSignal signal = new WorkSignal(workerPawn);
+            CaptureContext context = signal.BuildContext();
+
+            PawnDiaryRimTestScope.Require(context != null
+                    && context.FrequencyGroupKey == "workRoutine"
+                    && context.FrequencyTier == "ambient"
+                    && Math.Abs(context.NativeCaptureChance - ForcedPassChance) < 0.0001f,
+                "WorkSignal did not preserve its exact group and native capture chance.");
+            PawnDiaryRimTestScope.Require(!signal.FrequencyRejectionConsumesDedup,
+                "Work frequency rejection unexpectedly consumes its dedup window.");
+        }
+
+        /// <summary>
+        /// A zero-chance scan followed by a one-chance scan in the same tick must still record. This
+        /// catches accidental event-type dedup marking on the shared frequency-rejection path.
+        /// </summary>
+        [Test]
+        public static void FrequencyRejectionCanRetryWithinSameDedupWindow()
+        {
+            WorkTypeDef routineWork = MakeWorkType(
+                "PawnDiaryTest_RetryWork", WorkTags.None, null);
+            SetCurrentWork(workerPawn, routineWork, "checking stores");
+            DiarySignalPolicyDef policy = DiarySignalPolicies.ForKey(DiarySignalPolicies.Work);
+
+            policy.baseChance = 0f;
+            scope.RequireNoNewEvent(() => DiaryEvents.Submit(new WorkSignal(workerPawn)));
+
+            policy.baseChance = ForcedPassChance;
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => DiaryEvents.Submit(new WorkSignal(workerPawn)),
+                WorkEventData.RoutineDefName,
+                workerPawn,
+                null);
+            scope.RequireSoloRef(diaryEvent, workerPawn);
+        }
+
         // ----- test helpers -----------------------------------------------------------------------
 
         /// <summary>
-        /// Forces the Work signal policy so the weighted chance roll always passes (base chance clamps to
-        /// 1, every mood multiplier is 1) and the same-type cooldown window is long and known. Also pins
-        /// the global generation-chance weight to 1. Every field is snapshotted and restored in teardown,
-        /// so the developer's live tuning/settings are untouched after the suite.
+        /// Forces the Work signal policy to native chance 1 (every mood multiplier is 1), pins each
+        /// exercised group's shared multiplier to 1, and makes the same-type cooldown long and known.
+        /// Every field and override map is restored, leaving the developer's settings untouched.
         /// </summary>
         private static void ForceDeterministicWorkPolicy()
         {
@@ -197,15 +242,12 @@ namespace PawnDiary.RimTests
             float originalRecentDifferentMultiplier = policy.recentDifferentTypeMultiplier;
             int originalSameTypeCooldown = policy.sameTypeCooldownTicks;
             int originalLowSkillThreshold = policy.lowSkillThreshold;
-
-            policy.enabled = true;
-            policy.baseChance = ForcedPassChance;
-            policy.passionChanceMultiplier = 1f;
-            policy.negativeChanceMultiplier = 1f;
-            policy.darkStudyChanceMultiplier = 1f;
-            policy.recentDifferentTypeMultiplier = 1f;
-            policy.sameTypeCooldownTicks = ForcedSameTypeCooldownTicks;
-            policy.lowSkillThreshold = 0;
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+            Dictionary<string, float> originalFrequencyOverrides = settings.groupFrequencyOverrides == null
+                ? new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, float>(
+                    settings.groupFrequencyOverrides,
+                    StringComparer.OrdinalIgnoreCase);
 
             scope.RegisterCleanup(() =>
             {
@@ -217,14 +259,24 @@ namespace PawnDiary.RimTests
                 policy.recentDifferentTypeMultiplier = originalRecentDifferentMultiplier;
                 policy.sameTypeCooldownTicks = originalSameTypeCooldown;
                 policy.lowSkillThreshold = originalLowSkillThreshold;
+                settings.groupFrequencyOverrides = new Dictionary<string, float>(
+                    originalFrequencyOverrides,
+                    StringComparer.OrdinalIgnoreCase);
             });
 
-            PawnDiarySettings settings = PawnDiaryMod.Settings;
-            if (settings != null)
+            policy.enabled = true;
+            policy.baseChance = ForcedPassChance;
+            policy.passionChanceMultiplier = 1f;
+            policy.negativeChanceMultiplier = 1f;
+            policy.darkStudyChanceMultiplier = 1f;
+            policy.recentDifferentTypeMultiplier = 1f;
+            policy.sameTypeCooldownTicks = ForcedSameTypeCooldownTicks;
+            policy.lowSkillThreshold = 0;
+
+            string[] groups = { "workPassion", "workStrain", "workRoutine", "workDarkStudy" };
+            for (int i = 0; i < groups.Length; i++)
             {
-                float originalWeight = settings.generationChanceWeight;
-                settings.generationChanceWeight = 1f;
-                scope.RegisterCleanup(() => settings.generationChanceWeight = originalWeight);
+                settings.SetGroupFrequencyOverride(groups[i], 1f);
             }
         }
 

@@ -19,6 +19,7 @@ namespace PawnDiary.Ingestion
         private readonly Pawn child;
         private readonly BirthEventContextSnapshot eventContext;
         private readonly bool enabledAtBirth;
+        private readonly DiaryInteractionGroupDef group;
 
         public FamilyBirthSignal(
             FamilyBirthEventData payload,
@@ -38,6 +39,7 @@ namespace PawnDiary.Ingestion
             this.child = child;
             this.eventContext = eventContext;
             this.enabledAtBirth = enabledAtBirth;
+            group = InteractionGroups.ByKey("biotechFamilyBirth");
         }
 
         public override DiaryEventData Payload => payload;
@@ -48,18 +50,20 @@ namespace PawnDiary.Ingestion
                 eligible: writerPawns.Count > 0,
                 userEnabled: enabledAtBirth,
                 signalEnabled: true,
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                frequencyGroup: group,
+                nativeCaptureChance: 1f);
         }
 
         public override string DedupKey => snapshot?.correlationId ?? string.Empty;
 
         public override int DedupWindowTicks => DiaryBiotechPolicy.Snapshot().birthCorrelationExpiryTicks;
 
-        public override void CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
+        public override bool CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
         {
             if (snapshot == null || payload == null || writerPawns.Count == 0)
             {
-                return;
+                return false;
             }
 
             sink.CaptureEventKnowledgeWithoutPage(
@@ -68,6 +72,7 @@ namespace PawnDiary.Ingestion
                 FamilyBirthEventData.DefName,
                 BirthContextFormatter.Build(snapshot, writers),
                 snapshot.birthTick);
+            return true;
         }
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)
@@ -79,7 +84,6 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
-            DiaryInteractionGroupDef group = InteractionGroups.ByKey("biotechFamilyBirth");
             string label = group == null || string.IsNullOrWhiteSpace(group.label)
                 ? "PawnDiary.Event.Biotech.Birth.Label".Translate().Resolve()
                 : group.LabelCap.Resolve();

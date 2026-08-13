@@ -667,7 +667,7 @@ namespace PawnDiary
             });
         }
 
-        /// <summary>Commits non-terminal history first, then owns the generic Tale only on page success.</summary>
+        /// <summary>Commits history first, then owns the generic Tale only after page registration.</summary>
         private static void SurgicalRecipePostfix(
             Pawn pawn,
             Pawn billDoer,
@@ -737,7 +737,7 @@ namespace PawnDiary
             __state = captured;
         }
 
-        /// <summary>Verifies post-state and consumes DidSurgery only after the dedicated page exists.</summary>
+        /// <summary>Verifies post-state and consumes DidSurgery only after page registration.</summary>
         private static void GhoulInfusionPostfix(
             Pawn pawn,
             Pawn billDoer,
@@ -835,7 +835,7 @@ namespace PawnDiary
             state = captured;
         }
 
-        /// <summary>Verifies the terminal level, commits the outcome, and owns the Tale on page success.</summary>
+        /// <summary>Verifies the terminal level, commits the outcome, and owns the Tale on page registration.</summary>
         private static void VoidOutcomePostfix(Pawn pawn, VoidOutcomeCapture __state)
         {
             if (__state == null) return;
@@ -859,9 +859,9 @@ namespace PawnDiary
                         pawn, close.capture, out dedicatedEventCreated);
                 }
             });
-            // Suppress the deferred terminal Tale only after the dedicated page verifiably exists;
-            // every other result (verification failure, disabled output, missing author, exception)
-            // releases the vanilla Tale so the only ending is never lost.
+            // Suppress only after the dedicated page registered. Verification failure, disabled
+            // output, a missing author, or an exception before commit releases the vanilla Tale;
+            // an exception after commit keeps the registered dedicated page as the sole owner.
             bool suppress = AnomalySurgeryTaleOwnershipPolicy.ShouldSuppress(
                 AnomalyVoidOutcomePolicy.OwnsTerminalTale(plan),
                 dedicatedEventCreated,

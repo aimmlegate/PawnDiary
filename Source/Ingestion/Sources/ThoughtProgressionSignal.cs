@@ -25,6 +25,7 @@ namespace PawnDiary.Ingestion
         private readonly ThoughtDef thoughtDef;
         private readonly string label;
         private readonly string moodImpact;
+        private readonly DiaryInteractionGroupDef group;
         private readonly ThoughtProgressionEventData payload;
 
         public ThoughtProgressionSignal(Pawn pawn, ThoughtDef thoughtDef, string thoughtDefName, string categoryKey,
@@ -39,6 +40,7 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
+            group = InteractionGroups.ClassifyThought(thoughtDef);
             moodImpact = MoodImpact.Classify(moodOffset);
             payload = new ThoughtProgressionEventData
             {
@@ -64,7 +66,9 @@ namespace PawnDiary.Ingestion
                 eligible: DiaryGameComponent.IsDiaryEligible(pawn),
                 userEnabled: PawnDiaryMod.Settings.IsThoughtEnabled(thoughtDef),
                 signalEnabled: DiarySignalPolicies.Enabled(DiarySignalPolicies.ThoughtProgression),
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                frequencyGroup: group,
+                nativeCaptureChance: 1f);
         }
 
         public override string DedupKey => payload != null ? payload.DedupKey() : string.Empty;

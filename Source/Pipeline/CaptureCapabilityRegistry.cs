@@ -20,11 +20,27 @@ namespace PawnDiary
         private readonly HashSet<string> readyIds =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly int maxCapabilities;
+        private int revision;
 
         /// <summary>Creates a registry with a defensive maximum number of simultaneously ready ids.</summary>
         public CaptureCapabilityRegistry(int maxCapabilities)
         {
             this.maxCapabilities = maxCapabilities;
+        }
+
+        /// <summary>
+        /// Monotonically increases whenever the ready-id set actually changes. Presentation adapters
+        /// can use this to invalidate availability caches without copying the whole registry.
+        /// </summary>
+        public int Revision
+        {
+            get
+            {
+                lock (sync)
+                {
+                    return revision;
+                }
+            }
         }
 
         /// <summary>
@@ -43,7 +59,11 @@ namespace PawnDiary
             {
                 if (!ready)
                 {
-                    readyIds.Remove(normalizedId);
+                    if (readyIds.Remove(normalizedId))
+                    {
+                        revision++;
+                    }
+
                     return true;
                 }
 
@@ -58,6 +78,7 @@ namespace PawnDiary
                 }
 
                 readyIds.Add(normalizedId);
+                revision++;
                 return true;
             }
         }

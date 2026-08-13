@@ -1,19 +1,20 @@
-// Impure settings adapter for the public "read / add LLM API lane" integration surface. This is the
-// one place that turns the live PawnDiarySettings API lanes into the plain DiaryApiSetupSnapshot DTO,
-// and that applies an ExternalApiLaneRequest by mutating + persisting settings. The pure token<->enum
-// mapping and validation live in ApiLaneImport; the impure parts (settings mutation, LlmClient apply,
-// Scribe persistence) stay here at the edge, mirroring how PawnDiaryMod.WriteSettings persists lane
-// edits made in the settings window.
+// Impure settings adapter for the public API's global setup surfaces: LLM lanes plus automatic-event
+// enable/frequency settings. It copies live PawnDiarySettings/Def state into detached public DTOs and
+// applies validated external writes with the same persistence paths as the settings window. Pure
+// normalization stays in policy helpers; DefDatabase, settings mutation, and Scribe writes remain at
+// this edge.
 //
 // New to C#/RimWorld? See AGENTS.md ("IExposable", settings).
+using System;
 using System.Collections.Generic;
 using PawnDiary.Integration;
+using Verse;
 
 namespace PawnDiary
 {
     /// <summary>
-    /// Bridges the public integration API to Pawn Diary's saved API-lane settings: builds a read-only
-    /// setup snapshot and adds a new lane (persisting it and pushing it live to the shared LlmClient).
+    /// Bridges the public integration API to saved LLM-lane and automatic-event settings, producing
+    /// detached snapshots and persisting validated writes through their normal runtime adapters.
     /// </summary>
     internal static class IntegrationApiSettings
     {
@@ -212,8 +213,21 @@ namespace PawnDiary
         /// </summary>
         public static List<DiaryEventFilterSnapshot> BuildEventFilterSnapshots(PawnDiarySettings settings)
         {
+            DiaryFrequencyPresetSnapshot frequencyPreset = settings?.FrequencyPresetSnapshot();
+            return BuildEventFilterSnapshots(settings, frequencyPreset);
+        }
+
+        private static List<DiaryEventFilterSnapshot> BuildEventFilterSnapshots(
+            PawnDiarySettings settings,
+            DiaryFrequencyPresetSnapshot frequencyPreset)
+        {
             List<DiaryEventFilterSnapshot> result = new List<DiaryEventFilterSnapshot>();
             if (settings == null)
+            {
+                return result;
+            }
+
+            if (!settings.TryFinalizeGroupEnabledSettingsAfterDefsLoaded())
             {
                 return result;
             }
@@ -240,10 +254,47 @@ namespace PawnDiary
                     domain = group.domain.ToString(),
                     enabled = settings.IsGroupEnabled(group.defName),
                     defaultEnabled = group.defaultEnabled,
-                    hasOverride = settings.HasGroupEnabledOverride(group.defName)
+                    hasOverride = settings.HasGroupEnabledOverride(group.defName),
+                    frequencyTier = DiaryFrequencyTiers.Normalize(group.frequencyTier),
+                    presetFrequencyMultiplier = PawnDiarySettings.PresetGroupFrequencyMultiplier(
+                        group,
+                        frequencyPreset),
+                    effectiveFrequencyMultiplier = settings.EffectiveGroupFrequencyMultiplier(
+                        group,
+                        frequencyPreset),
+                    hasFrequencyOverride = settings.HasGroupFrequencyOverride(group.defName)
                 });
             }
 
+            return result;
+        }
+
+        /// <summary>
+        /// Builds one detached snapshot of the selected global frequency preset and all settings-visible
+        /// event rows. The old list-only getter delegates to the same row builder, so API-v8 fields and
+        /// ordering remain identical while API-v9 callers can also discover the selected preset.
+        /// </summary>
+        public static DiaryEventFrequencySettingsSnapshot BuildEventFrequencySettingsSnapshot(
+            PawnDiarySettings settings)
+        {
+            if (settings == null || !settings.TryFinalizeFrequencySettingsAfterDefsLoaded())
+            {
+                return null;
+            }
+
+            DiaryEventFrequencySettingsSnapshot result = new DiaryEventFrequencySettingsSnapshot();
+            DiaryFrequencyPresetSnapshot preset = settings.FrequencyPresetSnapshot();
+            string presetDefName = preset?.presetKey ?? string.Empty;
+            DiaryFrequencyPresetDef presetDef = string.IsNullOrWhiteSpace(presetDefName)
+                ? null
+                : DefDatabase<DiaryFrequencyPresetDef>.GetNamedSilentFail(presetDefName);
+
+            result.selectedPresetDefName = presetDefName;
+            result.selectedPresetLabel = !string.IsNullOrWhiteSpace(presetDef?.label)
+                ? presetDef.LabelCap.ToString()
+                : presetDefName;
+            result.hasCustomOverrides = settings.HasCustomFrequencyOverrides(preset);
+            result.filters = BuildEventFilterSnapshots(settings, preset);
             return result;
         }
 
@@ -255,6 +306,12 @@ namespace PawnDiary
         public static bool IsEventFilterEnabled(PawnDiarySettings settings, string key)
         {
             if (settings == null || string.IsNullOrWhiteSpace(key))
+            {
+                return false;
+            }
+
+
+            if (!settings.TryFinalizeGroupEnabledSettingsAfterDefsLoaded())
             {
                 return false;
             }
@@ -281,6 +338,12 @@ namespace PawnDiary
                 return false;
             }
 
+
+            if (!settings.TryFinalizeGroupEnabledSettingsAfterDefsLoaded())
+            {
+                return false;
+            }
+
             DiaryInteractionGroupDef group = InteractionGroups.ByKey(key);
             if (!PawnDiaryMod.IsSettingsEventFilterGroup(group))
             {
@@ -290,6 +353,129 @@ namespace PawnDiary
             settings.SetGroupEnabled(group.defName, enabled);
             settings.Write();
             return true;
+        }
+
+        /// <summary>
+        /// Selects one loaded frequency preset and clears sparse frequency overrides. Presets added by
+        /// future Pawn Diary builds or third-party Defs remain valid without an API update.
+        /// Validation happens before the settings helper because that helper intentionally recovers an
+        /// unknown saved token to Standard, while a public write must fail without mutation.
+        /// </summary>
+        public static bool TrySetEventFrequencyPreset(
+            PawnDiarySettings settings,
+            string presetDefName)
+        {
+            if (settings == null)
+            {
+                return false;
+            }
+
+            DiaryFrequencyPresetDef preset = LoadedFrequencyPreset(presetDefName);
+            if (preset == null || string.IsNullOrWhiteSpace(preset.defName))
+            {
+                return false;
+            }
+
+            if (!settings.TrySetFrequencyPreset(preset.defName, clearOverrides: true))
+            {
+                return false;
+            }
+
+            settings.Write();
+            return true;
+        }
+
+        /// <summary>
+        /// Stores a finite, bounded frequency multiplier for one settings-visible group. The settings
+        /// helper owns sparse inheritance, so passing the selected preset value removes the override.
+        /// </summary>
+        public static bool TrySetEventFrequencyMultiplier(
+            PawnDiarySettings settings,
+            string key,
+            float multiplier)
+        {
+            if (settings == null
+                || float.IsNaN(multiplier)
+                || float.IsInfinity(multiplier)
+                || multiplier < 0f
+                || multiplier > DiaryFrequencyPolicy.MaximumMultiplier
+                || !PawnDiarySettings.FrequencyDefinitionsReady())
+            {
+                return false;
+            }
+
+            // Validate the token before the lazy finalizer can migrate or normalize settings. The
+            // readiness check above reads DefDatabase directly, so an early call never initializes
+            // InteractionGroups while RimWorld is still binding Defs.
+            DiaryInteractionGroupDef group = SettingsFrequencyGroup(key);
+            if (group == null || !settings.TryFinalizeFrequencySettingsAfterDefsLoaded())
+            {
+                return false;
+            }
+
+            settings.SetGroupFrequencyOverride(group.defName, multiplier);
+            settings.Write();
+            return true;
+        }
+
+        /// <summary>Clears one known settings-visible group's frequency override and persists.</summary>
+        public static bool TryResetEventFrequencyMultiplier(PawnDiarySettings settings, string key)
+        {
+            if (settings == null || !PawnDiarySettings.FrequencyDefinitionsReady())
+            {
+                return false;
+            }
+
+            // Keep the invalid-key path observationally read-only, matching the setter above.
+            DiaryInteractionGroupDef group = SettingsFrequencyGroup(key);
+            if (group == null || !settings.TryFinalizeFrequencySettingsAfterDefsLoaded())
+            {
+                return false;
+            }
+
+            settings.ResetGroupFrequencyOverride(group.defName);
+            settings.Write();
+            return true;
+        }
+
+        private static DiaryInteractionGroupDef SettingsFrequencyGroup(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return null;
+            }
+
+            DiaryInteractionGroupDef group = InteractionGroups.ByKey(key.Trim());
+            return PawnDiaryMod.IsSettingsEventFilterGroup(group) ? group : null;
+        }
+
+        private static DiaryFrequencyPresetDef LoadedFrequencyPreset(string presetDefName)
+        {
+            string token = (presetDefName ?? string.Empty).Trim();
+            if (token.Length == 0)
+            {
+                return null;
+            }
+
+            DiaryFrequencyPresetDef exact =
+                DefDatabase<DiaryFrequencyPresetDef>.GetNamedSilentFail(token);
+            if (exact != null)
+            {
+                return exact;
+            }
+
+            List<DiaryFrequencyPresetDef> presets = DefDatabase<DiaryFrequencyPresetDef>.AllDefsListForReading;
+            for (int i = 0; i < presets.Count; i++)
+            {
+                DiaryFrequencyPresetDef preset = presets[i];
+                if (preset != null
+                    && string.Equals(preset.defName, token, StringComparison.OrdinalIgnoreCase))
+                {
+                    return preset;
+                }
+            }
+
+            return null;
         }
 
         // A lane serves generation only when enabled with both a URL and a model (mirrors ActiveEndpoints).

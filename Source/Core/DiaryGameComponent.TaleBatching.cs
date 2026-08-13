@@ -61,6 +61,16 @@ namespace PawnDiary
                 {
                     group = group,
                     policy = group.batch,
+                    frequencyGroupKey = group.defName ?? string.Empty,
+                    frequencyTier = group.frequencyTier ?? string.Empty,
+                    frequencyAdmissionAccepted = DecideFrequency(
+                        BuildCaptureContext(
+                            eligible: true,
+                            userEnabled: true,
+                            signalEnabled: true,
+                            ambientSignalEnabled: true,
+                            frequencyGroup: group),
+                        bypassFrequency: false).Accepted,
                     pawn = pawn,
                     pawnId = pawn.GetUniqueLoadID(),
                     firstTick = now,
@@ -193,6 +203,11 @@ namespace PawnDiary
         private void FlushTaleBatch(string key, PendingTaleBatch batch)
         {
             pendingTaleBatches.Remove(key);
+
+            if (batch != null && !batch.frequencyAdmissionAccepted)
+            {
+                return;
+            }
 
             // IsDiaryEligible intentionally does not encode life-state for every boundary path. A pawn
             // can die while this delayed batch waits for its quiet window or a pre-save flush.
@@ -416,6 +431,9 @@ namespace PawnDiary
         {
             public DiaryInteractionGroupDef group;
             public InteractionBatchPolicy policy;
+            public string frequencyGroupKey;
+            public string frequencyTier;
+            public bool frequencyAdmissionAccepted;
             // Live Pawn reference — only valid during the current game session (not saved).
             public Pawn pawn;
             public string pawnId;

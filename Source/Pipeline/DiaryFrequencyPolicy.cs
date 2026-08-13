@@ -81,6 +81,9 @@ namespace PawnDiary
         public bool enabled = true;
         public bool bypassFrequency;
         public float roll;
+        // Most legacy chance gates accept equality. Deterministic upstream samplers such as Social
+        // Reflection historically used a strict comparison and can preserve it explicitly.
+        public bool strictRollBoundary;
     }
 
     /// <summary>Typed reason returned by <see cref="DiaryFrequencyPolicy.Decide"/>.</summary>
@@ -112,6 +115,25 @@ namespace PawnDiary
     {
         public const float StandardMultiplier = 1f;
         public const float MaximumMultiplier = 5f;
+
+        /// <summary>
+        /// Computes the final bounded probability without drawing randomness. Runtime adapters use
+        /// this to avoid consuming even an isolated RNG value for deterministic 0x/1x outcomes.
+        /// </summary>
+        public static bool TryCalculateEffectiveChance(
+            float nativeCaptureChance,
+            float multiplier,
+            out float effectiveChance)
+        {
+            effectiveChance = 0f;
+            if (!IsFinite(nativeCaptureChance) || !IsFinite(multiplier))
+            {
+                return false;
+            }
+
+            effectiveChance = Clamp(nativeCaptureChance * multiplier, 0f, 1f);
+            return true;
+        }
 
         /// <summary>
         /// Resolves one preset multiplier. Precedence is exact group override, known tier multiplier,
@@ -241,10 +263,28 @@ namespace PawnDiary
             // Multiply first, then clamp the final probability. A source may deliberately expose a
             // native value above 1 before a reducing preset is applied; pre-clamping it would turn
             // native=2 with Lite=0.3 into 0.3 instead of the contract's correct 0.6.
-            float effectiveChance = Clamp(request.nativeCaptureChance * multiplier, 0f, 1f);
+            float effectiveChance;
+            if (!TryCalculateEffectiveChance(
+                request.nativeCaptureChance,
+                multiplier,
+                out effectiveChance))
+            {
+                return Result(DiaryFrequencyDecisionReason.Invalid, multiplier, 0f);
+            }
             float roll = Clamp(request.roll, 0f, 1f);
+            // A zero probability is always closed. Without this guard, the legacy inclusive
+            // comparison would accept the singular roll==0 boundary even though the caller
+            // explicitly requested that this source never be admitted.
+            if (effectiveChance <= 0f)
+            {
+                return Result(
+                    DiaryFrequencyDecisionReason.RejectedByFrequency,
+                    multiplier,
+                    effectiveChance);
+            }
+
             return Result(
-                roll <= effectiveChance
+                (request.strictRollBoundary ? roll < effectiveChance : roll <= effectiveChance)
                     ? DiaryFrequencyDecisionReason.Accepted
                     : DiaryFrequencyDecisionReason.RejectedByFrequency,
                 multiplier,

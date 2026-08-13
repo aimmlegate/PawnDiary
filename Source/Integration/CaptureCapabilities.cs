@@ -34,5 +34,11 @@ namespace PawnDiary.Integration
         {
             return Registry.AnyReady(ids);
         }
+
+        /// <summary>Changes only when the process-wide ready capability set changes.</summary>
+        public static int Revision
+        {
+            get { return Registry.Revision; }
+        }
     }
 }

@@ -25,6 +25,27 @@ namespace PawnDiary
             return "thoughtAmbient|" + pawnId + "|" + dayIndex;
         }
 
+        /// <summary>True when an exact ambient-interaction guard belongs to the requested day.</summary>
+        public static bool IsInteractionKeyForDay(string key, int dayIndex)
+        {
+            if (string.IsNullOrWhiteSpace(key)
+                || key.IndexOf("|ambient|", StringComparison.Ordinal) < 0)
+            {
+                return false;
+            }
+
+            int separator = key.LastIndexOf('|');
+            int parsedDay;
+            return separator >= 0
+                && separator + 1 < key.Length
+                && int.TryParse(
+                    key.Substring(separator + 1),
+                    NumberStyles.Integer,
+                    CultureInfo.InvariantCulture,
+                    out parsedDay)
+                && parsedDay == dayIndex;
+        }
+
         /// <summary>
         /// Recognizes one hot or archived history row for the current day. The saved <c>day=</c>
         /// marker is authoritative because a previous-day note may be flushed after midnight; the

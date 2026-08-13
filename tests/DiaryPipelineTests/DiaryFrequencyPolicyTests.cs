@@ -120,6 +120,11 @@ namespace DiaryPipelineTests
             AssertNear("decision reports resolved multiplier", 0.5f, decision.multiplier);
             AssertNear("decision reports multiplied chance", 0.3f, decision.effectiveChance);
 
+            request.strictRollBoundary = true;
+            decision = DiaryFrequencyPolicy.Decide(request);
+            AssertTrue("strict upstream boundary rejects an equal roll", !decision.Accepted);
+            request.strictRollBoundary = false;
+
             request.roll = 0.3001f;
             decision = DiaryFrequencyPolicy.Decide(request);
             AssertTrue("roll above effective chance is rejected", !decision.Accepted);
@@ -164,7 +169,9 @@ namespace DiaryPipelineTests
             request.roll = 0f;
             request.playerOverride = 0f;
             decision = DiaryFrequencyPolicy.Decide(request);
-            AssertTrue("inclusive zero boundary matches existing source semantics", decision.Accepted);
+            AssertTrue("zero probability is closed even at the zero roll boundary", !decision.Accepted);
+            AssertTrue("zero probability reports frequency rejection",
+                decision.reason == DiaryFrequencyDecisionReason.RejectedByFrequency);
 
             request.groupKey = " ";
             decision = DiaryFrequencyPolicy.Decide(request);

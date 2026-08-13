@@ -36,6 +36,10 @@ namespace DiaryPipelineTests
             TestDigestPacingPolicy();
             TestDailyEmissionGuardPolicy();
             TestDiaryFrequencyPolicy();
+            TestDiaryDispatchOutcomePolicy();
+            TestDiaryFrequencyChoicePolicy();
+            TestDiaryEventFilterListPolicy();
+            TestDiaryFrequencySettingsPolicy();
             TestLoadedEventRepairPolicy();
             TestSocialReflectionPolicy();
             TestCheapXmlExtensionCoverage();
@@ -3220,27 +3224,36 @@ namespace DiaryPipelineTests
         {
             CaptureCapabilityRegistry registry = new CaptureCapabilityRegistry(2);
 
+            AssertEqual("capture capability registry starts at revision zero", 0, registry.Revision);
             AssertTrue("capture capability registry rejects blank id", !registry.SetReady(" ", true));
+            AssertEqual("capture capability registry rejected write keeps revision", 0, registry.Revision);
             AssertTrue("capture capability registry starts unavailable", !registry.IsReady("adapter.rich"));
             AssertTrue("capture capability registry accepts ready id", registry.SetReady(" adapter.rich ", true));
+            AssertEqual("capture capability registry add advances revision", 1, registry.Revision);
             AssertTrue("capture capability registry trims and compares case-insensitively",
                 registry.IsReady("ADAPTER.RICH"));
             AssertTrue("capture capability registry accepts duplicate ready report",
                 registry.SetReady("adapter.rich", true));
+            AssertEqual("capture capability registry duplicate keeps revision", 1, registry.Revision);
             AssertTrue("capture capability registry accepts second id", registry.SetReady("adapter.off", true));
+            AssertEqual("capture capability registry second add advances revision", 2, registry.Revision);
             AssertTrue("capture capability registry enforces defensive cap",
                 !registry.SetReady("adapter.third", true));
+            AssertEqual("capture capability registry rejected cap write keeps revision", 2, registry.Revision);
             AssertTrue("capture capability registry detects any ready XML id",
                 registry.AnyReady(new[] { "unknown", "ADAPTER.OFF" }));
             AssertTrue("capture capability registry handles null XML list", !registry.AnyReady(null));
             AssertTrue("capture capability registry clears case-insensitively",
                 registry.SetReady("Adapter.Rich", false));
+            AssertEqual("capture capability registry clear advances revision", 3, registry.Revision);
             AssertTrue("capture capability registry reports cleared id unavailable",
                 !registry.IsReady("adapter.rich"));
             AssertTrue("capture capability registry reuses capacity after clear",
                 registry.SetReady("adapter.third", true));
+            AssertEqual("capture capability registry replacement advances revision", 4, registry.Revision);
             AssertTrue("capture capability registry clearing absent id is idempotent",
                 registry.SetReady("adapter.missing", false));
+            AssertEqual("capture capability registry absent clear keeps revision", 4, registry.Revision);
         }
 
         // DiaryPromptEnchantmentCandidateSnapshot.From is the internal mapping point between the
@@ -4332,6 +4345,23 @@ namespace DiaryPipelineTests
             AssertEqual("successful fanout result count excludes drops and failures", 1, successes);
             AssertEqual("each throwing sibling is reported", 2, failed.Count);
             AssertEqual("later sibling runs after callback and reporter failures", 4, attempted[3]);
+
+            int enumerationFailures = 0;
+            int committedBeforeEnumerationFailure = FaultIsolatedItemRunner.Run(
+                ThrowAfterFirstItem(),
+                item => item == 7,
+                (item, exception) => enumerationFailures++);
+            AssertEqual(
+                "enumerator failure retains already completed success count",
+                1,
+                committedBeforeEnumerationFailure);
+            AssertEqual("enumerator failure is reported once", 1, enumerationFailures);
+        }
+
+        private static IEnumerable<int> ThrowAfterFirstItem()
+        {
+            yield return 7;
+            throw new InvalidOperationException("expected iterator failure");
         }
 
         private static void TestExternalPromptContextText()

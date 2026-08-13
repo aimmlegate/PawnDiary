@@ -57,6 +57,35 @@ namespace PawnDiary
         private string selectedAdvancedGroupKey;
         private string advancedFilter;
         private AdvancedFieldFilterMode advancedFieldFilterMode = AdvancedFieldFilterMode.All;
+        // Events-tab search/collapse state is deliberately session-only: it changes presentation, not
+        // capture policy. Searching temporarily expands matching domains without clearing this set.
+        private string eventFilterSearch = string.Empty;
+        private readonly HashSet<string> eventFilterCollapsedDomains =
+            new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+        // Def databases are immutable while the settings window is open. Cache the three preset rows
+        // and memoize effective-value display bands so repaint events do not rebuild adapter lists for
+        // every visible event row.
+        private List<DiaryFrequencyPresetDef> eventFilterFrequencyPresetDefs;
+        private readonly Dictionary<float, DiaryFrequencyChoiceDef> eventFilterFrequencyDisplayCache =
+            new Dictionary<float, DiaryFrequencyChoiceDef>();
+        // The settings-visible group catalog and its localized labels are immutable for one loaded
+        // language/mod set. Cache those 147 plain rows across IMGUI Layout/Repaint events; only search
+        // text or a collapse click needs to rebuild the much smaller section projection.
+        private LoadedLanguage eventFilterCatalogLanguage;
+        private List<DiaryInteractionGroupDef> eventFilterCatalogSource;
+        private Dictionary<string, DiaryInteractionGroupDef> eventFilterGroupByKey;
+        private List<DiaryEventFilterListRowSnapshot> eventFilterCatalogRows;
+        private List<DiaryEventFilterListSection> eventFilterCachedSections;
+        private string eventFilterCachedSectionSearch;
+        private int eventFilterCollapseRevision;
+        private int eventFilterCachedCollapseRevision = -1;
+        // Availability changes only when an integration reports a different capture-capability state;
+        // loaded packages and Def rows are immutable for the session. Cache the sorted UI group list
+        // across IMGUI events, then invalidate it on that revision or a language switch.
+        private LoadedLanguage eventFilterUiGroupsLanguage;
+        private int eventFilterUiGroupsCapabilityRevision = -1;
+        private int eventFilterUiGroupsMutationRevision = -1;
+        private List<DiaryInteractionGroupDef> eventFilterUiGroups;
         // Per-field text-entry buffers for Advanced int/float/string fields, keyed by descriptor key.
         // IMGUI redraws every frame, so without buffers each keystroke fights the live Def value.
         // advancedTextSynced stores the invariant value a buffer was last built from, so a buffer is

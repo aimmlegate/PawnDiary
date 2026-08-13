@@ -36,6 +36,7 @@ namespace PawnDiary.Ingestion
 
         private readonly bool valid;
         private readonly string colonyDedupKey;
+        private readonly DiaryInteractionGroupDef frequencyGroup;
         private readonly Pawn organizer;
         private readonly Pawn targetPawn;
         private readonly List<Pawn> fixtureParticipants;
@@ -109,6 +110,7 @@ namespace PawnDiary.Ingestion
             {
                 return;
             }
+            frequencyGroup = group;
 
             int eventTick = Find.TickManager == null ? 0 : Find.TickManager.TicksGame;
             EventTick = eventTick;
@@ -345,6 +347,7 @@ namespace PawnDiary.Ingestion
                 + PawnKey(targetPawn) + "|" + tick;
             DiaryInteractionGroupDef group = InteractionGroups.ClassifyRitual(
                 RitualClassifierKey(DefName, BehaviorClass));
+            frequencyGroup = group;
             AuthoritySpeechPolicySnapshot speechPolicy;
             AuthoritySpeechRouteSnapshot speechRoute;
             bool speechMatchFailed;
@@ -379,6 +382,16 @@ namespace PawnDiary.Ingestion
         public override string ColonyDedupKey => valid ? colonyDedupKey : string.Empty;
 
         public override int ColonyDedupTicks => DiaryTuning.Current.ritualDedupTicks;
+
+        public override CaptureContext BuildFrequencyContext()
+        {
+            return DiaryGameComponent.BuildCaptureContext(
+                eligible: valid,
+                userEnabled: true,
+                signalEnabled: true,
+                ambientSignalEnabled: true,
+                frequencyGroup: frequencyGroup);
+        }
 
         public override IEnumerable<DiarySignal> PerPawnSignals()
         {
@@ -813,7 +826,8 @@ namespace PawnDiary.Ingestion
         public override CaptureContext BuildContext()
         {
             return DiaryGameComponent.BuildCaptureContext(
-                eligible: true, userEnabled: true, signalEnabled: true, ambientSignalEnabled: true);
+                eligible: true, userEnabled: true, signalEnabled: true, ambientSignalEnabled: true,
+                bypassFrequency: true);
         }
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)

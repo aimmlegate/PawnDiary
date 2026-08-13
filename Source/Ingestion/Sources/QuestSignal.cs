@@ -142,6 +142,16 @@ namespace PawnDiary.Ingestion
 
         public override int ColonyDedupTicks => DiaryTuning.Current.questDedupTicks;
 
+        public override CaptureContext BuildFrequencyContext()
+        {
+            return DiaryGameComponent.BuildCaptureContext(
+                eligible: valid,
+                userEnabled: true,
+                signalEnabled: true,
+                ambientSignalEnabled: true,
+                frequencyGroup: Group);
+        }
+
         public override IEnumerable<DiarySignal> PerPawnSignals()
         {
             if (!valid)
@@ -350,7 +360,8 @@ namespace PawnDiary.Ingestion
         public override CaptureContext BuildContext()
         {
             return DiaryGameComponent.BuildCaptureContext(
-                eligible: true, userEnabled: true, signalEnabled: true, ambientSignalEnabled: true);
+                eligible: true, userEnabled: true, signalEnabled: true, ambientSignalEnabled: true,
+                bypassFrequency: true);
         }
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)

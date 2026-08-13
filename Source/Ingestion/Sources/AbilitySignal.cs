@@ -2,9 +2,9 @@
 // (Ability.Activate, both the local-map and world-map overloads). Replaces the old
 // DiaryGameComponent.RecordAbilityUsed. A solo source: one entry for the caster, sampled by a
 // cooldown-weighted chance so fast repeatable powers rarely become diary pages while rare powers
-// carry more weight. The sample roll lives in the pure AbilityEventData.Decide (compares the
-// captured Roll against RecordChance); this class only snapshots the live facts and emits. Exact
-// XML-owned Ideology routes with a later canonical interaction/ritual are dropped before that draw.
+// carry more weight. This class supplies that native chance to the shared frequency gate; the pure
+// AbilityEventData reducer owns only semantic validity. Exact XML-owned Ideology routes with a later
+// canonical interaction/ritual are therefore dropped before the shared gate draws.
 //
 // The dedup key is tick-stamped and includes the cleaned target label, so it lives here (it needs
 // DiaryLineCleaner) rather than on the pure payload. Pure decision + game-context + the
@@ -94,8 +94,6 @@ namespace PawnDiary.Ingestion
                 DiaryTuning.Current.abilityUseMinChance,
                 DiaryTuning.Current.abilityUseMaxChance,
                 DiaryTuning.Current.abilityUseReferenceCooldownTicks);
-            float generationChanceWeight = PawnDiarySettings.ClampGenerationChanceWeight(PawnDiaryMod.Settings.generationChanceWeight);
-            chance = Math.Min(1f, Math.Max(0f, chance * generationChanceWeight));
 
             this.pawn = caster;
             this.targetPawn = targetPawn;
@@ -127,53 +125,31 @@ namespace PawnDiary.Ingestion
                 CooldownTicks = cooldown,
                 RecordChance = chance,
                 DownstreamCovered = downstreamCovered,
-                // Roll is NOT drawn here. The pre-bus RecordAbilityUsed checked dedup before rolling,
-                // so a same-tick duplicate never performed the chance draw. Dispatch now performs the
-                // dedup CHECK before it reads Payload, so the isolated roll is drawn lazily in the
-                // Payload getter below — only on the non-deduped path. This keeps Decide pure (it still
-                // reads Roll) while preserving the historical draw timing.
             };
 
             dedupKey = "ability|" + caster.GetUniqueLoadID() + "|" + name + "|"
                 + DiaryLineCleaner.CleanLine(targetLabel) + "|" + Find.TickManager.TicksGame;
         }
 
-        // Roll is drawn on the first Payload read instead of in the constructor. Solo Dispatch reads
-        // Payload only after the dedup check has passed, so a deduped duplicate activation performs
-        // no unnecessary chance draw. The rollDrawn guard makes the isolated draw idempotent.
-        private bool rollDrawn;
+        public override DiaryEventData Payload => payload;
 
-        public override DiaryEventData Payload
-        {
-            get
-            {
-                if (payload != null && !payload.DownstreamCovered && !rollDrawn)
-                {
-                    // This one-shot capture gate is frozen in the payload. Preserve the lazy,
-                    // post-dedup timing while keeping the draw off RimWorld's gameplay RNG stream.
-                    Rand.PushState();
-                    try
-                    {
-                        payload.Roll = Rand.Value;
-                        rollDrawn = true;
-                    }
-                    finally
-                    {
-                        Rand.PopState();
-                    }
-                }
-
-                return payload;
-            }
-        }
-
-        // Caster eligibility + the user's group toggle already passed in Init; the sample roll is the
-        // only remaining gate and it lives in the pure Decide.
+        // Caster eligibility + the user's group toggle already passed in Init. The exact classified
+        // group and native cooldown chance let the shared dispatcher own the only probability draw.
         public override CaptureContext BuildContext()
         {
             return DiaryGameComponent.BuildCaptureContext(
-                eligible: true, userEnabled: true, signalEnabled: true, ambientSignalEnabled: true);
+                eligible: true,
+                userEnabled: true,
+                signalEnabled: true,
+                ambientSignalEnabled: true,
+                frequencyGroup: group,
+                nativeCaptureChance: recordChance);
         }
+
+        /// <summary>
+        /// A frequency miss is a sampling miss, so another activation may retry after rejection.
+        /// </summary>
+        public override bool FrequencyRejectionConsumesDedup => false;
 
         public override string DedupKey => dedupKey ?? string.Empty;
 

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <PawnDiary_FrequencyChoice_Rare.label>Rare</PawnDiary_FrequencyChoice_Rare.label>
+  <PawnDiary_FrequencyChoice_Rare.description>Writes this event type much less often.</PawnDiary_FrequencyChoice_Rare.description>
+  <PawnDiary_FrequencyChoice_Reduced.label>Reduced</PawnDiary_FrequencyChoice_Reduced.label>
+  <PawnDiary_FrequencyChoice_Reduced.description>Writes this event type less often.</PawnDiary_FrequencyChoice_Reduced.description>
+  <PawnDiary_FrequencyChoice_Normal.label>Normal</PawnDiary_FrequencyChoice_Normal.label>
+  <PawnDiary_FrequencyChoice_Normal.description>Keeps this event type near its normal frequency.</PawnDiary_FrequencyChoice_Normal.description>
+  <PawnDiary_FrequencyChoice_Increased.label>Increased</PawnDiary_FrequencyChoice_Increased.label>
+  <PawnDiary_FrequencyChoice_Increased.description>Raises existing sampling chances for this event type.</PawnDiary_FrequencyChoice_Increased.description>
+</LanguageData>

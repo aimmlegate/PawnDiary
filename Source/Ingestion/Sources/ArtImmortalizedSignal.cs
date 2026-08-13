@@ -62,7 +62,10 @@ namespace PawnDiary.Ingestion
                 eligible: writer != null && DiaryGameComponent.IsDiaryEligible(writer),
                 userEnabled: groupEnabled,
                 signalEnabled: DiaryTuning.Current.artImmortalizationEnabled,
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                frequencyGroup: group,
+                nativeCaptureChance: 1f,
+                bypassFrequency: true);
         }
 
         /// <summary>

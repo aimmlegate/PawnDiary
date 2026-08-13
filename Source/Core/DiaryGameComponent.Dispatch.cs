@@ -48,26 +48,44 @@ namespace PawnDiary
         /// Runs one captured event through the shared pipeline. Called by
         /// <see cref="DiaryEvents.Submit(DiarySignal)"/>. The solo path checks dedup before reading
         /// the payload, runs the pure catalog decision, checks the short generic event-type safety key,
-        /// then marks dedup immediately before the impure Emit (so a dropped event never consumes a
-        /// window, and a deduped event never builds text or mutates the save).
+        /// applies frequency admission, then marks dedup immediately before the impure Emit. Most
+        /// frequency skips settle deterministic sources; Work and Ability preserve their historical
+        /// retry contract explicitly.
         /// </summary>
         /// <returns>
-        /// True if the signal passed the guard, decision, and dedup and its <c>Emit</c> ran. Most
-        /// callers (the static <see cref="DiaryEvents.Submit(DiarySignal)"/> façade) ignore this, but a
-        /// scanner whose own episode/staging state is coupled to whether the event recorded (e.g.
-        /// ThoughtProgression's recorded-stage set) calls <c>Dispatch</c> directly and reads the result.
+        /// True if the signal passed guard, semantic decision, dedup, and frequency admission and its
+        /// <c>Emit</c> completed. Stateful owners use <see cref="DispatchWithOutcome"/> instead so a
+        /// deliberate no-page settlement cannot be mistaken for an ordinary rejection.
         /// </returns>
         internal bool Dispatch(DiarySignal signal)
         {
+            return DiaryDispatchOutcomePolicy.EmissionRan(DispatchWithOutcome(signal));
+        }
+
+        /// <summary>
+        /// Runs one signal while preserving the distinction between an ordinary rejection and a
+        /// frequency rejection that deliberately settles a stateful source such as a reflection.
+        /// </summary>
+        internal DiaryDispatchOutcome DispatchWithOutcome(DiarySignal signal)
+        {
             string source = SignalTypeName(signal);
-            long registrationBefore = events.RegistrationVersion;
+            // Starting-arrival bootstrap can persist its own pages before this signal begins. DispatchCore
+            // moves this baseline forward only after that prerequisite succeeds, so a later target fault
+            // cannot claim somebody else's arrival commit as its own ExceptionAfterCommit result.
+            long targetRegistrationBefore = events.RegistrationVersion;
+            bool targetDispatchStarted = false;
             try
             {
-                return DispatchCore(signal, source);
+                return DispatchCore(
+                    signal,
+                    source,
+                    ref targetRegistrationBefore,
+                    ref targetDispatchStarted);
             }
             catch (Exception exception)
             {
-                bool committed = events.RegistrationVersion > registrationBefore;
+                bool committed = targetDispatchStarted
+                    && events.RegistrationVersion > targetRegistrationBefore;
                 DiaryTelemetryOutcome outcome = committed
                     ? DiaryTelemetryOutcome.DispatchExceptionAfterCommit
                     : DiaryTelemetryOutcome.DispatchException;
@@ -89,11 +107,17 @@ namespace PawnDiary
                 {
                     RunDiaryIntegrityAudit("dispatch_exception", true);
                 }
-                return false;
+                return DiaryDispatchOutcomePolicy.ForException(
+                    targetDispatchStarted,
+                    committed);
             }
         }
 
-        private bool DispatchCore(DiarySignal signal, string source)
+        private DiaryDispatchOutcome DispatchCore(
+            DiarySignal signal,
+            string source,
+            ref long targetRegistrationBefore,
+            ref bool targetDispatchStarted)
         {
             if (signal == null || !CanRecordGameplayEventNow())
             {
@@ -102,7 +126,7 @@ namespace PawnDiary
                     "dispatch.guard",
                     signal,
                     null);
-                return false;
+                return DiaryDispatchOutcome.Rejected;
             }
 
             if (!EnsureStartingArrivalsBefore(signal))
@@ -112,20 +136,23 @@ namespace PawnDiary
                     "dispatch.arrival_bootstrap",
                     signal,
                     null);
-                return false;
+                return DiaryDispatchOutcome.Rejected;
             }
+
+            // From this point onward registration changes belong to the requested signal, not to the
+            // prerequisite arrival scan above. Set the marker before any payload/context adapter runs.
+            targetRegistrationBefore = events.RegistrationVersion;
+            targetDispatchStarted = true;
 
             bool forceRecord = signal.ForceRecord;
 
             // Dedup CHECK first, before any impure payload work. Two reasons:
-            //   1. It restores the pre-refactor ordering for sources whose old RecordXxx checked
-            //      dedup before drawing impure state — notably Ability, which used to check dedup
-            //      before its Rand.Value roll. Drawing the roll at capture time and only then
-            //      deduping would perform an unnecessary cosmetic roll for a dropped duplicate.
+            //   1. It preserves the pre-refactor ordering for probability-backed sources: duplicate
+            //      Work/Ability candidates are rejected before the shared frequency adapter draws.
             //   2. It skips BuildContext + Decide for a deduped event, which is pure win with no
             //      behavior change (Decide is side-effect-free).
-            // The dedup MARK stays after Decide (below): an event that Decide drops (e.g. an ability
-            // whose roll fails its cooldown-weighted chance) must not consume the dedup window.
+            // The dedup MARK stays after frequency admission below. Work and Ability deliberately do
+            // not consume their source window when that probability decision fails.
             string key = signal.DedupKey;
             int windowTicks = signal.DedupWindowTicks;
             if (!forceRecord
@@ -137,15 +164,15 @@ namespace PawnDiary
                     "dispatch.source_dedup",
                     signal,
                     null);
-                return false;
+                return DiaryDispatchOutcome.Rejected;
             }
 
             // Read the payload AFTER the dedup check. A null payload means the signal's capture
             // already decided to drop (missing/ineligible inputs, no matching policy), and its
             // BuildContext may deref state that was never set. This is the common path for sources
             // that submit for every candidate (e.g. a HediffSignal for a hediff with no diary group).
-            // For Ability this read is also where its isolated Rand.Value roll is drawn (lazily,
-            // post-dedup).
+            // Source payload capture no longer owns frequency randomness; the shared admission step
+            // below draws only after semantic and both dedup checks have accepted the candidate.
             DiaryEventData payload = signal.Payload;
             if (payload == null)
             {
@@ -154,10 +181,11 @@ namespace PawnDiary
                     "dispatch.payload",
                     signal,
                     null);
-                return false;
+                return DiaryDispatchOutcome.Rejected;
             }
 
             CaptureDecision decision;
+            CaptureContext context = null;
             if (forceRecord)
             {
                 decision = ForcedDecisionFor(payload);
@@ -168,12 +196,12 @@ namespace PawnDiary
                         "dispatch.decision",
                         signal,
                         payload);
-                    return false;
+                    return DiaryDispatchOutcome.Rejected;
                 }
             }
             else
             {
-                CaptureContext context = signal.BuildContext();
+                context = signal.BuildContext();
                 DiaryTelemetryOutcome dropOutcome;
                 if (!TryDecide(payload, context, out decision, out dropOutcome))
                 {
@@ -187,17 +215,13 @@ namespace PawnDiary
                     // reducer before invoking an allowlisted signal's no-page adapter. This prevents
                     // duplicate arrivals, invalid mutations, and already-recorded family events from
                     // becoming knowledge merely because their ordinary page was dropped.
-                    if (DiaryKnowledgeCapturePolicy.ShouldCaptureWithoutPage(payload, context))
-                    {
-                        signal.CaptureKnowledgeWithoutPage(this);
-                        RecordSignalOutcome(
-                            DiaryTelemetryOutcome.KnowledgeCapturedWithoutPage,
-                            "dispatch.knowledge_only",
-                            signal,
-                            payload);
-                    }
+                    CapturePageRejectedKnowledge(
+                        signal,
+                        payload,
+                        context,
+                        "dispatch.knowledge_only");
 
-                    return false;
+                    return DiaryDispatchOutcome.Rejected;
                 }
             }
 
@@ -212,24 +236,12 @@ namespace PawnDiary
                     "dispatch.event_type_dedup",
                     signal,
                     payload);
-                return false;
+                return DiaryDispatchOutcome.Rejected;
             }
 
-            // Dedup MARK after Decide and both dedup checks, before the impure Emit — so a dropped
-            // event never consumes the window, and a recorded one is marked exactly once on the path
-            // it actually emits on.
-            if (!string.IsNullOrEmpty(key))
-            {
-                MarkRecentlyRecorded(recentEvents, key, windowTicks);
-            }
-            if (!string.IsNullOrEmpty(eventTypeKey))
-            {
-                MarkRecentlyRecorded(recentEvents, eventTypeKey, eventTypeWindowTicks);
-            }
-
-            // Some accepted sources have delayed secondary bookkeeping even when B6 folds the source
-            // page into a digest. Keep that hook outside EmitWithLowSaliencePacing, and isolate it so an
-            // optional scheduler failure can never suppress the canonical gameplay event itself.
+            // Interaction's independently configured Social Reflection reservation belongs to the
+            // semantic source occurrence, not to the ordinary page's frequency result. Keep the
+            // historical event-type dedup check above, then offer this hook before page admission.
             try
             {
                 signal.OnAccepted(this, decision);
@@ -241,6 +253,54 @@ namespace PawnDiary
                     + "will continue normally: " + exception,
                     ("PawnDiary.Dispatch.AcceptedFollowUp." + source
                         + "." + exception.GetType().FullName).GetHashCode());
+            }
+
+            DiaryFrequencyDecision frequency = DecideFrequency(context, forceRecord);
+            if (!frequency.Accepted)
+            {
+                if (signal.FrequencyRejectionConsumesDedup)
+                {
+                    if (!string.IsNullOrEmpty(key))
+                    {
+                        MarkRecentlyRecorded(recentEvents, key, windowTicks);
+                    }
+                    if (!string.IsNullOrEmpty(eventTypeKey))
+                    {
+                        MarkRecentlyRecorded(recentEvents, eventTypeKey, eventTypeWindowTicks);
+                    }
+                }
+
+                CaptureFrequencyRejectedKnowledge(signal, payload, context);
+                try
+                {
+                    signal.OnAcceptedEmissionCompleted(this, decision, false);
+                }
+                catch (Exception exception)
+                {
+                    Log.WarningOnce(
+                        "[Pawn Diary] " + source + " frequency-rejected follow-up failed: "
+                        + exception,
+                        ("PawnDiary.Dispatch.FrequencyFollowUp." + source
+                            + "." + exception.GetType().FullName).GetHashCode());
+                }
+
+                RecordSignalOutcome(
+                    DiaryTelemetryOutcome.FrequencyRejected,
+                    "dispatch.frequency",
+                    signal,
+                    payload);
+                return DiaryDispatchOutcome.FrequencyRejected;
+            }
+
+            // Dedup MARK after semantic/frequency admission and both dedup checks, before the impure
+            // Emit, so an accepted event is marked exactly once on the path that actually handles it.
+            if (!string.IsNullOrEmpty(key))
+            {
+                MarkRecentlyRecorded(recentEvents, key, windowTicks);
+            }
+            if (!string.IsNullOrEmpty(eventTypeKey))
+            {
+                MarkRecentlyRecorded(recentEvents, eventTypeKey, eventTypeWindowTicks);
             }
 
             long registrationBeforeEmit = events.RegistrationVersion;
@@ -287,15 +347,18 @@ namespace PawnDiary
                     signal,
                     payload);
             }
-            return true;
+            return registrations > 0
+                ? DiaryDispatchOutcome.PageRegistered
+                : DiaryDispatchOutcome.ConsumedWithoutPage;
         }
 
         /// <summary>
         /// Runs a colony-wide fan-out. Peeks the colony dedup window first; then iterates the per-pawn
         /// signals (already filtered to eligible colonists) through the fan-out child path:
-        /// payload/context snapshot → Decide → optional per-pawn dedup → Emit. The colony key is marked
-        /// only after at least one entry was emitted, so an empty colonist list cannot consume the whole
-        /// window (matching the old fan-out recorders).
+        /// payload/context snapshot → Decide → optional per-pawn dedup → frequency admission → Emit. The
+        /// colony key is marked only after at least one child settles (a page, an intentional no-page
+        /// result, or a post-commit fault), so an empty or wholly ineligible list cannot consume the
+        /// whole window while a handled occurrence cannot replay.
         /// </summary>
         internal void Dispatch(DiaryFanoutSignal signal)
         {
@@ -370,11 +433,17 @@ namespace PawnDiary
                 return;
             }
 
+            CaptureContext frequencyContext = signal.BuildFrequencyContext();
+            FanoutFrequencyAdmission frequencyAdmission = new FanoutFrequencyAdmission
+            {
+                context = frequencyContext
+            };
+
             // A colony fan-out is a set of independent pawn stories. One modded getter or one
             // malformed child must cost only that pawn, not every sibling after it.
-            int emittedCount = FaultIsolatedItemRunner.Run(
+            int settledCount = FaultIsolatedItemRunner.Run(
                 signal.PerPawnSignals(),
-                TryDispatchFanoutChild,
+                child => TryDispatchFanoutChild(child, frequencyAdmission),
                 (child, exception) =>
                 {
                     string childType = child?.GetType().FullName ?? "null";
@@ -391,9 +460,18 @@ namespace PawnDiary
                         DiaryTelemetryReporter.ErrorOnceKey(errorKey, fingerprint));
                 });
 
-            if (emittedCount > 0 && !string.IsNullOrEmpty(colonyKey))
+            if (settledCount > 0 && !string.IsNullOrEmpty(colonyKey))
             {
                 MarkRecentlyRecorded(recentEvents, colonyKey, colonyTicks);
+            }
+            if (frequencyAdmission.evaluated && !frequencyAdmission.decision.Accepted)
+            {
+                DiaryTelemetry.Record(
+                    DiaryTelemetryOutcome.FrequencyRejected,
+                    "fanout.frequency",
+                    source,
+                    frequencyContext?.FrequencyGroupKey,
+                    DiaryTelemetryReporter.CurrentGameTick());
             }
             DiaryTelemetry.Record(
                 DiaryTelemetryOutcome.FanoutCompleted,
@@ -403,18 +481,20 @@ namespace PawnDiary
                 DiaryTelemetryReporter.CurrentGameTick());
         }
 
-        private bool TryDispatchFanoutChild(DiarySignal child)
+        private bool TryDispatchFanoutChild(
+            DiarySignal child,
+            FanoutFrequencyAdmission frequencyAdmission)
         {
             string source = SignalTypeName(child);
             long registrationBefore = events.RegistrationVersion;
             try
             {
-                return TryDispatchFanoutChildCore(child);
+                return TryDispatchFanoutChildCore(child, frequencyAdmission);
             }
             catch (Exception exception)
             {
                 bool committed = events.RegistrationVersion > registrationBefore;
-                DiaryTelemetryReporter.RecordException(
+                string fingerprint = DiaryTelemetryReporter.RecordException(
                     committed
                         ? DiaryTelemetryOutcome.FanoutChildExceptionAfterCommit
                         : DiaryTelemetryOutcome.FanoutChildException,
@@ -426,12 +506,25 @@ namespace PawnDiary
                 if (committed)
                 {
                     RunDiaryIntegrityAudit("fanout_child_exception", true);
+                    Log.ErrorOnce(
+                        "[Pawn Diary] One fan-out child failed after event persistence began; "
+                        + "the shared occurrence was settled and remaining pawns will continue: "
+                        + exception,
+                        DiaryTelemetryReporter.ErrorOnceKey(
+                            "PawnDiary.FanoutChildCommitted." + source,
+                            fingerprint));
+                    // Persistence already began for this child. Count it as settled so the colony
+                    // dedup key closes even when this was the only eligible writer; otherwise a later
+                    // retry could duplicate the committed page or its siblings.
+                    return true;
                 }
                 throw;
             }
         }
 
-        private bool TryDispatchFanoutChildCore(DiarySignal child)
+        private bool TryDispatchFanoutChildCore(
+            DiarySignal child,
+            FanoutFrequencyAdmission frequencyAdmission)
         {
             if (child == null)
             {
@@ -455,14 +548,20 @@ namespace PawnDiary
             }
 
             CaptureDecision decision;
+            CaptureContext childContext = child.BuildContext();
             DiaryTelemetryOutcome dropOutcome;
-            if (!TryDecide(childPayload, child.BuildContext(), out decision, out dropOutcome))
+            if (!TryDecide(childPayload, childContext, out decision, out dropOutcome))
             {
                 RecordSignalOutcome(
                     dropOutcome,
                     "fanout.decision",
                     child,
                     childPayload);
+                CapturePageRejectedKnowledge(
+                    child,
+                    childPayload,
+                    childContext,
+                    "fanout.knowledge_only");
                 return false;
             }
 
@@ -495,6 +594,47 @@ namespace PawnDiary
                 return false;
             }
 
+            try
+            {
+                child.OnAccepted(this, decision);
+            }
+            catch (Exception exception)
+            {
+                Log.WarningOnce(
+                    "[Pawn Diary] One fan-out child's accepted-source follow-up failed; that child "
+                    + "will continue normally: " + exception,
+                    ("PawnDiary.Fanout.AcceptedFollowUp."
+                        + child.GetType().FullName + "." + exception.GetType().FullName).GetHashCode());
+            }
+
+            if (!frequencyAdmission.evaluated)
+            {
+                frequencyAdmission.decision = DecideFrequency(
+                    frequencyAdmission.context,
+                    bypassFrequency: false);
+                frequencyAdmission.evaluated = true;
+            }
+            if (!frequencyAdmission.decision.Accepted)
+            {
+                CaptureFrequencyRejectedKnowledge(child, childPayload, childContext);
+                try
+                {
+                    child.OnAcceptedEmissionCompleted(this, decision, false);
+                }
+                catch (Exception exception)
+                {
+                    Log.WarningOnce(
+                        "[Pawn Diary] One fan-out child's frequency-rejected follow-up failed; "
+                        + "the shared occurrence remains settled: " + exception,
+                        ("PawnDiary.Fanout.FrequencyFollowUp."
+                            + child.GetType().FullName + "."
+                            + exception.GetType().FullName).GetHashCode());
+                }
+                // One semantically valid child proves the shared occurrence existed. Returning true
+                // closes the colony key even though the profile deliberately emitted no pages.
+                return true;
+            }
+
             // Preserve the ingestion pipeline's mark-before-emit contract. Emit is not atomic: a
             // failure can occur after an event has already entered persistence, so leaving the key
             // unmarked would let a later retry duplicate that partially completed child.
@@ -510,6 +650,19 @@ namespace PawnDiary
             DiaryTelemetryOutcome emitOutcome =
                 EmitWithLowSaliencePacing(child, childPayload, decision);
             long registrations = events.RegistrationVersion - registrationBeforeEmit;
+            try
+            {
+                child.OnAcceptedEmissionCompleted(this, decision, registrations > 0);
+            }
+            catch (Exception exception)
+            {
+                Log.WarningOnce(
+                    "[Pawn Diary] One fan-out child's post-emission follow-up failed; its page "
+                    + "and the shared occurrence remain recorded: " + exception,
+                    ("PawnDiary.Fanout.PostEmissionFollowUp."
+                        + child.GetType().FullName + "."
+                        + exception.GetType().FullName).GetHashCode());
+            }
             if (emitOutcome == DiaryTelemetryOutcome.EventRecorded && registrations == 0)
             {
                 RecordSignalOutcome(
@@ -540,6 +693,160 @@ namespace PawnDiary
             // B6 soft cap folded into a digest was still handled, and re-running the fan-out for it
             // would duplicate the moment.
             return true;
+        }
+
+        /// <summary>Mutable holder for the one lazily evaluated decision shared by all fan-out children.</summary>
+        private sealed class FanoutFrequencyAdmission
+        {
+            public CaptureContext context;
+            public DiaryFrequencyDecision decision;
+            public bool evaluated;
+        }
+
+        /// <summary>
+        /// Applies the selected frequency profile after semantic policy and dedup have accepted the
+        /// source. The only random value is drawn inside the established isolated Rand scope.
+        /// </summary>
+        private static DiaryFrequencyDecision DecideFrequency(
+            CaptureContext context,
+            bool bypassFrequency)
+        {
+            if (bypassFrequency
+                || context == null
+                || context.BypassFrequency
+                || string.IsNullOrWhiteSpace(context.FrequencyGroupKey))
+            {
+                return new DiaryFrequencyDecision
+                {
+                    reason = DiaryFrequencyDecisionReason.AcceptedBypass,
+                    multiplier = DiaryFrequencyPolicy.StandardMultiplier,
+                    effectiveChance = 1f
+                };
+            }
+
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+            float playerOverride = DiaryFrequencyPolicy.StandardMultiplier;
+            bool hasOverride = settings != null
+                && settings.TryGetRuntimeGroupFrequencyOverride(
+                    context.FrequencyGroupKey,
+                    out playerOverride);
+            DiaryFrequencyPresetSnapshot preset = settings?.RuntimeFrequencyPresetSnapshot();
+            float multiplier = DiaryFrequencyPolicy.ResolveEffectiveMultiplier(
+                preset,
+                context.FrequencyGroupKey,
+                context.FrequencyTier,
+                hasOverride,
+                playerOverride);
+
+            float effectiveChance;
+            bool validChance = DiaryFrequencyPolicy.TryCalculateEffectiveChance(
+                context.NativeCaptureChance,
+                multiplier,
+                out effectiveChance);
+            float roll = float.NaN;
+            if (validChance && effectiveChance > 0f && effectiveChance < 1f)
+            {
+                Rand.PushState();
+                try
+                {
+                    roll = Rand.Value;
+                }
+                finally
+                {
+                    Rand.PopState();
+                }
+            }
+            else if (validChance)
+            {
+                // The pure policy still owns the boundary rule; these sentinels merely let a
+                // deterministic 0/1 chance reach it without advancing even the isolated stream.
+                roll = effectiveChance <= 0f ? 0f : 1f;
+            }
+
+            return DiaryFrequencyPolicy.Decide(new DiaryFrequencyRequest
+            {
+                groupKey = context.FrequencyGroupKey,
+                frequencyTier = context.FrequencyTier,
+                nativeCaptureChance = context.NativeCaptureChance,
+                preset = preset,
+                hasPlayerOverride = hasOverride,
+                playerOverride = playerOverride,
+                enabled = context.UserEnabled,
+                bypassFrequency = false,
+                roll = roll
+            });
+        }
+
+        private void CaptureFrequencyRejectedKnowledge(
+            DiarySignal signal,
+            DiaryEventData payload,
+            CaptureContext context)
+        {
+            CaptureRejectedKnowledge(
+                signal,
+                payload,
+                context,
+                DiaryKnowledgePageRejectionReason.Frequency,
+                "dispatch.frequency_knowledge_only");
+        }
+
+        private void CapturePageRejectedKnowledge(
+            DiarySignal signal,
+            DiaryEventData payload,
+            CaptureContext context,
+            string telemetryStage)
+        {
+            CaptureRejectedKnowledge(
+                signal,
+                payload,
+                context,
+                DiaryKnowledgePageRejectionReason.PagePolicy,
+                telemetryStage);
+        }
+
+        private void CaptureRejectedKnowledge(
+            DiarySignal signal,
+            DiaryEventData payload,
+            CaptureContext context,
+            DiaryKnowledgePageRejectionReason rejectionReason,
+            string telemetryStage)
+        {
+            if (signal == null
+                || !DiaryKnowledgeCapturePolicy.ShouldCaptureWithoutPage(
+                    payload,
+                    context,
+                    rejectionReason))
+            {
+                return;
+            }
+
+            try
+            {
+                if (signal.CaptureKnowledgeWithoutPage(this))
+                {
+                    RecordSignalOutcome(
+                        DiaryTelemetryOutcome.KnowledgeCapturedWithoutPage,
+                        telemetryStage,
+                        signal,
+                        payload);
+                }
+            }
+            catch (Exception exception)
+            {
+                // Knowledge projection is supplementary for every no-page lane. A broken adapter must
+                // neither turn a semantic page rejection into a dispatch fault nor reopen an occurrence
+                // whose frequency decision already settled, especially inside colony fan-outs.
+                string reasonToken = rejectionReason == DiaryKnowledgePageRejectionReason.Frequency
+                    ? "Frequency"
+                    : "PagePolicy";
+                Log.WarningOnce(
+                    "[Pawn Diary] " + SignalTypeName(signal)
+                    + " rejected-page knowledge capture failed; the page outcome remains isolated: "
+                    + exception,
+                    ("PawnDiary.Dispatch." + reasonToken + "Knowledge."
+                        + SignalTypeName(signal) + "."
+                        + exception.GetType().FullName).GetHashCode());
+            }
         }
 
         /// <summary>

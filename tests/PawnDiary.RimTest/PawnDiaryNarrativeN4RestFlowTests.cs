@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using PawnDiary.Capture;
+using PawnDiary.Ingestion;
 using RimWorld;
 using RimTestRedux;
 using Verse;
@@ -180,6 +181,51 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// A terminal-owned major arc skipped by frequency still consumes its selected supporting memory,
+        /// closes the pending request, and advances cadence. The false return means “no page”, not “retry”.
+        /// </summary>
+        [Test]
+        public static void FrequencyRejectedMajorArcSettlesPendingRequestWithoutPage()
+        {
+            ConfigureReflectionKinds(day: false, quadrum: false, arc: true);
+            tuning.arcReflectionMinMemoriesPreferred = 1;
+            tuning.arcReflectionMinMemoriesForced = 1;
+            tuning.arcReflectionMemoryShortfallRetryTicks = 0;
+            tuning.arcReflectionTerminalRetryMaxTicks =
+                GenDate.TicksPerDay * GenDate.DaysPerYear;
+
+            Pawn pawn = scope.CreateAdultColonist();
+            scope.SpawnAsLiveColonist(pawn);
+            PawnDiaryRecord diary = DiaryFor(pawn);
+            PawnReflectionState reflection = AlreadyBaselined(diary);
+            string ownerId = "rimtest-frequency-major-owner|" + pawn.GetUniqueLoadID();
+            string supportingId = "rimtest-frequency-major-support|" + pawn.GetUniqueLoadID();
+            InsertHotArcMemory(pawn, diary, ownerId, "The terminal chapter closed.");
+            InsertHotArcMemory(pawn, diary, supportingId, "A separate memory put it in perspective.");
+            reflection.QueueMajorArc(Find.TickManager.TicksGame, ownerId);
+            ForceFrequencyRejection("reflection");
+            int nowTick = Find.TickManager.TicksGame;
+
+            bool dispatched = true;
+            scope.RequireNoNewEvent(() => dispatched = Arbitrate(pawn));
+
+            PawnArcScheduleState schedule = diary.EnsureArcSchedule();
+            PawnDiaryRimTestScope.Require(!dispatched && !reflection.pendingMajorArc,
+                "A frequency-rejected major arc was reported as a page or retained pending debt.");
+            PawnDiaryRimTestScope.Require(
+                schedule.recentlyUsedEventIds.Contains(supportingId)
+                    && !schedule.recentlyUsedEventIds.Contains(ownerId)
+                    && reflection.lastMajorArcTick == nowTick
+                    && reflection.lastReflectionTick == nowTick,
+                "The frequency-rejected major arc did not settle its selection and cadence exactly once.");
+
+            bool repeatedDispatch = true;
+            scope.RequireNoNewEvent(() => repeatedDispatch = Arbitrate(pawn));
+            PawnDiaryRimTestScope.Require(!repeatedDispatch,
+                "A settled major-arc frequency skip rerolled on the next rest opportunity.");
+        }
+
+        /// <summary>
         /// A terminal request blocked by the annual schedule is backed off instead of being discarded or
         /// re-evaluated on every 250-tick sleep scan.
         /// </summary>
@@ -292,6 +338,48 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// A frequency skip settles the one reflection selected by priority without writing a page or
+        /// falling through to a lower-priority belief opportunity. The selected cross-arc cadence closes
+        /// exactly as it does after a page, so a second rest cannot reroll the same linked memories.
+        /// </summary>
+        [Test]
+        public static void FrequencyRejectedCrossArcSettlesWithoutLowerPriorityFallthrough()
+        {
+            ConfigureReflectionKinds(day: false, quadrum: false, arc: true);
+            Pawn pawn = scope.CreateAdultColonist();
+            PawnDiaryRecord diary = DiaryFor(pawn);
+            PawnReflectionState reflection = AlreadyBaselined(diary);
+            bool beliefDue = SeedPendingIdeologyChangeWhenAvailable(pawn, diary);
+            string archiveEventId = InsertLinkedHotAndArchiveRows(pawn, diary);
+            scope.RegisterCleanup(() => ArchiveRepository().RemoveForEventIds(
+                new HashSet<string>(new[] { archiveEventId }, StringComparer.OrdinalIgnoreCase)));
+            ForceFrequencyRejection("reflection");
+            int nowTick = Find.TickManager.TicksGame;
+
+            bool dispatched = true;
+            scope.RequireNoNewEvent(() => dispatched = Arbitrate(pawn));
+
+            PawnDiaryRimTestScope.Require(!dispatched,
+                "A frequency-rejected cross-arc reflection was reported as a written page.");
+            PawnDiaryRimTestScope.Require(
+                reflection.lastCrossArcTick == nowTick
+                    && reflection.lastReflectionTick == nowTick,
+                "The frequency-rejected cross-arc opportunity did not settle its kind/global cadence.");
+            if (beliefDue)
+            {
+                PawnBeliefState belief = diary.EnsureBeliefState();
+                PawnDiaryRimTestScope.Require(
+                    belief.pendingIdeologyChange && reflection.lastBeliefTick < 0,
+                    "Frequency rejection fell through and consumed the lower-priority belief opportunity.");
+            }
+
+            bool repeatedDispatch = true;
+            scope.RequireNoNewEvent(() => repeatedDispatch = Arbitrate(pawn));
+            PawnDiaryRimTestScope.Require(!repeatedDispatch,
+                "A settled cross-arc frequency skip rerolled on the next rest opportunity.");
+        }
+
+        /// <summary>
         /// With Ideology active, one saved ideology change becomes one prompt-only belief reflection and
         /// is consumed only after success. With Ideology absent, the identical detached debt is silently
         /// bounded and creates no page, proving the optional-DLC no-op branch in the loaded adapter.
@@ -363,6 +451,100 @@ namespace PawnDiary.RimTests
             scope.RequireNoNewEvent(() => repeatedDispatch = Arbitrate(pawn));
             PawnDiaryRimTestScope.Require(!repeatedDispatch,
                 "The global cooldown allowed a second belief reflection in the same rest.");
+        }
+
+        /// <summary>
+        /// With Ideology active, frequency rejection settles the selected belief debt and both cadence
+        /// rows without creating a page. DLC-off behavior remains covered by the existing no-op fixture.
+        /// </summary>
+        [Test]
+        public static void FrequencyRejectedBeliefReflectionSettlesDebtWithoutPage()
+        {
+            if (!ModsConfig.IdeologyActive)
+            {
+                return;
+            }
+
+            ConfigureReflectionKinds(day: false, quadrum: false, arc: false);
+            Pawn pawn = scope.CreateAdultColonist();
+            scope.SpawnAsLiveColonist(pawn);
+            PawnDiaryRecord diary = DiaryFor(pawn);
+            PawnReflectionState reflection = AlreadyBaselined(diary);
+            PawnDiaryRimTestScope.Require(
+                SeedPendingIdeologyChangeWhenAvailable(pawn, diary),
+                "Ideology is active, but the fixture pawn had no projectable belief tracker.");
+            PawnBeliefState belief = diary.EnsureBeliefState();
+            ForceFrequencyRejection("reflectionBelief");
+            int nowTick = Find.TickManager.TicksGame;
+
+            bool dispatched = true;
+            scope.RequireNoNewEvent(() => dispatched = Arbitrate(pawn));
+
+            PawnDiaryRimTestScope.Require(
+                !dispatched
+                    && !belief.pendingIdeologyChange
+                    && belief.lastReflectionTick == nowTick
+                    && reflection.lastBeliefTick == nowTick
+                    && reflection.lastReflectionTick == nowTick,
+                "The frequency-rejected belief opportunity did not settle its debt and cadence without a page.");
+
+            bool repeatedDispatch = true;
+            scope.RequireNoNewEvent(() => repeatedDispatch = Arbitrate(pawn));
+            PawnDiaryRimTestScope.Require(!repeatedDispatch,
+                "A settled belief frequency skip rerolled on the next rest opportunity.");
+        }
+
+        /// <summary>
+        /// The quiet policy has already used the belief group's multiplier and deterministic roll before
+        /// arbitration, so its accepted signal bypasses a later central 0x check. A stronger non-quiet
+        /// trigger does not carry that marker and remains subject to normal central admission.
+        /// </summary>
+        [Test]
+        public static void QuietAdmissionBypassesCentralFrequencyButNonQuietStillUsesIt()
+        {
+            if (!ModsConfig.IdeologyActive)
+            {
+                return;
+            }
+
+            Pawn quietPawn = scope.CreateAdultColonist();
+            Pawn nonQuietPawn = scope.CreateAdultColonist();
+            ForceFrequencyRejection(BeliefReflectionEventData.FrequencyGroupKey);
+            BeliefReflectionSignal quietSignal = BeliefSignalForFrequencyContract(
+                quietPawn,
+                BeliefReflectionTriggerTokens.Quiet,
+                frequencySettledUpstream: true);
+            BeliefReflectionSignal nonQuietSignal = BeliefSignalForFrequencyContract(
+                nonQuietPawn,
+                BeliefReflectionTriggerTokens.IdeologyChange,
+                frequencySettledUpstream: false);
+
+            CaptureContext quietContext = quietSignal.BuildContext();
+            CaptureContext nonQuietContext = nonQuietSignal.BuildContext();
+            PawnDiaryRimTestScope.Require(
+                quietContext.FrequencyGroupKey == BeliefReflectionEventData.FrequencyGroupKey
+                    && nonQuietContext.FrequencyGroupKey == BeliefReflectionEventData.FrequencyGroupKey,
+                "Belief reflection signals did not retain the exact reflectionBelief frequency owner.");
+            PawnDiaryRimTestScope.Require(
+                quietContext.BypassFrequency && !nonQuietContext.BypassFrequency,
+                "The upstream-settled marker bypassed the wrong belief trigger.");
+
+            DiaryDispatchOutcome quietOutcome = DiaryDispatchOutcome.Rejected;
+            scope.FireAndRequireEvent(
+                () => quietOutcome = scope.Component.DispatchWithOutcome(quietSignal),
+                BeliefReflectionEventData.DefNameToken,
+                quietPawn,
+                null,
+                rejectOtherTestPawnEvents: true);
+            PawnDiaryRimTestScope.Require(quietOutcome == DiaryDispatchOutcome.Accepted,
+                "An upstream-settled quiet reflection was sampled a second time by central admission.");
+
+            DiaryDispatchOutcome nonQuietOutcome = DiaryDispatchOutcome.Rejected;
+            scope.RequireNoNewEvent(() =>
+                nonQuietOutcome = scope.Component.DispatchWithOutcome(nonQuietSignal));
+            PawnDiaryRimTestScope.Require(
+                nonQuietOutcome == DiaryDispatchOutcome.FrequencyRejected,
+                "A non-quiet belief trigger bypassed its required central frequency admission.");
         }
 
         /// <summary>
@@ -669,6 +851,66 @@ namespace PawnDiary.RimTests
             tuning.daySummaryEnabled = day;
             tuning.quadrumReflectionEnabled = quadrum;
             tuning.arcReflectionEnabled = arc;
+        }
+
+        private static void ForceFrequencyRejection(string groupKey)
+        {
+            DiaryInteractionGroupDef group = InteractionGroups.ByKey(groupKey);
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+            if (group == null || settings?.groupFrequencyOverrides == null)
+            {
+                throw new AssertionException(
+                    "Could not configure the reflection frequency-rejection fixture for '"
+                    + groupKey + "'.");
+            }
+
+            float savedValue;
+            bool hadSavedValue = settings.groupFrequencyOverrides.TryGetValue(
+                group.defName, out savedValue);
+            settings.groupFrequencyOverrides[group.defName] = 0f;
+            scope.RegisterCleanup(() =>
+            {
+                if (hadSavedValue)
+                {
+                    settings.groupFrequencyOverrides[group.defName] = savedValue;
+                }
+                else
+                {
+                    settings.groupFrequencyOverrides.Remove(group.defName);
+                }
+            });
+        }
+
+        private static BeliefReflectionSignal BeliefSignalForFrequencyContract(
+            Pawn pawn,
+            string trigger,
+            bool frequencySettledUpstream)
+        {
+            int nowTick = Find.TickManager.TicksGame;
+            BeliefReflectionEventData data = new BeliefReflectionEventData
+            {
+                PawnId = pawn.GetUniqueLoadID(),
+                Tick = nowTick,
+                DefName = BeliefReflectionEventData.DefNameToken,
+                Trigger = trigger,
+                HasBeliefContext = true,
+                AlreadyWritten = false
+            };
+            BeliefContextBuildResult prepared = new BeliefContextBuildResult
+            {
+                evaluated = true,
+                fullContext = "belief_fixture=true",
+                resolution = new BeliefStanceResolution()
+            };
+            return new BeliefReflectionSignal(
+                data,
+                pawn,
+                "belief reflection fixture",
+                "A private belief reflection.",
+                "Write the prepared belief reflection.",
+                BeliefReflectionEventData.BuildGameContext(trigger),
+                prepared,
+                frequencySettledUpstream);
         }
     }
 }

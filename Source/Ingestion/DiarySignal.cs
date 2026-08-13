@@ -58,13 +58,21 @@ namespace PawnDiary.Ingestion
         public virtual bool ForceRecord => false;
 
         /// <summary>
+        /// Most deterministic occurrences close their dedup window when frequency rejects them so a
+        /// duplicate hook cannot reroll the same gameplay moment. Work and Ability override false to
+        /// preserve their historical failed-roll retry behavior.
+        /// </summary>
+        public virtual bool FrequencyRejectionConsumesDedup => true;
+
+        /// <summary>
         /// Captures durable important-event knowledge when the catalog drops only the diary page
         /// (for example because the player disabled that page group). The default is a no-op because
         /// most signals are deliberately outside the closed important-event allowlist. Overrides must
         /// only project already-captured facts; they must never create a DiaryEvent or queue generation.
         /// </summary>
-        public virtual void CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
+        public virtual bool CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
         {
+            return false;
         }
 
         /// <summary>
@@ -356,6 +364,15 @@ namespace PawnDiary.Ingestion
 
         /// <summary>How long (ticks) the colony dedup key blocks a repeat. Impure XML read.</summary>
         public abstract int ColonyDedupTicks { get; }
+
+        /// <summary>
+        /// Freezes the parent occurrence's frequency group before fan-out. Children deliberately omit
+        /// frequency metadata so one raid/ritual/quest draw accepts or rejects every eligible writer.
+        /// </summary>
+        public virtual CaptureContext BuildFrequencyContext()
+        {
+            return null;
+        }
 
         /// <summary>
         /// The per-pawn signals to run, already filtered to eligible colonists (and de-duplicated by

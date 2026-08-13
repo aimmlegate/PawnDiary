@@ -75,7 +75,9 @@ namespace PawnDiary.Ingestion
                 eligible: true,
                 userEnabled: PawnDiaryMod.Settings.IsGroupEnabled(group.defName),
                 signalEnabled: policy.enabled,
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                frequencyGroup: group,
+                nativeCaptureChance: 1f);
         }
 
         public override string DedupKey =>
@@ -83,7 +85,7 @@ namespace PawnDiary.Ingestion
 
         public override int DedupWindowTicks => policy != null ? System.Math.Max(0, policy.dedupTicks) : 0;
 
-        public override void CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
+        public override bool CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
         {
             if (source == HediffSignalSource.Appeared && payload != null)
             {
@@ -93,7 +95,9 @@ namespace PawnDiary.Ingestion
                     payload.DefName,
                     sink.BuildHediffKnowledgeContext(hediff, payload),
                     payload.Tick);
+                return true;
             }
+            return false;
         }
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)

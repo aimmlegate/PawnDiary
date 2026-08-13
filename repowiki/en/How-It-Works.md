@@ -33,7 +33,7 @@ The common dispatcher then checks:
 - the per-pawn and global settings;
 - whether the matched event group is enabled;
 - route-specific semantic eligibility;
-- configured chance and generation frequency;
+- native source chance and the selected Events frequency profile;
 - recent duplicate or source-ownership claims; and
 - low-salience pacing limits where applicable.
 
@@ -57,7 +57,7 @@ For routes that use XML classification, the first matching group supplies the se
 
 Everyday, low-salience pages can be capped per pawn and day. A folded moment does not always vanish: eligible facts can be retained as digest evidence for a later reflection. Important events, combat, colony fan-out, and configured batch routes use their own admission and pacing policies instead of automatically sharing the everyday cap.
 
-Chance still applies where the route or group enables it. The generation-frequency setting multiplies those chances; it does not promise a page for every signal.
+Chance still applies where the route or group enables it. The Events frequency profile multiplies that native chance through the classified group. Deterministic events remain limited to the one occurrence that actually happened; shared fan-outs sample once, and delayed batches retain their frozen result. A frequency skip can still preserve allowlisted important knowledge without creating or queueing a page.
 
 ## Generation and persistence
 

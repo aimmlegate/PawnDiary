@@ -42,6 +42,7 @@ Header pawn pickers supply subject and partner. Form values persist while you sw
   <PawnDiaryExampleAdapter.IncludeImportantToggle>include important-event context</PawnDiaryExampleAdapter.IncludeImportantToggle>
   <PawnDiaryExampleAdapter.Category.Psychotype>Psychotype</PawnDiaryExampleAdapter.Category.Psychotype>
   <PawnDiaryExampleAdapter.Category.LlmCompletion>LLM Completion</PawnDiaryExampleAdapter.Category.LlmCompletion>
+  <PawnDiaryExampleAdapter.Category.Events>Events</PawnDiaryExampleAdapter.Category.Events>
 
   <PawnDiaryExampleAdapter.Summary.GetPsychotype>Reads the selected pawn's effective outlook and saved custom rule.</PawnDiaryExampleAdapter.Summary.GetPsychotype>
   <PawnDiaryExampleAdapter.Summary.GetPsychotypeRule>Reads the localized built-in rule for one psychotype defName.</PawnDiaryExampleAdapter.Summary.GetPsychotypeRule>
@@ -53,6 +54,10 @@ Header pawn pickers supply subject and partner. Form values persist while you sw
   <PawnDiaryExampleAdapter.Summary.RequestLlmCompletion>Starts a paid one-shot completion on a configured API lane and remembers its handle.</PawnDiaryExampleAdapter.Summary.RequestLlmCompletion>
   <PawnDiaryExampleAdapter.Summary.GetLlmCompletionResult>Polls the remembered completion handle; the first terminal read consumes it.</PawnDiaryExampleAdapter.Summary.GetLlmCompletionResult>
   <PawnDiaryExampleAdapter.Summary.CancelLlmCompletion>Cancels obsolete one-shot completion work and releases its core slot.</PawnDiaryExampleAdapter.Summary.CancelLlmCompletion>
+  <PawnDiaryExampleAdapter.Summary.GetEventFrequencySettings>Reads the selected global frequency preset and every event group's effective multiplier (API v9+).</PawnDiaryExampleAdapter.Summary.GetEventFrequencySettings>
+  <PawnDiaryExampleAdapter.Summary.SetEventFrequencyPreset>Selects a loaded frequency preset and clears per-group frequency overrides (API v9+).</PawnDiaryExampleAdapter.Summary.SetEventFrequencyPreset>
+  <PawnDiaryExampleAdapter.Summary.SetEventFrequencyMultiplier>Sets one event group's multiplier without changing its enable toggle (API v9+).</PawnDiaryExampleAdapter.Summary.SetEventFrequencyMultiplier>
+  <PawnDiaryExampleAdapter.Summary.ResetEventFrequencyMultiplier>Returns one event group to the selected preset's inherited multiplier (API v9+).</PawnDiaryExampleAdapter.Summary.ResetEventFrequencyMultiplier>
 
   <!-- ── Form field labels (English on purpose: schema labels matching the DTO fields) ──── -->
   <PawnDiaryExampleAdapter.Field.EventKey>eventKey</PawnDiaryExampleAdapter.Field.EventKey>
@@ -107,6 +112,9 @@ Header pawn pickers supply subject and partner. Form values persist while you sw
   <PawnDiaryExampleAdapter.Field.LlmUserText>userText</PawnDiaryExampleAdapter.Field.LlmUserText>
   <PawnDiaryExampleAdapter.Field.LlmMaxTokens>maxTokens</PawnDiaryExampleAdapter.Field.LlmMaxTokens>
   <PawnDiaryExampleAdapter.Field.LlmHandle>completion handle</PawnDiaryExampleAdapter.Field.LlmHandle>
+  <PawnDiaryExampleAdapter.Field.FrequencyPresetDefName>frequency preset defName</PawnDiaryExampleAdapter.Field.FrequencyPresetDefName>
+  <PawnDiaryExampleAdapter.Field.FrequencyGroupKey>event group key</PawnDiaryExampleAdapter.Field.FrequencyGroupKey>
+  <PawnDiaryExampleAdapter.Field.FrequencyMultiplier>frequency multiplier (0–5)</PawnDiaryExampleAdapter.Field.FrequencyMultiplier>
 
   <!-- ── API Explorer popover help ───────────────────────────────────────────────────────── -->
   <PawnDiaryExampleAdapter.Help.EventKey>Stable adapter event key. It should match an External-domain group defName or another key your adapter documents.</PawnDiaryExampleAdapter.Help.EventKey>
@@ -158,6 +166,9 @@ Header pawn pickers supply subject and partner. Form values persist while you sw
   <PawnDiaryExampleAdapter.Help.LlmMaxTokens>Requested output cap. Pawn Diary clamps it to the integration completion limit.</PawnDiaryExampleAdapter.Help.LlmMaxTokens>
   <PawnDiaryExampleAdapter.Help.LlmHandle>The latest requested handle is filled automatically. You may also paste another positive handle.</PawnDiaryExampleAdapter.Help.LlmHandle>
   <PawnDiaryExampleAdapter.Help.LlmCompletionTokenWarning>This method sends a real provider request and can spend the player's tokens. Poll or cancel the returned handle afterward.</PawnDiaryExampleAdapter.Help.LlmCompletionTokenWarning>
+  <PawnDiaryExampleAdapter.Help.FrequencyPresetDefName>Stable DiaryFrequencyPresetDef name returned by GetEventFrequencySettings. The shipped values are PawnDiary_Frequency_Lite, PawnDiary_Frequency_Standard, and PawnDiary_Frequency_Frequent.</PawnDiaryExampleAdapter.Help.FrequencyPresetDefName>
+  <PawnDiaryExampleAdapter.Help.FrequencyGroupKey>Settings-visible event group defName returned in the frequency snapshot, such as smalltalk.</PawnDiaryExampleAdapter.Help.FrequencyGroupKey>
+  <PawnDiaryExampleAdapter.Help.FrequencyMultiplier>Finite multiplier from 0 through 5. A value equal to the selected preset removes the sparse override.</PawnDiaryExampleAdapter.Help.FrequencyMultiplier>
   <PawnDiaryExampleAdapter.Help.Hooks>Shows the example adapter's live entry-status listener events and pawn-context provider invocation count.</PawnDiaryExampleAdapter.Help.Hooks>
 
   <PawnDiaryExampleAdapter.LlmCompletion.TokenWarning>This invokes a configured provider and may spend tokens.</PawnDiaryExampleAdapter.LlmCompletion.TokenWarning>
@@ -176,6 +187,23 @@ Header pawn pickers supply subject and partner. Form values persist while you sw
   <PawnDiaryExampleAdapter.Log.ApiDisabled>External API is disabled in Pawn Diary's main mod settings.</PawnDiaryExampleAdapter.Log.ApiDisabled>
   <PawnDiaryExampleAdapter.Log.Copy>Copy</PawnDiaryExampleAdapter.Log.Copy>
   <PawnDiaryExampleAdapter.Log.Clear>Clear</PawnDiaryExampleAdapter.Log.Clear>
+
+  <!-- ── Optional API-v9 event-frequency result text ────────────────────────────────────── -->
+  <PawnDiaryExampleAdapter.Result.Yes>yes</PawnDiaryExampleAdapter.Result.Yes>
+  <PawnDiaryExampleAdapter.Result.No>no</PawnDiaryExampleAdapter.Result.No>
+  <PawnDiaryExampleAdapter.Result.Frequency.Unavailable>Event frequency settings are unavailable (requires API v9; the master switch, main thread, and settings must also be available).</PawnDiaryExampleAdapter.Result.Frequency.Unavailable>
+  <PawnDiaryExampleAdapter.Result.Frequency.Header>Event frequency settings</PawnDiaryExampleAdapter.Result.Frequency.Header>
+  <PawnDiaryExampleAdapter.Result.Frequency.Preset>Preset: {0} ({1})</PawnDiaryExampleAdapter.Result.Frequency.Preset>
+  <PawnDiaryExampleAdapter.Result.Frequency.Custom>Custom overrides: {0}</PawnDiaryExampleAdapter.Result.Frequency.Custom>
+  <PawnDiaryExampleAdapter.Result.Frequency.GroupCount>Event groups: {0}</PawnDiaryExampleAdapter.Result.Frequency.GroupCount>
+  <PawnDiaryExampleAdapter.Result.Frequency.Enabled>enabled</PawnDiaryExampleAdapter.Result.Frequency.Enabled>
+  <PawnDiaryExampleAdapter.Result.Frequency.Disabled>disabled</PawnDiaryExampleAdapter.Result.Frequency.Disabled>
+  <PawnDiaryExampleAdapter.Result.Frequency.EnableOverride> [enable override]</PawnDiaryExampleAdapter.Result.Frequency.EnableOverride>
+  <PawnDiaryExampleAdapter.Result.Frequency.MultiplierOverride> [frequency override]</PawnDiaryExampleAdapter.Result.Frequency.MultiplierOverride>
+  <PawnDiaryExampleAdapter.Result.Frequency.Row>  {0} {1} ({2}) — {3}× (preset {4}×), tier {5}{6}{7}; {8}</PawnDiaryExampleAdapter.Result.Frequency.Row>
+  <PawnDiaryExampleAdapter.Result.Frequency.OneLine>preset={0}; groups={1}</PawnDiaryExampleAdapter.Result.Frequency.OneLine>
+  <PawnDiaryExampleAdapter.Result.Frequency.MultiplierTarget>{0} at {1}×</PawnDiaryExampleAdapter.Result.Frequency.MultiplierTarget>
+  <PawnDiaryExampleAdapter.Result.Frequency.Mutation>{0}: target={1}; applied={2}</PawnDiaryExampleAdapter.Result.Frequency.Mutation>
 
   <!-- ── Dev-action Messages ─────────────────────────────────────────────────────────────── -->
   <PawnDiaryExampleAdapter.Quick.NoPawn>No eligible colonist found.</PawnDiaryExampleAdapter.Quick.NoPawn>

@@ -161,10 +161,10 @@ namespace PawnDiary
             // Dispatch directly (not the void Submit façade) so we learn whether the event actually
             // recorded — the recorded-stage set updates only on success, exactly like the old
             // RecordThoughtProgression bool return.
-            bool recorded = Dispatch(new ThoughtProgressionSignal(
+            DiaryDispatchOutcome outcome = DispatchWithOutcome(new ThoughtProgressionSignal(
                 pawn, match.thoughtDef, match.thoughtDefName, match.categoryKey, match.label,
                 match.stageIndex, match.severity, match.moodOffset, worsened, stageAlreadyRecorded));
-            if (recorded)
+            if (DiaryDispatchOutcomePolicy.SettlesSource(outcome))
             {
                 state.recordedStageKeys.Add(stageKey);
             }

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <PawnDiary_FrequencyChoice_Rare.label>Редко</PawnDiary_FrequencyChoice_Rare.label>
+  <PawnDiary_FrequencyChoice_Rare.description>Записи об этом типе событий создаются гораздо реже.</PawnDiary_FrequencyChoice_Rare.description>
+  <PawnDiary_FrequencyChoice_Reduced.label>Реже</PawnDiary_FrequencyChoice_Reduced.label>
+  <PawnDiary_FrequencyChoice_Reduced.description>Записи об этом типе событий создаются реже.</PawnDiary_FrequencyChoice_Reduced.description>
+  <PawnDiary_FrequencyChoice_Normal.label>Обычно</PawnDiary_FrequencyChoice_Normal.label>
+  <PawnDiary_FrequencyChoice_Normal.description>Сохраняет обычную частоту записей для этого типа событий.</PawnDiary_FrequencyChoice_Normal.description>
+  <PawnDiary_FrequencyChoice_Increased.label>Чаще</PawnDiary_FrequencyChoice_Increased.label>
+  <PawnDiary_FrequencyChoice_Increased.description>Повышает существующие шансы выборки для этого типа событий.</PawnDiary_FrequencyChoice_Increased.description>
+</LanguageData>

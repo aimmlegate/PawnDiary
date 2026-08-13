@@ -59,7 +59,9 @@ namespace PawnDiary.Ingestion
                 eligible: payload.FirstWriterEligible,
                 userEnabled: enabled,
                 signalEnabled: ModsConfig.AnomalyActive && policy.studyEnabled,
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                frequencyGroup: group,
+                nativeCaptureChance: 1f);
         }
 
         public override string DedupKey => payload.DedupKey();

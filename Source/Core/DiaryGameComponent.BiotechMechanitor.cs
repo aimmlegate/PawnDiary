@@ -177,7 +177,7 @@ namespace PawnDiary
 
         /// <summary>
         /// Observes the first configured hostile combat Tale whose exact instigator is a currently
-        /// controlled mech. A successful controller page suppresses the ordinary Tale route; disabled
+        /// controlled mech. A settled controller attempt suppresses the ordinary Tale route; disabled
         /// output still consumes the exact occurrence but fails open so generic ownership remains.
         /// </summary>
         internal bool TryHandleMechanitorCombatTale(Tale tale, TaleDef taleDef)
@@ -211,7 +211,7 @@ namespace PawnDiary
             if (target != null)
                 context += "; " + MechanitorContextKeys.CombatTarget + "="
                     + MechanitorContextValue(target.LabelShortCap);
-            bool emitted = EmitMechanitorProgression(
+            ProgressionDispatchResult dispatch = EmitMechanitorProgression(
                 controller,
                 MechanitorEventDefNames.FirstControlledMechCombat,
                 "first_controlled_mech_combat",
@@ -220,7 +220,9 @@ namespace PawnDiary
                     .Translate(controller.LabelShortCap, snapshot.displayName).Resolve(),
                 context,
                 "mechanitor-first-combat|" + controller.GetUniqueLoadID());
-            return emitted;
+            // Once central admission or a later committed stage owns this exact Tale, do not let the
+            // generic Tale provider retry it. Page visibility is deliberately not the ownership test.
+            return dispatch.SettlesSource;
         }
 
         /// <summary>Snapshots and records a custom-named or observed long-serving mech loss.</summary>
@@ -412,7 +414,7 @@ namespace PawnDiary
             return diary?.EnsureProgressionState();
         }
 
-        private bool EmitMechanitorProgression(
+        private ProgressionDispatchResult EmitMechanitorProgression(
             Pawn controller,
             string defName,
             string kind,
@@ -423,10 +425,10 @@ namespace PawnDiary
             List<NarrativeEvidence> narrativeEvidence = null,
             TerminalReflectionContract terminalReflection = null)
         {
-            if (controller == null) return false;
+            if (controller == null) return default(ProgressionDispatchResult);
             ProgressionEventData data = ProgressionData(
                 controller, defName, kind, label, string.Empty, label, context);
-            return DispatchProgression(
+            return DispatchProgressionWithResult(
                 controller,
                 data,
                 label,

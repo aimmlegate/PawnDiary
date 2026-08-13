@@ -68,22 +68,25 @@ namespace PawnDiary.Ingestion
                 eligible: payload.FirstEligible && payload.SecondEligible,
                 userEnabled: PawnDiaryMod.Settings.IsGroupEnabled(group.defName),
                 signalEnabled: true,
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                frequencyGroup: group,
+                nativeCaptureChance: 1f);
         }
 
         public override string DedupKey => payload != null ? payload.DedupKey() : string.Empty;
 
         public override int DedupWindowTicks => DiaryTuning.Current.romanceDedupTicks;
 
-        public override void CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
+        public override bool CaptureKnowledgeWithoutPage(DiaryGameComponent sink)
         {
             if (payload == null)
             {
-                return;
+                return false;
             }
 
             sink.CaptureEventKnowledgeWithoutPage(
                 pawn, otherPawn, relationDef.defName, BuildKnowledgeContext(), payload.Tick);
+            return true;
         }
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)

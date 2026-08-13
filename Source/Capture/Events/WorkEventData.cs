@@ -1,6 +1,6 @@
 // Payload + pure decision for sampled work diary events. RimWorld-specific work inspection, skill
-// reads, cooldown scans, settings reads, and RNG rolls stay in DiaryGameComponent.Work; this payload
-// records their primitive results so the catalog owns the final record/drop decision.
+// reads, cooldown scans, settings reads, and frequency sampling stay at the game edge; this payload
+// records semantic facts so the catalog owns the final valid/drop decision before shared admission.
 using System.Collections.Generic;
 
 namespace PawnDiary.Capture
@@ -24,7 +24,6 @@ namespace PawnDiary.Capture
         public bool HasCurrentWork;
         public bool IgnoredWorkType;
         public bool SameWorkCooldownClear;
-        public bool PassedChanceRoll;
         public bool HasPassion;
         public bool HasLowSkill;
         public bool IsNegativeChore;
@@ -42,7 +41,7 @@ namespace PawnDiary.Capture
                 return CaptureDecision.Drop;
             }
 
-            if (!data.HasCurrentWork || data.IgnoredWorkType || !data.SameWorkCooldownClear || !data.PassedChanceRoll)
+            if (!data.HasCurrentWork || data.IgnoredWorkType || !data.SameWorkCooldownClear)
             {
                 return CaptureDecision.Drop;
             }

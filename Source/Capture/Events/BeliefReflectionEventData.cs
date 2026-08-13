@@ -7,6 +7,7 @@ namespace PawnDiary.Capture
     internal sealed class BeliefReflectionEventData : DiaryEventData
     {
         public const string DefNameToken = "PawnBeliefReflection";
+        public const string FrequencyGroupKey = "reflectionBelief";
 
         public override DiaryEventType EventType => DiaryEventType.BeliefReflection;
 

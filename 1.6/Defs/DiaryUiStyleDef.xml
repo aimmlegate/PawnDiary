@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Display-only style knobs for the pawn Diary inspector tab.
+  Display-only style knobs for the pawn Diary inspector/reader and responsive mod-settings layout.
   Edit values and restart the game to retune visualization without recompiling. Every value here
   matches the code fallback, so deleting this file or omitting a field keeps the same behavior.
 
@@ -52,6 +52,22 @@
     <filterPanelGap>12</filterPanelGap>
     <!-- Live title/body search activates only after this many trimmed characters. -->
     <filterSearchMinimumCharacters>3</filterSearchMinimumCharacters>
+
+    <!-- Mod settings, Events tab. Short windows use label-only preset cards and omit secondary
+         header prose so the event list never overlaps controls that were already drawn. -->
+    <settingsEventsCompactHeightThreshold>500</settingsEventsCompactHeightThreshold>
+    <settingsEventsTitleHeight>30</settingsEventsTitleHeight>
+    <settingsEventsPresetHeaderHeight>30</settingsEventsPresetHeaderHeight>
+    <settingsEventsPresetCardHeight>84</settingsEventsPresetCardHeight>
+    <settingsEventsCompactPresetCardHeight>38</settingsEventsCompactPresetCardHeight>
+    <settingsEventsPresetStatusHeight>26</settingsEventsPresetStatusHeight>
+    <settingsEventsEnableAllButtonWidth>118</settingsEventsEnableAllButtonWidth>
+    <settingsEventsResetButtonWidth>142</settingsEventsResetButtonWidth>
+    <settingsEventsDismissButtonWidth>100</settingsEventsDismissButtonWidth>
+    <settingsEventsFrequencyButtonWidth>132</settingsEventsFrequencyButtonWidth>
+    <settingsEventsDomainHeight>28</settingsEventsDomainHeight>
+    <settingsEventsRowHeight>32</settingsEventsRowHeight>
+    <settingsEventsRowGap>3</settingsEventsRowGap>
 
     <!-- Header/card dimensions -->
     <controlLineHeight>28</controlLineHeight>

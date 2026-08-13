@@ -226,6 +226,53 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Proves legacy migration inventories package-gated compatibility rows even while their
+        /// target mod is absent, so old Social intent is waiting if that mod is installed later.
+        /// </summary>
+        [Test]
+        public static void FrequencyMigrationIncludesDormantCompatibilityGroups()
+        {
+            using (new FrequencyPromotionPolicyFixtureScope("hospitality_guestwork"))
+            {
+                List<DiaryFrequencyMigrationGroupSnapshot> groups =
+                    PawnDiarySettings.FrequencyMigrationGroupSnapshots();
+                DiaryFrequencyMigrationGroupSnapshot hospitality = groups.Find(group =>
+                    string.Equals(
+                        group?.groupKey,
+                        "hospitality_guestwork",
+                        StringComparison.OrdinalIgnoreCase));
+                Assert.That(hospitality != null
+                    && hospitality.affectedByInteractionPromotionWeight);
+
+                DiaryFrequencyMigrationGroupSnapshot external = groups.Find(group =>
+                    string.Equals(
+                        group?.groupKey,
+                        "externalDevTest",
+                        StringComparison.OrdinalIgnoreCase));
+                Assert.That(external == null);
+            }
+        }
+
+        /// <summary>Proves the compact Events-tab choice rows survive the real XML loader in order.</summary>
+        [Test]
+        public static void FrequencyChoicesLoadWithExpectedAbsoluteBands()
+        {
+            List<DiaryFrequencyChoiceDef> choices = DiaryFrequencyChoices.All();
+            string[] tokens = { "rare", "reduced", "normal", "increased" };
+            float[] multipliers = { 0.25f, 0.5f, 1f, 2f };
+            float[] displayMaximums = { 0.375f, 0.75f, 1.5f, 5f };
+            Assert.That(choices.Count == tokens.Length);
+            for (int i = 0; i < tokens.Length; i++)
+            {
+                DiaryFrequencyChoiceDef choice = choices[i];
+                Assert.That(choice != null
+                    && choice.token == tokens[i]
+                    && choice.multiplier == multipliers[i]
+                    && choice.displayMaxMultiplier == displayMaximums[i]);
+            }
+        }
+
+        /// <summary>
         /// Verifies that Phase 7's Royal Ascent Def family loaded and root-first Quest routing owns
         /// only the exact Royalty quest. Package gates decide runtime availability separately.
         /// </summary>

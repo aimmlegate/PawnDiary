@@ -555,13 +555,61 @@
   <PawnDiary.Settings.Adv.LockedTitle>Дополнительные XML-переопределения</PawnDiary.Settings.Adv.LockedTitle>
   <PawnDiary.Settings.Adv.LockedHelp>Здесь находятся экспериментальные переопределения XML-описаний для тонкой настройки и правил запросов. Включайте их только для проверки исходных параметров; для обычной игры оставляйте выключенными.</PawnDiary.Settings.Adv.LockedHelp>
   <PawnDiary.Settings.EventFilters.Title>Фильтры автоматической записи</PawnDiary.Settings.EventFilters.Title>
-  <PawnDiary.Settings.EventFilters.Summary>Автоматическая запись отключена для {0} из {1} типов событий.</PawnDiary.Settings.EventFilters.Summary>
-  <PawnDiary.Settings.EventFilters.Help>Отключите тип события, чтобы Pawn Diary не записывал его автоматически. Внешние моды по-прежнему могут добавлять свои записи через API.</PawnDiary.Settings.EventFilters.Help>
+  <PawnDiary.Settings.EventFilters.Summary>Автоматическая запись: отключено {0}/{1}.</PawnDiary.Settings.EventFilters.Summary>
+  <PawnDiary.Settings.EventFilters.Help>Флажок полностью включает или отключает тип события. Частота определяет, как часто включённое событие становится записью. Внешние моды используют собственные правила API.</PawnDiary.Settings.EventFilters.Help>
   <PawnDiary.Settings.EventFilters.EnableAll>Включить все</PawnDiary.Settings.EventFilters.EnableAll>
-  <PawnDiary.Settings.EventFilters.EnableAllTip>Включить все типы событий, показанные в этом списке.</PawnDiary.Settings.EventFilters.EnableAllTip>
+  <PawnDiary.Settings.EventFilters.EnableAllTip>Включить все доступные типы событий независимо от поиска и свёрнутых категорий.</PawnDiary.Settings.EventFilters.EnableAllTip>
   <PawnDiary.Settings.EventFilters.Changed>изменено</PawnDiary.Settings.EventFilters.Changed>
   <PawnDiary.Settings.EventFilters.RowTip>Группа автоматической записи: {0}. События из отключённых групп не записываются автоматически, но фильтр не блокирует внешние запросы API. Строка «Размышление» управляет итогами дня, квадрума и жизненного пути.</PawnDiary.Settings.EventFilters.RowTip>
   <PawnDiary.Settings.EventFilters.None>Нет доступных групп для автоматической записи.</PawnDiary.Settings.EventFilters.None>
+  <PawnDiary.Settings.EventFilters.FrequencyTitle>Частота записей</PawnDiary.Settings.EventFilters.FrequencyTitle>
+  <PawnDiary.Settings.EventFilters.ResetToPreset>Сбросить к профилю</PawnDiary.Settings.EventFilters.ResetToPreset>
+  <PawnDiary.Settings.EventFilters.ResetToPresetTip>Особые настройки частоты для сброса: {0}. Настройки включения и отключения не изменятся.</PawnDiary.Settings.EventFilters.ResetToPresetTip>
+  <PawnDiary.Settings.EventFilters.ResetToPresetEmptyTip>Сейчас все типы событий наследуют выбранный профиль.</PawnDiary.Settings.EventFilters.ResetToPresetEmptyTip>
+  <PawnDiary.Settings.EventFilters.ResetToPresetTitle>Сброс частоты записей</PawnDiary.Settings.EventFilters.ResetToPresetTitle>
+  <PawnDiary.Settings.EventFilters.ResetToPresetConfirm>Сбросить особые настройки частоты ({1}) и вернуть всем типам событий профиль «{0}»? Настройки включения и отключения не изменятся.</PawnDiary.Settings.EventFilters.ResetToPresetConfirm>
+  <PawnDiary.Settings.EventFilters.SelectPresetTitle>Выбрать «{0}»</PawnDiary.Settings.EventFilters.SelectPresetTitle>
+  <PawnDiary.Settings.EventFilters.SelectPresetConfirm>Переключиться на профиль «{0}» и сбросить особые настройки частоты ({1})? Настройки включения и отключения не изменятся.</PawnDiary.Settings.EventFilters.SelectPresetConfirm>
+  <PawnDiary.Settings.EventFilters.PresetStatusInherited>Используется профиль «{0}»; все типы событий наследуют его настройки.</PawnDiary.Settings.EventFilters.PresetStatusInherited>
+  <PawnDiary.Settings.EventFilters.PresetStatusCustom>Особый профиль на основе «{0}». Переопределения частоты: {1}.</PawnDiary.Settings.EventFilters.PresetStatusCustom>
+  <PawnDiary.Settings.EventFilters.PresetStatusMigrated>Особый профиль (перенесён) на основе «{0}». Переопределения частоты: {1}.</PawnDiary.Settings.EventFilters.PresetStatusMigrated>
+  <PawnDiary.Settings.EventFilters.PresetStatusHiddenOverrides>Используется профиль «{0}». Скрытые сохранённые настройки событий дополнений: {1}.</PawnDiary.Settings.EventFilters.PresetStatusHiddenOverrides>
+  <PawnDiary.Settings.EventFilters.PresetFallback>Стандартно</PawnDiary.Settings.EventFilters.PresetFallback>
+  <PawnDiary.Settings.EventFilters.MigrationNotice>Предыдущая настройка шанса перенесена только на те типы событий, которых она касалась. Маршрутизацию общения нельзя воспроизвести точно, поэтому проверьте перенесённые особые настройки.</PawnDiary.Settings.EventFilters.MigrationNotice>
+  <PawnDiary.Settings.EventFilters.MigrationNoticeCompact>Предыдущие настройки шанса перенесены. Проверьте особые настройки частоты.</PawnDiary.Settings.EventFilters.MigrationNoticeCompact>
+  <PawnDiary.Settings.EventFilters.MigrationDismiss>Понятно</PawnDiary.Settings.EventFilters.MigrationDismiss>
+  <PawnDiary.Settings.EventFilters.Search>Поиск</PawnDiary.Settings.EventFilters.Search>
+  <PawnDiary.Settings.EventFilters.NoSearchResults>Нет типов событий, соответствующих поиску.</PawnDiary.Settings.EventFilters.NoSearchResults>
+  <PawnDiary.Settings.EventFilters.DomainHeading>{0} {1} ({2})</PawnDiary.Settings.EventFilters.DomainHeading>
+  <PawnDiary.Settings.EventFilters.DomainHeadingSearch>{0} {1} ({2}/{3})</PawnDiary.Settings.EventFilters.DomainHeadingSearch>
+  <PawnDiary.Settings.EventFilters.ExpandDomainTip>Показать эту категорию событий.</PawnDiary.Settings.EventFilters.ExpandDomainTip>
+  <PawnDiary.Settings.EventFilters.CollapseDomainTip>Скрыть эту категорию событий. При поиске подходящие категории временно разворачиваются.</PawnDiary.Settings.EventFilters.CollapseDomainTip>
+  <PawnDiary.Settings.EventFilters.SearchDomainTip>Подходящие категории останутся развёрнутыми до очистки поиска.</PawnDiary.Settings.EventFilters.SearchDomainTip>
+  <PawnDiary.Settings.EventFilters.FrequencyExact>{0}x</PawnDiary.Settings.EventFilters.FrequencyExact>
+  <PawnDiary.Settings.EventFilters.FrequencyButtonCustom>{0} *</PawnDiary.Settings.EventFilters.FrequencyButtonCustom>
+  <PawnDiary.Settings.EventFilters.UsePresetChoice>Как в «{0}» ({1}x)</PawnDiary.Settings.EventFilters.UsePresetChoice>
+  <PawnDiary.Settings.EventFilters.UsePresetChoiceTip>Удалить особую частоту этой строки, чтобы она наследовала выбранный профиль.</PawnDiary.Settings.EventFilters.UsePresetChoiceTip>
+  <PawnDiary.Settings.EventFilters.FrequencyChoiceEntry>{0} ({1}x)</PawnDiary.Settings.EventFilters.FrequencyChoiceEntry>
+  <PawnDiary.Settings.EventFilters.FrequencyTipCustom>{0} ({1}x), особая настройка для {2}. Снятый флажок всё равно запрещает автоматическую запись.</PawnDiary.Settings.EventFilters.FrequencyTipCustom>
+  <PawnDiary.Settings.EventFilters.FrequencyTipInherited>{0} ({1}x), наследуется от профиля «{2}» для {3}. Снятый флажок всё равно запрещает автоматическую запись.</PawnDiary.Settings.EventFilters.FrequencyTipInherited>
+  <PawnDiary.Settings.EventFilters.Domain.Interaction>Общение</PawnDiary.Settings.EventFilters.Domain.Interaction>
+  <PawnDiary.Settings.EventFilters.Domain.MentalState>Психические состояния</PawnDiary.Settings.EventFilters.Domain.MentalState>
+  <PawnDiary.Settings.EventFilters.Domain.Tale>Жизненные события</PawnDiary.Settings.EventFilters.Domain.Tale>
+  <PawnDiary.Settings.EventFilters.Domain.MoodEvent>Условия колонии</PawnDiary.Settings.EventFilters.Domain.MoodEvent>
+  <PawnDiary.Settings.EventFilters.Domain.Thought>Мысли</PawnDiary.Settings.EventFilters.Domain.Thought>
+  <PawnDiary.Settings.EventFilters.Domain.Inspiration>Вдохновение</PawnDiary.Settings.EventFilters.Domain.Inspiration>
+  <PawnDiary.Settings.EventFilters.Domain.Romance>Отношения</PawnDiary.Settings.EventFilters.Domain.Romance>
+  <PawnDiary.Settings.EventFilters.Domain.Work>Работа</PawnDiary.Settings.EventFilters.Domain.Work>
+  <PawnDiary.Settings.EventFilters.Domain.Hediff>Здоровье</PawnDiary.Settings.EventFilters.Domain.Hediff>
+  <PawnDiary.Settings.EventFilters.Domain.Raid>Налёты и угрозы</PawnDiary.Settings.EventFilters.Domain.Raid>
+  <PawnDiary.Settings.EventFilters.Domain.Quest>Задания</PawnDiary.Settings.EventFilters.Domain.Quest>
+  <PawnDiary.Settings.EventFilters.Domain.Ritual>Ритуалы</PawnDiary.Settings.EventFilters.Domain.Ritual>
+  <PawnDiary.Settings.EventFilters.Domain.Ability>Способности</PawnDiary.Settings.EventFilters.Domain.Ability>
+  <PawnDiary.Settings.EventFilters.Domain.Progression>Развитие</PawnDiary.Settings.EventFilters.Domain.Progression>
+  <PawnDiary.Settings.EventFilters.Domain.Reflection>Размышления</PawnDiary.Settings.EventFilters.Domain.Reflection>
+  <PawnDiary.Settings.EventFilters.Domain.GravshipJourney>Путешествия на гравикорабле</PawnDiary.Settings.EventFilters.Domain.GravshipJourney>
+  <PawnDiary.Settings.EventFilters.Domain.PersonaWeapon>Персона-оружие</PawnDiary.Settings.EventFilters.Domain.PersonaWeapon>
+  <PawnDiary.Settings.EventFilters.Domain.RoyalPermit>Королевские разрешения</PawnDiary.Settings.EventFilters.Domain.RoyalPermit>
   <PawnDiary.Settings.Adv.OverrideInherited>Используется значение XML; своего значения нет.</PawnDiary.Settings.Adv.OverrideInherited>
   <PawnDiary.Settings.Adv.EffectivePreview>Итог: {0} — {1}</PawnDiary.Settings.Adv.EffectivePreview>
   <PawnDiary.Settings.Adv.Source.Override>своё значение</PawnDiary.Settings.Adv.Source.Override>

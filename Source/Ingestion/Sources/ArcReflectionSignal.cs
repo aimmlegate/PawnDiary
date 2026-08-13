@@ -46,7 +46,8 @@ namespace PawnDiary.Ingestion
                 eligible: DiaryGameComponent.IsDiaryEligible(pawn),
                 userEnabled: userEnabled,
                 signalEnabled: DiaryTuning.Current.arcReflectionEnabled,
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                frequencyGroup: group);
         }
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)

@@ -17,6 +17,7 @@
 // New to C#/RimWorld? See AGENTS.md.
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using PawnDiary.Integration;
 using RimWorld;
@@ -77,6 +78,12 @@ namespace PawnDiaryExampleAdapter
         public string llmUserText = "PawnDiaryExampleAdapter.Default.LlmUserText".Translate().Resolve();
         public string llmMaxTokens = "120";
         public string llmHandle = "0";
+
+        // Optional API-v9 event-frequency reads/writes. These stay primitive so FormState itself
+        // never acquires a hard reference to a v9-only Pawn Diary DTO.
+        public string frequencyPresetDefName = "PawnDiary_Frequency_Standard";
+        public string frequencyGroupKey = "smalltalk";
+        public string frequencyMultiplier = "1";
 
         // Read entry by id
         public string manualEventId = "paste_event_id_from_log";
@@ -210,6 +217,22 @@ namespace PawnDiaryExampleAdapter
 
         /// <summary>Returns the positive completion handle currently typed in the shared form.</summary>
         public int LlmHandle => ExplorerParsing.ParsePositiveInt(llmHandle, 0);
+
+        /// <summary>Parses the invariant multiplier field; invalid text intentionally becomes NaN.</summary>
+        public float FrequencyMultiplier
+        {
+            get
+            {
+                float value;
+                return float.TryParse(
+                    frequencyMultiplier,
+                    NumberStyles.Float,
+                    CultureInfo.InvariantCulture,
+                    out value)
+                    ? value
+                    : float.NaN;
+            }
+        }
 
         public DiaryEntryTitleQuery BuildQuery()
         {
@@ -383,8 +406,9 @@ namespace PawnDiaryExampleAdapter
                     ExplorerState.AppendLog("CancelLlmCompletion", oneLine, oneLine);
                 }));
 
-            // ── EVENTS (automatic-capture filters) ─────────────────────────────────────────────
-            list.Add(Leaf("Events", "GetEventFilters()",
+            // ── EVENTS (automatic-capture filters + optional API-v9 frequency controls) ────────
+            string eventsCategory = "PawnDiaryExampleAdapter.Category.Events".Translate();
+            list.Add(Leaf(eventsCategory, "GetEventFilters()",
                 "Lists the automatic-capture event filters (the settings Events tab), each with its current on/off state.",
                 (f, r) => { },
                 f =>
@@ -395,7 +419,7 @@ namespace PawnDiaryExampleAdapter
                         SnapshotFormatter.Format(filters as IReadOnlyList<DiaryEventFilterSnapshot>));
                 }));
 
-            list.Add(Leaf("Events", "SetEventFilterEnabled(toggle first)",
+            list.Add(Leaf(eventsCategory, "SetEventFilterEnabled(toggle first)",
                 "Flips the FIRST event filter's on/off state (demo of SetEventFilterEnabled — uses the same saved flag as the Events tab). Run twice to toggle it back.",
                 (f, r) => { },
                 f =>
@@ -415,6 +439,87 @@ namespace PawnDiaryExampleAdapter
                     string oneLine = "key=" + first.key + " set→" + target + " ok=" + ok + " now=" + now;
                     ExplorerState.AppendLog("SetEventFilterEnabled", oneLine,
                         oneLine + "\nlabel=" + first.label + "  domain=" + first.domain);
+                }));
+
+            list.Add(Leaf(eventsCategory, "GetEventFrequencySettings()",
+                "PawnDiaryExampleAdapter.Summary.GetEventFrequencySettings".Translate(),
+                (f, r) => { },
+                f =>
+                {
+                    AdapterEventFrequencySettingsSnapshot snapshot =
+                        PawnDiaryExampleApi.GetEventFrequencySettings();
+                    if (snapshot != null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(snapshot.selectedPresetDefName))
+                        {
+                            f.frequencyPresetDefName = snapshot.selectedPresetDefName;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(f.frequencyGroupKey)
+                            && snapshot.filters != null
+                            && snapshot.filters.Count > 0)
+                        {
+                            f.frequencyGroupKey = snapshot.filters[0].key;
+                        }
+                    }
+
+                    string oneLine = snapshot == null
+                        ? "PawnDiaryExampleAdapter.Result.Frequency.Unavailable".Translate().Resolve()
+                        : "PawnDiaryExampleAdapter.Result.Frequency.OneLine".Translate(
+                            snapshot.selectedPresetDefName,
+                            snapshot.filters == null ? 0 : snapshot.filters.Count).Resolve();
+                    ExplorerState.AppendLog(
+                        "GetEventFrequencySettings",
+                        oneLine,
+                        SnapshotFormatter.Format(snapshot));
+                }));
+
+            list.Add(Leaf(eventsCategory, "SetEventFrequencyPreset(defName)",
+                "PawnDiaryExampleAdapter.Summary.SetEventFrequencyPreset".Translate(),
+                DrawFrequencyPresetForm,
+                f =>
+                {
+                    bool applied = PawnDiaryExampleApi.SetEventFrequencyPreset(f.frequencyPresetDefName);
+                    string result = SnapshotFormatter.FormatFrequencyMutation(
+                        "SetEventFrequencyPreset",
+                        f.frequencyPresetDefName,
+                        applied);
+                    ExplorerState.AppendLog("SetEventFrequencyPreset", result, result);
+                }));
+
+            list.Add(Leaf(eventsCategory, "SetEventFrequencyMultiplier(group, value)",
+                "PawnDiaryExampleAdapter.Summary.SetEventFrequencyMultiplier".Translate(),
+                DrawFrequencyMultiplierForm,
+                f =>
+                {
+                    float multiplier = f.FrequencyMultiplier;
+                    bool applied = PawnDiaryExampleApi.SetEventFrequencyMultiplier(
+                        f.frequencyGroupKey,
+                        multiplier);
+                    string multiplierText = float.IsNaN(multiplier)
+                        ? f.frequencyMultiplier
+                        : multiplier.ToString("0.###", CultureInfo.InvariantCulture);
+                    string target = "PawnDiaryExampleAdapter.Result.Frequency.MultiplierTarget".Translate(
+                        f.frequencyGroupKey,
+                        multiplierText).Resolve();
+                    string result = SnapshotFormatter.FormatFrequencyMutation(
+                        "SetEventFrequencyMultiplier",
+                        target,
+                        applied);
+                    ExplorerState.AppendLog("SetEventFrequencyMultiplier", result, result);
+                }));
+
+            list.Add(Leaf(eventsCategory, "ResetEventFrequencyMultiplier(group)",
+                "PawnDiaryExampleAdapter.Summary.ResetEventFrequencyMultiplier".Translate(),
+                DrawFrequencyGroupForm,
+                f =>
+                {
+                    bool applied = PawnDiaryExampleApi.ResetEventFrequencyMultiplier(f.frequencyGroupKey);
+                    string result = SnapshotFormatter.FormatFrequencyMutation(
+                        "ResetEventFrequencyMultiplier",
+                        f.frequencyGroupKey,
+                        applied);
+                    ExplorerState.AppendLog("ResetEventFrequencyMultiplier", result, result);
                 }));
 
             // ── SUBMIT EVENT ───────────────────────────────────────────────────────────────────
@@ -1002,6 +1107,46 @@ namespace PawnDiaryExampleAdapter
             list.End();
         }
 
+        private static void DrawFrequencyPresetForm(FormState f, Rect r)
+        {
+            Listing_Standard list = new Listing_Standard();
+            list.ColumnWidth = r.width;
+            list.Begin(r);
+            list.TextFieldEntryLabeled(
+                "PawnDiaryExampleAdapter.Field.FrequencyPresetDefName",
+                ref f.frequencyPresetDefName,
+                "PawnDiaryExampleAdapter.Help.FrequencyPresetDefName");
+            list.End();
+        }
+
+        private static void DrawFrequencyMultiplierForm(FormState f, Rect r)
+        {
+            Listing_Standard list = new Listing_Standard();
+            list.ColumnWidth = r.width;
+            list.Begin(r);
+            list.TextFieldEntryLabeled(
+                "PawnDiaryExampleAdapter.Field.FrequencyGroupKey",
+                ref f.frequencyGroupKey,
+                "PawnDiaryExampleAdapter.Help.FrequencyGroupKey");
+            list.TextFieldEntryLabeled(
+                "PawnDiaryExampleAdapter.Field.FrequencyMultiplier",
+                ref f.frequencyMultiplier,
+                "PawnDiaryExampleAdapter.Help.FrequencyMultiplier");
+            list.End();
+        }
+
+        private static void DrawFrequencyGroupForm(FormState f, Rect r)
+        {
+            Listing_Standard list = new Listing_Standard();
+            list.ColumnWidth = r.width;
+            list.Begin(r);
+            list.TextFieldEntryLabeled(
+                "PawnDiaryExampleAdapter.Field.FrequencyGroupKey",
+                ref f.frequencyGroupKey,
+                "PawnDiaryExampleAdapter.Help.FrequencyGroupKey");
+            list.End();
+        }
+
         private static void DrawPsychotypeDefForm(FormState f, Rect r)
         {
             Listing_Standard list = new Listing_Standard();
@@ -1194,6 +1339,27 @@ namespace PawnDiaryExampleAdapter
 
             float w = Mathf.Max(180f, width);
             float h = 12f; // breathing room after the last row
+            if (node.label.StartsWith("SetEventFrequencyPreset"))
+            {
+                return h + FormStateExtensions.TextFieldEntryHeight(
+                    "PawnDiaryExampleAdapter.Field.FrequencyPresetDefName", w);
+            }
+
+            if (node.label.StartsWith("SetEventFrequencyMultiplier"))
+            {
+                h += FormStateExtensions.TextFieldEntryHeight(
+                    "PawnDiaryExampleAdapter.Field.FrequencyGroupKey", w);
+                h += FormStateExtensions.TextFieldEntryHeight(
+                    "PawnDiaryExampleAdapter.Field.FrequencyMultiplier", w);
+                return h;
+            }
+
+            if (node.label.StartsWith("ResetEventFrequencyMultiplier"))
+            {
+                return h + FormStateExtensions.TextFieldEntryHeight(
+                    "PawnDiaryExampleAdapter.Field.FrequencyGroupKey", w);
+            }
+
             if (node.category == "Submit")
             {
                 h += FormStateExtensions.TextFieldEntryHeight("PawnDiaryExampleAdapter.Field.EventKey", w);

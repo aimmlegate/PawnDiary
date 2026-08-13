@@ -3238,10 +3238,42 @@ namespace PawnDiary
             request.hasPendingCertaintyDrift = false;
             request.allowQuietReflection = true;
             request.quietRoll = 0f;
-            AssertEqual("quiet roll zero passes", BeliefReflectionTriggerTokens.Quiet,
-                BeliefReflectionPolicy.Plan(request, policy).trigger);
+            BeliefReflectionDecision quiet = BeliefReflectionPolicy.Plan(request, policy);
+            AssertEqual("quiet roll zero passes", BeliefReflectionTriggerTokens.Quiet, quiet.trigger);
+            AssertTrue("accepted quiet chance settles frequency upstream",
+                quiet.frequencySettledUpstream);
             request.quietRoll = 1f;
             AssertTrue("quiet roll one fails", !BeliefReflectionPolicy.Plan(request, policy).allowed);
+
+            BeliefPolicyBuilder quietBuilder = BeliefPolicyBuilder.CreateDefault();
+            quietBuilder.quietReflectionChance = 0.20f;
+            BeliefPolicySnapshot quietPolicy = quietBuilder.Build();
+            request.quietFrequencyMultiplier = 0.5f;
+            request.quietRoll = 0.0999f;
+            AssertTrue("quiet multiplier scales native chance with the existing roll",
+                BeliefReflectionPolicy.Plan(request, quietPolicy).allowed);
+            request.quietRoll = 0.10f;
+            AssertTrue("quiet multiplier preserves the strict historical boundary",
+                !BeliefReflectionPolicy.Plan(request, quietPolicy).allowed);
+            request.quietFrequencyMultiplier = 0f;
+            request.quietRoll = 0f;
+            AssertTrue("zero belief frequency closes the upstream quiet gate",
+                !BeliefReflectionPolicy.Plan(request, quietPolicy).allowed);
+            request.quietFrequencyMultiplier = 5f;
+            request.quietRoll = 0.9999f;
+            AssertTrue("quiet effective chance clamps to one",
+                BeliefReflectionPolicy.Plan(request, quietPolicy).allowed);
+            request.quietFrequencyMultiplier = float.NaN;
+            request.quietRoll = 0f;
+            AssertTrue("malformed quiet multiplier fails closed",
+                !BeliefReflectionPolicy.Plan(request, quietPolicy).allowed);
+
+            request.pendingIdeologyChange = true;
+            BeliefReflectionDecision nonQuiet = BeliefReflectionPolicy.Plan(request, quietPolicy);
+            AssertTrue("non-quiet triggers ignore the upstream multiplier",
+                nonQuiet.allowed
+                    && nonQuiet.trigger == BeliefReflectionTriggerTokens.IdeologyChange
+                    && !nonQuiet.frequencySettledUpstream);
 
             BeliefReflectionRequest cooldown = ReflectionRequest();
             cooldown.pendingIdeologyChange = true;

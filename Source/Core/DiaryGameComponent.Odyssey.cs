@@ -195,9 +195,14 @@ namespace PawnDiary
                 OdysseyMechhiveEventDefNames.Outcome);
             OdysseyMechhiveOutcomeSignal signal = new OdysseyMechhiveOutcomeSignal(
                 facts, plan, policy, group, actor);
-            Dispatch(signal);
-            if (signal.CreatedEvent == null) return plan;
-            dedicatedEventCreated = true;
+            DiaryDispatchOutcome outcome = DispatchWithOutcome(signal);
+            dedicatedEventCreated = DiaryDispatchOutcomePolicy.PageRegistered(outcome);
+            if (!dedicatedEventCreated) return plan;
+
+            // The typed outcome owns the deferred Quest signal. CreatedEvent remains optional
+            // bookkeeping only, so a post-commit exception cannot release a duplicate Quest page.
+            DiaryEvent createdEvent = signal.CreatedEvent;
+            if (createdEvent == null) return plan;
 
             try
             {
@@ -212,7 +217,7 @@ namespace PawnDiary
                     && string.Equals(
                         afterEvent.actorPawnId, plan.actorPawnId, StringComparison.Ordinal))
                 {
-                    afterEvent.eventId = signal.CreatedEvent.eventId ?? string.Empty;
+                    afterEvent.eventId = createdEvent.eventId ?? string.Empty;
                     odysseyMechhiveOutcome = OdysseyMechhiveOutcomeState.FromSnapshot(
                         OdysseyMechhivePersistencePolicy.Normalize(afterEvent));
                 }
@@ -223,7 +228,7 @@ namespace PawnDiary
                 // settings, memory-sufficiency, and writer-eligibility gates.
                 ConsiderArcReflectionAfterTerminalEvent(
                     actor,
-                    signal.CreatedEvent,
+                    createdEvent,
                     DiaryEvent.InitiatorRole,
                     new TerminalReflectionContract
                     {

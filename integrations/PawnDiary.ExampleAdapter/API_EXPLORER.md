@@ -34,6 +34,8 @@ base/custom setters, source-owned override pair, and external Regenerate callbac
 Completion category covers request, poll, and cancellation; requesting invokes a real configured
 provider and can spend the player's tokens, so the form calls that out explicitly.
 
-The copyable adapter code is `Source/PawnDiaryExampleApi.cs`. It is the only example-adapter source
-file that calls `PawnDiaryApi` directly, and each wrapper documents what it does, which args are
-required, and what safe return value to expect.
+The copyable adapter facade is `Source/PawnDiaryExampleApi.cs`; each wrapper documents what it does,
+which args are required, and what safe return value to expect. Copy the small
+`LoadedApiVersionProbe.cs`, `FrequencyApiV9Shim.cs`, and adapter-owned frequency snapshot file with
+it when supporting optional API-v9 frequency controls: those files keep the adapter loadable beside
+an API-v8 core by discovering the newer members only through reflection after a loaded-version check.

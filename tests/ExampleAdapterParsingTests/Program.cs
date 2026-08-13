@@ -1,11 +1,17 @@
-// Pure unit tests for ExplorerParsing. Mirrors the shape of the other tests/* console projects: a
-// static Main that runs focused assertions and returns non-zero on the first failure.
+// Pure unit tests for the example adapter's parsing and optional-version compatibility helpers.
+// Mirrors the shape of the other tests/* console projects: a static Main that runs focused
+// assertions and returns non-zero when any assertion fails.
 //
 // These run without RimWorld/Verse/Unity — the helpers under test are deliberately pure so the
 // explorer's parsing edge cases (multiline paste, comment lines, tri-state round-trips, tick
 // bounds) are covered without booting the game.
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using PawnDiaryExampleAdapter;
 
 namespace ExampleAdapterParsingTests
@@ -30,6 +36,11 @@ namespace ExampleAdapterParsingTests
             TestParsePositiveInt();
             TestTriStateRoundTrip();
             TestTriStateOutOfRange();
+            TestLoadedApiVersionProbe();
+            TestFrequencyV9Shim_DynamicV8Surface();
+            TestFrequencyV9Shim_DetachesV9Snapshot();
+            TestFrequencyV9Shim_InvokesV9Writes();
+            TestBuiltAdapterHasNoHardV9References();
 
             Console.WriteLine("==================================================");
             Console.WriteLine("ExplorerParsing tests: " + passed + " passed, " + failed + " failed.");
@@ -158,6 +169,316 @@ namespace ExampleAdapterParsingTests
             Assert(ExplorerParsing.TriStateFromIndex(99) == -1, "out-of-range UI index → any (-1)");
             Assert(ExplorerParsing.TriStateFromIndex(-7) == -1, "negative UI index → any (-1)");
             Assert(ExplorerParsing.IndexFromTriState(99) == 0, "out-of-range API value → UI any (0)");
+        }
+
+        // ---- Loaded API version -------------------------------------------------
+
+        private static void TestLoadedApiVersionProbe()
+        {
+            Assert(LoadedApiVersionProbe.Read(typeof(LiteralVersionShape)) == 17,
+                "literal const version is read from loaded metadata");
+            Assert(LoadedApiVersionProbe.Read(typeof(StaticVersionShape)) == 23,
+                "ordinary static version field is read from the loaded type");
+            Assert(LoadedApiVersionProbe.Read(typeof(MissingVersionShape)) == 0,
+                "missing version field fails safely to zero");
+            Assert(LoadedApiVersionProbe.Read(typeof(WrongTypeVersionShape)) == 0,
+                "non-integer version field fails safely to zero");
+            Assert(LoadedApiVersionProbe.Read(null) == 0,
+                "null facade type fails safely to zero");
+        }
+
+        private static class LiteralVersionShape
+        {
+            public const int ApiVersion = 17;
+        }
+
+        private static class StaticVersionShape
+        {
+            public static readonly int ApiVersion = 23;
+        }
+
+        private static class MissingVersionShape
+        {
+        }
+
+        private static class WrongTypeVersionShape
+        {
+            public const string ApiVersion = "twenty-three";
+        }
+
+        // ---- Optional API-v9 frequency compatibility ----------------------------
+
+        private static void TestFrequencyV9Shim_DynamicV8Surface()
+        {
+            Type v8ApiType = BuildDynamicV8ApiType();
+
+            Assert(LoadedApiVersionProbe.Read(v8ApiType) == 8,
+                "dynamic separate facade advertises API v8 through loaded metadata");
+            Assert(!FrequencyApiV9Shim.IsSupported(v8ApiType),
+                "API-v8 facade does not advertise optional frequency support");
+            Assert(FrequencyApiV9Shim.GetEventFrequencySettings(v8ApiType) == null,
+                "API-v8 facade with no v9 getter degrades to null without type-load failure");
+            Assert(!FrequencyApiV9Shim.SetEventFrequencyPreset(v8ApiType, "PawnDiary_Frequency_Standard"),
+                "API-v8 facade with no v9 preset setter degrades to false");
+            Assert(!FrequencyApiV9Shim.SetEventFrequencyMultiplier(v8ApiType, "smalltalk", 1f),
+                "API-v8 facade with no v9 multiplier setter degrades to false");
+            Assert(!FrequencyApiV9Shim.ResetEventFrequencyMultiplier(v8ApiType, "smalltalk"),
+                "API-v8 facade with no v9 reset method degrades to false");
+
+            Assert(FrequencyApiV9Shim.GetEventFrequencySettings(typeof(V9MissingMembersShape)) == null,
+                "advertised v9 with a missing getter still fails safely");
+            Assert(!FrequencyApiV9Shim.SetEventFrequencyPreset(
+                    typeof(V9MissingMembersShape),
+                    "PawnDiary_Frequency_Standard"),
+                "advertised v9 with a missing setter still fails safely");
+        }
+
+        private static Type BuildDynamicV8ApiType()
+        {
+            // This is a separate runtime assembly with the real facade's full type name but only the
+            // API-v8 version field. Compiling the shim into this test project without PawnDiary.dll,
+            // then exercising this shape, proves the compatibility path has no v9/core type link.
+            AssemblyName assemblyName = new AssemblyName(
+                "PawnDiaryV8SurfaceFixture_" + Guid.NewGuid().ToString("N"));
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
+                assemblyName,
+                AssemblyBuilderAccess.Run);
+            ModuleBuilder module = assembly.DefineDynamicModule(assemblyName.Name);
+            TypeBuilder type = module.DefineType(
+                "PawnDiary.Integration.PawnDiaryApi",
+                TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Sealed);
+            FieldBuilder version = type.DefineField(
+                "ApiVersion",
+                typeof(int),
+                FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal);
+            version.SetConstant(8);
+            return type.CreateType();
+        }
+
+        private static void TestFrequencyV9Shim_DetachesV9Snapshot()
+        {
+            V9ApiShape.snapshot = new V9SnapshotShape
+            {
+                selectedPresetDefName = "PawnDiary_Frequency_Frequent",
+                selectedPresetLabel = "Frequent",
+                hasCustomOverrides = true,
+                filters = new List<V9FilterShape>
+                {
+                    new V9FilterShape
+                    {
+                        key = "smalltalk",
+                        label = "Small talk",
+                        domain = "Interaction",
+                        enabled = true,
+                        defaultEnabled = false,
+                        hasOverride = true,
+                        frequencyTier = "normal",
+                        presetFrequencyMultiplier = 1.5f,
+                        effectiveFrequencyMultiplier = 2f,
+                        hasFrequencyOverride = true
+                    }
+                }
+            };
+
+            AdapterEventFrequencySettingsSnapshot copy =
+                FrequencyApiV9Shim.GetEventFrequencySettings(typeof(V9ApiShape));
+            Assert(copy != null, "API-v9 snapshot is discovered through reflection");
+            Assert(copy != null && copy.selectedPresetDefName == "PawnDiary_Frequency_Frequent",
+                "API-v9 preset defName is copied");
+            Assert(copy != null && copy.selectedPresetLabel == "Frequent" && copy.hasCustomOverrides,
+                "API-v9 preset label and custom flag are copied");
+            Assert(copy != null && copy.filters.Count == 1,
+                "API-v9 event rows are copied in order");
+
+            AdapterEventFrequencyFilterSnapshot row = copy == null || copy.filters.Count == 0
+                ? null
+                : copy.filters[0];
+            Assert(row != null && row.key == "smalltalk" && row.domain == "Interaction",
+                "API-v9 event row identity fields are copied");
+            Assert(row != null && row.enabled && !row.defaultEnabled && row.hasOverride,
+                "API-v8-compatible enable fields retain their semantics");
+            Assert(row != null
+                && row.frequencyTier == "normal"
+                && row.presetFrequencyMultiplier == 1.5f
+                && row.effectiveFrequencyMultiplier == 2f
+                && row.hasFrequencyOverride,
+                "API-v9 frequency fields are copied");
+
+            V9ApiShape.snapshot.selectedPresetLabel = "mutated";
+            V9ApiShape.snapshot.filters[0].key = "mutated";
+            V9ApiShape.snapshot.filters.Add(new V9FilterShape());
+            Assert(copy != null && copy.selectedPresetLabel == "Frequent",
+                "adapter preset snapshot is detached from the core object");
+            Assert(copy != null && copy.filters.Count == 1 && copy.filters[0].key == "smalltalk",
+                "adapter event rows/list are detached from the core object graph");
+        }
+
+        private static void TestFrequencyV9Shim_InvokesV9Writes()
+        {
+            V9ApiShape.lastPreset = null;
+            V9ApiShape.lastGroup = null;
+            V9ApiShape.lastMultiplier = -1f;
+            V9ApiShape.lastResetGroup = null;
+
+            Assert(FrequencyApiV9Shim.SetEventFrequencyPreset(
+                    typeof(V9ApiShape),
+                    "PawnDiary_Frequency_Lite"),
+                "v9 preset setter result is returned");
+            Assert(V9ApiShape.lastPreset == "PawnDiary_Frequency_Lite",
+                "v9 preset setter receives the exact token");
+
+            Assert(FrequencyApiV9Shim.SetEventFrequencyMultiplier(
+                    typeof(V9ApiShape),
+                    "smalltalk",
+                    0.5f),
+                "v9 multiplier setter result is returned");
+            Assert(V9ApiShape.lastGroup == "smalltalk" && V9ApiShape.lastMultiplier == 0.5f,
+                "v9 multiplier setter receives the exact group/value");
+
+            Assert(FrequencyApiV9Shim.ResetEventFrequencyMultiplier(typeof(V9ApiShape), "smalltalk"),
+                "v9 reset result is returned");
+            Assert(V9ApiShape.lastResetGroup == "smalltalk",
+                "v9 reset receives the exact group");
+        }
+
+        private static void TestBuiltAdapterHasNoHardV9References()
+        {
+            try
+            {
+                string repoRoot = FindRepoRoot();
+                string adapterPath = Path.Combine(
+                    repoRoot,
+                    "integrations",
+                    "PawnDiary.ExampleAdapter",
+                    "1.6",
+                    "Assemblies",
+                    "PawnDiaryExampleAdapter.dll");
+
+                using (FileStream stream = File.OpenRead(adapterPath))
+                using (PEReader pe = new PEReader(stream))
+                {
+                    MetadataReader metadata = pe.GetMetadataReader();
+                    bool hasV9DtoTypeReference = false;
+                    foreach (TypeReferenceHandle handle in metadata.TypeReferences)
+                    {
+                        TypeReference type = metadata.GetTypeReference(handle);
+                        string typeNamespace = metadata.GetString(type.Namespace);
+                        string typeName = metadata.GetString(type.Name);
+                        if (typeNamespace == "PawnDiary.Integration"
+                            && typeName == "DiaryEventFrequencySettingsSnapshot")
+                        {
+                            hasV9DtoTypeReference = true;
+                            break;
+                        }
+                    }
+
+                    bool hasDirectV9MethodReference = false;
+                    foreach (MemberReferenceHandle handle in metadata.MemberReferences)
+                    {
+                        string memberName = metadata.GetString(metadata.GetMemberReference(handle).Name);
+                        if (memberName == "GetEventFrequencySettings"
+                            || memberName == "SetEventFrequencyPreset"
+                            || memberName == "SetEventFrequencyMultiplier"
+                            || memberName == "ResetEventFrequencyMultiplier")
+                        {
+                            hasDirectV9MethodReference = true;
+                            break;
+                        }
+                    }
+
+                    Assert(!hasV9DtoTypeReference,
+                        "built adapter metadata has no hard reference to the core v9 frequency DTO");
+                    Assert(!hasDirectV9MethodReference,
+                        "built adapter metadata has no direct call reference to core v9 frequency methods");
+                }
+            }
+            catch (Exception e)
+            {
+                Assert(false, "built-adapter v8 compatibility metadata audit ran: " + e.Message);
+            }
+        }
+
+        private static string FindRepoRoot()
+        {
+            DirectoryInfo cursor = new DirectoryInfo(AppContext.BaseDirectory);
+            while (cursor != null)
+            {
+                string marker = Path.Combine(
+                    cursor.FullName,
+                    "integrations",
+                    "PawnDiary.ExampleAdapter",
+                    "Source",
+                    "PawnDiaryExampleAdapter.csproj");
+                if (File.Exists(marker))
+                {
+                    return cursor.FullName;
+                }
+
+                cursor = cursor.Parent;
+            }
+
+            throw new DirectoryNotFoundException("Pawn Diary repository root was not found.");
+        }
+
+        private static class V9MissingMembersShape
+        {
+            public const int ApiVersion = 9;
+        }
+
+        private sealed class V9SnapshotShape
+        {
+            public string selectedPresetDefName;
+            public string selectedPresetLabel;
+            public bool hasCustomOverrides;
+            public List<V9FilterShape> filters;
+        }
+
+        private sealed class V9FilterShape
+        {
+            public string key;
+            public string label;
+            public string domain;
+            public bool enabled;
+            public bool defaultEnabled;
+            public bool hasOverride;
+            public string frequencyTier;
+            public float presetFrequencyMultiplier;
+            public float effectiveFrequencyMultiplier;
+            public bool hasFrequencyOverride;
+        }
+
+        private static class V9ApiShape
+        {
+            public const int ApiVersion = 9;
+            public static V9SnapshotShape snapshot;
+            public static string lastPreset;
+            public static string lastGroup;
+            public static float lastMultiplier;
+            public static string lastResetGroup;
+
+            public static V9SnapshotShape GetEventFrequencySettings()
+            {
+                return snapshot;
+            }
+
+            public static bool SetEventFrequencyPreset(string presetDefName)
+            {
+                lastPreset = presetDefName;
+                return true;
+            }
+
+            public static bool SetEventFrequencyMultiplier(string key, float multiplier)
+            {
+                lastGroup = key;
+                lastMultiplier = multiplier;
+                return true;
+            }
+
+            public static bool ResetEventFrequencyMultiplier(string key)
+            {
+                lastResetGroup = key;
+                return true;
+            }
         }
 
         // ---- helpers ------------------------------------------------------------

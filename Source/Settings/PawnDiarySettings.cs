@@ -216,8 +216,9 @@ namespace PawnDiary
         public PromptOverrideDictionary eventPromptOverrides = new PromptOverrideDictionary("eventPromptOverrides");
         public PromptOverrideDictionary eventEnhancementOverrides = new PromptOverrideDictionary("eventEnhancementOverrides");
         public PromptOverrideDictionary eventForcedModelOverrides = new PromptOverrideDictionary("eventForcedModelOverrides");
-        // Player-facing multiplier for diary-page chance gates. 1x preserves XML tuning defaults;
-        // 0x suppresses optional random pages while guaranteed/important event pages still record.
+        // Retired player-facing multiplier retained only as a one-release migration field. Pre-schema
+        // configs are still read below, but every current-schema settings object neutralizes this to 1x;
+        // runtime admission reads only the preset and sparse per-group overrides.
         public float generationChanceWeight = DefaultGenerationChanceWeight;
         // Per-pawn hard cap for hot diary pages. Each pawn keeps its newest maxActiveDiaryEvents
         // full event references; older displayable rows compact into the archive before the hot ref is
@@ -231,6 +232,18 @@ namespace PawnDiary
         // A missing key means "use the XML defaultEnabled value"; rows are stored only when the
         // player changes a group from its XML default.
         public Dictionary<string, bool> groupEnabled = new Dictionary<string, bool>();
+        // Frequency schema for one-time conversion from generationChanceWeight and the even older
+        // Work/Social sliders. Version zero means none of the fields below existed yet.
+        public int frequencySettingsSchemaVersion = CurrentFrequencySettingsSchemaVersion;
+        // Stable DiaryFrequencyPresetDef.defName. Standard reproduces the pre-update behavior.
+        public string frequencyPresetDefName = DiaryFrequencyPresets.StandardDefName;
+        // Sparse absolute multipliers keyed by DiaryInteractionGroupDef.defName. Missing inherits the
+        // selected preset; unknown nonblank keys are retained so a temporarily absent add-on recovers.
+        public Dictionary<string, float> groupFrequencyOverrides =
+            new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+        // Separate one-shot UI state: migration may not be mathematically identical for interaction
+        // promotion routing, so the Events tab explains it until the player acknowledges the notice.
+        public bool frequencyMigrationNoticePending;
         // Writing-style preset edits made in settings: XML override rows plus user-created custom
         // styles. Owned by PersonaPresetStore, which holds the CRUD and normalization logic.
         public PersonaPresetStore personaPresets = new PersonaPresetStore();
@@ -247,6 +260,28 @@ namespace PawnDiary
         // their own scratch lists inside PromptOverrideDictionary.
         private List<string> groupEnabledKeys;
         private List<bool> groupEnabledValues;
+        private List<string> groupFrequencyOverrideKeys;
+        private List<float> groupFrequencyOverrideValues;
+        // GetSettings<PawnDiarySettings>() can deserialize before RimWorld binds XML Defs. Keep the
+        // raw legacy presence/value shape in memory until the post-Def startup hook can enumerate the
+        // complete group catalog; advancing the schema earlier would permanently lose split intent.
+        private DiaryFrequencyLegacySettingsSnapshot pendingLegacyFrequencyMigration;
+        // Effective-value reads happen for many rows every UI frame. Once post-Def migration and
+        // normalization finish, avoid rebuilding the entire 147-row snapshot for each button.
+        private bool frequencyDefBackedNormalizationComplete;
+        // Automatic capture reads the selected preset on a hot path. The public/UI projection is
+        // deliberately detached on every call, but runtime admission can safely reuse one immutable
+        // snapshot until the selected Def token changes.
+        private DiaryFrequencyPresetSnapshot runtimeFrequencyPresetSnapshot;
+        private string runtimeFrequencyPresetKey = string.Empty;
+        // Enable overrides need the interaction Def catalog but do not depend on the frequency preset
+        // XML. Keep their one-shot cleanup independent so the additive v8 API remains usable even if
+        // a frequency Def is missing or malformed.
+        private bool groupEnabledDefBackedNormalizationComplete;
+        // Advanced settings can change a group's XML-backed defaultEnabled value after the first
+        // cleanup. Remember which Def-mutation revision was normalized so a newly redundant sparse
+        // row is removed immediately instead of being reported as a player override until restart.
+        private int groupEnabledNormalizedMutationRevision = int.MinValue;
 
         // Default local LLM server endpoint (LM Studio/OpenAI-compatible local servers).
         public const string DefaultEndpointUrl = ApiEndpointPolicy.DefaultEndpointUrl;
@@ -273,6 +308,7 @@ namespace PawnDiary
         public const float DefaultGenerationChanceWeight = 1f;
         public const float MinGenerationChanceWeight = 0f;
         public const float MaxGenerationChanceWeight = 5f;
+        public const int CurrentFrequencySettingsSchemaVersion = 1;
 
         public override void ExposeData()
         {
@@ -316,7 +352,40 @@ namespace PawnDiary
             eventPromptOverrides.ExposeData();
             eventEnhancementOverrides.ExposeData();
             eventForcedModelOverrides.ExposeData();
-            ExposeGenerationChanceWeight();
+            DiaryFrequencyLegacySettingsSnapshot legacyFrequency = ExposeGenerationChanceWeight();
+            Scribe_Values.Look(
+                ref frequencySettingsSchemaVersion,
+                "frequencySettingsSchemaVersion",
+                0);
+            Scribe_Values.Look(
+                ref frequencyPresetDefName,
+                "frequencyPresetDefName",
+                DiaryFrequencyPresets.StandardDefName);
+            Scribe_Collections.Look(
+                ref groupFrequencyOverrides,
+                "groupFrequencyOverrides",
+                LookMode.Value,
+                LookMode.Value,
+                ref groupFrequencyOverrideKeys,
+                ref groupFrequencyOverrideValues);
+            Scribe_Values.Look(
+                ref frequencyMigrationNoticePending,
+                "frequencyMigrationNoticePending",
+                false);
+            if (Scribe.mode == LoadSaveMode.LoadingVars
+                && frequencySettingsSchemaVersion < CurrentFrequencySettingsSchemaVersion)
+            {
+                pendingLegacyFrequencyMigration = legacyFrequency
+                    ?? new DiaryFrequencyLegacySettingsSnapshot();
+            }
+            if (Scribe.mode == LoadSaveMode.LoadingVars)
+            {
+                frequencyDefBackedNormalizationComplete = false;
+                runtimeFrequencyPresetSnapshot = null;
+                runtimeFrequencyPresetKey = string.Empty;
+                groupEnabledDefBackedNormalizationComplete = false;
+                groupEnabledNormalizedMutationRevision = int.MinValue;
+            }
             Scribe_Values.Look(ref maxActiveDiaryEvents, "maxActiveDiaryEvents", DefaultMaxActiveDiaryEvents);
             Scribe_Values.Look(ref maxArchivedDiaryEvents, "maxArchivedDiaryEvents", DefaultMaxArchivedDiaryEvents);
             Scribe_Collections.Look(ref groupEnabled, "interactionGroupEnabled", LookMode.Value, LookMode.Value, ref groupEnabledKeys, ref groupEnabledValues);
@@ -973,6 +1042,293 @@ namespace PawnDiary
             return group != null && groupEnabled.ContainsKey(group.defName);
         }
 
+        // ---- Diary frequency settings ----------------------------------------------------------
+
+        /// <summary>Returns a detached copy of the selected XML frequency preset.</summary>
+        internal DiaryFrequencyPresetSnapshot FrequencyPresetSnapshot()
+        {
+            TryFinalizeFrequencySettingsAfterDefsLoaded();
+            return DiaryFrequencyPresets.Snapshot(frequencyPresetDefName);
+        }
+
+        /// <summary>
+        /// Returns the main-thread runtime preset without copying its dictionaries for every captured
+        /// candidate. The snapshot contains no live Def or settings references and is replaced as soon
+        /// as the selected preset token changes.
+        /// </summary>
+        internal DiaryFrequencyPresetSnapshot RuntimeFrequencyPresetSnapshot()
+        {
+            if (!TryFinalizeFrequencySettingsAfterDefsLoaded())
+            {
+                return null;
+            }
+
+            string selected = frequencyPresetDefName ?? string.Empty;
+            if (runtimeFrequencyPresetSnapshot == null
+                || !string.Equals(runtimeFrequencyPresetKey, selected, StringComparison.Ordinal))
+            {
+                runtimeFrequencyPresetSnapshot = DiaryFrequencyPresets.Snapshot(selected);
+                runtimeFrequencyPresetKey = selected;
+            }
+
+            return runtimeFrequencyPresetSnapshot;
+        }
+
+        /// <summary>
+        /// Reads the already-normalized sparse map for a classified runtime group without performing
+        /// another Def lookup. Callers still fail open to inherited Standard behavior until post-Def
+        /// settings finalization is available.
+        /// </summary>
+        internal bool TryGetRuntimeGroupFrequencyOverride(string groupKey, out float multiplier)
+        {
+            multiplier = DiaryFrequencyPolicy.StandardMultiplier;
+            EnsureFrequencyDictionary();
+            if (string.IsNullOrWhiteSpace(groupKey)
+                || !TryFinalizeFrequencySettingsAfterDefsLoaded())
+            {
+                return false;
+            }
+
+            return groupFrequencyOverrides.TryGetValue(groupKey.Trim(), out multiplier);
+        }
+
+        /// <summary>Resolves one already-classified runtime group without allocating detached maps.</summary>
+        internal float RuntimeGroupFrequencyMultiplier(DiaryInteractionGroupDef group)
+        {
+            if (group == null)
+            {
+                return DiaryFrequencyPolicy.StandardMultiplier;
+            }
+
+            float saved = DiaryFrequencyPolicy.StandardMultiplier;
+            bool hasOverride = TryGetRuntimeGroupFrequencyOverride(group.defName, out saved);
+            return DiaryFrequencyPolicy.ResolveEffectiveMultiplier(
+                RuntimeFrequencyPresetSnapshot(),
+                group.defName,
+                group.frequencyTier,
+                hasOverride,
+                saved);
+        }
+
+        /// <summary>Returns this group's inherited multiplier before a sparse player override.</summary>
+        public float PresetGroupFrequencyMultiplier(DiaryInteractionGroupDef group)
+        {
+            return PresetGroupFrequencyMultiplier(group, FrequencyPresetSnapshot());
+        }
+
+        /// <summary>Resolves inherited frequency against an already detached preset snapshot.</summary>
+        internal static float PresetGroupFrequencyMultiplier(
+            DiaryInteractionGroupDef group,
+            DiaryFrequencyPresetSnapshot preset)
+        {
+            if (group == null)
+            {
+                return DiaryFrequencyPolicy.StandardMultiplier;
+            }
+
+            return DiaryFrequencyPolicy.ResolvePresetMultiplier(
+                preset,
+                group.defName,
+                group.frequencyTier);
+        }
+
+        /// <summary>Returns this group's selected-preset multiplier with its saved override applied.</summary>
+        public float EffectiveGroupFrequencyMultiplier(DiaryInteractionGroupDef group)
+        {
+            return EffectiveGroupFrequencyMultiplier(group, FrequencyPresetSnapshot());
+        }
+
+        /// <summary>Resolves effective frequency while reusing one detached preset projection.</summary>
+        internal float EffectiveGroupFrequencyMultiplier(
+            DiaryInteractionGroupDef group,
+            DiaryFrequencyPresetSnapshot preset)
+        {
+            if (group == null)
+            {
+                return DiaryFrequencyPolicy.StandardMultiplier;
+            }
+
+            float saved;
+            bool hasOverride = TryGetGroupFrequencyOverride(group.defName, out saved);
+            return DiaryFrequencyPolicy.ResolveEffectiveMultiplier(
+                preset,
+                group.defName,
+                group.frequencyTier,
+                hasOverride,
+                saved);
+        }
+
+        /// <summary>True when this known group owns a sparse frequency override.</summary>
+        public bool HasGroupFrequencyOverride(string groupKey)
+        {
+            float ignored;
+            return TryGetGroupFrequencyOverride(groupKey, out ignored);
+        }
+
+        /// <summary>Reads a known group's saved absolute multiplier without applying its preset.</summary>
+        public bool TryGetGroupFrequencyOverride(string groupKey, out float multiplier)
+        {
+            EnsureFrequencyDictionary();
+            multiplier = DiaryFrequencyPolicy.StandardMultiplier;
+            if (!TryFinalizeFrequencySettingsAfterDefsLoaded())
+            {
+                return false;
+            }
+
+            DiaryInteractionGroupDef group = InteractionGroups.ByKey(groupKey);
+            if (group == null)
+            {
+                return false;
+            }
+
+            float saved;
+            if (!groupFrequencyOverrides.TryGetValue(group.defName, out saved))
+            {
+                return false;
+            }
+
+            multiplier = saved;
+            return true;
+        }
+
+        /// <summary>
+        /// Stores one settings-visible group's absolute multiplier. A value equal to the selected
+        /// preset is re-sparsified immediately; malformed values use the inherited preset safely.
+        /// </summary>
+        public void SetGroupFrequencyOverride(string groupKey, float multiplier)
+        {
+            EnsureFrequencyDictionary();
+            if (!TryFinalizeFrequencySettingsAfterDefsLoaded())
+            {
+                return;
+            }
+
+            DiaryInteractionGroupDef group = InteractionGroups.ByKey(groupKey);
+            if (!PawnDiaryMod.IsSettingsEventFilterGroup(group))
+            {
+                return;
+            }
+
+            float inherited = PresetGroupFrequencyMultiplier(group);
+            float normalized = DiaryFrequencySettingsPolicy.NormalizeMultiplier(
+                multiplier,
+                inherited);
+            if (DiaryFrequencySettingsPolicy.NearlyEqual(normalized, inherited))
+            {
+                groupFrequencyOverrides.Remove(group.defName);
+                return;
+            }
+
+            groupFrequencyOverrides[group.defName] = normalized;
+        }
+
+        /// <summary>Clears one known group's saved multiplier so it inherits the selected preset.</summary>
+        public void ResetGroupFrequencyOverride(string groupKey)
+        {
+            EnsureFrequencyDictionary();
+            if (!TryFinalizeFrequencySettingsAfterDefsLoaded())
+            {
+                return;
+            }
+
+            DiaryInteractionGroupDef group = InteractionGroups.ByKey(groupKey);
+            if (group != null)
+            {
+                groupFrequencyOverrides.Remove(group.defName);
+            }
+        }
+
+        /// <summary>Clears every known or preserved future-group frequency override.</summary>
+        public void ResetAllGroupFrequencyOverrides()
+        {
+            EnsureFrequencyDictionary();
+            if (!TryFinalizeFrequencySettingsAfterDefsLoaded())
+            {
+                return;
+            }
+
+            groupFrequencyOverrides.Clear();
+        }
+
+        /// <summary>Number of sparse rows currently persisted, including forward-compatible keys.</summary>
+        public int GroupFrequencyOverrideCount()
+        {
+            EnsureFrequencyDictionary();
+            TryFinalizeFrequencySettingsAfterDefsLoaded();
+            return groupFrequencyOverrides.Count;
+        }
+
+        /// <summary>True when at least one known group differs from the selected preset.</summary>
+        public bool HasCustomFrequencyOverrides()
+        {
+            return HasCustomFrequencyOverrides(FrequencyPresetSnapshot());
+        }
+
+        /// <summary>Detects Custom state while reusing an already detached preset projection.</summary>
+        internal bool HasCustomFrequencyOverrides(DiaryFrequencyPresetSnapshot preset)
+        {
+            EnsureFrequencyDictionary();
+            if (!TryFinalizeFrequencySettingsAfterDefsLoaded())
+            {
+                return false;
+            }
+
+            return DiaryFrequencyPolicy.HasCustomOverrides(
+                groupFrequencyOverrides,
+                FrequencyGroupSnapshots(settingsVisibleOnly: true),
+                preset);
+        }
+
+        /// <summary>
+        /// Selects any currently loaded frequency preset. Unknown input safely selects Standard for
+        /// direct/UI callers; pass <paramref name="clearOverrides"/> only after any UI confirmation.
+        /// </summary>
+        public void SetFrequencyPreset(string presetDefName, bool clearOverrides)
+        {
+            if (!TrySetFrequencyPreset(presetDefName, clearOverrides))
+            {
+                TrySetFrequencyPreset(DiaryFrequencyPresets.StandardDefName, clearOverrides);
+            }
+        }
+
+        /// <summary>
+        /// Attempts to select any loaded frequency preset, including add-on presets. Unknown tokens
+        /// return false without mutating saved state; the public API uses this forward-safe contract.
+        /// </summary>
+        public bool TrySetFrequencyPreset(string presetDefName, bool clearOverrides)
+        {
+            if (!TryFinalizeFrequencySettingsAfterDefsLoaded())
+            {
+                return false;
+            }
+
+            DiaryFrequencyPresetDef preset = FindFrequencyPreset(presetDefName);
+            if (preset == null)
+            {
+                return false;
+            }
+
+            frequencyPresetDefName = preset.defName;
+            runtimeFrequencyPresetSnapshot = null;
+            runtimeFrequencyPresetKey = string.Empty;
+            if (clearOverrides)
+            {
+                ResetAllGroupFrequencyOverrides();
+            }
+            else
+            {
+                NormalizeGroupFrequencyOverrides();
+            }
+
+            return true;
+        }
+
+        /// <summary>Marks the one-time migrated-frequency explanation as seen.</summary>
+        public void AcknowledgeFrequencyMigrationNotice()
+        {
+            frequencyMigrationNoticePending = false;
+        }
+
         /// <summary>
         /// Returns the XML instruction text for settings preview. It is no longer editable in saves.
         /// </summary>
@@ -1015,7 +1371,10 @@ namespace PawnDiary
         /// </summary>
         public void ClampValues()
         {
-            NormalizeGroupEnabledOverrides();
+            // Mod settings can load before DefDatabase is populated. Def-backed cleanup must wait;
+            // otherwise every saved enable row looks unknown and frequency migration sees no groups.
+            TryFinalizeGroupEnabledSettingsAfterDefsLoaded();
+            TryFinalizeFrequencySettingsAfterDefsLoaded();
             eventPromptOverrides.Normalize();
             eventEnhancementOverrides.Normalize();
             eventForcedModelOverrides.Normalize();
@@ -1040,7 +1399,10 @@ namespace PawnDiary
             systemPromptReflectionOverride = systemPromptReflectionOverride ?? string.Empty;
             systemPromptNeutralOverride = systemPromptNeutralOverride ?? string.Empty;
             titleSystemPromptOverride = titleSystemPromptOverride ?? string.Empty;
-            generationChanceWeight = ClampGenerationChanceWeight(generationChanceWeight);
+            generationChanceWeight = frequencySettingsSchemaVersion
+                >= CurrentFrequencySettingsSchemaVersion
+                    ? DefaultGenerationChanceWeight
+                    : ClampGenerationChanceWeight(generationChanceWeight);
             maxActiveDiaryEvents = ClampActiveDiaryEventLimit(maxActiveDiaryEvents);
             maxArchivedDiaryEvents = ClampArchivedDiaryEventLimit(maxArchivedDiaryEvents);
         }
@@ -1072,31 +1434,102 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Reads/writes the shared chance multiplier and migrates older separate work/social sliders.
+        /// Reads the retired scalar for one-release migration compatibility and captures raw legacy-key
+        /// presence before the old merge step erases whether Work/Social keys existed independently.
         /// </summary>
-        private void ExposeGenerationChanceWeight()
+        private DiaryFrequencyLegacySettingsSnapshot ExposeGenerationChanceWeight()
         {
             if (Scribe.mode == LoadSaveMode.Saving)
             {
+                // The mod constructor may persist a newly generated install id before Defs bind. If
+                // migration is still deferred, re-emit the exact retired-key shape so an interrupted
+                // startup cannot collapse distinct Work/Social intent into their compatibility mean.
+                if (frequencySettingsSchemaVersion < CurrentFrequencySettingsSchemaVersion
+                    && pendingLegacyFrequencyMigration != null)
+                {
+                    ExposePendingLegacyFrequencySettings(pendingLegacyFrequencyMigration);
+                    return null;
+                }
+
+                generationChanceWeight = DefaultGenerationChanceWeight;
                 Scribe_Values.Look(ref generationChanceWeight, "generationChanceWeight", DefaultGenerationChanceWeight);
-                return;
+                return null;
             }
 
-            float loadedGenerationChanceWeight = float.NaN;
-            Scribe_Values.Look(ref loadedGenerationChanceWeight, "generationChanceWeight", float.NaN);
+            // The sentinel lies beyond the supported range and is finite, so even a literal NaN or
+            // infinity in hand-edited XML remains distinguishable from a missing key.
+            const float missingSentinel = -987654f;
+            float loadedGenerationChanceWeight = missingSentinel;
+            Scribe_Values.Look(ref loadedGenerationChanceWeight, "generationChanceWeight", missingSentinel);
             if (Scribe.mode != LoadSaveMode.LoadingVars)
             {
-                return;
+                return null;
             }
 
-            float legacyWorkGenerationWeight = float.NaN;
-            float legacySocialGenerationWeight = float.NaN;
-            Scribe_Values.Look(ref legacyWorkGenerationWeight, "workGenerationWeight", float.NaN);
-            Scribe_Values.Look(ref legacySocialGenerationWeight, "socialGenerationWeight", float.NaN);
+            float legacyWorkGenerationWeight = missingSentinel;
+            float legacySocialGenerationWeight = missingSentinel;
+            Scribe_Values.Look(ref legacyWorkGenerationWeight, "workGenerationWeight", missingSentinel);
+            Scribe_Values.Look(ref legacySocialGenerationWeight, "socialGenerationWeight", missingSentinel);
 
-            generationChanceWeight = float.IsNaN(loadedGenerationChanceWeight)
-                ? MergeLegacyGenerationChanceWeights(legacyWorkGenerationWeight, legacySocialGenerationWeight)
-                : loadedGenerationChanceWeight;
+            DiaryFrequencyLegacySettingsSnapshot legacy =
+                new DiaryFrequencyLegacySettingsSnapshot
+                {
+                    hasGenerationChanceWeight = loadedGenerationChanceWeight != missingSentinel,
+                    generationChanceWeight = loadedGenerationChanceWeight,
+                    hasWorkGenerationWeight = legacyWorkGenerationWeight != missingSentinel,
+                    workGenerationWeight = legacyWorkGenerationWeight,
+                    hasSocialGenerationWeight = legacySocialGenerationWeight != missingSentinel,
+                    socialGenerationWeight = legacySocialGenerationWeight
+                };
+
+            // Keep the raw value only until post-Def migration can project it into exact group rows.
+            if (legacy.hasGenerationChanceWeight)
+            {
+                generationChanceWeight = loadedGenerationChanceWeight;
+            }
+            else
+            {
+                generationChanceWeight = MergeLegacyGenerationChanceWeights(
+                    legacy.hasWorkGenerationWeight ? legacyWorkGenerationWeight : float.NaN,
+                    legacy.hasSocialGenerationWeight ? legacySocialGenerationWeight : float.NaN);
+            }
+
+            return legacy;
+        }
+
+        /// <summary>Writes the exact raw legacy-key presence while post-Def migration is deferred.</summary>
+        private static void ExposePendingLegacyFrequencySettings(
+            DiaryFrequencyLegacySettingsSnapshot legacy)
+        {
+            if (legacy.hasGenerationChanceWeight)
+            {
+                float unified = legacy.generationChanceWeight;
+                Scribe_Values.Look(
+                    ref unified,
+                    "generationChanceWeight",
+                    DefaultGenerationChanceWeight,
+                    forceSave: true);
+            }
+
+            if (legacy.hasWorkGenerationWeight)
+            {
+                float work = legacy.workGenerationWeight;
+                Scribe_Values.Look(
+                    ref work,
+                    "workGenerationWeight",
+                    DefaultGenerationChanceWeight,
+                    forceSave: true);
+            }
+
+            if (legacy.hasSocialGenerationWeight)
+            {
+                float social = legacy.socialGenerationWeight;
+                Scribe_Values.Look(
+                    ref social,
+                    "socialGenerationWeight",
+                    DefaultGenerationChanceWeight,
+                    forceSave: true);
+            }
         }
 
         /// <summary>
@@ -1114,6 +1547,246 @@ namespace PawnDiary
             float migratedWorkWeight = hasWork ? workWeight : DefaultGenerationChanceWeight;
             float migratedSocialWeight = hasSocial ? socialWeight : DefaultGenerationChanceWeight;
             return (migratedWorkWeight + migratedSocialWeight) * 0.5f;
+        }
+
+        /// <summary>
+        /// Converts a pre-frequency-schema config exactly once, preserving the more precise original
+        /// Work/Social intent in sparse group rows and neutralizing the retired scalar afterwards.
+        /// </summary>
+        private void MigrateLegacyFrequencySettings(
+            DiaryFrequencyLegacySettingsSnapshot legacy)
+        {
+            EnsureFrequencyDictionary();
+            frequencyPresetDefName = DiaryFrequencyPresets.StandardDefName;
+
+            DiaryFrequencyMigrationResult migration =
+                DiaryFrequencySettingsPolicy.MigrateLegacy(
+                    legacy,
+                    FrequencyMigrationGroupSnapshots());
+            foreach (KeyValuePair<string, float> entry in migration.groupOverrides)
+            {
+                if (!groupFrequencyOverrides.ContainsKey(entry.Key))
+                {
+                    groupFrequencyOverrides[entry.Key] = entry.Value;
+                }
+            }
+
+            frequencyMigrationNoticePending = migration.hasMigratedCustomIntent;
+            frequencySettingsSchemaVersion = CurrentFrequencySettingsSchemaVersion;
+            generationChanceWeight = DefaultGenerationChanceWeight;
+            pendingLegacyFrequencyMigration = null;
+        }
+
+        /// <summary>
+        /// Completes Def-backed migration and normalization only after RimWorld has loaded the shipped
+        /// preset and representative Work/Ability/Interaction rows. The startup hook calls this after
+        /// Def binding; public settings readers retry defensively without ever caching an empty catalog.
+        /// </summary>
+        internal bool TryFinalizeFrequencySettingsAfterDefsLoaded()
+        {
+            if (frequencyDefBackedNormalizationComplete)
+            {
+                return true;
+            }
+
+            if (!FrequencyDefinitionsReady())
+            {
+                return false;
+            }
+
+            // This method is also the lazy boundary used by public API readers. Another mod can call
+            // those readers from a post-Def static constructor before DiaryModStartup runs, so the
+            // prerequisite cannot live only in that startup hook. Promotion membership used by the
+            // legacy Social migration must reflect the player's saved Advanced overrides on every
+            // entry path.
+            AdvancedFieldCatalog.EnsureApplied(advancedOverrides);
+            if (!AdvancedFieldCatalog.DefaultsCaptured)
+            {
+                return false;
+            }
+
+            if (frequencySettingsSchemaVersion < CurrentFrequencySettingsSchemaVersion)
+            {
+                DiaryFrequencyLegacySettingsSnapshot legacy = pendingLegacyFrequencyMigration
+                    ?? new DiaryFrequencyLegacySettingsSnapshot
+                    {
+                        hasGenerationChanceWeight = true,
+                        generationChanceWeight = generationChanceWeight
+                    };
+                MigrateLegacyFrequencySettings(legacy);
+            }
+
+            NormalizeFrequencyPresetDefName();
+            NormalizeGroupFrequencyOverrides();
+            // Schema v1 owns runtime frequency completely. Keep the retired public field readable for
+            // binary compatibility, but never let a carried Slice-2 bridge value affect later saves.
+            generationChanceWeight = DefaultGenerationChanceWeight;
+            // Constructor-time Clamp deliberately skips this Def-backed cleanup. Finish it beside
+            // frequency normalization so an early API snapshot cannot report stale/redundant enable
+            // overrides before the settings window has ever been opened.
+            TryFinalizeGroupEnabledSettingsAfterDefsLoaded();
+            frequencyDefBackedNormalizationComplete = true;
+            return true;
+        }
+
+        /// <summary>
+        /// Completes the older enable-override cleanup once interaction Defs exist. This intentionally
+        /// does not require any frequency Def, preserving the pre-v9 enable API under partial XML load.
+        /// </summary>
+        internal bool TryFinalizeGroupEnabledSettingsAfterDefsLoaded()
+        {
+            if (groupEnabledDefBackedNormalizationComplete
+                && groupEnabledNormalizedMutationRevision == InteractionGroups.MutationRevision)
+            {
+                return true;
+            }
+
+            if (!InteractionGroupDefinitionsReady())
+            {
+                return false;
+            }
+
+            // defaultEnabled itself is Advanced-overridable. Apply the saved Def values before
+            // deciding which sparse enable rows are redundant, even when frequency preset XML is
+            // unavailable and the frequency finalizer cannot run.
+            AdvancedFieldCatalog.EnsureApplied(advancedOverrides);
+            if (!AdvancedFieldCatalog.DefaultsCaptured)
+            {
+                return false;
+            }
+
+            NormalizeGroupEnabledOverrides();
+            groupEnabledDefBackedNormalizationComplete = true;
+            groupEnabledNormalizedMutationRevision = InteractionGroups.MutationRevision;
+            return true;
+        }
+
+        /// <summary>
+        /// True once representative interaction groups and the Standard preset can be resolved.
+        /// Safe before Def binding: public adapters use this guard before touching InteractionGroups.
+        /// </summary>
+        internal static bool FrequencyDefinitionsReady()
+        {
+            return InteractionGroupDefinitionsReady()
+                && DefDatabase<DiaryFrequencyPresetDef>.GetNamedSilentFail(
+                    DiaryFrequencyPresets.StandardDefName) != null;
+        }
+
+        private static bool InteractionGroupDefinitionsReady()
+        {
+            // These three base-mod rows cover every family used by legacy migration. Requiring all of
+            // them avoids treating a partially populated DefDatabase as the complete catalog.
+            return DefDatabase<DiaryInteractionGroupDef>.GetNamedSilentFail("smalltalk") != null
+                && DefDatabase<DiaryInteractionGroupDef>.GetNamedSilentFail("workRoutine") != null
+                && DefDatabase<DiaryInteractionGroupDef>.GetNamedSilentFail("abilityUsed") != null;
+        }
+
+        /// <summary>Returns any loaded frequency preset by case-insensitive stable Def name.</summary>
+        private static DiaryFrequencyPresetDef FindFrequencyPreset(string presetDefName)
+        {
+            string key = (presetDefName ?? string.Empty).Trim();
+            if (key.Length == 0)
+            {
+                return null;
+            }
+
+            List<DiaryFrequencyPresetDef> presets =
+                DefDatabase<DiaryFrequencyPresetDef>.AllDefsListForReading;
+            for (int i = 0; i < presets.Count; i++)
+            {
+                DiaryFrequencyPresetDef preset = presets[i];
+                if (preset != null && string.Equals(
+                    preset.defName,
+                    key,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    return preset;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>Repairs a missing/removed preset token to the safe shipped Standard key.</summary>
+        private void NormalizeFrequencyPresetDefName()
+        {
+            DiaryFrequencyPresetDef preset = FindFrequencyPreset(frequencyPresetDefName);
+            frequencyPresetDefName = preset?.defName ?? DiaryFrequencyPresets.StandardDefName;
+        }
+
+        /// <summary>
+        /// Re-sparsifies known current rows against the selected preset while retaining unknown saved
+        /// keys for add-ons that may be temporarily absent.
+        /// </summary>
+        private void NormalizeGroupFrequencyOverrides()
+        {
+            EnsureFrequencyDictionary();
+            groupFrequencyOverrides = DiaryFrequencySettingsPolicy.NormalizeOverrides(
+                groupFrequencyOverrides,
+                FrequencyGroupSnapshots(settingsVisibleOnly: false),
+                DiaryFrequencyPresets.Snapshot(frequencyPresetDefName));
+        }
+
+        /// <summary>Builds detached identities for Custom detection and sparse normalization.</summary>
+        private static List<DiaryFrequencyGroupSnapshot> FrequencyGroupSnapshots(
+            bool settingsVisibleOnly)
+        {
+            List<DiaryFrequencyGroupSnapshot> snapshots =
+                new List<DiaryFrequencyGroupSnapshot>();
+            List<DiaryInteractionGroupDef> groups =
+                DefDatabase<DiaryInteractionGroupDef>.AllDefsListForReading;
+            for (int i = 0; i < groups.Count; i++)
+            {
+                DiaryInteractionGroupDef group = groups[i];
+                if (group == null
+                    || group.domain == GroupDomain.External
+                    || (settingsVisibleOnly && !PawnDiaryMod.IsSettingsEventFilterGroup(group)))
+                {
+                    continue;
+                }
+
+                snapshots.Add(new DiaryFrequencyGroupSnapshot
+                {
+                    groupKey = group.defName ?? string.Empty,
+                    frequencyTier = group.frequencyTier ?? string.Empty
+                });
+            }
+
+            return snapshots;
+        }
+
+        /// <summary>
+        /// Builds detached migration facts for every known non-External row. A package-gated
+        /// compatibility group may be hidden today and become available later; legacy intent must
+        /// already be waiting when it does. Work, Ability, and active promotion groups are the
+        /// complete historical blast radius of the retired sliders.
+        /// </summary>
+        internal static List<DiaryFrequencyMigrationGroupSnapshot>
+            FrequencyMigrationGroupSnapshots()
+        {
+            List<DiaryFrequencyMigrationGroupSnapshot> snapshots =
+                new List<DiaryFrequencyMigrationGroupSnapshot>();
+            List<DiaryInteractionGroupDef> groups =
+                DefDatabase<DiaryInteractionGroupDef>.AllDefsListForReading;
+            for (int i = 0; i < groups.Count; i++)
+            {
+                DiaryInteractionGroupDef group = groups[i];
+                if (group == null || group.domain == GroupDomain.External)
+                {
+                    continue;
+                }
+
+                snapshots.Add(new DiaryFrequencyMigrationGroupSnapshot
+                {
+                    groupKey = group.defName ?? string.Empty,
+                    frequencyTier = group.frequencyTier ?? string.Empty,
+                    affectedByWorkWeight = group.domain == GroupDomain.Work,
+                    affectedByAbilityWeight = group.domain == GroupDomain.Ability,
+                    affectedByInteractionPromotionWeight = group.HasPromotionPolicy
+                });
+            }
+
+            return snapshots;
         }
 
         /// <summary>
@@ -1153,6 +1826,36 @@ namespace PawnDiary
             if (groupEnabled == null)
             {
                 groupEnabled = new Dictionary<string, bool>();
+            }
+        }
+
+        /// <summary>Ensures the sparse frequency dictionary survives old or damaged settings XML.</summary>
+        private void EnsureFrequencyDictionary()
+        {
+            if (groupFrequencyOverrides == null)
+            {
+                groupFrequencyOverrides =
+                    new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+                return;
+            }
+
+            // Scribe usually creates Dictionary<string,float> with its default comparer. Rebuild once
+            // so every runtime lookup honors stable Def keys case-insensitively.
+            if (!ReferenceEquals(
+                groupFrequencyOverrides.Comparer,
+                StringComparer.OrdinalIgnoreCase))
+            {
+                Dictionary<string, float> caseInsensitive =
+                    new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+                foreach (KeyValuePair<string, float> entry in groupFrequencyOverrides)
+                {
+                    if (entry.Key != null && !caseInsensitive.ContainsKey(entry.Key))
+                    {
+                        caseInsensitive[entry.Key] = entry.Value;
+                    }
+                }
+
+                groupFrequencyOverrides = caseInsensitive;
             }
         }
 

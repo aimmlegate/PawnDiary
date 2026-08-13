@@ -62,6 +62,22 @@ namespace DiaryPipelineTests
                 out interactionKey,
                 out thoughtKey);
             AssertTrue("ordinary saved event cannot become an ambient guard", !recognized);
+
+            string rejectedKey = DailyEmissionGuardPolicy.InteractionKey(
+                "quietSocial", "Pawn_E", 44);
+            AssertTrue(
+                "a persisted current-day frequency rejection is recognized",
+                DailyEmissionGuardPolicy.IsInteractionKeyForDay(rejectedKey, 44));
+            AssertTrue(
+                "a persisted frequency rejection expires after its day",
+                !DailyEmissionGuardPolicy.IsInteractionKeyForDay(rejectedKey, 45));
+            AssertTrue(
+                "an unrelated pipe-delimited token cannot impersonate an interaction guard",
+                !DailyEmissionGuardPolicy.IsInteractionKeyForDay("quietSocial|pair|Pawn_E|44", 44));
+            AssertTrue(
+                "a malformed frequency-rejection day fails closed",
+                !DailyEmissionGuardPolicy.IsInteractionKeyForDay(
+                    "quietSocial|ambient|Pawn_E|not-a-day", 44));
         }
     }
 }

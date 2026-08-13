@@ -291,7 +291,24 @@ namespace PawnDiary
             int opinion,
             IEnumerable<SocialReflectionChanceBand> bands)
         {
-            float chance = ChanceForOpinion(opinion, bands);
+            return PassesChance(sourceKey, opinion, bands, 1f);
+        }
+
+        /// <summary>
+        /// Applies the selected absolute frequency multiplier to the native opinion-band chance while
+        /// preserving this source's historical deterministic sample and strict boundary comparison.
+        /// </summary>
+        public static bool PassesChance(
+            string sourceKey,
+            int opinion,
+            IEnumerable<SocialReflectionChanceBand> bands,
+            float frequencyMultiplier)
+        {
+            float multiplier = float.IsNaN(frequencyMultiplier)
+                || float.IsInfinity(frequencyMultiplier)
+                ? 1f
+                : Math.Max(0f, frequencyMultiplier);
+            float chance = ClampChance(ChanceForOpinion(opinion, bands) * multiplier);
             return chance > 0f && DeterministicRoll(sourceKey) < chance;
         }
 

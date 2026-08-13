@@ -108,6 +108,10 @@ namespace PawnDiary
         // Prevents an ambient group from writing twice for the same pawn/day after an early save or
         // max-count flush. Transient, but rebuilt from hot/archive history after a load.
         private readonly HashSet<string> writtenAmbientInteractionNotes = new HashSet<string>();
+        // A frequency-rejected ambient aggregate has no page from which the transient day guard can be
+        // rebuilt. Save only those rejected current-day keys so a save/reload cannot reopen and reroll
+        // the same pawn/group/day occurrence. Old-day rows are pruned before every write.
+        private List<string> rejectedAmbientInteractionFrequencyKeys = new List<string>();
         // Ambient temporary thoughts still accumulating into one per-pawn day memory. Not saved;
         // flushed before saving just like interaction batches.
         private readonly Dictionary<string, PendingAmbientThoughtNote> pendingAmbientThoughtNotes = new Dictionary<string, PendingAmbientThoughtNote>();
@@ -278,6 +282,7 @@ namespace PawnDiary
             pendingAmbientInteractionNotes.Clear();
             pendingTaleBatches.Clear();
             writtenAmbientInteractionNotes.Clear();
+            rejectedAmbientInteractionFrequencyKeys.Clear();
             pendingAmbientThoughtNotes.Clear();
             writtenAmbientThoughtNotes.Clear();
             delayedRaidGenerationReadyTicks.Clear();
@@ -413,6 +418,14 @@ namespace PawnDiary
             archive.ExposeArchive("diaryArchiveEntries");
             ExposeKnowledgeData();
             Scribe_Collections.Look(ref activeEventWindows, "activeEventWindows", LookMode.Deep);
+            if (Scribe.mode == LoadSaveMode.Saving)
+            {
+                NormalizeRejectedAmbientInteractionFrequencyKeys(CurrentDayIndex);
+            }
+            Scribe_Collections.Look(
+                ref rejectedAmbientInteractionFrequencyKeys,
+                "rejectedAmbientInteractionFrequencyKeys",
+                LookMode.Value);
             // Plan 12: saved observed-condition runtime state. Additive key; old saves load an empty
             // list. See DiaryGameComponent.ObservedConditions.cs.
             Scribe_Collections.Look(ref activeObservedConditions, "activeObservedConditions", LookMode.Deep);
@@ -465,6 +478,11 @@ namespace PawnDiary
                 if (activeEventWindows == null)
                 {
                     activeEventWindows = new List<ActiveEventWindowState>();
+                }
+
+                if (rejectedAmbientInteractionFrequencyKeys == null)
+                {
+                    rejectedAmbientInteractionFrequencyKeys = new List<string>();
                 }
 
                 if (activeObservedConditions == null)

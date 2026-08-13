@@ -27,6 +27,10 @@
     <Compile Include="..\..\Source\Pipeline\DigestPacingPolicy.cs" Link="DigestPacingPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\DailyEmissionGuardPolicy.cs" Link="DailyEmissionGuardPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryFrequencyPolicy.cs" Link="DiaryFrequencyPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryDispatchOutcomePolicy.cs" Link="DiaryDispatchOutcomePolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryFrequencyChoicePolicy.cs" Link="DiaryFrequencyChoicePolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryEventFilterListPolicy.cs" Link="DiaryEventFilterListPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryFrequencySettingsPolicy.cs" Link="DiaryFrequencySettingsPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\LoadedEventRepairPolicy.cs" Link="LoadedEventRepairPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryEventPromptKeys.cs" Link="DiaryEventPromptKeys.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryEntryTitleFilter.cs" Link="DiaryEntryTitleFilter.cs" />

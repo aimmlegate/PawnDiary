@@ -158,11 +158,20 @@ namespace PawnDiary.Ingestion
 
         public override CaptureContext BuildContext()
         {
+            // Direct and promoted interactions are page candidates now, so the shared dispatcher
+            // admits them against their exact classified group. Delayed routes are contributors to a
+            // future aggregate page: the batch owner freezes that page's one frequency result when it
+            // opens, therefore the contributor must bypass the central per-signal roll here.
+            bool deferredAggregate = payload != null
+                && (payload.RouteToBatch || payload.RouteToAmbient);
             return DiaryGameComponent.BuildCaptureContext(
                 eligible: initiatorEligible || recipientEligible,
                 userEnabled: true,
                 signalEnabled: true,
-                ambientSignalEnabled: true);
+                ambientSignalEnabled: true,
+                frequencyGroup: classifiedGroup,
+                nativeCaptureChance: 1f,
+                bypassFrequency: deferredAggregate);
         }
 
         // Interaction has no detailed source-specific dedup, matching the old RecordInteraction. The

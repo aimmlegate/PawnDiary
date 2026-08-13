@@ -1,9 +1,9 @@
-// Diary tab visualization style pulled into XML.
+// Pawn Diary visualization and settings-layout style pulled into XML.
 //
-// This Def owns display-only numbers and colors for the pawn Diary inspector tab: card heights,
-// spacing, direct-speech markers, accent colors, and color-cue mappings. It deliberately does not
-// own runtime behavior toggles such as "show debug info" or "generate titles"; those remain saved
-// player settings. New to C#/RimWorld? See AGENTS.md ("Defs").
+// This Def owns display-only numbers and colors for the pawn Diary inspector/reader plus responsive
+// mod-settings dimensions: card heights, spacing, direct-speech markers, accent colors, and color-cue
+// mappings. It deliberately does not own runtime behavior toggles such as "show debug info" or
+// "generate titles"; those remain saved player settings. New to C#/RimWorld? See AGENTS.md ("Defs").
 using System;
 using System.Collections.Generic;
 using RimWorld;
@@ -107,7 +107,7 @@ namespace PawnDiary
     }
 
     /// <summary>
-    /// Display-only style Def shared by the Diary tab, standalone reader, and status overlays.
+    /// Display-only style Def shared by the Diary tab, reader, status overlays, and mod settings.
     /// </summary>
     public class DiaryUiStyleDef : Def
     {
@@ -147,6 +147,23 @@ namespace PawnDiary
         // Live text search stays inactive until this many trimmed characters have been typed, avoiding
         // enormous low-signal result sets for queries such as "a".
         public int filterSearchMinimumCharacters = 3;
+
+        // ---- Mod settings: Events tab ----
+        // These values keep the frequency header responsive independently of the diary reader layout.
+        // Below the compact threshold cards retain their labels/tooltips but omit descriptions/status.
+        public float settingsEventsCompactHeightThreshold = 500f;
+        public float settingsEventsTitleHeight = 30f;
+        public float settingsEventsPresetHeaderHeight = 30f;
+        public float settingsEventsPresetCardHeight = 84f;
+        public float settingsEventsCompactPresetCardHeight = 38f;
+        public float settingsEventsPresetStatusHeight = 26f;
+        public float settingsEventsEnableAllButtonWidth = 118f;
+        public float settingsEventsResetButtonWidth = 142f;
+        public float settingsEventsDismissButtonWidth = 100f;
+        public float settingsEventsFrequencyButtonWidth = 132f;
+        public float settingsEventsDomainHeight = 28f;
+        public float settingsEventsRowHeight = 32f;
+        public float settingsEventsRowGap = 3f;
 
         // ---- Control/header/card dimensions ----
         public float controlLineHeight = 28f;

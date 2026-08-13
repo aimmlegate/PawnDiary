@@ -106,6 +106,9 @@ namespace PawnDiary
         public bool hasPendingCertaintyDrift;
         public bool allowQuietReflection;
         public float quietRoll = 1f;
+        // Quiet is sampled before coordinator arbitration, so its native XML chance and the player's
+        // exact belief-reflection multiplier must share this one deterministic source roll.
+        public float quietFrequencyMultiplier = DiaryFrequencyPolicy.StandardMultiplier;
     }
 
     /// <summary>Pure reflection plan shell. It never creates or consumes a diary event.</summary>
@@ -115,6 +118,8 @@ namespace PawnDiary
         public string kind = NarrativeReflectionKindTokens.Belief;
         public string trigger = BeliefReflectionTriggerTokens.None;
         public string blockReason = string.Empty;
+        // Only a quiet trigger can set this. Stronger saved/event triggers still use central admission.
+        public bool frequencySettledUpstream;
     }
 
     /// <summary>Certainty boundary logic shared by the resolver, formatter, and future scanner.</summary>
@@ -397,8 +402,19 @@ namespace PawnDiary
                 return Allow(BeliefReflectionTriggerTokens.RecentEvent);
             if (request.hasPendingCertaintyDrift)
                 return Allow(BeliefReflectionTriggerTokens.PassiveDrift);
-            if (request.allowQuietReflection && SafeRoll(request.quietRoll) < effective.quietReflectionChance)
-                return Allow(BeliefReflectionTriggerTokens.Quiet);
+            float quietChance;
+            if (request.allowQuietReflection
+                && DiaryFrequencyPolicy.TryCalculateEffectiveChance(
+                    effective.quietReflectionChance,
+                    request.quietFrequencyMultiplier,
+                    out quietChance)
+                && quietChance > 0f
+                && SafeRoll(request.quietRoll) < quietChance)
+            {
+                return Allow(
+                    BeliefReflectionTriggerTokens.Quiet,
+                    frequencySettledUpstream: true);
+            }
 
             result.blockReason = request.hasRecentRelevantEvent && request.recentSourceAlreadyReflected
                 ? "source_reused"
@@ -406,9 +422,16 @@ namespace PawnDiary
             return result;
         }
 
-        private static BeliefReflectionDecision Allow(string trigger)
+        private static BeliefReflectionDecision Allow(
+            string trigger,
+            bool frequencySettledUpstream = false)
         {
-            return new BeliefReflectionDecision { allowed = true, trigger = trigger };
+            return new BeliefReflectionDecision
+            {
+                allowed = true,
+                trigger = trigger,
+                frequencySettledUpstream = frequencySettledUpstream
+            };
         }
 
         private static float SafeRoll(float value)
