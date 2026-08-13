@@ -192,7 +192,7 @@ namespace PawnDiary
 
         /// <summary>
         /// Returns the height needed for per-pawn dev controls above the diary list. The player-facing
-        /// Writing style opener lives in the header icon, so normal play reserves no extra row.
+        /// Diary profile opener lives in the header icon, so normal play reserves no extra row.
         /// </summary>
         private static float PawnControlsHeight(float availableWidth)
         {
@@ -202,14 +202,9 @@ namespace PawnDiary
             }
 
             float width = Mathf.Max(1f, availableWidth);
-            float height = DevCheckboxRowHeight(
-                "PawnDiary.Tab.GenerateForPawn".Translate(),
-                width);
+            float height = 0f;
             if (PawnDiaryMod.Settings != null)
             {
-                height += DevCheckboxRowHeight(
-                    "PawnDiary.Tab.ShowPersonaSettings".Translate(),
-                    width);
                 height += DevCheckboxRowHeight(
                     "PawnDiary.Tab.ShowLlmDebugInfo".Translate(),
                     width);
@@ -235,7 +230,7 @@ namespace PawnDiary
 
 
         /// <summary>
-        /// Renders dev-mode-only troubleshooting controls. Player-facing writing-style editing is
+        /// Renders dev-mode-only troubleshooting controls. Player-facing Diary profile editing is
         /// opened by the compact header icon, so this block is absent in normal play.
         /// </summary>
         private void DrawPawnControls(Pawn pawn, DiaryGameComponent component, Rect rect)
@@ -263,59 +258,10 @@ namespace PawnDiary
 
 
 
-            // Toggling this only gates future LLM requests. Recorded events remain visible as raw
-
-            // diary entries, which lets players pause generation without losing history.
-
-            bool enabled = component.DiaryGenerationEnabledFor(pawn);
-
-            bool before = enabled;
-
-            listing.CheckboxLabeled(
-
-                "PawnDiary.Tab.GenerateForPawn".Translate(),
-
-                ref enabled,
-
-                "PawnDiary.Tab.GenerateForPawnTip".Translate());
-
-            if (enabled != before)
-            {
-
-                component.SetDiaryGenerationEnabled(pawn, enabled);
-
-            }
-
-
-
             PawnDiarySettings settings = PawnDiaryMod.Settings;
 
             if (Prefs.DevMode && settings != null)
             {
-
-                bool showPersonaSettings = settings.showPersonaSettings;
-
-                bool showPersonaBefore = showPersonaSettings;
-
-                listing.CheckboxLabeled(
-
-                    "PawnDiary.Tab.ShowPersonaSettings".Translate(),
-
-                    ref showPersonaSettings,
-
-                    "PawnDiary.Tab.ShowPersonaSettingsTip".Translate());
-
-                if (showPersonaSettings != showPersonaBefore)
-                {
-
-                    settings.showPersonaSettings = showPersonaSettings;
-
-                    writeGlobalSettings = true;
-
-                }
-
-
-
                 bool showLlmDebugInfo = settings.showLlmDebugInfo;
 
                 bool showDebugBefore = showLlmDebugInfo;
@@ -418,11 +364,8 @@ namespace PawnDiary
 
 
 
-            // The base-style picker used to live here behind ShouldShowPersonaSettings(); it moved to
-
-            // the player Writing Style dialog opened by the header icon, which also exposes the custom
-
-            // prompt and override explanation, so this dev-only duplicate is gone.
+            // The old per-pawn generation/persona toggles now live together in the player-facing Diary
+            // profile, so this panel contains troubleshooting controls only.
 
             }
             finally
@@ -442,7 +385,7 @@ namespace PawnDiary
 
 
         /// <summary>
-        /// True when the Diary tab should offer the player-facing writing-style editor for this pawn.
+        /// True when the Diary tab should offer the player-facing Diary profile editor for this pawn.
         /// The tab can render children and corpses, but only diary-eligible pawns can store the result.
         /// </summary>
         private static bool ShouldDrawWritingStyleButton(Pawn pawn, DiaryGameComponent component)
@@ -452,7 +395,7 @@ namespace PawnDiary
 
         /// <summary>
         /// Draws the subtle header icon that opens <see cref="Dialog_PawnWritingStyle"/>. It is
-        /// read-only during draw; Save/Reset in the dialog remain the only mutation points.
+        /// read-only during draw; the dialog's explicit Save is the profile mutation boundary.
         /// </summary>
         private void DrawWritingStyleHeaderIcon(Rect rect, Pawn pawn, DiaryGameComponent component)
         {
@@ -473,7 +416,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Toggles the writing-style dialog for the pawn: a second click on the header icon closes the
+        /// Toggles the Diary profile for the pawn: a second click on the header icon closes the
         /// editor that is already open, otherwise it opens one (still avoiding duplicate editors that
         /// could save over each other).
         /// </summary>
@@ -633,18 +576,6 @@ namespace PawnDiary
         {
 
             return entry != null && (!string.IsNullOrWhiteSpace(entry.GeneratedText) || IsArchivedGenerationFallback(entry));
-
-        }
-
-
-
-        /// <summary>
-        /// Dev-mode preference gate for manual persona editing in the Diary tab.
-        /// </summary>
-        private static bool ShouldShowPersonaSettings()
-        {
-
-            return Prefs.DevMode && PawnDiaryMod.Settings != null && PawnDiaryMod.Settings.showPersonaSettings;
 
         }
 

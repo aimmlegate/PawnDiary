@@ -1597,10 +1597,34 @@
   <PawnDiary.Bucket.Effect.Negative>отрицательный</PawnDiary.Bucket.Effect.Negative>
   <PawnDiary.Bucket.Effect.StrongNegative>сильно отрицательный</PawnDiary.Bucket.Effect.StrongNegative>
 
-  <!-- Редактор манеры письма поселенца (вкладка «Дневник»). -->
-  <PawnDiary.Tab.WritingStyle>Манера письма: {0}</PawnDiary.Tab.WritingStyle>
-  <PawnDiary.Tab.WritingStyleTip>Открыть редактор манеры письма этого поселенца: выбрать базовую манеру, написать правило лично для него или посмотреть, почему действует временное переопределение.</PawnDiary.Tab.WritingStyleTip>
+  <!-- Профиль дневника поселенца (вкладка «Дневник»). -->
+  <PawnDiary.Tab.WritingStyle>Профиль дневника · манера письма: {0}</PawnDiary.Tab.WritingStyle>
+  <PawnDiary.Tab.WritingStyleTip>Открыть профиль дневника этого поселенца: приостановить или возобновить написание страниц, настроить голос и мироощущение либо проверить временные переопределения.</PawnDiary.Tab.WritingStyleTip>
   <PawnDiary.Tab.WritingStyleUnavailable>Манера письма появится, когда поселенец дорастёт до дневника.</PawnDiary.Tab.WritingStyleUnavailable>
+  <PawnDiary.Profile.EditorTitle>{0} — профиль дневника</PawnDiary.Profile.EditorTitle>
+  <PawnDiary.Profile.DiarySectionTitle>Дневник</PawnDiary.Profile.DiarySectionTitle>
+  <PawnDiary.Profile.GenerationEnabled>Писать страницы дневника для этого поселенца</PawnDiary.Profile.GenerationEnabled>
+  <PawnDiary.Profile.GenerationEnabledTip>Переключатель применяется кнопкой «Сохранить». Если его выключить, новые запросы на написание страниц прекратятся, но существующие страницы, события и сохранённые факты останутся. Уже запущенный запрос может завершиться.</PawnDiary.Profile.GenerationEnabledTip>
+  <PawnDiary.Profile.GenerationRunning>Написание дневника включено.</PawnDiary.Profile.GenerationRunning>
+  <PawnDiary.Profile.GenerationPaused>Написание дневника приостановлено. Существующие страницы и сохранённые факты останутся на месте.</PawnDiary.Profile.GenerationPaused>
+  <PawnDiary.Profile.GenerationPausePending>После сохранения новые страницы перестанут отправляться на написание. Существующие страницы, события и сохранённые факты останутся на месте.</PawnDiary.Profile.GenerationPausePending>
+  <PawnDiary.Profile.GenerationResumePending>После сохранения написание возобновится, а доступные ненаписанные страницы попадут в очередь.</PawnDiary.Profile.GenerationResumePending>
+  <PawnDiary.Profile.GenerationResumeDirectPending>После сохранения написание возобновится. Ненаписанных страниц для очереди нет.</PawnDiary.Profile.GenerationResumeDirectPending>
+  <PawnDiary.Profile.GenerationBacklogCount>Ненаписанных страниц: {0}.</PawnDiary.Profile.GenerationBacklogCount>
+  <PawnDiary.Profile.VoiceSectionTitle>Голос и мироощущение</PawnDiary.Profile.VoiceSectionTitle>
+  <PawnDiary.Profile.PreviewSectionTitle>Предпросмотр итогового профиля</PawnDiary.Profile.PreviewSectionTitle>
+  <PawnDiary.Profile.PreviewLabel>Что получит автор из этого профиля</PawnDiary.Profile.PreviewLabel>
+  <PawnDiary.Profile.PreviewNone>нет</PawnDiary.Profile.PreviewNone>
+  <PawnDiary.Profile.PreviewFrame>Мироощущение ({0}):\n{1}\n\nМанера письма ({2}):\n{3}</PawnDiary.Profile.PreviewFrame>
+  <PawnDiary.Profile.SourceBase>базовое правило</PawnDiary.Profile.SourceBase>
+  <PawnDiary.Profile.SourceCustom>своё правило</PawnDiary.Profile.SourceCustom>
+  <PawnDiary.Profile.ResumeConfirmTitle>Возобновить написание дневника?</PawnDiary.Profile.ResumeConfirmTitle>
+  <PawnDiary.Profile.ResumeConfirm>Для {0} доступно ненаписанных страниц: {1}. После сохранения профиля они сразу попадут в очередь. Возобновить написание дневника?</PawnDiary.Profile.ResumeConfirm>
+  <PawnDiary.Profile.ResumeConfirmButton>Возобновить и сохранить</PawnDiary.Profile.ResumeConfirmButton>
+  <PawnDiary.Profile.ResumeCancelButton>Отмена</PawnDiary.Profile.ResumeCancelButton>
+  <PawnDiary.Profile.Saved>Профиль дневника сохранён.</PawnDiary.Profile.Saved>
+  <PawnDiary.Profile.SaveFailed>Этот поселенец больше не может вести дневник, поэтому профиль не сохранён.</PawnDiary.Profile.SaveFailed>
+  <PawnDiary.Profile.VoiceResetDraft>Голос и мироощущение сброшены в черновике. Сохраните профиль, чтобы применить изменения.</PawnDiary.Profile.VoiceResetDraft>
   <PawnDiary.WritingStyle.EditorTitle>{0} — манера письма</PawnDiary.WritingStyle.EditorTitle>
   <PawnDiary.WritingStyle.BaseStyle>Базовая манера: {0}</PawnDiary.WritingStyle.BaseStyle>
   <PawnDiary.WritingStyle.BasePrompt>Базовое правило</PawnDiary.WritingStyle.BasePrompt>
@@ -1611,8 +1635,8 @@
   <PawnDiary.WritingStyle.CurrentExternal>Сейчас используется переопределение внешнего мода — {0}</PawnDiary.WritingStyle.CurrentExternal>
   <PawnDiary.WritingStyle.CurrentHediff>Сейчас используется временное переопределение из-за состояния здоровья — {0}</PawnDiary.WritingStyle.CurrentHediff>
   <PawnDiary.WritingStyle.SavedCustomWaiting>Ваше особое правило сохранено ниже, но начнёт действовать только после окончания этого переопределения.</PawnDiary.WritingStyle.SavedCustomWaiting>
-  <PawnDiary.WritingStyle.SaveForPawn>Сохранить</PawnDiary.WritingStyle.SaveForPawn>
-  <PawnDiary.WritingStyle.ResetToBase>Сбросить</PawnDiary.WritingStyle.ResetToBase>
+  <PawnDiary.WritingStyle.SaveForPawn>Сохранить профиль</PawnDiary.WritingStyle.SaveForPawn>
+  <PawnDiary.WritingStyle.ResetToBase>Сбросить голос</PawnDiary.WritingStyle.ResetToBase>
   <PawnDiary.WritingStyle.LoadBasePrompt>Вставить базовое</PawnDiary.WritingStyle.LoadBasePrompt>
   <PawnDiary.WritingStyle.Close>Закрыть</PawnDiary.WritingStyle.Close>
   <PawnDiary.WritingStyle.OverrideExternal>Манеру письма временно задаёт интеграция ({0}).</PawnDiary.WritingStyle.OverrideExternal>

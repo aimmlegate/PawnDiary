@@ -13,9 +13,9 @@
 // production pipeline renders and STORES each event's prompt and stops before any LlmClient.Enqueue — the
 // captured string is exactly what would have been sent, with zero network. Arrival and Death both queue
 // their neutral prompt SYNCHRONOUSLY on emit (ArrivalSignal.Emit -> QueueArrivalDescriptionFor and
-// DeathFallbackSignal.Emit -> QueueDeathDescriptionFor), and the neutral POV is ungated per-pawn
-// (PawnIdForRole(Neutral) is empty, so DiaryGenerationEnabledFor short-circuits to true), so firing the
-// signal captures on the NeutralRole immediately. Titles are different: QueueTitleRequest bails out under
+// DeathFallbackSignal.Emit -> QueueDeathDescriptionFor). Their exact owner comes from the saved arrival/
+// death context, so this fixture uses a generation-enabled pawn and captures on NeutralRole immediately.
+// Titles are different: QueueTitleRequest bails out under
 // promptTestMode, so titles never capture end-to-end. Per the plan we instead drive the pure title path
 // directly — DiaryPipelineAdapters.BuildPromptRequest(titleRequest:true) + DiaryPromptPlanner.Build — and
 // assert on the returned plan/request.

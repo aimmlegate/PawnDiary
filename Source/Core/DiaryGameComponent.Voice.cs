@@ -202,7 +202,9 @@ namespace PawnDiary
         /// </summary>
         internal PsychotypeResolution ResolvePsychotypeForDisplay(Pawn pawn)
         {
-            PawnDiaryRecord diary = pawn == null ? null : FindDiaryByPawnId(pawn.GetUniqueLoadID());
+            PawnDiaryRecord diary = pawn == null
+                ? null
+                : LookupDiaryByPawnId(pawn.GetUniqueLoadID());
             return BuildPsychotypeResolution(diary);
         }
 
@@ -229,21 +231,25 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            PawnDiaryRecord diary = FindDiary(pawn, false);
+            PawnDiaryRecord diary = LookupDiaryByPawnId(pawn.GetUniqueLoadID());
             return diary == null ? string.Empty : diary.customPsychotypeRule ?? string.Empty;
         }
 
         /// <summary>True when the player has pinned this pawn's psychotype (never auto-re-rolled).</summary>
         internal bool PsychotypePinnedFor(Pawn pawn)
         {
-            PawnDiaryRecord diary = IsDiaryEligible(pawn) ? FindDiary(pawn, false) : null;
+            PawnDiaryRecord diary = IsDiaryEligible(pawn)
+                ? LookupDiaryByPawnId(pawn.GetUniqueLoadID())
+                : null;
             return diary != null && diary.psychotypePinned;
         }
 
         /// <summary>True when the player has pinned this pawn's writing style (never auto-re-rolled).</summary>
         internal bool WritingStylePinnedFor(Pawn pawn)
         {
-            PawnDiaryRecord diary = IsDiaryEligible(pawn) ? FindDiary(pawn, false) : null;
+            PawnDiaryRecord diary = IsDiaryEligible(pawn)
+                ? LookupDiaryByPawnId(pawn.GetUniqueLoadID())
+                : null;
             return diary != null && diary.writingStylePinned;
         }
 
@@ -348,7 +354,7 @@ namespace PawnDiary
             }
 
             PsychotypeResolution resolution = ResolvePsychotypeForDisplay(pawn);
-            PawnDiaryRecord diary = FindDiary(pawn, false);
+            PawnDiaryRecord diary = LookupDiaryByPawnId(pawn.GetUniqueLoadID());
             return new Integration.DiaryPsychotypeSnapshot
             {
                 psychotypeDefName = resolution.baseTypeDefName ?? string.Empty,

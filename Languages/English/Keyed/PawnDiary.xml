@@ -1651,10 +1651,34 @@
   <PawnDiary.Bucket.Effect.Negative>negative</PawnDiary.Bucket.Effect.Negative>
   <PawnDiary.Bucket.Effect.StrongNegative>strong negative</PawnDiary.Bucket.Effect.StrongNegative>
 
-  <!-- Per-pawn Writing Style editor (Diary tab). Player-facing; keep localization-friendly. -->
-  <PawnDiary.Tab.WritingStyle>Writing style: {0}</PawnDiary.Tab.WritingStyle>
-  <PawnDiary.Tab.WritingStyleTip>Open this pawn's writing-style editor to choose the base style, write a pawn-specific prompt, or see why a temporary override is active.</PawnDiary.Tab.WritingStyleTip>
+  <!-- Per-pawn Diary profile (Diary tab). Player-facing; keep localization-friendly. -->
+  <PawnDiary.Tab.WritingStyle>Diary profile · writing style: {0}</PawnDiary.Tab.WritingStyle>
+  <PawnDiary.Tab.WritingStyleTip>Open this pawn's Diary profile to pause or resume page writing, shape their voice and outlook, or inspect temporary overrides.</PawnDiary.Tab.WritingStyleTip>
   <PawnDiary.Tab.WritingStyleUnavailable>Writing style is available once this colonist is old enough to keep a diary.</PawnDiary.Tab.WritingStyleUnavailable>
+  <PawnDiary.Profile.EditorTitle>{0} — Diary profile</PawnDiary.Profile.EditorTitle>
+  <PawnDiary.Profile.DiarySectionTitle>Diary</PawnDiary.Profile.DiarySectionTitle>
+  <PawnDiary.Profile.GenerationEnabled>Write diary pages for this pawn</PawnDiary.Profile.GenerationEnabled>
+  <PawnDiary.Profile.GenerationEnabledTip>Apply this switch with Save. Turning it off stops future page-writing requests but keeps existing pages, events, and remembered facts. A request already running may still finish.</PawnDiary.Profile.GenerationEnabledTip>
+  <PawnDiary.Profile.GenerationRunning>Diary writing is running.</PawnDiary.Profile.GenerationRunning>
+  <PawnDiary.Profile.GenerationPaused>Diary writing is paused. Existing pages and remembered facts are kept.</PawnDiary.Profile.GenerationPaused>
+  <PawnDiary.Profile.GenerationPausePending>Saving will pause future diary writing. Existing pages, events, and remembered facts will be kept.</PawnDiary.Profile.GenerationPausePending>
+  <PawnDiary.Profile.GenerationResumePending>Saving will resume diary writing and queue the available unwritten pages.</PawnDiary.Profile.GenerationResumePending>
+  <PawnDiary.Profile.GenerationResumeDirectPending>Saving will resume diary writing. There is no unwritten backlog to queue.</PawnDiary.Profile.GenerationResumeDirectPending>
+  <PawnDiary.Profile.GenerationBacklogCount>Unwritten page backlog: {0}.</PawnDiary.Profile.GenerationBacklogCount>
+  <PawnDiary.Profile.VoiceSectionTitle>Voice and outlook</PawnDiary.Profile.VoiceSectionTitle>
+  <PawnDiary.Profile.PreviewSectionTitle>Effective profile preview</PawnDiary.Profile.PreviewSectionTitle>
+  <PawnDiary.Profile.PreviewLabel>What the writer will receive from this profile</PawnDiary.Profile.PreviewLabel>
+  <PawnDiary.Profile.PreviewNone>none</PawnDiary.Profile.PreviewNone>
+  <PawnDiary.Profile.PreviewFrame>Outlook ({0}):\n{1}\n\nWriting style ({2}):\n{3}</PawnDiary.Profile.PreviewFrame>
+  <PawnDiary.Profile.SourceBase>base</PawnDiary.Profile.SourceBase>
+  <PawnDiary.Profile.SourceCustom>custom</PawnDiary.Profile.SourceCustom>
+  <PawnDiary.Profile.ResumeConfirmTitle>Resume diary writing?</PawnDiary.Profile.ResumeConfirmTitle>
+  <PawnDiary.Profile.ResumeConfirm>{0} has unwritten pages available: {1}. Saving this profile will queue them now. Resume diary writing?</PawnDiary.Profile.ResumeConfirm>
+  <PawnDiary.Profile.ResumeConfirmButton>Resume and save</PawnDiary.Profile.ResumeConfirmButton>
+  <PawnDiary.Profile.ResumeCancelButton>Cancel</PawnDiary.Profile.ResumeCancelButton>
+  <PawnDiary.Profile.Saved>Diary profile saved.</PawnDiary.Profile.Saved>
+  <PawnDiary.Profile.SaveFailed>This pawn can no longer keep a diary, so the profile was not saved.</PawnDiary.Profile.SaveFailed>
+  <PawnDiary.Profile.VoiceResetDraft>Voice and outlook reset in this draft. Save the profile to apply it.</PawnDiary.Profile.VoiceResetDraft>
   <PawnDiary.WritingStyle.EditorTitle>{0} - Writing Style</PawnDiary.WritingStyle.EditorTitle>
   <PawnDiary.WritingStyle.BaseStyle>Base style: {0}</PawnDiary.WritingStyle.BaseStyle>
   <PawnDiary.WritingStyle.BasePrompt>Base prompt</PawnDiary.WritingStyle.BasePrompt>
@@ -1665,8 +1689,8 @@
   <PawnDiary.WritingStyle.CurrentExternal>Currently used: external mod override — {0}</PawnDiary.WritingStyle.CurrentExternal>
   <PawnDiary.WritingStyle.CurrentHediff>Currently used: temporary health-condition override — {0}</PawnDiary.WritingStyle.CurrentHediff>
   <PawnDiary.WritingStyle.SavedCustomWaiting>Your custom prompt is saved below, but will take effect only after this override ends.</PawnDiary.WritingStyle.SavedCustomWaiting>
-  <PawnDiary.WritingStyle.SaveForPawn>Save for pawn</PawnDiary.WritingStyle.SaveForPawn>
-  <PawnDiary.WritingStyle.ResetToBase>Reset to base</PawnDiary.WritingStyle.ResetToBase>
+  <PawnDiary.WritingStyle.SaveForPawn>Save profile</PawnDiary.WritingStyle.SaveForPawn>
+  <PawnDiary.WritingStyle.ResetToBase>Reset voice</PawnDiary.WritingStyle.ResetToBase>
   <PawnDiary.WritingStyle.LoadBasePrompt>Load base prompt</PawnDiary.WritingStyle.LoadBasePrompt>
   <PawnDiary.WritingStyle.Close>Close</PawnDiary.WritingStyle.Close>
   <PawnDiary.WritingStyle.OverrideExternal>An integration ({0}) is temporarily supplying this pawn's writing style.</PawnDiary.WritingStyle.OverrideExternal>

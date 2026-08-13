@@ -1084,8 +1084,31 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Read-only profile-window getter. A saved row remains authoritative even if the pawn becomes
+        /// temporarily ineligible while the window is open; this lets Save detect that the edited switch
+        /// still needs a real write (which the normal setter may reject). A missing row always retains the
+        /// historical enabled default: eligibility is a separate runtime gate, not a persisted toggle value.
+        /// Inspection never creates, rolls, or normalizes state.
+        /// </summary>
+        internal bool DiaryGenerationEnabledForProfile(Pawn pawn)
+        {
+            if (pawn == null)
+            {
+                return false;
+            }
+
+            PawnDiaryRecord diary = LookupDiaryByPawnId(pawn.GetUniqueLoadID());
+            if (diary != null)
+            {
+                return diary.diaryGenerationEnabled;
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Public integration preflight: true only when the pawn passes diary-owner eligibility and the
-        /// player's saved per-pawn generation toggle is still enabled. Unlike the debug/UI helper above,
+        /// player's saved per-pawn generation toggle is still enabled. Like the profile reader above,
         /// this does not create a diary record just because an adapter asked.
         /// </summary>
         internal bool IsIntegrationEligibleFor(Pawn pawn)
@@ -1104,7 +1127,7 @@ namespace PawnDiary
                 return false;
             }
 
-            PawnDiaryRecord diary = FindDiary(pawn, false);
+            PawnDiaryRecord diary = LookupDiaryByPawnId(pawn.GetUniqueLoadID());
             return diary == null || diary.diaryGenerationEnabled;
         }
 
@@ -1175,7 +1198,7 @@ namespace PawnDiary
                 return null;
             }
 
-            PawnDiaryRecord diary = FindDiary(pawn, false);
+            PawnDiaryRecord diary = LookupDiaryByPawnId(pawn.GetUniqueLoadID());
             DiaryPersonaDef persona = DiaryPersonas.Resolve(diary?.personaDefName);
             if (persona == null)
             {
@@ -1219,7 +1242,7 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            PawnDiaryRecord diary = FindDiary(pawn, false);
+            PawnDiaryRecord diary = LookupDiaryByPawnId(pawn.GetUniqueLoadID());
             return diary == null ? string.Empty : diary.customWritingStyleRule ?? string.Empty;
         }
 
@@ -1261,7 +1284,7 @@ namespace PawnDiary
                 return HediffPersonaOverrides.ResolveWritingStyle(null, null, null, null, null);
             }
 
-            PawnDiaryRecord diary = FindDiary(pawn, false);
+            PawnDiaryRecord diary = LookupDiaryByPawnId(pawn.GetUniqueLoadID());
             return HediffPersonaOverrides.ResolveWritingStyle(
                 pawn,
                 diary?.personaDefName,

@@ -1,13 +1,13 @@
-// Player-facing dialog for editing one pawn's VOICE from the Diary tab: the writing style (sentence
-// mechanics) and the psychotype (outlook/temperament). Both layers are edited here in one window, each
-// with a base picker, a read-only base preview, an editable pawn-specific custom rule, and a prominent
-// status panel that always identifies which layer currently wins. A manual pick / custom edit / re-roll
-// pins the layer so it is not auto-re-rolled when the pawn grows up. Developer mode appends isolated
-// sections for inspecting cultural lore and editing/removing this pawn's durable important memories.
+// Player-facing Diary profile for one pawn. It keeps the pawn's generation switch, writing style
+// (sentence mechanics), and psychotype (outlook/temperament) in one normal-play window. Both voice
+// layers have a base picker, a read-only base preview, an editable pawn-specific custom rule, and a
+// status panel that identifies which source currently wins. A compact effective preview shows the
+// exact draft voice/outlook text without invoking prompt context providers. Developer mode appends
+// isolated sections for inspecting cultural lore and editing/removing durable important memories.
 //
-// RimWorld IMGUI draws this window repeatedly, so editable buffers live as fields and are only flushed
-// to the diary record through explicit Save/Reset button clicks — never during a draw pass. The whole
-// content area scrolls so both sections fit on small screens.
+// RimWorld IMGUI draws this window repeatedly, so editable buffers live as fields and are flushed to
+// the diary record only by explicit Save — never during a draw pass. Reset changes the draft, and the
+// whole content area scrolls so every section fits on small screens.
 //
 // New to C#/RimWorld? See AGENTS.md ("Window", "IExposable", "IMGUI").
 using System;
@@ -20,8 +20,8 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>
-    /// Modal window for inspecting and editing one pawn's writing style and psychotype. Writes only the
-    /// pawn-specific custom rules, selected base defs, and pin flags — never the global catalog or XML Defs.
+    /// Modal window for inspecting and editing one pawn's Diary profile. Writes only the pawn-specific
+    /// generation switch, custom rules, selected base defs, and pin flags — never global catalog/XML data.
     /// </summary>
     internal sealed partial class Dialog_PawnWritingStyle : Window
     {
@@ -29,13 +29,24 @@ namespace PawnDiary
         private string customRuleBuffer;
         private string pendingBaseStyleDefName;
         private readonly string originalBaseStyleDefName;
+        private readonly string originalCustomRule;
+        private readonly bool originalWritingStylePinned;
         private bool pendingWritingStylePinned;
 
         // ---- Psychotype editing state ----
         private string customPsychotypeBuffer;
         private string pendingPsychotypeDefName;
         private readonly string originalPsychotypeDefName;
+        private readonly string originalCustomPsychotypeRule;
+        private readonly bool originalPsychotypePinned;
         private bool pendingPsychotypePinned;
+
+        // ---- Diary-generation draft ----
+        // These open-time values keep the visible status stable. A fresh backlog scan is allowed only
+        // at the Save boundary for confirmation; never from DoWindowContents, which runs repeatedly.
+        private readonly bool originalGenerationEnabled;
+        private bool pendingGenerationEnabled;
+        private readonly int resumableBacklogCount;
 
         // ---- External (integration) psychotype-generation state ----
         // Set while we wait for an adapter's Regenerate to finish. The editor buffer captured at click
@@ -51,6 +62,7 @@ namespace PawnDiary
         private Vector2 customScroll;
         private Vector2 psychotypeBaseScroll;
         private Vector2 psychotypeCustomScroll;
+        private Vector2 effectivePreviewScroll;
 
         // Layout constants (safe font row heights per AGENTS.md / UI lore: Tiny 20, Small 24, Medium 30).
         private const float HeaderHeight = 32f;
@@ -81,6 +93,7 @@ namespace PawnDiary
 
             // Seed the writing-style editors from the saved record.
             customRuleBuffer = component == null ? string.Empty : component.CustomWritingStyleRuleFor(pawn);
+            originalCustomRule = customRuleBuffer ?? string.Empty;
             WritingStyleResolution style = component == null
                 ? HediffPersonaOverrides.ResolveWritingStyle(null, null, null, null, null)
                 : component.ResolveWritingStyleFor(pawn);
@@ -89,17 +102,28 @@ namespace PawnDiary
                 : style.baseStyleDefName;
             originalBaseStyleDefName = pendingBaseStyleDefName;
             pendingWritingStylePinned = component != null && component.WritingStylePinnedFor(pawn);
+            originalWritingStylePinned = pendingWritingStylePinned;
 
-            // Seed the psychotype editors from the saved record (resolving ensures a band/backfill first).
+            // Seed through the display-only resolution. Opening a profile must never roll/backfill a voice
+            // stage or materialize a PawnDiaryRecord merely because the player inspected the window.
             customPsychotypeBuffer = component == null ? string.Empty : component.CustomPsychotypeRuleFor(pawn);
+            originalCustomPsychotypeRule = customPsychotypeBuffer ?? string.Empty;
             PsychotypeResolution psycho = component == null
                 ? PsychotypeResolutionPolicy.Resolve(null, null, null, null)
-                : component.ResolvePsychotypeFor(pawn);
+                : component.ResolvePsychotypeForDisplay(pawn);
             pendingPsychotypeDefName = string.IsNullOrWhiteSpace(psycho.baseTypeDefName)
                 ? DiaryPsychotypes.NeutralDefName
                 : psycho.baseTypeDefName;
             originalPsychotypeDefName = pendingPsychotypeDefName;
             pendingPsychotypePinned = component != null && component.PsychotypePinnedFor(pawn);
+            originalPsychotypePinned = pendingPsychotypePinned;
+
+            originalGenerationEnabled = component == null
+                || component.DiaryGenerationEnabledForProfile(pawn);
+            pendingGenerationEnabled = originalGenerationEnabled;
+            resumableBacklogCount = component == null
+                ? 0
+                : component.PendingGenerationBacklogCountForProfile(pawn);
         }
 
         public override Vector2 InitialSize
@@ -119,14 +143,17 @@ namespace PawnDiary
             Text.Font = GameFont.Small;
 
             // Re-resolve every draw so override status stays live (read-only w.r.t. the record).
-            WritingStyleResolution styleResolution = component == null
+            WritingStyleResolution savedStyleResolution = component == null
                 ? HediffPersonaOverrides.ResolveWritingStyle(null, null, null, null, null)
                 : component.ResolveWritingStyleFor(pawn);
-            // Display-only read (no EnsureVoiceStage): never rolls/mutates during a repaint. The
-            // constructor already backfilled via the mutating resolve when the editor opened.
-            PsychotypeResolution psychotypeResolution = component == null
+            // Display-only read (no EnsureVoiceStage): neither opening nor repainting this profile
+            // rolls/backfills a voice stage or creates a diary record.
+            PsychotypeResolution savedPsychotypeResolution = component == null
                 ? PsychotypeResolutionPolicy.Resolve(null, null, null, null)
                 : component.ResolvePsychotypeForDisplay(pawn);
+            WritingStyleResolution styleResolution = DraftWritingStyleResolution(savedStyleResolution);
+            PsychotypeResolution psychotypeResolution =
+                DraftPsychotypeResolution(savedPsychotypeResolution);
             bool showDeveloperKnowledge = Prefs.DevMode;
             LoreMemorySnapshotForDev loreMemory = showDeveloperKnowledge
                 && component != null
@@ -156,8 +183,15 @@ namespace PawnDiary
 
             Widgets.BeginScrollView(scrollOuter, ref contentScroll, contentRect);
             float y = 0f;
+            DrawDiarySection(contentRect.x, innerWidth, ref y);
             DrawStyleSection(contentRect.x, innerWidth, ref y, styleResolution);
             DrawPsychotypeSection(contentRect.x, innerWidth, ref y, psychotypeResolution);
+            DrawEffectivePreviewSection(
+                contentRect.x,
+                innerWidth,
+                ref y,
+                styleResolution,
+                psychotypeResolution);
             if (showDeveloperKnowledge)
             {
                 DrawLoreMemorySection(contentRect.x, innerWidth, ref y, loreMemory);
@@ -171,13 +205,80 @@ namespace PawnDiary
         private string Title()
         {
             string name = pawn == null ? string.Empty : pawn.LabelShortCap;
-            return "PawnDiary.WritingStyle.EditorTitle".Translate(name);
+            return FormatProfileFrame("PawnDiary.Profile.EditorTitle", name);
+        }
+
+        // ---- Diary generation -------------------------------------------------------------------------
+
+        /// <summary>Draws the draft-only per-pawn generation switch and its saved/backlog status.</summary>
+        private void DrawDiarySection(float x, float width, ref float y)
+        {
+            Widgets.Label(
+                new Rect(x, y, width, SectionTitleHeight),
+                "PawnDiary.Profile.DiarySectionTitle".Translate());
+            y += SectionTitleHeight + FieldGap;
+
+            Rect toggleRect = new Rect(x, y, width, ButtonHeight);
+            Widgets.CheckboxLabeled(
+                toggleRect,
+                "PawnDiary.Profile.GenerationEnabled".Translate(),
+                ref pendingGenerationEnabled);
+            TooltipHandler.TipRegion(
+                toggleRect,
+                "PawnDiary.Profile.GenerationEnabledTip".Translate());
+            y += ButtonHeight + FieldGap;
+
+            y += DrawMessagePanel(
+                new Rect(x, y, width, 0f),
+                DiaryGenerationStatusMessage(),
+                StatusPanelColor(!pendingGenerationEnabled)) + FieldGap;
+        }
+
+        private string DiaryGenerationStatusMessage()
+        {
+            string status;
+            if (pendingGenerationEnabled == originalGenerationEnabled)
+            {
+                if (pendingGenerationEnabled)
+                {
+                    status = "PawnDiary.Profile.GenerationRunning".Translate().Resolve();
+                }
+                else
+                {
+                    status = "PawnDiary.Profile.GenerationPaused".Translate().Resolve();
+                }
+            }
+            else if (!pendingGenerationEnabled)
+            {
+                status = "PawnDiary.Profile.GenerationPausePending".Translate().Resolve();
+            }
+            else if (resumableBacklogCount > 0)
+            {
+                status = "PawnDiary.Profile.GenerationResumePending".Translate().Resolve();
+            }
+            else
+            {
+                status = "PawnDiary.Profile.GenerationResumeDirectPending".Translate().Resolve();
+            }
+
+            return status + "\n" + FormatProfileFrame(
+                "PawnDiary.Profile.GenerationBacklogCount",
+                resumableBacklogCount);
         }
 
         // ---- Writing-style section --------------------------------------------------------------------
 
         private void DrawStyleSection(float x, float width, ref float y, WritingStyleResolution resolution)
         {
+            y += SectionGap;
+            Widgets.DrawLineHorizontal(x, y, width);
+            y += FieldGap;
+
+            Widgets.Label(
+                new Rect(x, y, width, SectionTitleHeight),
+                "PawnDiary.Profile.VoiceSectionTitle".Translate());
+            y += SectionTitleHeight + FieldGap;
+
             DrawBaseStylePicker(new Rect(x, y, width, ButtonHeight), resolution);
             y += ButtonHeight + FieldGap;
 
@@ -223,7 +324,6 @@ namespace PawnDiary
                             if (option != null)
                             {
                                 pendingBaseStyleDefName = option.defName;
-                                pendingWritingStylePinned = true; // a manual pick pins the layer
                             }
                         });
                     })
@@ -415,13 +515,149 @@ namespace PawnDiary
                             if (option != null)
                             {
                                 pendingPsychotypeDefName = option.defName;
-                                pendingPsychotypePinned = true; // a manual pick pins the layer
                             }
                         });
                     })
                     .ToList();
                 Find.WindowStack.Add(new FloatMenu(options));
             }
+        }
+
+        // ---- Effective draft preview -----------------------------------------------------------------
+
+        /// <summary>
+        /// Draws the exact effective voice/outlook rules represented by the current draft. It deliberately
+        /// avoids pawn-summary, memory, and external context providers: this is a compact persona preview,
+        /// not a synthetic event prompt.
+        /// </summary>
+        private void DrawEffectivePreviewSection(
+            float x,
+            float width,
+            ref float y,
+            WritingStyleResolution styleResolution,
+            PsychotypeResolution psychotypeResolution)
+        {
+            y += SectionGap;
+            Widgets.DrawLineHorizontal(x, y, width);
+            y += FieldGap;
+
+            Widgets.Label(
+                new Rect(x, y, width, SectionTitleHeight),
+                "PawnDiary.Profile.PreviewSectionTitle".Translate());
+            y += SectionTitleHeight + FieldGap;
+
+            string preview = EffectivePreviewText(styleResolution, psychotypeResolution);
+            y += DrawLabeledScrollText(
+                new Rect(x, y, width, SmallPromptHeight),
+                "PawnDiary.Profile.PreviewLabel".Translate(),
+                preview,
+                ref effectivePreviewScroll,
+                SmallPromptHeight) + FieldGap;
+        }
+
+        private string EffectivePreviewText(
+            WritingStyleResolution styleResolution,
+            PsychotypeResolution psychotypeResolution)
+        {
+            string styleRule = styleResolution?.rule ?? string.Empty;
+            string psychotypeRule = psychotypeResolution?.rule ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(styleRule))
+            {
+                styleRule = "PawnDiary.Profile.PreviewNone".Translate().Resolve();
+            }
+
+            if (string.IsNullOrWhiteSpace(psychotypeRule))
+            {
+                psychotypeRule = "PawnDiary.Profile.PreviewNone".Translate().Resolve();
+            }
+
+            return FormatProfileFrame(
+                "PawnDiary.Profile.PreviewFrame",
+                PsychotypeSourceLabel(psychotypeResolution),
+                psychotypeRule,
+                WritingStyleSourceLabel(styleResolution),
+                styleRule);
+        }
+
+        private string WritingStyleSourceLabel(WritingStyleResolution resolution)
+        {
+            if (resolution == null)
+            {
+                return "PawnDiary.Profile.SourceBase".Translate().Resolve();
+            }
+
+            switch (resolution.source)
+            {
+                case WritingStyleRuleSource.ExternalApiOverride:
+                    return string.IsNullOrWhiteSpace(resolution.externalSourceId)
+                        ? "PawnDiary.WritingStyle.ExternalSourceLabel".Translate().Resolve()
+                        : resolution.externalSourceId;
+                case WritingStyleRuleSource.HediffOverride:
+                    return string.IsNullOrWhiteSpace(resolution.hediffStyleLabel)
+                        ? (resolution.hediffStyleDefName ?? string.Empty)
+                        : resolution.hediffStyleLabel;
+                case WritingStyleRuleSource.PawnCustom:
+                    return "PawnDiary.Profile.SourceCustom".Translate().Resolve();
+                default:
+                    return "PawnDiary.Profile.SourceBase".Translate().Resolve();
+            }
+        }
+
+        private string PsychotypeSourceLabel(PsychotypeResolution resolution)
+        {
+            if (resolution == null)
+            {
+                return "PawnDiary.Profile.SourceBase".Translate().Resolve();
+            }
+
+            switch (resolution.source)
+            {
+                case PsychotypeRuleSource.ExternalApiOverride:
+                    return string.IsNullOrWhiteSpace(resolution.externalSourceId)
+                        ? "PawnDiary.Psychotype.ExternalSourceLabel".Translate().Resolve()
+                        : resolution.externalSourceId;
+                case PsychotypeRuleSource.PawnCustom:
+                    return "PawnDiary.Profile.SourceCustom".Translate().Resolve();
+                default:
+                    return "PawnDiary.Profile.SourceBase".Translate().Resolve();
+            }
+        }
+
+        private WritingStyleResolution DraftWritingStyleResolution(WritingStyleResolution saved)
+        {
+            WritingStyleResolution result = WritingStyleResolutionPolicy.Resolve(
+                BaseStylePromptFor(pendingBaseStyleDefName),
+                PlayerWritingStyleText.CleanRule(customRuleBuffer),
+                saved?.hediffStyleDefName,
+                saved?.hediffStyleLabel,
+                saved?.hediffRule,
+                saved?.externalSourceId,
+                saved?.externalRule);
+            DiaryPersonaDef selected = DiaryPersonas.Resolve(pendingBaseStyleDefName);
+            result.baseStyleDefName = selected?.defName ?? string.Empty;
+            result.baseStyleLabel = selected?.label ?? string.Empty;
+            return result;
+        }
+
+        private PsychotypeResolution DraftPsychotypeResolution(PsychotypeResolution saved)
+        {
+            DiaryPsychotypeDef selected = DiaryPsychotypes.Resolve(pendingPsychotypeDefName);
+            string baseRule = DiaryPsychotypes.RuleFor(selected?.defName);
+            PsychotypeResolution result = PsychotypeResolutionPolicy.Resolve(
+                baseRule,
+                PsychotypeText.CleanRule(customPsychotypeBuffer),
+                saved?.externalSourceId,
+                saved?.externalRule);
+            result.baseTypeDefName = selected?.defName ?? DiaryPsychotypes.NeutralDefName;
+            result.baseTypeLabel = selected?.label ?? string.Empty;
+            if (component != null
+                && !component.PsychotypeLayerEnabled
+                && result.source != PsychotypeRuleSource.ExternalApiOverride)
+            {
+                result.rule = string.Empty;
+            }
+
+            return result;
         }
 
         // ---- Shared drawing helpers -------------------------------------------------------------------
@@ -486,7 +722,14 @@ namespace PawnDiary
         {
             float h = 0f;
 
+            // Diary generation section.
+            h += SectionTitleHeight + FieldGap;
+            h += ButtonHeight + FieldGap;
+            h += MessagePanelHeight(DiaryGenerationStatusMessage(), width);
+
             // Style section.
+            h += SectionGap + FieldGap;
+            h += SectionTitleHeight + FieldGap;
             h += ButtonHeight + FieldGap;
             h += MessagePanelHeight(WritingStyleStatusMessage(styleResolution), width);
             h += LabeledScrollTextHeight(
@@ -524,6 +767,14 @@ namespace PawnDiary
                 width,
                 SmallPromptHeight) + FieldGap;
             h += MessagePanelHeight(PsychotypeHintMessage(psychotypeResolution), width);
+
+            // Effective voice/outlook preview.
+            h += SectionGap + FieldGap;
+            h += SectionTitleHeight + FieldGap;
+            h += LabeledScrollTextHeight(
+                "PawnDiary.Profile.PreviewLabel".Translate(),
+                width,
+                SmallPromptHeight) + FieldGap;
 
             if (showDeveloperKnowledge)
             {
@@ -632,7 +883,13 @@ namespace PawnDiary
             bool overridden = resolution != null
                 && (resolution.source == WritingStyleRuleSource.ExternalApiOverride
                     || resolution.source == WritingStyleRuleSource.HediffOverride);
-            return overridden
+            return StatusPanelColor(overridden);
+        }
+
+        // Reuses the dialog's established calm/warning status palette for every normal-play panel.
+        private static Color StatusPanelColor(bool warning)
+        {
+            return warning
                 ? new Color(0.22f, 0.14f, 0.03f, 0.8f)
                 : new Color(0.05f, 0.18f, 0.10f, 0.7f);
         }
@@ -678,21 +935,16 @@ namespace PawnDiary
 
             if (Widgets.ButtonText(saveRect, "PawnDiary.WritingStyle.SaveForPawn".Translate()))
             {
-                if (Save())
-                {
-                    Messages.Message("PawnDiary.WritingStyle.Saved".Translate(), MessageTypeDefOf.NeutralEvent, false);
-                    Close();
-                }
-                else
-                {
-                    Messages.Message("PawnDiary.WritingStyle.SaveFailed".Translate(), MessageTypeDefOf.RejectInput, false);
-                }
+                RequestSave();
             }
 
             if (Widgets.ButtonText(resetRect, "PawnDiary.WritingStyle.ResetToBase".Translate()))
             {
                 ResetToBase();
-                Messages.Message("PawnDiary.Voice.Reset".Translate(), MessageTypeDefOf.NeutralEvent, false);
+                Messages.Message(
+                    "PawnDiary.Profile.VoiceResetDraft".Translate(),
+                    MessageTypeDefOf.NeutralEvent,
+                    false);
             }
 
             if (Widgets.ButtonText(loadRect, "PawnDiary.WritingStyle.LoadBasePrompt".Translate()))
@@ -706,57 +958,171 @@ namespace PawnDiary
             }
         }
 
-        private bool Save()
+        /// <summary>
+        /// Decides whether re-enabling needs confirmation before applying anything. This ordering is the
+        /// atomicity boundary: declining the dialog must leave generation, voice, and outlook untouched.
+        /// </summary>
+        private void RequestSave()
+        {
+            // An untouched switch is not permission to overwrite a live API/integration change made
+            // while this window was open. Save voice/outlook only in that case, with no fresh backlog
+            // scan, confirmation, or generation setter.
+            bool generationEdited = pendingGenerationEnabled != originalGenerationEnabled;
+            if (!generationEdited)
+            {
+                CompleteSave(false);
+                return;
+            }
+
+            // The window's status uses its stable open-time snapshot, but another mod/API may have
+            // changed generation since then. Re-read once at the Save boundary so the decision and final
+            // setter are relative to the state that actually exists now, never to stale UI state.
+            bool saveTimeGenerationEnabled = component != null && pawn != null
+                ? component.DiaryGenerationEnabledForProfile(pawn)
+                : originalGenerationEnabled;
+            int saveTimeBacklogCount = component != null && pawn != null
+                ? component.PendingGenerationBacklogCountForProfile(pawn)
+                : resumableBacklogCount;
+            DiaryPawnProfileGenerationDecision decision =
+                DiaryPawnProfilePolicy.DecideGenerationChange(
+                    saveTimeGenerationEnabled,
+                    pendingGenerationEnabled,
+                    saveTimeBacklogCount);
+            if (decision != DiaryPawnProfileGenerationDecision.EnableWithConfirmation)
+            {
+                CompleteSave(true);
+                return;
+            }
+
+            string name = pawn == null ? string.Empty : pawn.LabelShortCap;
+            Dialog_MessageBox confirmation = new Dialog_MessageBox(
+                FormatProfileFrame(
+                    "PawnDiary.Profile.ResumeConfirm",
+                    name,
+                    saveTimeBacklogCount),
+                "PawnDiary.Profile.ResumeConfirmButton".Translate(),
+                delegate { CompleteSave(true); },
+                "PawnDiary.Profile.ResumeCancelButton".Translate(),
+                null,
+                "PawnDiary.Profile.ResumeConfirmTitle".Translate());
+            Find.WindowStack.Add(confirmation);
+        }
+
+        private void CompleteSave(bool generationEdited)
+        {
+            if (Save(generationEdited))
+            {
+                Messages.Message(
+                    "PawnDiary.Profile.Saved".Translate(),
+                    MessageTypeDefOf.NeutralEvent,
+                    false);
+                Close();
+                return;
+            }
+
+            Messages.Message(
+                "PawnDiary.Profile.SaveFailed".Translate(),
+                MessageTypeDefOf.RejectInput,
+                false);
+        }
+
+        private bool Save(bool generationEdited)
         {
             if (component == null || pawn == null)
             {
                 return false;
             }
 
+            // Re-read at the actual commit boundary as well. The confirmation may have stayed open while
+            // an integration changed generation; comparing against the click-time value could otherwise
+            // replay an enable and scan/requeue the same backlog a second time.
+            bool commitTimeGenerationEnabled = generationEdited
+                ? component.DiaryGenerationEnabledForProfile(pawn)
+                : pendingGenerationEnabled;
             bool ok = true;
+            string cleanedWritingRule = PlayerWritingStyleText.CleanRule(customRuleBuffer);
+            string cleanedPsychotypeRule = PsychotypeText.CleanRule(customPsychotypeBuffer);
+            bool writingBaseChanged = !string.Equals(
+                pendingBaseStyleDefName,
+                originalBaseStyleDefName,
+                StringComparison.Ordinal);
+            bool psychotypeBaseChanged = !string.Equals(
+                pendingPsychotypeDefName,
+                originalPsychotypeDefName,
+                StringComparison.Ordinal);
+
+            bool writingCustomChanged = !string.Equals(
+                cleanedWritingRule,
+                originalCustomRule,
+                StringComparison.Ordinal);
+            bool psychotypeCustomChanged = !string.Equals(
+                cleanedPsychotypeRule,
+                originalCustomPsychotypeRule,
+                StringComparison.Ordinal);
+
+            // A changed base pick or newly edited nonblank rule pins the corresponding layer. A saved,
+            // nonblank-but-unpinned custom rule must remain unpinned when Save makes no changes.
+            if (writingBaseChanged
+                || (writingCustomChanged && !string.IsNullOrWhiteSpace(cleanedWritingRule)))
+            {
+                pendingWritingStylePinned = true;
+            }
+
+            if (psychotypeBaseChanged
+                || (psychotypeCustomChanged && !string.IsNullOrWhiteSpace(cleanedPsychotypeRule)))
+            {
+                pendingPsychotypePinned = true;
+            }
 
             // Writing style. Only write the base style when the player actually changed it: for a pawn
             // with no record yet, SetPersona would create+roll a record and then overwrite the fresh roll
             // with the seeded default, silently discarding the pawn's rolled style.
             if (!string.IsNullOrWhiteSpace(pendingBaseStyleDefName)
-                && !string.Equals(pendingBaseStyleDefName, originalBaseStyleDefName, StringComparison.Ordinal))
+                && writingBaseChanged)
             {
                 ok &= component.SetPersona(pawn, pendingBaseStyleDefName);
             }
 
-            ok &= component.SetCustomWritingStyleRule(pawn, customRuleBuffer);
-            // Changing the base style or authoring a custom rule counts as a manual pick.
-            if (!string.Equals(pendingBaseStyleDefName, originalBaseStyleDefName, StringComparison.Ordinal)
-                || !string.IsNullOrWhiteSpace(customRuleBuffer))
+            if (writingCustomChanged)
             {
-                pendingWritingStylePinned = true;
+                ok &= component.SetCustomWritingStyleRule(pawn, cleanedWritingRule);
             }
 
-            ok &= component.SetWritingStylePinned(pawn, pendingWritingStylePinned);
+            if (pendingWritingStylePinned != originalWritingStylePinned)
+            {
+                ok &= component.SetWritingStylePinned(pawn, pendingWritingStylePinned);
+            }
 
             // Psychotype. Same first-time-roll guard as the writing style: only write the base outlook
             // when the player changed it, so opening + saving unchanged does not replace a freshly rolled
             // outlook with the seeded Neutral default.
             if (!string.IsNullOrWhiteSpace(pendingPsychotypeDefName)
-                && !string.Equals(pendingPsychotypeDefName, originalPsychotypeDefName, StringComparison.Ordinal))
+                && psychotypeBaseChanged)
             {
                 ok &= component.SetPsychotype(pawn, pendingPsychotypeDefName);
             }
 
-            ok &= component.SetCustomPsychotypeRule(pawn, customPsychotypeBuffer);
-            // Changing the base outlook or authoring a custom rule counts as a manual pick (decided from
-            // final state here, so typing then clearing the custom rule does not leave the layer pinned).
-            if (!string.Equals(pendingPsychotypeDefName, originalPsychotypeDefName, StringComparison.Ordinal)
-                || !string.IsNullOrWhiteSpace(customPsychotypeBuffer))
+            if (psychotypeCustomChanged)
             {
-                pendingPsychotypePinned = true;
+                ok &= component.SetCustomPsychotypeRule(pawn, cleanedPsychotypeRule);
             }
 
-            ok &= component.SetPsychotypePinned(pawn, pendingPsychotypePinned);
+            if (pendingPsychotypePinned != originalPsychotypePinned)
+            {
+                ok &= component.SetPsychotypePinned(pawn, pendingPsychotypePinned);
+            }
 
-            // Reflect the sanitized saves back into the buffers so a follow-up edit starts clean.
-            customRuleBuffer = component.CustomWritingStyleRuleFor(pawn);
-            customPsychotypeBuffer = component.CustomPsychotypeRuleFor(pawn);
+            // Generation is deliberately last. A failed/ineligible voice save must never resume queued
+            // LLM work, and an unchanged true value must never requeue work through the existing setter.
+            if (ok
+                && generationEdited
+                && pendingGenerationEnabled != commitTimeGenerationEnabled)
+            {
+                ok &= component.TrySetDiaryGenerationEnabledForIntegration(
+                    pawn,
+                    pendingGenerationEnabled);
+            }
+
             return ok;
         }
 
@@ -765,29 +1131,12 @@ namespace PawnDiary
             return candidate != null && candidate == pawn;
         }
 
-        // Clears both custom rules, unpins both layers, and repoints the pickers to the current saved
-        // (auto-managed) base, so the pawn's voice goes back to being managed automatically.
+        // Clears both custom rules and unpins both layers in the DRAFT only. Explicit Save is the sole
+        // persistence boundary; closing after Reset must leave the pawn unchanged.
         private void ResetToBase()
         {
-            if (component == null || pawn == null)
-            {
-                return;
-            }
-
-            component.SetCustomWritingStyleRule(pawn, string.Empty);
-            component.SetCustomPsychotypeRule(pawn, string.Empty);
-            component.SetWritingStylePinned(pawn, false);
-            component.SetPsychotypePinned(pawn, false);
-
-            WritingStyleResolution style = component.ResolveWritingStyleFor(pawn);
-            pendingBaseStyleDefName = string.IsNullOrWhiteSpace(style.baseStyleDefName)
-                ? (DiaryPersonas.Default?.defName ?? string.Empty)
-                : style.baseStyleDefName;
-            PsychotypeResolution psycho = component.ResolvePsychotypeFor(pawn);
-            pendingPsychotypeDefName = string.IsNullOrWhiteSpace(psycho.baseTypeDefName)
-                ? DiaryPsychotypes.NeutralDefName
-                : psycho.baseTypeDefName;
-
+            pendingBaseStyleDefName = originalBaseStyleDefName;
+            pendingPsychotypeDefName = originalPsychotypeDefName;
             customRuleBuffer = string.Empty;
             customPsychotypeBuffer = string.Empty;
             pendingWritingStylePinned = false;
@@ -830,6 +1179,21 @@ namespace PawnDiary
         private static string BaseStylePromptFor(string defName)
         {
             return DiaryPersonas.RuleFor(defName);
+        }
+
+        private static string FormatProfileFrame(string key, params object[] values)
+        {
+            string frame = key.Translate().Resolve();
+            try
+            {
+                // Verse's Translate(args) can sentence-case inserted player text (including pawn names).
+                // Resolve the argument-free frame, then format the placeholders without altering values.
+                return string.Format(frame, values);
+            }
+            catch (FormatException)
+            {
+                return frame;
+            }
         }
 
     }

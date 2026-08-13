@@ -29,8 +29,10 @@ namespace PawnDiary
             Dictionary<string, DiaryBoundsCacheEntry> boundsCache = null, Dictionary<string, Pawn> livePawnsById = null)
         {
             // DiaryEvents store pawn IDs, not Pawn instances, so queue-time checks resolve through
-            // the saved diary record for that POV.
-            string pawnId = PawnIdForRole(diaryEvent, povRole);
+            // the saved diary record for that generation owner. Arrival/death descriptions use the
+            // neutral slot, but their exact owner is frozen in gameContext and must honor the same
+            // per-pawn switch as an ordinary first-person POV.
+            string pawnId = GenerationOwnerPawnId(diaryEvent, povRole);
             if (string.IsNullOrWhiteSpace(pawnId))
             {
                 return true;
@@ -499,6 +501,34 @@ namespace PawnDiary
             if (string.Equals(povRole, DiaryEvent.InitiatorRole, StringComparison.OrdinalIgnoreCase))
             {
                 return diaryEvent.initiatorPawnId;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Returns the pawn whose saved generation switch owns this request. Ordinary POVs keep their
+        /// initiator/recipient owner; only the two owner-bearing neutral boundary pages opt into an owner
+        /// via their exact saved context field. Other neutral prompts remain intentionally ownerless.
+        /// </summary>
+        private static string GenerationOwnerPawnId(DiaryEvent diaryEvent, string povRole)
+        {
+            string pawnId = PawnIdForRole(diaryEvent, povRole);
+            if (!string.IsNullOrWhiteSpace(pawnId)
+                || diaryEvent == null
+                || !DiaryEvent.RoleEquals(povRole, DiaryEvent.NeutralRole))
+            {
+                return pawnId;
+            }
+
+            if (diaryEvent.HasArrivalDescription())
+            {
+                return DiaryContextFields.Value(diaryEvent.gameContext, "arrival_pawn_id");
+            }
+
+            if (diaryEvent.HasDeathDescription())
+            {
+                return DiaryContextFields.Value(diaryEvent.gameContext, "death_victim_id");
             }
 
             return null;

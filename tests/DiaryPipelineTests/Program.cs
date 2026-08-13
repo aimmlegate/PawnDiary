@@ -37,6 +37,7 @@ namespace DiaryPipelineTests
             TestDailyEmissionGuardPolicy();
             TestDiaryFrequencyPolicy();
             TestDiaryDispatchOutcomePolicy();
+            TestDiaryPawnProfilePolicy();
             TestDiaryFrequencyChoicePolicy();
             TestDiaryEventFilterListPolicy();
             TestDiaryFrequencySettingsPolicy();

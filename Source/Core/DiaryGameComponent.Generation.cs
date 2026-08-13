@@ -259,14 +259,87 @@ namespace PawnDiary
                 return;
             }
 
-            PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
+            Dictionary<string, DiaryBoundsCacheEntry> boundsCache = new Dictionary<string, DiaryBoundsCacheEntry>();
+            Dictionary<string, Pawn> livePawnsById = SnapshotLivePawnsByLoadId();
+            VisitPendingGenerationCandidatesForPawn(
+                pawnId,
+                boundsCache,
+                livePawnsById,
+                false,
+                delegate(DiaryEvent diaryEvent, string povRole)
+                {
+                    EnsureGenerationQueued(
+                        diaryEvent, povRole, boundsCache, livePawnsById);
+                });
+        }
+
+        /// <summary>
+        /// Counts this pawn's resumable, not-yet-generated POV backlog without repairing statuses,
+        /// scheduling retries, creating a diary, or queuing an LLM request. A POV that must first wait
+        /// for an existing delay, battle-beat quiet period, or viable pair dependency still counts: enabling
+        /// starts that pipeline even when no HTTP request is immediate. The profile dialog snapshots this
+        /// once when it opens; it must not run this active-event scan on every repaint.
+        /// </summary>
+        internal int PendingGenerationBacklogCountForProfile(Pawn pawn)
+        {
+            if (!IsDiaryEligible(pawn))
+            {
+                return 0;
+            }
+
+            string pawnId = pawn.GetUniqueLoadID();
+            PawnDiaryRecord diary = LookupDiaryByPawnId(pawnId);
+            if (diary == null || diary.eventIds == null)
+            {
+                return 0;
+            }
+
+            Dictionary<string, DiaryBoundsCacheEntry> boundsCache =
+                new Dictionary<string, DiaryBoundsCacheEntry>();
+            Dictionary<string, Pawn> livePawnsById = SnapshotLivePawnsByLoadId();
+            int count = 0;
+            VisitPendingGenerationCandidatesForPawn(
+                pawnId,
+                boundsCache,
+                livePawnsById,
+                true,
+                delegate(DiaryEvent diaryEvent, string povRole)
+                {
+                    if (ProfilePovIsResumable(
+                        diaryEvent, povRole, pawnId, boundsCache, livePawnsById))
+                    {
+                        count++;
+                    }
+                });
+
+            return count;
+        }
+
+        /// <summary>
+        /// Visits the exact active-event and owner-role candidates used by both the real resume scan and
+        /// its profile preview. The mutating path preserves the existing normalized bounds behavior; the
+        /// inspection path uses raw rows so merely opening the profile cannot repair an old save.
+        /// </summary>
+        private void VisitPendingGenerationCandidatesForPawn(
+            string pawnId,
+            Dictionary<string, DiaryBoundsCacheEntry> boundsCache,
+            Dictionary<string, Pawn> livePawnsById,
+            bool readOnlyInspection,
+            Action<DiaryEvent, string> visit)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId) || visit == null)
+            {
+                return;
+            }
+
+            PawnDiaryRecord diary = readOnlyInspection
+                ? LookupDiaryByPawnId(pawnId)
+                : FindDiaryByPawnId(pawnId);
             if (diary == null || diary.eventIds == null)
             {
                 return;
             }
 
-            Dictionary<string, DiaryBoundsCacheEntry> boundsCache = new Dictionary<string, DiaryBoundsCacheEntry>();
-            Dictionary<string, Pawn> livePawnsById = SnapshotLivePawnsByLoadId();
             IReadOnlyList<DiaryEvent> activeEvents = ActiveScanEvents();
             for (int i = 0; i < activeEvents.Count; i++)
             {
@@ -276,7 +349,12 @@ namespace PawnDiary
                     continue;
                 }
 
-                if (EventFallsOutsideDiaryBoundsForPawn(diaryEvent, pawnId, boundsCache, livePawnsById))
+                bool outsideBounds = readOnlyInspection
+                    ? EventFallsOutsideProfileBounds(
+                        diaryEvent, pawnId, boundsCache, livePawnsById)
+                    : EventFallsOutsideDiaryBoundsForPawn(
+                        diaryEvent, pawnId, boundsCache, livePawnsById);
+                if (outsideBounds)
                 {
                     continue;
                 }
@@ -285,7 +363,7 @@ namespace PawnDiary
                 {
                     if (diaryEvent.IsDeathDescriptionFor(pawnId))
                     {
-                        EnsureGenerationQueued(diaryEvent, DiaryEvent.NeutralRole, boundsCache, livePawnsById);
+                        visit(diaryEvent, DiaryEvent.NeutralRole);
                     }
 
                     continue;
@@ -295,15 +373,189 @@ namespace PawnDiary
                 {
                     if (diaryEvent.IsArrivalDescriptionFor(pawnId))
                     {
-                        EnsureGenerationQueued(diaryEvent, DiaryEvent.NeutralRole, boundsCache, livePawnsById);
+                        visit(diaryEvent, DiaryEvent.NeutralRole);
                     }
 
                     continue;
                 }
 
                 string povRole = diaryEvent.RoleForPawn(pawnId);
-                EnsureGenerationQueued(diaryEvent, povRole, boundsCache, livePawnsById);
+                if (!string.IsNullOrWhiteSpace(povRole))
+                {
+                    visit(diaryEvent, povRole);
+                }
             }
+        }
+
+        /// <summary>
+        /// Read-only counterpart to the resume scan's routing gates. A paired recipient counts while a
+        /// viable initiator dependency is pending, even though the sequential queue writes that initiator
+        /// first; the number describes target-owned POV backlog, not requests enqueued synchronously.
+        /// </summary>
+        private bool ProfilePovIsResumable(
+            DiaryEvent diaryEvent,
+            string povRole,
+            string profilePawnId,
+            Dictionary<string, DiaryBoundsCacheEntry> boundsCache,
+            Dictionary<string, Pawn> livePawnsById)
+        {
+            if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole))
+            {
+                return false;
+            }
+
+            if (DiaryEvent.RoleEquals(povRole, DiaryEvent.NeutralRole))
+            {
+                return diaryEvent.CanQueueGeneration(povRole);
+            }
+
+            if (!DiaryGenerationWouldBeEnabledForProfile(
+                    diaryEvent, povRole, profilePawnId, boundsCache, livePawnsById)
+                || !ProfilePovCanQueueAfterIncapacitation(
+                    diaryEvent, povRole, livePawnsById))
+            {
+                return false;
+            }
+
+            if (diaryEvent.solo)
+            {
+                return true;
+            }
+
+            if (DiaryEvent.RoleEquals(povRole, DiaryEvent.InitiatorRole))
+            {
+                return true;
+            }
+
+            // Sequential pairs write the initiator first when its POV is enabled. A queueable or
+            // already-pending initiator is a viable dependency, so the recipient remains real backlog.
+            bool initiatorEnabled = DiaryGenerationWouldBeEnabledForProfile(
+                diaryEvent,
+                DiaryEvent.InitiatorRole,
+                profilePawnId,
+                boundsCache,
+                livePawnsById);
+            bool initiatorSkipped = ProfilePovWouldBeSkippedAfterIncapacitation(
+                diaryEvent, DiaryEvent.InitiatorRole, livePawnsById);
+            bool initiatorContextExpected = initiatorEnabled && !initiatorSkipped;
+            if (!initiatorContextExpected)
+            {
+                return true;
+            }
+
+            if (ProfilePovCanQueueAfterIncapacitation(
+                diaryEvent, DiaryEvent.InitiatorRole, livePawnsById)
+                || diaryEvent.IsPending(DiaryEvent.InitiatorRole))
+            {
+                return true;
+            }
+
+            string initiatorStatus = diaryEvent.StatusForRole(DiaryEvent.InitiatorRole);
+            if (string.Equals(
+                initiatorStatus, DiaryEvent.FailedStatus, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            return string.Equals(
+                    initiatorStatus, DiaryEvent.CompleteStatus, StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(diaryEvent.initiatorGeneratedText);
+        }
+
+        private bool DiaryGenerationWouldBeEnabledForProfile(
+            DiaryEvent diaryEvent,
+            string povRole,
+            string profilePawnId,
+            Dictionary<string, DiaryBoundsCacheEntry> boundsCache,
+            Dictionary<string, Pawn> livePawnsById)
+        {
+            string pawnId = PawnIdForRole(diaryEvent, povRole);
+            if (string.IsNullOrWhiteSpace(pawnId))
+            {
+                return true;
+            }
+
+            if (initialArrivalScanPending && !diaryEvent.HasArrivalDescription())
+            {
+                return false;
+            }
+
+            if (EventFallsOutsideProfileBounds(
+                diaryEvent, pawnId, boundsCache, livePawnsById))
+            {
+                return false;
+            }
+
+            if (string.Equals(pawnId, profilePawnId, StringComparison.Ordinal))
+            {
+                // The profile is asking what enabling THIS pawn would release.
+                return true;
+            }
+
+            return LookupDiaryByPawnId(pawnId)?.diaryGenerationEnabled ?? true;
+        }
+
+        private bool EventFallsOutsideProfileBounds(
+            DiaryEvent diaryEvent,
+            string pawnId,
+            Dictionary<string, DiaryBoundsCacheEntry> boundsCache,
+            Dictionary<string, Pawn> livePawnsById)
+        {
+            if (diaryEvent == null || string.IsNullOrWhiteSpace(pawnId))
+            {
+                return false;
+            }
+
+            DiaryBoundsCacheEntry cacheEntry;
+            if (!boundsCache.TryGetValue(pawnId, out cacheEntry))
+            {
+                // Use the raw no-create record. FindDiaryByPawnId would normalize adjacent saved
+                // profile state merely because the dialog asked for a count.
+                cacheEntry = BuildDiaryBoundsCacheEntry(
+                    pawnId, LookupDiaryByPawnId(pawnId), livePawnsById);
+                boundsCache[pawnId] = cacheEntry;
+            }
+
+            int eventIndex = EventIndexInDiary(cacheEntry, diaryEvent.eventId);
+            return EventFallsOutsideDiaryBounds(diaryEvent, eventIndex, cacheEntry.bounds);
+        }
+
+        private static bool ProfilePovCanQueueAfterIncapacitation(
+            DiaryEvent diaryEvent,
+            string povRole,
+            Dictionary<string, Pawn> livePawnsById)
+        {
+            if (diaryEvent.CanQueueGeneration(povRole))
+            {
+                Pawn pawn = FindLivePawnByLoadId(
+                    PawnIdForRole(diaryEvent, povRole), livePawnsById);
+                return !ShouldSkipFirstPersonGenerationForIncapacitation(diaryEvent, pawn);
+            }
+
+            return PermanentBodyChangeAllowsGenerationWhileIncapacitated(diaryEvent)
+                && diaryEvent.IsSkippedForReason(povRole, IncapacitatedSkipReason());
+        }
+
+        private static bool ProfilePovWouldBeSkippedAfterIncapacitation(
+            DiaryEvent diaryEvent,
+            string povRole,
+            Dictionary<string, Pawn> livePawnsById)
+        {
+            if (PermanentBodyChangeAllowsGenerationWhileIncapacitated(diaryEvent)
+                && diaryEvent.IsSkippedForReason(povRole, IncapacitatedSkipReason()))
+            {
+                return false;
+            }
+
+            if (diaryEvent.IsSkipped(povRole))
+            {
+                return true;
+            }
+
+            Pawn pawn = FindLivePawnByLoadId(
+                PawnIdForRole(diaryEvent, povRole), livePawnsById);
+            return diaryEvent.CanQueueGeneration(povRole)
+                && ShouldSkipFirstPersonGenerationForIncapacitation(diaryEvent, pawn);
         }
 
         /// <summary>

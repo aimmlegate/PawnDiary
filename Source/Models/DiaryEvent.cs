@@ -778,20 +778,31 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// True only when this POV is terminally skipped for the exact supplied reason. This read-only
+        /// twin of <see cref="TryResetSkippedForReason"/> lets inspection UI predict recoverable work
+        /// without repairing saved generation state during a draw pass.
+        /// </summary>
+        internal bool IsSkippedForReason(string povRole, string expectedReason)
+        {
+            ref PovSlot slot = ref SlotFor(povRole);
+            return RoleEquals(slot.status, SkippedStatus)
+                && !string.IsNullOrWhiteSpace(expectedReason)
+                && string.Equals(slot.error, expectedReason, StringComparison.Ordinal);
+        }
+
+        /// <summary>
         /// Resets only a terminal skipped POV whose saved reason exactly matches the supplied reason.
         /// This narrow migration seam lets a changed eligibility rule recover its own old rows without
         /// reviving prompt-only pages or LLM work that exhausted its retry budget.
         /// </summary>
         internal bool TryResetSkippedForReason(string povRole, string expectedReason)
         {
-            ref PovSlot slot = ref SlotFor(povRole);
-            if (!RoleEquals(slot.status, SkippedStatus)
-                || string.IsNullOrWhiteSpace(expectedReason)
-                || !string.Equals(slot.error, expectedReason, StringComparison.Ordinal))
+            if (!IsSkippedForReason(povRole, expectedReason))
             {
                 return false;
             }
 
+            ref PovSlot slot = ref SlotFor(povRole);
             DiaryStateVersion.Bump();
             slot.status = NotGeneratedStatus;
             slot.error = null;

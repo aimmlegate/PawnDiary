@@ -269,7 +269,7 @@ namespace PawnDiary
             if (subject.Alive
                 && subject.Pawn != null
                 && component != null
-                && !component.DiaryGenerationEnabledFor(subject.Pawn))
+                && !component.DiaryGenerationEnabledForProfile(subject.Pawn))
             {
                 Widgets.Label(rect, "PawnDiary.Tab.NoEntriesGenerationDisabled".Translate());
                 return;
