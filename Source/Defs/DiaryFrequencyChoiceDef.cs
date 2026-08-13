@@ -31,14 +31,19 @@ namespace PawnDiary
             for (int i = 0; i < loaded.Count; i++)
             {
                 DiaryFrequencyChoiceDef def = loaded[i];
-                string key = (def?.token ?? string.Empty).Trim();
-                if (key.Length == 0 || byKey.ContainsKey(key))
+                DiaryFrequencyChoiceSnapshot normalized;
+                if (!DiaryFrequencyChoicePolicy.TryNormalizeRow(
+                        ToSnapshot(def),
+                        out normalized)
+                    || byKey.ContainsKey(normalized.choiceKey))
                 {
                     continue;
                 }
 
-                byKey[key] = def;
-                snapshots.Add(ToSnapshot(def));
+                // Validate before reserving the stable token. Otherwise one malformed third-party
+                // row can suppress a later valid row with the same token for the whole settings UI.
+                byKey[normalized.choiceKey] = def;
+                snapshots.Add(normalized);
             }
 
             List<DiaryFrequencyChoiceSnapshot> ordered =
@@ -66,7 +71,12 @@ namespace PawnDiary
             for (int i = 0; i < defs.Count; i++)
             {
                 DiaryFrequencyChoiceDef def = defs[i];
-                DiaryFrequencyChoiceSnapshot snapshot = ToSnapshot(def);
+                DiaryFrequencyChoiceSnapshot snapshot;
+                if (!DiaryFrequencyChoicePolicy.TryNormalizeRow(ToSnapshot(def), out snapshot))
+                {
+                    continue;
+                }
+
                 snapshots.Add(snapshot);
                 byKey[snapshot.choiceKey] = def;
             }

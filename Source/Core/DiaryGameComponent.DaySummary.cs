@@ -1533,6 +1533,9 @@ namespace PawnDiary
             PruneStaleDayHediffs(CurrentDayIndex);
             // Same rollover boundary for B6: yesterday's pacing counts and unused digest lines go.
             PruneStaleDayDigest(CurrentDayIndex);
+            // Accepted ambient admission is still a live candidate, not a settled day guard. Once its
+            // pawn/group/day key expires it must not survive in memory until some later save happens.
+            NormalizeAcceptedAmbientInteractionFrequencyKeys(CurrentDayIndex);
         }
 
         // ── Quality Wave B6: daily pacing store ───────────────────────────────────────────────────
@@ -1875,6 +1878,10 @@ namespace PawnDiary
                     entryDay,
                     currentDay);
             }
+
+            // Run after history has rebuilt writtenAmbientInteractionNotes so a hand-edited/interrupted
+            // save carrying both a page and an accepted key keeps the page and drops the stale admission.
+            NormalizeAcceptedAmbientInteractionFrequencyKeys(currentDay);
         }
 
         /// <summary>Persists one no-page ambient settlement and activates its in-session guard.</summary>
@@ -1893,7 +1900,35 @@ namespace PawnDiary
             {
                 rejectedAmbientInteractionFrequencyKeys.Add(key);
             }
+            ForgetAcceptedAmbientInteractionFrequencyKey(key);
             writtenAmbientInteractionNotes.Add(key);
+        }
+
+        /// <summary>Persists one accepted-but-not-yet-writable ambient admission without settling it.</summary>
+        private void RememberAcceptedAmbientInteractionFrequencyKey(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return;
+            }
+
+            if (acceptedAmbientInteractionFrequencyKeys == null)
+            {
+                acceptedAmbientInteractionFrequencyKeys = new List<string>();
+            }
+            if (!acceptedAmbientInteractionFrequencyKeys.Contains(key))
+            {
+                acceptedAmbientInteractionFrequencyKeys.Add(key);
+            }
+        }
+
+        /// <summary>Clears a carried acceptance after the aggregate writes, rejects, or expires.</summary>
+        private void ForgetAcceptedAmbientInteractionFrequencyKey(string key)
+        {
+            if (acceptedAmbientInteractionFrequencyKeys != null && !string.IsNullOrWhiteSpace(key))
+            {
+                acceptedAmbientInteractionFrequencyKeys.Remove(key);
+            }
         }
 
         /// <summary>Keeps the additive saved rejection list bounded to this one in-game day.</summary>
@@ -1917,6 +1952,33 @@ namespace PawnDiary
                 }
             }
             rejectedAmbientInteractionFrequencyKeys = normalized;
+        }
+
+        /// <summary>
+        /// Keeps the additive accepted-admission list bounded to unfinished current-day candidates.
+        /// Old saves omit this field and normalize exactly like an empty list.
+        /// </summary>
+        private void NormalizeAcceptedAmbientInteractionFrequencyKeys(int currentDay)
+        {
+            if (acceptedAmbientInteractionFrequencyKeys == null)
+            {
+                acceptedAmbientInteractionFrequencyKeys = new List<string>();
+                return;
+            }
+
+            HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
+            List<string> normalized = new List<string>();
+            for (int i = 0; i < acceptedAmbientInteractionFrequencyKeys.Count; i++)
+            {
+                string key = acceptedAmbientInteractionFrequencyKeys[i];
+                if (DailyEmissionGuardPolicy.IsInteractionKeyForDay(key, currentDay)
+                    && !writtenAmbientInteractionNotes.Contains(key)
+                    && seen.Add(key))
+                {
+                    normalized.Add(key);
+                }
+            }
+            acceptedAmbientInteractionFrequencyKeys = normalized;
         }
 
         /// <summary>Adds a recognized current-day ambient history row to its exact runtime guard set.</summary>

@@ -16,13 +16,13 @@ namespace PawnDiary.Integration
         /// <summary>External event key copied from the request for adapter-side correlation.</summary>
         public string eventKey = string.Empty;
 
-        /// <summary>True only when the diary pipeline actually created an entry.</summary>
+        /// <summary>True only when the submission returned a non-null <see cref="primary"/> handle.</summary>
         public bool recorded;
 
         /// <summary>True when the created entry has both subject and partner POVs.</summary>
         public bool pairwise;
 
-        /// <summary>Handle for the request subject's POV. Null when <see cref="recorded"/> is false.</summary>
+        /// <summary>Handle for the request subject's POV. Non-null exactly when <see cref="recorded"/> is true.</summary>
         public DiaryEntryHandle primary;
 
         /// <summary>Handle for the partner's POV on pairwise entries; null for solo entries.</summary>

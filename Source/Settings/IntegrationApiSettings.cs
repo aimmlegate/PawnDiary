@@ -284,15 +284,18 @@ namespace PawnDiary
 
             DiaryEventFrequencySettingsSnapshot result = new DiaryEventFrequencySettingsSnapshot();
             DiaryFrequencyPresetSnapshot preset = settings.FrequencyPresetSnapshot();
-            string presetDefName = preset?.presetKey ?? string.Empty;
-            DiaryFrequencyPresetDef presetDef = string.IsNullOrWhiteSpace(presetDefName)
+            // Keep selection identity separate from effective arithmetic. A temporarily absent
+            // third-party preset remains the saved selection, while FrequencyPresetSnapshot safely
+            // supplies Standard multipliers until that provider returns.
+            string selectedPresetDefName = (settings.frequencyPresetDefName ?? string.Empty).Trim();
+            DiaryFrequencyPresetDef presetDef = string.IsNullOrWhiteSpace(selectedPresetDefName)
                 ? null
-                : DefDatabase<DiaryFrequencyPresetDef>.GetNamedSilentFail(presetDefName);
+                : DefDatabase<DiaryFrequencyPresetDef>.GetNamedSilentFail(selectedPresetDefName);
 
-            result.selectedPresetDefName = presetDefName;
+            result.selectedPresetDefName = selectedPresetDefName;
             result.selectedPresetLabel = !string.IsNullOrWhiteSpace(presetDef?.label)
                 ? presetDef.LabelCap.ToString()
-                : presetDefName;
+                : selectedPresetDefName;
             result.hasCustomOverrides = settings.HasCustomFrequencyOverrides(preset);
             result.filters = BuildEventFilterSnapshots(settings, preset);
             return result;

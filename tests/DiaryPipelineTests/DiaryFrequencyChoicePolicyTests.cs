@@ -40,6 +40,33 @@ namespace DiaryPipelineTests
             AssertEqual("choice policy orders increased fourth", "increased", normalized[3].choiceKey);
             AssertNear("first duplicate choice wins", 0.25f, normalized[0].multiplier);
 
+            List<DiaryFrequencyChoiceSnapshot> invalidThenValidDuplicate =
+                new List<DiaryFrequencyChoiceSnapshot>
+                {
+                    Choice("addon-choice", float.NaN, 2f, 1),
+                    Choice(" ADDON-CHOICE ", 0.6f, 0.8f, 2)
+                };
+            List<DiaryFrequencyChoiceSnapshot> recoveredDuplicate =
+                DiaryFrequencyChoicePolicy.NormalizeForMenu(invalidThenValidDuplicate);
+            AssertEqual("invalid first duplicate does not reserve the choice token", 1,
+                recoveredDuplicate.Count);
+            AssertEqual("later valid duplicate canonicalizes its choice token", "ADDON-CHOICE",
+                recoveredDuplicate[0].choiceKey);
+            AssertNear("later valid duplicate keeps its multiplier", 0.6f,
+                recoveredDuplicate[0].multiplier);
+
+            DiaryFrequencyChoiceSnapshot detached;
+            AssertTrue("single-row validator rejects malformed numeric policy",
+                !DiaryFrequencyChoicePolicy.TryNormalizeRow(
+                    invalidThenValidDuplicate[0],
+                    out detached));
+            AssertTrue("single-row validator accepts and detaches the later valid row",
+                DiaryFrequencyChoicePolicy.TryNormalizeRow(
+                    invalidThenValidDuplicate[1],
+                    out detached)
+                    && detached != invalidThenValidDuplicate[1]
+                    && detached.choiceKey == "ADDON-CHOICE");
+
             AssertEqual("0.15 inherited value displays Rare", "rare",
                 DiaryFrequencyChoicePolicy.ChoiceForMultiplier(raw, 0.15f).choiceKey);
             AssertEqual("0.375 inclusive boundary displays Rare", "rare",
@@ -62,6 +89,17 @@ namespace DiaryPipelineTests
 
         private static void TestFrequencyChoiceXmlAndLocalizationContract()
         {
+            string defAdapter = System.IO.File.ReadAllText(RepoPath(
+                "Source", "Defs", "DiaryFrequencyChoiceDef.cs"));
+            int rowValidation = defAdapter.IndexOf(
+                "DiaryFrequencyChoicePolicy.TryNormalizeRow(",
+                StringComparison.Ordinal);
+            int tokenReservation = defAdapter.IndexOf(
+                "byKey.ContainsKey(normalized.choiceKey)",
+                StringComparison.Ordinal);
+            AssertTrue("Def adapter validates a choice before reserving its duplicate token",
+                rowValidation >= 0 && tokenReservation > rowValidation);
+
             XDocument defs = XDocument.Load(RepoPath(
                 "1.6", "Defs", "DiaryFrequencyChoiceDefs.xml"));
             XDocument english = XDocument.Load(RepoPath(

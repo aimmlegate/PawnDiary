@@ -52,7 +52,9 @@ namespace PawnDiary.Integration
         /// submissions intentionally bypass player event-filter toggles and set userEnabled=true, so a
         /// disabled Reflection/Quest/etc. row never drops here.) This is the normal "the pipeline
         /// declined afterwards" path that also returns <c>recorded=false</c> from
-        /// <see cref="PawnDiaryApi.SubmitEventWithHandle"/>.
+        /// <see cref="PawnDiaryApi.SubmitEventWithHandle"/>. For v8 compatibility it also covers the
+        /// rare case where later work faults after persistence begins; callers must treat that outcome
+        /// as indeterminate rather than automatically replaying it.
         /// </summary>
         DroppedByPipeline = 5
     }

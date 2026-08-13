@@ -19,6 +19,10 @@ namespace DiaryPipelineTests
                 DiaryDispatchOutcomePolicy.SettlesSource(DiaryDispatchOutcome.PageRegistered));
             AssertTrue("post-commit exception settles its source",
                 DiaryDispatchOutcomePolicy.SettlesSource(DiaryDispatchOutcome.ExceptionAfterCommit));
+            AssertTrue("frequency skip owns a deferred fallback without fabricating a page",
+                DiaryDispatchOutcomePolicy.SettlesSource(DiaryDispatchOutcome.FrequencyRejected)
+                    && !DiaryDispatchOutcomePolicy.PageRegistered(
+                        DiaryDispatchOutcome.FrequencyRejected));
 
             AssertTrue("frequency rejection is not a registered page",
                 !DiaryDispatchOutcomePolicy.PageRegistered(DiaryDispatchOutcome.FrequencyRejected));

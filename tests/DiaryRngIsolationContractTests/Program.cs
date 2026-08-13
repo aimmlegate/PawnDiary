@@ -66,11 +66,11 @@ namespace DiaryRngIsolationContractTests
                 "Range",
                 "chosen instruction variant is frozen in the captured event payload"),
             OneShot(
-                "Source/Core/DiaryGameComponent.Dispatch.cs",
-                "DecideFrequency",
+                "Source/Core/DiaryGameComponent.cs",
+                "DiaryGameComponent",
                 MemberKind.Method,
-                "Value",
-                "shared post-semantic frequency admission is frozen by the emitted-or-omitted event"),
+                "Int",
+                "one isolated seed starts the component-owned evolving diary-admission stream"),
             Stable(
                 "Source/Generation/DiaryContextBuilder.cs",
                 "ShouldMentionWeather",
@@ -149,12 +149,6 @@ namespace DiaryRngIsolationContractTests
                 MemberKind.Method,
                 "Chance",
                 "promotion route is frozen by the emitted event payload"),
-            OneShot(
-                "Source/Core/DiaryGameComponent.InteractionBatching.cs",
-                "FreezeInteractionAggregateFrequency",
-                MemberKind.Method,
-                "Value",
-                "one aggregate admission result is frozen in its pending batch or pawn/day note"),
         };
 
         private static readonly UnityDrawContract[] UnityInventory =
@@ -206,10 +200,10 @@ namespace DiaryRngIsolationContractTests
                 MemberKind.Method,
                 @"\bRand\s*\.\s*Range\s*\("),
             OneShotGuard(
-                "Source/Core/DiaryGameComponent.Dispatch.cs",
-                "DecideFrequency",
+                "Source/Core/DiaryGameComponent.cs",
+                "DiaryGameComponent",
                 MemberKind.Method,
-                @"\bRand\s*\.\s*Value\b"),
+                @"\bRand\s*\.\s*Int\b"),
             StableGuard(
                 "Source/Generation/DiaryContextBuilder.cs",
                 "ShouldMentionWeather",
@@ -252,11 +246,6 @@ namespace DiaryRngIsolationContractTests
                 "ShouldPromoteInteraction",
                 MemberKind.Method,
                 @"\bRand\s*\.\s*Chance\s*\("),
-            OneShotGuard(
-                "Source/Core/DiaryGameComponent.InteractionBatching.cs",
-                "FreezeInteractionAggregateFrequency",
-                MemberKind.Method,
-                @"\bRand\s*\.\s*Value\b"),
         };
 
         private static readonly UnityGuardContract[] UnityGuards =
@@ -361,6 +350,8 @@ namespace DiaryRngIsolationContractTests
             TestForbiddenRngUsingFormsFailClosed();
             TestProductionHasNoRngUsingBypasses(corpus);
             TestInteractionFrequencyOwnership(corpus);
+            TestTaleBatchFrequencyKnowledgeOwnership(corpus);
+            TestAdmissionFrequencyStreamOwnership(corpus);
             TestManifestMetadata(corpus);
             TestDrawInventory(corpus);
             TestVerseRestorationScopes(corpus);
@@ -470,6 +461,18 @@ namespace DiaryRngIsolationContractTests
         {
             SourceFile batching = corpus.File(
                 "Source/Core/DiaryGameComponent.InteractionBatching.cs");
+            string pairBatch = corpus.Member(
+                batching.Path,
+                "RecordBatchedInteraction",
+                MemberKind.Method).Text(batching.Sanitized);
+            string ambientBatch = corpus.Member(
+                batching.Path,
+                "AppendAmbientInteraction",
+                MemberKind.Method).Text(batching.Sanitized);
+            string ambientFlush = corpus.Member(
+                batching.Path,
+                "FlushAmbientInteractionNote",
+                MemberKind.Method).Text(batching.Sanitized);
             string promotion = corpus.Member(
                 batching.Path,
                 "ShouldPromoteInteraction",
@@ -495,10 +498,125 @@ namespace DiaryRngIsolationContractTests
 
             AssertTrue(
                 "pair and ambient pending state freeze exact aggregate admission",
-                Regex.Matches(
-                    batching.Sanitized,
+                Regex.IsMatch(
+                    pairBatch,
                     @"frequencyAdmissionAccepted\s*=\s*FreezeInteractionAggregateFrequency\s*\(")
-                    .Count == 2);
+                    && Regex.IsMatch(
+                        ambientBatch,
+                        @"frequencyAdmissionAccepted\s*=\s*preservedAcceptance\s*\|\|\s*"
+                            + @"FreezeInteractionAggregateFrequency\s*\("));
+            AssertTrue(
+                "threshold ambient flush carries acceptance across pre-commit faults",
+                Regex.IsMatch(
+                    ambientFlush,
+                    @"RememberAcceptedAmbientInteractionFrequencyKey\s*\(\s*key\s*\)"
+                        + @"[\s\S]{0,500}?registrationBefore\s*=\s*events\s*\.\s*RegistrationVersion"
+                        + @"[\s\S]{0,1800}?AddSoloEventWithFrozenMood\s*\("));
+            AssertTrue(
+                "post-commit ambient flush fault settles the carried acceptance",
+                Regex.IsMatch(
+                    ambientFlush,
+                    @"catch\s*\{[\s\S]{0,400}?events\s*\.\s*RegistrationVersion\s*>\s*registrationBefore"
+                        + @"[\s\S]{0,400}?ForgetAcceptedAmbientInteractionFrequencyKey\s*\(\s*key\s*\)"
+                        + @"[\s\S]{0,300}?writtenAmbientInteractionNotes\s*\.\s*Add\s*\(\s*key\s*\)"));
+
+            SourceFile component = corpus.File("Source/Core/DiaryGameComponent.cs");
+            AssertTrue(
+                "ambient accepted admission is an additive Scribe field with old-save repair",
+                Regex.IsMatch(
+                    component.Raw,
+                    @"Scribe_Collections\s*\.\s*Look\s*\(\s*ref\s+acceptedAmbientInteractionFrequencyKeys"
+                        + @"\s*,\s*""acceptedAmbientInteractionFrequencyKeys"""
+                        + @"[\s\S]{0,5000}?acceptedAmbientInteractionFrequencyKeys\s*==\s*null"
+                        + @"[\s\S]{0,300}?new\s+List\s*<\s*string\s*>\s*\("));
+            AssertTrue(
+                "new games clear carried ambient admission state",
+                Regex.IsMatch(
+                    component.Sanitized,
+                    @"StartedNewGame\s*\([\s\S]{0,1800}?"
+                        + @"acceptedAmbientInteractionFrequencyKeys\s*\.\s*Clear\s*\("));
+
+            SourceFile daySummary = corpus.File(
+                "Source/Core/DiaryGameComponent.DaySummary.cs");
+            string rebuildGuards = corpus.Member(
+                daySummary.Path,
+                "RebuildWrittenDailyGuardsFromHistory",
+                MemberKind.Method).Text(daySummary.Sanitized);
+            AssertTrue(
+                "loaded ambient acceptance normalizes after written history is rebuilt",
+                Regex.IsMatch(
+                    rebuildGuards,
+                    @"RememberAmbientDailyGuard\s*\([\s\S]{0,5000}?"
+                        + @"NormalizeAcceptedAmbientInteractionFrequencyKeys\s*\(\s*currentDay\s*\)"));
+        }
+
+        private static void TestAdmissionFrequencyStreamOwnership(SourceCorpus corpus)
+        {
+            SourceFile component = corpus.File("Source/Core/DiaryGameComponent.cs");
+            string constructor = corpus.Member(
+                component.Path,
+                "DiaryGameComponent",
+                MemberKind.Method).Text(component.Sanitized);
+            AssertTrue(
+                "component seeds exactly one private admission stream",
+                Regex.Matches(constructor, @"new\s+DiaryAdmissionRandom\s*\(").Count == 1
+                    && Regex.Matches(constructor, @"\bRand\s*\.\s*Int\b").Count == 1);
+
+            SourceFile dispatch = corpus.File("Source/Core/DiaryGameComponent.Dispatch.cs");
+            string direct = corpus.Member(
+                dispatch.Path,
+                "DecideFrequency",
+                MemberKind.Method).Text(dispatch.Sanitized);
+            SourceFile batching = corpus.File(
+                "Source/Core/DiaryGameComponent.InteractionBatching.cs");
+            string aggregate = corpus.Member(
+                batching.Path,
+                "FreezeInteractionAggregateFrequency",
+                MemberKind.Method).Text(batching.Sanitized);
+
+            AssertTrue(
+                "direct admission advances the private stream without Verse.Rand",
+                Regex.Matches(direct, @"\badmissionRandom\s*\.\s*NextUnitFloat\s*\(").Count == 1
+                    && !Regex.IsMatch(direct, @"\bRand\s*\."));
+            AssertTrue(
+                "aggregate admission advances the same private stream without Verse.Rand",
+                Regex.Matches(aggregate, @"\badmissionRandom\s*\.\s*NextUnitFloat\s*\(").Count == 1
+                    && !Regex.IsMatch(aggregate, @"\bRand\s*\."));
+        }
+
+        private static void TestTaleBatchFrequencyKnowledgeOwnership(SourceCorpus corpus)
+        {
+            SourceFile batching = corpus.File(
+                "Source/Core/DiaryGameComponent.TaleBatching.cs");
+            string record = corpus.Member(
+                batching.Path,
+                "RecordBatchedTale",
+                MemberKind.Method).Text(batching.Sanitized);
+            string append = corpus.Member(
+                batching.Path,
+                "AppendTaleBatch",
+                MemberKind.Method).Text(batching.Sanitized);
+            AssertTrue(
+                "Tale batching reports each locally rejected aggregate owner",
+                Regex.Matches(record, @"frequencyRejected\s*\|=\s*!\s*AppendTaleBatch\s*\(").Count == 2
+                    && Regex.IsMatch(
+                        append,
+                        @"frequencyAccepted\s*=\s*batch\s*\.\s*frequencyAdmissionAccepted"
+                            + @"[\s\S]{0,400}?return\s+frequencyAccepted\s*;"));
+
+            SourceFile signal = corpus.File("Source/Ingestion/Sources/TaleSignal.cs");
+            string emit = corpus.Member(
+                signal.Path,
+                "Emit",
+                MemberKind.Method).Text(signal.Sanitized);
+            AssertTrue(
+                "a locally rejected Tale batch rejoins knowledge-only frequency handling",
+                Regex.IsMatch(
+                    emit,
+                    @"frequencyRejected\s*=\s*sink\s*\.\s*RecordBatchedTale\s*\("
+                        + @"[\s\S]{0,500}?if\s*\(\s*frequencyRejected\s*\)"
+                        + @"[\s\S]{0,700}?sink\s*\.\s*CaptureFrequencyRejectedKnowledge\s*\("
+                        + @"\s*this\s*,\s*payload\s*,\s*BuildContext\s*\(\s*\)\s*\)"));
         }
 
         private static void TestManifestMetadata(SourceCorpus corpus)

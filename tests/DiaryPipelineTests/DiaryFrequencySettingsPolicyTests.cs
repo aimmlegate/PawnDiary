@@ -155,7 +155,11 @@ namespace DiaryPipelineTests
                 { " ", 4f }
             };
             Dictionary<string, float> normalized =
-                DiaryFrequencySettingsPolicy.NormalizeOverrides(raw, known, lite);
+                DiaryFrequencySettingsPolicy.NormalizeOverrides(
+                    raw,
+                    known,
+                    lite,
+                    resparsifyKnownValues: true);
             AssertTrue("known override equal to preset is re-sparsified",
                 !normalized.ContainsKey("workRoutine"));
             AssertNear("known custom override canonicalizes key", 0.2f,
@@ -165,6 +169,23 @@ namespace DiaryPipelineTests
             AssertNear("unknown future NaN is preserved as safe Standard", 1f,
                 normalized["futureNan"]);
             AssertEqual("blank override key is dropped", 3, normalized.Count);
+
+            Dictionary<string, float> unresolvedPresetValues =
+                DiaryFrequencySettingsPolicy.NormalizeOverrides(
+                    new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        { "workRoutine", 1f },
+                        { "smalltalk", float.NaN }
+                    },
+                    known,
+                    new DiaryFrequencyPresetSnapshot(),
+                    resparsifyKnownValues: false);
+            AssertNear("unresolved preset retains an explicit Standard-equivalent override", 1f,
+                unresolvedPresetValues["workRoutine"]);
+            AssertNear("unresolved preset normalizes but retains corrupt known intent", 1f,
+                unresolvedPresetValues["smalltalk"]);
+            AssertEqual("unresolved preset cleanup never destructively re-sparsifies known rows", 2,
+                unresolvedPresetValues.Count);
 
             AssertNear("negative infinity clamps to zero", 0f,
                 DiaryFrequencySettingsPolicy.NormalizeMultiplier(

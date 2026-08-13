@@ -251,8 +251,16 @@ namespace PawnDiary.Ingestion
             {
                 if (batchGroup != null)
                 {
-                    sink.RecordBatchedTale(batchGroup, firstPawn, secondPawn, firstEligible, secondEligible,
+                    bool frequencyRejected = sink.RecordBatchedTale(
+                        batchGroup, firstPawn, secondPawn, firstEligible, secondEligible,
                         taleDef, label, attachedDef, instruction);
+                    if (frequencyRejected)
+                    {
+                        // Batch admission happens after central dispatch intentionally bypassed its
+                        // frequency gate. Rejoin the standard rejected-page path so frequency can
+                        // suppress prose without discarding allowlisted lifelong facts or telemetry.
+                        sink.CaptureFrequencyRejectedKnowledge(this, payload, BuildContext());
+                    }
                 }
                 return;
             }

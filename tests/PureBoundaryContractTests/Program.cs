@@ -130,7 +130,8 @@ namespace PureBoundaryContractTests
                 TestEverySignalDeclaresFrequencyOwnership(root);
                 TestBondedDeathAnniversaryFrequencyHandoff(root);
                 TestProgressionFallbackSettlement(root);
-                TestNativeFallbackPageRegistrationOwnership(root);
+                TestDirectFanoutFrequencyAdmission(root);
+                TestNativeFallbackSettlementOwnership(root);
                 List<Violation> violations = new List<Violation>();
                 ProjectAuditResult projects = AuditPureProjects(root, violations);
                 int contextWriters = AuditStructuredContextWriters(root, violations);
@@ -1304,11 +1305,59 @@ namespace PureBoundaryContractTests
         }
 
         /// <summary>
-        /// Guards exact Anomaly/Odyssey native fallbacks against the legacy Dispatch/CreatedEvent
-        /// ambiguity. ExceptionAfterCommit counts as a registered replacement page; CreatedEvent is
-        /// allowed only afterward for optional event-ID and terminal-reflection bookkeeping.
+        /// Guards the two direct page fan-outs that do not travel through DiarySignal. Each owner must
+        /// resolve eligible recipients first, make exactly one shared frequency decision, and keep that
+        /// decision outside the per-pawn loop. An observed-condition miss must satisfy its transition;
+        /// making it retryable would eventually defeat the configured probability.
         /// </summary>
-        private static void TestNativeFallbackPageRegistrationOwnership(string root)
+        private static void TestDirectFanoutFrequencyAdmission(string root)
+        {
+            string eventWindows = File.ReadAllText(Path.Combine(
+                root, "Source", "Core", "DiaryGameComponent.EventWindows.cs"));
+            string observedConditions = File.ReadAllText(Path.Combine(
+                root, "Source", "Core", "DiaryGameComponent.ObservedConditions.cs"));
+
+            Require("event-window fanout has exactly one owner frequency call",
+                Regex.Matches(
+                    eventWindows,
+                    @"\bDiaryFrequencyDecision\s+frequency\s*=\s*DecideFrequency\s*\(",
+                    RegexOptions.CultureInvariant).Count == 1);
+            Require("event-window fanout admits once after recipients and before per-pawn emission",
+                Regex.IsMatch(
+                    eventWindows,
+                    @"private\s+void\s+RecordEventWindowPhase\s*\([\s\S]{0,6000}?"
+                        + @"RemoveIneligibleDirectFanoutPawns\s*\(\s*pawns\s*\)\s*;"
+                        + @"[\s\S]{0,700}?DiaryFrequencyDecision\s+frequency\s*=\s*DecideFrequency\s*\("
+                        + @"[\s\S]{0,700}?frequencyGroup\s*:\s*group"
+                        + @"[\s\S]{0,700}?if\s*\(\s*!frequency\s*\.\s*Accepted\s*\)"
+                        + @"[\s\S]{0,400}?return\s*;"
+                        + @"[\s\S]{0,900}?for\s*\([^\)]*pawns\s*\.\s*Count",
+                    RegexOptions.CultureInvariant));
+
+            Require("observed-condition fanout has exactly one owner frequency call",
+                Regex.Matches(
+                    observedConditions,
+                    @"\bDiaryFrequencyDecision\s+frequency\s*=\s*DecideFrequency\s*\(",
+                    RegexOptions.CultureInvariant).Count == 1);
+            Require("observed-condition fanout settles one shared frequency miss before emission",
+                Regex.IsMatch(
+                    observedConditions,
+                    @"private\s+bool\s+RecordObservedConditionPage\s*\([\s\S]{0,6000}?"
+                        + @"RemoveIneligibleDirectFanoutPawns\s*\(\s*pawns\s*\)\s*;"
+                        + @"[\s\S]{0,700}?DiaryFrequencyDecision\s+frequency\s*=\s*DecideFrequency\s*\("
+                        + @"[\s\S]{0,700}?frequencyGroup\s*:\s*group"
+                        + @"[\s\S]{0,700}?if\s*\(\s*!frequency\s*\.\s*Accepted\s*\)"
+                        + @"[\s\S]{0,500}?return\s+true\s*;"
+                        + @"[\s\S]{0,1100}?for\s*\([^\)]*pawns\s*\.\s*Count",
+                    RegexOptions.CultureInvariant));
+        }
+
+        /// <summary>
+        /// Guards exact Anomaly/Odyssey native fallbacks against the legacy Dispatch/CreatedEvent
+        /// ambiguity. Every settled outcome, including FrequencyRejected, owns the deferred source;
+        /// CreatedEvent is allowed only afterward for optional event-ID/reflection bookkeeping.
+        /// </summary>
+        private static void TestNativeFallbackSettlementOwnership(string root)
         {
             string anomaly = File.ReadAllText(Path.Combine(
                 root, "Source", "Core", "DiaryGameComponent.Anomaly.cs"));
@@ -1319,13 +1368,13 @@ namespace PureBoundaryContractTests
             string odysseyPatches = File.ReadAllText(Path.Combine(
                 root, "Source", "Patches", "DiaryOdysseyPatches.cs"));
 
-            Require("Anomaly study owns its Tale from typed page registration",
+            Require("Anomaly study owns its Tale from typed source settlement",
                 Regex.IsMatch(
                     anomaly,
                     @"AnomalyStudySignal\s+signal\s*=\s*new\s+AnomalyStudySignal\s*\("
                         + @"[\s\S]{0,300}?DiaryDispatchOutcome\s+outcome\s*=\s*"
                         + @"DispatchWithOutcome\s*\(\s*signal\s*\)\s*;"
-                        + @"[\s\S]{0,220}?DiaryDispatchOutcomePolicy\s*\.\s*PageRegistered"
+                        + @"[\s\S]{0,220}?DiaryDispatchOutcomePolicy\s*\.\s*SettlesSource"
                         + @"\s*\(\s*outcome\s*\)[\s\S]{0,700}?"
                         + @"AnomalyStudySuppressionCache\s*\.\s*Register\s*\(",
                     RegexOptions.CultureInvariant));
@@ -1335,14 +1384,14 @@ namespace PureBoundaryContractTests
                     @"AnomalyStudySignal\s+signal[\s\S]{0,900}?signal\s*\.\s*CreatedEvent",
                     RegexOptions.CultureInvariant));
 
-            Require("creep-joiner surgery owns DidSurgery from typed page registration",
+            Require("creep-joiner surgery owns DidSurgery from typed source settlement",
                 Regex.IsMatch(
                     anomaly,
                     @"CreepJoinerSurgicalDisclosureSignal\s+signal[\s\S]{0,500}?"
                         + @"DiaryDispatchOutcome\s+outcome\s*=\s*DispatchWithOutcome"
                         + @"\s*\(\s*signal\s*\)\s*;[\s\S]{0,180}?"
-                        + @"dedicatedEventCreated\s*=\s*DiaryDispatchOutcomePolicy\s*\.\s*"
-                        + @"PageRegistered\s*\(\s*outcome\s*\)\s*;",
+                        + @"dedicatedSourceSettled\s*=\s*DiaryDispatchOutcomePolicy\s*\.\s*"
+                        + @"SettlesSource\s*\(\s*outcome\s*\)\s*;",
                     RegexOptions.CultureInvariant));
             Require("creep-joiner surgery consults CreatedEvent only for its saved event ID",
                 Regex.IsMatch(
@@ -1351,29 +1400,29 @@ namespace PureBoundaryContractTests
                         + @"[\s\S]{0,650}?lastVisibleEventId\s*=\s*createdEvent\s*\.\s*eventId",
                     RegexOptions.CultureInvariant));
 
-            Require("ghoul surgery owns DidSurgery from typed page registration",
+            Require("ghoul surgery owns DidSurgery from typed source settlement",
                 Regex.IsMatch(
                     anomaly,
                     @"GhoulTransformationSignal\s+signal[\s\S]{0,420}?"
                         + @"DiaryDispatchOutcome\s+outcome\s*=\s*DispatchWithOutcome"
                         + @"\s*\(\s*signal\s*\)\s*;[\s\S]{0,180}?"
-                        + @"dedicatedEventCreated\s*=\s*DiaryDispatchOutcomePolicy\s*\.\s*"
-                        + @"PageRegistered\s*\(\s*outcome\s*\)\s*;",
+                        + @"dedicatedSourceSettled\s*=\s*DiaryDispatchOutcomePolicy\s*\.\s*"
+                        + @"SettlesSource\s*\(\s*outcome\s*\)\s*;",
                     RegexOptions.CultureInvariant));
             Require("native Anomaly ownership is never assigned from CreatedEvent",
                 !Regex.IsMatch(
                     anomaly,
-                    @"dedicatedEventCreated\s*=\s*signal\s*\.\s*CreatedEvent",
+                    @"dedicatedSourceSettled\s*=\s*signal\s*\.\s*CreatedEvent",
                     RegexOptions.CultureInvariant));
 
-            Require("terminal void owns its Tale from typed page registration",
+            Require("terminal void owns its Tale from typed source settlement",
                 Regex.IsMatch(
                     anomaly,
                     @"VoidOutcomeSignal\s+signal[\s\S]{0,420}?"
                         + @"DiaryDispatchOutcome\s+outcome\s*=\s*DispatchWithOutcome"
                         + @"\s*\(\s*signal\s*\)\s*;[\s\S]{0,180}?"
-                        + @"dedicatedEventCreated\s*=\s*DiaryDispatchOutcomePolicy\s*\.\s*"
-                        + @"PageRegistered\s*\(\s*outcome\s*\)\s*;",
+                        + @"dedicatedSourceSettled\s*=\s*DiaryDispatchOutcomePolicy\s*\.\s*"
+                        + @"SettlesSource\s*\(\s*outcome\s*\)\s*;",
                     RegexOptions.CultureInvariant));
             Require("terminal void consults CreatedEvent only for ID/reflection bookkeeping",
                 Regex.IsMatch(
@@ -1384,23 +1433,23 @@ namespace PureBoundaryContractTests
                         + @"[\s\S]{0,120}?createdEvent\s*,",
                     RegexOptions.CultureInvariant));
 
-            Require("Anomaly patches correlate registered ownership before suppressing native Tales",
+            Require("Anomaly patches correlate settled ownership before suppressing native Tales",
                 Regex.Matches(
                     anomalyPatches,
                     @"Complete(?:CreepJoinerSurgicalInspection|GhoulTransformation|VoidOutcome)\s*\("
-                        + @"[\s\S]{0,220}?out\s+dedicatedEventCreated[\s\S]{0,500}?"
+                        + @"[\s\S]{0,220}?out\s+dedicatedSourceSettled[\s\S]{0,500}?"
                         + @"AnomalySurgeryTaleOwnershipPolicy\s*\.\s*ShouldSuppress\s*\("
-                        + @"[\s\S]{0,220}?dedicatedEventCreated\s*,",
+                        + @"[\s\S]{0,220}?dedicatedSourceSettled\s*,",
                     RegexOptions.CultureInvariant).Count == 3);
 
-            Require("Odyssey Mechhive owns Quest success from typed page registration",
+            Require("Odyssey Mechhive owns Quest success from typed source settlement",
                 Regex.IsMatch(
                     odyssey,
                     @"OdysseyMechhiveOutcomeSignal\s+signal[\s\S]{0,420}?"
                         + @"DiaryDispatchOutcome\s+outcome\s*=\s*DispatchWithOutcome"
                         + @"\s*\(\s*signal\s*\)\s*;[\s\S]{0,180}?"
-                        + @"dedicatedEventCreated\s*=\s*DiaryDispatchOutcomePolicy\s*\.\s*"
-                        + @"PageRegistered\s*\(\s*outcome\s*\)\s*;",
+                        + @"dedicatedSourceSettled\s*=\s*DiaryDispatchOutcomePolicy\s*\.\s*"
+                        + @"SettlesSource\s*\(\s*outcome\s*\)\s*;",
                     RegexOptions.CultureInvariant));
             Require("Odyssey Mechhive consults CreatedEvent only for ID/reflection bookkeeping",
                 Regex.IsMatch(
@@ -1414,9 +1463,9 @@ namespace PureBoundaryContractTests
                 Regex.IsMatch(
                     odysseyPatches,
                     @"CompleteOdysseyMechhiveOutcome\s*\([\s\S]{0,260}?"
-                        + @"out\s+dedicatedEventCreated[\s\S]{0,260}?"
+                        + @"out\s+dedicatedSourceSettled[\s\S]{0,260}?"
                         + @"OwnsQuestSuccess\s*\(\s*plan\s*\)\s*&&\s*"
-                        + @"dedicatedEventCreated\s*&&",
+                        + @"dedicatedSourceSettled\s*&&",
                     RegexOptions.CultureInvariant));
         }
 

@@ -8,7 +8,8 @@
 //
 // Coverage-matrix ID (design/TEST_COVERAGE_PLAN.md §3): EVT-09 Tale. This suite covers single-pawn shape,
 // two-pawn shape + participant extraction, the XML group toggle, and the base-game positive combat-batch
-// route (accumulate, source-dedup, flush exactly once). Death tales remain in EVT-10.
+// route (accumulate, source-dedup, flush exactly once), plus knowledge-only preservation when a
+// delayed batch is frequency-rejected. Death tales remain in EVT-10.
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -245,6 +246,73 @@ namespace PawnDiary.RimTests
                 "The completed Tale batch did not remain a single durable page.");
         }
 
+        /// <summary>
+        /// EVT-09. A delayed Tale owns its frequency decision outside central dispatch. When that
+        /// local decision rejects the page, an add-on allowlisted fact must still reach lifelong
+        /// knowledge exactly once and the rejected batch must settle without prose.
+        /// </summary>
+        [Test]
+        public static void FrequencyRejectedCombatBatchPreservesAllowlistedKnowledge()
+        {
+            TaleDef wasOnFire = RequireDef<TaleDef>("WasOnFire");
+            PawnDiaryRimTestScope.Require(
+                DiaryGameComponent.TaleBatchGroupFor(wasOnFire)?.defName == "talecombat",
+                "WasOnFire no longer classifies to the shipped talecombat batch.");
+
+            float originalIgnoreChance = wasOnFire.ignoreChance;
+            wasOnFire.ignoreChance = 0f;
+            scope.RegisterCleanup(() => { wasOnFire.ignoreChance = originalIgnoreChance; });
+            IsolatePendingTaleBatches();
+
+            DiaryInteractionGroupDef group = DiaryGameComponent.TaleBatchGroupFor(wasOnFire);
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+            float previousMultiplier;
+            bool hadOverride = settings.TryGetGroupFrequencyOverride(
+                group.defName, out previousMultiplier);
+            float inheritedMultiplier = settings.PresetGroupFrequencyMultiplier(group);
+            settings.SetGroupFrequencyOverride(group.defName, 0f);
+            scope.RegisterCleanup(() => settings.SetGroupFrequencyOverride(
+                group.defName,
+                hadOverride ? previousMultiplier : inheritedMultiplier));
+
+            string eventKind = "rimtest.tale.frequency." + Guid.NewGuid().ToString("N");
+            ImportantEventRule rule = new ImportantEventRule
+            {
+                defName = "PawnDiary_RimTest_TaleBatchFrequencyKnowledge",
+                eventKind = eventKind,
+                topicKey = "rimtest",
+                signal = KnowledgeTokens.SignalEvent,
+                order = int.MinValue,
+                owners = KnowledgeTokens.OwnersInitiator,
+                lineTemplate = "remembered a rejected batched Tale"
+            };
+            rule.matchDefNames.Add(wasOnFire.defName);
+            List<ImportantEventRule> rules = DiaryKnowledgePolicy.ImportantEventRules();
+            rules.Add(rule);
+            scope.RegisterCleanup(() => rules.Remove(rule));
+
+            Tale recordedTale = null;
+            scope.RegisterCleanup(() => RemoveRecordedTale(recordedTale));
+            scope.RequireNoNewEvent(
+                () => { recordedTale = TaleRecorder.RecordTale(wasOnFire, firstPawn); });
+            PawnDiaryRimTestScope.Require(
+                PendingTaleBatchCount() == 1,
+                "The rejected Tale occurrence did not leave exactly one pending owner batch.");
+
+            PawnKnowledgeState knowledge = scope.RequireDiaryRecord(firstPawn).EnsureKnowledgeState();
+            PawnDiaryRimTestScope.Require(
+                CountKnowledgeKind(knowledge, eventKind) == 1,
+                "The locally frequency-rejected Tale did not capture exactly one allowlisted fact.");
+
+            scope.RequireNoNewEvent(FlushAllTaleBatches);
+            PawnDiaryRimTestScope.Require(
+                PendingTaleBatchCount() == 0,
+                "Flushing did not consume the locally rejected Tale batch.");
+            PawnDiaryRimTestScope.Require(
+                CountKnowledgeKind(knowledge, eventKind) == 1,
+                "Flushing the rejected Tale batch duplicated or erased its knowledge-only fact.");
+        }
+
         // ----- helpers ---------------------------------------------------------------------------
 
         // Verse.TaleManager exposes no public single-tale removal (volatile tales normally expire on
@@ -323,6 +391,39 @@ namespace PawnDiary.RimTests
             }
 
             FlushAllTaleBatchesMethod.Invoke(scope.Component, null);
+        }
+
+        private static int PendingTaleBatchCount()
+        {
+            IDictionary batches = PendingTaleBatchesField?.GetValue(scope.Component) as IDictionary;
+            if (batches == null)
+            {
+                throw new AssertionException(
+                    "Pawn Diary Tale test could not locate pendingTaleBatches.");
+            }
+
+            return batches.Count;
+        }
+
+        private static int CountKnowledgeKind(PawnKnowledgeState state, string eventKind)
+        {
+            int count = 0;
+            if (state?.records == null)
+            {
+                return count;
+            }
+
+            for (int i = 0; i < state.records.Count; i++)
+            {
+                ImportantMemoryRecord record = state.records[i];
+                if (record != null
+                    && string.Equals(record.eventKind, eventKind, StringComparison.Ordinal))
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         private static int TotalEventCount()

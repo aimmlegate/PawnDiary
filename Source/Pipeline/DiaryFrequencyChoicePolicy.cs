@@ -34,28 +34,49 @@ namespace PawnDiary
 
             foreach (DiaryFrequencyChoiceSnapshot row in source)
             {
-                string key = (row?.choiceKey ?? string.Empty).Trim();
-                if (key.Length == 0 || seen.Contains(key)
-                    || !IsFinite(row.multiplier) || !IsFinite(row.displayMaxMultiplier)
-                    || row.multiplier < 0f || row.multiplier > DiaryFrequencyPolicy.MaximumMultiplier
-                    || row.displayMaxMultiplier < 0f
-                    || row.displayMaxMultiplier > DiaryFrequencyPolicy.MaximumMultiplier)
+                DiaryFrequencyChoiceSnapshot normalized;
+                if (!TryNormalizeRow(row, out normalized)
+                    || !seen.Add(normalized.choiceKey))
                 {
                     continue;
                 }
 
-                seen.Add(key);
-                result.Add(new DiaryFrequencyChoiceSnapshot
-                {
-                    choiceKey = key,
-                    multiplier = row.multiplier,
-                    displayMaxMultiplier = row.displayMaxMultiplier,
-                    order = row.order
-                });
+                result.Add(normalized);
             }
 
             result.Sort(CompareMenuOrder);
             return result;
+        }
+
+        /// <summary>
+        /// Validates and detaches one XML row without reserving its token. Def adapters use this
+        /// before duplicate detection so an invalid earlier row cannot hide a later valid definition.
+        /// </summary>
+        public static bool TryNormalizeRow(
+            DiaryFrequencyChoiceSnapshot row,
+            out DiaryFrequencyChoiceSnapshot normalized)
+        {
+            normalized = null;
+            string key = (row?.choiceKey ?? string.Empty).Trim();
+            if (key.Length == 0
+                || !IsFinite(row.multiplier)
+                || !IsFinite(row.displayMaxMultiplier)
+                || row.multiplier < 0f
+                || row.multiplier > DiaryFrequencyPolicy.MaximumMultiplier
+                || row.displayMaxMultiplier < 0f
+                || row.displayMaxMultiplier > DiaryFrequencyPolicy.MaximumMultiplier)
+            {
+                return false;
+            }
+
+            normalized = new DiaryFrequencyChoiceSnapshot
+            {
+                choiceKey = key,
+                multiplier = row.multiplier,
+                displayMaxMultiplier = row.displayMaxMultiplier,
+                order = row.order
+            };
+            return true;
         }
 
         /// <summary>

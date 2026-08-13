@@ -1215,8 +1215,14 @@ namespace PawnDiary
                 inherited);
             if (DiaryFrequencySettingsPolicy.NearlyEqual(normalized, inherited))
             {
-                groupFrequencyOverrides.Remove(group.defName);
-                return;
+                // An unavailable third-party preset uses Standard only as its temporary effective
+                // fallback. Keep an explicit 1x choice in that state: removing it would let the
+                // add-on's different inherited value silently take over when the preset returns.
+                if (FindFrequencyPreset(frequencyPresetDefName) != null)
+                {
+                    groupFrequencyOverrides.Remove(group.defName);
+                    return;
+                }
             }
 
             groupFrequencyOverrides[group.defName] = normalized;
@@ -1317,7 +1323,7 @@ namespace PawnDiary
             }
             else
             {
-                NormalizeGroupFrequencyOverrides();
+                NormalizeGroupFrequencyOverrides(resparsifyKnownValues: true);
             }
 
             return true;
@@ -1616,8 +1622,8 @@ namespace PawnDiary
                 MigrateLegacyFrequencySettings(legacy);
             }
 
-            NormalizeFrequencyPresetDefName();
-            NormalizeGroupFrequencyOverrides();
+            bool selectedPresetResolved = NormalizeFrequencyPresetDefName();
+            NormalizeGroupFrequencyOverrides(selectedPresetResolved);
             // Schema v1 owns runtime frequency completely. Keep the retired public field readable for
             // binary compatibility, but never let a carried Slice-2 bridge value affect later saves.
             generationChanceWeight = DefaultGenerationChanceWeight;
@@ -1707,24 +1713,43 @@ namespace PawnDiary
             return null;
         }
 
-        /// <summary>Repairs a missing/removed preset token to the safe shipped Standard key.</summary>
-        private void NormalizeFrequencyPresetDefName()
+        /// <summary>
+        /// Canonicalizes a loaded preset token. Blank/corrupt absence becomes shipped Standard, while
+        /// a nonblank unresolved token is preserved for a temporarily missing third-party provider.
+        /// Returns whether the selected Def is currently available.
+        /// </summary>
+        private bool NormalizeFrequencyPresetDefName()
         {
-            DiaryFrequencyPresetDef preset = FindFrequencyPreset(frequencyPresetDefName);
-            frequencyPresetDefName = preset?.defName ?? DiaryFrequencyPresets.StandardDefName;
+            string key = (frequencyPresetDefName ?? string.Empty).Trim();
+            if (key.Length == 0)
+            {
+                key = DiaryFrequencyPresets.StandardDefName;
+            }
+
+            DiaryFrequencyPresetDef preset = FindFrequencyPreset(key);
+            if (preset != null)
+            {
+                frequencyPresetDefName = preset.defName;
+                return true;
+            }
+
+            frequencyPresetDefName = key;
+            return false;
         }
 
         /// <summary>
-        /// Re-sparsifies known current rows against the selected preset while retaining unknown saved
-        /// keys for add-ons that may be temporarily absent.
+        /// Normalizes current rows while retaining unknown saved keys. Re-sparsification is safe only
+        /// when the selected preset is loaded; Standard may supply effective fallback arithmetic for
+        /// an unresolved third-party token but must not erase values that its returning Def can change.
         /// </summary>
-        private void NormalizeGroupFrequencyOverrides()
+        private void NormalizeGroupFrequencyOverrides(bool resparsifyKnownValues)
         {
             EnsureFrequencyDictionary();
             groupFrequencyOverrides = DiaryFrequencySettingsPolicy.NormalizeOverrides(
                 groupFrequencyOverrides,
                 FrequencyGroupSnapshots(settingsVisibleOnly: false),
-                DiaryFrequencyPresets.Snapshot(frequencyPresetDefName));
+                DiaryFrequencyPresets.Snapshot(frequencyPresetDefName),
+                resparsifyKnownValues);
         }
 
         /// <summary>Builds detached identities for Custom detection and sparse normalization.</summary>

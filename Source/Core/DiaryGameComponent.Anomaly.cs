@@ -222,11 +222,12 @@ namespace PawnDiary
             AnomalyStudySignal signal = new AnomalyStudySignal(
                 studier, facts, plan, policy, group);
             DiaryDispatchOutcome outcome = DispatchWithOutcome(signal);
-            if (!DiaryDispatchOutcomePolicy.PageRegistered(outcome)) return;
+            if (!DiaryDispatchOutcomePolicy.SettlesSource(outcome)) return;
 
-            // Ownership begins only after the dedicated page is registered. An exception after the
-            // repository commit still owns this source, while an ordinary rejection leaves vanilla's
-            // generic StudiedEntity Tale available.
+            // Ownership begins once the dedicated route settles this exact occurrence. A deliberate
+            // frequency miss must suppress its generic StudiedEntity fallback too; otherwise frequency
+            // controls merely swap the dedicated page for an uncontrolled generic page. Only an
+            // ordinary pre-settlement rejection leaves the vanilla Tale available.
             AnomalyStudySuppressionCache.Register(
                 new AnomalyStudyTaleClaim
                 {
@@ -314,15 +315,15 @@ namespace PawnDiary
 
         /// <summary>
         /// Verifies one exact returned surgical recipe, commits non-terminal reveal history before
-        /// output, then reports whether a dedicated event exists so Tale ownership can decide safely.
+        /// output, then reports whether the dedicated route settled so Tale ownership can decide safely.
         /// </summary>
         internal CreepJoinerSurgicalDisclosurePlan CompleteCreepJoinerSurgicalInspection(
             Pawn subject,
             Pawn surgeon,
             CreepJoinerSurgicalInspectionCapture capture,
-            out bool dedicatedEventCreated)
+            out bool dedicatedSourceSettled)
         {
-            dedicatedEventCreated = false;
+            dedicatedSourceSettled = false;
             CreepJoinerSurgicalDisclosureFacts facts;
             if (!DlcContext.TryCompleteCreepJoinerSurgicalInspection(
                     subject, surgeon, capture, out facts)
@@ -356,11 +357,11 @@ namespace PawnDiary
                 new CreepJoinerSurgicalDisclosureSignal(
                     facts, plan, policy, group, writers, subject, surgeon);
             DiaryDispatchOutcome outcome = DispatchWithOutcome(signal);
-            dedicatedEventCreated = DiaryDispatchOutcomePolicy.PageRegistered(outcome);
-            if (!dedicatedEventCreated) return plan;
+            dedicatedSourceSettled = DiaryDispatchOutcomePolicy.SettlesSource(outcome);
+            if (!dedicatedSourceSettled) return plan;
 
-            // Page registration already owns this source even if a post-commit exception prevented
-            // CreatedEvent assignment. CreatedEvent is consulted only for optional ID bookkeeping.
+            // Settlement already owns the deferred Tale, including a deliberate frequency skip.
+            // CreatedEvent is consulted only for optional ID bookkeeping after a real page exists.
             DiaryEvent createdEvent = signal.CreatedEvent;
             if (createdEvent == null) return plan;
 
@@ -379,15 +380,15 @@ namespace PawnDiary
 
         /// <summary>
         /// Verifies one exact normally returned infusion and reports whether the dedicated event
-        /// really exists, so the patch can suppress or release DidSurgery without losing a page.
+        /// route settled, so the patch can suppress or release DidSurgery without bypassing frequency.
         /// </summary>
         internal GhoulTransformationPlan CompleteGhoulTransformation(
             Pawn subject,
             Pawn surgeon,
             GhoulTransformationCapture capture,
-            out bool dedicatedEventCreated)
+            out bool dedicatedSourceSettled)
         {
-            dedicatedEventCreated = false;
+            dedicatedSourceSettled = false;
             GhoulTransformationFacts facts;
             if (!DlcContext.TryCompleteGhoulTransformation(
                     subject, surgeon, capture, out facts)
@@ -409,7 +410,7 @@ namespace PawnDiary
             GhoulTransformationSignal signal = new GhoulTransformationSignal(
                 facts, plan, policy, group, writers, subject, surgeon);
             DiaryDispatchOutcome outcome = DispatchWithOutcome(signal);
-            dedicatedEventCreated = DiaryDispatchOutcomePolicy.PageRegistered(outcome);
+            dedicatedSourceSettled = DiaryDispatchOutcomePolicy.SettlesSource(outcome);
             return plan;
         }
 
@@ -420,7 +421,7 @@ namespace PawnDiary
         /// <summary>
         /// Verifies one exact terminal void method reached its expected level, commits the saved
         /// terminal token first, then optionally writes the single choosing pawn's ending page and
-        /// reports whether that dedicated page exists so the patch can suppress or release the Tale.
+        /// reports whether that dedicated route settled so the patch can suppress or release the Tale.
         /// A contradictory method/level, an already-committed terminal, or a missing author never
         /// creates a page, and the terminal token is written before the page so a transport failure
         /// still bars replay.
@@ -428,9 +429,9 @@ namespace PawnDiary
         internal VoidOutcomePlan CompleteVoidOutcome(
             Pawn actor,
             VoidOutcomeCapture capture,
-            out bool dedicatedEventCreated)
+            out bool dedicatedSourceSettled)
         {
-            dedicatedEventCreated = false;
+            dedicatedSourceSettled = false;
             VoidOutcomeFacts facts;
             if (!DlcContext.TryCompleteVoidOutcome(actor, capture, out facts) || facts == null)
                 return null;
@@ -462,11 +463,11 @@ namespace PawnDiary
                 AnomalyEventDefNames.VoidOutcome);
             VoidOutcomeSignal signal = new VoidOutcomeSignal(facts, plan, policy, group, writer);
             DiaryDispatchOutcome outcome = DispatchWithOutcome(signal);
-            dedicatedEventCreated = DiaryDispatchOutcomePolicy.PageRegistered(outcome);
-            if (!dedicatedEventCreated) return plan;
+            dedicatedSourceSettled = DiaryDispatchOutcomePolicy.SettlesSource(outcome);
+            if (!dedicatedSourceSettled) return plan;
 
-            // Source ownership is already frozen by the typed outcome. The event object is optional
-            // bookkeeping only: a post-commit exception must not release the deferred terminal Tale.
+            // Source ownership is already frozen by the typed outcome, including a frequency skip.
+            // The event object is optional ID/reflection bookkeeping only.
             DiaryEvent createdEvent = signal.CreatedEvent;
             if (createdEvent == null) return plan;
 
@@ -510,7 +511,7 @@ namespace PawnDiary
             {
                 // The dedicated ending page already exists and the terminal token is committed. If
                 // this bookkeeping escaped, the postfix would observe a null plan while
-                // dedicatedEventCreated is already true, fail the ownership proof, and release the
+                // dedicatedSourceSettled is already true, fail the ownership proof, and release the
                 // deferred vanilla Tale — a second ending page. Contain it here instead.
                 Log.ErrorOnce(
                     "[Pawn Diary] Terminal void bookkeeping after the ending page failed; the "

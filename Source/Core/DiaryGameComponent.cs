@@ -92,6 +92,11 @@ namespace PawnDiary
         // here before dropping their heavy hot DiaryEvent refs, so long histories remain visible without
         // staying in generation/title/orphan scans. Saved under "diaryArchiveEntries".
         private readonly DiaryArchiveRepository archive = new DiaryArchiveRepository();
+        // One private, independently evolving admission stream belongs to each loaded GameComponent.
+        // It is seeded once through an isolated Verse.Rand scope in the constructor, then never reads
+        // gameplay RNG again. The stream itself is transient: emitted/omitted pages and the persisted
+        // aggregate-admission keys below are the authoritative one-shot outcomes across save/load.
+        private readonly DiaryAdmissionRandom admissionRandom;
         // Saved XML event-window state. Each row is a long-running narrative window such as "gray
         // flesh was found, but the metalhorror has not emerged yet." The Def remains XML-owned; this
         // list only remembers active runtime instances across save/load.
@@ -112,6 +117,11 @@ namespace PawnDiary
         // rebuilt. Save only those rejected current-day keys so a save/reload cannot reopen and reroll
         // the same pawn/group/day occurrence. Old-day rows are pruned before every write.
         private List<string> rejectedAmbientInteractionFrequencyKeys = new List<string>();
+        // A pre-save flush can find an accepted ambient note before it reaches minEventsToWrite. There
+        // is no page yet, so save just this admission-state key and let later same-day evidence reopen
+        // with the original acceptance. This list never marks a page written. The additive save field
+        // loads default-empty in older saves and is pruned to current-day keys before each write/load.
+        private List<string> acceptedAmbientInteractionFrequencyKeys = new List<string>();
         // Ambient temporary thoughts still accumulating into one per-pawn day memory. Not saved;
         // flushed before saving just like interaction batches.
         private readonly Dictionary<string, PendingAmbientThoughtNote> pendingAmbientThoughtNotes = new Dictionary<string, PendingAmbientThoughtNote>();
@@ -220,6 +230,19 @@ namespace PawnDiary
 
         public DiaryGameComponent(Game game)
         {
+            // `PushState()` without a seed snapshots the gameplay stream; restoring it after Rand.Int
+            // keeps this single seed draw cosmetic. Unlike drawing Rand.Value inside every admission,
+            // the private stream then advances independently instead of replaying the restored value.
+            Rand.PushState();
+            try
+            {
+                admissionRandom = new DiaryAdmissionRandom(unchecked((uint)Rand.Int));
+            }
+            finally
+            {
+                Rand.PopState();
+            }
+
             // One LLM session spans the lifetime of one loaded Game, and this constructor is the
             // single place that starts it. Constructing a Game (new game OR loading a save) runs this
             // ctor first, so BeginSession here cancels any requests still running from a previous Game
@@ -283,6 +306,7 @@ namespace PawnDiary
             pendingTaleBatches.Clear();
             writtenAmbientInteractionNotes.Clear();
             rejectedAmbientInteractionFrequencyKeys.Clear();
+            acceptedAmbientInteractionFrequencyKeys.Clear();
             pendingAmbientThoughtNotes.Clear();
             writtenAmbientThoughtNotes.Clear();
             delayedRaidGenerationReadyTicks.Clear();
@@ -421,10 +445,15 @@ namespace PawnDiary
             if (Scribe.mode == LoadSaveMode.Saving)
             {
                 NormalizeRejectedAmbientInteractionFrequencyKeys(CurrentDayIndex);
+                NormalizeAcceptedAmbientInteractionFrequencyKeys(CurrentDayIndex);
             }
             Scribe_Collections.Look(
                 ref rejectedAmbientInteractionFrequencyKeys,
                 "rejectedAmbientInteractionFrequencyKeys",
+                LookMode.Value);
+            Scribe_Collections.Look(
+                ref acceptedAmbientInteractionFrequencyKeys,
+                "acceptedAmbientInteractionFrequencyKeys",
                 LookMode.Value);
             // Plan 12: saved observed-condition runtime state. Additive key; old saves load an empty
             // list. See DiaryGameComponent.ObservedConditions.cs.
@@ -483,6 +512,13 @@ namespace PawnDiary
                 if (rejectedAmbientInteractionFrequencyKeys == null)
                 {
                     rejectedAmbientInteractionFrequencyKeys = new List<string>();
+                }
+
+                // Additive compatibility: saves from before accepted admission carry-forward have no
+                // field, which is exactly an empty list rather than an error or a fabricated decision.
+                if (acceptedAmbientInteractionFrequencyKeys == null)
+                {
+                    acceptedAmbientInteractionFrequencyKeys = new List<string>();
                 }
 
                 if (activeObservedConditions == null)

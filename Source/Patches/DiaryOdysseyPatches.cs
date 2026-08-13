@@ -445,7 +445,7 @@ namespace PawnDiary
             __state = captured;
         }
 
-        /// <summary>Verifies the committed branch and owns Quest success only after page registration.</summary>
+        /// <summary>Verifies the committed branch and owns Quest success once the dedicated route settles.</summary>
         private static void Postfix(
             object __instance,
             OdysseyMechhiveOutcomeCapture __state)
@@ -461,7 +461,7 @@ namespace PawnDiary
             if (!close.matched) return;
 
             OdysseyMechhiveOutcomePlan plan = null;
-            bool dedicatedEventCreated = false;
+            bool dedicatedSourceSettled = false;
             DiaryPatchSafety.Run("Odyssey.Mechhive.Postfix.Complete", () =>
             {
                 DiaryGameComponent component = DiaryGameComponent.Instance;
@@ -471,11 +471,11 @@ namespace PawnDiary
                         __instance,
                         close.capture,
                         close.deferredQuest != null,
-                        out dedicatedEventCreated);
+                        out dedicatedSourceSettled);
                 }
             });
             bool suppress = OdysseyMechhiveOutcomePolicy.OwnsQuestSuccess(plan)
-                && dedicatedEventCreated
+                && dedicatedSourceSettled
                 && close.deferredQuest != null;
             if (!suppress) ReleaseQuestSignal(close.deferredQuest);
         }

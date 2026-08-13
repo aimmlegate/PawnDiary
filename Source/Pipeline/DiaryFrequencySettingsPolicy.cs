@@ -133,14 +133,18 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns a detached, case-insensitive sparse map. Known rows equal to their selected preset
-        /// are removed; unknown nonblank keys are retained for forward compatibility but are never
-        /// considered by the known-row Custom detector.
+        /// Returns a detached, case-insensitive sparse map. When the selected preset is available,
+        /// known rows equal to it are removed. Callers can suppress that re-sparsification while a
+        /// third-party preset is temporarily unavailable: Standard remains the safe numeric fallback,
+        /// but explicit saved values must survive so the returning preset cannot reinterpret them.
+        /// Unknown nonblank keys are retained for forward compatibility and are never considered by
+        /// the known-row Custom detector.
         /// </summary>
         public static Dictionary<string, float> NormalizeOverrides(
             IDictionary<string, float> source,
             IEnumerable<DiaryFrequencyGroupSnapshot> knownGroups,
-            DiaryFrequencyPresetSnapshot preset)
+            DiaryFrequencyPresetSnapshot preset,
+            bool resparsifyKnownValues)
         {
             Dictionary<string, DiaryFrequencyGroupSnapshot> known =
                 new Dictionary<string, DiaryFrequencyGroupSnapshot>(StringComparer.OrdinalIgnoreCase);
@@ -188,7 +192,7 @@ namespace PawnDiary
                         group.frequencyTier)
                     : DiaryFrequencyPolicy.StandardMultiplier;
                 float value = NormalizeMultiplier(entry.Value, inherited);
-                if (isKnown && NearlyEqual(value, inherited))
+                if (isKnown && resparsifyKnownValues && NearlyEqual(value, inherited))
                 {
                     continue;
                 }

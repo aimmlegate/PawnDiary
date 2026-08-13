@@ -456,6 +456,142 @@ namespace PawnDiary.RimTests
                 scope.Component, "writtenAmbientInteractionNotes", secondPawn);
         }
 
+        /// <summary>
+        /// A pre-save flush below minEventsToWrite must retain an accepted pawn/group/day admission.
+        /// Reopening after the setting becomes 0x therefore still writes at the normal threshold instead
+        /// of drawing again; the carry-forward key is admission state only, never a written-page guard.
+        /// </summary>
+        [Test]
+        public static void AcceptedThinAmbientPreSaveFlushReopensWithoutReroll()
+        {
+            DiaryInteractionGroupDef group = RequireGroup("smalltalk");
+            InteractionDef chitchat = RequireDef<InteractionDef>("Chitchat");
+            string label = chitchat.LabelCap.Resolve();
+            int originalMinimum = group.batch.minEventsToWrite;
+            group.batch.minEventsToWrite = BatchFlushThreshold;
+            scope.RegisterCleanup(() => group.batch.minEventsToWrite = originalMinimum);
+
+            scope.RequireNoNewEvent(() => scope.Component.RecordBatchedInteraction(
+                group, firstPawn, secondPawn, chitchat, label, "before save", "before save", 950001));
+            InvokePrivateNoArgs(scope.Component, "FlushAllInteractionBatches");
+
+            RequireListContainsPawnKey(
+                scope.Component, "acceptedAmbientInteractionFrequencyKeys", firstPawn, true);
+            RequireListContainsPawnKey(
+                scope.Component, "acceptedAmbientInteractionFrequencyKeys", secondPawn, true);
+            RequireSetContainsPawnKey(
+                scope.Component, "writtenAmbientInteractionNotes", firstPawn, false);
+            RequireSetContainsPawnKey(
+                scope.Component, "writtenAmbientInteractionNotes", secondPawn, false);
+
+            // If reopening rerolls, this deterministic 0x override rejects both notes. Reusing the saved
+            // acceptance is the only route by which the threshold-reaching row can still create pages.
+            PawnDiaryMod.Settings.SetGroupFrequencyOverride(group.defName, 0f);
+            scope.RequireNoNewEvent(() => scope.Component.RecordBatchedInteraction(
+                group, firstPawn, secondPawn, chitchat, label, "after save one", "after save one", 950002));
+            scope.RequireNoNewEvent(() => scope.Component.RecordBatchedInteraction(
+                group, firstPawn, secondPawn, chitchat, label, "after save two", "after save two", 950003));
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => scope.Component.RecordBatchedInteraction(
+                    group, firstPawn, secondPawn, chitchat, label,
+                    "after save three", "after save three", 950004),
+                "SmallTalkAmbientDay",
+                firstPawn,
+                null);
+
+            scope.RequireSoloRef(diaryEvent, firstPawn);
+            RequireListContainsPawnKey(
+                scope.Component, "acceptedAmbientInteractionFrequencyKeys", firstPawn, false);
+            RequireListContainsPawnKey(
+                scope.Component, "acceptedAmbientInteractionFrequencyKeys", secondPawn, false);
+        }
+
+        /// <summary>
+        /// A first threshold-reaching flush can fail before repository registration (for example, a
+        /// broken third-party context getter during pre-save). The removed pending note must still leave
+        /// its accepted admission behind, so reopening under 0x retries the page without a new roll.
+        /// </summary>
+        [Test]
+        public static void AcceptedAmbientFactoryFaultBeforeCommitRetainsAdmission()
+        {
+            DiaryInteractionGroupDef group = RequireGroup("smalltalk");
+            InteractionDef chitchat = RequireDef<InteractionDef>("Chitchat");
+            string label = chitchat.LabelCap.Resolve();
+            int originalMinimum = group.batch.minEventsToWrite;
+            int originalMaximum = group.batch.maxEvents;
+            group.batch.minEventsToWrite = 2;
+            group.batch.maxEvents = 100;
+            scope.RegisterCleanup(() =>
+            {
+                group.batch.minEventsToWrite = originalMinimum;
+                group.batch.maxEvents = originalMaximum;
+            });
+
+            scope.RequireNoNewEvent(() => scope.Component.RecordBatchedInteraction(
+                group, firstPawn, secondPawn, chitchat, label,
+                "fault candidate", "fault candidate", 950101));
+
+            IDictionary pending = ReadDictionaryField(
+                scope.Component, "pendingAmbientInteractionNotes");
+            string key = null;
+            object note = null;
+            string firstPawnId = firstPawn.GetUniqueLoadID();
+            foreach (DictionaryEntry entry in pending)
+            {
+                string candidateKey = entry.Key as string;
+                if (!string.IsNullOrEmpty(candidateKey)
+                    && candidateKey.IndexOf(firstPawnId, StringComparison.Ordinal) >= 0)
+                {
+                    key = candidateKey;
+                    note = entry.Value;
+                    break;
+                }
+            }
+
+            Type noteType = note?.GetType();
+            FieldInfo countField = noteType?.GetField(
+                "eventCount", BindingFlags.Instance | BindingFlags.Public);
+            FieldInfo samplesField = noteType?.GetField(
+                "sampleLines", BindingFlags.Instance | BindingFlags.Public);
+            MethodInfo flush = typeof(DiaryGameComponent).GetMethod(
+                "FlushAmbientInteractionNote", PrivateInstance);
+            PawnDiaryRimTestScope.Require(
+                key != null && note != null && countField != null && samplesField != null && flush != null,
+                "The ambient pre-commit fault fixture could not resolve its pending note adapter.");
+
+            countField.SetValue(note, 2);
+            samplesField.SetValue(note, null);
+            bool threw = false;
+            try
+            {
+                flush.Invoke(scope.Component, new[] { (object)key, note });
+            }
+            catch (TargetInvocationException exception)
+            {
+                threw = exception.InnerException != null;
+            }
+            PawnDiaryRimTestScope.Require(
+                threw,
+                "The ambient fault fixture did not fail before page registration as intended.");
+
+            RequireListContainsPawnKey(
+                scope.Component, "acceptedAmbientInteractionFrequencyKeys", firstPawn, true);
+            group.batch.minEventsToWrite = 1;
+            group.batch.maxEvents = 1;
+            PawnDiaryMod.Settings.SetGroupFrequencyOverride(group.defName, 0f);
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => scope.Component.RecordBatchedInteraction(
+                    group, firstPawn, secondPawn, chitchat, label,
+                    "retry", "retry", 950102),
+                "SmallTalkAmbientDay",
+                firstPawn,
+                null);
+
+            scope.RequireSoloRef(diaryEvent, firstPawn);
+            RequireListContainsPawnKey(
+                scope.Component, "acceptedAmbientInteractionFrequencyKeys", firstPawn, false);
+        }
+
         // ----- helpers ---------------------------------------------------------------------------
 
         /// <summary>
@@ -595,7 +731,8 @@ namespace PawnDiary.RimTests
         private static void RequireSetContainsPawnKey(
             DiaryGameComponent component,
             string fieldName,
-            Pawn pawn)
+            Pawn pawn,
+            bool expected = true)
         {
             FieldInfo field = typeof(DiaryGameComponent).GetField(fieldName, PrivateInstance);
             HashSet<string> values = field?.GetValue(component) as HashSet<string>;
@@ -614,9 +751,41 @@ namespace PawnDiary.RimTests
                 }
             }
             PawnDiaryRimTestScope.Require(
-                found,
-                "Rejected ambient frequency did not settle the pawn/day written guard for '"
-                    + pawnId + "'.");
+                found == expected,
+                "Expected private set '" + fieldName + "' "
+                    + (expected ? "to contain" : "not to contain")
+                    + " a key for '" + pawnId + "'.");
+        }
+
+        private static void RequireListContainsPawnKey(
+            DiaryGameComponent component,
+            string fieldName,
+            Pawn pawn,
+            bool expected)
+        {
+            FieldInfo field = typeof(DiaryGameComponent).GetField(fieldName, PrivateInstance);
+            List<string> values = field?.GetValue(component) as List<string>;
+            string pawnId = pawn?.GetUniqueLoadID();
+            bool found = values != null && values.Exists(value =>
+                !string.IsNullOrEmpty(value)
+                    && !string.IsNullOrEmpty(pawnId)
+                    && value.IndexOf(pawnId, StringComparison.Ordinal) >= 0);
+            PawnDiaryRimTestScope.Require(
+                found == expected,
+                "Expected private list '" + fieldName + "' "
+                    + (expected ? "to contain" : "not to contain")
+                    + " a key for '" + pawnId + "'.");
+        }
+
+        private static void InvokePrivateNoArgs(DiaryGameComponent component, string methodName)
+        {
+            MethodInfo method = typeof(DiaryGameComponent).GetMethod(methodName, PrivateInstance);
+            if (method == null)
+            {
+                throw new AssertionException(
+                    "EVT-02 fixture could not locate private method '" + methodName + "'.");
+            }
+            method.Invoke(component, null);
         }
 
         /// <summary>
@@ -694,6 +863,8 @@ namespace PawnDiary.RimTests
             RemoveDictionaryKeysReferencing(component, "pendingInteractionBatches", ids);
             RemoveDictionaryKeysReferencing(component, "pendingAmbientInteractionNotes", ids);
             RemoveSetEntriesReferencing(component, "writtenAmbientInteractionNotes", ids);
+            RemoveListEntriesReferencing(component, "rejectedAmbientInteractionFrequencyKeys", ids);
+            RemoveListEntriesReferencing(component, "acceptedAmbientInteractionFrequencyKeys", ids);
         }
 
         /// <summary>True when any pending interaction/ambient batch key references either test pawn.</summary>
@@ -798,6 +969,20 @@ namespace PawnDiary.RimTests
             }
 
             set.RemoveWhere(key => KeyReferencesAnyId(key, ids));
+        }
+
+        private static void RemoveListEntriesReferencing(
+            DiaryGameComponent component, string fieldName, HashSet<string> ids)
+        {
+            FieldInfo field = typeof(DiaryGameComponent).GetField(fieldName, PrivateInstance);
+            if (field == null)
+            {
+                throw new AssertionException(
+                    "EVT-02 batch cleanup could not locate private field '" + fieldName + "'.");
+            }
+
+            List<string> values = field.GetValue(component) as List<string>;
+            values?.RemoveAll(key => KeyReferencesAnyId(key, ids));
         }
 
         private static bool KeyReferencesAnyId(string key, HashSet<string> ids)

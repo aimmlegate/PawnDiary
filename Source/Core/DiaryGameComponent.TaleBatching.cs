@@ -26,30 +26,38 @@ namespace PawnDiary
         /// Adds one Tale to each eligible pawn's pending solo batch instead of creating an immediate
         /// event. Each pawn gets their own final first-person diary entry when the batch flushes.
         /// </summary>
-        internal void RecordBatchedTale(DiaryInteractionGroupDef group, Pawn firstPawn, Pawn secondPawn,
+        internal bool RecordBatchedTale(DiaryInteractionGroupDef group, Pawn firstPawn, Pawn secondPawn,
             bool firstEligible, bool secondEligible, TaleDef taleDef, string taleLabel, Def attachedDef,
             string instruction)
         {
             if (group == null || group.batch == null || taleDef == null)
             {
-                return;
+                return false;
             }
 
+            bool frequencyRejected = false;
             if (firstEligible && firstPawn != null)
             {
-                AppendTaleBatch(group, firstPawn, secondPawn, taleDef, taleLabel, attachedDef, instruction);
+                frequencyRejected |= !AppendTaleBatch(
+                    group, firstPawn, secondPawn, taleDef, taleLabel, attachedDef, instruction);
             }
 
             if (secondEligible && secondPawn != null && secondPawn != firstPawn)
             {
-                AppendTaleBatch(group, secondPawn, firstPawn, taleDef, taleLabel, attachedDef, instruction);
+                frequencyRejected |= !AppendTaleBatch(
+                    group, secondPawn, firstPawn, taleDef, taleLabel, attachedDef, instruction);
             }
+
+            // The central Tale dispatch deliberately bypasses frequency because each delayed pawn
+            // batch owns a frozen admission. Tell the signal when any such owner rejected this exact
+            // occurrence so its important facts can still enter lifelong knowledge without prose.
+            return frequencyRejected;
         }
 
         /// <summary>
         /// Opens or appends to the pending per-pawn Tale batch for this group and source def.
         /// </summary>
-        private void AppendTaleBatch(DiaryInteractionGroupDef group, Pawn pawn, Pawn otherPawn,
+        private bool AppendTaleBatch(DiaryInteractionGroupDef group, Pawn pawn, Pawn otherPawn,
             TaleDef taleDef, string taleLabel, Def attachedDef, string instruction)
         {
             string key = TaleBatchKey(group, taleDef, pawn);
@@ -93,10 +101,13 @@ namespace PawnDiary
                 batch.sampleLines.Add(TaleBatchLine(batch, taleLabel, text));
             }
 
+            bool frequencyAccepted = batch.frequencyAdmissionAccepted;
             if (batch.eventCount >= BatchMaxEvents(batch.policy))
             {
                 FlushTaleBatch(key, batch);
             }
+
+            return frequencyAccepted;
         }
 
         /// <summary>

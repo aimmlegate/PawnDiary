@@ -343,8 +343,11 @@ namespace PawnDiary.Integration
                 // SubmitEventWithHandle's recorded=false branch.
                 DiaryDispatchOutcome dispatchOutcome = DiaryGameComponent.Instance.DispatchWithOutcome(
                     new ExternalEventSignal(request));
-                bool recorded = DiaryDispatchOutcomePolicy.PageRegistered(dispatchOutcome);
-                if (!recorded)
+                // Preserve the pre-v9 bool contract even though the typed outcome can distinguish a
+                // page that committed before later work faulted. Existing adapters saw that path as
+                // failure through Dispatch's legacy EmissionRan predicate.
+                bool emitted = DiaryDispatchOutcomePolicy.EmissionRan(dispatchOutcome);
+                if (!emitted)
                 {
                     DiaryGameComponent.Instance.ReleaseExternalApiBudgetReservation(reservation);
                     outcome = SubmitEventOutcome.DroppedByPipeline;
@@ -376,9 +379,7 @@ namespace PawnDiary.Integration
         /// <summary>
         /// Submits one external event and returns stable handles when the pipeline actually creates an
         /// entry. Unlike <see cref="SubmitEvent"/>, a valid-but-deduped or policy-dropped request
-        /// returns a result with <c>recorded=false</c> instead of only saying it was handed off. After
-        /// a rare post-commit fault, <c>recorded</c> remains true even when no safe handle is available;
-        /// the API never fabricates an event id.
+        /// returns a result with <c>recorded=false</c> instead of only saying it was handed off.
         /// </summary>
         public static DiaryEventSubmissionResult SubmitEventWithHandle(ExternalEventRequest request)
         {
@@ -403,13 +404,13 @@ namespace PawnDiary.Integration
                 ExternalEventSignal signal = new ExternalEventSignal(request);
                 DiaryDispatchOutcome dispatchOutcome =
                     DiaryGameComponent.Instance.DispatchWithOutcome(signal);
-                bool recorded = DiaryDispatchOutcomePolicy.PageRegistered(dispatchOutcome);
-                if (!recorded)
+                bool emitted = DiaryDispatchOutcomePolicy.EmissionRan(dispatchOutcome);
+                if (!emitted)
                 {
                     DiaryGameComponent.Instance.ReleaseExternalApiBudgetReservation(reservation);
                 }
 
-                return SubmissionResultFor(sourceId, eventKey, recorded, signal);
+                return SubmissionResultFor(sourceId, eventKey, emitted, signal);
             }
             catch (Exception e)
             {
@@ -426,8 +427,6 @@ namespace PawnDiary.Integration
         /// Submits one wrapped prompt-entry request and returns stable handles when the pipeline
         /// actually creates an entry. This queues normal Pawn Diary generation with the supplied
         /// instruction placed inside protected prompt context; it is not a raw system-prompt escape.
-        /// A rare post-commit fault can report <c>recorded=true</c> with null handles rather than
-        /// inventing an event id.
         /// </summary>
         public static DiaryEventSubmissionResult SubmitPromptEntry(ExternalPromptEntryRequest request)
         {
@@ -452,13 +451,13 @@ namespace PawnDiary.Integration
                 ExternalEventSignal signal = new ExternalEventSignal(request, false);
                 DiaryDispatchOutcome dispatchOutcome =
                     DiaryGameComponent.Instance.DispatchWithOutcome(signal);
-                bool recorded = DiaryDispatchOutcomePolicy.PageRegistered(dispatchOutcome);
-                if (!recorded)
+                bool emitted = DiaryDispatchOutcomePolicy.EmissionRan(dispatchOutcome);
+                if (!emitted)
                 {
                     DiaryGameComponent.Instance.ReleaseExternalApiBudgetReservation(reservation);
                 }
 
-                return SubmissionResultFor(sourceId, eventKey, recorded, signal);
+                return SubmissionResultFor(sourceId, eventKey, emitted, signal);
             }
             catch (Exception e)
             {
@@ -474,8 +473,7 @@ namespace PawnDiary.Integration
         /// <summary>
         /// Submits caller-authored final diary prose and returns handles when an entry was actually
         /// saved. This does not queue the main LLM rewrite; optional title generation may still run
-        /// when requested and enabled by the player. A rare post-commit fault can report
-        /// <c>recorded=true</c> with null handles rather than inventing an event id.
+        /// when requested and enabled by the player.
         /// </summary>
         public static DiaryEventSubmissionResult SubmitDirectEntry(ExternalDirectEntryRequest request)
         {
@@ -500,13 +498,13 @@ namespace PawnDiary.Integration
                 ExternalDirectEntrySignal signal = new ExternalDirectEntrySignal(request);
                 DiaryDispatchOutcome dispatchOutcome =
                     DiaryGameComponent.Instance.DispatchWithOutcome(signal);
-                bool recorded = DiaryDispatchOutcomePolicy.PageRegistered(dispatchOutcome);
-                if (!recorded)
+                bool emitted = DiaryDispatchOutcomePolicy.EmissionRan(dispatchOutcome);
+                if (!emitted)
                 {
                     DiaryGameComponent.Instance.ReleaseExternalApiBudgetReservation(reservation);
                 }
 
-                return SubmissionResultFor(sourceId, eventKey, recorded, signal);
+                return SubmissionResultFor(sourceId, eventKey, emitted, signal);
             }
             catch (Exception e)
             {
@@ -2291,22 +2289,13 @@ namespace PawnDiary.Integration
         private static DiaryEventSubmissionResult SubmissionResultFor(
             string sourceId,
             string eventKey,
-            bool pageRegistered,
+            bool emitted,
             ExternalEventSignal signal)
         {
             DiaryEventSubmissionResult result = EmptySubmissionResult(sourceId, eventKey);
-            result.recorded = pageRegistered;
-            if (!pageRegistered)
-            {
-                return result;
-            }
-
             DiaryEvent diaryEvent = signal?.CreatedEvent;
-            if (diaryEvent == null)
+            if (!emitted || diaryEvent == null)
             {
-                // ExceptionAfterCommit means persistence began even when the throwing adapter never
-                // returned the DiaryEvent to its signal. Preserve that durable truth, but never invent
-                // an event id merely to manufacture a handle.
                 return result;
             }
 
@@ -2316,6 +2305,7 @@ namespace PawnDiary.Integration
                 result.partner = DiaryGameComponent.BuildEntryHandle(diaryEvent, DiaryEvent.RecipientRole);
             }
 
+            result.recorded = result.primary != null;
             result.pairwise = result.partner != null;
             return result;
         }
@@ -2323,21 +2313,13 @@ namespace PawnDiary.Integration
         private static DiaryEventSubmissionResult SubmissionResultFor(
             string sourceId,
             string eventKey,
-            bool pageRegistered,
+            bool emitted,
             ExternalDirectEntrySignal signal)
         {
             DiaryEventSubmissionResult result = EmptySubmissionResult(sourceId, eventKey);
-            result.recorded = pageRegistered;
-            if (!pageRegistered)
-            {
-                return result;
-            }
-
             DiaryEvent diaryEvent = signal?.CreatedEvent;
-            if (diaryEvent == null)
+            if (!emitted || diaryEvent == null)
             {
-                // Match the generated-entry path: a committed page stays recorded even when its
-                // post-commit fault prevents safe handle construction.
                 return result;
             }
 
@@ -2347,6 +2329,7 @@ namespace PawnDiary.Integration
                 result.partner = DiaryGameComponent.BuildEntryHandle(diaryEvent, DiaryEvent.RecipientRole);
             }
 
+            result.recorded = result.primary != null;
             result.pairwise = result.partner != null;
             return result;
         }

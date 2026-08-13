@@ -67,7 +67,7 @@ namespace PawnDiary
         /// pending aggregate keeps this bool until every flush route settles it, so a settings change,
         /// quiet-window flush, save flush, or one-pawn fallback can never reroll the same candidate.
         /// </summary>
-        private static bool FreezeInteractionAggregateFrequency(
+        private bool FreezeInteractionAggregateFrequency(
             DiaryInteractionGroupDef group)
         {
             if (group == null || string.IsNullOrWhiteSpace(group.defName))
@@ -97,17 +97,9 @@ namespace PawnDiary
             float roll = float.NaN;
             if (validChance && effectiveChance > 0f && effectiveChance < 1f)
             {
-                // This is a one-shot cosmetic choice whose result lives in the pending object. Keep it
-                // isolated from RimWorld's seeded gameplay stream exactly like direct-page admission.
-                Rand.PushState();
-                try
-                {
-                    roll = Rand.Value;
-                }
-                finally
-                {
-                    Rand.PopState();
-                }
+                // The result lives in the pending aggregate. Draw from the component-owned stream so
+                // consecutive batches evolve independently without advancing RimWorld's gameplay RNG.
+                roll = admissionRandom.NextUnitFloat();
             }
             else if (validChance)
             {
@@ -354,6 +346,8 @@ namespace PawnDiary
             if (!pendingAmbientInteractionNotes.TryGetValue(key, out note))
             {
                 int now = Find.TickManager.TicksGame;
+                bool preservedAcceptance = acceptedAmbientInteractionFrequencyKeys != null
+                    && acceptedAmbientInteractionFrequencyKeys.Contains(key);
                 note = new PendingAmbientInteractionNote
                 {
                     key = key,
@@ -361,7 +355,8 @@ namespace PawnDiary
                     policy = group.batch,
                     frequencyGroupKey = group.defName ?? string.Empty,
                     frequencyTier = group.frequencyTier ?? string.Empty,
-                    frequencyAdmissionAccepted = FreezeInteractionAggregateFrequency(group),
+                    frequencyAdmissionAccepted = preservedAcceptance
+                        || FreezeInteractionAggregateFrequency(group),
                     pawn = pawn,
                     pawnId = pawn.GetUniqueLoadID(),
                     dayIndex = CurrentDayIndex,
@@ -504,39 +499,70 @@ namespace PawnDiary
             if (note.pawn == null || note.pawn.Dead
                 || !IsDiaryEligible(note.pawn))
             {
+                ForgetAcceptedAmbientInteractionFrequencyKey(key);
                 return;
             }
 
             if (note.eventCount < AmbientMinEventsToWrite(note.policy))
             {
+                RememberAcceptedAmbientInteractionFrequencyKey(key);
                 return;
             }
 
-            string label = AmbientLabel(note);
-            string defName = AmbientDefName(note);
-            string text = BuildAmbientInteractionText(note);
-            string instruction = AmbientInstruction(note);
-            string gameContext = "group=" + GameContextValue.Sanitize(note.GroupKey)
-                + "; batch=ambient_day_note"
-                + "; events=" + note.eventCount
-                + "; day=" + note.dayIndex
-                + "; participants=" + GameContextValue.Sanitize(
-                    string.Join(", ", note.participantNames.ToArray()))
-                + "; first_tick=" + note.firstTick
-                + "; last_tick=" + note.lastTick;
+            // The pending note was removed above, so establish a durable no-reroll key before any page
+            // formatting or registration work can throw. A pre-commit fault leaves this acceptance for
+            // later same-day evidence; a post-commit fault settles it as written so that evidence cannot
+            // create a duplicate page in the still-loaded game.
+            RememberAcceptedAmbientInteractionFrequencyKey(key);
+            long registrationBefore = events.RegistrationVersion;
+            try
+            {
+                string label = AmbientLabel(note);
+                string defName = AmbientDefName(note);
+                string text = BuildAmbientInteractionText(note);
+                string instruction = AmbientInstruction(note);
+                string gameContext = "group=" + GameContextValue.Sanitize(note.GroupKey)
+                    + "; batch=ambient_day_note"
+                    + "; events=" + note.eventCount
+                    + "; day=" + note.dayIndex
+                    + "; participants=" + GameContextValue.Sanitize(
+                        string.Join(", ", note.participantNames.ToArray()))
+                    + "; first_tick=" + note.firstTick
+                    + "; last_tick=" + note.lastTick;
 
-            DiaryEvent diaryEvent = AddSoloEventWithFrozenMood(
-                note.pawn,
-                null,
-                defName,
-                label,
-                text,
-                instruction,
-                gameContext,
-                note.moodSnapshot);
-            AddPlayLogEntryIds(diaryEvent, note.playLogEntryIds);
-            writtenAmbientInteractionNotes.Add(key);
-            QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
+                DiaryEvent diaryEvent = AddSoloEventWithFrozenMood(
+                    note.pawn,
+                    null,
+                    defName,
+                    label,
+                    text,
+                    instruction,
+                    gameContext,
+                    note.moodSnapshot);
+                if (diaryEvent == null)
+                {
+                    // Registration declined atomically. Preserve the accepted candidate so later
+                    // same-day evidence can retry the page without sampling frequency again.
+                    return;
+                }
+
+                ForgetAcceptedAmbientInteractionFrequencyKey(key);
+                writtenAmbientInteractionNotes.Add(key);
+                AddPlayLogEntryIds(diaryEvent, note.playLogEntryIds);
+                QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
+            }
+            catch
+            {
+                if (events.RegistrationVersion > registrationBefore)
+                {
+                    // Match dispatch's established commit boundary. The page may not have returned to
+                    // this adapter, but persistence began, so reopening would risk a second page.
+                    ForgetAcceptedAmbientInteractionFrequencyKey(key);
+                    writtenAmbientInteractionNotes.Add(key);
+                }
+
+                throw;
+            }
         }
 
         /// <summary>

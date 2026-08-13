@@ -667,7 +667,7 @@ namespace PawnDiary
             });
         }
 
-        /// <summary>Commits history first, then owns the generic Tale only after page registration.</summary>
+        /// <summary>Commits history first, then owns the generic Tale once the dedicated route settles.</summary>
         private static void SurgicalRecipePostfix(
             Pawn pawn,
             Pawn billDoer,
@@ -684,19 +684,19 @@ namespace PawnDiary
             if (!close.matched) return;
 
             CreepJoinerSurgicalDisclosurePlan plan = null;
-            bool dedicatedEventCreated = false;
+            bool dedicatedSourceSettled = false;
             DiaryPatchSafety.Run("DiaryAnomalyPatches.SurgicalRecipePostfix.Complete", () =>
             {
                 DiaryGameComponent component = DiaryGameComponent.Instance;
                 if (component != null)
                 {
                     plan = component.CompleteCreepJoinerSurgicalInspection(
-                        pawn, billDoer, close.capture, out dedicatedEventCreated);
+                        pawn, billDoer, close.capture, out dedicatedSourceSettled);
                 }
             });
             bool suppress = AnomalySurgeryTaleOwnershipPolicy.ShouldSuppress(
                 CreepJoinerSurgicalDisclosurePolicy.OwnsDidSurgery(plan),
-                dedicatedEventCreated,
+                dedicatedSourceSettled,
                 close.deferredTale != null);
             if (!suppress) ReleaseSurgicalTale(close.deferredTale);
         }
@@ -737,7 +737,7 @@ namespace PawnDiary
             __state = captured;
         }
 
-        /// <summary>Verifies post-state and consumes DidSurgery only after page registration.</summary>
+        /// <summary>Verifies post-state and consumes DidSurgery once the dedicated route settles.</summary>
         private static void GhoulInfusionPostfix(
             Pawn pawn,
             Pawn billDoer,
@@ -754,19 +754,19 @@ namespace PawnDiary
             if (!close.matched) return;
 
             GhoulTransformationPlan plan = null;
-            bool dedicatedEventCreated = false;
+            bool dedicatedSourceSettled = false;
             DiaryPatchSafety.Run("DiaryAnomalyPatches.GhoulInfusionPostfix.Complete", () =>
             {
                 DiaryGameComponent component = DiaryGameComponent.Instance;
                 if (component != null)
                 {
                     plan = component.CompleteGhoulTransformation(
-                        pawn, billDoer, close.capture, out dedicatedEventCreated);
+                        pawn, billDoer, close.capture, out dedicatedSourceSettled);
                 }
             });
             bool suppress = AnomalySurgeryTaleOwnershipPolicy.ShouldSuppress(
                 GhoulTransformationPolicy.OwnsDidSurgery(plan),
-                dedicatedEventCreated,
+                dedicatedSourceSettled,
                 close.deferredTale != null);
             if (!suppress) ReleaseSurgicalTale(close.deferredTale);
         }
@@ -835,7 +835,7 @@ namespace PawnDiary
             state = captured;
         }
 
-        /// <summary>Verifies the terminal level, commits the outcome, and owns the Tale on page registration.</summary>
+        /// <summary>Verifies the terminal level, commits the outcome, and owns the Tale on route settlement.</summary>
         private static void VoidOutcomePostfix(Pawn pawn, VoidOutcomeCapture __state)
         {
             if (__state == null) return;
@@ -849,22 +849,22 @@ namespace PawnDiary
             if (!close.matched) return;
 
             VoidOutcomePlan plan = null;
-            bool dedicatedEventCreated = false;
+            bool dedicatedSourceSettled = false;
             DiaryPatchSafety.Run("DiaryAnomalyPatches.VoidOutcomePostfix.Complete", () =>
             {
                 DiaryGameComponent component = DiaryGameComponent.Instance;
                 if (component != null)
                 {
                     plan = component.CompleteVoidOutcome(
-                        pawn, close.capture, out dedicatedEventCreated);
+                        pawn, close.capture, out dedicatedSourceSettled);
                 }
             });
-            // Suppress only after the dedicated page registered. Verification failure, disabled
-            // output, a missing author, or an exception before commit releases the vanilla Tale;
-            // an exception after commit keeps the registered dedicated page as the sole owner.
+            // Suppress once the dedicated route settles. A frequency miss owns the occurrence without
+            // a page; verification failure, disabled output, a missing author, or a pre-settlement
+            // exception still releases the vanilla Tale.
             bool suppress = AnomalySurgeryTaleOwnershipPolicy.ShouldSuppress(
                 AnomalyVoidOutcomePolicy.OwnsTerminalTale(plan),
-                dedicatedEventCreated,
+                dedicatedSourceSettled,
                 close.deferredTale != null);
             if (!suppress) ReleaseSurgicalTale(close.deferredTale);
         }

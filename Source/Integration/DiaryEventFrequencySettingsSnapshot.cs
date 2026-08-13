@@ -13,10 +13,17 @@ namespace PawnDiary.Integration
     /// <summary>The selected global frequency preset and current automatic-event filter rows.</summary>
     public sealed class DiaryEventFrequencySettingsSnapshot
     {
-        /// <summary>Stable <c>DiaryFrequencyPresetDef.defName</c> selected in global settings.</summary>
+        /// <summary>
+        /// Stable <c>DiaryFrequencyPresetDef.defName</c> selected in global settings. A nonblank token
+        /// remains here when its third-party Def is temporarily unavailable; row multipliers then use
+        /// Pawn Diary's safe Standard fallback until that provider returns.
+        /// </summary>
         public string selectedPresetDefName = string.Empty;
 
-        /// <summary>Localized selected-preset label for display. Never use this as an identifier.</summary>
+        /// <summary>
+        /// Localized selected-preset label for display, or the preserved Def token when its provider is
+        /// unavailable. Never use this as an identifier.
+        /// </summary>
         public string selectedPresetLabel = string.Empty;
 
         /// <summary>True when at least one known settings-visible group has a saved frequency override

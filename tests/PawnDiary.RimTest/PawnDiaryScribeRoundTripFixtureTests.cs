@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using PawnDiary.Capture;
+using PawnDiary.Integration;
 using RimTestRedux;
 using Verse;
 
@@ -1373,6 +1374,79 @@ namespace PawnDiary.RimTests
                 "unknown future-group frequency override was not preserved.");
             Require(loaded.HasCustomFrequencyOverrides(),
                 "known sparse override was not detected as Custom after load.");
+        }
+
+        /// <summary>
+        /// A preset supplied by an optional add-on can be absent for one launch. Its stable token and
+        /// explicit Standard-equivalent rows must survive repeated settings round-trips, while runtime
+        /// and API row arithmetic safely use Standard until the provider returns.
+        /// </summary>
+        [Test]
+        public static void UnavailableThirdPartyFrequencyPresetPreservesSelectionAndOverrides()
+        {
+            const string unavailablePreset = "PawnDiary_RimTest_UnavailableFrequencyPreset";
+            PawnDiarySettings original = new PawnDiarySettings
+            {
+                frequencySettingsSchemaVersion =
+                    PawnDiarySettings.CurrentFrequencySettingsSchemaVersion,
+                frequencyPresetDefName = unavailablePreset,
+                groupFrequencyOverrides = new Dictionary<string, float>(
+                    StringComparer.OrdinalIgnoreCase)
+                {
+                    // This equals today's Standard fallback but may differ from the returning add-on
+                    // preset. Re-sparsifying it would silently change the player's future intent.
+                    { "workRoutine", 1f }
+                }
+            };
+
+            PawnDiarySettings loaded = ScribeRoundTrip(original);
+            AssertStr(unavailablePreset, loaded.frequencyPresetDefName,
+                "unavailable third-party frequency preset token");
+            float savedMultiplier;
+            Require(loaded.TryGetGroupFrequencyOverride("workRoutine", out savedMultiplier)
+                    && Math.Abs(savedMultiplier - 1f) < 0.0001f,
+                "Standard-equivalent override was destructively re-sparsified while its preset was absent.");
+
+            DiaryFrequencyPresetSnapshot effectivePreset = loaded.FrequencyPresetSnapshot();
+            AssertStr(DiaryFrequencyPresets.StandardDefName, effectivePreset.presetKey,
+                "unavailable preset effective fallback");
+            DiaryEventFrequencySettingsSnapshot apiSnapshot =
+                IntegrationApiSettings.BuildEventFrequencySettingsSnapshot(loaded);
+            Require(apiSnapshot != null
+                    && string.Equals(
+                        apiSnapshot.selectedPresetDefName,
+                        unavailablePreset,
+                        StringComparison.Ordinal)
+                    && string.Equals(
+                        apiSnapshot.selectedPresetLabel,
+                        unavailablePreset,
+                        StringComparison.Ordinal)
+                    && !apiSnapshot.hasCustomOverrides,
+                "frequency API did not separate the unresolved selection from effective Standard state.");
+
+            DiaryEventFilterSnapshot workRow = null;
+            for (int i = 0; i < apiSnapshot.filters.Count; i++)
+            {
+                DiaryEventFilterSnapshot candidate = apiSnapshot.filters[i];
+                if (string.Equals(candidate?.key, "workRoutine", StringComparison.OrdinalIgnoreCase))
+                {
+                    workRow = candidate;
+                    break;
+                }
+            }
+
+            Require(workRow != null
+                    && workRow.hasFrequencyOverride
+                    && Math.Abs(workRow.presetFrequencyMultiplier - 1f) < 0.0001f
+                    && Math.Abs(workRow.effectiveFrequencyMultiplier - 1f) < 0.0001f,
+                "unavailable preset did not expose Standard as only its effective fallback.");
+
+            PawnDiarySettings reloaded = ScribeRoundTrip(loaded);
+            AssertStr(unavailablePreset, reloaded.frequencyPresetDefName,
+                "unavailable preset token after second round-trip");
+            Require(reloaded.TryGetGroupFrequencyOverride("workRoutine", out savedMultiplier)
+                    && Math.Abs(savedMultiplier - 1f) < 0.0001f,
+                "second settings round-trip dropped the unavailable preset's explicit override.");
         }
 
         /// <summary>

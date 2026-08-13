@@ -212,18 +212,20 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
-        /// A post-commit dispatch fault still reports durable recording even when the signal never
-        /// receives the saved event object. Both handle-result paths must preserve that truth without
-        /// inventing an event id that callers could mistake for a resolvable handle.
+        /// The typed dispatcher can know that persistence began after a fault, but the existing public
+        /// submission APIs must retain their pre-v9 completed-emission contract. Both handle factories
+        /// therefore report failure and never fabricate an event id for that exceptional path.
         /// </summary>
         [Test]
-        public static void PostCommitSubmissionResultStaysRecordedWithoutFabricatedHandles()
+        public static void PostCommitSubmissionResultPreservesLegacyFailureContract()
         {
             bool pageRegistered = DiaryDispatchOutcomePolicy.PageRegistered(
                 DiaryDispatchOutcome.ExceptionAfterCommit);
+            bool emitted = DiaryDispatchOutcomePolicy.EmissionRan(
+                DiaryDispatchOutcome.ExceptionAfterCommit);
             PawnDiaryRimTestScope.Require(
-                pageRegistered,
-                "ExceptionAfterCommit must remain a page-registered public API outcome.");
+                pageRegistered && !emitted,
+                "ExceptionAfterCommit must remain durable internally but false under the legacy emission predicate.");
 
             int checkedFactories = 0;
             MethodInfo[] methods = typeof(PawnDiaryApi).GetMethods(
@@ -244,23 +246,23 @@ namespace PawnDiary.RimTests
                 const string eventKey = "pawndiary_rimtest_post_commit";
                 DiaryEventSubmissionResult result = method.Invoke(
                     null,
-                    new object[] { TestSourceId, eventKey, pageRegistered, null })
+                    new object[] { TestSourceId, eventKey, emitted, null })
                     as DiaryEventSubmissionResult;
                 PawnDiaryRimTestScope.Require(
                     result != null
-                        && result.recorded
+                        && !result.recorded
                         && !result.pairwise
                         && result.primary == null
                         && result.partner == null
                         && string.Equals(result.sourceId, TestSourceId, StringComparison.Ordinal)
                         && string.Equals(result.eventKey, eventKey, StringComparison.Ordinal),
-                    "A page-registered post-commit result lost its recorded state or fabricated a handle.");
+                    "A post-commit fault changed the legacy failure result or fabricated a handle.");
                 checkedFactories++;
             }
 
             PawnDiaryRimTestScope.Require(
                 checkedFactories == 2,
-                "The post-commit contract must cover generated/prompt and direct-entry result factories.");
+                "The legacy post-commit contract must cover generated/prompt and direct-entry result factories.");
         }
 
         /// <summary>

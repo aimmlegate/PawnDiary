@@ -814,9 +814,9 @@ namespace PawnDiary
 
         // Records the optional start/end diary page for a condition transition, gated by the def's
         // recordStartEvent / recordEndEvent flag and deduped per phase/map/subject. Returns true when the
-        // transition is SATISFIED (a page was written, or the def does not record this phase, or it was
-        // already deduped) and false when a page was wanted but could not be written (no eligible pawn),
-        // so the caller can keep the saved state retryable instead of permanently losing the page.
+        // transition is SATISFIED (a page was written, output was deliberately disabled/skipped, the def
+        // does not record this phase, or it was already deduped) and false when a page was wanted but
+        // could not be written (no eligible pawn), so the caller can keep the saved state retryable.
         private bool RecordObservedConditionPage(ObservedConditionDecision decision, DiaryObservedConditionDef def)
         {
             bool isStart = decision.kind == ObservedConditionDecisionKind.StartRecorded;
@@ -828,6 +828,17 @@ namespace PawnDiary
             if (!isStart && !def.recordEndEvent)
             {
                 return true; // def does not record ends: nothing wanted, so the transition is satisfied.
+            }
+
+            // Observed-condition page Defs use the same Interaction-domain group catalog as event
+            // windows. A disabled group deliberately settles the lifecycle transition without a page;
+            // retaining it as retryable would create retroactive output when the player re-enables it.
+            DiaryInteractionGroupDef group =
+                InteractionGroups.ClassifyDefName(GroupDomain.Interaction, def.defName);
+            if (group != null && PawnDiaryMod.Settings != null
+                && !PawnDiaryMod.Settings.IsGroupEnabled(group.defName))
+            {
+                return true;
             }
 
             string phase = isStart ? ObservedConditionPhaseStart : ObservedConditionPhaseEnd;
@@ -844,9 +855,28 @@ namespace PawnDiary
 
             int transitionTick = Find.TickManager.TicksGame;
             List<Pawn> pawns = ObservedConditionPawns(def, decision.state, transitionTick);
+            RemoveIneligibleDirectFanoutPawns(pawns);
             if (pawns.Count == 0)
             {
                 return false; // retryable: no recipient right now.
+            }
+
+            DiaryFrequencyDecision frequency = DecideFrequency(
+                BuildCaptureContext(
+                    eligible: true,
+                    userEnabled: true,
+                    signalEnabled: true,
+                    ambientSignalEnabled: true,
+                    frequencyGroup: group,
+                    nativeCaptureChance: 1f,
+                    bypassFrequency: false),
+                bypassFrequency: false);
+            if (!frequency.Accepted)
+            {
+                // Frequency owns the transition, not an individual pawn. Returning true is essential:
+                // ApplyObservedConditionPlan must commit the start/end state rather than retrying until
+                // this configured probability eventually wins.
+                return true;
             }
 
             string label = DiaryLineCleaner.CleanLine(def.LabelCap.Resolve());

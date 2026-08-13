@@ -705,9 +705,9 @@ namespace PawnDiary
 
         /// <summary>
         /// Applies the selected frequency profile after semantic policy and dedup have accepted the
-        /// source. The only random value is drawn inside the established isolated Rand scope.
+        /// source. Probabilistic candidates draw from the component's private evolving admission stream.
         /// </summary>
-        private static DiaryFrequencyDecision DecideFrequency(
+        private DiaryFrequencyDecision DecideFrequency(
             CaptureContext context,
             bool bypassFrequency)
         {
@@ -746,15 +746,7 @@ namespace PawnDiary
             float roll = float.NaN;
             if (validChance && effectiveChance > 0f && effectiveChance < 1f)
             {
-                Rand.PushState();
-                try
-                {
-                    roll = Rand.Value;
-                }
-                finally
-                {
-                    Rand.PopState();
-                }
+                roll = admissionRandom.NextUnitFloat();
             }
             else if (validChance)
             {
@@ -777,7 +769,11 @@ namespace PawnDiary
             });
         }
 
-        private void CaptureFrequencyRejectedKnowledge(
+        /// <summary>
+        /// Applies the shared no-page knowledge policy for both central frequency rejection and an
+        /// aggregate owner whose admission is deliberately deferred until after dispatch.
+        /// </summary>
+        internal void CaptureFrequencyRejectedKnowledge(
             DiarySignal signal,
             DiaryEventData payload,
             CaptureContext context)

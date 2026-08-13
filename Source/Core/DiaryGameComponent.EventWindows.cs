@@ -684,10 +684,10 @@ namespace PawnDiary
         {
             // Event-window pages classify as Interaction-domain events by their window defName (e.g.
             // "Birthday" -> eventWindowBirthday), and that group is the settings Events row players
-            // toggle. Honor it at this one choke point every start/end/timeout page passes through, so
-            // a disabled row stops the page while window state, dedup, and prompt coloring keep
-            // working. This is also the contract the Biotech growth fallback relies on: with the row
-            // disabled, ReleaseBiotechGrowthToOrdinaryBirthday consumes baselines without a page.
+            // toggle and tune. Honor both controls at this one choke point every start/end/timeout page
+            // passes through, so a disabled/frequency-rejected row stops the page while window state,
+            // dedup, and prompt coloring keep working. This is also the contract the Biotech growth
+            // fallback relies on: a settled window occurrence consumes baselines without a page.
             bool questSource = string.Equals(
                 facts?.source ?? active?.startSource,
                 EventWindowSourceQuest,
@@ -708,8 +708,29 @@ namespace PawnDiary
             }
 
             List<Pawn> pawns = EventWindowPawns(def, active, facts, map, subjectPawn);
+            // Some scopes can resolve a live pawn that is not currently allowed to own a diary. Remove
+            // those rows before admission so an empty fan-out neither draws frequency nor pretends it
+            // had a recipient. The surviving list is the exact one decision shared by every page below.
+            RemoveIneligibleDirectFanoutPawns(pawns);
             if (pawns.Count == 0)
             {
+                return;
+            }
+
+            DiaryFrequencyDecision frequency = DecideFrequency(
+                BuildCaptureContext(
+                    eligible: true,
+                    userEnabled: true,
+                    signalEnabled: true,
+                    ambientSignalEnabled: true,
+                    frequencyGroup: group,
+                    nativeCaptureChance: 1f,
+                    bypassFrequency: false),
+                bypassFrequency: false);
+            if (!frequency.Accepted)
+            {
+                // ProcessEventWindowStart/End (or the timeout scanner) already owns lifecycle and dedup.
+                // A deliberate miss therefore settles this exact phase instead of rerolling per pawn.
                 return;
             }
 
@@ -741,6 +762,27 @@ namespace PawnDiary
                 ApplyEventWindowNarrativeEvidence(diaryEvent, def, active, facts, pawn);
 
                 QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
+            }
+        }
+
+        /// <summary>
+        /// Narrows one direct page fan-out to the pawns that can currently own diary pages. Event windows
+        /// and observed conditions share this impure adapter so both sample frequency only after their
+        /// exact recipient set is known, while still sharing one decision across that whole set.
+        /// </summary>
+        private static void RemoveIneligibleDirectFanoutPawns(List<Pawn> pawns)
+        {
+            if (pawns == null)
+            {
+                return;
+            }
+
+            for (int i = pawns.Count - 1; i >= 0; i--)
+            {
+                if (!IsDiaryEligible(pawns[i]))
+                {
+                    pawns.RemoveAt(i);
+                }
             }
         }
 

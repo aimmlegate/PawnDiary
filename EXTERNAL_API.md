@@ -24,7 +24,8 @@ time and cannot report the version of the DLL RimWorld actually loaded. Keep v9-
 calls behind the same reflection boundary; the example adapter's `LoadedApiVersionProbe.cs` and
 `FrequencyApiV9Shim.cs` are the reference implementation.
 
-For `SubmitEventWithHandle`, `SubmitPromptEntry`, and `SubmitDirectEntry`, `recorded=true` means the
-canonical page entered persistence. In the rare case that later post-commit work fails before the
-signal can expose that page, `primary` and `partner` remain null because Pawn Diary will not fabricate
-an event id; the accepted request still consumes its budget reservation.
+Existing submission semantics remain unchanged in v9: Boolean success uses the legacy completed-
+emission predicate, and `SubmitEventWithHandle`, `SubmitPromptEntry`, and `SubmitDirectEntry` return
+`recorded=true` only with a non-null `primary` handle. A rare exception after persistence begins is
+therefore reported as failure with null handles, and any budget reservation is released; adapters
+should treat that result as indeterminate rather than automatically replaying it.

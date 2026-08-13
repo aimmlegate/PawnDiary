@@ -151,15 +151,15 @@ namespace PawnDiary
         /// <summary>
         /// Verifies one normally-returned exact owner, commits its replay barrier, and dispatches at
         /// most one operator-authored ending page. The generic Quest signal remains deferred until the
-        /// caller proves this method actually created that dedicated page.
+        /// caller proves this dedicated route settled the exact source occurrence.
         /// </summary>
         internal OdysseyMechhiveOutcomePlan CompleteOdysseyMechhiveOutcome(
             object coreComp,
             OdysseyMechhiveOutcomeCapture capture,
             bool questSuccessObserved,
-            out bool dedicatedEventCreated)
+            out bool dedicatedSourceSettled)
         {
-            dedicatedEventCreated = false;
+            dedicatedSourceSettled = false;
             OdysseyMechhiveOutcomeFacts facts;
             if (!DlcContext.TryCompleteOdysseyMechhiveOutcome(
                 coreComp, capture, questSuccessObserved, out facts) || facts == null)
@@ -196,11 +196,11 @@ namespace PawnDiary
             OdysseyMechhiveOutcomeSignal signal = new OdysseyMechhiveOutcomeSignal(
                 facts, plan, policy, group, actor);
             DiaryDispatchOutcome outcome = DispatchWithOutcome(signal);
-            dedicatedEventCreated = DiaryDispatchOutcomePolicy.PageRegistered(outcome);
-            if (!dedicatedEventCreated) return plan;
+            dedicatedSourceSettled = DiaryDispatchOutcomePolicy.SettlesSource(outcome);
+            if (!dedicatedSourceSettled) return plan;
 
-            // The typed outcome owns the deferred Quest signal. CreatedEvent remains optional
-            // bookkeeping only, so a post-commit exception cannot release a duplicate Quest page.
+            // The typed outcome owns the deferred Quest signal, including a frequency skip.
+            // CreatedEvent remains optional ID/reflection bookkeeping after a real page exists.
             DiaryEvent createdEvent = signal.CreatedEvent;
             if (createdEvent == null) return plan;
 

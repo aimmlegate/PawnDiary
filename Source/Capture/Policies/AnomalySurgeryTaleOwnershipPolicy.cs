@@ -32,15 +32,16 @@ namespace PawnDiary.Capture
         }
 
         /// <summary>
-        /// The staged generic signal is discarded only after its source truth is verified and a
-        /// dedicated replacement event was actually created. Every other result releases it.
+        /// The staged generic signal is discarded only after its source truth is verified and the
+        /// dedicated route settled the occurrence. Settlement may be a page or an intentional
+        /// frequency skip; every pre-settlement rejection releases the fallback.
         /// </summary>
         public static bool ShouldSuppress(
             bool verifiedReplacement,
-            bool dedicatedEventCreated,
+            bool dedicatedSourceSettled,
             bool taleWasDeferred)
         {
-            return taleWasDeferred && dedicatedEventCreated && verifiedReplacement;
+            return taleWasDeferred && dedicatedSourceSettled && verifiedReplacement;
         }
 
         private static string CleanStable(string value)

@@ -42,8 +42,12 @@ description: PawnDiary repository workflow for Claude Code, Codex, and OpenCode.
      isolated in `Rand.PushState(...)` / `Rand.PopState()` so it does not advance RimWorld's seeded
      `Rand` stream that the rest of the game draws from.
    - Use `Rand.PushState(HumorChancePolicy.StableSeed(eventId, pawnId, salt))` for generation-time
-     picks that must reproduce on Regenerate/preview. Use unseeded `Rand.PushState()` for one-shot
-     capture picks whose result is persisted. Always `PopState()` in a `finally`.
+     picks that must reproduce on Regenerate/preview. For an isolated one-shot pick, unseeded
+     `Rand.PushState()` is safe only when some unrelated evolving state supplies a fresh seed or the
+     choice is made once: `PopState()` restores Verse's seed/iteration, so repeatedly drawing inside
+     identical unseeded scopes repeats the same value. A recurring runtime gate must seed one private
+     evolving stream (or use a stable per-occurrence seed), then persist the resulting decision.
+     Always `PopState()` in a `finally`.
    - Mirror `Source/Generation/HumorCues.cs` and `Source/Generation/PsychotypeRolls.cs`.
 
 5. Prefer XML-owned policy and constants
