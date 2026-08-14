@@ -368,7 +368,11 @@ namespace PawnDiaryPowerfulAiBridge
 
             return selected == null
                 ? string.Empty
-                : selected.index + "|" + (selected.url ?? string.Empty) + "|" + (selected.model ?? string.Empty);
+                : PersonaTransferText.BuildLaneSignature(
+                    selected.index,
+                    selected.url,
+                    selected.model,
+                    selected.apiMode);
         }
 
         private IEnumerable<Pawn> TouchedPawns()

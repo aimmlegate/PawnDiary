@@ -16,6 +16,7 @@ namespace PowerfulAiBridgeLogicTests
             BlankPersonaReturnsNull();
             CapsWithoutSplittingSurrogatePair();
             FingerprintIsStableAndSensitive();
+            LaneSignatureChangesWithProtocolMode();
             Console.WriteLine("PowerfulAiBridgeLogicTests: " + passed + " passed, " + failed + " failed.");
             return failed == 0 ? 0 : 1;
         }
@@ -74,6 +75,20 @@ namespace PowerfulAiBridgeLogicTests
             Check("different input changes fingerprint", a != PersonaTransferText.StableFingerprint("same text!"));
             Check("null equals empty", PersonaTransferText.StableFingerprint(null)
                 == PersonaTransferText.StableFingerprint(string.Empty));
+        }
+
+        private static void LaneSignatureChangesWithProtocolMode()
+        {
+            const string url = "https://provider.example/v1";
+            const string model = "shared-model";
+            string chat = PersonaTransferText.BuildLaneSignature(
+                2, url, model, "chatCompletions");
+            string responses = PersonaTransferText.BuildLaneSignature(
+                2, url, model, "responses");
+
+            Check("lane signature includes protocol mode",
+                chat == "2|https://provider.example/v1|shared-model|chatCompletions");
+            Check("protocol mode change invalidates lane signature", chat != responses);
         }
 
         private static PowerfulAiPersonaSnapshot CompleteSnapshot()

@@ -5,6 +5,9 @@
 // XML Def prompt-policy and tuning fields.
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using PawnDiary.Capture;
 using RimWorld;
 using UnityEngine;
@@ -21,6 +24,8 @@ namespace PawnDiary
     /// </summary>
     public class ApiEndpointConfig : IExposable
     {
+        private const int MaximumPersistedProviderFamilyChars = 128;
+
         // Base URL of the API. EndpointUtility adds the mode-specific path at send time.
         public string url = PawnDiarySettings.DefaultEndpointUrl;
         // Model name sent in the request payload. Required — a row with no model is ignored.
@@ -50,6 +55,11 @@ namespace PawnDiary
         // (empty for a lane the player added by hand). Persisted so an API-injected lane stays traceable
         // and is never silently indistinguishable from a hand-added row. See IntegrationApiSettings.AddLane.
         public string addedBySourceId = string.Empty;
+        // Model discovery can expose a provider architecture family that is not present in a renamed
+        // model id. Keep the bounded value with a credential-free signature of the exact URL, protocol,
+        // and model that produced it so a later row edit can never reuse stale metadata.
+        private string providerModelFamily = string.Empty;
+        private string providerModelFamilyLaneSignature = string.Empty;
 
         public ApiEndpointConfig()
         {
@@ -77,8 +87,32 @@ namespace PawnDiary
                 reasoningEffort = reasoningEffort,
                 reasoningTag = reasoningTag,
                 contextDetailOverride = contextDetailOverride,
-                addedBySourceId = addedBySourceId
+                addedBySourceId = addedBySourceId,
+                providerModelFamily = this.providerModelFamily,
+                providerModelFamilyLaneSignature = this.providerModelFamilyLaneSignature
             };
+        }
+
+        /// <summary>Stores bounded discovery metadata for this row's exact current lane identity.</summary>
+        internal void RememberProviderModelFamily(string providerFamily)
+        {
+            this.providerModelFamily = NormalizeProviderModelFamily(providerFamily);
+            providerModelFamilyLaneSignature = string.IsNullOrEmpty(this.providerModelFamily)
+                ? string.Empty
+                : CurrentProviderModelFamilyLaneSignature();
+        }
+
+        /// <summary>Returns saved family metadata only while URL, protocol, and model still match.</summary>
+        internal string ProviderModelFamilyForCurrentLane()
+        {
+            string normalizedFamily = NormalizeProviderModelFamily(providerModelFamily);
+            return !string.IsNullOrEmpty(normalizedFamily)
+                && string.Equals(
+                    providerModelFamilyLaneSignature,
+                    CurrentProviderModelFamilyLaneSignature(),
+                    StringComparison.Ordinal)
+                ? normalizedFamily
+                : string.Empty;
         }
 
         // Reads/writes the row fields on save and load (Scribe is RimWorld's serializer).
@@ -102,6 +136,88 @@ namespace PawnDiary
             Scribe_Values.Look(ref reasoningTag, "reasoningTag", PawnDiarySettings.DefaultReasoningTag);
             Scribe_Values.Look(ref contextDetailOverride, "contextDetailOverride", PromptContextDetailOverride.Inherit);
             Scribe_Values.Look(ref addedBySourceId, "addedBySourceId", string.Empty);
+            NormalizePersistedProviderModelFamily();
+            Scribe_Values.Look(ref providerModelFamily, "providerModelFamily", string.Empty);
+            Scribe_Values.Look(
+                ref providerModelFamilyLaneSignature,
+                "providerModelFamilyLaneSignature",
+                string.Empty);
+            NormalizePersistedProviderModelFamily();
+        }
+
+        private void NormalizePersistedProviderModelFamily()
+        {
+            providerModelFamily = NormalizeProviderModelFamily(providerModelFamily);
+            if (string.IsNullOrEmpty(providerModelFamily)
+                || !string.Equals(
+                    providerModelFamilyLaneSignature,
+                    CurrentProviderModelFamilyLaneSignature(),
+                    StringComparison.Ordinal))
+            {
+                providerModelFamily = string.Empty;
+                providerModelFamilyLaneSignature = string.Empty;
+            }
+        }
+
+        private static string NormalizeProviderModelFamily(string value)
+        {
+            string raw = value ?? string.Empty;
+            StringBuilder normalized = new StringBuilder(
+                Math.Min(raw.Length, MaximumPersistedProviderFamilyChars));
+            bool pendingSpace = false;
+            for (int i = 0; i < raw.Length && normalized.Length < MaximumPersistedProviderFamilyChars; i++)
+            {
+                char current = raw[i];
+                if (char.IsWhiteSpace(current) || char.IsControl(current))
+                {
+                    pendingSpace = normalized.Length > 0;
+                    continue;
+                }
+
+                if (pendingSpace && normalized.Length < MaximumPersistedProviderFamilyChars)
+                {
+                    normalized.Append(' ');
+                    pendingSpace = false;
+                }
+
+                if (char.IsHighSurrogate(current))
+                {
+                    if (i + 1 >= raw.Length
+                        || !char.IsLowSurrogate(raw[i + 1])
+                        || normalized.Length > MaximumPersistedProviderFamilyChars - 2)
+                    {
+                        continue;
+                    }
+
+                    normalized.Append(current);
+                    normalized.Append(raw[++i]);
+                    continue;
+                }
+
+                // An unpaired low surrogate is not valid XML text either; discard it defensively.
+                if (!char.IsLowSurrogate(current))
+                {
+                    normalized.Append(current);
+                }
+            }
+
+            return normalized.ToString().Trim();
+        }
+
+        private string CurrentProviderModelFamilyLaneSignature()
+        {
+            // Hashing avoids duplicating a query credential that may already be embedded in the saved
+            // URL. Length prefixes make the exact raw URL/model boundary unambiguous before hashing.
+            string rawUrl = url ?? string.Empty;
+            string rawModel = model ?? string.Empty;
+            string identity = ((int)ApiEndpointPolicy.NormalizeApiMode(apiMode)).ToString(
+                    CultureInfo.InvariantCulture)
+                + "|" + rawUrl.Length.ToString(CultureInfo.InvariantCulture) + "|" + rawUrl
+                + "|" + rawModel.Length.ToString(CultureInfo.InvariantCulture) + "|" + rawModel;
+            using (SHA256 hash = SHA256.Create())
+            {
+                return Convert.ToBase64String(hash.ComputeHash(Encoding.UTF8.GetBytes(identity)));
+            }
         }
     }
 

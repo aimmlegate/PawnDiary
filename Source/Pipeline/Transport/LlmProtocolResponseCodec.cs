@@ -119,9 +119,9 @@ namespace PawnDiary
 
             if (responseMode == LlmResponseMode.OpenAIResponses)
             {
-                result.FinishReason = StringField(root, "status").Trim().ToLowerInvariant();
+                result.FinishReason = NormalizeFinishReason(StringField(root, "status"), false);
                 Dictionary<string, object> incomplete = ObjectField(root, "incomplete_details");
-                string incompleteReason = StringField(incomplete, "reason").Trim().ToLowerInvariant();
+                string incompleteReason = NormalizeFinishReason(StringField(incomplete, "reason"), false);
                 result.Truncated = string.Equals(result.FinishReason, "incomplete", StringComparison.Ordinal)
                     || incompleteReason.IndexOf("max", StringComparison.Ordinal) >= 0;
 
@@ -139,7 +139,7 @@ namespace PawnDiary
             }
 
             Dictionary<string, object> choice = FirstObject(ArrayField(root, "choices"));
-            result.FinishReason = StringField(choice, "finish_reason").Trim().ToLowerInvariant();
+            result.FinishReason = NormalizeFinishReason(StringField(choice, "finish_reason"), false);
             result.Truncated = string.Equals(result.FinishReason, "length", StringComparison.Ordinal);
             result.Refused = string.Equals(result.FinishReason, "content_filter", StringComparison.Ordinal);
             Dictionary<string, object> message = ObjectField(choice, "message");
@@ -162,7 +162,7 @@ namespace PawnDiary
         {
             errorType = ErrorType(root);
             result.ProviderError = ProviderObjectError(root, "Anthropic", true);
-            result.FinishReason = StringField(root, "stop_reason").Trim().ToLowerInvariant();
+            result.FinishReason = NormalizeFinishReason(StringField(root, "stop_reason"), false);
             result.Truncated = string.Equals(result.FinishReason, "max_tokens", StringComparison.Ordinal)
                 || string.Equals(result.FinishReason, "model_context_window_exceeded", StringComparison.Ordinal);
             result.Refused = string.Equals(result.FinishReason, "refusal", StringComparison.Ordinal);
@@ -186,7 +186,7 @@ namespace PawnDiary
 
             if (result.Refused && string.IsNullOrWhiteSpace(result.ProviderError))
             {
-                string stopDetail = ErrorDetail(ObjectField(root, "stop_details"));
+                string stopDetail = AnthropicStopDetail(ObjectField(root, "stop_details"));
                 result.ProviderError = string.IsNullOrWhiteSpace(stopDetail)
                     ? "Anthropic refused the request."
                     : "Anthropic refusal: " + stopDetail;
@@ -215,7 +215,7 @@ namespace PawnDiary
             }
 
             Dictionary<string, object> candidate = FirstObject(ArrayField(root, "candidates"));
-            result.FinishReason = StringField(candidate, "finishReason").Trim().ToUpperInvariant();
+            result.FinishReason = NormalizeFinishReason(StringField(candidate, "finishReason"), true);
             result.FinishMessage = BoundedDetail(StringField(candidate, "finishMessage"));
             result.Truncated = string.Equals(result.FinishReason, "MAX_TOKENS", StringComparison.Ordinal);
             if (IsGeminiRefusalReason(result.FinishReason))
@@ -262,7 +262,7 @@ namespace PawnDiary
             Dictionary<string, object> message = ObjectField(root, "message");
             // message.thinking is intentionally ignored even when a model emits it unexpectedly.
             result.Text = StringField(message, "content");
-            result.FinishReason = StringField(root, "done_reason").Trim().ToLowerInvariant();
+            result.FinishReason = NormalizeFinishReason(StringField(root, "done_reason"), false);
             result.Truncated = string.Equals(result.FinishReason, "length", StringComparison.Ordinal)
                 || string.Equals(result.FinishReason, "max_tokens", StringComparison.Ordinal);
 
@@ -327,23 +327,37 @@ namespace PawnDiary
         {
             string errorText = ProviderObjectError(root, "Gemini", false);
             Dictionary<string, object> error = ObjectField(root, "error");
-            Dictionary<string, object> detail = FirstObject(ArrayField(error, "details"));
-            if (detail == null)
+            StringBuilder summary = new StringBuilder();
+            object[] details = ArrayField(error, "details");
+            for (int i = 0; i < details.Length; i++)
             {
-                return errorText;
+                Dictionary<string, object> detail = details[i] as Dictionary<string, object>;
+                if (detail == null)
+                {
+                    continue;
+                }
+
+                AppendNamedDetail(summary, "reason", BoundedDetail(StringField(detail, "reason")));
+                AppendNamedDetail(summary, "domain", BoundedDetail(StringField(detail, "domain")));
+
+                // ErrorInfo keeps these useful routing hints inside metadata. Read only the two
+                // documented scalar keys; arbitrary metadata remains deliberately invisible.
+                Dictionary<string, object> metadata = ObjectField(detail, "metadata");
+                AppendNamedDetail(summary, "service", BoundedDetail(StringField(metadata, "service")));
+                AppendNamedDetail(summary, "method", BoundedDetail(StringField(metadata, "method")));
+
+                object[] violations = ArrayField(detail, "fieldViolations");
+                for (int j = 0; j < violations.Length; j++)
+                {
+                    Dictionary<string, object> violation = violations[j] as Dictionary<string, object>;
+                    AppendNamedDetail(summary, "field", BoundedDetail(StringField(violation, "field")));
+                    AppendNamedDetail(
+                        summary,
+                        "description",
+                        BoundedDetail(StringField(violation, "description")));
+                }
             }
 
-            string reason = BoundedDetail(StringField(detail, "reason"));
-            string domain = BoundedDetail(StringField(detail, "domain"));
-            Dictionary<string, object> violation = FirstObject(ArrayField(detail, "fieldViolations"));
-            string field = BoundedDetail(StringField(violation, "field"));
-            string description = BoundedDetail(StringField(violation, "description"));
-
-            StringBuilder summary = new StringBuilder();
-            AppendNamedDetail(summary, "reason", reason);
-            AppendNamedDetail(summary, "domain", domain);
-            AppendNamedDetail(summary, "field", field);
-            AppendNamedDetail(summary, "description", description);
             if (summary.Length == 0)
             {
                 return errorText;
@@ -422,10 +436,14 @@ namespace PawnDiary
             {
                 case "SAFETY":
                 case "RECITATION":
+                case "LANGUAGE":
                 case "BLOCKLIST":
                 case "PROHIBITED_CONTENT":
                 case "IMAGE_SAFETY":
+                case "IMAGE_PROHIBITED_CONTENT":
+                case "IMAGE_RECITATION":
                 case "SPII":
+                case "ESCALATION":
                     return true;
                 default:
                     return false;
@@ -483,6 +501,24 @@ namespace PawnDiary
                 return type + ": " + message;
             }
             return string.IsNullOrEmpty(message) ? type : message;
+        }
+
+        /// <summary>
+        /// Formats Anthropic's documented refusal metadata without accepting arbitrary nested
+        /// objects or obsolete message-shaped fixtures as provider diagnostics.
+        /// </summary>
+        private static string AnthropicStopDetail(Dictionary<string, object> fields)
+        {
+            if (fields == null)
+            {
+                return string.Empty;
+            }
+
+            StringBuilder summary = new StringBuilder();
+            AppendNamedDetail(summary, "type", BoundedDetail(StringField(fields, "type")));
+            AppendNamedDetail(summary, "category", BoundedDetail(StringField(fields, "category")));
+            AppendNamedDetail(summary, "explanation", BoundedDetail(StringField(fields, "explanation")));
+            return BoundedDetail(summary.ToString());
         }
 
         private static void AppendTextBlock(StringBuilder builder, string text)
@@ -546,6 +582,16 @@ namespace PawnDiary
             }
             string text = value as string;
             return string.Equals(text, "true", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Bounds provider-owned finish metadata and keeps it on one line before applying the
+        /// casing expected by each protocol's comparisons and diagnostics.
+        /// </summary>
+        private static string NormalizeFinishReason(string value, bool upperCase)
+        {
+            string normalized = BoundedDetail(value);
+            return upperCase ? normalized.ToUpperInvariant() : normalized.ToLowerInvariant();
         }
 
         private static string BoundedDetail(string value)

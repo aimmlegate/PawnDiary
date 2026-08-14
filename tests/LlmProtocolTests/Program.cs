@@ -270,9 +270,88 @@ namespace PawnDiary
             AssertNotContains("gemini corrupt max omits temperature", LlmProtocolRequestJson.Build(gemini), "temperature");
             AssertNotContains("gemini blank system omitted", LlmProtocolRequestJson.Build(gemini), "systemInstruction");
 
+            LlmProtocolRequestInput geminiFlash = Request(LlmProtocolMode.GeminiGenerateContent);
+            geminiFlash.ModelName = "models/GEMINI-2.5-FLASH-preview-09-2025";
+            geminiFlash.MaxTokens = 32;
+            AssertEqual("gemini 2.5 flash disables thinking without stealing visible budget",
+                "{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"User\\ttext\"}]}],"
+                    + "\"systemInstruction\":{\"parts\":[{\"text\":\"System\\nline\"}]},"
+                    + "\"generationConfig\":{\"maxOutputTokens\":32,"
+                    + "\"thinkingConfig\":{\"thinkingBudget\":0}}}",
+                LlmProtocolRequestJson.Build(geminiFlash));
+
+            LlmProtocolRequestInput geminiFlashLite = Request(LlmProtocolMode.GeminiGenerateContent);
+            geminiFlashLite.ModelName = "gemini-2.5-flash-lite";
+            geminiFlashLite.MaxTokens = 40;
+            AssertContains("gemini 2.5 flash-lite disables thinking",
+                LlmProtocolRequestJson.Build(geminiFlashLite),
+                "\"maxOutputTokens\":40,\"thinkingConfig\":{\"thinkingBudget\":0}");
+
+            LlmProtocolRequestInput geminiPro = Request(LlmProtocolMode.GeminiGenerateContent);
+            geminiPro.ModelName = "gemini-2.5-pro";
+            geminiPro.MaxTokens = 32;
+            AssertContains("gemini 2.5 pro reserves minimum thinking headroom",
+                LlmProtocolRequestJson.Build(geminiPro),
+                "\"maxOutputTokens\":160,\"thinkingConfig\":{\"thinkingBudget\":128}");
+
+            LlmProtocolRequestInput gemini3 = Request(LlmProtocolMode.GeminiGenerateContent);
+            gemini3.ModelName = "gemini-3.6-flash";
+            gemini3.MaxTokens = 40;
+            AssertContains("gemini 3 uses low thinking with headroom",
+                LlmProtocolRequestJson.Build(gemini3),
+                "\"maxOutputTokens\":1064,\"thinkingConfig\":{\"thinkingLevel\":\"low\"}");
+            gemini3.ProviderMaximumOutputTokens = 500;
+            AssertContains("gemini thinking headroom respects provider cap",
+                LlmProtocolRequestJson.Build(gemini3),
+                "\"maxOutputTokens\":500,\"thinkingConfig\":{\"thinkingLevel\":\"low\"}");
+
+            LlmProtocolRequestInput geminiImage = Request(LlmProtocolMode.GeminiGenerateContent);
+            geminiImage.ModelName = "gemini-2.5-flash-image";
+            AssertNotContains("gemini 2.5 image omits unsupported thinking config",
+                LlmProtocolRequestJson.Build(geminiImage), "thinkingConfig");
+            AssertContains("gemini 2.5 image keeps visible token cap",
+                LlmProtocolRequestJson.Build(geminiImage), "\"maxOutputTokens\":123");
+
+            LlmProtocolRequestInput gemini3Image = Request(LlmProtocolMode.GeminiGenerateContent);
+            gemini3Image.ModelName = "models/gemini-3.1-flash-lite-image";
+            gemini3Image.MaxTokens = 32;
+            AssertContains("gemini 3 flash image uses supported minimal level",
+                LlmProtocolRequestJson.Build(gemini3Image),
+                "\"maxOutputTokens\":1056,\"thinkingConfig\":{\"thinkingLevel\":\"minimal\"}");
+
+            LlmProtocolRequestInput gemini3ProImage = Request(LlmProtocolMode.GeminiGenerateContent);
+            gemini3ProImage.ModelName = "gemini-3-pro-image";
+            AssertNotContains("gemini 3 pro image omits unsupported low level",
+                LlmProtocolRequestJson.Build(gemini3ProImage), "thinkingConfig");
+
+            LlmProtocolRequestInput robotics = Request(LlmProtocolMode.GeminiGenerateContent);
+            robotics.ModelName = "models/GEMINI-ROBOTICS-ER-1.6-PREVIEW";
+            robotics.MaxTokens = 32;
+            AssertContains("gemini robotics disables thinking without stealing visible budget",
+                LlmProtocolRequestJson.Build(robotics),
+                "\"maxOutputTokens\":32,\"thinkingConfig\":{\"thinkingBudget\":0}");
+
+            string[] latestAliases =
+            {
+                "gemini-flash-latest",
+                "models/GEMINI-FLASH-LITE-LATEST",
+                "gemini-pro-latest"
+            };
+            for (int i = 0; i < latestAliases.Length; i++)
+            {
+                LlmProtocolRequestInput latest = Request(LlmProtocolMode.GeminiGenerateContent);
+                latest.ModelName = latestAliases[i];
+                latest.MaxTokens = 32;
+                string latestJson = LlmProtocolRequestJson.Build(latest);
+                AssertContains("gemini latest alias low thinking " + latestAliases[i], latestJson,
+                    "\"maxOutputTokens\":1056");
+                AssertContains("gemini latest alias thinking level " + latestAliases[i], latestJson,
+                    "\"thinkingConfig\":{\"thinkingLevel\":\"low\"}");
+            }
+
             LlmProtocolRequestInput ollama = Request(LlmProtocolMode.OllamaChat);
             AssertEqual("ollama exact body",
-                "{\"model\":\"model\\\"one\",\"messages\":[{\"role\":\"system\",\"content\":\"System\\nline\"},{\"role\":\"user\",\"content\":\"User\\ttext\"}],\"stream\":false,\"options\":{\"temperature\":0.7,\"num_predict\":123}}",
+                "{\"model\":\"model\\\"one\",\"messages\":[{\"role\":\"system\",\"content\":\"System\\nline\"},{\"role\":\"user\",\"content\":\"User\\ttext\"}],\"stream\":false,\"think\":false,\"options\":{\"temperature\":0.7,\"num_predict\":123}}",
                 LlmProtocolRequestJson.Build(ollama));
             ollama.Temperature = 99f;
             ollama.ProviderMaximumOutputTokens = 20;
@@ -282,6 +361,30 @@ namespace PawnDiary
             ollama.Temperature = float.NaN;
             AssertNotContains("ollama blank system omitted", LlmProtocolRequestJson.Build(ollama), "\"role\":\"system\"");
             AssertContains("ollama nonfinite temp safe", LlmProtocolRequestJson.Build(ollama), "\"temperature\":1");
+
+            LlmProtocolRequestInput gptOss = Request(LlmProtocolMode.OllamaChat);
+            gptOss.ModelName = "registry.local/team/GPT-OSS:20b";
+            gptOss.MaxTokens = 32;
+            AssertEqual("ollama gpt-oss uses supported low thinking with headroom",
+                "{\"model\":\"registry.local/team/GPT-OSS:20b\","
+                    + "\"messages\":[{\"role\":\"system\",\"content\":\"System\\nline\"},"
+                    + "{\"role\":\"user\",\"content\":\"User\\ttext\"}],"
+                    + "\"stream\":false,\"think\":\"low\","
+                    + "\"options\":{\"temperature\":0.7,\"num_predict\":1056}}",
+                LlmProtocolRequestJson.Build(gptOss));
+            gptOss.ProviderMaximumOutputTokens = 500;
+            AssertContains("ollama gpt-oss headroom respects provider cap",
+                LlmProtocolRequestJson.Build(gptOss), "\"num_predict\":500");
+
+            LlmProtocolRequestInput aliasedGptOss = Request(LlmProtocolMode.OllamaChat);
+            aliasedGptOss.ModelName = "diary-writer:latest";
+            aliasedGptOss.ProviderModelFamily = "gptoss";
+            aliasedGptOss.MaxTokens = 32;
+            string aliasedGptOssJson = LlmProtocolRequestJson.Build(aliasedGptOss);
+            AssertContains("ollama renamed gpt-oss uses discovered family level",
+                aliasedGptOssJson, "\"think\":\"low\"");
+            AssertContains("ollama renamed gpt-oss receives thinking headroom",
+                aliasedGptOssJson, "\"num_predict\":1056");
         }
 
         private static void TestOpenAIResponses()
@@ -294,6 +397,14 @@ namespace PawnDiary
             AssertEqual("chat finish reason", "length", chat.FinishReason);
             AssertTrue("chat length truncated", chat.Truncated);
 
+            LlmProtocolParseResult boundedChat = LlmProtocolResponseCodec.ParseGeneration(
+                "{\"choices\":[{\"message\":{\"content\":\"Visible\"},"
+                    + "\"finish_reason\":\"custom\\r\\n\\u0001" + new string('c', 700) + "\"}]}",
+                LlmProtocolMode.OpenAIChatCompletions);
+            AssertEqual("chat finish reason bounded", 512, boundedChat.FinishReason.Length);
+            AssertNotContains("chat finish reason strips newlines", boundedChat.FinishReason, "\n");
+            AssertNotContains("chat finish reason strips controls", boundedChat.FinishReason, "\u0001");
+
             string responsesJson = "{\"status\":\"completed\",\"output\":["
                 + "{\"type\":\"reasoning\",\"content\":[{\"text\":\"secret\"}]},"
                 + "{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"One\"},{\"type\":\"output_text\",\"text\":\"Two\"}]}]}";
@@ -302,6 +413,15 @@ namespace PawnDiary
             AssertEqual("responses uses existing block parser", "One\nTwo", responses.Text);
             AssertNotContains("responses reasoning excluded", responses.Text, "secret");
             AssertEqual("responses status finish", "completed", responses.FinishReason);
+
+            LlmProtocolParseResult boundedResponses = LlmProtocolResponseCodec.ParseGeneration(
+                "{\"status\":\"custom\\n\\u0001" + new string('s', 700) + "\","
+                    + "\"output\":[{\"type\":\"message\",\"content\":["
+                    + "{\"type\":\"output_text\",\"text\":\"Visible\"}]}]}",
+                LlmProtocolMode.OpenAIResponses);
+            AssertEqual("responses finish reason bounded", 512, boundedResponses.FinishReason.Length);
+            AssertNotContains("responses finish reason strips newlines", boundedResponses.FinishReason, "\n");
+            AssertNotContains("responses finish reason strips controls", boundedResponses.FinishReason, "\u0001");
 
             LlmProtocolParseResult refusal = LlmProtocolResponseCodec.ParseGeneration(
                 "{\"status\":\"completed\",\"output\":[{\"type\":\"message\",\"content\":[{\"type\":\"refusal\",\"refusal\":\"No.\"}]}]}",
@@ -332,10 +452,35 @@ namespace PawnDiary
             AssertContains("anthropic thinking-only no content", thinkingOnly.ProviderError, "no text content");
 
             LlmProtocolParseResult refusal = LlmProtocolResponseCodec.ParseGeneration(
-                "{\"content\":[{\"type\":\"text\",\"text\":\"I cannot.\"}],\"stop_reason\":\"refusal\",\"stop_details\":{\"message\":\"policy\"}}",
+                "{\"content\":[{\"type\":\"text\",\"text\":\"I cannot.\"}],\"stop_reason\":\"refusal\","
+                    + "\"stop_details\":{\"type\":\"refusal\",\"category\":\"cyber\","
+                    + "\"explanation\":\"Policy\\nexplanation " + new string('e', 700) + "\","
+                    + "\"message\":\"obsolete fixture field must not surface\"}}",
                 LlmProtocolMode.AnthropicMessages);
             AssertTrue("anthropic refusal flag", refusal.Refused);
-            AssertContains("anthropic refusal surfaced", refusal.ProviderError, "refus");
+            AssertFalse("anthropic refusal is not success", refusal.Success);
+            AssertContains("anthropic refusal type surfaced", refusal.ProviderError, "type=refusal");
+            AssertContains("anthropic refusal category surfaced", refusal.ProviderError, "category=cyber");
+            AssertContains("anthropic refusal explanation surfaced", refusal.ProviderError, "Policy explanation");
+            AssertNotContains("anthropic refusal stays one line", refusal.ProviderError, "\n");
+            AssertNotContains("anthropic obsolete refusal message ignored", refusal.ProviderError,
+                "obsolete fixture field");
+            AssertTrue("anthropic refusal detail bounded", refusal.ProviderError.Length <= 512);
+
+            LlmProtocolParseResult minimalRefusal = LlmProtocolResponseCodec.ParseGeneration(
+                "{\"content\":[],\"stop_reason\":\"refusal\","
+                    + "\"stop_details\":{\"type\":\"refusal\"}}",
+                LlmProtocolMode.AnthropicMessages);
+            AssertContains("anthropic sparse refusal safely falls back", minimalRefusal.ProviderError,
+                "type=refusal");
+
+            LlmProtocolParseResult boundedStop = LlmProtocolResponseCodec.ParseGeneration(
+                "{\"content\":[{\"type\":\"text\",\"text\":\"Visible\"}],\"stop_reason\":\"custom\\n\\u0001"
+                    + new string('x', 700) + "\"}",
+                LlmProtocolMode.AnthropicMessages);
+            AssertEqual("anthropic finish reason bounded", 512, boundedStop.FinishReason.Length);
+            AssertNotContains("anthropic finish reason stays one line", boundedStop.FinishReason, "\n");
+            AssertNotContains("anthropic finish reason strips controls", boundedStop.FinishReason, "\u0001");
 
             LlmProtocolParseResult overloaded = LlmProtocolResponseCodec.ParseGeneration(
                 "{\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Busy\"},\"request_id\":\"req_123\"}",
@@ -380,6 +525,45 @@ namespace PawnDiary
             AssertContains("gemini safety surfaced", safety.ProviderError, "SAFETY");
             AssertContains("gemini safety message surfaced", safety.ProviderError, "unsafe");
 
+            string[] newlyFilteredReasons =
+            {
+                "LANGUAGE",
+                "ESCALATION",
+                "IMAGE_PROHIBITED_CONTENT",
+                "IMAGE_RECITATION"
+            };
+            for (int i = 0; i < newlyFilteredReasons.Length; i++)
+            {
+                string reason = newlyFilteredReasons[i];
+                LlmProtocolParseResult filtered = LlmProtocolResponseCodec.ParseGeneration(
+                    "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"partial filtered text\"}]},"
+                        + "\"finishReason\":\"" + reason + "\"}]}",
+                    LlmProtocolMode.GeminiGenerateContent);
+                AssertTrue("gemini filtered reason refusal " + reason, filtered.Refused);
+                AssertFalse("gemini filtered partial text rejected " + reason, filtered.Success);
+                AssertContains("gemini filtered reason surfaced " + reason, filtered.ProviderError, reason);
+            }
+
+            string[] technicalReasons = { "MALFORMED_RESPONSE", "UNEXPECTED_TOOL_CALL" };
+            for (int i = 0; i < technicalReasons.Length; i++)
+            {
+                string reason = technicalReasons[i];
+                LlmProtocolParseResult technical = LlmProtocolResponseCodec.ParseGeneration(
+                    "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"partial technical text\"}]},"
+                        + "\"finishReason\":\"" + reason + "\"}]}",
+                    LlmProtocolMode.GeminiGenerateContent);
+                AssertFalse("gemini technical reason is not refusal " + reason, technical.Refused);
+                AssertTrue("gemini technical partial text remains usable " + reason, technical.Success);
+            }
+
+            LlmProtocolParseResult boundedReason = LlmProtocolResponseCodec.ParseGeneration(
+                "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Text\"}]},"
+                    + "\"finishReason\":\"custom\\n\\u0001" + new string('r', 700) + "\"}]}",
+                LlmProtocolMode.GeminiGenerateContent);
+            AssertEqual("gemini finish reason bounded", 512, boundedReason.FinishReason.Length);
+            AssertNotContains("gemini finish reason stays one line", boundedReason.FinishReason, "\n");
+            AssertNotContains("gemini finish reason strips controls", boundedReason.FinishReason, "\u0001");
+
             LlmProtocolParseResult thoughtOnly = LlmProtocolResponseCodec.ParseGeneration(
                 "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"secret\",\"thought\":true}]},\"finishReason\":\"STOP\"}]}",
                 LlmProtocolMode.GeminiGenerateContent);
@@ -402,20 +586,38 @@ namespace PawnDiary
 
             LlmProtocolParseResult invalidField = LlmProtocolResponseCodec.ParseGeneration(
                 "{\"error\":{\"code\":400,\"status\":\"INVALID_ARGUMENT\",\"message\":\"Bad request\","
-                    + "\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.BadRequest\","
-                    + "\"reason\":\"INVALID_FIELD\",\"domain\":\"googleapis.com\","
-                    + "\"metadata\":{\"raw\":\"must-not-surface\"},"
+                    + "\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.ErrorInfo\","
+                    + "\"reason\":\"INVALID_FIELD\",\"domain\":\"googleapis.com\",\"metadata\":{"
+                    + "\"service\":\"generativelanguage.googleapis.com\","
+                    + "\"method\":\"google.ai.generativelanguage.v1beta.GenerativeService.GenerateContent\","
+                    + "\"raw\":\"must-not-surface\"}},{"
+                    + "\"@type\":\"type.googleapis.com/google.rpc.BadRequest\","
                     + "\"fieldViolations\":[{\"field\":\"generationConfig.maxOutputTokens\","
-                    + "\"description\":\"must be positive\"}]}]}}",
+                    + "\"description\":\"must be positive\"},{\"field\":\"contents[0].parts[0].text\","
+                    + "\"description\":\"must not be blank\\nfor generation\"}],"
+                    + "\"ignored\":\"also-must-not-surface\"}]}}",
                 LlmProtocolMode.GeminiGenerateContent,
                 400);
             AssertContains("gemini structured detail reason", invalidField.ProviderError, "INVALID_FIELD");
+            AssertContains("gemini structured detail domain", invalidField.ProviderError, "googleapis.com");
+            AssertContains("gemini structured detail service", invalidField.ProviderError,
+                "generativelanguage.googleapis.com");
+            AssertContains("gemini structured detail method", invalidField.ProviderError,
+                "GenerativeService.GenerateContent");
             AssertContains("gemini structured detail field", invalidField.ProviderError,
                 "generationConfig.maxOutputTokens");
             AssertContains("gemini structured detail description", invalidField.ProviderError,
                 "must be positive");
+            AssertContains("gemini second field violation", invalidField.ProviderError,
+                "contents[0].parts[0].text");
+            AssertContains("gemini second description normalized", invalidField.ProviderError,
+                "must not be blank for generation");
+            AssertNotContains("gemini structured details one line", invalidField.ProviderError, "\n");
+            AssertTrue("gemini structured details bounded", invalidField.ProviderError.Length <= 512);
             AssertNotContains("gemini arbitrary metadata hidden", invalidField.ProviderError,
                 "must-not-surface");
+            AssertNotContains("gemini arbitrary detail hidden", invalidField.ProviderError,
+                "also-must-not-surface");
         }
 
         private static void TestOllamaResponses()
@@ -449,6 +651,14 @@ namespace PawnDiary
                 LlmProtocolMode.OllamaChat);
             AssertContains("ollama thinking-only no content", thinkingOnly.ProviderError, "no message content");
             AssertNotContains("ollama thinking-only secret hidden", thinkingOnly.ProviderError, "secret");
+
+            LlmProtocolParseResult boundedReason = LlmProtocolResponseCodec.ParseGeneration(
+                "{\"message\":{\"content\":\"Visible\"},\"done\":true,"
+                    + "\"done_reason\":\"custom\\n\\u0001" + new string('o', 700) + "\"}",
+                LlmProtocolMode.OllamaChat);
+            AssertEqual("ollama finish reason bounded", 512, boundedReason.FinishReason.Length);
+            AssertNotContains("ollama finish reason strips newlines", boundedReason.FinishReason, "\n");
+            AssertNotContains("ollama finish reason strips controls", boundedReason.FinishReason, "\u0001");
         }
 
         private static void TestRuntimeFailureDetail()
@@ -479,6 +689,43 @@ namespace PawnDiary
             AssertContains("no-text finish gets safe fallback",
                 LlmProtocolRuntimePolicy.NativeProviderFailureDetail(noText),
                 "no usable message content");
+
+            string hostile = "provider\r\n\t\u0001" + new string('x', 1200);
+            string bounded = LlmProtocolRuntimePolicy.NativeProviderFailureDetail(
+                new LlmProtocolParseResult
+                {
+                    ProviderError = "Provider\r\nfailed.\u0000",
+                    FinishReason = "SAFETY\r\n\u0001",
+                    FinishMessage = hostile
+                });
+            AssertTrue("native final failure detail bounded", bounded.Length <= 512);
+            AssertNotContains("native final failure strips carriage returns", bounded, "\r");
+            AssertNotContains("native final failure strips newlines", bounded, "\n");
+            AssertNotContains("native final failure strips controls", bounded, "\u0001");
+            AssertNotContains("native final failure strips nul", bounded, "\u0000");
+            AssertContains("native final failure keeps finish label", bounded, "finish_reason=SAFETY");
+            AssertContains("native final failure keeps message label", bounded, "message=provider");
+
+            AssertEqual("control-only error does not hide usable text", string.Empty,
+                LlmProtocolRuntimePolicy.NativeProviderFailureDetail(
+                    new LlmProtocolParseResult
+                    {
+                        ProviderError = "\r\n\t\u0000\u0001",
+                        Text = "Visible"
+                    }));
+            AssertContains("control-only empty result gets fallback",
+                LlmProtocolRuntimePolicy.NativeProviderFailureDetail(
+                    new LlmProtocolParseResult { ProviderError = "\r\n\t\u0000\u0001" }),
+                "no usable message content");
+
+            string surrogateBoundary = LlmProtocolRuntimePolicy.NativeProviderFailureDetail(
+                new LlmProtocolParseResult
+                {
+                    ProviderError = new string('z', 511) + "\uD800"
+                });
+            AssertEqual("native cap removes dangling high surrogate", 511, surrogateBoundary.Length);
+            AssertFalse("native result ends on complete UTF-16 boundary",
+                char.IsHighSurrogate(surrogateBoundary[surrogateBoundary.Length - 1]));
         }
 
         private static void TestMalformedAndDisposition()
@@ -592,11 +839,15 @@ namespace PawnDiary
         private static void TestOllamaModelsAndLimits()
         {
             LlmProtocolModelPageResult ollama = LlmProtocolModelListCodec.ParsePage(
-                "{\"models\":[{\"name\":\"zeta:latest\",\"model\":\"ignored\"},{\"model\":\"alpha:q4\"},{\"name\":\"zeta:latest\"},{}]}",
+                "{\"models\":[{\"name\":\"zeta:latest\",\"model\":\"ignored\"},"
+                    + "{\"model\":\"alpha:q4\"},{\"name\":\"zeta:latest\","
+                    + "\"details\":{\"family\":\"gptoss\"}},{}]}",
                 LlmProtocolMode.OllamaChat);
             AssertEqual("ollama models dedup", 2, ollama.Models.Count);
             AssertEqual("ollama fallback model sorted", "alpha:q4", ollama.Models[0].Id);
             AssertEqual("ollama name preferred", "zeta:latest", ollama.Models[1].Id);
+            AssertEqual("ollama duplicate retains discovered family", "gptoss",
+                ollama.Models[1].ProviderFamily);
 
             LlmProtocolModelPageResult malformed = LlmProtocolModelListCodec.ParsePage(
                 "{bad", LlmProtocolMode.OllamaChat);

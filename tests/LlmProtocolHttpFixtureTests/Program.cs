@@ -45,6 +45,7 @@ namespace LlmProtocolHttpFixtureTests
         private static async Task Run()
         {
             await TestGenerationPhysicalExchange();
+            await TestPersistedOllamaFamilyOnFreshRequest();
             await TestGenerationNativeErrorRedactionAndCollision();
             await TestSingleCompletionRetryCapAndCancellation();
             await TestOpenAiModelDiscoveryCompatibility();
@@ -52,6 +53,7 @@ namespace LlmProtocolHttpFixtureTests
             await TestGeminiModelPaginationAndCapabilities();
             await TestOllamaModelDiscovery();
             await TestModelDiscoveryGuardsAndRedaction();
+            TestModelPageMetadataMerge();
             TestCapabilityCacheIdentityAndSecretExclusion();
             TestConnectionSignatureIncludesProtocolMode();
             TestNativeFinishMetadataPolicy();
@@ -144,23 +146,23 @@ namespace LlmProtocolHttpFixtureTests
             ApiEndpointConfig geminiEndpoint = Endpoint(
                 "https://generativelanguage.googleapis.com/v1beta/models",
                 "gemini-secret",
-                "models/gemini-test",
+                "models/gemini-3.6-flash",
                 ApiCompatibilityMode.GeminiGenerateContent,
                 ApiAuthMode.CustomHeader,
                 "x-goog-api-key");
             // Exercise the runtime cache-to-request binding, not only the pure serializer: the
-            // connection probe's fixed 32-token budget and temperature must clamp to discovery data.
+            // 32-token visible budget gets thinking headroom while temperature honors discovery.
             ModelCapabilityCache.Update(
                 geminiEndpoint.url,
                 geminiEndpoint.apiMode,
                 geminiEndpoint.model,
-                new ModelProtocolCapability(null, 8, 0.3d));
+                new ModelProtocolCapability(null, 2048, 0.3d));
             string geminiText = await SendConnectionTest(geminiEndpoint, prompt, temperature, gemini);
             AssertEqual("Gemini normal finish is successful", "Gemini OK", geminiText);
             CapturedRequest geminiRequest = gemini.Requests[0];
             AssertEqual(
                 "Gemini generation URL canonicalizes model prefix",
-                "https://generativelanguage.googleapis.com/v1beta/models/gemini-test:generateContent",
+                "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
                 geminiRequest.Url);
             AssertEqual("Gemini key header", "gemini-secret", Header(geminiRequest, "x-goog-api-key"));
             AssertFalse("Gemini has no bearer", geminiRequest.Headers.ContainsKey("Authorization"));
@@ -168,12 +170,16 @@ namespace LlmProtocolHttpFixtureTests
                 "Gemini generation body",
                 NativeBody(
                     LlmProtocolMode.GeminiGenerateContent,
-                    "models/gemini-test",
+                    "models/gemini-3.6-flash",
                     prompt,
                     temperature,
-                    8,
+                    2048,
                     0.3d),
                 geminiRequest.Body);
+            AssertContains("Gemini physical request reserves thinking headroom", geminiRequest.Body,
+                "\"maxOutputTokens\":1056");
+            AssertContains("Gemini physical request selects low thinking", geminiRequest.Body,
+                "\"thinkingConfig\":{\"thinkingLevel\":\"low\"}");
 
             ScriptedExchange ollama = new ScriptedExchange(Response(
                 HttpStatusCode.OK,
@@ -182,10 +188,15 @@ namespace LlmProtocolHttpFixtureTests
             ApiEndpointConfig ollamaEndpoint = Endpoint(
                 "http://localhost:11434/api/tags",
                 "stale-unused-secret",
-                "llama-test:latest",
+                "diary-writer:latest",
                 ApiCompatibilityMode.OllamaChat,
                 ApiAuthMode.None,
                 string.Empty);
+            ModelCapabilityCache.Update(
+                ollamaEndpoint.url,
+                ollamaEndpoint.apiMode,
+                ollamaEndpoint.model,
+                new ModelProtocolCapability(null, 0, null, "gptoss"));
             string ollamaText = await SendConnectionTest(ollamaEndpoint, prompt, temperature, ollama);
             AssertEqual("Ollama normal done reason is successful", "Ollama OK", ollamaText);
             CapturedRequest ollamaRequest = ollama.Requests[0];
@@ -195,10 +206,155 @@ namespace LlmProtocolHttpFixtureTests
                 "Ollama generation body",
                 NativeBody(
                     LlmProtocolMode.OllamaChat,
-                    "llama-test:latest",
+                    "diary-writer:latest",
                     prompt,
-                    temperature),
+                    temperature,
+                    null,
+                    null,
+                    "gptoss"),
                 ollamaRequest.Body);
+            AssertContains("Ollama physical request uses family-aware thinking level", ollamaRequest.Body,
+                "\"think\":\"low\"");
+            AssertContains("Ollama physical request reserves thinking headroom", ollamaRequest.Body,
+                "\"num_predict\":1056");
+        }
+
+        private static async Task TestPersistedOllamaFamilyOnFreshRequest()
+        {
+            const string prompt = "Fresh process probe";
+            ApiEndpointConfig endpoint = Endpoint(
+                "http://fresh-provider-family.invalid:11434/api/tags",
+                string.Empty,
+                "renamed-diary-writer:latest",
+                ApiCompatibilityMode.OllamaChat,
+                ApiAuthMode.None,
+                string.Empty);
+
+            endpoint.RememberProviderModelFamily(" \t gpt\0\r\noss ");
+            AssertEqual(
+                "persisted provider family collapses controls and whitespace",
+                "gpt oss",
+                endpoint.ProviderModelFamilyForCurrentLane());
+            endpoint.RememberProviderModelFamily(new string('x', 127) + "\uD800");
+            string surrogateSafeFamily = endpoint.ProviderModelFamilyForCurrentLane();
+            AssertFalse(
+                "persisted provider family drops a dangling high surrogate",
+                surrogateSafeFamily.Length > 0
+                    && char.IsHighSurrogate(surrogateSafeFamily[surrogateSafeFamily.Length - 1]));
+            endpoint.RememberProviderModelFamily(new string('x', 200));
+            AssertEqual(
+                "persisted provider family is bounded",
+                128,
+                endpoint.ProviderModelFamilyForCurrentLane().Length);
+            endpoint.RememberProviderModelFamily("gptoss");
+            AssertTrue(
+                "fresh request starts without process capability cache",
+                ModelCapabilityCache.Get(endpoint.url, endpoint.apiMode, endpoint.model) == null);
+            AssertEqual(
+                "endpoint copy preserves exact-lane provider family",
+                "gptoss",
+                endpoint.Copy().ProviderModelFamilyForCurrentLane());
+
+            ApiEndpointConfig edited = endpoint.Copy();
+            edited.url = "http://different-provider.invalid:11434";
+            AssertEqual(
+                "URL edit invalidates persisted provider family",
+                string.Empty,
+                edited.ProviderModelFamilyForCurrentLane());
+            edited = endpoint.Copy();
+            edited.model = "different-model:latest";
+            AssertEqual(
+                "model edit invalidates persisted provider family",
+                string.Empty,
+                edited.ProviderModelFamilyForCurrentLane());
+            edited = endpoint.Copy();
+            edited.apiMode = ApiCompatibilityMode.OpenAIChatCompletions;
+            AssertEqual(
+                "protocol edit invalidates persisted provider family",
+                string.Empty,
+                edited.ProviderModelFamilyForCurrentLane());
+
+            ScriptedExchange persistedFallback = new ScriptedExchange(Response(
+                HttpStatusCode.OK,
+                "{\"message\":{\"content\":\"persisted family ok\"},\"done\":true}"));
+            await SendConnectionTest(endpoint, prompt, 0.4f, persistedFallback);
+            AssertContains(
+                "cache-empty request uses persisted GPT-OSS low thinking",
+                persistedFallback.Requests[0].Body,
+                "\"think\":\"low\"");
+            AssertContains(
+                "cache-empty request reserves persisted GPT-OSS headroom",
+                persistedFallback.Requests[0].Body,
+                "\"num_predict\":1056");
+
+            // A successful fresh discovery that reports no family is authoritative: it must disable
+            // the older persisted classification rather than falling back to it again.
+            ModelCapabilityCache.Update(
+                endpoint.url,
+                endpoint.apiMode,
+                endpoint.model,
+                new ModelProtocolCapability(null, 0, null, string.Empty));
+            ScriptedExchange freshMetadata = new ScriptedExchange(Response(
+                HttpStatusCode.OK,
+                "{\"message\":{\"content\":\"fresh metadata ok\"},\"done\":true}"));
+            await SendConnectionTest(endpoint, prompt, 0.4f, freshMetadata);
+            AssertContains(
+                "fresh empty family overrides persisted GPT-OSS thinking",
+                freshMetadata.Requests[0].Body,
+                "\"think\":false");
+            AssertContains(
+                "fresh empty family removes persisted GPT-OSS headroom",
+                freshMetadata.Requests[0].Body,
+                "\"num_predict\":32");
+
+            ApiEndpointConfig pickerEndpoint = Endpoint(
+                "http://picker-provider-family.invalid:11434",
+                string.Empty,
+                string.Empty,
+                ApiCompatibilityMode.OllamaChat,
+                ApiAuthMode.None,
+                string.Empty);
+            const string pickedModel = "post-fetch-alias:latest";
+            ModelCapabilityCache.Update(
+                pickerEndpoint.url,
+                pickerEndpoint.apiMode,
+                pickedModel,
+                new ModelProtocolCapability(null, 0, null, "gptoss"));
+            pickerEndpoint.model = pickedModel;
+            MethodInfo rememberCachedFamily = typeof(PawnDiaryMod).GetMethod(
+                "RememberCachedProviderModelFamily",
+                BindingFlags.NonPublic | BindingFlags.Static);
+            AssertTrue("post-fetch family sync helper is discoverable", rememberCachedFamily != null);
+            rememberCachedFamily.Invoke(null, new object[] { pickerEndpoint });
+            AssertEqual(
+                "post-fetch model selection persists its cached provider family",
+                "gptoss",
+                pickerEndpoint.ProviderModelFamilyForCurrentLane());
+        }
+
+        private static void TestModelPageMetadataMerge()
+        {
+            MethodInfo mergePage = typeof(ModelListClient).GetMethod(
+                "MergePage",
+                BindingFlags.NonPublic | BindingFlags.Static);
+            AssertTrue("model page merge helper is discoverable", mergePage != null);
+
+            Dictionary<string, LlmProtocolModelEntry> entries =
+                new Dictionary<string, LlmProtocolModelEntry>(StringComparer.Ordinal);
+            LlmProtocolModelPageResult first = new LlmProtocolModelPageResult();
+            first.Models.Add(new LlmProtocolModelEntry { Id = "duplicate-alias:latest" });
+            LlmProtocolModelPageResult second = new LlmProtocolModelPageResult();
+            second.Models.Add(new LlmProtocolModelEntry
+            {
+                Id = "duplicate-alias:latest",
+                ProviderFamily = "gptoss"
+            });
+            mergePage.Invoke(null, new object[] { entries, first });
+            mergePage.Invoke(null, new object[] { entries, second });
+            AssertEqual(
+                "later duplicate model page fills missing provider family",
+                "gptoss",
+                entries["duplicate-alias:latest"].ProviderFamily);
         }
 
         private static async Task TestGenerationNativeErrorRedactionAndCollision()
@@ -225,6 +381,55 @@ namespace LlmProtocolHttpFixtureTests
                 "native generation error excludes unstructured raw body",
                 error.Message,
                 "RAW_NATIVE_BODY_MUST_NOT_LEAK");
+
+            ScriptedExchange geminiFiltered = new ScriptedExchange(Response(
+                HttpStatusCode.OK,
+                "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"partial must be discarded\"}]},"
+                    + "\"finishReason\":\"ESCALATION\"}]}"));
+            ApiEndpointConfig geminiFilteredEndpoint = Endpoint(
+                "https://generativelanguage.googleapis.com/v1beta",
+                "gemini-filter-secret",
+                "gemini-3.6-flash",
+                ApiCompatibilityMode.GeminiGenerateContent,
+                ApiAuthMode.CustomHeader,
+                "x-goog-api-key");
+            InvalidOperationException geminiFilteredError =
+                await ExpectThrowsAsync<InvalidOperationException>(
+                    "Gemini filtered partial response",
+                    () => SendConnectionTest(
+                        geminiFilteredEndpoint,
+                        "probe",
+                        0.2f,
+                        geminiFiltered));
+            AssertContains("Gemini filtered HTTP response surfaces reason",
+                geminiFilteredError.Message, "ESCALATION");
+            AssertNotContains("Gemini filtered HTTP response discards partial text",
+                geminiFilteredError.Message, "partial must be discarded");
+
+            ScriptedExchange anthropicRefusal = new ScriptedExchange(Response(
+                HttpStatusCode.OK,
+                "{\"content\":[{\"type\":\"text\",\"text\":\"partial must be discarded\"}],"
+                    + "\"stop_reason\":\"refusal\",\"stop_details\":{\"type\":\"refusal\","
+                    + "\"category\":\"cyber\",\"explanation\":\"Policy stop\"}}"));
+            ApiEndpointConfig anthropicRefusalEndpoint = Endpoint(
+                "https://api.anthropic.com/v1",
+                "anthropic-refusal-secret",
+                "claude-refusal",
+                ApiCompatibilityMode.AnthropicMessages,
+                ApiAuthMode.CustomHeader,
+                "x-api-key");
+            InvalidOperationException anthropicRefusalError =
+                await ExpectThrowsAsync<InvalidOperationException>(
+                    "Anthropic structured refusal response",
+                    () => SendConnectionTest(
+                        anthropicRefusalEndpoint,
+                        "probe",
+                        0.2f,
+                        anthropicRefusal));
+            AssertContains("Anthropic HTTP refusal surfaces documented category",
+                anthropicRefusalError.Message, "category=cyber");
+            AssertNotContains("Anthropic HTTP refusal discards partial text",
+                anthropicRefusalError.Message, "partial must be discarded");
 
             int sends = 0;
             LlmClient.SendAsyncOverrideForTests = (request, option, token) =>
@@ -472,7 +677,8 @@ namespace LlmProtocolHttpFixtureTests
         {
             ScriptedExchange exchange = new ScriptedExchange(Response(
                 HttpStatusCode.OK,
-                "{\"models\":[{\"name\":\"llama3:latest\"},{\"model\":\"qwen:7b\"}]}"));
+                "{\"models\":[{\"name\":\"llama3:latest\","
+                    + "\"details\":{\"family\":\"gptoss\"}},{\"model\":\"qwen:7b\"}]}"));
             ModelListResult result = await FetchModels(
                 "http://localhost:11434/api/chat",
                 "stale-unused-key",
@@ -483,7 +689,9 @@ namespace LlmProtocolHttpFixtureTests
             AssertSequence("Ollama name/model fallback", result.Models, "llama3:latest", "qwen:7b");
             AssertEqual("Ollama tags URL", "http://localhost:11434/api/tags", exchange.Requests[0].Url);
             AssertFalse("Ollama model fetch sends no auth", exchange.Requests[0].Headers.ContainsKey("Authorization"));
-            AssertTrue("Ollama empty metadata cached", result.ProtocolCapabilities.ContainsKey("llama3:latest"));
+            AssertTrue("Ollama metadata cached", result.ProtocolCapabilities.ContainsKey("llama3:latest"));
+            AssertEqual("Ollama family metadata cached", "gptoss",
+                result.ProtocolCapabilities["llama3:latest"].ProviderFamily);
         }
 
         private static async Task TestModelDiscoveryGuardsAndRedaction()
@@ -790,7 +998,8 @@ namespace LlmProtocolHttpFixtureTests
             string prompt,
             float temperature,
             int? providerMaximumOutputTokens = null,
-            double? providerMaximumTemperature = null)
+            double? providerMaximumTemperature = null,
+            string providerModelFamily = null)
         {
             return LlmProtocolRequestJson.Build(new LlmProtocolRequestInput
             {
@@ -801,6 +1010,7 @@ namespace LlmProtocolHttpFixtureTests
                 ReasoningEffort = ApiEndpointPolicy.DefaultReasoningEffort,
                 MaxTokens = 32,
                 Temperature = temperature,
+                ProviderModelFamily = providerModelFamily,
                 ProviderMaximumOutputTokens = providerMaximumOutputTokens,
                 ProviderMaximumTemperature = providerMaximumTemperature
             });

@@ -23,14 +23,19 @@ namespace PawnDiary
         /// <summary>Finite non-negative sampling maximum, or null when unknown.</summary>
         public readonly double? MaxTemperature;
 
+        /// <summary>Provider-advertised architecture family, or empty when unavailable.</summary>
+        public readonly string ProviderFamily;
+
         public ModelProtocolCapability(
             ModelReasoningCapability reasoningCapability,
             int maxOutputTokens,
-            double? maxTemperature)
+            double? maxTemperature,
+            string providerFamily = null)
         {
             ReasoningCapability = reasoningCapability;
             MaxOutputTokens = Math.Max(0, maxOutputTokens);
             MaxTemperature = IsUsableTemperature(maxTemperature) ? maxTemperature : null;
+            ProviderFamily = (providerFamily ?? string.Empty).Trim();
         }
 
         /// <summary>Creates an immutable cache value from one pure model-list entry.</summary>
@@ -41,7 +46,8 @@ namespace PawnDiary
                 : new ModelProtocolCapability(
                     entry.ReasoningCapability,
                     entry.MaxOutputTokens,
-                    entry.MaxTemperature);
+                    entry.MaxTemperature,
+                    entry.ProviderFamily);
         }
 
         private static bool IsUsableTemperature(double? value)

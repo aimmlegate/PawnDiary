@@ -531,8 +531,9 @@ namespace PawnDiary
 
             while (pendingCapabilityRefreshResults.TryDequeue(out CapabilityRefreshResult result))
             {
+                PawnDiarySettings settings = CurrentSettings();
                 if (result.generation != capabilityRefreshGeneration
-                    || !CapabilityRefreshTargetStillMatches(result, CurrentSettings())
+                    || !CapabilityRefreshTargetStillMatches(result, settings)
                     || result.capabilities == null)
                 {
                     continue;
@@ -549,6 +550,10 @@ namespace PawnDiary
                         entry.Key,
                         entry.Value);
                 }
+
+                RememberProviderModelFamily(
+                    settings.apiEndpoints[result.targetIndex],
+                    result.capabilities);
             }
         }
 
@@ -770,6 +775,26 @@ namespace PawnDiary
                 {
                     endpoint.model = fetchedModels[0];
                 }
+
+                RememberProviderModelFamily(endpoint, result.capabilities);
+            }
+        }
+
+        private static void RememberProviderModelFamily(
+            ApiEndpointConfig endpoint,
+            Dictionary<string, ModelProtocolCapability> capabilities)
+        {
+            if (endpoint == null
+                || capabilities == null
+                || string.IsNullOrWhiteSpace(endpoint.model))
+            {
+                return;
+            }
+
+            ModelProtocolCapability capability;
+            if (capabilities.TryGetValue(endpoint.model, out capability) && capability != null)
+            {
+                endpoint.RememberProviderModelFamily(capability.ProviderFamily);
             }
         }
 

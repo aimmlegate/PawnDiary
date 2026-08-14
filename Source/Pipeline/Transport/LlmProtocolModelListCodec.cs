@@ -14,6 +14,7 @@ namespace PawnDiary
         private const int MaximumModelsPerPage = 1000;
         private const int MaximumPaginationCursorChars = 1024;
         private const int MaximumProviderErrorChars = 512;
+        private const int MaximumProviderFamilyChars = 128;
 
         /// <summary>Decodes a model-list page for the selected protocol.</summary>
         public static LlmProtocolModelPageResult ParsePage(string responseJson, LlmProtocolMode mode)
@@ -162,7 +163,17 @@ namespace PawnDiary
                     continue;
                 }
 
-                if (!AddModel(distinct, new LlmProtocolModelEntry { Id = id }, result))
+                Dictionary<string, object> details = ObjectField(row, "details");
+                string family = StringField(details, "family").Trim();
+                if (family.Length > MaximumProviderFamilyChars)
+                {
+                    family = family.Substring(0, MaximumProviderFamilyChars);
+                }
+
+                if (!AddModel(
+                    distinct,
+                    new LlmProtocolModelEntry { Id = id, ProviderFamily = family },
+                    result))
                 {
                     break;
                 }
@@ -190,6 +201,10 @@ namespace PawnDiary
                     // Existing OpenAI parsing assigned capabilities[id] for every capable duplicate,
                     // so the last non-null advertised capability wins.
                     existing.ReasoningCapability = entry.ReasoningCapability;
+                }
+                if (string.IsNullOrEmpty(existing.ProviderFamily))
+                {
+                    existing.ProviderFamily = entry.ProviderFamily;
                 }
                 return true;
             }
@@ -363,6 +378,17 @@ namespace PawnDiary
                 return new object[0];
             }
             return value as object[] ?? new object[0];
+        }
+
+        private static Dictionary<string, object> ObjectField(
+            Dictionary<string, object> fields,
+            string name)
+        {
+            if (fields == null || !fields.TryGetValue(name, out object value))
+            {
+                return null;
+            }
+            return value as Dictionary<string, object>;
         }
 
         private static string StringField(Dictionary<string, object> fields, string name)

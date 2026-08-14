@@ -164,6 +164,24 @@ namespace PawnDiary
                 + "|" + ApiEndpointPolicy.NormalizeApiMode(endpoint.apiMode);
         }
 
+        /// <summary>Persists any already-discovered family for the row's exact current model choice.</summary>
+        private static void RememberCachedProviderModelFamily(ApiEndpointConfig endpoint)
+        {
+            if (endpoint == null || string.IsNullOrWhiteSpace(endpoint.model))
+            {
+                return;
+            }
+
+            ModelProtocolCapability capability = ModelCapabilityCache.Get(
+                endpoint.url,
+                endpoint.apiMode,
+                endpoint.model);
+            if (capability != null)
+            {
+                endpoint.RememberProviderModelFamily(capability.ProviderFamily);
+            }
+        }
+
         /// <summary>
         /// Draws global request knobs inside the connection section so the top-level settings page
         /// stays focused on diary behavior.
@@ -346,7 +364,12 @@ namespace PawnDiary
             Rect pickRect = new Rect(modelLineRect.xMax - pickButtonWidth, modelLineRect.y, pickButtonWidth, modelLineRect.height);
             Rect fetchRect = new Rect(pickRect.x - gap - fetchButtonWidth, modelLineRect.y, fetchButtonWidth, modelLineRect.height);
             Rect modelRect = new Rect(modelLineRect.x, modelLineRect.y, fetchRect.x - modelLineRect.x - gap, modelLineRect.height);
+            string previousModel = endpoint.model;
             endpoint.model = DrawCompactTextField(modelRect, "PawnDiary.Settings.ModelName".Translate(), endpoint.model, 94f);
+            if (!string.Equals(previousModel, endpoint.model, StringComparison.Ordinal))
+            {
+                RememberCachedProviderModelFamily(endpoint);
+            }
             DrawModelButtons(fetchRect, pickRect, index, endpoint);
 
             y += lineHeight + gap;
@@ -778,7 +801,11 @@ namespace PawnDiary
                     options = apiConnectionController.FetchedModels
                         .Distinct()
                         .OrderBy(model => model)
-                        .Select(model => new FloatMenuOption(model, delegate { endpoint.model = model; }))
+                        .Select(model => new FloatMenuOption(model, delegate
+                        {
+                            endpoint.model = model;
+                            RememberCachedProviderModelFamily(endpoint);
+                        }))
                         .ToList();
                 }
                 else

@@ -197,6 +197,7 @@ namespace PawnDiary
                 apiMode = target.apiMode,
                 reasoningEffort = target.reasoningEffort,
                 reasoningTag = target.reasoningTag,
+                providerModelFamily = target.ProviderModelFamilyForCurrentLane(),
                 forcePrimaryLane = forcePrimaryLane,
                 // The other configured lanes, tried in order if this one errors ("use next model").
                 failoverTargets = failoverTargets,
@@ -693,6 +694,7 @@ namespace PawnDiary
                 apiMode = target.apiMode,
                 reasoningEffort = target.reasoningEffort,
                 reasoningTag = target.reasoningTag,
+                providerModelFamily = target.ProviderModelFamilyForCurrentLane(),
                 failoverTargets = BuildFailoverTargets(targets, target),
                 timeoutSeconds = settings.timeoutSeconds,
                 maxTokens = TitleMaxTokens,

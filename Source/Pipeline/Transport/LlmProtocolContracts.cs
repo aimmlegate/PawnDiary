@@ -81,6 +81,12 @@ namespace PawnDiary
         public float Temperature;
 
         /// <summary>
+        /// Optional provider-advertised architecture family for a discovered model. Ollama exposes
+        /// this independently from its freely editable model alias; other protocols leave it blank.
+        /// </summary>
+        public string ProviderModelFamily;
+
+        /// <summary>
         /// Optional positive output cap advertised by the selected native-provider model. Missing,
         /// zero, or corrupt values leave <see cref="MaxTokens"/> unchanged; OpenAI modes ignore it.
         /// </summary>
@@ -124,6 +130,7 @@ namespace PawnDiary
         public int MaxOutputTokens;
         public double? MaxTemperature;
         public ModelReasoningCapability ReasoningCapability;
+        public string ProviderFamily = string.Empty;
     }
 
     /// <summary>

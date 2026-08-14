@@ -239,6 +239,10 @@ namespace PawnDiary
                     {
                         existing.ReasoningCapability = incoming.ReasoningCapability;
                     }
+                    if (string.IsNullOrEmpty(existing.ProviderFamily))
+                    {
+                        existing.ProviderFamily = incoming.ProviderFamily;
+                    }
                     continue;
                 }
 

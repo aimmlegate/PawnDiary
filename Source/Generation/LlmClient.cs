@@ -42,6 +42,13 @@ namespace PawnDiary
         /// <summary>Model identifier accepted by the API (e.g. "gpt-4o-mini").</summary>
         public string modelName;
 
+        /// <summary>
+        /// Bounded provider-family metadata captured only when it belongs to this request's exact
+        /// endpoint, protocol, and model. Used as a fresh-process fallback until discovery repopulates
+        /// <see cref="ModelCapabilityCache"/>.
+        /// </summary>
+        public string providerModelFamily;
+
         /// <summary>Bearer token for API authentication; may be empty for local endpoints.</summary>
         public string apiKey;
 
@@ -507,6 +514,7 @@ namespace PawnDiary
                 apiMode = endpoint.apiMode,
                 reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort),
                 reasoningTag = PawnDiarySettings.NormalizeReasoningTag(endpoint.reasoningTag),
+                providerModelFamily = endpoint.ProviderModelFamilyForCurrentLane(),
                 timeoutSeconds = timeoutSeconds,
                 maxTokens = 32,
                 temperature = temperature,
@@ -833,6 +841,7 @@ namespace PawnDiary
                 apiMode = endpoint.apiMode,
                 reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort),
                 reasoningTag = PawnDiarySettings.NormalizeReasoningTag(endpoint.reasoningTag),
+                providerModelFamily = endpoint.ProviderModelFamilyForCurrentLane(),
                 timeoutSeconds = timeoutSeconds,
                 maxTokens = Math.Max(1, maxTokens),
                 temperature = temperature,
@@ -1476,6 +1485,7 @@ namespace PawnDiary
                     request.apiMode = target.apiMode;
                     request.reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(target.reasoningEffort);
                     request.reasoningTag = PawnDiarySettings.NormalizeReasoningTag(target.reasoningTag);
+                    request.providerModelFamily = target.ProviderModelFamilyForCurrentLane();
                     string laneLabel = LaneLabel(request);
                     ApplyPromptVariantForCurrentLane(request);
 
@@ -1910,16 +1920,21 @@ namespace PawnDiary
         /// </summary>
         private static List<ApiEndpointConfig> BuildAttemptTargets(LlmGenerationRequest request)
         {
+            ApiEndpointConfig primary = new ApiEndpointConfig(
+                request.endpointUrl,
+                request.apiKey,
+                request.modelName)
+            {
+                authMode = PawnDiarySettings.NormalizeAuthMode(request.authMode),
+                customAuthHeaderName = request.customAuthHeaderName,
+                apiMode = request.apiMode,
+                reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(request.reasoningEffort),
+                reasoningTag = PawnDiarySettings.NormalizeReasoningTag(request.reasoningTag)
+            };
+            primary.RememberProviderModelFamily(request.providerModelFamily);
             List<ApiEndpointConfig> targets = new List<ApiEndpointConfig>
             {
-                new ApiEndpointConfig(request.endpointUrl, request.apiKey, request.modelName)
-                {
-                    authMode = PawnDiarySettings.NormalizeAuthMode(request.authMode),
-                    customAuthHeaderName = request.customAuthHeaderName,
-                    apiMode = request.apiMode,
-                    reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(request.reasoningEffort),
-                    reasoningTag = PawnDiarySettings.NormalizeReasoningTag(request.reasoningTag)
-                }
+                primary
             };
 
             if (request.failoverTargets != null)
@@ -2205,6 +2220,11 @@ namespace PawnDiary
                 ReasoningEffort = resolvedEffort,
                 MaxTokens = request.maxTokens,
                 Temperature = request.temperature,
+                // A completed discovery result, including an explicitly empty family, supersedes the
+                // persisted fallback. The fallback exists only for fresh processes with no cache row.
+                ProviderModelFamily = capability != null
+                    ? capability.ProviderFamily
+                    : request.providerModelFamily,
                 ProviderMaximumOutputTokens = capability != null
                     && capability.MaxOutputTokens > 0
                         ? (int?)capability.MaxOutputTokens

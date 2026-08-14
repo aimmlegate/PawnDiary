@@ -17,7 +17,7 @@ namespace PawnDiaryPowerfulAiBridge.Pure
         public string personaPreset = string.Empty;
     }
 
-    /// <summary>Builds the direct psychotype rule, LLM input, and stable source fingerprint.</summary>
+    /// <summary>Builds the direct psychotype rule, LLM input, and stable change-detection keys.</summary>
     public static class PersonaTransferText
     {
         /// <summary>
@@ -74,6 +74,20 @@ namespace PawnDiaryPowerfulAiBridge.Pure
 
                 return hash.ToString("x8");
             }
+        }
+
+        /// <summary>
+        /// Builds the persisted identity of the selected Pawn Diary LLM lane. Protocol mode belongs in
+        /// the identity because the same endpoint and model can decode through incompatible wire formats.
+        /// </summary>
+        internal static string BuildLaneSignature(
+            int index,
+            string url,
+            string model,
+            string apiMode)
+        {
+            return index + "|" + (url ?? string.Empty) + "|" + (model ?? string.Empty)
+                + "|" + (apiMode ?? string.Empty);
         }
 
         private static void Add(List<string> lines, string label, string value)
