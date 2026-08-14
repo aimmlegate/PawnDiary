@@ -33,6 +33,19 @@ namespace PawnDiary
             return RewriteEndpointPath(endpoint, "/models");
         }
 
+        /// <summary>
+        /// Builds a provider-aware model-list URL, optionally continuing one bounded native-provider
+        /// page. The two-argument overload above intentionally remains the exact OpenAI helper used by
+        /// the pure dispatcher, so routing back through this overload cannot recurse.
+        /// </summary>
+        public static string BuildModelsUrl(string endpoint, ApiCompatibilityMode mode, string pageCursor)
+        {
+            return LlmProtocolDispatcher.BuildModelsUrl(
+                endpoint,
+                ProtocolModeFor(mode),
+                pageCursor);
+        }
+
         /// <summary>Builds the full generation URL for the selected compatibility mode.</summary>
         public static string BuildGenerationUrl(string endpoint, ApiCompatibilityMode mode)
         {
@@ -43,6 +56,32 @@ namespace PawnDiary
                 default:
                     return BuildChatCompletionsUrl(endpoint);
             }
+        }
+
+        /// <summary>
+        /// Builds the final provider-aware generation URL. Native Gemini places the model in the path,
+        /// while the historical two-argument OpenAI overload above remains byte-for-byte unchanged.
+        /// </summary>
+        public static string BuildGenerationUrl(
+            string endpoint,
+            string modelName,
+            ApiCompatibilityMode mode)
+        {
+            return LlmProtocolDispatcher.BuildGenerationUrl(
+                endpoint,
+                modelName,
+                ProtocolModeFor(mode));
+        }
+
+        /// <summary>
+        /// Adapts the persisted enum to the transport-only protocol enum. Their explicit ordinals are
+        /// intentionally mirrored; both normalizers keep retired ordinal 2 and unknown future values on
+        /// the historical OpenAI Chat path.
+        /// </summary>
+        internal static LlmProtocolMode ProtocolModeFor(ApiCompatibilityMode mode)
+        {
+            ApiCompatibilityMode normalized = ApiEndpointPolicy.NormalizeApiMode(mode);
+            return LlmProtocolDispatcher.NormalizeMode((int)normalized);
         }
 
         /// <summary>Builds the full /chat/completions URL for LLM requests.</summary>

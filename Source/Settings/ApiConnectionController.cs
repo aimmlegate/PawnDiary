@@ -111,7 +111,10 @@ namespace PawnDiary
                 return null;
             }
 
-            return ModelCapabilityCache.Get(endpoint.url, endpoint.model);
+            return ModelCapabilityCache.GetReasoning(
+                endpoint.url,
+                endpoint.apiMode,
+                endpoint.model);
         }
 
         /// <summary>True while a connection test for <paramref name="index"/> is in flight.</summary>
@@ -228,9 +231,9 @@ namespace PawnDiary
                     return;
                 }
 
-                // Best-effort: also refresh this row's reasoning capability in the background. Runs in
+                // Best-effort: also refresh this row's protocol capability in the background. Runs in
                 // parallel with the test request and only updates the thread-safe cache, so a player
-                // who tests but never clicks Fetch still gets reasoning-effort clamping.
+                // who tests but never clicks Fetch still gets reasoning clamping and native limits.
                 RefreshCapability(index);
 
                 string sampleText = await LlmClient.TestConnection(
@@ -360,7 +363,7 @@ namespace PawnDiary
                     targetIndex = index,
                     success = true,
                     models = fetchResult.Models,
-                    capabilities = fetchResult.Capabilities,
+                    capabilities = fetchResult.ProtocolCapabilities,
                     endpointUrl = url,
                     apiKey = apiKey,
                     customAuthHeaderName = ApiEndpointPolicy.EffectiveAuthHeaderName(authMode, customAuthHeaderName),
@@ -401,10 +404,10 @@ namespace PawnDiary
         /// <see cref="ModelCapabilityCache"/> -- it never touches the single-flight picker state,
         /// status string, or auto-pick logic, so many rows can refresh at once without disturbing
         /// the UI. Used by the settings-open, URL/key-change, and Test-connection triggers so a
-        /// player never has to click Fetch manually just to get reasoning-effort clamping.
-        /// Providers that return no reasoning object (OpenAI-direct, GGUF) cache nothing and degrade
-        /// gracefully. Fire-and-forget; the per-frame <see cref="ModelCapabilityForRow"/> read picks
-        /// up new entries next frame.
+        /// player never has to click Fetch manually just to get model capability metadata. OpenAI
+        /// rows without reasoning metadata cache nothing (preserving prior refresh semantics); native
+        /// rows cache an immutable unknown-limits value. Fire-and-forget; the per-frame
+        /// <see cref="ModelCapabilityForRow"/> read picks up new entries next frame.
         /// </summary>
         public async void RefreshCapability(int index)
         {
@@ -464,7 +467,7 @@ namespace PawnDiary
                     {
                         generation = generation,
                         targetIndex = index,
-                        capabilities = fetchResult?.Capabilities,
+                        capabilities = fetchResult?.ProtocolCapabilities,
                         endpointUrl = url,
                         apiKey = apiKey,
                         customAuthHeaderName = ApiEndpointPolicy.EffectiveAuthHeaderName(
@@ -535,11 +538,16 @@ namespace PawnDiary
                     continue;
                 }
 
-                // Models without an advertised reasoning object stay absent (treated as
-                // "capability unknown"). This cache mutation now happens only on the main thread.
-                foreach (KeyValuePair<string, ModelReasoningCapability> entry in result.capabilities)
+                // OpenAI models without advertised reasoning stay absent. Native rows may carry only
+                // output/sampling limits, or an immutable unknown-limits marker. Cache mutation stays
+                // on the main thread.
+                foreach (KeyValuePair<string, ModelProtocolCapability> entry in result.capabilities)
                 {
-                    ModelCapabilityCache.Update(result.endpointUrl, entry.Key, entry.Value);
+                    ModelCapabilityCache.Update(
+                        result.endpointUrl,
+                        result.apiMode,
+                        entry.Key,
+                        entry.Value);
                 }
             }
         }
@@ -605,7 +613,7 @@ namespace PawnDiary
                     continue;
                 }
 
-                if (ModelCapabilityCache.Get(endpoint.url, endpoint.model) == null)
+                if (ModelCapabilityCache.Get(endpoint.url, endpoint.apiMode, endpoint.model) == null)
                 {
                     RefreshCapability(i);
                 }
@@ -730,14 +738,18 @@ namespace PawnDiary
                 fetchedModels.AddRange(result.models);
             }
 
-            // Feed the process-wide capability cache so the settings UI can guide the effort
-            // dropdown and the generation path can clamp the outgoing reasoning_effort. Done on the
-            // main thread (here); reads on the background thread are safe against immutable entries.
+            // Feed the process-wide capability cache so the settings UI can guide reasoning and the
+            // generation path can clamp native token/temperature limits. Done on the main thread;
+            // background reads are safe because the values are immutable.
             if (result.capabilities != null && result.capabilities.Count > 0)
             {
-                foreach (KeyValuePair<string, ModelReasoningCapability> entry in result.capabilities)
+                foreach (KeyValuePair<string, ModelProtocolCapability> entry in result.capabilities)
                 {
-                    ModelCapabilityCache.Update(result.endpointUrl, entry.Key, entry.Value);
+                    ModelCapabilityCache.Update(
+                        result.endpointUrl,
+                        result.apiMode,
+                        entry.Key,
+                        entry.Value);
                 }
             }
 
@@ -902,7 +914,7 @@ namespace PawnDiary
         {
             public int generation;
             public int targetIndex;
-            public Dictionary<string, ModelReasoningCapability> capabilities;
+            public Dictionary<string, ModelProtocolCapability> capabilities;
             public string endpointUrl;
             public string apiKey;
             public string customAuthHeaderName;
@@ -926,9 +938,9 @@ namespace PawnDiary
             public int targetIndex;
             public bool success;
             public List<string> models;   // immutable snapshot returned by ModelListClient
-            // Per-model reasoning capability advertised by the endpoint (OpenRouter, some gateways).
-            // Null/empty when the provider does not report capability; absent models stay "unknown".
-            public Dictionary<string, ModelReasoningCapability> capabilities;
+            // Immutable per-model protocol capability advertised or inferred from model discovery.
+            // OpenAI entries remain absent when no reasoning metadata is advertised.
+            public Dictionary<string, ModelProtocolCapability> capabilities;
             public string errorDetail;    // raw, untranslated exception message
             public string endpointUrl;    // row URL snapshot used to reject stale row edits
             public string apiKey;         // row key snapshot; never logged or shown

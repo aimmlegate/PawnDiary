@@ -323,6 +323,9 @@
   <PawnDiary.Settings.ApiCompatibility>Формат</PawnDiary.Settings.ApiCompatibility>
   <PawnDiary.Settings.ApiCompatibility.Chat>Совместимый с OpenAI Chat</PawnDiary.Settings.ApiCompatibility.Chat>
   <PawnDiary.Settings.ApiCompatibility.Responses>Формат OpenAI Responses</PawnDiary.Settings.ApiCompatibility.Responses>
+  <PawnDiary.Settings.ApiCompatibility.AnthropicMessages>Формат Anthropic Messages</PawnDiary.Settings.ApiCompatibility.AnthropicMessages>
+  <PawnDiary.Settings.ApiCompatibility.GeminiGenerateContent>Формат Gemini GenerateContent</PawnDiary.Settings.ApiCompatibility.GeminiGenerateContent>
+  <PawnDiary.Settings.ApiCompatibility.OllamaChat>Нативный чат Ollama</PawnDiary.Settings.ApiCompatibility.OllamaChat>
   <PawnDiary.Settings.ApiAuthMode>Авторизация</PawnDiary.Settings.ApiAuthMode>
   <PawnDiary.Settings.ApiAuthMode.Bearer>Токен Bearer</PawnDiary.Settings.ApiAuthMode.Bearer>
   <PawnDiary.Settings.ApiAuthMode.None>Без авторизации</PawnDiary.Settings.ApiAuthMode.None>

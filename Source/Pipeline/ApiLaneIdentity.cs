@@ -32,17 +32,18 @@ namespace PawnDiary
 
         /// <summary>
         /// Identity for concurrency gates and transient-failure cooldowns. This preserves the old
-        /// behavior: normalized endpoint, trimmed model, raw compatibility mode, effective auth style,
-        /// and effective key; reasoning effort does not split a lane.
+        /// behavior: canonical generation URL, trimmed model, normalized compatibility mode, effective
+        /// auth style, and effective key; reasoning effort does not split a lane. Gemini's optional
+        /// <c>models/</c> prefix is the one provider-specific model spelling normalized here.
         /// </summary>
         public static ApiLaneIdentity ForGate(string endpointUrl, string modelName, ApiCompatibilityMode apiMode,
             ApiAuthMode authMode, string customAuthHeaderName, string apiKey)
         {
             return new ApiLaneIdentity(Join(
                 "gate",
-                NormalizedBaseEndpointKey(endpointUrl),
-                Trimmed(modelName),
-                apiMode.ToString(),
+                NormalizedGenerationUrlKey(endpointUrl, modelName, apiMode),
+                IdentityModelName(modelName, apiMode, true),
+                ApiEndpointPolicy.NormalizeApiMode(apiMode).ToString(),
                 ApiEndpointPolicy.NormalizeAuthMode(authMode).ToString(),
                 ApiEndpointPolicy.EffectiveAuthHeaderName(authMode, customAuthHeaderName),
                 ApiEndpointPolicy.EffectiveApiKey(authMode, apiKey)));
@@ -50,16 +51,16 @@ namespace PawnDiary
 
         /// <summary>
         /// Identity for removing duplicate failover attempts. Model text stays raw here because the
-        /// previous comparison did not trim it.
+        /// previous comparison did not trim it, except Gemini's equivalent <c>models/</c> prefix.
         /// </summary>
         public static ApiLaneIdentity ForAttempt(string endpointUrl, string modelName, ApiCompatibilityMode apiMode,
             ApiAuthMode authMode, string customAuthHeaderName, string apiKey)
         {
             return new ApiLaneIdentity(Join(
                 "attempt",
-                NormalizedBaseEndpointKey(endpointUrl),
-                Raw(modelName),
-                apiMode.ToString(),
+                NormalizedGenerationUrlKey(endpointUrl, modelName, apiMode),
+                IdentityModelName(modelName, apiMode, false),
+                ApiEndpointPolicy.NormalizeApiMode(apiMode).ToString(),
                 ApiEndpointPolicy.NormalizeAuthMode(authMode).ToString(),
                 ApiEndpointPolicy.EffectiveAuthHeaderName(authMode, customAuthHeaderName),
                 ApiEndpointPolicy.EffectiveApiKey(authMode, apiKey)));
@@ -70,9 +71,9 @@ namespace PawnDiary
         {
             return new ApiLaneIdentity(Join(
                 "generation",
-                NormalizedGenerationUrlKey(endpointUrl, apiMode),
-                Raw(modelName),
-                apiMode.ToString()));
+                NormalizedGenerationUrlKey(endpointUrl, modelName, apiMode),
+                IdentityModelName(modelName, apiMode, false),
+                ApiEndpointPolicy.NormalizeApiMode(apiMode).ToString()));
         }
 
         /// <summary>Identity for generation-lane pinning when auth must also match.</summary>
@@ -81,9 +82,9 @@ namespace PawnDiary
         {
             return new ApiLaneIdentity(Join(
                 "generation-auth",
-                NormalizedGenerationUrlKey(endpointUrl, apiMode),
-                Raw(modelName),
-                apiMode.ToString(),
+                NormalizedGenerationUrlKey(endpointUrl, modelName, apiMode),
+                IdentityModelName(modelName, apiMode, false),
+                ApiEndpointPolicy.NormalizeApiMode(apiMode).ToString(),
                 ApiEndpointPolicy.NormalizeAuthMode(authMode).ToString(),
                 ApiEndpointPolicy.EffectiveAuthHeaderName(authMode, customAuthHeaderName),
                 ApiEndpointPolicy.EffectiveApiKey(authMode, apiKey)));
@@ -102,7 +103,7 @@ namespace PawnDiary
                 Raw(apiKey),
                 ApiEndpointPolicy.NormalizeAuthMode(authMode).ToString(),
                 ApiEndpointPolicy.EffectiveAuthHeaderName(authMode, customAuthHeaderName),
-                apiMode.ToString()));
+                ApiEndpointPolicy.NormalizeApiMode(apiMode).ToString()));
         }
 
         /// <summary>
@@ -153,14 +154,29 @@ namespace PawnDiary
             return !left.Equals(right);
         }
 
-        private static string NormalizedBaseEndpointKey(string endpointUrl)
+        private static string NormalizedGenerationUrlKey(
+            string endpointUrl,
+            string modelName,
+            ApiCompatibilityMode apiMode)
         {
-            return EndpointUtility.NormalizeBaseEndpoint(endpointUrl ?? string.Empty).Trim().ToLowerInvariant();
+            return EndpointUtility.BuildGenerationUrl(
+                endpointUrl ?? string.Empty,
+                modelName ?? string.Empty,
+                apiMode).Trim().ToLowerInvariant();
         }
 
-        private static string NormalizedGenerationUrlKey(string endpointUrl, ApiCompatibilityMode apiMode)
+        private static string IdentityModelName(
+            string modelName,
+            ApiCompatibilityMode apiMode,
+            bool trimNonGemini)
         {
-            return EndpointUtility.BuildGenerationUrl(endpointUrl ?? string.Empty, apiMode).Trim().ToLowerInvariant();
+            LlmProtocolMode protocolMode = EndpointUtility.ProtocolModeFor(apiMode);
+            if (protocolMode == LlmProtocolMode.GeminiGenerateContent)
+            {
+                return LlmProtocolDispatcher.CanonicalModelName(modelName, protocolMode);
+            }
+
+            return trimNonGemini ? Trimmed(modelName) : Raw(modelName);
         }
 
         private static string Raw(string value)
@@ -727,8 +743,11 @@ namespace PawnDiary
             string model = string.IsNullOrWhiteSpace(modelName) ? "<blank-model>" : modelName;
             string endpoint = string.IsNullOrWhiteSpace(endpointUrl)
                 ? "<blank-url>"
-                : EndpointUtility.BuildGenerationUrl(SanitizeEndpointUrlForLog(endpointUrl), apiMode);
-            return model + " [" + apiMode + "] @ " + endpoint;
+                : EndpointUtility.BuildGenerationUrl(
+                    SanitizeEndpointUrlForLog(endpointUrl),
+                    modelName,
+                    apiMode);
+            return model + " [" + ApiEndpointPolicy.NormalizeApiMode(apiMode) + "] @ " + endpoint;
         }
 
         /// <summary>Trims one-line log details to the shared diagnostic length cap.</summary>

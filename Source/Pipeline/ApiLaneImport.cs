@@ -27,6 +27,9 @@ namespace PawnDiary
         // --- Compatibility-mode tokens (the public "apiMode" string) ---
         public const string ApiModeChat = "chatCompletions";
         public const string ApiModeResponses = "responses";
+        public const string ApiModeAnthropicMessages = "anthropicMessages";
+        public const string ApiModeGeminiGenerateContent = "geminiGenerateContent";
+        public const string ApiModeOllamaChat = "ollamaChat";
 
         // --- Routing-mode tokens (the public "routingMode" string on the setup DTO) ---
         public const string RoutingBalanced = "balanced";
@@ -89,14 +92,24 @@ namespace PawnDiary
         /// <summary>Maps a normalized compatibility mode to its stable public token.</summary>
         public static string ApiModeToken(ApiCompatibilityMode mode)
         {
-            return ApiEndpointPolicy.NormalizeApiMode(mode) == ApiCompatibilityMode.OpenAIResponses
-                ? ApiModeResponses
-                : ApiModeChat;
+            switch (ApiEndpointPolicy.NormalizeApiMode(mode))
+            {
+                case ApiCompatibilityMode.OpenAIResponses:
+                    return ApiModeResponses;
+                case ApiCompatibilityMode.AnthropicMessages:
+                    return ApiModeAnthropicMessages;
+                case ApiCompatibilityMode.GeminiGenerateContent:
+                    return ApiModeGeminiGenerateContent;
+                case ApiCompatibilityMode.OllamaChat:
+                    return ApiModeOllamaChat;
+                default:
+                    return ApiModeChat;
+            }
         }
 
         /// <summary>
-        /// Parses a public compatibility-mode token. Anything but an explicit "responses" token maps to
-        /// the OpenAI chat/completions default, matching NormalizeApiMode's own conservative fallback.
+        /// Parses a public compatibility-mode token. Unknown/future tokens and the retired native-Ollama
+        /// name map to OpenAI Chat, matching NormalizeApiMode's conservative migration fallback.
         /// </summary>
         public static ApiCompatibilityMode ParseApiMode(string token)
         {
@@ -107,6 +120,17 @@ namespace PawnDiary
                 case "openairesponses":
                 case "openai_responses":
                     return ApiCompatibilityMode.OpenAIResponses;
+                case "anthropicmessages":
+                    return ApiCompatibilityMode.AnthropicMessages;
+                case "geminigeneratecontent":
+                    return ApiCompatibilityMode.GeminiGenerateContent;
+                case "ollamachat":
+                    return ApiCompatibilityMode.OllamaChat;
+                case "ollamanativechat":
+                case "2":
+                    // Do not implicitly reactivate the retired ordinal. Old native-Ollama rows can
+                    // continue through Ollama's /v1 OpenAI-compatible surface after this fallback.
+                    return ApiCompatibilityMode.OpenAIChatCompletions;
                 default:
                     return ApiCompatibilityMode.OpenAIChatCompletions;
             }

@@ -109,6 +109,8 @@
     <Compile Include="..\..\Source\Pipeline\TextTruncation.cs" Link="TextTruncation.cs" />
     <Compile Include="..\..\Source\Pipeline\ApiLaneSelector.cs" Link="ApiLaneSelector.cs" />
     <Compile Include="..\..\Source\Pipeline\LlmRequestJsonBuilder.cs" Link="LlmRequestJsonBuilder.cs" />
+    <Compile Include="..\..\Source\Pipeline\Transport\LlmProtocolContracts.cs" Link="LlmProtocolContracts.cs" />
+    <Compile Include="..\..\Source\Pipeline\Transport\LlmProtocolDispatcher.cs" Link="LlmProtocolDispatcher.cs" />
     <Compile Include="..\..\Source\Diagnostics\Pure\ErrorScrub.cs" Link="Diagnostics\ErrorScrub.cs" />
     <Compile Include="..\..\Source\Diagnostics\Pure\ErrorFingerprint.cs" Link="Diagnostics\ErrorFingerprint.cs" />
     <Compile Include="..\..\Source\Diagnostics\Pure\ErrorReportPayload.cs" Link="Diagnostics\ErrorReportPayload.cs" />

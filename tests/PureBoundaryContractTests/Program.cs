@@ -32,6 +32,10 @@ namespace PureBoundaryContractTests
                     "tests/PawnDiary.RimTest/PawnDiary.RimTest.csproj",
                     "Loaded-game adapter fixtures intentionally reference RimWorld, Verse, Unity, Harmony, and RimTest."
                 },
+                {
+                    "tests/LlmProtocolHttpFixtureTests/LlmProtocolHttpFixtureTests.csproj",
+                    "Socket-free HTTP fixtures intentionally exercise the compiled impure transport adapters."
+                },
             };
 
         // A pure harness occasionally links one mixed adapter so it can exercise a pure method beside
@@ -51,6 +55,10 @@ namespace PureBoundaryContractTests
                 {
                     "Source/Settings/ApiRequestAuth.cs#ApplyHeaders#network request/header type",
                     "ApplyHeaders is the intentional impure edge that mutates an HttpRequestMessage."
+                },
+                {
+                    "Source/Settings/ApiRequestAuth.cs#ApplyProtocolHeaders#network request/header type",
+                    "ApplyProtocolHeaders is the intentional impure edge for mandatory provider headers."
                 },
             };
 

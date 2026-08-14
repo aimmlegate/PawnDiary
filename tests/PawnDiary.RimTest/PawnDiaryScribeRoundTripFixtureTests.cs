@@ -1327,6 +1327,103 @@ namespace PawnDiary.RimTests
         // ---- Global settings round-trip ------------------------------------------------------------
 
         /// <summary>
+        /// Native-provider ordinals 3/4/5 survive real settings Scribe and detached row copies. This
+        /// guards the append-only enum contract independently of the pure token tests.
+        /// </summary>
+        [Test]
+        public static void NativeProviderModesRoundTripAndCopyWithoutOrdinalDrift()
+        {
+            PawnDiarySettings original = new PawnDiarySettings
+            {
+                apiEndpoints = new List<ApiEndpointConfig>
+                {
+                    new ApiEndpointConfig("https://api.anthropic.com", "anthropic-key", "claude-test")
+                    {
+                        apiMode = ApiCompatibilityMode.AnthropicMessages
+                    },
+                    new ApiEndpointConfig("https://generativelanguage.googleapis.com/v1beta", "gemini-key", "gemini-test")
+                    {
+                        apiMode = ApiCompatibilityMode.GeminiGenerateContent
+                    },
+                    new ApiEndpointConfig("http://localhost:11434", string.Empty, "ollama-test")
+                    {
+                        apiMode = ApiCompatibilityMode.OllamaChat,
+                        authMode = ApiAuthMode.None
+                    }
+                }
+            };
+
+            PawnDiarySettings loaded = ScribeRoundTrip(original);
+            Require(loaded.apiEndpoints != null && loaded.apiEndpoints.Count == 3,
+                "native-provider settings rows did not round-trip.");
+
+            ApiCompatibilityMode[] expectedModes =
+            {
+                ApiCompatibilityMode.AnthropicMessages,
+                ApiCompatibilityMode.GeminiGenerateContent,
+                ApiCompatibilityMode.OllamaChat
+            };
+            string[] expectedTokens =
+            {
+                "anthropicMessages",
+                "geminiGenerateContent",
+                "ollamaChat"
+            };
+            for (int i = 0; i < expectedModes.Length; i++)
+            {
+                ApiEndpointConfig row = loaded.apiEndpoints[i];
+                Require(row != null && row.apiMode == expectedModes[i],
+                    "native-provider mode " + expectedModes[i] + " did not survive Scribe.");
+                ApiEndpointConfig copy = row.Copy();
+                Require(copy != row && copy.apiMode == expectedModes[i],
+                    "detached API-row copy lost native-provider mode " + expectedModes[i] + ".");
+            }
+
+            DiaryApiSetupSnapshot snapshot = IntegrationApiSettings.BuildSetupSnapshot(loaded);
+            Require(snapshot != null && snapshot.lanes != null && snapshot.lanes.Count == 3,
+                "public API setup DTO did not copy the native-provider rows.");
+            for (int i = 0; i < expectedTokens.Length; i++)
+            {
+                Require(string.Equals(snapshot.lanes[i].apiMode, expectedTokens[i],
+                        StringComparison.Ordinal),
+                    "public API lane DTO emitted the wrong token for " + expectedModes[i] + ".");
+            }
+        }
+
+        /// <summary>
+        /// Both historical enum spellings (name and numeric ordinal 2) are consumed as OpenAI Chat,
+        /// never reactivated as the new Ollama mode. The old thinking toggle is discarded, and a working
+        /// localhost:11434/v1 OpenAI-compatible row is not converted based on its URL.
+        /// </summary>
+        [Test]
+        public static void RetiredOllamaSettingsNormalizeWithoutUrlInferenceOrSaveChurn()
+        {
+            PawnDiarySettings named = LoadSettingsWithRawProviderMode("OllamaNativeChat", true);
+            AssertRetiredOllamaRowNeutralized(named, "named");
+
+            PawnDiarySettings numeric = LoadSettingsWithRawProviderMode("2", true);
+            AssertRetiredOllamaRowNeutralized(numeric, "numeric");
+
+            string resavedXml = SaveScribeXml(numeric);
+            Require(resavedXml.IndexOf("ollamaThink", StringComparison.Ordinal) < 0,
+                "the obsolete ollamaThink key was written again after migration.");
+            Require(resavedXml.IndexOf("<apiMode>OpenAIChatCompletions</apiMode>",
+                    StringComparison.Ordinal) < 0,
+                "the normalized default OpenAI Chat mode created unnecessary settings churn.");
+        }
+
+        private static void AssertRetiredOllamaRowNeutralized(PawnDiarySettings settings, string shape)
+        {
+            Require(settings?.apiEndpoints != null && settings.apiEndpoints.Count == 1,
+                shape + " retired-Ollama fixture lost its endpoint row.");
+            ApiEndpointConfig row = settings.apiEndpoints[0];
+            Require(row != null && row.apiMode == ApiCompatibilityMode.OpenAIChatCompletions,
+                shape + " retired-Ollama mode did not conservatively normalize to OpenAI Chat.");
+            AssertStr("http://localhost:11434/v1", row.url,
+                shape + " OpenAI-compatible Ollama URL");
+        }
+
+        /// <summary>
         /// Proves the new frequency schema, selected preset, sparse known/future rows, notice state,
         /// survive RimWorld's real settings serialization while the retired scalar stays neutral.
         /// </summary>
@@ -1731,6 +1828,92 @@ namespace PawnDiary.RimTests
                 }
 
                 settings?.ExposeData();
+            }
+        }
+
+        /// <summary>
+        /// Writes a real current settings object with the reserved ordinal, then substitutes the exact
+        /// historical enum text under test before loading it through current production ExposeData.
+        /// This avoids a fake enum parser and proves Verse accepts both its named and numeric shapes.
+        /// </summary>
+        private static PawnDiarySettings LoadSettingsWithRawProviderMode(
+            string serializedMode,
+            bool includeOllamaThink)
+        {
+            PawnDiarySettings original = new PawnDiarySettings
+            {
+                apiEndpoints = new List<ApiEndpointConfig>
+                {
+                    new ApiEndpointConfig("http://localhost:11434/v1", string.Empty, "legacy-ollama")
+                    {
+                        apiMode = ApiCompatibilityMode.OllamaNativeChat,
+                        authMode = ApiAuthMode.None
+                    }
+                }
+            };
+
+            string path = System.IO.Path.Combine(
+                System.IO.Path.GetTempPath(),
+                "pawndiary_provider_migration_" + Guid.NewGuid().ToString("N") + ".xml");
+            PawnDiarySettings loaded = null;
+            try
+            {
+                Scribe.saver.InitSaving(path, "root");
+                PawnDiarySettings saveRef = original;
+                Scribe_Deep.Look(ref saveRef, "obj");
+                Scribe.saver.FinalizeSaving();
+
+                string xml = System.IO.File.ReadAllText(path);
+                const string WrittenMode = "<apiMode>OllamaNativeChat</apiMode>";
+                Require(xml.IndexOf(WrittenMode, StringComparison.Ordinal) >= 0,
+                    "Scribe did not write the reserved provider mode in the expected enum shape.");
+                string replacement = "<apiMode>" + serializedMode + "</apiMode>";
+                if (includeOllamaThink)
+                {
+                    replacement += "<ollamaThink>True</ollamaThink>";
+                }
+                System.IO.File.WriteAllText(path, xml.Replace(WrittenMode, replacement));
+
+                Scribe.loader.InitLoading(path);
+                Scribe.mode = LoadSaveMode.LoadingVars;
+                Scribe_Deep.Look(ref loaded, "obj");
+                Scribe.loader.FinalizeLoading();
+            }
+            finally
+            {
+                if (Scribe.mode != LoadSaveMode.Inactive)
+                {
+                    Scribe.ForceStop();
+                }
+                DeleteTempFile(path);
+            }
+
+            Require(loaded != null,
+                "provider-migration Scribe fixture returned null for mode " + serializedMode + ".");
+            return loaded;
+        }
+
+        /// <summary>Saves one object and returns its XML so migration tests can assert retired keys vanish.</summary>
+        private static string SaveScribeXml<T>(T toSave) where T : class, IExposable
+        {
+            string path = System.IO.Path.Combine(
+                System.IO.Path.GetTempPath(),
+                "pawndiary_scribe_xml_" + Guid.NewGuid().ToString("N") + ".xml");
+            try
+            {
+                Scribe.saver.InitSaving(path, "root");
+                T saveRef = toSave;
+                Scribe_Deep.Look(ref saveRef, "obj");
+                Scribe.saver.FinalizeSaving();
+                return System.IO.File.ReadAllText(path);
+            }
+            finally
+            {
+                if (Scribe.mode != LoadSaveMode.Inactive)
+                {
+                    Scribe.ForceStop();
+                }
+                DeleteTempFile(path);
             }
         }
 

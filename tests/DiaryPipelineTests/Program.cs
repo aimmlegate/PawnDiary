@@ -7065,10 +7065,28 @@ namespace DiaryPipelineTests
 
         private static void TestApiEndpointPolicy()
         {
+            // Persisted enum ordinals are append-only. In particular, retired ordinal 2 must never
+            // silently deserialize as Anthropic in a newer build.
+            AssertEqual("chat compatibility ordinal", 0, (int)ApiCompatibilityMode.OpenAIChatCompletions);
+            AssertEqual("responses compatibility ordinal", 1, (int)ApiCompatibilityMode.OpenAIResponses);
+            AssertEqual("retired Ollama compatibility ordinal remains reserved", 2,
+                (int)ApiCompatibilityMode.OllamaNativeChat);
+            AssertEqual("Anthropic compatibility ordinal", 3, (int)ApiCompatibilityMode.AnthropicMessages);
+            AssertEqual("Gemini compatibility ordinal", 4, (int)ApiCompatibilityMode.GeminiGenerateContent);
+            AssertEqual("Ollama chat compatibility ordinal", 5, (int)ApiCompatibilityMode.OllamaChat);
+
             AssertEqual("normalize chat compatibility", ApiCompatibilityMode.OpenAIChatCompletions,
                 ApiEndpointPolicy.NormalizeApiMode(ApiCompatibilityMode.OpenAIChatCompletions));
             AssertEqual("normalize responses compatibility", ApiCompatibilityMode.OpenAIResponses,
                 ApiEndpointPolicy.NormalizeApiMode(ApiCompatibilityMode.OpenAIResponses));
+            AssertEqual("normalize Anthropic compatibility", ApiCompatibilityMode.AnthropicMessages,
+                ApiEndpointPolicy.NormalizeApiMode(ApiCompatibilityMode.AnthropicMessages));
+            AssertEqual("normalize Gemini compatibility", ApiCompatibilityMode.GeminiGenerateContent,
+                ApiEndpointPolicy.NormalizeApiMode(ApiCompatibilityMode.GeminiGenerateContent));
+            AssertEqual("normalize Ollama chat compatibility", ApiCompatibilityMode.OllamaChat,
+                ApiEndpointPolicy.NormalizeApiMode(ApiCompatibilityMode.OllamaChat));
+            AssertEqual("retired Ollama compatibility stays OpenAI chat", ApiCompatibilityMode.OpenAIChatCompletions,
+                ApiEndpointPolicy.NormalizeApiMode(ApiCompatibilityMode.OllamaNativeChat));
             AssertEqual("normalize invalid compatibility", ApiCompatibilityMode.OpenAIChatCompletions,
                 ApiEndpointPolicy.NormalizeApiMode((ApiCompatibilityMode)999));
 
@@ -7138,18 +7156,58 @@ namespace DiaryPipelineTests
             AssertEqual("generation pin matches recorded full URL",
                 ApiLaneIdentity.ForGeneration("https://example.test/v1", "m", ApiCompatibilityMode.OpenAIResponses),
                 ApiLaneIdentity.ForGeneration("https://EXAMPLE.test/v1/responses", "m", ApiCompatibilityMode.OpenAIResponses));
+            string geminiBase = "https://generativelanguage.googleapis.com/v1beta";
+            string geminiFull = geminiBase + "/models/gemini-fixture:generateContent";
+            AssertEqual("Gemini gate canonicalizes base/full URL and model prefix",
+                ApiLaneIdentity.ForGate(geminiBase, "models/gemini-fixture", ApiCompatibilityMode.GeminiGenerateContent,
+                    ApiAuthMode.CustomHeader, "x-goog-api-key", "k"),
+                ApiLaneIdentity.ForGate(geminiFull, "gemini-fixture", ApiCompatibilityMode.GeminiGenerateContent,
+                    ApiAuthMode.CustomHeader, "x-goog-api-key", "k"));
+            AssertEqual("Gemini attempt canonicalizes base/full URL and model prefix",
+                ApiLaneIdentity.ForAttempt(geminiBase, "models/gemini-fixture", ApiCompatibilityMode.GeminiGenerateContent,
+                    ApiAuthMode.CustomHeader, "x-goog-api-key", "k"),
+                ApiLaneIdentity.ForAttempt(geminiFull, "gemini-fixture", ApiCompatibilityMode.GeminiGenerateContent,
+                    ApiAuthMode.CustomHeader, "x-goog-api-key", "k"));
+            AssertEqual("Gemini generation canonicalizes base/full URL and model prefix",
+                ApiLaneIdentity.ForGeneration(geminiBase, "models/gemini-fixture", ApiCompatibilityMode.GeminiGenerateContent),
+                ApiLaneIdentity.ForGeneration(geminiFull, "gemini-fixture", ApiCompatibilityMode.GeminiGenerateContent));
             AssertTrue("generation auth includes effective key",
                 ApiLaneIdentity.ForGenerationWithAuth("https://example.test/v1", "m", ApiCompatibilityMode.OpenAIResponses, ApiAuthMode.BearerToken, string.Empty, "a")
                 != ApiLaneIdentity.ForGenerationWithAuth("https://example.test/v1", "m", ApiCompatibilityMode.OpenAIResponses, ApiAuthMode.BearerToken, string.Empty, "b"));
             AssertTrue("fetch target keeps raw URL exact",
                 ApiLaneIdentity.ForFetchTarget("https://example.test/v1/", "k", ApiAuthMode.BearerToken, string.Empty, ApiCompatibilityMode.OpenAIChatCompletions)
                 != ApiLaneIdentity.ForFetchTarget("https://example.test/v1", "k", ApiAuthMode.BearerToken, string.Empty, ApiCompatibilityMode.OpenAIChatCompletions));
+            AssertEqual("retired mode gate identity normalizes to Chat",
+                ApiLaneIdentity.ForGate("https://example.test/v1", "m", ApiCompatibilityMode.OllamaNativeChat,
+                    ApiAuthMode.BearerToken, string.Empty, "k"),
+                ApiLaneIdentity.ForGate("https://example.test/v1", "m", ApiCompatibilityMode.OpenAIChatCompletions,
+                    ApiAuthMode.BearerToken, string.Empty, "k"));
+            AssertEqual("unknown mode attempt identity normalizes to Chat",
+                ApiLaneIdentity.ForAttempt("https://example.test/v1", "m", (ApiCompatibilityMode)999,
+                    ApiAuthMode.BearerToken, string.Empty, "k"),
+                ApiLaneIdentity.ForAttempt("https://example.test/v1", "m", ApiCompatibilityMode.OpenAIChatCompletions,
+                    ApiAuthMode.BearerToken, string.Empty, "k"));
+            AssertEqual("retired mode generation identity normalizes to Chat",
+                ApiLaneIdentity.ForGeneration("https://example.test/v1", "m", ApiCompatibilityMode.OllamaNativeChat),
+                ApiLaneIdentity.ForGeneration("https://example.test/v1", "m", ApiCompatibilityMode.OpenAIChatCompletions));
+            AssertEqual("unknown mode fetch identity normalizes to Chat",
+                ApiLaneIdentity.ForFetchTarget("https://example.test/v1", "k", ApiAuthMode.BearerToken, string.Empty,
+                    (ApiCompatibilityMode)999),
+                ApiLaneIdentity.ForFetchTarget("https://example.test/v1", "k", ApiAuthMode.BearerToken, string.Empty,
+                    ApiCompatibilityMode.OpenAIChatCompletions));
             AssertEqual("connection test normalizes mode and reasoning",
                 ApiLaneIdentity.ForConnectionTest("https://example.test/v1", "k", "m", ApiAuthMode.CustomHeader, "x-api-key", (ApiCompatibilityMode)999, " HIGH "),
                 ApiLaneIdentity.ForConnectionTest("https://example.test/v1", "k", "m", ApiAuthMode.CustomHeader, "x-api-key", ApiCompatibilityMode.OpenAIChatCompletions, "high"));
             AssertEqual("label strips query and fragment",
                 "m [OpenAIResponses] @ https://example.test/v1/responses",
                 ApiLaneLabels.Label("https://example.test/v1?key=secret#frag", "m", ApiCompatibilityMode.OpenAIResponses));
+            AssertEqual("Gemini label uses one canonical full path and hides query secret",
+                "models/gemini-fixture [GeminiGenerateContent] @ "
+                    + "https://generativelanguage.googleapis.com/v1beta/models/gemini-fixture:generateContent",
+                ApiLaneLabels.Label(
+                    geminiFull + "?x-goog-api-key=secret#fragment",
+                    "models/gemini-fixture",
+                    ApiCompatibilityMode.GeminiGenerateContent));
             AssertEqual("label blank placeholders",
                 "<blank-model> [OpenAIChatCompletions] @ <blank-url>",
                 ApiLaneLabels.Label(" ", " ", ApiCompatibilityMode.OpenAIChatCompletions));
@@ -7176,8 +7234,31 @@ namespace DiaryPipelineTests
             // Compatibility-mode tokens.
             AssertEqual("api mode chat token", "chatCompletions", ApiLaneImport.ApiModeToken(ApiCompatibilityMode.OpenAIChatCompletions));
             AssertEqual("api mode responses token", "responses", ApiLaneImport.ApiModeToken(ApiCompatibilityMode.OpenAIResponses));
+            AssertEqual("api mode Anthropic token", "anthropicMessages",
+                ApiLaneImport.ApiModeToken(ApiCompatibilityMode.AnthropicMessages));
+            AssertEqual("api mode Gemini token", "geminiGenerateContent",
+                ApiLaneImport.ApiModeToken(ApiCompatibilityMode.GeminiGenerateContent));
+            AssertEqual("api mode Ollama token", "ollamaChat",
+                ApiLaneImport.ApiModeToken(ApiCompatibilityMode.OllamaChat));
+            AssertEqual("retired Ollama mode never emits a native token", "chatCompletions",
+                ApiLaneImport.ApiModeToken(ApiCompatibilityMode.OllamaNativeChat));
+            AssertEqual("unknown future mode emits safe default token", "chatCompletions",
+                ApiLaneImport.ApiModeToken((ApiCompatibilityMode)999));
             AssertTrue("parse responses", ApiLaneImport.ParseApiMode(" Responses ") == ApiCompatibilityMode.OpenAIResponses);
+            AssertTrue("parse Anthropic token", ApiLaneImport.ParseApiMode(" AnthropicMessages ") == ApiCompatibilityMode.AnthropicMessages);
+            AssertTrue("parse Gemini token", ApiLaneImport.ParseApiMode("geminiGenerateContent") == ApiCompatibilityMode.GeminiGenerateContent);
+            AssertTrue("parse Ollama token", ApiLaneImport.ParseApiMode("ollamaChat") == ApiCompatibilityMode.OllamaChat);
+            AssertTrue("parse retired Ollama name stays OpenAI chat",
+                ApiLaneImport.ParseApiMode("OllamaNativeChat") == ApiCompatibilityMode.OpenAIChatCompletions);
+            AssertTrue("parse retired numeric token stays OpenAI chat",
+                ApiLaneImport.ParseApiMode("2") == ApiCompatibilityMode.OpenAIChatCompletions);
             AssertTrue("parse api mode default", ApiLaneImport.ParseApiMode("something") == ApiCompatibilityMode.OpenAIChatCompletions);
+            AssertEqual("Anthropic token round-trips", ApiCompatibilityMode.AnthropicMessages,
+                ApiLaneImport.ParseApiMode(ApiLaneImport.ApiModeToken(ApiCompatibilityMode.AnthropicMessages)));
+            AssertEqual("Gemini token round-trips", ApiCompatibilityMode.GeminiGenerateContent,
+                ApiLaneImport.ParseApiMode(ApiLaneImport.ApiModeToken(ApiCompatibilityMode.GeminiGenerateContent)));
+            AssertEqual("Ollama token round-trips", ApiCompatibilityMode.OllamaChat,
+                ApiLaneImport.ParseApiMode(ApiLaneImport.ApiModeToken(ApiCompatibilityMode.OllamaChat)));
 
             // Routing + context-detail override tokens.
             AssertEqual("routing balanced token", "balanced", ApiLaneImport.RoutingModeToken(ApiLaneRoutingMode.Balanced));
@@ -7222,6 +7303,12 @@ namespace DiaryPipelineTests
                 ApiRequestAuth.ApplyQueryAuth(
                     "https://example.test/v1/chat/completions?key=old&existing=1&key=older#frag",
                     "new key",
+                    ApiAuthMode.QueryParameterKey));
+            AssertEqual("query auth replaces case/encoding variants without duplicate secrets",
+                "https://example.test/v1/chat/completions?existing=1&key=new",
+                ApiRequestAuth.ApplyQueryAuth(
+                    "https://example.test/v1/chat/completions?KEY=old&%6b%65%79=older&existing=1",
+                    "new",
                     ApiAuthMode.QueryParameterKey));
             AssertEqual("query auth unchanged without key",
                 "https://example.test/v1/chat/completions",

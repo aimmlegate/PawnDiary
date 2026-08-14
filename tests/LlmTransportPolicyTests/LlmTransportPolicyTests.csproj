@@ -4,12 +4,17 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
+    <!-- This focused link graph needs the routing contracts, but not the codecs that assign every DTO field. -->
+    <NoWarn>$(NoWarn);CS0649</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="..\..\Source\Pipeline\ApiEndpointPolicy.cs" Link="ApiEndpointPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\ApiLaneIdentity.cs" Link="ApiLaneIdentity.cs" />
+    <Compile Include="..\..\Source\Pipeline\ModelReasoningCapability.cs" Link="ModelReasoningCapability.cs" />
     <Compile Include="..\..\Source\Pipeline\TextTruncation.cs" Link="TextTruncation.cs" />
+    <Compile Include="..\..\Source\Pipeline\Transport\LlmProtocolContracts.cs" Link="LlmProtocolContracts.cs" />
+    <Compile Include="..\..\Source\Pipeline\Transport\LlmProtocolDispatcher.cs" Link="LlmProtocolDispatcher.cs" />
     <Compile Include="..\..\Source\Settings\EndpointUtility.cs" Link="EndpointUtility.cs" />
   </ItemGroup>
 </Project>

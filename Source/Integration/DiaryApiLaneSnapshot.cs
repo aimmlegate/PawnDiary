@@ -42,7 +42,10 @@ namespace PawnDiary.Integration
         /// <summary>Header name used when authMode is "customHeader"; empty otherwise.</summary>
         public string customAuthHeaderName = string.Empty;
 
-        /// <summary>Stable compatibility-mode token: "chatCompletions" or "responses".</summary>
+        /// <summary>
+        /// Stable compatibility-mode token: "chatCompletions", "responses", "anthropicMessages",
+        /// "geminiGenerateContent", or "ollamaChat".
+        /// </summary>
         public string apiMode = string.Empty;
 
         /// <summary>Reasoning-effort token for the responses mode ("default", "low", "high", ...).</summary>

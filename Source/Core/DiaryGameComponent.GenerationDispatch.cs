@@ -161,7 +161,10 @@ namespace PawnDiary
                 + " reason=" + selectionReason
                 + " failovers=[" + LaneList(failoverTargets) + "]");
 
-            diaryEvent.SetLlmMeta(povRole, EndpointUtility.BuildGenerationUrl(target.url, target.apiMode), target.model);
+            diaryEvent.SetLlmMeta(
+                povRole,
+                EndpointUtility.BuildGenerationUrl(target.url, target.model, target.apiMode),
+                target.model);
             diaryEvent.MarkQueued(povRole);
 
             DiaryResponseRules responseRules = promptPlan.responseRules
@@ -410,7 +413,13 @@ namespace PawnDiary
             ApiEndpointConfig successfulLane = SuccessfulLaneFromResult(result);
             if (!string.IsNullOrWhiteSpace(result.endpointUrl) && !string.IsNullOrWhiteSpace(result.modelName))
             {
-                diaryEvent.SetLlmMeta(result.povRole, EndpointUtility.BuildGenerationUrl(result.endpointUrl, result.apiMode), result.modelName);
+                diaryEvent.SetLlmMeta(
+                    result.povRole,
+                    EndpointUtility.BuildGenerationUrl(
+                        result.endpointUrl,
+                        result.modelName,
+                        result.apiMode),
+                    result.modelName);
             }
 
             NotifyEntryStatusChanged(diaryEvent, result.povRole);

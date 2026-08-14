@@ -338,6 +338,9 @@
   <PawnDiary.Settings.ApiCompatibility>Type</PawnDiary.Settings.ApiCompatibility>
   <PawnDiary.Settings.ApiCompatibility.Chat>OpenAI chat-compatible</PawnDiary.Settings.ApiCompatibility.Chat>
   <PawnDiary.Settings.ApiCompatibility.Responses>OpenAI Responses</PawnDiary.Settings.ApiCompatibility.Responses>
+  <PawnDiary.Settings.ApiCompatibility.AnthropicMessages>Anthropic Messages</PawnDiary.Settings.ApiCompatibility.AnthropicMessages>
+  <PawnDiary.Settings.ApiCompatibility.GeminiGenerateContent>Gemini GenerateContent</PawnDiary.Settings.ApiCompatibility.GeminiGenerateContent>
+  <PawnDiary.Settings.ApiCompatibility.OllamaChat>Ollama native chat</PawnDiary.Settings.ApiCompatibility.OllamaChat>
   <PawnDiary.Settings.ApiAuthMode>Auth</PawnDiary.Settings.ApiAuthMode>
   <PawnDiary.Settings.ApiAuthMode.Bearer>Bearer token</PawnDiary.Settings.ApiAuthMode.Bearer>
   <PawnDiary.Settings.ApiAuthMode.None>No auth</PawnDiary.Settings.ApiAuthMode.None>

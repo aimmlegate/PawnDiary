@@ -16,7 +16,7 @@ namespace PawnDiary
         // means every key starts masked. Session-only UI state; never saved.
         private static readonly HashSet<ApiEndpointConfig> revealedApiKeys = new HashSet<ApiEndpointConfig>();
 
-        // Last-seen connection signature per row (url|apiKey|authMode|customAuthHeaderName), keyed by
+        // Last-seen signature per row (url|apiKey|authMode|customAuthHeaderName|apiMode), keyed by
         // the ApiEndpointConfig instance so it survives reordering. Compared each frame to detect
         // when a player edits the URL/key/auth of a configured row, so a background capability
         // refresh fires once per change rather than per keystroke. Session-only UI state; never saved.
@@ -160,7 +160,8 @@ namespace PawnDiary
             return (endpoint.url ?? string.Empty)
                 + "|" + (endpoint.apiKey ?? string.Empty)
                 + "|" + endpoint.authMode
-                + "|" + (endpoint.customAuthHeaderName ?? string.Empty);
+                + "|" + (endpoint.customAuthHeaderName ?? string.Empty)
+                + "|" + ApiEndpointPolicy.NormalizeApiMode(endpoint.apiMode);
         }
 
         /// <summary>
@@ -477,10 +478,16 @@ namespace PawnDiary
 
         private static string ApiCompatibilityLabel(ApiCompatibilityMode mode)
         {
-            switch (mode)
+            switch (PawnDiarySettings.NormalizeApiMode(mode))
             {
                 case ApiCompatibilityMode.OpenAIResponses:
                     return "PawnDiary.Settings.ApiCompatibility.Responses";
+                case ApiCompatibilityMode.AnthropicMessages:
+                    return "PawnDiary.Settings.ApiCompatibility.AnthropicMessages";
+                case ApiCompatibilityMode.GeminiGenerateContent:
+                    return "PawnDiary.Settings.ApiCompatibility.GeminiGenerateContent";
+                case ApiCompatibilityMode.OllamaChat:
+                    return "PawnDiary.Settings.ApiCompatibility.OllamaChat";
                 default:
                     return "PawnDiary.Settings.ApiCompatibility.Chat";
             }

@@ -251,6 +251,14 @@ namespace PawnDiary
             Timeout = Timeout.InfiniteTimeSpan // disable HttpClient's own timeout; we use CancellationToken deadlines instead
         };
 
+#if DEBUG
+        // Standalone scripted-HTTP fixtures replace only the physical send. Production Debug builds
+        // leave this null, and Release builds do not contain the seam at all. Retry, cooldown,
+        // admission, deadlines, response caps, parsing, and redaction all remain owned by LlmClient.
+        internal static Func<HttpRequestMessage, HttpCompletionOption, CancellationToken,
+            Task<HttpResponseMessage>> SendAsyncOverrideForTests;
+#endif
+
         /// <summary>Monotonically increasing ID so stale results from previous sessions are ignored.</summary>
         private static long currentSessionId;
 
@@ -1955,44 +1963,119 @@ namespace PawnDiary
         /// </summary>
         private static async Task<SendResponse> SendOnce(LlmGenerationRequest request, CancellationToken cancellationToken)
         {
+            LlmProtocolMode protocolMode = EndpointUtility.ProtocolModeFor(request.apiMode);
+            bool openAiProtocol = protocolMode == LlmProtocolMode.OpenAIChatCompletions
+                || protocolMode == LlmProtocolMode.OpenAIResponses;
+
+            // Validate a custom-secret/fixed-header collision before applying any auth material or
+            // constructing a request that could be sent.
+            LlmProtocolHeadersPlan protocolHeaders = ApiRequestAuth.PrepareProtocolHeaders(
+                request.apiMode,
+                request.authMode,
+                request.customAuthHeaderName);
             string requestUrl = ApiRequestAuth.ApplyQueryAuth(
-                EndpointUtility.BuildGenerationUrl(request.endpointUrl, request.apiMode),
+                EndpointUtility.BuildGenerationUrl(
+                    request.endpointUrl,
+                    request.modelName,
+                    request.apiMode),
                 request.apiKey,
                 request.authMode);
             using (HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, requestUrl))
             {
                 ApiRequestAuth.ApplyHeaders(message, request.apiKey, request.authMode, request.customAuthHeaderName);
+                ApiRequestAuth.ApplyProtocolHeaders(message, protocolHeaders);
 
                 message.Content = new StringContent(BuildRequestJson(request), Encoding.UTF8, "application/json");
-                using (HttpResponseMessage response = await Client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
+                using (HttpResponseMessage response = await SendHttpAsync(
+                    message,
+                    HttpCompletionOption.ResponseHeadersRead,
+                    cancellationToken))
                 {
                     string responseJson = await ReadCappedResponseString(response.Content, MaxResponseBytes, cancellationToken);
                     if (!response.IsSuccessStatusCode)
                     {
-                        string error = $"HTTP {(int)response.StatusCode}: {TrimForLog(request, responseJson)}";
-                        if (IsTransientStatusCode((int)response.StatusCode))
+                        int statusCode = (int)response.StatusCode;
+                        LlmProtocolParseResult parsedFailure = openAiProtocol
+                            ? null
+                            : LlmProtocolResponseCodec.ParseGeneration(
+                                responseJson,
+                                protocolMode,
+                                statusCode);
+                        string errorDetail = openAiProtocol
+                            // Preserve the historical OpenAI status/body text exactly.
+                            ? TrimForLog(request, responseJson)
+                            : TrimForLog(
+                                request,
+                                LlmProtocolRuntimePolicy.NativeProviderFailureDetail(parsedFailure));
+                        string error = $"HTTP {statusCode}: {errorDetail}";
+                        bool protocolTransient = !openAiProtocol
+                            && parsedFailure != null
+                            && parsedFailure.FailureDisposition
+                                == LlmProtocolFailureDisposition.Transient;
+                        if (IsTransientStatusCode(statusCode) || protocolTransient)
                         {
-                            // Honor a 429/503 Retry-After so this lane cools for the server-dictated
-                            // time instead of hammering it with fast local retries.
+                            // Honor Retry-After so this lane cools for the server-dictated time instead
+                            // of hammering it with fast local retries. Native provider semantics may
+                            // additionally classify a documented status such as Anthropic 409.
                             throw new LlmTransientException(error, RetryAfterSecondsFrom(response));
                         }
 
                         throw new LlmPermanentException(error);
                     }
 
-                    Dictionary<string, object> responseRoot = LlmResponseParser.ParseResponseRoot(responseJson);
-                    LlmResponseMode responseMode = ResponseModeFor(request.apiMode);
-                    string generatedText = LlmResponseParser.ParseGeneratedText(responseRoot, responseMode);
-                    string providerError = LlmResponseParser.ExtractProviderError(responseRoot, responseMode, !string.IsNullOrWhiteSpace(generatedText));
+                    string generatedText;
+                    string providerError;
+                    Dictionary<string, object> responseRoot = null;
+                    LlmResponseMode responseMode = LlmResponseMode.OpenAIChatCompletions;
+                    LlmProtocolParseResult parsedSuccess = null;
+                    if (openAiProtocol)
+                    {
+                        // Keep the established OpenAI parser path exact, including Responses->Chat
+                        // fallback and the second no-visible-text status check below.
+                        responseRoot = LlmResponseParser.ParseResponseRoot(responseJson);
+                        responseMode = ResponseModeFor(request.apiMode);
+                        generatedText = LlmResponseParser.ParseGeneratedText(responseRoot, responseMode);
+                        providerError = LlmResponseParser.ExtractProviderError(
+                            responseRoot,
+                            responseMode,
+                            !string.IsNullOrWhiteSpace(generatedText));
+                    }
+                    else
+                    {
+                        parsedSuccess = LlmProtocolResponseCodec.ParseGeneration(
+                            responseJson,
+                            protocolMode,
+                            (int)response.StatusCode);
+                        generatedText = parsedSuccess.Text;
+                        // A normal native response commonly carries a stop/finish reason alongside
+                        // valid text. That metadata is diagnostic only when the provider returned an
+                        // actual error or no usable text.
+                        providerError = string.IsNullOrWhiteSpace(parsedSuccess.ProviderError)
+                            ? string.Empty
+                            : LlmProtocolRuntimePolicy.NativeProviderFailureDetail(parsedSuccess);
+                    }
+
                     if (!string.IsNullOrWhiteSpace(providerError))
                     {
-                        throw new LlmPermanentException(RedactRequestSecrets(request, providerError));
+                        string safeProviderError = RedactRequestSecrets(request, providerError);
+                        if (!openAiProtocol
+                            && parsedSuccess != null
+                            && parsedSuccess.FailureDisposition
+                                == LlmProtocolFailureDisposition.Transient)
+                        {
+                            throw new LlmTransientException(safeProviderError);
+                        }
+
+                        // Embedded OpenAI/body errors remain permanent for exact compatibility.
+                        throw new LlmPermanentException(safeProviderError);
                     }
 
                     string visibleText = LlmResponseParser.StripReasoningTextBlocks(generatedText, request.reasoningTag);
                     if (string.IsNullOrWhiteSpace(visibleText))
                     {
-                        providerError = LlmResponseParser.ExtractProviderError(responseRoot, responseMode, false);
+                        providerError = openAiProtocol
+                            ? LlmResponseParser.ExtractProviderError(responseRoot, responseMode, false)
+                            : LlmProtocolRuntimePolicy.NativeProviderFailureDetail(parsedSuccess);
                         throw new LlmPermanentException(string.IsNullOrWhiteSpace(providerError)
                             ? "The endpoint returned no message content."
                             : RedactRequestSecrets(request, providerError));
@@ -2016,6 +2099,23 @@ namespace PawnDiary
                     };
                 }
             }
+        }
+
+        /// <summary>Uses the shared production client unless a Debug-only scripted fixture is active.</summary>
+        private static Task<HttpResponseMessage> SendHttpAsync(
+            HttpRequestMessage request,
+            HttpCompletionOption completionOption,
+            CancellationToken cancellationToken)
+        {
+#if DEBUG
+            Func<HttpRequestMessage, HttpCompletionOption, CancellationToken,
+                Task<HttpResponseMessage>> scripted = SendAsyncOverrideForTests;
+            if (scripted != null)
+            {
+                return scripted(request, completionOption, cancellationToken);
+            }
+#endif
+            return Client.SendAsync(request, completionOption, cancellationToken);
         }
 
         /// <summary>
@@ -2088,19 +2188,28 @@ namespace PawnDiary
         /// </summary>
         private static string BuildRequestJson(LlmGenerationRequest request)
         {
+            ModelProtocolCapability capability = ModelCapabilityCache.Get(
+                request.endpointUrl,
+                request.apiMode,
+                request.modelName);
             string resolvedEffort = ModelReasoningCapability.EffectiveReasoningEffort(
                 request.reasoningEffort,
-                ModelCapabilityCache.Get(request.endpointUrl, request.modelName));
+                capability?.ReasoningCapability);
 
-            return LlmRequestJsonBuilder.Build(new LlmRequestJsonInput
+            return LlmProtocolRequestJson.Build(new LlmProtocolRequestInput
             {
-                apiMode = request.apiMode,
-                modelName = request.modelName,
-                systemPrompt = request.systemPrompt,
-                rawText = request.rawText,
-                reasoningEffort = resolvedEffort,
-                maxTokens = request.maxTokens,
-                temperature = request.temperature
+                Mode = EndpointUtility.ProtocolModeFor(request.apiMode),
+                ModelName = request.modelName,
+                SystemPrompt = request.systemPrompt,
+                UserText = request.rawText,
+                ReasoningEffort = resolvedEffort,
+                MaxTokens = request.maxTokens,
+                Temperature = request.temperature,
+                ProviderMaximumOutputTokens = capability != null
+                    && capability.MaxOutputTokens > 0
+                        ? (int?)capability.MaxOutputTokens
+                        : null,
+                ProviderMaximumTemperature = capability?.MaxTemperature
             });
         }
 

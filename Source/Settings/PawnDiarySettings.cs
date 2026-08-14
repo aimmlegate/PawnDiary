@@ -35,6 +35,9 @@ namespace PawnDiary
         public bool enabled = true;
         // Request/response compatibility mode. Default preserves existing OpenAI-compatible setups.
         public ApiCompatibilityMode apiMode = ApiCompatibilityMode.OpenAIChatCompletions;
+        // Historical native-Ollama rows saved this toggle. It is read once below only so the obsolete
+        // key is explicitly consumed, then cleared; it never selects the new native Ollama protocol.
+        private bool obsoleteOllamaThink;
         // OpenAI Responses reasoning effort. "default" means omit the reasoning object entirely.
         public string reasoningEffort = PawnDiarySettings.DefaultReasoningEffort;
         // Reasoning-tag override for the response stripper. "auto" = built-in broad tag detection;
@@ -88,6 +91,13 @@ namespace PawnDiary
             Scribe_Values.Look(ref customAuthHeaderName, "customAuthHeaderName", ApiEndpointPolicy.DefaultCustomHeaderName);
             Scribe_Values.Look(ref enabled, "enabled", true);
             Scribe_Values.Look(ref apiMode, "apiMode", ApiCompatibilityMode.OpenAIChatCompletions);
+            if (Scribe.mode == LoadSaveMode.Saving)
+            {
+                // Keep the retired key out of every new save, including after an old row was loaded.
+                obsoleteOllamaThink = false;
+            }
+            Scribe_Values.Look(ref obsoleteOllamaThink, "ollamaThink", false);
+            obsoleteOllamaThink = false;
             Scribe_Values.Look(ref reasoningEffort, "reasoningEffort", PawnDiarySettings.DefaultReasoningEffort);
             Scribe_Values.Look(ref reasoningTag, "reasoningTag", PawnDiarySettings.DefaultReasoningTag);
             Scribe_Values.Look(ref contextDetailOverride, "contextDetailOverride", PromptContextDetailOverride.Inherit);
@@ -642,6 +652,9 @@ namespace PawnDiary
                 }
 
                 endpoint.authMode = NormalizeAuthMode(endpoint.authMode);
+                // This is intentionally value-only. Never infer a native protocol from the URL: a
+                // working http://localhost:11434/v1 row is an OpenAI-compatible Ollama lane and must
+                // remain one unless the player explicitly chooses the new native mode.
                 endpoint.apiMode = NormalizeApiMode(endpoint.apiMode);
                 endpoint.reasoningEffort = NormalizeReasoningEffort(endpoint.reasoningEffort);
                 endpoint.reasoningTag = NormalizeReasoningTag(endpoint.reasoningTag);

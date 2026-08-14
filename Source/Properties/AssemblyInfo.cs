@@ -5,10 +5,11 @@ using System.Runtime.InteropServices;
 
 // Pure pipeline helpers and the saved event-store surface are internal implementation detail — the
 // public integration contract lives in the PawnDiary.Integration namespace. The standalone pipeline
-// tests and the separate in-game RimTest assembly compile against the real assembly and need to call
-// those internals, so only those two named test assemblies are explicitly trusted here.
+// tests, scripted HTTP fixture, and separate in-game RimTest assembly compile against the real
+// assembly and need to call those internals, so only these named test assemblies are trusted here.
 [assembly: InternalsVisibleTo("DiaryPipelineTests")]
 [assembly: InternalsVisibleTo("PawnDiary.RimTest")]
+[assembly: InternalsVisibleTo("LlmProtocolHttpFixtureTests")]
 
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information

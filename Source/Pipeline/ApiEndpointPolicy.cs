@@ -6,14 +6,22 @@ using System.Collections.Generic;
 namespace PawnDiary
 {
     /// <summary>
-    /// Which request/response shape an API lane speaks. Most providers that advertise
-    /// "OpenAI-compatible" should use <see cref="OpenAIChatCompletions"/>; the Responses mode covers
-    /// newer OpenAI reasoning models.
+    /// Which request/response shape an API lane speaks. Numeric values are persisted by RimWorld and
+    /// are therefore an append-only compatibility contract: never reorder or reuse an ordinal.
     /// </summary>
     public enum ApiCompatibilityMode
     {
-        OpenAIChatCompletions,
-        OpenAIResponses
+        OpenAIChatCompletions = 0,
+        OpenAIResponses = 1,
+
+        // Pawn Diary briefly shipped this native-Ollama value. Keep its exact name and ordinal so
+        // old named/numeric settings deserialize deterministically, but NormalizeApiMode deliberately
+        // neutralizes it to OpenAI Chat. In particular, ordinal 2 must never become Anthropic.
+        OllamaNativeChat = 2,
+
+        AnthropicMessages = 3,
+        GeminiGenerateContent = 4,
+        OllamaChat = 5
     }
 
     /// <summary>
@@ -80,12 +88,24 @@ namespace PawnDiary
             "scratchpad"
         };
 
-        /// <summary>Normalizes invalid compatibility enum values loaded from hand-edited settings.</summary>
+        /// <summary>
+        /// Keeps current provider modes and conservatively maps invalid/future values plus the retired
+        /// ordinal-2 Ollama mode to OpenAI Chat. Reactivating an obsolete provider is a settings migration
+        /// decision, never an accidental consequence of enum parsing.
+        /// </summary>
         public static ApiCompatibilityMode NormalizeApiMode(ApiCompatibilityMode mode)
         {
-            return mode == ApiCompatibilityMode.OpenAIResponses
-                ? ApiCompatibilityMode.OpenAIResponses
-                : ApiCompatibilityMode.OpenAIChatCompletions;
+            switch (mode)
+            {
+                case ApiCompatibilityMode.OpenAIChatCompletions:
+                case ApiCompatibilityMode.OpenAIResponses:
+                case ApiCompatibilityMode.AnthropicMessages:
+                case ApiCompatibilityMode.GeminiGenerateContent:
+                case ApiCompatibilityMode.OllamaChat:
+                    return mode;
+                default:
+                    return ApiCompatibilityMode.OpenAIChatCompletions;
+            }
         }
 
         /// <summary>Normalizes invalid auth enum values loaded from hand-edited settings.</summary>

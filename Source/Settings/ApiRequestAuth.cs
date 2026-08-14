@@ -12,6 +12,57 @@ namespace PawnDiary
     /// </summary>
     internal static class ApiRequestAuth
     {
+        /// <summary>
+        /// Builds and validates the non-secret provider-header plan before an HTTP request is created.
+        /// A custom secret header may never replace a mandatory protocol header (or vice versa).
+        /// </summary>
+        public static LlmProtocolHeadersPlan PrepareProtocolHeaders(
+            ApiCompatibilityMode apiMode,
+            ApiAuthMode authMode,
+            string customHeaderName)
+        {
+            LlmProtocolHeadersPlan plan = LlmProtocolDispatcher.HeadersFor(
+                EndpointUtility.ProtocolModeFor(apiMode),
+                authMode,
+                customHeaderName);
+            if (plan.HasSecretHeaderCollision)
+            {
+                throw new InvalidOperationException(
+                    "The custom authentication header conflicts with the required provider header '"
+                    + plan.CollisionHeaderName
+                    + "'.");
+            }
+
+            return plan;
+        }
+
+        /// <summary>
+        /// Applies mandatory non-secret provider headers after collision preflight. Secret attachment
+        /// remains exclusively in <see cref="ApplyHeaders(HttpRequestMessage,string,ApiAuthMode,string)"/>.
+        /// </summary>
+        public static void ApplyProtocolHeaders(
+            HttpRequestMessage request,
+            LlmProtocolHeadersPlan plan)
+        {
+            if (request == null || plan?.RequiredHeaders == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < plan.RequiredHeaders.Count; i++)
+            {
+                LlmProtocolHeader header = plan.RequiredHeaders[i];
+                if (header == null
+                    || string.IsNullOrWhiteSpace(header.Name)
+                    || string.IsNullOrWhiteSpace(header.Value))
+                {
+                    continue;
+                }
+
+                request.Headers.TryAddWithoutValidation(header.Name, header.Value);
+            }
+        }
+
         /// <summary>Adds query-parameter auth when the selected auth mode requires it.</summary>
         public static string ApplyQueryAuth(string url, string apiKey, ApiAuthMode authMode)
         {
@@ -101,7 +152,17 @@ namespace PawnDiary
         {
             int equalsIndex = parameter.IndexOf("=", StringComparison.Ordinal);
             string parameterName = equalsIndex >= 0 ? parameter.Substring(0, equalsIndex) : parameter;
-            return string.Equals(parameterName, name, StringComparison.Ordinal);
+            try
+            {
+                parameterName = Uri.UnescapeDataString(parameterName);
+            }
+            catch
+            {
+                // A malformed user-entered query stays recoverable. It simply cannot match the
+                // canonical key name and will remain beside the newly attached safe parameter.
+            }
+
+            return string.Equals(parameterName, name, StringComparison.OrdinalIgnoreCase);
         }
     }
 }
