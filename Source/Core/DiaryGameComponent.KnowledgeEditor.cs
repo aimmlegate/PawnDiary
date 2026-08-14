@@ -1,8 +1,8 @@
-// Developer-only browsing and mutation endpoints for one pawn's durable important memories and
-// read-only cultural lore.
+// Normal-play profile adapters for one pawn's durable important memories and player-authored
+// background, plus the existing developer-only cultural-lore diagnostics.
 //
-// The Writing Style window consumes the detached lore snapshot and read-only memory list below,
-// then commits memory edits/removals only through the guarded methods. That keeps RimWorld's
+// The Diary profile consumes detached snapshots and commits memory edits/removals only through the
+// guarded methods below. That keeps RimWorld's
 // repeated IMGUI draw passes from mutating save state and keeps stable retrieval identity (record
 // id, event kind, participants, subjects, facts) out of the editor. Text changes affect future
 // relevant-past selection output; already-frozen DiaryEvent memoryContext fields remain historical
@@ -63,8 +63,250 @@ namespace PawnDiary
 
     public partial class DiaryGameComponent
     {
+        private static readonly IReadOnlyList<ImportantMemoryRecordSnapshot>
+            NoImportantMemoriesForProfile = new List<ImportantMemoryRecordSnapshot>();
         private static readonly IReadOnlyList<ImportantMemoryRecord> NoImportantMemoriesForDev =
             new List<ImportantMemoryRecord>();
+
+        /// <summary>
+        /// Returns detached captured/contextual rows for the exact eligible pawn without creating or
+        /// normalizing save state. Player/background rows are intentionally absent so the canonical
+        /// background cannot appear twice in the profile.
+        /// </summary>
+        internal IReadOnlyList<ImportantMemoryRecordSnapshot> ImportantMemoriesForProfile(Pawn pawn)
+        {
+            PawnKnowledgeState state = ExistingKnowledgeStateForProfile(pawn);
+            if (state?.records == null)
+            {
+                return NoImportantMemoriesForProfile;
+            }
+
+            string ownerPawnId = pawn.GetUniqueLoadID();
+            List<ImportantMemoryRecordSnapshot> saved = state.ToRecordSnapshots();
+            List<ImportantMemoryRecordSnapshot> visible =
+                new List<ImportantMemoryRecordSnapshot>(saved.Count);
+            for (int i = 0; i < saved.Count; i++)
+            {
+                ImportantMemoryRecordSnapshot record = saved[i];
+                if (record == null)
+                {
+                    continue;
+                }
+
+                // The owning state is attached to the exact diary looked up above. Stamp that detached
+                // owner even for an old blank state id; no saved object is changed during this read.
+                record.ownerPawnId = ownerPawnId;
+                if (IsCapturedContextual(record))
+                {
+                    visible.Add(record);
+                }
+            }
+
+            return visible.Count == 0 ? NoImportantMemoriesForProfile : visible;
+        }
+
+        /// <summary>Returns the XML-owned edit/render limit for captured contextual memory prose.</summary>
+        internal int ImportantMemoryTextLimitForProfile()
+        {
+            return Math.Max(
+                0,
+                DiaryKnowledgePolicy.Snapshot(applyGlobalMemorySetting: false)
+                    .fallbackSummaryMaxChars);
+        }
+
+        /// <summary>
+        /// Replaces only one captured row's prompt/display prose. Stable ownership, matching facts,
+        /// participants, subjects, and event identity remain read-only.
+        /// </summary>
+        internal bool TrySetImportantMemoryTextForProfile(
+            Pawn pawn,
+            string recordId,
+            string text)
+        {
+            if (string.IsNullOrWhiteSpace(recordId))
+            {
+                return false;
+            }
+
+            PawnKnowledgeState state = ExistingKnowledgeStateForProfile(pawn);
+            if (state == null)
+            {
+                return false;
+            }
+
+            // This is an explicit Save action, so repairing null lists/schema defaults is safe here.
+            state.Normalize();
+            ImportantMemoryRecord record = FindImportantMemoryRecord(state, recordId);
+            if (!IsCapturedContextual(record))
+            {
+                return false;
+            }
+
+            string cleaned = ImportantMemoryLineRenderer.CleanManualOverride(
+                text,
+                ImportantMemoryTextLimitForProfile());
+            if (string.Equals(record.manualTextOverride, cleaned, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            record.manualTextOverride = cleaned;
+            InvalidateKnowledgeAfterProfileMutation(pawn.GetUniqueLoadID());
+            return true;
+        }
+
+        /// <summary>Removes exactly one captured/contextual row owned by the requested pawn.</summary>
+        internal bool TryRemoveImportantMemoryForProfile(Pawn pawn, string recordId)
+        {
+            if (string.IsNullOrWhiteSpace(recordId))
+            {
+                return false;
+            }
+
+            PawnKnowledgeState state = ExistingKnowledgeStateForProfile(pawn);
+            if (state == null)
+            {
+                return false;
+            }
+
+            state.Normalize();
+            for (int i = 0; i < state.records.Count; i++)
+            {
+                ImportantMemoryRecord record = state.records[i];
+                if (record != null
+                    && IsCapturedContextual(record)
+                    && string.Equals(record.recordId, recordId, StringComparison.Ordinal))
+                {
+                    state.records.RemoveAt(i);
+                    InvalidateKnowledgeAfterProfileMutation(pawn.GetUniqueLoadID());
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Reads the exact canonical background text for an eligible pawn without creating or
+        /// normalizing any save row. Corrupt lookalikes are ignored rather than promoted to canon.
+        /// </summary>
+        internal string BackgroundMemoryForProfile(Pawn pawn)
+        {
+            PawnKnowledgeState state = ExistingKnowledgeStateForProfile(pawn);
+            if (state == null)
+            {
+                return string.Empty;
+            }
+
+            ImportantMemoryRecordSnapshot record = CanonicalBackgroundSnapshot(
+                state,
+                pawn.GetUniqueLoadID());
+            return PlayerMemoryPolicy.NormalizePlayerText(record?.manualTextOverride);
+        }
+
+        /// <summary>Returns the XML-owned maximum for the singleton player-authored background.</summary>
+        internal int BackgroundMemoryTextLimitForProfile()
+        {
+            return Math.Max(
+                0,
+                DiaryKnowledgePolicy.Snapshot(applyGlobalMemorySetting: false)
+                    .playerAuthoredMemoryMaxChars);
+        }
+
+        /// <summary>
+        /// Applies the pure create/update/blank-to-delete plan for one exact eligible pawn. This is an
+        /// explicit profile Save boundary, so creating/repairing the pawn's save state is allowed here.
+        /// </summary>
+        internal bool TrySetBackgroundMemoryForProfile(Pawn pawn, string text)
+        {
+            if (!IsDiaryEligible(pawn))
+            {
+                return false;
+            }
+
+            string ownerPawnId = pawn.GetUniqueLoadID();
+            PawnDiaryRecord diary = LookupDiaryByPawnId(ownerPawnId);
+            if (diary != null
+                && !string.Equals(diary.pawnId, ownerPawnId, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            PawnKnowledgeState state = diary?.KnowledgeStateOrNull();
+            if (state != null
+                && !string.IsNullOrWhiteSpace(state.pawnId)
+                && !string.Equals(state.pawnId, ownerPawnId, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            ImportantMemoryRecordSnapshot existing = state == null
+                ? null
+                : CanonicalBackgroundSnapshot(state, ownerPawnId);
+            PlayerMemoryMutationPlan plan = PlayerMemoryPolicy.PlanBackstoryMutation(
+                ownerPawnId,
+                existing,
+                text,
+                BackgroundMemoryTextLimitForProfile());
+            if (plan.action == PlayerMemoryMutationAction.None)
+            {
+                return true;
+            }
+
+            if (plan.action == PlayerMemoryMutationAction.Rejected || plan.record == null
+                && plan.action != PlayerMemoryMutationAction.Delete)
+            {
+                return false;
+            }
+
+            if (diary == null)
+            {
+                // Blank input planned None above, so only a real create reaches this explicit mutation.
+                diary = FindDiary(pawn, true);
+            }
+
+            if (diary == null)
+            {
+                return false;
+            }
+
+            state = EnsureKnowledgeState(diary);
+            int existingIndex = FindCanonicalBackgroundIndex(state, ownerPawnId);
+            if (plan.action == PlayerMemoryMutationAction.Create)
+            {
+                if (existingIndex >= 0)
+                {
+                    return false;
+                }
+
+                state.records.Add(ImportantMemoryRecord.FromSnapshot(plan.record));
+            }
+            else if (plan.action == PlayerMemoryMutationAction.Update)
+            {
+                if (existingIndex < 0)
+                {
+                    return false;
+                }
+
+                state.records[existingIndex] = ImportantMemoryRecord.FromSnapshot(plan.record);
+            }
+            else if (plan.action == PlayerMemoryMutationAction.Delete)
+            {
+                if (existingIndex < 0)
+                {
+                    return false;
+                }
+
+                state.records.RemoveAt(existingIndex);
+            }
+            else
+            {
+                return false;
+            }
+
+            InvalidateKnowledgeAfterProfileMutation(ownerPawnId);
+            return true;
+        }
 
         /// <summary>
         /// Returns the existing saved memory list for developer display without creating or
@@ -150,15 +392,7 @@ namespace PawnDiary
         /// </summary>
         internal int ImportantMemoryTextLimitForDev()
         {
-            if (!Prefs.DevMode)
-            {
-                return 0;
-            }
-
-            return Math.Max(
-                0,
-                DiaryKnowledgePolicy.Snapshot(applyGlobalMemorySetting: false)
-                    .fallbackSummaryMaxChars);
+            return Prefs.DevMode ? ImportantMemoryTextLimitForProfile() : 0;
         }
 
         /// <summary>
@@ -167,36 +401,8 @@ namespace PawnDiary
         /// </summary>
         internal bool TrySetImportantMemoryTextForDev(Pawn pawn, string recordId, string text)
         {
-            if (!Prefs.DevMode || string.IsNullOrWhiteSpace(recordId))
-            {
-                return false;
-            }
-
-            PawnKnowledgeState state = ExistingKnowledgeStateForDev(pawn);
-            if (state == null)
-            {
-                return false;
-            }
-
-            // This is an explicit mutation click, so repairing a hand-edited live row here is safe.
-            state.Normalize();
-            ImportantMemoryRecord record = FindImportantMemoryRecord(state, recordId);
-            if (record == null)
-            {
-                return false;
-            }
-
-            int maxChars = DiaryKnowledgePolicy.Snapshot(applyGlobalMemorySetting: false)
-                .fallbackSummaryMaxChars;
-            string cleaned = ImportantMemoryLineRenderer.CleanManualOverride(text, maxChars);
-            if (string.Equals(record.manualTextOverride, cleaned, StringComparison.Ordinal))
-            {
-                return true;
-            }
-
-            record.manualTextOverride = cleaned;
-            InvalidateKnowledgeAfterDevMutation(state.pawnId);
-            return true;
+            return Prefs.DevMode
+                && TrySetImportantMemoryTextForProfile(pawn, recordId, text);
         }
 
         /// <summary>
@@ -205,31 +411,130 @@ namespace PawnDiary
         /// </summary>
         internal bool TryRemoveImportantMemoryForDev(Pawn pawn, string recordId)
         {
-            if (!Prefs.DevMode || string.IsNullOrWhiteSpace(recordId))
+            return Prefs.DevMode
+                && TryRemoveImportantMemoryForProfile(pawn, recordId);
+        }
+
+        /// <summary>
+        /// Exact no-create diary lookup for the normal profile. Eligibility is checked here as a second
+        /// authorization boundary rather than relying on the window having hidden itself correctly.
+        /// </summary>
+        private PawnDiaryRecord ExistingDiaryForProfile(Pawn pawn)
+        {
+            if (!IsDiaryEligible(pawn))
             {
-                return false;
+                return null;
             }
 
-            PawnKnowledgeState state = ExistingKnowledgeStateForDev(pawn);
+            string pawnId = pawn.GetUniqueLoadID();
+            PawnDiaryRecord diary = LookupDiaryByPawnId(pawnId);
+            return diary != null
+                && string.Equals(diary.pawnId, pawnId, StringComparison.Ordinal)
+                ? diary
+                : null;
+        }
+
+        /// <summary>
+        /// Existing state for profile reads/actions. A blank legacy state owner is safely identified by
+        /// its exact diary attachment; a conflicting nonblank owner is rejected, never silently repaired.
+        /// </summary>
+        private PawnKnowledgeState ExistingKnowledgeStateForProfile(Pawn pawn)
+        {
+            PawnDiaryRecord diary = ExistingDiaryForProfile(pawn);
+            PawnKnowledgeState state = diary?.KnowledgeStateOrNull();
             if (state == null)
             {
-                return false;
+                return null;
             }
 
-            state.Normalize();
-            for (int i = 0; i < state.records.Count; i++)
+            string pawnId = pawn.GetUniqueLoadID();
+            return string.IsNullOrWhiteSpace(state.pawnId)
+                || string.Equals(state.pawnId, pawnId, StringComparison.Ordinal)
+                ? state
+                : null;
+        }
+
+        private static bool IsCapturedContextual(ImportantMemoryRecordSnapshot record)
+        {
+            return record != null
+                && string.Equals(
+                    PlayerMemoryPolicy.NormalizeSourceKind(record.sourceKind),
+                    KnowledgeTokens.SourceKindCaptured,
+                    StringComparison.Ordinal)
+                && string.Equals(
+                    PlayerMemoryPolicy.NormalizeRecallScope(record.recallScope),
+                    KnowledgeTokens.RecallScopeContextual,
+                    StringComparison.Ordinal);
+        }
+
+        private static bool IsCapturedContextual(ImportantMemoryRecord record)
+        {
+            return record != null
+                && string.Equals(
+                    PlayerMemoryPolicy.NormalizeSourceKind(record.sourceKind),
+                    KnowledgeTokens.SourceKindCaptured,
+                    StringComparison.Ordinal)
+                && string.Equals(
+                    PlayerMemoryPolicy.NormalizeRecallScope(record.recallScope),
+                    KnowledgeTokens.RecallScopeContextual,
+                    StringComparison.Ordinal);
+        }
+
+        private static ImportantMemoryRecordSnapshot CanonicalBackgroundSnapshot(
+            PawnKnowledgeState state,
+            string ownerPawnId)
+        {
+            if (state?.records == null)
             {
-                ImportantMemoryRecord record = state.records[i];
-                if (record != null
-                    && string.Equals(record.recordId, recordId, StringComparison.Ordinal))
+                return null;
+            }
+
+            List<ImportantMemoryRecordSnapshot> records = state.ToRecordSnapshots();
+            for (int i = 0; i < records.Count; i++)
+            {
+                ImportantMemoryRecordSnapshot record = records[i];
+                if (record == null)
                 {
-                    state.records.RemoveAt(i);
-                    InvalidateKnowledgeAfterDevMutation(state.pawnId);
-                    return true;
+                    continue;
+                }
+
+                // The state was reached through this owner's exact diary attachment. Stamping only the
+                // detached mirror preserves no-mutation reads while allowing legacy blank state ids.
+                record.ownerPawnId = ownerPawnId ?? string.Empty;
+                if (PlayerMemoryPolicy.IsCanonicalBackstory(record, ownerPawnId))
+                {
+                    return record;
                 }
             }
 
-            return false;
+            return null;
+        }
+
+        private static int FindCanonicalBackgroundIndex(
+            PawnKnowledgeState state,
+            string ownerPawnId)
+        {
+            if (state?.records == null)
+            {
+                return -1;
+            }
+
+            for (int i = 0; i < state.records.Count; i++)
+            {
+                ImportantMemoryRecord record = state.records[i];
+                if (record != null && PlayerMemoryPolicy.IsCanonicalBackstory(
+                    ownerPawnId,
+                    record.recordId,
+                    record.dedupKey,
+                    record.eventKind,
+                    record.sourceKind,
+                    record.recallScope))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
 
         /// <summary>
@@ -346,7 +651,7 @@ namespace PawnDiary
             }
         }
 
-        private void InvalidateKnowledgeAfterDevMutation(string pawnId)
+        private void InvalidateKnowledgeAfterProfileMutation(string pawnId)
         {
             // The last selection report may name the old text or a now-removed record.
             if (!string.IsNullOrWhiteSpace(pawnId))
@@ -354,7 +659,7 @@ namespace PawnDiary
                 knowledgeReportsByPawnId.Remove(pawnId);
             }
 
-            // The diary UI's shared cache token also covers this adjacent developer window.
+            // The diary UI's shared cache token also covers this profile and its developer diagnostics.
             DiaryStateVersion.Bump();
         }
     }

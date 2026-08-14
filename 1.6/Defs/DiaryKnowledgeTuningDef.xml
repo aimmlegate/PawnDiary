@@ -24,12 +24,15 @@
     <maxRecordsPerPawn>512</maxRecordsPerPawn>
     <maxRecordsGlobal>20000</maxRecordsGlobal>
     <fallbackSummaryMaxChars>240</fallbackSummaryMaxChars>
+    <!-- Leaves headroom for the localized background prefix inside relevantPastMaxChars. -->
+    <playerAuthoredMemoryMaxChars>450</playerAuthoredMemoryMaxChars>
     <evictionScanIntervalTicks>150000</evictionScanIntervalTicks>
 
     <!-- Relevant-past prompt block (§3.2): at most two dated fact lines. -->
     <relevantPastMaxLines>2</relevantPastMaxLines>
     <relevantPastMaxChars>500</relevantPastMaxChars>
     <relevantPastLineFormat>- ({0}) {1}</relevantPastLineFormat>
+    <backgroundMemoryLineFormat>- (background) {0}</backgroundMemoryLineFormat>
     <relevantPastInstruction>Facts from this pawn's past. Use one only if it fits naturally; never force a mention - these are context, not today's events.</relevantPastInstruction>
 
     <!-- Inline culture annotation (§4.3): at most two topics per prompt. -->

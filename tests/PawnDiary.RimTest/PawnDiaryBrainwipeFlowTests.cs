@@ -153,6 +153,12 @@ namespace PawnDiary.RimTests
                 tick = Find.TickManager.TicksGame,
                 fallbackSummary = "Disposable important memory.",
             });
+            PlayerMemoryMutationPlan backgroundPlan = PlayerMemoryPolicy.PlanBackstoryMutation(
+                targetId,
+                null,
+                "I remember a childhood before this colony.",
+                450);
+            knowledge.records.Add(ImportantMemoryRecord.FromSnapshot(backgroundPlan.record));
 
             PawnArcScheduleState oldArcSchedule = new PawnArcScheduleState();
             PawnBeliefState oldBeliefState = new PawnBeliefState();
@@ -161,7 +167,7 @@ namespace PawnDiary.RimTests
             targetRecord.beliefState = oldBeliefState;
             targetRecord.reflectionState = oldReflectionState;
 
-            scope.Component.ForgetDiaryHistory(target);
+            bool removedPlayerBackground = scope.Component.ForgetDiaryHistory(target);
 
             PawnDiaryRimTestScope.Require(
                 targetRecord.eventIds.Count == 0
@@ -171,7 +177,8 @@ namespace PawnDiary.RimTests
                     && targetRecord.acknowledgedGeneratedEntryCount == 0,
                 "Brainwipe did not clear the target's page references, favorites, or unread state.");
             PawnDiaryRimTestScope.Require(
-                knowledge.records.Count == 0
+                removedPlayerBackground
+                    && knowledge.records.Count == 0
                     && knowledge.originCultureDefName == "PawnDiary_RimTest_OriginCulture"
                     && knowledge.originCultureSource == "rimtest"
                     && knowledge.adoptedCultureDefName == "PawnDiary_RimTest_AdoptedCulture",
@@ -210,7 +217,10 @@ namespace PawnDiary.RimTests
                 "A page that must disappear.",
                 string.Empty,
                 "rimtest_brainwipe=before");
-            scope.Component.ForgetDiaryHistory(target);
+            bool removedPlayerBackground = scope.Component.ForgetDiaryHistory(target);
+            PawnDiaryRimTestScope.Require(
+                !removedPlayerBackground,
+                "A reset without a canonical player background reported that it removed one.");
 
             DiaryEvents.Submit(new BrainwipeArrivalSignal(target));
 

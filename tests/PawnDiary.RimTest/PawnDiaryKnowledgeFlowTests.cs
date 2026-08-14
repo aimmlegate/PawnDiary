@@ -21,12 +21,14 @@
 //   9. Conversion channel: adopted culture REPLACES on each conversion and each conversion is
 //      recorded (§4.1).
 //  10. Role channel: an ideological role change is remembered WITHOUT creating a diary page.
-//  11. Defensive caps: the per-pawn record cap drops the oldest records at insert (§2.3).
+//  11. Defensive caps: insert/global adapters drop captured rows but preserve canonical backgrounds.
 //  12. Annotation: a themed prompt carries the pawn's culture clause inline; an ordinary chat
 //      prompt does not carry that clause (§4.3).
-//  13. Developer editor endpoints stay hidden/disabled outside Dev Mode, update only rendered
+//  13. Normal profile endpoints detach captured rows, guard ownership, create/update/delete one
+//      bounded background singleton, and freeze edits for future events only.
+//  14. Legacy developer editor endpoints stay hidden/disabled outside Dev Mode, update only rendered
 //      prose, and remove exactly the addressed record without touching another pawn's memory.
-//  14. The same developer window receives a detached lore view with culture provenance, resolved
+//  15. The same developer window receives a detached lore view with culture provenance, resolved
 //      clauses, lexical/structured matchers, and the active injection-switch state.
 //
 // All fragile scaffolding — isolated pawns, settings snapshot/restore, event/diary cleanup —
@@ -35,6 +37,7 @@
 // RimTalk preset cleanup stays a manual check (needs RimTalk loaded).
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using PawnDiary.Ingestion;
@@ -54,11 +57,19 @@ namespace PawnDiary.RimTests
         private static readonly MethodInfo FindDiaryMethod =
             typeof(DiaryGameComponent).GetMethod("FindDiary",
                 BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly FieldInfo DiariesField =
+            typeof(DiaryGameComponent).GetField(
+                "diaries",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly MethodInfo ApplyKnowledgeEvictionMethod =
+            typeof(DiaryGameComponent).GetMethod(
+                "ApplyKnowledgeEviction",
+                BindingFlags.Instance | BindingFlags.NonPublic);
 
         private static PawnDiaryRimTestScope scope;
         private static Pawn pawnA;
         private static Pawn pawnB;
-        private static bool savedMemorySetting;
+        private static PromptContextDetailLevel savedContextDetailLevel;
 
         [BeforeEach]
         public static void SetUp()
@@ -77,8 +88,8 @@ namespace PawnDiary.RimTests
 
             pawnA = scope.CreateAdultColonist();
             pawnB = scope.CreateAdultColonist();
-            savedMemorySetting = PawnDiaryMod.Settings.enableMemorySystem;
-            PawnDiaryMod.Settings.enableMemorySystem = true;
+            savedContextDetailLevel = PawnDiaryMod.Settings.contextDetailLevel;
+            PawnDiaryMod.Settings.contextDetailLevel = PromptContextDetailLevel.Full;
         }
 
         [AfterEach]
@@ -86,7 +97,7 @@ namespace PawnDiary.RimTests
         {
             try
             {
-                PawnDiaryMod.Settings.enableMemorySystem = savedMemorySetting;
+                PawnDiaryMod.Settings.contextDetailLevel = savedContextDetailLevel;
                 scope?.TearDown();
             }
             finally
@@ -191,38 +202,70 @@ namespace PawnDiary.RimTests
             }
         }
 
-        // ── 3: the one player switch gates injection only ────────────────────────────────────────────
+        // ── 3: lane detail gates request projection, not event-time capture ─────────────────────────
 
         /// <summary>
-        /// With the memory switch OFF: capture continues, but the page's relevant-past slot stays
-        /// empty. With it back ON: a later event with the same partner carries the stored fact.
+        /// Event registration always freezes the richest relevant-past snapshot before an API lane is
+        /// selected. Full keeps that layer; Balanced and Compact remove it only from their detached
+        /// request payloads, while important-memory capture continues in every lane.
         /// </summary>
         [Test]
-        public static void SwitchOffStillCapturesAndOnInjectsRelevantPast()
+        public static void CompactStillCapturesAndLaneProjectionControlsRelevantPast()
         {
-            PawnDiaryMod.Settings.enableMemorySystem = false;
+            PawnDiaryMod.Settings.contextDetailLevel = PromptContextDetailLevel.Compact;
             PawnKnowledgeState stateA = KnowledgeFor(pawnA);
             int before = stateA.records.Count;
 
-            DiaryEvent offEvent = AddRomancePairEvent(pawnA, pawnB, "Spouse", "married");
+            AddRomancePairEvent(pawnA, pawnB, "Spouse", "married");
             Require(stateA.records.Count == before + 1,
-                "Capture must continue while prompt injection is disabled (§3.2).");
-            Require(string.IsNullOrEmpty(offEvent.MemoryContextForRole(DiaryEvent.InitiatorRole)),
-                "No relevant-past lines may be injected while the switch is off.");
+                "Important-memory capture must continue while the selected lane is Compact (§3.2).");
 
-            // Re-enable and fire a related event (same partner): the marriage surfaces as at most
-            // two dated lines on the NEW event.
-            PawnDiaryMod.Settings.enableMemorySystem = true;
-            DiaryEvent onEvent = AddRomancePairEvent(pawnA, pawnB, "Lover", "lover");
-            string block = onEvent.MemoryContextForRole(DiaryEvent.InitiatorRole);
-            Require(!onEvent.IsSkipped(DiaryEvent.InitiatorRole),
-                "The memory-on romance fixture unexpectedly skipped its initiator POV.");
+            // A related event freezes the marriage before any lane is chosen.
+            DiaryEvent relatedEvent = AddRomancePairEvent(pawnA, pawnB, "Lover", "lover");
+            string block = relatedEvent.MemoryContextForRole(DiaryEvent.InitiatorRole);
+            Require(!relatedEvent.IsSkipped(DiaryEvent.InitiatorRole),
+                "The lane-projection romance fixture unexpectedly skipped its initiator POV.");
             Require(!string.IsNullOrWhiteSpace(block),
-                "A related past record (shared partner) must inject relevant-past lines.");
+                "A related past record must be frozen before lane projection.");
             Require(block.Split('\n').Length <= 2,
                 "At most two relevant-past lines may be injected (§3.2), got: " + block);
             Require(block.IndexOf(pawnB.LabelShort, StringComparison.OrdinalIgnoreCase) >= 0,
                 "The marriage line must reference the partner by saved name; got: " + block);
+
+            DiaryPromptRequest full = BuildMemoryLayerRequest(
+                relatedEvent, PromptContextDetailLevel.Full);
+            DiaryPromptRequest balanced = BuildMemoryLayerRequest(
+                relatedEvent, PromptContextDetailLevel.Balanced);
+            DiaryPromptRequest compact = BuildMemoryLayerRequest(
+                relatedEvent, PromptContextDetailLevel.Compact);
+            Require(
+                string.Equals(
+                    full.payload.initiator.memoryContext,
+                    block,
+                    StringComparison.Ordinal),
+                "Full request projection did not preserve the frozen relevant-past block.");
+            Require(
+                string.IsNullOrEmpty(balanced.payload.initiator.memoryContext)
+                    && string.IsNullOrEmpty(compact.payload.initiator.memoryContext),
+                "Balanced/Compact request projection leaked the Full-only memory layer.");
+        }
+
+        private static DiaryPromptRequest BuildMemoryLayerRequest(
+            DiaryEvent diaryEvent,
+            PromptContextDetailLevel level)
+        {
+            return DiaryPipelineAdapters.BuildPromptRequest(
+                diaryEvent,
+                DiaryEvent.InitiatorRole,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                null,
+                null,
+                false,
+                0,
+                level);
         }
 
         /// <summary>
@@ -308,6 +351,208 @@ namespace PawnDiary.RimTests
             {
                 Prefs.DevMode = originalDevMode;
             }
+        }
+
+        /// <summary>
+        /// Normal profile methods expose detached captured rows, apply the canonical background plan,
+        /// and freeze each event's selected background so a later edit cannot rewrite old context.
+        /// </summary>
+        [Test]
+        public static void ProfileMemoryCrudIsOwnedDetachedAndFutureOnly()
+        {
+            PawnKnowledgeState stateA = KnowledgeFor(pawnA);
+            PawnKnowledgeState stateB = KnowledgeFor(pawnB);
+            int beforeB = stateB.records.Count;
+            int versionBefore = DiaryStateVersion.Current;
+
+            const string originalBackground = "lowercase Жизнь café";
+            Require(scope.Component.TrySetBackgroundMemoryForProfile(
+                    pawnA,
+                    "  <b>lowercase</b>\r\n\t Жизнь   café  "),
+                "The normal profile rejected a valid background create.");
+            Require(scope.Component.BackgroundMemoryForProfile(pawnA) == originalBackground,
+                "The background getter did not preserve case/non-ASCII normalized prose.");
+            Require(scope.Component.ImportantMemoriesForProfile(pawnA).Count == 0,
+                "The captured-memory browser must not show the background singleton twice.");
+            Require(stateB.records.Count == beforeB
+                    && string.IsNullOrEmpty(scope.Component.BackgroundMemoryForProfile(pawnB)),
+                "Creating one pawn's background cross-edited another pawn's state.");
+            Require(DiaryStateVersion.Current > versionBefore,
+                "Creating a background did not invalidate diary/profile caches.");
+
+            scope.EnablePromptCapture();
+            DiaryEvent first = AddRomancePairEvent(pawnA, pawnB, "Spouse", "married");
+            string firstFrozen = first.MemoryContextForRole(DiaryEvent.InitiatorRole);
+            Require(firstFrozen.IndexOf(originalBackground, StringComparison.Ordinal) >= 0,
+                "The Full/template-enabled event did not freeze the background fallback: "
+                + firstFrozen);
+            Require(scope.CapturedPrompt(first, DiaryEvent.InitiatorRole)
+                    .IndexOf(originalBackground, StringComparison.Ordinal) >= 0,
+                "The Full prompt omitted the frozen background line.");
+
+            ImportantMemoryRecord captured = LastOfKind(stateA, "relation.spouse.gained");
+            ImportantMemoryRecord partnerCaptured = LastOfKind(
+                stateB,
+                "relation.spouse.gained");
+            IReadOnlyList<ImportantMemoryRecordSnapshot> detached =
+                scope.Component.ImportantMemoriesForProfile(pawnA);
+            Require(detached.Count == 1
+                    && detached[0].recordId == captured.recordId
+                    && detached[0].sourceKind == KnowledgeTokens.SourceKindCaptured
+                    && detached[0].recallScope == KnowledgeTokens.RecallScopeContextual,
+                "The normal profile did not expose exactly the captured/contextual row.");
+            detached[0].manualTextOverride = "must remain detached";
+            Require(string.IsNullOrEmpty(captured.manualTextOverride),
+                "Mutating a profile snapshot changed the live saved record.");
+
+            string capturedRecordId = captured.recordId;
+            string capturedDedup = captured.dedupKey;
+            string capturedSourceEventId = captured.sourceEventId;
+            string capturedSourceKind = captured.sourceKind;
+            string capturedRecallScope = captured.recallScope;
+            string capturedKind = captured.eventKind;
+            string capturedTopic = captured.topicKey;
+            int capturedTick = captured.tick;
+            string capturedDate = captured.dateLabel;
+            string capturedFallback = captured.fallbackSummary;
+            List<string> capturedParticipantIds =
+                new List<string>(captured.participantIds);
+            List<string> capturedParticipantNames =
+                new List<string>(captured.participantNames);
+            List<string> capturedSubjects = new List<string>(captured.subjectKeys);
+            List<string> capturedFactKeys = new List<string>(captured.factKeys);
+            List<string> capturedFactValues = new List<string>(captured.factValues);
+            int partnerCountBeforeWrongOwner = stateB.records.Count;
+            string partnerTextBeforeWrongOwner = partnerCaptured.manualTextOverride;
+
+            bool originalDevMode = Prefs.DevMode;
+            try
+            {
+                Prefs.DevMode = false;
+                Require(!scope.Component.TrySetImportantMemoryTextForProfile(
+                        pawnB,
+                        capturedRecordId,
+                        "must not cross owners"),
+                    "A normal profile edit accepted another pawn's record id.");
+                Require(!scope.Component.TryRemoveImportantMemoryForProfile(
+                        pawnB,
+                        capturedRecordId),
+                    "A normal profile removal accepted another pawn's record id.");
+                Require(scope.Component.TrySetImportantMemoryTextForProfile(
+                        pawnA,
+                        capturedRecordId,
+                        "  <i>I remember this bond.</i>\n "),
+                    "Normal-play captured-memory editing was incorrectly Dev-gated.");
+            }
+            finally
+            {
+                Prefs.DevMode = originalDevMode;
+            }
+
+            Require(captured.manualTextOverride == "I remember this bond.",
+                "The normal editor did not sanitize only the captured row's prose.");
+            Require(
+                stateB.records.Count == partnerCountBeforeWrongOwner
+                    && string.Equals(
+                        partnerCaptured.manualTextOverride,
+                        partnerTextBeforeWrongOwner,
+                        StringComparison.Ordinal),
+                "A rejected wrong-owner operation changed the other pawn's memory state.");
+            Require(
+                captured.recordId == capturedRecordId
+                    && captured.dedupKey == capturedDedup
+                    && captured.sourceEventId == capturedSourceEventId
+                    && captured.sourceKind == capturedSourceKind
+                    && captured.recallScope == capturedRecallScope
+                    && captured.eventKind == capturedKind
+                    && captured.topicKey == capturedTopic
+                    && captured.tick == capturedTick
+                    && captured.dateLabel == capturedDate
+                    && captured.fallbackSummary == capturedFallback
+                    && captured.participantIds.SequenceEqual(capturedParticipantIds)
+                    && captured.participantNames.SequenceEqual(capturedParticipantNames)
+                    && captured.subjectKeys.SequenceEqual(capturedSubjects)
+                    && captured.factKeys.SequenceEqual(capturedFactKeys)
+                    && captured.factValues.SequenceEqual(capturedFactValues),
+                "Editing captured prose changed stable ownership, retrieval, or matching metadata.");
+
+            const string updatedBackground = "I worked on orbital farms before landing.";
+            Require(scope.Component.TrySetBackgroundMemoryForProfile(pawnA, updatedBackground),
+                "The normal profile rejected a valid background update.");
+            Require(first.MemoryContextForRole(DiaryEvent.InitiatorRole) == firstFrozen
+                    && firstFrozen.IndexOf(updatedBackground, StringComparison.Ordinal) < 0,
+                "Editing the profile rewrote an older event's frozen memory context.");
+
+            DiaryEvent later = AddRomancePairEvent(pawnA, pawnB, "Lover", "lover");
+            string laterFrozen = later.MemoryContextForRole(DiaryEvent.InitiatorRole);
+            Require(laterFrozen.IndexOf(updatedBackground, StringComparison.Ordinal) >= 0,
+                "A later event did not receive the updated background fallback: " + laterFrozen);
+            Require(captured.dedupKey == capturedDedup && captured.eventKind == capturedKind,
+                "Editing rendered prose changed captured matching identity.");
+
+            string stateOwner = stateA.pawnId;
+            int stateCountBeforeMismatch = stateA.records.Count;
+            try
+            {
+                stateA.pawnId = pawnB.GetUniqueLoadID();
+                Require(
+                    !scope.Component.TrySetImportantMemoryTextForProfile(
+                        pawnA,
+                        capturedRecordId,
+                        "must not repair a conflicting owner")
+                        && !scope.Component.TryRemoveImportantMemoryForProfile(
+                            pawnA,
+                            capturedRecordId)
+                        && !scope.Component.TrySetBackgroundMemoryForProfile(
+                            pawnA,
+                            "must not replace a conflicting owner"),
+                    "A normal profile mutation accepted a conflicting saved-state owner.");
+            }
+            finally
+            {
+                stateA.pawnId = stateOwner;
+            }
+
+            Require(
+                stateA.records.Count == stateCountBeforeMismatch
+                    && string.Equals(
+                        scope.Component.BackgroundMemoryForProfile(pawnA),
+                        updatedBackground,
+                        StringComparison.Ordinal)
+                    && captured.manualTextOverride == "I remember this bond.",
+                "A rejected conflicting-owner mutation changed the pawn's saved memories.");
+
+            int partnerCountBeforeNormalRemove = stateB.records.Count;
+            originalDevMode = Prefs.DevMode;
+            try
+            {
+                Prefs.DevMode = false;
+                Require(
+                    scope.Component.TryRemoveImportantMemoryForProfile(
+                        pawnA,
+                        capturedRecordId),
+                    "Normal-play captured-memory removal was incorrectly Dev-gated.");
+            }
+            finally
+            {
+                Prefs.DevMode = originalDevMode;
+            }
+
+            Require(
+                !ContainsRecordId(stateA, capturedRecordId)
+                    && stateB.records.Count == partnerCountBeforeNormalRemove
+                    && ContainsRecordId(stateB, partnerCaptured.recordId),
+                "Normal removal did not delete only the addressed owner's captured row.");
+
+            int backgroundLimit = scope.Component.BackgroundMemoryTextLimitForProfile();
+            Require(!scope.Component.TrySetBackgroundMemoryForProfile(
+                    pawnA,
+                    new string('x', backgroundLimit + 1))
+                    && scope.Component.BackgroundMemoryForProfile(pawnA) == updatedBackground,
+                "An over-limit background edit mutated or replaced the saved singleton.");
+            Require(scope.Component.TrySetBackgroundMemoryForProfile(pawnA, "  <b> </b>\n")
+                    && string.IsNullOrEmpty(scope.Component.BackgroundMemoryForProfile(pawnA)),
+                "Blank + Save did not remove the canonical background singleton.");
         }
 
         /// <summary>
@@ -742,6 +987,109 @@ namespace PawnDiary.RimTests
             }
         }
 
+        /// <summary>
+        /// Both impure eviction adapters must project the canonical protection bit. Insert-time
+        /// enforcement drops the newly captured row before the singleton, and the detached global scan
+        /// drops captured rows while terminating safely when every remaining row is protected.
+        /// </summary>
+        [Test]
+        public static void ProtectedBackgroundSurvivesInsertionAndGlobalEvictionAdapters()
+        {
+            DiaryKnowledgeTuningDef tuning =
+                DefDatabase<DiaryKnowledgeTuningDef>.GetNamedSilentFail("Diary_Knowledge");
+            if (tuning == null)
+            {
+                throw new AssertionException("Diary_Knowledge tuning def is missing.");
+            }
+
+            if (DiariesField == null || ApplyKnowledgeEvictionMethod == null)
+            {
+                throw new AssertionException(
+                    "The knowledge fixture could not locate the global eviction adapter surface.");
+            }
+
+            int savedPerPawnCap = tuning.maxRecordsPerPawn;
+            int savedGlobalCap = tuning.maxRecordsGlobal;
+            try
+            {
+                Pawn insertionOwner = scope.CreateAdultColonist();
+                string insertionOwnerId = insertionOwner.GetUniqueLoadID();
+                Require(
+                    scope.Component.TrySetBackgroundMemoryForProfile(
+                        insertionOwner,
+                        "I grew up maintaining irrigation pumps."),
+                    "The insertion-eviction fixture could not seed its canonical background.");
+                PawnKnowledgeState insertionState = KnowledgeFor(insertionOwner);
+
+                tuning.maxRecordsPerPawn = 1;
+                AddRomancePairEvent(insertionOwner, pawnB, "Spouse", "married");
+                Require(
+                    insertionState.records.Count == 1
+                        && IsCanonicalBackground(
+                            insertionState.records[0],
+                            insertionOwnerId),
+                    "Insert-time cap enforcement evicted the canonical background before captured prose.");
+
+                // Route the mixed row through the global adapter's per-owner plan. Keeping the global
+                // cap non-binding avoids consuming production's one-shot global-cap warning in a test.
+                tuning.maxRecordsPerPawn = 1;
+                tuning.maxRecordsGlobal = 10;
+                PawnDiaryRecord mixedOwner = NewIsolatedBackgroundDiary(
+                    "PawnDiary_RimTest_GlobalMixed",
+                    "I remember the old observatory.");
+                PawnKnowledgeState mixedState = mixedOwner.EnsureKnowledgeState();
+                mixedState.records.Add(new ImportantMemoryRecord
+                {
+                    recordId = "PawnDiary_RimTest_GlobalCaptured",
+                    dedupKey = "PawnDiary_RimTest_GlobalCaptured",
+                    sourceEventId = "PawnDiary_RimTest_GlobalEvent",
+                    sourceKind = KnowledgeTokens.SourceKindCaptured,
+                    recallScope = KnowledgeTokens.RecallScopeContextual,
+                    eventKind = "relation.spouse.gained",
+                    tick = 100,
+                    fallbackSummary = "Disposable captured row."
+                });
+                DiaryGameComponent mixedComponent = (DiaryGameComponent)
+                    FormatterServices.GetUninitializedObject(typeof(DiaryGameComponent));
+                DiariesField.SetValue(
+                    mixedComponent,
+                    new List<PawnDiaryRecord> { mixedOwner });
+                ApplyKnowledgeEvictionMethod.Invoke(mixedComponent, null);
+                Require(
+                    mixedState.records.Count == 1
+                        && IsCanonicalBackground(
+                            mixedState.records[0],
+                            mixedOwner.pawnId),
+                    "The global eviction adapter failed to mark canon protected or retain it over a captured row.");
+
+                // A truly global overflow with only protected rows must return without a deletion or
+                // warning. This is the adapter-level counterpart to the pure all-protected planner test.
+                tuning.maxRecordsPerPawn = 10;
+                tuning.maxRecordsGlobal = 1;
+                PawnDiaryRecord firstProtected = NewIsolatedBackgroundDiary(
+                    "PawnDiary_RimTest_GlobalProtectedA",
+                    "I remember the northern coast.");
+                PawnDiaryRecord secondProtected = NewIsolatedBackgroundDiary(
+                    "PawnDiary_RimTest_GlobalProtectedB",
+                    "I remember the desert road.");
+                DiaryGameComponent protectedOnlyComponent = (DiaryGameComponent)
+                    FormatterServices.GetUninitializedObject(typeof(DiaryGameComponent));
+                DiariesField.SetValue(
+                    protectedOnlyComponent,
+                    new List<PawnDiaryRecord> { firstProtected, secondProtected });
+                ApplyKnowledgeEvictionMethod.Invoke(protectedOnlyComponent, null);
+                Require(
+                    firstProtected.EnsureKnowledgeState().records.Count == 1
+                        && secondProtected.EnsureKnowledgeState().records.Count == 1,
+                    "The global adapter deleted a canonical row when every candidate was protected.");
+            }
+            finally
+            {
+                tuning.maxRecordsPerPawn = savedPerPawnCap;
+                tuning.maxRecordsGlobal = savedGlobalCap;
+            }
+        }
+
         // ── 12: inline culture annotation reaches the real prompt ────────────────────────────────────
 
         /// <summary>
@@ -1025,6 +1373,46 @@ namespace PawnDiary.RimTests
             }
 
             return diaryEvent;
+        }
+
+        /// <summary>Builds one detached diary containing only its exact canonical background row.</summary>
+        private static PawnDiaryRecord NewIsolatedBackgroundDiary(
+            string ownerPawnId,
+            string text)
+        {
+            PawnDiaryRecord diary = new PawnDiaryRecord
+            {
+                pawnId = ownerPawnId,
+                pawnName = ownerPawnId
+            };
+            PawnKnowledgeState state = diary.EnsureKnowledgeState();
+            PlayerMemoryMutationPlan plan = PlayerMemoryPolicy.PlanBackstoryMutation(
+                ownerPawnId,
+                null,
+                text,
+                450);
+            if (plan.record == null)
+            {
+                throw new AssertionException(
+                    "The isolated eviction fixture could not plan a canonical background row.");
+            }
+
+            state.records.Add(ImportantMemoryRecord.FromSnapshot(plan.record));
+            return diary;
+        }
+
+        /// <summary>Checks the saved scalar identity used by both runtime eviction adapters.</summary>
+        private static bool IsCanonicalBackground(
+            ImportantMemoryRecord record,
+            string ownerPawnId)
+        {
+            return record != null && PlayerMemoryPolicy.IsCanonicalBackstory(
+                ownerPawnId,
+                record.recordId,
+                record.dedupKey,
+                record.eventKind,
+                record.sourceKind,
+                record.recallScope);
         }
 
         private static void Require(bool condition, string message)

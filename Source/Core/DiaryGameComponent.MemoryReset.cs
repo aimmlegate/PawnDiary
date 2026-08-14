@@ -13,12 +13,14 @@ namespace PawnDiary
         /// Forgets every personal diary page and narrative memory owned by one pawn while preserving
         /// their player-configured voice and generation settings. Shared events remain available to
         /// other pawns; only events no diary references anymore are removed from the hot repository.
+        /// Returns whether the reset removed the pawn's exact player-authored background singleton, so
+        /// the post-Brainwipe adapter can show a truthful non-blocking notice only when relevant.
         /// </summary>
-        internal void ForgetDiaryHistory(Pawn pawn)
+        internal bool ForgetDiaryHistory(Pawn pawn)
         {
             if (pawn == null)
             {
-                return;
+                return false;
             }
 
             string pawnId = pawn.GetUniqueLoadID();
@@ -29,7 +31,7 @@ namespace PawnDiary
             PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
             if (diary == null)
             {
-                return;
+                return false;
             }
 
             diary.eventIds?.Clear();
@@ -39,8 +41,9 @@ namespace PawnDiary
             diary.acknowledgedGeneratedEntryCount = 0;
 
             // Culture provenance describes identity rather than an episodic memory, so retain it while
-            // dropping the durable important-event records used as factual prompt memories.
+            // dropping the durable important-event records and player background used as factual prompts.
             PawnKnowledgeState knowledge = diary.KnowledgeStateOrNull();
+            bool removedPlayerBackground = HasCanonicalBackgroundMemory(knowledge, pawnId);
             knowledge?.records?.Clear();
 
             // Reset every scheduler/cache whose values refer to now-forgotten pages. Fresh reflection
@@ -54,6 +57,34 @@ namespace PawnDiary
             events.RetainOnly(CollectHotReferencedEventIds());
             SetCachedCommandStatus(pawnId, 0, 0, 0);
             DiaryStateVersion.Bump();
+            return removedPlayerBackground;
+        }
+
+        private static bool HasCanonicalBackgroundMemory(
+            PawnKnowledgeState state,
+            string ownerPawnId)
+        {
+            if (state?.records == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < state.records.Count; i++)
+            {
+                ImportantMemoryRecord record = state.records[i];
+                if (record != null && PlayerMemoryPolicy.IsCanonicalBackstory(
+                    ownerPawnId,
+                    record.recordId,
+                    record.dedupKey,
+                    record.eventKind,
+                    record.sourceKind,
+                    record.recallScope))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>Removes saved and indexed daily digest facts collected before the brainwipe.</summary>

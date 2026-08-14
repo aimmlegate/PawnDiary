@@ -932,8 +932,9 @@ namespace PawnDiary
     }
 
     /// <summary>
-    /// Clears the target's personal Pawn Diary history when vanilla's Brainwipe outcome actually
-    /// erases their memories. This runs at the delayed outcome, not when the ceremony ends.
+    /// Clears the target's personal Pawn Diary history, including player-authored background memory,
+    /// when vanilla's Brainwipe outcome actually erases their memories. This runs at the delayed
+    /// outcome, not when the ceremony ends.
     /// </summary>
     [HarmonyPatch(typeof(PsychicRitualToil_Brainwipe), "ApplyOutcome")]
     internal static class PsychicRitualBrainwipeOutcomePatch
@@ -957,7 +958,32 @@ namespace PawnDiary
                     return;
                 }
 
-                component.ForgetDiaryHistory(target);
+                bool removedPlayerBackground = component.ForgetDiaryHistory(target);
+                if (removedPlayerBackground)
+                {
+                    // Brainwipe has already happened by the time this Postfix runs, so this is
+                    // deliberately a non-blocking notice rather than a confirmation that could promise
+                    // cancellation. Resolve the frame without translation arguments: RimWorld's
+                    // argument formatter can recase player-visible pawn names after punctuation.
+                    string noticeFrame = "PawnDiary.Profile.BrainwipeHistoryCleared"
+                        .Translate()
+                        .Resolve();
+                    string clearedNotice;
+                    try
+                    {
+                        clearedNotice = string.Format(noticeFrame, target.LabelShortCap);
+                    }
+                    catch (FormatException)
+                    {
+                        clearedNotice = noticeFrame.Replace("{0}", target.LabelShortCap);
+                    }
+
+                    Messages.Message(
+                        clearedNotice,
+                        MessageTypeDefOf.NeutralEvent,
+                        historical: false);
+                }
+
                 DiaryEvents.Submit(new BrainwipeArrivalSignal(target));
             });
         }

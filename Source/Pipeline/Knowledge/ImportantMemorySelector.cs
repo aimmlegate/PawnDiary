@@ -1,7 +1,8 @@
 // ImportantMemorySelector.cs — deterministic retrieval over a pawn's important-memory records
 // (design/MEMORY_SYSTEM_REDESIGN_PLAN.md §3.1). No randomness, no cooldowns, no decay, no
-// minimum store size: a past record is eligible only when the current event shares a concrete
-// participant or an exact subject/entity key, and the ranking is a fixed tier comparison.
+// minimum store size: a captured past record is eligible only when the current event shares a
+// concrete participant or an exact subject/entity key, and the ranking is a fixed tier comparison.
+// One exact owner-bound player background may fill a slot left unused by those contextual matches.
 //
 // New to C#/RimWorld? See AGENTS.md ("architecture barriers"). No Verse/Unity/Def/settings here.
 using System;
@@ -9,7 +10,7 @@ using System.Collections.Generic;
 
 namespace PawnDiary
 {
-    /// <summary>Selects at most the line-cap related records for the current event.</summary>
+    /// <summary>Selects contextual records first, then at most one canonical background fallback.</summary>
     internal static class ImportantMemorySelector
     {
         private sealed class RankedCandidate
@@ -19,9 +20,10 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Runs eligibility + ranking and returns the selected records newest-relevance-first,
-        /// with a full per-candidate report for the dev tab (§7). Broad mood/social/body/danger
-        /// domains never match by themselves — only shared participants and exact keys do.
+        /// Runs eligibility + ranking and returns contextual records newest-relevance-first, followed
+        /// by the owner's canonical background only when a line slot remains. Broad mood/social/body/
+        /// danger domains never match by themselves — only shared participants and exact keys do.
+        /// Participant-required queries (currently Social Reflection) never receive the fallback.
         /// </summary>
         public static KnowledgeSelectionResult Select(
             KnowledgeQuery query,
@@ -36,6 +38,7 @@ namespace PawnDiary
 
             KnowledgePolicySnapshot safePolicy = policy ?? KnowledgePolicySnapshot.CreateDefault();
             List<RankedCandidate> eligible = new List<RankedCandidate>();
+            List<RankedCandidate> backgroundFallbacks = new List<RankedCandidate>();
             for (int i = 0; i < records.Count; i++)
             {
                 ImportantMemoryRecordSnapshot record = records[i];
@@ -48,6 +51,48 @@ namespace PawnDiary
                 report.recordId = record.recordId;
                 report.eventKind = record.eventKind ?? string.Empty;
                 result.report.Add(report);
+
+                // A background row deliberately carries no participants or subject keys. Only the
+                // exact canonical singleton for this query owner can use the fallback door; malformed,
+                // cross-owner, and duplicate lookalikes stay visible in diagnostics but never become
+                // factual prompt canon. H7's subject-specific participant gate remains absolute.
+                if (string.Equals(
+                    PlayerMemoryPolicy.NormalizeRecallScope(record.recallScope),
+                    KnowledgeTokens.RecallScopeBackground,
+                    StringComparison.Ordinal))
+                {
+                    if (!query.requireParticipantOverlap
+                        && PlayerMemoryPolicy.IsCanonicalBackstory(record, query.ownerPawnId))
+                    {
+                        backgroundFallbacks.Add(new RankedCandidate
+                        {
+                            record = record,
+                            report = report
+                        });
+                    }
+                    else
+                    {
+                        report.rejectReason = KnowledgeRejectReasons.NoOverlap;
+                    }
+
+                    continue;
+                }
+
+                // Contextual retrieval is reserved for gameplay-captured rows. A corrupt or future
+                // player-authored row cannot fabricate participants/subjects to enter this path; the
+                // canonical background door above is the only player-memory path in this release.
+                if (!string.Equals(
+                        PlayerMemoryPolicy.NormalizeSourceKind(record.sourceKind),
+                        KnowledgeTokens.SourceKindCaptured,
+                        StringComparison.Ordinal)
+                    || !string.Equals(
+                        PlayerMemoryPolicy.NormalizeRecallScope(record.recallScope),
+                        KnowledgeTokens.RecallScopeContextual,
+                        StringComparison.Ordinal))
+                {
+                    report.rejectReason = KnowledgeRejectReasons.NoOverlap;
+                    continue;
+                }
 
                 // Self-echo guard: the record deposited by this very event never surfaces on it.
                 if (!string.IsNullOrWhiteSpace(record.sourceEventId)
@@ -87,6 +132,7 @@ namespace PawnDiary
             }
 
             eligible.Sort(CompareCandidates);
+            backgroundFallbacks.Sort(CompareCandidates);
             int cap = Math.Max(0, safePolicy.relevantPastMaxLines);
             for (int i = 0; i < eligible.Count; i++)
             {
@@ -98,6 +144,21 @@ namespace PawnDiary
                 else
                 {
                     eligible[i].report.rejectReason = KnowledgeRejectReasons.OverCap;
+                }
+            }
+
+            // Background is a fallback, never a competitor. Even a newer player-authored row cannot
+            // displace an exact relationship/body/status memory that qualified above.
+            for (int i = 0; i < backgroundFallbacks.Count; i++)
+            {
+                if (i == 0 && result.selected.Count < cap)
+                {
+                    backgroundFallbacks[i].report.selected = true;
+                    result.selected.Add(backgroundFallbacks[i].record);
+                }
+                else
+                {
+                    backgroundFallbacks[i].report.rejectReason = KnowledgeRejectReasons.OverCap;
                 }
             }
 

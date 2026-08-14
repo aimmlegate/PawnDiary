@@ -398,7 +398,7 @@ namespace PawnDiary.RimTests
         /// <summary>
         /// The per-pawn knowledge state (MEMORY_SYSTEM_REDESIGN_PLAN §2.2, §4.1) round-trips
         /// through real Scribe preserving culture provenance, important-event records, and a
-        /// developer-authored memory-text override. Normalize() repairs a hand-edited save:
+        /// player/editor-authored memory-text override. Normalize() repairs a hand-edited save:
         /// null lists/text heal, parallel fact lists realign,
         /// and duplicated dedup keys collapse to one record.
         /// </summary>
@@ -408,6 +408,9 @@ namespace PawnDiary.RimTests
             PawnKnowledgeState source = new PawnKnowledgeState
             {
                 pawnId = "PawnA",
+                // Version 1 equals the stable Scribe default, so its schema XML key is omitted. The
+                // load assertion below proves a missing legacy key does not inherit the v2 initializer.
+                schemaVersion = 1,
                 originCultureDefName = "Rustican",
                 originCultureSource = "captured",
                 adoptedCultureDefName = "Corunan",
@@ -415,7 +418,10 @@ namespace PawnDiary.RimTests
             ImportantMemoryRecord overridden = NewKnowledgeRecord("rec-1", "relation.spouse.gained", 200);
             overridden.manualTextOverride = "Brik and I chose each other beneath the stars.";
             source.records.Add(overridden);
-            source.records.Add(NewKnowledgeRecord("rec-2", "body.part.lost", 300));
+            ImportantMemoryRecord newSchemaRow = NewKnowledgeRecord("rec-2", "body.part.lost", 300);
+            newSchemaRow.sourceKind = KnowledgeTokens.SourceKindPlayer;
+            newSchemaRow.recallScope = KnowledgeTokens.RecallScopeBackground;
+            source.records.Add(newSchemaRow);
 
             RunWithTempFile(path =>
             {
@@ -425,7 +431,11 @@ namespace PawnDiary.RimTests
                 PawnKnowledgeState loaded = null;
                 LoadVarsWithScribe(path, () => Scribe_Deep.Look(ref loaded, KnowledgeLabel));
                 Require(loaded != null, "The knowledge state must round-trip through Scribe.");
+                Require(loaded.schemaVersion == 1,
+                    "A missing legacy schema key must load as v1 before normalization, not inherit v2.");
                 loaded.Normalize();
+                Require(loaded.schemaVersion == PawnKnowledgeState.CurrentSchemaVersion,
+                    "Normalize must migrate the per-state schema additively to v2.");
 
                 Require(loaded.originCultureDefName == "Rustican"
                         && loaded.originCultureSource == "captured"
@@ -437,7 +447,13 @@ namespace PawnDiary.RimTests
                 Require(first.eventKind == "relation.spouse.gained" && first.tick == 200,
                     "Record kind/tick must survive the round trip.");
                 Require(first.manualTextOverride == "Brik and I chose each other beneath the stars.",
-                    "The developer-authored memory-text override must survive the round trip.");
+                    "The editor-authored memory-text override must survive the round trip.");
+                Require(first.sourceKind == KnowledgeTokens.SourceKindCaptured
+                        && first.recallScope == KnowledgeTokens.RecallScopeContextual,
+                    "An old/default record must normalize to captured/contextual.");
+                Require(loaded.records[1].sourceKind == KnowledgeTokens.SourceKindPlayer
+                        && loaded.records[1].recallScope == KnowledgeTokens.RecallScopeBackground,
+                    "The additive player/background fields must survive Scribe.");
                 Require(first.participantIds.Count == 1 && first.participantNames[0] == "Brik",
                     "Participant ids and saved display names must survive.");
                 Require(first.subjectKeys.Count == 1 && first.factKeys.Count == first.factValues.Count,
@@ -452,7 +468,12 @@ namespace PawnDiary.RimTests
                     recordId = "rec-3",
                     dedupKey = "d3",
                     participantIds = null,
+                    participantNames = null,
+                    subjectKeys = null,
                     factKeys = null,
+                    factValues = null,
+                    sourceKind = "future-source",
+                    recallScope = null,
                     manualTextOverride = null,
                 });
                 loaded.Normalize();
@@ -464,6 +485,42 @@ namespace PawnDiary.RimTests
                     "Normalize must heal null record lists.");
                 Require(repaired.manualTextOverride == string.Empty,
                     "Normalize must heal a null memory-text override to an empty string.");
+                Require(repaired.sourceKind == KnowledgeTokens.SourceKindCaptured
+                        && repaired.recallScope == KnowledgeTokens.RecallScopeContextual,
+                    "Unknown/missing additive tokens must repair to captured/contextual.");
+
+                // Profile draft seeding is read-only: detached snapshots tolerate raw null lists
+                // without first mutating the save model through Normalize().
+                ImportantMemoryRecord raw = new ImportantMemoryRecord
+                {
+                    recordId = "raw",
+                    dedupKey = "raw",
+                    sourceKind = "PLAYER",
+                    recallScope = "BACKGROUND",
+                    participantIds = null,
+                    participantNames = null,
+                    subjectKeys = null,
+                    factKeys = null,
+                    factValues = null
+                };
+                ImportantMemoryRecordSnapshot rawSnapshot = raw.ToSnapshot();
+                Require(rawSnapshot.sourceKind == KnowledgeTokens.SourceKindPlayer
+                        && rawSnapshot.recallScope == KnowledgeTokens.RecallScopeBackground,
+                    "Detached conversion must normalize copied tokens without mutating the row.");
+                Require(rawSnapshot.participants.Count == 0
+                        && rawSnapshot.subjectKeys.Count == 0
+                        && rawSnapshot.facts.Count == 0,
+                    "Detached conversion must treat raw null lists as empty.");
+                Require(raw.participantIds == null && raw.subjectKeys == null && raw.factKeys == null,
+                    "Read-only detached conversion must not repair/mutate the saved row.");
+
+                PawnKnowledgeState rawState = new PawnKnowledgeState
+                {
+                    pawnId = "RawPawn",
+                    records = null
+                };
+                Require(rawState.ToRecordSnapshots().Count == 0 && rawState.records == null,
+                    "A no-create profile read must treat a null record list as empty without mutation.");
             });
         }
 

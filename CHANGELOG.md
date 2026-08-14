@@ -6,6 +6,10 @@ Companion: [repowiki/README.md](repowiki/README.md) describes the current state.
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-08-14
+
+- **Editable pawn memories.** Diary profiles now manage one protected background memory plus captured-memory prose, with deterministic Full-context recall, additive save migration, and Brainwipe cleanup.
+
 ## 2026-08-13
 
 - **Per-pawn diary profiles.** Pawn-specific generation pauses, pinned voice/outlook drafts, and lane-aware previews now resume safely with backlog confirmation and title catch-up.

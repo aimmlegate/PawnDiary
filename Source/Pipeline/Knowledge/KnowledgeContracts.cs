@@ -37,6 +37,17 @@ namespace PawnDiary
         // record as satisfying the boundary when the player deliberately disabled arrival pages.
         public const string EventKindFactionJoined = "status.faction.joined";
 
+        // Additive record provenance and recall-scope tokens. Old saves omit both fields, so the
+        // normalizers deliberately resolve missing or unknown values to captured/contextual.
+        public const string SourceKindCaptured = "captured";
+        public const string SourceKindPlayer = "player";
+        public const string RecallScopeContextual = "contextual";
+        public const string RecallScopeBackground = "background";
+
+        // The one player-authored memory kind in v1 of the normal profile editor. This is a saved
+        // schema token, not player-facing prose, and must never be localized or renamed.
+        public const string EventKindPlayerBackstory = "player.backstory";
+
         // Owner tokens for signal=event rows: which POV of the diary event owns the record.
         public const string OwnersInitiator = "initiator";
         public const string OwnersRecipient = "recipient";
@@ -80,7 +91,7 @@ namespace PawnDiary
 
     /// <summary>
     /// Pure mirror of one saved ImportantMemoryRecord (§2.2). Gameplay facts plus an optional
-    /// developer-authored prose override — never a generated diary entry or LLM summary.
+    /// editor-authored prose override — never a generated diary entry or LLM summary.
     /// </summary>
     internal sealed class ImportantMemoryRecordSnapshot
     {
@@ -88,6 +99,10 @@ namespace PawnDiary
         public string dedupKey = string.Empty;
         public string ownerPawnId = string.Empty;
         public string sourceEventId = string.Empty;
+        /// <summary>KnowledgeTokens.SourceKind*; old/unknown rows resolve to captured.</summary>
+        public string sourceKind = KnowledgeTokens.SourceKindCaptured;
+        /// <summary>KnowledgeTokens.RecallScope*; old/unknown rows resolve to contextual.</summary>
+        public string recallScope = KnowledgeTokens.RecallScopeContextual;
         /// <summary>Stable event-kind token from the matched DiaryImportantEventDef.</summary>
         public string eventKind = string.Empty;
         /// <summary>Ranking family (§3.1 tier 3), e.g. "relationship"/"body"/"status".</summary>
@@ -103,7 +118,7 @@ namespace PawnDiary
         /// missing (mod removed). Stable IDs/tokens above remain authoritative (§5).</summary>
         public string fallbackSummary = string.Empty;
         /// <summary>
-        /// Optional developer-authored replacement for the rendered line. Retrieval identity and
+        /// Optional player/editor-authored replacement for the rendered line. Retrieval identity and
         /// structured facts stay authoritative; this changes only the prose sent to the writer.
         /// </summary>
         public string manualTextOverride = string.Empty;
@@ -385,6 +400,11 @@ namespace PawnDiary
     {
         public string recordId = string.Empty;
         public int tick;
+        /// <summary>
+        /// True only for the owning pawn's exact canonical player/background singleton. Planners
+        /// count protected rows toward caps but may never choose them for automatic eviction.
+        /// </summary>
+        public bool protectedFromAutomaticEviction;
     }
 
     /// <summary>Eviction plan: record ids to drop plus whether the one bounded global-cap warning
@@ -410,12 +430,18 @@ namespace PawnDiary
         public int maxRecordsPerPawn = 512;
         public int maxRecordsGlobal = 20000;
         public int fallbackSummaryMaxChars = 240;
+        public int playerAuthoredMemoryMaxChars = 450;
 
         // Relevant-past prompt block (§3.2).
         public int relevantPastMaxLines = 2;
         public int relevantPastMaxChars = 500;
         /// <summary>"- ({0}) {1}" — {0} game date, {1} localized fact line.</summary>
         public string relevantPastLineFormat = "- ({0}) {1}";
+        /// <summary>
+        /// XML/DefInjected factual framing for player background prose. The code fallback contains
+        /// no English prompt prose so a missing Def safely emits only the authored text.
+        /// </summary>
+        public string backgroundMemoryLineFormat = "{0}";
         public string relevantPastInstruction = string.Empty;
 
         // Inline culture annotation (§4.3).
@@ -478,6 +504,8 @@ namespace PawnDiary
                 effective.maxRecordsGlobal, defaults.maxRecordsGlobal);
             effective.fallbackSummaryMaxChars = PositiveOrDefault(
                 effective.fallbackSummaryMaxChars, defaults.fallbackSummaryMaxChars);
+            effective.playerAuthoredMemoryMaxChars = PositiveOrDefault(
+                effective.playerAuthoredMemoryMaxChars, defaults.playerAuthoredMemoryMaxChars);
             effective.relevantPastMaxLines = PositiveOrDefault(
                 effective.relevantPastMaxLines, defaults.relevantPastMaxLines);
             effective.relevantPastMaxChars = PositiveOrDefault(

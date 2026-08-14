@@ -3,8 +3,8 @@
 // layers have a base picker, a read-only base preview, an editable pawn-specific custom rule, and a
 // status panel that identifies which source currently wins. A compact draft preview shows the
 // currently represented voice/outlook text and calls out any automatic or API-lane uncertainty.
-// Developer mode appends isolated sections for inspecting cultural lore and editing/removing durable
-// important memories.
+// Player-facing memory sections add one background draft plus a one-record-at-a-time editor for
+// captured memories. Developer mode appends isolated culture diagnostics and raw matching metadata.
 //
 // RimWorld IMGUI draws this window repeatedly, so editable buffers live as fields and are flushed to
 // the diary record only by explicit Save — never during a draw pass. Reset changes the draft, and the
@@ -22,7 +22,8 @@ namespace PawnDiary
 {
     /// <summary>
     /// Modal window for inspecting and editing one pawn's Diary profile. Writes only the pawn-specific
-    /// generation switch, custom rules, selected base defs, and pin flags — never global catalog/XML data.
+    /// generation switch, voice layers, background memory, and stored-memory prose — never global
+    /// catalog/XML data or RimWorld's pawn biography.
     /// </summary>
     internal sealed partial class Dialog_PawnWritingStyle : Window
     {
@@ -129,6 +130,8 @@ namespace PawnDiary
             resumableBacklogCount = component == null
                 ? 0
                 : component.PendingGenerationBacklogCountForProfile(pawn);
+
+            SeedMemoryDrafts();
         }
 
         public override Vector2 InitialSize
@@ -167,10 +170,10 @@ namespace PawnDiary
                 && component != null
                 ? component.LoreMemoryForDev(pawn)
                 : null;
-            IReadOnlyList<ImportantMemoryRecord> importantMemories = showDeveloperKnowledge
-                && component != null
-                ? component.ImportantMemoriesForDev(pawn)
-                : null;
+            // The constructor deep-copies one filtered editor snapshot. Explicit memory Save/Remove
+            // callbacks refresh it; newly captured gameplay memories may appear when the dialog reopens.
+            IReadOnlyList<ImportantMemoryRecordSnapshot> importantMemories =
+                profileMemorySnapshots;
 
             Rect buttonRow = new Rect(inRect.x, inRect.yMax - ButtonHeight - Padding, inRect.width, ButtonHeight);
             Rect scrollOuter = new Rect(
@@ -202,10 +205,16 @@ namespace PawnDiary
                 styleResolution,
                 psychotypeResolution,
                 previewDecision);
+            DrawBackgroundMemorySection(contentRect.x, innerWidth, ref y);
+            DrawMemorySection(
+                contentRect.x,
+                innerWidth,
+                ref y,
+                importantMemories,
+                showDeveloperKnowledge);
             if (showDeveloperKnowledge)
             {
                 DrawLoreMemorySection(contentRect.x, innerWidth, ref y, loreMemory);
-                DrawMemorySection(contentRect.x, innerWidth, ref y, importantMemories);
             }
             Widgets.EndScrollView();
 
@@ -884,7 +893,7 @@ namespace PawnDiary
             DiaryPawnProfilePreviewDecision previewDecision,
             bool showDeveloperKnowledge,
             LoreMemorySnapshotForDev loreMemory,
-            IReadOnlyList<ImportantMemoryRecord> importantMemories)
+            IReadOnlyList<ImportantMemoryRecordSnapshot> importantMemories)
         {
             float h = 0f;
 
@@ -943,10 +952,14 @@ namespace PawnDiary
                 SmallPromptHeight) + FieldGap;
             h += MessagePanelHeight(PreviewCautionMessage(previewDecision), width);
 
+            // Player-facing background and captured-memory sections are always present. Their
+            // component getters are detached/no-create, so measuring and drawing remain read-only.
+            h += BackgroundMemorySectionHeight(width);
+            h += MemorySectionHeight(width, importantMemories, showDeveloperKnowledge);
+
             if (showDeveloperKnowledge)
             {
                 h += LoreMemorySectionHeight(width, loreMemory);
-                h += MemorySectionHeight(width, importantMemories);
             }
 
             return h;
@@ -1285,6 +1298,11 @@ namespace PawnDiary
             {
                 ok &= component.SetPsychotypePinned(pawn, resolvedPsychotypePinned);
             }
+
+            // Background is part of the same explicit profile Save. A canonical blank removes the
+            // singleton; Reset voice never edits this draft. Generation stays last so a failed profile
+            // mutation cannot resume queued LLM work.
+            ok &= SaveBackgroundMemoryDraft();
 
             // Generation is deliberately last. A failed/ineligible voice save must never resume queued
             // LLM work, and an unchanged true value must never requeue work through the existing setter.

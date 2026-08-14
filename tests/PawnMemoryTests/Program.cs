@@ -29,6 +29,7 @@ namespace PawnMemoryTests
 
             TestPolicyDefaultsAndXmlParity();
             TestMalformedPolicyNormalization();
+            TestPlayerMemoryPolicy();
             TestSentinelValues();
             TestClassifierPositiveCatalog();
             TestClassifierNegativeCatalog();
@@ -42,6 +43,7 @@ namespace PawnMemoryTests
             TestComposeBlockCaps();
             TestSelectorEligibilityDoors();
             TestSelectorRequiredParticipantDoor();
+            TestSelectorBackgroundFallback();
             TestSelectorRankingAndStableTies();
             TestSelectorTwoRecordCapAndReports();
             TestSelectorSelfEcho();
@@ -52,6 +54,7 @@ namespace PawnMemoryTests
             TestEvictionPerPawnCap();
             TestEvictionGlobalCapAbsentFirst();
             TestEvictionDeterminismAndNoMutation();
+            TestEvictionProtectedRows();
             TestCultureResolutionPaths();
             TestCultureLegacyInferenceAndStability();
             TestCultureConversionReplacement();
@@ -186,7 +189,10 @@ namespace PawnMemoryTests
             AssertEqual("default.injection", true, policy.injectionEnabled);
             AssertEqual("default.perPawn", 512, policy.maxRecordsPerPawn);
             AssertEqual("default.global", 20000, policy.maxRecordsGlobal);
+            AssertEqual("default.playerAuthoredChars", 450, policy.playerAuthoredMemoryMaxChars);
             AssertEqual("default.lines", 2, policy.relevantPastMaxLines);
+            AssertEqual("default.backgroundFormat.safeFallback", "{0}",
+                policy.backgroundMemoryLineFormat);
             AssertEqual("default.topics", 2, policy.maxCultureTopicsPerPrompt);
 
             // Behavioral parity with the shipped XML (the tuning Def must mirror CreateDefault).
@@ -202,6 +208,8 @@ namespace PawnMemoryTests
                 int.Parse((string)def.Element("relevantPastMaxChars")));
             AssertEqual("xml.fallbackChars", policy.fallbackSummaryMaxChars,
                 int.Parse((string)def.Element("fallbackSummaryMaxChars")));
+            AssertEqual("xml.playerAuthoredChars", policy.playerAuthoredMemoryMaxChars,
+                int.Parse((string)def.Element("playerAuthoredMemoryMaxChars")));
             AssertEqual("xml.topics", policy.maxCultureTopicsPerPrompt,
                 int.Parse((string)def.Element("maxCultureTopicsPerPrompt")));
             AssertEqual("xml.lineFormat", policy.relevantPastLineFormat,
@@ -210,6 +218,9 @@ namespace PawnMemoryTests
                 (string)def.Element("annotationSingleFormat"));
             AssertEqual("xml.dualFormat", policy.annotationDualFormat,
                 (string)def.Element("annotationDualFormat"));
+            string backgroundFormat = (string)def.Element("backgroundMemoryLineFormat");
+            AssertTrue("xml.backgroundFormat.nonblank", !string.IsNullOrWhiteSpace(backgroundFormat));
+            AssertTrue("xml.backgroundFormat.placeholder", backgroundFormat.Contains("{0}"));
 
             List<string> xmlSources = ListItems(def, "scannableSources").ToList();
             AssertEqual("xml.sources.count", policy.scannableSources.Count, xmlSources.Count);
@@ -238,6 +249,7 @@ namespace PawnMemoryTests
             malformed.maxRecordsPerPawn = 0;
             malformed.maxRecordsGlobal = -1;
             malformed.fallbackSummaryMaxChars = 0;
+            malformed.playerAuthoredMemoryMaxChars = -10;
             malformed.relevantPastMaxLines = -2;
             malformed.relevantPastMaxChars = 0;
             malformed.maxCultureTopicsPerPrompt = -3;
@@ -248,6 +260,8 @@ namespace PawnMemoryTests
             AssertEqual("normalize.global", defaults.maxRecordsGlobal, normalized.maxRecordsGlobal);
             AssertEqual("normalize.fallbackChars",
                 defaults.fallbackSummaryMaxChars, normalized.fallbackSummaryMaxChars);
+            AssertEqual("normalize.playerAuthoredChars",
+                defaults.playerAuthoredMemoryMaxChars, normalized.playerAuthoredMemoryMaxChars);
             AssertEqual("normalize.lines", defaults.relevantPastMaxLines, normalized.relevantPastMaxLines);
             AssertEqual("normalize.chars", defaults.relevantPastMaxChars, normalized.relevantPastMaxChars);
             AssertEqual("normalize.topics",
@@ -260,6 +274,118 @@ namespace PawnMemoryTests
                 KnowledgePolicyNormalization.EvictionScanIntervalTicks(-25));
             AssertEqual("normalize.eviction.valid",
                 60000, KnowledgePolicyNormalization.EvictionScanIntervalTicks(60000));
+        }
+
+        private static void TestPlayerMemoryPolicy()
+        {
+            AssertEqual("playerMemory.source.blank", KnowledgeTokens.SourceKindCaptured,
+                PlayerMemoryPolicy.NormalizeSourceKind(null));
+            AssertEqual("playerMemory.source.unknown", KnowledgeTokens.SourceKindCaptured,
+                PlayerMemoryPolicy.NormalizeSourceKind("future-source"));
+            AssertEqual("playerMemory.source.playerCase", KnowledgeTokens.SourceKindPlayer,
+                PlayerMemoryPolicy.NormalizeSourceKind(" PLAYER "));
+            AssertEqual("playerMemory.scope.blank", KnowledgeTokens.RecallScopeContextual,
+                PlayerMemoryPolicy.NormalizeRecallScope(string.Empty));
+            AssertEqual("playerMemory.scope.unknown", KnowledgeTokens.RecallScopeContextual,
+                PlayerMemoryPolicy.NormalizeRecallScope("future-scope"));
+            AssertEqual("playerMemory.scope.backgroundCase", KnowledgeTokens.RecallScopeBackground,
+                PlayerMemoryPolicy.NormalizeRecallScope(" BACKGROUND "));
+
+            const string owner = "Thing_Human42";
+            string canonicalId = owner + "|" + KnowledgeTokens.EventKindPlayerBackstory;
+            AssertEqual("playerMemory.canonical.record", canonicalId,
+                PlayerMemoryPolicy.CanonicalBackstoryRecordId(owner));
+            AssertEqual("playerMemory.canonical.dedup", canonicalId,
+                PlayerMemoryPolicy.CanonicalBackstoryDedupKey(owner));
+
+            PlayerMemoryMutationPlan missingOwner = PlayerMemoryPolicy.PlanBackstoryMutation(
+                "  ", null, "text", 450);
+            AssertEqual("playerMemory.missingOwner.action", PlayerMemoryMutationAction.Rejected,
+                missingOwner.action);
+            AssertEqual("playerMemory.missingOwner.error",
+                PlayerMemoryValidationError.MissingOwnerPawnId, missingOwner.error);
+
+            PlayerMemoryMutationPlan tooLong = PlayerMemoryPolicy.PlanBackstoryMutation(
+                owner, null, new string('x', 451), 450);
+            AssertEqual("playerMemory.tooLong.action", PlayerMemoryMutationAction.Rejected,
+                tooLong.action);
+            AssertEqual("playerMemory.tooLong.error", PlayerMemoryValidationError.TextTooLong,
+                tooLong.error);
+            AssertEqual("playerMemory.tooLong.notTruncated", 451, tooLong.normalizedText.Length);
+            PlayerMemoryMutationPlan defaultLimit = PlayerMemoryPolicy.PlanBackstoryMutation(
+                owner, null, new string('x', 451), 0);
+            AssertEqual("playerMemory.defaultLimit", PlayerMemoryValidationError.TextTooLong,
+                defaultLimit.error);
+
+            PlayerMemoryMutationPlan create = PlayerMemoryPolicy.PlanBackstoryMutation(
+                owner, null, "  <b>lowercase</b>\r\n\t Жизнь   café  ", 450);
+            AssertEqual("playerMemory.create.action", PlayerMemoryMutationAction.Create,
+                create.action);
+            AssertEqual("playerMemory.create.error", PlayerMemoryValidationError.None, create.error);
+            AssertEqual("playerMemory.create.normalized", "lowercase Жизнь café",
+                create.normalizedText);
+            AssertTrue("playerMemory.create.record", create.record != null);
+            AssertEqual("playerMemory.create.id", canonicalId, create.record.recordId);
+            AssertEqual("playerMemory.create.dedup", canonicalId, create.record.dedupKey);
+            AssertEqual("playerMemory.create.owner", owner, create.record.ownerPawnId);
+            AssertEqual("playerMemory.create.kind", KnowledgeTokens.EventKindPlayerBackstory,
+                create.record.eventKind);
+            AssertEqual("playerMemory.create.source", KnowledgeTokens.SourceKindPlayer,
+                create.record.sourceKind);
+            AssertEqual("playerMemory.create.scope", KnowledgeTokens.RecallScopeBackground,
+                create.record.recallScope);
+            AssertEqual("playerMemory.create.sourceEvent", string.Empty,
+                create.record.sourceEventId);
+            AssertEqual("playerMemory.create.date", string.Empty, create.record.dateLabel);
+            AssertEqual("playerMemory.create.tick", 0, create.record.tick);
+            AssertEqual("playerMemory.create.fallback", string.Empty,
+                create.record.fallbackSummary);
+            AssertEqual("playerMemory.create.participants", 0, create.record.participants.Count);
+            AssertEqual("playerMemory.create.subjects", 0, create.record.subjectKeys.Count);
+            AssertEqual("playerMemory.create.facts", 0, create.record.facts.Count);
+            AssertTrue("playerMemory.create.canonical",
+                PlayerMemoryPolicy.IsCanonicalBackstory(create.record, owner));
+            AssertTrue("playerMemory.create.wrongOwner",
+                !PlayerMemoryPolicy.IsCanonicalBackstory(create.record, "Thing_Human99"));
+
+            PlayerMemoryMutationPlan unchanged = PlayerMemoryPolicy.PlanBackstoryMutation(
+                owner, create.record, create.normalizedText, 450);
+            AssertEqual("playerMemory.unchanged", PlayerMemoryMutationAction.None, unchanged.action);
+
+            PlayerMemoryMutationPlan update = PlayerMemoryPolicy.PlanBackstoryMutation(
+                owner, create.record, "changed Сюжет", 450);
+            AssertEqual("playerMemory.update.action", PlayerMemoryMutationAction.Update,
+                update.action);
+            AssertEqual("playerMemory.update.text", "changed Сюжет",
+                update.record.manualTextOverride);
+            AssertEqual("playerMemory.update.doesNotMutateInput", "lowercase Жизнь café",
+                create.record.manualTextOverride);
+
+            PlayerMemoryMutationPlan delete = PlayerMemoryPolicy.PlanBackstoryMutation(
+                owner, create.record, " <b> </b>\r\n ", 450);
+            AssertEqual("playerMemory.delete", PlayerMemoryMutationAction.Delete, delete.action);
+            AssertTrue("playerMemory.delete.noRecord", delete.record == null);
+            PlayerMemoryMutationPlan blankAbsent = PlayerMemoryPolicy.PlanBackstoryMutation(
+                owner, null, "  ", 450);
+            AssertEqual("playerMemory.blankAbsent", PlayerMemoryMutationAction.None,
+                blankAbsent.action);
+
+            ImportantMemoryRecordSnapshot noncanonical = new ImportantMemoryRecordSnapshot
+            {
+                ownerPawnId = owner,
+                recordId = canonicalId,
+                dedupKey = canonicalId,
+                eventKind = KnowledgeTokens.EventKindPlayerBackstory,
+                sourceKind = KnowledgeTokens.SourceKindCaptured,
+                recallScope = KnowledgeTokens.RecallScopeBackground,
+                manualTextOverride = "must not be edited"
+            };
+            AssertTrue("playerMemory.noncanonical.rejected",
+                !PlayerMemoryPolicy.IsCanonicalBackstory(noncanonical, owner));
+            PlayerMemoryMutationPlan safeCreate = PlayerMemoryPolicy.PlanBackstoryMutation(
+                owner, noncanonical, "new canon", 450);
+            AssertEqual("playerMemory.noncanonical.treatedAbsent", PlayerMemoryMutationAction.Create,
+                safeCreate.action);
         }
 
         private static void TestSentinelValues()
@@ -534,6 +660,23 @@ namespace PawnMemoryTests
                     "  <b>kept</b>\r\n\t as   <color=red>memory</color>  ", 240));
             AssertEqual("render.manualOverride.cap", "12345678",
                 ImportantMemoryLineRenderer.CleanManualOverride("123456789tail", 8));
+            AssertEqual("render.background.localizedFrame",
+                "Factual background: lowercase Жизнь café",
+                ImportantMemoryLineRenderer.FormatBackground(
+                    "lowercase Жизнь café",
+                    "Factual background: {0}"));
+            AssertEqual("render.background.blankFormat", "lowercase Жизнь café",
+                ImportantMemoryLineRenderer.FormatBackground("lowercase Жизнь café", "  "));
+            AssertEqual("render.background.malformedFormat", "lowercase Жизнь café",
+                ImportantMemoryLineRenderer.FormatBackground("lowercase Жизнь café", "{1}"));
+            AssertEqual("render.background.missingPlaceholder", "lowercase Жизнь café",
+                ImportantMemoryLineRenderer.FormatBackground(
+                    "lowercase Жизнь café",
+                    "Factual background"));
+            AssertEqual("render.background.escapedPlaceholder", "lowercase Жизнь café",
+                ImportantMemoryLineRenderer.FormatBackground("lowercase Жизнь café", "{{0}}"));
+            AssertEqual("render.background.blankFact", string.Empty,
+                ImportantMemoryLineRenderer.FormatBackground("  ", "Factual background: {0}"));
 
             string manualSurrogateSafe = ImportantMemoryLineRenderer.CleanManualOverride(
                 "1234567\U0001F600tail", 8);
@@ -680,6 +823,86 @@ namespace PawnMemoryTests
                 "requiredParticipant.wrongPawnRejected",
                 KnowledgeRejectReasons.NoOverlap,
                 result.report.First(row => row.recordId == "wrongParticipant").rejectReason);
+        }
+
+        private static void TestSelectorBackgroundFallback()
+        {
+            ImportantMemoryRecordSnapshot background = PlayerMemoryPolicy.PlanBackstoryMutation(
+                "P1", null, "I grew up tending mountain goats.", 450).record;
+            KnowledgePolicySnapshot policy = KnowledgePolicySnapshot.CreateDefault();
+
+            KnowledgeSelectionResult result = ImportantMemorySelector.Select(
+                Query(),
+                new List<ImportantMemoryRecordSnapshot> { background },
+                policy);
+            AssertEqual("backgroundFallback.alone.count", 1, result.selected.Count);
+            AssertEqual("backgroundFallback.alone.pick", background.recordId,
+                result.selected[0].recordId);
+
+            ImportantMemoryRecordSnapshot contextual =
+                Record("contextual", 100, participantId: "P2");
+            result = ImportantMemorySelector.Select(
+                Query(participantId: "P2"),
+                new List<ImportantMemoryRecordSnapshot> { background, contextual },
+                policy);
+            AssertEqual("backgroundFallback.spareSlot.count", 2, result.selected.Count);
+            AssertEqual("backgroundFallback.spareSlot.contextualFirst", "contextual",
+                result.selected[0].recordId);
+            AssertEqual("backgroundFallback.spareSlot.backgroundSecond", background.recordId,
+                result.selected[1].recordId);
+
+            ImportantMemoryRecordSnapshot newer =
+                Record("newerContextual", 200, participantId: "P2");
+            result = ImportantMemorySelector.Select(
+                Query(participantId: "P2"),
+                new List<ImportantMemoryRecordSnapshot> { background, contextual, newer },
+                policy);
+            AssertEqual("backgroundFallback.fullContextual.count", 2, result.selected.Count);
+            AssertEqual("backgroundFallback.fullContextual.first", "newerContextual",
+                result.selected[0].recordId);
+            AssertEqual("backgroundFallback.fullContextual.second", "contextual",
+                result.selected[1].recordId);
+            AssertEqual("backgroundFallback.fullContextual.report", KnowledgeRejectReasons.OverCap,
+                result.report.First(row => row.recordId == background.recordId).rejectReason);
+
+            KnowledgeQuery socialReflection = Query(participantId: "P2");
+            socialReflection.requireParticipantOverlap = true;
+            result = ImportantMemorySelector.Select(
+                socialReflection,
+                new List<ImportantMemoryRecordSnapshot> { background, contextual },
+                policy);
+            AssertEqual("backgroundFallback.participantGate.count", 1, result.selected.Count);
+            AssertEqual("backgroundFallback.participantGate.pick", "contextual",
+                result.selected[0].recordId);
+            AssertEqual("backgroundFallback.participantGate.backgroundRejected",
+                KnowledgeRejectReasons.NoOverlap,
+                result.report.First(row => row.recordId == background.recordId).rejectReason);
+
+            ImportantMemoryRecordSnapshot wrongOwner = PlayerMemoryPolicy.PlanBackstoryMutation(
+                "P9", null, "Other pawn canon.", 450).record;
+            ImportantMemoryRecordSnapshot fabricatedPlayerContext =
+                Record("fabricatedPlayerContext", 999, participantId: "P2");
+            fabricatedPlayerContext.sourceKind = KnowledgeTokens.SourceKindPlayer;
+            fabricatedPlayerContext.recallScope = KnowledgeTokens.RecallScopeContextual;
+            ImportantMemoryRecordSnapshot capturedBackgroundLookalike =
+                Record("capturedBackgroundLookalike", 998, participantId: "P2");
+            capturedBackgroundLookalike.recallScope = KnowledgeTokens.RecallScopeBackground;
+            result = ImportantMemorySelector.Select(
+                Query(participantId: "P2"),
+                new List<ImportantMemoryRecordSnapshot>
+                {
+                    wrongOwner,
+                    fabricatedPlayerContext,
+                    capturedBackgroundLookalike
+                },
+                policy);
+            AssertEqual("backgroundFallback.lookalikesBlocked", 0, result.selected.Count);
+            AssertEqual("backgroundFallback.wrongOwnerRejected", KnowledgeRejectReasons.NoOverlap,
+                result.report.First(row => row.recordId == wrongOwner.recordId).rejectReason);
+            AssertEqual("backgroundFallback.playerContextRejected", KnowledgeRejectReasons.NoOverlap,
+                result.report.First(row => row.recordId == fabricatedPlayerContext.recordId).rejectReason);
+            AssertEqual("backgroundFallback.capturedBackgroundRejected", KnowledgeRejectReasons.NoOverlap,
+                result.report.First(row => row.recordId == capturedBackgroundLookalike.recordId).rejectReason);
         }
 
         private static void TestSelectorRankingAndStableTies()
@@ -880,6 +1103,46 @@ namespace PawnMemoryTests
             AssertEqual("evict.deterministic", string.Join(",", first.dropRecordIds),
                 string.Join(",", second.dropRecordIds));
             AssertEqual("evict.noMutation", 2, owners[0].records.Count);
+        }
+
+        private static void TestEvictionProtectedRows()
+        {
+            KnowledgePolicySnapshot policy = KnowledgePolicySnapshot.CreateDefault();
+            policy.maxRecordsPerPawn = 2;
+            policy.maxRecordsGlobal = 20;
+            KnowledgeOwnerLoad perPawn = Owner("protected", false, 0, 100, 200);
+            perPawn.records[0].protectedFromAutomaticEviction = true;
+            KnowledgeEvictionPlan plan = KnowledgeEvictionPlanner.Plan(
+                new List<KnowledgeOwnerLoad> { perPawn }, policy);
+            AssertEqual("evict.protected.perPawn.count", 1, plan.dropRecordIds.Count);
+            AssertEqual("evict.protected.perPawn.oldestCaptured", "protected-1",
+                plan.dropRecordIds[0]);
+            AssertTrue("evict.protected.perPawn.kept",
+                !plan.dropRecordIds.Contains("protected-0"));
+
+            policy.maxRecordsPerPawn = 10;
+            policy.maxRecordsGlobal = 1;
+            KnowledgeOwnerLoad global = Owner("globalProtected", true, 0, 500);
+            global.records[0].protectedFromAutomaticEviction = true;
+            plan = KnowledgeEvictionPlanner.Plan(
+                new List<KnowledgeOwnerLoad> { global }, policy);
+            AssertEqual("evict.protected.global.count", 1, plan.dropRecordIds.Count);
+            AssertEqual("evict.protected.global.captured", "globalProtected-1",
+                plan.dropRecordIds[0]);
+            AssertTrue("evict.protected.global.warn", plan.globalCapHit);
+
+            // A corrupted store with only protected candidates can remain above a defensive cap,
+            // but the bounded planner must neither loop nor invent a deletion target.
+            policy.maxRecordsPerPawn = 0;
+            policy.maxRecordsGlobal = 0;
+            KnowledgeOwnerLoad allProtected = Owner("allProtected", false, 0, 1);
+            allProtected.records[0].protectedFromAutomaticEviction = true;
+            allProtected.records[1].protectedFromAutomaticEviction = true;
+            plan = KnowledgeEvictionPlanner.Plan(
+                new List<KnowledgeOwnerLoad> { allProtected }, policy);
+            AssertEqual("evict.protected.all.count", 0, plan.dropRecordIds.Count);
+            AssertTrue("evict.protected.all.noFalseWarning", !plan.globalCapHit);
+            AssertEqual("evict.protected.all.noMutation", 2, allProtected.records.Count);
         }
 
         // ── Culture (§4.1) ───────────────────────────────────────────────────────────────────────────

@@ -1,9 +1,10 @@
-// Developer-only important-memory section for Dialog_PawnWritingStyle.
+// Player-facing background and stored-memory sections for Dialog_PawnWritingStyle.
 //
 // At most one record is drawn at a time: the XML policy permits hundreds of memories per pawn, so
 // rendering one editor for every row would make RimWorld's repeated IMGUI passes unnecessarily
 // expensive. Older/Newer and a lazy FloatMenu provide access to the full list. Persistent changes
-// happen only from explicit Save/Remove clicks through DiaryGameComponent's guarded dev endpoints.
+// happen only from explicit profile Save, memory Save, or confirmed Remove clicks through guarded
+// DiaryGameComponent endpoints. Raw matching metadata remains visible only in Dev Mode.
 using System;
 using System.Collections.Generic;
 using RimWorld;
@@ -14,35 +15,178 @@ namespace PawnDiary
 {
     internal sealed partial class Dialog_PawnWritingStyle
     {
+        // Background is part of the main profile draft. Opening/repainting the dialog uses the
+        // component's no-create getter; only the profile Save button can create/update/remove it.
+        private string backgroundMemoryBuffer = string.Empty;
+        private string originalBackgroundMemory = string.Empty;
+        private int backgroundMemoryMaxChars;
+        private Vector2 backgroundMemoryScroll;
+
         private string selectedMemoryRecordId = string.Empty;
         private string memoryEditBuffer = string.Empty;
         private bool memoryEditing;
         private Vector2 memoryTextScroll;
+        // One detached editor snapshot per dialog lifetime. Deep-copying hundreds of participant/fact
+        // rows on every IMGUI event would be needless work; explicit mutations refresh this cache.
+        private IReadOnlyList<ImportantMemoryRecordSnapshot> profileMemorySnapshots =
+            new List<ImportantMemoryRecordSnapshot>();
 
         /// <summary>
-        /// Draws the developer-only memory selector and single-record editor. The caller owns the
-        /// Prefs.DevMode gate so normal play draws and reserves no part of this section.
+        /// Seeds the detached background draft without creating a diary or knowledge state.
+        /// </summary>
+        private void SeedMemoryDrafts()
+        {
+            backgroundMemoryBuffer = component == null
+                ? string.Empty
+                : component.BackgroundMemoryForProfile(pawn);
+            backgroundMemoryBuffer = PlayerMemoryPolicy.NormalizePlayerText(
+                backgroundMemoryBuffer);
+            originalBackgroundMemory = backgroundMemoryBuffer;
+            backgroundMemoryMaxChars = component == null
+                ? 0
+                : component.BackgroundMemoryTextLimitForProfile();
+            RefreshMemorySnapshots();
+        }
+
+        private void RefreshMemorySnapshots()
+        {
+            profileMemorySnapshots = component == null
+                ? (IReadOnlyList<ImportantMemoryRecordSnapshot>)
+                    new List<ImportantMemoryRecordSnapshot>()
+                : component.ImportantMemoriesForProfile(pawn);
+            if (profileMemorySnapshots == null)
+            {
+                profileMemorySnapshots = new List<ImportantMemoryRecordSnapshot>();
+            }
+        }
+
+        /// <summary>Draws the singleton player-authored background-memory draft.</summary>
+        private void DrawBackgroundMemorySection(float x, float width, ref float y)
+        {
+            y += SectionGap;
+            Widgets.DrawLineHorizontal(x, y, width);
+            y += FieldGap;
+
+            Widgets.Label(
+                new Rect(x, y, width, SectionTitleHeight),
+                "PawnDiary.Profile.BackgroundSectionTitle".Translate());
+            y += SectionTitleHeight + FieldGap;
+
+            y += DrawLabeledScrollText(
+                new Rect(x, y, width, PromptAreaHeight),
+                BackgroundMemoryLabel(),
+                backgroundMemoryBuffer,
+                ref backgroundMemoryScroll,
+                PromptAreaHeight,
+                editable: true,
+                editedText: text =>
+                {
+                    backgroundMemoryBuffer = ClampBackgroundDraft(text);
+                }) + FieldGap;
+
+            y += DrawMessagePanel(
+                new Rect(x, y, width, 0f),
+                "PawnDiary.Profile.BackgroundExplanation".Translate(),
+                StatusPanelColor(false)) + FieldGap;
+        }
+
+        /// <summary>Mirrors the background section so the outer scroll view cannot clip it.</summary>
+        private float BackgroundMemorySectionHeight(float width)
+        {
+            float height = SectionGap + FieldGap;
+            height += SectionTitleHeight + FieldGap;
+            height += LabeledScrollTextHeight(
+                BackgroundMemoryLabel(),
+                width,
+                PromptAreaHeight) + FieldGap;
+            height += MessagePanelHeight(
+                "PawnDiary.Profile.BackgroundExplanation".Translate(),
+                width);
+            return height;
+        }
+
+        private string BackgroundMemoryLabel()
+        {
+            // Count the canonical one-line value, while retaining trailing spaces/newlines in the raw
+            // TextArea draft so ordinary multi-word typing is not disrupted between keystrokes.
+            int length = PlayerMemoryPolicy.NormalizePlayerText(backgroundMemoryBuffer).Length;
+            return backgroundMemoryMaxChars > 0
+                ? FormatMemoryFrame(
+                    "PawnDiary.Profile.BackgroundEditLabel",
+                    length,
+                    backgroundMemoryMaxChars)
+                : FormatMemoryFrame(
+                    "PawnDiary.Profile.BackgroundEditLabelUnlimited",
+                    length);
+        }
+
+        /// <summary>
+        /// Applies the canonical background draft at the profile Save boundary. Equivalent whitespace
+        /// edits make no call; a canonical blank delegates to the component's delete plan.
+        /// </summary>
+        private bool SaveBackgroundMemoryDraft()
+        {
+            string cleaned = PlayerMemoryPolicy.NormalizePlayerText(backgroundMemoryBuffer);
+            if (backgroundMemoryMaxChars > 0 && cleaned.Length > backgroundMemoryMaxChars)
+            {
+                cleaned = TextTruncation.SafePrefix(cleaned, backgroundMemoryMaxChars);
+            }
+
+            if (string.Equals(cleaned, originalBackgroundMemory, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            return component != null
+                && component.TrySetBackgroundMemoryForProfile(pawn, cleaned);
+        }
+
+        private string ClampBackgroundDraft(string text)
+        {
+            string raw = text ?? string.Empty;
+            if (backgroundMemoryMaxChars <= 0)
+            {
+                return raw;
+            }
+
+            string cleaned = PlayerMemoryPolicy.NormalizePlayerText(raw);
+            return cleaned.Length <= backgroundMemoryMaxChars
+                ? raw
+                : TextTruncation.SafePrefix(cleaned, backgroundMemoryMaxChars);
+        }
+
+        /// <summary>
+        /// Draws the normal-play memory selector and single-record editor. Matching diagnostics are
+        /// optional and remain Dev-only; the editable prose and guarded actions are always available.
         /// </summary>
         private void DrawMemorySection(
             float x,
             float width,
             ref float y,
-            IReadOnlyList<ImportantMemoryRecord> memories)
+            IReadOnlyList<ImportantMemoryRecordSnapshot> memories,
+            bool showDeveloperDiagnostics)
         {
             y += SectionGap;
             Widgets.DrawLineHorizontal(x, y, width);
             y += FieldGap;
 
             int memoryCount = ValidMemoryCount(memories);
-            string title = FormatMemoryFrame("PawnDiary.Dev.Memory.SectionTitle", memoryCount);
+            string title = FormatMemoryFrame("PawnDiary.Profile.MemorySectionTitle", memoryCount);
             float titleHeight = SmallLabelHeight(title, width);
             Widgets.Label(new Rect(x, y, width, titleHeight), title);
             y += titleHeight + FieldGap;
 
-            ImportantMemoryRecord selected = EnsureMemorySelection(memories);
+            y += DrawMessagePanel(
+                new Rect(x, y, width, 0f),
+                "PawnDiary.Profile.MemoryExplanation".Translate(),
+                StatusPanelColor(false)) + FieldGap;
+
+            // Resolve the newest row as a read-only display fallback. Do not repair selection fields in
+            // an IMGUI draw pass; only explicit navigation/edit actions may change local UI state.
+            ImportantMemoryRecordSnapshot selected = SelectedMemoryOrNewest(memories);
             if (selected == null)
             {
-                string empty = "PawnDiary.Dev.Memory.Empty".Translate();
+                string empty = "PawnDiary.Profile.MemoryEmpty".Translate();
                 float emptyHeight = SmallLabelHeight(empty, width);
                 Widgets.Label(new Rect(x, y, width, emptyHeight), empty);
                 y += emptyHeight + FieldGap;
@@ -58,19 +202,22 @@ namespace PawnDiary
                 memoryCount);
             y += ButtonHeight + FieldGap;
 
-            string metadata = MemoryMetadata(selected);
+            string metadata = showDeveloperDiagnostics
+                ? MemoryMetadata(selected)
+                : MemoryDate(selected);
             float metadataHeight = SmallLabelHeight(metadata, width);
             Widgets.Label(new Rect(x, y, width, metadataHeight), metadata);
             y += metadataHeight + FieldGap;
 
             int textLimit = MemoryTextLimit();
             string actualText = RenderedMemoryText(selected, textLimit);
-            string shownText = memoryEditing
+            bool editingSelected = IsEditingMemory(selected);
+            string shownText = editingSelected
                 ? memoryEditBuffer
                 : MemoryTextForDisplay(actualText);
-            string label = memoryEditing
+            string label = editingSelected
                 ? MemoryEditLabel(textLimit)
-                : "PawnDiary.Dev.Memory.TextLabel".Translate().ToString();
+                : "PawnDiary.Profile.MemoryTextLabel".Translate().ToString();
 
             y += DrawLabeledScrollText(
                 new Rect(x, y, width, PromptAreaHeight),
@@ -78,8 +225,8 @@ namespace PawnDiary
                 shownText,
                 ref memoryTextScroll,
                 PromptAreaHeight,
-                editable: memoryEditing,
-                editedText: memoryEditing
+                editable: editingSelected,
+                editedText: editingSelected
                     ? (Action<string>)(text =>
                     {
                         memoryEditBuffer = textLimit > 0
@@ -94,32 +241,38 @@ namespace PawnDiary
 
         /// <summary>
         /// Mirrors <see cref="DrawMemorySection"/> exactly so the outer scroll view never clips the
-        /// developer section or leaves dead space when Dev Mode is toggled while the window is open.
+        /// normal editor or leaves dead space when Dev Mode diagnostics are toggled.
         /// </summary>
         private float MemorySectionHeight(
             float width,
-            IReadOnlyList<ImportantMemoryRecord> memories)
+            IReadOnlyList<ImportantMemoryRecordSnapshot> memories,
+            bool showDeveloperDiagnostics)
         {
             int memoryCount = ValidMemoryCount(memories);
             float height = SectionGap + FieldGap; // gap plus separator line
             height += SmallLabelHeight(
-                FormatMemoryFrame("PawnDiary.Dev.Memory.SectionTitle", memoryCount),
+                FormatMemoryFrame("PawnDiary.Profile.MemorySectionTitle", memoryCount),
                 width) + FieldGap;
+            height += MessagePanelHeight(
+                "PawnDiary.Profile.MemoryExplanation".Translate(),
+                width);
 
-            ImportantMemoryRecord selected = SelectedMemoryOrNewest(memories);
+            ImportantMemoryRecordSnapshot selected = SelectedMemoryOrNewest(memories);
             if (selected == null)
             {
                 return height
-                    + SmallLabelHeight("PawnDiary.Dev.Memory.Empty".Translate(), width)
+                    + SmallLabelHeight("PawnDiary.Profile.MemoryEmpty".Translate(), width)
                     + FieldGap;
             }
 
             height += ButtonHeight + FieldGap;
-            height += SmallLabelHeight(MemoryMetadata(selected), width) + FieldGap;
+            height += SmallLabelHeight(
+                showDeveloperDiagnostics ? MemoryMetadata(selected) : MemoryDate(selected),
+                width) + FieldGap;
             height += LabeledScrollTextHeight(
-                memoryEditing
+                IsEditingMemory(selected)
                     ? MemoryEditLabel(MemoryTextLimit())
-                    : "PawnDiary.Dev.Memory.TextLabel".Translate().ToString(),
+                    : "PawnDiary.Profile.MemoryTextLabel".Translate().ToString(),
                 width,
                 PromptAreaHeight) + FieldGap;
             height += ButtonHeight + FieldGap;
@@ -128,8 +281,8 @@ namespace PawnDiary
 
         private void DrawMemoryNavigation(
             Rect rect,
-            IReadOnlyList<ImportantMemoryRecord> memories,
-            ImportantMemoryRecord selected,
+            IReadOnlyList<ImportantMemoryRecordSnapshot> memories,
+            ImportantMemoryRecordSnapshot selected,
             int selectedIndex,
             int memoryCount)
         {
@@ -148,11 +301,11 @@ namespace PawnDiary
 
             int olderIndex = FindNextMemoryIndex(memories, selectedIndex - 1, -1);
             int newerIndex = FindNextMemoryIndex(memories, selectedIndex + 1, 1);
-            bool navigationEnabled = !memoryEditing;
+            bool navigationEnabled = !IsEditingMemory(selected);
 
             if (Widgets.ButtonText(
                 olderRect,
-                "PawnDiary.Dev.Memory.Older".Translate(),
+                "PawnDiary.Profile.MemoryOlder".Translate(),
                 true,
                 true,
                 navigationEnabled && olderIndex >= 0))
@@ -161,7 +314,7 @@ namespace PawnDiary
             }
 
             string selector = FormatMemoryFrame(
-                "PawnDiary.Dev.Memory.Selector",
+                "PawnDiary.Profile.MemorySelector",
                 MemoryDisplayPosition(memories, selected.recordId),
                 memoryCount);
             if (Widgets.ButtonText(
@@ -176,7 +329,7 @@ namespace PawnDiary
 
             if (Widgets.ButtonText(
                 newerRect,
-                "PawnDiary.Dev.Memory.Newer".Translate(),
+                "PawnDiary.Profile.MemoryNewer".Translate(),
                 true,
                 true,
                 navigationEnabled && newerIndex >= 0))
@@ -185,9 +338,13 @@ namespace PawnDiary
             }
         }
 
-        private void DrawMemoryActions(Rect rect, ImportantMemoryRecord record, string renderedText)
+        private void DrawMemoryActions(
+            Rect rect,
+            ImportantMemoryRecordSnapshot record,
+            string renderedText)
         {
-            int buttonCount = memoryEditing ? 3 : 2;
+            bool editingSelected = IsEditingMemory(record);
+            int buttonCount = editingSelected ? 3 : 2;
             float buttonWidth = Mathf.Max(
                 1f,
                 (rect.width - FieldGap * (buttonCount - 1)) / buttonCount);
@@ -196,16 +353,17 @@ namespace PawnDiary
             Rect second = new Rect(first.xMax + FieldGap, rect.y, buttonWidth, rect.height);
             Rect third = new Rect(second.xMax + FieldGap, rect.y, buttonWidth, rect.height);
 
-            if (!memoryEditing)
+            if (!editingSelected)
             {
-                if (Widgets.ButtonText(first, "PawnDiary.Dev.Memory.Edit".Translate()))
+                if (Widgets.ButtonText(first, "PawnDiary.Profile.MemoryEdit".Translate()))
                 {
+                    SelectMemory(record);
                     memoryEditBuffer = renderedText ?? string.Empty;
                     memoryEditing = true;
                     memoryTextScroll = Vector2.zero;
                 }
 
-                if (Widgets.ButtonText(second, "PawnDiary.Dev.Memory.Remove".Translate()))
+                if (Widgets.ButtonText(second, "PawnDiary.Profile.MemoryRemove".Translate()))
                 {
                     ConfirmMemoryRemoval(record, renderedText);
                 }
@@ -213,19 +371,20 @@ namespace PawnDiary
                 return;
             }
 
-            if (Widgets.ButtonText(first, "PawnDiary.Dev.Memory.Save".Translate()))
+            if (Widgets.ButtonText(first, "PawnDiary.Profile.MemorySave".Translate()))
             {
                 if (component != null
-                    && component.TrySetImportantMemoryTextForDev(
+                    && component.TrySetImportantMemoryTextForProfile(
                         pawn,
                         record.recordId,
                         memoryEditBuffer))
                 {
+                    RefreshMemorySnapshots();
                     memoryEditing = false;
                     memoryEditBuffer = string.Empty;
                     memoryTextScroll = Vector2.zero;
                     Messages.Message(
-                        "PawnDiary.Dev.Memory.Saved".Translate(),
+                        "PawnDiary.Profile.MemorySaved".Translate(),
                         MessageTypeDefOf.NeutralEvent,
                         false);
                 }
@@ -235,20 +394,22 @@ namespace PawnDiary
                 }
             }
 
-            if (Widgets.ButtonText(second, "PawnDiary.Dev.Memory.Cancel".Translate()))
+            if (Widgets.ButtonText(second, "PawnDiary.Profile.MemoryCancel".Translate()))
             {
                 memoryEditing = false;
                 memoryEditBuffer = string.Empty;
                 memoryTextScroll = Vector2.zero;
             }
 
-            if (Widgets.ButtonText(third, "PawnDiary.Dev.Memory.Remove".Translate()))
+            if (Widgets.ButtonText(third, "PawnDiary.Profile.MemoryRemove".Translate()))
             {
                 ConfirmMemoryRemoval(record, renderedText);
             }
         }
 
-        private void ConfirmMemoryRemoval(ImportantMemoryRecord record, string renderedText)
+        private void ConfirmMemoryRemoval(
+            ImportantMemoryRecordSnapshot record,
+            string renderedText)
         {
             if (record == null || string.IsNullOrWhiteSpace(record.recordId))
             {
@@ -258,15 +419,15 @@ namespace PawnDiary
 
             string recordId = record.recordId;
             string confirmation = FormatMemoryFrame(
-                "PawnDiary.Dev.Memory.RemoveConfirm",
+                "PawnDiary.Profile.MemoryRemoveConfirm",
                 MemoryTextForDisplay(renderedText));
             Dialog_MessageBox dialog = new Dialog_MessageBox(
                 confirmation,
-                "PawnDiary.Dev.Memory.Remove".Translate(),
+                "PawnDiary.Profile.MemoryRemove".Translate(),
                 delegate
                 {
                     if (component != null
-                        && component.TryRemoveImportantMemoryForDev(pawn, recordId))
+                        && component.TryRemoveImportantMemoryForProfile(pawn, recordId))
                     {
                         if (string.Equals(
                             selectedMemoryRecordId,
@@ -279,8 +440,9 @@ namespace PawnDiary
                         memoryEditing = false;
                         memoryEditBuffer = string.Empty;
                         memoryTextScroll = Vector2.zero;
+                        RefreshMemorySnapshots();
                         Messages.Message(
-                            "PawnDiary.Dev.Memory.Removed".Translate(),
+                            "PawnDiary.Profile.MemoryRemoved".Translate(),
                             MessageTypeDefOf.NeutralEvent,
                             false);
                     }
@@ -289,20 +451,21 @@ namespace PawnDiary
                         MemoryOperationFailed();
                     }
                 },
-                "PawnDiary.Dev.Memory.Cancel".Translate(),
+                "PawnDiary.Profile.MemoryCancel".Translate(),
                 null,
-                "PawnDiary.Dev.Memory.RemoveTitle".Translate());
+                "PawnDiary.Profile.MemoryRemoveTitle".Translate());
             Find.WindowStack.Add(dialog);
         }
 
-        private void OpenMemoryPicker(IReadOnlyList<ImportantMemoryRecord> memories)
+        private void OpenMemoryPicker(
+            IReadOnlyList<ImportantMemoryRecordSnapshot> memories)
         {
             List<FloatMenuOption> options = new List<FloatMenuOption>();
             if (memories != null)
             {
                 for (int i = memories.Count - 1; i >= 0; i--)
                 {
-                    ImportantMemoryRecord record = memories[i];
+                    ImportantMemoryRecordSnapshot record = memories[i];
                     if (record == null || string.IsNullOrWhiteSpace(record.recordId))
                     {
                         continue;
@@ -323,32 +486,8 @@ namespace PawnDiary
             }
         }
 
-        private ImportantMemoryRecord EnsureMemorySelection(
-            IReadOnlyList<ImportantMemoryRecord> memories)
-        {
-            ImportantMemoryRecord selected = SelectedMemoryOrNewest(memories);
-            if (selected == null)
-            {
-                selectedMemoryRecordId = string.Empty;
-                memoryEditing = false;
-                memoryEditBuffer = string.Empty;
-                memoryTextScroll = Vector2.zero;
-                return null;
-            }
-
-            if (!string.Equals(
-                selectedMemoryRecordId,
-                selected.recordId,
-                StringComparison.Ordinal))
-            {
-                SelectMemory(selected);
-            }
-
-            return selected;
-        }
-
-        private ImportantMemoryRecord SelectedMemoryOrNewest(
-            IReadOnlyList<ImportantMemoryRecord> memories)
+        private ImportantMemoryRecordSnapshot SelectedMemoryOrNewest(
+            IReadOnlyList<ImportantMemoryRecordSnapshot> memories)
         {
             int selectedIndex = FindMemoryIndex(memories, selectedMemoryRecordId);
             if (selectedIndex >= 0)
@@ -363,7 +502,7 @@ namespace PawnDiary
         }
 
         private void SelectMemoryById(
-            IReadOnlyList<ImportantMemoryRecord> memories,
+            IReadOnlyList<ImportantMemoryRecordSnapshot> memories,
             string recordId)
         {
             int index = FindMemoryIndex(memories, recordId);
@@ -373,7 +512,7 @@ namespace PawnDiary
             }
         }
 
-        private void SelectMemory(ImportantMemoryRecord record)
+        private void SelectMemory(ImportantMemoryRecordSnapshot record)
         {
             if (record == null)
             {
@@ -386,25 +525,47 @@ namespace PawnDiary
             memoryTextScroll = Vector2.zero;
         }
 
-        private string MemoryMetadata(ImportantMemoryRecord record)
+        private bool IsEditingMemory(ImportantMemoryRecordSnapshot record)
         {
-            return FormatMemoryFrame(
-                "PawnDiary.Dev.Memory.Metadata",
-                MemoryValue(record?.dateLabel),
-                MemoryValue(record?.eventKind),
-                MemoryValue(record?.topicKey));
+            return memoryEditing
+                && record != null
+                && string.Equals(
+                    selectedMemoryRecordId,
+                    record.recordId,
+                    StringComparison.Ordinal);
         }
 
-        private string MemoryOptionLabel(ImportantMemoryRecord record)
+        private string MemoryMetadata(ImportantMemoryRecordSnapshot record)
+        {
+            return FormatMemoryFrame(
+                "PawnDiary.Dev.Memory.MetadataExtended",
+                MemoryValue(record?.dateLabel),
+                MemoryValue(record?.eventKind),
+                MemoryValue(record?.topicKey),
+                MemoryValue(record?.sourceKind),
+                MemoryValue(record?.recallScope),
+                MemoryValue(record?.recordId));
+        }
+
+        private string MemoryDate(ImportantMemoryRecordSnapshot record)
+        {
+            return FormatMemoryFrame(
+                "PawnDiary.Profile.MemoryDate",
+                MemoryValue(record?.dateLabel));
+        }
+
+        private string MemoryOptionLabel(ImportantMemoryRecordSnapshot record)
         {
             string rendered = RenderedMemoryText(record, MemoryTextLimit());
             return FormatMemoryFrame(
-                "PawnDiary.Dev.Memory.Option",
+                "PawnDiary.Profile.MemoryOption",
                 MemoryValue(record?.dateLabel),
                 MemoryTextForDisplay(rendered));
         }
 
-        private string RenderedMemoryText(ImportantMemoryRecord record, int maxChars)
+        private string RenderedMemoryText(
+            ImportantMemoryRecordSnapshot record,
+            int maxChars)
         {
             if (record == null)
             {
@@ -413,7 +574,7 @@ namespace PawnDiary
 
             ImportantEventRule rule = DiaryKnowledgePolicy.RuleForKind(record.eventKind);
             return ImportantMemoryLineRenderer.Render(
-                record.ToSnapshot(),
+                record,
                 rule?.lineTemplate,
                 maxChars);
         }
@@ -422,20 +583,21 @@ namespace PawnDiary
         {
             return maxChars > 0
                 ? FormatMemoryFrame(
-                    "PawnDiary.Dev.Memory.EditLabel",
+                    "PawnDiary.Profile.MemoryEditLabel",
                     (memoryEditBuffer ?? string.Empty).Length,
                     maxChars)
                 : FormatMemoryFrame(
-                    "PawnDiary.Dev.Memory.EditLabelUnlimited",
+                    "PawnDiary.Profile.MemoryEditLabelUnlimited",
                     (memoryEditBuffer ?? string.Empty).Length);
         }
 
         private int MemoryTextLimit()
         {
-            return component == null ? 0 : component.ImportantMemoryTextLimitForDev();
+            return component == null ? 0 : component.ImportantMemoryTextLimitForProfile();
         }
 
-        private static int ValidMemoryCount(IReadOnlyList<ImportantMemoryRecord> memories)
+        private static int ValidMemoryCount(
+            IReadOnlyList<ImportantMemoryRecordSnapshot> memories)
         {
             if (memories == null)
             {
@@ -456,7 +618,7 @@ namespace PawnDiary
         }
 
         private static int FindMemoryIndex(
-            IReadOnlyList<ImportantMemoryRecord> memories,
+            IReadOnlyList<ImportantMemoryRecordSnapshot> memories,
             string recordId)
         {
             if (memories == null || string.IsNullOrWhiteSpace(recordId))
@@ -466,7 +628,7 @@ namespace PawnDiary
 
             for (int i = 0; i < memories.Count; i++)
             {
-                ImportantMemoryRecord record = memories[i];
+                ImportantMemoryRecordSnapshot record = memories[i];
                 if (record != null
                     && string.Equals(record.recordId, recordId, StringComparison.Ordinal))
                 {
@@ -478,7 +640,7 @@ namespace PawnDiary
         }
 
         private static int FindNextMemoryIndex(
-            IReadOnlyList<ImportantMemoryRecord> memories,
+            IReadOnlyList<ImportantMemoryRecordSnapshot> memories,
             int start,
             int step)
         {
@@ -489,7 +651,7 @@ namespace PawnDiary
 
             for (int i = start; i >= 0 && i < memories.Count; i += step)
             {
-                ImportantMemoryRecord record = memories[i];
+                ImportantMemoryRecordSnapshot record = memories[i];
                 if (record != null && !string.IsNullOrWhiteSpace(record.recordId))
                 {
                     return i;
@@ -500,7 +662,7 @@ namespace PawnDiary
         }
 
         private static int MemoryDisplayPosition(
-            IReadOnlyList<ImportantMemoryRecord> memories,
+            IReadOnlyList<ImportantMemoryRecordSnapshot> memories,
             string selectedRecordId)
         {
             if (memories == null)
@@ -511,7 +673,7 @@ namespace PawnDiary
             int position = 0;
             for (int i = memories.Count - 1; i >= 0; i--)
             {
-                ImportantMemoryRecord record = memories[i];
+                ImportantMemoryRecordSnapshot record = memories[i];
                 if (record == null || string.IsNullOrWhiteSpace(record.recordId))
                 {
                     continue;
@@ -533,14 +695,14 @@ namespace PawnDiary
         private static string MemoryValue(string value)
         {
             return string.IsNullOrWhiteSpace(value)
-                ? "PawnDiary.Dev.Memory.Unknown".Translate().ToString()
+                ? "PawnDiary.Profile.MemoryUnknown".Translate().ToString()
                 : value;
         }
 
         private static string MemoryTextForDisplay(string text)
         {
             return string.IsNullOrWhiteSpace(text)
-                ? "PawnDiary.Dev.Memory.RenderedEmpty".Translate().ToString()
+                ? "PawnDiary.Profile.MemoryRenderedEmpty".Translate().ToString()
                 : text;
         }
 
@@ -562,7 +724,7 @@ namespace PawnDiary
         private static void MemoryOperationFailed()
         {
             Messages.Message(
-                "PawnDiary.Dev.Memory.OperationFailed".Translate(),
+                "PawnDiary.Profile.MemoryOperationFailed".Translate(),
                 MessageTypeDefOf.RejectInput,
                 false);
         }

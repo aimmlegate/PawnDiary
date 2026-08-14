@@ -17,6 +17,7 @@ namespace PawnDiary
             public string recordId;
             public int tick;
             public bool ownerAbsent;
+            public bool protectedFromAutomaticEviction;
         }
 
         /// <summary>
@@ -50,17 +51,23 @@ namespace PawnDiary
                 int dropCount = Math.Max(0, stubs.Count - perPawnCap);
                 for (int j = 0; j < stubs.Count; j++)
                 {
-                    if (j < dropCount)
+                    KnowledgeRecordStub stub = stubs[j];
+                    // Protected rows still count toward the cap. Skip them and keep scanning oldest-
+                    // first for an evictable captured row; if every row is protected, dropCount simply
+                    // remains unmet and this bounded loop terminates without deleting canon.
+                    if (dropCount > 0 && !stub.protectedFromAutomaticEviction)
                     {
-                        plan.dropRecordIds.Add(stubs[j].recordId);
+                        plan.dropRecordIds.Add(stub.recordId);
+                        dropCount--;
                     }
                     else
                     {
                         survivors.Add(new GlobalStub
                         {
-                            recordId = stubs[j].recordId,
-                            tick = stubs[j].tick,
-                            ownerAbsent = owner.ownerAbsent
+                            recordId = stub.recordId,
+                            tick = stub.tick,
+                            ownerAbsent = owner.ownerAbsent,
+                            protectedFromAutomaticEviction = stub.protectedFromAutomaticEviction
                         });
                     }
                 }
@@ -72,14 +79,26 @@ namespace PawnDiary
                 return plan;
             }
 
-            plan.globalCapHit = true;
             // Absent owners first (§2.3), each pool oldest-first, ties by record id so replays of
-            // the same save always evict the same rows.
-            survivors.Sort(CompareGlobalEvictionOrder);
-            for (int i = 0; i < overflow && i < survivors.Count; i++)
+            // the same save always evict the same rows. Protected rows count toward overflow but are
+            // excluded from the candidate pool, so an all-protected store terminates with no plan.
+            List<GlobalStub> candidates = new List<GlobalStub>();
+            for (int i = 0; i < survivors.Count; i++)
             {
-                plan.dropRecordIds.Add(survivors[i].recordId);
+                if (!survivors[i].protectedFromAutomaticEviction)
+                {
+                    candidates.Add(survivors[i]);
+                }
             }
+
+            candidates.Sort(CompareGlobalEvictionOrder);
+            int globalDrops = Math.Min(overflow, candidates.Count);
+            for (int i = 0; i < globalDrops; i++)
+            {
+                plan.dropRecordIds.Add(candidates[i].recordId);
+            }
+
+            plan.globalCapHit = globalDrops > 0;
 
             return plan;
         }

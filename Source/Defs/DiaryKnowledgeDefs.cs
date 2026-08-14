@@ -316,9 +316,13 @@ namespace PawnDiary
         public int maxRecordsPerPawn = 512;
         public int maxRecordsGlobal = 20000;
         public int fallbackSummaryMaxChars = 240;
+        /// <summary>Maximum normalized characters in the one player-authored background row.</summary>
+        public int playerAuthoredMemoryMaxChars = 450;
         public int relevantPastMaxLines = 2;
         public int relevantPastMaxChars = 500;
         public string relevantPastLineFormat = "- ({0}) {1}";
+        /// <summary>DefInjected factual framing for player background prose; {0} is verbatim text.</summary>
+        public string backgroundMemoryLineFormat;
         /// <summary>Prompt guidance: past context, used only when natural — never a demand.</summary>
         public string relevantPastInstruction;
         public int maxCultureTopicsPerPrompt = 2;
@@ -407,11 +411,17 @@ namespace PawnDiary
             policy.maxRecordsPerPawn = tuning.maxRecordsPerPawn;
             policy.maxRecordsGlobal = tuning.maxRecordsGlobal;
             policy.fallbackSummaryMaxChars = tuning.fallbackSummaryMaxChars;
+            policy.playerAuthoredMemoryMaxChars = tuning.playerAuthoredMemoryMaxChars;
             policy.relevantPastMaxLines = tuning.relevantPastMaxLines;
             policy.relevantPastMaxChars = tuning.relevantPastMaxChars;
             if (!string.IsNullOrWhiteSpace(tuning.relevantPastLineFormat))
             {
                 policy.relevantPastLineFormat = tuning.relevantPastLineFormat;
+            }
+
+            if (!string.IsNullOrWhiteSpace(tuning.backgroundMemoryLineFormat))
+            {
+                policy.backgroundMemoryLineFormat = tuning.backgroundMemoryLineFormat;
             }
 
             policy.relevantPastInstruction = tuning.relevantPastInstruction ?? string.Empty;

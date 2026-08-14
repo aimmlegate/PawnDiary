@@ -9,6 +9,7 @@
   <!-- Link only plain source. This project must compile with no RimWorld, Verse, Unity, or DLC assembly. -->
   <ItemGroup>
     <Compile Include="..\..\Source\Pipeline\Knowledge\KnowledgeContracts.cs" Link="KnowledgeContracts.cs" />
+    <Compile Include="..\..\Source\Pipeline\Knowledge\PlayerMemoryPolicy.cs" Link="PlayerMemoryPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\ImportantEventClassifier.cs" Link="ImportantEventClassifier.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\ImportantMemorySelector.cs" Link="ImportantMemorySelector.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\ImportantMemoryLineRenderer.cs" Link="ImportantMemoryLineRenderer.cs" />

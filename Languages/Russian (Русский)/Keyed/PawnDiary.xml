@@ -1629,6 +1629,33 @@
   <PawnDiary.Profile.Saved>Профиль дневника сохранён.</PawnDiary.Profile.Saved>
   <PawnDiary.Profile.SaveFailed>Этот поселенец больше не может вести дневник, поэтому профиль не сохранён.</PawnDiary.Profile.SaveFailed>
   <PawnDiary.Profile.VoiceResetDraft>Голос и мироощущение сброшены в черновике. Сохраните профиль, чтобы применить изменения.</PawnDiary.Profile.VoiceResetDraft>
+  <PawnDiary.Profile.BackgroundSectionTitle>Фоновое воспоминание</PawnDiary.Profile.BackgroundSectionTitle>
+  <PawnDiary.Profile.BackgroundEditLabel>Фоновое воспоминание — {0}/{1}</PawnDiary.Profile.BackgroundEditLabel>
+  <PawnDiary.Profile.BackgroundEditLabelUnlimited>Фоновое воспоминание — {0} символов</PawnDiary.Profile.BackgroundEditLabelUnlimited>
+  <PawnDiary.Profile.BackgroundExplanation>Это воспоминание может попасть только в будущие записи с полным контекстом, если шаблон включает память. Оно не меняет данные персонажа RimWorld и старые события дневника. Пустое поле будет удалено при сохранении; команда «Забыть историю дневника» и нейростирание очищают его.</PawnDiary.Profile.BackgroundExplanation>
+  <PawnDiary.Profile.MemorySectionTitle>Сохранённые воспоминания — {0}</PawnDiary.Profile.MemorySectionTitle>
+  <PawnDiary.Profile.MemoryExplanation>Эти воспоминания собраны из игровых событий. Правка меняет только текст для будущих обращений и этого окна; владелец и ключи выбора не меняются. Уже созданные события дневника сохраняют свой контекст.</PawnDiary.Profile.MemoryExplanation>
+  <PawnDiary.Profile.MemoryEmpty>У этого поселенца нет сохранённых воспоминаний.</PawnDiary.Profile.MemoryEmpty>
+  <PawnDiary.Profile.MemoryOlder>Старее</PawnDiary.Profile.MemoryOlder>
+  <PawnDiary.Profile.MemoryNewer>Новее</PawnDiary.Profile.MemoryNewer>
+  <PawnDiary.Profile.MemorySelector>Воспоминание {0} / {1}</PawnDiary.Profile.MemorySelector>
+  <PawnDiary.Profile.MemoryDate>Вспоминает: {0}</PawnDiary.Profile.MemoryDate>
+  <PawnDiary.Profile.MemoryTextLabel>Текст воспоминания для будущих обращений</PawnDiary.Profile.MemoryTextLabel>
+  <PawnDiary.Profile.MemoryEditLabel>Изменить текст воспоминания — {0}/{1}</PawnDiary.Profile.MemoryEditLabel>
+  <PawnDiary.Profile.MemoryEditLabelUnlimited>Изменить текст воспоминания — {0} символов</PawnDiary.Profile.MemoryEditLabelUnlimited>
+  <PawnDiary.Profile.MemoryEdit>Изменить</PawnDiary.Profile.MemoryEdit>
+  <PawnDiary.Profile.MemorySave>Сохранить воспоминание</PawnDiary.Profile.MemorySave>
+  <PawnDiary.Profile.MemoryCancel>Отмена</PawnDiary.Profile.MemoryCancel>
+  <PawnDiary.Profile.MemoryRemove>Удалить</PawnDiary.Profile.MemoryRemove>
+  <PawnDiary.Profile.MemoryRemoveTitle>Удалить воспоминание</PawnDiary.Profile.MemoryRemoveTitle>
+  <PawnDiary.Profile.MemoryRemoveConfirm>Удалить это воспоминание навсегда?\n\n{0}\n\nЭто повлияет только на будущие обращения; уже созданные события дневника сохранят свой контекст.</PawnDiary.Profile.MemoryRemoveConfirm>
+  <PawnDiary.Profile.MemorySaved>Текст воспоминания сохранён. Он будет использоваться при будущих обращениях.</PawnDiary.Profile.MemorySaved>
+  <PawnDiary.Profile.MemoryRemoved>Воспоминание удалено.</PawnDiary.Profile.MemoryRemoved>
+  <PawnDiary.Profile.MemoryOperationFailed>Не удалось изменить воспоминание. Возможно, запись больше не существует или принадлежит другому персонажу.</PawnDiary.Profile.MemoryOperationFailed>
+  <PawnDiary.Profile.MemoryOption>{0} — {1}</PawnDiary.Profile.MemoryOption>
+  <PawnDiary.Profile.MemoryUnknown>неизвестно</PawnDiary.Profile.MemoryUnknown>
+  <PawnDiary.Profile.MemoryRenderedEmpty>(пустой текст воспоминания)</PawnDiary.Profile.MemoryRenderedEmpty>
+  <PawnDiary.Profile.BrainwipeHistoryCleared>Нейростирание очистило историю дневника и фоновое воспоминание персонажа {0}.</PawnDiary.Profile.BrainwipeHistoryCleared>
   <PawnDiary.WritingStyle.EditorTitle>{0} — манера письма</PawnDiary.WritingStyle.EditorTitle>
   <PawnDiary.WritingStyle.BaseStyle>Базовая манера: {0}</PawnDiary.WritingStyle.BaseStyle>
   <PawnDiary.WritingStyle.BasePrompt>Базовое правило</PawnDiary.WritingStyle.BasePrompt>
@@ -1662,6 +1689,7 @@
   <PawnDiary.Dev.Memory.Newer>Новее</PawnDiary.Dev.Memory.Newer>
   <PawnDiary.Dev.Memory.Selector>Воспоминание {0} / {1}</PawnDiary.Dev.Memory.Selector>
   <PawnDiary.Dev.Memory.Metadata>Дата: {0} · тип: {1} · тема: {2}</PawnDiary.Dev.Memory.Metadata>
+  <PawnDiary.Dev.Memory.MetadataExtended>Дата: {0} · тип: {1} · тема: {2}\nисточник: {3} · выборка: {4}\nзапись: {5}</PawnDiary.Dev.Memory.MetadataExtended>
   <PawnDiary.Dev.Memory.TextLabel>Текст воспоминания для будущих обращений</PawnDiary.Dev.Memory.TextLabel>
   <PawnDiary.Dev.Memory.EditLabel>Изменить текст воспоминания — {0}/{1}</PawnDiary.Dev.Memory.EditLabel>
   <PawnDiary.Dev.Memory.EditLabelUnlimited>Изменить текст воспоминания — {0} символов</PawnDiary.Dev.Memory.EditLabelUnlimited>

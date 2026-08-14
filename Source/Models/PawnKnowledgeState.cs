@@ -4,9 +4,9 @@
 // (mirroring beliefState), so it saves/loads with the diary and survives the pawn's death for
 // resurrection.
 //
-// The record stores gameplay facts plus an optional developer-authored prompt/display override —
-// never a generated diary entry or an LLM summary. Everything here is strings/scalars/bounded
-// lists; no live Pawn/Def references are retained.
+// The record stores gameplay facts or the one player-authored background row plus an optional
+// prompt/display prose override — never a generated diary entry or an LLM summary. Everything here
+// is strings/scalars/bounded lists; no live Pawn/Def references are retained.
 //
 // New to C#/RimWorld? See AGENTS.md ("IExposable"): ExposeData is called for BOTH save and load;
 // Scribe_* mirrors each field to XML. PostLoadInit-style repair lives in Normalize(), called by
@@ -22,6 +22,10 @@ namespace PawnDiary
         public string recordId = string.Empty;
         public string dedupKey = string.Empty;
         public string sourceEventId = string.Empty;
+        /// <summary>"captured" for gameplay rows or "player" for the profile background row.</summary>
+        public string sourceKind = KnowledgeTokens.SourceKindCaptured;
+        /// <summary>"contextual" for matched facts or "background" for the profile fallback.</summary>
+        public string recallScope = KnowledgeTokens.RecallScopeContextual;
         /// <summary>Stable event-kind token from the matched DiaryImportantEventDef.</summary>
         public string eventKind = string.Empty;
         public string topicKey = string.Empty;
@@ -39,7 +43,7 @@ namespace PawnDiary
         /// <summary>Bounded capture-time summary used when the event Def is missing.</summary>
         public string fallbackSummary = string.Empty;
         /// <summary>
-        /// Optional developer-authored replacement for the rendered memory line. Stable identity,
+        /// Optional player/editor-authored replacement for the rendered memory line. Stable identity,
         /// matching keys, and structured facts remain untouched; only prompt/display prose changes.
         /// </summary>
         public string manualTextOverride = string.Empty;
@@ -49,6 +53,8 @@ namespace PawnDiary
             Scribe_Values.Look(ref recordId, "id");
             Scribe_Values.Look(ref dedupKey, "dedup");
             Scribe_Values.Look(ref sourceEventId, "sourceEventId");
+            Scribe_Values.Look(ref sourceKind, "sourceKind", KnowledgeTokens.SourceKindCaptured);
+            Scribe_Values.Look(ref recallScope, "recallScope", KnowledgeTokens.RecallScopeContextual);
             Scribe_Values.Look(ref eventKind, "kind");
             Scribe_Values.Look(ref topicKey, "topic");
             Scribe_Values.Look(ref tick, "tick");
@@ -68,6 +74,8 @@ namespace PawnDiary
             recordId = recordId ?? string.Empty;
             dedupKey = dedupKey ?? string.Empty;
             sourceEventId = sourceEventId ?? string.Empty;
+            sourceKind = PlayerMemoryPolicy.NormalizeSourceKind(sourceKind);
+            recallScope = PlayerMemoryPolicy.NormalizeRecallScope(recallScope);
             eventKind = eventKind ?? string.Empty;
             topicKey = topicKey ?? string.Empty;
             dateLabel = dateLabel ?? string.Empty;
@@ -103,6 +111,8 @@ namespace PawnDiary
                 recordId = snapshot.recordId ?? string.Empty,
                 dedupKey = snapshot.dedupKey ?? string.Empty,
                 sourceEventId = snapshot.sourceEventId ?? string.Empty,
+                sourceKind = PlayerMemoryPolicy.NormalizeSourceKind(snapshot.sourceKind),
+                recallScope = PlayerMemoryPolicy.NormalizeRecallScope(snapshot.recallScope),
                 eventKind = snapshot.eventKind ?? string.Empty,
                 topicKey = snapshot.topicKey ?? string.Empty,
                 tick = snapshot.tick,
@@ -153,6 +163,8 @@ namespace PawnDiary
                 dedupKey = dedupKey ?? string.Empty,
                 ownerPawnId = string.Empty, // filled by the owning state
                 sourceEventId = sourceEventId ?? string.Empty,
+                sourceKind = PlayerMemoryPolicy.NormalizeSourceKind(sourceKind),
+                recallScope = PlayerMemoryPolicy.NormalizeRecallScope(recallScope),
                 eventKind = eventKind ?? string.Empty,
                 topicKey = topicKey ?? string.Empty,
                 tick = tick,
@@ -160,22 +172,36 @@ namespace PawnDiary
                 fallbackSummary = fallbackSummary ?? string.Empty,
                 manualTextOverride = manualTextOverride ?? string.Empty
             };
-            for (int i = 0; i < participantIds.Count; i++)
+            // Read-only UI/profile snapshots must tolerate a hand-edited or partially loaded row
+            // without calling Normalize(), because Normalize mutates saved state during IMGUI draw.
+            List<string> safeParticipantIds = participantIds;
+            List<string> safeParticipantNames = participantNames;
+            for (int i = 0; safeParticipantIds != null && i < safeParticipantIds.Count; i++)
             {
                 snapshot.participants.Add(new KnowledgeParticipant
                 {
-                    pawnId = participantIds[i] ?? string.Empty,
-                    name = i < participantNames.Count ? (participantNames[i] ?? string.Empty) : string.Empty
+                    pawnId = safeParticipantIds[i] ?? string.Empty,
+                    name = safeParticipantNames != null && i < safeParticipantNames.Count
+                        ? (safeParticipantNames[i] ?? string.Empty)
+                        : string.Empty
                 });
             }
 
-            snapshot.subjectKeys.AddRange(subjectKeys);
-            for (int i = 0; i < factKeys.Count; i++)
+            if (subjectKeys != null)
+            {
+                snapshot.subjectKeys.AddRange(subjectKeys);
+            }
+
+            List<string> safeFactKeys = factKeys;
+            List<string> safeFactValues = factValues;
+            for (int i = 0; safeFactKeys != null && i < safeFactKeys.Count; i++)
             {
                 snapshot.facts.Add(new KnowledgeFact
                 {
-                    key = factKeys[i] ?? string.Empty,
-                    value = i < factValues.Count ? (factValues[i] ?? string.Empty) : string.Empty
+                    key = safeFactKeys[i] ?? string.Empty,
+                    value = safeFactValues != null && i < safeFactValues.Count
+                        ? (safeFactValues[i] ?? string.Empty)
+                        : string.Empty
                 });
             }
 
@@ -186,9 +212,11 @@ namespace PawnDiary
     /// <summary>The per-pawn knowledge state (§4.1): culture provenance + important events.</summary>
     public class PawnKnowledgeState : IExposable
     {
-        /// <summary>Current save schema for this state. Version 1 = the redesign's clean start;
-        /// old associative fragments are never migrated in (§6).</summary>
-        public const int CurrentSchemaVersion = 1;
+        /// <summary>
+        /// Current save schema for this state. Version 1 = the redesign's clean start; version 2
+        /// adds provenance/scope to each record and defaults old rows to captured/contextual.
+        /// </summary>
+        public const int CurrentSchemaVersion = 2;
 
         public string pawnId = string.Empty;
         public int schemaVersion = CurrentSchemaVersion;
@@ -200,7 +228,9 @@ namespace PawnDiary
 
         public void ExposeData()
         {
-            Scribe_Values.Look(ref schemaVersion, "schemaVersion", CurrentSchemaVersion);
+            // Keep the missing-key default pinned to the actual legacy schema. Using the current
+            // value here would make an old save silently appear pre-migrated before Normalize().
+            Scribe_Values.Look(ref schemaVersion, "schemaVersion", 1);
             Scribe_Values.Look(ref pawnId, "pawnId");
             Scribe_Values.Look(ref originCultureDefName, "originCulture");
             Scribe_Values.Look(ref originCultureSource, "originCultureSource");
@@ -312,8 +342,9 @@ namespace PawnDiary
         /// <summary>Pure record mirrors with the owner id stamped on.</summary>
         internal List<ImportantMemoryRecordSnapshot> ToRecordSnapshots()
         {
-            List<ImportantMemoryRecordSnapshot> snapshots = new List<ImportantMemoryRecordSnapshot>(records.Count);
-            for (int i = 0; i < records.Count; i++)
+            List<ImportantMemoryRecordSnapshot> snapshots = new List<ImportantMemoryRecordSnapshot>(
+                records?.Count ?? 0);
+            for (int i = 0; records != null && i < records.Count; i++)
             {
                 if (records[i] == null)
                 {

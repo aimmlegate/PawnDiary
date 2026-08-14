@@ -1683,6 +1683,33 @@
   <PawnDiary.Profile.Saved>Diary profile saved.</PawnDiary.Profile.Saved>
   <PawnDiary.Profile.SaveFailed>This pawn can no longer keep a diary, so the profile was not saved.</PawnDiary.Profile.SaveFailed>
   <PawnDiary.Profile.VoiceResetDraft>Voice and outlook reset in this draft. Save the profile to apply it.</PawnDiary.Profile.VoiceResetDraft>
+  <PawnDiary.Profile.BackgroundSectionTitle>Background memory</PawnDiary.Profile.BackgroundSectionTitle>
+  <PawnDiary.Profile.BackgroundEditLabel>Background memory — {0}/{1}</PawnDiary.Profile.BackgroundEditLabel>
+  <PawnDiary.Profile.BackgroundEditLabelUnlimited>Background memory — {0} characters</PawnDiary.Profile.BackgroundEditLabelUnlimited>
+  <PawnDiary.Profile.BackgroundExplanation>This memory can appear only in future Full-context entries whose template includes memory. It does not alter RimWorld's pawn data or old diary events. Saving a blank field removes it; Forget Diary History and brainwipe clear it.</PawnDiary.Profile.BackgroundExplanation>
+  <PawnDiary.Profile.MemorySectionTitle>Stored memories — {0}</PawnDiary.Profile.MemorySectionTitle>
+  <PawnDiary.Profile.MemoryExplanation>These memories were captured from play. Editing changes only the prose used for future recall and this display; ownership and recall keys stay unchanged. Existing diary events keep their frozen context.</PawnDiary.Profile.MemoryExplanation>
+  <PawnDiary.Profile.MemoryEmpty>No stored memories for this pawn.</PawnDiary.Profile.MemoryEmpty>
+  <PawnDiary.Profile.MemoryOlder>Older</PawnDiary.Profile.MemoryOlder>
+  <PawnDiary.Profile.MemoryNewer>Newer</PawnDiary.Profile.MemoryNewer>
+  <PawnDiary.Profile.MemorySelector>Memory {0} / {1}</PawnDiary.Profile.MemorySelector>
+  <PawnDiary.Profile.MemoryDate>Remembered: {0}</PawnDiary.Profile.MemoryDate>
+  <PawnDiary.Profile.MemoryTextLabel>Memory text used for future recall</PawnDiary.Profile.MemoryTextLabel>
+  <PawnDiary.Profile.MemoryEditLabel>Edit memory text — {0}/{1}</PawnDiary.Profile.MemoryEditLabel>
+  <PawnDiary.Profile.MemoryEditLabelUnlimited>Edit memory text — {0} characters</PawnDiary.Profile.MemoryEditLabelUnlimited>
+  <PawnDiary.Profile.MemoryEdit>Edit</PawnDiary.Profile.MemoryEdit>
+  <PawnDiary.Profile.MemorySave>Save memory</PawnDiary.Profile.MemorySave>
+  <PawnDiary.Profile.MemoryCancel>Cancel</PawnDiary.Profile.MemoryCancel>
+  <PawnDiary.Profile.MemoryRemove>Remove</PawnDiary.Profile.MemoryRemove>
+  <PawnDiary.Profile.MemoryRemoveTitle>Remove memory</PawnDiary.Profile.MemoryRemoveTitle>
+  <PawnDiary.Profile.MemoryRemoveConfirm>Remove this memory permanently?\n\n{0}\n\nOnly future recalls are affected; already-created diary events keep their frozen context.</PawnDiary.Profile.MemoryRemoveConfirm>
+  <PawnDiary.Profile.MemorySaved>Memory text saved. Future recalls will use it.</PawnDiary.Profile.MemorySaved>
+  <PawnDiary.Profile.MemoryRemoved>Memory removed.</PawnDiary.Profile.MemoryRemoved>
+  <PawnDiary.Profile.MemoryOperationFailed>The memory could not be changed. The record may no longer exist or belong to this pawn.</PawnDiary.Profile.MemoryOperationFailed>
+  <PawnDiary.Profile.MemoryOption>{0} — {1}</PawnDiary.Profile.MemoryOption>
+  <PawnDiary.Profile.MemoryUnknown>unknown</PawnDiary.Profile.MemoryUnknown>
+  <PawnDiary.Profile.MemoryRenderedEmpty>(empty memory text)</PawnDiary.Profile.MemoryRenderedEmpty>
+  <PawnDiary.Profile.BrainwipeHistoryCleared>{0}'s Diary history and background memory were cleared by the brainwipe.</PawnDiary.Profile.BrainwipeHistoryCleared>
   <PawnDiary.WritingStyle.EditorTitle>{0} - Writing Style</PawnDiary.WritingStyle.EditorTitle>
   <PawnDiary.WritingStyle.BaseStyle>Base style: {0}</PawnDiary.WritingStyle.BaseStyle>
   <PawnDiary.WritingStyle.BasePrompt>Base prompt</PawnDiary.WritingStyle.BasePrompt>
@@ -1716,6 +1743,7 @@
   <PawnDiary.Dev.Memory.Newer>Newer</PawnDiary.Dev.Memory.Newer>
   <PawnDiary.Dev.Memory.Selector>Memory {0} / {1}</PawnDiary.Dev.Memory.Selector>
   <PawnDiary.Dev.Memory.Metadata>Date: {0} · kind: {1} · topic: {2}</PawnDiary.Dev.Memory.Metadata>
+  <PawnDiary.Dev.Memory.MetadataExtended>Date: {0} · kind: {1} · topic: {2}\nsource: {3} · recall: {4}\nrecord: {5}</PawnDiary.Dev.Memory.MetadataExtended>
   <PawnDiary.Dev.Memory.TextLabel>Memory text used for future recall</PawnDiary.Dev.Memory.TextLabel>
   <PawnDiary.Dev.Memory.EditLabel>Edit memory text — {0}/{1}</PawnDiary.Dev.Memory.EditLabel>
   <PawnDiary.Dev.Memory.EditLabelUnlimited>Edit memory text — {0} characters</PawnDiary.Dev.Memory.EditLabelUnlimited>

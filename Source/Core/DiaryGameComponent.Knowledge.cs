@@ -638,30 +638,46 @@ namespace PawnDiary
                 int cap = Math.Max(0, policy.maxRecordsPerPawn);
                 while (state.records.Count > cap && state.records.Count > 0)
                 {
-                    RemoveOldestRecord(state);
+                    if (!RemoveOldestRecord(state))
+                    {
+                        // A protected player/background singleton still counts toward the cap but
+                        // may never be auto-evicted. Stop instead of looping forever when it is the
+                        // only row left to consider.
+                        break;
+                    }
                 }
             }
         }
 
-        private static void RemoveOldestRecord(PawnKnowledgeState state)
+        /// <summary>Removes the oldest evictable row; false means every remaining row is protected.</summary>
+        private static bool RemoveOldestRecord(PawnKnowledgeState state)
         {
-            int oldestIndex = 0;
-            for (int i = 1; i < state.records.Count; i++)
+            int oldestIndex = -1;
+            for (int i = 0; i < state.records.Count; i++)
             {
                 ImportantMemoryRecord candidate = state.records[i];
-                ImportantMemoryRecord oldest = state.records[oldestIndex];
                 if (candidate == null)
                 {
                     oldestIndex = i;
                     break;
                 }
 
-                if (oldest == null)
+                if (PlayerMemoryPolicy.IsCanonicalBackstory(
+                    state.pawnId,
+                    candidate.recordId,
+                    candidate.dedupKey,
+                    candidate.eventKind,
+                    candidate.sourceKind,
+                    candidate.recallScope))
                 {
                     continue;
                 }
 
-                if (candidate.tick < oldest.tick
+                ImportantMemoryRecord oldest = oldestIndex >= 0
+                    ? state.records[oldestIndex]
+                    : null;
+                if (oldest == null
+                    || candidate.tick < oldest.tick
                     || (candidate.tick == oldest.tick
                         && string.CompareOrdinal(candidate.recordId, oldest.recordId) < 0))
                 {
@@ -669,16 +685,22 @@ namespace PawnDiary
                 }
             }
 
+            if (oldestIndex < 0)
+            {
+                return false;
+            }
+
             state.records.RemoveAt(oldestIndex);
+            return true;
         }
 
         // ── Retrieval (§3) ───────────────────────────────────────────────────────────────────────────
 
         /// <summary>
         /// Freezes the "relevant past" block onto each first-person POV of a just-registered
-        /// event: deterministic selection, at most two dated localized fact lines. Gated by the
-        /// single player switch (injection only) and by template projectability, exactly like the
-        /// narrative/belief context builders.
+        /// event: deterministic contextual selection plus an optional owner background fallback,
+        /// at most two localized fact lines. Gated by the single player switch (injection only) and
+        /// by template projectability, exactly like the narrative/belief context builders.
         /// </summary>
         private void ApplyRelevantPastForEvent(DiaryEvent diaryEvent)
         {
@@ -812,17 +834,28 @@ namespace PawnDiary
             for (int i = 0; i < result.selected.Count; i++)
             {
                 ImportantMemoryRecordSnapshot record = result.selected[i];
-                ImportantEventRule rule = DiaryKnowledgePolicy.RuleForKind(record.eventKind);
+                bool playerBackground = PlayerMemoryPolicy.IsCanonicalBackstory(record, pawnId);
+                ImportantEventRule rule = playerBackground
+                    ? null
+                    : DiaryKnowledgePolicy.RuleForKind(record.eventKind);
                 string fact = ImportantMemoryLineRenderer.Render(
-                    record, rule?.lineTemplate, policy.fallbackSummaryMaxChars);
+                    record,
+                    rule?.lineTemplate,
+                    playerBackground
+                        ? policy.playerAuthoredMemoryMaxChars
+                        : policy.fallbackSummaryMaxChars);
                 if (string.IsNullOrWhiteSpace(fact))
                 {
                     continue;
                 }
 
-                string line = string.IsNullOrWhiteSpace(record.dateLabel)
-                    ? fact
-                    : SafeLineFormat(policy.relevantPastLineFormat, record.dateLabel, fact);
+                string line = playerBackground
+                    ? ImportantMemoryLineRenderer.FormatBackground(
+                        fact,
+                        policy.backgroundMemoryLineFormat)
+                    : (string.IsNullOrWhiteSpace(record.dateLabel)
+                        ? fact
+                        : SafeLineFormat(policy.relevantPastLineFormat, record.dateLabel, fact));
                 lines.Add(line);
             }
 
@@ -850,9 +883,11 @@ namespace PawnDiary
                 maxRecordsPerPawn = safe.maxRecordsPerPawn,
                 maxRecordsGlobal = safe.maxRecordsGlobal,
                 fallbackSummaryMaxChars = safe.fallbackSummaryMaxChars,
+                playerAuthoredMemoryMaxChars = safe.playerAuthoredMemoryMaxChars,
                 relevantPastMaxLines = Math.Max(0, lineCap),
                 relevantPastMaxChars = safe.relevantPastMaxChars,
                 relevantPastLineFormat = safe.relevantPastLineFormat,
+                backgroundMemoryLineFormat = safe.backgroundMemoryLineFormat,
                 relevantPastInstruction = safe.relevantPastInstruction,
                 maxCultureTopicsPerPrompt = safe.maxCultureTopicsPerPrompt,
                 annotationSingleFormat = safe.annotationSingleFormat,
@@ -960,6 +995,8 @@ namespace PawnDiary
                 }
 
                 builder.Append("  [").Append(i).Append("] ").Append(record.eventKind)
+                    .Append(" source=").Append(record.sourceKind)
+                    .Append(" scope=").Append(record.recallScope)
                     .Append(" @").Append(record.tick)
                     .Append(" (").Append(Display(record.dateLabel)).Append(")");
                 if (record.subjectKeys.Count > 0)
@@ -1097,7 +1134,15 @@ namespace PawnDiary
                             load.records.Add(new KnowledgeRecordStub
                             {
                                 recordId = record.recordId,
-                                tick = record.tick
+                                tick = record.tick,
+                                protectedFromAutomaticEviction =
+                                    PlayerMemoryPolicy.IsCanonicalBackstory(
+                                        state.pawnId,
+                                        record.recordId,
+                                        record.dedupKey,
+                                        record.eventKind,
+                                        record.sourceKind,
+                                        record.recallScope)
                             });
                         }
                     }

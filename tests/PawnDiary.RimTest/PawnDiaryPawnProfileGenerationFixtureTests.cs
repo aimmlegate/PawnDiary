@@ -1,4 +1,5 @@
-// Loaded-game coverage for the pawn profile's per-pawn diary-generation switch and backlog preview.
+// Loaded-game coverage for the pawn profile's per-pawn generation switch, mutation-free reads,
+// backlog preview, and the Reset voice draft/Save boundary.
 //
 // The profile dialog must inspect saved state without creating or normalizing a diary record. When a
 // disabled pawn has resumable pages, the count shown before Save must also predict what the existing
@@ -22,8 +23,8 @@ using Verse;
 namespace PawnDiary.RimTests
 {
     /// <summary>
-    /// Proves the profile read model is mutation-free and its resumable count stays aligned with the
-    /// existing per-pawn resume queue for solo, neutral-arrival, and pair POV ownership.
+    /// Proves the profile read model is mutation-free, Reset preserves independent memory/generation
+    /// state, and resumable counts align with the existing per-pawn queue for every POV shape.
     /// </summary>
     [TestSuite]
     public static class PawnDiaryPawnProfileGenerationFixtureTests
@@ -53,6 +54,10 @@ namespace PawnDiary.RimTests
             typeof(LlmClient).GetMethod(
                 "Enqueue",
                 BindingFlags.Static | BindingFlags.Public);
+        private static readonly MethodInfo ResetProfileVoiceDraftMethod =
+            typeof(Dialog_PawnWritingStyle).GetMethod("ResetToBase", PrivateInstance);
+        private static readonly MethodInfo SaveProfileDraftMethod =
+            typeof(Dialog_PawnWritingStyle).GetMethod("Save", PrivateInstance);
 
         private static PawnDiaryRimTestScope scope;
         private static Pawn pawn;
@@ -122,8 +127,68 @@ namespace PawnDiary.RimTests
                     && !scope.Component.PsychotypePinnedFor(pawn),
                 "No-record profile readers returned saved custom or pin state.");
             Require(
+                scope.Component.ImportantMemoriesForProfile(pawn).Count == 0
+                    && string.IsNullOrEmpty(scope.Component.BackgroundMemoryForProfile(pawn)),
+                "No-record profile memory readers returned saved memory state.");
+            Require(
+                scope.Component.TrySetBackgroundMemoryForProfile(pawn, "  <b> </b>\r\n "),
+                "A canonical blank background Save should be a successful no-op.");
+            Require(
                 !RawDiaryRecordExists(pawn),
-                "Reading generation, voice, or outlook profile state created/indexed a saved diary row.");
+                "Reading profile state or saving a blank background created/indexed a saved diary row.");
+        }
+
+        /// <summary>
+        /// Reset voice changes only the dialog draft until Save. Committing that reset clears/unpins the
+        /// two voice layers while preserving the independently drafted background and generation switch.
+        /// </summary>
+        [Test]
+        public static void ResetVoiceSavePreservesBackgroundAndGeneration()
+        {
+            if (ResetProfileVoiceDraftMethod == null || SaveProfileDraftMethod == null)
+            {
+                throw new AssertionException(
+                    "The profile fixture could not locate Dialog_PawnWritingStyle Reset/Save methods.");
+            }
+
+            string pawnId = pawn.GetUniqueLoadID();
+            PawnDiaryRecord diary;
+            Require(
+                RequireDiaryIndex().TryGetValue(pawnId, out diary) && diary != null,
+                "The Reset voice fixture could not find the setup pawn's diary row.");
+
+            diary.customWritingStyleRule = "Keep this temporary writing rule.";
+            diary.customPsychotypeRule = "Keep this temporary outlook rule.";
+            diary.writingStylePinned = true;
+            diary.psychotypePinned = true;
+            diary.diaryGenerationEnabled = false;
+            const string background = "I grew up repairing weather stations.";
+            Require(
+                scope.Component.TrySetBackgroundMemoryForProfile(pawn, background),
+                "The Reset voice fixture could not seed its canonical background.");
+
+            Dialog_PawnWritingStyle dialog =
+                new Dialog_PawnWritingStyle(pawn, scope.Component);
+            ResetProfileVoiceDraftMethod.Invoke(dialog, null);
+            object saved = SaveProfileDraftMethod.Invoke(dialog, new object[] { false });
+
+            Require(saved is bool && (bool)saved,
+                "The Reset voice draft failed at the profile Save boundary.");
+            Require(
+                string.IsNullOrEmpty(diary.customWritingStyleRule)
+                    && string.IsNullOrEmpty(diary.customPsychotypeRule)
+                    && !diary.writingStylePinned
+                    && !diary.psychotypePinned,
+                "Reset voice + Save did not clear and unpin both voice layers.");
+            Require(
+                !diary.diaryGenerationEnabled,
+                "Reset voice + Save changed the pawn's disabled generation flag.");
+            Require(
+                string.Equals(
+                    scope.Component.BackgroundMemoryForProfile(pawn),
+                    background,
+                    StringComparison.Ordinal),
+                "Reset voice + Save changed or removed the pawn's background memory.");
         }
 
         /// <summary>
