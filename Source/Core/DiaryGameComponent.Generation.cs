@@ -160,16 +160,29 @@ namespace PawnDiary
             Dictionary<string, DiaryBoundsCacheEntry> boundsCache = null,
             Dictionary<string, Pawn> livePawnsById = null)
         {
-            if (diaryEvent == null
-                || string.IsNullOrWhiteSpace(povRole)
-                || !diaryEvent.HasGeneratedTextForRole(povRole)
-                || !string.IsNullOrWhiteSpace(diaryEvent.TitleForRole(povRole))
-                || !diaryEvent.CanQueueTitleGeneration(povRole))
+            if (!HasCompletedMainTextNeedingTitle(diaryEvent, povRole))
             {
                 return;
             }
 
             QueueTitleRequest(diaryEvent, povRole, null, boundsCache, livePawnsById);
+        }
+
+        /// <summary>
+        /// Returns true only when a completed main request has prose but no title. Regeneration keeps
+        /// the old prose visible while resetting the main status, so checking text alone could title
+        /// that stale prose concurrently with its replacement request.
+        /// </summary>
+        private static bool HasCompletedMainTextNeedingTitle(DiaryEvent diaryEvent, string povRole)
+        {
+            return diaryEvent != null
+                && !string.IsNullOrWhiteSpace(povRole)
+                && DiaryEvent.RoleEquals(
+                    diaryEvent.StatusForRole(povRole),
+                    DiaryEvent.CompleteStatus)
+                && diaryEvent.HasGeneratedTextForRole(povRole)
+                && string.IsNullOrWhiteSpace(diaryEvent.TitleForRole(povRole))
+                && diaryEvent.CanQueueTitleGeneration(povRole);
         }
 
         /// <summary>
@@ -261,6 +274,7 @@ namespace PawnDiary
 
             Dictionary<string, DiaryBoundsCacheEntry> boundsCache = new Dictionary<string, DiaryBoundsCacheEntry>();
             Dictionary<string, Pawn> livePawnsById = SnapshotLivePawnsByLoadId();
+            bool queueMissingTitles = PawnDiaryMod.Settings?.generateTitles == true;
             VisitPendingGenerationCandidatesForPawn(
                 pawnId,
                 boundsCache,
@@ -270,6 +284,15 @@ namespace PawnDiary
                 {
                     EnsureGenerationQueued(
                         diaryEvent, povRole, boundsCache, livePawnsById);
+                    if (queueMissingTitles)
+                    {
+                        // A main request may have completed while this pawn was paused. Its title
+                        // follow-up was correctly blocked by the saved switch, so resume must repair
+                        // that title here; the global title catch-up otherwise runs only on load or
+                        // when the title setting changes.
+                        QueueMissingTitleForRole(
+                            diaryEvent, povRole, boundsCache, livePawnsById);
+                    }
                 });
         }
 
@@ -475,11 +498,9 @@ namespace PawnDiary
                 return true;
             }
 
-            if (initialArrivalScanPending && !diaryEvent.HasArrivalDescription())
-            {
-                return false;
-            }
-
+            // The profile describes durable work that will resume after the starting-arrival gate opens.
+            // CompleteInitialArrivalBootstrap always requests that deferred scan, so this transient gate
+            // must not hide ordinary pages or suppress the player's confirmation count.
             if (EventFallsOutsideProfileBounds(
                 diaryEvent, pawnId, boundsCache, livePawnsById))
             {

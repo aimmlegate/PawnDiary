@@ -5,6 +5,7 @@
 // SetDiaryGenerationEnabled(..., true) path will actually release. These fixtures seed isolated saved
 // pages through the production event factory, exercise the read-only profile helpers, and use Prompt
 // Test Mode for the resume step so the real queue renders a prompt but never reaches an LLM provider.
+// Bootstrap coverage also proves deferred ordinary work stays visible and schedules a fresh scan.
 //
 // New to C#/RimWorld? Reflection below reads the component's private saved-record stores so the
 // no-create contract can be asserted directly. See AGENTS.md and PawnDiaryRimTestScope's header.
@@ -28,11 +29,25 @@ namespace PawnDiary.RimTests
     {
         private const BindingFlags PrivateInstance =
             BindingFlags.Instance | BindingFlags.NonPublic;
+        private const BindingFlags PrivateStatic =
+            BindingFlags.Static | BindingFlags.NonPublic;
 
         private static readonly FieldInfo DiariesField =
             typeof(DiaryGameComponent).GetField("diaries", PrivateInstance);
         private static readonly FieldInfo DiariesByIdField =
             typeof(DiaryGameComponent).GetField("diariesById", PrivateInstance);
+        private static readonly FieldInfo InitialArrivalScanPendingField =
+            typeof(DiaryGameComponent).GetField("initialArrivalScanPending", PrivateInstance);
+        private static readonly FieldInfo GenerationScanRequestedField =
+            typeof(DiaryGameComponent).GetField("generationScanRequested", PrivateInstance);
+        private static readonly MethodInfo CompleteInitialArrivalBootstrapMethod =
+            typeof(DiaryGameComponent).GetMethod(
+                "CompleteInitialArrivalBootstrap",
+                PrivateInstance);
+        private static readonly MethodInfo HasCompletedMainTextNeedingTitleMethod =
+            typeof(DiaryGameComponent).GetMethod(
+                "HasCompletedMainTextNeedingTitle",
+                PrivateStatic);
 
         private static PawnDiaryRimTestScope scope;
         private static Pawn pawn;
@@ -305,6 +320,105 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Regeneration deliberately leaves the previous prose visible while its replacement is queued.
+        /// Title catch-up must wait for that replacement main request to complete instead of dispatching
+        /// a title for the stale retained text in parallel.
+        /// </summary>
+        [Test]
+        public static void RegenerationRetainedTextCannotQueueStaleTitle()
+        {
+            if (HasCompletedMainTextNeedingTitleMethod == null)
+            {
+                throw new AssertionException(
+                    "The profile fixture could not locate the missing-title eligibility rule.");
+            }
+
+            DiaryEvent page = SeedSoloPage("regeneration-title-ordering");
+            page.MarkInjectedTextComplete(
+                DiaryEvent.InitiatorRole,
+                "The previous completed pawn-profile fixture page.");
+            Require(
+                MissingTitleIsQueueable(page, DiaryEvent.InitiatorRole),
+                "A completed main page with missing title was not eligible for title catch-up.");
+
+            page.PrepareForRegeneration(DiaryEvent.InitiatorRole);
+            Require(
+                page.HasGeneratedTextForRole(DiaryEvent.InitiatorRole),
+                "The regeneration fixture no longer retained the previous prose.");
+            Require(
+                !MissingTitleIsQueueable(page, DiaryEvent.InitiatorRole),
+                "Title catch-up accepted retained stale prose before regeneration completed.");
+
+            page.MarkInjectedTextComplete(
+                DiaryEvent.InitiatorRole,
+                "The replacement completed pawn-profile fixture page.");
+            Require(
+                MissingTitleIsQueueable(page, DiaryEvent.InitiatorRole),
+                "Title catch-up did not reopen after replacement prose completed.");
+        }
+
+        /// <summary>
+        /// A load/new-game generation pass can run while the starting-arrival prerequisite still blocks
+        /// ordinary pages. The profile must keep that deferred page visible, and completing bootstrap must
+        /// request another pass instead of leaving the page stranded until an unrelated later trigger.
+        /// </summary>
+        [Test]
+        public static void ArrivalBootstrapDeferralRemainsVisibleAndSchedulesResume()
+        {
+            if (InitialArrivalScanPendingField == null
+                || GenerationScanRequestedField == null
+                || CompleteInitialArrivalBootstrapMethod == null)
+            {
+                throw new AssertionException(
+                    "The profile fixture could not locate the arrival-bootstrap generation state.");
+            }
+
+            DiaryEvent page = SeedSoloPage("arrival-bootstrap-deferral");
+            PawnDiaryRecord diary = RequireDiaryIndex()[pawn.GetUniqueLoadID()];
+            bool originalArrivalPending =
+                (bool)InitialArrivalScanPendingField.GetValue(scope.Component);
+            bool originalGenerationScanRequested =
+                (bool)GenerationScanRequestedField.GetValue(scope.Component);
+            bool originalGenerationEnabled = diary.diaryGenerationEnabled;
+            try
+            {
+                InitialArrivalScanPendingField.SetValue(scope.Component, true);
+                GenerationScanRequestedField.SetValue(scope.Component, false);
+
+                // The real enable path tries its scoped queue immediately. Bootstrap deliberately
+                // defers that attempt, leaving this ordinary page in the resumable state.
+                scope.Component.SetDiaryGenerationEnabled(pawn, true);
+                Require(
+                    DiaryEvent.RoleEquals(
+                        page.StatusForRole(DiaryEvent.InitiatorRole),
+                        DiaryEvent.NotGeneratedStatus)
+                        && string.IsNullOrWhiteSpace(
+                            page.PromptForRole(DiaryEvent.InitiatorRole)),
+                    "The starting-arrival gate did not defer the ordinary profile page.");
+                RequireBacklog(
+                    pawn,
+                    1,
+                    "The profile hid ordinary resumable work while arrival bootstrap was pending.");
+
+                CompleteInitialArrivalBootstrapMethod.Invoke(scope.Component, null);
+                Require(
+                    !(bool)InitialArrivalScanPendingField.GetValue(scope.Component),
+                    "Completing arrival bootstrap left its generation gate closed.");
+                Require(
+                    (bool)GenerationScanRequestedField.GetValue(scope.Component),
+                    "Completing arrival bootstrap did not schedule the deferred generation scan.");
+            }
+            finally
+            {
+                diary.diaryGenerationEnabled = originalGenerationEnabled;
+                InitialArrivalScanPendingField.SetValue(scope.Component, originalArrivalPending);
+                GenerationScanRequestedField.SetValue(
+                    scope.Component,
+                    originalGenerationScanRequested);
+            }
+        }
+
+        /// <summary>
         /// Arrival descriptions belong to their neutral slot, not the factory's initiator slot. A direct
         /// queue attempt while the exact owner is disabled must remain untouched; re-enabling then queues
         /// only that neutral prompt. A failed initiator POV therefore cannot hide or receive this work.
@@ -407,6 +521,14 @@ namespace PawnDiary.RimTests
         {
             int actual = scope.Component.PendingGenerationBacklogCountForProfile(subject);
             Require(actual == expected, message + " Expected " + expected + ", got " + actual + ".");
+        }
+
+        /// <summary>Invokes the production missing-title eligibility rule without dispatching an LLM request.</summary>
+        private static bool MissingTitleIsQueueable(DiaryEvent page, string povRole)
+        {
+            return (bool)HasCompletedMainTextNeedingTitleMethod.Invoke(
+                null,
+                new object[] { page, povRole });
         }
 
         /// <summary>

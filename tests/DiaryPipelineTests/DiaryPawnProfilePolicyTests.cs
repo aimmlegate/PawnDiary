@@ -44,6 +44,160 @@ namespace DiaryPipelineTests
                 false,
                 true,
                 -12);
+
+            AssertOutlookPreview(
+                "all Full/Balanced lanes include automatic outlook",
+                DiaryPawnProfileOutlookPreviewMode.Included,
+                false,
+                2,
+                2);
+            AssertOutlookPreview(
+                "all Compact lanes omit automatic outlook",
+                DiaryPawnProfileOutlookPreviewMode.Omitted,
+                false,
+                2,
+                0);
+            AssertOutlookPreview(
+                "mixed lane overrides remain conditional",
+                DiaryPawnProfileOutlookPreviewMode.LaneDependent,
+                false,
+                2,
+                1);
+            AssertOutlookPreview(
+                "no usable lane remains conditional",
+                DiaryPawnProfileOutlookPreviewMode.NoActiveLane,
+                false,
+                0,
+                0);
+            AssertOutlookPreview(
+                "external outlook bypasses Compact lane gate",
+                DiaryPawnProfileOutlookPreviewMode.Included,
+                true,
+                2,
+                0);
+            AssertOutlookPreview(
+                "external outlook still has no writer without an active lane",
+                DiaryPawnProfileOutlookPreviewMode.NoActiveLane,
+                true,
+                0,
+                0);
+
+            AssertPreviewProvisional("stable saved voice", false, false, false);
+            AssertPreviewProvisional("style assignment pending", true, true, false);
+            AssertPreviewProvisional("outlook restage pending", true, false, true);
+
+            AssertDraftPin("unchanged unpinned layer stays automatic", false, false, false, false, false);
+            AssertDraftPin("changed base pins layer", true, false, true, false, false);
+            AssertDraftPin("new nonblank custom rule pins layer", true, false, false, true, true);
+            AssertDraftPin("typed then cleared custom rule stays automatic", false, false, false, true, false);
+            AssertVoiceWritePlan(
+                "recordless custom-only edit pins without replacing automatic base",
+                true,
+                false,
+                false,
+                false,
+                false,
+                true,
+                true);
+            AssertVoiceWritePlan(
+                "explicit pin-only transition persists displayed base",
+                true,
+                true,
+                false,
+                true,
+                false,
+                false,
+                false);
+            AssertVoiceWritePlan(
+                "base choice persists and pins without explicit pin toggle",
+                true,
+                true,
+                false,
+                false,
+                true,
+                false,
+                false);
+
+            AssertVoiceStagePreview(
+                "recordless automatic layers will be assigned",
+                true,
+                true,
+                new DiaryVoiceStagePreviewFacts
+                {
+                    recordExists = false,
+                    writingStyleManagedAutomatically = true,
+                    psychotypeManagedAutomatically = true
+                });
+            AssertVoiceStagePreview(
+                "stable saved adult voice stays exact",
+                false,
+                false,
+                new DiaryVoiceStagePreviewFacts
+                {
+                    recordExists = true,
+                    writingStyleManagedAutomatically = true,
+                    psychotypeManagedAutomatically = true,
+                    bandStamped = true,
+                    bandMatches = true,
+                    writingStyleSet = true,
+                    psychotypeSet = true
+                });
+            AssertVoiceStagePreview(
+                "stale saved band restages both automatic layers",
+                true,
+                true,
+                new DiaryVoiceStagePreviewFacts
+                {
+                    recordExists = true,
+                    writingStyleManagedAutomatically = true,
+                    psychotypeManagedAutomatically = true,
+                    bandStamped = true,
+                    bandMatches = false,
+                    writingStyleSet = true,
+                    psychotypeSet = true
+                });
+            AssertVoiceStagePreview(
+                "established legacy Neutral voice is already truthful",
+                false,
+                false,
+                new DiaryVoiceStagePreviewFacts
+                {
+                    recordExists = true,
+                    writingStyleManagedAutomatically = true,
+                    psychotypeManagedAutomatically = true,
+                    bandStamped = false,
+                    writingStyleSet = true,
+                    psychotypeSet = true,
+                    psychotypeIsNeutral = true
+                });
+            AssertVoiceStagePreview(
+                "unstamped empty legacy outlook stays conservatively provisional",
+                false,
+                true,
+                new DiaryVoiceStagePreviewFacts
+                {
+                    recordExists = true,
+                    writingStyleManagedAutomatically = true,
+                    psychotypeManagedAutomatically = true,
+                    bandStamped = false,
+                    writingStyleSet = true,
+                    psychotypeSet = false,
+                    psychotypeIsNeutral = false
+                });
+            AssertVoiceStagePreview(
+                "unstamped non-Neutral legacy outlook stays conservatively provisional",
+                false,
+                true,
+                new DiaryVoiceStagePreviewFacts
+                {
+                    recordExists = true,
+                    writingStyleManagedAutomatically = true,
+                    psychotypeManagedAutomatically = true,
+                    bandStamped = false,
+                    writingStyleSet = true,
+                    psychotypeSet = true,
+                    psychotypeIsNeutral = false
+                });
         }
 
         private static void AssertProfileDecision(
@@ -63,6 +217,110 @@ namespace DiaryPipelineTests
             {
                 throw new System.Exception(
                     label + ": expected " + expected + ", got " + actual);
+            }
+        }
+
+        private static void AssertOutlookPreview(
+            string label,
+            DiaryPawnProfileOutlookPreviewMode expected,
+            bool externalOverride,
+            int activeLaneCount,
+            int lanesAllowingPsychotypes)
+        {
+            assertions++;
+            DiaryPawnProfileOutlookPreviewMode actual =
+                DiaryPawnProfilePolicy.DecideOutlookPreview(
+                    externalOverride,
+                    activeLaneCount,
+                    lanesAllowingPsychotypes);
+            if (actual != expected)
+            {
+                throw new System.Exception(label + ": expected " + expected + ", got " + actual);
+            }
+        }
+
+        private static void AssertPreviewProvisional(
+            string label,
+            bool expected,
+            bool writingStyleMayChange,
+            bool psychotypeMayChange)
+        {
+            assertions++;
+            DiaryPawnProfilePreviewDecision actual = DiaryPawnProfilePolicy.DecidePreview(
+                DiaryPawnProfileOutlookPreviewMode.Included,
+                writingStyleMayChange,
+                psychotypeMayChange);
+            if (actual.automaticVoiceMayChange != expected)
+            {
+                throw new System.Exception(
+                    label + ": expected provisional=" + expected
+                    + ", got " + actual.automaticVoiceMayChange);
+            }
+        }
+
+        private static void AssertDraftPin(
+            string label,
+            bool expected,
+            bool draftPinned,
+            bool baseChanged,
+            bool customChanged,
+            bool customHasText)
+        {
+            assertions++;
+            bool actual = DiaryPawnProfilePolicy.ResolveDraftPin(
+                draftPinned,
+                baseChanged,
+                customChanged,
+                customHasText);
+            if (actual != expected)
+            {
+                throw new System.Exception(label + ": expected pin=" + expected + ", got " + actual);
+            }
+        }
+
+        private static void AssertVoiceWritePlan(
+            string label,
+            bool expectedPinned,
+            bool expectedPersistBase,
+            bool originalPinned,
+            bool explicitDraftPinned,
+            bool baseChanged,
+            bool customChanged,
+            bool customHasText)
+        {
+            assertions++;
+            DiaryPawnProfileVoiceWritePlan actual = DiaryPawnProfilePolicy.PlanVoiceWrite(
+                originalPinned,
+                explicitDraftPinned,
+                baseChanged,
+                customChanged,
+                customHasText);
+            if (actual.pinned != expectedPinned
+                || actual.persistDisplayedBase != expectedPersistBase)
+            {
+                throw new System.Exception(
+                    label + ": expected pin/persist-base="
+                    + expectedPinned + "/" + expectedPersistBase
+                    + ", got " + actual.pinned + "/" + actual.persistDisplayedBase);
+            }
+        }
+
+        private static void AssertVoiceStagePreview(
+            string label,
+            bool expectedWritingStyleChange,
+            bool expectedPsychotypeChange,
+            DiaryVoiceStagePreviewFacts facts)
+        {
+            assertions++;
+            DiaryVoiceStagePreviewSnapshot actual =
+                DiaryPawnProfilePolicy.DecideVoiceStagePreview(facts);
+            if (actual.writingStyleMayChange != expectedWritingStyleChange
+                || actual.psychotypeMayChange != expectedPsychotypeChange)
+            {
+                throw new System.Exception(
+                    label + ": expected style/outlook="
+                    + expectedWritingStyleChange + "/" + expectedPsychotypeChange
+                    + ", got " + actual.writingStyleMayChange + "/" + actual.psychotypeMayChange);
             }
         }
     }

@@ -74,6 +74,22 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Opens ordinary generation after the starting-arrival prerequisite finishes. The load/new-game
+        /// scan may already have consumed its one requested pass while this gate was closed, so always ask
+        /// for a fresh pass here; otherwise a not-generated page preserved during bootstrap can strand.
+        /// </summary>
+        private void CompleteInitialArrivalBootstrap()
+        {
+            if (!initialArrivalScanPending)
+            {
+                return;
+            }
+
+            initialArrivalScanPending = false;
+            RequestGenerationScan();
+        }
+
+        /// <summary>
         /// Load-time check for the arrival bootstrap: true when any free map colonist eligible for a
         /// diary has neither an arrival page nor its durable arrival knowledge yet. Mirrors
         /// TryRecordStartingColonistArrivals' iteration

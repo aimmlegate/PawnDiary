@@ -856,7 +856,7 @@ namespace PawnDiary
                     now, DiaryRoyaltyPolicy.Snapshot());
             if (initialArrivalScanPending && TryRecordStartingColonistArrivals())
             {
-                initialArrivalScanPending = false;
+                CompleteInitialArrivalBootstrap();
             }
 
             if (initialArrivalScanPending)

@@ -921,7 +921,7 @@ namespace PawnDiary
 
             if (TryRecordStartingColonistArrivals())
             {
-                initialArrivalScanPending = false;
+                CompleteInitialArrivalBootstrap();
                 return true;
             }
 
@@ -941,7 +941,7 @@ namespace PawnDiary
 
             if (TryRecordStartingColonistArrivals())
             {
-                initialArrivalScanPending = false;
+                CompleteInitialArrivalBootstrap();
                 return true;
             }
 

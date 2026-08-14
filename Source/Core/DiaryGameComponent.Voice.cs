@@ -223,6 +223,52 @@ namespace PawnDiary
             return BandForPawn(pawn);
         }
 
+        /// <summary>
+        /// Mirrors the change predicates in <see cref="EnsureVoiceStage(Pawn, PawnDiaryRecord)"/> for
+        /// the automatic layers currently visible in a profile draft. It deliberately performs no roll,
+        /// record creation, default backfill, or stage stamp, so it is safe during repeated UI draws.
+        /// </summary>
+        internal DiaryVoiceStagePreviewSnapshot VoiceStagePreviewFor(
+            Pawn pawn,
+            bool writingStyleManagedAutomatically,
+            bool psychotypeManagedAutomatically)
+        {
+            DiaryVoiceStagePreviewSnapshot snapshot = new DiaryVoiceStagePreviewSnapshot();
+            if (pawn == null)
+            {
+                return snapshot;
+            }
+
+            PawnDiaryRecord diary = LookupDiaryByPawnId(pawn.GetUniqueLoadID());
+            string targetBand = BandForPawn(pawn);
+            bool bandStamped = diary != null && !string.IsNullOrEmpty(diary.voiceStageBand);
+            return DiaryPawnProfilePolicy.DecideVoiceStagePreview(
+                new DiaryVoiceStagePreviewFacts
+                {
+                    recordExists = diary != null,
+                    writingStyleManagedAutomatically = writingStyleManagedAutomatically,
+                    psychotypeManagedAutomatically = psychotypeManagedAutomatically,
+                    bandStamped = bandStamped,
+                    bandMatches = bandStamped
+                        && string.Equals(
+                            diary.voiceStageBand,
+                            targetBand,
+                            StringComparison.OrdinalIgnoreCase),
+                    writingStyleSet = diary != null
+                        && !string.IsNullOrWhiteSpace(diary.personaDefName)
+                        && DiaryPersonas.ForDefName(diary.personaDefName) != null,
+                    psychotypeSet = diary != null && !string.IsNullOrEmpty(diary.psychotypeDefName),
+                    // An unstamped legacy record cannot be classified exactly without walking its
+                    // history. Keep this repaint-time snapshot O(1): Neutral is stable in either
+                    // generation branch, while empty/non-Neutral states are conservatively provisional.
+                    psychotypeIsNeutral = diary != null
+                        && string.Equals(
+                            diary.psychotypeDefName,
+                            DiaryPsychotypes.NeutralDefName,
+                            StringComparison.OrdinalIgnoreCase)
+                });
+        }
+
         /// <summary>This pawn's saved custom psychotype rule (player-authored), or empty.</summary>
         internal string CustomPsychotypeRuleFor(Pawn pawn)
         {

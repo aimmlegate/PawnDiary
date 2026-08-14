@@ -1,9 +1,10 @@
 // Player-facing Diary profile for one pawn. It keeps the pawn's generation switch, writing style
 // (sentence mechanics), and psychotype (outlook/temperament) in one normal-play window. Both voice
 // layers have a base picker, a read-only base preview, an editable pawn-specific custom rule, and a
-// status panel that identifies which source currently wins. A compact effective preview shows the
-// exact draft voice/outlook text without invoking prompt context providers. Developer mode appends
-// isolated sections for inspecting cultural lore and editing/removing durable important memories.
+// status panel that identifies which source currently wins. A compact draft preview shows the
+// currently represented voice/outlook text and calls out any automatic or API-lane uncertainty.
+// Developer mode appends isolated sections for inspecting cultural lore and editing/removing durable
+// important memories.
 //
 // RimWorld IMGUI draws this window repeatedly, so editable buffers live as fields and are flushed to
 // the diary record only by explicit Save — never during a draw pass. Reset changes the draft, and the
@@ -152,8 +153,11 @@ namespace PawnDiary
                 ? PsychotypeResolutionPolicy.Resolve(null, null, null, null)
                 : component.ResolvePsychotypeForDisplay(pawn);
             WritingStyleResolution styleResolution = DraftWritingStyleResolution(savedStyleResolution);
+            DiaryPawnProfilePreviewDecision previewDecision = DraftPreviewDecision(
+                styleResolution,
+                savedPsychotypeResolution);
             PsychotypeResolution psychotypeResolution =
-                DraftPsychotypeResolution(savedPsychotypeResolution);
+                DraftPsychotypeResolution(savedPsychotypeResolution, previewDecision.outlookMode);
             bool showDeveloperKnowledge = Prefs.DevMode;
             LoreMemorySnapshotForDev loreMemory = showDeveloperKnowledge
                 && component != null
@@ -176,6 +180,7 @@ namespace PawnDiary
                 innerWidth,
                 styleResolution,
                 psychotypeResolution,
+                previewDecision,
                 showDeveloperKnowledge,
                 loreMemory,
                 importantMemories);
@@ -191,7 +196,8 @@ namespace PawnDiary
                 innerWidth,
                 ref y,
                 styleResolution,
-                psychotypeResolution);
+                psychotypeResolution,
+                previewDecision);
             if (showDeveloperKnowledge)
             {
                 DrawLoreMemorySection(contentRect.x, innerWidth, ref y, loreMemory);
@@ -526,16 +532,17 @@ namespace PawnDiary
         // ---- Effective draft preview -----------------------------------------------------------------
 
         /// <summary>
-        /// Draws the exact effective voice/outlook rules represented by the current draft. It deliberately
-        /// avoids pawn-summary, memory, and external context providers: this is a compact persona preview,
-        /// not a synthetic event prompt.
+        /// Draws the voice/outlook rules represented by the current draft. It deliberately avoids
+        /// pawn-summary, memory, and external context providers: this is a compact profile preview, not a
+        /// synthetic event prompt. A notice below the frame names automatic staging or API-lane uncertainty.
         /// </summary>
         private void DrawEffectivePreviewSection(
             float x,
             float width,
             ref float y,
             WritingStyleResolution styleResolution,
-            PsychotypeResolution psychotypeResolution)
+            PsychotypeResolution psychotypeResolution,
+            DiaryPawnProfilePreviewDecision previewDecision)
         {
             y += SectionGap;
             Widgets.DrawLineHorizontal(x, y, width);
@@ -553,6 +560,15 @@ namespace PawnDiary
                 preview,
                 ref effectivePreviewScroll,
                 SmallPromptHeight) + FieldGap;
+
+            string caution = PreviewCautionMessage(previewDecision);
+            if (!string.IsNullOrWhiteSpace(caution))
+            {
+                y += DrawMessagePanel(
+                    new Rect(x, y, width, 0f),
+                    caution,
+                    new Color(0.12f, 0.10f, 0.04f, 0.55f)) + FieldGap;
+            }
         }
 
         private string EffectivePreviewText(
@@ -639,7 +655,9 @@ namespace PawnDiary
             return result;
         }
 
-        private PsychotypeResolution DraftPsychotypeResolution(PsychotypeResolution saved)
+        private PsychotypeResolution DraftPsychotypeResolution(
+            PsychotypeResolution saved,
+            DiaryPawnProfileOutlookPreviewMode outlookMode)
         {
             DiaryPsychotypeDef selected = DiaryPsychotypes.Resolve(pendingPsychotypeDefName);
             string baseRule = DiaryPsychotypes.RuleFor(selected?.defName);
@@ -650,14 +668,129 @@ namespace PawnDiary
                 saved?.externalRule);
             result.baseTypeDefName = selected?.defName ?? DiaryPsychotypes.NeutralDefName;
             result.baseTypeLabel = selected?.label ?? string.Empty;
-            if (component != null
-                && !component.PsychotypeLayerEnabled
+            if (outlookMode == DiaryPawnProfileOutlookPreviewMode.Omitted
                 && result.source != PsychotypeRuleSource.ExternalApiOverride)
             {
                 result.rule = string.Empty;
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Collects a read-only summary of preview certainty. It considers every currently usable API
+        /// lane without guessing which one dispatch will choose, and treats unpinned automatic layers as
+        /// provisional because generation may assign or age-restage them before building a request.
+        /// </summary>
+        private DiaryPawnProfilePreviewDecision DraftPreviewDecision(
+            WritingStyleResolution styleResolution,
+            PsychotypeResolution savedPsychotypeResolution)
+        {
+            int activeLaneCount = 0;
+            int lanesAllowingAutomaticPsychotype = 0;
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+            // Do not call ActiveEndpoints() from OnGUI: it normalizes the settings list. Snapshot only
+            // already-usable rows here so repeated draws stay read-only.
+            if (settings?.apiEndpoints != null)
+            {
+                for (int i = 0; i < settings.apiEndpoints.Count; i++)
+                {
+                    ApiEndpointConfig lane = settings.apiEndpoints[i];
+                    if (lane == null
+                        || !lane.enabled
+                        || string.IsNullOrWhiteSpace(lane.url)
+                        || string.IsNullOrWhiteSpace(lane.model))
+                    {
+                        continue;
+                    }
+
+                    activeLaneCount++;
+                    if (PromptContextFeaturePolicy.AllowsPsychotypes(
+                        settings.EffectiveContextDetailLevel(lane)))
+                    {
+                        lanesAllowingAutomaticPsychotype++;
+                    }
+                }
+            }
+
+            bool externalPsychotypeOverrideActive = savedPsychotypeResolution != null
+                && savedPsychotypeResolution.source == PsychotypeRuleSource.ExternalApiOverride;
+            DiaryPawnProfileOutlookPreviewMode outlookMode =
+                DiaryPawnProfilePolicy.DecideOutlookPreview(
+                    externalPsychotypeOverrideActive,
+                    activeLaneCount,
+                    lanesAllowingAutomaticPsychotype);
+
+            bool writingStyleManagedAutomatically = activeLaneCount > 0
+                && !DraftWritingStylePinned()
+                && styleResolution != null
+                && styleResolution.source == WritingStyleRuleSource.BaseStyle;
+            bool psychotypeManagedAutomatically = activeLaneCount > 0
+                && outlookMode != DiaryPawnProfileOutlookPreviewMode.Omitted
+                && !DraftPsychotypePinned()
+                && !externalPsychotypeOverrideActive
+                && string.IsNullOrWhiteSpace(PsychotypeText.CleanRule(customPsychotypeBuffer));
+            DiaryVoiceStagePreviewSnapshot stage = component == null
+                ? new DiaryVoiceStagePreviewSnapshot()
+                : component.VoiceStagePreviewFor(
+                    pawn,
+                    writingStyleManagedAutomatically,
+                    psychotypeManagedAutomatically);
+            return DiaryPawnProfilePolicy.DecidePreview(
+                outlookMode,
+                stage.writingStyleMayChange,
+                stage.psychotypeMayChange);
+        }
+
+        private bool DraftWritingStylePinned()
+        {
+            string cleaned = PlayerWritingStyleText.CleanRule(customRuleBuffer);
+            return DiaryPawnProfilePolicy.PlanVoiceWrite(
+                originalWritingStylePinned,
+                pendingWritingStylePinned,
+                !string.Equals(pendingBaseStyleDefName, originalBaseStyleDefName, StringComparison.Ordinal),
+                !string.Equals(cleaned, originalCustomRule, StringComparison.Ordinal),
+                !string.IsNullOrWhiteSpace(cleaned)).pinned;
+        }
+
+        private bool DraftPsychotypePinned()
+        {
+            string cleaned = PsychotypeText.CleanRule(customPsychotypeBuffer);
+            return DiaryPawnProfilePolicy.PlanVoiceWrite(
+                originalPsychotypePinned,
+                pendingPsychotypePinned,
+                !string.Equals(pendingPsychotypeDefName, originalPsychotypeDefName, StringComparison.Ordinal),
+                !string.Equals(cleaned, originalCustomPsychotypeRule, StringComparison.Ordinal),
+                !string.IsNullOrWhiteSpace(cleaned)).pinned;
+        }
+
+        private static string PreviewCautionMessage(DiaryPawnProfilePreviewDecision decision)
+        {
+            string message = decision.automaticVoiceMayChange
+                ? "PawnDiary.Profile.PreviewVoiceProvisional".Translate().Resolve()
+                : string.Empty;
+            string outlookMessage = string.Empty;
+            if (decision.outlookMode == DiaryPawnProfileOutlookPreviewMode.LaneDependent)
+            {
+                outlookMessage = "PawnDiary.Profile.PreviewOutlookConditional".Translate().Resolve();
+            }
+            else if (decision.outlookMode == DiaryPawnProfileOutlookPreviewMode.NoActiveLane)
+            {
+                outlookMessage = "PawnDiary.Profile.PreviewNoActiveLane".Translate().Resolve();
+            }
+            else if (decision.outlookMode == DiaryPawnProfileOutlookPreviewMode.Omitted)
+            {
+                outlookMessage = "PawnDiary.Profile.PreviewOutlookOmitted".Translate().Resolve();
+            }
+
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                return string.IsNullOrWhiteSpace(outlookMessage) ? null : outlookMessage;
+            }
+
+            return string.IsNullOrWhiteSpace(outlookMessage)
+                ? message
+                : message + "\n" + outlookMessage;
         }
 
         // ---- Shared drawing helpers -------------------------------------------------------------------
@@ -716,6 +849,7 @@ namespace PawnDiary
             float width,
             WritingStyleResolution styleResolution,
             PsychotypeResolution psychotypeResolution,
+            DiaryPawnProfilePreviewDecision previewDecision,
             bool showDeveloperKnowledge,
             LoreMemorySnapshotForDev loreMemory,
             IReadOnlyList<ImportantMemoryRecord> importantMemories)
@@ -775,6 +909,7 @@ namespace PawnDiary
                 "PawnDiary.Profile.PreviewLabel".Translate(),
                 width,
                 SmallPromptHeight) + FieldGap;
+            h += MessagePanelHeight(PreviewCautionMessage(previewDecision), width);
 
             if (showDeveloperKnowledge)
             {
@@ -894,15 +1029,11 @@ namespace PawnDiary
                 : new Color(0.05f, 0.18f, 0.10f, 0.7f);
         }
 
-        // The psychotype hint panel: a disabled-layer note, and/or an active external-override explanation.
+        // The psychotype hint panel explains an active external override. Lane-specific inclusion is
+        // summarized beside the draft preview, where it cannot be mistaken for one global switch.
         private string PsychotypeHintMessage(PsychotypeResolution resolution)
         {
             string message = null;
-            if (component != null && !component.PsychotypeLayerEnabled)
-            {
-                message = "PawnDiary.Psychotype.Disabled".Translate();
-            }
-
             if (resolution != null && resolution.source == PsychotypeRuleSource.ExternalApiOverride)
             {
                 string source = string.IsNullOrWhiteSpace(resolution.externalSourceId)
@@ -1061,24 +1192,31 @@ namespace PawnDiary
                 StringComparison.Ordinal);
 
             // A changed base pick or newly edited nonblank rule pins the corresponding layer. A saved,
-            // nonblank-but-unpinned custom rule must remain unpinned when Save makes no changes.
-            if (writingBaseChanged
-                || (writingCustomChanged && !string.IsNullOrWhiteSpace(cleanedWritingRule)))
-            {
-                pendingWritingStylePinned = true;
-            }
-
-            if (psychotypeBaseChanged
-                || (psychotypeCustomChanged && !string.IsNullOrWhiteSpace(cleanedPsychotypeRule)))
-            {
-                pendingPsychotypePinned = true;
-            }
+            // nonblank-but-unpinned custom rule must remain unpinned when Save makes no changes. Use the
+            // same pure decision as the read-only preview so both agree about automatic staging.
+            DiaryPawnProfileVoiceWritePlan writingWritePlan =
+                DiaryPawnProfilePolicy.PlanVoiceWrite(
+                originalWritingStylePinned,
+                pendingWritingStylePinned,
+                writingBaseChanged,
+                writingCustomChanged,
+                !string.IsNullOrWhiteSpace(cleanedWritingRule));
+            DiaryPawnProfileVoiceWritePlan psychotypeWritePlan =
+                DiaryPawnProfilePolicy.PlanVoiceWrite(
+                originalPsychotypePinned,
+                pendingPsychotypePinned,
+                psychotypeBaseChanged,
+                psychotypeCustomChanged,
+                !string.IsNullOrWhiteSpace(cleanedPsychotypeRule));
+            bool resolvedWritingStylePinned = writingWritePlan.pinned;
+            bool resolvedPsychotypePinned = psychotypeWritePlan.pinned;
 
             // Writing style. Only write the base style when the player actually changed it: for a pawn
             // with no record yet, SetPersona would create+roll a record and then overwrite the fresh roll
-            // with the seeded default, silently discarding the pawn's rolled style.
+            // with the seeded default, silently discarding the pawn's rolled style. A custom-only edit
+            // must preserve that roll even though Save auto-pins the custom rule.
             if (!string.IsNullOrWhiteSpace(pendingBaseStyleDefName)
-                && writingBaseChanged)
+                && writingWritePlan.persistDisplayedBase)
             {
                 ok &= component.SetPersona(pawn, pendingBaseStyleDefName);
             }
@@ -1088,16 +1226,17 @@ namespace PawnDiary
                 ok &= component.SetCustomWritingStyleRule(pawn, cleanedWritingRule);
             }
 
-            if (pendingWritingStylePinned != originalWritingStylePinned)
+            if (resolvedWritingStylePinned != originalWritingStylePinned)
             {
-                ok &= component.SetWritingStylePinned(pawn, pendingWritingStylePinned);
+                ok &= component.SetWritingStylePinned(pawn, resolvedWritingStylePinned);
             }
 
             // Psychotype. Same first-time-roll guard as the writing style: only write the base outlook
             // when the player changed it, so opening + saving unchanged does not replace a freshly rolled
-            // outlook with the seeded Neutral default.
+            // outlook with the seeded Neutral default. An explicit pin is the exception: persist the
+            // exact base shown in the draft before pinning, while a custom-only auto-pin keeps the roll.
             if (!string.IsNullOrWhiteSpace(pendingPsychotypeDefName)
-                && psychotypeBaseChanged)
+                && psychotypeWritePlan.persistDisplayedBase)
             {
                 ok &= component.SetPsychotype(pawn, pendingPsychotypeDefName);
             }
@@ -1107,9 +1246,9 @@ namespace PawnDiary
                 ok &= component.SetCustomPsychotypeRule(pawn, cleanedPsychotypeRule);
             }
 
-            if (pendingPsychotypePinned != originalPsychotypePinned)
+            if (resolvedPsychotypePinned != originalPsychotypePinned)
             {
-                ok &= component.SetPsychotypePinned(pawn, pendingPsychotypePinned);
+                ok &= component.SetPsychotypePinned(pawn, resolvedPsychotypePinned);
             }
 
             // Generation is deliberately last. A failed/ineligible voice save must never resume queued
