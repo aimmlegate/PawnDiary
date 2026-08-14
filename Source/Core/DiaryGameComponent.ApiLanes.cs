@@ -1,8 +1,9 @@
 // API lane selection for LLM generation: given the active endpoints, pick the primary lane for a
 // request (spreading new events across lanes, pinning the recipient of a paired event to the
 // initiator's lane so a sequential pair shares one model), build the ordered failover list, and
-// emit the one-line English debug diagnostics (never API keys). These helpers are shared by the
-// queue choke point (DiaryGameComponent.GenerationDispatch.cs) and the title follow-up.
+// emit the one-line English debug diagnostics (never API keys). It also exposes a read-only lane-shape
+// snapshot for the pawn-profile preview. These helpers are shared by the queue choke point
+// (DiaryGameComponent.GenerationDispatch.cs), the title follow-up, and that profile adapter.
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,57 @@ namespace PawnDiary
 {
     public partial class DiaryGameComponent
     {
+        /// <summary>
+        /// Projects the request shapes the pawn-profile preview must represent without calling
+        /// <see cref="PawnDiarySettings.ActiveEndpoints"/>, which normalizes/mutates saved settings and is
+        /// therefore unsafe during repeated IMGUI draws. Prompt-test mode uses its one synthetic global
+        /// context exactly like <c>QueuePrompt</c>; an empty/null list represents the default lane that
+        /// <c>ActiveEndpoints</c> would materialize when a real request is queued.
+        /// </summary>
+        internal DiaryPawnProfileApiLaneSnapshot ApiLanePreviewForProfile()
+        {
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+            if (settings == null)
+            {
+                return new DiaryPawnProfileApiLaneSnapshot();
+            }
+
+            bool configuredLaneListMissingOrEmpty = settings.apiEndpoints == null
+                || settings.apiEndpoints.Count == 0;
+            bool promptTestMode = PromptTestModeEnabled();
+            int activeConfiguredLaneCount = 0;
+            int configuredLanesAllowingAutomaticPsychotype = 0;
+            if (!configuredLaneListMissingOrEmpty && !promptTestMode)
+            {
+                for (int i = 0; i < settings.apiEndpoints.Count; i++)
+                {
+                    ApiEndpointConfig lane = settings.apiEndpoints[i];
+                    if (lane == null
+                        || !lane.enabled
+                        || string.IsNullOrWhiteSpace(lane.url)
+                        || string.IsNullOrWhiteSpace(lane.model))
+                    {
+                        continue;
+                    }
+
+                    activeConfiguredLaneCount++;
+                    if (PromptContextFeaturePolicy.AllowsPsychotypes(
+                        settings.EffectiveContextDetailLevel(lane)))
+                    {
+                        configuredLanesAllowingAutomaticPsychotype++;
+                    }
+                }
+            }
+
+            return DiaryPawnProfilePolicy.DecideApiLanePreview(
+                promptTestMode,
+                configuredLaneListMissingOrEmpty,
+                PromptContextFeaturePolicy.AllowsPsychotypes(
+                    PawnDiarySettings.NormalizeContextDetailLevel(settings.contextDetailLevel)),
+                activeConfiguredLaneCount,
+                configuredLanesAllowingAutomaticPsychotype);
+        }
+
         /// <summary>
         /// Chooses the primary API lane for a request from the given active lanes (non-empty).
         /// The recipient of a paired event reuses the lane the initiator used — matched

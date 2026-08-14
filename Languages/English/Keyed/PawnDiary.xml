@@ -1672,7 +1672,7 @@
   <PawnDiary.Profile.PreviewFrame>Outlook ({0}):\n{1}\n\nWriting style ({2}):\n{3}</PawnDiary.Profile.PreviewFrame>
   <PawnDiary.Profile.PreviewVoiceProvisional>Unpinned automatic voice layers are provisional here. Before a request, they may be assigned or re-staged for this pawn's current age.</PawnDiary.Profile.PreviewVoiceProvisional>
   <PawnDiary.Profile.PreviewOutlookConditional>Outlook inclusion is lane-dependent. The API lane used for a request may include or omit this layer according to its context-detail setting.</PawnDiary.Profile.PreviewOutlookConditional>
-  <PawnDiary.Profile.PreviewOutlookOmitted>Every active API lane currently omits the automatic outlook layer at its context-detail setting.</PawnDiary.Profile.PreviewOutlookOmitted>
+  <PawnDiary.Profile.PreviewOutlookOmitted>Every currently available request context omits the automatic outlook layer at its context-detail setting.</PawnDiary.Profile.PreviewOutlookOmitted>
   <PawnDiary.Profile.PreviewNoActiveLane>No active API lane is configured, so there is no current request profile to preview.</PawnDiary.Profile.PreviewNoActiveLane>
   <PawnDiary.Profile.SourceBase>base</PawnDiary.Profile.SourceBase>
   <PawnDiary.Profile.SourceCustom>custom</PawnDiary.Profile.SourceCustom>

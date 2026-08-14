@@ -81,18 +81,56 @@ namespace DiaryPipelineTests
                 true,
                 0,
                 0);
+            AssertApiLanePreview(
+                "prompt-test mode uses one synthetic Full request",
+                1,
+                1,
+                true,
+                false,
+                true,
+                0,
+                0);
+            AssertApiLanePreview(
+                "prompt-test Compact ignores configured lane overrides",
+                1,
+                0,
+                true,
+                false,
+                false,
+                2,
+                1);
+            AssertApiLanePreview(
+                "empty configured list previews the default global lane",
+                1,
+                1,
+                false,
+                true,
+                true,
+                0,
+                0);
+            AssertApiLanePreview(
+                "configured mixed lanes retain their own counts",
+                2,
+                1,
+                false,
+                false,
+                false,
+                2,
+                1);
 
             AssertPreviewProvisional("stable saved voice", false, false, false);
             AssertPreviewProvisional("style assignment pending", true, true, false);
             AssertPreviewProvisional("outlook restage pending", true, false, true);
 
-            AssertDraftPin("unchanged unpinned layer stays automatic", false, false, false, false, false);
-            AssertDraftPin("changed base pins layer", true, false, true, false, false);
-            AssertDraftPin("new nonblank custom rule pins layer", true, false, false, true, true);
-            AssertDraftPin("typed then cleared custom rule stays automatic", false, false, false, true, false);
+            AssertDraftPin("unchanged unpinned layer stays automatic", false, false, false, false, false, false);
+            AssertDraftPin("changed base pins layer", true, false, false, true, false, false);
+            AssertDraftPin("new nonblank custom rule pins layer", true, false, false, false, true, true);
+            AssertDraftPin("typed then cleared custom rule stays automatic", false, false, false, false, true, false);
+            AssertDraftPin("explicit unpin wins over a changed base", false, false, true, true, false, false);
             AssertVoiceWritePlan(
                 "recordless custom-only edit pins without replacing automatic base",
                 true,
+                false,
                 false,
                 false,
                 false,
@@ -105,6 +143,7 @@ namespace DiaryPipelineTests
                 true,
                 false,
                 true,
+                true,
                 false,
                 false,
                 false);
@@ -114,6 +153,17 @@ namespace DiaryPipelineTests
                 true,
                 false,
                 false,
+                false,
+                true,
+                false,
+                false);
+            AssertVoiceWritePlan(
+                "explicit unpin remains authoritative after a base choice",
+                false,
+                true,
+                false,
+                false,
+                true,
                 true,
                 false,
                 false);
@@ -167,6 +217,20 @@ namespace DiaryPipelineTests
                     psychotypeManagedAutomatically = true,
                     bandStamped = false,
                     writingStyleSet = true,
+                    psychotypeSet = true,
+                    psychotypeIsNeutral = true
+                });
+            AssertVoiceStagePreview(
+                "unstamped missing legacy style receives a fallback",
+                true,
+                false,
+                new DiaryVoiceStagePreviewFacts
+                {
+                    recordExists = true,
+                    writingStyleManagedAutomatically = true,
+                    psychotypeManagedAutomatically = true,
+                    bandStamped = false,
+                    writingStyleSet = false,
                     psychotypeSet = true,
                     psychotypeIsNeutral = true
                 });
@@ -258,10 +322,40 @@ namespace DiaryPipelineTests
             }
         }
 
+        private static void AssertApiLanePreview(
+            string label,
+            int expectedActiveLaneCount,
+            int expectedLanesAllowingPsychotype,
+            bool promptTestMode,
+            bool configuredLaneListMissingOrEmpty,
+            bool globalContextAllowsPsychotype,
+            int activeConfiguredLaneCount,
+            int configuredLanesAllowingPsychotype)
+        {
+            assertions++;
+            DiaryPawnProfileApiLaneSnapshot actual =
+                DiaryPawnProfilePolicy.DecideApiLanePreview(
+                    promptTestMode,
+                    configuredLaneListMissingOrEmpty,
+                    globalContextAllowsPsychotype,
+                    activeConfiguredLaneCount,
+                    configuredLanesAllowingPsychotype);
+            if (actual.activeLaneCount != expectedActiveLaneCount
+                || actual.lanesAllowingAutomaticPsychotype != expectedLanesAllowingPsychotype)
+            {
+                throw new System.Exception(
+                    label + ": expected active/allowing="
+                    + expectedActiveLaneCount + "/" + expectedLanesAllowingPsychotype
+                    + ", got " + actual.activeLaneCount + "/"
+                    + actual.lanesAllowingAutomaticPsychotype);
+            }
+        }
+
         private static void AssertDraftPin(
             string label,
             bool expected,
             bool draftPinned,
+            bool pinChoiceExplicitlyEdited,
             bool baseChanged,
             bool customChanged,
             bool customHasText)
@@ -269,6 +363,7 @@ namespace DiaryPipelineTests
             assertions++;
             bool actual = DiaryPawnProfilePolicy.ResolveDraftPin(
                 draftPinned,
+                pinChoiceExplicitlyEdited,
                 baseChanged,
                 customChanged,
                 customHasText);
@@ -283,7 +378,8 @@ namespace DiaryPipelineTests
             bool expectedPinned,
             bool expectedPersistBase,
             bool originalPinned,
-            bool explicitDraftPinned,
+            bool draftPinned,
+            bool pinChoiceExplicitlyEdited,
             bool baseChanged,
             bool customChanged,
             bool customHasText)
@@ -291,7 +387,8 @@ namespace DiaryPipelineTests
             assertions++;
             DiaryPawnProfileVoiceWritePlan actual = DiaryPawnProfilePolicy.PlanVoiceWrite(
                 originalPinned,
-                explicitDraftPinned,
+                draftPinned,
+                pinChoiceExplicitlyEdited,
                 baseChanged,
                 customChanged,
                 customHasText);

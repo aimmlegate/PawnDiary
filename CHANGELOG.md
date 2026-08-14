@@ -8,6 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-08-13
 
+- **Per-pawn diary profiles.** Pawn-specific generation pauses, pinned voice/outlook drafts, and lane-aware previews now resume safely with backlog confirmation and title catch-up.
 - **Diary frequency runtime hardening.** Independent admission rolls now cover direct fan-outs, settle owned fallbacks, survive thin ambient save flushes, and preserve add-on preset/API compatibility.
 - **Third-party hediff label isolation.** Broken optional-mod label getters now degrade to fallback text without aborting diary dispatch or observed-condition ticks.
 

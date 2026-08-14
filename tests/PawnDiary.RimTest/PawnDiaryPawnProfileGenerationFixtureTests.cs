@@ -12,6 +12,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using HarmonyLib;
 using PawnDiary.Capture;
 using PawnDiary.Ingestion;
 using RimWorld;
@@ -48,9 +49,16 @@ namespace PawnDiary.RimTests
             typeof(DiaryGameComponent).GetMethod(
                 "HasCompletedMainTextNeedingTitle",
                 PrivateStatic);
+        private static readonly MethodInfo LlmEnqueueMethod =
+            typeof(LlmClient).GetMethod(
+                "Enqueue",
+                BindingFlags.Static | BindingFlags.Public);
 
         private static PawnDiaryRimTestScope scope;
         private static Pawn pawn;
+        private static string interceptedTitleEventId;
+        private static string interceptedTitlePovRole;
+        private static LlmGenerationRequest interceptedTitleRequest;
 
         /// <summary>
         /// Starts with one eligible, generation-disabled colonist and Prompt Test Mode enabled. The
@@ -358,6 +366,127 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// A neutral arrival can finish its main prose while its exact owner is disabled, which blocks the
+        /// normal title follow-up. Re-enabling that pawn must revisit the already-complete neutral slot and
+        /// queue its title without requeueing or replacing the completed main text. The transport prefix is
+        /// a test-only safety boundary: it captures the fully built title request and suppresses provider IO.
+        /// </summary>
+        [Test]
+        public static void ResumeQueuesMissingTitleForCompletedNeutralArrival()
+        {
+            if (LlmEnqueueMethod == null)
+            {
+                throw new AssertionException(
+                    "The profile fixture could not locate the LLM enqueue transport boundary.");
+            }
+
+            string pawnId = pawn.GetUniqueLoadID();
+            DiaryEvent arrival = scope.Component.AddSoloEvent(
+                pawn,
+                null,
+                ArrivalSignal.ArrivalDefName,
+                "pawn profile title-resume fixture",
+                "A completed arrival page lost its title follow-up while generation was paused.",
+                string.Empty,
+                ArrivalEventData.BuildGameContext(
+                    pawn.LabelShortCap,
+                    pawnId,
+                    "arrival_source=pawn_profile_title_resume_fixture"));
+            Require(arrival != null, "The title-resume fixture could not seed a neutral arrival page.");
+            Require(
+                arrival.IsArrivalDescriptionFor(pawnId),
+                "The title-resume arrival did not identify the profile pawn as its exact owner.");
+            arrival.MarkInjectedTextComplete(
+                DiaryEvent.NeutralRole,
+                "I had already finished writing about my arrival.");
+
+            PawnDiaryRecord diary = RequireDiaryIndex()[pawnId];
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+            bool originalGenerationEnabled = diary.diaryGenerationEnabled;
+            bool originalGenerateTitles = settings.generateTitles;
+            bool originalPromptTestMode = settings.promptTestMode;
+            List<ApiEndpointConfig> originalEndpoints = settings.apiEndpoints;
+            string harmonyId =
+                "PawnDiary.RimTest.ProfileTitleResume." + Guid.NewGuid().ToString("N");
+            Harmony transportIntercept = new Harmony(harmonyId);
+            try
+            {
+                Require(
+                    !originalGenerationEnabled,
+                    "The title-resume fixture pawn did not begin with generation disabled.");
+                Require(
+                    originalPromptTestMode,
+                    "The title-resume fixture lost its Prompt Test Mode safety rail.");
+                Require(
+                    MissingTitleIsQueueable(arrival, DiaryEvent.NeutralRole),
+                    "The completed neutral arrival was not eligible for its missing title follow-up.");
+
+                interceptedTitleEventId = arrival.eventId;
+                interceptedTitlePovRole = DiaryEvent.NeutralRole;
+                interceptedTitleRequest = null;
+                transportIntercept.Patch(
+                    LlmEnqueueMethod,
+                    prefix: new HarmonyMethod(
+                        typeof(PawnDiaryPawnProfileGenerationFixtureTests),
+                        nameof(InterceptLlmEnqueueWithoutProvider)));
+
+                settings.generateTitles = true;
+                settings.apiEndpoints = new List<ApiEndpointConfig>
+                {
+                    new ApiEndpointConfig(
+                        "http://127.0.0.1:1/v1",
+                        string.Empty,
+                        "pawndiary-rimtest-intercepted-title")
+                };
+                // QueueTitleRequest intentionally exits in Prompt Test Mode. The transport is already
+                // intercepted above, so temporarily cross only that guard to exercise the complete
+                // production title planner without permitting a provider request.
+                settings.promptTestMode = false;
+
+                scope.Component.SetDiaryGenerationEnabled(pawn, true);
+
+                Require(
+                    diary.diaryGenerationEnabled,
+                    "Resuming the profile did not persist the pawn's enabled generation flag.");
+                Require(
+                    DiaryEvent.RoleEquals(
+                        arrival.StatusForRole(DiaryEvent.NeutralRole),
+                        DiaryEvent.CompleteStatus)
+                        && arrival.HasGeneratedTextForRole(DiaryEvent.NeutralRole)
+                        && string.Equals(
+                            arrival.DisplayTextForRole(DiaryEvent.NeutralRole),
+                            "I had already finished writing about my arrival.",
+                            StringComparison.Ordinal),
+                    "Title-only resume changed or requeued the completed neutral main text.");
+                Require(
+                    arrival.IsTitlePending(DiaryEvent.NeutralRole),
+                    "Resuming the profile did not mark the missing neutral title as queued.");
+                Require(
+                    interceptedTitleRequest != null
+                        && interceptedTitleRequest.isTitleRequest
+                        && string.Equals(
+                            interceptedTitleRequest.eventId,
+                            arrival.eventId,
+                            StringComparison.Ordinal)
+                        && DiaryEvent.RoleEquals(
+                            interceptedTitleRequest.povRole,
+                            DiaryEvent.NeutralRole),
+                    "The resume path did not send the completed neutral slot to the title queue boundary.");
+            }
+            finally
+            {
+                transportIntercept.UnpatchAll(harmonyId);
+                diary.diaryGenerationEnabled = originalGenerationEnabled;
+                settings.generateTitles = originalGenerateTitles;
+                settings.promptTestMode = originalPromptTestMode;
+                settings.apiEndpoints = originalEndpoints;
+                interceptedTitleEventId = null;
+                interceptedTitlePovRole = null;
+                interceptedTitleRequest = null;
+            }
+        }
+
+        /// <summary>
         /// A load/new-game generation pass can run while the starting-arrival prerequisite still blocks
         /// ordinary pages. The profile must keep that deferred page visible, and completing bootstrap must
         /// request another pass instead of leaving the page stranded until an unrelated later trigger.
@@ -529,6 +658,24 @@ namespace PawnDiary.RimTests
             return (bool)HasCompletedMainTextNeedingTitleMethod.Invoke(
                 null,
                 new object[] { page, povRole });
+        }
+
+        /// <summary>
+        /// Harmony prefix used only by the title-resume fixture. It captures the target request at the
+        /// last boundary before background transport and suppresses every enqueue while installed, so a
+        /// failing assertion can never contact either the synthetic endpoint or the player's providers.
+        /// </summary>
+        private static bool InterceptLlmEnqueueWithoutProvider(LlmGenerationRequest request)
+        {
+            if (request != null
+                && request.isTitleRequest
+                && string.Equals(request.eventId, interceptedTitleEventId, StringComparison.Ordinal)
+                && DiaryEvent.RoleEquals(request.povRole, interceptedTitlePovRole))
+            {
+                interceptedTitleRequest = request;
+            }
+
+            return false;
         }
 
         /// <summary>

@@ -41,6 +41,10 @@ namespace PawnDiary
         private readonly string originalCustomPsychotypeRule;
         private readonly bool originalPsychotypePinned;
         private bool pendingPsychotypePinned;
+        // Automatic pinning mirrors a manual base/custom choice in the checkbox immediately. Once the
+        // player clicks the checkbox, that explicit draft choice wins and later typing must not re-pin it.
+        private bool psychotypePinChoiceExplicitlyEdited;
+        private bool psychotypeBaseExplicitlyChosen;
 
         // ---- Diary-generation draft ----
         // These open-time values keep the visible status stable. A fresh backlog scan is allowed only
@@ -401,12 +405,19 @@ namespace PawnDiary
                 if (component != null)
                 {
                     pendingPsychotypeDefName = component.RollPsychotypePreview(pawn);
-                    pendingPsychotypePinned = true; // an explicit re-roll pins the result
+                    psychotypeBaseExplicitlyChosen = true;
+                    RefreshAutomaticPsychotypePin();
                 }
             }
 
             TooltipHandler.TipRegion(rerollRect, "PawnDiary.Psychotype.RerollTip".Translate());
+            bool pinnedBeforeCheckbox = pendingPsychotypePinned;
             Widgets.CheckboxLabeled(pinRect, "PawnDiary.Psychotype.Pinned".Translate(), ref pendingPsychotypePinned);
+            if (pendingPsychotypePinned != pinnedBeforeCheckbox)
+            {
+                psychotypePinChoiceExplicitlyEdited = true;
+            }
+
             TooltipHandler.TipRegion(pinRect, "PawnDiary.Psychotype.PinnedTip".Translate());
             y += controlRows * ButtonHeight
                 + (controlRows - 1) * PsychotypeControlGap
@@ -429,10 +440,13 @@ namespace PawnDiary
                 ref psychotypeCustomScroll,
                 SmallPromptHeight,
                 editable: true,
-                // Pin state is decided from the final buffer at Save (see Save), never per keystroke, so
-                // typing a custom outlook and then clearing it does not leave the layer pinned. Mirrors
-                // the writing-style custom field above.
-                editedText: text => customPsychotypeBuffer = ClampInput(text, PsychotypeText.MaxCustomRuleChars))
+                editedText: text =>
+                {
+                    customPsychotypeBuffer = ClampInput(text, PsychotypeText.MaxCustomRuleChars);
+                    // Keep the visible checkbox aligned with Save. An explicit checkbox click makes the
+                    // player's choice authoritative, so subsequent keystrokes cannot re-pin it.
+                    RefreshAutomaticPsychotypePin();
+                })
                 + FieldGap;
 
             string hint = PsychotypeHintMessage(resolution);
@@ -473,6 +487,7 @@ namespace PawnDiary
                         StringComparison.Ordinal))
                 {
                     customPsychotypeBuffer = component.CustomPsychotypeRuleFor(pawn);
+                    RefreshAutomaticPsychotypePin();
                 }
 
                 awaitingRegen = false;
@@ -521,6 +536,8 @@ namespace PawnDiary
                             if (option != null)
                             {
                                 pendingPsychotypeDefName = option.defName;
+                                psychotypeBaseExplicitlyChosen = true;
+                                RefreshAutomaticPsychotypePin();
                             }
                         });
                     })
@@ -686,32 +703,10 @@ namespace PawnDiary
             WritingStyleResolution styleResolution,
             PsychotypeResolution savedPsychotypeResolution)
         {
-            int activeLaneCount = 0;
-            int lanesAllowingAutomaticPsychotype = 0;
-            PawnDiarySettings settings = PawnDiaryMod.Settings;
-            // Do not call ActiveEndpoints() from OnGUI: it normalizes the settings list. Snapshot only
-            // already-usable rows here so repeated draws stay read-only.
-            if (settings?.apiEndpoints != null)
-            {
-                for (int i = 0; i < settings.apiEndpoints.Count; i++)
-                {
-                    ApiEndpointConfig lane = settings.apiEndpoints[i];
-                    if (lane == null
-                        || !lane.enabled
-                        || string.IsNullOrWhiteSpace(lane.url)
-                        || string.IsNullOrWhiteSpace(lane.model))
-                    {
-                        continue;
-                    }
-
-                    activeLaneCount++;
-                    if (PromptContextFeaturePolicy.AllowsPsychotypes(
-                        settings.EffectiveContextDetailLevel(lane)))
-                    {
-                        lanesAllowingAutomaticPsychotype++;
-                    }
-                }
-            }
+            DiaryPawnProfileApiLaneSnapshot lanes = component == null
+                ? new DiaryPawnProfileApiLaneSnapshot()
+                : component.ApiLanePreviewForProfile();
+            int activeLaneCount = lanes.activeLaneCount;
 
             bool externalPsychotypeOverrideActive = savedPsychotypeResolution != null
                 && savedPsychotypeResolution.source == PsychotypeRuleSource.ExternalApiOverride;
@@ -719,7 +714,7 @@ namespace PawnDiary
                 DiaryPawnProfilePolicy.DecideOutlookPreview(
                     externalPsychotypeOverrideActive,
                     activeLaneCount,
-                    lanesAllowingAutomaticPsychotype);
+                    lanes.lanesAllowingAutomaticPsychotype);
 
             bool writingStyleManagedAutomatically = activeLaneCount > 0
                 && !DraftWritingStylePinned()
@@ -748,6 +743,7 @@ namespace PawnDiary
             return DiaryPawnProfilePolicy.PlanVoiceWrite(
                 originalWritingStylePinned,
                 pendingWritingStylePinned,
+                false,
                 !string.Equals(pendingBaseStyleDefName, originalBaseStyleDefName, StringComparison.Ordinal),
                 !string.Equals(cleaned, originalCustomRule, StringComparison.Ordinal),
                 !string.IsNullOrWhiteSpace(cleaned)).pinned;
@@ -758,10 +754,46 @@ namespace PawnDiary
             string cleaned = PsychotypeText.CleanRule(customPsychotypeBuffer);
             return DiaryPawnProfilePolicy.PlanVoiceWrite(
                 originalPsychotypePinned,
-                pendingPsychotypePinned,
-                !string.Equals(pendingPsychotypeDefName, originalPsychotypeDefName, StringComparison.Ordinal),
+                PsychotypeDraftPinIntent(),
+                psychotypePinChoiceExplicitlyEdited,
+                PsychotypeBaseEdited(),
                 !string.Equals(cleaned, originalCustomPsychotypeRule, StringComparison.Ordinal),
                 !string.IsNullOrWhiteSpace(cleaned)).pinned;
+        }
+
+        // Until the checkbox itself is clicked, its visible value is a projection of the same automatic
+        // pin rules Save uses. Feed the saved pin to the policy so a custom-only auto-pin does not masquerade
+        // as an explicit request to persist the seeded base over a record's first automatic roll.
+        private bool PsychotypeDraftPinIntent()
+        {
+            return psychotypePinChoiceExplicitlyEdited
+                ? pendingPsychotypePinned
+                : originalPsychotypePinned;
+        }
+
+        private bool PsychotypeBaseEdited()
+        {
+            return psychotypeBaseExplicitlyChosen
+                || !string.Equals(
+                    pendingPsychotypeDefName,
+                    originalPsychotypeDefName,
+                    StringComparison.Ordinal);
+        }
+
+        private void RefreshAutomaticPsychotypePin()
+        {
+            if (psychotypePinChoiceExplicitlyEdited)
+            {
+                return;
+            }
+
+            string cleaned = PsychotypeText.CleanRule(customPsychotypeBuffer);
+            pendingPsychotypePinned = DiaryPawnProfilePolicy.ResolveDraftPin(
+                originalPsychotypePinned,
+                false,
+                PsychotypeBaseEdited(),
+                !string.Equals(cleaned, originalCustomPsychotypeRule, StringComparison.Ordinal),
+                !string.IsNullOrWhiteSpace(cleaned));
         }
 
         private static string PreviewCautionMessage(DiaryPawnProfilePreviewDecision decision)
@@ -1181,6 +1213,7 @@ namespace PawnDiary
                 pendingPsychotypeDefName,
                 originalPsychotypeDefName,
                 StringComparison.Ordinal);
+            bool psychotypeBaseEdited = psychotypeBaseExplicitlyChosen || psychotypeBaseChanged;
 
             bool writingCustomChanged = !string.Equals(
                 cleanedWritingRule,
@@ -1198,14 +1231,16 @@ namespace PawnDiary
                 DiaryPawnProfilePolicy.PlanVoiceWrite(
                 originalWritingStylePinned,
                 pendingWritingStylePinned,
+                false,
                 writingBaseChanged,
                 writingCustomChanged,
                 !string.IsNullOrWhiteSpace(cleanedWritingRule));
             DiaryPawnProfileVoiceWritePlan psychotypeWritePlan =
                 DiaryPawnProfilePolicy.PlanVoiceWrite(
                 originalPsychotypePinned,
-                pendingPsychotypePinned,
-                psychotypeBaseChanged,
+                PsychotypeDraftPinIntent(),
+                psychotypePinChoiceExplicitlyEdited,
+                psychotypeBaseEdited,
                 psychotypeCustomChanged,
                 !string.IsNullOrWhiteSpace(cleanedPsychotypeRule));
             bool resolvedWritingStylePinned = writingWritePlan.pinned;
@@ -1280,6 +1315,9 @@ namespace PawnDiary
             customPsychotypeBuffer = string.Empty;
             pendingWritingStylePinned = false;
             pendingPsychotypePinned = false;
+            psychotypeBaseExplicitlyChosen = false;
+            // Reset explicitly presents an unpinned draft; later typing must not silently reverse it.
+            psychotypePinChoiceExplicitlyEdited = true;
         }
 
         // ---- Small helpers ----------------------------------------------------------------------------

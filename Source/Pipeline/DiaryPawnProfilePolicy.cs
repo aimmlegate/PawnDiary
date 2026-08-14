@@ -47,6 +47,13 @@ namespace PawnDiary
         public DiaryPawnProfileOutlookPreviewMode outlookMode;
     }
 
+    /// <summary>Read-only API-lane facts projected by the game/settings adapter for the pure policy.</summary>
+    internal struct DiaryPawnProfileApiLaneSnapshot
+    {
+        public int activeLaneCount;
+        public int lanesAllowingAutomaticPsychotype;
+    }
+
     /// <summary>Resolved pin state plus whether Save must persist the displayed base first.</summary>
     internal struct DiaryPawnProfileVoiceWritePlan
     {
@@ -103,14 +110,21 @@ namespace PawnDiary
 
         /// <summary>
         /// Returns the pin state that Save will persist for one draft voice layer. A changed base or
-        /// newly authored nonblank custom rule is an explicit manual choice and therefore pins it.
+        /// newly authored nonblank custom rule auto-pins it unless the player explicitly edited a visible
+        /// pin checkbox; in that case the checkbox is authoritative even when the rule also changed.
         /// </summary>
         public static bool ResolveDraftPin(
             bool draftPinned,
+            bool pinChoiceExplicitlyEdited,
             bool baseChanged,
             bool customChanged,
             bool customRuleHasText)
         {
+            if (pinChoiceExplicitlyEdited)
+            {
+                return draftPinned;
+            }
+
             return draftPinned || baseChanged || (customChanged && customRuleHasText);
         }
 
@@ -121,20 +135,25 @@ namespace PawnDiary
         /// </summary>
         public static DiaryPawnProfileVoiceWritePlan PlanVoiceWrite(
             bool originalPinned,
-            bool explicitDraftPinned,
+            bool draftPinned,
+            bool pinChoiceExplicitlyEdited,
             bool baseChanged,
             bool customChanged,
             bool customRuleHasText)
         {
+            bool resolvedPinned = ResolveDraftPin(
+                draftPinned,
+                pinChoiceExplicitlyEdited,
+                baseChanged,
+                customChanged,
+                customRuleHasText);
             return new DiaryPawnProfileVoiceWritePlan
             {
-                pinned = ResolveDraftPin(
-                    explicitDraftPinned,
-                    baseChanged,
-                    customChanged,
-                    customRuleHasText),
+                pinned = resolvedPinned,
                 persistDisplayedBase = baseChanged
-                    || (!originalPinned && explicitDraftPinned)
+                    || (!originalPinned
+                        && pinChoiceExplicitlyEdited
+                        && draftPinned)
             };
         }
 
@@ -173,6 +192,37 @@ namespace PawnDiary
             return outlookMode;
         }
 
+        /// <summary>
+        /// Mirrors the request-shape precedence around API lanes after the settings adapter has projected
+        /// plain counts. Developer prompt-test mode uses one synthetic global-context request; a missing or
+        /// empty configured list becomes the one default lane at dispatch; otherwise configured lanes win.
+        /// </summary>
+        public static DiaryPawnProfileApiLaneSnapshot DecideApiLanePreview(
+            bool promptTestMode,
+            bool configuredLaneListMissingOrEmpty,
+            bool globalContextAllowsAutomaticPsychotype,
+            int activeConfiguredLaneCount,
+            int configuredLanesAllowingAutomaticPsychotype)
+        {
+            if (promptTestMode || configuredLaneListMissingOrEmpty)
+            {
+                return new DiaryPawnProfileApiLaneSnapshot
+                {
+                    activeLaneCount = 1,
+                    lanesAllowingAutomaticPsychotype = globalContextAllowsAutomaticPsychotype ? 1 : 0
+                };
+            }
+
+            int activeCount = Math.Max(0, activeConfiguredLaneCount);
+            return new DiaryPawnProfileApiLaneSnapshot
+            {
+                activeLaneCount = activeCount,
+                lanesAllowingAutomaticPsychotype = Math.Max(
+                    0,
+                    Math.Min(activeCount, configuredLanesAllowingAutomaticPsychotype))
+            };
+        }
+
         /// <summary>Combines the lane summary with a read-only adapter's exact stage-change predicates.</summary>
         public static DiaryPawnProfilePreviewDecision DecidePreview(
             DiaryPawnProfileOutlookPreviewMode outlookMode,
@@ -208,8 +258,9 @@ namespace PawnDiary
             bool bandChanged = facts.bandStamped && !facts.bandMatches;
             DiaryVoiceStagePreviewSnapshot snapshot = new DiaryVoiceStagePreviewSnapshot
             {
+                // A legacy unstamped style is retained only when it is valid. Missing/unknown styles still
+                // fall back during EnsureVoiceStage, so the preview must remain provisional in that case.
                 writingStyleMayChange = facts.writingStyleManagedAutomatically
-                    && !legacyUnstamped
                     && (bandChanged || !facts.writingStyleSet)
             };
 

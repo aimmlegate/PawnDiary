@@ -1618,7 +1618,7 @@
   <PawnDiary.Profile.PreviewFrame>Мироощущение ({0}):\n{1}\n\nМанера письма ({2}):\n{3}</PawnDiary.Profile.PreviewFrame>
   <PawnDiary.Profile.PreviewVoiceProvisional>Незакреплённые автоматические слои голоса здесь предварительны. Перед запросом они могут быть назначены или обновлены с учётом текущего возраста персонажа.</PawnDiary.Profile.PreviewVoiceProvisional>
   <PawnDiary.Profile.PreviewOutlookConditional>Включение мироощущения зависит от канала API. В запросе этот слой может быть включён или пропущен согласно настройке подробности контекста выбранного канала.</PawnDiary.Profile.PreviewOutlookConditional>
-  <PawnDiary.Profile.PreviewOutlookOmitted>При текущих настройках подробности контекста все активные каналы API пропускают автоматический слой мироощущения.</PawnDiary.Profile.PreviewOutlookOmitted>
+  <PawnDiary.Profile.PreviewOutlookOmitted>При текущих настройках подробности все доступные контексты запросов пропускают автоматический слой мироощущения.</PawnDiary.Profile.PreviewOutlookOmitted>
   <PawnDiary.Profile.PreviewNoActiveLane>Нет настроенного активного канала API, поэтому сейчас невозможно показать профиль запроса.</PawnDiary.Profile.PreviewNoActiveLane>
   <PawnDiary.Profile.SourceBase>базовое правило</PawnDiary.Profile.SourceBase>
   <PawnDiary.Profile.SourceCustom>своё правило</PawnDiary.Profile.SourceCustom>
