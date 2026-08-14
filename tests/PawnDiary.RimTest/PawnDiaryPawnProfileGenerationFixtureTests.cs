@@ -1,5 +1,5 @@
 // Loaded-game coverage for the pawn profile's per-pawn generation switch, mutation-free reads,
-// backlog preview, and the Reset voice draft/Save boundary.
+// backlog preview, captured-memory drafts, and the Reset voice draft/Save boundary.
 //
 // The profile dialog must inspect saved state without creating or normalizing a diary record. When a
 // disabled pawn has resumable pages, the count shown before Save must also predict what the existing
@@ -23,8 +23,9 @@ using Verse;
 namespace PawnDiary.RimTests
 {
     /// <summary>
-    /// Proves the profile read model is mutation-free, Reset preserves independent memory/generation
-    /// state, and resumable counts align with the existing per-pawn queue for every POV shape.
+    /// Proves the profile read model is mutation-free, footer Save commits memory drafts safely,
+    /// Reset preserves independent memory/generation state, and resumable counts align with the
+    /// existing per-pawn queue for every POV shape.
     /// </summary>
     [TestSuite]
     public static class PawnDiaryPawnProfileGenerationFixtureTests
@@ -58,6 +59,10 @@ namespace PawnDiary.RimTests
             typeof(Dialog_PawnWritingStyle).GetMethod("ResetToBase", PrivateInstance);
         private static readonly MethodInfo SaveProfileDraftMethod =
             typeof(Dialog_PawnWritingStyle).GetMethod("Save", PrivateInstance);
+        private static readonly MethodInfo BeginMemoryEditMethod =
+            typeof(Dialog_PawnWritingStyle).GetMethod("BeginMemoryEdit", PrivateInstance);
+        private static readonly FieldInfo MemoryEditBufferField =
+            typeof(Dialog_PawnWritingStyle).GetField("memoryEditBuffer", PrivateInstance);
 
         private static PawnDiaryRimTestScope scope;
         private static Pawn pawn;
@@ -189,6 +194,85 @@ namespace PawnDiary.RimTests
                     background,
                     StringComparison.Ordinal),
                 "Reset voice + Save changed or removed the pawn's background memory.");
+        }
+
+        /// <summary>
+        /// The fixed footer Save is a real commit boundary for the active captured-memory editor. An
+        /// unchanged rendered fallback must remain template-owned, while changed text is persisted and
+        /// a later blank draft clears that override back to the fallback.
+        /// </summary>
+        [Test]
+        public static void FooterSaveCommitsMemoryDraftWithoutFreezingRenderedFallback()
+        {
+            if (SaveProfileDraftMethod == null
+                || BeginMemoryEditMethod == null
+                || MemoryEditBufferField == null)
+            {
+                throw new AssertionException(
+                    "The profile fixture could not locate the memory-edit/footer-Save surface.");
+            }
+
+            PawnDiaryRecord diary;
+            Require(
+                RequireDiaryIndex().TryGetValue(pawn.GetUniqueLoadID(), out diary) && diary != null,
+                "The footer memory fixture could not find the setup pawn's diary row.");
+            const string recordId = "PawnDiary_RimTest_ProfileFooterMemory";
+            const string renderedFallback = "I joined the colony beneath a hard spring rain.";
+            ImportantMemoryRecord savedRecord = new ImportantMemoryRecord
+            {
+                recordId = recordId,
+                dedupKey = recordId,
+                sourceEventId = "PawnDiary_RimTest_ProfileFooterEvent",
+                sourceKind = KnowledgeTokens.SourceKindCaptured,
+                recallScope = KnowledgeTokens.RecallScopeContextual,
+                eventKind = "rimtest.profile.footer",
+                tick = Find.TickManager.TicksGame,
+                fallbackSummary = renderedFallback
+            };
+            diary.EnsureKnowledgeState().records.Add(savedRecord);
+
+            ImportantMemoryRecordSnapshot snapshot = RequireMemorySnapshot(recordId);
+            Dialog_PawnWritingStyle unchangedDialog =
+                new Dialog_PawnWritingStyle(pawn, scope.Component);
+            BeginMemoryEditMethod.Invoke(
+                unchangedDialog,
+                new object[] { snapshot, renderedFallback });
+            object unchangedSaved = SaveProfileDraftMethod.Invoke(
+                unchangedDialog,
+                new object[] { false });
+            Require(
+                unchangedSaved is bool
+                    && (bool)unchangedSaved
+                    && string.IsNullOrEmpty(savedRecord.manualTextOverride),
+                "Unchanged Edit + footer Save froze rendered fallback text as a manual override.");
+
+            const string editedText = "I chose this colony after the spring rain.";
+            snapshot = RequireMemorySnapshot(recordId);
+            Dialog_PawnWritingStyle editedDialog =
+                new Dialog_PawnWritingStyle(pawn, scope.Component);
+            BeginMemoryEditMethod.Invoke(editedDialog, new object[] { snapshot, renderedFallback });
+            MemoryEditBufferField.SetValue(editedDialog, editedText);
+            object editedSaved = SaveProfileDraftMethod.Invoke(editedDialog, new object[] { false });
+            Require(
+                editedSaved is bool
+                    && (bool)editedSaved
+                    && string.Equals(
+                        savedRecord.manualTextOverride,
+                        editedText,
+                        StringComparison.Ordinal),
+                "Footer Save reported success without committing the active memory draft.");
+
+            snapshot = RequireMemorySnapshot(recordId);
+            Dialog_PawnWritingStyle clearedDialog =
+                new Dialog_PawnWritingStyle(pawn, scope.Component);
+            BeginMemoryEditMethod.Invoke(clearedDialog, new object[] { snapshot, editedText });
+            MemoryEditBufferField.SetValue(clearedDialog, string.Empty);
+            object clearedSaved = SaveProfileDraftMethod.Invoke(clearedDialog, new object[] { false });
+            Require(
+                clearedSaved is bool
+                    && (bool)clearedSaved
+                    && string.IsNullOrEmpty(savedRecord.manualTextOverride),
+                "Blank footer Save did not clear the manual override back to rendered fallback text.");
         }
 
         /// <summary>
@@ -775,6 +859,24 @@ namespace PawnDiary.RimTests
             bool inIndex = index.ContainsKey(pawnId);
             Require(inRows == inIndex, "The raw diary list and pawn-id index disagreed for the fixture pawn.");
             return inRows;
+        }
+
+        private static ImportantMemoryRecordSnapshot RequireMemorySnapshot(string recordId)
+        {
+            IReadOnlyList<ImportantMemoryRecordSnapshot> memories =
+                scope.Component.ImportantMemoriesForProfile(pawn);
+            for (int i = 0; i < memories.Count; i++)
+            {
+                ImportantMemoryRecordSnapshot record = memories[i];
+                if (record != null
+                    && string.Equals(record.recordId, recordId, StringComparison.Ordinal))
+                {
+                    return record;
+                }
+            }
+
+            throw new AssertionException(
+                "The profile fixture could not find captured-memory snapshot " + recordId + ".");
         }
 
         private static List<PawnDiaryRecord> RequireDiaryRows()

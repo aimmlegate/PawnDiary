@@ -24,6 +24,7 @@ namespace DiaryPatchManifestTests
             TestResetAndSnapshotCopy();
             TestPatchCircuitBreaker();
             TestIndependentActionsContinueAfterFailure();
+            TestBrainwipeNoticeCannotBlockArrivalOrMainCircuit();
             TestLivePawnSnapshotIncludesTravellingTransporters();
             TestErrorTransportCannotBypassLocalLog();
             Console.WriteLine("DiaryPatchManifestTests passed " + assertions + " assertions.");
@@ -250,6 +251,50 @@ namespace DiaryPatchManifestTests
             AssertEqual("third action ran after first failed", 2, ran[2]);
             AssertEqual("fourth action ran after reporter failed", 3, ran[3]);
             AssertEqual("later action failures are still reported", 2, reports);
+        }
+
+        private static void TestBrainwipeNoticeCannotBlockArrivalOrMainCircuit()
+        {
+            string root = FindRepositoryRoot();
+            string source = File.ReadAllText(Path.Combine(
+                root,
+                "Source",
+                "Patches",
+                "DiaryEventSignalPatches.cs"));
+            int patchStart = source.IndexOf(
+                "internal static class PsychicRitualBrainwipeOutcomePatch",
+                StringComparison.Ordinal);
+            int patchEnd = source.IndexOf(
+                "// Fires after a pawn ability",
+                patchStart,
+                StringComparison.Ordinal);
+            AssertTrue(
+                "Brainwipe patch source region remains discoverable",
+                patchStart >= 0 && patchEnd > patchStart);
+
+            string patch = source.Substring(patchStart, patchEnd - patchStart);
+            int mainContext = patch.IndexOf(
+                "DiaryPatchSafety.Run(\"PsychicRitualBrainwipeOutcomePatch\"",
+                StringComparison.Ordinal);
+            int arrival = patch.IndexOf(
+                "DiaryEvents.Submit(new BrainwipeArrivalSignal(target));",
+                StringComparison.Ordinal);
+            int noticeContext = patch.IndexOf(
+                "PsychicRitualBrainwipeOutcomePatch.HistoryClearedNotice",
+                StringComparison.Ordinal);
+
+            AssertTrue("Brainwipe cleanup keeps its main safety context", mainContext >= 0);
+            AssertTrue(
+                "Brainwipe arrival is submitted inside the main safety context",
+                arrival > mainContext);
+            AssertTrue(
+                "optional Brainwipe notice runs after the essential arrival submission",
+                noticeContext > arrival);
+            AssertTrue(
+                "optional Brainwipe notice has a distinct safety context",
+                noticeContext >= 0
+                    && patch.IndexOf("ShowHistoryClearedNotice);", StringComparison.Ordinal)
+                        > noticeContext);
         }
 
         private static void TestLivePawnSnapshotIncludesTravellingTransporters()

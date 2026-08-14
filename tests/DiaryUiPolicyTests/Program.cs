@@ -1,4 +1,4 @@
-// Standalone tests for pure diary UI cache and responsive-layout decisions.
+// Standalone tests for pure diary UI cache, responsive-layout, and editor-save decisions.
 using System;
 using PawnDiary;
 
@@ -14,6 +14,8 @@ namespace DiaryUiPolicyTests
             TestReaderDirectorySessionIdentity();
             TestInlineYearSelector();
             TestPsychotypeControlRows();
+            TestMemoryDraftPersistence();
+            TestProtectedMemoryActions();
 
             Console.WriteLine("DiaryUiPolicyTests passed: " + assertions + " assertions.");
             return 0;
@@ -118,6 +120,42 @@ namespace DiaryUiPolicyTests
                 1,
                 DiaryUiPolicy.PsychotypeControlRowCount(100f, -1f, -1f, -1f, -1f),
                 "negative component dimensions are clamped");
+        }
+
+        private static void TestMemoryDraftPersistence()
+        {
+            False(
+                DiaryUiPolicy.MemoryDraftNeedsPersistence(
+                    "A colonist joined the settlement.",
+                    "A colonist joined the settlement."),
+                "an unchanged rendered template remains a no-op");
+            False(
+                DiaryUiPolicy.MemoryDraftNeedsPersistence(null, string.Empty),
+                "missing and blank canonical text are equivalent");
+            True(
+                DiaryUiPolicy.MemoryDraftNeedsPersistence(
+                    "A colonist joined the settlement.",
+                    "They chose to stay with us."),
+                "edited prose must be persisted by either memory Save or profile Save");
+            True(
+                DiaryUiPolicy.MemoryDraftNeedsPersistence(
+                    "A manually overridden memory.",
+                    string.Empty),
+                "clearing an override must persist so the localized template is restored");
+        }
+
+        private static void TestProtectedMemoryActions()
+        {
+            const string protectedKind = "status.faction.joined";
+            False(
+                DiaryUiPolicy.ShouldOfferMemoryRemove(protectedKind, protectedKind),
+                "the protected faction-joining lifecycle row has no misleading Remove action");
+            True(
+                DiaryUiPolicy.ShouldOfferMemoryRemove("social.marriage", protectedKind),
+                "ordinary captured memories remain removable");
+            True(
+                DiaryUiPolicy.ShouldOfferMemoryRemove(protectedKind, null),
+                "a missing protected token must not hide every Remove action");
         }
 
         private static void True(bool value, string message)

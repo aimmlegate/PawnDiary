@@ -21,13 +21,14 @@
 //   9. Conversion channel: adopted culture REPLACES on each conversion and each conversion is
 //      recorded (§4.1).
 //  10. Role channel: an ideological role change is remembered WITHOUT creating a diary page.
-//  11. Defensive caps: insert/global adapters drop captured rows but preserve canonical backgrounds.
+//  11. Defensive caps: background creation plus insert/global adapters drop disposable captured rows
+//      but preserve canonical backgrounds and captured arrival lifecycle boundaries.
 //  12. Annotation: a themed prompt carries the pawn's culture clause inline; an ordinary chat
 //      prompt does not carry that clause (§4.3).
-//  13. Normal profile endpoints detach captured rows, guard ownership, create/update/delete one
-//      bounded background singleton, and freeze edits for future events only.
+//  13. Normal profile endpoints detach captured rows, guard ownership and the arrival lifecycle marker,
+//      create/update/delete one bounded background singleton, and freeze edits for future events only.
 //  14. Legacy developer editor endpoints stay hidden/disabled outside Dev Mode, update only rendered
-//      prose, and remove exactly the addressed record without touching another pawn's memory.
+//      prose, and retain diagnostic removal for lifecycle-owned captured rows.
 //  15. The same developer window receives a detached lore view with culture provenance, resolved
 //      clauses, lexical/structured matchers, and the active injection-switch state.
 //
@@ -556,6 +557,78 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// A disabled arrival page leaves faction-joined knowledge as the load bootstrap's only durable
+        /// one-time boundary. Normal profile deletion must preserve it, while the explicitly Dev-gated
+        /// diagnostic remover remains able to repair captured lifecycle rows deliberately without
+        /// broadening into player/background deletion.
+        /// </summary>
+        [Test]
+        public static void ProfileRemovalPreservesArrivalBoundaryWhileDevRepairsCapturedRows()
+        {
+            PawnKnowledgeState state = KnowledgeFor(pawnA);
+            string recordId = pawnA.GetUniqueLoadID() + "|rimtest-arrival-boundary";
+            state.records.Add(new ImportantMemoryRecord
+            {
+                recordId = recordId,
+                dedupKey = recordId,
+                sourceKind = KnowledgeTokens.SourceKindCaptured,
+                recallScope = KnowledgeTokens.RecallScopeContextual,
+                eventKind = KnowledgeTokens.EventKindFactionJoined,
+                tick = Find.TickManager.TicksGame,
+                fallbackSummary = "Joined the colony."
+            });
+            const string backgroundText = "I remember the old landing site.";
+            Require(
+                scope.Component.TrySetBackgroundMemoryForProfile(pawnA, backgroundText),
+                "The arrival-boundary fixture could not seed its canonical background control.");
+            string backgroundRecordId =
+                PlayerMemoryPolicy.CanonicalBackstoryRecordId(pawnA.GetUniqueLoadID());
+
+            int versionBefore = DiaryStateVersion.Current;
+            bool originalDevMode = Prefs.DevMode;
+            try
+            {
+                Prefs.DevMode = false;
+                Require(
+                    !scope.Component.TryRemoveImportantMemoryForProfile(pawnA, recordId)
+                        && ContainsRecordId(state, recordId),
+                    "Normal profile removal deleted the faction-joined load-bootstrap boundary.");
+                Require(
+                    DiaryStateVersion.Current == versionBefore,
+                    "Rejecting arrival-boundary removal unexpectedly invalidated saved/UI state.");
+
+                Prefs.DevMode = true;
+                Require(
+                    !scope.Component.TryRemoveImportantMemoryForDev(pawnA, backgroundRecordId)
+                        && scope.Component.BackgroundMemoryForProfile(pawnA) == backgroundText,
+                    "Dev lifecycle repair broadened into deleting player/background rows.");
+
+                string savedStateOwner = state.pawnId;
+                try
+                {
+                    state.pawnId = pawnB.GetUniqueLoadID();
+                    Require(
+                        !scope.Component.TryRemoveImportantMemoryForDev(pawnA, recordId)
+                            && ContainsRecordId(state, recordId),
+                        "Dev lifecycle repair bypassed the profile's exact saved-state owner guard.");
+                }
+                finally
+                {
+                    state.pawnId = savedStateOwner;
+                }
+
+                Require(
+                    scope.Component.TryRemoveImportantMemoryForDev(pawnA, recordId)
+                        && !ContainsRecordId(state, recordId),
+                    "The Dev-only diagnostic remover no longer permits deliberate lifecycle repair.");
+            }
+            finally
+            {
+                Prefs.DevMode = originalDevMode;
+            }
+        }
+
+        /// <summary>
         /// The lore-memory endpoint is guarded by Dev Mode and exposes the current XML policy as a
         /// detached view: profile status, clauses, and the localized prose terms developers need
         /// to diagnose why a topic did or did not annotate a prompt.
@@ -988,12 +1061,13 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
-        /// Both impure eviction adapters must project the canonical protection bit. Insert-time
-        /// enforcement drops the newly captured row before the singleton, and the detached global scan
-        /// drops captured rows while terminating safely when every remaining row is protected.
+        /// All impure retention adapters must project the centralized protection decision. Creating a
+        /// background into a full store, inserting after a background, and inserting after a captured
+        /// arrival boundary all drop disposable prose first; the global scan preserves both protected
+        /// record classes.
         /// </summary>
         [Test]
-        public static void ProtectedBackgroundSurvivesInsertionAndGlobalEvictionAdapters()
+        public static void ProtectedLifecycleMemoriesSurviveInsertionAndGlobalEvictionAdapters()
         {
             DiaryKnowledgeTuningDef tuning =
                 DefDatabase<DiaryKnowledgeTuningDef>.GetNamedSilentFail("Diary_Knowledge");
@@ -1012,6 +1086,33 @@ namespace PawnDiary.RimTests
             int savedGlobalCap = tuning.maxRecordsGlobal;
             try
             {
+                tuning.maxRecordsPerPawn = 1;
+                Pawn backgroundCreationOwner = scope.CreateAdultColonist();
+                string backgroundCreationOwnerId = backgroundCreationOwner.GetUniqueLoadID();
+                PawnKnowledgeState backgroundCreationState = KnowledgeFor(backgroundCreationOwner);
+                backgroundCreationState.records.Add(new ImportantMemoryRecord
+                {
+                    recordId = "PawnDiary_RimTest_BackgroundCreateCaptured",
+                    dedupKey = "PawnDiary_RimTest_BackgroundCreateCaptured",
+                    sourceEventId = "PawnDiary_RimTest_BackgroundCreateEvent",
+                    sourceKind = KnowledgeTokens.SourceKindCaptured,
+                    recallScope = KnowledgeTokens.RecallScopeContextual,
+                    eventKind = "relation.spouse.gained",
+                    tick = 100,
+                    fallbackSummary = "Old captured row."
+                });
+                Require(
+                    scope.Component.TrySetBackgroundMemoryForProfile(
+                        backgroundCreationOwner,
+                        "I grew up repairing greenhouse heaters."),
+                    "The background-creation cap fixture could not create its canonical row.");
+                Require(
+                    backgroundCreationState.records.Count == 1
+                        && IsCanonicalBackground(
+                            backgroundCreationState.records[0],
+                            backgroundCreationOwnerId),
+                    "Background creation left its owner over cap or evicted protected canon.");
+
                 Pawn insertionOwner = scope.CreateAdultColonist();
                 string insertionOwnerId = insertionOwner.GetUniqueLoadID();
                 Require(
@@ -1021,7 +1122,6 @@ namespace PawnDiary.RimTests
                     "The insertion-eviction fixture could not seed its canonical background.");
                 PawnKnowledgeState insertionState = KnowledgeFor(insertionOwner);
 
-                tuning.maxRecordsPerPawn = 1;
                 AddRomancePairEvent(insertionOwner, pawnB, "Spouse", "married");
                 Require(
                     insertionState.records.Count == 1
@@ -1029,6 +1129,20 @@ namespace PawnDiary.RimTests
                             insertionState.records[0],
                             insertionOwnerId),
                     "Insert-time cap enforcement evicted the canonical background before captured prose.");
+
+                Pawn arrivalInsertionOwner = scope.CreateAdultColonist();
+                string arrivalInsertionOwnerId = arrivalInsertionOwner.GetUniqueLoadID();
+                PawnKnowledgeState arrivalInsertionState = KnowledgeFor(arrivalInsertionOwner);
+                ImportantMemoryRecord arrivalBoundary =
+                    NewArrivalBoundaryRecord(arrivalInsertionOwnerId);
+                arrivalInsertionState.records.Add(arrivalBoundary);
+                AddRomancePairEvent(arrivalInsertionOwner, pawnB, "Lover", "lover");
+                Require(
+                    arrivalInsertionState.records.Count == 1
+                        && ContainsRecordId(
+                            arrivalInsertionState,
+                            arrivalBoundary.recordId),
+                    "Insert-time cap enforcement evicted the faction-joined lifecycle boundary.");
 
                 // Route the mixed row through the global adapter's per-owner plan. Keeping the global
                 // cap non-binding avoids consuming production's one-shot global-cap warning in a test.
@@ -1069,9 +1183,8 @@ namespace PawnDiary.RimTests
                 PawnDiaryRecord firstProtected = NewIsolatedBackgroundDiary(
                     "PawnDiary_RimTest_GlobalProtectedA",
                     "I remember the northern coast.");
-                PawnDiaryRecord secondProtected = NewIsolatedBackgroundDiary(
-                    "PawnDiary_RimTest_GlobalProtectedB",
-                    "I remember the desert road.");
+                PawnDiaryRecord secondProtected = NewIsolatedArrivalDiary(
+                    "PawnDiary_RimTest_GlobalProtectedArrival");
                 DiaryGameComponent protectedOnlyComponent = (DiaryGameComponent)
                     FormatterServices.GetUninitializedObject(typeof(DiaryGameComponent));
                 DiariesField.SetValue(
@@ -1081,7 +1194,7 @@ namespace PawnDiary.RimTests
                 Require(
                     firstProtected.EnsureKnowledgeState().records.Count == 1
                         && secondProtected.EnsureKnowledgeState().records.Count == 1,
-                    "The global adapter deleted a canonical row when every candidate was protected.");
+                    "The global adapter deleted a canonical background or arrival lifecycle boundary.");
             }
             finally
             {
@@ -1399,6 +1512,34 @@ namespace PawnDiary.RimTests
 
             state.records.Add(ImportantMemoryRecord.FromSnapshot(plan.record));
             return diary;
+        }
+
+        /// <summary>Builds one detached diary containing only captured arrival lifecycle knowledge.</summary>
+        private static PawnDiaryRecord NewIsolatedArrivalDiary(string ownerPawnId)
+        {
+            PawnDiaryRecord diary = new PawnDiaryRecord
+            {
+                pawnId = ownerPawnId,
+                pawnName = ownerPawnId
+            };
+            diary.EnsureKnowledgeState().records.Add(NewArrivalBoundaryRecord(ownerPawnId));
+            return diary;
+        }
+
+        /// <summary>Builds the captured/contextual record that owns a disabled-page arrival boundary.</summary>
+        private static ImportantMemoryRecord NewArrivalBoundaryRecord(string ownerPawnId)
+        {
+            string recordId = ownerPawnId + "|arrival-boundary";
+            return new ImportantMemoryRecord
+            {
+                recordId = recordId,
+                dedupKey = recordId,
+                sourceKind = KnowledgeTokens.SourceKindCaptured,
+                recallScope = KnowledgeTokens.RecallScopeContextual,
+                eventKind = KnowledgeTokens.EventKindFactionJoined,
+                tick = 0,
+                fallbackSummary = "Joined the colony."
+            };
         }
 
         /// <summary>Checks the saved scalar identity used by both runtime eviction adapters.</summary>

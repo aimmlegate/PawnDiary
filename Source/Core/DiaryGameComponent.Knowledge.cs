@@ -635,16 +635,31 @@ namespace PawnDiary
                 }
 
                 state.records.Add(ImportantMemoryRecord.FromSnapshot(draft.record));
-                int cap = Math.Max(0, policy.maxRecordsPerPawn);
-                while (state.records.Count > cap && state.records.Count > 0)
+                EnforcePerPawnKnowledgeCap(state, policy.maxRecordsPerPawn);
+            }
+        }
+
+        /// <summary>
+        /// Applies the insert-time per-pawn cap while preserving protected player/background canon and
+        /// captured arrival lifecycle boundaries.
+        /// Shared by gameplay capture and explicit profile creation so both mutation paths have the
+        /// same immediate retention semantics; the separate global cap remains cadence/pre-save work.
+        /// </summary>
+        private static void EnforcePerPawnKnowledgeCap(PawnKnowledgeState state, int configuredCap)
+        {
+            if (state?.records == null)
+            {
+                return;
+            }
+
+            int cap = Math.Max(0, configuredCap);
+            while (state.records.Count > cap && state.records.Count > 0)
+            {
+                if (!RemoveOldestRecord(state))
                 {
-                    if (!RemoveOldestRecord(state))
-                    {
-                        // A protected player/background singleton still counts toward the cap but
-                        // may never be auto-evicted. Stop instead of looping forever when it is the
-                        // only row left to consider.
-                        break;
-                    }
+                    // Protected player background and arrival lifecycle rows still count toward the
+                    // cap but may never be auto-evicted. Stop when no disposable row remains.
+                    break;
                 }
             }
         }
@@ -662,7 +677,7 @@ namespace PawnDiary
                     break;
                 }
 
-                if (PlayerMemoryPolicy.IsCanonicalBackstory(
+                if (PlayerMemoryPolicy.IsProtectedFromAutomaticEviction(
                     state.pawnId,
                     candidate.recordId,
                     candidate.dedupKey,
@@ -1136,7 +1151,7 @@ namespace PawnDiary
                                 recordId = record.recordId,
                                 tick = record.tick,
                                 protectedFromAutomaticEviction =
-                                    PlayerMemoryPolicy.IsCanonicalBackstory(
+                                    PlayerMemoryPolicy.IsProtectedFromAutomaticEviction(
                                         state.pawnId,
                                         record.recordId,
                                         record.dedupKey,

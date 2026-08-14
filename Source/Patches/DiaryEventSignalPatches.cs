@@ -939,6 +939,8 @@ namespace PawnDiary
     [HarmonyPatch(typeof(PsychicRitualToil_Brainwipe), "ApplyOutcome")]
     internal static class PsychicRitualBrainwipeOutcomePatch
     {
+        private static Action<Pawn> historyClearedNoticeOverrideForTests;
+
         /// <summary>
         /// Harmony Postfix for the private vanilla outcome method. A Postfix ensures Pawn Diary changes
         /// only after RimWorld has successfully applied its own brainwipe to the same target.
@@ -959,33 +961,62 @@ namespace PawnDiary
                 }
 
                 bool removedPlayerBackground = component.ForgetDiaryHistory(target);
-                if (removedPlayerBackground)
+                // Establish the essential post-wipe autobiographical boundary before attempting the
+                // optional player notice. Translation or another mod's Messages.Message patch may fail;
+                // neither may suppress this signal or disable future Brainwipe cleanup.
+                DiaryEvents.Submit(new BrainwipeArrivalSignal(target));
+                if (!removedPlayerBackground)
                 {
-                    // Brainwipe has already happened by the time this Postfix runs, so this is
-                    // deliberately a non-blocking notice rather than a confirmation that could promise
-                    // cancellation. Resolve the frame without translation arguments: RimWorld's
-                    // argument formatter can recase player-visible pawn names after punctuation.
-                    string noticeFrame = "PawnDiary.Profile.BrainwipeHistoryCleared"
-                        .Translate()
-                        .Resolve();
-                    string clearedNotice;
-                    try
-                    {
-                        clearedNotice = string.Format(noticeFrame, target.LabelShortCap);
-                    }
-                    catch (FormatException)
-                    {
-                        clearedNotice = noticeFrame.Replace("{0}", target.LabelShortCap);
-                    }
-
-                    Messages.Message(
-                        clearedNotice,
-                        MessageTypeDefOf.NeutralEvent,
-                        historical: false);
+                    return;
                 }
 
-                DiaryEvents.Submit(new BrainwipeArrivalSignal(target));
+                DiaryPatchSafety.Run(
+                    "PsychicRitualBrainwipeOutcomePatch.HistoryClearedNotice",
+                    target,
+                    ShowHistoryClearedNotice);
             });
+        }
+
+        /// <summary>
+        /// Loaded-test seam for forcing the optional notice adapter to fail without patching RimWorld's
+        /// global message bus. Passing null restores the real translated notice.
+        /// </summary>
+        internal static void SetHistoryClearedNoticeOverrideForTests(Action<Pawn> callback)
+        {
+            historyClearedNoticeOverrideForTests = callback;
+        }
+
+        private static void ShowHistoryClearedNotice(Pawn target)
+        {
+            Action<Pawn> callback = historyClearedNoticeOverrideForTests;
+            if (callback != null)
+            {
+                callback(target);
+                return;
+            }
+
+            // Brainwipe has already happened by the time this Postfix runs, so this is deliberately a
+            // non-blocking notice rather than a confirmation that could promise cancellation. Resolve
+            // the frame without translation arguments: RimWorld's argument formatter can recase
+            // player-visible pawn names after punctuation. This patch runs on RimWorld's main thread,
+            // where Translate() is safe.
+            string noticeFrame = "PawnDiary.Profile.BrainwipeHistoryCleared"
+                .Translate()
+                .Resolve();
+            string clearedNotice;
+            try
+            {
+                clearedNotice = string.Format(noticeFrame, target.LabelShortCap);
+            }
+            catch (FormatException)
+            {
+                clearedNotice = noticeFrame.Replace("{0}", target.LabelShortCap);
+            }
+
+            Messages.Message(
+                clearedNotice,
+                MessageTypeDefOf.NeutralEvent,
+                historical: false);
         }
     }
 

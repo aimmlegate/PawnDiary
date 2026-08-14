@@ -1,6 +1,6 @@
-// PlayerMemoryPolicy.cs — pure ownership, validation, and mutation planning for the pawn profile's
-// one player-authored background-memory record. The UI and GameComponent pass detached snapshots
-// here; this file never reads Pawn, Verse, Defs, settings, or save objects.
+// PlayerMemoryPolicy.cs — pure ownership, validation, mutation planning, and retention protection
+// for the pawn profile's saved memories. The UI and GameComponent pass detached snapshots or scalar
+// record fields here; this file never reads Pawn, Verse, Defs, settings, or save objects.
 //
 // The background is factual memory, not persona instruction text. Its exact owner-bound identity
 // prevents one pawn's profile from editing another pawn, while create/update plans contain no
@@ -42,7 +42,10 @@ namespace PawnDiary
         public ImportantMemoryRecordSnapshot record;
     }
 
-    /// <summary>Pure policy for the canonical player-authored background-memory singleton.</summary>
+    /// <summary>
+    /// Pure policy for the canonical player-authored background singleton and saved lifecycle rows
+    /// that normal profile removal or automatic cap enforcement must preserve.
+    /// </summary>
     internal static class PlayerMemoryPolicy
     {
         /// <summary>Returns the owner-bound stable record ID, or blank when the owner is invalid.</summary>
@@ -132,6 +135,61 @@ namespace PawnDiary
                     KnowledgeTokens.SourceKindPlayer, StringComparison.Ordinal)
                 && string.Equals(NormalizeRecallScope(recallScope),
                     KnowledgeTokens.RecallScopeBackground, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// True when this exact owner's detached row is protected from automatic eviction and normal
+        /// profile removal: either canonical player background or captured faction-joined lifecycle
+        /// knowledge. The owner check prevents a detached row from borrowing another profile's canon.
+        /// </summary>
+        public static bool IsProtectedFromAutomaticEviction(
+            ImportantMemoryRecordSnapshot record,
+            string ownerPawnId)
+        {
+            string owner = NormalizeOwnerPawnId(ownerPawnId);
+            return record != null
+                && string.Equals(record.ownerPawnId ?? string.Empty, owner, StringComparison.Ordinal)
+                && IsProtectedFromAutomaticEviction(
+                    owner,
+                    record.recordId,
+                    record.dedupKey,
+                    record.eventKind,
+                    record.sourceKind,
+                    record.recallScope);
+        }
+
+        /// <summary>
+        /// Allocation-free form for persistence adapters whose owning state supplies the pawn id.
+        /// Missing/legacy provenance fields normalize to captured/contextual, so an old arrival marker
+        /// remains protected after migration just like a newly captured one.
+        /// </summary>
+        public static bool IsProtectedFromAutomaticEviction(
+            string ownerPawnId,
+            string recordId,
+            string dedupKey,
+            string eventKind,
+            string sourceKind,
+            string recallScope)
+        {
+            return IsCanonicalBackstory(
+                    ownerPawnId,
+                    recordId,
+                    dedupKey,
+                    eventKind,
+                    sourceKind,
+                    recallScope)
+                || (string.Equals(
+                        eventKind ?? string.Empty,
+                        KnowledgeTokens.EventKindFactionJoined,
+                        StringComparison.Ordinal)
+                    && string.Equals(
+                        NormalizeSourceKind(sourceKind),
+                        KnowledgeTokens.SourceKindCaptured,
+                        StringComparison.Ordinal)
+                    && string.Equals(
+                        NormalizeRecallScope(recallScope),
+                        KnowledgeTokens.RecallScopeContextual,
+                        StringComparison.Ordinal));
         }
 
         /// <summary>

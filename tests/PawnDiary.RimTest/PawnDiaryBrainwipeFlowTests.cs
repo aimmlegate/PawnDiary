@@ -6,6 +6,7 @@
 //   1. DiaryGameComponent.ForgetDiaryHistory clears only autobiographical history.
 //   2. BrainwipeArrivalSignal creates the first anxious-amnesiac page after that reset.
 //   3. PsychicRitualBrainwipeOutcomePatch obeys the Anomaly ownership gate in the loaded profile.
+//   4. A translated-notice failure cannot suppress that boundary or disable a later reset.
 //
 // All pawns and repository rows belong to PawnDiaryRimTestScope. The archive and day-digest rows
 // seeded below use those disposable pawn IDs and receive explicit emergency cleanup callbacks, so a
@@ -47,6 +48,7 @@ namespace PawnDiary.RimTests
         public static void SetUp()
         {
             RequireReflectionSurface();
+            PsychicRitualBrainwipeOutcomePatch.SetHistoryClearedNoticeOverrideForTests(null);
             scope = PawnDiaryRimTestScope.Begin(ArrivalGroupKey);
             target = scope.CreateAdultColonist();
             partner = scope.CreateAdultColonist();
@@ -56,6 +58,7 @@ namespace PawnDiary.RimTests
         [AfterEach]
         public static void TearDown()
         {
+            PsychicRitualBrainwipeOutcomePatch.SetHistoryClearedNoticeOverrideForTests(null);
             scope?.TearDown();
             scope = null;
             target = null;
@@ -282,6 +285,106 @@ namespace PawnDiary.RimTests
                 "The Anomaly-enabled Brainwipe patch retained its old page or omitted the new boundary.");
         }
 
+        /// <summary>
+        /// A failure in the optional translated notice happens after the new arrival boundary and opens
+        /// only the notice circuit. A second wipe must still clear its newly seeded history and create a
+        /// fresh boundary, while the disabled notice adapter is not retried.
+        /// </summary>
+        [Test]
+        public static void NoticeFailureKeepsArrivalAndLaterBrainwipeCleanup()
+        {
+            if (!ModsConfig.AnomalyActive)
+            {
+                return;
+            }
+
+            DiaryEvent firstPrior = AddPriorPage("First");
+            AddPlayerBackground("I remember a first disposable childhood.");
+            int noticeAttempts = 0;
+            PsychicRitualBrainwipeOutcomePatch.SetHistoryClearedNoticeOverrideForTests(pawn =>
+            {
+                noticeAttempts++;
+                throw new ExpectedBrainwipeNoticeFault();
+            });
+
+            PsychicRitualBrainwipeOutcomePatch.Postfix(target);
+
+            PawnDiaryRecord record = scope.RequireDiaryRecord(target);
+            DiaryEvent firstBoundary = RequireOnlyBrainwipeBoundary(
+                record,
+                firstPrior,
+                "The failing notice suppressed the first post-Brainwipe boundary.");
+            PawnDiaryRimTestScope.Require(
+                noticeAttempts == 1,
+                "The failing notice adapter was not attempted exactly once.");
+
+            DiaryEvent secondPrior = AddPriorPage("Second");
+            AddPlayerBackground("I remember a second disposable childhood.");
+            PsychicRitualBrainwipeOutcomePatch.Postfix(target);
+
+            DiaryEvent secondBoundary = RequireOnlyBrainwipeBoundary(
+                record,
+                secondPrior,
+                "The notice fault disabled the main Brainwipe cleanup context on the later wipe.");
+            PawnDiaryRimTestScope.Require(
+                firstBoundary.eventId != secondBoundary.eventId
+                    && scope.Component.FindEventById(firstBoundary.eventId) == null,
+                "The later Brainwipe retained its earlier autobiographical boundary.");
+            PawnDiaryRimTestScope.Require(
+                noticeAttempts == 1,
+                "The isolated notice circuit retried its known-failing adapter on the later wipe.");
+        }
+
+        private static DiaryEvent AddPriorPage(string suffix)
+        {
+            DiaryEvent prior = scope.Component.AddSoloEvent(
+                target,
+                null,
+                "PawnDiary_RimTest_BrainwipeNoticePrior" + suffix,
+                "brainwipe notice fixture",
+                "A disposable page before Brainwipe " + suffix + ".",
+                string.Empty,
+                "rimtest_brainwipe=notice_failure");
+            PawnDiaryRimTestScope.Require(
+                prior != null,
+                "The notice-failure fixture could not seed its " + suffix + " prior page.");
+            return prior;
+        }
+
+        private static void AddPlayerBackground(string text)
+        {
+            string pawnId = target.GetUniqueLoadID();
+            PlayerMemoryMutationPlan plan = PlayerMemoryPolicy.PlanBackstoryMutation(
+                pawnId,
+                null,
+                text,
+                450);
+            PawnDiaryRimTestScope.Require(
+                plan.action == PlayerMemoryMutationAction.Create && plan.record != null,
+                "The notice-failure fixture could not plan a canonical player background.");
+            scope.RequireDiaryRecord(target)
+                .EnsureKnowledgeState()
+                .records.Add(ImportantMemoryRecord.FromSnapshot(plan.record));
+        }
+
+        private static DiaryEvent RequireOnlyBrainwipeBoundary(
+            PawnDiaryRecord record,
+            DiaryEvent prior,
+            string failure)
+        {
+            PawnDiaryRimTestScope.Require(
+                record.eventIds.Count == 1
+                    && record.eventIds[0] != prior.eventId
+                    && scope.Component.FindEventById(prior.eventId) == null,
+                failure);
+            DiaryEvent boundary = scope.Component.FindEventById(record.eventIds[0]);
+            PawnDiaryRimTestScope.Require(
+                boundary != null
+                    && boundary.interactionDefName == BrainwipeArrivalSignal.BrainwipeArrivalDefName,
+                failure);
+            return boundary;
+        }
+
         private static void ConfigureVoiceIdentity(PawnDiaryRecord record)
         {
             record.personaDefName = DiaryPersonas.Default.defName;
@@ -362,6 +465,14 @@ namespace PawnDiary.RimTests
                     && DayDigestStatesField != null
                     && PendingDayDigestField != null,
                 "Pawn Diary's archive/day-digest stores changed; update the Brainwipe fixture.");
+        }
+
+        private sealed class ExpectedBrainwipeNoticeFault : Exception
+        {
+            public ExpectedBrainwipeNoticeFault()
+                : base("intentional Brainwipe notice adapter fault")
+            {
+            }
         }
     }
 }

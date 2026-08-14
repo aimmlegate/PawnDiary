@@ -34,7 +34,8 @@ namespace PawnDiary
 
         // Event-kind tokens that runtime lifecycle code must recognize. Most event kinds remain
         // XML-only; arrival is special because the load bootstrap must treat its durable knowledge
-        // record as satisfying the boundary when the player deliberately disabled arrival pages.
+        // record as satisfying the boundary when the player deliberately disabled arrival pages, and
+        // normal profile removal/automatic eviction must preserve that lifecycle-owned marker.
         public const string EventKindFactionJoined = "status.faction.joined";
 
         // Additive record provenance and recall-scope tokens. Old saves omit both fields, so the
@@ -401,8 +402,9 @@ namespace PawnDiary
         public string recordId = string.Empty;
         public int tick;
         /// <summary>
-        /// True only for the owning pawn's exact canonical player/background singleton. Planners
-        /// count protected rows toward caps but may never choose them for automatic eviction.
+        /// True for the owning pawn's exact canonical player/background singleton or a captured,
+        /// contextual faction-joined lifecycle marker. Planners count protected rows toward caps but
+        /// may never choose them for automatic eviction.
         /// </summary>
         public bool protectedFromAutomaticEviction;
     }

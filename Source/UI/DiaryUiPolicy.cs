@@ -1,11 +1,11 @@
-// Pure layout and cache decisions shared by the diary UI. Keeping these tiny policies free of
-// Verse and Unity types lets standalone tests cover narrow-window and game-session edge cases.
+// Pure layout, cache, and editor-save decisions shared by the diary UI. Keeping these tiny policies
+// free of Verse and Unity types lets standalone tests cover narrow-window and game-session edge cases.
 using System;
 
 namespace PawnDiary
 {
     /// <summary>
-    /// Pure policy helpers for responsive diary UI layout and session-bound caches.
+    /// Pure policy helpers for responsive diary UI layout, session-bound caches, and draft saves.
     /// </summary>
     internal static class DiaryUiPolicy
     {
@@ -61,6 +61,36 @@ namespace PawnDiary
                 + Math.Max(0f, pinWidth)
                 + Math.Max(0f, gap) * 2f;
             return availableWidth >= requiredWidth ? 1 : 3;
+        }
+
+        /// <summary>
+        /// Returns whether a canonical memory-editor draft differs from the canonical text shown when
+        /// editing began. Callers sanitize both values first, so markup or whitespace-only differences
+        /// cannot freeze a currently localized XML template into a manual override.
+        /// </summary>
+        public static bool MemoryDraftNeedsPersistence(
+            string initialCanonicalText,
+            string draftCanonicalText)
+        {
+            return !string.Equals(
+                initialCanonicalText ?? string.Empty,
+                draftCanonicalText ?? string.Empty,
+                StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Returns whether the memory editor should offer Remove for one event kind. The adapter passes
+        /// the central schema token so this pure UI helper does not duplicate persistence identifiers.
+        /// </summary>
+        public static bool ShouldOfferMemoryRemove(
+            string eventKind,
+            string protectedEventKind)
+        {
+            return string.IsNullOrWhiteSpace(protectedEventKind)
+                || !string.Equals(
+                    eventKind ?? string.Empty,
+                    protectedEventKind,
+                    StringComparison.Ordinal);
         }
     }
 }

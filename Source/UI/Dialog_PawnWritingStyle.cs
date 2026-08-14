@@ -1209,6 +1209,14 @@ namespace PawnDiary
                 return false;
             }
 
+            // The fixed footer is still visible while the captured-memory sub-editor is active. Commit
+            // that detached draft first so "Save profile" can never report success and close over text
+            // the player just entered. Failure leaves the editor and its buffer open for retry.
+            if (!TrySaveActiveMemoryDraft(showSuccessMessage: false))
+            {
+                return false;
+            }
+
             // Re-read at the actual commit boundary as well. The confirmation may have stayed open while
             // an integration changed generation; comparing against the click-time value could otherwise
             // replay an enable and scan/requeue the same backlog a second time.

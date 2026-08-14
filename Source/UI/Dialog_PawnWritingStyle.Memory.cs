@@ -24,6 +24,9 @@ namespace PawnDiary
 
         private string selectedMemoryRecordId = string.Empty;
         private string memoryEditBuffer = string.Empty;
+        // The rendered text shown when Edit began. Comparing canonical text against this baseline makes
+        // Edit -> Save without changes a true no-op instead of freezing a localized XML template.
+        private string memoryEditStartRenderedText = string.Empty;
         private bool memoryEditing;
         private Vector2 memoryTextScroll;
         // One detached editor snapshot per dialog lifetime. Deep-copying hundreds of participant/fact
@@ -344,7 +347,12 @@ namespace PawnDiary
             string renderedText)
         {
             bool editingSelected = IsEditingMemory(record);
-            int buttonCount = editingSelected ? 3 : 2;
+            bool canRemove = DiaryUiPolicy.ShouldOfferMemoryRemove(
+                record?.eventKind,
+                KnowledgeTokens.EventKindFactionJoined);
+            int buttonCount = editingSelected
+                ? (canRemove ? 3 : 2)
+                : (canRemove ? 2 : 1);
             float buttonWidth = Mathf.Max(
                 1f,
                 (rect.width - FieldGap * (buttonCount - 1)) / buttonCount);
@@ -357,13 +365,11 @@ namespace PawnDiary
             {
                 if (Widgets.ButtonText(first, "PawnDiary.Profile.MemoryEdit".Translate()))
                 {
-                    SelectMemory(record);
-                    memoryEditBuffer = renderedText ?? string.Empty;
-                    memoryEditing = true;
-                    memoryTextScroll = Vector2.zero;
+                    BeginMemoryEdit(record, renderedText);
                 }
 
-                if (Widgets.ButtonText(second, "PawnDiary.Profile.MemoryRemove".Translate()))
+                if (canRemove
+                    && Widgets.ButtonText(second, "PawnDiary.Profile.MemoryRemove".Translate()))
                 {
                     ConfirmMemoryRemoval(record, renderedText);
                 }
@@ -373,22 +379,7 @@ namespace PawnDiary
 
             if (Widgets.ButtonText(first, "PawnDiary.Profile.MemorySave".Translate()))
             {
-                if (component != null
-                    && component.TrySetImportantMemoryTextForProfile(
-                        pawn,
-                        record.recordId,
-                        memoryEditBuffer))
-                {
-                    RefreshMemorySnapshots();
-                    memoryEditing = false;
-                    memoryEditBuffer = string.Empty;
-                    memoryTextScroll = Vector2.zero;
-                    Messages.Message(
-                        "PawnDiary.Profile.MemorySaved".Translate(),
-                        MessageTypeDefOf.NeutralEvent,
-                        false);
-                }
-                else
+                if (!TrySaveActiveMemoryDraft(showSuccessMessage: true))
                 {
                     MemoryOperationFailed();
                 }
@@ -396,12 +387,11 @@ namespace PawnDiary
 
             if (Widgets.ButtonText(second, "PawnDiary.Profile.MemoryCancel".Translate()))
             {
-                memoryEditing = false;
-                memoryEditBuffer = string.Empty;
-                memoryTextScroll = Vector2.zero;
+                EndMemoryEdit();
             }
 
-            if (Widgets.ButtonText(third, "PawnDiary.Profile.MemoryRemove".Translate()))
+            if (canRemove
+                && Widgets.ButtonText(third, "PawnDiary.Profile.MemoryRemove".Translate()))
             {
                 ConfirmMemoryRemoval(record, renderedText);
             }
@@ -414,6 +404,15 @@ namespace PawnDiary
             if (record == null || string.IsNullOrWhiteSpace(record.recordId))
             {
                 MemoryOperationFailed();
+                return;
+            }
+
+            // Persistence also guards this lifecycle row. Mirroring that rule here avoids ever opening
+            // a confirmation dialog for an action that cannot succeed.
+            if (!DiaryUiPolicy.ShouldOfferMemoryRemove(
+                record.eventKind,
+                KnowledgeTokens.EventKindFactionJoined))
+            {
                 return;
             }
 
@@ -437,9 +436,7 @@ namespace PawnDiary
                             selectedMemoryRecordId = string.Empty;
                         }
 
-                        memoryEditing = false;
-                        memoryEditBuffer = string.Empty;
-                        memoryTextScroll = Vector2.zero;
+                        EndMemoryEdit();
                         RefreshMemorySnapshots();
                         Messages.Message(
                             "PawnDiary.Profile.MemoryRemoved".Translate(),
@@ -520,8 +517,77 @@ namespace PawnDiary
             }
 
             selectedMemoryRecordId = record.recordId ?? string.Empty;
+            EndMemoryEdit();
+        }
+
+        /// <summary>Starts a detached edit while remembering exactly what the player was shown.</summary>
+        private void BeginMemoryEdit(ImportantMemoryRecordSnapshot record, string renderedText)
+        {
+            SelectMemory(record);
+            memoryEditStartRenderedText = renderedText ?? string.Empty;
+            memoryEditBuffer = memoryEditStartRenderedText;
+            memoryEditing = true;
+        }
+
+        /// <summary>
+        /// Commits the active detached draft for either the row-level button or the profile footer.
+        /// Unchanged canonical text exits edit mode without touching save state, so a translated XML
+        /// template stays dynamic. A blank changed draft still reaches the component and clears an
+        /// existing override back to that template.
+        /// </summary>
+        private bool TrySaveActiveMemoryDraft(bool showSuccessMessage)
+        {
+            if (!memoryEditing)
+            {
+                return true;
+            }
+
+            int recordIndex = FindMemoryIndex(profileMemorySnapshots, selectedMemoryRecordId);
+            if (recordIndex < 0 || component == null)
+            {
+                return false;
+            }
+
+            ImportantMemoryRecordSnapshot record = profileMemorySnapshots[recordIndex];
+            int textLimit = MemoryTextLimit();
+            string initialText = ImportantMemoryLineRenderer.CleanManualOverride(
+                memoryEditStartRenderedText,
+                textLimit);
+            string draftText = ImportantMemoryLineRenderer.CleanManualOverride(
+                memoryEditBuffer,
+                textLimit);
+            bool needsPersistence = DiaryUiPolicy.MemoryDraftNeedsPersistence(
+                initialText,
+                draftText);
+            if (needsPersistence
+                && !component.TrySetImportantMemoryTextForProfile(
+                    pawn,
+                    record.recordId,
+                    draftText))
+            {
+                return false;
+            }
+
+            // Refresh after an explicit Save even for a no-op. If gameplay removed the detached row while
+            // this dialog was open, the editor exits cleanly and the visible list catches up.
+            RefreshMemorySnapshots();
+            EndMemoryEdit();
+            if (showSuccessMessage)
+            {
+                Messages.Message(
+                    "PawnDiary.Profile.MemorySaved".Translate(),
+                    MessageTypeDefOf.NeutralEvent,
+                    false);
+            }
+
+            return true;
+        }
+
+        private void EndMemoryEdit()
+        {
             memoryEditing = false;
             memoryEditBuffer = string.Empty;
+            memoryEditStartRenderedText = string.Empty;
             memoryTextScroll = Vector2.zero;
         }
 

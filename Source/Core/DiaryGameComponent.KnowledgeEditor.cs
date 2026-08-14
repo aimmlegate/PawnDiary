@@ -155,7 +155,10 @@ namespace PawnDiary
             return true;
         }
 
-        /// <summary>Removes exactly one captured/contextual row owned by the requested pawn.</summary>
+        /// <summary>
+        /// Removes exactly one captured/contextual row owned by the requested pawn, except the
+        /// faction-joined marker that the load bootstrap uses as a one-time arrival boundary.
+        /// </summary>
         internal bool TryRemoveImportantMemoryForProfile(Pawn pawn, string recordId)
         {
             if (string.IsNullOrWhiteSpace(recordId))
@@ -175,6 +178,13 @@ namespace PawnDiary
                 ImportantMemoryRecord record = state.records[i];
                 if (record != null
                     && IsCapturedContextual(record)
+                    && !PlayerMemoryPolicy.IsProtectedFromAutomaticEviction(
+                        state.pawnId,
+                        record.recordId,
+                        record.dedupKey,
+                        record.eventKind,
+                        record.sourceKind,
+                        record.recallScope)
                     && string.Equals(record.recordId, recordId, StringComparison.Ordinal))
                 {
                     state.records.RemoveAt(i);
@@ -280,6 +290,13 @@ namespace PawnDiary
                 }
 
                 state.records.Add(ImportantMemoryRecord.FromSnapshot(plan.record));
+                // The protected background counts toward the same per-pawn cap as captured rows.
+                // Enforce that cap now so profile creation cannot expose an over-cap store until the
+                // much slower global maintenance pass or the next save.
+                EnforcePerPawnKnowledgeCap(
+                    state,
+                    DiaryKnowledgePolicy.Snapshot(applyGlobalMemorySetting: false)
+                        .maxRecordsPerPawn);
             }
             else if (plan.action == PlayerMemoryMutationAction.Update)
             {
@@ -406,13 +423,40 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Permanently removes exactly one memory by its stable record id. The developer-mode guard
-        /// is repeated here so hiding the UI is never the only authorization boundary.
+        /// Permanently removes exactly one captured/contextual memory by its stable record id. Unlike
+        /// the normal profile, this intentionally permits lifecycle rows as a diagnostic repair escape
+        /// hatch, but it retains the same pawn eligibility/state-owner authorization and still cannot
+        /// delete player/background or malformed future record classes. The developer-mode guard is
+        /// repeated here so hiding the UI is never the only authorization boundary.
         /// </summary>
         internal bool TryRemoveImportantMemoryForDev(Pawn pawn, string recordId)
         {
-            return Prefs.DevMode
-                && TryRemoveImportantMemoryForProfile(pawn, recordId);
+            if (!Prefs.DevMode || string.IsNullOrWhiteSpace(recordId))
+            {
+                return false;
+            }
+
+            PawnKnowledgeState state = ExistingKnowledgeStateForProfile(pawn);
+            if (state == null)
+            {
+                return false;
+            }
+
+            state.Normalize();
+            for (int i = 0; i < state.records.Count; i++)
+            {
+                ImportantMemoryRecord record = state.records[i];
+                if (record != null
+                    && IsCapturedContextual(record)
+                    && string.Equals(record.recordId, recordId, StringComparison.Ordinal))
+                {
+                    state.records.RemoveAt(i);
+                    InvalidateKnowledgeAfterProfileMutation(pawn.GetUniqueLoadID());
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>

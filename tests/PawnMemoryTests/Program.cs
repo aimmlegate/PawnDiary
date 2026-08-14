@@ -347,6 +347,60 @@ namespace PawnMemoryTests
                 PlayerMemoryPolicy.IsCanonicalBackstory(create.record, owner));
             AssertTrue("playerMemory.create.wrongOwner",
                 !PlayerMemoryPolicy.IsCanonicalBackstory(create.record, "Thing_Human99"));
+            AssertTrue("playerMemory.protected.canonical",
+                PlayerMemoryPolicy.IsProtectedFromAutomaticEviction(create.record, owner));
+            AssertTrue("playerMemory.protected.canonicalWrongOwner",
+                !PlayerMemoryPolicy.IsProtectedFromAutomaticEviction(
+                    create.record,
+                    "Thing_Human99"));
+
+            ImportantMemoryRecordSnapshot arrivalBoundary = new ImportantMemoryRecordSnapshot
+            {
+                ownerPawnId = owner,
+                recordId = owner + "|arrival-boundary",
+                dedupKey = owner + "|arrival-boundary",
+                eventKind = KnowledgeTokens.EventKindFactionJoined,
+                sourceKind = KnowledgeTokens.SourceKindCaptured,
+                recallScope = KnowledgeTokens.RecallScopeContextual
+            };
+            AssertTrue("playerMemory.protected.arrival",
+                PlayerMemoryPolicy.IsProtectedFromAutomaticEviction(arrivalBoundary, owner));
+            AssertTrue("playerMemory.protected.arrivalWrongOwner",
+                !PlayerMemoryPolicy.IsProtectedFromAutomaticEviction(
+                    arrivalBoundary,
+                    "Thing_Human99"));
+            AssertTrue("playerMemory.protected.arrivalLegacyDefaults",
+                PlayerMemoryPolicy.IsProtectedFromAutomaticEviction(
+                    owner,
+                    "legacy-arrival",
+                    "legacy-arrival",
+                    KnowledgeTokens.EventKindFactionJoined,
+                    null,
+                    null));
+            AssertTrue("playerMemory.protected.arrivalPlayerRejected",
+                !PlayerMemoryPolicy.IsProtectedFromAutomaticEviction(
+                    owner,
+                    "player-arrival",
+                    "player-arrival",
+                    KnowledgeTokens.EventKindFactionJoined,
+                    KnowledgeTokens.SourceKindPlayer,
+                    KnowledgeTokens.RecallScopeContextual));
+            AssertTrue("playerMemory.protected.arrivalBackgroundRejected",
+                !PlayerMemoryPolicy.IsProtectedFromAutomaticEviction(
+                    owner,
+                    "background-arrival",
+                    "background-arrival",
+                    KnowledgeTokens.EventKindFactionJoined,
+                    KnowledgeTokens.SourceKindCaptured,
+                    KnowledgeTokens.RecallScopeBackground));
+            AssertTrue("playerMemory.protected.ordinaryCapturedRejected",
+                !PlayerMemoryPolicy.IsProtectedFromAutomaticEviction(
+                    owner,
+                    "ordinary",
+                    "ordinary",
+                    "relation.spouse.gained",
+                    KnowledgeTokens.SourceKindCaptured,
+                    KnowledgeTokens.RecallScopeContextual));
 
             PlayerMemoryMutationPlan unchanged = PlayerMemoryPolicy.PlanBackstoryMutation(
                 owner, create.record, create.normalizedText, 450);
