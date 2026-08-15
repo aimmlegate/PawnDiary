@@ -43,7 +43,7 @@ namespace PawnDiary.Integration
         // Keep this const for metadata compatibility with adapters compiled against earlier Pawn Diary
         // versions. Adapters that need a runtime feature gate must inspect this field through reflection:
         // a direct C# read is substituted with the build-time value and does not see the loaded DLL.
-        public const int ApiVersion = 9;
+        public const int ApiVersion = 10;
 
         /// <summary>
         /// True while a game is loaded and the diary component is alive — the only time

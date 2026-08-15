@@ -753,17 +753,26 @@ namespace PawnDiary
     /// </summary>
     internal static class ApiLaneLabels
     {
+        // Defensive diagnostic caps. Endpoint/model text is user-editable and can otherwise make one
+        // lane label arbitrarily large even though no request payload needs that full text in a log.
+        private const int ModelLabelMaxCharacters = 80;
+        private const int EndpointLabelMaxCharacters = 120;
+
         /// <summary>Formats one endpoint/model/mode tuple for logs without leaking query-string keys.</summary>
         public static string Label(string endpointUrl, string modelName, ApiCompatibilityMode apiMode)
         {
-            string model = string.IsNullOrWhiteSpace(modelName) ? "<blank-model>" : modelName;
+            string model = DiagnosticComponent(modelName, "<blank-model>", ModelLabelMaxCharacters);
             string endpoint = string.IsNullOrWhiteSpace(endpointUrl)
                 ? "<blank-url>"
-                : EndpointUtility.BuildGenerationUrl(
-                    SanitizeEndpointUrlForLog(endpointUrl),
-                    modelName,
-                    apiMode);
-            return model + " [" + ApiEndpointPolicy.NormalizeApiMode(apiMode) + "] @ " + endpoint;
+                : DiagnosticComponent(
+                    EndpointUtility.BuildGenerationUrl(
+                        SanitizeEndpointUrlForLog(endpointUrl),
+                        model,
+                        apiMode),
+                    "<blank-url>",
+                    EndpointLabelMaxCharacters);
+            return TrimForLog(
+                model + " [" + ApiEndpointPolicy.NormalizeApiMode(apiMode) + "] @ " + endpoint);
         }
 
         /// <summary>Trims one-line log details to the shared diagnostic length cap.</summary>
@@ -784,7 +793,7 @@ namespace PawnDiary
 
             // Redact before trimming so a secret can never be the surviving prefix of a long line.
             value = OneLine(RedactSecrets(value, apiKey, customAuthHeaderName));
-            return value.Length <= 180 ? value : TextTruncation.SafePrefix(value, 180) + "...";
+            return TextTruncation.EllipsizedPrefix(value, 180);
         }
 
         // A bearer token or a key=/token= query parameter can ride along inside an arbitrary error
@@ -799,6 +808,11 @@ namespace PawnDiary
         // would leak the tail of such keys; stop only at a boundary a token never spans.
         private static readonly Regex BearerPattern = new Regex(
             @"\bBearer\s+[^\s""']+",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        // URI userinfo is itself a credential channel (`https://user:password@host`). Mask it in
+        // arbitrary exception/status text in addition to stripping it from structured lane labels.
+        private static readonly Regex UriUserInfoPattern = new Regex(
+            @"(\b[a-z][a-z0-9+.-]*://)[^/\s?#@]+@",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
@@ -830,6 +844,7 @@ namespace PawnDiary
                 value = value.Replace(apiKey, "<redacted>");
             }
 
+            value = UriUserInfoPattern.Replace(value, "$1<redacted>@");
             value = QueryKeyPattern.Replace(value, "$1<redacted>");
             value = BearerPattern.Replace(value, "Bearer <redacted>");
 
@@ -858,8 +873,10 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            int query = endpointUrl.IndexOf('?');
-            int fragment = endpointUrl.IndexOf('#');
+            string sanitized = OneLine(endpointUrl);
+
+            int query = sanitized.IndexOf('?');
+            int fragment = sanitized.IndexOf('#');
             int cut = -1;
             if (query >= 0)
             {
@@ -871,18 +888,80 @@ namespace PawnDiary
                 cut = fragment;
             }
 
-            return cut >= 0 ? endpointUrl.Substring(0, cut) : endpointUrl;
+            if (cut >= 0)
+            {
+                sanitized = sanitized.Substring(0, cut);
+            }
+
+            // Preserve the endpoint spelling/path for useful diagnostics, but remove every byte of
+            // URI userinfo before it can enter a log. Limit the search to the authority so an '@' in
+            // a later path segment remains ordinary path text.
+            int schemeSeparator = sanitized.IndexOf("://", StringComparison.Ordinal);
+            if (schemeSeparator >= 0)
+            {
+                int authorityStart = schemeSeparator + 3;
+                int authorityEnd = sanitized.IndexOf('/', authorityStart);
+                if (authorityEnd < 0)
+                {
+                    authorityEnd = sanitized.Length;
+                }
+
+                int authorityLength = authorityEnd - authorityStart;
+                if (authorityLength > 0)
+                {
+                    int userInfoEnd = sanitized.LastIndexOf(
+                        '@', authorityEnd - 1, authorityLength);
+                    if (userInfoEnd >= authorityStart)
+                    {
+                        sanitized = sanitized.Substring(0, authorityStart)
+                            + sanitized.Substring(userInfoEnd + 1);
+                    }
+                }
+            }
+
+            return sanitized;
         }
 
         /// <summary>Collapses whitespace/newlines/tabs to a single trimmed line. Shared so log/status
         /// trimmers (e.g. ApiConnectionController.TrimForStatus) don't each re-implement it.</summary>
         internal static string OneLine(string value)
         {
-            return (value ?? string.Empty)
-                .Replace('\r', ' ')
-                .Replace('\n', ' ')
-                .Replace('\t', ' ')
-                .Trim();
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+
+            StringBuilder builder = new StringBuilder(value.Length);
+            bool pendingSpace = false;
+            for (int i = 0; i < value.Length; i++)
+            {
+                char c = value[i];
+                if (char.IsWhiteSpace(c) || char.IsControl(c))
+                {
+                    pendingSpace = builder.Length > 0;
+                    continue;
+                }
+
+                if (pendingSpace)
+                {
+                    builder.Append(' ');
+                    pendingSpace = false;
+                }
+                builder.Append(c);
+            }
+
+            return builder.ToString();
+        }
+
+        private static string DiagnosticComponent(string value, string blankValue, int maxCharacters)
+        {
+            string oneLine = OneLine(value);
+            if (string.IsNullOrWhiteSpace(oneLine))
+            {
+                return blankValue;
+            }
+
+            return TextTruncation.EllipsizedPrefix(oneLine, maxCharacters);
         }
     }
 }

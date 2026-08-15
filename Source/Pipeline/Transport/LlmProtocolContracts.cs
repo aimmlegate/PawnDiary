@@ -81,6 +81,13 @@ namespace PawnDiary
         public float Temperature;
 
         /// <summary>
+        /// Plain main-thread snapshot of the XML-tuned hidden-token reserve used for native models
+        /// whose cheapest supported thinking mode is still enabled. Nonpositive values use the pure
+        /// serializer's safe fallback; no Def or settings object crosses this boundary.
+        /// </summary>
+        public int LowThinkingHeadroomTokens;
+
+        /// <summary>
         /// Optional provider-advertised architecture family for a discovered model. Ollama exposes
         /// this independently from its freely editable model alias; other protocols leave it blank.
         /// </summary>

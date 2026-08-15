@@ -349,8 +349,12 @@ namespace PawnDiary
             Pawn pawn = FindLivePawnByLoadId(pawnId, livePawnsById);
             // The anti-repetition reroll counter salts the stable humor seed: 0 (the normal case)
             // reproduces the entry's original humor decision; the guard increments it to re-roll.
-            return HumorCues.CueFor(diaryEvent, pawn, pawnId,
-                diaryEvent == null ? 0 : diaryEvent.promptVariantRerolls);
+            return HumorCues.CueFor(
+                diaryEvent,
+                pawn,
+                pawnId,
+                diaryEvent == null ? 0 : diaryEvent.promptVariantRerolls,
+                povRole);
         }
 
         private static Dictionary<string, Pawn> SnapshotLivePawnsByLoadId()

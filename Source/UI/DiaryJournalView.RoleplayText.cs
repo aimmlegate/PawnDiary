@@ -106,6 +106,15 @@ namespace PawnDiary
             }
 
             renderCacheComponent = component;
+            // A static link request may legitimately be created before this view's first draw. Keep it
+            // when it already belongs to the component being bound; clear only proven prior-session
+            // ownership (including legacy/unowned static state).
+            if (DiaryUiPolicy.ShouldClearPendingRequest(
+                pendingScrollSessionComponent?.Target,
+                component))
+            {
+                ClearPendingScrollRequest();
+            }
             ClearPawnUiStatesForSession();
             preparedRoleplayCache.Clear();
             entryCardMeasurer.Clear();

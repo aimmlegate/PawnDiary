@@ -25,6 +25,7 @@ namespace DiaryPatchManifestTests
             TestPatchCircuitBreaker();
             TestIndependentActionsContinueAfterFailure();
             TestBrainwipeNoticeCannotBlockArrivalOrMainCircuit();
+            TestBrainwipeResetsDelayedProgressionOwnership();
             TestLivePawnSnapshotIncludesTravellingTransporters();
             TestErrorTransportCannotBypassLocalLog();
             Console.WriteLine("DiaryPatchManifestTests passed " + assertions + " assertions.");
@@ -295,6 +296,91 @@ namespace DiaryPatchManifestTests
                 noticeContext >= 0
                     && patch.IndexOf("ShowHistoryClearedNotice);", StringComparison.Ordinal)
                         > noticeContext);
+        }
+
+        private static void TestBrainwipeResetsDelayedProgressionOwnership()
+        {
+            string root = FindRepositoryRoot();
+            string resetSource = File.ReadAllText(Path.Combine(
+                root,
+                "Source",
+                "Core",
+                "DiaryGameComponent.MemoryReset.cs"));
+            string progressionSource = File.ReadAllText(Path.Combine(
+                root,
+                "Source",
+                "Core",
+                "DiaryGameComponent.MemoryResetProgression.cs"));
+
+            int pawnIdCapture = resetSource.IndexOf(
+                "string pawnId = pawn.GetUniqueLoadID();",
+                StringComparison.Ordinal);
+            int progressionReset = resetSource.IndexOf(
+                "ResetProgressionMemoryForPawn(pawnId,",
+                StringComparison.Ordinal);
+            int missingDiaryReturn = resetSource.IndexOf(
+                "if (diary == null)",
+                StringComparison.Ordinal);
+            AssertTrue(
+                "Brainwipe progression reset runs after exact pawn ID capture",
+                pawnIdCapture >= 0 && progressionReset > pawnIdCapture);
+            AssertTrue(
+                "Brainwipe progression reset runs before the missing-diary early return",
+                progressionReset >= 0 && missingDiaryReturn > progressionReset);
+
+            AssertContains(
+                "Brainwipe makes the wipe tick the new arrival epoch",
+                progressionSource,
+                "progression.arrivalAnniversaryStartTick = boundaryTick;");
+            AssertContains(
+                "Brainwipe resolves the replacement arrival boundary",
+                progressionSource,
+                "progression.arrivalAnniversaryBoundaryResolved = true;");
+            AssertContains(
+                "Brainwipe restarts arrival-year accounting",
+                progressionSource,
+                "progression.lastArrivalAnniversaryYear = 0;");
+            AssertContains(
+                "Brainwipe clears remembered bonded deaths",
+                progressionSource,
+                "progression.bondedDeathMemories?.Clear();");
+            AssertContains(
+                "Brainwipe advances bonded-death discovery to the wipe boundary",
+                progressionSource,
+                "progression.lastBondedDeathDiscoveryTick = boundaryTick;");
+            AssertContains(
+                "Brainwipe prevents legacy bonded-death rediscovery",
+                progressionSource,
+                "progression.bondedDeathHistoryMigrationComplete = true;");
+            AssertContains(
+                "Brainwipe reopens the same-day bonded-death slot",
+                progressionSource,
+                "progression.lastBondedDeathPageDay = int.MinValue;");
+            AssertContains(
+                "Brainwipe removes unresolved mechanitor boss ownership",
+                progressionSource,
+                "call => call == null || !call.defeatedObserved");
+            int progressionGuard = progressionSource.IndexOf(
+                "if (progression != null)",
+                StringComparison.Ordinal);
+            int successionCleanup = progressionSource.IndexOf(
+                "royaltyPendingSuccessions?.RemoveAll",
+                StringComparison.Ordinal);
+            int personaCleanup = progressionSource.IndexOf(
+                "PersonaLifecyclePolicy.RebaselineAfterMemoryReset",
+                StringComparison.Ordinal);
+            AssertTrue(
+                "component-wide Royalty cleanup is not blocked by a missing progression row",
+                progressionGuard >= 0
+                    && successionCleanup > progressionGuard
+                    && personaCleanup > successionCleanup
+                    && progressionSource.IndexOf(
+                        "if (progression == null)",
+                        StringComparison.Ordinal) < 0);
+            AssertContains(
+                "Brainwipe pending succession cleanup uses exact pure heir ownership",
+                progressionSource,
+                "RoyalSuccessionPolicy.IsOwnedByHeir(succession?.heirPawnId, pawnId)");
         }
 
         private static void TestLivePawnSnapshotIncludesTravellingTransporters()

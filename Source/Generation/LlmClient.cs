@@ -96,6 +96,13 @@ namespace PawnDiary
         /// <summary>Maximum number of tokens the model may generate in its response.</summary>
         public int maxTokens;
 
+        /// <summary>
+        /// Main-thread snapshot of XML-tuned hidden-token headroom for native low-thinking modes.
+        /// The pure/background serializer never reaches back into DefDatabase.
+        /// </summary>
+        public int lowThinkingHeadroomTokens =
+            LlmProtocolRequestJson.DefaultLowThinkingHeadroomTokens;
+
         /// <summary>Sampling temperature (0.0–2.0). Higher values produce more random output.</summary>
         public float temperature;
 
@@ -517,6 +524,7 @@ namespace PawnDiary
                 providerModelFamily = endpoint.ProviderModelFamilyForCurrentLane(),
                 timeoutSeconds = timeoutSeconds,
                 maxTokens = 32,
+                lowThinkingHeadroomTokens = DiaryTuning.LowThinkingHeadroomTokens,
                 temperature = temperature,
                 isTitleRequest = true
             };
@@ -588,7 +596,8 @@ namespace PawnDiary
                 maxTokens,
                 timeoutSeconds,
                 temperature,
-                callerCancellation);
+                callerCancellation,
+                LlmProtocolRequestJson.DefaultLowThinkingHeadroomTokens);
 
             // Adapter work shares the same per-lane gate and cooldown as diary generation. Without
             // this gate, a colony-wide transform can burst one HTTP request per pawn even when the player
@@ -708,7 +717,9 @@ namespace PawnDiary
             float temperature,
             int retryAttempts,
             double retryBaseDelaySeconds,
-            CancellationToken callerCancellation)
+            CancellationToken callerCancellation,
+            int lowThinkingHeadroomTokens =
+                LlmProtocolRequestJson.DefaultLowThinkingHeadroomTokens)
         {
             LlmGenerationRequest request = CreateSingleCompletionRequest(
                 endpoint,
@@ -717,7 +728,8 @@ namespace PawnDiary
                 maxTokens,
                 timeoutSeconds,
                 temperature,
-                callerCancellation);
+                callerCancellation,
+                lowThinkingHeadroomTokens);
             request.retryAttempts = LlmTransportPolicy.NormalizeRetryAttempts(retryAttempts);
             request.retryBaseDelaySeconds =
                 LlmTransportPolicy.NormalizeRetryDelaySeconds(retryBaseDelaySeconds);
@@ -805,7 +817,8 @@ namespace PawnDiary
             int maxTokens,
             int timeoutSeconds,
             float temperature,
-            CancellationToken callerCancellation)
+            CancellationToken callerCancellation,
+            int lowThinkingHeadroomTokens)
         {
             if (endpoint == null)
             {
@@ -844,6 +857,7 @@ namespace PawnDiary
                 providerModelFamily = endpoint.ProviderModelFamilyForCurrentLane(),
                 timeoutSeconds = timeoutSeconds,
                 maxTokens = Math.Max(1, maxTokens),
+                lowThinkingHeadroomTokens = lowThinkingHeadroomTokens,
                 temperature = temperature,
                 externalCancellationToken = callerCancellation,
                 isTitleRequest = false
@@ -2235,6 +2249,7 @@ namespace PawnDiary
                 ReasoningEffort = resolvedEffort,
                 MaxTokens = request.maxTokens,
                 Temperature = request.temperature,
+                LowThinkingHeadroomTokens = request.lowThinkingHeadroomTokens,
                 // A completed discovery result, including an explicitly empty family, supersedes the
                 // persisted fallback. The fallback exists only for fresh processes with no cache row.
                 ProviderModelFamily = capability != null
@@ -2310,8 +2325,10 @@ namespace PawnDiary
 
             return ApiLaneLabels.TrimForLog(
                 value,
-                request.apiKey,
-                request.customAuthHeaderName);
+                ApiEndpointPolicy.EffectiveApiKey(request.authMode, request.apiKey),
+                ApiEndpointPolicy.EffectiveAuthHeaderName(
+                    request.authMode,
+                    request.customAuthHeaderName));
         }
 
         /// <summary>Masks generic auth patterns plus the exact credentials sent by this request.</summary>
@@ -2324,8 +2341,10 @@ namespace PawnDiary
 
             return ApiLaneLabels.RedactSecrets(
                 value,
-                request.apiKey,
-                request.customAuthHeaderName);
+                ApiEndpointPolicy.EffectiveApiKey(request.authMode, request.apiKey),
+                ApiEndpointPolicy.EffectiveAuthHeaderName(
+                    request.authMode,
+                    request.customAuthHeaderName));
         }
 
         /// <summary>

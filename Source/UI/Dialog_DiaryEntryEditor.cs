@@ -366,15 +366,23 @@ namespace PawnDiary
                 return;
             }
 
-            if (!Creating && !DraftChanged())
+            PlayerEntryMutationPlan mutation = BuildMutationPlan();
+            if (!mutation.valid)
+            {
+                Reject(MutationErrorTip(mutation.errorCode));
+                return;
+            }
+
+            if (mutation.noChange)
             {
                 allowImmediateClose = true;
                 base.Close();
                 return;
             }
 
-            string title = Reviewing ? reviewTitleBuffer : titleBuffer;
-            string body = Reviewing ? reviewBodyBuffer : bodyBuffer;
+            string title = mutation.title;
+            string body = mutation.body;
+            selectedEntryTypeKey = mutation.entryTypeKey;
             bool saved;
             string createdEventId = string.Empty;
             if (Creating)
@@ -488,44 +496,55 @@ namespace PawnDiary
                 return false;
             }
 
-            string title = Reviewing ? reviewTitleBuffer : titleBuffer;
-            string body = Reviewing ? reviewBodyBuffer : bodyBuffer;
-            if (string.IsNullOrWhiteSpace(body))
+            PlayerEntryMutationPlan mutation = BuildMutationPlan();
+            if (!mutation.valid)
             {
-                tip = "PawnDiary.ManualEntry.BodyRequired".Translate().Resolve();
+                tip = MutationErrorTip(mutation.errorCode);
                 return false;
             }
 
-            bool titleChanged = Creating || !string.Equals(title, originalTitle, StringComparison.Ordinal);
-            bool bodyChanged = Creating || !string.Equals(body, originalBody, StringComparison.Ordinal);
-            if ((titleChanged && title.Length > titleMaxCharacters)
-                || (bodyChanged && body.Length > bodyMaxCharacters))
-            {
-                tip = "PawnDiary.ManualEntry.TooLong".Translate().Resolve();
-                return false;
-            }
-
-            if (Creating)
-            {
-                PlayerEntryTypeSnapshot ignored;
-                if (!TryFindEntryType(selectedEntryTypeKey, out ignored))
-                {
-                    tip = "PawnDiary.ManualEntry.EntryTypeUnavailable".Translate().Resolve();
-                    return false;
-                }
-            }
-            else if (entryTypeLocked && !string.Equals(
-                selectedEntryTypeKey, originalEntryTypeKey, StringComparison.Ordinal))
-            {
-                tip = "PawnDiary.ManualEntry.EntryTypeLockedTip".Translate().Resolve();
-                return false;
-            }
-
-            if (!Creating && !DraftChanged())
+            if (mutation.noChange)
             {
                 tip = "PawnDiary.ManualEntry.NoChanges".Translate().Resolve();
             }
             return true;
+        }
+
+        /// <summary>
+        /// Runs the shared pure final-save contract against caps snapshotted from XML when this dialog
+        /// opened. No save model is touched; Save submits the returned normalized values to the impure
+        /// component adapter, which repeats the same validation defensively.
+        /// </summary>
+        private PlayerEntryMutationPlan BuildMutationPlan()
+        {
+            return PlayerEntryMutationPolicy.Plan(
+                new PlayerEntryMutationRequest
+                {
+                    creating = Creating,
+                    entryTypeLocked = entryTypeLocked,
+                    originalTitle = originalTitle,
+                    originalBody = originalBody,
+                    originalEntryTypeKey = originalEntryTypeKey,
+                    requestedTitle = Reviewing ? reviewTitleBuffer : titleBuffer,
+                    requestedBody = Reviewing ? reviewBodyBuffer : bodyBuffer,
+                    requestedEntryTypeKey = selectedEntryTypeKey,
+                    titleMaxCharacters = titleMaxCharacters,
+                    bodyMaxCharacters = bodyMaxCharacters
+                },
+                entryTypes);
+        }
+
+        private static string MutationErrorTip(string errorCode)
+        {
+            if (string.Equals(errorCode, "blank_body", StringComparison.Ordinal))
+                return "PawnDiary.ManualEntry.BodyRequired".Translate().Resolve();
+            if (string.Equals(errorCode, "text_too_long", StringComparison.Ordinal))
+                return "PawnDiary.ManualEntry.TooLong".Translate().Resolve();
+            if (string.Equals(errorCode, "unknown_entry_type", StringComparison.Ordinal))
+                return "PawnDiary.ManualEntry.EntryTypeUnavailable".Translate().Resolve();
+            if (string.Equals(errorCode, "entry_type_locked", StringComparison.Ordinal))
+                return "PawnDiary.ManualEntry.EntryTypeLockedTip".Translate().Resolve();
+            return "PawnDiary.ManualEntry.SaveFailed".Translate().Resolve();
         }
 
         private bool DraftChanged()

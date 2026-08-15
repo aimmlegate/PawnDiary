@@ -384,13 +384,10 @@ namespace PawnDiary
                     break;
                 }
 
-                if (IsReflectionDefName(ev.interactionDefName) || !ev.IsImportant())
-                {
-                    continue;
-                }
-
                 string role;
-                if (!ev.TryGetDisplayRoleForPawn(pawnId, out role))
+                if (!ev.TryGetDisplayRoleForPawn(pawnId, out role)
+                    || ev.IsReflectionForRole(role)
+                    || !ev.IsImportantForRole(role))
                 {
                     continue;
                 }
@@ -401,7 +398,7 @@ namespace PawnDiary
                     continue;
                 }
 
-                float weight = ev.IsCombatRelated()
+                float weight = ev.IsCombatRelatedForRole(role)
                     ? DiaryTuning.Current.daySummaryWeightCriticalEvent
                     : DiaryTuning.Current.daySummaryWeightMajorEvent;
                 candidates.Add(new QuadrumReflectionSignal(
@@ -485,13 +482,10 @@ namespace PawnDiary
                     break;
                 }
 
-                if (IsReflectionDefName(ev.interactionDefName) || !ev.IsImportant())
-                {
-                    continue;
-                }
-
                 string role;
-                if (!ev.TryGetDisplayRoleForPawn(pawnId, out role))
+                if (!ev.TryGetDisplayRoleForPawn(pawnId, out role)
+                    || ev.IsReflectionForRole(role)
+                    || !ev.IsImportantForRole(role))
                 {
                     continue;
                 }
@@ -506,7 +500,7 @@ namespace PawnDiary
                     QuadrumAnniversaryMemoryPolicy.IdentityFor(
                         ev.eventId, ev.tick, ev.interactionDefName, role),
                     ev.tick,
-                    ev.IsCombatRelated()
+                    ev.IsCombatRelatedForRole(role)
                         ? DiaryTuning.Current.daySummaryWeightCriticalEvent
                         : DiaryTuning.Current.daySummaryWeightMajorEvent,
                     line));
@@ -534,7 +528,9 @@ namespace PawnDiary
                         break;
                     }
 
-                    if (!entry.important || IsArchivedReflectionMemorySource(entry))
+                    PlayerEntrySemanticProjection semantics = entry.SemanticProjection();
+                    if (!semantics.important || semantics.reflection
+                        || IsArchivedReflectionMemorySource(entry))
                     {
                         continue;
                     }
@@ -549,7 +545,7 @@ namespace PawnDiary
                         QuadrumAnniversaryMemoryPolicy.IdentityFor(
                             entry.eventId, entry.tick, entry.interactionDefName, entry.povRole),
                         entry.tick,
-                        IsCriticalArchivedMemory(entry)
+                        semantics.combat || IsCriticalArchivedMemory(entry)
                             ? DiaryTuning.Current.daySummaryWeightCriticalEvent
                             : DiaryTuning.Current.daySummaryWeightMajorEvent,
                         line));
@@ -595,7 +591,8 @@ namespace PawnDiary
                 }
 
                 string role = ev.RoleForPawn(pawnId);
-                if (role == null || !ev.IsImportant())
+                if (role == null || ev.IsReflectionForRole(role)
+                    || !ev.IsImportantForRole(role))
                 {
                     continue;
                 }
@@ -606,7 +603,9 @@ namespace PawnDiary
                     continue;
                 }
 
-                float weight = ev.IsCombatRelated() ? tuning.daySummaryWeightCriticalEvent : tuning.daySummaryWeightMajorEvent;
+                float weight = ev.IsCombatRelatedForRole(role)
+                    ? tuning.daySummaryWeightCriticalEvent
+                    : tuning.daySummaryWeightMajorEvent;
                 string kind = DayReflectionEventData.SignalKindEvent;
                 candidates.Add(new DaySummarySignal(
                     weight,
@@ -800,7 +799,7 @@ namespace PawnDiary
                     continue;
                 }
 
-                string domain = DiaryEventDomainClassifier.DomainForContext(diaryEvent.gameContext);
+                string domain = diaryEvent.DomainForRole(role);
                 if (ColonyNewsPolicy.EventOwnsCategory(
                     category,
                     domain,
@@ -826,9 +825,7 @@ namespace PawnDiary
                 }
 
                 string context = entry.decorationGameContext;
-                string domain = string.IsNullOrWhiteSpace(entry.decorationDomain)
-                    ? DiaryEventDomainClassifier.DomainForContext(context)
-                    : entry.decorationDomain;
+                string domain = entry.SemanticProjection().domain;
                 if (ColonyNewsPolicy.EventOwnsCategory(category, domain, context, rules))
                 {
                     return true;
@@ -1289,7 +1286,9 @@ namespace PawnDiary
                 return false;
             }
 
-            string domain = ArchivedMemoryDomain(entry);
+            PlayerEntrySemanticProjection semantics = entry.SemanticProjection();
+            if (semantics.combat) return true;
+            string domain = semantics.domain;
             return string.Equals(domain, DiaryEventDomainClassifier.Raid, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(domain, DiaryEventDomainClassifier.MentalState, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(entry.colorCue, DiaryEvent.CombatColorCue, StringComparison.OrdinalIgnoreCase)
@@ -1301,20 +1300,13 @@ namespace PawnDiary
         private static bool IsArchivedReflectionMemorySource(ArchivedDiaryEntry entry)
         {
             return entry != null
-                && (IsReflectionDefName(entry.interactionDefName)
-                    || string.Equals(
-                        ArchivedMemoryDomain(entry),
-                        DiaryEventDomainClassifier.Reflection,
-                        StringComparison.OrdinalIgnoreCase));
+                && (entry.SemanticProjection().reflection
+                    || IsReflectionDefName(entry.interactionDefName));
         }
 
         private static string ArchivedMemoryDomain(ArchivedDiaryEntry entry)
         {
-            return entry == null
-                ? string.Empty
-                : (string.IsNullOrWhiteSpace(entry.decorationDomain)
-                    ? DiaryEventDomainClassifier.DomainForContext(entry.decorationGameContext)
-                    : entry.decorationDomain);
+            return entry?.SemanticProjection().domain ?? string.Empty;
         }
 
         private static string BuildQuadrumReflectionText(Pawn pawn, string quadrumDates,

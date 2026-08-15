@@ -693,7 +693,7 @@ namespace PawnDiary
             // Raid pages are solo, so only the initiator can own this work.
             if (!DiaryEvent.RoleEquals(povRole, DiaryEvent.InitiatorRole)
                 || !DiaryContextFields.HasField(diaryEvent.gameContext, RaidEventData.RaidContextKey)
-                || !diaryEvent.IsImportant()
+                || !diaryEvent.IsImportantForRole(povRole)
                 || BattleBeatsPolicy.AlreadyChecked(diaryEvent.gameContext))
             {
                 // Non-important friendly arrivals use SoloDefault, which does not project

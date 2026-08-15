@@ -22,10 +22,12 @@ namespace DiaryBiotechPolicyTests
             TestPendingGrowthNormalization();
             TestGrowthRecordMatching();
             TestFamilyArcObservationAndRetention();
+            TestFamilyMemoryReset();
             TestSupporterSelectionAndWriterShapes();
             TestBirthWriterSelection();
             TestBirthCorrelationClassification();
             TestBirthArcAndPendingOwnership();
+            TestPendingWriterReset();
             TestSettingsInheritance();
             TestContextFormatting();
             TestGeneSalienceCardinalityAndDeltas();
@@ -915,6 +917,442 @@ namespace DiaryBiotechPolicyTests
                 FamilyArcPolicy.DecideRetention(orphanEvidence, new FamilyArcRetentionInput(), 5000, 1000));
         }
 
+        private static void TestFamilyMemoryReset()
+        {
+            BiotechFamilyArcState targetChild = new BiotechFamilyArcState
+            {
+                familyArcId = "biotech-family|Pawn_1",
+                childId = "Pawn_1",
+                birtherId = "Birther",
+                geneticMotherId = "Mother",
+                fatherId = "Pawn_10",
+                birthOutcomeToken = BiotechBirthOutcomeTokens.Healthy,
+                recordedGrowthAges = new List<int> { 7, 10 },
+                lastObservedTick = 800,
+                supporters = new List<FamilySupportObservationState>
+                {
+                    Supporter("Pawn_1", 9, 8, 7),
+                    Supporter("Pawn_10", 5, 4, 3),
+                    Supporter("Teacher", 2, 1, 6)
+                }
+            };
+            BiotechFamilyArcState otherChild = new BiotechFamilyArcState
+            {
+                familyArcId = "biotech-family|OtherChild",
+                childId = "OtherChild",
+                fatherId = "Pawn_1",
+                supporters = new List<FamilySupportObservationState>
+                {
+                    Supporter("Pawn_1", 3, 2, 1),
+                    Supporter("Pawn_10", 4, 3, 2),
+                    Supporter("OtherAdult", 6, 5, 4)
+                }
+            };
+            BiotechFamilyArcState parentWithoutSupportRow = new BiotechFamilyArcState
+            {
+                familyArcId = "biotech-family|ParentOnlyChild",
+                childId = "ParentOnlyChild",
+                fatherId = "Pawn_1",
+                fatherName = "Wiped parent",
+                supporters = new List<FamilySupportObservationState>
+                {
+                    Supporter("OtherParent", 4, 3, 2)
+                }
+            };
+            List<BiotechFamilyArcState> arcs =
+                new List<BiotechFamilyArcState>
+                {
+                    targetChild,
+                    otherChild,
+                    parentWithoutSupportRow
+                };
+
+            BiotechFamilyMemoryResetPolicy.ResetForPawn(arcs, " Pawn_1 ", 900);
+
+            FamilySupportObservationState wipedAdultOtherChild =
+                otherChild.supporters.Single(row => row.adultId == "Pawn_1");
+            FamilySupportObservationState wipedAdultView =
+                BiotechFamilyMemoryResetPolicy.ProjectSupporterForPov(
+                    otherChild,
+                    wipedAdultOtherChild,
+                    "Pawn_1");
+            FamilySupportObservationState survivingChildView =
+                BiotechFamilyMemoryResetPolicy.ProjectSupporterForPov(
+                    otherChild,
+                    wipedAdultOtherChild,
+                    "OtherChild");
+            AssertTrue("adult reset retains shared row but rebases only that adult POV",
+                targetChild.supporters.Any(row => row.adultId == "Pawn_1")
+                && otherChild.supporters.Any(row => row.adultId == "Pawn_1")
+                && wipedAdultOtherChild.adultMemoryBoundaryActive
+                && wipedAdultView.lessonCount == 0
+                && survivingChildView.lessonCount == 3
+                && !BiotechFamilyMemoryResetPolicy.HasObservedUpbringingForPov(
+                    otherChild, "Pawn_1")
+                && BiotechFamilyMemoryResetPolicy.HasObservedUpbringingForPov(
+                    otherChild, "OtherChild"));
+            AssertTrue("prefix-collision adult supporter and POV remain untouched",
+                targetChild.supporters.Any(row => row.adultId == "Pawn_10"
+                    && !row.adultMemoryBoundaryActive)
+                && otherChild.supporters.Any(row => row.adultId == "Pawn_10"
+                    && !row.adultMemoryBoundaryActive));
+            AssertTrue("parent identity without an old support row still retains adult boundary",
+                parentWithoutSupportRow.supporters.Any(row => row.adultId == "Pawn_1"
+                    && row.adultMemoryBoundaryActive
+                    && row.relationToken == BiotechFamilyRoleTokens.Parent)
+                && parentWithoutSupportRow.supporters.Any(row => row.adultId == "OtherParent"
+                    && row.lessonCount == 4)
+                && BiotechFamilyMemoryResetPolicy.HasMemoryBoundaryForPov(
+                    parentWithoutSupportRow, "Pawn_1"));
+            FamilySupportObservationState childTeacher =
+                BiotechFamilyMemoryResetPolicy.ProjectSupporterForPov(
+                    targetChild,
+                    targetChild.supporters.Single(row => row.adultId == "Teacher"),
+                    "Pawn_1");
+            FamilySupportObservationState adultTeacher =
+                BiotechFamilyMemoryResetPolicy.ProjectSupporterForPov(
+                    targetChild,
+                    targetChild.supporters.Single(row => row.adultId == "Teacher"),
+                    "Teacher");
+            AssertTrue("target-child POV starts from a zero-evidence lifetime baseline",
+                childTeacher.lessonCount == 0
+                    && childTeacher.babyPlayCount == 0
+                    && childTeacher.careCount == 0
+                    && !BiotechFamilyMemoryResetPolicy.HasObservedUpbringingForPov(
+                        targetChild, "Pawn_1")
+                    && BiotechFamilyMemoryResetPolicy.HasChildMemoryBoundaryForPov(
+                        targetChild, "Pawn_1"));
+            AssertTrue("adult POV retains truthful pre-wipe supporter evidence",
+                adultTeacher.lessonCount == 2
+                    && adultTeacher.babyPlayCount == 1
+                    && adultTeacher.careCount == 6
+                    && BiotechFamilyMemoryResetPolicy.HasObservedUpbringingForPov(
+                        targetChild, "Teacher")
+                    && !BiotechFamilyMemoryResetPolicy.HasChildMemoryBoundaryForPov(
+                        targetChild, "Teacher"));
+            AssertTrue("other child's unrelated supporter evidence remains truthful",
+                otherChild.supporters.Single(row => row.adultId == "OtherAdult").lessonCount == 6
+                && otherChild.supporters.Single(row => row.adultId == "Pawn_10").lessonCount == 4);
+            AssertTrue("family world truth and milestones survive child reset",
+                targetChild.birtherId == "Birther"
+                && targetChild.geneticMotherId == "Mother"
+                && targetChild.fatherId == "Pawn_10"
+                && targetChild.birthOutcomeToken == BiotechBirthOutcomeTokens.Healthy
+                && targetChild.recordedGrowthAges.SequenceEqual(new[] { 7, 10 })
+                && targetChild.lastObservedTick == 800
+                && otherChild.fatherId == "Pawn_1");
+
+            BiotechFamilyArcState teacherOnlyArc = new BiotechFamilyArcState
+            {
+                familyArcId = "biotech-family|TeacherBoundaryChild",
+                childId = "TeacherBoundaryChild",
+                supporters = new List<FamilySupportObservationState>
+                {
+                    new FamilySupportObservationState
+                    {
+                        adultId = "Pawn_1",
+                        lessonCount = 5,
+                        summarizedLessonCount = 4,
+                        firstObservedTick = 100,
+                        lastObservedTick = 800
+                    }
+                }
+            };
+            BiotechFamilyMemoryResetPolicy.ResetForPawn(
+                new List<BiotechFamilyArcState> { teacherOnlyArc },
+                "Pawn_1",
+                900);
+            FamilySupportObservationState teacherRow = teacherOnlyArc.supporters[0];
+            FamilySupportObservationState teacherChildVisible =
+                BiotechFamilyMemoryResetPolicy.ProjectSupporterForPov(
+                    teacherOnlyArc,
+                    teacherRow,
+                    "TeacherBoundaryChild");
+            FamilySupportObservationState teacherPairVisible =
+                BiotechFamilyMemoryResetPolicy.ProjectSupporterForPair(
+                    teacherOnlyArc,
+                    teacherRow,
+                    "TeacherBoundaryChild");
+            FamilySupportSelection childTeacherSelection = FamilySupportPolicy.Select(
+                new List<FamilySupportCandidate>
+                {
+                    new FamilySupportCandidate
+                    {
+                        adultId = "Pawn_1",
+                        lessonCount = teacherChildVisible.lessonCount,
+                        unsummarizedEvidenceCount =
+                            FamilyArcPolicy.UnsummarizedEvidence(teacherChildVisible),
+                        lastObservedTick = 800,
+                        eligible = true,
+                        sameMap = true
+                    }
+                },
+                BiotechPolicySnapshot.CreateDefault());
+            FamilySupportSelection pairTeacherSelection = FamilySupportPolicy.Select(
+                new List<FamilySupportCandidate>
+                {
+                    new FamilySupportCandidate
+                    {
+                        adultId = "Pawn_1",
+                        lessonCount = teacherPairVisible.lessonCount,
+                        unsummarizedEvidenceCount =
+                            FamilyArcPolicy.UnsummarizedEvidence(teacherPairVisible),
+                        lastObservedTick = 800,
+                        eligible = true,
+                        sameMap = true
+                    }
+                },
+                BiotechPolicySnapshot.CreateDefault());
+            AssertTrue("zero-delta wiped teacher cannot pair but child keeps independent context",
+                teacherRow.adultMemoryBoundaryActive
+                && childTeacherSelection != null
+                && pairTeacherSelection == null
+                && teacherChildVisible.lessonCount == 5
+                && teacherPairVisible.lessonCount == 0);
+            FamilySupportSelection unavailableParentChildContext = FamilySupportPolicy.Select(
+                new List<FamilySupportCandidate>
+                {
+                    Candidate("UnavailableParent", BiotechFamilyRoleTokens.Parent,
+                        0, 800, true, false)
+                },
+                BiotechPolicySnapshot.CreateDefault());
+            FamilySupportSelection unavailableParentWriter = FamilySupportPolicy.Select(
+                new List<FamilySupportCandidate>
+                {
+                    Candidate("UnavailableParent", BiotechFamilyRoleTokens.Parent,
+                        0, 800, false, false)
+                },
+                BiotechPolicySnapshot.CreateDefault());
+            AssertTrue("unavailable supporter remains child context but cannot become adult writer",
+                unavailableParentChildContext != null && unavailableParentWriter == null);
+
+            List<BiotechFamilyArcState> mergedAdultBoundary = FamilyArcPolicy.Normalize(
+                new List<BiotechFamilyArcState>
+                {
+                    new BiotechFamilyArcState
+                    {
+                        familyArcId = "biotech-family|MergedAdultBoundary",
+                        childId = "MergedAdultBoundary",
+                        supporters = new List<FamilySupportObservationState>
+                        {
+                            new FamilySupportObservationState
+                            {
+                                adultId = "Pawn_1",
+                                lessonCount = 2,
+                                firstObservedTick = 100,
+                                lastObservedTick = 500
+                            }
+                        }
+                    },
+                    new BiotechFamilyArcState
+                    {
+                        familyArcId = "biotech-family|MergedAdultBoundary",
+                        childId = "MergedAdultBoundary",
+                        supporters = new List<FamilySupportObservationState>
+                        {
+                            new FamilySupportObservationState
+                            {
+                                adultId = "Pawn_1",
+                                lessonCount = 3,
+                                firstObservedTick = 100,
+                                lastObservedTick = 900,
+                                adultMemoryBoundaryActive = true,
+                                adultMemoryBoundaryTick = 900,
+                                adultMemoryLessonBaseline = 3
+                            }
+                        }
+                    }
+                },
+                1000,
+                12);
+            FamilySupportObservationState mergedAdult = mergedAdultBoundary[0].supporters[0];
+            AssertTrue("duplicate supporter merge preserves raw child truth and fails closed for adult",
+                mergedAdult.lessonCount == 5
+                && mergedAdult.adultMemoryBoundaryActive
+                && mergedAdult.adultMemoryLessonBaseline == 5
+                && BiotechFamilyMemoryResetPolicy.ProjectSupporterForPov(
+                    mergedAdultBoundary[0], mergedAdult, "Pawn_1").lessonCount == 0
+                && BiotechFamilyMemoryResetPolicy.ProjectSupporterForPov(
+                    mergedAdultBoundary[0], mergedAdult, "MergedAdultBoundary").lessonCount == 5);
+
+            FamilyArcPolicy.ObserveActivity(arcs, new FamilyActivityObservation
+            {
+                kindToken = BiotechFamilyActivityKindTokens.Lesson,
+                adultId = "NewTeacher",
+                adultName = "New post-wipe teacher",
+                childId = "Pawn_1",
+                observedTick = 950
+            }, 12);
+            FamilySupportObservationState newTeacher =
+                targetChild.supporters.Single(row => row.adultId == "NewTeacher");
+            FamilySupportObservationState newTeacherChildView =
+                BiotechFamilyMemoryResetPolicy.ProjectSupporterForPov(
+                    targetChild,
+                    newTeacher,
+                    "Pawn_1");
+            AssertTrue("new post-wipe supporter gets an implicit zero child baseline",
+                newTeacherChildView.lessonCount == 1
+                && FamilyArcPolicy.UnsummarizedEvidence(newTeacherChildView) == 1);
+
+            FamilyArcPolicy.ObserveActivity(arcs, new FamilyActivityObservation
+            {
+                kindToken = BiotechFamilyActivityKindTokens.Lesson,
+                adultId = "Teacher",
+                adultName = "Post-wipe teacher",
+                childId = "Pawn_1",
+                observedTick = 1000
+            }, 12);
+            FamilySupportObservationState freshChildEvidence =
+                targetChild.supporters.Single(row => row.adultId == "Teacher");
+            FamilySupportObservationState freshChildProjection =
+                BiotechFamilyMemoryResetPolicy.ProjectSupporterForPov(
+                    targetChild,
+                    freshChildEvidence,
+                    "Pawn_1");
+            AssertTrue("post-wipe child support starts a fresh consumable counter",
+                freshChildEvidence.lessonCount == 3
+                && freshChildProjection.lessonCount == 1
+                && FamilyArcPolicy.UnsummarizedEvidence(freshChildProjection) == 1
+                && BiotechFamilyMemoryResetPolicy.HasObservedUpbringingForPov(
+                    targetChild, "Pawn_1"));
+            int adultCursorBeforeChildPage = freshChildEvidence.summarizedLessonCount;
+            FamilyArcPolicy.MarkGrowthSummarized(
+                targetChild,
+                13,
+                1050,
+                childPovConsumed: true,
+                adultPovConsumed: false);
+            AssertTrue("child page consumes only its detached post-wipe support cursor",
+                !BiotechFamilyMemoryResetPolicy.HasObservedUpbringingForPov(
+                    targetChild, "Pawn_1")
+                && BiotechFamilyMemoryResetPolicy.HasObservedUpbringingForPov(
+                    targetChild, "Teacher")
+                && freshChildEvidence.summarizedLessonCount == adultCursorBeforeChildPage);
+
+            FamilyArcPolicy.ObserveActivity(arcs, new FamilyActivityObservation
+            {
+                kindToken = BiotechFamilyActivityKindTokens.BabyPlay,
+                adultId = "Teacher",
+                adultName = "Post-wipe teacher",
+                childId = "Pawn_1",
+                observedTick = 1075
+            }, 12);
+            FamilyArcPolicy.MarkGrowthSummarized(
+                targetChild,
+                13,
+                1080,
+                childPovConsumed: false,
+                adultPovConsumed: true,
+                adultPovPawnId: "Teacher");
+            FamilySupportObservationState childAfterAdultConsumption =
+                BiotechFamilyMemoryResetPolicy.ProjectSupporterForPov(
+                    targetChild,
+                    freshChildEvidence,
+                    "Pawn_1");
+            AssertTrue("adult-only consumption advances shared cursor without stealing child evidence",
+                freshChildEvidence.summarizedLessonCount == freshChildEvidence.lessonCount
+                && freshChildEvidence.summarizedBabyPlayCount == freshChildEvidence.babyPlayCount
+                && childAfterAdultConsumption.babyPlayCount == 1
+                && FamilyArcPolicy.UnsummarizedEvidence(childAfterAdultConsumption) == 1);
+
+            FamilyArcPolicy.ObserveActivity(arcs, new FamilyActivityObservation
+            {
+                kindToken = BiotechFamilyActivityKindTokens.Lesson,
+                adultId = "Teacher",
+                adultName = "Post-wipe teacher",
+                childId = "Pawn_1",
+                observedTick = 1090
+            }, 12);
+            FamilyArcPolicy.MarkGrowthSummarized(
+                targetChild,
+                13,
+                1095,
+                childPovConsumed: true,
+                adultPovConsumed: true,
+                adultPovPawnId: "Teacher");
+            FamilySupportObservationState childAfterPairConsumption =
+                BiotechFamilyMemoryResetPolicy.ProjectSupporterForPov(
+                    targetChild,
+                    freshChildEvidence,
+                    "Pawn_1");
+            AssertTrue("paired growth consumption advances child and adult cursors independently",
+                freshChildEvidence.summarizedLessonCount == freshChildEvidence.lessonCount
+                && freshChildEvidence.summarizedBabyPlayCount == freshChildEvidence.babyPlayCount
+                && FamilyArcPolicy.UnsummarizedEvidence(childAfterPairConsumption) == 0
+                && !BiotechFamilyMemoryResetPolicy.HasObservedUpbringingForPov(
+                    targetChild, "Pawn_1"));
+
+            FamilyArcPolicy.ObserveActivity(arcs, new FamilyActivityObservation
+            {
+                kindToken = BiotechFamilyActivityKindTokens.BabyPlay,
+                adultId = "Pawn_1",
+                adultName = "Post-wipe supporter",
+                childId = "OtherChild",
+                observedTick = 1100
+            }, 12);
+            FamilySupportObservationState adultAfterFreshSupport =
+                BiotechFamilyMemoryResetPolicy.ProjectSupporterForPov(
+                    otherChild,
+                    wipedAdultOtherChild,
+                    "Pawn_1");
+            AssertTrue("wiped adult may accumulate only fresh family evidence for their POV",
+                wipedAdultOtherChild.babyPlayCount == 3
+                && adultAfterFreshSupport.babyPlayCount == 1
+                && BiotechFamilyMemoryResetPolicy.ProjectSupporterForPov(
+                    otherChild,
+                    wipedAdultOtherChild,
+                    "OtherChild").babyPlayCount == 3);
+            int childSharedCursorBeforeAdultPage =
+                wipedAdultOtherChild.summarizedBabyPlayCount;
+            FamilyArcPolicy.MarkGrowthSummarized(
+                otherChild,
+                7,
+                1110,
+                childPovConsumed: false,
+                adultPovConsumed: true,
+                adultPovPawnId: "Pawn_1");
+            AssertTrue("wiped-adult solo page consumes only its detached adult cursor",
+                BiotechFamilyMemoryResetPolicy.ProjectSupporterForPov(
+                    otherChild,
+                    wipedAdultOtherChild,
+                    "Pawn_1").babyPlayCount == 0
+                && wipedAdultOtherChild.summarizedBabyPlayCount
+                    == childSharedCursorBeforeAdultPage
+                && FamilyArcPolicy.UnsummarizedEvidence(wipedAdultOtherChild) > 0);
+
+            FamilyArcPolicy.ObserveActivity(arcs, new FamilyActivityObservation
+            {
+                kindToken = BiotechFamilyActivityKindTokens.Lesson,
+                adultId = "Pawn_1",
+                adultName = "Post-wipe supporter",
+                childId = "OtherChild",
+                observedTick = 1120
+            }, 12);
+            FamilySupportObservationState pairVisible =
+                BiotechFamilyMemoryResetPolicy.ProjectSupporterForPair(
+                    otherChild,
+                    wipedAdultOtherChild,
+                    "OtherChild");
+            AssertTrue("pair projection exposes only evidence visible to child and wiped adult",
+                pairVisible.lessonCount == 1
+                && pairVisible.firstObservedTick == 900
+                && FamilyArcPolicy.UnsummarizedEvidence(pairVisible) == 1);
+            FamilyArcPolicy.MarkGrowthSummarized(
+                otherChild,
+                10,
+                1130,
+                childPovConsumed: true,
+                adultPovConsumed: true,
+                adultPovPawnId: "Pawn_1");
+            AssertTrue("mixed-boundary pair consumes shared child and detached adult cursors",
+                FamilyArcPolicy.UnsummarizedEvidence(wipedAdultOtherChild) == 0
+                && FamilyArcPolicy.UnsummarizedEvidence(
+                    BiotechFamilyMemoryResetPolicy.ProjectSupporterForPov(
+                        otherChild,
+                        wipedAdultOtherChild,
+                        "Pawn_1")) == 0);
+        }
+
         private static void TestSupporterSelectionAndWriterShapes()
         {
             BiotechPolicySnapshot policy = BiotechPolicySnapshot.CreateDefault();
@@ -1368,6 +1806,178 @@ namespace DiaryBiotechPolicyTests
                     birth.childId));
         }
 
+        private static void TestPendingWriterReset()
+        {
+            PendingBiotechGrowthMoment wipedGrowth = new PendingBiotechGrowthMoment
+            {
+                pawnId = "Pawn_1",
+                birthdayAge = 7
+            };
+            PendingBiotechGrowthMoment prefixCollision = new PendingBiotechGrowthMoment
+            {
+                pawnId = "Pawn_10",
+                birthdayAge = 10
+            };
+            PendingBiotechGrowthMoment otherGrowth = new PendingBiotechGrowthMoment
+            {
+                pawnId = "Other",
+                birthdayAge = 13
+            };
+            List<PendingBiotechGrowthMoment> growthRows =
+                BiotechPendingWriterResetPolicy.RemoveGrowthWriter(
+                    new List<PendingBiotechGrowthMoment>
+                    {
+                        wipedGrowth,
+                        prefixCollision,
+                        otherGrowth
+                    },
+                    " Pawn_1 ");
+            AssertEqual("Brainwipe removes only the exact delayed growth writer", 2, growthRows.Count);
+            AssertTrue("Brainwipe keeps prefix-collision and unrelated growth writers",
+                growthRows.Contains(prefixCollision)
+                && growthRows.Contains(otherGrowth)
+                && !growthRows.Contains(wipedGrowth));
+
+            BirthMutationSnapshot sharedSnapshot = BirthSnapshot("SharedChild", 400);
+            PendingBiotechBirthState sharedBirth = new PendingBiotechBirthState
+            {
+                snapshot = sharedSnapshot,
+                writers = new BirthWriterSelection
+                {
+                    writers = new List<BirthWriterFact>
+                    {
+                        new BirthWriterFact
+                        {
+                            pawnId = "Pawn_1",
+                            roleToken = BiotechFamilyRoleTokens.Birther
+                        },
+                        new BirthWriterFact
+                        {
+                            pawnId = "Other",
+                            displayName = "Other writer",
+                            roleToken = BiotechFamilyRoleTokens.Father
+                        }
+                    }
+                },
+                eventContext = new BirthEventContextSnapshot
+                {
+                    birthTick = 400,
+                    birthDate = "shared birth date",
+                    writers = new List<BirthWriterContextSnapshot>
+                    {
+                        new BirthWriterContextSnapshot
+                        {
+                            pawnId = "Pawn_1",
+                            continuity = "wiped continuity"
+                        },
+                        new BirthWriterContextSnapshot
+                        {
+                            pawnId = "Other",
+                            continuity = "surviving continuity",
+                            pairContinuity = "surviving pair continuity"
+                        }
+                    }
+                },
+                createdTick = 405
+            };
+            PendingBiotechBirthState targetOnlyBirth = new PendingBiotechBirthState
+            {
+                snapshot = BirthSnapshot("TargetOnlyChild", 410),
+                writers = new BirthWriterSelection
+                {
+                    writers = new List<BirthWriterFact>
+                    {
+                        new BirthWriterFact
+                        {
+                            pawnId = "Pawn_1",
+                            roleToken = BiotechFamilyRoleTokens.GeneticMother
+                        }
+                    }
+                },
+                eventContext = new BirthEventContextSnapshot
+                {
+                    writers = new List<BirthWriterContextSnapshot>
+                    {
+                        new BirthWriterContextSnapshot { pawnId = "Pawn_1" }
+                    }
+                }
+            };
+            PendingBiotechBirthState subjectOnly = new PendingBiotechBirthState
+            {
+                snapshot = BirthSnapshot("SubjectOnlyChild", 420),
+                writers = new BirthWriterSelection
+                {
+                    writers = new List<BirthWriterFact>
+                    {
+                        new BirthWriterFact
+                        {
+                            pawnId = "Other",
+                            roleToken = BiotechFamilyRoleTokens.Father
+                        }
+                    }
+                }
+            };
+            subjectOnly.snapshot.birther = Participant("Pawn_1", "Wiped subject", true);
+
+            List<PendingBiotechBirthState> birthRows =
+                BiotechPendingWriterResetPolicy.RemoveBirthWriter(
+                    new List<PendingBiotechBirthState>
+                    {
+                        sharedBirth,
+                        targetOnlyBirth,
+                        subjectOnly
+                    },
+                    "Pawn_1");
+            AssertEqual("Brainwipe drops only a birth whose final writer was wiped", 2, birthRows.Count);
+            PendingBiotechBirthState projectedShared = birthRows.Single(
+                row => row.snapshot.childId == "SharedChild");
+            AssertTrue("shared birth keeps its frozen facts and creation tick",
+                object.ReferenceEquals(sharedSnapshot, projectedShared.snapshot)
+                && projectedShared.createdTick == 405);
+            AssertTrue("shared birth keeps only the other exact writer",
+                projectedShared.writers.writers.Count == 1
+                && projectedShared.writers.writers[0].pawnId == "Other");
+            AssertTrue("shared birth keeps only the other writer's event-time context",
+                projectedShared.eventContext.writers.Count == 1
+                && projectedShared.eventContext.writers[0].pawnId == "Other"
+                && projectedShared.eventContext.writers[0].continuity == "surviving continuity"
+                && projectedShared.eventContext.writers[0].pairContinuity
+                    == "surviving pair continuity");
+            AssertTrue("a wiped subject does not erase another pawn's birth memory",
+                birthRows.Contains(subjectOnly));
+
+            AssertEqual("a malformed birth with no writer is discarded during reset", 0,
+                BiotechPendingWriterResetPolicy.RemoveBirthWriter(
+                    new List<PendingBiotechBirthState>
+                    {
+                        new PendingBiotechBirthState
+                        {
+                            snapshot = BirthSnapshot("OrphanedChild", 430),
+                            writers = new BirthWriterSelection()
+                        }
+                    },
+                    "Pawn_1").Count);
+
+            AssertEqual("blank reset ID leaves growth ownership untouched", 3,
+                BiotechPendingWriterResetPolicy.RemoveGrowthWriter(
+                    new List<PendingBiotechGrowthMoment>
+                    {
+                        wipedGrowth,
+                        prefixCollision,
+                        otherGrowth
+                    },
+                    " ").Count);
+            AssertEqual("blank reset ID leaves birth ownership untouched", 3,
+                BiotechPendingWriterResetPolicy.RemoveBirthWriter(
+                    new List<PendingBiotechBirthState>
+                    {
+                        sharedBirth,
+                        targetOnlyBirth,
+                        subjectOnly
+                    },
+                    null).Count);
+        }
+
         private static void TestSettingsInheritance()
         {
             AssertTrue("growth absent uses new default", BiotechSettingsInheritance.GrowthEnabled(null, null, true));
@@ -1508,6 +2118,54 @@ namespace DiaryBiotechPolicyTests
                 MechanitorLifecyclePolicy.ShouldRecordLoss(custom, 100, 101, 900));
             AssertTrue("recent numerical mech loss stays silent",
                 !MechanitorLifecyclePolicy.ShouldRecordLoss(numerical, 100, 101, 900));
+
+            MechanitorMechObservationState activeBeforeWipe = new MechanitorMechObservationState
+            {
+                mechId = "Mech_Active",
+                lastDisplayName = "Moss",
+                kindDefName = "Lifter",
+                firstObservedTick = 75,
+                lossObserved = false
+            };
+            MechanitorMechObservationState completedBeforeWipe = new MechanitorMechObservationState
+            {
+                mechId = "Mech_Lost",
+                lastDisplayName = "Slate",
+                kindDefName = "Scyther",
+                firstObservedTick = 50,
+                lossObserved = true
+            };
+            List<MechanitorMechObservationState> wipeRows =
+                new List<MechanitorMechObservationState>
+                {
+                    activeBeforeWipe,
+                    completedBeforeWipe,
+                    null
+                };
+            MechanitorLifecyclePolicy.RebaselineActiveMechsAfterMemoryReset(wipeRows, 700);
+            AssertTrue("Brainwipe preserves active mech row identity",
+                object.ReferenceEquals(activeBeforeWipe, wipeRows[0]));
+            AssertEqual("Brainwipe restarts active mech service clock", 700,
+                activeBeforeWipe.firstObservedTick);
+            AssertEqual("Brainwipe preserves active mech ID", "Mech_Active",
+                activeBeforeWipe.mechId);
+            AssertEqual("Brainwipe preserves active mech display name", "Moss",
+                activeBeforeWipe.lastDisplayName);
+            AssertEqual("Brainwipe preserves active mech kind", "Lifter",
+                activeBeforeWipe.kindDefName);
+            AssertTrue("Brainwipe leaves active mech eligible for a later loss",
+                !activeBeforeWipe.lossObserved);
+            AssertTrue("Brainwipe preserves completed mech row identity",
+                object.ReferenceEquals(completedBeforeWipe, wipeRows[1]));
+            AssertEqual("Brainwipe preserves completed mech service clock", 50,
+                completedBeforeWipe.firstObservedTick);
+            AssertTrue("Brainwipe preserves completed mech loss dedup",
+                completedBeforeWipe.lossObserved);
+            MechanitorLifecyclePolicy.RebaselineActiveMechsAfterMemoryReset(wipeRows, -5);
+            AssertEqual("malformed Brainwipe tick clamps active mech clock", 0,
+                activeBeforeWipe.firstObservedTick);
+            AssertEqual("malformed Brainwipe tick still preserves completed clock", 50,
+                completedBeforeWipe.firstObservedTick);
 
             List<string> first = new List<string> { "KilledMelee" };
             List<string> second = new List<string> { "KilledBy" };
@@ -1809,6 +2467,18 @@ namespace DiaryBiotechPolicyTests
             AssertEqual("lifetime cap keeps later severe wake silent",
                 DeathrestInterruptionDecision.OwnSilently,
                 DeathrestInterruptionPolicy.Decide(snapshot, state, policy));
+            DeathrestInterruptionPolicy.ForgetMemory(state);
+            AssertEqual("Brainwipe installs current deathrest observation schema",
+                DeathrestInterruptionPolicy.CurrentObservationVersion,
+                state.observationVersion);
+            AssertEqual("Brainwipe clears deathrest lifetime count", 0,
+                state.severeInterruptionsRecorded);
+            AssertEqual("Brainwipe clears deathrest cooldown tick", -1,
+                state.lastRecordedTick);
+            AssertEqual("first severe post-wipe interruption can record",
+                DeathrestInterruptionDecision.OwnAndRecord,
+                DeathrestInterruptionPolicy.Decide(snapshot, state, policy));
+            DeathrestInterruptionPolicy.ForgetMemory(null);
 
             DeathrestMutationSnapshot inactive = new DeathrestMutationSnapshot
             {
@@ -2226,6 +2896,28 @@ namespace DiaryBiotechPolicyTests
         private static GrowthSkillFact Skill(string key, string label, string passion)
         {
             return new GrowthSkillFact { skillDefName = key, label = label, passion = passion };
+        }
+
+        private static FamilySupportObservationState Supporter(
+            string adultId,
+            int lessons,
+            int babyPlay,
+            int care)
+        {
+            return new FamilySupportObservationState
+            {
+                adultId = adultId,
+                lastDisplayName = adultId,
+                relationToken = BiotechFamilyRoleTokens.Parent,
+                lessonCount = lessons,
+                babyPlayCount = babyPlay,
+                careCount = care,
+                summarizedLessonCount = Math.Max(0, lessons - 1),
+                summarizedBabyPlayCount = Math.Max(0, babyPlay - 1),
+                summarizedCareCount = Math.Max(0, care - 1),
+                firstObservedTick = 100,
+                lastObservedTick = 800
+            };
         }
 
         private static FamilySupportCandidate Candidate(

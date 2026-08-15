@@ -88,6 +88,8 @@ namespace PawnDiary
     {
         public string colorCue;
         public bool important = true;
+        public bool combat;
+        public bool reflection;
     }
 
     /// <summary>

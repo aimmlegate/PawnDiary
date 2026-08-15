@@ -126,12 +126,6 @@ namespace DiaryRngIsolationContractTests
                 MemberKind.Method,
                 "generation candidate gate; the public snapshot route is independently isolated"),
             OneShot(
-                "Source/Generation/PsychotypeRolls.cs",
-                "Roll",
-                MemberKind.Method,
-                "Value",
-                "new-pawn psychotype result is persisted in the diary record"),
-            OneShot(
                 "Source/Core/DiaryGameComponent.DaySummary.cs",
                 "SelectHighlights",
                 MemberKind.Method,
@@ -226,11 +220,6 @@ namespace DiaryRngIsolationContractTests
                 "PromptEnchantmentCandidatesFor",
                 MemberKind.Method,
                 @"\bPromptEnchantmentCollector\s*\.\s*Collect\s*\("),
-            OneShotGuard(
-                "Source/Generation/PsychotypeRolls.cs",
-                "Roll",
-                MemberKind.Method,
-                @"\bRand\s*\.\s*Value\b"),
             OneShotGuard(
                 "Source/Core/DiaryGameComponent.DaySummary.cs",
                 "SelectHighlights",
@@ -352,6 +341,7 @@ namespace DiaryRngIsolationContractTests
             TestInteractionFrequencyOwnership(corpus);
             TestTaleBatchFrequencyKnowledgeOwnership(corpus);
             TestAdmissionFrequencyStreamOwnership(corpus);
+            TestPsychotypePrivateStreamOwnership(corpus);
             TestManifestMetadata(corpus);
             TestDrawInventory(corpus);
             TestVerseRestorationScopes(corpus);
@@ -558,8 +548,8 @@ namespace DiaryRngIsolationContractTests
                 "DiaryGameComponent",
                 MemberKind.Method).Text(component.Sanitized);
             AssertTrue(
-                "component seeds exactly one private admission stream",
-                Regex.Matches(constructor, @"new\s+DiaryAdmissionRandom\s*\(").Count == 1
+                "component seeds separate admission and psychotype streams from one isolated draw",
+                Regex.Matches(constructor, @"new\s+DiaryAdmissionRandom\s*\(").Count == 2
                     && Regex.Matches(constructor, @"\bRand\s*\.\s*Int\b").Count == 1);
 
             SourceFile dispatch = corpus.File("Source/Core/DiaryGameComponent.Dispatch.cs");
@@ -617,6 +607,47 @@ namespace DiaryRngIsolationContractTests
                         + @"[\s\S]{0,500}?if\s*\(\s*frequencyRejected\s*\)"
                         + @"[\s\S]{0,700}?sink\s*\.\s*CaptureFrequencyRejectedKnowledge\s*\("
                         + @"\s*this\s*,\s*payload\s*,\s*BuildContext\s*\(\s*\)\s*\)"));
+        }
+
+        private static void TestPsychotypePrivateStreamOwnership(SourceCorpus corpus)
+        {
+            SourceFile component = corpus.File("Source/Core/DiaryGameComponent.cs");
+            string constructor = corpus.Member(
+                component.Path,
+                "DiaryGameComponent",
+                MemberKind.Method).Text(component.Sanitized);
+            AssertTrue(
+                "component derives a separate psychotype stream inside the isolated seed scope",
+                Regex.IsMatch(
+                    constructor,
+                    @"privateRandomSeed\s*=\s*unchecked\s*\(\s*\(uint\)\s*Rand\s*\.\s*Int\s*\)"
+                        + @"[\s\S]{0,300}?admissionRandom\s*=\s*new\s+DiaryAdmissionRandom\s*\(\s*privateRandomSeed\s*\)"
+                        + @"[\s\S]{0,300}?psychotypeRollRandom\s*=\s*new\s+DiaryAdmissionRandom\s*\("
+                        + @"\s*privateRandomSeed\s*\^\s*0x[0-9A-Fa-f]+u\s*\)"));
+
+            SourceFile voice = corpus.File("Source/Core/DiaryGameComponent.Voice.cs");
+            string rollAdapter = corpus.Member(
+                voice.Path,
+                "RollPsychotypeFor",
+                MemberKind.Method).Text(voice.Sanitized);
+            AssertTrue(
+                "every automatic or preview psychotype roll advances the component-owned stream",
+                Regex.IsMatch(
+                    rollAdapter,
+                    @"PsychotypeRolls\s*\.\s*Roll\s*\([\s\S]{0,400}?"
+                        + @"psychotypeRollRandom\s*\.\s*NextUnitFloat\s*\)"));
+
+            SourceFile rolls = corpus.File("Source/Generation/PsychotypeRolls.cs");
+            string roll = corpus.Member(
+                rolls.Path,
+                "Roll",
+                MemberKind.Method).Text(rolls.Sanitized);
+            AssertTrue(
+                "psychotype adapter delegates only to the supplied private stream",
+                Regex.IsMatch(
+                    roll,
+                    @"PsychotypeRollPolicy\s*\.\s*Roll\s*\(\s*input\s*,\s*candidates\s*,\s*nextUnitFloat\s*\)")
+                    && roll.IndexOf("Rand.", StringComparison.Ordinal) < 0);
         }
 
         private static void TestManifestMetadata(SourceCorpus corpus)

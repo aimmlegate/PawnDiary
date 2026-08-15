@@ -829,6 +829,43 @@ namespace PawnDiary
             AssertEqual("write-side maintenance prunes stale rows without a read", 0,
                 writePruned.Count);
 
+            BeliefMutationBuffer forgotten = new BeliefMutationBuffer();
+            forgotten.RecordOrMerge(nested, 100, 8, 10);
+            BeliefMutationState otherBefore = new BeliefMutationState
+            {
+                pawnId = "PawnB", capturedTick = 100, ideologyId = "IdeoA",
+                hasCertainty = true, certainty = 0.8f
+            };
+            BeliefMutationState otherAfter = new BeliefMutationState
+            {
+                pawnId = "PawnB", capturedTick = 100, ideologyId = "IdeoA",
+                hasCertainty = true, certainty = 0.7f
+            };
+            BeliefMutationState prefixBefore = new BeliefMutationState
+            {
+                pawnId = "PawnAA", capturedTick = 100, ideologyId = "IdeoA",
+                hasCertainty = true, certainty = 0.8f
+            };
+            BeliefMutationState prefixAfter = new BeliefMutationState
+            {
+                pawnId = "PawnAA", capturedTick = 100, ideologyId = "IdeoA",
+                hasCertainty = true, certainty = 0.7f
+            };
+            forgotten.RecordOrMerge(BeliefMutationPolicy.Create(
+                otherBefore, otherAfter, null, BeliefMutationCauseTokens.CertaintyOffset,
+                null, 30, 31), 100, 8, 10);
+            forgotten.RecordOrMerge(BeliefMutationPolicy.Create(
+                prefixBefore, prefixAfter, null, BeliefMutationCauseTokens.CertaintyOffset,
+                null, 32, 33), 100, 8, 10);
+            AssertEqual("Brainwipe removes only exact pawn belief mutations", 1,
+                forgotten.ForgetPawn(" PawnA "));
+            AssertTrue("Brainwipe preserves unrelated and prefix-collision belief mutations",
+                forgotten.PeekLatest("PawnB", 100, 10) != null
+                    && forgotten.PeekLatest("PawnAA", 100, 10) != null
+                    && forgotten.PeekLatest("PawnA", 100, 10) == null);
+            AssertEqual("blank belief mutation reset is inert", 0,
+                forgotten.ForgetPawn(" "));
+
             BeliefMutationBuffer regressedClock = new BeliefMutationBuffer();
             BeliefMutationState futureBefore = new BeliefMutationState
             {
@@ -2864,6 +2901,36 @@ namespace PawnDiary
                 visiblePawnIds = new List<string> { "SyntheticPawn" }
             }, 510, 3, 20);
             AssertEqual("malformed history identities fail closed", 0, buffer.Count);
+
+            buffer.Observe(new BeliefHistoryObservation
+            {
+                tick = 520,
+                historyEventDefName = "History_Shared",
+                visiblePawnIds = new List<string> { "SyntheticPawn", "OtherPawn" }
+            }, 520, 8, 20);
+            buffer.Observe(new BeliefHistoryObservation
+            {
+                tick = 520,
+                historyEventDefName = "History_TargetOnly",
+                visiblePawnIds = new List<string> { "SyntheticPawn" }
+            }, 520, 8, 20);
+            buffer.Observe(new BeliefHistoryObservation
+            {
+                tick = 520,
+                historyEventDefName = "History_Prefix",
+                visiblePawnIds = new List<string> { "SyntheticPawnX" }
+            }, 520, 8, 20);
+            AssertEqual("Brainwipe removes exact pawn from shared history memberships", 2,
+                buffer.ForgetPawn(" SyntheticPawn "));
+            AssertEqual("Brainwipe drops only target-only history row", 2, buffer.Count);
+            AssertEqual("wiped pawn cannot see pre-wipe history evidence", 0,
+                buffer.NearbyDefNames("SyntheticPawn", 520, 20).Count);
+            AssertEqual("shared history remains visible to another pawn", 1,
+                buffer.NearbyDefNames("OtherPawn", 520, 20).Count);
+            AssertEqual("prefix-collision history membership survives", 1,
+                buffer.NearbyDefNames("SyntheticPawnX", 520, 20).Count);
+            AssertEqual("blank history reset is inert", 0, buffer.ForgetPawn(" "));
+            buffer.Clear();
 
             buffer.Observe(new BeliefHistoryObservation
             {

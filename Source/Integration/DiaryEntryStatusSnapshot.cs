@@ -69,6 +69,9 @@ namespace PawnDiary.Integration
         /// <summary>Semantic event domain such as External, Thought, Interaction, or Reflection.</summary>
         public string domain = string.Empty;
 
+        /// <summary>Player category key such as Personal or Combat. Empty for source-derived pages.</summary>
+        public string entryTypeKey = string.Empty;
+
         /// <summary>Rare atmosphere cue such as fractured, unsettled, or memorial.</summary>
         public string atmosphereCue = string.Empty;
 

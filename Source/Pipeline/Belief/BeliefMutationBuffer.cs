@@ -69,6 +69,23 @@ namespace PawnDiary
             return Copy(best);
         }
 
+        /// <summary>Removes only detached mutations owned by one exact pawn.</summary>
+        public int ForgetPawn(string pawnId)
+        {
+            string wanted = SafeId(pawnId);
+            if (wanted.Length == 0) return 0;
+            int removed = 0;
+            for (int i = rows.Count - 1; i >= 0; i--)
+            {
+                if (string.Equals(rows[i]?.pawnId, wanted, StringComparison.Ordinal))
+                {
+                    rows.RemoveAt(i);
+                    removed++;
+                }
+            }
+            return removed;
+        }
+
         /// <summary>Clears all transient rows at a game/test boundary.</summary>
         public void Clear()
         {

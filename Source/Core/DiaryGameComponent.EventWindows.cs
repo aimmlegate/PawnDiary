@@ -600,12 +600,14 @@ namespace PawnDiary
 
                 // Timeout cleanup runs on a short periodic cadence, but prompt generation can happen
                 // between scans (or immediately after loading/time-skipping). Never let an already-expired
-                // saved row color another prompt while it waits for the cleanup pass.
-                active.expiresTick = EventWindowExpiryPolicy.ResolveDeadline(
+                // saved row color another prompt while it waits for the cleanup pass. This is a read-only
+                // context snapshot, so repair into a local deadline; lifecycle/load normalization owns
+                // the saved expiresTick mutation.
+                int effectiveExpiresTick = EventWindowExpiryPolicy.ResolveDeadline(
                     active.startedTick,
                     active.expiresTick,
                     def.EffectiveTimeoutTicks());
-                if (EventWindowExpiryPolicy.IsExpired(now, active.expiresTick))
+                if (EventWindowExpiryPolicy.IsExpired(now, effectiveExpiresTick))
                 {
                     continue;
                 }
@@ -618,7 +620,7 @@ namespace PawnDiary
                         active.startCorrelationId,
                         active.startNarrativeArcKey,
                         active.startedTick,
-                        active.expiresTick,
+                        effectiveExpiresTick,
                         now,
                         royaltyPolicy,
                         ModsConfig.RoyaltyActive))

@@ -29,4 +29,45 @@ namespace PawnDiary
             return value ?? string.Empty;
         }
     }
+
+    /// <summary>
+    /// Pure admission policy for the shared public/internal one-shot completion table. Public callers
+    /// may use the paid-work capacity except for a small internal reserve; every caller still obeys
+    /// the same fixed total cap.
+    /// </summary>
+    internal static class LlmCompletionCapacityPolicy
+    {
+        /// <summary>
+        /// True when one request can enter the table without exceeding either the total hard cap or
+        /// the public partition. Counts are snapshots taken under the service's existing lock.
+        /// </summary>
+        public static bool CanAccept(
+            int totalTracked,
+            int publicTracked,
+            bool trustedInternal,
+            int maximumTracked,
+            int reservedForInternal)
+        {
+            if (maximumTracked < 1
+                || totalTracked < 0
+                || publicTracked < 0
+                || publicTracked > totalTracked
+                || totalTracked >= maximumTracked)
+            {
+                return false;
+            }
+
+            int reserve = reservedForInternal;
+            if (reserve < 0)
+            {
+                reserve = 0;
+            }
+            else if (reserve > maximumTracked)
+            {
+                reserve = maximumTracked;
+            }
+
+            return trustedInternal || publicTracked < maximumTracked - reserve;
+        }
+    }
 }

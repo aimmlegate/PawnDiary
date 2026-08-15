@@ -282,6 +282,19 @@ namespace PawnDiary
         public static int PendingCountForTests => Pending.Count;
         public static int ActiveCountForTests => Active.Count;
 
+        /// <summary>
+        /// Silently removes one exact pawn's open and pending mutation ownership at Brainwipe. No
+        /// fallback is emitted: those title/psylink facts belong to the autobiography being erased.
+        /// Unrelated rows and the monotonic correlation serial remain untouched.
+        /// </summary>
+        public static int ForgetPawn(string pawnId)
+        {
+            string pawn = CleanId(pawnId);
+            if (pawn.Length == 0) return 0;
+            int removed = RemovePawnRows(Active, pawn);
+            return removed + RemovePawnRows(Pending, pawn);
+        }
+
         public static void Clear()
         {
             Active.Clear();
@@ -306,6 +319,20 @@ namespace PawnDiary
             for (int i = 0; i < values.Count; i++)
                 if (string.Equals(CleanId(values[i]), expected, StringComparison.Ordinal)) return true;
             return false;
+        }
+
+        private static int RemovePawnRows(List<RoyalMutationBatchSnapshot> rows, string pawnId)
+        {
+            int removed = 0;
+            for (int i = rows.Count - 1; i >= 0; i--)
+            {
+                if (string.Equals(rows[i]?.pawnId, pawnId, StringComparison.Ordinal))
+                {
+                    rows.RemoveAt(i);
+                    removed++;
+                }
+            }
+            return removed;
         }
 
         private static int Clamp(int value, int minimum, int maximum, int fallback)

@@ -59,6 +59,32 @@ namespace PawnDiary
             return result;
         }
 
+        /// <summary>
+        /// Removes one exact pawn from shared visibility rows, dropping a row only when no other
+        /// visible pawn remains. This preserves another POV's independent correlation evidence.
+        /// </summary>
+        public int ForgetPawn(string pawnId)
+        {
+            string wanted = SafeId(pawnId);
+            if (wanted.Length == 0) return 0;
+            int removedMemberships = 0;
+            for (int i = observations.Count - 1; i >= 0; i--)
+            {
+                BeliefHistoryObservation row = observations[i];
+                if (row?.visiblePawnIds == null) continue;
+                for (int j = row.visiblePawnIds.Count - 1; j >= 0; j--)
+                {
+                    if (string.Equals(row.visiblePawnIds[j], wanted, StringComparison.Ordinal))
+                    {
+                        row.visiblePawnIds.RemoveAt(j);
+                        removedMemberships++;
+                    }
+                }
+                if (row.visiblePawnIds.Count == 0) observations.RemoveAt(i);
+            }
+            return removedMemberships;
+        }
+
         /// <summary>Clears process-static state at every game boundary.</summary>
         public void Clear()
         {

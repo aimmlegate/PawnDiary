@@ -642,4 +642,10 @@ If using direct speech, quote only words supplied for the POV pawn; never invent
   <!-- Quality Wave H1 append-only combat-beats labels. Byte-identical to the base Def. -->
   <DiaryPromptTemplate_PairCombat.fields.33.label>combat beats</DiaryPromptTemplate_PairCombat.fields.33.label>
   <DiaryPromptTemplate_SoloImportant.fields.137.label>combat beats</DiaryPromptTemplate_SoloImportant.fields.137.label>
+  <!-- Player composer context contract; all rows append to preserve existing indexes. -->
+  <DiaryPromptTemplate_SoloDefault.fields.57.label>you</DiaryPromptTemplate_SoloDefault.fields.57.label>
+  <DiaryPromptTemplate_SoloDefault.fields.58.label>key relationships</DiaryPromptTemplate_SoloDefault.fields.58.label>
+  <DiaryPromptTemplate_SoloImportant.fields.138.label>key relationships</DiaryPromptTemplate_SoloImportant.fields.138.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.42.label>pawn context</DiaryPromptTemplate_SoloInternalState.fields.42.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.43.label>key relationships</DiaryPromptTemplate_SoloInternalState.fields.43.label>
 </LanguageData>

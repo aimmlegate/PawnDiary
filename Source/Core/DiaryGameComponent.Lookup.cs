@@ -113,6 +113,32 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Removes only structurally pawn-owned source/type dedup keys after Brainwipe. Shared colony
+        /// fan-out and opaque occurrence keys deliberately survive; see the pure key policy for the
+        /// audited prefix/field allowlist and prefix-collision guarantees.
+        /// </summary>
+        private void ForgetRecentEventsForPawn(string pawnId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId) || recentEvents.Count == 0)
+            {
+                return;
+            }
+
+            List<string> ownedKeys = new List<string>();
+            foreach (string key in recentEvents.Keys)
+            {
+                if (PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(key, pawnId))
+                {
+                    ownedKeys.Add(key);
+                }
+            }
+            for (int i = 0; i < ownedKeys.Count; i++)
+            {
+                recentEvents.Remove(ownedKeys[i]);
+            }
+        }
+
+        /// <summary>
         /// Checks whether a pawn is a humanlike (as opposed to an animal or mechanoid).
         /// </summary>
         private static bool IsHumanlike(Pawn pawn)

@@ -110,6 +110,38 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Central compact-row semantic projection. Player categories are re-projected through the same
+        /// pure policy as hot events, while ordinary rows retain the facts frozen at compaction.
+        /// </summary>
+        internal PlayerEntrySemanticProjection SemanticProjection()
+        {
+            string sourceDomain = string.IsNullOrWhiteSpace(decorationDomain)
+                ? DiaryEventDomainClassifier.DomainForContext(decorationGameContext)
+                : decorationDomain;
+            bool sourceCombat = string.Equals(
+                    sourceDomain, DiaryEventDomainClassifier.Raid, System.StringComparison.OrdinalIgnoreCase)
+                || string.Equals(
+                    sourceDomain, DiaryEventDomainClassifier.MentalState, System.StringComparison.OrdinalIgnoreCase)
+                || string.Equals(colorCue, DiaryEvent.CombatColorCue, System.StringComparison.OrdinalIgnoreCase)
+                || string.Equals(colorCue, DiaryEvent.SocialFightColorCue, System.StringComparison.OrdinalIgnoreCase)
+                || string.Equals(colorCue, DiaryEvent.MentalBreakColorCue, System.StringComparison.OrdinalIgnoreCase);
+            PlayerEntryTypeSnapshot playerType = string.IsNullOrWhiteSpace(entryTypeKey)
+                ? null
+                : DiaryPlayerEntryTypes.ResolveOrPersonal(entryTypeKey);
+            return PlayerEntrySemanticPolicy.Project(
+                playerType,
+                sourceDomain,
+                groupLabel,
+                colorCue,
+                important,
+                sourceCombat,
+                string.Equals(
+                    sourceDomain,
+                    DiaryEventDomainClassifier.Reflection,
+                    System.StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
         /// Creates a compact archive row from the same display view the Diary tab uses today. The caller
         /// decides that this row is safe to archive before calling this method.
         /// </summary>
@@ -198,14 +230,12 @@ namespace PawnDiary
         /// <summary>Builds the immutable UI view used by the Diary tab.</summary>
         internal DiaryEntryView ToView()
         {
-            PlayerEntryTypeSnapshot playerType = string.IsNullOrWhiteSpace(entryTypeKey)
-                ? null
-                : DiaryPlayerEntryTypes.ResolveOrPersonal(entryTypeKey);
-            string displayColorCue = playerType?.colorCue ?? colorCue;
+            PlayerEntrySemanticProjection semantics = SemanticProjection();
+            string displayColorCue = semantics.colorCue;
             // A nonblank player category owns both display cues, exactly as it does for a hot event.
             // Deriving this at projection time also repairs the view of rows saved by versions that
             // changed entryTypeKey/colorCue but accidentally retained the source atmosphereCue.
-            string displayAtmosphereCue = playerType == null
+            string displayAtmosphereCue = string.IsNullOrWhiteSpace(semantics.entryTypeKey)
                 ? atmosphereCue
                 : DiaryAtmosphereCuePolicy.ForColorCue(displayColorCue);
             if (deathDescription
@@ -233,7 +263,7 @@ namespace PawnDiary
                 defName = interactionDefName,
                 colorCue = displayColorCue,
                 atmosphereCue = displayAtmosphereCue,
-                domain = playerType?.domain ?? decorationDomain,
+                domain = semantics.domain,
                 gameContext = decorationGameContext
             };
             DiaryTextDecorations.AddEventTagsFromContext(decoration, decorationGameContext);
@@ -251,12 +281,12 @@ namespace PawnDiary
                 string.Empty,
                 eventId,
                 povRole,
-                playerType?.label ?? groupLabel,
+                semantics.label,
                 displayColorCue,
                 displayAtmosphereCue,
                 staggeredIntensity,
                 distortDirectSpeech,
-                playerType?.important ?? important,
+                semantics.important,
                 link,
                 title,
                 false,
@@ -264,7 +294,8 @@ namespace PawnDiary
                 decoration,
                 archivedGenerationStale,
                 true,
-                deathDescription ? 1 : (arrivalDescription ? -1 : 0));
+                deathDescription ? 1 : (arrivalDescription ? -1 : 0),
+                semantics.entryTypeKey);
         }
 
         public bool IsArrivalDescriptionFor(string requestedPawnId)

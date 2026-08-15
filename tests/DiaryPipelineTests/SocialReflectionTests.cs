@@ -259,6 +259,19 @@ namespace DiaryPipelineTests
                 "social reflection blank pawn cannot form pair",
                 string.Empty,
                 SocialReflectionPolicy.PairKey("Pawn_1", " "));
+            AssertTrue("length-prefixed pair parser finds either exact pawn",
+                SocialReflectionPolicy.PairKeyContainsPawn(forwardPair, "Pawn_1")
+                    && SocialReflectionPolicy.PairKeyContainsPawn(forwardPair, "Pawn_2"));
+            AssertTrue("length-prefixed pair parser rejects prefix collisions",
+                !SocialReflectionPolicy.PairKeyContainsPawn(
+                    SocialReflectionPolicy.PairKey("Pawn_10", "Pawn_2"), "Pawn_1"));
+            AssertTrue("length-prefixed pair parser rejects malformed and trailing data",
+                !SocialReflectionPolicy.PairKeyContainsPawn("6:Pawn_1", "Pawn_1")
+                    && !SocialReflectionPolicy.PairKeyContainsPawn(
+                        forwardPair + "junk", "Pawn_1")
+                    && !SocialReflectionPolicy.PairKeyContainsPawn(
+                        "x:Pawn_14:Pawn", "Pawn_1")
+                    && !SocialReflectionPolicy.PairKeyContainsPawn(forwardPair, " "));
 
             List<SocialReflectionRelationFact> facts = new List<SocialReflectionRelationFact>
             {

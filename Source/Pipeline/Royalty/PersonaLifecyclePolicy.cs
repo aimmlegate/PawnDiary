@@ -8,6 +8,37 @@ namespace PawnDiary
     internal static class PersonaLifecyclePolicy
     {
         /// <summary>
+        /// Re-baselines the autobiographical part of an exact live persona bond after Brainwipe while
+        /// retaining its physical weapon/pawn identity, epoch deduplication, traits, and already-consumed
+        /// kill milestone. Returns null for unrelated, prefix-collision, untracked, or ended rows so the
+        /// adapter can preserve those saved objects byte-for-byte.
+        /// </summary>
+        public static PersonaBondStateSnapshot RebaselineAfterMemoryReset(
+            PersonaBondStateSnapshot current,
+            string pawnId,
+            int wipeTick)
+        {
+            if (current == null
+                || !PersonaBondPhaseTokens.IsLive(current.phaseToken)
+                || !Same(current.currentPawnId, pawnId))
+            {
+                return null;
+            }
+
+            PersonaBondStateSnapshot reset = CopyState(current);
+            int boundaryTick = Math.Max(0, wipeTick);
+            reset.previousPawnId = string.Empty;
+            reset.phaseToken = PersonaBondPhaseTokens.Active;
+            reset.bondStartedTick = boundaryTick;
+            reset.pendingSeparationTick = -1;
+            reset.separationEmitted = false;
+            reset.lastPrimaryObservedTick = boundaryTick;
+            reset.endedTick = -1;
+            reset.endCauseToken = PersonaEndCauseTokens.None;
+            return reset;
+        }
+
+        /// <summary>
         /// Resolves overlapping cleanup evidence in the frozen R1 precedence order. Callers still
         /// need exact source evidence; this method only prevents a lower-priority cleanup callback
         /// from relabeling a death, destruction, or transfer.

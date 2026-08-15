@@ -303,7 +303,8 @@ namespace PawnDiary
 
         /// <summary>
         /// Ensures child identity/parent baselines, attaches the shared family key, and selects at most
-        /// one currently eligible supporter for a canonical growth page.
+        /// one saved supporter for child context. A live eligible supporter is promoted separately when
+        /// the canonical growth page can use an adult writer.
         /// </summary>
         internal BiotechFamilyArcState PrepareBiotechGrowthFamily(
             Pawn child,
@@ -324,6 +325,10 @@ namespace PawnDiary
             }
 
             mutation.familyArcId = arc.familyArcId;
+            // When the child has a POV, supporter ranking must use only evidence observed after that
+            // child's Brainwipe boundary. If the child cannot write, an eligible adult is ranked through
+            // their own POV projection, which is lifetime truth unless that adult was also Brainwiped.
+            bool childCanWrite = IsDiaryEligible(child);
             List<FamilySupportCandidate> candidates = new List<FamilySupportCandidate>();
             if (arc.supporters != null)
             {
@@ -332,6 +337,11 @@ namespace PawnDiary
                     FamilySupportObservationState saved = arc.supporters[i];
                     if (saved == null || string.IsNullOrWhiteSpace(saved.adultId)) continue;
                     Pawn adult = FindLivePawnByLoadId(saved.adultId);
+                    FamilySupportObservationState visible =
+                        BiotechFamilyMemoryResetPolicy.ProjectSupporterForPov(
+                            arc,
+                            saved,
+                            childCanWrite ? mutation.childId : saved.adultId);
                     candidates.Add(new FamilySupportCandidate
                     {
                         adultId = saved.adultId,
@@ -339,12 +349,14 @@ namespace PawnDiary
                             ? saved.lastDisplayName ?? string.Empty
                             : DiaryLineCleaner.CleanLine(adult.LabelShortCap),
                         relationToken = saved.relationToken,
-                        lessonCount = saved.lessonCount,
-                        babyPlayCount = saved.babyPlayCount,
-                        careCount = saved.careCount,
-                        unsummarizedEvidenceCount = FamilyArcPolicy.UnsummarizedEvidence(saved),
-                        lastObservedTick = saved.lastObservedTick,
-                        eligible = IsDiaryEligible(adult),
+                        lessonCount = visible?.lessonCount ?? 0,
+                        babyPlayCount = visible?.babyPlayCount ?? 0,
+                        careCount = visible?.careCount ?? 0,
+                        unsummarizedEvidenceCount = FamilyArcPolicy.UnsummarizedEvidence(visible),
+                        lastObservedTick = visible?.lastObservedTick ?? 0,
+                        // The child's page may remember a dead/off-world supporter from saved evidence.
+                        // Live diary eligibility is applied only when promoting that selection to a pair.
+                        eligible = childCanWrite || IsDiaryEligible(adult),
                         sameMap = adult != null && child.MapHeld != null && adult.MapHeld == child.MapHeld
                     });
                 }
@@ -354,6 +366,55 @@ namespace PawnDiary
             if (mutation.supporter != null)
             {
                 supporterPawn = FindLivePawnByLoadId(mutation.supporter.adultId);
+                if (childCanWrite)
+                {
+                    // Selection first honors the child's visible family truth. Before that adult becomes
+                    // a pair writer, recompute the chosen row through BOTH POV epochs. A zero-delta
+                    // teacher drops; an exact parent may still join with an empty observation band.
+                    FamilySupportObservationState selectedSaved = arc.supporters.Find(row => row != null
+                        && string.Equals(
+                            row.adultId,
+                            mutation.supporter.adultId,
+                            StringComparison.Ordinal));
+                    FamilySupportObservationState pairVisible =
+                        BiotechFamilyMemoryResetPolicy.ProjectSupporterForPair(
+                            arc,
+                            selectedSaved,
+                            mutation.childId);
+                    List<FamilySupportCandidate> pairCandidate = new List<FamilySupportCandidate>();
+                    if (selectedSaved != null && pairVisible != null)
+                    {
+                        pairCandidate.Add(new FamilySupportCandidate
+                        {
+                            adultId = selectedSaved.adultId,
+                            displayName = supporterPawn == null
+                                ? selectedSaved.lastDisplayName ?? string.Empty
+                                : DiaryLineCleaner.CleanLine(supporterPawn.LabelShortCap),
+                            relationToken = selectedSaved.relationToken,
+                            lessonCount = pairVisible.lessonCount,
+                            babyPlayCount = pairVisible.babyPlayCount,
+                            careCount = pairVisible.careCount,
+                            unsummarizedEvidenceCount =
+                                FamilyArcPolicy.UnsummarizedEvidence(pairVisible),
+                            lastObservedTick = pairVisible.lastObservedTick,
+                            eligible = IsDiaryEligible(supporterPawn),
+                            sameMap = supporterPawn != null && child.MapHeld != null
+                                && supporterPawn.MapHeld == child.MapHeld
+                        });
+                    }
+                    FamilySupportSelection pairSelection =
+                        FamilySupportPolicy.Select(pairCandidate, policy);
+                    if (pairSelection != null)
+                    {
+                        mutation.supporter = pairSelection;
+                    }
+                    else
+                    {
+                        // The child-visible selection remains useful autobiography for a ChildSolo page.
+                        // Only the adult writer is removed when their own post-wipe delta cannot qualify.
+                        supporterPawn = null;
+                    }
+                }
             }
             return arc;
         }
@@ -373,13 +434,25 @@ namespace PawnDiary
             return arc?.familyArcId ?? string.Empty;
         }
 
-        /// <summary>Marks current family observations consumed by this growth page or suppressed owner.</summary>
-        internal void MarkBiotechGrowthFamilySummarized(BiotechFamilyArcState arc, int age)
+        /// <summary>
+        /// Marks only the family evidence visible to this growth owner. A wiped child consumes its
+        /// detached post-boundary baseline; a wiped supporter consumes their own detached row while an
+        /// ordinary supporter consumes the shared cursor. Paired pages consume both independently.
+        /// </summary>
+        internal void MarkBiotechGrowthFamilySummarized(
+            BiotechFamilyArcState arc,
+            int age,
+            bool childPovConsumed,
+            bool adultPovConsumed,
+            string adultPovPawnId)
         {
             FamilyArcPolicy.MarkGrowthSummarized(
                 arc,
                 age,
-                Find.TickManager?.TicksGame ?? 0);
+                Find.TickManager?.TicksGame ?? 0,
+                childPovConsumed,
+                adultPovConsumed,
+                adultPovPawnId);
         }
 
         /// <summary>Appends a shared family ID to an already-captured pregnancy/labor event context.</summary>

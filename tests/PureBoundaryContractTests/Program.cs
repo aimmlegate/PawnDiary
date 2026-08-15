@@ -140,6 +140,7 @@ namespace PureBoundaryContractTests
                 TestProgressionFallbackSettlement(root);
                 TestDirectFanoutFrequencyAdmission(root);
                 TestNativeFallbackSettlementOwnership(root);
+                TestBrainwipeRetiresDelayedAndSharedWriters(root);
                 List<Violation> violations = new List<Violation>();
                 ProjectAuditResult projects = AuditPureProjects(root, violations);
                 int contextWriters = AuditStructuredContextWriters(root, violations);
@@ -999,6 +1000,344 @@ namespace PureBoundaryContractTests
                 !LooksLikeStructuredContextWriter(
                     "Source/Pipeline/Example.cs",
                     "return text + \"; reason=\" + reason;"));
+        }
+
+        /// <summary>
+        /// Keeps the destructive Brainwipe boundary wired to every detached delayed writer and to the
+        /// same shared-role tombstone used by the dev full-history purge. Loaded fixtures own behavior;
+        /// these source assertions prevent a future refactor from silently bypassing that boundary.
+        /// </summary>
+        private static void TestBrainwipeRetiresDelayedAndSharedWriters(string root)
+        {
+            string memoryResetPath = Path.Combine(
+                root,
+                "Source",
+                "Core",
+                "DiaryGameComponent.MemoryReset.cs");
+            string devPath = Path.Combine(
+                root,
+                "Source",
+                "Core",
+                "DiaryGameComponent.Dev.cs");
+            string progressionResetPath = Path.Combine(
+                root,
+                "Source",
+                "Core",
+                "DiaryGameComponent.MemoryResetProgression.cs");
+            string thoughtProgressionPath = Path.Combine(
+                root,
+                "Source",
+                "Core",
+                "DiaryGameComponent.ThoughtProgression.cs");
+            string hediffProgressionPath = Path.Combine(
+                root,
+                "Source",
+                "Core",
+                "DiaryGameComponent.Hediffs.cs");
+            string recentLookupPath = Path.Combine(
+                root,
+                "Source",
+                "Core",
+                "DiaryGameComponent.Lookup.cs");
+            string socialReflectionPath = Path.Combine(
+                root,
+                "Source",
+                "Core",
+                "DiaryGameComponent.SocialReflection.cs");
+            string anomalyRecentStudyPath = Path.Combine(
+                root,
+                "Source",
+                "Generation",
+                "AnomalyRecentStudyCache.cs");
+            string sharedArcResetPath = Path.Combine(
+                root,
+                "Source",
+                "Core",
+                "DiaryGameComponent.MemoryResetSharedArcs.cs");
+            string odysseyComponentPath = Path.Combine(
+                root,
+                "Source",
+                "Core",
+                "DiaryGameComponent.Odyssey.cs");
+            string odysseyStatePath = Path.Combine(
+                root,
+                "Source",
+                "Models",
+                "OdysseyJourneyState.cs");
+            string biotechFamilyStatePath = Path.Combine(
+                root,
+                "Source",
+                "Models",
+                "BiotechFamilyArcState.cs");
+            string biotechFamilyResetPolicyPath = Path.Combine(
+                root,
+                "Source",
+                "Capture",
+                "Biotech",
+                "BiotechFamilyMemoryResetPolicy.cs");
+            string biotechFamilyComponentPath = Path.Combine(
+                root,
+                "Source",
+                "Core",
+                "DiaryGameComponent.BiotechFamily.cs");
+            string biotechGrowthComponentPath = Path.Combine(
+                root,
+                "Source",
+                "Core",
+                "DiaryGameComponent.BiotechGrowth.cs");
+            string growthSignalPath = Path.Combine(
+                root,
+                "Source",
+                "Ingestion",
+                "Sources",
+                "GrowthMomentSignal.cs");
+            string memoryReset = File.ReadAllText(memoryResetPath);
+            string dev = File.ReadAllText(devPath);
+            string progressionReset = File.ReadAllText(progressionResetPath);
+            string thoughtProgression = File.ReadAllText(thoughtProgressionPath);
+            string hediffProgression = File.ReadAllText(hediffProgressionPath);
+            string recentLookup = File.ReadAllText(recentLookupPath);
+            string socialReflection = File.ReadAllText(socialReflectionPath);
+            string anomalyRecentStudy = File.ReadAllText(anomalyRecentStudyPath);
+            string sharedArcReset = File.ReadAllText(sharedArcResetPath);
+            string odysseyComponent = File.ReadAllText(odysseyComponentPath);
+            string odysseyState = File.ReadAllText(odysseyStatePath);
+            string biotechFamilyState = File.ReadAllText(biotechFamilyStatePath);
+            string biotechFamilyResetPolicy = File.ReadAllText(biotechFamilyResetPolicyPath);
+            string biotechFamilyComponent = File.ReadAllText(biotechFamilyComponentPath);
+            string biotechGrowthComponent = File.ReadAllText(biotechGrowthComponentPath);
+            string growthSignal = File.ReadAllText(growthSignalPath);
+
+            Require(
+                "Brainwipe rebaselines only the target thought progression snapshot",
+                memoryReset.IndexOf("RebaselineThoughtProgressionsForPawn(pawn);", StringComparison.Ordinal) >= 0
+                    && thoughtProgression.IndexOf(
+                        "PawnScopedTransientKeyPolicy.StartsWithPawnToken(key, pawnId)",
+                        StringComparison.Ordinal) >= 0
+                    && thoughtProgression.IndexOf(
+                        "UpdateThoughtProgressionState(pawn, pair.Key, pair.Value, snapshotOnly: true);",
+                        StringComparison.Ordinal) >= 0
+                    && thoughtProgression.IndexOf(
+                        "thoughtProgressionPawnBaselinesPending.Add(pawnId);",
+                        StringComparison.Ordinal) >= 0
+                    && thoughtProgression.IndexOf(
+                        "snapshotOnly || pawnSnapshotOnly",
+                        StringComparison.Ordinal) >= 0);
+            Require(
+                "ordinary thought scans fail atomically while Brainwipe isolates and retries one pawn",
+                thoughtProgression.IndexOf("bool isolateFailures = false", StringComparison.Ordinal) >= 0
+                    && thoughtProgression.IndexOf("if (!isolateFailures)", StringComparison.Ordinal) >= 0
+                    && thoughtProgression.IndexOf("isolateFailures: true", StringComparison.Ordinal) >= 0
+                    && thoughtProgression.IndexOf(
+                        "PawnDiary.Brainwipe.ThoughtRebaselineCollection",
+                        StringComparison.Ordinal) >= 0
+                    && thoughtProgression.IndexOf(
+                        "activeByStateKey.Clear();\n                    return false;",
+                        StringComparison.Ordinal) >= 0
+                    && thoughtProgression.IndexOf(
+                        "thoughtProgressionPawnBaselinesPending.Remove(pawnId);",
+                        StringComparison.Ordinal) >= 0
+                    && thoughtProgression.IndexOf(
+                        "baselineThoughtProgressionsOnNextScan = true",
+                        StringComparison.Ordinal) < 0);
+            Require(
+                "Brainwipe rebaselines only the target hediff progression snapshot",
+                memoryReset.IndexOf("RebaselineHediffProgressionsForPawn(pawn);", StringComparison.Ordinal) >= 0
+                    && hediffProgression.IndexOf(
+                        "PawnScopedTransientKeyPolicy.StartsWithPawnToken(key, pawnId)",
+                        StringComparison.Ordinal) >= 0
+                    && hediffProgression.IndexOf(
+                        "UpdateHediffProgressionState(pair.Key, pair.Value, snapshotOnly: true);",
+                        StringComparison.Ordinal) >= 0);
+            Require(
+                "Brainwipe isolates malformed hediffs and delayed survivor flushes",
+                hediffProgression.IndexOf("isolateFailures: true", StringComparison.Ordinal) >= 0
+                    && hediffProgression.IndexOf(
+                        "PawnDiary.Brainwipe.HediffRebaseline",
+                        StringComparison.Ordinal) >= 0
+                    && memoryReset.IndexOf(
+                        "PawnDiary.Brainwipe.PendingInteractionSurvivor",
+                        StringComparison.Ordinal) >= 0
+                    && memoryReset.IndexOf(
+                        "brainwipe_pending_interaction_exception",
+                        StringComparison.Ordinal) >= 0);
+            Require(
+                "Brainwipe consumes every exact target correlation cache before diary lookup",
+                memoryReset.IndexOf("RoyalMutationCorrelation.ForgetPawn(pawnId);", StringComparison.Ordinal) >= 0
+                    && memoryReset.IndexOf("RoyalTitleThoughtCorrelation.ForgetPawn(pawnId);", StringComparison.Ordinal) >= 0
+                    && memoryReset.IndexOf("BeliefMutationCache.ForgetPawn(pawnId);", StringComparison.Ordinal) >= 0
+                    && memoryReset.IndexOf("BeliefHistoryCorrelationCache.ForgetPawn(pawnId);", StringComparison.Ordinal) >= 0
+                    && memoryReset.IndexOf("AnomalyRecentStudyCache.ForgetStudier(pawnId);", StringComparison.Ordinal) >= 0);
+            Require(
+                "Brainwipe releases exact social pacing but retains terminal source ownership",
+                memoryReset.IndexOf("ForgetSocialReflectionCooldownsForPawn(pawnId);", StringComparison.Ordinal) >= 0
+                    && socialReflection.IndexOf(
+                        "string.Equals(row.writerPawnId, pawnId, StringComparison.Ordinal)",
+                        StringComparison.Ordinal) >= 0
+                    && socialReflection.IndexOf(
+                        "SocialReflectionPolicy.PairKeyContainsPawn(row.pairKey, pawnId)",
+                        StringComparison.Ordinal) >= 0
+                    && socialReflection.IndexOf(
+                        "socialReflectionHandledSources.RemoveAll",
+                        StringComparison.Ordinal) < 0);
+            Require(
+                "Brainwipe removes exact target recent-study and audited recent-event ownership",
+                anomalyRecentStudy.IndexOf(
+                    "Studies[i]?.studierPawnId",
+                    StringComparison.Ordinal) >= 0
+                    && anomalyRecentStudy.IndexOf("ForgetStudier(string studierPawnId)",
+                        StringComparison.Ordinal) >= 0
+                    && recentLookup.IndexOf(
+                        "PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(key, pawnId)",
+                        StringComparison.Ordinal) >= 0);
+            Require(
+                "Brainwipe restarts quadrum and Deathrest autobiography pacing",
+                memoryReset.IndexOf(
+                    "PawnScopedTransientKeyPolicy.StartsWithPawnToken(key, pawnId)",
+                    StringComparison.Ordinal) >= 0
+                    && progressionReset.IndexOf(
+                        "DeathrestInterruptionPolicy.ForgetMemory(",
+                        StringComparison.Ordinal) >= 0);
+
+            Require(
+                "Brainwipe projects saved delayed growth ownership",
+                memoryReset.IndexOf(
+                    "BiotechPendingWriterResetPolicy.RemoveGrowthWriter(",
+                    StringComparison.Ordinal) >= 0);
+            Require(
+                "Brainwipe projects saved delayed birth ownership",
+                memoryReset.IndexOf(
+                    "BiotechPendingWriterResetPolicy.RemoveBirthWriter(",
+                    StringComparison.Ordinal) >= 0);
+            Require(
+                "Brainwipe rebaselines active mechanitor service clocks",
+                progressionReset.IndexOf(
+                    "MechanitorLifecyclePolicy.RebaselineActiveMechsAfterMemoryReset(",
+                    StringComparison.Ordinal) >= 0);
+            Require(
+                "Brainwipe clears surviving archive links to its retired POV",
+                memoryReset.IndexOf("archive.ClearLinksToPawn(pawnId);", StringComparison.Ordinal) >= 0);
+
+            int sharedArcResetCall = memoryReset.IndexOf(
+                "ResetSharedArcMemoryForPawn(pawnId, memoryBoundaryTick);",
+                StringComparison.Ordinal);
+            int diaryLookup = memoryReset.IndexOf(
+                "PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);",
+                StringComparison.Ordinal);
+            Require(
+                "Brainwipe projects shared saved arcs before a missing-diary early return",
+                sharedArcResetCall >= 0 && diaryLookup > sharedArcResetCall);
+            Require(
+                "shared-arc reset covers exact family, Odyssey, and nonterminal CreepJoiner memory",
+                sharedArcReset.IndexOf(
+                    "BiotechFamilyMemoryResetPolicy.ResetForPawn(",
+                    StringComparison.Ordinal) >= 0
+                    && sharedArcReset.IndexOf(
+                        "ExcludeOdysseyWriterFromActiveJourney(pawnId);",
+                        StringComparison.Ordinal) >= 0
+                    && sharedArcReset.IndexOf(
+                        "CreepJoinerMemoryResetPolicy.RemoveNonterminalForPawn(",
+                        StringComparison.Ordinal) >= 0);
+            Require(
+                "Odyssey saves an additive exact-writer boundary and filters both landing sources",
+                odysseyState.IndexOf(
+                    "\"memoryExcludedWriterPawnIds\"",
+                    StringComparison.Ordinal) >= 0
+                    && odysseyComponent.IndexOf(
+                        "writers = OdysseyWriterMemoryBoundaryPolicy.ExcludeWriters(",
+                        StringComparison.Ordinal) >= 0
+                    && odysseyComponent.IndexOf(
+                        "journey.writers = OdysseyWriterMemoryBoundaryPolicy.ExcludeWriters(",
+                        StringComparison.Ordinal) >= 0);
+            Require(
+                "family child/adult memory boundaries are additive and pair ranking is POV-projected",
+                biotechFamilyState.IndexOf(
+                    "\"childMemoryBoundaryPawnId\"",
+                    StringComparison.Ordinal) >= 0
+                    && biotechFamilyState.IndexOf(
+                        "\"childMemorySupportBaselines\"",
+                        StringComparison.Ordinal) >= 0
+                    && biotechFamilyState.IndexOf(
+                        "\"adultMemoryBoundaryActive\"",
+                        StringComparison.Ordinal) >= 0
+                    && biotechFamilyComponent.IndexOf(
+                        "BiotechFamilyMemoryResetPolicy.ProjectSupporterForPov(",
+                        StringComparison.Ordinal) >= 0
+                    && biotechFamilyComponent.IndexOf(
+                        "BiotechFamilyMemoryResetPolicy.ProjectSupporterForPair(",
+                        StringComparison.Ordinal) >= 0
+                    && biotechFamilyComponent.IndexOf(
+                        "eligible = childCanWrite || IsDiaryEligible(adult)",
+                        StringComparison.Ordinal) >= 0
+                    && biotechFamilyResetPolicy.IndexOf(
+                        "CaptureAdultBoundary(supporter, boundary);",
+                        StringComparison.Ordinal) >= 0);
+            Require(
+                "growth continuity excludes pre-wipe birth/upbringing for exact child and adult POVs",
+                growthSignal.IndexOf(
+                    "!povMemoryBoundary && familyArc != null",
+                    StringComparison.Ordinal) >= 0
+                    && growthSignal.IndexOf(
+                        "BiotechFamilyMemoryResetPolicy.HasMemoryBoundaryForPov(",
+                        StringComparison.Ordinal) >= 0
+                    && growthSignal.IndexOf(
+                        "BiotechFamilyMemoryResetPolicy.HasObservedUpbringingForPov(",
+                        StringComparison.Ordinal) >= 0);
+            Require(
+                "growth settlement consumes actual writer shapes and the selected supporter cursor",
+                biotechGrowthComponent.IndexOf(
+                    "writerShape == GrowthWriterShape.ChildSolo",
+                    StringComparison.Ordinal) >= 0
+                    && biotechGrowthComponent.IndexOf(
+                        "writerShape == GrowthWriterShape.SupporterSolo",
+                        StringComparison.Ordinal) >= 0
+                    && biotechGrowthComponent.IndexOf(
+                        "mutation.supporter?.adultId",
+                        StringComparison.Ordinal) >= 0);
+            Require(
+                "pair growth context has a role-specific POV upbringing projection",
+                growthSignal.IndexOf("PovUpbringingDescription(", StringComparison.Ordinal) >= 0
+                    && growthSignal.IndexOf(
+                        "BiotechFamilyMemoryResetPolicy.ProjectSupporterForPov(",
+                        StringComparison.Ordinal) >= 0);
+
+            int detachCall = memoryReset.IndexOf(
+                "DetachForgottenRolesFromSharedEvents(pawnId, survivingHotEventIds);",
+                StringComparison.Ordinal);
+            int retainCall = memoryReset.IndexOf(
+                "events.RetainOnly(survivingHotEventIds);",
+                StringComparison.Ordinal);
+            Require(
+                "Brainwipe detaches a surviving shared role before repository retention",
+                detachCall >= 0 && retainCall > detachCall);
+
+            int helperStart = memoryReset.IndexOf(
+                "private bool DetachRetiredSharedRole(",
+                StringComparison.Ordinal);
+            Require("shared-role retirement helper remains discoverable", helperStart >= 0);
+            string helper = memoryReset.Substring(helperStart);
+            int markSkipped = helper.IndexOf("diaryEvent.MarkSkipped(", StringComparison.Ordinal);
+            int notify = helper.IndexOf("NotifyEntryStatusChanged(", StringComparison.Ordinal);
+            int blankOwner = helper.IndexOf(
+                "diaryEvent.initiatorPawnId = string.Empty;",
+                StringComparison.Ordinal);
+            Require(
+                "shared role is terminalized and notified before owner detachment",
+                markSkipped >= 0 && notify > markSkipped && blankOwner > notify);
+            Require(
+                "shared-role retirement clears delayed and orphan work keys",
+                helper.IndexOf("delayedRaidGenerationReadyTicks.Remove(workKey);", StringComparison.Ordinal) >= 0
+                    && helper.IndexOf("orphanCandidatesLastScan.Remove(workKey);", StringComparison.Ordinal) >= 0);
+            Require(
+                "retired initiator releases the surviving sequential recipient",
+                helper.IndexOf("QueueSequentialPairwiseRewrite(diaryEvent);", StringComparison.Ordinal) >= 0
+                    && helper.IndexOf(
+                        "PawnDiary.Brainwipe.SharedRoleSurvivorRelease",
+                        StringComparison.Ordinal) >= 0);
+            Require(
+                "dev purge reuses production shared-role retirement",
+                dev.IndexOf("DetachRetiredSharedRole(diaryEvent, pawnId)", StringComparison.Ordinal) >= 0
+                    && dev.IndexOf("DetachPurgedSharedRoleForDev", StringComparison.Ordinal) < 0);
         }
 
         /// <summary>

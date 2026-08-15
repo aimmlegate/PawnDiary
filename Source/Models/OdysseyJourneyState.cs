@@ -159,6 +159,7 @@ namespace PawnDiary
         public bool baselineOnly;
         public bool landingApplied;
         public List<OdysseyWriterState> writers = new List<OdysseyWriterState>();
+        public List<string> memoryExcludedWriterPawnIds = new List<string>();
 
         public void ExposeData()
         {
@@ -175,6 +176,12 @@ namespace PawnDiary
             Scribe_Values.Look(ref baselineOnly, "baselineOnly", false);
             Scribe_Values.Look(ref landingApplied, "landingApplied", false);
             Scribe_Collections.Look(ref writers, "writers", LookMode.Deep);
+            // Additive field: an older save has no per-writer memory boundary and therefore loads the
+            // same empty list as a journey that has not crossed Brainwipe.
+            Scribe_Collections.Look(
+                ref memoryExcludedWriterPawnIds,
+                "memoryExcludedWriterPawnIds",
+                LookMode.Value);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 journeyId = journeyId ?? string.Empty;
@@ -182,6 +189,7 @@ namespace PawnDiary
                 shipName = shipName ?? string.Empty;
                 launchQualityBand = launchQualityBand ?? OdysseyLaunchQualityTokens.Unknown;
                 writers = writers ?? new List<OdysseyWriterState>();
+                memoryExcludedWriterPawnIds = memoryExcludedWriterPawnIds ?? new List<string>();
             }
         }
 
@@ -210,7 +218,10 @@ namespace PawnDiary
                 sourceComplete = sourceComplete,
                 baselineOnly = baselineOnly,
                 landingApplied = landingApplied,
-                writers = copiedWriters
+                writers = copiedWriters,
+                memoryExcludedWriterPawnIds = memoryExcludedWriterPawnIds == null
+                    ? new List<string>()
+                    : new List<string>(memoryExcludedWriterPawnIds)
             };
         }
 
@@ -230,7 +241,10 @@ namespace PawnDiary
                 roughLanding = source.roughLanding,
                 sourceComplete = source.sourceComplete,
                 baselineOnly = source.baselineOnly,
-                landingApplied = source.landingApplied
+                landingApplied = source.landingApplied,
+                memoryExcludedWriterPawnIds = source.memoryExcludedWriterPawnIds == null
+                    ? new List<string>()
+                    : new List<string>(source.memoryExcludedWriterPawnIds)
             };
             if (source.writers != null)
             {
@@ -429,6 +443,9 @@ namespace PawnDiary
             snapshot.origin = NormalizeLocation(snapshot.origin, effective);
             snapshot.destination = NormalizeLocation(snapshot.destination, effective);
             snapshot.writers = NormalizeWriters(snapshot.writers, effective);
+            snapshot.memoryExcludedWriterPawnIds =
+                OdysseyWriterMemoryBoundaryPolicy.NormalizeExcludedWriterIds(
+                    snapshot.memoryExcludedWriterPawnIds);
             if (snapshot.shipStableId.Length == 0 || snapshot.journeyId.Length == 0)
             {
                 return null;

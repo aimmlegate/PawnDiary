@@ -283,7 +283,9 @@ namespace PawnDiary
             ApplyRelevantPastForEvent(
                 diaryEvent,
                 recordDiagnostics: false,
-                createMissingKnowledgeState: false);
+                createMissingKnowledgeState: false,
+                requestedTemplateKey: input.templateKey,
+                povRole: DiaryEvent.InitiatorRole);
             return diaryEvent;
         }
 

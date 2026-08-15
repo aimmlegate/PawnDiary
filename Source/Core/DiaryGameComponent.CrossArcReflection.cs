@@ -214,6 +214,7 @@ namespace PawnDiary
                 references.Add(NarrativeReferencePolicy.FromEvidence(evidence[i]));
             }
             references.AddRange(diaryEvent.NarrativeReferencesForRole(role));
+            PlayerEntrySemanticProjection semantics = diaryEvent.SemanticProjectionForRole(role);
 
             return new CrossArcMemoryCandidate
             {
@@ -227,13 +228,12 @@ namespace PawnDiary
                     ? diaryEvent.DisplayTextForRole(role)
                     : string.Empty,
                 title = diaryEvent.TitleForRole(role),
-                label = diaryEvent.interactionLabel,
-                salience = diaryEvent.IsImportant()
+                label = semantics.label,
+                salience = semantics.important
                     ? NarrativeSalienceTokens.Major
                     : NarrativeSalienceTokens.Minor,
-                reflection = IsReflectionDefName(diaryEvent.interactionDefName)
-                    || diaryEvent.IsArcReflection()
-                    || diaryEvent.IsBeliefReflection(),
+                reflection = semantics.reflection
+                    || IsReflectionDefName(diaryEvent.interactionDefName),
                 recap = IsReflectionDefName(diaryEvent.interactionDefName),
                 references = NarrativePersistencePolicy.NormalizeReferences(references)
             };
@@ -243,6 +243,7 @@ namespace PawnDiary
         internal static CrossArcMemoryCandidate CrossArcCandidateFromArchive(ArchivedDiaryEntry entry)
         {
             if (entry == null) return null;
+            PlayerEntrySemanticProjection semantics = entry.SemanticProjection();
             return new CrossArcMemoryCandidate
             {
                 eventId = entry.eventId,
@@ -253,12 +254,12 @@ namespace PawnDiary
                 text = entry.text,
                 generatedText = entry.generatedText,
                 title = entry.title,
-                label = entry.interactionLabel,
-                salience = entry.important
+                label = semantics.label,
+                salience = semantics.important
                     ? NarrativeSalienceTokens.Major
                     : NarrativeSalienceTokens.Minor,
-                reflection = IsReflectionDefName(entry.interactionDefName)
-                    || DiaryContextFields.IsTrue(entry.decorationGameContext, "belief_reflection"),
+                reflection = semantics.reflection
+                    || IsReflectionDefName(entry.interactionDefName),
                 recap = IsReflectionDefName(entry.interactionDefName),
                 references = NarrativeStatePersistence.ToReferences(entry.narrativeReferences)
             };

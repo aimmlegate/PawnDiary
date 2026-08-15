@@ -204,6 +204,32 @@ namespace PawnDiary
                 : Segment(second) + Segment(first);
         }
 
+        /// <summary>
+        /// True only when a valid two-segment pair key contains the exact pawn ID. Pair keys are
+        /// length-prefixed, not pipe-delimited; parsing their schema prevents Pawn_1/Pawn_10 and
+        /// punctuation collisions during a one-pawn Brainwipe cooldown reset.
+        /// </summary>
+        public static bool PairKeyContainsPawn(string pairKey, string pawnId)
+        {
+            string wanted = Clean(pawnId);
+            if (wanted.Length == 0 || string.IsNullOrEmpty(pairKey)) return false;
+
+            int offset = 0;
+            int firstStart;
+            int firstLength;
+            int secondStart;
+            int secondLength;
+            if (!TryReadSegment(pairKey, ref offset, out firstStart, out firstLength)
+                || !TryReadSegment(pairKey, ref offset, out secondStart, out secondLength)
+                || offset != pairKey.Length)
+            {
+                return false;
+            }
+
+            return SegmentValueEquals(pairKey, firstStart, firstLength, wanted)
+                || SegmentValueEquals(pairKey, secondStart, secondLength, wanted);
+        }
+
         /// <summary>Finds the configured probability for |opinion|, clamped to the reviewed 0..100 range.</summary>
         public static float ChanceForOpinion(
             int opinion,
@@ -694,6 +720,49 @@ namespace PawnDiary
         {
             string clean = value ?? string.Empty;
             return clean.Length.ToString(CultureInfo.InvariantCulture) + ":" + clean;
+        }
+
+        private static bool TryReadSegment(
+            string key,
+            ref int offset,
+            out int valueStart,
+            out int valueLength)
+        {
+            valueStart = 0;
+            valueLength = 0;
+            if (offset < 0 || offset >= key.Length) return false;
+
+            int length = 0;
+            int digitCount = 0;
+            while (offset < key.Length && key[offset] != ':')
+            {
+                char value = key[offset];
+                if (value < '0' || value > '9' || length > (int.MaxValue - 9) / 10)
+                    return false;
+                length = (length * 10) + (value - '0');
+                digitCount++;
+                offset++;
+            }
+            if (digitCount == 0 || offset >= key.Length || key[offset] != ':' || length <= 0)
+                return false;
+
+            offset++;
+            valueStart = offset;
+            valueLength = length;
+            if (length > key.Length - offset) return false;
+            offset += length;
+            return true;
+        }
+
+        private static bool SegmentValueEquals(
+            string key,
+            int valueStart,
+            int valueLength,
+            string expected)
+        {
+            return valueLength == expected.Length
+                && string.CompareOrdinal(
+                    key, valueStart, expected, 0, expected.Length) == 0;
         }
 
         private static string Clean(string value)

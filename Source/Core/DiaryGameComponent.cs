@@ -97,6 +97,11 @@ namespace PawnDiary
         // gameplay RNG again. The stream itself is transient: emitted/omitted pages and the persisted
         // aggregate-admission keys below are the authoritative one-shot outcomes across save/load.
         private readonly DiaryAdmissionRandom admissionRandom;
+        // Repeated psychotype previews need an independently advancing cosmetic stream: sharing the
+        // admission stream would make a UI click alter future page volume, while restoring Verse.Rand
+        // around every click would replay the same draw. This second stream is transient UI/runtime
+        // state and never touches RimWorld's seeded gameplay sequence.
+        private readonly DiaryAdmissionRandom psychotypeRollRandom;
         // Saved XML event-window state. Each row is a long-running narrative window such as "gray
         // flesh was found, but the metalhorror has not emerged yet." The Def remains XML-owned; this
         // list only remembers active runtime instances across save/load.
@@ -231,12 +236,14 @@ namespace PawnDiary
         public DiaryGameComponent(Game game)
         {
             // `PushState()` without a seed snapshots the gameplay stream; restoring it after Rand.Int
-            // keeps this single seed draw cosmetic. Unlike drawing Rand.Value inside every admission,
-            // the private stream then advances independently instead of replaying the restored value.
+            // keeps this single seed draw cosmetic. Derive two domain-separated streams from that seed:
+            // admission and psychotype previews must advance independently of each other and gameplay.
             Rand.PushState();
             try
             {
-                admissionRandom = new DiaryAdmissionRandom(unchecked((uint)Rand.Int));
+                uint privateRandomSeed = unchecked((uint)Rand.Int);
+                admissionRandom = new DiaryAdmissionRandom(privateRandomSeed);
+                psychotypeRollRandom = new DiaryAdmissionRandom(privateRandomSeed ^ 0xB5297A4Du);
             }
             finally
             {

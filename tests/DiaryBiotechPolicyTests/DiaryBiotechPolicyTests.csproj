@@ -21,8 +21,10 @@
     <Compile Include="..\..\Source\Capture\Biotech\GrowthRecordPolicy.cs" Link="GrowthRecordPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Biotech\FamilySupportPolicy.cs" Link="FamilySupportPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Biotech\FamilyArcPolicy.cs" Link="FamilyArcPolicy.cs" />
+    <Compile Include="..\..\Source\Capture\Biotech\BiotechFamilyMemoryResetPolicy.cs" Link="BiotechFamilyMemoryResetPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Biotech\BirthOwnershipPolicy.cs" Link="BirthOwnershipPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Biotech\BirthCorrelationPolicy.cs" Link="BirthCorrelationPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Biotech\BirthRecordPolicy.cs" Link="BirthRecordPolicy.cs" />
+    <Compile Include="..\..\Source\Capture\Biotech\BiotechPendingWriterResetPolicy.cs" Link="BiotechPendingWriterResetPolicy.cs" />
   </ItemGroup>
 </Project>

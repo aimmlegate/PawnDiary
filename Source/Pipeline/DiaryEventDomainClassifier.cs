@@ -29,6 +29,7 @@ namespace PawnDiary
         public const string PersonaWeapon = "PersonaWeapon";
         public const string RoyalPermit = "RoyalPermit";
         public const string External = "External";
+        public const string PlayerEntry = "PlayerEntry";
 
         /// <summary>
         /// Returns the domain implied by a saved event's game-context marker. Plain social
@@ -36,6 +37,7 @@ namespace PawnDiary
         /// </summary>
         public static string DomainForContext(string context)
         {
+            if (DiaryContextFields.HasMarker(context, "manual_entry=")) return PlayerEntry;
             if (DiaryContextFields.HasMarker(context, "external=")) return External;
             if (DiaryContextFields.HasMarker(context, "royal_permit=")) return RoyalPermit;
             if (DiaryContextFields.HasMarker(context, "persona_weapon=")) return PersonaWeapon;

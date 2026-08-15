@@ -17,6 +17,7 @@ namespace DiaryOdysseyPolicyTests
             TestExactQuestRootClassification();
             TestMechhiveOutcomePolicyAndPersistence();
             TestDeterministicWriterSelection();
+            TestWriterMemoryBoundary();
             TestQualitativeBands();
             TestLaunchCooldownPolicy();
             TestReasonPriorityAndHistoryMutation();
@@ -263,6 +264,101 @@ namespace DiaryOdysseyPolicyTests
             AssertEqual("hard maximum remains two", 2, selected.Count);
             AssertEqual("crew stable id tie-break", "Crew_A", selected[0].pawnId);
             AssertEqual("second crew stable id", "Crew_B", selected[1].pawnId);
+        }
+
+        private static void TestWriterMemoryBoundary()
+        {
+            List<string> excluded = OdysseyWriterMemoryBoundaryPolicy.AddExcludedWriter(
+                new List<string>
+                {
+                    "Pawn_10",
+                    " Pawn_10 ",
+                    string.Empty,
+                    "bad|id"
+                },
+                " Pawn_1 ");
+            AssertEqual("memory boundary normalizes and adds exact writer", 2, excluded.Count);
+            AssertEqual("memory boundary stable first ID", "Pawn_1", excluded[0]);
+            AssertEqual("memory boundary preserves prefix collision", "Pawn_10", excluded[1]);
+
+            string longPrefix = new string('X', 200);
+            List<string> overCap = OdysseyWriterMemoryBoundaryPolicy.NormalizeExcludedWriterIds(
+                new List<string> { longPrefix + "A", longPrefix + "B" });
+            AssertEqual("over-cap IDs sharing a prefix are rejected instead of collided", 0,
+                overCap.Count);
+            overCap = OdysseyWriterMemoryBoundaryPolicy.AddExcludedWriter(
+                new List<string> { longPrefix },
+                longPrefix + "C");
+            AssertTrue("valid capped ID is not confused with an over-cap extension",
+                overCap.Count == 1 && overCap[0] == longPrefix);
+
+            List<OdysseyWriterCandidate> candidates = new List<OdysseyWriterCandidate>
+            {
+                Writer("Pawn_1", "pilot", true, true, true),
+                Writer("Pawn_10", "copilot", true, true, true),
+                Writer("Other", "crew", true, true, true)
+            };
+            List<OdysseyWriterCandidate> projected =
+                OdysseyWriterMemoryBoundaryPolicy.ExcludeWriters(candidates, excluded);
+            AssertEqual("only exact excluded writers are projected away", 1, projected.Count);
+            AssertEqual("unrelated writer survives projection", "Other", projected[0].pawnId);
+
+            projected = OdysseyWriterMemoryBoundaryPolicy.ExcludeWriters(
+                candidates,
+                new List<string> { "Pawn_1" });
+            List<OdysseyWriterCandidate> selected = OdysseyWriterPolicy.Select(projected, 2);
+            AssertEqual("prefix writer remains eligible after exact Brainwipe", 2, selected.Count);
+            AssertEqual("prefix writer becomes first surviving role", "Pawn_10", selected[0].pawnId);
+
+            OdysseyJourneySnapshot newJourney = new OdysseyJourneySnapshot();
+            projected = OdysseyWriterMemoryBoundaryPolicy.ExcludeWriters(
+                candidates,
+                newJourney.memoryExcludedWriterPawnIds);
+            AssertEqual("a newly-started journey restores the wiped pawn", 3, projected.Count);
+            AssertEqual("new journey may select the pilot again", "Pawn_1",
+                OdysseyWriterPolicy.Select(projected, 2)[0].pawnId);
+
+            OdysseyPolicySnapshot policy = Policy();
+            OdysseyJourneySnapshot soleJourney = Journey(100, false);
+            soleJourney.destination = Location(
+                "major", "surface", string.Empty, "Site_Mechhive");
+            soleJourney.writers.Add(Writer("Pawn_1", "pilot", true, true, true));
+            soleJourney.memoryExcludedWriterPawnIds.Add("Pawn_1");
+            OdysseyLandingObservation soleLanding = Observation(soleJourney, 1000, true);
+            soleLanding.writers = OdysseyWriterMemoryBoundaryPolicy.ExcludeWriters(
+                soleLanding.writers,
+                soleJourney.memoryExcludedWriterPawnIds);
+            soleJourney.writers = OdysseyWriterMemoryBoundaryPolicy.ExcludeWriters(
+                soleJourney.writers,
+                soleJourney.memoryExcludedWriterPawnIds);
+            OdysseyLandingPlan solePlan = OdysseyLandingPolicy.Plan(
+                soleLanding,
+                History(trustworthy: false),
+                policy);
+            AssertTrue("filtered sole writer cannot reappear through departure fallback",
+                solePlan.primaryReason == OdysseyLandingReasonTokens.MajorDestination
+                    && !solePlan.writePage && solePlan.selectedWriters.Count == 0);
+
+            OdysseyJourneySnapshot sharedJourney = Journey(100, false);
+            sharedJourney.destination = Location(
+                "major", "surface", string.Empty, "Site_Mechhive");
+            sharedJourney.writers.Add(Writer("Pawn_1", "pilot", true, true, true));
+            sharedJourney.writers.Add(Writer("Other", "copilot", true, true, true));
+            sharedJourney.memoryExcludedWriterPawnIds.Add("Pawn_1");
+            OdysseyLandingObservation sharedLanding = Observation(sharedJourney, 1000, true);
+            sharedLanding.writers = OdysseyWriterMemoryBoundaryPolicy.ExcludeWriters(
+                sharedLanding.writers,
+                sharedJourney.memoryExcludedWriterPawnIds);
+            sharedJourney.writers = OdysseyWriterMemoryBoundaryPolicy.ExcludeWriters(
+                sharedJourney.writers,
+                sharedJourney.memoryExcludedWriterPawnIds);
+            OdysseyLandingPlan sharedPlan = OdysseyLandingPolicy.Plan(
+                sharedLanding,
+                History(trustworthy: false),
+                policy);
+            AssertTrue("shared journey keeps the unaffected landing writer",
+                sharedPlan.writePage && sharedPlan.selectedWriters.Count == 1
+                    && sharedPlan.selectedWriters[0].pawnId == "Other");
         }
 
         private static void TestQualitativeBands()

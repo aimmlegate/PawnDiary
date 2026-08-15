@@ -27,6 +27,9 @@ namespace PawnDiary.Integration
         /// <summary>Event group label that can be used as a fallback display label.</summary>
         public string groupLabel = string.Empty;
 
+        /// <summary>Player category key such as Personal or Combat. Empty for source-derived pages.</summary>
+        public string entryTypeKey = string.Empty;
+
         /// <summary>True when this entry was authored or influenced through the external API.</summary>
         public bool externallyAuthored;
 

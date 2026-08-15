@@ -18,6 +18,12 @@ namespace PawnDiary
         private readonly Dictionary<string, ActiveThoughtProgressionState> activeThoughtProgressions =
             new Dictionary<string, ActiveThoughtProgressionState>();
 
+        // A Brainwipe normally snapshots the pawn's live thoughts immediately. If a broken modded
+        // thought makes GetAllMoodThoughts fail as a whole, remember only that pawn here. Their next
+        // successful scan becomes the missing silent baseline; other pawns continue normally.
+        private readonly HashSet<string> thoughtProgressionPawnBaselinesPending =
+            new HashSet<string>(StringComparer.Ordinal);
+
         private int nextThoughtProgressionScanTick;
         private bool baselineThoughtProgressionsOnNextScan;
 
@@ -28,6 +34,7 @@ namespace PawnDiary
         private void ResetThoughtProgressionState(bool baselineNextScan)
         {
             activeThoughtProgressions.Clear();
+            thoughtProgressionPawnBaselinesPending.Clear();
             nextThoughtProgressionScanTick = 0;
             baselineThoughtProgressionsOnNextScan = baselineNextScan;
         }
@@ -57,65 +64,29 @@ namespace PawnDiary
             for (int i = 0; i < colonists.Count; i++)
             {
                 Pawn pawn = colonists[i];
-                if (!IsDiaryEligible(pawn) || pawn.needs?.mood?.thoughts == null)
-                {
-                    continue;
-                }
-
-                thoughts.Clear();
-                activeByStateKey.Clear();
-
-                // GetAllMoodThoughts itself calls MoodOffset() on every thought, and a modded thought
-                // class can throw inside its own MoodOffset override before the per-thought guard below
-                // ever runs. A pawn with such a thought costs only their own scan pass, not the whole
-                // colony tick. Do not log: the broken thought rethrows every scan while it persists.
-                try
-                {
-                    pawn.needs.mood.thoughts.GetAllMoodThoughts(thoughts);
-                }
-                catch (Exception)
-                {
-                    continue;
-                }
-
                 string pawnId = pawn.GetUniqueLoadID();
-
-                for (int j = 0; j < thoughts.Count; j++)
+                bool pawnSnapshotOnly = thoughtProgressionPawnBaselinesPending.Contains(pawnId);
+                if (!TryCollectThoughtProgressionsForPawn(
+                    pawn, rules, thoughts, activeByStateKey))
                 {
-                    ThoughtProgressionMatch match;
-                    try
-                    {
-                        // MatchThoughtProgression reads thought.MoodOffset()/LabelCap, which another mod
-                        // can postfix and which can throw on a stale thought. Isolate a bad thought so it
-                        // costs only itself, not the whole colony's progression scan (mirrors the guard in
-                        // DiaryContextBuilder.BuildTopThoughtsSummary).
-                        match = MatchThoughtProgression(thoughts[j], rules);
-                    }
-                    catch (Exception)
-                    {
-                        continue;
-                    }
-
-                    if (match == null)
-                    {
-                        continue;
-                    }
-
-                    string stateKey = ThoughtProgressionStateKey(pawnId, match.categoryKey);
-                    ThoughtProgressionMatch existing;
-                    if (activeByStateKey.TryGetValue(stateKey, out existing)
-                        && existing.severity >= match.severity)
-                    {
-                        continue;
-                    }
-
-                    activeByStateKey[stateKey] = match;
+                    continue;
                 }
 
                 foreach (KeyValuePair<string, ThoughtProgressionMatch> pair in activeByStateKey)
                 {
                     seenStateKeys.Add(pair.Key);
-                    UpdateThoughtProgressionState(pawn, pair.Key, pair.Value, snapshotOnly);
+                    UpdateThoughtProgressionState(
+                        pawn,
+                        pair.Key,
+                        pair.Value,
+                        snapshotOnly || pawnSnapshotOnly);
+                }
+
+                // Consume only after collection and every snapshot update succeeded. A later scan
+                // may now treat genuinely new/worsened stages as post-wipe events for this pawn.
+                if (pawnSnapshotOnly)
+                {
+                    thoughtProgressionPawnBaselinesPending.Remove(pawnId);
                 }
             }
 
@@ -134,6 +105,143 @@ namespace PawnDiary
             {
                 activeThoughtProgressions.Remove(staleKeys[i]);
             }
+        }
+
+        /// <summary>
+        /// Replaces only one pawn's active-thought episode snapshot with their state at Brainwipe.
+        /// This is deliberately independent from the global next-scan baseline flag: other pawns keep
+        /// their episodes, while an unscanned pre-wipe worsening cannot become post-wipe autobiography.
+        /// </summary>
+        private void RebaselineThoughtProgressionsForPawn(Pawn pawn)
+        {
+            if (pawn == null)
+            {
+                return;
+            }
+
+            string pawnId = pawn.GetUniqueLoadID();
+            List<string> ownedKeys = new List<string>();
+            foreach (string key in activeThoughtProgressions.Keys)
+            {
+                if (PawnScopedTransientKeyPolicy.StartsWithPawnToken(key, pawnId))
+                {
+                    ownedKeys.Add(key);
+                }
+            }
+            for (int i = 0; i < ownedKeys.Count; i++)
+            {
+                activeThoughtProgressions.Remove(ownedKeys[i]);
+            }
+
+            thoughtProgressionPawnBaselinesPending.Add(pawnId);
+
+            List<ThoughtProgressionRule> rules = DiarySignalPolicies.ThoughtProgressionRules;
+            if (rules == null || rules.Count == 0)
+            {
+                return;
+            }
+
+            Dictionary<string, ThoughtProgressionMatch> activeByStateKey =
+                new Dictionary<string, ThoughtProgressionMatch>();
+            if (!TryCollectThoughtProgressionsForPawn(
+                pawn,
+                rules,
+                new List<Thought>(),
+                activeByStateKey,
+                isolateFailures: true))
+            {
+                return;
+            }
+
+            foreach (KeyValuePair<string, ThoughtProgressionMatch> pair in activeByStateKey)
+            {
+                UpdateThoughtProgressionState(pawn, pair.Key, pair.Value, snapshotOnly: true);
+            }
+            thoughtProgressionPawnBaselinesPending.Remove(pawnId);
+        }
+
+        /// <summary>Collects one pawn's strongest configured thought per category without emitting.</summary>
+        private static bool TryCollectThoughtProgressionsForPawn(
+            Pawn pawn,
+            List<ThoughtProgressionRule> rules,
+            List<Thought> thoughts,
+            Dictionary<string, ThoughtProgressionMatch> activeByStateKey,
+            bool isolateFailures = false)
+        {
+            thoughts.Clear();
+            activeByStateKey.Clear();
+            if (!IsDiaryEligible(pawn) || pawn.needs?.mood?.thoughts == null)
+            {
+                return false;
+            }
+
+            // GetAllMoodThoughts itself calls MoodOffset() on every thought, and a modded thought
+            // class can throw inside its own MoodOffset override before the per-thought guard below.
+            try
+            {
+                pawn.needs.mood.thoughts.GetAllMoodThoughts(thoughts);
+            }
+            catch (Exception exception)
+            {
+                if (!isolateFailures)
+                {
+                    // Preserve the ordinary scanner's all-or-nothing stale-state cleanup. Its caller
+                    // must not interpret an unreadable pawn as having recovered from every thought.
+                    throw;
+                }
+
+                Log.ErrorOnce(
+                    "[Pawn Diary] Brainwipe could not read the pawn's live mood thoughts while "
+                    + "rebuilding a silent progression baseline; the next successful scan will "
+                    + "baseline only this pawn: " + exception,
+                    "PawnDiary.Brainwipe.ThoughtRebaselineCollection".GetHashCode());
+                return false;
+            }
+
+            string pawnId = pawn.GetUniqueLoadID();
+            for (int i = 0; i < thoughts.Count; i++)
+            {
+                ThoughtProgressionMatch match;
+                try
+                {
+                    match = MatchThoughtProgression(thoughts[i], rules);
+                }
+                catch (Exception exception)
+                {
+                    if (!isolateFailures)
+                    {
+                        // As above, an ordinary partial snapshot must never drive stale-state removal.
+                        throw;
+                    }
+
+                    // A partial snapshot is not a safe memory boundary: if this thought becomes
+                    // readable next scan, it could otherwise emit its pre-wipe stage as first-seen.
+                    // Keep the target-only retry marker until one complete scan can baseline them all.
+                    Log.ErrorOnce(
+                        "[Pawn Diary] Brainwipe skipped one malformed live thought while rebuilding "
+                        + "the pawn's silent progression baseline; the next complete scan will retry "
+                        + "only this pawn: " + exception,
+                        "PawnDiary.Brainwipe.ThoughtRebaselineRow".GetHashCode());
+                    activeByStateKey.Clear();
+                    return false;
+                }
+
+                if (match == null)
+                {
+                    continue;
+                }
+
+                string stateKey = ThoughtProgressionStateKey(pawnId, match.categoryKey);
+                ThoughtProgressionMatch existing;
+                if (activeByStateKey.TryGetValue(stateKey, out existing)
+                    && existing.severity >= match.severity)
+                {
+                    continue;
+                }
+                activeByStateKey[stateKey] = match;
+            }
+
+            return true;
         }
 
         private void UpdateThoughtProgressionState(Pawn pawn, string stateKey, ThoughtProgressionMatch match, bool snapshotOnly)

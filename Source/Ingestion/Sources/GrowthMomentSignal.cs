@@ -380,13 +380,31 @@ namespace PawnDiary.Ingestion
                 return null;
             }
 
+            string povPawnId = povPawn.GetUniqueLoadID();
+            bool povMemoryBoundary =
+                BiotechFamilyMemoryResetPolicy.HasMemoryBoundaryForPov(
+                    familyArc,
+                    povPawnId);
             string continuity = BiotechNarrativeProvider.FamilyContinuity(
-                familyArc != null && familyArc.birthTick > 0 && !familyArc.baselineOnly,
-                FamilyArcPolicy.HasObservedUpbringing(familyArc),
+                !povMemoryBoundary && familyArc != null
+                    && familyArc.birthTick > 0 && !familyArc.baselineOnly,
+                BiotechFamilyMemoryResetPolicy.HasObservedUpbringingForPov(
+                    familyArc,
+                    povPawnId),
                 FamilyArcPolicy.HasExactFamilyConnection(familyArc));
             string childName = DiaryLineCleaner.CleanLine(child.LabelShortCap);
             string familyFormat = FamilyNarrativeFormat(policy, continuity);
             string familyText = FormatNarrative(familyFormat, childName);
+            string upbringingText = PovUpbringingDescription(
+                familyArc,
+                mutation,
+                povPawnId,
+                policy);
+            if (!string.IsNullOrWhiteSpace(upbringingText))
+            {
+                familyText = DiaryLineCleaner.CleanLine(
+                    (familyText + " " + upbringingText).Trim());
+            }
 
             string xenotypeDefName = DlcContext.XenotypeDefName(child);
             string xenotypeLabel = DlcContext.Xenotype(child);
@@ -398,7 +416,7 @@ namespace PawnDiary.Ingestion
             return new BiotechNarrativeSnapshot
             {
                 providerAvailable = true,
-                povPawnId = povPawn.GetUniqueLoadID(),
+                povPawnId = povPawnId,
                 childId = mutation.childId,
                 familyArcId = continuity.Length == 0 ? string.Empty : mutation.familyArcId,
                 familyContinuity = continuity,
@@ -413,6 +431,39 @@ namespace PawnDiary.Ingestion
                         mutation.supporter?.adultId,
                         StringComparison.Ordinal)
             };
+        }
+
+        private static string PovUpbringingDescription(
+            BiotechFamilyArcState familyArc,
+            GrowthMomentMutation mutation,
+            string povPawnId,
+            BiotechPolicySnapshot policy)
+        {
+            if (familyArc?.supporters == null || mutation?.supporter == null) return string.Empty;
+            for (int i = 0; i < familyArc.supporters.Count; i++)
+            {
+                FamilySupportObservationState supporter = familyArc.supporters[i];
+                if (supporter == null || !string.Equals(
+                    supporter.adultId,
+                    mutation.supporter.adultId,
+                    StringComparison.Ordinal)) continue;
+                FamilySupportObservationState visible =
+                    BiotechFamilyMemoryResetPolicy.ProjectSupporterForPov(
+                        familyArc,
+                        supporter,
+                        povPawnId);
+                BiotechObservationBandRule band = FamilySupportPolicy.ObservationBandFor(
+                    FamilyArcPolicy.UnsummarizedEvidence(visible),
+                    policy);
+                string token = band?.token ?? string.Empty;
+                return string.Equals(
+                    token,
+                    mutation.supporter.observationBand ?? string.Empty,
+                    StringComparison.Ordinal)
+                    ? string.Empty
+                    : ObservationDescription(policy, token);
+            }
+            return string.Empty;
         }
 
         private static string FamilyNarrativeFormat(BiotechPolicySnapshot policy, string continuity)

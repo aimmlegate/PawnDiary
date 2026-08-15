@@ -22,11 +22,9 @@ namespace PawnDiary
         // budget so small title and connection-test requests can still produce an answer.
         private const int Gemini25ProThinkingTokens = 128;
 
-        // Gemini 3 and GPT-OSS expose relative thinking levels rather than an exact off switch.
-        // "low" is the least expensive level supported across their model families. 1,024
-        // tokens gives these simple diary requests useful room to think without restoring the
-        // providers' unbounded/default thinking behavior.
-        private const int LowThinkingHeadroomTokens = 1024;
+        // Safe fallback when the main-thread XML tuning snapshot is absent/corrupt. The actual policy
+        // value is owned by DiaryTuningDef; this pure serializer never reads Verse/DefDatabase.
+        internal const int DefaultLowThinkingHeadroomTokens = 1024;
 
         /// <summary>Returns compact JSON for one provider generation request.</summary>
         public static string Build(LlmProtocolRequestInput input)
@@ -97,7 +95,7 @@ namespace PawnDiary
                     + "\"}]}";
             }
 
-            int thinkingHeadroom = GeminiThinkingHeadroom(input.ModelName);
+            int thinkingHeadroom = GeminiThinkingHeadroom(input);
             json += ",\"generationConfig\":{\"maxOutputTokens\":"
                 + SafeTokenLimit(input, thinkingHeadroom);
             AppendGeminiThinkingConfig(ref json, input.ModelName);
@@ -124,7 +122,7 @@ namespace PawnDiary
                 + "\"temperature\":" + JsonNumber(OllamaTemperature(input.Temperature)) + ","
                 + "\"num_predict\":" + SafeTokenLimit(
                     input,
-                    gptOss ? LowThinkingHeadroomTokens : 0)
+                    gptOss ? LowThinkingHeadroom(input) : 0)
                 + "}}";
         }
 
@@ -181,18 +179,30 @@ namespace PawnDiary
         }
 
         /// <summary>Returns hidden-token headroom for Gemini models that cannot disable thinking.</summary>
-        private static int GeminiThinkingHeadroom(string modelName)
+        private static int GeminiThinkingHeadroom(LlmProtocolRequestInput input)
         {
-            if (IsGemini25ProThinkingModel(modelName))
+            if (IsGemini25ProThinkingModel(input.ModelName))
             {
                 return Gemini25ProThinkingTokens;
             }
-            if (IsGemini3MinimalThinkingModel(modelName)
-                || IsGemini3LowThinkingModel(modelName))
+            if (IsGemini3MinimalThinkingModel(input.ModelName)
+                || IsGemini3LowThinkingModel(input.ModelName))
             {
-                return LowThinkingHeadroomTokens;
+                return LowThinkingHeadroom(input);
             }
             return 0;
+        }
+
+        /// <summary>Normalizes the detached XML policy snapshot under the defensive wire cap.</summary>
+        private static int LowThinkingHeadroom(LlmProtocolRequestInput input)
+        {
+            int value = input.LowThinkingHeadroomTokens;
+            if (value <= 0)
+            {
+                return DefaultLowThinkingHeadroomTokens;
+            }
+
+            return value > MaximumWireTokens ? MaximumWireTokens : value;
         }
 
         /// <summary>Adds only the thinking control supported by the selected Gemini model family.</summary>

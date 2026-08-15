@@ -12,7 +12,7 @@
     <displayOrder>0</displayOrder>
     <important>false</important>
     <colorCue>quiet</colorCue>
-    <domain>Interaction</domain>
+    <domain>PlayerEntry</domain>
   </PawnDiary.DiaryPlayerEntryTypeDef>
   <PawnDiary.DiaryPlayerEntryTypeDef>
     <defName>PawnDiary_PlayerEntryType_Important</defName>
@@ -24,7 +24,7 @@
     <displayOrder>10</displayOrder>
     <important>true</important>
     <colorCue>white</colorCue>
-    <domain>Tale</domain>
+    <domain>PlayerEntry</domain>
   </PawnDiary.DiaryPlayerEntryTypeDef>
   <PawnDiary.DiaryPlayerEntryTypeDef>
     <defName>PawnDiary_PlayerEntryType_InnerThoughts</defName>
@@ -36,7 +36,7 @@
     <displayOrder>20</displayOrder>
     <important>false</important>
     <colorCue>quiet</colorCue>
-    <domain>Thought</domain>
+    <domain>PlayerEntry</domain>
   </PawnDiary.DiaryPlayerEntryTypeDef>
   <PawnDiary.DiaryPlayerEntryTypeDef>
     <defName>PawnDiary_PlayerEntryType_Social</defName>
@@ -48,7 +48,7 @@
     <displayOrder>30</displayOrder>
     <important>false</important>
     <colorCue>white</colorCue>
-    <domain>Interaction</domain>
+    <domain>PlayerEntry</domain>
   </PawnDiary.DiaryPlayerEntryTypeDef>
   <PawnDiary.DiaryPlayerEntryTypeDef>
     <defName>PawnDiary_PlayerEntryType_Work</defName>
@@ -60,7 +60,7 @@
     <displayOrder>40</displayOrder>
     <important>false</important>
     <colorCue>quiet</colorCue>
-    <domain>Work</domain>
+    <domain>PlayerEntry</domain>
   </PawnDiary.DiaryPlayerEntryTypeDef>
   <PawnDiary.DiaryPlayerEntryTypeDef>
     <defName>PawnDiary_PlayerEntryType_Health</defName>
@@ -72,7 +72,7 @@
     <displayOrder>50</displayOrder>
     <important>true</important>
     <colorCue>danger</colorCue>
-    <domain>Hediff</domain>
+    <domain>PlayerEntry</domain>
   </PawnDiary.DiaryPlayerEntryTypeDef>
   <PawnDiary.DiaryPlayerEntryTypeDef>
     <defName>PawnDiary_PlayerEntryType_Combat</defName>
@@ -83,8 +83,9 @@
     <defaultTemplateKey>SoloImportant</defaultTemplateKey>
     <displayOrder>60</displayOrder>
     <important>true</important>
+    <combat>true</combat>
     <colorCue>combat</colorCue>
-    <domain>Raid</domain>
+    <domain>PlayerEntry</domain>
   </PawnDiary.DiaryPlayerEntryTypeDef>
   <PawnDiary.DiaryPlayerEntryTypeDef>
     <defName>PawnDiary_PlayerEntryType_Colony</defName>
@@ -96,7 +97,7 @@
     <displayOrder>70</displayOrder>
     <important>false</important>
     <colorCue>white</colorCue>
-    <domain>Quest</domain>
+    <domain>PlayerEntry</domain>
   </PawnDiary.DiaryPlayerEntryTypeDef>
   <PawnDiary.DiaryPlayerEntryTypeDef>
     <defName>PawnDiary_PlayerEntryType_Reflection</defName>
@@ -107,7 +108,8 @@
     <defaultTemplateKey>SoloInternalState</defaultTemplateKey>
     <displayOrder>80</displayOrder>
     <important>false</important>
+    <reflection>true</reflection>
     <colorCue>quiet</colorCue>
-    <domain>Reflection</domain>
+    <domain>PlayerEntry</domain>
   </PawnDiary.DiaryPlayerEntryTypeDef>
 </Defs>

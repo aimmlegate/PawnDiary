@@ -133,7 +133,14 @@ namespace PawnDiary.Capture
             string pawnPart = HasEligibleDistinctPartner(this)
                 ? CanonicalPairKey(SubjectPawnId, PartnerPawnId)
                 : SubjectPawnId;
-            return "external|" + EventKey + "|" + pawnPart;
+            // A conventional eventKey is one pipe token, so Brainwipe can later recognize the exact
+            // subject/pair fields. Adapter keys containing the delimiter remain fully deduplicated but
+            // use an opaque namespace: their token boundaries are ambiguous and must never cause an
+            // unrelated pawn's suppression row to be removed.
+            string prefix = (EventKey ?? string.Empty).IndexOf('|') >= 0
+                ? "external-opaque"
+                : "external";
+            return prefix + "|" + EventKey + "|" + pawnPart;
         }
 
         private static bool HasEligibleDistinctPartner(ExternalEventData data)

@@ -39,7 +39,12 @@ namespace PawnDiary
         /// persisted reroll counter: 0 reproduces the entry's original humor decision exactly, while
         /// a positive value re-rolls onto a different stable seed.
         /// </summary>
-        public static string CueFor(DiaryEvent diaryEvent, Pawn writerPawn, string writerStableId, int seedSalt = 0)
+        public static string CueFor(
+            DiaryEvent diaryEvent,
+            Pawn writerPawn,
+            string writerStableId,
+            int seedSalt = 0,
+            string povRole = null)
         {
             if (diaryEvent == null)
             {
@@ -60,7 +65,7 @@ namespace PawnDiary
                     return string.Empty;
                 }
 
-                bool isGallows = IsHighStakes(diaryEvent);
+                bool isGallows = IsHighStakes(diaryEvent, povRole);
 
                 List<DiaryHumorCueDef> candidates = null;
                 List<string> candidateKeys = null;
@@ -205,32 +210,14 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Derives the stakes tier from the event. Gallows (high-stakes) when the event is marked
-        /// important, belongs to the Raid domain, or its display color cue is combat/social-fight/
-        /// mental-break; otherwise Light. Both tiers remain eligible — this only picks the flavor.
+        /// Derives the stakes tier from the event's central per-POV semantics. Gallows applies to an
+        /// important or combat-related POV; otherwise Light. Both tiers remain eligible — this only
+        /// picks the flavor.
         /// </summary>
-        private static bool IsHighStakes(DiaryEvent diaryEvent)
+        private static bool IsHighStakes(DiaryEvent diaryEvent, string povRole)
         {
-            if (diaryEvent.IsImportant())
-            {
-                return true;
-            }
-
-            string domain = DiaryEventDomainClassifier.DomainForContext(diaryEvent.gameContext);
-            if (string.Equals(domain, DiaryEventDomainClassifier.Raid, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-
-            string colorCue = DiaryEvent.ResolveColorCue(diaryEvent.interactionDefName, diaryEvent.gameContext);
-            if (string.Equals(colorCue, DiaryEvent.CombatColorCue, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(colorCue, DiaryEvent.SocialFightColorCue, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(colorCue, DiaryEvent.MentalBreakColorCue, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-
-            return false;
+            PlayerEntrySemanticProjection semantics = diaryEvent.SemanticProjectionForRole(povRole);
+            return semantics.important || semantics.combat;
         }
 
         // Same weighted-pick algorithm as PromptEnchantments.PickWeighted: roll in [0, total), walk

@@ -203,6 +203,7 @@ namespace PawnDiary
                 failoverTargets = failoverTargets,
                 timeoutSeconds = settings.timeoutSeconds,
                 maxTokens = requestMaxTokens,
+                lowThinkingHeadroomTokens = DiaryTuning.LowThinkingHeadroomTokens,
                 temperature = settings.temperature,
                 responseRules = responseRules,
                 promptVariants = promptVariants
@@ -714,6 +715,7 @@ namespace PawnDiary
                 failoverTargets = BuildFailoverTargets(targets, target),
                 timeoutSeconds = settings.timeoutSeconds,
                 maxTokens = TitleMaxTokens,
+                lowThinkingHeadroomTokens = DiaryTuning.LowThinkingHeadroomTokens,
                 temperature = settings.temperature,
                 responseRules = titleRules
             });

@@ -11,6 +11,7 @@ namespace DiaryUiPolicyTests
         private static int Main()
         {
             TestSessionIdentity();
+            TestPendingRequestSessionIdentity();
             TestReaderDirectorySessionIdentity();
             TestInlineYearSelector();
             TestPsychotypeControlRows();
@@ -54,6 +55,25 @@ namespace DiaryUiPolicyTests
             True(
                 DiaryUiPolicy.ShouldShowInlineYearSelector(float.PositiveInfinity, 2),
                 "infinite panel geometry fails safe to inline");
+        }
+
+        private static void TestPendingRequestSessionIdentity()
+        {
+            object current = new object();
+            object previous = new object();
+
+            False(
+                DiaryUiPolicy.ShouldClearPendingRequest(current, current),
+                "a same-session request created before first draw survives binding");
+            True(
+                DiaryUiPolicy.ShouldClearPendingRequest(previous, current),
+                "a prior-game static request is cleared during binding");
+            True(
+                DiaryUiPolicy.ShouldClearPendingRequest(null, current),
+                "legacy unowned static navigation fails closed on entering a game");
+            False(
+                DiaryUiPolicy.ShouldClearPendingRequest(null, null),
+                "empty menu state needs no redundant reset");
         }
 
         private static void TestReaderDirectorySessionIdentity()

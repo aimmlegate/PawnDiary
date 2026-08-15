@@ -210,6 +210,9 @@
     <integrationPromptBudgetMaxRequestsGlobal>30</integrationPromptBudgetMaxRequestsGlobal>
     <integrationPromptBudgetMaxTokensPerSource>20000</integrationPromptBudgetMaxTokensPerSource>
     <integrationPromptBudgetMaxTokensGlobal>60000</integrationPromptBudgetMaxTokensGlobal>
+    <!-- Hidden-token reserve added to visible output for native model families whose cheapest
+         supported thinking mode remains enabled (Gemini low/minimal and Ollama GPT-OSS). -->
+    <lowThinkingHeadroomTokens>1024</lowThinkingHeadroomTokens>
     <!-- Diary UI long-history loading budget. Work is sliced across frames so opening a diary with
          thousands of pages does not freeze the game. -->
     <uiHistoryScanMaxEventsPerFrame>60</uiHistoryScanMaxEventsPerFrame>

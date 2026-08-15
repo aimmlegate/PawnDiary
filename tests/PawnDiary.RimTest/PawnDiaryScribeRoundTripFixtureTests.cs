@@ -1105,6 +1105,17 @@ namespace PawnDiary.RimTests
                 detailsCompacted = false,
                 lastSummarizedObservationTick = 800,
                 recordedGrowthAges = new List<int> { 7, 10 },
+                childMemoryBoundaryPawnId = "Thing_Child",
+                childMemoryBoundaryTick = 850,
+                childMemorySupportBaselines = new List<FamilySupportMemoryBaselineState>
+                {
+                    new FamilySupportMemoryBaselineState
+                    {
+                        adultId = "Thing_Parent",
+                        lessonCount = 5,
+                        babyPlayCount = 2
+                    }
+                },
                 supporters = new List<FamilySupportObservationState>
                 {
                     new FamilySupportObservationState
@@ -1117,7 +1128,11 @@ namespace PawnDiary.RimTests
                         summarizedLessonCount = 4,
                         summarizedBabyPlayCount = 2,
                         firstObservedTick = 200,
-                        lastObservedTick = 900
+                        lastObservedTick = 900,
+                        adultMemoryBoundaryActive = true,
+                        adultMemoryBoundaryTick = 850,
+                        adultMemoryLessonBaseline = 4,
+                        adultMemoryBabyPlayBaseline = 2
                     }
                 }
             };
@@ -1139,6 +1154,73 @@ namespace PawnDiary.RimTests
             AssertInt(4, supporter.summarizedLessonCount, "family summarized lessons");
             AssertInt(2, supporter.summarizedBabyPlayCount, "family summarized play");
             AssertInt(900, supporter.lastObservedTick, "family supporter last observation tick");
+            Require(supporter.adultMemoryBoundaryActive,
+                "family exact-adult memory boundary should survive.");
+            AssertInt(850, supporter.adultMemoryBoundaryTick,
+                "family exact-adult memory boundary tick");
+            AssertInt(4, supporter.adultMemoryLessonBaseline,
+                "family exact-adult lesson baseline");
+            AssertStr("Thing_Child", loaded.childMemoryBoundaryPawnId,
+                "family child-memory boundary pawn");
+            AssertInt(850, loaded.childMemoryBoundaryTick, "family child-memory boundary tick");
+            Require(loaded.childMemorySupportBaselines != null
+                    && loaded.childMemorySupportBaselines.Count == 1,
+                "family child-memory supporter baselines should survive.");
+            AssertStr("Thing_Parent", loaded.childMemorySupportBaselines[0].adultId,
+                "family child-memory supporter ID");
+            AssertInt(5, loaded.childMemorySupportBaselines[0].lessonCount,
+                "family child-memory lesson baseline");
+        }
+
+        /// <summary>
+        /// An active shared Odyssey journey keeps its additive exact writer exclusions across save/load,
+        /// without deleting the raw writers needed by the other landing POVs.
+        /// </summary>
+        [Test]
+        public static void OdysseyJourneyWriterMemoryBoundaryRoundTrips()
+        {
+            OdysseyJourneyState original = new OdysseyJourneyState
+            {
+                journeyId = "odyssey-journey|Thing_Gravship|700",
+                shipStableId = "Thing_Gravship",
+                shipName = "Wayfarer",
+                departureTick = 700,
+                launchQualityBand = OdysseyLaunchQualityTokens.Excellent,
+                sourceComplete = true,
+                writers = new List<OdysseyWriterState>
+                {
+                    new OdysseyWriterState
+                    {
+                        pawnId = "Pawn_1",
+                        displayName = "Ari",
+                        roleToken = OdysseyJourneyRoleTokens.Pilot,
+                        eligible = true,
+                        present = true,
+                        hasDiary = true
+                    },
+                    new OdysseyWriterState
+                    {
+                        pawnId = "Pawn_10",
+                        displayName = "Bea",
+                        roleToken = OdysseyJourneyRoleTokens.Copilot,
+                        eligible = true,
+                        present = true,
+                        hasDiary = true
+                    }
+                },
+                memoryExcludedWriterPawnIds = new List<string> { "Pawn_1" }
+            };
+
+            OdysseyJourneyState loaded = ScribeRoundTrip(original);
+            Require(loaded.writers != null && loaded.writers.Count == 2,
+                "Odyssey raw journey writers should survive.");
+            Require(loaded.memoryExcludedWriterPawnIds != null
+                    && loaded.memoryExcludedWriterPawnIds.Count == 1,
+                "Odyssey writer-memory exclusions should survive.");
+            AssertStr("Pawn_1", loaded.memoryExcludedWriterPawnIds[0],
+                "Odyssey exact excluded writer ID");
+            AssertStr("Pawn_10", loaded.writers[1].pawnId,
+                "Odyssey unaffected raw writer ID");
         }
 
         /// <summary>

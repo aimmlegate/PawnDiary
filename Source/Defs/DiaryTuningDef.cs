@@ -260,6 +260,9 @@ namespace PawnDiary
         public int integrationPromptBudgetMaxRequestsGlobal = 30;
         public int integrationPromptBudgetMaxTokensPerSource = 20000;
         public int integrationPromptBudgetMaxTokensGlobal = 60000;
+        // Hidden-token reserve added to the visible response budget for native model families whose
+        // cheapest supported reasoning mode is still enabled (Gemini low/minimal and Ollama GPT-OSS).
+        public int lowThinkingHeadroomTokens = 1024;
         // Diary UI long-history indexing is sliced across frames so selecting a pawn never scans
         // thousands of entries in one draw. These cap per-frame work for the tab and command badges.
         public int uiHistoryScanMaxEventsPerFrame = 60;
@@ -1081,6 +1084,26 @@ namespace PawnDiary
         public static int PromptAntiRepeatMaxRerolls
         {
             get { return NonNegativeOrDefault(Current.promptAntiRepeatMaxRerolls, Fallback.promptAntiRepeatMaxRerolls); }
+        }
+
+        /// <summary>
+        /// XML-tuned hidden-token reserve for native providers whose cheapest thinking mode cannot be
+        /// disabled. Invalid values use the shipped fallback; the cap is purely defensive and matches
+        /// the serializer's maximum wire-token integer.
+        /// </summary>
+        public static int LowThinkingHeadroomTokens
+        {
+            get
+            {
+                int value = Current.lowThinkingHeadroomTokens;
+                if (value <= 0)
+                {
+                    return Fallback.lowThinkingHeadroomTokens;
+                }
+
+                const int MaximumWireTokens = 1024 * 1024;
+                return value > MaximumWireTokens ? MaximumWireTokens : value;
+            }
         }
 
         private static float NonNegativeOrDefault(float value, float fallback)

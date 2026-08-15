@@ -148,6 +148,35 @@ namespace PawnDiary
         }
 
         public static int PendingCountForTests => Pending.Count;
+        public static int RecentCountForTests => Recent.Count;
+
+        /// <summary>
+        /// Silently removes one exact pawn's staged title memories and inverse-order owner tokens at
+        /// Brainwipe. Releasing them to the ordinary Thought pipeline would recreate pre-wipe prose.
+        /// </summary>
+        public static int ForgetPawn(string pawnId)
+        {
+            string pawn = (pawnId ?? string.Empty).Trim();
+            if (pawn.Length == 0) return 0;
+            int removed = 0;
+            for (int i = Pending.Count - 1; i >= 0; i--)
+            {
+                if (string.Equals(Pending[i]?.fact?.pawnId, pawn, StringComparison.Ordinal))
+                {
+                    Pending.RemoveAt(i);
+                    removed++;
+                }
+            }
+            for (int i = Recent.Count - 1; i >= 0; i--)
+            {
+                if (string.Equals(Recent[i]?.pawnId, pawn, StringComparison.Ordinal))
+                {
+                    Recent.RemoveAt(i);
+                    removed++;
+                }
+            }
+            return removed;
+        }
 
         public static void Clear()
         {

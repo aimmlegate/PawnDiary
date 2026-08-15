@@ -116,6 +116,7 @@ namespace PawnDiary
 
             bool socialReflection = DiaryContextFields.IsTrue(
                 diaryEvent.gameContext, "social_reflection");
+            PlayerEntrySemanticProjection semantics = diaryEvent.SemanticProjectionForRole(povRole);
             DiaryEventPayload payload = new DiaryEventPayload
             {
                 eventId = diaryEvent.eventId,
@@ -124,7 +125,7 @@ namespace PawnDiary
                 defName = diaryEvent.interactionDefName,
                 label = diaryEvent.interactionLabel,
                 eventNoun = EventNoun(diaryEvent),
-                domain = DomainFor(diaryEvent.gameContext),
+                domain = semantics.domain,
                 solo = diaryEvent.solo,
                 gameContext = diaryEvent.gameContext,
                 instruction = diaryEvent.instruction,
@@ -143,16 +144,12 @@ namespace PawnDiary
                 recipient = PovFor(diaryEvent, DiaryPipelineRoles.Recipient, readOnlyKnowledge),
                 display = new DiaryDisplayPayload
                 {
-                    // H7 freezes a polarity-specific cue on the event. Regeneration must keep that
-                    // saved decision instead of re-deriving the social-reflection group's quiet
-                    // fallback (or reading later XML changes).
-                    colorCue = socialReflection
-                            && !string.IsNullOrWhiteSpace(diaryEvent.colorCue)
-                        ? diaryEvent.colorCue
-                        : DiaryEvent.ResolveColorCue(
-                            diaryEvent.interactionDefName,
-                            diaryEvent.gameContext),
-                    important = diaryEvent.IsImportant()
+                    // The per-POV projection preserves a saved source cue for ordinary events and
+                    // applies the selected player category for composer pages.
+                    colorCue = semantics.colorCue,
+                    important = semantics.important,
+                    combat = semantics.combat,
+                    reflection = semantics.reflection
                 }
             };
 
@@ -163,11 +160,13 @@ namespace PawnDiary
             {
                 payload.defName = playerType.eventPromptKey;
                 payload.playerEntryTypeKey = playerType.entryTypeKey;
-                payload.label = playerType.label;
-                payload.eventNoun = playerType.label;
-                payload.domain = playerType.domain;
-                payload.display.colorCue = playerType.colorCue;
-                payload.display.important = playerType.important;
+                payload.label = semantics.label;
+                payload.eventNoun = semantics.label;
+                payload.domain = semantics.domain;
+                payload.display.colorCue = semantics.colorCue;
+                payload.display.important = semantics.important;
+                payload.display.combat = semantics.combat;
+                payload.display.reflection = semantics.reflection;
             }
 
             return payload;
@@ -290,11 +289,39 @@ namespace PawnDiary
         /// </summary>
         public static bool ProjectsMemoryContext(
             DiaryEvent diaryEvent,
-            bool readOnlyKnowledge = false)
+            bool readOnlyKnowledge = false,
+            string requestedTemplateKey = null,
+            string povRole = null)
         {
+            string normalizedRole = string.IsNullOrWhiteSpace(povRole)
+                ? DiaryEvent.InitiatorRole
+                : povRole;
+            string effectiveRequestedKey = string.IsNullOrWhiteSpace(requestedTemplateKey)
+                ? diaryEvent?.PlayerEntryTypeForRole(normalizedRole)?.defaultTemplateKey
+                : requestedTemplateKey.Trim();
+            if (!string.IsNullOrWhiteSpace(effectiveRequestedKey))
+            {
+                // Bind to the same first selectable Def as the composer UI/prompt adapter. Looking up by
+                // key or defName again would let a custom alias collision predict the wrong memory layer.
+                List<DiaryPromptTemplateDef> selectable =
+                    DiaryPlayerPromptTemplates.FirstSelectableDefs();
+                for (int i = 0; i < selectable.Count; i++)
+                {
+                    DiaryPromptTemplateDef template = selectable[i];
+                    if (template != null && string.Equals(
+                        template.templateKey?.Trim(),
+                        effectiveRequestedKey,
+                        StringComparison.OrdinalIgnoreCase))
+                    {
+                        return FieldsProjectMemoryContext(
+                            DiaryPromptTemplates.FieldsFor(template, effectiveRequestedKey));
+                    }
+                }
+            }
+
             DiaryEventPayload payload = ToPayload(
                 diaryEvent,
-                DiaryEvent.InitiatorRole,
+                normalizedRole,
                 readOnlyKnowledge);
             string classifierKey = ClassifierKeyForPayload(payload);
             DiaryInteractionGroupDef group = GroupForPayload(payload, classifierKey);
@@ -312,6 +339,11 @@ namespace PawnDiary
                 policy = minimalPolicy
             });
             List<DiaryPromptFieldDef> fields = DiaryPromptTemplates.FieldsFor(templateKey);
+            return FieldsProjectMemoryContext(fields);
+        }
+
+        private static bool FieldsProjectMemoryContext(List<DiaryPromptFieldDef> fields)
+        {
             for (int i = 0; i < fields.Count; i++)
             {
                 DiaryPromptFieldDef field = fields[i];
@@ -682,6 +714,11 @@ namespace PawnDiary
                 return false;
             }
 
+            if (payload.display != null && payload.display.combat)
+            {
+                return true;
+            }
+
             if (string.Equals(payload.domain, GroupDomain.MentalState.ToString(), StringComparison.OrdinalIgnoreCase))
             {
                 return true;
@@ -792,6 +829,19 @@ namespace PawnDiary
         private static DiaryInteractionGroupDef GroupForPayload(DiaryEventPayload payload, string classifierKey)
         {
             if (payload == null)
+            {
+                return null;
+            }
+
+            // Player-authored categories are an independent semantic axis. Their eventPromptKey may
+            // intentionally (or accidentally, in a custom Def) equal a captured interaction's key;
+            // never let that collision import the capture group's combat/tone/model policy or make
+            // anti-repeat rerolls replace the player's exact instruction.
+            if (!string.IsNullOrWhiteSpace(payload.playerEntryTypeKey)
+                || string.Equals(
+                    payload.domain,
+                    DiaryEventDomainClassifier.PlayerEntry,
+                    StringComparison.OrdinalIgnoreCase))
             {
                 return null;
             }

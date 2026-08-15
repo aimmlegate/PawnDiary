@@ -16,6 +16,7 @@ namespace RoyaltyContextTests
             TestPolicyFallbacksAndMalformedValues();
             TestFormationAndBaselineMatrix();
             TestSeparationRecoveryMatrix();
+            TestBrainwipePersonaRebaseline();
             TestEndingTransferAndDisabledMatrix();
             TestLifecycleContextVisibilityAndReservedThoughtOwnership();
             TestPersonaKillCorrelationBufferPolicy();
@@ -30,6 +31,7 @@ namespace RoyaltyContextTests
             TestMutationRuntimeCorrelationStore();
             TestPhase4RoutesThoughtsAndContext();
             TestSuccessionCommitMatchingAndContext();
+            TestBrainwipeSuccessionExactOwnership();
             TestSuccessionCorrelationNormalizationAndAppointment();
             TestPermitAllowlistMappingsAndExclusions();
             TestPermitMalformedOrderingDedupAndCaps();
@@ -893,6 +895,71 @@ namespace RoyaltyContextTests
             AssertTrue("recovery without emitted separation silent", !recovered.shouldEmit);
         }
 
+        private static void TestBrainwipePersonaRebaseline()
+        {
+            const int wipeTick = 900;
+            PersonaBondStateSnapshot pending = ActiveState();
+            pending.previousPawnId = "Pawn_Previous";
+            pending.phaseToken = PersonaBondPhaseTokens.SeparationPending;
+            pending.pendingSeparationTick = 10;
+            pending.firstConsequentialKillObserved = true;
+            pending.firstConsequentialKillEventRecorded = true;
+            PersonaBondStateSnapshot reset = PersonaLifecyclePolicy.RebaselineAfterMemoryReset(
+                pending,
+                "Pawn_A",
+                wipeTick);
+
+            AssertTrue("Brainwipe rebaselines an exact live persona owner", reset != null);
+            AssertTrue("Brainwipe preserves persona physical ownership and epoch dedup",
+                reset.weaponThingId == pending.weaponThingId
+                && reset.currentPawnId == pending.currentPawnId
+                && reset.bondEpoch == pending.bondEpoch);
+            AssertTrue("Brainwipe clears only the persona autobiography timeline",
+                reset.phaseToken == PersonaBondPhaseTokens.Active
+                && reset.previousPawnId.Length == 0
+                && reset.bondStartedTick == wipeTick
+                && reset.lastPrimaryObservedTick == wipeTick
+                && reset.pendingSeparationTick == -1
+                && !reset.separationEmitted);
+            AssertTrue("Brainwipe retains consumed persona kill ownership",
+                reset.firstConsequentialKillObserved
+                && reset.firstConsequentialKillEventRecorded);
+
+            PersonaLifecycleDecision firstLoss = PersonaLifecyclePolicy.Evaluate(
+                reset,
+                Observation(PersonaObservationTokens.NotPrimary, wipeTick, true),
+                Policy(1000));
+            AssertTrue("a pre-wipe pending persona does not separate immediately after Brainwipe",
+                firstLoss.nextState.phaseToken == PersonaBondPhaseTokens.SeparationPending
+                && firstLoss.nextState.pendingSeparationTick == wipeTick
+                && !firstLoss.shouldEmit);
+
+            PersonaBondStateSnapshot separated = ActiveState();
+            separated.phaseToken = PersonaBondPhaseTokens.Separated;
+            separated.separationEmitted = true;
+            PersonaBondStateSnapshot separatedReset =
+                PersonaLifecyclePolicy.RebaselineAfterMemoryReset(separated, "Pawn_A", wipeTick);
+            PersonaLifecycleDecision firstPrimary = PersonaLifecyclePolicy.Evaluate(
+                separatedReset,
+                Observation(PersonaObservationTokens.Primary, wipeTick + 1, true),
+                Policy(1000));
+            AssertTrue("a pre-wipe separated persona does not emit a false recovery after Brainwipe",
+                firstPrimary.nextState.phaseToken == PersonaBondPhaseTokens.Active
+                && !firstPrimary.shouldEmit
+                && firstPrimary.narrativePhase.Length == 0);
+
+            PersonaBondStateSnapshot ended = ActiveState();
+            ended.phaseToken = PersonaBondPhaseTokens.Ended;
+            AssertTrue("Brainwipe preserves an inert terminal persona row",
+                PersonaLifecyclePolicy.RebaselineAfterMemoryReset(ended, "Pawn_A", wipeTick) == null);
+            AssertTrue("Brainwipe rejects persona prefix collisions and unrelated owners",
+                PersonaLifecyclePolicy.RebaselineAfterMemoryReset(pending, "Pawn", wipeTick) == null
+                && PersonaLifecyclePolicy.RebaselineAfterMemoryReset(
+                    pending, "Pawn_A_suffix", wipeTick) == null
+                && PersonaLifecyclePolicy.RebaselineAfterMemoryReset(
+                    pending, "Pawn_B", wipeTick) == null);
+        }
+
         private static void TestEndingTransferAndDisabledMatrix()
         {
             RoyaltyPolicySnapshot policy = Policy(1000);
@@ -1553,6 +1620,33 @@ namespace RoyaltyContextTests
                 RoyalMutationCorrelation.PruneExpiredMissingOwners(
                     new HashSet<string>(StringComparer.Ordinal), 2001, policy) == 1
                 && RoyalMutationCorrelation.PendingCountForTests == 0);
+
+            RoyalMutationBatchSnapshot forgetActive = RoyalMutationCorrelation.Open(
+                "Pawn_A", "Ari", "Empire", RoyalMutationCauseTokens.ImperialBestowing,
+                2100, before, 1, 16);
+            RoyalMutationBatchSnapshot forgetPending = OpenCompletedTitleBatch(
+                "Pawn_A", "Empire", 2100, before, after, 64);
+            RoyalMutationBatchSnapshot prefixActive = RoyalMutationCorrelation.Open(
+                "Pawn_AA", "Prefix", "Empire", RoyalMutationCauseTokens.ImperialBestowing,
+                2100, Title("Pawn_AA", "Empire", "Yeoman", 1), 1, 16);
+            RoyalMutationBatchSnapshot otherPending = OpenCompletedTitleBatch(
+                "Pawn_B", "Empire", 2100,
+                Title("Pawn_B", "Empire", "Yeoman", 1),
+                Title("Pawn_B", "Empire", "Acolyte", 2), 64);
+            AssertTrue("Brainwipe royal mutation fixtures stage active and pending rows",
+                forgetActive != null && forgetPending != null && prefixActive != null
+                    && otherPending != null
+                    && RoyalMutationCorrelation.ActiveCountForTests == 2
+                    && RoyalMutationCorrelation.PendingCountForTests == 2);
+            AssertEqual("Brainwipe removes exact pawn active and pending royal mutations", 2,
+                RoyalMutationCorrelation.ForgetPawn(" Pawn_A "));
+            AssertTrue("Brainwipe preserves unrelated and prefix-collision royal mutations",
+                RoyalMutationCorrelation.ActiveCountForTests == 1
+                    && RoyalMutationCorrelation.PendingCountForTests == 1
+                    && RoyalMutationCorrelation.IsActive(prefixActive)
+                    && RoyalMutationCorrelation.HasPendingForPawn("Pawn_B"));
+            AssertEqual("blank royal mutation reset is inert", 0,
+                RoyalMutationCorrelation.ForgetPawn(" "));
             RoyalMutationCorrelation.Clear();
         }
 
@@ -1800,6 +1894,21 @@ namespace RoyaltyContextTests
             AssertTrue("succession context omits internal proof metadata",
                 !context.Contains("Pawn_Dead") && !context.Contains("correlation")
                 && !context.Contains("commitTick") && !context.Contains("wasInherited"));
+        }
+
+        private static void TestBrainwipeSuccessionExactOwnership()
+        {
+            AssertTrue("Brainwipe recognizes exact saved succession heir ownership",
+                RoyalSuccessionPolicy.IsOwnedByHeir("Pawn_Heir", "Pawn_Heir"));
+            AssertTrue("Brainwipe succession ownership normalizes harmless surrounding whitespace",
+                RoyalSuccessionPolicy.IsOwnedByHeir("  Pawn_Heir  ", "Pawn_Heir"));
+            AssertTrue("Brainwipe succession ownership rejects both prefix-collision directions",
+                !RoyalSuccessionPolicy.IsOwnedByHeir("Pawn_Heir_2", "Pawn_Heir")
+                && !RoyalSuccessionPolicy.IsOwnedByHeir("Pawn_Heir", "Pawn_Heir_2"));
+            AssertTrue("Brainwipe succession ownership rejects blank and malformed IDs",
+                !RoyalSuccessionPolicy.IsOwnedByHeir(null, "Pawn_Heir")
+                && !RoyalSuccessionPolicy.IsOwnedByHeir("Pawn_Heir", " ")
+                && !RoyalSuccessionPolicy.IsOwnedByHeir("Pawn;Heir", "Pawn;Heir"));
         }
 
         private static void TestSuccessionCorrelationNormalizationAndAppointment()

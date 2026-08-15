@@ -80,14 +80,18 @@ namespace PawnDiary.Integration
         private const int MaxMaxTokens = 600;
         private const int MaxTrustedMaxTokens = PlayerEntryComposerPolicy.MaxResolvedPolicyTokens;
         // Admission cap: an adapter that stops polling must not leak slots OR keep starting paid work.
-        // Once full, Begin rejects new requests until callers consume terminal handles or a game reset
-        // clears the session. Pending work is never silently evicted while its HTTP request keeps running.
+        // Public callers share this fixed cap but cannot consume the one slot reserved for Pawn Diary's
+        // own composer. Pending work is never silently evicted while its HTTP request keeps running.
         private const int MaxTrackedRequests = 64;
+        private const int ReservedInternalRequests = 1;
 
         private static readonly object gate = new object();
         private static readonly Dictionary<int, LlmCompletionResult> results = new Dictionary<int, LlmCompletionResult>();
         private static readonly Dictionary<int, CancellationTokenSource> cancellations =
             new Dictionary<int, CancellationTokenSource>();
+        // Ownership survives completion until the terminal result is polled, so abandoned public
+        // handles remain bounded by their partition rather than starving the internal composer.
+        private static readonly HashSet<int> publicHandles = new HashSet<int>();
         private static int nextHandle;
 
         /// <summary>
@@ -150,12 +154,20 @@ namespace PawnDiary.Integration
             int retryAttempts = LlmTransportPolicy.NormalizeRetryAttempts(settings.retryAttempts);
             double retryBaseDelaySeconds =
                 LlmTransportPolicy.NormalizeRetryDelaySeconds(settings.retryBaseDelaySeconds);
+            // BeginCore is main-thread-only: detach XML tuning here before RunAsync crosses into the
+            // background transport, just like the lane/settings values above.
+            int lowThinkingHeadroomTokens = DiaryTuning.LowThinkingHeadroomTokens;
 
             int handle;
             CancellationTokenSource cancellation = new CancellationTokenSource();
             lock (gate)
             {
-                if (results.Count >= MaxTrackedRequests)
+                if (!LlmCompletionCapacityPolicy.CanAccept(
+                        results.Count,
+                        publicHandles.Count,
+                        trustedInternalPrompt,
+                        MaxTrackedRequests,
+                        ReservedInternalRequests))
                 {
                     cancellation.Dispose();
                     return 0;
@@ -164,6 +176,10 @@ namespace PawnDiary.Integration
                 handle = AllocateHandle();
                 results[handle] = new LlmCompletionResult { status = LlmCompletionStatus.Pending };
                 cancellations[handle] = cancellation;
+                if (!trustedInternalPrompt)
+                {
+                    publicHandles.Add(handle);
+                }
             }
 
             RunAsync(
@@ -176,6 +192,7 @@ namespace PawnDiary.Integration
                 temperature,
                 retryAttempts,
                 retryBaseDelaySeconds,
+                lowThinkingHeadroomTokens,
                 cancellation.Token);
             return handle;
         }
@@ -190,6 +207,7 @@ namespace PawnDiary.Integration
             lock (gate)
             {
                 results.Clear();
+                publicHandles.Clear();
                 toCancel = new List<CancellationTokenSource>(cancellations.Values);
                 cancellations.Clear();
             }
@@ -207,6 +225,7 @@ namespace PawnDiary.Integration
             lock (gate)
             {
                 bool removed = results.Remove(handle);
+                publicHandles.Remove(handle);
                 if (!cancellations.TryGetValue(handle, out cancellation))
                 {
                     return removed;
@@ -284,6 +303,7 @@ namespace PawnDiary.Integration
                 if (slot.status == LlmCompletionStatus.Succeeded || slot.status == LlmCompletionStatus.Failed)
                 {
                     results.Remove(handle);
+                    publicHandles.Remove(handle);
                 }
 
                 return copy;
@@ -296,13 +316,14 @@ namespace PawnDiary.Integration
         private static async void RunAsync(int handle, ApiEndpointConfig endpoint, string systemPrompt,
             string userText, int maxTokens, int timeoutSeconds, float temperature,
             int retryAttempts, double retryBaseDelaySeconds,
+            int lowThinkingHeadroomTokens,
             CancellationToken cancellationToken)
         {
             try
             {
                 string text = await LlmClient.SendSingleCompletion(endpoint, systemPrompt, userText,
                     maxTokens, timeoutSeconds, temperature, retryAttempts, retryBaseDelaySeconds,
-                    cancellationToken);
+                    cancellationToken, lowThinkingHeadroomTokens);
                 Complete(handle, LlmCompletionStatus.Succeeded, text, string.Empty);
             }
             catch (Exception e)

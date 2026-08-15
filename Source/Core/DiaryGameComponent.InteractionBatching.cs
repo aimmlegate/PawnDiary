@@ -588,7 +588,10 @@ namespace PawnDiary
         /// <summary>
         /// Converts a finished batch into a DiaryEvent and queues it for the normal generation flow.
         /// </summary>
-        private void FlushInteractionBatch(string key, PendingInteractionBatch batch)
+        private void FlushInteractionBatch(
+            string key,
+            PendingInteractionBatch batch,
+            string excludedWriterPawnId = null)
         {
             pendingInteractionBatches.Remove(key);
 
@@ -606,8 +609,24 @@ namespace PawnDiary
 
             // Freeze prose/mood at capture, but decide final ownership at flush: either participant may
             // have died while the batch waited, in which case the living side can still receive a solo.
-            bool initiatorEligible = !batch.initiator.Dead && IsDiaryEligible(batch.initiator);
-            bool recipientEligible = !batch.recipient.Dead && IsDiaryEligible(batch.recipient);
+            // Brainwipe also excludes only the wiped writer here. The other pawn's pre-wipe experience
+            // remains theirs, while no delayed batch can recreate a page for the pawn who forgot it.
+            bool initiatorExcluded = !string.IsNullOrWhiteSpace(excludedWriterPawnId)
+                && string.Equals(
+                    batch.initiatorPawnId,
+                    excludedWriterPawnId,
+                    StringComparison.Ordinal);
+            bool recipientExcluded = !string.IsNullOrWhiteSpace(excludedWriterPawnId)
+                && string.Equals(
+                    batch.recipientPawnId,
+                    excludedWriterPawnId,
+                    StringComparison.Ordinal);
+            bool initiatorEligible = !initiatorExcluded
+                && !batch.initiator.Dead
+                && IsDiaryEligible(batch.initiator);
+            bool recipientEligible = !recipientExcluded
+                && !batch.recipient.Dead
+                && IsDiaryEligible(batch.recipient);
 
             if (!initiatorEligible && !recipientEligible)
             {

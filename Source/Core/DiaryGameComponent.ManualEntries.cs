@@ -142,35 +142,38 @@ namespace PawnDiary
                 return false;
             }
 
-            // Preserve an unchanged field byte-for-byte. Old saves or another adapter may contain a
-            // value longer than today's XML cap; editing only its sibling must never truncate it.
-            string cleanedBody = string.Equals(body, current.Body, StringComparison.Ordinal)
-                ? current.Body
-                : ExternalDirectEntryText.CleanProse(body, ManualEntryBodyMaxCharacters);
-            if (string.IsNullOrWhiteSpace(cleanedBody))
-            {
-                return false;
-            }
+            // Snapshot XML caps and the detached Def catalog before crossing into the pure mutation
+            // planner. The editor uses this same contract, but persistence repeats it defensively so a
+            // direct/internal caller cannot bypass validation.
+            PlayerEntryMutationPlan mutation = PlayerEntryMutationPolicy.Plan(
+                new PlayerEntryMutationRequest
+                {
+                    creating = false,
+                    entryTypeLocked = current.EntryTypeLocked,
+                    originalBody = current.Body,
+                    originalTitle = current.Title,
+                    originalEntryTypeKey = current.EntryTypeKey,
+                    requestedBody = body,
+                    requestedTitle = title,
+                    requestedEntryTypeKey = entryTypeKey,
+                    bodyMaxCharacters = ManualEntryBodyMaxCharacters,
+                    titleMaxCharacters = ManualEntryTitleMaxCharacters
+                },
+                DiaryPlayerEntryTypes.ForUi());
+            if (!mutation.valid) return false;
 
-            string cleanedTitle = string.Equals(title, current.Title, StringComparison.Ordinal)
-                ? current.Title
-                : ExternalDirectEntryText.CleanTitle(title, ManualEntryTitleMaxCharacters);
-            string requestedEntryTypeKey = string.IsNullOrWhiteSpace(entryTypeKey)
-                ? string.Empty
-                : entryTypeKey.Trim();
-            bool typeChanged = !string.Equals(
-                requestedEntryTypeKey, current.EntryTypeKey, StringComparison.Ordinal);
+            string cleanedBody = mutation.body;
+            string cleanedTitle = mutation.title;
+            string requestedEntryTypeKey = mutation.entryTypeKey;
+            bool typeChanged = mutation.typeChanged;
             PlayerEntryTypeSnapshot requestedEntryType = null;
             if (typeChanged
-                && (current.EntryTypeLocked
-                    || !DiaryPlayerEntryTypes.TryResolve(requestedEntryTypeKey, out requestedEntryType)))
+                && !DiaryPlayerEntryTypes.TryResolve(requestedEntryTypeKey, out requestedEntryType))
             {
                 return false;
             }
 
-            if (string.Equals(cleanedBody, current.Body, StringComparison.Ordinal)
-                && string.Equals(cleanedTitle, current.Title, StringComparison.Ordinal)
-                && !typeChanged)
+            if (mutation.noChange)
             {
                 return true;
             }
@@ -186,8 +189,7 @@ namespace PawnDiary
 
             // A shared pair can stay in the hot repository for its other pawn after this exact POV has
             // compacted. Archive ownership is enough authority to update that matching hidden slot too.
-            bool textChanged = !string.Equals(cleanedBody, current.Body, StringComparison.Ordinal)
-                || !string.Equals(cleanedTitle, current.Title, StringComparison.Ordinal);
+            bool textChanged = mutation.textChanged;
             bool hotChanged = hotRoleMatches
                 && (HasHotEntryReference(pawnId, eventId) || archived != null)
                 && ((!textChanged || diaryEvent.ReplaceWithManualText(hotRole, cleanedBody, cleanedTitle))
@@ -278,27 +280,31 @@ namespace PawnDiary
                 return false;
             }
 
-            PlayerEntryTypeSnapshot requestedEntryType = null;
             string requestedEntryTypeKey = string.IsNullOrWhiteSpace(entryTypeKey)
                 ? PlayerEntryComposerPolicy.PersonalEntryTypeKey
                 : entryTypeKey.Trim();
+            PlayerEntryMutationPlan mutation = PlayerEntryMutationPolicy.Plan(
+                new PlayerEntryMutationRequest
+                {
+                    creating = true,
+                    requestedBody = body,
+                    requestedTitle = title,
+                    requestedEntryTypeKey = requestedEntryTypeKey,
+                    bodyMaxCharacters = ManualEntryBodyMaxCharacters,
+                    titleMaxCharacters = ManualEntryTitleMaxCharacters
+                },
+                DiaryPlayerEntryTypes.ForUi());
+            if (!mutation.valid) return false;
+
+            PlayerEntryTypeSnapshot requestedEntryType = null;
             if (requireEntryType
-                && !DiaryPlayerEntryTypes.TryResolve(requestedEntryTypeKey, out requestedEntryType))
+                && !DiaryPlayerEntryTypes.TryResolve(mutation.entryTypeKey, out requestedEntryType))
             {
                 return false;
             }
 
-            string cleanedBody = ExternalDirectEntryText.CleanProse(
-                body,
-                ManualEntryBodyMaxCharacters);
-            if (string.IsNullOrWhiteSpace(cleanedBody))
-            {
-                return false;
-            }
-
-            string cleanedTitle = ExternalDirectEntryText.CleanTitle(
-                title,
-                ManualEntryTitleMaxCharacters);
+            string cleanedBody = mutation.body;
+            string cleanedTitle = mutation.title;
             string cleanedLabel = ExternalEventRequestText.CleanEventLabel(localizedLabel);
             string rawText = DiarySentenceExcerpt.FirstSentence(
                 cleanedBody,

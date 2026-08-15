@@ -109,8 +109,9 @@ namespace PawnDiary.Ingestion
                 bypassFrequency: true);
         }
 
-        // Keep the same dedup namespace as external LLM-queued events, so an adapter can safely choose
-        // whether a factual event or a direct prose entry should win inside a window.
+        // Keep the same standard/custom namespaces as external LLM-queued events, so an adapter can
+        // choose whether a factual event or direct prose entry wins without making opaque custom keys
+        // look like structurally pawn-owned default keys at Brainwipe.
         public override string DedupKey
         {
             get
@@ -123,7 +124,7 @@ namespace PawnDiary.Ingestion
                 string custom = request.dedupKey;
                 return string.IsNullOrWhiteSpace(custom)
                     ? payload.DedupKey()
-                    : "external|" + payload.EventKey + "|" + custom.Trim();
+                    : "external-custom|" + payload.EventKey + "|" + custom.Trim();
             }
         }
 

@@ -52,6 +52,8 @@ namespace PawnDiary
         public string defaultTemplateKey = string.Empty;
         public int displayOrder;
         public bool important;
+        public bool combat;
+        public bool reflection;
         public string colorCue = string.Empty;
         public string domain = string.Empty;
         public string label = string.Empty;
@@ -67,14 +69,12 @@ namespace PawnDiary
         public string description = string.Empty;
     }
 
-    /// <summary>Plain input shared by validation, the runtime draft facade, and standalone tests.</summary>
+    /// <summary>Plain generation-draft input shared by validation, the runtime facade, and tests.</summary>
     internal sealed class PlayerEntryComposerRequest
     {
         public PlayerEntryComposerMode mode;
         public string entryTypeKey = string.Empty;
         public string templateKey = string.Empty;
-        public string title = string.Empty;
-        public string body = string.Empty;
         public string factualSummary = string.Empty;
         public string customInstruction = string.Empty;
         public string systemPrompt = string.Empty;
@@ -83,7 +83,7 @@ namespace PawnDiary
         public int maxTokens = PlayerEntryComposerPolicy.UseTemplateOrSettingsMaxTokens;
     }
 
-    /// <summary>Sanitized request plan. ErrorCode is a stable internal token, never UI copy.</summary>
+    /// <summary>Sanitized generation-draft plan. ErrorCode is a stable internal token, never UI copy.</summary>
     internal sealed class PlayerEntryComposerPlan
     {
         public bool valid;
@@ -91,8 +91,6 @@ namespace PawnDiary
         public PlayerEntryComposerMode mode;
         public string entryTypeKey = string.Empty;
         public string templateKey = string.Empty;
-        public string title = string.Empty;
-        public string body = string.Empty;
         public string factualSummary = string.Empty;
         public string customInstruction = string.Empty;
         public string systemPrompt = string.Empty;
@@ -101,12 +99,209 @@ namespace PawnDiary
         public int maxTokens;
     }
 
+    /// <summary>
+    /// Plain per-POV meaning used by hot events, compact archive rows, prompt policy, and public reads.
+    /// A player category overrides source-derived meaning only for the selected POV.
+    /// </summary>
+    internal sealed class PlayerEntrySemanticProjection
+    {
+        public string entryTypeKey = string.Empty;
+        public string domain = string.Empty;
+        public string label = string.Empty;
+        public string colorCue = string.Empty;
+        public bool important;
+        public bool combat;
+        public bool reflection;
+    }
+
+    /// <summary>Pure category overlay shared by hot and archived entry projections.</summary>
+    internal static class PlayerEntrySemanticPolicy
+    {
+        public static PlayerEntrySemanticProjection Project(
+            PlayerEntryTypeSnapshot playerType,
+            string sourceDomain,
+            string sourceLabel,
+            string sourceColorCue,
+            bool sourceImportant,
+            bool sourceCombat,
+            bool sourceReflection)
+        {
+            if (playerType == null)
+            {
+                return new PlayerEntrySemanticProjection
+                {
+                    domain = Clean(sourceDomain),
+                    label = sourceLabel ?? string.Empty,
+                    colorCue = sourceColorCue ?? string.Empty,
+                    important = sourceImportant,
+                    combat = sourceCombat,
+                    reflection = sourceReflection
+                };
+            }
+
+            return new PlayerEntrySemanticProjection
+            {
+                entryTypeKey = Clean(playerType.entryTypeKey),
+                // Player-authored facts do not prove a raid, quest, hediff, thought, or generated
+                // reflection occurred. Even a malformed old/custom category cannot opt back into a
+                // capture domain: the category axis carries its finer meaning separately.
+                domain = DiaryEventDomainClassifier.PlayerEntry,
+                label = playerType.label ?? string.Empty,
+                colorCue = playerType.colorCue ?? string.Empty,
+                important = playerType.important,
+                combat = playerType.combat,
+                reflection = playerType.reflection
+            };
+        }
+
+        private static string Clean(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    /// <summary>Plain create/edit input for final player-authored prose.</summary>
+    internal sealed class PlayerEntryMutationRequest
+    {
+        public bool creating;
+        public bool entryTypeLocked;
+        public string originalTitle = string.Empty;
+        public string originalBody = string.Empty;
+        public string originalEntryTypeKey = string.Empty;
+        public string requestedTitle = string.Empty;
+        public string requestedBody = string.Empty;
+        public string requestedEntryTypeKey = string.Empty;
+        public int titleMaxCharacters;
+        public int bodyMaxCharacters;
+    }
+
+    /// <summary>Normalized final text and category mutation decision.</summary>
+    internal sealed class PlayerEntryMutationPlan
+    {
+        public bool valid;
+        public string errorCode = string.Empty;
+        public string title = string.Empty;
+        public string body = string.Empty;
+        public string entryTypeKey = string.Empty;
+        public bool textChanged;
+        public bool typeChanged;
+        public bool noChange;
+    }
+
+    /// <summary>
+    /// Pure final-save boundary. UI and persistence supply the same XML-snapshotted caps and detached
+    /// category catalog, so Direct and generated Review saves cannot validate one contract and persist
+    /// another. Unchanged legacy fields remain byte-for-byte intact even when they exceed today's caps.
+    /// </summary>
+    internal static class PlayerEntryMutationPolicy
+    {
+        public static PlayerEntryMutationPlan Plan(
+            PlayerEntryMutationRequest request,
+            IList<PlayerEntryTypeSnapshot> entryTypes)
+        {
+            PlayerEntryMutationPlan result = new PlayerEntryMutationPlan();
+            if (request == null)
+            {
+                result.errorCode = "missing_request";
+                return result;
+            }
+
+            if (request.titleMaxCharacters <= 0 || request.bodyMaxCharacters <= 0)
+            {
+                result.errorCode = "invalid_caps";
+                return result;
+            }
+
+            string originalTitle = request.originalTitle ?? string.Empty;
+            string originalBody = request.originalBody ?? string.Empty;
+            string originalType = request.originalEntryTypeKey ?? string.Empty;
+            string requestedTitle = request.requestedTitle ?? string.Empty;
+            string requestedBody = request.requestedBody ?? string.Empty;
+            string requestedType = CleanKey(request.requestedEntryTypeKey);
+
+            bool bodyChanged = request.creating
+                || !string.Equals(requestedBody, originalBody, StringComparison.Ordinal);
+            bool titleChanged = request.creating
+                || !string.Equals(requestedTitle, originalTitle, StringComparison.Ordinal);
+            result.body = bodyChanged
+                ? ExternalDirectEntryText.CleanProse(requestedBody, 0)
+                : originalBody;
+            result.title = titleChanged
+                ? ExternalDirectEntryText.CleanTitle(requestedTitle, 0)
+                : originalTitle;
+
+            if (string.IsNullOrWhiteSpace(result.body))
+            {
+                result.errorCode = "blank_body";
+                return result;
+            }
+
+            if ((bodyChanged && result.body.Length > request.bodyMaxCharacters)
+                || (titleChanged && result.title.Length > request.titleMaxCharacters))
+            {
+                result.errorCode = "text_too_long";
+                return result;
+            }
+
+            if (request.creating)
+            {
+                PlayerEntryTypeSnapshot selected = PlayerEntryComposerPolicy.ResolveEntryType(
+                    requestedType, entryTypes);
+                if (selected == null)
+                {
+                    result.errorCode = "unknown_entry_type";
+                    return result;
+                }
+
+                result.entryTypeKey = selected.entryTypeKey ?? string.Empty;
+                result.typeChanged = true;
+            }
+            else
+            {
+                result.typeChanged = !string.Equals(
+                    requestedType, originalType, StringComparison.Ordinal);
+                if (!result.typeChanged)
+                {
+                    // A blank/unknown legacy key is legal while unchanged.
+                    result.entryTypeKey = originalType;
+                }
+                else
+                {
+                    if (request.entryTypeLocked)
+                    {
+                        result.errorCode = "entry_type_locked";
+                        return result;
+                    }
+
+                    PlayerEntryTypeSnapshot selected = requestedType.Length == 0
+                        ? null
+                        : PlayerEntryComposerPolicy.ResolveEntryType(requestedType, entryTypes);
+                    if (selected == null)
+                    {
+                        result.errorCode = "unknown_entry_type";
+                        return result;
+                    }
+
+                    result.entryTypeKey = selected.entryTypeKey ?? string.Empty;
+                }
+            }
+
+            result.textChanged = bodyChanged || titleChanged;
+            result.noChange = !request.creating && !result.textChanged && !result.typeChanged;
+            result.valid = true;
+            return result;
+        }
+
+        private static string CleanKey(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
     /// <summary>Pure validation, defensive caps, and template allow-list rules for composer input.</summary>
     internal static class PlayerEntryComposerPolicy
     {
         public const string PersonalEntryTypeKey = "Personal";
-        public const int TitleMaxCharacters = 200;
-        public const int BodyMaxCharacters = 4000;
         public const int ContextSummaryMaxCharacters = 4000;
         public const int ContextInstructionMaxCharacters = 4000;
         public const int RawPromptMaxCharacters = 4000;
@@ -139,8 +334,6 @@ namespace PawnDiary
             result.mode = request.mode;
             result.laneIndex = request.laneIndex;
             result.maxTokens = NormalizeRequestedMaxTokens(request.maxTokens);
-            result.title = CleanProse(request.title, TitleMaxCharacters).Trim();
-            result.body = CleanProse(request.body, BodyMaxCharacters).Trim();
             result.factualSummary = CleanProse(
                 request.factualSummary, ContextSummaryMaxCharacters).Trim();
             result.customInstruction = CleanProse(
@@ -161,11 +354,10 @@ namespace PawnDiary
             if (request.mode == PlayerEntryComposerMode.Direct
                 || request.mode == PlayerEntryComposerMode.Review)
             {
-                if (string.IsNullOrWhiteSpace(result.body))
-                {
-                    result.errorCode = "blank_body";
-                    return result;
-                }
+                // Final prose crosses PlayerEntryMutationPolicy with XML-snapshotted title/body caps.
+                // This policy admits generation drafts only, so it cannot become a second save contract.
+                result.errorCode = "mode_not_generating";
+                return result;
             }
             else if (request.mode == PlayerEntryComposerMode.Context)
             {

@@ -33,11 +33,9 @@ namespace DiaryPipelineTests
             AssertTrue("manual-entry null context is not player-created",
                 !ManualDiaryEntryFacts.IsPlayerCreated(null));
 
-            // The general domain classifier deliberately falls back to Interaction. The loaded-model
-            // display adapter must therefore test the manual marker first and return the saved localized
-            // label instead of letting Interaction's catch-all group relabel the page.
-            AssertEqual("manual-entry domain remains the safe Interaction fallback",
-                DiaryEventDomainClassifier.Interaction,
+            // Player pages have a truthful dedicated domain; their category is an independent axis.
+            AssertEqual("manual-entry domain is dedicated PlayerEntry",
+                DiaryEventDomainClassifier.PlayerEntry,
                 DiaryEventDomainClassifier.DomainForContext(ManualDiaryEntryFacts.GameContext));
             string eventSource = File.ReadAllText(RepoPath("Source", "Models", "DiaryEvent.cs"));
             int groupStart = eventSource.IndexOf(
@@ -115,8 +113,14 @@ namespace DiaryPipelineTests
             string editorSource = editorStateSource + "\n" + editorLayoutSource;
             string completionServiceSource = File.ReadAllText(RepoPath(
                 "Source", "Integration", "ExternalLlmCompletionService.cs"));
+            string integrationSnapshotsSource = File.ReadAllText(RepoPath(
+                "Source", "Core", "DiaryGameComponent.IntegrationSnapshots.cs"));
+            string pipelineAdaptersSource = File.ReadAllText(RepoPath(
+                "Source", "Generation", "DiaryPipelineAdapters.cs"));
             string journalStateSource = File.ReadAllText(RepoPath(
                 "Source", "UI", "DiaryJournalView.cs"));
+            string journalSessionSource = File.ReadAllText(RepoPath(
+                "Source", "UI", "DiaryJournalView.RoleplayText.cs"));
             string journalFilterSource = File.ReadAllText(RepoPath(
                 "Source", "UI", "DiaryJournalView.FilterPanel.cs"));
             AssertTrue("manual-entry UI does not route through the public integration facade",
@@ -135,6 +139,28 @@ namespace DiaryPipelineTests
                     "internal static int BeginTrusted(",
                     "private static int BeginCore("),
                 "trustedInternalPrompt: true");
+            AssertContains("completion service applies the public/internal capacity partition",
+                completionServiceSource, "LlmCompletionCapacityPolicy.CanAccept(");
+            AssertContains("completion service tracks public ownership through terminal polling",
+                completionServiceSource, "publicHandles.Remove(handle);");
+            AssertContains("ordinary public status snapshot preserves the player category axis",
+                SourceSlice(
+                    integrationSnapshotsSource,
+                    "internal DiaryEntryStatusSnapshot EntryStatusFor(string eventId, string povRole)",
+                    "internal DiaryEntrySnapshot EntrySnapshotFor(DiaryEntryHandle handle)"),
+                "entryTypeKey = view.EntryTypeKey ?? string.Empty");
+            AssertContains("player pages cannot inherit a colliding capture group",
+                SourceSlice(
+                    pipelineAdaptersSource,
+                    "private static DiaryInteractionGroupDef GroupForPayload(",
+                    "private static string ClassifierKeyForPayload("),
+                "payload.playerEntryTypeKey");
+            AssertContains("legacy player domain also bypasses capture-group fallback",
+                SourceSlice(
+                    pipelineAdaptersSource,
+                    "private static DiaryInteractionGroupDef GroupForPayload(",
+                    "private static string ClassifierKeyForPayload("),
+                "DiaryEventDomainClassifier.PlayerEntry");
 
             // Unity can execute layout/repaint multiple times. The presentation partial may edit detached
             // buffers or dispatch a button handler, but persistence/polling must stay in explicit state
@@ -188,6 +214,18 @@ namespace DiaryPipelineTests
             AssertContains("journal clears the filtered-reveal option with its pending request",
                 journalStateSource,
                 "pendingScrollRevealEvenIfFiltered = false;");
+            AssertContains("journal scroll request records its loaded-game owner",
+                journalStateSource,
+                "pendingScrollSessionComponent = requestSession == null");
+            AssertContains("journal scroll cancellation clears its loaded-game owner",
+                journalStateSource,
+                "pendingScrollSessionComponent = null;");
+            AssertContains("journal session reset rejects only a mismatched scroll owner",
+                journalSessionSource,
+                "if (DiaryUiPolicy.ShouldClearPendingRequest(");
+            AssertContains("journal session reset cancels stale static navigation",
+                journalSessionSource,
+                "ClearPendingScrollRequest();");
             AssertContains("journal reveal checks the pending target against active filters",
                 journalFilterSource,
                 "if (!PassesCurrentJournalFilters(entry, showLlmDebugInfo))");
@@ -355,6 +393,10 @@ namespace DiaryPipelineTests
                 string defaultTemplateKey = row.Element("defaultTemplateKey")?.Value?.Trim() ?? string.Empty;
                 string domain = row.Element("domain")?.Value?.Trim() ?? string.Empty;
                 string colorCue = row.Element("colorCue")?.Value?.Trim() ?? string.Empty;
+                bool combat = string.Equals(
+                    row.Element("combat")?.Value?.Trim(), "true", StringComparison.OrdinalIgnoreCase);
+                bool reflection = string.Equals(
+                    row.Element("reflection")?.Value?.Trim(), "true", StringComparison.OrdinalIgnoreCase);
                 int displayOrder;
                 AssertTrue("player-entry type display order parses " + entryKey,
                     int.TryParse(row.Element("displayOrder")?.Value, out displayOrder));
@@ -362,7 +404,12 @@ namespace DiaryPipelineTests
                 AssertTrue("player-entry type key nonblank " + i, entryKey.Length > 0);
                 AssertTrue("player-entry type event prompt nonblank " + entryKey,
                     eventPromptKey.Length > 0);
-                AssertTrue("player-entry type domain nonblank " + entryKey, domain.Length > 0);
+                AssertEqual("player-entry type uses truthful dedicated domain " + entryKey,
+                    DiaryEventDomainClassifier.PlayerEntry, domain);
+                AssertTrue("player-entry combat trait " + entryKey,
+                    string.Equals(entryKey, "Combat", StringComparison.Ordinal) == combat);
+                AssertTrue("player-entry reflection trait " + entryKey,
+                    string.Equals(entryKey, "Reflection", StringComparison.Ordinal) == reflection);
                 AssertTrue("player-entry type color cue nonblank " + entryKey, colorCue.Length > 0);
                 AssertTrue("player-entry type default uses selectable template " + entryKey,
                     expectedTemplateKeys.Contains(defaultTemplateKey, StringComparer.Ordinal));
@@ -425,7 +472,35 @@ namespace DiaryPipelineTests
                     defName,
                     englishTemplates,
                     russianTemplates);
+
+                XElement[] fields = row.Element("fields")?.Elements("li").ToArray()
+                    ?? new XElement[0];
+                int pawnSummaryIndex = Array.FindIndex(fields, field => string.Equals(
+                    field.Element("source")?.Value?.Trim(), "PawnSummary", StringComparison.Ordinal));
+                int identityIndex = Array.FindIndex(fields, field => string.Equals(
+                    field.Element("source")?.Value?.Trim(), "Identity", StringComparison.Ordinal));
+                AssertTrue("selectable template structurally renders PawnSummary " + templateKey,
+                    pawnSummaryIndex >= 0);
+                AssertTrue("selectable template structurally renders Identity " + templateKey,
+                    identityIndex >= 0);
+                AssertDefInjectedFieldsPair(
+                    "selectable template PawnSummary " + templateKey,
+                    defName,
+                    englishTemplates,
+                    russianTemplates,
+                    ".fields." + pawnSummaryIndex + ".label");
+                AssertDefInjectedFieldsPair(
+                    "selectable template Identity " + templateKey,
+                    defName,
+                    englishTemplates,
+                    russianTemplates,
+                    ".fields." + identityIndex + ".label");
             }
+
+            // Every shipped category can be paired with any selectable template in the UI. The
+            // structural assertions above therefore establish the full category x template matrix.
+            AssertEqual("player-entry category/template context matrix size",
+                typeRows.Length * selectableTemplates.Length, 27);
 
             string catalogSource = File.ReadAllText(RepoPath(
                 "Source", "Defs", "DiaryPlayerEntryTypeDef.cs"));
@@ -505,17 +580,17 @@ namespace DiaryPipelineTests
             AssertEqual("composer missing request error", "missing_request", missing.errorCode);
 
             AssertComposerError(
-                "composer direct blank",
-                Request(PlayerEntryComposerMode.Direct, body: " \r\n\t "),
+                "composer Direct cannot bypass final-save mutation policy",
+                Request(PlayerEntryComposerMode.Direct),
                 types,
                 templates,
-                "blank_body");
+                "mode_not_generating");
             AssertComposerError(
-                "composer review blank",
-                Request(PlayerEntryComposerMode.Review, body: ""),
+                "composer Review cannot bypass final-save mutation policy",
+                Request(PlayerEntryComposerMode.Review),
                 types,
                 templates,
-                "blank_body");
+                "mode_not_generating");
             AssertComposerError(
                 "composer context blank",
                 Request(PlayerEntryComposerMode.Context),
@@ -540,27 +615,10 @@ namespace DiaryPipelineTests
                 "blank_user_prompt");
             AssertComposerError(
                 "composer unknown mode",
-                Request((PlayerEntryComposerMode)999, body: "body"),
+                Request((PlayerEntryComposerMode)999),
                 types,
                 templates,
                 "unknown_mode");
-
-            PlayerEntryComposerPlan direct = PlayerEntryComposerPolicy.Plan(
-                Request(
-                    PlayerEntryComposerMode.Direct,
-                    entryTypeKey: "battle",
-                    templateKey: "reflection",
-                    body: "  body\u0001 text  ",
-                    title: "  title\u0002 text  ",
-                    maxTokens: 1),
-                types,
-                templates);
-            AssertTrue("composer direct valid", direct.valid);
-            AssertEqual("composer type lookup case insensitive", "Battle", direct.entryTypeKey);
-            AssertEqual("composer direct mode ignores template selection", string.Empty, direct.templateKey);
-            AssertEqual("composer prose strips controls and trims", "body text", direct.body);
-            AssertEqual("composer title strips controls and trims", "title text", direct.title);
-            AssertEqual("composer token floor", PlayerEntryComposerPolicy.MinMaxTokens, direct.maxTokens);
 
             List<PlayerEntryTemplateSnapshot> corruptTemplates =
                 new List<PlayerEntryTemplateSnapshot>
@@ -569,12 +627,6 @@ namespace DiaryPipelineTests
                     new PlayerEntryTemplateSnapshot { templateKey = string.Empty },
                     new PlayerEntryTemplateSnapshot { templateKey = "damaged" }
                 };
-            AssertTrue("composer Direct ignores an unusable template catalog",
-                PlayerEntryComposerPolicy.Plan(
-                    Request(PlayerEntryComposerMode.Direct, body: "body"),
-                    types,
-                    corruptTemplates).valid);
-
             PlayerEntryComposerPlan fallback = PlayerEntryComposerPolicy.Plan(
                 Request(
                     PlayerEntryComposerMode.Context,
@@ -662,23 +714,15 @@ namespace DiaryPipelineTests
                     types,
                     corruptTemplates).valid);
 
-            string bodyAtCap = new string('b', PlayerEntryComposerPolicy.BodyMaxCharacters + 3);
-            string titleAtCap = new string('t', PlayerEntryComposerPolicy.TitleMaxCharacters + 3);
             string summaryAtCap = new string('s', PlayerEntryComposerPolicy.ContextSummaryMaxCharacters + 3);
             string instructionAtCap = new string('i', PlayerEntryComposerPolicy.ContextInstructionMaxCharacters + 3);
             PlayerEntryComposerPlan cappedContext = PlayerEntryComposerPolicy.Plan(
                 Request(
                     PlayerEntryComposerMode.Context,
-                    body: bodyAtCap,
-                    title: titleAtCap,
                     factualSummary: summaryAtCap,
                     customInstruction: instructionAtCap),
                 types,
                 templates);
-            AssertEqual("composer body cap", PlayerEntryComposerPolicy.BodyMaxCharacters,
-                cappedContext.body.Length);
-            AssertEqual("composer title cap", PlayerEntryComposerPolicy.TitleMaxCharacters,
-                cappedContext.title.Length);
             AssertEqual("composer factual summary cap",
                 PlayerEntryComposerPolicy.ContextSummaryMaxCharacters,
                 cappedContext.factualSummary.Length);
@@ -705,6 +749,133 @@ namespace DiaryPipelineTests
             AssertEqual("trusted assembled prompt bypasses public adapter cap",
                 longInternalPrompt,
                 LlmCompletionInputPolicy.ForTrustedInternalPrompt(longInternalPrompt));
+
+            AssertTrue("public completions can fill their partition",
+                LlmCompletionCapacityPolicy.CanAccept(62, 62, false, 64, 1));
+            AssertTrue("abandoned public handles cannot consume internal reserve",
+                !LlmCompletionCapacityPolicy.CanAccept(63, 63, false, 64, 1));
+            AssertTrue("internal composer can use reserved slot after public saturation",
+                LlmCompletionCapacityPolicy.CanAccept(63, 63, true, 64, 1));
+            AssertTrue("internal reserve never raises total paid-work cap",
+                !LlmCompletionCapacityPolicy.CanAccept(64, 63, true, 64, 1));
+            AssertTrue("existing internal work does not reduce the public partition",
+                LlmCompletionCapacityPolicy.CanAccept(63, 62, false, 64, 1));
+            AssertTrue("corrupt completion counters fail closed",
+                !LlmCompletionCapacityPolicy.CanAccept(3, 4, true, 64, 1));
+
+            XDocument tuningDocument = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryTuningDef.xml"));
+            XElement tuningDef = tuningDocument.Root?.Element("PawnDiary.DiaryTuningDef");
+            AssertEqual("low-thinking headroom is XML-owned", 1024,
+                (int?)tuningDef?.Element("lowThinkingHeadroomTokens") ?? -1);
+
+            int xmlTitleCap = (int?)tuningDef?.Element("integrationDirectTitleMaxChars") ?? -1;
+            int xmlBodyCap = (int?)tuningDef?.Element("integrationDirectTextMaxChars") ?? -1;
+            AssertTrue("manual final-save XML caps are positive", xmlTitleCap > 0 && xmlBodyCap > 0);
+            List<PlayerEntryTypeSnapshot> mutationTypes = new List<PlayerEntryTypeSnapshot>
+            {
+                new PlayerEntryTypeSnapshot
+                {
+                    entryTypeKey = "Personal",
+                    domain = DiaryEventDomainClassifier.PlayerEntry
+                },
+                new PlayerEntryTypeSnapshot
+                {
+                    entryTypeKey = "Combat",
+                    // An adversarial custom/old row cannot turn a player category into a captured raid.
+                    domain = DiaryEventDomainClassifier.Raid,
+                    important = true,
+                    combat = true
+                },
+                new PlayerEntryTypeSnapshot
+                {
+                    entryTypeKey = "Reflection",
+                    domain = DiaryEventDomainClassifier.PlayerEntry,
+                    reflection = true
+                }
+            };
+            PlayerEntryMutationPlan createMutation = PlayerEntryMutationPolicy.Plan(
+                new PlayerEntryMutationRequest
+                {
+                    creating = true,
+                    requestedBody = "  first\r\n\r\nsecond\u0001  ",
+                    requestedTitle = "  title\r\nnext  ",
+                    requestedEntryTypeKey = "combat",
+                    titleMaxCharacters = xmlTitleCap,
+                    bodyMaxCharacters = xmlBodyCap
+                },
+                mutationTypes);
+            AssertTrue("manual final-save create plan valid", createMutation.valid);
+            AssertEqual("manual final-save body normalization", "first\n\nsecond", createMutation.body);
+            AssertEqual("manual final-save title normalization", "title next", createMutation.title);
+            AssertEqual("manual final-save category canonicalization", "Combat",
+                createMutation.entryTypeKey);
+
+            PlayerEntryMutationPlan tooLongMutation = PlayerEntryMutationPolicy.Plan(
+                new PlayerEntryMutationRequest
+                {
+                    creating = true,
+                    requestedBody = new string('x', xmlBodyCap + 1),
+                    requestedEntryTypeKey = "Personal",
+                    titleMaxCharacters = xmlTitleCap,
+                    bodyMaxCharacters = xmlBodyCap
+                },
+                mutationTypes);
+            AssertEqual("manual final-save uses XML body cap", "text_too_long",
+                tooLongMutation.errorCode);
+
+            string legacyBody = new string('L', xmlBodyCap + 20);
+            PlayerEntryMutationPlan legacyMutation = PlayerEntryMutationPolicy.Plan(
+                new PlayerEntryMutationRequest
+                {
+                    originalBody = legacyBody,
+                    originalTitle = "old",
+                    originalEntryTypeKey = string.Empty,
+                    requestedBody = legacyBody,
+                    requestedTitle = "new",
+                    requestedEntryTypeKey = "Reflection",
+                    titleMaxCharacters = xmlTitleCap,
+                    bodyMaxCharacters = xmlBodyCap
+                },
+                mutationTypes);
+            AssertTrue("manual final-save preserves unchanged over-cap legacy sibling",
+                legacyMutation.valid && string.Equals(legacyMutation.body, legacyBody,
+                    StringComparison.Ordinal));
+            AssertTrue("manual final-save reports text and category mutation",
+                legacyMutation.textChanged && legacyMutation.typeChanged
+                    && string.Equals(legacyMutation.entryTypeKey, "Reflection", StringComparison.Ordinal));
+
+            PlayerEntryMutationPlan lockedMutation = PlayerEntryMutationPolicy.Plan(
+                new PlayerEntryMutationRequest
+                {
+                    entryTypeLocked = true,
+                    originalBody = "body",
+                    originalEntryTypeKey = "Personal",
+                    requestedBody = "body",
+                    requestedEntryTypeKey = "Combat",
+                    titleMaxCharacters = xmlTitleCap,
+                    bodyMaxCharacters = xmlBodyCap
+                },
+                mutationTypes);
+            AssertEqual("manual final-save category lock", "entry_type_locked",
+                lockedMutation.errorCode);
+
+            PlayerEntrySemanticProjection sourceSemantics = PlayerEntrySemanticPolicy.Project(
+                null, DiaryEventDomainClassifier.Quest, "quest", "white", true, false, false);
+            PlayerEntrySemanticProjection combatSemantics = PlayerEntrySemanticPolicy.Project(
+                mutationTypes[1], DiaryEventDomainClassifier.Quest, "quest", "white", false, false, false);
+            PlayerEntrySemanticProjection reflectionSemantics = PlayerEntrySemanticPolicy.Project(
+                mutationTypes[2], DiaryEventDomainClassifier.Raid, "raid", "combat", true, true, false);
+            AssertEqual("source semantics preserve source domain",
+                DiaryEventDomainClassifier.Quest, sourceSemantics.domain);
+            AssertTrue("Combat category is combat but not Raid",
+                combatSemantics.combat && combatSemantics.important
+                    && string.Equals(combatSemantics.domain,
+                        DiaryEventDomainClassifier.PlayerEntry, StringComparison.Ordinal));
+            AssertTrue("Reflection category is reflection but not source Raid",
+                reflectionSemantics.reflection && !reflectionSemantics.combat
+                    && string.Equals(reflectionSemantics.domain,
+                        DiaryEventDomainClassifier.PlayerEntry, StringComparison.Ordinal));
 
             AssertTrue("composer template allow-list accepts opted solo template",
                 PlayerEntryComposerPolicy.IsRequestedTemplateAllowed(
@@ -775,8 +946,6 @@ namespace DiaryPipelineTests
             PlayerEntryComposerMode mode,
             string entryTypeKey = "Personal",
             string templateKey = "standard",
-            string body = "",
-            string title = "",
             string factualSummary = "",
             string customInstruction = "",
             string systemPrompt = "",
@@ -788,8 +957,6 @@ namespace DiaryPipelineTests
                 mode = mode,
                 entryTypeKey = entryTypeKey,
                 templateKey = templateKey,
-                body = body,
-                title = title,
                 factualSummary = factualSummary,
                 customInstruction = customInstruction,
                 systemPrompt = systemPrompt,

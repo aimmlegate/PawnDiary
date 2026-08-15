@@ -596,13 +596,16 @@ namespace DiaryPipelineTests
                 RepoPath("1.6", "Defs", "DiaryPromptTemplateDefs.xml"));
             string[] templateKeys = { "PairBatched", "SoloInternalState", "SoloBatched" };
             int[] moodIndexes = { 30, 41, 41 };
+            int[] fieldCounts = { 31, 44, 42 };
             for (int i = 0; i < templateKeys.Length; i++)
             {
                 XElement def = templates.Descendants("PawnDiary.DiaryPromptTemplateDef")
                     .Single(row => ChildValue(row, "templateKey") == templateKeys[i]);
                 List<XElement> fields = def.Element("fields").Elements("li").ToList();
-                AssertEqual("B2 " + templateKeys[i] + " MoodSnapshot field remains append-only",
-                    moodIndexes[i], fields.Count - 1);
+                AssertEqual("B2 " + templateKeys[i] + " append-only field footprint",
+                    fieldCounts[i], fields.Count);
+                AssertEqual("B2 " + templateKeys[i] + " preserves MoodSnapshot index",
+                    "MoodSnapshot", ChildValue(fields[moodIndexes[i]], "source"));
                 AssertEqual("B2 " + templateKeys[i] + " projects MoodSnapshot exactly once",
                     1,
                     fields.Count(row => ChildValue(row, "source") == "MoodSnapshot"));
@@ -4102,6 +4105,7 @@ namespace DiaryPipelineTests
                 date = "3rd of Aprimay, 5501",
                 povRole = "initiator",
                 domain = "External",
+                entryTypeKey = "Combat",
                 atmosphereCue = "unsettled",
                 sourceId = "adapter.mod",
                 eventKey = "adapter_confession",
@@ -4118,6 +4122,12 @@ namespace DiaryPipelineTests
                 DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { domain = "external" }));
             AssertTrue("title filter rejects wrong domain",
                 !DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { domain = "Thought" }));
+            AssertTrue("title filter matches player category independently from domain",
+                DiaryEntryTitleFilter.Matches(facts,
+                    new DiaryEntryTitleQuery { domain = "external", entryTypeKey = "combat" }));
+            AssertTrue("title filter rejects wrong player category",
+                !DiaryEntryTitleFilter.Matches(facts,
+                    new DiaryEntryTitleQuery { domain = "external", entryTypeKey = "Reflection" }));
             AssertTrue("title filter matches atmosphere cue",
                 DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { atmosphereCue = "Unsettled" }));
             AssertTrue("title filter rejects wrong atmosphere cue",
@@ -6189,9 +6199,15 @@ namespace DiaryPipelineTests
             // Field-count guard for the append-only rule: raising this number is only correct when the
             // new rows were APPENDED, because DefInjected labels are indexed (fields.N.label) and an
             // inserted row silently re-attaches every translation below it. Last raised by Quality Wave
-            // H1's "combat beats" row (index 137).
-            AssertEqual("SoloImportant keeps its append-only field list at 138 fields",
-                138, new List<XElement>(solo.Element("fields").Elements("li")).Count);
+            // H1's "combat beats" row (index 137), then player-composer Identity (index 138).
+            List<XElement> soloImportantFields =
+                new List<XElement>(solo.Element("fields").Elements("li"));
+            AssertEqual("SoloImportant keeps its append-only field list at 139 fields",
+                139, soloImportantFields.Count);
+            AssertEqual("SoloImportant preserves combat beats at index 137",
+                "battle_beats", ChildValue(soloImportantFields[137], "contextKey"));
+            AssertEqual("SoloImportant appends player Identity at index 138",
+                "Identity", ChildValue(soloImportantFields[138], "source"));
             for (int i = 0; i < contextKeys.Length; i++)
             {
                 AssertTrue("SoloImportant persona prompt field exists: " + contextKeys[i],
@@ -7130,6 +7146,10 @@ namespace DiaryPipelineTests
                 ApiEndpointPolicy.NormalizeCustomHeaderName(" x-api-key "));
             AssertEqual("custom header rejects invalid spaces", "x-goog-api-key",
                 ApiEndpointPolicy.NormalizeCustomHeaderName("bad header"));
+            AssertEqual("effective custom header uses normalized fallback", "x-goog-api-key",
+                ApiEndpointPolicy.EffectiveAuthHeaderName(
+                    ApiAuthMode.CustomHeader,
+                    "bad header"));
             AssertEqual("reasoning trims and lowercases", "xhigh",
                 ApiEndpointPolicy.NormalizeReasoningEffort(" XHIGH "));
             AssertEqual("reasoning invalid falls back", "default",
@@ -7253,6 +7273,12 @@ namespace DiaryPipelineTests
             AssertEqual("label strips query and fragment",
                 "m [OpenAIResponses] @ https://example.test/v1/responses",
                 ApiLaneLabels.Label("https://example.test/v1?key=secret#frag", "m", ApiCompatibilityMode.OpenAIResponses));
+            AssertEqual("label strips URI userinfo credentials",
+                "m [OpenAIResponses] @ https://example.test/v1/responses",
+                ApiLaneLabels.Label(
+                    "https://diagnostic-user:diagnostic-password@example.test/v1?key=secret",
+                    "m",
+                    ApiCompatibilityMode.OpenAIResponses));
             AssertEqual("Gemini label uses one canonical full path and hides query secret",
                 "models/gemini-fixture [GeminiGenerateContent] @ "
                     + "https://generativelanguage.googleapis.com/v1beta/models/gemini-fixture:generateContent",
@@ -7265,6 +7291,18 @@ namespace DiaryPipelineTests
                 ApiLaneLabels.Label(" ", " ", ApiCompatibilityMode.OpenAIChatCompletions));
             AssertEqual("trim log makes one line", "first second third",
                 ApiLaneLabels.TrimForLog(" first\nsecond\tthird "));
+            string hostileLabel = ApiLaneLabels.Label(
+                "https://example.test/" + new string('p', 240) + "\r\n\u0001FORGED-ENDPOINT",
+                new string('m', 240) + "\r\n\u0002FORGED-MODEL",
+                ApiCompatibilityMode.OpenAIResponses);
+            AssertTrue("lane label has hard diagnostic cap", hostileLabel.Length <= 180);
+            AssertTrue("lane label strips control/newline injection",
+                hostileLabel.IndexOf('\r') < 0
+                && hostileLabel.IndexOf('\n') < 0
+                && hostileLabel.IndexOf('\u0001') < 0
+                && hostileLabel.IndexOf('\u0002') < 0);
+            AssertTrue("lane label truncates injected endpoint/model suffixes",
+                hostileLabel.IndexOf("FORGED-", StringComparison.Ordinal) < 0);
         }
 
         private static void TestApiLaneImport()
@@ -7381,6 +7419,31 @@ namespace DiaryPipelineTests
                 ApiRequestAuth.ApplyHeaders(customKey, "secret", ApiAuthMode.CustomHeader, "x-goog-api-key");
                 AssertHeader("custom x-goog-api-key header", customKey, "x-goog-api-key", "secret");
                 AssertTrue("custom header has no bearer", customKey.Headers.Authorization == null);
+            }
+
+            using (HttpRequestMessage rejectedCustom =
+                new HttpRequestMessage(HttpMethod.Post, "https://example.test"))
+            {
+                InvalidOperationException rejected = null;
+                try
+                {
+                    ApiRequestAuth.ApplyHeaders(
+                        rejectedCustom,
+                        "must-not-appear",
+                        ApiAuthMode.CustomHeader,
+                        "Content-Type");
+                }
+                catch (InvalidOperationException exception)
+                {
+                    rejected = exception;
+                }
+
+                AssertTrue("request-header collection rejection fails locally", rejected != null);
+                AssertContains("request-header rejection names field", rejected?.Message, "Content-Type");
+                AssertTrue("request-header rejection excludes credential",
+                    (rejected?.Message ?? string.Empty).IndexOf(
+                        "must-not-appear",
+                        StringComparison.Ordinal) < 0);
             }
 
             using (HttpRequestMessage xApiKey = new HttpRequestMessage(HttpMethod.Post, "https://example.test"))
@@ -10479,6 +10542,18 @@ namespace DiaryPipelineTests
             AssertEqual("bearer token with mixed separators stops at whitespace",
                 "Bearer <redacted> failed",
                 ApiLaneLabels.RedactSecrets("Bearer eyJhbG.c-iOi_Jz~I1 failed"));
+            AssertEqual("URI userinfo is redacted from arbitrary diagnostics",
+                "GET https://<redacted>@api.test/v1 failed",
+                ApiLaneLabels.RedactSecrets(
+                    "GET https://diagnostic-user:diagnostic-password@api.test/v1 failed"));
+            AssertEqual("effective fallback custom header is redacted",
+                "x-goog-api-key: <redacted>",
+                ApiLaneLabels.RedactSecrets(
+                    "x-goog-api-key: proxy-normalized-secret",
+                    ApiEndpointPolicy.EffectiveApiKey(ApiAuthMode.CustomHeader, " actual-secret "),
+                    ApiEndpointPolicy.EffectiveAuthHeaderName(
+                        ApiAuthMode.CustomHeader,
+                        "bad header")));
             AssertEqual("text without secrets is unchanged",
                 "HTTP 500: upstream timeout",
                 ApiLaneLabels.RedactSecrets("HTTP 500: upstream timeout"));

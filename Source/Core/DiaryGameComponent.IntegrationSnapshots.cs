@@ -383,6 +383,7 @@ namespace PawnDiary
                 externallyAuthored = view.ExternallyAuthored,
                 externalSourceId = view.ExternalSourceId ?? string.Empty,
                 domain = decoration?.domain ?? string.Empty,
+                entryTypeKey = view.EntryTypeKey ?? string.Empty,
                 atmosphereCue = view.AtmosphereCue ?? string.Empty,
                 summary = hasGeneratedText
                     ? DiarySentenceExcerpt.FirstSentence(
@@ -460,6 +461,7 @@ namespace PawnDiary
                 externallyAuthored = view.ExternallyAuthored,
                 externalSourceId = view.ExternalSourceId ?? string.Empty,
                 domain = decoration?.domain ?? string.Empty,
+                entryTypeKey = view.EntryTypeKey ?? string.Empty,
                 atmosphereCue = view.AtmosphereCue ?? string.Empty,
                 summary = hasGeneratedText
                     ? DiarySentenceExcerpt.FirstSentence(view.GeneratedText, DiaryTuning.IntegrationContextSummaryMaxChars)
@@ -597,6 +599,7 @@ namespace PawnDiary
                 externallyAuthored = view.ExternallyAuthored,
                 externalSourceId = view.ExternalSourceId ?? string.Empty,
                 domain = decoration?.domain ?? string.Empty,
+                entryTypeKey = view.EntryTypeKey ?? string.Empty,
                 atmosphereCue = view.AtmosphereCue ?? string.Empty
             };
         }
@@ -871,6 +874,7 @@ namespace PawnDiary
                 povRole = view.PovRole ?? string.Empty,
                 title = view.Title ?? string.Empty,
                 groupLabel = view.GroupLabel ?? string.Empty,
+                entryTypeKey = view.EntryTypeKey ?? string.Empty,
                 externallyAuthored = view.ExternallyAuthored,
                 externalSourceId = view.ExternalSourceId ?? string.Empty,
                 archived = archived
@@ -946,6 +950,7 @@ namespace PawnDiary
                 externallyAuthored = view.ExternallyAuthored,
                 externalSourceId = view.ExternalSourceId ?? string.Empty,
                 domain = decoration?.domain ?? string.Empty,
+                entryTypeKey = view.EntryTypeKey ?? string.Empty,
                 atmosphereCue = view.AtmosphereCue ?? string.Empty,
                 summary = summary,
                 archived = archived
@@ -1051,6 +1056,7 @@ namespace PawnDiary
                 date = view?.Date ?? string.Empty,
                 povRole = view?.PovRole ?? string.Empty,
                 domain = decoration?.domain ?? string.Empty,
+                entryTypeKey = view?.EntryTypeKey ?? string.Empty,
                 atmosphereCue = view?.AtmosphereCue ?? string.Empty,
                 sourceId = view?.ExternalSourceId ?? string.Empty,
                 eventKey = decoration?.defName ?? string.Empty,

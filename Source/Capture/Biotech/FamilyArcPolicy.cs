@@ -400,8 +400,20 @@ namespace PawnDiary.Capture
             return arc;
         }
 
-        /// <summary>Marks current observation counters as summarized by one canonical growth age.</summary>
-        public static void MarkGrowthSummarized(BiotechFamilyArcState arc, int age, int observedTick)
+        /// <summary>
+        /// Marks the evidence actually available to one canonical growth owner as summarized.
+        /// A Brainwiped child's POV consumes only its detached post-boundary baseline; it must not move
+        /// the adult-facing lifetime cursors because that older adult evidence was unavailable to a
+        /// child-only page. A supporter POV consumes the adult cursor independently; a pair consumes both.
+        /// Every arc without a child boundary retains the ordinary single shared-cursor behavior.
+        /// </summary>
+        public static void MarkGrowthSummarized(
+            BiotechFamilyArcState arc,
+            int age,
+            int observedTick,
+            bool childPovConsumed = false,
+            bool adultPovConsumed = true,
+            string adultPovPawnId = null)
         {
             if (arc == null || BiotechGrowthStageTokens.ForAge(age).Length == 0)
             {
@@ -414,7 +426,15 @@ namespace PawnDiary.Capture
                 arc.recordedGrowthAges.Sort();
             }
 
-            if (arc.supporters != null)
+            bool hasDetachedChildPov =
+                BiotechFamilyMemoryResetPolicy.HasChildMemoryBoundaryForPov(arc, arc.childId);
+            bool hasDetachedAdultPov = adultPovConsumed
+                && BiotechFamilyMemoryResetPolicy.HasAdultMemoryBoundaryForPov(
+                    arc,
+                    adultPovPawnId);
+            bool sharedCursorConsumed = (childPovConsumed && !hasDetachedChildPov)
+                || (adultPovConsumed && !hasDetachedAdultPov);
+            if (sharedCursorConsumed && arc.supporters != null)
             {
                 for (int i = 0; i < arc.supporters.Count; i++)
                 {
@@ -424,6 +444,16 @@ namespace PawnDiary.Capture
                     supporter.summarizedBabyPlayCount = Math.Max(0, supporter.babyPlayCount);
                     supporter.summarizedCareCount = Math.Max(0, supporter.careCount);
                 }
+            }
+            if (hasDetachedChildPov && childPovConsumed)
+            {
+                BiotechFamilyMemoryResetPolicy.MarkChildPovSummarized(arc);
+            }
+            if (hasDetachedAdultPov)
+            {
+                BiotechFamilyMemoryResetPolicy.MarkAdultPovSummarized(
+                    arc,
+                    adultPovPawnId);
             }
 
             arc.lastSummarizedObservationTick = Math.Max(
@@ -556,6 +586,20 @@ namespace PawnDiary.Capture
                 supporter.summarizedCareCount = 0;
                 supporter.firstObservedTick = 0;
                 supporter.lastObservedTick = 0;
+                supporter.adultMemoryLessonBaseline = 0;
+                supporter.adultMemoryBabyPlayBaseline = 0;
+                supporter.adultMemoryCareBaseline = 0;
+            }
+            if (arc.childMemorySupportBaselines != null)
+            {
+                for (int i = 0; i < arc.childMemorySupportBaselines.Count; i++)
+                {
+                    FamilySupportMemoryBaselineState baseline = arc.childMemorySupportBaselines[i];
+                    if (baseline == null) continue;
+                    baseline.lessonCount = 0;
+                    baseline.babyPlayCount = 0;
+                    baseline.careCount = 0;
+                }
             }
             arc.detailsCompacted = true;
         }
@@ -606,6 +650,10 @@ namespace PawnDiary.Capture
             arc.lastSummarizedObservationTick = ClampTick(arc.lastSummarizedObservationTick, currentTick);
             arc.recordedGrowthAges = NormalizeGrowthAges(arc.recordedGrowthAges);
             arc.supporters = NormalizeSupporters(arc.supporters, maximumSupporterRows);
+            BiotechFamilyMemoryResetPolicy.NormalizeBoundary(
+                arc,
+                currentTick,
+                maximumSupporterRows);
             return arc;
         }
 
@@ -637,6 +685,7 @@ namespace PawnDiary.Capture
             target.closed |= source.closed;
             target.baselineOnly &= source.baselineOnly;
             target.detailsCompacted &= source.detailsCompacted;
+            BiotechFamilyMemoryResetPolicy.MergeBoundary(target, source);
             if (source.recordedGrowthAges != null) target.recordedGrowthAges.AddRange(source.recordedGrowthAges);
             if (source.supporters != null) target.supporters.AddRange(source.supporters);
             target.recordedGrowthAges = NormalizeGrowthAges(target.recordedGrowthAges);
@@ -738,12 +787,14 @@ namespace PawnDiary.Capture
             row.summarizedCareCount = Math.Min(row.careCount, Math.Max(0, row.summarizedCareCount));
             row.firstObservedTick = Math.Max(0, row.firstObservedTick);
             row.lastObservedTick = Math.Max(row.firstObservedTick, row.lastObservedTick);
+            BiotechFamilyMemoryResetPolicy.NormalizeAdultBoundary(row);
         }
 
         private static void MergeSupporter(
             FamilySupportObservationState target,
             FamilySupportObservationState source)
         {
+            BiotechFamilyMemoryResetPolicy.MergeAdultBoundary(target, source);
             if (!string.IsNullOrWhiteSpace(source.lastDisplayName)) target.lastDisplayName = source.lastDisplayName;
             if (source.relationToken == BiotechFamilyRoleTokens.BirthParent
                 || (source.relationToken == BiotechFamilyRoleTokens.Parent
@@ -979,7 +1030,12 @@ namespace PawnDiary.Capture
                     summarizedBabyPlayCount = row.summarizedBabyPlayCount,
                     summarizedCareCount = row.summarizedCareCount,
                     firstObservedTick = row.firstObservedTick,
-                    lastObservedTick = row.lastObservedTick
+                    lastObservedTick = row.lastObservedTick,
+                    adultMemoryBoundaryActive = row.adultMemoryBoundaryActive,
+                    adultMemoryBoundaryTick = row.adultMemoryBoundaryTick,
+                    adultMemoryLessonBaseline = row.adultMemoryLessonBaseline,
+                    adultMemoryBabyPlayBaseline = row.adultMemoryBabyPlayBaseline,
+                    adultMemoryCareBaseline = row.adultMemoryCareBaseline
                 });
             }
 

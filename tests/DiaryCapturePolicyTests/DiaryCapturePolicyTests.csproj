@@ -17,6 +17,7 @@
     <Compile Include="..\..\Source\Capture\CaptureContext.cs" Link="Capture\CaptureContext.cs" />
     <Compile Include="..\..\Source\Capture\CaptureDecision.cs" Link="Capture\CaptureDecision.cs" />
     <Compile Include="..\..\Source\Capture\RecentEventExpiry.cs" Link="Capture\RecentEventExpiry.cs" />
+    <Compile Include="..\..\Source\Capture\PawnScopedTransientKeyPolicy.cs" Link="Capture\PawnScopedTransientKeyPolicy.cs" />
     <Compile Include="..\..\Source\Capture\GenericEventTypeDedup.cs" Link="Capture\GenericEventTypeDedup.cs" />
     <Compile Include="..\..\Source\Capture\RomanceRelationTransitionPolicy.cs" Link="Capture\RomanceRelationTransitionPolicy.cs" />
     <Compile Include="..\..\Source\Capture\MonolithActivationProvenancePolicy.cs" Link="Capture\MonolithActivationProvenancePolicy.cs" />

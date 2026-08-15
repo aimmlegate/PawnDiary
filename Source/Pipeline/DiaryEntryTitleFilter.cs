@@ -14,6 +14,7 @@ namespace PawnDiary
         public string date;
         public string povRole;
         public string domain;
+        public string entryTypeKey;
         public string atmosphereCue;
         public string sourceId;
         public string eventKey;
@@ -66,6 +67,11 @@ namespace PawnDiary
             }
 
             if (!MatchesToken(facts.domain, query.domain))
+            {
+                return false;
+            }
+
+            if (!MatchesToken(facts.entryTypeKey, query.entryTypeKey))
             {
                 return false;
             }

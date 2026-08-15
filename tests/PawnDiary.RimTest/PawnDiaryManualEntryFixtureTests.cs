@@ -546,6 +546,26 @@ namespace PawnDiary.RimTests
             ManualDiaryEntrySnapshot snapshot = RequireSnapshot(firstPawn, page);
             DiaryEntryView view = page?.ToViewFor(firstPawn.GetUniqueLoadID());
             PawnDiaryRecord record = scope.RequireDiaryRecord(firstPawn);
+            // Re-enable only the read facade after proving creation succeeded while integrations were
+            // disabled, then pin the additive public category axis across metadata/title/prose DTOs.
+            settings.allowExternalIntegrations = true;
+            PawnDiaryRimTestScope.Require(
+                PawnDiaryApi.ApiVersion >= 10,
+                "The additive player-category read axis requires contract version 10 or newer.");
+            DiaryEntrySnapshot publicEntry = PawnDiaryApi.GetEntrySnapshot(
+                eventId, DiaryEvent.InitiatorRole);
+            DiaryEntryStatusSnapshot publicStatus = PawnDiaryApi.GetEntryStatus(
+                eventId, DiaryEvent.InitiatorRole);
+            DiaryEntryTitleQuery categoryQuery = new DiaryEntryTitleQuery
+            {
+                entryTypeKey = "combat"
+            };
+            DiaryEntryTitleSnapshot publicTitle = PawnDiaryApi.GetRecentEntryTitles(
+                    firstPawn, 10, categoryQuery)
+                .Find(row => string.Equals(row?.eventId, eventId, StringComparison.Ordinal));
+            DiaryEntryProseSnapshot publicProse = PawnDiaryApi.GetContextSnapshot(
+                    firstPawn, 10, categoryQuery)?.entries
+                .Find(row => string.Equals(row?.eventId, eventId, StringComparison.Ordinal));
             PawnDiaryRimTestScope.Require(
                 page != null
                     && snapshot != null
@@ -553,7 +573,15 @@ namespace PawnDiary.RimTests
                     && !snapshot.EntryTypeLocked
                     && view != null
                     && view.Important
-                    && string.Equals(view.TextDecorationContext?.domain, "Raid", StringComparison.Ordinal)
+                    && string.Equals(view.EntryTypeKey, "Combat", StringComparison.Ordinal)
+                    && string.Equals(view.TextDecorationContext?.domain,
+                        DiaryEventDomainClassifier.PlayerEntry, StringComparison.Ordinal)
+                    && string.Equals(publicEntry?.entryTypeKey, "Combat", StringComparison.Ordinal)
+                    && string.Equals(publicEntry?.domain,
+                        DiaryEventDomainClassifier.PlayerEntry, StringComparison.Ordinal)
+                    && string.Equals(publicStatus?.entryTypeKey, "Combat", StringComparison.Ordinal)
+                    && string.Equals(publicTitle?.entryTypeKey, "Combat", StringComparison.Ordinal)
+                    && string.Equals(publicProse?.entryTypeKey, "Combat", StringComparison.Ordinal)
                     && record.unreadGeneratedEntryCount == 0
                     && !record.hasUnreadGeneratedEntry,
                 "Typed direct creation lost its per-POV category or produced generated/unread state.");
@@ -719,6 +747,12 @@ namespace PawnDiary.RimTests
                         && string.Equals(row.entryTypeKey, expectedTypes[i], StringComparison.Ordinal)
                         && string.Equals(row.eventPromptKey, expectedPromptKeys[i], StringComparison.Ordinal)
                         && !string.IsNullOrWhiteSpace(row.defaultTemplateKey)
+                        && string.Equals(row.domain,
+                            DiaryEventDomainClassifier.PlayerEntry, StringComparison.Ordinal)
+                        && row.combat == string.Equals(
+                            row.entryTypeKey, "Combat", StringComparison.Ordinal)
+                        && row.reflection == string.Equals(
+                            row.entryTypeKey, "Reflection", StringComparison.Ordinal)
                         && !string.IsNullOrWhiteSpace(row.label)
                         && !string.IsNullOrWhiteSpace(row.description),
                     "Loaded player-entry type ordering/localization diverged at row " + i + ".");
@@ -737,7 +771,90 @@ namespace PawnDiary.RimTests
                         && string.Equals(row.templateKey, expectedTemplates[i], StringComparison.Ordinal)
                         && !string.IsNullOrWhiteSpace(row.label)
                         && !string.IsNullOrWhiteSpace(row.description),
-                "Loaded player template ordering/localization diverged at row " + i + ".");
+                    "Loaded player template ordering/localization diverged at row " + i + ".");
+                DiaryPromptTemplateDef loaded = DiaryPlayerPromptTemplates.FirstSelectableDefs()
+                    .Find(candidate => string.Equals(
+                        candidate?.templateKey, row.templateKey, StringComparison.Ordinal));
+                List<DiaryPromptFieldDef> fields = DiaryPromptTemplates.FieldsFor(
+                    loaded, row.templateKey);
+                PawnDiaryRimTestScope.Require(
+                    fields.Exists(field => field != null && field.enabled
+                        && string.Equals(field.source, "PawnSummary", StringComparison.Ordinal))
+                    && fields.Exists(field => field != null && field.enabled
+                        && string.Equals(field.source, "Identity", StringComparison.Ordinal)),
+                    "Selectable player template omitted captured pawn or identity context at row " + i + ".");
+            }
+
+            PawnDiaryRimTestScope.Require(types.Count * templates.Count == 27,
+                "The loaded category/template context contract did not cover all 27 selectable pairs.");
+        }
+
+        /// <summary>
+        /// Player category meaning must be identical while the page is hot and after compaction. In
+        /// particular Combat is high-stakes without becoming Raid, and Reflection is reflective without
+        /// becoming a generated day/arc source.
+        /// </summary>
+        [Test]
+        public static void PlayerCategorySemanticsSurviveHotArchiveProjection()
+        {
+            string pawnId = firstPawn.GetUniqueLoadID();
+            string[] keys = { "Personal", "Combat", "Reflection" };
+            bool[] important = { false, true, false };
+            bool[] combat = { false, true, false };
+            bool[] reflection = { false, false, true };
+            for (int i = 0; i < keys.Length; i++)
+            {
+                DiaryEvent hot = new DiaryEvent
+                {
+                    eventId = "rimtest-player-semantics-" + keys[i],
+                    tick = 1000 + i,
+                    date = "fixture date " + i,
+                    interactionDefName = "PawnDiary_ManualEntry",
+                    interactionLabel = "fixture source",
+                    initiatorPawnId = pawnId,
+                    initiatorName = firstPawn.LabelShortCap,
+                    initiatorText = "fixture facts",
+                    gameContext = ManualDiaryEntryFacts.GameContext,
+                    solo = true
+                };
+                hot.MarkInjectedTextComplete(DiaryEvent.InitiatorRole, "fixture prose");
+                PawnDiaryRimTestScope.Require(
+                    hot.TrySetEntryTypeKey(
+                        DiaryEvent.InitiatorRole, keys[i], bumpVersion: false),
+                    "Could not set fixture player category " + keys[i] + ".");
+                DiaryEntryView view = hot.ToViewFor(pawnId);
+                ArchivedDiaryEntry archived = ArchivedDiaryEntry.FromEvent(
+                    hot, pawnId, view, forceFallback: false);
+                PlayerEntrySemanticProjection hotSemantics =
+                    hot.SemanticProjectionForRole(DiaryEvent.InitiatorRole);
+                PlayerEntrySemanticProjection coldSemantics = archived?.SemanticProjection();
+                CrossArcMemoryCandidate hotCross =
+                    DiaryGameComponent.CrossArcCandidateFromEvent(
+                        hot, pawnId, DiaryEvent.InitiatorRole);
+                CrossArcMemoryCandidate coldCross =
+                    DiaryGameComponent.CrossArcCandidateFromArchive(archived);
+
+                PawnDiaryRimTestScope.Require(
+                    view != null
+                        && archived != null
+                        && coldSemantics != null
+                        && string.Equals(hotSemantics.entryTypeKey, keys[i], StringComparison.Ordinal)
+                        && string.Equals(coldSemantics.entryTypeKey, keys[i], StringComparison.Ordinal)
+                        && string.Equals(hotSemantics.domain,
+                            DiaryEventDomainClassifier.PlayerEntry, StringComparison.Ordinal)
+                        && string.Equals(coldSemantics.domain,
+                            DiaryEventDomainClassifier.PlayerEntry, StringComparison.Ordinal)
+                        && hotSemantics.important == important[i]
+                        && coldSemantics.important == important[i]
+                        && hotSemantics.combat == combat[i]
+                        && coldSemantics.combat == combat[i]
+                        && hotSemantics.reflection == reflection[i]
+                        && coldSemantics.reflection == reflection[i]
+                        && string.Equals(hotCross?.salience, coldCross?.salience,
+                            StringComparison.Ordinal)
+                        && hotCross?.reflection == reflection[i]
+                        && coldCross?.reflection == reflection[i],
+                    "Player category semantics changed across compaction for " + keys[i] + ".");
             }
         }
 
@@ -787,6 +904,26 @@ namespace PawnDiary.RimTests
                 row?.templateKey, customKey, StringComparison.OrdinalIgnoreCase));
             DiaryTemplatePolicy copied = policy.templates.Find(row => string.Equals(
                 row?.templateKey, customKey, StringComparison.OrdinalIgnoreCase));
+            DiaryEvent playerEvent = new DiaryEvent
+            {
+                eventId = "rimtest-custom-memory-template",
+                interactionDefName = "PawnDiary_ManualEntry",
+                interactionLabel = "Personal",
+                gameContext = ManualDiaryEntryFacts.GameContext,
+                solo = true
+            };
+            playerEvent.TrySetEntryTypeKey(
+                DiaryEvent.InitiatorRole, "Personal", bumpVersion: false);
+            bool customProjectsMemory = DiaryPipelineAdapters.ProjectsMemoryContext(
+                playerEvent,
+                readOnlyKnowledge: true,
+                requestedTemplateKey: customKey,
+                povRole: DiaryEvent.InitiatorRole);
+            bool defaultProjectsMemory = DiaryPipelineAdapters.ProjectsMemoryContext(
+                playerEvent,
+                readOnlyKnowledge: true,
+                requestedTemplateKey: DiaryPipelineTemplates.SoloDefault,
+                povRole: DiaryEvent.InitiatorRole);
             PawnDiaryRimTestScope.Require(
                 uiRow != null
                     && copied != null
@@ -796,8 +933,66 @@ namespace PawnDiary.RimTests
                         copied.systemPrompt, custom.systemPrompt, StringComparison.Ordinal)
                     && copied.fields.Count == 1
                     && string.Equals(
-                        copied.fields[0].source, "PovText", StringComparison.Ordinal),
+                        copied.fields[0].source, "PovText", StringComparison.Ordinal)
+                    && !customProjectsMemory
+                    && defaultProjectsMemory,
                 "A custom player-selectable template was shown by the UI but absent/corrupt in prompt policy.");
+        }
+
+        /// <summary>
+        /// A custom player category may reuse a captured interaction prompt key. That exact guidance
+        /// remains selectable, but the collision must not import the capture group's combat/tone/model
+        /// policy or let anti-repeat rerolls replace player-authored instruction text.
+        /// </summary>
+        [Test]
+        public static void PlayerEntryPromptKeyCollisionDoesNotInheritCaptureGroup()
+        {
+            DiaryInteractionGroupDef insults = InteractionGroups.ClassifyDefName(
+                GroupDomain.Interaction, "Insult");
+            PawnDiaryRimTestScope.Require(
+                insults != null
+                    && insults.combat
+                    && insults.instructions != null
+                    && insults.instructions.Count > 1,
+                "The collision fixture requires the shipped combat-capable insults group.");
+
+            DiaryPolicySnapshot policy = DiaryPipelineAdapters.PolicyFor(
+                new DiaryEventPayload
+                {
+                    defName = "Insult",
+                    domain = DiaryEventDomainClassifier.PlayerEntry,
+                    playerEntryTypeKey = "RimTestNonCombatCollision",
+                    solo = true,
+                    display = new DiaryDisplayPayload
+                    {
+                        important = false,
+                        combat = false,
+                        reflection = false
+                    }
+                });
+            PawnDiaryRimTestScope.Require(
+                policy?.group != null
+                    && string.IsNullOrWhiteSpace(policy.group.defName)
+                    && !policy.group.combat,
+                "A player prompt-key collision inherited the captured insults group or combat role.");
+
+            DiaryEvent playerEvent = new DiaryEvent
+            {
+                eventId = "rimtest-player-group-collision",
+                interactionDefName = "Insult",
+                interactionLabel = "custom player category",
+                gameContext = ManualDiaryEntryFacts.GameContext,
+                instruction = insults.instructions[0],
+                solo = true
+            };
+            playerEvent.TrySetEntryTypeKey(
+                DiaryEvent.InitiatorRole, "Personal", bumpVersion: false);
+            string originalInstruction = playerEvent.instruction;
+            PawnDiaryRimTestScope.Require(
+                !DiaryPipelineAdapters.TryRerollInstruction(playerEvent, 1)
+                    && string.Equals(
+                        playerEvent.instruction, originalInstruction, StringComparison.Ordinal),
+                "A player prompt-key collision rerolled instruction text from a capture-group pool.");
         }
 
         /// <summary>
@@ -1449,8 +1644,6 @@ namespace PawnDiary.RimTests
                 templateKey = DiaryPipelineTemplates.SoloInternalState,
                 factualSummary = "RAW_FACTS_MUST_NOT_LEAK",
                 customInstruction = "RAW_INSTRUCTION_MUST_NOT_LEAK",
-                title = "RAW_TITLE_MUST_NOT_LEAK",
-                body = "RAW_BODY_MUST_NOT_LEAK",
                 systemPrompt = rawSystem,
                 userPrompt = rawUser,
                 laneIndex = 2,
@@ -1478,9 +1671,7 @@ namespace PawnDiary.RimTests
                     && !captured[0].userText.Contains("RAW_CONTEXT_MUST_NOT_LEAK")
                     && !captured[0].userText.Contains("RAW_CONTINUITY_MUST_NOT_LEAK")
                     && !captured[0].userText.Contains("RAW_FACTS_MUST_NOT_LEAK")
-                    && !captured[0].userText.Contains("RAW_INSTRUCTION_MUST_NOT_LEAK")
-                    && !captured[0].userText.Contains("RAW_TITLE_MUST_NOT_LEAK")
-                    && !captured[0].userText.Contains("RAW_BODY_MUST_NOT_LEAK"),
+                    && !captured[0].userText.Contains("RAW_INSTRUCTION_MUST_NOT_LEAK"),
                 "Full Prompt added context/template data or changed the sanitized raw envelope.");
             RequireNoComposerPersistence(
                 record,

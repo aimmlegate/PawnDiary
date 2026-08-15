@@ -67,6 +67,11 @@ namespace PawnDiary
             LlmProtocolMode protocolMode = EndpointUtility.ProtocolModeFor(mode);
             bool openAiProtocol = protocolMode == LlmProtocolMode.OpenAIChatCompletions
                 || protocolMode == LlmProtocolMode.OpenAIResponses;
+            // Snapshot the exact normalized credential/header forms that the auth adapter puts on
+            // the wire. Provider error bodies can echo a bare trimmed key or a fallback header name.
+            string effectiveApiKey = ApiEndpointPolicy.EffectiveApiKey(authMode, apiKey);
+            string effectiveAuthHeaderName =
+                ApiEndpointPolicy.EffectiveAuthHeaderName(authMode, customAuthHeaderName);
 
             // Collision preflight happens before query/header auth is attached to any request.
             LlmProtocolHeadersPlan protocolHeaders = ApiRequestAuth.PrepareProtocolHeaders(
@@ -138,7 +143,10 @@ namespace PawnDiary
 
                                 throw new InvalidOperationException(
                                     $"HTTP {(int)response.StatusCode}: "
-                                    + TrimForStatus(detail, apiKey, customAuthHeaderName));
+                                    + TrimForStatus(
+                                        detail,
+                                        effectiveApiKey,
+                                        effectiveAuthHeaderName));
                             }
 
                             if (!page.ParsedJsonObject || !string.IsNullOrWhiteSpace(page.ProviderError))
@@ -148,8 +156,8 @@ namespace PawnDiary
                                         ? "The model endpoint did not return a JSON object."
                                         : TrimForStatus(
                                             page.ProviderError,
-                                            apiKey,
-                                            customAuthHeaderName));
+                                            effectiveApiKey,
+                                            effectiveAuthHeaderName));
                             }
 
                             bool aggregateLimitReached = MergePage(entries, page);

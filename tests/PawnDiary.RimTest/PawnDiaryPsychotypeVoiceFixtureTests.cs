@@ -26,6 +26,7 @@
 // pawn's PawnDiaryRecord are cleared via RegisterCleanup (belt-and-suspenders — the harness also deletes
 // the whole test record), so the no-leak audit passes.
 using System;
+using System.Reflection;
 using PawnDiary.Ingestion;
 using RimTestRedux;
 using RimWorld;
@@ -329,6 +330,58 @@ namespace PawnDiary.RimTests
                 resolution.source == PsychotypeRuleSource.PawnCustom
                     && string.Equals(resolution.rule, CustomOutlookMarker, StringComparison.Ordinal),
                 "The custom outlook should still resolve for this pawn, proving the arrival suppression is template-driven.");
+        }
+
+        /// <summary>
+        /// The editor's repeated Re-roll action advances its component-owned cosmetic stream while the
+        /// next Verse gameplay draw remains byte-for-byte equivalent to the pre-click state.
+        /// </summary>
+        [Test]
+        public static void PsychotypePreviewAdvancesPrivateStreamWithoutAdvancingVerseRand()
+        {
+            const BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
+            FieldInfo streamField = typeof(DiaryGameComponent).GetField(
+                "psychotypeRollRandom", PrivateInstance);
+            object stream = streamField?.GetValue(scope.Component);
+            FieldInfo stateField = stream?.GetType().GetField("state", PrivateInstance);
+            PawnDiaryRimTestScope.Require(
+                stream != null && stateField != null,
+                "Psychotype preview fixture could not locate the component-owned private stream.");
+
+            ulong privateStateBefore = (ulong)stateField.GetValue(stream);
+            scope.RegisterCleanup(() => stateField.SetValue(stream, privateStateBefore));
+            int gameplayDrawBefore;
+            Rand.PushState();
+            try
+            {
+                gameplayDrawBefore = Rand.Int;
+            }
+            finally
+            {
+                Rand.PopState();
+            }
+
+            scope.Component.RollPsychotypePreview(pawn);
+            scope.Component.RollPsychotypePreview(pawn);
+
+            ulong privateStateAfter = (ulong)stateField.GetValue(stream);
+            int gameplayDrawAfter;
+            Rand.PushState();
+            try
+            {
+                gameplayDrawAfter = Rand.Int;
+            }
+            finally
+            {
+                Rand.PopState();
+            }
+
+            PawnDiaryRimTestScope.Require(
+                privateStateAfter != privateStateBefore,
+                "Repeated psychotype previews replayed one restored private draw.");
+            PawnDiaryRimTestScope.Require(
+                gameplayDrawAfter == gameplayDrawBefore,
+                "Psychotype preview advanced RimWorld's seeded gameplay RNG.");
         }
 
         // ----- helpers -------------------------------------------------------------------------------

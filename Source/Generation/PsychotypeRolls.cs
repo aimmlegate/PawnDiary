@@ -1,11 +1,13 @@
 // Impure adapter for the psychotype roll. It snapshots live Pawn skill passions, the creepjoiner flag,
 // the two veto traits, and the canonical trait keys (PsychotypeTraitAffinities: trait weight pull +
 // trait-gated psychotype unlocks) on the main thread into a plain PsychotypeRollInput, projects the
-// psychotype catalog into pure candidates, then delegates to the pure PsychotypeRollPolicy with
-// Rand.Value. Keep all Verse/DefDatabase/Rand access here; the policy stays pure and unit-tested.
+// psychotype catalog into pure candidates, then delegates to the pure PsychotypeRollPolicy with the
+// component-owned private random stream. Keep Verse/DefDatabase access here; the policy stays pure
+// and unit-tested, while repeated UI rerolls advance without touching RimWorld's gameplay RNG.
 //
 // New to C#/RimWorld? See AGENTS.md. Passion is RimWorld's per-skill interest level (None/Minor/Major);
 // "burning" is Passion.Major.
+using System;
 using System.Collections.Generic;
 using RimWorld;
 using Verse;
@@ -23,27 +25,20 @@ namespace PawnDiary
         /// <summary>
         /// Rolls a psychotype defName for the pawn in the given band ("adult"/"child"). Returns Neutral
         /// when the roll finds no usable candidate, so callers always get a valid defName. Main thread
-        /// only (reads live Pawn/Def state and Rand).
+        /// only (reads live Pawn/Def state; the caller owns the private advancing random stream).
         /// </summary>
         public static string Roll(Pawn pawn, string stageBand, IDictionary<string, int> usedCounts,
-            string childPsychotypeDefName)
+            string childPsychotypeDefName, Func<float> nextUnitFloat)
         {
+            if (nextUnitFloat == null)
+            {
+                return DiaryPsychotypes.NeutralDefName;
+            }
+
             PsychotypeRollInput input = BuildInput(pawn, stageBand, usedCounts, childPsychotypeDefName);
             List<PsychotypeCandidate> candidates = DiaryPsychotypes.RollCandidates();
-
-            // Isolate the roll from the global gameplay RNG stream. This is a cosmetic per-pawn pick, not a
-            // simulation event, so it must not shift the seeded Rand sequence the rest of the game draws
-            // from. PushState/PopState checkpoints that stream and restores it exactly around the roll.
-            Rand.PushState();
-            try
-            {
-                string defName = PsychotypeRollPolicy.Roll(input, candidates, () => Rand.Value);
-                return string.IsNullOrWhiteSpace(defName) ? DiaryPsychotypes.NeutralDefName : defName;
-            }
-            finally
-            {
-                Rand.PopState();
-            }
+            string defName = PsychotypeRollPolicy.Roll(input, candidates, nextUnitFloat);
+            return string.IsNullOrWhiteSpace(defName) ? DiaryPsychotypes.NeutralDefName : defName;
         }
 
         private static PsychotypeRollInput BuildInput(Pawn pawn, string stageBand,

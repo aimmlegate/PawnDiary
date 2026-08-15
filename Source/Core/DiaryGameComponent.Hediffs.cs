@@ -65,31 +65,9 @@ namespace PawnDiary
             for (int i = 0; i < colonists.Count; i++)
             {
                 Pawn pawn = colonists[i];
-                if (!IsDiaryEligible(pawn) || pawn.health?.hediffSet?.hediffs == null)
+                if (!TryCollectHediffProgressionsForPawn(pawn, activeByStateKey))
                 {
                     continue;
-                }
-
-                activeByStateKey.Clear();
-                string pawnId = pawn.GetUniqueLoadID();
-                List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
-                for (int j = 0; j < hediffs.Count; j++)
-                {
-                    HediffProgressionMatch match = MatchHediffProgression(pawn, hediffs[j]);
-                    if (match == null)
-                    {
-                        continue;
-                    }
-
-                    string stateKey = HediffProgressionStateKey(pawnId, match.defName, match.partKey);
-                    HediffProgressionMatch existing;
-                    if (activeByStateKey.TryGetValue(stateKey, out existing)
-                        && existing.stage >= match.stage)
-                    {
-                        continue;
-                    }
-
-                    activeByStateKey[stateKey] = match;
                 }
 
                 foreach (KeyValuePair<string, HediffProgressionMatch> pair in activeByStateKey)
@@ -112,6 +90,102 @@ namespace PawnDiary
             {
                 activeHediffProgressions.Remove(staleKeys[i]);
             }
+        }
+
+        /// <summary>
+        /// Replaces only the wiped pawn's live severity snapshot. Existing hediffs become the new silent
+        /// baseline, so a severity change which happened before Brainwipe cannot emit on the next scan;
+        /// every other pawn's active episode remains byte-for-byte untouched.
+        /// </summary>
+        private void RebaselineHediffProgressionsForPawn(Pawn pawn)
+        {
+            if (pawn == null)
+            {
+                return;
+            }
+
+            string pawnId = pawn.GetUniqueLoadID();
+            List<string> ownedKeys = new List<string>();
+            foreach (string key in activeHediffProgressions.Keys)
+            {
+                if (PawnScopedTransientKeyPolicy.StartsWithPawnToken(key, pawnId))
+                {
+                    ownedKeys.Add(key);
+                }
+            }
+            for (int i = 0; i < ownedKeys.Count; i++)
+            {
+                activeHediffProgressions.Remove(ownedKeys[i]);
+            }
+
+            Dictionary<string, HediffProgressionMatch> current =
+                new Dictionary<string, HediffProgressionMatch>();
+            if (!TryCollectHediffProgressionsForPawn(
+                pawn,
+                current,
+                isolateFailures: true))
+            {
+                return;
+            }
+            foreach (KeyValuePair<string, HediffProgressionMatch> pair in current)
+            {
+                UpdateHediffProgressionState(pair.Key, pair.Value, snapshotOnly: true);
+            }
+        }
+
+        /// <summary>Collects one pawn's highest configured live severity stage without emitting.</summary>
+        private bool TryCollectHediffProgressionsForPawn(
+            Pawn pawn,
+            Dictionary<string, HediffProgressionMatch> activeByStateKey,
+            bool isolateFailures = false)
+        {
+            activeByStateKey.Clear();
+            if (!IsDiaryEligible(pawn) || pawn.health?.hediffSet?.hediffs == null)
+            {
+                return false;
+            }
+
+            string pawnId = pawn.GetUniqueLoadID();
+            List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
+            for (int i = 0; i < hediffs.Count; i++)
+            {
+                HediffProgressionMatch match;
+                try
+                {
+                    match = MatchHediffProgression(pawn, hediffs[i]);
+                }
+                catch (Exception exception)
+                {
+                    if (!isolateFailures)
+                    {
+                        throw;
+                    }
+
+                    // Brainwipe must finish even when one modded Hediff/Def getter is broken. The old
+                    // target snapshot was already removed; if this row becomes readable later, the
+                    // ordinary scanner will first-see it silently rather than emit pre-wipe change.
+                    Log.ErrorOnce(
+                        "[Pawn Diary] Brainwipe skipped one malformed live hediff while rebuilding "
+                        + "the pawn's silent progression baseline: " + exception,
+                        "PawnDiary.Brainwipe.HediffRebaseline".GetHashCode());
+                    continue;
+                }
+                if (match == null)
+                {
+                    continue;
+                }
+
+                string stateKey = HediffProgressionStateKey(pawnId, match.defName, match.partKey);
+                HediffProgressionMatch existing;
+                if (activeByStateKey.TryGetValue(stateKey, out existing)
+                    && existing.stage >= match.stage)
+                {
+                    continue;
+                }
+                activeByStateKey[stateKey] = match;
+            }
+
+            return true;
         }
 
         private void UpdateHediffProgressionState(string stateKey, HediffProgressionMatch match, bool snapshotOnly)

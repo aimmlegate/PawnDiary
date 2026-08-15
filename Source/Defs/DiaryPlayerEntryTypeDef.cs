@@ -15,6 +15,8 @@ namespace PawnDiary
         public string defaultTemplateKey;
         public int displayOrder;
         public bool important;
+        public bool combat;
+        public bool reflection;
         public string colorCue;
         public string domain;
     }
@@ -82,6 +84,8 @@ namespace PawnDiary
                 defaultTemplateKey = Clean(source.defaultTemplateKey),
                 displayOrder = source.displayOrder,
                 important = source.important,
+                combat = source.combat,
+                reflection = source.reflection,
                 colorCue = Clean(source.colorCue),
                 domain = Clean(source.domain),
                 label = source.LabelCap.Resolve(),
@@ -106,8 +110,10 @@ namespace PawnDiary
                 defaultTemplateKey = DiaryPipelineTemplates.SoloDefault,
                 displayOrder = 0,
                 important = false,
+                combat = false,
+                reflection = false,
                 colorCue = DiaryEvent.QuietColorCue,
-                domain = DiaryEventDomainClassifier.Interaction,
+                domain = DiaryEventDomainClassifier.PlayerEntry,
                 label = "PawnDiary.EntryComposer.EntryType.Personal".Translate().Resolve(),
                 description = "PawnDiary.EntryComposer.EntryType.Personal.Description".Translate().Resolve()
             };

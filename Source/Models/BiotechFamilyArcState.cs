@@ -23,12 +23,35 @@ namespace PawnDiary.Capture
             Scribe_Values.Look(ref summarizedCareCount, "summarizedCareCount", 0);
             Scribe_Values.Look(ref firstObservedTick, "firstObservedTick", 0);
             Scribe_Values.Look(ref lastObservedTick, "lastObservedTick", 0);
+            // Additive exact-adult POV boundary. Older saves omit these keys and retain the ordinary
+            // shared-cursor behavior; no live Pawn or DLC object is persisted here.
+            Scribe_Values.Look(ref adultMemoryBoundaryActive, "adultMemoryBoundaryActive", false);
+            Scribe_Values.Look(ref adultMemoryBoundaryTick, "adultMemoryBoundaryTick", 0);
+            Scribe_Values.Look(ref adultMemoryLessonBaseline, "adultMemoryLessonBaseline", 0);
+            Scribe_Values.Look(ref adultMemoryBabyPlayBaseline, "adultMemoryBabyPlayBaseline", 0);
+            Scribe_Values.Look(ref adultMemoryCareBaseline, "adultMemoryCareBaseline", 0);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 adultId = adultId ?? string.Empty;
                 lastDisplayName = lastDisplayName ?? string.Empty;
                 relationToken = relationToken ?? string.Empty;
+            }
+        }
+    }
+
+    /// <summary>Scribes one adult's lifetime-count baseline for the child memory boundary.</summary>
+    internal partial class FamilySupportMemoryBaselineState : IExposable
+    {
+        public void ExposeData()
+        {
+            Scribe_Values.Look(ref adultId, "adultId");
+            Scribe_Values.Look(ref lessonCount, "lessonCount", 0);
+            Scribe_Values.Look(ref babyPlayCount, "babyPlayCount", 0);
+            Scribe_Values.Look(ref careCount, "careCount", 0);
+            if (Scribe.mode == LoadSaveMode.PostLoadInit)
+            {
+                adultId = adultId ?? string.Empty;
             }
         }
     }
@@ -62,6 +85,14 @@ namespace PawnDiary.Capture
             Scribe_Collections.Look(ref supporters, "supporters", LookMode.Deep);
             Scribe_Collections.Look(ref recordedGrowthAges, "recordedGrowthAges", LookMode.Value);
             Scribe_Values.Look(ref lastSummarizedObservationTick, "lastSummarizedObservationTick", 0);
+            // Additive child-POV Brainwipe baseline. Older saves omit all three keys and therefore load
+            // the ordinary no-boundary state without migration or a paid-DLC requirement.
+            Scribe_Values.Look(ref childMemoryBoundaryPawnId, "childMemoryBoundaryPawnId");
+            Scribe_Values.Look(ref childMemoryBoundaryTick, "childMemoryBoundaryTick", 0);
+            Scribe_Collections.Look(
+                ref childMemorySupportBaselines,
+                "childMemorySupportBaselines",
+                LookMode.Deep);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -81,6 +112,9 @@ namespace PawnDiary.Capture
                 currentChildName = currentChildName ?? string.Empty;
                 supporters = supporters ?? new List<FamilySupportObservationState>();
                 recordedGrowthAges = recordedGrowthAges ?? new List<int>();
+                childMemoryBoundaryPawnId = childMemoryBoundaryPawnId ?? string.Empty;
+                childMemorySupportBaselines = childMemorySupportBaselines
+                    ?? new List<FamilySupportMemoryBaselineState>();
             }
         }
     }

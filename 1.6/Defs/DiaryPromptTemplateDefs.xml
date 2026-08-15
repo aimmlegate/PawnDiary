@@ -396,6 +396,9 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <!-- Odyssey O3 exact Quest-root enrichment. Append-only to preserve older indexed labels. -->
       <li><label>odyssey site category</label><source>GameContext</source><contextKey>odyssey_site_category</contextKey></li>
       <li><label>major odyssey destination</label><source>GameContext</source><contextKey>odyssey_major_destination</contextKey></li>
+      <!-- Player-composer contract: append only, because DefInjected labels are index-addressed. -->
+      <li><label>you</label><source>PawnSummary</source></li>
+      <li><label>key relationships</label><source>Identity</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -598,6 +601,8 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <!-- Quality Wave H1 append-only field: the strongest moment(s) of this pawn's own fight, taken
            from RimWorld's combat log. Absent on non-raid pages and omitted by PromptAssembler. -->
       <li><label>combat beats</label><source>GameContext</source><contextKey>battle_beats</contextKey></li>
+      <!-- Player-composer contract: PawnSummary is field 4; append the missing identity field. -->
+      <li><label>key relationships</label><source>Identity</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -666,6 +671,9 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
       <li><label>belief context</label><source>BeliefContext</source></li>
       <!-- Quality Wave B2 append-only event-time POV state; deterministic omission costs no tokens. -->
       <li><label>you</label><source>MoodSnapshot</source></li>
+      <!-- Player-composer contract: append only, because DefInjected labels are index-addressed. -->
+      <li><label>pawn context</label><source>PawnSummary</source></li>
+      <li><label>key relationships</label><source>Identity</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 

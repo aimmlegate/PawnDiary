@@ -16,6 +16,12 @@ namespace PawnDiary.Integration
         public string domain = string.Empty;
 
         /// <summary>
+        /// Player category key such as "Personal", "Combat", or "Reflection". Empty means any
+        /// category, including source-derived pages. Category is independent from semantic domain.
+        /// </summary>
+        public string entryTypeKey = string.Empty;
+
+        /// <summary>
         /// Rare atmosphere cue such as "fractured", "unsettled", or "memorial". Empty means any cue.
         /// </summary>
         public string atmosphereCue = string.Empty;

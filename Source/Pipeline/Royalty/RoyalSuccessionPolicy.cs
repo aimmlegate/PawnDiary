@@ -94,6 +94,20 @@ namespace PawnDiary
             return IsClaim(ClassifyMutation(fact, mutation, correlationId, now));
         }
 
+        /// <summary>
+        /// Returns whether a saved pending succession belongs to this exact heir. Brainwipe uses this
+        /// primitive identity rule to retire delayed pre-wipe ownership without touching live Royalty
+        /// trackers or confusing prefix-collision pawn IDs.
+        /// </summary>
+        public static bool IsOwnedByHeir(string heirPawnId, string pawnId)
+        {
+            string owner = CleanId(heirPawnId);
+            string target = CleanId(pawnId);
+            return owner.Length > 0
+                && target.Length > 0
+                && string.Equals(owner, target, StringComparison.Ordinal);
+        }
+
         /// <summary>Returns a detached copy whose chain cursor has consumed one compatible mutation.</summary>
         public static RoyalSuccessionFact AdvanceMutation(
             RoyalSuccessionFact fact,

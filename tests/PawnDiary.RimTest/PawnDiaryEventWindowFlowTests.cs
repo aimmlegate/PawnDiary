@@ -54,6 +54,8 @@ namespace PawnDiary.RimTests
             typeof(DiaryGameComponent).GetField("recentEventWindowEvents", PrivateInstance);
         private static readonly MethodInfo ScanTimeoutsMethod =
             typeof(DiaryGameComponent).GetMethod("ScanEventWindowTimeouts", PrivateInstance);
+        private static readonly MethodInfo ActivePromptCandidatesMethod =
+            typeof(DiaryGameComponent).GetMethod("ActiveEventWindowPromptCandidates", PrivateInstance);
 
         private static PawnDiaryRimTestScope scope;
         private static Pawn firstPawn;
@@ -83,6 +85,9 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 ScanTimeoutsMethod != null,
                 "Event-window suite could not locate private method 'ScanEventWindowTimeouts'.");
+            PawnDiaryRimTestScope.Require(
+                ActivePromptCandidatesMethod != null,
+                "Event-window suite could not locate private prompt-candidate enumeration.");
 
             RegisterEventWindowStoreCleanup();
         }
@@ -343,6 +348,34 @@ namespace PawnDiary.RimTests
             // there is no truthful actor to own a first-person activation page.
             scope.RequireNoNewEvent(() => scope.Component.RecordEventWindowSignal(
                 "VoidMonolith", "Gleaming", "activated", "Gleaming", null, firstPawn));
+        }
+
+        /// <summary>
+        /// Building prompt context is read-only. A legacy missing deadline is interpreted locally so
+        /// an ordinary preview/cancel cannot dirty the save-owned active-window row.
+        /// </summary>
+        [Test]
+        public static void PromptCandidateEnumerationDoesNotRepairSavedExpiry()
+        {
+            DiaryEventWindowDef def = RequireWindowDef("ShortCircuitAftermath");
+            PawnDiaryRimTestScope.Require(
+                def.promptEnabled,
+                "The read-only prompt fixture requires ShortCircuitAftermath prompt coloring enabled.");
+            HashSet<ActiveEventWindowState> baseline = SnapshotActiveWindows();
+            scope.Component.RecordEventWindowSignal(
+                "Incident", "ShortCircuit", "executed", "short circuit", null, null);
+            ActiveEventWindowState opened = FindNewWindow(baseline, "ShortCircuitAftermath");
+            PawnDiaryRimTestScope.Require(
+                opened != null,
+                "Setup: the ShortCircuit signal did not open a prompt-context window.");
+
+            opened.expiresTick = -1;
+            object[] arguments = { firstPawn, 1f };
+            object candidates = ActivePromptCandidatesMethod.Invoke(scope.Component, arguments);
+
+            PawnDiaryRimTestScope.Require(
+                candidates != null && opened.expiresTick == -1,
+                "Prompt candidate enumeration mutated the save-owned expiresTick field.");
         }
 
         // ----- test helpers -----------------------------------------------------------------------

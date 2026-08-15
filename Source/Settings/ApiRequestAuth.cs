@@ -103,9 +103,17 @@ namespace PawnDiary
                 case ApiAuthMode.QueryParameterKey:
                     return;
                 case ApiAuthMode.CustomHeader:
-                    request.Headers.TryAddWithoutValidation(
-                        ApiEndpointPolicy.EffectiveAuthHeaderName(authMode, customHeaderName),
-                        key);
+                    string headerName =
+                        ApiEndpointPolicy.EffectiveAuthHeaderName(authMode, customHeaderName);
+                    if (!request.Headers.TryAddWithoutValidation(headerName, key))
+                    {
+                        // Some syntactically valid names (for example Content-Type) belong to a
+                        // different header collection. Never silently send an unauthenticated paid
+                        // request when HttpRequestHeaders rejects the player's selected auth field.
+                        throw new InvalidOperationException(
+                            "The authentication header '" + headerName
+                            + "' cannot be attached to an HTTP request.");
+                    }
                     return;
                 default:
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);

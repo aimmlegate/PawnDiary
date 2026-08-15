@@ -378,8 +378,11 @@ namespace PawnDiary
         private ArcMemoryCandidate ArcCandidateFromEvent(DiaryEvent ev, string pawnId, string role,
             int currentYear, int currentDay)
         {
-            string domain = DiaryEventDomainClassifier.DomainForContext(ev.gameContext);
-            string groupKey = ArcGroupKeyForSavedEvent(domain, ev.gameContext, ev.interactionDefName);
+            PlayerEntrySemanticProjection semantics = ev.SemanticProjectionForRole(role);
+            string domain = semantics.domain;
+            string groupKey = string.IsNullOrWhiteSpace(semantics.entryTypeKey)
+                ? ArcGroupKeyForSavedEvent(domain, ev.gameContext, ev.interactionDefName)
+                : DiaryEventDomainClassifier.PlayerEntry + ":" + semantics.entryTypeKey;
             int eventYear = YearForGameTick(ev.tick);
             return new ArcMemoryCandidate
             {
@@ -392,16 +395,17 @@ namespace PawnDiary
                 defName = ev.interactionDefName,
                 domain = domain,
                 groupKey = groupKey,
-                label = ev.interactionLabel,
+                label = semantics.label,
                 text = ev.TextForRole(role),
                 generatedText = ev.HasGeneratedTextForRole(role) ? ev.DisplayTextForRole(role) : string.Empty,
                 title = ev.TitleForRole(role),
-                important = ev.IsImportant(),
-                reflection = IsReflectionDefName(ev.interactionDefName) || ev.IsArcReflection(),
+                important = semantics.important,
+                reflection = semantics.reflection || IsReflectionDefName(ev.interactionDefName),
                 deathDescription = ev.HasDeathDescription(),
                 sameQuadrum = QuadrumIndexForDay(DayIndexForGameTick(ev.tick)) == QuadrumIndexForDay(currentDay),
                 progression = DiaryContextFields.HasMarker(ev.gameContext, "progression="),
-                highStakes = IsHighStakesArcMemory(domain, ev.interactionDefName, ev.gameContext)
+                highStakes = semantics.combat
+                    || IsHighStakesArcMemory(domain, ev.interactionDefName, ev.gameContext)
             };
         }
 
@@ -413,8 +417,11 @@ namespace PawnDiary
             }
 
             string context = entry.decorationGameContext ?? string.Empty;
-            string domain = DiaryEventDomainClassifier.DomainForContext(context);
-            string groupKey = ArcGroupKeyForSavedEvent(domain, context, entry.interactionDefName);
+            PlayerEntrySemanticProjection semantics = entry.SemanticProjection();
+            string domain = semantics.domain;
+            string groupKey = string.IsNullOrWhiteSpace(semantics.entryTypeKey)
+                ? ArcGroupKeyForSavedEvent(domain, context, entry.interactionDefName)
+                : DiaryEventDomainClassifier.PlayerEntry + ":" + semantics.entryTypeKey;
             int year = entry.year > 0 ? entry.year : YearForGameTick(entry.tick);
             return new ArcMemoryCandidate
             {
@@ -427,16 +434,17 @@ namespace PawnDiary
                 defName = entry.interactionDefName,
                 domain = domain,
                 groupKey = groupKey,
-                label = entry.interactionLabel,
+                label = semantics.label,
                 text = entry.text,
                 generatedText = entry.generatedText,
                 title = entry.title,
-                important = entry.important,
-                reflection = IsReflectionDefName(entry.interactionDefName),
+                important = semantics.important,
+                reflection = semantics.reflection || IsReflectionDefName(entry.interactionDefName),
                 deathDescription = entry.deathDescription,
                 sameQuadrum = QuadrumIndexForDay(DayIndexForGameTick(entry.tick)) == QuadrumIndexForDay(currentDay),
                 progression = DiaryContextFields.HasMarker(context, "progression="),
-                highStakes = IsHighStakesArcMemory(domain, entry.interactionDefName, context)
+                highStakes = semantics.combat
+                    || IsHighStakesArcMemory(domain, entry.interactionDefName, context)
             };
         }
 

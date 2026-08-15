@@ -720,7 +720,9 @@ namespace PawnDiary
         private void ApplyRelevantPastForEvent(
             DiaryEvent diaryEvent,
             bool recordDiagnostics = true,
-            bool createMissingKnowledgeState = true)
+            bool createMissingKnowledgeState = true,
+            string requestedTemplateKey = null,
+            string povRole = null)
         {
             try
             {
@@ -729,7 +731,10 @@ namespace PawnDiary
                 KnowledgePolicySnapshot policy = DiaryKnowledgePolicy.Snapshot(
                     applyGlobalMemorySetting: false);
                 if (!policy.injectionEnabled || !EventProjectsMemoryContext(
-                    diaryEvent, readOnlyKnowledge: !createMissingKnowledgeState))
+                    diaryEvent,
+                    readOnlyKnowledge: !createMissingKnowledgeState,
+                    requestedTemplateKey: requestedTemplateKey,
+                    povRole: povRole))
                 {
                     return;
                 }
@@ -765,9 +770,15 @@ namespace PawnDiary
         /// </summary>
         private static bool EventProjectsMemoryContext(
             DiaryEvent diaryEvent,
-            bool readOnlyKnowledge = false)
+            bool readOnlyKnowledge = false,
+            string requestedTemplateKey = null,
+            string povRole = null)
         {
-            return DiaryPipelineAdapters.ProjectsMemoryContext(diaryEvent, readOnlyKnowledge);
+            return DiaryPipelineAdapters.ProjectsMemoryContext(
+                diaryEvent,
+                readOnlyKnowledge,
+                requestedTemplateKey,
+                povRole);
         }
 
         private void ApplyRelevantPastForRole(

@@ -89,6 +89,34 @@ namespace PawnDiary
             return result;
         }
 
+        /// <summary>
+        /// Removes only relationships written by one exact researcher at the Brainwipe boundary.
+        /// This cache is merely future writer-selection context; the separate consume-once Tale
+        /// suppression cache deliberately remains intact so the same study action cannot replay.
+        /// </summary>
+        internal static int ForgetStudier(string studierPawnId)
+        {
+            string pawnId = (studierPawnId ?? string.Empty).Trim();
+            if (pawnId.Length == 0)
+            {
+                return 0;
+            }
+
+            int removed = 0;
+            for (int i = Studies.Count - 1; i >= 0; i--)
+            {
+                if (string.Equals(
+                    Studies[i]?.studierPawnId,
+                    pawnId,
+                    StringComparison.Ordinal))
+                {
+                    Studies.RemoveAt(i);
+                    removed++;
+                }
+            }
+            return removed;
+        }
+
         /// <summary>Clears all relationships at a game/new-game/load boundary.</summary>
         internal static void Clear()
         {

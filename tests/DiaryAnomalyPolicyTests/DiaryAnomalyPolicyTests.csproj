@@ -18,6 +18,7 @@
     <Compile Include="..\..\Source\Capture\Policies\CreepJoinerOutcomePolicy.cs" Link="CreepJoinerOutcomePolicy.cs" />
     <Compile Include="..\..\Source\Capture\Policies\CreepJoinerOutcomeContextFormatter.cs" Link="CreepJoinerOutcomeContextFormatter.cs" />
     <Compile Include="..\..\Source\Capture\Policies\CreepJoinerSurgicalDisclosurePolicy.cs" Link="CreepJoinerSurgicalDisclosurePolicy.cs" />
+    <Compile Include="..\..\Source\Capture\Policies\CreepJoinerMemoryResetPolicy.cs" Link="CreepJoinerMemoryResetPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Policies\CreepJoinerSurgicalDisclosureContextFormatter.cs" Link="CreepJoinerSurgicalDisclosureContextFormatter.cs" />
     <Compile Include="..\..\Source\Capture\Policies\AnomalySurgeryTaleOwnershipPolicy.cs" Link="AnomalySurgeryTaleOwnershipPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Policies\GhoulTransformationPolicy.cs" Link="GhoulTransformationPolicy.cs" />

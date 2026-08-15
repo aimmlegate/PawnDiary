@@ -492,6 +492,13 @@ namespace PawnDiary.Capture
         public int summarizedCareCount;
         public int firstObservedTick;
         public int lastObservedTick;
+        // Additive Brainwipe cursor for this exact adult POV. Raw counters remain shared family truth
+        // for the child and other relatives; only this adult sees deltas from these saved baselines.
+        public bool adultMemoryBoundaryActive;
+        public int adultMemoryBoundaryTick;
+        public int adultMemoryLessonBaseline;
+        public int adultMemoryBabyPlayBaseline;
+        public int adultMemoryCareBaseline;
     }
 
     /// <summary>Plain candidate used by deterministic supporter selection.</summary>
@@ -598,6 +605,21 @@ namespace PawnDiary.Capture
         public List<FamilySupportObservationState> supporters = new List<FamilySupportObservationState>();
         public List<int> recordedGrowthAges = new List<int>();
         public int lastSummarizedObservationTick;
+        // Additive Brainwipe boundary for this arc's child POV. Lifetime supporter counters remain
+        // shared truth; these baselines let the child see only evidence observed after their reset.
+        public string childMemoryBoundaryPawnId = string.Empty;
+        public int childMemoryBoundaryTick;
+        public List<FamilySupportMemoryBaselineState> childMemorySupportBaselines =
+            new List<FamilySupportMemoryBaselineState>();
+    }
+
+    /// <summary>Lifetime supporter counts captured at one child's exact memory-reset boundary.</summary>
+    internal partial class FamilySupportMemoryBaselineState
+    {
+        public string adultId = string.Empty;
+        public int lessonCount;
+        public int babyPlayCount;
+        public int careCount;
     }
 
     /// <summary>Exact participant fact; eligibility is captured before pure writer selection.</summary>

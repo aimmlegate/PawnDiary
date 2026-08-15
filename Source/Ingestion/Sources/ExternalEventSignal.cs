@@ -100,8 +100,8 @@ namespace PawnDiary.Ingestion
                 bypassFrequency: true);
         }
 
-        // A custom request key still gets the "external|eventKey|" prefix so adapters can never
-        // collide with another source's (or another adapter's) dedup namespace.
+        // A custom request key gets its own prefix so Brainwipe can distinguish the standard
+        // external|eventKey|pawnId ownership schema from an adapter's intentionally opaque identity.
         public override string DedupKey
         {
             get
@@ -114,7 +114,7 @@ namespace PawnDiary.Ingestion
                 string custom = request.dedupKey;
                 return string.IsNullOrWhiteSpace(custom)
                     ? payload.DedupKey()
-                    : "external|" + payload.EventKey + "|" + custom.Trim();
+                    : "external-custom|" + payload.EventKey + "|" + custom.Trim();
             }
         }
 

@@ -1068,8 +1068,7 @@ namespace PawnDiary
             // startup thoughts and the death page (newest) never sorts below same-tick final events.
             int boundaryRank = HasDeathDescription() ? 1 : (HasArrivalDescription() ? -1 : 0);
 
-            DiaryInteractionGroupDef group = GroupForDisplay();
-            PlayerEntryTypeSnapshot playerType = PlayerEntryTypeForRole(povRole);
+            PlayerEntrySemanticProjection semantics = SemanticProjectionForRole(povRole);
 
             // Title for this pawn's POV: stored LLM title only. When empty, the Diary card header
             // renders the date alone with no separator.
@@ -1130,19 +1129,20 @@ namespace PawnDiary
                 PromptFor(povRole),
                 eventId,
                 povRole,
-                playerType?.label ?? group?.label ?? interactionLabel ?? string.Empty,
-                playerType?.colorCue ?? ColorCueForDisplay(),
+                semantics.label,
+                semantics.colorCue,
                 AtmosphereCueForDisplay(povRole),
                 StaggeredIntensityForRole(povRole),
                 DistortDirectSpeechForDisplay(povRole),
-                playerType?.important ?? (group == null || group.important),
+                semantics.important,
                 linkedEntry,
                 titleForPov,
                 titlePendingForPov,
                 RawResponseFor(povRole),
                 TextDecorationContextForRole(povRole),
                 archivedGenerationStale,
-                boundaryRank: boundaryRank);
+                boundaryRank: boundaryRank,
+                entryTypeKey: semantics.entryTypeKey);
         }
 
         /// <summary>
@@ -1769,14 +1769,14 @@ namespace PawnDiary
         /// </summary>
         internal DiaryTextDecorationContext TextDecorationContextForRole(string povRole)
         {
-            PlayerEntryTypeSnapshot playerType = PlayerEntryTypeForRole(povRole);
+            PlayerEntrySemanticProjection semantics = SemanticProjectionForRole(povRole);
             DiaryTextDecorationContext context = new DiaryTextDecorationContext
             {
                 povRole = povRole,
                 defName = interactionDefName,
-                colorCue = playerType?.colorCue ?? ColorCueForDisplay(),
+                colorCue = semantics.colorCue,
                 atmosphereCue = AtmosphereCueForDisplay(povRole),
-                domain = playerType?.domain ?? DecorationDomainForContext(gameContext),
+                domain = semantics.domain,
                 gameContext = gameContext
             };
             DiaryTextDecorations.AddEventTagsFromContext(context, gameContext);
@@ -1968,8 +1968,45 @@ namespace PawnDiary
         /// <summary>Resolves importance for one displayed POV, honoring its optional player category.</summary>
         internal bool IsImportantForRole(string povRole)
         {
-            PlayerEntryTypeSnapshot playerType = PlayerEntryTypeForRole(povRole);
-            return playerType?.important ?? IsImportant();
+            return SemanticProjectionForRole(povRole).important;
+        }
+
+        /// <summary>Resolves the semantic domain for one POV, including a player category overlay.</summary>
+        internal string DomainForRole(string povRole)
+        {
+            return SemanticProjectionForRole(povRole).domain;
+        }
+
+        /// <summary>Resolves combat meaning for one POV without mistaking the Combat category for Raid.</summary>
+        internal bool IsCombatRelatedForRole(string povRole)
+        {
+            return SemanticProjectionForRole(povRole).combat;
+        }
+
+        /// <summary>Resolves reflection meaning for one POV, including the generic Reflection category.</summary>
+        internal bool IsReflectionForRole(string povRole)
+        {
+            return SemanticProjectionForRole(povRole).reflection;
+        }
+
+        /// <summary>
+        /// Central hot-event semantic projection. Source meaning is preserved for ordinary pages; a
+        /// per-POV player category replaces only its display/selection meaning.
+        /// </summary>
+        internal PlayerEntrySemanticProjection SemanticProjectionForRole(string povRole)
+        {
+            DiaryInteractionGroupDef group = GroupForDisplay();
+            string sourceDomain = DecorationDomainForContext(gameContext);
+            return PlayerEntrySemanticPolicy.Project(
+                PlayerEntryTypeForRole(povRole),
+                sourceDomain,
+                group?.label ?? interactionLabel ?? string.Empty,
+                ColorCueForDisplay(),
+                group == null || group.important,
+                IsCombatRelated(),
+                string.Equals(
+                    sourceDomain, DiaryEventDomainClassifier.Reflection,
+                    StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>

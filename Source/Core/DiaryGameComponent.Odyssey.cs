@@ -138,6 +138,21 @@ namespace PawnDiary
             return pawn != null && FindDiary(pawn, false) != null;
         }
 
+        /// <summary>
+        /// Excludes one exact pawn from narrating the currently active journey after a memory reset.
+        /// The shared journey remains intact for other crew, and a later travel commit replaces it with
+        /// a fresh state whose exclusion list is empty. Detached save state is handled even if Odyssey
+        /// is inactive now, so enabling the DLC on a later load cannot revive pre-wipe autobiography.
+        /// </summary>
+        private void ExcludeOdysseyWriterFromActiveJourney(string pawnId)
+        {
+            if (odysseyActiveJourney == null || string.IsNullOrWhiteSpace(pawnId)) return;
+            odysseyActiveJourney.memoryExcludedWriterPawnIds =
+                OdysseyWriterMemoryBoundaryPolicy.AddExcludedWriter(
+                    odysseyActiveJourney.memoryExcludedWriterPawnIds,
+                    pawnId);
+        }
+
         /// <summary>True once an exact destroy/scavenge Mechhive outcome is normalized and committed.</summary>
         internal bool HasCommittedOdysseyMechhiveOutcome => odysseyMechhiveOutcome != null;
 
@@ -688,6 +703,17 @@ namespace PawnDiary
             List<OdysseyWriterCandidate> writers = finish.writers != null && finish.writers.Count > 0
                 ? finish.writers
                 : correlated?.writers;
+            // A Brainwiped crew member may still be physically aboard, but this already-departed
+            // journey's origin/duration/launch-quality facts predate their new autobiographical epoch.
+            // Remove only that exact writer from both sources: the landing policy intentionally falls
+            // back to departure writers when live landing capture is empty, so filtering only the live
+            // list would resurrect a wiped sole writer through that compatibility path.
+            writers = OdysseyWriterMemoryBoundaryPolicy.ExcludeWriters(
+                writers,
+                journey.memoryExcludedWriterPawnIds);
+            journey.writers = OdysseyWriterMemoryBoundaryPolicy.ExcludeWriters(
+                journey.writers,
+                journey.memoryExcludedWriterPawnIds);
             DiaryInteractionGroupDef group = InteractionGroups.ClassifyGravshipJourney(
                 OdysseyEventDefNames.Landing);
             bool groupEnabled = ModsConfig.OdysseyActive

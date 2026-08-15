@@ -1,11 +1,12 @@
-// Pure private random stream for runtime diary-page admission. The game-facing component supplies
-// one gameplay-RNG-isolated seed when a loaded Game is constructed; every later admission advances
-// this stream instead of borrowing Verse.Rand. This keeps cosmetic page volume independent without
-// changing RimWorld's gameplay sequence. SplitMix64 is small, deterministic, and requires no runtime
-// dependency beyond the CLR types RimWorld's Mono already provides.
+// Pure private random stream for runtime diary decisions. The game-facing component supplies one
+// gameplay-RNG-isolated seed when a loaded Game is constructed, then owns separate instances for page
+// admission and psychotype rolls. Every later decision advances its own stream instead of borrowing
+// Verse.Rand. SplitMix64 is small, deterministic, and requires no runtime dependency beyond the CLR
+// types RimWorld's Mono already provides. The historical class name is retained for save/source
+// compatibility; instances are transient and never serialized.
 namespace PawnDiary
 {
-    /// <summary>An independently evolving random stream used only for one-shot diary admission.</summary>
+    /// <summary>An independently evolving random stream used for one-shot diary decisions.</summary>
     internal sealed class DiaryAdmissionRandom
     {
         // The increment is odd, so adding it visits every 64-bit state before repeating.

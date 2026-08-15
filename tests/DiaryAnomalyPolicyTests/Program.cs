@@ -44,6 +44,7 @@ namespace DiaryAnomalyPolicyTests
             TestCreepJoinerWriterSelectionAndBounds();
             TestCreepJoinerContextFirewall();
             TestCreepJoinerSurgicalDisclosurePolicy();
+            TestCreepJoinerMemoryReset();
             TestCreepJoinerSurgicalWriterAndContextFirewall();
             TestCreepJoinerSurgeryTaleOwnership();
             TestGhoulTransformationPolicy();
@@ -1034,6 +1035,32 @@ namespace DiaryAnomalyPolicyTests
                 !AnomalyRecentStudyCache.Matches("Entity_B", "Pawn_A", 160, 60));
             AssertTrue("recent studier mismatch fails",
                 !AnomalyRecentStudyCache.Matches("Entity_A", "Pawn_B", 160, 60));
+
+            AssertTrue("second researcher on same entity registers",
+                AnomalyRecentStudyCache.Register(new AnomalyRecentStudyFact
+                {
+                    studierPawnId = "Pawn_B",
+                    studiedEntityId = "Entity_A",
+                    studiedTick = 120
+                }, 160, 60));
+            AssertTrue("prefix-collision researcher registers",
+                AnomalyRecentStudyCache.Register(new AnomalyRecentStudyFact
+                {
+                    studierPawnId = "Pawn_AA",
+                    studiedEntityId = "Entity_C",
+                    studiedTick = 120
+                }, 160, 60));
+            AssertEqual("Brainwipe removes only exact recent studier rows", 1,
+                AnomalyRecentStudyCache.ForgetStudier(" Pawn_A "));
+            AssertTrue("Brainwipe preserves another and prefix-collision researcher",
+                AnomalyRecentStudyCache.Matches("Entity_A", "Pawn_B", 160, 60)
+                    && AnomalyRecentStudyCache.Matches("Entity_C", "Pawn_AA", 160, 60));
+            AssertEqual("blank recent studier reset is inert", 0,
+                AnomalyRecentStudyCache.ForgetStudier(" "));
+            AnomalyRecentStudyCache.Clear();
+
+            AssertTrue("recent exact study re-registers for expiry boundary",
+                AnomalyRecentStudyCache.Register(study, 100, 60));
             AssertTrue("recent study expires after exact boundary",
                 !AnomalyRecentStudyCache.Matches("Entity_A", "Pawn_A", 161, 60));
             AssertEqual("expired recent study pruned", 0, AnomalyRecentStudyCache.CountForTests);
@@ -1603,6 +1630,66 @@ namespace DiaryAnomalyPolicyTests
                 !preservedByArrival.terminal
                     && preservedByArrival.lastVisiblePhase == AnomalyOutcomeTokens.SurgicalReveal
                     && preservedByArrival.arrivalEventId == "Arrival_AfterReveal");
+        }
+
+        private static void TestCreepJoinerMemoryReset()
+        {
+            CreepJoinerArcSnapshot targetNonterminal = Arc(
+                AnomalyOutcomeTokens.SurgicalReveal, false);
+            targetNonterminal.pawnId = "Pawn_1";
+            targetNonterminal.arrivalEventId = "Arrival_PreWipe";
+            targetNonterminal.lastVisibleEventId = "Reveal_PreWipe";
+            CreepJoinerArcSnapshot targetTerminal = Arc(
+                AnomalyOutcomeTokens.Rejected, true);
+            targetTerminal.pawnId = "Pawn_1";
+            targetTerminal.lastVisibleEventId = "Terminal_World_Truth";
+            CreepJoinerArcSnapshot prefixCollision = Arc(
+                AnomalyOutcomeTokens.SurgicalReveal, false);
+            prefixCollision.pawnId = "Pawn_10";
+            CreepJoinerArcSnapshot unrelated = Arc(CreepJoinerPhaseTokens.Joined, false);
+            unrelated.pawnId = "Other";
+
+            List<CreepJoinerArcSnapshot> projected =
+                CreepJoinerMemoryResetPolicy.RemoveNonterminalForPawn(
+                    new List<CreepJoinerArcSnapshot>
+                    {
+                        targetNonterminal,
+                        targetTerminal,
+                        prefixCollision,
+                        unrelated
+                    },
+                    " Pawn_1 ");
+            AssertTrue("Brainwipe drops only the exact target nonterminal CreepJoiner arc",
+                !projected.Contains(targetNonterminal)
+                    && projected.Contains(targetTerminal)
+                    && projected.Contains(prefixCollision)
+                    && projected.Contains(unrelated));
+            AssertEqual("terminal CreepJoiner outcome remains a replay barrier",
+                "Terminal_World_Truth",
+                projected.Single(row => row.pawnId == "Pawn_1").lastVisibleEventId);
+
+            List<CreepJoinerArcSnapshot> freshRows =
+                CreepJoinerMemoryResetPolicy.RemoveNonterminalForPawn(
+                    new List<CreepJoinerArcSnapshot>
+                    {
+                        targetNonterminal,
+                        prefixCollision
+                    },
+                    "Pawn_1");
+            AssertTrue("exact target has no stale nonterminal row after reset",
+                freshRows.All(row => row.pawnId != "Pawn_1")
+                    && freshRows.Single().pawnId == "Pawn_10");
+            CreepJoinerSurgicalDisclosureFacts facts = SurgicalDisclosure();
+            facts.subjectPawnId = "Pawn_1";
+            facts.tick = 900;
+            CreepJoinerSurgicalDisclosurePlan freshPlan =
+                CreepJoinerSurgicalDisclosurePolicy.Plan(facts, null, null);
+            AssertTrue("post-wipe valid surgery opens fresh nonterminal continuity",
+                freshPlan.valid && freshPlan.advanceArc && freshPlan.writePage
+                    && !freshPlan.replaySuppressed
+                    && freshPlan.nextArc.pawnId == "Pawn_1"
+                    && freshPlan.nextArc.lastVisiblePhase
+                        == AnomalyOutcomeTokens.SurgicalReveal);
         }
 
         private static void TestCreepJoinerSurgicalWriterAndContextFirewall()

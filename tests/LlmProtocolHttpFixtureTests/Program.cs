@@ -47,6 +47,7 @@ namespace LlmProtocolHttpFixtureTests
             await TestGenerationPhysicalExchange();
             await TestPersistedOllamaFamilyOnFreshRequest();
             await TestGenerationNativeErrorRedactionAndCollision();
+            TestRequestAwareDiagnosticRedaction();
             await TestSingleCompletionRetryCapAndCancellation();
             await TestConfiguredDeadlineExpiresPhysicalSend();
             await TestQueuedMultiLaneFailover();
@@ -398,6 +399,28 @@ namespace LlmProtocolHttpFixtureTests
                 error.Message,
                 "RAW_NATIVE_BODY_MUST_NOT_LEAK");
 
+            const string trimmedSecret = "trimmed-generation-secret";
+            ScriptedExchange trimmedErrorExchange = new ScriptedExchange(Response(
+                HttpStatusCode.BadRequest,
+                "{\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\","
+                    + "\"message\":\"denied " + trimmedSecret + "\"}}"));
+            ApiEndpointConfig trimmedEndpoint = Endpoint(
+                "https://trimmed.api.anthropic.com/v1",
+                "  " + trimmedSecret + "  ",
+                "claude-trimmed-error",
+                ApiCompatibilityMode.AnthropicMessages,
+                ApiAuthMode.CustomHeader,
+                "x-api-key");
+            InvalidOperationException trimmedError = await ExpectThrowsAsync<InvalidOperationException>(
+                "trimmed generation key echo",
+                () => SendConnectionTest(trimmedEndpoint, "probe", 0.2f, trimmedErrorExchange));
+            AssertEqual("generation sends trimmed wire key", trimmedSecret,
+                Header(trimmedErrorExchange.Requests[0], "x-api-key"));
+            AssertNotContains("generation redacts bare trimmed key echo",
+                trimmedError.Message, trimmedSecret);
+            AssertContains("generation trimmed key echo leaves marker",
+                trimmedError.Message, "<redacted>");
+
             ScriptedExchange geminiFiltered = new ScriptedExchange(Response(
                 HttpStatusCode.OK,
                 "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"partial must be discarded\"}]},"
@@ -468,7 +491,57 @@ namespace LlmProtocolHttpFixtureTests
                 "generation collision error excludes secret",
                 collisionError.Message,
                 "must-never-be-attached");
+
+            ApiEndpointConfig rejectedHeader = Endpoint(
+                "https://rejected-header.example.test/v1",
+                "must-never-be-attached",
+                "header-rejection",
+                ApiCompatibilityMode.OpenAIChatCompletions,
+                ApiAuthMode.CustomHeader,
+                "Content-Type");
+            InvalidOperationException rejectedHeaderError =
+                await ExpectThrowsAsync<InvalidOperationException>(
+                    "generation request-header rejection",
+                    () => LlmClient.TestConnection(rejectedHeader, "probe", 30, 0.2f));
+            AssertEqual("generation rejected custom header before send", 0, sends);
+            AssertContains("generation rejected header diagnostic names field",
+                rejectedHeaderError.Message, "Content-Type");
+            AssertNotContains("generation rejected header diagnostic excludes secret",
+                rejectedHeaderError.Message, "must-never-be-attached");
             LlmClient.SendAsyncOverrideForTests = null;
+        }
+
+        private static void TestRequestAwareDiagnosticRedaction()
+        {
+            LlmGenerationRequest request = new LlmGenerationRequest
+            {
+                authMode = ApiAuthMode.CustomHeader,
+                apiKey = "  effective-wire-secret  ",
+                // This invalid saved name normalizes to x-goog-api-key on the wire. Diagnostic
+                // redaction must use that same effective name, not the stale raw settings text.
+                customAuthHeaderName = "Content Type"
+            };
+            MethodInfo trimForLog = typeof(LlmClient).GetMethod(
+                "TrimForLog",
+                BindingFlags.NonPublic | BindingFlags.Static,
+                null,
+                new[] { typeof(LlmGenerationRequest), typeof(string) },
+                null);
+            AssertTrue("request-aware diagnostic trimmer exists", trimForLog != null);
+
+            string diagnostic = (string)trimForLog.Invoke(
+                null,
+                new object[]
+                {
+                    request,
+                    "denied effective-wire-secret; x-goog-api-key: normalized-header-echo"
+                });
+            AssertNotContains("request-aware diagnostic masks trimmed wire key",
+                diagnostic, "effective-wire-secret");
+            AssertNotContains("request-aware diagnostic masks normalized header value",
+                diagnostic, "normalized-header-echo");
+            AssertContains("request-aware diagnostic retains redaction marker",
+                diagnostic, "<redacted>");
         }
 
         private static async Task TestSingleCompletionRetryCapAndCancellation()
@@ -949,6 +1022,28 @@ namespace LlmProtocolHttpFixtureTests
             AssertNotContains("model collision excludes secret", collision.Message, "collision-secret");
             ModelListClient.SendAsyncOverrideForTests = null;
 
+            int rejectedHeaderSends = 0;
+            ModelListClient.SendAsyncOverrideForTests = (request, option, token) =>
+            {
+                rejectedHeaderSends++;
+                return Task.FromResult(Response(HttpStatusCode.OK, "{}"));
+            };
+            InvalidOperationException rejectedHeader = await ExpectThrowsAsync<InvalidOperationException>(
+                "model request-header rejection",
+                () => ModelListClient.FetchModels(
+                    "https://api.example.test/v1",
+                    "must-never-be-attached",
+                    ApiAuthMode.CustomHeader,
+                    "Content-Type",
+                    ApiCompatibilityMode.OpenAIChatCompletions,
+                    30));
+            AssertEqual("model rejected custom header before send", 0, rejectedHeaderSends);
+            AssertContains("model rejected header diagnostic names field",
+                rejectedHeader.Message, "Content-Type");
+            AssertNotContains("model rejected header diagnostic excludes secret",
+                rejectedHeader.Message, "must-never-be-attached");
+            ModelListClient.SendAsyncOverrideForTests = null;
+
             int cancellationPages = 0;
             using (CancellationTokenSource callerCancellation = new CancellationTokenSource())
             {
@@ -1003,6 +1098,27 @@ namespace LlmProtocolHttpFixtureTests
             AssertNotContains("native model error redacts key", error.Message, errorSecret);
             AssertContains("native model error redaction marker", error.Message, "<redacted>");
             AssertNotContains("native model error excludes raw body field", error.Message, "RAW_MODEL_BODY_MUST_NOT_LEAK");
+
+            const string trimmedModelSecret = "trimmed-model-secret";
+            ScriptedExchange trimmedNativeError = new ScriptedExchange(Response(
+                HttpStatusCode.BadRequest,
+                "{\"error\":{\"message\":\"denied " + trimmedModelSecret + "\"}}"));
+            InvalidOperationException trimmedModelError =
+                await ExpectThrowsAsync<InvalidOperationException>(
+                    "trimmed native model key echo",
+                    () => FetchModels(
+                        "https://generativelanguage.googleapis.com/v1beta",
+                        "  " + trimmedModelSecret + "  ",
+                        ApiAuthMode.CustomHeader,
+                        "x-goog-api-key",
+                        ApiCompatibilityMode.GeminiGenerateContent,
+                        trimmedNativeError));
+            AssertEqual("model discovery sends trimmed wire key", trimmedModelSecret,
+                Header(trimmedNativeError.Requests[0], "x-goog-api-key"));
+            AssertNotContains("model discovery redacts bare trimmed key echo",
+                trimmedModelError.Message, trimmedModelSecret);
+            AssertContains("model trimmed key echo leaves marker",
+                trimmedModelError.Message, "<redacted>");
 
             const string malformedSecret = "malformed-model-secret";
             ScriptedExchange malformed = new ScriptedExchange(Response(

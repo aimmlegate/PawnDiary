@@ -889,6 +889,21 @@ namespace PawnDiary
             return removed;
         }
 
+        /// <summary>
+        /// Reopens post-Brainwipe social pacing for one exact writer. Completed writer cooldowns and
+        /// unordered pair cooldowns still describe pre-wipe autobiography, while handled-source claims
+        /// and subject-only pending rows remain global/other-writer ownership and deliberately survive.
+        /// </summary>
+        private void ForgetSocialReflectionCooldownsForPawn(string pawnId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId)) return;
+            EnsureSocialReflectionLists();
+            socialReflectionWriterCooldowns.RemoveAll(row => row != null
+                && string.Equals(row.writerPawnId, pawnId, StringComparison.Ordinal));
+            socialReflectionPairCooldowns.RemoveAll(row => row != null
+                && SocialReflectionPolicy.PairKeyContainsPawn(row.pairKey, pawnId));
+        }
+
         private void CancelPendingSocialReflection(
             PendingSocialReflectionState row,
             bool eventWasRegistered)

@@ -386,6 +386,15 @@ namespace PawnDiary.Capture
             state.lastRecordedTick = Math.Max(0, observedTick);
         }
 
+        /// <summary>Restarts the autobiographical lifetime/cooldown counters at Brainwipe.</summary>
+        public static void ForgetMemory(DeathrestObservationState state)
+        {
+            if (state == null) return;
+            state.observationVersion = CurrentObservationVersion;
+            state.severeInterruptionsRecorded = 0;
+            state.lastRecordedTick = -1;
+        }
+
         public static void Normalize(DeathrestObservationState state, int nowTick)
         {
             if (state == null) return;

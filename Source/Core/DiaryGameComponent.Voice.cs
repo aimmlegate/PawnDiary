@@ -129,7 +129,12 @@ namespace PawnDiary
 
         private string RollPsychotypeFor(Pawn pawn, string band, string childCarryDefName, string excludePawnId)
         {
-            return PsychotypeRolls.Roll(pawn, band, BuildUsedPsychotypeCounts(excludePawnId, band), childCarryDefName);
+            return PsychotypeRolls.Roll(
+                pawn,
+                band,
+                BuildUsedPsychotypeCounts(excludePawnId, band),
+                childCarryDefName,
+                psychotypeRollRandom.NextUnitFloat);
         }
 
         private string RollStyleFor(Pawn pawn, string band, string excludePawnId)

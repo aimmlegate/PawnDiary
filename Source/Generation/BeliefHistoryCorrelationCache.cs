@@ -29,6 +29,12 @@ namespace PawnDiary
                 : Buffer.NearbyDefNames(pawnId, eventTick, policy.historyCorrelationWindowTicks);
         }
 
+        /// <summary>Forgets only one exact pawn's membership in recent shared history evidence.</summary>
+        public static int ForgetPawn(string pawnId)
+        {
+            return Buffer.ForgetPawn(pawnId);
+        }
+
         public static void Reset()
         {
             Buffer.Clear();

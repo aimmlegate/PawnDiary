@@ -37,6 +37,12 @@ namespace PawnDiary
                 : Buffer.PeekLatest(pawnId, eventTick, policy.mutationCorrelationWindowTicks);
         }
 
+        /// <summary>Forgets one exact pawn's evidence without rewinding global call ordering.</summary>
+        public static int ForgetPawn(string pawnId)
+        {
+            return Buffer.ForgetPawn(pawnId);
+        }
+
         /// <summary>Clears every row and ordering token at a game/test boundary.</summary>
         public static void Reset()
         {

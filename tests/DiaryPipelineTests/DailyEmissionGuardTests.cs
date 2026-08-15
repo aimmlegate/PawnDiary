@@ -78,6 +78,54 @@ namespace DiaryPipelineTests
                 "a malformed frequency-rejection day fails closed",
                 !DailyEmissionGuardPolicy.IsInteractionKeyForDay(
                     "quietSocial|ambient|Pawn_E|not-a-day", 44));
+
+            AssertTrue(
+                "Brainwipe ownership recognizes an exact ambient-interaction pawn",
+                DailyEmissionGuardPolicy.IsInteractionKeyForPawn(
+                    "quietSocial|ambient|Pawn_E|44", "Pawn_E"));
+            AssertTrue(
+                "Brainwipe interaction ownership rejects a prefixed pawn collision",
+                !DailyEmissionGuardPolicy.IsInteractionKeyForPawn(
+                    "quietSocial|ambient|Pawn_EE|44", "Pawn_E"));
+            AssertTrue(
+                "Brainwipe ownership recognizes an exact ambient-thought pawn",
+                DailyEmissionGuardPolicy.IsThoughtKeyForPawn(
+                    "thoughtAmbient|Pawn_E|44", "Pawn_E"));
+            AssertTrue(
+                "Brainwipe thought ownership rejects a prefixed pawn collision",
+                !DailyEmissionGuardPolicy.IsThoughtKeyForPawn(
+                    "thoughtAmbient|Pawn_EE|44", "Pawn_E"));
+            AssertTrue(
+                "Brainwipe ownership recognizes an exact pawn/day key",
+                DailyEmissionGuardPolicy.IsPawnDayKey("Pawn_E|44", "Pawn_E"));
+            AssertTrue(
+                "Brainwipe pawn/day ownership rejects a prefixed pawn collision",
+                !DailyEmissionGuardPolicy.IsPawnDayKey("Pawn_EE|44", "Pawn_E"));
+            AssertTrue(
+                "Brainwipe recognizes the exact outbound opinion owner",
+                DailyEmissionGuardPolicy.IsOutboundOpinionKeyForPawn(
+                    "Pawn_E|Pawn_F", "Pawn_E"));
+            AssertTrue(
+                "Brainwipe outbound opinion ownership rejects a prefixed pawn collision",
+                !DailyEmissionGuardPolicy.IsOutboundOpinionKeyForPawn(
+                    "Pawn_EE|Pawn_F", "Pawn_E"));
+            AssertTrue(
+                "Brainwipe preserves another pawn's inbound opinion baseline",
+                !DailyEmissionGuardPolicy.IsOutboundOpinionKeyForPawn(
+                    "Pawn_F|Pawn_E", "Pawn_E"));
+            AssertTrue(
+                "Brainwipe opinion ownership rejects malformed pair keys",
+                !DailyEmissionGuardPolicy.IsOutboundOpinionKeyForPawn("Pawn_E|", "Pawn_E")
+                    && !DailyEmissionGuardPolicy.IsOutboundOpinionKeyForPawn("|Pawn_F", "Pawn_E"));
+            AssertTrue(
+                "Brainwipe ownership fails closed for blank pawn IDs",
+                !DailyEmissionGuardPolicy.IsInteractionKeyForPawn(
+                    "quietSocial|ambient|Pawn_E|44", " ")
+                    && !DailyEmissionGuardPolicy.IsThoughtKeyForPawn(
+                        "thoughtAmbient|Pawn_E|44", null)
+                    && !DailyEmissionGuardPolicy.IsPawnDayKey("Pawn_E|44", string.Empty)
+                    && !DailyEmissionGuardPolicy.IsOutboundOpinionKeyForPawn(
+                        "Pawn_E|Pawn_F", " "));
         }
     }
 }

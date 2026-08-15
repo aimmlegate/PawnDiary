@@ -18,6 +18,17 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Returns whether a static navigation request belongs to another loaded game. A request made
+        /// before this view's first draw is retained when it already names the current component.
+        /// </summary>
+        public static bool ShouldClearPendingRequest(
+            object requestSession,
+            object currentSession)
+        {
+            return SessionChanged(requestSession, currentSession);
+        }
+
+        /// <summary>
         /// Returns whether a reader-directory cache belongs to another game or component instance.
         /// </summary>
         public static bool ReaderDirectorySessionChanged(

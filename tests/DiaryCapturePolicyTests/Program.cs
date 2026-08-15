@@ -104,6 +104,7 @@ namespace DiaryCapturePolicyTests
             TestGenericEventTypeDedupKeys();
             TestEmitPlans();
             TestRecentEventExpiry();
+            TestPawnScopedTransientKeys();
             TestGroupNameMatcher();
 
             Console.WriteLine("DiaryCapturePolicyTests passed " + assertions + " assertions.");
@@ -817,6 +818,126 @@ namespace DiaryCapturePolicyTests
                 BodyPartEventPolicy.CauseToken(true, "Cut"));
             AssertEqual("old loss cause unknown", "unknown",
                 BodyPartEventPolicy.CauseToken(false, "Cut"));
+        }
+
+        private static void TestPawnScopedTransientKeys()
+        {
+            const string target = "Pawn_1";
+            AssertTrue("progression first token matches exact pawn",
+                PawnScopedTransientKeyPolicy.StartsWithPawnToken("Pawn_1|hunger", target));
+            AssertTrue("progression prefix collision does not match",
+                !PawnScopedTransientKeyPolicy.StartsWithPawnToken("Pawn_10|hunger", target));
+            AssertTrue("progression later token does not count as owner",
+                !PawnScopedTransientKeyPolicy.StartsWithPawnToken("other|Pawn_1", target));
+            AssertTrue("progression malformed inputs do not match",
+                !PawnScopedTransientKeyPolicy.StartsWithPawnToken("Pawn_1", target)
+                    && !PawnScopedTransientKeyPolicy.StartsWithPawnToken("Pawn_1|x", " ")
+                    && !PawnScopedTransientKeyPolicy.StartsWithPawnToken("Pawn_1|x", "Pawn|1"));
+
+            AssertTrue("recent pawn token matches in key middle",
+                PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                    "thought|Pawn_1|AteWithoutTable", target));
+            AssertTrue("recent pawn token matches at key end",
+                PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                    "event-type|DeathDescription|Pawn_1", target));
+            AssertTrue("recent pair key matches either exact owner",
+                PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                    "romance|Pawn_0|Pawn_1|Lover", target));
+            AssertTrue("recent prefix collision does not match",
+                !PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                    "thought|Pawn_10|AteWithoutTable", target));
+            AssertTrue("recent partial token does not match",
+                !PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                    "thought|prefixPawn_1suffix|AteWithoutTable", target));
+            AssertTrue("recent malformed inputs do not match",
+                !PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(null, target)
+                    && !PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn("", target)
+                    && !PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                        "thought|Pawn_1|AteWithoutTable", "Pawn|1"));
+            AssertTrue("standard external pawn ownership is recognized",
+                PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                    "external|standardEvent|Pawn_1", target)
+                    && PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                        "external|standardEvent|Pawn_0|Pawn_1", target)
+                    && !PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                        "external|ambiguous|Pawn_1|Pawn_2|extra", target));
+            string[] progressionOwnerKeys =
+            {
+                "ability|Pawn_1|Skip|Target|123",
+                "progression-gene|Pawn_1|xenotype_changed",
+                "progression-trait|Pawn_1|Kind|0",
+                "anniversary-birthday|Pawn_1|30",
+                "anniversary-arrival|Pawn_1|5",
+                "anniversary-death|Pawn_1|memory-key",
+                "anniversary-record|Pawn_1|Kills|100",
+                "biotech-deathrest-interrupted|Pawn_1|2",
+                "mechanitor-mechlink-install|Pawn_1",
+                "mechanitor-mechlink-remove|Pawn_1",
+                "mechanitor-first-mech|Pawn_1",
+                "mechanitor-first-combat|Pawn_1",
+                "mechanitor-mech-loss|Pawn_1|Mech_9",
+                "mechanitor-boss-called|Pawn_1|Diabolus|123",
+                "mechanitor-boss-defeated|Pawn_1|Diabolus|123",
+                "royalty-psylink|Pawn_1|123",
+                "royalty-title|Pawn_1|Empire|promotion|Yeoman|Acolyte|123"
+            };
+            for (int i = 0; i < progressionOwnerKeys.Length; i++)
+            {
+                AssertTrue("progression recent key owns exact writer " + i,
+                    PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                        progressionOwnerKeys[i], target));
+                AssertTrue("progression recent key rejects prefix writer " + i,
+                    !PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                        progressionOwnerKeys[i].Replace("Pawn_1", "Pawn_10"), target));
+            }
+            AssertTrue("Royal succession keys belong only to exact heir token",
+                PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                    "royal-heir-appointment|Pawn_0|Pawn_1|Empire|Acolyte|123", target)
+                    && PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                        "royal-succession|Pawn_0|Pawn_1|Empire|Acolyte|123", target)
+                    && !PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                        "royal-heir-appointment|Pawn_1|Pawn_0|Empire|Acolyte|123", target)
+                    && !PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                        "royal-succession|Pawn_1|Pawn_0|Empire|Acolyte|123", target));
+            AssertTrue("pawn-looking non-owner progression fields are preserved",
+                !PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                    "anniversary-death|Pawn_0|memory-Pawn_1", target)
+                    && !PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                        "mechanitor-mech-loss|Pawn_0|Pawn_1", target));
+            AssertTrue("opaque and external custom IDs are conservatively preserved",
+                !PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                    "external-custom|customEvent|Pawn_1", target)
+                && !PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                    "external-opaque|adapter|Pawn_1|Pawn_2", target)
+                && !PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                    "anomaly-event|study|Pawn_1", target)
+                && !PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                    "persona-weapon|Pawn_1|2|active", target)
+                && !PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                    "social-reflection|6:source6:Pawn_1", target)
+                && !PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                    "growth|biotech-family|Pawn_1|7", target)
+                && !PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                    "birth|biotech-family|Pawn_1", target)
+                && !PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                    "odyssey|Landing|Pawn_1", target));
+
+            string[] colonyKeys =
+            {
+                "raid|RaidEnemy|0|Pirate|Pawn_1",
+                "quest|Pawn_1|accepted",
+                "moodevent|Condition|Pawn_1",
+                "ritual|Bestowing|Pawn_1|Pawn_2|100",
+                "ritual_fixture|Bestowing|Pawn_1|Pawn_2|100",
+                "psychic_ritual|Brainwipe|Pawn_1|100",
+                "psychic_ritual_fixture|Brainwipe|Pawn_1|Pawn_2|100"
+            };
+            for (int i = 0; i < colonyKeys.Length; i++)
+            {
+                AssertTrue("colony recent key survives pawn wipe " + i,
+                    !PawnScopedTransientKeyPolicy.RecentEventKeyBelongsToPawn(
+                        colonyKeys[i], target));
+            }
         }
 
         private static void TestPermanentBodyChangeGenerationPolicy()
@@ -3496,6 +3617,9 @@ namespace DiaryCapturePolicyTests
             AssertEqual("external self partner uses solo dedup key",
                 "external|rimtalk_chat|A",
                 External(key: "rimtalk_chat", subject: "A", partner: "A", partnerEligible: true).DedupKey());
+            AssertEqual("pipe-bearing external event key stays deduplicated in opaque namespace",
+                "external-opaque|adapter|subevent|A",
+                External(key: "adapter|subevent", subject: "A").DedupKey());
         }
 
         private static void TestExternalBuildGameContextFormat()

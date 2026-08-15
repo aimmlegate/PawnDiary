@@ -495,10 +495,26 @@ namespace PawnDiary
                 return;
             }
 
+            bool childEligible = IsDiaryEligible(pawn);
+            bool supporterEligible = IsDiaryEligible(supporterPawn);
+            GrowthWriterShape writerShape = GrowthWriterPolicy.Decide(
+                mutation?.childId,
+                childEligible,
+                supporterEligible ? mutation?.supporter : null);
+            bool childPovConsumed = writerShape == GrowthWriterShape.ChildSolo
+                || writerShape == GrowthWriterShape.Pair;
+            bool adultPovConsumed = writerShape == GrowthWriterShape.SupporterSolo
+                || writerShape == GrowthWriterShape.Pair;
+
             if (HasRecordedBiotechGrowth(pawn?.GetUniqueLoadID(), birthdayAge))
             {
                 ConsumeBiotechGrowthProgression(pawn, before, after, birthdayAge);
-                MarkBiotechGrowthFamilySummarized(familyArc, birthdayAge);
+                MarkBiotechGrowthFamilySummarized(
+                    familyArc,
+                    birthdayAge,
+                    childPovConsumed,
+                    adultPovConsumed,
+                    mutation?.supporter?.adultId);
                 return;
             }
 
@@ -510,9 +526,9 @@ namespace PawnDiary
                     PawnId = mutation.childId,
                     ChildId = mutation.childId,
                     Age = mutation.age,
-                    ChildEligible = IsDiaryEligible(pawn),
+                    ChildEligible = childEligible,
                     SupporterId = mutation.supporter?.adultId ?? string.Empty,
-                    SupporterEligible = IsDiaryEligible(supporterPawn),
+                    SupporterEligible = supporterEligible,
                     HasVerifiedMutation = true,
                     AlreadyRecorded = false
                 };
@@ -524,8 +540,14 @@ namespace PawnDiary
                     familyArc));
                 settled = DiaryDispatchOutcomePolicy.SettlesSource(outcome);
                 // Settings can suppress the page, but the canonical birthday still consumes the
-                // current upbringing interval so the same lesson history is not narrated at age 10/13.
-                MarkBiotechGrowthFamilySummarized(familyArc, birthdayAge);
+                // evidence visible to its owner so the same lesson history is not narrated at age 10/13.
+                // A wiped child's detached interval deliberately leaves older adult-only evidence open.
+                MarkBiotechGrowthFamilySummarized(
+                    familyArc,
+                    birthdayAge,
+                    childPovConsumed,
+                    adultPovConsumed,
+                    mutation.supporter?.adultId);
             }
 
             ConsumeBiotechGrowthProgression(pawn, before, after, birthdayAge);

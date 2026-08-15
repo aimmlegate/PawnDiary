@@ -194,7 +194,7 @@ namespace PawnDiary
 
                     if (hotReferencedEventIds.Contains(eventId))
                     {
-                        stateChanged |= DetachPurgedSharedRoleForDev(diaryEvent, pawnId);
+                        stateChanged |= DetachRetiredSharedRole(diaryEvent, pawnId);
                     }
                     else
                     {
@@ -222,62 +222,6 @@ namespace PawnDiary
             }
 
             return removed;
-        }
-
-        /// <summary>
-        /// Retires only the selected pawn's role on a shared event. The other role and all frozen text
-        /// stay intact for its surviving diary page; clearing this role's owner ID makes late results
-        /// harmless and prevents global history scans from treating the purged pawn as still involved.
-        /// </summary>
-        private bool DetachPurgedSharedRoleForDev(DiaryEvent diaryEvent, string pawnId)
-        {
-            if (diaryEvent == null || string.IsNullOrWhiteSpace(pawnId))
-            {
-                return false;
-            }
-
-            string povRole = diaryEvent.RoleForPawn(pawnId);
-            if (!DiaryEvent.RoleIsInitiatorOrRecipient(povRole))
-            {
-                return false;
-            }
-
-            bool purgedInitiator = DiaryEvent.RoleEquals(povRole, DiaryEvent.InitiatorRole);
-            diaryEvent.MarkSkipped(povRole, string.Empty);
-            if (purgedInitiator)
-            {
-                diaryEvent.initiatorTitleStatus = DiaryEvent.SkippedStatus;
-            }
-            else
-            {
-                diaryEvent.recipientTitleStatus = DiaryEvent.SkippedStatus;
-            }
-
-            // Publish the terminal state while the old owner ID still exists, then sever ownership.
-            NotifyEntryStatusChanged(diaryEvent, povRole);
-            if (purgedInitiator)
-            {
-                diaryEvent.initiatorPawnId = string.Empty;
-            }
-            else
-            {
-                diaryEvent.recipientPawnId = string.Empty;
-            }
-
-            string workKey = diaryEvent.eventId + "|" + povRole;
-            delayedRaidGenerationReadyTicks.Remove(workKey);
-            orphanCandidatesLastScan.Remove(workKey);
-            DiaryStateVersion.Bump();
-
-            // Sequential pairs normally wait for the initiator result before queueing the recipient.
-            // Purge may cancel or discard that result, so release the surviving recipient immediately;
-            // CanQueueGeneration keeps this harmless when it was already queued or completed.
-            if (purgedInitiator && !diaryEvent.solo)
-            {
-                QueueSequentialPairwiseRewrite(diaryEvent);
-            }
-
-            return true;
         }
 
         /// <summary>

@@ -191,6 +191,10 @@ namespace PawnDiary
         // pawn's generated entry list is available and its card layout has a stable offset.
         private static string pendingScrollPawnId;
         private static string pendingScrollEventId;
+        // Static navigation survives the individual tab instance, but must not cross loaded games.
+        // A weak owner lets first draw preserve a just-created request for this session while rejecting
+        // a stale prior-Game request, without a static reference retaining the previous save graph.
+        private static WeakReference pendingScrollSessionComponent;
         // Manual creation opts into clearing only the filters that would hide its new page. Ordinary
         // Social-tab/link jumps retain the player's filters and preserve their existing semantics.
         private static bool pendingScrollRevealEvenIfFiltered;
@@ -253,6 +257,10 @@ namespace PawnDiary
         {
             pendingScrollPawnId = pawnId;
             pendingScrollEventId = eventId;
+            DiaryGameComponent requestSession = DiaryGameComponent.Instance;
+            pendingScrollSessionComponent = requestSession == null
+                ? null
+                : new WeakReference(requestSession);
             pendingScrollRevealEvenIfFiltered = revealEvenIfFiltered;
         }
 
@@ -263,6 +271,7 @@ namespace PawnDiary
         {
             pendingScrollPawnId = null;
             pendingScrollEventId = null;
+            pendingScrollSessionComponent = null;
             pendingScrollRevealEvenIfFiltered = false;
         }
 

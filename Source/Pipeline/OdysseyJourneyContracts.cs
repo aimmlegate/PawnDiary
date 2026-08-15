@@ -351,6 +351,9 @@ namespace PawnDiary
         public bool baselineOnly;
         public bool landingApplied;
         public List<OdysseyWriterCandidate> writers = new List<OdysseyWriterCandidate>();
+        // Brainwipe is personal, while the journey is shared world truth. These exact IDs suppress only
+        // the affected pawn's landing POV for this already-departed journey; a new journey starts empty.
+        public List<string> memoryExcludedWriterPawnIds = new List<string>();
     }
 
     /// <summary>Successful-finish input assembled before pure landing planning.</summary>

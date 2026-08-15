@@ -312,6 +312,25 @@ namespace PawnDiary.Capture
     /// <summary>Pure Phase-6 truth and salience decisions.</summary>
     internal static class MechanitorLifecyclePolicy
     {
+        /// <summary>
+        /// Restarts only live mech-service clocks at a Brainwipe boundary. Completed loss rows stay
+        /// byte-for-byte intact because their <see cref="MechanitorMechObservationState.lossObserved"/>
+        /// flag is the durable deduplication record for that mech identity.
+        /// </summary>
+        public static void RebaselineActiveMechsAfterMemoryReset(
+            IList<MechanitorMechObservationState> observedMechs,
+            int wipeTick)
+        {
+            if (observedMechs == null) return;
+            int boundaryTick = Math.Max(0, wipeTick);
+            for (int i = 0; i < observedMechs.Count; i++)
+            {
+                MechanitorMechObservationState row = observedMechs[i];
+                if (row != null && !row.lossObserved)
+                    row.firstObservedTick = boundaryTick;
+            }
+        }
+
         /// <summary>Vanilla numerical names such as “Lifter 1” are not player-named identity.</summary>
         public static bool IsPlayerNamed(MechanitorMechSnapshot mech)
         {

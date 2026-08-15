@@ -691,4 +691,10 @@
   <!-- Quality Wave H1: добавленные в конец подписи для самых заметных мгновений собственного боя. -->
   <DiaryPromptTemplate_PairCombat.fields.33.label>моменты боя</DiaryPromptTemplate_PairCombat.fields.33.label>
   <DiaryPromptTemplate_SoloImportant.fields.137.label>моменты боя</DiaryPromptTemplate_SoloImportant.fields.137.label>
+  <!-- Контракт контекста редактора; все строки добавлены в конец, чтобы сохранить старые индексы. -->
+  <DiaryPromptTemplate_SoloDefault.fields.57.label>ты</DiaryPromptTemplate_SoloDefault.fields.57.label>
+  <DiaryPromptTemplate_SoloDefault.fields.58.label>важные отношения</DiaryPromptTemplate_SoloDefault.fields.58.label>
+  <DiaryPromptTemplate_SoloImportant.fields.138.label>важные отношения</DiaryPromptTemplate_SoloImportant.fields.138.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.42.label>контекст поселенца</DiaryPromptTemplate_SoloInternalState.fields.42.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.43.label>важные отношения</DiaryPromptTemplate_SoloInternalState.fields.43.label>
 </LanguageData>

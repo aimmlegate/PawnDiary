@@ -304,6 +304,13 @@ namespace PawnDiary
             AssertContains("gemini thinking headroom respects provider cap",
                 LlmProtocolRequestJson.Build(gemini3),
                 "\"maxOutputTokens\":500,\"thinkingConfig\":{\"thinkingLevel\":\"low\"}");
+            LlmProtocolRequestInput gemini3Tuned = Request(LlmProtocolMode.GeminiGenerateContent);
+            gemini3Tuned.ModelName = "gemini-3.6-flash";
+            gemini3Tuned.MaxTokens = 40;
+            gemini3Tuned.LowThinkingHeadroomTokens = 96;
+            AssertContains("gemini uses detached XML headroom snapshot",
+                LlmProtocolRequestJson.Build(gemini3Tuned),
+                "\"maxOutputTokens\":136,\"thinkingConfig\":{\"thinkingLevel\":\"low\"}");
 
             LlmProtocolRequestInput geminiImage = Request(LlmProtocolMode.GeminiGenerateContent);
             geminiImage.ModelName = "gemini-2.5-flash-image";
@@ -375,6 +382,15 @@ namespace PawnDiary
             gptOss.ProviderMaximumOutputTokens = 500;
             AssertContains("ollama gpt-oss headroom respects provider cap",
                 LlmProtocolRequestJson.Build(gptOss), "\"num_predict\":500");
+            LlmProtocolRequestInput tunedGptOss = Request(LlmProtocolMode.OllamaChat);
+            tunedGptOss.ModelName = "gpt-oss:20b";
+            tunedGptOss.MaxTokens = 32;
+            tunedGptOss.LowThinkingHeadroomTokens = 96;
+            AssertContains("ollama gpt-oss uses detached XML headroom snapshot",
+                LlmProtocolRequestJson.Build(tunedGptOss), "\"num_predict\":128");
+            tunedGptOss.LowThinkingHeadroomTokens = -1;
+            AssertContains("corrupt low-thinking snapshot uses safe fallback",
+                LlmProtocolRequestJson.Build(tunedGptOss), "\"num_predict\":1056");
 
             LlmProtocolRequestInput aliasedGptOss = Request(LlmProtocolMode.OllamaChat);
             aliasedGptOss.ModelName = "diary-writer:latest";
