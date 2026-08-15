@@ -742,6 +742,277 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Any XML template opted into the composer must cross the Def-to-pure boundary under its exact
+        /// key; showing a custom row and then silently planning with SoloDefault is forbidden.
+        /// </summary>
+        [Test]
+        public static void CustomPlayerSelectableTemplateIsCopiedIntoPromptPolicy()
+        {
+            const string customKey = "RimTestPlayerSelectableCustom";
+            DiaryPromptTemplateDef custom = new DiaryPromptTemplateDef
+            {
+                defName = "PawnDiary_RimTest_PlayerSelectableCustom",
+                label = "fixture custom template",
+                description = "Fixture-only custom composer template.",
+                templateKey = customKey,
+                playerSelectable = true,
+                playerOrder = 777,
+                systemPrompt = "CUSTOM_TEMPLATE_SYSTEM_SENTINEL",
+                finalInstruction = "CUSTOM_TEMPLATE_FINAL_SENTINEL",
+                maxTokens = 277,
+                fields = new List<DiaryPromptFieldDef>
+                {
+                    new DiaryPromptFieldDef
+                    {
+                        label = "fixture facts",
+                        source = "PovText"
+                    }
+                }
+            };
+            List<DiaryPromptTemplateDef> defs =
+                DefDatabase<DiaryPromptTemplateDef>.AllDefsListForReading;
+            defs.Add(custom);
+            scope.RegisterCleanup(() => defs.Remove(custom));
+
+            List<PlayerEntryTemplateSnapshot> uiRows = DiaryPlayerPromptTemplates.ForUi();
+            DiaryPolicySnapshot policy = DiaryPipelineAdapters.PolicyFor(
+                new DiaryEventPayload
+                {
+                    defName = "PlayerPersonal",
+                    playerEntryTypeKey = "Personal",
+                    solo = true,
+                    display = new DiaryDisplayPayload { important = false }
+                });
+            PlayerEntryTemplateSnapshot uiRow = uiRows.Find(row => string.Equals(
+                row?.templateKey, customKey, StringComparison.OrdinalIgnoreCase));
+            DiaryTemplatePolicy copied = policy.templates.Find(row => string.Equals(
+                row?.templateKey, customKey, StringComparison.OrdinalIgnoreCase));
+            PawnDiaryRimTestScope.Require(
+                uiRow != null
+                    && copied != null
+                    && copied.playerSelectable
+                    && copied.maxTokens == 277
+                    && string.Equals(
+                        copied.systemPrompt, custom.systemPrompt, StringComparison.Ordinal)
+                    && copied.fields.Count == 1
+                    && string.Equals(
+                        copied.fields[0].source, "PovText", StringComparison.Ordinal),
+                "A custom player-selectable template was shown by the UI but absent/corrupt in prompt policy.");
+        }
+
+        /// <summary>
+        /// A non-selectable patch Def may share a built-in template key. The fixed policy bootstrap must
+        /// be replaced by the exact first selectable Def that the composer exposes for that key.
+        /// </summary>
+        [Test]
+        public static void NonSelectableBuiltInKeyCollisionKeepsSelectableTemplateBound()
+        {
+            DiaryPromptTemplateDef collision = new DiaryPromptTemplateDef
+            {
+                defName = "PawnDiary_RimTest_NonSelectableSoloDefaultCollision",
+                label = "hidden collision",
+                templateKey = DiaryPipelineTemplates.SoloDefault,
+                playerSelectable = false,
+                playerOrder = -999,
+                systemPrompt = "NON_SELECTABLE_BUILT_IN_COLLISION_MUST_NOT_BIND",
+                maxTokens = 991,
+                fields = new List<DiaryPromptFieldDef>
+                {
+                    new DiaryPromptFieldDef { label = "wrong", source = "EntryText" }
+                }
+            };
+            List<DiaryPromptTemplateDef> defs =
+                DefDatabase<DiaryPromptTemplateDef>.AllDefsListForReading;
+            defs.Insert(0, collision);
+            scope.RegisterCleanup(() => defs.Remove(collision));
+
+            DiaryPromptTemplateDef expected = defs.Find(row =>
+                !ReferenceEquals(row, collision)
+                    && row != null
+                    && row.playerSelectable
+                    && string.Equals(
+                        row.templateKey,
+                        DiaryPipelineTemplates.SoloDefault,
+                        StringComparison.OrdinalIgnoreCase));
+            List<PlayerEntryTemplateSnapshot> uiRows = DiaryPlayerPromptTemplates.ForUi();
+            DiaryPolicySnapshot policy = DiaryPipelineAdapters.PolicyFor(
+                new DiaryEventPayload
+                {
+                    defName = "PlayerPersonal",
+                    playerEntryTypeKey = "Personal",
+                    solo = true,
+                    display = new DiaryDisplayPayload { important = false }
+                });
+            PlayerEntryTemplateSnapshot uiRow = uiRows.Find(row => string.Equals(
+                row?.templateKey,
+                DiaryPipelineTemplates.SoloDefault,
+                StringComparison.OrdinalIgnoreCase));
+            DiaryTemplatePolicy copied = policy.templates.Find(row => string.Equals(
+                row?.templateKey,
+                DiaryPipelineTemplates.SoloDefault,
+                StringComparison.OrdinalIgnoreCase));
+            string expectedSystemPrompt = DiaryPromptTemplates.SystemPromptFor(
+                expected, DiaryPipelineTemplates.SoloDefault);
+            List<DiaryPromptFieldDef> expectedFields = DiaryPromptTemplates.FieldsFor(
+                expected, DiaryPipelineTemplates.SoloDefault);
+            PawnDiaryRimTestScope.Require(
+                expected != null
+                    && uiRow != null
+                    && uiRow.displayOrder == expected.playerOrder
+                    && copied != null
+                    && copied.playerSelectable
+                    && copied.playerOrder == expected.playerOrder
+                    && copied.maxTokens == expected.maxTokens
+                    && string.Equals(
+                        copied.systemPrompt, expectedSystemPrompt, StringComparison.Ordinal)
+                    && copied.fields.Count == expectedFields.Count
+                    && copied.fields.Count > 0
+                    && string.Equals(
+                        copied.fields[0].source, expectedFields[0].source, StringComparison.Ordinal)
+                    && !string.Equals(
+                        copied.systemPrompt, collision.systemPrompt, StringComparison.Ordinal),
+                "A hidden built-in-key collision rebound the policy away from the UI's selectable Def.");
+        }
+
+        /// <summary>
+        /// A different template whose defName aliases a selectable templateKey must not hijack the
+        /// policy after the UI has selected the later exact Def.
+        /// </summary>
+        [Test]
+        public static void DefNameAliasCollisionKeepsCustomSelectableTemplateBound()
+        {
+            const string customKey = "RimTestSelectableAliasTarget";
+            DiaryPromptTemplateDef alias = new DiaryPromptTemplateDef
+            {
+                defName = customKey,
+                label = "hidden alias",
+                templateKey = "RimTestDifferentTemplateKey",
+                playerSelectable = false,
+                systemPrompt = "DEF_NAME_ALIAS_MUST_NOT_BIND",
+                maxTokens = 992
+            };
+            DiaryPromptTemplateDef selectable = new DiaryPromptTemplateDef
+            {
+                defName = "PawnDiary_RimTest_SelectableAliasTarget",
+                label = "selectable alias target",
+                description = "Fixture selectable row behind a defName alias.",
+                templateKey = customKey,
+                playerSelectable = true,
+                playerOrder = 778,
+                systemPrompt = "SELECTABLE_ALIAS_TARGET_SYSTEM",
+                finalInstruction = "SELECTABLE_ALIAS_TARGET_FINAL",
+                maxTokens = 278,
+                fields = new List<DiaryPromptFieldDef>
+                {
+                    new DiaryPromptFieldDef { label = "facts", source = "PovText" }
+                }
+            };
+            List<DiaryPromptTemplateDef> defs =
+                DefDatabase<DiaryPromptTemplateDef>.AllDefsListForReading;
+            defs.Insert(0, alias);
+            defs.Add(selectable);
+            scope.RegisterCleanup(() =>
+            {
+                defs.Remove(selectable);
+                defs.Remove(alias);
+            });
+
+            List<PlayerEntryTemplateSnapshot> uiRows = DiaryPlayerPromptTemplates.ForUi();
+            DiaryPolicySnapshot policy = DiaryPipelineAdapters.PolicyFor(
+                new DiaryEventPayload
+                {
+                    defName = "PlayerPersonal",
+                    playerEntryTypeKey = "Personal",
+                    solo = true,
+                    display = new DiaryDisplayPayload { important = false }
+                });
+            PlayerEntryTemplateSnapshot uiRow = uiRows.Find(row => string.Equals(
+                row?.templateKey, customKey, StringComparison.OrdinalIgnoreCase));
+            DiaryTemplatePolicy copied = policy.templates.Find(row => string.Equals(
+                row?.templateKey, customKey, StringComparison.OrdinalIgnoreCase));
+            PawnDiaryRimTestScope.Require(
+                uiRow != null
+                    && uiRow.displayOrder == selectable.playerOrder
+                    && copied != null
+                    && copied.playerSelectable
+                    && copied.playerOrder == selectable.playerOrder
+                    && copied.maxTokens == selectable.maxTokens
+                    && string.Equals(
+                        copied.systemPrompt, selectable.systemPrompt, StringComparison.Ordinal)
+                    && copied.fields.Count == 1
+                    && string.Equals(
+                        copied.fields[0].source, "PovText", StringComparison.Ordinal),
+                "A defName alias rebound a custom UI template to the wrong loaded Def.");
+        }
+
+        /// <summary>A usable forced model wins the requested row; unknown/disabled matches fall back.</summary>
+        [Test]
+        public static void InternalCompletionEndpointSelectionHonorsForcedModel()
+        {
+            PawnDiarySettings settings = new PawnDiarySettings
+            {
+                apiEndpoints = new List<ApiEndpointConfig>
+                {
+                    new ApiEndpointConfig("https://disabled.invalid/v1", string.Empty, "forced-model")
+                    {
+                        enabled = false
+                    },
+                    new ApiEndpointConfig("https://requested.invalid/v1", string.Empty, "requested-model")
+                    {
+                        enabled = true,
+                        contextDetailOverride = PromptContextDetailOverride.Compact
+                    },
+                    new ApiEndpointConfig("https://forced.invalid/v1", string.Empty, "forced-model")
+                    {
+                        enabled = true,
+                        contextDetailOverride = PromptContextDetailOverride.Full
+                    }
+                }
+            };
+
+            ExternalLlmEndpointSelection forced =
+                ExternalLlmCompletionService.ResolveEndpointSelectionSnapshot(
+                    settings, 1, " FORCED-MODEL ");
+            ExternalLlmEndpointSelection unknown =
+                ExternalLlmCompletionService.ResolveEndpointSelectionSnapshot(
+                    settings, 1, "missing-model");
+            PawnDiaryRimTestScope.Require(
+                forced != null
+                    && forced.laneIndex == 2
+                    && forced.endpoint != settings.apiEndpoints[2]
+                    && string.Equals(forced.endpoint.model, "forced-model", StringComparison.Ordinal)
+                    && forced.endpoint.contextDetailOverride == PromptContextDetailOverride.Full
+                    && unknown != null
+                    && unknown.laneIndex == 1
+                    && string.Equals(
+                        unknown.endpoint.model, "requested-model", StringComparison.Ordinal),
+                "Internal composer endpoint selection ignored a usable forced model or lost fallback semantics.");
+        }
+
+        /// <summary>
+        /// Reset must restore the internal trusted completion boundary itself. Comparing delegates is
+        /// hermetic: the test never invokes the completion method, resolves a lane, or starts network work.
+        /// </summary>
+        [Test]
+        public static void PlayerEntryDraftResetRestoresTrustedCompletionBoundary()
+        {
+            DiaryGameComponent.BeginDraftCompletion = (ignoredRequest, ignoredSettings) => 0;
+            DiaryGameComponent.ResetPlayerEntryDraftTestSeams();
+
+            Func<ExternalLlmCompletionRequest, PawnDiarySettings, int> expected =
+                ExternalLlmCompletionService.BeginTrusted;
+            Func<ExternalLlmCompletionRequest, PawnDiarySettings, int> actual =
+                DiaryGameComponent.BeginDraftCompletion;
+            PawnDiaryRimTestScope.Require(
+                actual != null
+                    && actual == expected
+                    && actual.Target == null
+                    && actual.Method.IsAssembly
+                    && !actual.Method.IsPublic,
+                "ResetPlayerEntryDraftTestSeams did not restore the internal BeginTrusted completion boundary.");
+        }
+
+        /// <summary>
         /// Player categories own generic guidance. They must never inherit the capture assumptions of the
         /// display domains they resemble: Personal is not necessarily a social interaction, Combat is not
         /// necessarily a raid, Colony is not necessarily a quest, and Reflection is not necessarily daily.
@@ -752,8 +1023,14 @@ namespace PawnDiary.RimTests
             scope.SpawnAsLiveColonist(firstPawn);
             PawnDiarySettings settings = PawnDiaryMod.Settings;
             bool oldIntegrations = settings.allowExternalIntegrations;
+            int oldMaxTokens = settings.maxTokens;
             settings.allowExternalIntegrations = false;
-            scope.RegisterCleanup(() => settings.allowExternalIntegrations = oldIntegrations);
+            settings.maxTokens = 137;
+            scope.RegisterCleanup(() =>
+            {
+                settings.allowExternalIntegrations = oldIntegrations;
+                settings.maxTokens = oldMaxTokens;
+            });
 
             string[,] cases =
             {
@@ -778,11 +1055,16 @@ namespace PawnDiary.RimTests
             List<ExternalLlmCompletionRequest> captured =
                 new List<ExternalLlmCompletionRequest>();
             int nextHandle = 700;
-            DiaryGameComponent.ResolveDraftEndpoint = (ignoredSettings, ignoredLane) =>
-                new ApiEndpointConfig("https://fixture.invalid/v1", string.Empty, "fixture-model")
+            DiaryGameComponent.ResolveDraftEndpoint = (ignoredSettings, ignoredLane, ignoredForcedModel) =>
+                new ExternalLlmEndpointSelection
                 {
-                    enabled = true,
-                    contextDetailOverride = PromptContextDetailOverride.Compact
+                    laneIndex = ignoredLane >= 0 ? ignoredLane : 0,
+                    endpoint = new ApiEndpointConfig(
+                        "https://fixture.invalid/v1", string.Empty, "fixture-model")
+                    {
+                        enabled = true,
+                        contextDetailOverride = PromptContextDetailOverride.Compact
+                    }
                 };
             DiaryGameComponent.BeginDraftCompletion = (request, ignoredSettings) =>
             {
@@ -818,7 +1100,7 @@ namespace PawnDiary.RimTests
                         entryTypeKey = cases[i, 0],
                         templateKey = DiaryPipelineTemplates.SoloDefault,
                         factualSummary = "PLAYER_SUPPLIED_FACTS_" + cases[i, 0],
-                        maxTokens = 128
+                        maxTokens = PlayerEntryComposerPolicy.UseTemplateOrSettingsMaxTokens
                     });
                 ExternalLlmCompletionRequest prompt = captured.Count == i + 1 ? captured[i] : null;
                 bool clean = prompt != null
@@ -842,6 +1124,8 @@ namespace PawnDiary.RimTests
                     started != null
                         && started.accepted
                         && string.Equals(started.entryTypeKey, cases[i, 0], StringComparison.Ordinal)
+                        && prompt != null
+                        && prompt.maxTokens == 137
                         && clean
                         && scope.Component.CancelPlayerEntryDraft(started.handle),
                     "Context draft inherited capture-specific guidance for " + cases[i, 0] + ".");
@@ -907,6 +1191,14 @@ namespace PawnDiary.RimTests
                 combatPromptKey, combatXmlPrompt);
             settings.eventPromptOverrides.Set(
                 combatPromptKey, "CONTEXT_EVENT_GUIDANCE_SENTINEL", combatXmlPrompt);
+            string combatXmlForcedModel = combatPrompt?.forcedModel ?? string.Empty;
+            bool hadCombatForcedModelOverride =
+                settings.eventForcedModelOverrides.HasOverride(combatPromptKey);
+            string oldCombatForcedModel = settings.eventForcedModelOverrides.Effective(
+                combatPromptKey, combatXmlForcedModel);
+            const string forcedComposerModel = "fixture-forced-composer-model";
+            settings.eventForcedModelOverrides.Set(
+                combatPromptKey, forcedComposerModel, combatXmlForcedModel);
             scope.RegisterCleanup(() =>
             {
                 if (hadCombatOverride)
@@ -914,6 +1206,11 @@ namespace PawnDiary.RimTests
                         combatPromptKey, oldCombatPrompt, combatXmlPrompt);
                 else
                     settings.eventPromptOverrides.Reset(combatPromptKey);
+                if (hadCombatForcedModelOverride)
+                    settings.eventForcedModelOverrides.Set(
+                        combatPromptKey, oldCombatForcedModel, combatXmlForcedModel);
+                else
+                    settings.eventForcedModelOverrides.Reset(combatPromptKey);
             });
 
             List<DiaryEntryStatusSnapshot> notifications = new List<DiaryEntryStatusSnapshot>();
@@ -922,12 +1219,27 @@ namespace PawnDiary.RimTests
             scope.RegisterCleanup(() => PawnDiaryApi.UnregisterEntryStatusListener(listenerId));
 
             ExternalLlmCompletionRequest captured = null;
-            DiaryGameComponent.ResolveDraftEndpoint = (ignoredSettings, ignoredLane) =>
-                new ApiEndpointConfig("https://fixture.invalid/v1", string.Empty, "fixture-model")
+            List<string> forcedModelLookups = new List<string>();
+            DiaryGameComponent.ResolveDraftEndpoint = (ignoredSettings, ignoredLane, forcedModel) =>
+            {
+                forcedModelLookups.Add(forcedModel ?? string.Empty);
+                bool forced = string.Equals(
+                    forcedModel, forcedComposerModel, StringComparison.OrdinalIgnoreCase);
+                return new ExternalLlmEndpointSelection
                 {
-                    enabled = true,
-                    contextDetailOverride = PromptContextDetailOverride.Full
+                    laneIndex = forced ? 4 : (ignoredLane >= 0 ? ignoredLane : 0),
+                    endpoint = new ApiEndpointConfig(
+                        "https://fixture.invalid/v1",
+                        string.Empty,
+                        forced ? forcedComposerModel : "fixture-initial-model")
+                    {
+                        enabled = true,
+                        contextDetailOverride = forced
+                            ? PromptContextDetailOverride.Full
+                            : PromptContextDetailOverride.Compact
+                    }
                 };
+            };
             DiaryGameComponent.BeginDraftCompletion = (request, ignoredSettings) =>
             {
                 captured = request;
@@ -955,7 +1267,7 @@ namespace PawnDiary.RimTests
                     factualSummary = "CONTEXT_FACTUAL_SUMMARY_SENTINEL",
                     customInstruction = "CONTEXT_CUSTOM_INSTRUCTION_SENTINEL",
                     laneIndex = 7,
-                    maxTokens = 333
+                    maxTokens = PlayerEntryComposerPolicy.UseTemplateOrSettingsMaxTokens
                 });
 
             string templateSystem = DiaryPromptTemplates.SystemPromptFor(
@@ -970,8 +1282,12 @@ namespace PawnDiary.RimTests
                     && captured != null
                     && string.Equals(captured.sourceId,
                         "PawnDiary.PlayerComposer", StringComparison.Ordinal)
-                    && captured.laneIndex == 7
-                    && captured.maxTokens == 333
+                    && captured.laneIndex == 4
+                    && captured.maxTokens == 200
+                    && forcedModelLookups.Count == 2
+                    && string.IsNullOrEmpty(forcedModelLookups[0])
+                    && string.Equals(
+                        forcedModelLookups[1], forcedComposerModel, StringComparison.Ordinal)
                     && captured.systemPrompt.Contains(templateSystem)
                     && captured.systemPrompt.Contains("CONTEXT_PERSONA_SENTINEL")
                     && captured.userText.Contains("CONTEXT_FACTUAL_SUMMARY_SENTINEL")
@@ -1095,11 +1411,16 @@ namespace PawnDiary.RimTests
                 new List<ExternalLlmCompletionRequest>();
             int nextHandle = 500;
             int canceledHandle = 0;
-            DiaryGameComponent.ResolveDraftEndpoint = (ignoredSettings, ignoredLane) =>
-                new ApiEndpointConfig("https://fixture.invalid/v1", string.Empty, "fixture-model")
+            DiaryGameComponent.ResolveDraftEndpoint = (ignoredSettings, ignoredLane, ignoredForcedModel) =>
+                new ExternalLlmEndpointSelection
                 {
-                    enabled = true,
-                    contextDetailOverride = PromptContextDetailOverride.Full
+                    laneIndex = ignoredLane >= 0 ? ignoredLane : 0,
+                    endpoint = new ApiEndpointConfig(
+                        "https://fixture.invalid/v1", string.Empty, "fixture-model")
+                    {
+                        enabled = true,
+                        contextDetailOverride = PromptContextDetailOverride.Full
+                    }
                 };
             DiaryGameComponent.BeginDraftCompletion = (completionRequest, ignoredSettings) =>
             {

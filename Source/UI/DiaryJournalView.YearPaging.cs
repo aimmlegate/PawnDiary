@@ -199,7 +199,7 @@ namespace PawnDiary
 
 
         /// <summary>
-        /// A Social-tab or linked-entry jump may target an older year. Switch the pager first so
+        /// A pending linked/manual navigation may target an older year. Switch the pager first so
         /// TryApplyPendingScroll can find the event in the filtered list and place it on screen.
         /// </summary>
         private void SelectYearForPendingScroll(string pawnId, DiaryJournalVisibleEntriesCache entriesCache)
@@ -419,7 +419,7 @@ namespace PawnDiary
 
 
         /// <summary>
-        /// Consumes a pending Social-tab jump request by placing the target card near the top
+        /// Consumes a pending Diary navigation request by placing the target card near the top
         /// of the scroll view. If the entry disappeared before redraw, clear the stale request.
         /// </summary>
         private void TryApplyPendingScroll(string pawnId, List<DiaryEntryView> ordered, float[] offsets, float viewHeight, float outHeight)

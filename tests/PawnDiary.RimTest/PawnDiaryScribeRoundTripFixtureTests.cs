@@ -824,6 +824,89 @@ namespace PawnDiary.RimTests
                 "manual archive entry type decoration domain");
         }
 
+        /// <summary>
+        /// Recategorizing a compact extreme page must replace its saved atmosphere just as a hot
+        /// DiaryEvent view does. The cleared value must also survive Scribe so it cannot reappear after
+        /// saving and loading the colony.
+        /// </summary>
+        [Test]
+        public static void ArchivedRecategorizationClearsExtremeAtmosphereAcrossScribe()
+        {
+            PlayerEntryTypeSnapshot personal = new PlayerEntryTypeSnapshot
+            {
+                entryTypeKey = "Personal",
+                label = "personal",
+                colorCue = "quiet",
+                important = false,
+                domain = "Personal"
+            };
+
+            ArchivedDiaryEntry mentalBreak = new ArchivedDiaryEntry
+            {
+                eventId = "evt_archive_mental_break",
+                pawnId = "Thing_Human_ArchiveMentalBreak",
+                povRole = DiaryEvent.InitiatorRole,
+                tick = 777003,
+                date = "5th Jugust 5503",
+                year = 5503,
+                text = "A breaking point.",
+                generatedText = "A breaking point.",
+                status = DiaryEvent.CompleteStatus,
+                colorCue = DiaryEvent.MentalBreakColorCue,
+                atmosphereCue = DiaryEntryView.AtmosphereFractured
+            };
+            Require(mentalBreak.TrySetEntryType(personal),
+                "Could not recategorize the archived mental-break page as Personal.");
+            ArchivedDiaryEntry mentalBreakLoaded = ScribeRoundTrip(mentalBreak);
+            AssertStr(string.Empty, mentalBreakLoaded.atmosphereCue,
+                "recategorized mental-break archive atmosphere");
+            AssertStr(string.Empty, mentalBreakLoaded.ToView().AtmosphereCue,
+                "recategorized mental-break archive view atmosphere");
+
+            ArchivedDiaryEntry anomaly = new ArchivedDiaryEntry
+            {
+                eventId = "evt_archive_anomaly",
+                pawnId = "Thing_Human_ArchiveAnomaly",
+                povRole = DiaryEvent.InitiatorRole,
+                tick = 777004,
+                date = "5th Jugust 5503",
+                year = 5503,
+                text = "Something answered.",
+                generatedText = "Something answered.",
+                status = DiaryEvent.CompleteStatus,
+                colorCue = DiaryEvent.StrangeChatColorCue,
+                atmosphereCue = DiaryEntryView.AtmosphereUnsettled
+            };
+            Require(anomaly.TrySetEntryType(personal),
+                "Could not recategorize the archived anomaly page as Personal.");
+            ArchivedDiaryEntry anomalyLoaded = ScribeRoundTrip(anomaly);
+            AssertStr(string.Empty, anomalyLoaded.atmosphereCue,
+                "recategorized anomaly archive atmosphere");
+            AssertStr(string.Empty, anomalyLoaded.ToView().AtmosphereCue,
+                "recategorized anomaly archive view atmosphere");
+
+            // Simulate a row already written by the buggy version: the selected category was saved,
+            // but the source event's atmosphere remained. Projection must self-heal that legacy row.
+            ArchivedDiaryEntry staleSavedRow = new ArchivedDiaryEntry
+            {
+                eventId = "evt_archive_stale_category_atmosphere",
+                pawnId = "Thing_Human_ArchiveStaleAtmosphere",
+                povRole = DiaryEvent.InitiatorRole,
+                tick = 777005,
+                date = "5th Jugust 5503",
+                year = 5503,
+                text = "A page already recategorized.",
+                generatedText = "A page already recategorized.",
+                status = DiaryEvent.CompleteStatus,
+                entryTypeKey = "Personal",
+                colorCue = "quiet",
+                atmosphereCue = DiaryEntryView.AtmosphereFractured
+            };
+            ArchivedDiaryEntry staleLoadedRow = ScribeRoundTrip(staleSavedRow);
+            AssertStr(string.Empty, staleLoadedRow.ToView().AtmosphereCue,
+                "previously saved categorized archive view atmosphere");
+        }
+
         // ---- PawnDiaryRecord round-trip ------------------------------------------------------------
 
         /// <summary>

@@ -243,7 +243,17 @@ namespace PawnDiary
         /// </summary>
         public static List<DiaryPromptFieldDef> FieldsFor(string templateKey)
         {
-            DiaryPromptTemplateDef template = ForKey(templateKey);
+            return FieldsFor(ForKey(templateKey), templateKey);
+        }
+
+        /// <summary>
+        /// Resolves fields from one already-selected Def without performing another key/defName lookup.
+        /// This keeps a player-selectable collision bound to the exact Def the UI exposed.
+        /// </summary>
+        internal static List<DiaryPromptFieldDef> FieldsFor(
+            DiaryPromptTemplateDef template,
+            string templateKey)
+        {
             if (template?.fields != null && template.fields.Count > 0)
             {
                 return template.fields;
@@ -254,7 +264,14 @@ namespace PawnDiary
 
         public static string SystemPromptFor(string templateKey)
         {
-            DiaryPromptTemplateDef template = ForKey(templateKey);
+            return SystemPromptFor(ForKey(templateKey), templateKey);
+        }
+
+        /// <summary>Resolves the system prompt from one exact Def, then applies the usual safe fallback.</summary>
+        internal static string SystemPromptFor(
+            DiaryPromptTemplateDef template,
+            string templateKey)
+        {
             if (!string.IsNullOrWhiteSpace(template?.systemPrompt))
             {
                 return template.systemPrompt;
@@ -297,7 +314,14 @@ namespace PawnDiary
 
         public static string FinalInstructionFor(string templateKey)
         {
-            DiaryPromptTemplateDef template = ForKey(templateKey);
+            return FinalInstructionFor(ForKey(templateKey), templateKey);
+        }
+
+        /// <summary>Resolves the final instruction from one exact Def, then applies the usual fallback.</summary>
+        internal static string FinalInstructionFor(
+            DiaryPromptTemplateDef template,
+            string templateKey)
+        {
             if (!string.IsNullOrWhiteSpace(template?.finalInstruction))
             {
                 return template.finalInstruction;
@@ -328,7 +352,12 @@ namespace PawnDiary
 
         public static string RecipientFinalInstruction(string templateKey)
         {
-            DiaryPromptTemplateDef template = ForKey(templateKey);
+            return RecipientFinalInstruction(ForKey(templateKey));
+        }
+
+        /// <summary>Resolves the recipient instruction from one exact Def, then applies the usual fallback.</summary>
+        internal static string RecipientFinalInstruction(DiaryPromptTemplateDef template)
+        {
             if (!string.IsNullOrWhiteSpace(template?.recipientFinalInstruction))
             {
                 return template.recipientFinalInstruction;

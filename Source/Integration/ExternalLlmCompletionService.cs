@@ -62,16 +62,23 @@ namespace PawnDiary.Integration
         public string error = string.Empty;
     }
 
+    /// <summary>Detached configured-lane choice used while assembling one trusted internal prompt.</summary>
+    internal sealed class ExternalLlmEndpointSelection
+    {
+        public int laneIndex = -1;
+        public ApiEndpointConfig endpoint;
+    }
+
     /// <summary>
     /// Process-global store for in-flight adapter LLM completions. Internal: the public contract is
     /// <see cref="PawnDiaryApi.RequestLlmCompletion"/> / <see cref="PawnDiaryApi.GetLlmCompletionResult"/>.
     /// </summary>
     internal static class ExternalLlmCompletionService
     {
-        // Defensive schema limits (untrusted adapter input), not tuning policy.
-        private const int MaxInputChars = 4000;
+        // Defensive response limits for the one-shot service, not prompt tuning policy.
         private const int MinMaxTokens = 16;
         private const int MaxMaxTokens = 600;
+        private const int MaxTrustedMaxTokens = PlayerEntryComposerPolicy.MaxResolvedPolicyTokens;
         // Admission cap: an adapter that stops polling must not leak slots OR keep starting paid work.
         // Once full, Begin rejects new requests until callers consume terminal handles or a game reset
         // clears the session. Pending work is never silently evicted while its HTTP request keeps running.
@@ -90,12 +97,34 @@ namespace PawnDiary.Integration
         /// </summary>
         public static int Begin(ExternalLlmCompletionRequest request, PawnDiarySettings settings)
         {
+            return BeginCore(request, settings, trustedInternalPrompt: false);
+        }
+
+        /// <summary>
+        /// Starts one Pawn Diary-authored completion without reapplying the public adapter's 4,000-
+        /// character input cap. The internal planner has already bounded individual structured fields;
+        /// public integrations cannot call this method.
+        /// </summary>
+        internal static int BeginTrusted(
+            ExternalLlmCompletionRequest request,
+            PawnDiarySettings settings)
+        {
+            return BeginCore(request, settings, trustedInternalPrompt: true);
+        }
+
+        private static int BeginCore(
+            ExternalLlmCompletionRequest request,
+            PawnDiarySettings settings,
+            bool trustedInternalPrompt)
+        {
             if (request == null || settings == null)
             {
                 return 0;
             }
 
-            string userText = Cap(request.userText);
+            string userText = trustedInternalPrompt
+                ? LlmCompletionInputPolicy.ForTrustedInternalPrompt(request.userText)
+                : LlmCompletionInputPolicy.ForPublicAdapter(request.userText);
             if (string.IsNullOrWhiteSpace(userText))
             {
                 return 0;
@@ -109,8 +138,13 @@ namespace PawnDiary.Integration
 
             // Detach the lane snapshot so a settings edit mid-flight cannot mutate this request.
             ApiEndpointConfig laneSnapshot = endpoint.Copy();
-            string systemPrompt = Cap(request.systemPrompt);
-            int maxTokens = Clamp(request.maxTokens, MinMaxTokens, MaxMaxTokens);
+            string systemPrompt = trustedInternalPrompt
+                ? LlmCompletionInputPolicy.ForTrustedInternalPrompt(request.systemPrompt)
+                : LlmCompletionInputPolicy.ForPublicAdapter(request.systemPrompt);
+            int maxTokens = Clamp(
+                request.maxTokens,
+                MinMaxTokens,
+                trustedInternalPrompt ? MaxTrustedMaxTokens : MaxMaxTokens);
             int timeoutSeconds = settings.timeoutSeconds;
             float temperature = settings.temperature;
             int retryAttempts = LlmTransportPolicy.NormalizeRetryAttempts(settings.retryAttempts);
@@ -202,6 +236,28 @@ namespace PawnDiary.Integration
         {
             ApiEndpointConfig endpoint = settings == null ? null : ResolveEndpoint(settings, laneIndex);
             return endpoint?.Copy();
+        }
+
+        /// <summary>
+        /// Resolves a configured lane for an internally planned prompt. A matching forced model wins;
+        /// otherwise this preserves the public service's requested-index/first-usable behavior.
+        /// </summary>
+        internal static ExternalLlmEndpointSelection ResolveEndpointSelectionSnapshot(
+            PawnDiarySettings settings,
+            int laneIndex,
+            string forcedModelName)
+        {
+            int resolvedIndex = -1;
+            ApiEndpointConfig endpoint = settings == null
+                ? null
+                : ResolveEndpoint(settings, laneIndex, forcedModelName, out resolvedIndex);
+            return endpoint == null
+                ? null
+                : new ExternalLlmEndpointSelection
+                {
+                    laneIndex = resolvedIndex,
+                    endpoint = endpoint.Copy()
+                };
         }
 
         /// <summary>
@@ -308,14 +364,43 @@ namespace PawnDiary.Integration
         // Picks the requested lane when it is usable, else the first usable (enabled + url + model) lane.
         private static ApiEndpointConfig ResolveEndpoint(PawnDiarySettings settings, int laneIndex)
         {
+            int ignored;
+            return ResolveEndpoint(settings, laneIndex, string.Empty, out ignored);
+        }
+
+        private static ApiEndpointConfig ResolveEndpoint(
+            PawnDiarySettings settings,
+            int laneIndex,
+            string forcedModelName,
+            out int resolvedIndex)
+        {
+            resolvedIndex = -1;
             List<ApiEndpointConfig> lanes = settings.apiEndpoints;
             if (lanes == null || lanes.Count == 0)
             {
                 return null;
             }
 
+            if (!string.IsNullOrWhiteSpace(forcedModelName))
+            {
+                List<string> usableModels = new List<string>(lanes.Count);
+                for (int i = 0; i < lanes.Count; i++)
+                {
+                    usableModels.Add(IsUsable(lanes[i]) ? lanes[i].model : string.Empty);
+                }
+
+                int forcedIndex = ApiLaneSelector.SelectForcedModelIndex(
+                    usableModels, forcedModelName);
+                if (forcedIndex >= 0 && forcedIndex < lanes.Count)
+                {
+                    resolvedIndex = forcedIndex;
+                    return lanes[forcedIndex];
+                }
+            }
+
             if (laneIndex >= 0 && laneIndex < lanes.Count && IsUsable(lanes[laneIndex]))
             {
+                resolvedIndex = laneIndex;
                 return lanes[laneIndex];
             }
 
@@ -323,6 +408,7 @@ namespace PawnDiary.Integration
             {
                 if (IsUsable(lanes[i]))
                 {
+                    resolvedIndex = i;
                     return lanes[i];
                 }
             }
@@ -336,16 +422,6 @@ namespace PawnDiary.Integration
                 && endpoint.enabled
                 && !string.IsNullOrWhiteSpace(endpoint.url)
                 && !string.IsNullOrWhiteSpace(endpoint.model);
-        }
-
-        private static string Cap(string value)
-        {
-            if (string.IsNullOrEmpty(value))
-            {
-                return string.Empty;
-            }
-
-            return value.Length > MaxInputChars ? TextTruncation.SafePrefix(value, MaxInputChars) : value;
         }
 
         private static int Clamp(int value, int min, int max)

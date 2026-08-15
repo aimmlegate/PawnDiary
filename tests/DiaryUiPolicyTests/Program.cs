@@ -14,6 +14,7 @@ namespace DiaryUiPolicyTests
             TestReaderDirectorySessionIdentity();
             TestInlineYearSelector();
             TestPsychotypeControlRows();
+            TestEffectiveFooterLineHeight();
             TestMemoryDraftPersistence();
             TestProtectedMemoryActions();
 
@@ -122,6 +123,26 @@ namespace DiaryUiPolicyTests
                 "negative component dimensions are clamped");
         }
 
+        private static void TestEffectiveFooterLineHeight()
+        {
+            Equal(
+                22f,
+                DiaryUiPolicy.EffectiveFooterLineHeight(20f, 22f),
+                "effective Small fallback expands the Tiny footer");
+            Equal(
+                24f,
+                DiaryUiPolicy.EffectiveFooterLineHeight(24f, 22f),
+                "XML minimum may reserve more room than the font");
+            Equal(
+                22f,
+                DiaryUiPolicy.EffectiveFooterLineHeight(float.NaN, 22f),
+                "invalid XML geometry falls back to measured font height");
+            Equal(
+                20f,
+                DiaryUiPolicy.EffectiveFooterLineHeight(20f, float.PositiveInfinity),
+                "invalid font geometry retains the XML minimum");
+        }
+
         private static void TestMemoryDraftPersistence()
         {
             False(
@@ -180,6 +201,16 @@ namespace DiaryUiPolicyTests
         {
             assertions++;
             if (expected != actual)
+            {
+                throw new InvalidOperationException(
+                    message + " (expected " + expected + ", actual " + actual + ")");
+            }
+        }
+
+        private static void Equal(float expected, float actual, string message)
+        {
+            assertions++;
+            if (Math.Abs(expected - actual) > 0.001f)
             {
                 throw new InvalidOperationException(
                     message + " (expected " + expected + ", actual " + actual + ")");

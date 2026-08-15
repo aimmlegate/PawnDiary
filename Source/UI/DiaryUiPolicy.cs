@@ -64,6 +64,25 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Returns a footer row tall enough for the effective Tiny font while retaining the XML-owned
+        /// configured height as a minimum. RimWorld can map Tiny to Small for accessibility/locales.
+        /// </summary>
+        public static float EffectiveFooterLineHeight(
+            float configuredMinimumHeight,
+            float measuredLineHeight)
+        {
+            float configured = float.IsNaN(configuredMinimumHeight)
+                || float.IsInfinity(configuredMinimumHeight)
+                ? 0f
+                : Math.Max(0f, configuredMinimumHeight);
+            float measured = float.IsNaN(measuredLineHeight)
+                || float.IsInfinity(measuredLineHeight)
+                ? 0f
+                : Math.Max(0f, measuredLineHeight);
+            return Math.Max(configured, measured);
+        }
+
+        /// <summary>
         /// Returns whether a canonical memory-editor draft differs from the canonical text shown when
         /// editing began. Callers sanitize both values first, so markup or whitespace-only differences
         /// cannot freeze a currently localized XML template into a manual override.

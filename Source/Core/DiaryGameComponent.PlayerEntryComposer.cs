@@ -18,9 +18,9 @@ namespace PawnDiary
         // Hermetic RimTest seams. Production defaults always point at the existing one-shot core;
         // tests may replace them to capture exact prompt envelopes without sockets or paid work.
         internal static Func<ExternalLlmCompletionRequest, PawnDiarySettings, int>
-            BeginDraftCompletion = ExternalLlmCompletionService.Begin;
-        internal static Func<PawnDiarySettings, int, ApiEndpointConfig> ResolveDraftEndpoint =
-            ExternalLlmCompletionService.ResolveEndpointSnapshot;
+            BeginDraftCompletion = ExternalLlmCompletionService.BeginTrusted;
+        internal static Func<PawnDiarySettings, int, string, ExternalLlmEndpointSelection>
+            ResolveDraftEndpoint = ExternalLlmCompletionService.ResolveEndpointSelectionSnapshot;
         internal static Func<int, LlmCompletionResult> PollDraftCompletion =
             ExternalLlmCompletionService.Poll;
         internal static Func<int, bool> CancelDraftCompletion =
@@ -29,8 +29,8 @@ namespace PawnDiary
         /// <summary>Restores production completion delegates after one hermetic fixture.</summary>
         internal static void ResetPlayerEntryDraftTestSeams()
         {
-            BeginDraftCompletion = ExternalLlmCompletionService.Begin;
-            ResolveDraftEndpoint = ExternalLlmCompletionService.ResolveEndpointSnapshot;
+            BeginDraftCompletion = ExternalLlmCompletionService.BeginTrusted;
+            ResolveDraftEndpoint = ExternalLlmCompletionService.ResolveEndpointSelectionSnapshot;
             PollDraftCompletion = ExternalLlmCompletionService.Poll;
             CancelDraftCompletion = ExternalLlmCompletionService.Cancel;
         }
@@ -69,9 +69,11 @@ namespace PawnDiary
 
             string systemPrompt;
             string userPrompt;
+            int completionMaxTokens;
             PawnDiarySettings settings = PawnDiaryMod.Settings;
-            ApiEndpointConfig lane = ResolveDraftEndpoint(settings, input.laneIndex);
-            if (lane == null)
+            ExternalLlmEndpointSelection endpoint = ResolveDraftEndpoint(
+                settings, input.laneIndex, string.Empty);
+            if (endpoint?.endpoint == null)
             {
                 rejected.errorCode = "completion_rejected";
                 return rejected;
@@ -82,30 +84,59 @@ namespace PawnDiary
                 // Do not trim, wrap, add Pawn Diary context, or otherwise reinterpret either string.
                 systemPrompt = input.systemPrompt;
                 userPrompt = input.userPrompt;
+                completionMaxTokens = PlayerEntryComposerPolicy.ResolveCompletionMaxTokens(
+                    input.maxTokens, settings.maxTokens);
             }
             else
             {
+                PromptContextDetailLevel detailLevel = settings.EffectiveContextDetailLevel(
+                    endpoint.endpoint);
                 DiaryPromptPlan prompt = BuildPlayerEntryContextDraftPrompt(
                     pawn,
                     input,
-                    settings.EffectiveContextDetailLevel(lane));
+                    detailLevel);
                 if (prompt == null || string.IsNullOrWhiteSpace(prompt.userPrompt))
                 {
                     rejected.errorCode = "prompt_plan_failed";
                     return rejected;
                 }
+
+                // Event prompt policy may pin generation to a configured model. Resolve it after the
+                // routing plan exists, then rebuild only when that lane changes context-detail policy.
+                endpoint = ResolveDraftEndpoint(
+                    settings, input.laneIndex, prompt.forcedModelName);
+                if (endpoint?.endpoint == null)
+                {
+                    rejected.errorCode = "completion_rejected";
+                    return rejected;
+                }
+                PromptContextDetailLevel selectedDetailLevel = settings.EffectiveContextDetailLevel(
+                    endpoint.endpoint);
+                if (selectedDetailLevel != detailLevel)
+                {
+                    prompt = BuildPlayerEntryContextDraftPrompt(
+                        pawn, input, selectedDetailLevel);
+                    if (prompt == null || string.IsNullOrWhiteSpace(prompt.userPrompt))
+                    {
+                        rejected.errorCode = "prompt_plan_failed";
+                        return rejected;
+                    }
+                }
                 systemPrompt = prompt.systemPrompt ?? string.Empty;
                 userPrompt = prompt.userPrompt;
+                completionMaxTokens = PlayerEntryComposerPolicy.ResolveCompletionMaxTokens(
+                    prompt.responseRules?.maxTokens ?? 0,
+                    settings.maxTokens);
             }
 
             int handle = BeginDraftCompletion(
                 new ExternalLlmCompletionRequest
                 {
                     sourceId = PlayerComposerSourceId,
-                    laneIndex = input.laneIndex,
+                    laneIndex = endpoint.laneIndex,
                     systemPrompt = systemPrompt,
                     userText = userPrompt,
-                    maxTokens = input.maxTokens
+                    maxTokens = completionMaxTokens
                 },
                 settings);
             if (handle <= 0)

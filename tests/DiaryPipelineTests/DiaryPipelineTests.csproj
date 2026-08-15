@@ -12,6 +12,7 @@
     <Compile Include="..\..\Source\Pipeline\DiaryGenerationStatus.cs" Link="DiaryGenerationStatus.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryArchiveEligibility.cs" Link="DiaryArchiveEligibility.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryArchiveFallback.cs" Link="DiaryArchiveFallback.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryAtmosphereCuePolicy.cs" Link="DiaryAtmosphereCuePolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryArchiveCompactionPlanner.cs" Link="DiaryArchiveCompactionPlanner.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryLifeBoundaryPolicy.cs" Link="DiaryLifeBoundaryPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\IdentitySummaryPolicy.cs" Link="IdentitySummaryPolicy.cs" />
@@ -86,6 +87,7 @@
     <Compile Include="..\..\Source\Pipeline\EventWindowPolicy.cs" Link="EventWindowPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\ProgressionMilestonePolicy.cs" Link="ProgressionMilestonePolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\PlayerEntryComposerPolicy.cs" Link="PlayerEntryComposerPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\LlmCompletionInputPolicy.cs" Link="LlmCompletionInputPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\ArcReflectionSchedulePolicy.cs" Link="ArcReflectionSchedulePolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\ReflectionSettingsInheritance.cs" Link="ReflectionSettingsInheritance.cs" />
     <Compile Include="..\..\Source\Pipeline\ArcReflectionMemorySelector.cs" Link="ArcReflectionMemorySelector.cs" />

@@ -51,6 +51,7 @@ namespace PawnDiary
         private DiaryRenderToken cachedLayoutToken;
         private int cachedLayoutHighlightVersion = -1;
         private int cachedLayoutExpansionVersion = -1;
+        private float cachedLayoutFooterLineHeight = -1f;
         private float cachedLayoutViewHeight;
         private bool cachedLayoutAnimationSettled = true;
         private bool layoutBuildInProgress;
@@ -63,6 +64,7 @@ namespace PawnDiary
         private DiaryRenderToken layoutBuildToken;
         private int layoutBuildHighlightVersion = -1;
         private int layoutBuildExpansionVersion = -1;
+        private float layoutBuildFooterLineHeight = -1f;
         private int layoutBuildIndex;
         private float layoutBuildCurY;
         private bool layoutBuildAnimationSettled = true;
@@ -185,10 +187,13 @@ namespace PawnDiary
         private readonly Dictionary<string, float> entryExpansionBlend = new Dictionary<string, float>();
         private int entryExpansionVersion;
         private float lastExpansionAnimationSeconds;
-        // Set by the Social-tab click patch before opening this tab. FillTab consumes it once
-        // the relevant pawn's generated entry list is available.
+        // Set by linked navigation or a successful manual create. Draw consumes it once the relevant
+        // pawn's generated entry list is available and its card layout has a stable offset.
         private static string pendingScrollPawnId;
         private static string pendingScrollEventId;
+        // Manual creation opts into clearing only the filters that would hide its new page. Ordinary
+        // Social-tab/link jumps retain the player's filters and preserve their existing semantics.
+        private static bool pendingScrollRevealEvenIfFiltered;
 
         private sealed class RoleplayLineBlock
         {
@@ -235,8 +240,20 @@ namespace PawnDiary
         /// </summary>
         internal static void RequestScrollToEntry(string pawnId, string eventId)
         {
+            RequestScrollToEntry(pawnId, eventId, false);
+        }
+
+        /// <summary>
+        /// Requests a scroll and optionally allows the target to clear active filters that exclude it.
+        /// </summary>
+        internal static void RequestScrollToEntry(
+            string pawnId,
+            string eventId,
+            bool revealEvenIfFiltered)
+        {
             pendingScrollPawnId = pawnId;
             pendingScrollEventId = eventId;
+            pendingScrollRevealEvenIfFiltered = revealEvenIfFiltered;
         }
 
         /// <summary>
@@ -246,6 +263,7 @@ namespace PawnDiary
         {
             pendingScrollPawnId = null;
             pendingScrollEventId = null;
+            pendingScrollRevealEvenIfFiltered = false;
         }
 
         /// <summary>
@@ -429,6 +447,14 @@ namespace PawnDiary
             bool haveOrdered = !indexLoading
                 && years.Count > 0
                 && visibleEntriesCache.TryGetOrderedEntriesForSelectedYear(subject.PawnId, selectedYear, out ordered);
+
+            // Creating a page is an explicit navigation action. If that exact page is present but the
+            // current search/Favorites/tag selections would hide it, clear those filters before drawing
+            // either column so the panel state and scrolled journal agree in this same GUI pass.
+            RevealPendingScrollTargetIfFiltered(
+                subject.PawnId,
+                haveOrdered ? ordered : null,
+                showLlmDebugInfo);
 
             bool exportReady = !indexLoading && (years.Count == 0 || haveOrdered);
             DrawFilterPanel(
@@ -785,7 +811,8 @@ namespace PawnDiary
                 || !string.Equals(cachedLayoutPawnId, pawnId, StringComparison.Ordinal)
                 || cachedLayoutSelectedYear != selectedYear;
             // Visual layout only needs to rebuild when a real layout input changed: card width, the
-            // debug toggle, or the name-highlight set (bold markup changes wrapping). The render
+            // debug toggle, name-highlight set (bold markup changes wrapping), or effective footer
+            // font height. The render
             // token is intentionally NOT tested here: its stateVersion half is the process-wide
             // DiaryStateVersion counter, which ticks whenever ANY pawn's entry status/text/title
             // changes anywhere in the colony. Testing it made every such tick declare the layout
@@ -800,9 +827,11 @@ namespace PawnDiary
             // case adds no rebuilds; on an older page it changes once per in-game day, which is
             // exactly when the divider has to move.
             int onThisDayStamp = DiaryOnThisDayDivider.LayoutDayStamp(selectedYear, selectedYear != UnknownYear);
+            float footerLineHeight = EffectiveEntryFooterLineHeight();
             bool visualLayoutDirty = cachedLayoutViewWidth != viewWidth
                 || cachedLayoutShowDebug != showLlmDebugInfo
                 || cachedLayoutHighlightVersion != nameHighlightsVersion
+                || cachedLayoutFooterLineHeight != footerLineHeight
                 || cachedLayoutOnThisDayStamp != onThisDayStamp;
             bool expansionLayoutDirty = cachedLayoutExpansionVersion != entryExpansionVersion
                 || !cachedLayoutAnimationSettled;
@@ -823,7 +852,16 @@ namespace PawnDiary
                 // The selected year's data is already visible. Rebuild offsets immediately so scroll,
                 // collapse/expand, highlight refreshes, and quiet entry updates never swap the list for
                 // the blocking loading panel. Cold loads and explicit year changes still use slices.
-                BeginEntryLayoutBuild(ordered, visibleRevision, pawnId, viewWidth, showLlmDebugInfo, token, count, onThisDayStamp);
+                BeginEntryLayoutBuild(
+                    ordered,
+                    visibleRevision,
+                    pawnId,
+                    viewWidth,
+                    showLlmDebugInfo,
+                    token,
+                    count,
+                    onThisDayStamp,
+                    footerLineHeight);
                 ProcessEntryLayoutSlice(
                     ordered,
                     viewWidth,
@@ -845,7 +883,8 @@ namespace PawnDiary
 
             // Same reasoning as the visualLayoutDirty check above: the in-progress sliced layout
             // build must only be invalidated by a STRUCTURAL change (different list, year, width,
-            // filters, highlight set, or expansion version) — never by a global state-version tick.
+            // filters, highlight set, footer font, or expansion version) — never by a global
+            // state-version tick.
             // Letting a tick restart this build made the layout scan reset to row zero every frame
             // under active generation, so a large history could never finish laying out and the tab
             // sat on the loading panel. The captured token is still stored (layoutBuildToken) for
@@ -859,9 +898,19 @@ namespace PawnDiary
                 || layoutBuildShowDebug != showLlmDebugInfo
                 || layoutBuildHighlightVersion != nameHighlightsVersion
                 || layoutBuildExpansionVersion != entryExpansionVersion
+                || layoutBuildFooterLineHeight != footerLineHeight
                 || layoutBuildOnThisDayStamp != onThisDayStamp)
             {
-                BeginEntryLayoutBuild(ordered, visibleRevision, pawnId, viewWidth, showLlmDebugInfo, token, count, onThisDayStamp);
+                BeginEntryLayoutBuild(
+                    ordered,
+                    visibleRevision,
+                    pawnId,
+                    viewWidth,
+                    showLlmDebugInfo,
+                    token,
+                    count,
+                    onThisDayStamp,
+                    footerLineHeight);
             }
 
             ProcessEntryLayoutSlice(
@@ -891,7 +940,8 @@ namespace PawnDiary
             bool showLlmDebugInfo,
             DiaryRenderToken token,
             int count,
-            int onThisDayStamp)
+            int onThisDayStamp,
+            float footerLineHeight)
         {
             EnsureEntryMeasurementBufferCapacity(count);
             layoutBuildInProgress = true;
@@ -904,6 +954,7 @@ namespace PawnDiary
             layoutBuildToken = token;
             layoutBuildHighlightVersion = nameHighlightsVersion;
             layoutBuildExpansionVersion = entryExpansionVersion;
+            layoutBuildFooterLineHeight = footerLineHeight;
             layoutBuildIndex = 0;
             layoutBuildCurY = 0f;
             layoutBuildAnimationSettled = true;
@@ -973,7 +1024,8 @@ namespace PawnDiary
                         component,
                         dialogueColor,
                         searchQuery,
-                        searchHighlightColorHex)
+                        searchHighlightColorHex,
+                        layoutBuildFooterLineHeight)
                     : CollapsedEntryHeight;
 
                 // Reserve a quadrum/season divider above this card when it opens a new quadrum. The
@@ -1052,6 +1104,7 @@ namespace PawnDiary
             cachedLayoutToken = layoutBuildToken;
             cachedLayoutHighlightVersion = layoutBuildHighlightVersion;
             cachedLayoutExpansionVersion = layoutBuildExpansionVersion;
+            cachedLayoutFooterLineHeight = layoutBuildFooterLineHeight;
             cachedLayoutAnimationSettled = layoutBuildAnimationSettled;
             cachedLayoutOnThisDayStamp = layoutBuildOnThisDayStamp;
             cachedLayoutViewHeight = layoutBuildCurY + 12f; // includes bottom padding
@@ -1114,8 +1167,9 @@ namespace PawnDiary
         /// every expanded card 60x/second while the tab is open is pure waste once it has been laid
         /// out. The cache is dropped wholesale whenever something that can change a card's height
         /// changes: the pawn's render token (entry text/status), the card width, the debug-info
-        /// toggle, or the name-highlight set (bold highlight markup can change text wrapping, and the
-        /// highlight set changes off the live colony without bumping the render token). Collapsed
+        /// toggle, the effective footer-font height, or the name-highlight set (bold highlight markup
+        /// can change text wrapping, and the highlight set changes off the live colony without
+        /// bumping the render token). Collapsed
         /// cards bypass this entirely via the constant CollapsedEntryHeight.
         /// </summary>
         private float CachedEntryHeight(
@@ -1128,7 +1182,8 @@ namespace PawnDiary
             DiaryGameComponent component,
             Color dialogueColor,
             string searchQuery,
-            string searchHighlightColorHex)
+            string searchHighlightColorHex,
+            float footerLineHeight)
         {
             float cachedHeight;
             if (entryCardMeasurer.TryGetCachedHeight(
@@ -1137,6 +1192,7 @@ namespace PawnDiary
                 showLlmDebugInfo,
                 token,
                 nameHighlightsVersion,
+                footerLineHeight,
                 out cachedHeight))
             {
                 return cachedHeight;
@@ -1152,7 +1208,8 @@ namespace PawnDiary
                     component,
                     dialogueColor,
                     searchQuery,
-                    searchHighlightColorHex));
+                    searchHighlightColorHex,
+                    footerLineHeight));
         }
 
 

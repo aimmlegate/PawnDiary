@@ -33,17 +33,17 @@ namespace PawnDiary
         public const string CombatColorCue = "combat";
         public const string DangerColorCue = "danger";
         public const string SocialFightColorCue = "socialFight";
-        public const string MentalBreakColorCue = "mentalBreak";
+        public const string MentalBreakColorCue = DiaryAtmosphereCuePolicy.MentalBreakColorCue;
         public const string DazeColorCue = "daze";
-        public const string StrangeChatColorCue = "strangeChat";
+        public const string StrangeChatColorCue = DiaryAtmosphereCuePolicy.StrangeChatColorCue;
         // Retired cues. No shipped group stamps these any more — Anomaly dread moved to the anomalyDeep
         // family and the mixed Biotech/Odyssey "eventful" bucket was split into per-DLC families. They
         // stay defined, and keep their rows in DiaryUiStyleDef, because colorCue is PERSISTED: every
         // page written before that change still carries one of these strings and must still render.
-        public const string ExtremeDarkColorCue = "extremeDark";
+        public const string ExtremeDarkColorCue = DiaryAtmosphereCuePolicy.ExtremeDarkColorCue;
         public const string EventfulColorCue = "eventful";
         public const string WhiteColorCue = "white";
-        public const string BodyPartAnomalousColorCue = "bodyPartAnomalous";
+        public const string BodyPartAnomalousColorCue = DiaryAtmosphereCuePolicy.BodyPartAnomalousColorCue;
         public const string BodyPartArtificialColorCue = "bodyPartArtificial";
         public const string BodyPartLostColorCue = "bodyPartLost";
         // Psychic events (psycast abilities): a bright violet, distinct from the Anomaly family below.
@@ -1755,19 +1755,7 @@ namespace PawnDiary
             }
 
             string cue = PlayerEntryTypeForRole(povRole)?.colorCue ?? ColorCueForDisplay();
-            if (string.Equals(cue, StrangeChatColorCue, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(cue, ExtremeDarkColorCue, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(cue, BodyPartAnomalousColorCue, StringComparison.OrdinalIgnoreCase))
-            {
-                return DiaryEntryView.AtmosphereUnsettled;
-            }
-
-            if (string.Equals(cue, MentalBreakColorCue, StringComparison.OrdinalIgnoreCase))
-            {
-                return DiaryEntryView.AtmosphereFractured;
-            }
-
-            return string.Empty;
+            return DiaryAtmosphereCuePolicy.ForColorCue(cue);
         }
 
         private bool DistortDirectSpeechForDisplay(string povRole)

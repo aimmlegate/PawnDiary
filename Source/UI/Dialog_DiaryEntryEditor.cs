@@ -123,6 +123,9 @@ namespace PawnDiary
             draggable = true;
             resizeable = false;
             doCloseX = true;
+            // Return belongs to the composer's multiline text areas. Verse.Window otherwise treats
+            // it as the dialog Accept key before Widgets.TextArea can insert the newline.
+            closeOnAccept = false;
             closeOnClickedOutside = false;
             absorbInputAroundWindow = false;
             onlyOneOfTypeAllowed = true;
@@ -310,7 +313,7 @@ namespace PawnDiary
                 systemPrompt = rawSystemPromptBuffer,
                 userPrompt = rawUserPromptBuffer,
                 laneIndex = -1,
-                maxTokens = PlayerEntryComposerPolicy.DefaultMaxTokens
+                maxTokens = PlayerEntryComposerPolicy.UseTemplateOrSettingsMaxTokens
             };
         }
 
@@ -411,7 +414,9 @@ namespace PawnDiary
 
             if (Creating && !string.IsNullOrWhiteSpace(createdEventId))
             {
-                DiaryJournalView.RequestScrollToEntry(pawnId, createdEventId);
+                // A successful create should reveal the new page even if the journal currently has a
+                // search, Favorites-only, or tag filter that the unstarred page cannot satisfy.
+                DiaryJournalView.RequestScrollToEntry(pawnId, createdEventId, true);
             }
 
             Messages.Message(

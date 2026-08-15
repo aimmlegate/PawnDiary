@@ -113,10 +113,28 @@ namespace DiaryPipelineTests
             string editorLayoutSource = File.ReadAllText(RepoPath(
                 "Source", "UI", "Dialog_DiaryEntryEditor.Layout.cs"));
             string editorSource = editorStateSource + "\n" + editorLayoutSource;
+            string completionServiceSource = File.ReadAllText(RepoPath(
+                "Source", "Integration", "ExternalLlmCompletionService.cs"));
+            string journalStateSource = File.ReadAllText(RepoPath(
+                "Source", "UI", "DiaryJournalView.cs"));
+            string journalFilterSource = File.ReadAllText(RepoPath(
+                "Source", "UI", "DiaryJournalView.FilterPanel.cs"));
             AssertTrue("manual-entry UI does not route through the public integration facade",
                 editorSource.IndexOf("PawnDiaryApi.", StringComparison.Ordinal) < 0);
             AssertTrue("manual-entry UI does not own the adapter completion poller",
                 editorSource.IndexOf("ExternalLlmCompletionService", StringComparison.Ordinal) < 0);
+            AssertContains("public completion retains untrusted input policy",
+                SourceSlice(
+                    completionServiceSource,
+                    "public static int Begin(",
+                    "internal static int BeginTrusted("),
+                "trustedInternalPrompt: false");
+            AssertContains("trusted completion path remains internal",
+                SourceSlice(
+                    completionServiceSource,
+                    "internal static int BeginTrusted(",
+                    "private static int BeginCore("),
+                "trustedInternalPrompt: true");
 
             // Unity can execute layout/repaint multiple times. The presentation partial may edit detached
             // buffers or dispatch a button handler, but persistence/polling must stay in explicit state
@@ -141,6 +159,8 @@ namespace DiaryPipelineTests
                 editorStateSource, "draftStage = ComposerDraftStage.Failed;");
             AssertContains("manual-entry failed footer exposes retry",
                 editorLayoutSource, "\"PawnDiary.ManualEntry.Retry\".Translate().Resolve()");
+            AssertContains("manual-entry multiline editor retains Return as text input",
+                editorStateSource, "closeOnAccept = false;");
             AssertContains("manual-entry review locks the generated type selector",
                 editorStateSource, "if (entryTypeLocked || Pending || Reviewing) return;");
             AssertContains("manual-entry review renders its type selector disabled",
@@ -160,6 +180,17 @@ namespace DiaryPipelineTests
                 saveSource, "component.TryCreateManualEntry(");
             AssertContains("manual-entry edit persists only from Save",
                 saveSource, "component.TryEditManualEntry(");
+            AssertContains("manual-entry create opts into filtered journal reveal",
+                saveSource, "DiaryJournalView.RequestScrollToEntry(pawnId, createdEventId, true);");
+            AssertContains("journal stores the filtered-reveal option",
+                journalStateSource,
+                "pendingScrollRevealEvenIfFiltered = revealEvenIfFiltered;");
+            AssertContains("journal clears the filtered-reveal option with its pending request",
+                journalStateSource,
+                "pendingScrollRevealEvenIfFiltered = false;");
+            AssertContains("journal reveal checks the pending target against active filters",
+                journalFilterSource,
+                "if (!PassesCurrentJournalFilters(entry, showLlmDebugInfo))");
             AssertEqual("manual-entry create persistence has one UI call site", 1,
                 ManualCountOccurrences(editorSource, "component.TryCreateManualEntry("));
             AssertEqual("manual-entry edit persistence has one UI call site", 1,
@@ -559,6 +590,26 @@ namespace DiaryPipelineTests
             AssertEqual("composer type default template fallback", "standard", fallback.templateKey);
             AssertEqual("composer token ceiling", PlayerEntryComposerPolicy.MaxMaxTokens, fallback.maxTokens);
 
+            PlayerEntryComposerPlan inheritedTokens = PlayerEntryComposerPolicy.Plan(
+                Request(
+                    PlayerEntryComposerMode.Context,
+                    factualSummary: "inherit token policy",
+                    maxTokens: PlayerEntryComposerPolicy.UseTemplateOrSettingsMaxTokens),
+                types,
+                templates);
+            AssertEqual("composer zero token request preserves template/settings inheritance",
+                PlayerEntryComposerPolicy.UseTemplateOrSettingsMaxTokens,
+                inheritedTokens.maxTokens);
+            AssertEqual("composer positive template cap wins settings fallback", 240,
+                PlayerEntryComposerPolicy.ResolveCompletionMaxTokens(240, 90));
+            AssertEqual("composer zero template cap uses global settings", 90,
+                PlayerEntryComposerPolicy.ResolveCompletionMaxTokens(0, 90));
+            AssertEqual("composer inherited global setting survives public adapter ceiling", 2048,
+                PlayerEntryComposerPolicy.ResolveCompletionMaxTokens(0, 2048));
+            AssertEqual("composer corrupt inherited policy keeps trusted ceiling",
+                PlayerEntryComposerPolicy.MaxResolvedPolicyTokens,
+                PlayerEntryComposerPolicy.ResolveCompletionMaxTokens(int.MaxValue, 90));
+
             AssertComposerError(
                 "composer explicit unknown type rejects",
                 Request(
@@ -646,6 +697,15 @@ namespace DiaryPipelineTests
             AssertTrue("composer raw Unicode-safe cap has no dangling high surrogate",
                 cappedRaw.Length == 0 || !char.IsHighSurrogate(cappedRaw[cappedRaw.Length - 1]));
 
+            string longInternalPrompt = new string('p',
+                LlmCompletionInputPolicy.PublicMaxInputCharacters + 37);
+            AssertEqual("public one-shot completion retains 4000-character input cap",
+                LlmCompletionInputPolicy.PublicMaxInputCharacters,
+                LlmCompletionInputPolicy.ForPublicAdapter(longInternalPrompt).Length);
+            AssertEqual("trusted assembled prompt bypasses public adapter cap",
+                longInternalPrompt,
+                LlmCompletionInputPolicy.ForTrustedInternalPrompt(longInternalPrompt));
+
             AssertTrue("composer template allow-list accepts opted solo template",
                 PlayerEntryComposerPolicy.IsRequestedTemplateAllowed(
                     " reflection ", true, "Reflection", true));
@@ -721,7 +781,7 @@ namespace DiaryPipelineTests
             string customInstruction = "",
             string systemPrompt = "",
             string userPrompt = "",
-            int maxTokens = PlayerEntryComposerPolicy.DefaultMaxTokens)
+            int maxTokens = PlayerEntryComposerPolicy.UseTemplateOrSettingsMaxTokens)
         {
             return new PlayerEntryComposerRequest
             {

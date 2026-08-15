@@ -263,6 +263,7 @@ namespace PawnDiary
             AddTemplate(snapshot, DiaryPipelineTemplates.DeathDescription);
             AddTemplate(snapshot, DiaryPipelineTemplates.ArrivalDescription);
             AddTemplate(snapshot, DiaryPipelineTemplates.Title);
+            AddPlayerSelectableTemplates(snapshot);
             return snapshot;
         }
 
@@ -408,7 +409,19 @@ namespace PawnDiary
 
         private static void AddTemplate(DiaryPolicySnapshot snapshot, string templateKey)
         {
-            DiaryPromptTemplateDef template = DiaryPromptTemplates.ForKey(templateKey);
+            UpsertTemplate(snapshot, DiaryPromptTemplates.ForKey(templateKey), templateKey);
+        }
+
+        /// <summary>
+        /// Copies one exact loaded Def into the detached policy. Passing the Def explicitly prevents a
+        /// second key/defName lookup from selecting a different collision than the composer UI selected.
+        /// </summary>
+        private static void UpsertTemplate(
+            DiaryPolicySnapshot snapshot,
+            DiaryPromptTemplateDef template,
+            string templateKey)
+        {
+            if (snapshot == null || template == null || string.IsNullOrWhiteSpace(templateKey)) return;
             int maxTokens = template.maxTokens;
             if (maxTokens <= 0 && string.Equals(templateKey, DiaryPipelineTemplates.SoloQuadrumReflection, StringComparison.OrdinalIgnoreCase))
             {
@@ -427,23 +440,65 @@ namespace PawnDiary
                 maxTokens = 200;
             }
 
-            snapshot.templates.Add(new DiaryTemplatePolicy
+            DiaryTemplatePolicy copied = new DiaryTemplatePolicy
             {
                 templateKey = templateKey,
                 playerSelectable = template.playerSelectable,
                 playerOrder = template.playerOrder,
-                systemPrompt = DiaryPromptTemplates.SystemPromptFor(templateKey),
-                finalInstruction = DiaryPromptTemplates.FinalInstructionFor(templateKey),
-                recipientFinalInstruction = DiaryPromptTemplates.RecipientFinalInstruction(templateKey),
+                systemPrompt = DiaryPromptTemplates.SystemPromptFor(template, templateKey),
+                finalInstruction = DiaryPromptTemplates.FinalInstructionFor(template, templateKey),
+                recipientFinalInstruction = DiaryPromptTemplates.RecipientFinalInstruction(template),
                 includePromptEnchantment = template.includePromptEnchantment,
                 includePersona = template.includePersona,
                 appendDirectSpeechInstruction = template.appendDirectSpeechInstruction,
                 maxTokens = maxTokens,
                 fields = CopyFields(
-                    DiaryPromptTemplates.FieldsFor(templateKey),
+                    DiaryPromptTemplates.FieldsFor(template, templateKey),
                     snapshot.narrativeContextFieldLabel,
                     snapshot.beliefContextFieldLabel)
-            });
+            };
+            int existing = TemplateIndex(snapshot.templates, templateKey);
+            if (existing >= 0)
+            {
+                snapshot.templates[existing] = copied;
+            }
+            else
+            {
+                snapshot.templates.Add(copied);
+            }
+        }
+
+        /// <summary>
+        /// Copies every additional XML template that opted into the player composer. The fixed list above
+        /// remains the fail-safe policy catalog for ordinary generation; this pass closes the extension
+        /// seam so any custom row shown by <see cref="DiaryPlayerPromptTemplates.ForUi"/> is also available
+        /// to the pure planner under its exact key.
+        /// </summary>
+        private static void AddPlayerSelectableTemplates(DiaryPolicySnapshot snapshot)
+        {
+            if (snapshot == null) return;
+            List<DiaryPromptTemplateDef> defs = DiaryPlayerPromptTemplates.FirstSelectableDefs();
+
+            for (int i = 0; i < defs.Count; i++)
+            {
+                DiaryPromptTemplateDef template = defs[i];
+                string key = template.templateKey.Trim();
+                UpsertTemplate(snapshot, template, key);
+            }
+        }
+
+        private static int TemplateIndex(List<DiaryTemplatePolicy> templates, string templateKey)
+        {
+            if (templates == null || string.IsNullOrWhiteSpace(templateKey)) return -1;
+            for (int i = 0; i < templates.Count; i++)
+            {
+                if (string.Equals(
+                    templates[i]?.templateKey, templateKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    return i;
+                }
+            }
+            return -1;
         }
 
         private static List<DiaryPromptFieldPolicy> CopyFields(

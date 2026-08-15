@@ -151,36 +151,53 @@ namespace PawnDiary
         public static List<PlayerEntryTemplateSnapshot> ForUi()
         {
             List<PlayerEntryTemplateSnapshot> result = new List<PlayerEntryTemplateSnapshot>();
-            List<DiaryPromptTemplateDef> defs = DefDatabase<DiaryPromptTemplateDef>.AllDefsListForReading;
-            if (defs != null)
+            List<DiaryPromptTemplateDef> defs = FirstSelectableDefs();
+            for (int i = 0; i < defs.Count; i++)
             {
-                for (int i = 0; i < defs.Count; i++)
+                DiaryPromptTemplateDef source = defs[i];
+                string key = source.templateKey.Trim();
+                result.Add(new PlayerEntryTemplateSnapshot
                 {
-                    DiaryPromptTemplateDef source = defs[i];
-                    if (source == null || !source.playerSelectable
-                        || string.IsNullOrWhiteSpace(source.templateKey)) continue;
-                    string key = source.templateKey.Trim();
-                    bool duplicate = false;
-                    for (int existing = 0; existing < result.Count; existing++)
-                    {
-                        if (string.Equals(
-                            result[existing]?.templateKey, key, StringComparison.OrdinalIgnoreCase))
-                        {
-                            duplicate = true;
-                            break;
-                        }
-                    }
-                    if (duplicate) continue;
-                    result.Add(new PlayerEntryTemplateSnapshot
-                    {
-                        templateKey = key,
-                        displayOrder = source.playerOrder,
-                        label = source.LabelCap.Resolve(),
-                        description = source.description ?? string.Empty
-                    });
-                }
+                    templateKey = key,
+                    displayOrder = source.playerOrder,
+                    label = source.LabelCap.Resolve(),
+                    description = source.description ?? string.Empty
+                });
             }
             result.Sort(Compare);
+            return result;
+        }
+
+        /// <summary>
+        /// Returns the exact first selectable Def for each template key. Both the UI and the prompt-policy
+        /// adapter consume this same winner list so a duplicate key or defName alias cannot rebind later.
+        /// </summary>
+        internal static List<DiaryPromptTemplateDef> FirstSelectableDefs()
+        {
+            List<DiaryPromptTemplateDef> result = new List<DiaryPromptTemplateDef>();
+            List<DiaryPromptTemplateDef> defs =
+                DefDatabase<DiaryPromptTemplateDef>.AllDefsListForReading;
+            if (defs == null) return result;
+
+            for (int i = 0; i < defs.Count; i++)
+            {
+                DiaryPromptTemplateDef source = defs[i];
+                if (source == null || !source.playerSelectable
+                    || string.IsNullOrWhiteSpace(source.templateKey)) continue;
+                string key = source.templateKey.Trim();
+                bool duplicate = false;
+                for (int existing = 0; existing < result.Count; existing++)
+                {
+                    if (string.Equals(
+                        result[existing]?.templateKey?.Trim(), key,
+                        StringComparison.OrdinalIgnoreCase))
+                    {
+                        duplicate = true;
+                        break;
+                    }
+                }
+                if (!duplicate) result.Add(source);
+            }
             return result;
         }
 

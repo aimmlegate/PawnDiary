@@ -26,7 +26,7 @@ namespace PawnDiary
         public float LinkedEntryPadding;
         public float LinkedEntryTotalHeight;
         public float ModelNameTopPadding;
-        public float ModelNameHeight;
+        public float FooterLineHeight;
         public float DebugTextTopPadding;
     }
 
@@ -40,6 +40,7 @@ namespace PawnDiary
         private bool cacheShowDebug;
         private DiaryRenderToken cacheToken;
         private int cacheHighlightVersion = -1;
+        private float cacheFooterLineHeight = -1f;
 
         /// <summary>
         /// Drops every session-bound measurement and its cache identity.
@@ -51,11 +52,12 @@ namespace PawnDiary
             cacheShowDebug = false;
             cacheToken = default(DiaryRenderToken);
             cacheHighlightVersion = -1;
+            cacheFooterLineHeight = -1f;
         }
 
         /// <summary>
-        /// Tries to reuse an expanded height while the render token, width, debug flag, and highlight
-        /// set are unchanged.
+        /// Tries to reuse an expanded height while the render token, width, debug flag, highlight set,
+        /// and effective footer-font height are unchanged.
         /// </summary>
         public bool TryGetCachedHeight(
             string entryKey,
@@ -63,17 +65,20 @@ namespace PawnDiary
             bool showLlmDebugInfo,
             DiaryRenderToken token,
             int highlightVersion,
+            float footerLineHeight,
             out float height)
         {
             if (width != cacheWidth
                 || showLlmDebugInfo != cacheShowDebug
                 || highlightVersion != cacheHighlightVersion
+                || footerLineHeight != cacheFooterLineHeight
                 || !token.Equals(cacheToken))
             {
                 heightCache.Clear();
                 cacheWidth = width;
                 cacheShowDebug = showLlmDebugInfo;
                 cacheHighlightVersion = highlightVersion;
+                cacheFooterLineHeight = footerLineHeight;
                 cacheToken = token;
             }
 
@@ -129,7 +134,7 @@ namespace PawnDiary
 
             if (request.HasFooterLine)
             {
-                height += request.ModelNameTopPadding + request.ModelNameHeight;
+                height += request.ModelNameTopPadding + request.FooterLineHeight;
             }
 
             if (request.ShowLlmDebugInfo)

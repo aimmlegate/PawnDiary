@@ -75,6 +75,7 @@ namespace DiaryPipelineTests
             TestMemoryDecayXmlPolicy();
             TestObservedConditionDecayXmlPolicy();
             TestColorCueXmlPolicy();
+            TestDiaryAtmosphereCuePolicy();
             TestPromptTextSanitizer();
             TestPromptContextLines();
             TestHealthImpactPolicy();
@@ -3807,6 +3808,24 @@ namespace DiaryPipelineTests
                 "infection prompt (RU) avoids naming the implant/host",
                 infectionDescriptionRu.IndexOf("имплант", StringComparison.OrdinalIgnoreCase) < 0
                     && infectionDescriptionRu.IndexOf("носител", StringComparison.OrdinalIgnoreCase) < 0);
+        }
+
+        private static void TestDiaryAtmosphereCuePolicy()
+        {
+            AssertEqual("mental-break cue is fractured", "fractured",
+                DiaryAtmosphereCuePolicy.ForColorCue("mentalBreak"));
+            AssertEqual("mental-break matching ignores case", "fractured",
+                DiaryAtmosphereCuePolicy.ForColorCue("MENTALBREAK"));
+            AssertEqual("strange-chat cue is unsettled", "unsettled",
+                DiaryAtmosphereCuePolicy.ForColorCue("strangeChat"));
+            AssertEqual("legacy extreme-dark cue is unsettled", "unsettled",
+                DiaryAtmosphereCuePolicy.ForColorCue("extremeDark"));
+            AssertEqual("anomalous-body-part cue is unsettled", "unsettled",
+                DiaryAtmosphereCuePolicy.ForColorCue("bodyPartAnomalous"));
+            AssertEqual("ordinary category clears atmosphere", string.Empty,
+                DiaryAtmosphereCuePolicy.ForColorCue("quiet"));
+            AssertEqual("missing category clears atmosphere", string.Empty,
+                DiaryAtmosphereCuePolicy.ForColorCue(null));
         }
 
         private static void TestColorCueXmlPolicy()

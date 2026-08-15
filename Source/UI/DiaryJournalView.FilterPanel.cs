@@ -97,6 +97,65 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>Clears every current journal filter without changing year or scroll position.</summary>
+        private void ClearJournalFilters()
+        {
+            filterFavoritesOnly = false;
+            filterActiveTags.Clear();
+            filterSearchQuery = string.Empty;
+        }
+
+        /// <summary>Returns whether one entry survives the currently active filter selections.</summary>
+        private bool PassesCurrentJournalFilters(DiaryEntryView entry, bool showLlmDebugInfo)
+        {
+            return entry != null
+                && DiaryEntryFilterPolicy.Passes(
+                    filterFavoritesOnly,
+                    IsFavoriteEntry(entry.EntryKey),
+                    entry.GroupLabel,
+                    filterActiveTags)
+                && DiaryEntrySearch.Matches(
+                    EntryDisplayTitle(entry),
+                    EntryBodyText(entry, showLlmDebugInfo),
+                    ActiveJournalSearchQuery,
+                    UiStyle.FilterSearchMinimumCharacters);
+        }
+
+        /// <summary>
+        /// Clears active filters only when an opted-in pending target exists on this page and would
+        /// otherwise be hidden. The pending scroll itself is consumed later after layout has offsets.
+        /// </summary>
+        private void RevealPendingScrollTargetIfFiltered(
+            string pawnId,
+            List<DiaryEntryView> ordered,
+            bool showLlmDebugInfo)
+        {
+            if (!pendingScrollRevealEvenIfFiltered
+                || !JournalFiltersActive
+                || ordered == null
+                || !string.Equals(pawnId, pendingScrollPawnId, StringComparison.Ordinal)
+                || string.IsNullOrWhiteSpace(pendingScrollEventId))
+            {
+                return;
+            }
+
+            for (int i = 0; i < ordered.Count; i++)
+            {
+                DiaryEntryView entry = ordered[i];
+                if (entry == null
+                    || !string.Equals(entry.EventId, pendingScrollEventId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (!PassesCurrentJournalFilters(entry, showLlmDebugInfo))
+                {
+                    ClearJournalFilters();
+                }
+                return;
+            }
+        }
+
         /// <summary>
         /// Returns the selected year's cards narrowed by the current filter selections, reusing one
         /// stable buffer between frames. The buffer is refilled only when an input changed: the source
@@ -131,17 +190,7 @@ namespace PawnDiary
                 for (int i = 0; i < ordered.Count; i++)
                 {
                     DiaryEntryView entry = ordered[i];
-                    if (entry != null
-                        && DiaryEntryFilterPolicy.Passes(
-                            filterFavoritesOnly,
-                            IsFavoriteEntry(entry.EntryKey),
-                            entry.GroupLabel,
-                            filterActiveTags)
-                        && DiaryEntrySearch.Matches(
-                            EntryDisplayTitle(entry),
-                            EntryBodyText(entry, showLlmDebugInfo),
-                            searchQuery,
-                            UiStyle.FilterSearchMinimumCharacters))
+                    if (PassesCurrentJournalFilters(entry, showLlmDebugInfo))
                     {
                         journalFilterBuffer.Add(entry);
                     }
@@ -367,9 +416,7 @@ namespace PawnDiary
                 actionRow.height);
             if (Widgets.ButtonText(clearRect, "PawnDiary.Tab.FilterClear".Translate()))
             {
-                filterFavoritesOnly = false;
-                filterActiveTags.Clear();
-                filterSearchQuery = string.Empty;
+                ClearJournalFilters();
             }
 
             DrawMarkdownExportButton(

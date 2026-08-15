@@ -80,7 +80,7 @@ namespace PawnDiary
         public string systemPrompt = string.Empty;
         public string userPrompt = string.Empty;
         public int laneIndex = -1;
-        public int maxTokens = PlayerEntryComposerPolicy.DefaultMaxTokens;
+        public int maxTokens = PlayerEntryComposerPolicy.UseTemplateOrSettingsMaxTokens;
     }
 
     /// <summary>Sanitized request plan. ErrorCode is a stable internal token, never UI copy.</summary>
@@ -111,8 +111,13 @@ namespace PawnDiary
         public const int ContextInstructionMaxCharacters = 4000;
         public const int RawPromptMaxCharacters = 4000;
         public const int MinMaxTokens = 16;
+        // Public one-shot adapters stop at 600; trusted XML/global policy may use the same 4,000-token
+        // ceiling exposed by Prompt Studio's template field without letting corrupt values run unbounded.
         public const int MaxMaxTokens = 600;
-        public const int DefaultMaxTokens = 200;
+        public const int MaxResolvedPolicyTokens = 4000;
+        // Zero is a policy sentinel: Context mode uses the selected XML template's positive cap,
+        // then both generating modes fall back to the player's global setting when no cap exists.
+        public const int UseTemplateOrSettingsMaxTokens = 0;
 
         /// <summary>
         /// Produces a detached validated plan. Raw prompts preserve every character except NUL and
@@ -133,7 +138,7 @@ namespace PawnDiary
 
             result.mode = request.mode;
             result.laneIndex = request.laneIndex;
-            result.maxTokens = Clamp(request.maxTokens, MinMaxTokens, MaxMaxTokens);
+            result.maxTokens = NormalizeRequestedMaxTokens(request.maxTokens);
             result.title = CleanProse(request.title, TitleMaxCharacters).Trim();
             result.body = CleanProse(request.body, BodyMaxCharacters).Trim();
             result.factualSummary = CleanProse(
@@ -214,6 +219,17 @@ namespace PawnDiary
 
             if (ContainsTemplate(templates, requested)) return requested;
             return ContainsTemplate(templates, fallback) ? fallback : string.Empty;
+        }
+
+        /// <summary>
+        /// Resolves a planner/template token cap against the player's global setting. Positive values
+        /// win; zero means "inherit". The final value stays inside the one-shot transport's defensive
+        /// response band.
+        /// </summary>
+        public static int ResolveCompletionMaxTokens(int plannedMaxTokens, int settingsMaxTokens)
+        {
+            int chosen = plannedMaxTokens > 0 ? plannedMaxTokens : settingsMaxTokens;
+            return Clamp(chosen, MinMaxTokens, MaxResolvedPolicyTokens);
         }
 
         /// <summary>Finds an exact entry type; blank input intentionally selects Personal.</summary>
@@ -310,6 +326,13 @@ namespace PawnDiary
         private static string CleanKey(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+
+        private static int NormalizeRequestedMaxTokens(int value)
+        {
+            return value <= 0
+                ? UseTemplateOrSettingsMaxTokens
+                : Clamp(value, MinMaxTokens, MaxMaxTokens);
         }
 
         private static int Clamp(int value, int min, int max)

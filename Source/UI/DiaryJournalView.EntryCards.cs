@@ -243,7 +243,12 @@ namespace PawnDiary
                     // model name and regenerate icon on the right. HasFooterLine reserves its height so
                     // measured and drawn card heights stay in sync. (The favorite star remains in the
                     // title bar.)
-                    Rect footerRect = new Rect(localEntryRect.x + 12f, localEntryRect.yMax - EntryBottomPadding - ModelNameHeight, localEntryRect.width - 24f, ModelNameHeight);
+                    float footerLineHeight = EffectiveEntryFooterLineHeight();
+                    Rect footerRect = new Rect(
+                        localEntryRect.x + 12f,
+                        localEntryRect.yMax - EntryBottomPadding - footerLineHeight,
+                        localEntryRect.width - 24f,
+                        footerLineHeight);
                     DrawEntryFooter(
                         footerRect,
                         footerNote,
@@ -413,6 +418,27 @@ namespace PawnDiary
             }
             clicked = Widgets.ButtonInvisible(actionRect, false);
             return totalWidth;
+        }
+
+        /// <summary>
+        /// Measures the font RimWorld will actually use for Tiny labels. Some accessibility/language
+        /// configurations map Tiny to Small, so the XML height is a minimum rather than a fixed row.
+        /// The descender probe is intentional: Text.LineHeight measures only a capital W and can clip
+        /// letters such as g, j, p, q, and y (see docs/lore/ui.md).
+        /// </summary>
+        private static float EffectiveEntryFooterLineHeight()
+        {
+            GameFont oldFont = Text.Font;
+            try
+            {
+                Text.Font = GameFont.Tiny;
+                float descenderSafeHeight = Mathf.Ceil(Text.CalcHeight("gjpqy", 999f));
+                return DiaryUiPolicy.EffectiveFooterLineHeight(ModelNameHeight, descenderSafeHeight);
+            }
+            finally
+            {
+                Text.Font = oldFont;
+            }
         }
 
         /// <summary>
@@ -1616,7 +1642,8 @@ namespace PawnDiary
             DiaryGameComponent component,
             Color dialogueColor,
             string searchQuery,
-            string searchHighlightColorHex)
+            string searchHighlightColorHex,
+            float footerLineHeight)
         {
             string bodyText = EntryBodyText(entry, showLlmDebugInfo);
             string atmosphereCue = EntryAtmosphereCue(entry);
@@ -1654,7 +1681,7 @@ namespace PawnDiary
                 LinkedEntryPadding = LinkedEntryPadding,
                 LinkedEntryTotalHeight = LinkedEntryTotalHeight,
                 ModelNameTopPadding = ModelNameTopPadding,
-                ModelNameHeight = ModelNameHeight,
+                FooterLineHeight = footerLineHeight,
                 DebugTextTopPadding = DebugTextTopPadding,
             };
         }

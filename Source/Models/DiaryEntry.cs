@@ -53,8 +53,8 @@ namespace PawnDiary
     /// </summary>
     internal class DiaryEntryView
     {
-        public const string AtmosphereFractured = "fractured";
-        public const string AtmosphereUnsettled = "unsettled";
+        public const string AtmosphereFractured = DiaryAtmosphereCuePolicy.FracturedAtmosphereCue;
+        public const string AtmosphereUnsettled = DiaryAtmosphereCuePolicy.UnsettledAtmosphereCue;
         public const string AtmosphereMemorial = "memorial";
 
         public readonly int Tick;           // Game tick when the event occurred

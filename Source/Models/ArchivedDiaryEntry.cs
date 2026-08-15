@@ -101,6 +101,9 @@ namespace PawnDiary
             entryTypeKey = entryType.entryTypeKey ?? string.Empty;
             groupLabel = entryType.label ?? string.Empty;
             colorCue = entryType.colorCue ?? string.Empty;
+            // Compact rows cannot recompute this later from their discarded source event. Update the
+            // persisted atmosphere now, using the same pure mapping as a hot DiaryEvent display view.
+            atmosphereCue = DiaryAtmosphereCuePolicy.ForColorCue(colorCue);
             important = entryType.important;
             decorationDomain = entryType.domain ?? string.Empty;
             return true;
@@ -198,6 +201,19 @@ namespace PawnDiary
             PlayerEntryTypeSnapshot playerType = string.IsNullOrWhiteSpace(entryTypeKey)
                 ? null
                 : DiaryPlayerEntryTypes.ResolveOrPersonal(entryTypeKey);
+            string displayColorCue = playerType?.colorCue ?? colorCue;
+            // A nonblank player category owns both display cues, exactly as it does for a hot event.
+            // Deriving this at projection time also repairs the view of rows saved by versions that
+            // changed entryTypeKey/colorCue but accidentally retained the source atmosphereCue.
+            string displayAtmosphereCue = playerType == null
+                ? atmosphereCue
+                : DiaryAtmosphereCuePolicy.ForColorCue(displayColorCue);
+            if (deathDescription
+                && string.Equals(povRole, DiaryEvent.NeutralRole, StringComparison.OrdinalIgnoreCase))
+            {
+                displayAtmosphereCue = DiaryEntryView.AtmosphereMemorial;
+            }
+
             LinkedEntryView link = null;
             if (!string.IsNullOrWhiteSpace(linkedPawnId) || !string.IsNullOrWhiteSpace(linkedPreviewText))
             {
@@ -215,8 +231,8 @@ namespace PawnDiary
             {
                 povRole = povRole,
                 defName = interactionDefName,
-                colorCue = playerType?.colorCue ?? colorCue,
-                atmosphereCue = atmosphereCue,
+                colorCue = displayColorCue,
+                atmosphereCue = displayAtmosphereCue,
                 domain = playerType?.domain ?? decorationDomain,
                 gameContext = decorationGameContext
             };
@@ -236,8 +252,8 @@ namespace PawnDiary
                 eventId,
                 povRole,
                 playerType?.label ?? groupLabel,
-                playerType?.colorCue ?? colorCue,
-                atmosphereCue,
+                displayColorCue,
+                displayAtmosphereCue,
                 staggeredIntensity,
                 distortDirectSpeech,
                 playerType?.important ?? important,
