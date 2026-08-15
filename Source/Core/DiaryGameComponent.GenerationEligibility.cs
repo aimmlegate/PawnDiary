@@ -188,7 +188,9 @@ namespace PawnDiary
         {
             // Missing records fall back to the XML default writing style.
             string pawnId = PawnIdForRole(diaryEvent, povRole);
-            PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
+            PawnDiaryRecord diary = ensureVoiceStage
+                ? FindDiaryByPawnId(pawnId)
+                : LookupDiaryByPawnId(pawnId);
             Pawn pawn = FindLivePawnByLoadId(pawnId, livePawnsById);
             // Resolve any pending crystallization/backfill first so the style below reflects the band the
             // pawn is actually in (a just-grown-up child re-rolls onto the adult style catalog here).
@@ -217,7 +219,9 @@ namespace PawnDiary
             PromptContextDetailLevel? contextDetailLevel = null)
         {
             string pawnId = PawnIdForRole(diaryEvent, povRole);
-            PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
+            PawnDiaryRecord diary = ensureVoiceStage
+                ? FindDiaryByPawnId(pawnId)
+                : LookupDiaryByPawnId(pawnId);
             Pawn pawn = FindLivePawnByLoadId(pawnId, livePawnsById);
             bool automaticLayerEnabled = contextDetailLevel.HasValue
                 ? PromptContextFeaturePolicy.AllowsPsychotypes(contextDetailLevel.Value)
@@ -260,7 +264,8 @@ namespace PawnDiary
         /// </summary>
         private string PromptEnchantmentRuleFor(DiaryEvent diaryEvent, string povRole,
             Dictionary<string, Pawn> livePawnsById = null,
-            PromptContextDetailLevel? contextDetailLevel = null)
+            PromptContextDetailLevel? contextDetailLevel = null,
+            bool readOnlyPreview = false)
         {
             bool layerEnabled = contextDetailLevel.HasValue
                 ? PromptContextFeaturePolicy.AllowsPromptEnchantments(contextDetailLevel.Value)
@@ -275,13 +280,15 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            if (!DiaryPromptBuilder.ShouldResolvePromptEnchantment(diaryEvent))
+            if (!DiaryPromptBuilder.ShouldResolvePromptEnchantment(diaryEvent, readOnlyPreview))
             {
                 return string.Empty;
             }
 
             string pawnId = PawnIdForRole(diaryEvent, povRole);
-            PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
+            PawnDiaryRecord diary = readOnlyPreview
+                ? LookupDiaryByPawnId(pawnId)
+                : FindDiaryByPawnId(pawnId);
             Pawn pawn = FindLivePawnByLoadId(pawnId, livePawnsById);
             List<string> suppressedHediffDefNames = HasExternalWritingStyleOverride(diary)
                 ? new List<string>()
@@ -315,7 +322,7 @@ namespace PawnDiary
                 diaryEvent?.eventId ?? string.Empty,
                 pawnId,
                 diaryEvent?.promptVariantRerolls ?? 0,
-                diaryEvent != null && diaryEvent.IsImportant(),
+                diaryEvent != null && diaryEvent.IsImportantForRole(povRole),
                 candidates,
                 eventWindowNormalMultiplier * observedConditionNormalMultiplier,
                 suppressedHediffDefNames,

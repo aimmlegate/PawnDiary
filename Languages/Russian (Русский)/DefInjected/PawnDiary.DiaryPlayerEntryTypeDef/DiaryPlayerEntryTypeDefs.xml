@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <PawnDiary_PlayerEntryType_Personal.label>личное</PawnDiary_PlayerEntryType_Personal.label>
+  <PawnDiary_PlayerEntryType_Personal.description>Личная запись о том, что сейчас занимает мысли поселенца.</PawnDiary_PlayerEntryType_Personal.description>
+  <PawnDiary_PlayerEntryType_Important.label>важное</PawnDiary_PlayerEntryType_Important.label>
+  <PawnDiary_PlayerEntryType_Important.description>Значимый момент, которому стоит уделить больше места и веса.</PawnDiary_PlayerEntryType_Important.description>
+  <PawnDiary_PlayerEntryType_InnerThoughts.label>внутренние мысли</PawnDiary_PlayerEntryType_InnerThoughts.label>
+  <PawnDiary_PlayerEntryType_InnerThoughts.description>Личное чувство, тревога, надежда или перемена во взглядах.</PawnDiary_PlayerEntryType_InnerThoughts.description>
+  <PawnDiary_PlayerEntryType_Social.label>отношения</PawnDiary_PlayerEntryType_Social.label>
+  <PawnDiary_PlayerEntryType_Social.description>Разговор, отношения или момент, связанный с другими людьми.</PawnDiary_PlayerEntryType_Social.description>
+  <PawnDiary_PlayerEntryType_Work.label>работа</PawnDiary_PlayerEntryType_Work.label>
+  <PawnDiary_PlayerEntryType_Work.description>Работа, проект, ремесло, урожай или обычный трудовой день.</PawnDiary_PlayerEntryType_Work.description>
+  <PawnDiary_PlayerEntryType_Health.label>здоровье</PawnDiary_PlayerEntryType_Health.label>
+  <PawnDiary_PlayerEntryType_Health.description>Болезнь, ранение, выздоровление, лечение или перемена в теле.</PawnDiary_PlayerEntryType_Health.description>
+  <PawnDiary_PlayerEntryType_Combat.label>бой</PawnDiary_PlayerEntryType_Combat.label>
+  <PawnDiary_PlayerEntryType_Combat.description>Сражение, рейд, угроза, оборона или чудесное спасение.</PawnDiary_PlayerEntryType_Combat.description>
+  <PawnDiary_PlayerEntryType_Colony.label>колония</PawnDiary_PlayerEntryType_Colony.label>
+  <PawnDiary_PlayerEntryType_Colony.description>Общее дело колонии, план, кризис или достижение.</PawnDiary_PlayerEntryType_Colony.description>
+  <PawnDiary_PlayerEntryType_Reflection.label>размышление</PawnDiary_PlayerEntryType_Reflection.label>
+  <PawnDiary_PlayerEntryType_Reflection.description>Более широкий взгляд на недавние события и их значение.</PawnDiary_PlayerEntryType_Reflection.description>
+</LanguageData>

@@ -385,6 +385,116 @@ namespace PawnDiary
 
 
         /// <summary>
+        /// True when the current subject can receive a new player-authored page. This intentionally
+        /// ignores the automatic-generation toggle: pausing the LLM must not disable manual writing.
+        /// </summary>
+        private static bool ShouldDrawManualEntryCreateButton(
+            DiaryReaderSubject subject,
+            DiaryGameComponent component)
+        {
+            return subject.Alive
+                && subject.Pawn != null
+                && component != null
+                && DiaryGameComponent.IsDiaryEligible(subject.Pawn);
+        }
+
+        /// <summary>
+        /// Draws the quiet header plus icon that opens a detached new-page draft.
+        /// </summary>
+        private static void DrawManualEntryCreateHeaderIcon(
+            Rect rect,
+            Pawn pawn,
+            DiaryGameComponent component)
+        {
+            Color baseColor = new Color(1f, 1f, 1f, Mathf.Clamp01(WritingStyleIconAlpha));
+            Color hoverColor = new Color(1f, 1f, 1f, Mathf.Clamp01(WritingStyleIconHoverAlpha));
+            if (Widgets.ButtonImage(rect, DiaryButtonTextures.NewEntry, baseColor, hoverColor))
+            {
+                OpenManualEntryCreateDialog(pawn, component);
+            }
+
+            string pawnName = pawn == null ? string.Empty : pawn.LabelShortCap.ToString();
+            TooltipHandler.TipRegion(
+                rect,
+                Dialog_DiaryEntryEditor.FormatPlayerTextFrame(
+                    "PawnDiary.ManualEntry.NewTip",
+                    pawnName));
+        }
+
+        /// <summary>
+        /// Opens one new-page editor, or focuses the existing manual editor so two detached drafts
+        /// cannot later overwrite each other in a surprising order.
+        /// </summary>
+        private static void OpenManualEntryCreateDialog(Pawn pawn, DiaryGameComponent component)
+        {
+            if (pawn == null || component == null || FocusExistingManualEntryEditor())
+            {
+                return;
+            }
+
+            Find.WindowStack.Add(Dialog_DiaryEntryEditor.ForCreate(
+                pawn,
+                component,
+                DiaryGameComponent.ManualEntryTitleMaxCharacters,
+                DiaryGameComponent.ManualEntryBodyMaxCharacters));
+        }
+
+        /// <summary>Focuses the singleton manual editor when a detached draft is already open.</summary>
+        private static bool FocusExistingManualEntryEditor()
+        {
+            Dialog_DiaryEntryEditor existing =
+                Find.WindowStack.Windows.OfType<Dialog_DiaryEntryEditor>().FirstOrDefault();
+            if (existing == null)
+            {
+                return false;
+            }
+
+            Find.WindowStack.Notify_ManuallySetFocus(existing);
+            return true;
+        }
+
+        /// <summary>
+        /// Resolves a fresh detached snapshot for one exact persisted page before opening the editor.
+        /// The stable pawn/event/POV identity is used instead of EntryKey, whose damaged-row fallback is
+        /// intentionally suitable only for transient UI caches.
+        /// </summary>
+        private static void OpenManualEntryEditDialog(
+            string pawnId,
+            string pawnDisplayName,
+            DiaryEntryView entry,
+            DiaryGameComponent component)
+        {
+            if (entry == null || component == null || FocusExistingManualEntryEditor())
+            {
+                return;
+            }
+
+            ManualDiaryEntrySnapshot snapshot;
+            if (!component.TryGetManualEntrySnapshot(
+                pawnId,
+                entry.EventId,
+                entry.PovRole,
+                out snapshot))
+            {
+                Messages.Message(
+                    "PawnDiary.ManualEntry.EntryUnavailable".Translate(),
+                    MessageTypeDefOf.RejectInput,
+                    false);
+                return;
+            }
+
+            string displayName = string.IsNullOrWhiteSpace(pawnDisplayName)
+                ? "PawnDiary.Reader.UnknownPawn".Translate().ToString()
+                : pawnDisplayName;
+            Find.WindowStack.Add(Dialog_DiaryEntryEditor.ForEdit(
+                displayName,
+                snapshot,
+                component,
+                DiaryGameComponent.ManualEntryTitleMaxCharacters,
+                DiaryGameComponent.ManualEntryBodyMaxCharacters));
+        }
+
+        /// <summary>
         /// True when the Diary tab should offer the player-facing Diary profile editor for this pawn.
         /// The tab can render children and corpses, but only diary-eligible pawns can store the result.
         /// </summary>

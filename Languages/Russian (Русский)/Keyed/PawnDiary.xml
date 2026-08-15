@@ -250,6 +250,81 @@
   <PawnDiary.Tab.CopyEntry>Копировать страницу</PawnDiary.Tab.CopyEntry>
   <PawnDiary.Tab.CopyEntryTip>Скопировать текст страницы в буфер обмена.</PawnDiary.Tab.CopyEntryTip>
   <PawnDiary.Tab.CopyEntryCopied>Текст страницы скопирован.</PawnDiary.Tab.CopyEntryCopied>
+  <PawnDiary.ManualEntry.NewTip>Написать новую страницу дневника для {0}.</PawnDiary.ManualEntry.NewTip>
+  <PawnDiary.ManualEntry.EditAction>Изменить</PawnDiary.ManualEntry.EditAction>
+  <PawnDiary.ManualEntry.EditTip>Изменить заголовок и текст этой страницы.</PawnDiary.ManualEntry.EditTip>
+  <PawnDiary.ManualEntry.NewTitle>Новая страница дневника — {0}</PawnDiary.ManualEntry.NewTitle>
+  <PawnDiary.ManualEntry.EditTitle>Изменение страницы — {0}</PawnDiary.ManualEntry.EditTitle>
+  <PawnDiary.ManualEntry.TitleLabel>Заголовок (необязательно)</PawnDiary.ManualEntry.TitleLabel>
+  <PawnDiary.ManualEntry.BodyLabel>Текст страницы</PawnDiary.ManualEntry.BodyLabel>
+  <PawnDiary.ManualEntry.CharacterCount>{0} / {1}</PawnDiary.ManualEntry.CharacterCount>
+  <PawnDiary.ManualEntry.Save>Сохранить страницу</PawnDiary.ManualEntry.Save>
+  <PawnDiary.ManualEntry.Cancel>Отмена</PawnDiary.ManualEntry.Cancel>
+  <PawnDiary.ManualEntry.BodyRequired>Напишите что-нибудь на странице перед сохранением.</PawnDiary.ManualEntry.BodyRequired>
+  <PawnDiary.ManualEntry.TooLong>Сократите заголовок или текст страницы до указанного ограничения.</PawnDiary.ManualEntry.TooLong>
+  <PawnDiary.ManualEntry.NoChanges>Изменений нет. Сохранение закроет окно, не меняя страницу.</PawnDiary.ManualEntry.NoChanges>
+  <PawnDiary.ManualEntry.Created>Новая страница дневника сохранена.</PawnDiary.ManualEntry.Created>
+  <PawnDiary.ManualEntry.Updated>Страница дневника изменена.</PawnDiary.ManualEntry.Updated>
+  <PawnDiary.ManualEntry.SaveFailed>Не удалось сохранить страницу дневника.</PawnDiary.ManualEntry.SaveFailed>
+  <PawnDiary.ManualEntry.EntryUnavailable>Эту страницу больше нельзя изменить.</PawnDiary.ManualEntry.EntryUnavailable>
+  <PawnDiary.ManualEntry.GroupLabel>Личная запись</PawnDiary.ManualEntry.GroupLabel>
+  <PawnDiary.ManualEntry.SubtitleCreate>Черновик не попадёт в дневник, пока вы не проверите и не сохраните его.</PawnDiary.ManualEntry.SubtitleCreate>
+  <PawnDiary.ManualEntry.SubtitleEdit>Изменения останутся только в этом окне, пока вы их не сохраните.</PawnDiary.ManualEntry.SubtitleEdit>
+  <PawnDiary.ManualEntry.ModeWrite>Написать страницу</PawnDiary.ManualEntry.ModeWrite>
+  <PawnDiary.ManualEntry.ModeWriteDescription>Самостоятельно ввести готовый текст дневника.</PawnDiary.ManualEntry.ModeWriteDescription>
+  <PawnDiary.ManualEntry.ModeContext>Создать с контекстом дневника</PawnDiary.ManualEntry.ModeContext>
+  <PawnDiary.ManualEntry.ModeContextDescription>Задайте направление, а Дневник пешки создаст черновик с контекстом пешки.</PawnDiary.ManualEntry.ModeContextDescription>
+  <PawnDiary.ManualEntry.ModeFullPrompt>Полный промпт</PawnDiary.ManualEntry.ModeFullPrompt>
+  <PawnDiary.ManualEntry.ModeFullPromptDescription>Отправить только ваши системный и пользовательский промпты, а затем проверить результат.</PawnDiary.ManualEntry.ModeFullPromptDescription>
+  <PawnDiary.ManualEntry.EntryTypeLabel>Тип записи</PawnDiary.ManualEntry.EntryTypeLabel>
+  <PawnDiary.ManualEntry.EntryTypeOriginal>Исходный тип события</PawnDiary.ManualEntry.EntryTypeOriginal>
+  <PawnDiary.ManualEntry.EntryTypeOriginalDescription>Сохранить исходную классификацию и оформление этой страницы.</PawnDiary.ManualEntry.EntryTypeOriginalDescription>
+  <PawnDiary.ManualEntry.EntryTypeLocked>Задан исходным событием</PawnDiary.ManualEntry.EntryTypeLocked>
+  <PawnDiary.ManualEntry.EntryTypeLockedTip>Страницы прибытия и смерти сохраняют исходный тип и граничный смысл.</PawnDiary.ManualEntry.EntryTypeLockedTip>
+  <PawnDiary.ManualEntry.TemplateLabel>Шаблон</PawnDiary.ManualEntry.TemplateLabel>
+  <PawnDiary.ManualEntry.TemplateAutomatic>Автоматически (рекомендуется)</PawnDiary.ManualEntry.TemplateAutomatic>
+  <PawnDiary.ManualEntry.TemplateAutomaticDescription>Использовать лучший совместимый шаблон для выбранного типа записи.</PawnDiary.ManualEntry.TemplateAutomaticDescription>
+  <PawnDiary.ManualEntry.ContextSubjectLabel>О чём должна быть эта страница?</PawnDiary.ManualEntry.ContextSubjectLabel>
+  <PawnDiary.ManualEntry.ContextSubjectHelp>Опишите факты или момент, о котором должна написать пешка.</PawnDiary.ManualEntry.ContextSubjectHelp>
+  <PawnDiary.ManualEntry.ContextInstructionLabel>Дополнительное указание для текста (необязательно)</PawnDiary.ManualEntry.ContextInstructionLabel>
+  <PawnDiary.ManualEntry.ContextInstructionHelp>Укажите акцент, настроение или структуру, не повторяя факты выше.</PawnDiary.ManualEntry.ContextInstructionHelp>
+  <PawnDiary.ManualEntry.ContextAddedTitle>Дневник пешки добавит</PawnDiary.ManualEntry.ContextAddedTitle>
+  <PawnDiary.ManualEntry.ContextAddedBody>Стиль письма и взгляд на мир · украшение промпта · выбранные указания для события и безопасный шаблон · сводка и личность пешки · обстановка · связь, последняя начальная фраза и предыдущее окончание · подходящее прошлое только для чтения</PawnDiary.ManualEntry.ContextAddedBody>
+  <PawnDiary.ManualEntry.FullPromptWarningTitle>Полный промпт исключает контекст Дневника пешки</PawnDiary.ManualEntry.FullPromptWarningTitle>
+  <PawnDiary.ManualEntry.FullPromptWarningBody>Дневник пешки не добавит персону, профиль пешки, воспоминания, текущую обстановку, связь с предыдущими записями, указания для события, стиль письма и ограничения достоверности и безопасности. Через протокол настроенного провайдера будут отправлены только системный и пользовательский промпты ниже.</PawnDiary.ManualEntry.FullPromptWarningBody>
+  <PawnDiary.ManualEntry.SystemPromptLabel>Системный промпт (необязательно)</PawnDiary.ManualEntry.SystemPromptLabel>
+  <PawnDiary.ManualEntry.SystemPromptHelp>Задайте роль модели или общие правила.</PawnDiary.ManualEntry.SystemPromptHelp>
+  <PawnDiary.ManualEntry.UserPromptLabel>Пользовательский промпт</PawnDiary.ManualEntry.UserPromptLabel>
+  <PawnDiary.ManualEntry.UserPromptHelp>Напишите полный запрос именно в том виде, в каком его должна получить модель.</PawnDiary.ManualEntry.UserPromptHelp>
+  <PawnDiary.ManualEntry.ReviewTitle>Проверка черновика</PawnDiary.ManualEntry.ReviewTitle>
+  <PawnDiary.ManualEntry.ReviewContextDescription>Этот черновик создан с выбранным шаблоном и контекстом Дневника пешки. Перед сохранением его можно свободно изменить.</PawnDiary.ManualEntry.ReviewContextDescription>
+  <PawnDiary.ManualEntry.ReviewFullPromptDescription>Этот черновик создан из вашего полного промпта. Перед сохранением его можно свободно изменить.</PawnDiary.ManualEntry.ReviewFullPromptDescription>
+  <PawnDiary.ManualEntry.ReviewContextBadge>Черновик с контекстом дневника</PawnDiary.ManualEntry.ReviewContextBadge>
+  <PawnDiary.ManualEntry.ReviewFullPromptBadge>Черновик из полного промпта</PawnDiary.ManualEntry.ReviewFullPromptBadge>
+  <PawnDiary.ManualEntry.ReviewTemplateUsed>Использованный шаблон: {0}</PawnDiary.ManualEntry.ReviewTemplateUsed>
+  <PawnDiary.ManualEntry.GenerateDraft>Создать черновик</PawnDiary.ManualEntry.GenerateDraft>
+  <PawnDiary.ManualEntry.Generating>Создание…</PawnDiary.ManualEntry.Generating>
+  <PawnDiary.ManualEntry.CancelRequest>Отменить запрос</PawnDiary.ManualEntry.CancelRequest>
+  <PawnDiary.ManualEntry.Retry>Повторить</PawnDiary.ManualEntry.Retry>
+  <PawnDiary.ManualEntry.BackToPrompt>Вернуться к промпту</PawnDiary.ManualEntry.BackToPrompt>
+  <PawnDiary.ManualEntry.GenerationFailed>Не удалось создать черновик: {0}</PawnDiary.ManualEntry.GenerationFailed>
+  <PawnDiary.ManualEntry.GenerationErrorTitle>Сбой создания</PawnDiary.ManualEntry.GenerationErrorTitle>
+  <PawnDiary.ManualEntry.GenerationUnknown>Запрос завершился без результата. Можно повторить попытку.</PawnDiary.ManualEntry.GenerationUnknown>
+  <PawnDiary.ManualEntry.SubjectRequired>Перед созданием опишите, о чём должна быть эта страница.</PawnDiary.ManualEntry.SubjectRequired>
+  <PawnDiary.ManualEntry.PromptRequired>Перед созданием напишите пользовательский промпт.</PawnDiary.ManualEntry.PromptRequired>
+  <PawnDiary.ManualEntry.NoProvider>Нет доступного настроенного провайдера ИИ.</PawnDiary.ManualEntry.NoProvider>
+  <PawnDiary.ManualEntry.GenerationStartFailed>Не удалось запустить создание черновика.</PawnDiary.ManualEntry.GenerationStartFailed>
+  <PawnDiary.ManualEntry.PromptTooLong>Сократите поля промпта до указанных ограничений.</PawnDiary.ManualEntry.PromptTooLong>
+  <PawnDiary.ManualEntry.EntryTypeUnavailable>Выбранный тип записи больше недоступен.</PawnDiary.ManualEntry.EntryTypeUnavailable>
+  <PawnDiary.ManualEntry.TemplateUnavailable>Нет доступного совместимого шаблона дневника.</PawnDiary.ManualEntry.TemplateUnavailable>
+  <PawnDiary.ManualEntry.PawnUnavailable>Для этой пешки больше нельзя создать новую страницу дневника.</PawnDiary.ManualEntry.PawnUnavailable>
+  <PawnDiary.ManualEntry.DiscardTitle>Отбросить черновик?</PawnDiary.ManualEntry.DiscardTitle>
+  <PawnDiary.ManualEntry.DiscardPrompt>Закрыть это окно и отбросить несохранённые изменения?</PawnDiary.ManualEntry.DiscardPrompt>
+  <PawnDiary.ManualEntry.CancelPendingTitle>Отменить создание?</PawnDiary.ManualEntry.CancelPendingTitle>
+  <PawnDiary.ManualEntry.CancelPendingPrompt>Запрос всё ещё выполняется. Отменить его и отбросить этот черновик?</PawnDiary.ManualEntry.CancelPendingPrompt>
+  <PawnDiary.EntryComposer.EntryType.Personal>Личная запись</PawnDiary.EntryComposer.EntryType.Personal>
+  <PawnDiary.EntryComposer.EntryType.Personal.Description>Личный или повседневный момент, описанный голосом самой пешки.</PawnDiary.EntryComposer.EntryType.Personal.Description>
+  <PawnDiary.EntryComposer.EntryType.Source.Description>Эта страница сохраняет категорию, определённую исходным событием.</PawnDiary.EntryComposer.EntryType.Source.Description>
   <PawnDiary.Tab.FavoriteAddTip>Отметить страницу как избранную.</PawnDiary.Tab.FavoriteAddTip>
   <PawnDiary.Tab.FavoriteRemoveTip>Убрать страницу из избранного.</PawnDiary.Tab.FavoriteRemoveTip>
   <!-- Боковая панель фильтров и управления: выбор года, фильтры журнала и инструменты разработчика. -->

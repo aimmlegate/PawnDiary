@@ -6,6 +6,10 @@ Companion: [repowiki/README.md](repowiki/README.md) describes the current state.
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-08-15
+
+- **Player diary composer.** Journal pages can now be written or edited with friendly entry types, or generated as reviewable drafts from Pawn Diary context or an exact full prompt before saving.
+
 ## 2026-08-14
 
 - **Editable pawn memories.** Diary profiles now manage one protected background memory plus captured-memory prose, with deterministic Full-context recall, additive save migration, and Brainwipe cleanup.

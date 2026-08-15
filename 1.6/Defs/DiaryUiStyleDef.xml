@@ -47,6 +47,33 @@
     <readerScreenMargin>48</readerScreenMargin>
     <readerDeadPawnTint><r>0.72</r><g>0.66</g><b>0.62</b><a>1</a></readerDeadPawnTint>
 
+    <!-- Shared responsive composer for writing, generating, reviewing, and revising diary pages. It
+         shrinks to the current screen after preserving the configured surrounding desktop space. -->
+    <manualEntryEditorWidth>820</manualEntryEditorWidth>
+    <manualEntryEditorHeight>700</manualEntryEditorHeight>
+    <manualEntryEditorScreenMargin>64</manualEntryEditorScreenMargin>
+    <manualEntryEditorFieldGap>8</manualEntryEditorFieldGap>
+    <manualEntryEditorButtonWidth>140</manualEntryEditorButtonWidth>
+    <manualEntryEditorButtonGap>10</manualEntryEditorButtonGap>
+    <manualEntryComposerCompactWidth>620</manualEntryComposerCompactWidth>
+    <manualEntryComposerSectionGap>12</manualEntryComposerSectionGap>
+    <manualEntryComposerPanelPadding>10</manualEntryComposerPanelPadding>
+    <manualEntryComposerModeGap>8</manualEntryComposerModeGap>
+    <manualEntryComposerModeMinHeight>72</manualEntryComposerModeMinHeight>
+    <manualEntryComposerSelectorGap>12</manualEntryComposerSelectorGap>
+    <manualEntryComposerSelectorMinHeight>34</manualEntryComposerSelectorMinHeight>
+    <manualEntryComposerDescriptionGap>4</manualEntryComposerDescriptionGap>
+    <manualEntryComposerCharacterGap>8</manualEntryComposerCharacterGap>
+    <manualEntryComposerTextPadding>6</manualEntryComposerTextPadding>
+    <manualEntryComposerShortAreaHeight>104</manualEntryComposerShortAreaHeight>
+    <manualEntryComposerSystemAreaHeight>120</manualEntryComposerSystemAreaHeight>
+    <manualEntryComposerLongAreaHeight>240</manualEntryComposerLongAreaHeight>
+    <manualEntryComposerWarningPadding>10</manualEntryComposerWarningPadding>
+    <manualEntryComposerWarningBackground><r>0.30</r><g>0.20</g><b>0.05</b><a>0.88</a></manualEntryComposerWarningBackground>
+    <manualEntryComposerWarningBorder><r>0.95</r><g>0.66</g><b>0.18</b><a>0.90</a></manualEntryComposerWarningBorder>
+    <manualEntryComposerMutedText><r>0.68</r><g>0.70</g><b>0.72</b><a>1</a></manualEntryComposerMutedText>
+    <manualEntryComposerErrorText><r>1</r><g>0.42</g><b>0.34</b><a>1</a></manualEntryComposerErrorText>
+
     <!-- Right-hand filter/controls panel (independent, non-virtualized scroll column). -->
     <filterPanelWidth>260</filterPanelWidth>
     <filterPanelGap>12</filterPanelGap>

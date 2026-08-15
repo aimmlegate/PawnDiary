@@ -180,6 +180,66 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Replaces one exact archived POV with player-authored prose and keeps every compact linked
+        /// preview of that POV in sync. Page identity and narrative keys do not change, so the existing
+        /// indexes remain valid. Returns true when the owned page existed and accepted the replacement.
+        /// </summary>
+        public bool ReplaceWithManualText(
+            string eventId,
+            string pawnId,
+            string povRole,
+            string body,
+            string title)
+        {
+            ArchivedDiaryEntry owned = Find(eventId, pawnId, povRole);
+            if (owned == null || !owned.ReplaceWithManualText(body, title))
+            {
+                return false;
+            }
+
+            RefreshLinkedPreview(eventId, pawnId, povRole, body, title);
+            return true;
+        }
+
+        /// <summary>
+        /// Refreshes archived partner cards that point at an exact hot or archived POV. This also covers
+        /// mixed retention, where one pawn's compact row survives while the shared event remains hot for
+        /// the other pawn.
+        /// </summary>
+        public void RefreshLinkedPreview(
+            string eventId,
+            string pawnId,
+            string povRole,
+            string body,
+            string title)
+        {
+            if (string.IsNullOrWhiteSpace(eventId)
+                || string.IsNullOrWhiteSpace(pawnId)
+                || string.IsNullOrWhiteSpace(povRole)
+                || string.IsNullOrWhiteSpace(body))
+            {
+                return;
+            }
+
+            string preview = DiaryEvent.TruncateForPreview(body);
+            for (int i = 0; i < archiveEntries.Count; i++)
+            {
+                ArchivedDiaryEntry entry = archiveEntries[i];
+                if (entry == null
+                    || !string.Equals(entry.eventId, eventId, StringComparison.OrdinalIgnoreCase)
+                    || !string.Equals(entry.linkedPawnId, pawnId, StringComparison.Ordinal)
+                    || !string.Equals(entry.linkedRole, povRole, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                entry.linkedPreviewText = preview;
+                entry.linkedGenerated = true;
+                entry.linkedTitle = title ?? string.Empty;
+            }
+        }
+
+        /// <summary>
         /// True when <paramref name="entry"/> is a well-formed archive row this store would accept (the
         /// same gate <see cref="AddOrKeep"/> applies). Lets retention decide a ref is safe to drop while
         /// only committing the write for refs it actually removes.

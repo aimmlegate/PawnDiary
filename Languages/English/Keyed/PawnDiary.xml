@@ -260,6 +260,81 @@
   <PawnDiary.Tab.CopyEntry>Copy entry</PawnDiary.Tab.CopyEntry>
   <PawnDiary.Tab.CopyEntryTip>Copy this page's text to the clipboard.</PawnDiary.Tab.CopyEntryTip>
   <PawnDiary.Tab.CopyEntryCopied>Copied page text to clipboard.</PawnDiary.Tab.CopyEntryCopied>
+  <PawnDiary.ManualEntry.NewTip>Write a new diary page for {0}.</PawnDiary.ManualEntry.NewTip>
+  <PawnDiary.ManualEntry.EditAction>Edit</PawnDiary.ManualEntry.EditAction>
+  <PawnDiary.ManualEntry.EditTip>Edit this page's title and text.</PawnDiary.ManualEntry.EditTip>
+  <PawnDiary.ManualEntry.NewTitle>New diary page — {0}</PawnDiary.ManualEntry.NewTitle>
+  <PawnDiary.ManualEntry.EditTitle>Edit diary page — {0}</PawnDiary.ManualEntry.EditTitle>
+  <PawnDiary.ManualEntry.TitleLabel>Title (optional)</PawnDiary.ManualEntry.TitleLabel>
+  <PawnDiary.ManualEntry.BodyLabel>Page text</PawnDiary.ManualEntry.BodyLabel>
+  <PawnDiary.ManualEntry.CharacterCount>{0} / {1}</PawnDiary.ManualEntry.CharacterCount>
+  <PawnDiary.ManualEntry.Save>Save page</PawnDiary.ManualEntry.Save>
+  <PawnDiary.ManualEntry.Cancel>Cancel</PawnDiary.ManualEntry.Cancel>
+  <PawnDiary.ManualEntry.BodyRequired>Write something on the page before saving.</PawnDiary.ManualEntry.BodyRequired>
+  <PawnDiary.ManualEntry.TooLong>Shorten the title or page text to the shown limits before saving.</PawnDiary.ManualEntry.TooLong>
+  <PawnDiary.ManualEntry.NoChanges>No changes. Save will close without altering this page.</PawnDiary.ManualEntry.NoChanges>
+  <PawnDiary.ManualEntry.Created>New diary page saved.</PawnDiary.ManualEntry.Created>
+  <PawnDiary.ManualEntry.Updated>Diary page updated.</PawnDiary.ManualEntry.Updated>
+  <PawnDiary.ManualEntry.SaveFailed>Could not save this diary page.</PawnDiary.ManualEntry.SaveFailed>
+  <PawnDiary.ManualEntry.EntryUnavailable>This page can no longer be edited.</PawnDiary.ManualEntry.EntryUnavailable>
+  <PawnDiary.ManualEntry.GroupLabel>Personal entry</PawnDiary.ManualEntry.GroupLabel>
+  <PawnDiary.ManualEntry.SubtitleCreate>Nothing enters the diary until you review and save the draft.</PawnDiary.ManualEntry.SubtitleCreate>
+  <PawnDiary.ManualEntry.SubtitleEdit>Changes remain in this window until you save them.</PawnDiary.ManualEntry.SubtitleEdit>
+  <PawnDiary.ManualEntry.ModeWrite>Write page</PawnDiary.ManualEntry.ModeWrite>
+  <PawnDiary.ManualEntry.ModeWriteDescription>Enter the finished diary text yourself.</PawnDiary.ManualEntry.ModeWriteDescription>
+  <PawnDiary.ManualEntry.ModeContext>Generate with Diary context</PawnDiary.ManualEntry.ModeContext>
+  <PawnDiary.ManualEntry.ModeContextDescription>Guide Pawn Diary, then review a draft built with the pawn's context.</PawnDiary.ManualEntry.ModeContextDescription>
+  <PawnDiary.ManualEntry.ModeFullPrompt>Full prompt</PawnDiary.ManualEntry.ModeFullPrompt>
+  <PawnDiary.ManualEntry.ModeFullPromptDescription>Send only your own system and user prompts, then review the result.</PawnDiary.ManualEntry.ModeFullPromptDescription>
+  <PawnDiary.ManualEntry.EntryTypeLabel>Entry type</PawnDiary.ManualEntry.EntryTypeLabel>
+  <PawnDiary.ManualEntry.EntryTypeOriginal>Original event type</PawnDiary.ManualEntry.EntryTypeOriginal>
+  <PawnDiary.ManualEntry.EntryTypeOriginalDescription>Keep this existing page's original event classification and appearance.</PawnDiary.ManualEntry.EntryTypeOriginalDescription>
+  <PawnDiary.ManualEntry.EntryTypeLocked>Set by the original event</PawnDiary.ManualEntry.EntryTypeLocked>
+  <PawnDiary.ManualEntry.EntryTypeLockedTip>Arrival and death pages keep their original type and boundary meaning.</PawnDiary.ManualEntry.EntryTypeLockedTip>
+  <PawnDiary.ManualEntry.TemplateLabel>Template</PawnDiary.ManualEntry.TemplateLabel>
+  <PawnDiary.ManualEntry.TemplateAutomatic>Automatic (recommended)</PawnDiary.ManualEntry.TemplateAutomatic>
+  <PawnDiary.ManualEntry.TemplateAutomaticDescription>Use the best compatible template for the selected entry type.</PawnDiary.ManualEntry.TemplateAutomaticDescription>
+  <PawnDiary.ManualEntry.ContextSubjectLabel>What should this page be about?</PawnDiary.ManualEntry.ContextSubjectLabel>
+  <PawnDiary.ManualEntry.ContextSubjectHelp>Describe the facts or moment the pawn should write about.</PawnDiary.ManualEntry.ContextSubjectHelp>
+  <PawnDiary.ManualEntry.ContextInstructionLabel>Extra writing instruction (optional)</PawnDiary.ManualEntry.ContextInstructionLabel>
+  <PawnDiary.ManualEntry.ContextInstructionHelp>Add emphasis, mood, or structure without repeating the facts above.</PawnDiary.ManualEntry.ContextInstructionHelp>
+  <PawnDiary.ManualEntry.ContextAddedTitle>Pawn Diary will add</PawnDiary.ManualEntry.ContextAddedTitle>
+  <PawnDiary.ManualEntry.ContextAddedBody>Writing style and outlook · prompt enchantment · selected event guidance and safe template · pawn summary and identity · surroundings · continuity, last opener, and previous ending · read-only relevant past</PawnDiary.ManualEntry.ContextAddedBody>
+  <PawnDiary.ManualEntry.FullPromptWarningTitle>Full prompt leaves Pawn Diary's context out</PawnDiary.ManualEntry.FullPromptWarningTitle>
+  <PawnDiary.ManualEntry.FullPromptWarningBody>Pawn Diary will not add its persona, pawn profile, memories, current setting, continuity, event guidance, writing style, or factuality and safety wrapper. Only the system and user prompts below are sent through the configured provider protocol.</PawnDiary.ManualEntry.FullPromptWarningBody>
+  <PawnDiary.ManualEntry.SystemPromptLabel>System prompt (optional)</PawnDiary.ManualEntry.SystemPromptLabel>
+  <PawnDiary.ManualEntry.SystemPromptHelp>Set the model's role or general rules.</PawnDiary.ManualEntry.SystemPromptHelp>
+  <PawnDiary.ManualEntry.UserPromptLabel>User prompt</PawnDiary.ManualEntry.UserPromptLabel>
+  <PawnDiary.ManualEntry.UserPromptHelp>Write the complete request exactly as the model should receive it.</PawnDiary.ManualEntry.UserPromptHelp>
+  <PawnDiary.ManualEntry.ReviewTitle>Review draft</PawnDiary.ManualEntry.ReviewTitle>
+  <PawnDiary.ManualEntry.ReviewContextDescription>This draft used the selected template and Pawn Diary context. Edit it freely before saving.</PawnDiary.ManualEntry.ReviewContextDescription>
+  <PawnDiary.ManualEntry.ReviewFullPromptDescription>This draft came from your full prompt. Edit it freely before saving.</PawnDiary.ManualEntry.ReviewFullPromptDescription>
+  <PawnDiary.ManualEntry.ReviewContextBadge>Diary context draft</PawnDiary.ManualEntry.ReviewContextBadge>
+  <PawnDiary.ManualEntry.ReviewFullPromptBadge>Full prompt draft</PawnDiary.ManualEntry.ReviewFullPromptBadge>
+  <PawnDiary.ManualEntry.ReviewTemplateUsed>Template used: {0}</PawnDiary.ManualEntry.ReviewTemplateUsed>
+  <PawnDiary.ManualEntry.GenerateDraft>Generate draft</PawnDiary.ManualEntry.GenerateDraft>
+  <PawnDiary.ManualEntry.Generating>Generating…</PawnDiary.ManualEntry.Generating>
+  <PawnDiary.ManualEntry.CancelRequest>Cancel request</PawnDiary.ManualEntry.CancelRequest>
+  <PawnDiary.ManualEntry.Retry>Retry</PawnDiary.ManualEntry.Retry>
+  <PawnDiary.ManualEntry.BackToPrompt>Back to prompt</PawnDiary.ManualEntry.BackToPrompt>
+  <PawnDiary.ManualEntry.GenerationFailed>Could not generate a draft: {0}</PawnDiary.ManualEntry.GenerationFailed>
+  <PawnDiary.ManualEntry.GenerationErrorTitle>Generation failed</PawnDiary.ManualEntry.GenerationErrorTitle>
+  <PawnDiary.ManualEntry.GenerationUnknown>The generation request ended without a result. You can try again.</PawnDiary.ManualEntry.GenerationUnknown>
+  <PawnDiary.ManualEntry.SubjectRequired>Describe what this page should be about before generating.</PawnDiary.ManualEntry.SubjectRequired>
+  <PawnDiary.ManualEntry.PromptRequired>Write a user prompt before generating.</PawnDiary.ManualEntry.PromptRequired>
+  <PawnDiary.ManualEntry.NoProvider>No configured AI provider is available.</PawnDiary.ManualEntry.NoProvider>
+  <PawnDiary.ManualEntry.GenerationStartFailed>The draft request could not be started.</PawnDiary.ManualEntry.GenerationStartFailed>
+  <PawnDiary.ManualEntry.PromptTooLong>Shorten the prompt fields to the shown limits before generating.</PawnDiary.ManualEntry.PromptTooLong>
+  <PawnDiary.ManualEntry.EntryTypeUnavailable>The selected entry type is no longer available.</PawnDiary.ManualEntry.EntryTypeUnavailable>
+  <PawnDiary.ManualEntry.TemplateUnavailable>No compatible diary template is available.</PawnDiary.ManualEntry.TemplateUnavailable>
+  <PawnDiary.ManualEntry.PawnUnavailable>This pawn can no longer receive a new diary page.</PawnDiary.ManualEntry.PawnUnavailable>
+  <PawnDiary.ManualEntry.DiscardTitle>Discard draft?</PawnDiary.ManualEntry.DiscardTitle>
+  <PawnDiary.ManualEntry.DiscardPrompt>Close this window and discard its unsaved changes?</PawnDiary.ManualEntry.DiscardPrompt>
+  <PawnDiary.ManualEntry.CancelPendingTitle>Cancel generation?</PawnDiary.ManualEntry.CancelPendingTitle>
+  <PawnDiary.ManualEntry.CancelPendingPrompt>The request is still running. Cancel it and discard this draft?</PawnDiary.ManualEntry.CancelPendingPrompt>
+  <PawnDiary.EntryComposer.EntryType.Personal>Personal</PawnDiary.EntryComposer.EntryType.Personal>
+  <PawnDiary.EntryComposer.EntryType.Personal.Description>A personal or everyday moment written in the pawn's own voice.</PawnDiary.EntryComposer.EntryType.Personal.Description>
+  <PawnDiary.EntryComposer.EntryType.Source.Description>This page keeps the category captured from its original event.</PawnDiary.EntryComposer.EntryType.Source.Description>
   <PawnDiary.Tab.FavoriteAddTip>Star this page as a favorite.</PawnDiary.Tab.FavoriteAddTip>
   <PawnDiary.Tab.FavoriteRemoveTip>Remove this page from favorites.</PawnDiary.Tab.FavoriteRemoveTip>
   <!-- Right-hand filter/controls panel: year selector, journal filters, and (dev mode) dev tools. -->

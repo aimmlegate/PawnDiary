@@ -217,4 +217,31 @@
   <DiaryEventPrompt_SlaveryGroup.label>slavery or suppression</DiaryEventPrompt_SlaveryGroup.label>
   <DiaryEventPrompt_SlaveryGroup.prompt>Write the supplied enslavement, suppression, or defiance interaction from this pawn&apos;s exact role.</DiaryEventPrompt_SlaveryGroup.prompt>
   <DiaryEventPrompt_SlaveryGroup.enhancement>Use only status, participants, social text, and result supplied. Do not invent abuse, consent, rebellion plans, escape, emancipation, or later punishment.</DiaryEventPrompt_SlaveryGroup.enhancement>
+  <DiaryEventPrompt_PlayerPersonal.label>player personal note</DiaryEventPrompt_PlayerPersonal.label>
+  <DiaryEventPrompt_PlayerPersonal.prompt>Write the player&apos;s supplied personal note as a first-person diary entry.</DiaryEventPrompt_PlayerPersonal.prompt>
+  <DiaryEventPrompt_PlayerPersonal.enhancement>Treat only the supplied summary as fact. Do not assume a conversation, incident, time of day, or outcome.</DiaryEventPrompt_PlayerPersonal.enhancement>
+  <DiaryEventPrompt_PlayerImportant.label>player important note</DiaryEventPrompt_PlayerImportant.label>
+  <DiaryEventPrompt_PlayerImportant.prompt>Write the player&apos;s supplied important moment as a first-person diary entry.</DiaryEventPrompt_PlayerImportant.prompt>
+  <DiaryEventPrompt_PlayerImportant.enhancement>Give it appropriate weight without inventing why it matters, who was present, or what happened before or after.</DiaryEventPrompt_PlayerImportant.enhancement>
+  <DiaryEventPrompt_PlayerInnerThoughts.label>player inner thoughts</DiaryEventPrompt_PlayerInnerThoughts.label>
+  <DiaryEventPrompt_PlayerInnerThoughts.prompt>Write the player&apos;s supplied inner thought or feeling as a first-person diary entry.</DiaryEventPrompt_PlayerInnerThoughts.prompt>
+  <DiaryEventPrompt_PlayerInnerThoughts.enhancement>Stay inside the supplied feeling or idea. Do not invent an external cause, diagnosis, decision, or outcome.</DiaryEventPrompt_PlayerInnerThoughts.enhancement>
+  <DiaryEventPrompt_PlayerSocial.label>player social note</DiaryEventPrompt_PlayerSocial.label>
+  <DiaryEventPrompt_PlayerSocial.prompt>Write the player&apos;s supplied social moment as a first-person diary entry.</DiaryEventPrompt_PlayerSocial.prompt>
+  <DiaryEventPrompt_PlayerSocial.enhancement>Use only the people, relationship, and interaction the player actually supplies. Do not invent dialogue, motives, or history.</DiaryEventPrompt_PlayerSocial.enhancement>
+  <DiaryEventPrompt_PlayerWork.label>player work note</DiaryEventPrompt_PlayerWork.label>
+  <DiaryEventPrompt_PlayerWork.prompt>Write the player&apos;s supplied work moment as a first-person diary entry.</DiaryEventPrompt_PlayerWork.prompt>
+  <DiaryEventPrompt_PlayerWork.enhancement>Use only the task and details supplied. Do not invent completion, skill gains, tools, failures, or results.</DiaryEventPrompt_PlayerWork.enhancement>
+  <DiaryEventPrompt_PlayerHealth.label>player health note</DiaryEventPrompt_PlayerHealth.label>
+  <DiaryEventPrompt_PlayerHealth.prompt>Write the player&apos;s supplied health moment as a first-person diary entry.</DiaryEventPrompt_PlayerHealth.prompt>
+  <DiaryEventPrompt_PlayerHealth.enhancement>Use only symptoms, injuries, treatment, and change supplied. Do not invent a diagnosis, cause, procedure, recovery, or prognosis.</DiaryEventPrompt_PlayerHealth.enhancement>
+  <DiaryEventPrompt_PlayerCombat.label>player combat note</DiaryEventPrompt_PlayerCombat.label>
+  <DiaryEventPrompt_PlayerCombat.prompt>Write the player&apos;s supplied combat-related moment as a first-person diary entry.</DiaryEventPrompt_PlayerCombat.prompt>
+  <DiaryEventPrompt_PlayerCombat.enhancement>Use only danger, participants, actions, and outcome supplied. Do not assume a raid, enemy arrival, tactics, injury, victory, or defeat.</DiaryEventPrompt_PlayerCombat.enhancement>
+  <DiaryEventPrompt_PlayerColony.label>player colony note</DiaryEventPrompt_PlayerColony.label>
+  <DiaryEventPrompt_PlayerColony.prompt>Write the player&apos;s supplied colony matter as a first-person diary entry.</DiaryEventPrompt_PlayerColony.prompt>
+  <DiaryEventPrompt_PlayerColony.enhancement>Use only the shared plan, problem, or achievement supplied. Do not assume a quest, reward, crisis, vote, or outcome.</DiaryEventPrompt_PlayerColony.enhancement>
+  <DiaryEventPrompt_PlayerReflection.label>player reflection</DiaryEventPrompt_PlayerReflection.label>
+  <DiaryEventPrompt_PlayerReflection.prompt>Write the player&apos;s supplied reflection as a first-person diary entry.</DiaryEventPrompt_PlayerReflection.prompt>
+  <DiaryEventPrompt_PlayerReflection.enhancement>Follow the scope the player supplies. Do not assume it covers a day, season, year, milestone, or any event not named.</DiaryEventPrompt_PlayerReflection.enhancement>
 </LanguageData>

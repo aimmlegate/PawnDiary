@@ -310,6 +310,88 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Publishes exactly one post-mutation snapshot for a manual create/edit, including the case
+        /// where retention compacted this POV before notification. No listener call is made when no
+        /// owned hot/archive row can be resolved.
+        /// </summary>
+        internal void NotifyManualEntryStatusChanged(string eventId, string pawnId, string povRole)
+        {
+            if (string.IsNullOrWhiteSpace(eventId) || string.IsNullOrWhiteSpace(pawnId)
+                || string.IsNullOrWhiteSpace(povRole)) return;
+
+            DiaryEvent diaryEvent = events.FindEvent(eventId);
+            if (diaryEvent != null && HasHotEntryReference(pawnId, eventId))
+            {
+                DiaryEntryView hotView = diaryEvent.ToViewFor(pawnId);
+                EntryStatusListeners.Notify(BuildManualEntryStatusSnapshot(
+                    hotView,
+                    pawnId,
+                    archived: false,
+                    titleStatus: diaryEvent.TitleStatusForRole(povRole)));
+                return;
+            }
+
+            ArchivedDiaryEntry archived = archive.Find(eventId, pawnId, povRole);
+            if (archived == null) return;
+            DiaryEntryView view = archived.ToView();
+            EntryStatusListeners.Notify(BuildManualEntryStatusSnapshot(
+                view,
+                pawnId,
+                archived: true,
+                titleStatus: string.IsNullOrWhiteSpace(view.Title)
+                    ? DiaryEvent.SkippedStatus
+                    : DiaryEvent.CompleteStatus));
+        }
+
+        private static DiaryEntryStatusSnapshot BuildManualEntryStatusSnapshot(
+            DiaryEntryView view,
+            string pawnId,
+            bool archived,
+            string titleStatus)
+        {
+            if (view == null) return null;
+            bool hasGeneratedText = !string.IsNullOrWhiteSpace(view.GeneratedText);
+            DiaryTextDecorationContext decoration = view.TextDecorationContext;
+            return new DiaryEntryStatusSnapshot
+            {
+                handle = new DiaryEntryHandle
+                {
+                    eventId = view.EventId ?? string.Empty,
+                    povRole = view.PovRole ?? string.Empty,
+                    pawnId = pawnId,
+                    entryKey = view.EntryKey ?? EntryKeyFor(view.EventId, view.PovRole)
+                },
+                tick = view.Tick,
+                date = view.Date ?? string.Empty,
+                status = view.LlmStatus ?? string.Empty,
+                pending = !archived
+                    && DiaryEvent.RoleEquals(view.LlmStatus, DiaryEvent.PendingStatus)
+                    && !view.ArchivedGenerationStale,
+                complete = hasGeneratedText,
+                failed = view.ArchivedGenerationStale
+                    || DiaryEvent.RoleEquals(view.LlmStatus, DiaryEvent.FailedStatus),
+                skipped = DiaryEvent.RoleEquals(view.LlmStatus, DiaryEvent.SkippedStatus),
+                promptOnly = DiaryEvent.RoleEquals(view.LlmStatus, DiaryEvent.PromptOnlyStatus),
+                archived = archived,
+                archivedGenerationStale = view.ArchivedGenerationStale,
+                hasGeneratedText = hasGeneratedText,
+                title = view.Title ?? string.Empty,
+                titleStatus = titleStatus ?? string.Empty,
+                titlePending = !archived && view.TitlePending,
+                titleComplete = !string.IsNullOrWhiteSpace(view.Title),
+                groupLabel = view.GroupLabel ?? string.Empty,
+                externallyAuthored = view.ExternallyAuthored,
+                externalSourceId = view.ExternalSourceId ?? string.Empty,
+                domain = decoration?.domain ?? string.Empty,
+                atmosphereCue = view.AtmosphereCue ?? string.Empty,
+                summary = hasGeneratedText
+                    ? DiarySentenceExcerpt.FirstSentence(
+                        view.GeneratedText, DiaryTuning.IntegrationContextSummaryMaxChars)
+                    : string.Empty
+            };
+        }
+
+        /// <summary>
         /// Builds a compact status snapshot for one handled diary entry. Called only by the public API,
         /// which owns main-thread/readiness checks and exception logging.
         /// </summary>

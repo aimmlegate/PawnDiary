@@ -31,6 +31,8 @@ namespace PawnDiary
         public string llmModel;
         public string title;
         public bool archivedGenerationStale;
+        // Optional per-POV player category. Blank preserves source-derived behavior for legacy rows.
+        public string entryTypeKey;
 
         public string groupLabel;
         public string interactionDefName;
@@ -70,6 +72,38 @@ namespace PawnDiary
         public bool HasGeneratedText
         {
             get { return !string.IsNullOrWhiteSpace(generatedText); }
+        }
+
+        /// <summary>
+        /// Replaces this compact page with player-authored final prose and title. Identity, chronology,
+        /// event metadata, favorites, and narrative indexes remain untouched, so no repository rebuild
+        /// is required. The former model name is cleared because it no longer describes the visible text.
+        /// </summary>
+        internal bool ReplaceWithManualText(string body, string manualTitle)
+        {
+            if (string.IsNullOrWhiteSpace(body))
+            {
+                return false;
+            }
+
+            generatedText = body;
+            status = DiaryEvent.CompleteStatus;
+            llmModel = string.Empty;
+            title = manualTitle ?? string.Empty;
+            archivedGenerationStale = false;
+            return true;
+        }
+
+        /// <summary>Applies one validated player category without rewriting source event metadata.</summary>
+        internal bool TrySetEntryType(PlayerEntryTypeSnapshot entryType)
+        {
+            if (entryType == null || arrivalDescription || deathDescription) return false;
+            entryTypeKey = entryType.entryTypeKey ?? string.Empty;
+            groupLabel = entryType.label ?? string.Empty;
+            colorCue = entryType.colorCue ?? string.Empty;
+            important = entryType.important;
+            decorationDomain = entryType.domain ?? string.Empty;
+            return true;
         }
 
         /// <summary>
@@ -114,6 +148,7 @@ namespace PawnDiary
                 llmModel = view.LlmModel,
                 title = view.Title,
                 archivedGenerationStale = forceFallback || view.ArchivedGenerationStale,
+                entryTypeKey = diaryEvent.EntryTypeKeyForRole(view.PovRole),
                 groupLabel = view.GroupLabel,
                 interactionDefName = diaryEvent.interactionDefName,
                 interactionLabel = diaryEvent.interactionLabel,
@@ -160,6 +195,9 @@ namespace PawnDiary
         /// <summary>Builds the immutable UI view used by the Diary tab.</summary>
         internal DiaryEntryView ToView()
         {
+            PlayerEntryTypeSnapshot playerType = string.IsNullOrWhiteSpace(entryTypeKey)
+                ? null
+                : DiaryPlayerEntryTypes.ResolveOrPersonal(entryTypeKey);
             LinkedEntryView link = null;
             if (!string.IsNullOrWhiteSpace(linkedPawnId) || !string.IsNullOrWhiteSpace(linkedPreviewText))
             {
@@ -177,9 +215,9 @@ namespace PawnDiary
             {
                 povRole = povRole,
                 defName = interactionDefName,
-                colorCue = colorCue,
+                colorCue = playerType?.colorCue ?? colorCue,
                 atmosphereCue = atmosphereCue,
-                domain = decorationDomain,
+                domain = playerType?.domain ?? decorationDomain,
                 gameContext = decorationGameContext
             };
             DiaryTextDecorations.AddEventTagsFromContext(decoration, decorationGameContext);
@@ -197,12 +235,12 @@ namespace PawnDiary
                 string.Empty,
                 eventId,
                 povRole,
-                groupLabel,
-                colorCue,
+                playerType?.label ?? groupLabel,
+                playerType?.colorCue ?? colorCue,
                 atmosphereCue,
                 staggeredIntensity,
                 distortDirectSpeech,
-                important,
+                playerType?.important ?? important,
                 link,
                 title,
                 false,
@@ -249,6 +287,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref llmModel, "llmModel");
             Scribe_Values.Look(ref title, "title");
             Scribe_Values.Look(ref archivedGenerationStale, "archivedGenerationStale", false);
+            Scribe_Values.Look(ref entryTypeKey, "entryTypeKey");
 
             Scribe_Values.Look(ref groupLabel, "groupLabel");
             Scribe_Values.Look(ref interactionDefName, "interactionDefName");
@@ -300,6 +339,7 @@ namespace PawnDiary
             status = DiaryGenerationStatus.NormalizeLoadedMainStatus(status, generatedText);
             llmModel = DiarySaveNormalization.NormalizeString(llmModel);
             title = DiarySaveNormalization.NormalizeString(title);
+            entryTypeKey = DiarySaveNormalization.NormalizeString(entryTypeKey);
             groupLabel = DiarySaveNormalization.NormalizeString(groupLabel);
             interactionDefName = DiarySaveNormalization.NormalizeString(interactionDefName);
             interactionLabel = DiarySaveNormalization.NormalizeString(interactionLabel);

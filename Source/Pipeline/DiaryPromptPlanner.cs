@@ -223,6 +223,26 @@ namespace PawnDiary
                 return DiaryPipelineTemplates.ArrivalDescription;
             }
 
+            // The normal selection remains byte-identical when requestedTemplateKey is blank. An
+            // explicit override is accepted only from the copied XML opt-in catalog and only for a
+            // solo prompt; title/arrival/death shapes above can never be overridden.
+            if (!string.IsNullOrWhiteSpace(request.requestedTemplateKey)
+                && request.policy?.templates != null)
+            {
+                for (int i = 0; i < request.policy.templates.Count; i++)
+                {
+                    DiaryTemplatePolicy candidate = request.policy.templates[i];
+                    if (candidate != null && PlayerEntryComposerPolicy.IsRequestedTemplateAllowed(
+                        request.requestedTemplateKey,
+                        payload.solo,
+                        candidate.templateKey,
+                        candidate.playerSelectable))
+                    {
+                        return candidate.templateKey;
+                    }
+                }
+            }
+
             bool hasOtherPawn = !payload.solo;
             bool combat = request.policy?.group != null && request.policy.group.combat;
             bool important = request.policy?.group == null || request.policy.group.important;

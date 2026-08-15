@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Friendly, no-DLC entry categories for the player composer. These rows affect only the selected
+     POV; they never rewrite the captured source event or its partner's page. -->
+<Defs>
+  <PawnDiary.DiaryPlayerEntryTypeDef>
+    <defName>PawnDiary_PlayerEntryType_Personal</defName>
+    <label>personal</label>
+    <description>A personal note about whatever is on this pawn's mind.</description>
+    <entryTypeKey>Personal</entryTypeKey>
+    <eventPromptKey>PlayerPersonal</eventPromptKey>
+    <defaultTemplateKey>SoloDefault</defaultTemplateKey>
+    <displayOrder>0</displayOrder>
+    <important>false</important>
+    <colorCue>quiet</colorCue>
+    <domain>Interaction</domain>
+  </PawnDiary.DiaryPlayerEntryTypeDef>
+  <PawnDiary.DiaryPlayerEntryTypeDef>
+    <defName>PawnDiary_PlayerEntryType_Important</defName>
+    <label>important</label>
+    <description>A major moment that deserves a little more space and weight.</description>
+    <entryTypeKey>Important</entryTypeKey>
+    <eventPromptKey>PlayerImportant</eventPromptKey>
+    <defaultTemplateKey>SoloImportant</defaultTemplateKey>
+    <displayOrder>10</displayOrder>
+    <important>true</important>
+    <colorCue>white</colorCue>
+    <domain>Tale</domain>
+  </PawnDiary.DiaryPlayerEntryTypeDef>
+  <PawnDiary.DiaryPlayerEntryTypeDef>
+    <defName>PawnDiary_PlayerEntryType_InnerThoughts</defName>
+    <label>inner thoughts</label>
+    <description>A private feeling, worry, hope, or change of mind.</description>
+    <entryTypeKey>InnerThoughts</entryTypeKey>
+    <eventPromptKey>PlayerInnerThoughts</eventPromptKey>
+    <defaultTemplateKey>SoloInternalState</defaultTemplateKey>
+    <displayOrder>20</displayOrder>
+    <important>false</important>
+    <colorCue>quiet</colorCue>
+    <domain>Thought</domain>
+  </PawnDiary.DiaryPlayerEntryTypeDef>
+  <PawnDiary.DiaryPlayerEntryTypeDef>
+    <defName>PawnDiary_PlayerEntryType_Social</defName>
+    <label>social</label>
+    <description>A conversation, relationship, or moment involving other people.</description>
+    <entryTypeKey>Social</entryTypeKey>
+    <eventPromptKey>PlayerSocial</eventPromptKey>
+    <defaultTemplateKey>SoloDefault</defaultTemplateKey>
+    <displayOrder>30</displayOrder>
+    <important>false</important>
+    <colorCue>white</colorCue>
+    <domain>Interaction</domain>
+  </PawnDiary.DiaryPlayerEntryTypeDef>
+  <PawnDiary.DiaryPlayerEntryTypeDef>
+    <defName>PawnDiary_PlayerEntryType_Work</defName>
+    <label>work</label>
+    <description>A job, project, craft, harvest, or ordinary day of labor.</description>
+    <entryTypeKey>Work</entryTypeKey>
+    <eventPromptKey>PlayerWork</eventPromptKey>
+    <defaultTemplateKey>SoloDefault</defaultTemplateKey>
+    <displayOrder>40</displayOrder>
+    <important>false</important>
+    <colorCue>quiet</colorCue>
+    <domain>Work</domain>
+  </PawnDiary.DiaryPlayerEntryTypeDef>
+  <PawnDiary.DiaryPlayerEntryTypeDef>
+    <defName>PawnDiary_PlayerEntryType_Health</defName>
+    <label>health</label>
+    <description>An illness, injury, recovery, treatment, or change in the body.</description>
+    <entryTypeKey>Health</entryTypeKey>
+    <eventPromptKey>PlayerHealth</eventPromptKey>
+    <defaultTemplateKey>SoloImportant</defaultTemplateKey>
+    <displayOrder>50</displayOrder>
+    <important>true</important>
+    <colorCue>danger</colorCue>
+    <domain>Hediff</domain>
+  </PawnDiary.DiaryPlayerEntryTypeDef>
+  <PawnDiary.DiaryPlayerEntryTypeDef>
+    <defName>PawnDiary_PlayerEntryType_Combat</defName>
+    <label>combat</label>
+    <description>A fight, raid, threat, defense, or narrow escape.</description>
+    <entryTypeKey>Combat</entryTypeKey>
+    <eventPromptKey>PlayerCombat</eventPromptKey>
+    <defaultTemplateKey>SoloImportant</defaultTemplateKey>
+    <displayOrder>60</displayOrder>
+    <important>true</important>
+    <colorCue>combat</colorCue>
+    <domain>Raid</domain>
+  </PawnDiary.DiaryPlayerEntryTypeDef>
+  <PawnDiary.DiaryPlayerEntryTypeDef>
+    <defName>PawnDiary_PlayerEntryType_Colony</defName>
+    <label>colony</label>
+    <description>A shared colony matter, plan, crisis, or achievement.</description>
+    <entryTypeKey>Colony</entryTypeKey>
+    <eventPromptKey>PlayerColony</eventPromptKey>
+    <defaultTemplateKey>SoloDefault</defaultTemplateKey>
+    <displayOrder>70</displayOrder>
+    <important>false</important>
+    <colorCue>white</colorCue>
+    <domain>Quest</domain>
+  </PawnDiary.DiaryPlayerEntryTypeDef>
+  <PawnDiary.DiaryPlayerEntryTypeDef>
+    <defName>PawnDiary_PlayerEntryType_Reflection</defName>
+    <label>reflection</label>
+    <description>A broader look back at recent events and what they meant.</description>
+    <entryTypeKey>Reflection</entryTypeKey>
+    <eventPromptKey>PlayerReflection</eventPromptKey>
+    <defaultTemplateKey>SoloInternalState</defaultTemplateKey>
+    <displayOrder>80</displayOrder>
+    <important>false</important>
+    <colorCue>quiet</colorCue>
+    <domain>Reflection</domain>
+  </PawnDiary.DiaryPlayerEntryTypeDef>
+</Defs>

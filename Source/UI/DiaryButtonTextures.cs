@@ -1,11 +1,10 @@
 // Shared texture cache for the Diary tab's action-button icons.
 //
-// The glyphs are CoreUI Icons (Free set, MIT) rasterized to solid-white PNGs so RimWorld's GUI.color
-// tinting drives their on-screen color (see Textures/UI/DiaryButtons/CREDITS.txt). Each icon is loaded
-// lazily on first draw with a defensive fallback to the vanilla built-in it replaced, mirroring the
-// load-with-fallback pattern in Source/Patches/DiaryInspectCommandPatch.cs. Loading lazily (from the
-// UI draw thread, after content is ready) rather than in a static constructor sidesteps any
-// static-init ordering question with RimWorld's own TexButton cache.
+// Most glyphs are CoreUI Icons (Free set, MIT) rasterized to solid-white PNGs so RimWorld's GUI.color
+// tinting drives their on-screen color (see Textures/UI/DiaryButtons/CREDITS.txt). The manual New/Edit
+// actions reuse vanilla TexButton glyphs directly. Custom icons load lazily on first draw with a
+// defensive vanilla fallback, mirroring Source/Patches/DiaryInspectCommandPatch.cs. Loading from the
+// UI draw thread, after content is ready, avoids static-init ordering questions with TexButton itself.
 //
 // New to C#/RimWorld? (JS/TS analogy) ContentFinder<Texture2D>.Get("path", reportFailure) is like a
 // synchronous asset loader: the path is relative to any active mod's Textures/ folder, and passing
@@ -18,8 +17,8 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>
-    /// Lazily-loaded icon textures for the Diary tab's action buttons. All are solid-white PNGs meant
-    /// to be tinted via <see cref="GUI.color"/> at draw time.
+    /// Icon textures for the Diary tab's action buttons. Custom assets load lazily and are solid-white
+    /// PNGs meant to be tinted via <see cref="GUI.color"/>; simple New/Edit actions reuse vanilla art.
     /// </summary>
     [StaticConstructorOnStartup]
     internal static class DiaryButtonTextures
@@ -49,6 +48,12 @@ namespace PawnDiary
 
         /// <summary>Downward transfer glyph for the per-pawn Markdown export (cil-data-transfer-down).</summary>
         public static Texture2D Export => export ?? (export = Load("Export", TexButton.Copy));
+
+        /// <summary>Vanilla plus glyph for creating a player-authored diary page.</summary>
+        public static Texture2D NewEntry => TexButton.Add;
+
+        /// <summary>Vanilla rename/pencil glyph for editing a persisted diary page.</summary>
+        public static Texture2D EditEntry => TexButton.Rename;
 
         /// <summary>Circular-arrow glyph for the "Regenerate entry" action (cil-reload).</summary>
         public static Texture2D Regenerate => regenerate ?? (regenerate = Load("Regenerate", TexButton.Reload));

@@ -110,6 +110,8 @@ namespace DiaryPipelineTests
             TestArcReflectionMemorySelector();
             TestEventPromptKeyCandidates();
             TestDomainClassifier();
+            TestManualDiaryEntryContract();
+            TestPlayerEntryComposerPolicy();
             TestContextFields();
             TestResponsePostprocessorRules();
             TestDirectSpeechParser();

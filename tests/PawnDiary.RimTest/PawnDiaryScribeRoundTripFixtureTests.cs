@@ -698,6 +698,132 @@ namespace PawnDiary.RimTests
                 "archive null playLogEntryIds should load as a non-null empty list.");
         }
 
+        /// <summary>
+        /// Player-created identity is carried only by the stable saved context marker. Prove that marker
+        /// and the canonical provider-free title/body survive both hot-event and compact-archive Scribe
+        /// shapes without introducing a second override store or migration-only field.
+        /// </summary>
+        [Test]
+        public static void ManualCanonicalPagesRoundTripHotAndArchived()
+        {
+            DiaryEvent hot = new DiaryEvent
+            {
+                eventId = "evt_manual_hot",
+                tick = 777001,
+                date = "4th Jugust 5503",
+                interactionDefName = "PawnDiary_ManualEntry",
+                interactionLabel = "Personal entry",
+                gameContext = ManualDiaryEntryFacts.GameContext,
+                solo = true,
+                initiatorPawnId = "Thing_Human_ManualHot",
+                initiatorName = "Mira",
+            };
+            hot.ApplyLlmResult(new LlmGenerationResult
+            {
+                povRole = DiaryEvent.InitiatorRole,
+                success = true,
+                generatedText = "obsolete provider prose",
+                rawResponse = "obsolete provider raw response",
+            });
+            hot.SetPrompt(DiaryEvent.InitiatorRole, "obsolete provider prompt");
+            hot.SetLlmMeta(
+                DiaryEvent.InitiatorRole,
+                "https://provider.invalid/v1",
+                "obsolete-provider-model");
+            hot.MarkQueued(DiaryEvent.InitiatorRole);
+            hot.MarkTitleQueued(DiaryEvent.InitiatorRole);
+            Require(hot.ReplaceWithManualText(
+                    DiaryEvent.InitiatorRole,
+                    "The page I chose to keep.",
+                    "My own title"),
+                "Could not stage the canonical hot manual page before Scribe.");
+            Require(hot.TrySetEntryTypeKey(DiaryEvent.InitiatorRole, "Combat", false),
+                "Could not stage the hot manual page's player entry type before Scribe.");
+
+            DiaryEvent hotLoaded = ScribeRoundTrip(hot);
+            AssertEventLevel(hot, hotLoaded);
+            Require(ManualDiaryEntryFacts.IsPlayerCreated(hotLoaded.gameContext),
+                "The hot manual-entry marker did not survive Scribe.");
+            AssertStr("The page I chose to keep.", hotLoaded.initiatorGeneratedText,
+                "manual hot generatedText");
+            AssertStr("My own title", hotLoaded.initiatorTitle, "manual hot title");
+            AssertStr(DiaryEvent.CompleteStatus, hotLoaded.initiatorStatus,
+                "manual hot status");
+            AssertStr(DiaryEvent.CompleteStatus, hotLoaded.initiatorTitleStatus,
+                "manual hot titleStatus");
+            DiaryEntryView hotLoadedView = hotLoaded.ToViewFor("Thing_Human_ManualHot");
+            Require(hotLoadedView != null,
+                "The hot manual page could not project a post-Scribe display view.");
+            AssertStr(string.Empty, hotLoadedView.LlmRawResponse,
+                "manual hot rawResponse");
+            AssertStr(string.Empty, PromptFor(hotLoaded, DiaryEvent.InitiatorRole),
+                "manual hot prompt");
+            AssertStr(string.Empty, hotLoaded.initiatorLlmEndpoint,
+                "manual hot llmEndpoint");
+            AssertStr(string.Empty, hotLoaded.initiatorLlmModel,
+                "manual hot llmModel");
+            AssertStr("Combat", hotLoaded.EntryTypeKeyForRole(DiaryEvent.InitiatorRole),
+                "manual hot entryTypeKey");
+            Require(hotLoadedView.Important,
+                "The hot manual page lost the Combat importance override after Scribe.");
+            AssertStr("Raid", hotLoadedView.TextDecorationContext?.domain,
+                "manual hot entry type decoration domain");
+
+            ArchivedDiaryEntry archived = new ArchivedDiaryEntry
+            {
+                eventId = "evt_manual_archive",
+                pawnId = "Thing_Human_ManualArchive",
+                povRole = DiaryEvent.InitiatorRole,
+                tick = 777002,
+                date = "4th Jugust 5503",
+                year = 5503,
+                text = "manual archive source",
+                generatedText = "obsolete archived prose",
+                status = DiaryEvent.PendingStatus,
+                llmModel = "obsolete-archive-model",
+                title = "obsolete title",
+                archivedGenerationStale = true,
+                groupLabel = "Personal entry",
+                interactionDefName = "PawnDiary_ManualEntry",
+                interactionLabel = "Personal entry",
+                decorationGameContext = ManualDiaryEntryFacts.GameContext,
+            };
+            Require(archived.ReplaceWithManualText(
+                    "The compact page I chose to keep.",
+                    string.Empty),
+                "Could not stage the canonical archived manual page before Scribe.");
+            Require(archived.TrySetEntryType(new PlayerEntryTypeSnapshot
+                {
+                    entryTypeKey = "Combat",
+                    label = "combat",
+                    colorCue = "combat",
+                    important = true,
+                    domain = "Raid"
+                }),
+                "Could not stage the archived manual page's player entry type before Scribe.");
+
+            ArchivedDiaryEntry archiveLoaded = ScribeRoundTrip(archived);
+            Require(ManualDiaryEntryFacts.IsPlayerCreated(archiveLoaded.decorationGameContext),
+                "The archived manual-entry marker did not survive Scribe.");
+            AssertStr("The compact page I chose to keep.", archiveLoaded.generatedText,
+                "manual archive generatedText");
+            AssertStr(string.Empty, archiveLoaded.title, "manual archive blank title");
+            AssertStr(DiaryEvent.CompleteStatus, archiveLoaded.status,
+                "manual archive status");
+            AssertStr(string.Empty, archiveLoaded.llmModel, "manual archive llmModel");
+            Require(!archiveLoaded.archivedGenerationStale,
+                "The archived manual page reloaded as stale after canonical replacement.");
+            AssertStr(ManualDiaryEntryFacts.GameContext, archiveLoaded.decorationGameContext,
+                "manual archive decorationGameContext");
+            AssertStr("Combat", archiveLoaded.entryTypeKey,
+                "manual archive entryTypeKey");
+            DiaryEntryView archiveLoadedView = archiveLoaded.ToView();
+            Require(archiveLoadedView.Important,
+                "The archived manual page lost the Combat importance override after Scribe.");
+            AssertStr("Raid", archiveLoadedView.TextDecorationContext?.domain,
+                "manual archive entry type decoration domain");
+        }
+
         // ---- PawnDiaryRecord round-trip ------------------------------------------------------------
 
         /// <summary>
@@ -2088,6 +2214,18 @@ namespace PawnDiary.RimTests
                 "playLogInteractionDefName");
             AssertStr(expected.gameContext, actual.gameContext, "gameContext");
             AssertIntList(expected.playLogEntryIds, actual.playLogEntryIds, "playLogEntryIds");
+            AssertStr(
+                expected.EntryTypeKeyForRole(DiaryEvent.InitiatorRole),
+                actual.EntryTypeKeyForRole(DiaryEvent.InitiatorRole),
+                "initiator entryTypeKey");
+            AssertStr(
+                expected.EntryTypeKeyForRole(DiaryEvent.RecipientRole),
+                actual.EntryTypeKeyForRole(DiaryEvent.RecipientRole),
+                "recipient entryTypeKey");
+            AssertStr(
+                expected.EntryTypeKeyForRole(DiaryEvent.NeutralRole),
+                actual.EntryTypeKeyForRole(DiaryEvent.NeutralRole),
+                "neutral entryTypeKey");
         }
 
         // Asserts a completed POV's pawn identity, status, generated text, and LLM lane survived.

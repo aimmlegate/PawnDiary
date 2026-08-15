@@ -923,7 +923,9 @@ namespace PawnDiary
             }
 
             DiaryEvent diaryEvent = events.FindEvent(entry.EventId);
-            if (diaryEvent == null || string.IsNullOrWhiteSpace(entry.PovRole))
+            if (diaryEvent == null
+                || string.IsNullOrWhiteSpace(entry.PovRole)
+                || ManualDiaryEntryFacts.IsPlayerCreated(diaryEvent.gameContext))
             {
                 return false;
             }

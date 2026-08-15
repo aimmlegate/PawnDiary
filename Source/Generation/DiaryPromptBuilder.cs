@@ -95,7 +95,9 @@ namespace PawnDiary
         /// placeholders are fine for this probe. Call on the main thread: building the request resolves
         /// localized strings (<c>.Translate()</c>), exactly as the real prompt build does.
         /// </summary>
-        public static bool ShouldResolvePromptEnchantment(DiaryEvent diaryEvent)
+        public static bool ShouldResolvePromptEnchantment(
+            DiaryEvent diaryEvent,
+            bool readOnlyKnowledge = false)
         {
             DiaryPromptRequest request = DiaryPipelineAdapters.BuildPromptRequest(
                 diaryEvent,
@@ -107,7 +109,10 @@ namespace PawnDiary
                 null,
                 null,
                 false,
-                0);
+                0,
+                PromptContextDetailLevel.Full,
+                requestedTemplateKey: null,
+                readOnlyKnowledge: readOnlyKnowledge);
             string templateKey = DiaryPromptPlanner.TemplateKeyFor(request);
             return request.policy.Template(templateKey).includePromptEnchantment;
         }

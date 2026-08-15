@@ -387,8 +387,24 @@ namespace PawnDiary
             // the title is a separate, smaller request that lives on its own per-POV fields.
             if (result.isTitleRequest)
             {
+                // The request may have finished after the player manually replaced this page. Manual
+                // Save clears the pending title state, so consuming-but-ignoring this stale completion
+                // prevents it from overwriting the player's canonical title or emitting callbacks.
+                if (!diaryEvent.IsTitlePending(result.povRole))
+                {
+                    return DiaryTelemetryOutcome.LlmTitleResultApplied;
+                }
+
                 ApplyTitleResult(diaryEvent, result);
                 return DiaryTelemetryOutcome.LlmTitleResultApplied;
+            }
+
+            // As above for the main body: every accepted generation marks its exact role pending before
+            // transport starts. A non-pending completion is obsolete (manual edit, purge, or another
+            // terminal transition) and must not restore prose, unread state, retries, or pair follow-ups.
+            if (!diaryEvent.IsPending(result.povRole))
+            {
+                return DiaryTelemetryOutcome.LlmResultApplied;
             }
 
             if (!result.success)

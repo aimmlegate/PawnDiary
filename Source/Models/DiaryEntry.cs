@@ -89,6 +89,9 @@ namespace PawnDiary
         // RimWorld-sourced diary pages.
         public readonly string ExternalSourceId;
         public readonly bool ExternallyAuthored;
+        // True only for a page the player created from the editor. Ordinary generated pages remain
+        // false after a manual edit, so their explicit Regenerate action stays available.
+        public readonly bool PlayerCreated;
         public readonly bool Important;     // Visual importance marker derived from the event group
         public readonly LinkedEntryView LinkedEntry; // Preview of the other pawn's entry for the same event (null for solo).
         // Short chat-style subject: stored LLM-generated title only. Empty when no title has
@@ -160,6 +163,7 @@ namespace PawnDiary
             TextDecorationContext = textDecorationContext;
             ExternalSourceId = ExternalEntryAttribution.SourceIdForContext(textDecorationContext?.gameContext);
             ExternallyAuthored = !string.IsNullOrWhiteSpace(ExternalSourceId);
+            PlayerCreated = ManualDiaryEntryFacts.IsPlayerCreated(textDecorationContext?.gameContext);
             Important = important;
             LinkedEntry = linkedEntry;
             Title = title ?? string.Empty;

@@ -67,6 +67,7 @@ namespace PawnDiary
             public Rect VisibleEntryRect;
             public Pawn Pawn;
             public string PawnId;
+            public string PawnDisplayName;
             public DiaryGameComponent Component;
             // The owning journal instance: the favorite star reads/toggles the pawn's persisted favorite
             // set through it. Null is tolerated (star simply cannot toggle) for defensive robustness.
@@ -235,14 +236,25 @@ namespace PawnDiary
                 }
 
                 bool showCopyButton = ShowCopyButton(entry);
-                if (showModelName || showRegenerateButton || showCopyButton)
+                bool showManualEditButton = CanShowManualEntryEditButton(entry);
+                if (showModelName || showRegenerateButton || showCopyButton || showManualEditButton)
                 {
-                    // One footer line: player-visible "Copy entry" on the left, then the provenance/model
-                    // name and the regenerate icon on the right. HasFooterLine reserves its height so the
-                    // measured and drawn card heights stay in sync. (The favorite star lives in the title
-                    // bar now, not here.)
+                    // One footer line: player-visible Copy/Edit actions on the left, then the provenance/
+                    // model name and regenerate icon on the right. HasFooterLine reserves its height so
+                    // measured and drawn card heights stay in sync. (The favorite star remains in the
+                    // title bar.)
                     Rect footerRect = new Rect(localEntryRect.x + 12f, localEntryRect.yMax - EntryBottomPadding - ModelNameHeight, localEntryRect.width - 24f, ModelNameHeight);
-                    DrawEntryFooter(footerRect, footerNote, showCopyButton, showRegenerateButton, entry, request.Pawn, request.Component);
+                    DrawEntryFooter(
+                        footerRect,
+                        footerNote,
+                        showCopyButton,
+                        showManualEditButton,
+                        showRegenerateButton,
+                        entry,
+                        request.Pawn,
+                        request.PawnId,
+                        request.PawnDisplayName,
+                        request.Component);
                 }
 
                 return toggleExpansion;
@@ -260,6 +272,29 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// True when a real persisted page may offer manual editing. Exact ownership is rechecked by
+        /// DiaryGameComponent when the editor opens and again on Save; this display gate chiefly keeps
+        /// generating, prompt-only, and transient dev-preview rows from advertising an impossible action.
+        /// </summary>
+        private static bool CanShowManualEntryEditButton(DiaryEntryView entry)
+        {
+            if (entry == null
+                || IsGenerating(entry)
+                || entry.TitlePending
+                || IsPromptOnly(entry)
+                || string.IsNullOrWhiteSpace(entry.EventId)
+                || string.IsNullOrWhiteSpace(entry.PovRole))
+            {
+                return false;
+            }
+
+            DiaryTextDecorationContext context = entry.TextDecorationContext;
+            return context == null
+                || context.eventTags == null
+                || !context.eventTags.Contains("dev_preview");
+        }
+
+        /// <summary>
         /// Draws the "Copy entry" action (icon + label) at the left of the footer line and returns the
         /// horizontal space it consumed. Clicking copies the page text (or the captured prompt for dev
         /// prompt-only cards) to the system clipboard.
@@ -271,25 +306,95 @@ namespace PawnDiary
                 return 0f;
             }
 
+            string label = "PawnDiary.Tab.CopyEntry".Translate();
+            bool clicked;
+            float width = DrawFooterAction(
+                rect,
+                DiaryButtonTextures.Copy,
+                label,
+                "PawnDiary.Tab.CopyEntryTip".Translate(),
+                out clicked);
+            if (clicked)
+            {
+                string text = EntryCopyText(entry);
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    GUIUtility.systemCopyBuffer = text;
+                    Messages.Message("PawnDiary.Tab.CopyEntryCopied".Translate(), MessageTypeDefOf.NeutralEvent, false);
+                }
+            }
+
+            return width;
+        }
+
+        /// <summary>Draws the Edit footer action and opens an exact pawn/event/POV snapshot on click.</summary>
+        private static float DrawManualEntryEditAction(
+            Rect rect,
+            string pawnId,
+            string pawnDisplayName,
+            DiaryEntryView entry,
+            DiaryGameComponent component)
+        {
+            bool clicked;
+            float width = DrawFooterAction(
+                rect,
+                DiaryButtonTextures.EditEntry,
+                "PawnDiary.ManualEntry.EditAction".Translate(),
+                "PawnDiary.ManualEntry.EditTip".Translate(),
+                out clicked);
+            if (clicked)
+            {
+                OpenManualEntryEditDialog(
+                    pawnId,
+                    pawnDisplayName,
+                    entry,
+                    component);
+            }
+
+            return width;
+        }
+
+        /// <summary>
+        /// Paints one compact icon+label footer action within the supplied width and reports its exact
+        /// consumed width. The caller can reserve a neighboring action's icon before offering label room,
+        /// so long translations clip gracefully without hiding the next action.
+        /// </summary>
+        private static float DrawFooterAction(
+            Rect rect,
+            Texture2D icon,
+            string label,
+            string tooltip,
+            out bool clicked)
+        {
+            clicked = false;
+            if (rect.width <= 0f || rect.height <= 0f)
+            {
+                return 0f;
+            }
+
+            float iconSize = Mathf.Min(EntryFooterActionButtonSize, rect.width);
             Rect iconRect = new Rect(
                 rect.x,
-                rect.y + (rect.height - EntryFooterActionButtonSize) * 0.5f,
-                EntryFooterActionButtonSize,
-                EntryFooterActionButtonSize);
+                rect.y + (rect.height - iconSize) * 0.5f,
+                iconSize,
+                iconSize);
 
-            string label = "PawnDiary.Tab.CopyEntry".Translate();
             GameFont oldFont = Text.Font;
             Text.Font = GameFont.Tiny;
-            float labelWidth = Mathf.Min(Mathf.Max(0f, rect.width - EntryFooterActionButtonSize - 4f), Text.CalcSize(label).x);
+            float labelWidth = Mathf.Min(
+                Mathf.Max(0f, rect.width - iconSize - 4f),
+                Text.CalcSize(label ?? string.Empty).x);
             Text.Font = oldFont;
 
-            float totalWidth = EntryFooterActionButtonSize + (labelWidth > 0f ? 4f + labelWidth : 0f);
+            float totalWidth = Mathf.Min(
+                rect.width,
+                iconSize + (labelWidth > 0f ? 4f + labelWidth : 0f));
             Rect actionRect = new Rect(rect.x, rect.y, totalWidth, rect.height);
             bool hover = Mouse.IsOver(actionRect);
 
             Color oldColor = GUI.color;
             GUI.color = new Color(1f, 1f, 1f, hover ? 1f : 0.85f);
-            GUI.DrawTexture(iconRect, DiaryButtonTextures.Copy);
+            GUI.DrawTexture(iconRect, icon);
             if (labelWidth > 0f)
             {
                 GameFont oldLabelFont = Text.Font;
@@ -302,17 +407,11 @@ namespace PawnDiary
             }
             GUI.color = oldColor;
 
-            TooltipHandler.TipRegion(actionRect, "PawnDiary.Tab.CopyEntryTip".Translate());
-            if (Widgets.ButtonInvisible(actionRect, false))
+            if (!string.IsNullOrWhiteSpace(tooltip))
             {
-                string text = EntryCopyText(entry);
-                if (!string.IsNullOrWhiteSpace(text))
-                {
-                    GUIUtility.systemCopyBuffer = text;
-                    Messages.Message("PawnDiary.Tab.CopyEntryCopied".Translate(), MessageTypeDefOf.NeutralEvent, false);
-                }
+                TooltipHandler.TipRegion(actionRect, tooltip);
             }
-
+            clicked = Widgets.ButtonInvisible(actionRect, false);
             return totalWidth;
         }
 
@@ -594,17 +693,23 @@ namespace PawnDiary
 
         /// <summary>
         /// True when the expanded card should reserve the footer line: any of the provenance/model
-        /// note, the regenerate action, or the player-visible copy action needs it.
+        /// note, regenerate action, or either player-visible Copy/Edit action needs it.
         /// </summary>
         private static bool HasFooterLine(DiaryEntryView entry)
         {
-            return HasModelName(entry) || CanShowRegenerateButton(entry) || ShowCopyButton(entry);
+            return HasModelName(entry)
+                || CanShowRegenerateButton(entry)
+                || ShowCopyButton(entry)
+                || CanShowManualEntryEditButton(entry);
         }
 
         private static bool CanShowRegenerateButton(DiaryEntryView entry)
         {
             return entry != null
                 && !entry.Archived
+                // Player-created pages have no factual prompt/source payload to regenerate safely.
+                // The component enforces the same rule at the mutation boundary.
+                && !entry.PlayerCreated
                 && !IsGenerating(entry)
                 && !IsPromptOnly(entry)
                 // Failed diagnostic rows no longer offer a player-facing manual retry. Completed
@@ -1109,28 +1214,23 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws the single card footer line: the player-visible "Copy entry" action on the left, then
-        /// the quiet provenance/model note and the normal-play rewrite action on the right, without any
-        /// of the three stealing another's space.
+        /// Draws the single card footer line: player-visible Copy/Edit actions on the left, then the
+        /// quiet provenance/model note and normal-play rewrite action on the right. At narrow widths the
+        /// action labels surrender space first, while both action icons remain reachable.
         /// </summary>
         private static void DrawEntryFooter(
             Rect rect,
             string modelName,
             bool showCopyButton,
+            bool showManualEditButton,
             bool showRegenerateButton,
             DiaryEntryView entry,
             Pawn pawn,
+            string pawnId,
+            string pawnDisplayName,
             DiaryGameComponent component)
         {
-            // Left: copy action. Right edge of the remaining strip retreats as it consumes width.
-            float leftEdge = rect.x;
-            if (showCopyButton)
-            {
-                float copyWidth = DrawCopyAction(rect, entry);
-                leftEdge = rect.x + copyWidth + EntryFooterActionGap;
-            }
-
-            // Right side: the regenerate icon (rightmost); the provenance/model note fills the middle.
+            // Reserve the right-side regenerate icon before measuring translated action labels.
             float rightEdge = rect.xMax;
             if (showRegenerateButton)
             {
@@ -1141,6 +1241,44 @@ namespace PawnDiary
                     EntryFooterActionButtonSize);
                 rightEdge = regenerateRect.x - EntryFooterActionGap;
                 DrawRegenerateButton(regenerateRect, entry, pawn, component);
+            }
+
+            float leftEdge = rect.x;
+            float available = Mathf.Max(0f, rightEdge - leftEdge);
+            if (showCopyButton && available > 0f)
+            {
+                // When Edit follows, guarantee its icon plus one inter-action gap before Copy gets label
+                // room. This keeps both actions discoverable with long translations or narrow readers.
+                float editReserve = showManualEditButton
+                    ? Mathf.Min(EntryFooterActionButtonSize, available) + EntryFooterActionGap
+                    : 0f;
+                Rect copyRect = new Rect(
+                    leftEdge,
+                    rect.y,
+                    Mathf.Max(0f, available - editReserve),
+                    rect.height);
+                float copyWidth = DrawCopyAction(copyRect, entry);
+                leftEdge += copyWidth;
+                if (copyWidth > 0f)
+                {
+                    leftEdge += EntryFooterActionGap;
+                }
+            }
+
+            available = Mathf.Max(0f, rightEdge - leftEdge);
+            if (showManualEditButton && available > 0f)
+            {
+                float editWidth = DrawManualEntryEditAction(
+                    new Rect(leftEdge, rect.y, available, rect.height),
+                    pawnId,
+                    pawnDisplayName,
+                    entry,
+                    component);
+                leftEdge += editWidth;
+                if (editWidth > 0f)
+                {
+                    leftEdge += EntryFooterActionGap;
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(modelName) && rightEdge > leftEdge)

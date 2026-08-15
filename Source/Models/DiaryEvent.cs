@@ -117,6 +117,9 @@ namespace PawnDiary
             public string titleStatus;
             public string titleError;
             public string text;
+            // Optional player-selected category for this exact POV. Blank is meaningful: legacy and
+            // untouched generated pages continue to derive display/prompt policy from their source.
+            public string entryTypeKey;
             // Pawn-specific fields, persisted only for initiator/recipient; always empty for neutral.
             public string pawnId;
             public string name;
@@ -419,6 +422,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref slot.pawnId, prefix + "PawnId");
             Scribe_Values.Look(ref slot.name, prefix + "Name");
             Scribe_Values.Look(ref slot.text, prefix + "Text");
+            Scribe_Values.Look(ref slot.entryTypeKey, prefix + "EntryTypeKey");
             Scribe_Values.Look(ref slot.pawnSummary, prefix + "PawnSummary");
             Scribe_Values.Look(ref slot.surroundings, prefix + "Surroundings");
             Scribe_Values.Look(ref slot.continuity, prefix + "Continuity");
@@ -476,6 +480,7 @@ namespace PawnDiary
         private static void ScribeNeutralSlot(ref PovSlot slot)
         {
             Scribe_Values.Look(ref slot.text, "neutralText");
+            Scribe_Values.Look(ref slot.entryTypeKey, "neutralEntryTypeKey");
             Scribe_Values.Look(ref slot.prompt, "neutralPrompt");
             Scribe_Values.Look(ref slot.generatedText, "neutralGeneratedText");
             Scribe_Values.Look(ref slot.rawResponse, "neutralRawResponse");
@@ -503,6 +508,7 @@ namespace PawnDiary
             string povRole)
         {
             slot.text = DiarySaveNormalization.NormalizeString(slot.text);
+            slot.entryTypeKey = DiarySaveNormalization.NormalizeString(slot.entryTypeKey);
             slot.generatedText = DiarySaveNormalization.NormalizeString(slot.generatedText);
             slot.error = DiarySaveNormalization.NormalizeString(slot.error);
             slot.llmEndpoint = DiarySaveNormalization.NormalizeString(slot.llmEndpoint);
@@ -926,6 +932,72 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Replaces one displayed POV with player-authored final prose and title. Unlike an override
+        /// layer, this deliberately becomes the canonical saved page: continuity, search, export, and
+        /// later archive compaction all see the same text. Provider diagnostics are cleared because an
+        /// older prompt/model no longer authored the visible result. A blank title is terminally skipped
+        /// so the background title backfill cannot undo the player's choice.
+        /// </summary>
+        internal bool ReplaceWithManualText(string povRole, string text, string title)
+        {
+            if ((!RoleEquals(povRole, InitiatorRole)
+                    && !RoleEquals(povRole, RecipientRole)
+                    && !RoleEquals(povRole, NeutralRole))
+                || string.IsNullOrWhiteSpace(text))
+            {
+                return false;
+            }
+
+            DiaryStateVersion.Bump();
+            ref PovSlot slot = ref SlotFor(povRole);
+            slot.generatedText = text;
+            slot.rawResponse = string.Empty;
+            slot.prompt = string.Empty;
+            slot.status = CompleteStatus;
+            slot.error = null;
+            slot.automaticGenerationRetryAttempts = 0;
+            slot.llmEndpoint = string.Empty;
+            slot.llmModel = string.Empty;
+            slot.title = title ?? string.Empty;
+            slot.titleStatus = string.IsNullOrWhiteSpace(slot.title)
+                ? SkippedStatus
+                : CompleteStatus;
+            slot.titleError = null;
+            return true;
+        }
+
+        /// <summary>Returns the exact saved per-POV player category key; blank means source-derived.</summary>
+        internal string EntryTypeKeyForRole(string povRole)
+        {
+            return SlotFor(povRole).entryTypeKey ?? string.Empty;
+        }
+
+        /// <summary>
+        /// Changes only one POV's player category. Arrival/death boundary pages reject categorization,
+        /// and no event-level source identity, chronology, context, partner role, or prose is touched.
+        /// </summary>
+        internal bool TrySetEntryTypeKey(string povRole, string entryTypeKey, bool bumpVersion = true)
+        {
+            if ((!RoleEquals(povRole, InitiatorRole)
+                    && !RoleEquals(povRole, RecipientRole)
+                    && !RoleEquals(povRole, NeutralRole))
+                || HasArrivalDescription()
+                || HasDeathDescription())
+            {
+                return false;
+            }
+
+            string cleaned = string.IsNullOrWhiteSpace(entryTypeKey)
+                ? string.Empty
+                : entryTypeKey.Trim();
+            ref PovSlot slot = ref SlotFor(povRole);
+            if (string.Equals(slot.entryTypeKey, cleaned, StringComparison.Ordinal)) return true;
+            slot.entryTypeKey = cleaned;
+            if (bumpVersion) DiaryStateVersion.Bump();
+            return true;
+        }
+
+        /// <summary>
         /// Applies an LLM generation result to the appropriate POV slot based on result.povRole.
         /// Unknown roles are ignored (no slot is mutated), preserving the historical no-op
         /// fall-through. The per-role bodies collapsed into <see cref="ApplyLlmResultToSlot"/>.
@@ -997,6 +1069,7 @@ namespace PawnDiary
             int boundaryRank = HasDeathDescription() ? 1 : (HasArrivalDescription() ? -1 : 0);
 
             DiaryInteractionGroupDef group = GroupForDisplay();
+            PlayerEntryTypeSnapshot playerType = PlayerEntryTypeForRole(povRole);
 
             // Title for this pawn's POV: stored LLM title only. When empty, the Diary card header
             // renders the date alone with no separator.
@@ -1057,12 +1130,12 @@ namespace PawnDiary
                 PromptFor(povRole),
                 eventId,
                 povRole,
-                group?.label ?? interactionLabel ?? string.Empty,
-                ColorCueForDisplay(),
+                playerType?.label ?? group?.label ?? interactionLabel ?? string.Empty,
+                playerType?.colorCue ?? ColorCueForDisplay(),
                 AtmosphereCueForDisplay(povRole),
                 StaggeredIntensityForRole(povRole),
                 DistortDirectSpeechForDisplay(povRole),
-                group == null || group.important,
+                playerType?.important ?? (group == null || group.important),
                 linkedEntry,
                 titleForPov,
                 titlePendingForPov,
@@ -1076,7 +1149,7 @@ namespace PawnDiary
         /// Truncates text to a short preview suitable for the linked-entry card.
         /// Takes the first line (or up to ~120 characters), appending an ellipsis if truncated.
         /// </summary>
-        private static string TruncateForPreview(string text)
+        internal static string TruncateForPreview(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
@@ -1681,7 +1754,7 @@ namespace PawnDiary
                 return DiaryEntryView.AtmosphereMemorial;
             }
 
-            string cue = ColorCueForDisplay();
+            string cue = PlayerEntryTypeForRole(povRole)?.colorCue ?? ColorCueForDisplay();
             if (string.Equals(cue, StrangeChatColorCue, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(cue, ExtremeDarkColorCue, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(cue, BodyPartAnomalousColorCue, StringComparison.OrdinalIgnoreCase))
@@ -1708,13 +1781,14 @@ namespace PawnDiary
         /// </summary>
         internal DiaryTextDecorationContext TextDecorationContextForRole(string povRole)
         {
+            PlayerEntryTypeSnapshot playerType = PlayerEntryTypeForRole(povRole);
             DiaryTextDecorationContext context = new DiaryTextDecorationContext
             {
                 povRole = povRole,
                 defName = interactionDefName,
-                colorCue = ColorCueForDisplay(),
+                colorCue = playerType?.colorCue ?? ColorCueForDisplay(),
                 atmosphereCue = AtmosphereCueForDisplay(povRole),
-                domain = DecorationDomainForContext(gameContext),
+                domain = playerType?.domain ?? DecorationDomainForContext(gameContext),
                 gameContext = gameContext
             };
             DiaryTextDecorations.AddEventTagsFromContext(context, gameContext);
@@ -1865,6 +1939,13 @@ namespace PawnDiary
 
         private static DiaryInteractionGroupDef GroupForDisplay(string context, string defName)
         {
+            // Player-created pages are not automatic interactions. Let their saved localized label win
+            // instead of allowing the Interaction catch-all to relabel them as a quiet-day event.
+            if (ManualDiaryEntryFacts.IsPlayerCreated(context))
+            {
+                return null;
+            }
+
             string domainName = DiaryEventDomainClassifier.DomainForContext(context);
             GroupDomain domain;
             if (!Enum.TryParse(domainName, out domain))
@@ -1894,6 +1975,23 @@ namespace PawnDiary
         {
             DiaryInteractionGroupDef group = GroupForDisplay();
             return group == null || group.important;
+        }
+
+        /// <summary>Resolves importance for one displayed POV, honoring its optional player category.</summary>
+        internal bool IsImportantForRole(string povRole)
+        {
+            PlayerEntryTypeSnapshot playerType = PlayerEntryTypeForRole(povRole);
+            return playerType?.important ?? IsImportant();
+        }
+
+        /// <summary>
+        /// Returns no override for a blank legacy slot. A nonblank stale/corrupt key safely displays as
+        /// Personal, while mutation APIs still reject unknown explicit keys.
+        /// </summary>
+        internal PlayerEntryTypeSnapshot PlayerEntryTypeForRole(string povRole)
+        {
+            string key = EntryTypeKeyForRole(povRole);
+            return string.IsNullOrWhiteSpace(key) ? null : DiaryPlayerEntryTypes.ResolveOrPersonal(key);
         }
 
         /// <summary>

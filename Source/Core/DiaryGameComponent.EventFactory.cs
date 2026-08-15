@@ -443,6 +443,31 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Creates the saved shell for a player-authored page without queueing generation, capturing
+        /// synthetic knowledge, or running retention before its final prose is installed. The manual-entry
+        /// adapter completes the slot and then applies the ordinary caps atomically from the UI's point of
+        /// view.
+        /// </summary>
+        private DiaryEvent AddManualEntryEvent(Pawn pawn, string label, string rawText)
+        {
+            return AddSoloEventCore(
+                pawn,
+                null,
+                ManualEntryDefName,
+                label,
+                rawText,
+                string.Empty,
+                ManualEntryGameContext,
+                null,
+                -1,
+                null,
+                null,
+                captureKnowledge: false,
+                applyDiaryEventLimits: false,
+                notifySkippedStatus: false);
+        }
+
+        /// <summary>
         /// Atomically creates a solo page for an exact writer whose diary eligibility was frozen before
         /// an irreversible vanilla transition. The caller must supply only that captured writer.
         /// </summary>
@@ -630,7 +655,8 @@ namespace PawnDiary
             int generationReadyTick = -1,
             bool captureKnowledge = true,
             bool applyDiaryEventLimits = true,
-            bool initiatorEligibilityAlreadyVerified = false)
+            bool initiatorEligibilityAlreadyVerified = false,
+            bool notifySkippedStatus = true)
         {
             IReadOnlyList<DiaryEvent> activeEvents = ActiveScanEvents();
             string pawnId = pawn.GetUniqueLoadID();
@@ -724,7 +750,7 @@ namespace PawnDiary
             {
                 CaptureKnowledgeForEvent(diaryEvent, pawn, otherPawn);
             }
-            if (diaryEvent.IsSkipped(DiaryEvent.InitiatorRole))
+            if (notifySkippedStatus && diaryEvent.IsSkipped(DiaryEvent.InitiatorRole))
             {
                 NotifyEntryStatusChanged(diaryEvent, DiaryEvent.InitiatorRole);
             }

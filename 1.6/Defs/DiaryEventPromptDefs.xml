@@ -702,6 +702,81 @@
     <enhancement>Use only status, participants, social text, and result supplied. Do not invent abuse, consent, rebellion plans, escape, emancipation, or later punishment.</enhancement>
   </PawnDiary.DiaryEventPromptDef>
 
+  <!-- Normal-play composer categories. These are deliberately generic: selecting a display/prompt
+       category is not evidence that a source-captured raid, quest, conversation, or day boundary
+       occurred. The adapter resolves these exact keys without inheriting source-group guidance. -->
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PlayerPersonal</defName>
+    <label>player personal note</label>
+    <eventType>PlayerPersonal</eventType>
+    <prompt>Write the player&apos;s supplied personal note as a first-person diary entry.</prompt>
+    <enhancement>Treat only the supplied summary as fact. Do not assume a conversation, incident, time of day, or outcome.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PlayerImportant</defName>
+    <label>player important note</label>
+    <eventType>PlayerImportant</eventType>
+    <prompt>Write the player&apos;s supplied important moment as a first-person diary entry.</prompt>
+    <enhancement>Give it appropriate weight without inventing why it matters, who was present, or what happened before or after.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PlayerInnerThoughts</defName>
+    <label>player inner thoughts</label>
+    <eventType>PlayerInnerThoughts</eventType>
+    <prompt>Write the player&apos;s supplied inner thought or feeling as a first-person diary entry.</prompt>
+    <enhancement>Stay inside the supplied feeling or idea. Do not invent an external cause, diagnosis, decision, or outcome.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PlayerSocial</defName>
+    <label>player social note</label>
+    <eventType>PlayerSocial</eventType>
+    <prompt>Write the player&apos;s supplied social moment as a first-person diary entry.</prompt>
+    <enhancement>Use only the people, relationship, and interaction the player actually supplies. Do not invent dialogue, motives, or history.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PlayerWork</defName>
+    <label>player work note</label>
+    <eventType>PlayerWork</eventType>
+    <prompt>Write the player&apos;s supplied work moment as a first-person diary entry.</prompt>
+    <enhancement>Use only the task and details supplied. Do not invent completion, skill gains, tools, failures, or results.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PlayerHealth</defName>
+    <label>player health note</label>
+    <eventType>PlayerHealth</eventType>
+    <prompt>Write the player&apos;s supplied health moment as a first-person diary entry.</prompt>
+    <enhancement>Use only symptoms, injuries, treatment, and change supplied. Do not invent a diagnosis, cause, procedure, recovery, or prognosis.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PlayerCombat</defName>
+    <label>player combat note</label>
+    <eventType>PlayerCombat</eventType>
+    <prompt>Write the player&apos;s supplied combat-related moment as a first-person diary entry.</prompt>
+    <enhancement>Use only danger, participants, actions, and outcome supplied. Do not assume a raid, enemy arrival, tactics, injury, victory, or defeat.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PlayerColony</defName>
+    <label>player colony note</label>
+    <eventType>PlayerColony</eventType>
+    <prompt>Write the player&apos;s supplied colony matter as a first-person diary entry.</prompt>
+    <enhancement>Use only the shared plan, problem, or achievement supplied. Do not assume a quest, reward, crisis, vote, or outcome.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PlayerReflection</defName>
+    <label>player reflection</label>
+    <eventType>PlayerReflection</eventType>
+    <prompt>Write the player&apos;s supplied reflection as a first-person diary entry.</prompt>
+    <enhancement>Follow the scope the player supplies. Do not assume it covers a day, season, year, milestone, or any event not named.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
   <!-- Broad-domain fallback for integration-API events (see INTEGRATIONS.md). Adapter mods can
        ship a narrower DiaryEventPromptDef keyed by their eventKey or group defName; this row only
        catches External events with no more specific policy loaded. -->

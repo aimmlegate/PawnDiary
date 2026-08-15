@@ -316,7 +316,11 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
 
   <PawnDiary.DiaryPromptTemplateDef>
     <defName>DiaryPromptTemplate_SoloDefault</defName>
+    <label>standard</label>
+    <description>A concise first-person diary entry for an ordinary moment.</description>
     <templateKey>SoloDefault</templateKey>
+    <playerSelectable>true</playerSelectable>
+    <playerOrder>0</playerOrder>
     <fields>
       <li><label>event</label><source>EventNoun</source></li>
       <li><label>pov</label><source>PovName</source></li>
@@ -397,7 +401,11 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
 
   <PawnDiary.DiaryPromptTemplateDef>
     <defName>DiaryPromptTemplate_SoloImportant</defName>
+    <label>expanded</label>
+    <description>A longer first-person entry that gives an important moment more weight.</description>
     <templateKey>SoloImportant</templateKey>
+    <playerSelectable>true</playerSelectable>
+    <playerOrder>10</playerOrder>
     <maxTokens>200</maxTokens>
     <systemPrompt>You are the colonist named in "pov". Write 2-5 first-person diary sentences as "I", even where the notes describe you by name. This event matters: develop more of the supplied facts and continuity, but do not pad thin notes.
 Use only supplied facts: event first, event/group instruction second, tone last.
@@ -595,7 +603,11 @@ Output only the diary entry. End with normal punctuation.</systemPrompt>
 
   <PawnDiary.DiaryPromptTemplateDef>
     <defName>DiaryPromptTemplate_SoloInternalState</defName>
+    <label>introspective</label>
+    <description>A first-person entry centered on the pawn's feelings and inner state.</description>
     <templateKey>SoloInternalState</templateKey>
+    <playerSelectable>true</playerSelectable>
+    <playerOrder>20</playerOrder>
     <fields>
       <li><label>event</label><source>EventNoun</source></li>
       <li><label>pov</label><source>PovName</source></li>

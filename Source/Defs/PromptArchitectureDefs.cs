@@ -27,6 +27,10 @@ namespace PawnDiary
     public class DiaryPromptTemplateDef : Def
     {
         public string templateKey;
+        // Normal-play composer opt-in. False is deliberately safe for every existing/custom shape:
+        // templates become player-selectable only when their XML author explicitly says so.
+        public bool playerSelectable;
+        public int playerOrder;
         public string systemPrompt;
         public string finalInstruction;
         public string recipientFinalInstruction;

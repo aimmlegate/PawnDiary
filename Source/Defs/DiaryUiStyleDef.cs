@@ -139,6 +139,35 @@ namespace PawnDiary
         public float readerScreenMargin = 48f;
         public DiaryUiColorSpec readerDeadPawnTint = Color(0.72f, 0.66f, 0.62f, 1f);
 
+        // ---- Manual diary-entry composer ----
+        // The composer is shared by the inspect tab and standalone reader, and clamps to the current
+        // screen after applying this clear margin. Every new layout number lives here so high UI scales
+        // and translations can be tuned from XML without recompiling the mod.
+        public float manualEntryEditorWidth = 820f;
+        public float manualEntryEditorHeight = 700f;
+        public float manualEntryEditorScreenMargin = 64f;
+        public float manualEntryEditorFieldGap = 8f;
+        public float manualEntryEditorButtonWidth = 140f;
+        public float manualEntryEditorButtonGap = 10f;
+        public float manualEntryComposerCompactWidth = 620f;
+        public float manualEntryComposerSectionGap = 12f;
+        public float manualEntryComposerPanelPadding = 10f;
+        public float manualEntryComposerModeGap = 8f;
+        public float manualEntryComposerModeMinHeight = 72f;
+        public float manualEntryComposerSelectorGap = 12f;
+        public float manualEntryComposerSelectorMinHeight = 34f;
+        public float manualEntryComposerDescriptionGap = 4f;
+        public float manualEntryComposerCharacterGap = 8f;
+        public float manualEntryComposerTextPadding = 6f;
+        public float manualEntryComposerShortAreaHeight = 104f;
+        public float manualEntryComposerSystemAreaHeight = 120f;
+        public float manualEntryComposerLongAreaHeight = 240f;
+        public float manualEntryComposerWarningPadding = 10f;
+        public DiaryUiColorSpec manualEntryComposerWarningBackground = Color(0.30f, 0.20f, 0.05f, 0.88f);
+        public DiaryUiColorSpec manualEntryComposerWarningBorder = Color(0.95f, 0.66f, 0.18f, 0.90f);
+        public DiaryUiColorSpec manualEntryComposerMutedText = Color(0.68f, 0.70f, 0.72f, 1f);
+        public DiaryUiColorSpec manualEntryComposerErrorText = Color(1f, 0.42f, 0.34f, 1f);
+
         // ---- Right-hand filter/controls panel ----
         // Independent, non-virtualized scroll column on the right of the Diary tab. Holds the year
         // selector, filter controls, and (in dev mode) the diary dev tools.
@@ -479,6 +508,14 @@ namespace PawnDiary
         public Color ModelNameColor => modelNameColor.ToColor(new Color(0.45f, 0.48f, 0.50f, 0.62f));
         public Color RegenerateEntryButtonColor => regenerateEntryButtonColor.ToColor(new Color(0.82f, 0.85f, 0.88f, 0.85f));
         public Color FavoriteStarColor => favoriteStarColor.ToColor(new Color(0.98f, 0.82f, 0.34f, 1f));
+        public Color ManualEntryComposerWarningBackground => manualEntryComposerWarningBackground.ToColor(
+            new Color(0.30f, 0.20f, 0.05f, 0.88f));
+        public Color ManualEntryComposerWarningBorder => manualEntryComposerWarningBorder.ToColor(
+            new Color(0.95f, 0.66f, 0.18f, 0.90f));
+        public Color ManualEntryComposerMutedText => manualEntryComposerMutedText.ToColor(
+            new Color(0.68f, 0.70f, 0.72f, 1f));
+        public Color ManualEntryComposerErrorText => manualEntryComposerErrorText.ToColor(
+            new Color(1f, 0.42f, 0.34f, 1f));
         public Color FilterActiveIconColor => filterActiveIconColor.ToColor(new Color(0.96f, 0.78f, 0.40f, 0.98f));
         public Color FilterSearchHighlightColor => filterSearchHighlightColor.ToColor(new Color(1f, 0.74f, 0.24f, 1f));
         public Color DebugTextColor => debugTextColor.ToColor(new Color(0.54f, 0.58f, 0.60f, 0.90f));

@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
+  <DiaryPromptTemplate_SoloDefault.label>standard</DiaryPromptTemplate_SoloDefault.label>
+  <DiaryPromptTemplate_SoloDefault.description>A concise first-person diary entry for an ordinary moment.</DiaryPromptTemplate_SoloDefault.description>
+  <DiaryPromptTemplate_SoloImportant.label>expanded</DiaryPromptTemplate_SoloImportant.label>
+  <DiaryPromptTemplate_SoloImportant.description>A longer first-person entry that gives an important moment more weight.</DiaryPromptTemplate_SoloImportant.description>
+  <DiaryPromptTemplate_SoloInternalState.label>introspective</DiaryPromptTemplate_SoloInternalState.label>
+  <DiaryPromptTemplate_SoloInternalState.description>A first-person entry centered on the pawn's feelings and inner state.</DiaryPromptTemplate_SoloInternalState.description>
   <DiaryPromptTemplate_PairDefault.fields.0.label>event</DiaryPromptTemplate_PairDefault.fields.0.label>
   <DiaryPromptTemplate_PairDefault.fields.1.label>pov</DiaryPromptTemplate_PairDefault.fields.1.label>
   <DiaryPromptTemplate_PairDefault.fields.2.label>role</DiaryPromptTemplate_PairDefault.fields.2.label>

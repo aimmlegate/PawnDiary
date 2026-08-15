@@ -106,9 +106,9 @@ namespace PawnDiary
         private static float YearFilterHeight => UiStyle.yearFilterHeight;
         private static float YearFilterGap => UiStyle.yearFilterGap;
 
-        // Player-facing writing-style opener in the Diary header. Layout values come from XML via
-        // UiStyle (DiaryUiStyleDef). The dev-control block measures its translated labels against the
-        // live filter width in DiaryJournalView.Controls.cs.
+        // Player-facing action icons in the Diary header. The writing-style and new-page actions share
+        // this quiet size/gap/alpha treatment; values come from XML via DiaryUiStyleDef. The dev-control
+        // block measures its translated labels against the live filter width in Controls.cs.
         private static float WritingStyleIconSize => UiStyle.writingStyleIconSize;
         private static float WritingStyleIconRightGap => UiStyle.writingStyleIconRightGap;
         // Horizontal clearance kept between the header's rightmost icon and the window's right edge, so
@@ -380,6 +380,22 @@ namespace PawnDiary
                     iconSize);
                 DrawWritingStyleHeaderIcon(writingStyleIconRect, pawn, component);
                 headerRight = writingStyleIconRect.x - Mathf.Max(0f, WritingStyleIconRightGap);
+            }
+
+            // Player-authored page creation belongs to the shared header rather than either host, so
+            // the inspect tab and standalone reader expose the same action. The eligibility check is
+            // deliberately independent of automatic generation: a paused profile may still be written
+            // by the player. Archive-only subjects have no live Pawn and therefore show no create icon.
+            if (ShouldDrawManualEntryCreateButton(subject, component))
+            {
+                float iconSize = Mathf.Max(1f, WritingStyleIconSize);
+                Rect newEntryIconRect = new Rect(
+                    headerRight - iconSize,
+                    journalRect.y + Mathf.Max(0f, (headerRect.height - iconSize) * 0.5f),
+                    iconSize,
+                    iconSize);
+                DrawManualEntryCreateHeaderIcon(newEntryIconRect, subject.Pawn, component);
+                headerRight = newEntryIconRect.x - Mathf.Max(0f, WritingStyleIconRightGap);
             }
 
             headerRect.width = Mathf.Max(0f, headerRight - journalRect.x);
@@ -661,6 +677,7 @@ namespace PawnDiary
                             VisibleEntryRect = visibleEntryRect,
                             Pawn = pawn,
                             PawnId = subject.PawnId,
+                            PawnDisplayName = subject.DisplayName,
                             Component = component,
                             Owner = this,
                             AccentColor = accentColor,

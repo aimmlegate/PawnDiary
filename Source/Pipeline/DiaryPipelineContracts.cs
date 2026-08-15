@@ -104,6 +104,10 @@ namespace PawnDiary
         public string label;
         public string eventNoun;
         public string domain;
+        // Nonblank only when one exact POV has a player-selected composer category. The impure
+        // adapter uses this marker to keep generic player guidance isolated from source-event group
+        // assumptions (for example, Combat must not silently become a raid).
+        public string playerEntryTypeKey;
         public bool solo;
         public string gameContext;
         public string instruction;
@@ -177,6 +181,8 @@ namespace PawnDiary
     internal class DiaryTemplatePolicy
     {
         public string templateKey;
+        public bool playerSelectable;
+        public int playerOrder;
         public string systemPrompt;
         public string finalInstruction;
         public string recipientFinalInstruction;
@@ -258,6 +264,9 @@ namespace PawnDiary
         public DiaryPolicySnapshot policy;
         public string povRole;
         public bool titleRequest;
+        // Optional normal-play composer override. The pure planner honors it only for a solo,
+        // XML-opted template, after title and life-boundary safeguards have selected their shapes.
+        public string requestedTemplateKey;
         public string personaRule;
         public string personaVoiceBlock;
         public string promptEnchantment;

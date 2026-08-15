@@ -85,6 +85,7 @@
     <Compile Include="..\..\Source\Pipeline\DiaryEntrySearch.cs" Link="DiaryEntrySearch.cs" />
     <Compile Include="..\..\Source\Pipeline\EventWindowPolicy.cs" Link="EventWindowPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\ProgressionMilestonePolicy.cs" Link="ProgressionMilestonePolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\PlayerEntryComposerPolicy.cs" Link="PlayerEntryComposerPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\ArcReflectionSchedulePolicy.cs" Link="ArcReflectionSchedulePolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\ReflectionSettingsInheritance.cs" Link="ReflectionSettingsInheritance.cs" />
     <Compile Include="..\..\Source\Pipeline\ArcReflectionMemorySelector.cs" Link="ArcReflectionMemorySelector.cs" />
@@ -130,6 +131,7 @@
     <Compile Include="..\..\Source\Settings\AdvancedRawSyntax.cs" Link="AdvancedRawSyntax.cs" />
     <Compile Include="..\..\Source\Generation\PromptAssembler.cs" Link="PromptAssembler.cs" />
     <Compile Include="..\..\Source\Generation\DiaryContextFields.cs" Link="DiaryContextFields.cs" />
+    <Compile Include="..\..\Source\Models\ManualDiaryEntrySnapshot.cs" Link="ManualDiaryEntrySnapshot.cs" />
     <Compile Include="..\..\Source\Generation\LlmResponseParser.cs" Link="LlmResponseParser.cs" />
     <Compile Include="..\..\Source\Util\MiniJson.cs" Link="MiniJson.cs" />
     <Compile Include="..\..\Source\Util\PromptTextTemplate.cs" Link="PromptTextTemplate.cs" />

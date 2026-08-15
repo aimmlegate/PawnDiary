@@ -26,10 +26,12 @@ namespace PawnDiary
             string entryText,
             bool titleRequest,
             int maxTokens,
-            PromptContextDetailLevel contextDetailLevel = PromptContextDetailLevel.Full)
+            PromptContextDetailLevel contextDetailLevel = PromptContextDetailLevel.Full,
+            string requestedTemplateKey = null,
+            bool readOnlyKnowledge = false)
         {
-            DiaryEventPayload payload = ToPayload(diaryEvent);
             string normalizedRole = string.IsNullOrWhiteSpace(povRole) ? DiaryPipelineRoles.Initiator : povRole;
+            DiaryEventPayload payload = ToPayload(diaryEvent, normalizedRole, readOnlyKnowledge);
             PromptContextDetailLevel normalizedLevel = PromptContextSelector.Normalize(contextDetailLevel);
 
             // Event capture intentionally freezes the richest available snapshot before an API lane is
@@ -50,6 +52,10 @@ namespace PawnDiary
                 policy = PolicyFor(payload, applyGlobalMemorySetting: false),
                 povRole = normalizedRole,
                 titleRequest = titleRequest,
+                requestedTemplateKey = !string.IsNullOrWhiteSpace(requestedTemplateKey)
+                    ? requestedTemplateKey
+                    : diaryEvent?.PlayerEntryTypeForRole(normalizedRole)?.defaultTemplateKey
+                        ?? string.Empty,
                 personaRule = personaRule,
                 // The psychotype (outlook) block, the writing-style block, and the per-entry humor cue all
                 // ride inside one combined voice block rather than separate request fields, so no
@@ -81,6 +87,23 @@ namespace PawnDiary
         }
 
         public static DiaryEventPayload ToPayload(DiaryEvent diaryEvent)
+        {
+            return ToPayload(diaryEvent, string.Empty);
+        }
+
+        /// <summary>
+        /// Projects one event, optionally overlaying the selected POV's player category on the plain
+        /// prompt/display payload. The saved event's source identity and context remain untouched.
+        /// </summary>
+        public static DiaryEventPayload ToPayload(DiaryEvent diaryEvent, string povRole)
+        {
+            return ToPayload(diaryEvent, povRole, false);
+        }
+
+        private static DiaryEventPayload ToPayload(
+            DiaryEvent diaryEvent,
+            string povRole,
+            bool readOnlyKnowledge)
         {
             if (diaryEvent == null)
             {
@@ -116,8 +139,8 @@ namespace PawnDiary
                 beliefReflection = diaryEvent.IsBeliefReflection(),
                 socialReflection = socialReflection,
                 supportsDirectSpeechInstruction = IsInteractionPrompt(diaryEvent),
-                initiator = PovFor(diaryEvent, DiaryPipelineRoles.Initiator),
-                recipient = PovFor(diaryEvent, DiaryPipelineRoles.Recipient),
+                initiator = PovFor(diaryEvent, DiaryPipelineRoles.Initiator, readOnlyKnowledge),
+                recipient = PovFor(diaryEvent, DiaryPipelineRoles.Recipient, readOnlyKnowledge),
                 display = new DiaryDisplayPayload
                 {
                     // H7 freezes a polarity-specific cue on the event. Regeneration must keep that
@@ -133,6 +156,20 @@ namespace PawnDiary
                 }
             };
 
+            PlayerEntryTypeSnapshot playerType = string.IsNullOrWhiteSpace(povRole)
+                ? null
+                : diaryEvent.PlayerEntryTypeForRole(povRole);
+            if (playerType != null)
+            {
+                payload.defName = playerType.eventPromptKey;
+                payload.playerEntryTypeKey = playerType.entryTypeKey;
+                payload.label = playerType.label;
+                payload.eventNoun = playerType.label;
+                payload.domain = playerType.domain;
+                payload.display.colorCue = playerType.colorCue;
+                payload.display.important = playerType.important;
+            }
+
             return payload;
         }
 
@@ -147,14 +184,33 @@ namespace PawnDiary
             BeliefPolicySnapshot beliefPolicy = DiaryBeliefPolicy.Snapshot();
             string classifierKey = ClassifierKeyForPayload(payload);
             DiaryInteractionGroupDef group = GroupForPayload(payload, classifierKey);
-            List<string> eventPromptKeys = DiaryEventPromptKeys.CandidateKeys(
-                payload,
-                group?.defName,
-                classifierKey,
-                FallbackEventPromptKeyForPayload(payload),
-                preferGroup: string.Equals(
-                    payload?.domain, DiaryEventDomainClassifier.Ritual,
-                    StringComparison.OrdinalIgnoreCase));
+            List<string> eventPromptKeys;
+            if (!string.IsNullOrWhiteSpace(payload?.playerEntryTypeKey))
+            {
+                // Player categories describe whatever facts the player supplied; they are not proof
+                // that a raid, quest, conversation, or end-of-day boundary occurred. Resolve only the
+                // exact generic category guidance, then the generic Personal policy as a corrupt-Def
+                // fallback. Never inherit a source capture group's prompt, enhancement, or model.
+                eventPromptKeys = new List<string> { payload.defName };
+                if (!string.Equals(
+                    payload.defName,
+                    DiaryPlayerEntryTypes.PersonalEventPromptKey,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    eventPromptKeys.Add(DiaryPlayerEntryTypes.PersonalEventPromptKey);
+                }
+            }
+            else
+            {
+                eventPromptKeys = DiaryEventPromptKeys.CandidateKeys(
+                    payload,
+                    group?.defName,
+                    classifierKey,
+                    FallbackEventPromptKeyForPayload(payload),
+                    preferGroup: string.Equals(
+                        payload?.domain, DiaryEventDomainClassifier.Ritual,
+                        StringComparison.OrdinalIgnoreCase));
+            }
             string eventPromptKey;
             DiaryEventPrompts.ForFirstAvailableKey(eventPromptKeys, out eventPromptKey);
             string eventPromptText = ResolveEventPromptField(eventPromptKeys, def => def?.prompt,
@@ -231,9 +287,14 @@ namespace PawnDiary
         /// and scans that template's field rows; it deliberately avoids building the full 15-template
         /// prompt policy, culture profiles, belief policy, prompt overrides, and tone selection.
         /// </summary>
-        public static bool ProjectsMemoryContext(DiaryEvent diaryEvent)
+        public static bool ProjectsMemoryContext(
+            DiaryEvent diaryEvent,
+            bool readOnlyKnowledge = false)
         {
-            DiaryEventPayload payload = ToPayload(diaryEvent);
+            DiaryEventPayload payload = ToPayload(
+                diaryEvent,
+                DiaryEvent.InitiatorRole,
+                readOnlyKnowledge);
             string classifierKey = ClassifierKeyForPayload(payload);
             DiaryInteractionGroupDef group = GroupForPayload(payload, classifierKey);
             DiaryPolicySnapshot minimalPolicy = new DiaryPolicySnapshot
@@ -302,7 +363,10 @@ namespace PawnDiary
             return string.Empty;
         }
 
-        private static DiaryPovPayload PovFor(DiaryEvent diaryEvent, string role)
+        private static DiaryPovPayload PovFor(
+            DiaryEvent diaryEvent,
+            string role,
+            bool readOnlyKnowledge = false)
         {
             bool recipient = string.Equals(role, DiaryPipelineRoles.Recipient, StringComparison.OrdinalIgnoreCase);
             DiaryPovPayload pov = new DiaryPovPayload
@@ -329,8 +393,10 @@ namespace PawnDiary
 
             // Culture names from the LIVE knowledge state (MEMORY_SYSTEM_REDESIGN_PLAN §4.1) so a
             // regenerated page always annotates with the latest adopted culture. Main thread only.
-            PawnKnowledgeState knowledge = DiaryGameComponent.Instance
-                ?.KnowledgeStateForPawnId(pov.pawnId);
+            DiaryGameComponent component = DiaryGameComponent.Instance;
+            PawnKnowledgeState knowledge = readOnlyKnowledge
+                ? component?.KnowledgeStateForPawnIdReadOnly(pov.pawnId)
+                : component?.KnowledgeStateForPawnId(pov.pawnId);
             if (knowledge != null)
             {
                 pov.originCultureDefName = knowledge.originCultureDefName;
@@ -364,6 +430,8 @@ namespace PawnDiary
             snapshot.templates.Add(new DiaryTemplatePolicy
             {
                 templateKey = templateKey,
+                playerSelectable = template.playerSelectable,
+                playerOrder = template.playerOrder,
                 systemPrompt = DiaryPromptTemplates.SystemPromptFor(templateKey),
                 finalInstruction = DiaryPromptTemplates.FinalInstructionFor(templateKey),
                 recipientFinalInstruction = DiaryPromptTemplates.RecipientFinalInstruction(templateKey),
@@ -576,6 +644,14 @@ namespace PawnDiary
             DiaryEventPayload payload,
             DiaryInteractionGroupDef group)
         {
+            // Generic player categories carry exact event guidance above. A capture-group tone can
+            // smuggle the same false assumption back in ("end-of-day", "raid", "quest"), so player
+            // pages intentionally use the selected template/voice without a source-derived tone.
+            if (!string.IsNullOrWhiteSpace(payload?.playerEntryTypeKey))
+            {
+                return string.Empty;
+            }
+
             if (payload != null && payload.socialReflection)
             {
                 string frozen = DiaryContextFields.Value(

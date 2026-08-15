@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <PawnDiary_PlayerEntryType_Personal.label>personal</PawnDiary_PlayerEntryType_Personal.label>
+  <PawnDiary_PlayerEntryType_Personal.description>A personal note about whatever is on this pawn's mind.</PawnDiary_PlayerEntryType_Personal.description>
+  <PawnDiary_PlayerEntryType_Important.label>important</PawnDiary_PlayerEntryType_Important.label>
+  <PawnDiary_PlayerEntryType_Important.description>A major moment that deserves a little more space and weight.</PawnDiary_PlayerEntryType_Important.description>
+  <PawnDiary_PlayerEntryType_InnerThoughts.label>inner thoughts</PawnDiary_PlayerEntryType_InnerThoughts.label>
+  <PawnDiary_PlayerEntryType_InnerThoughts.description>A private feeling, worry, hope, or change of mind.</PawnDiary_PlayerEntryType_InnerThoughts.description>
+  <PawnDiary_PlayerEntryType_Social.label>social</PawnDiary_PlayerEntryType_Social.label>
+  <PawnDiary_PlayerEntryType_Social.description>A conversation, relationship, or moment involving other people.</PawnDiary_PlayerEntryType_Social.description>
+  <PawnDiary_PlayerEntryType_Work.label>work</PawnDiary_PlayerEntryType_Work.label>
+  <PawnDiary_PlayerEntryType_Work.description>A job, project, craft, harvest, or ordinary day of labor.</PawnDiary_PlayerEntryType_Work.description>
+  <PawnDiary_PlayerEntryType_Health.label>health</PawnDiary_PlayerEntryType_Health.label>
+  <PawnDiary_PlayerEntryType_Health.description>An illness, injury, recovery, treatment, or change in the body.</PawnDiary_PlayerEntryType_Health.description>
+  <PawnDiary_PlayerEntryType_Combat.label>combat</PawnDiary_PlayerEntryType_Combat.label>
+  <PawnDiary_PlayerEntryType_Combat.description>A fight, raid, threat, defense, or narrow escape.</PawnDiary_PlayerEntryType_Combat.description>
+  <PawnDiary_PlayerEntryType_Colony.label>colony</PawnDiary_PlayerEntryType_Colony.label>
+  <PawnDiary_PlayerEntryType_Colony.description>A shared colony matter, plan, crisis, or achievement.</PawnDiary_PlayerEntryType_Colony.description>
+  <PawnDiary_PlayerEntryType_Reflection.label>reflection</PawnDiary_PlayerEntryType_Reflection.label>
+  <PawnDiary_PlayerEntryType_Reflection.description>A broader look back at recent events and what they meant.</PawnDiary_PlayerEntryType_Reflection.description>
+</LanguageData>

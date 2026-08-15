@@ -218,4 +218,31 @@
   <DiaryEventPrompt_SlaveryGroup.label>Рабство или подавление</DiaryEventPrompt_SlaveryGroup.label>
   <DiaryEventPrompt_SlaveryGroup.prompt>Опиши переданное порабощение, подавление или неповиновение с переданной точки зрения этого поселенца.</DiaryEventPrompt_SlaveryGroup.prompt>
   <DiaryEventPrompt_SlaveryGroup.enhancement>Используй лишь переданные статус, участников, социальный текст и результат. Не выдумывай насилие, согласие, планы бунта, побег, освобождение или последующее наказание.</DiaryEventPrompt_SlaveryGroup.enhancement>
+  <DiaryEventPrompt_PlayerPersonal.label>личная запись игрока</DiaryEventPrompt_PlayerPersonal.label>
+  <DiaryEventPrompt_PlayerPersonal.prompt>Напиши переданную игроком личную заметку как дневниковую запись от первого лица.</DiaryEventPrompt_PlayerPersonal.prompt>
+  <DiaryEventPrompt_PlayerPersonal.enhancement>Считай фактом только переданное описание. Не предполагай разговор, происшествие, время суток или исход.</DiaryEventPrompt_PlayerPersonal.enhancement>
+  <DiaryEventPrompt_PlayerImportant.label>важная запись игрока</DiaryEventPrompt_PlayerImportant.label>
+  <DiaryEventPrompt_PlayerImportant.prompt>Напиши переданный игроком важный момент как дневниковую запись от первого лица.</DiaryEventPrompt_PlayerImportant.prompt>
+  <DiaryEventPrompt_PlayerImportant.enhancement>Придай моменту уместный вес, но не выдумывай, почему он важен, кто присутствовал и что было до или после.</DiaryEventPrompt_PlayerImportant.enhancement>
+  <DiaryEventPrompt_PlayerInnerThoughts.label>внутренние мысли игрока</DiaryEventPrompt_PlayerInnerThoughts.label>
+  <DiaryEventPrompt_PlayerInnerThoughts.prompt>Напиши переданную игроком мысль или чувство как дневниковую запись от первого лица.</DiaryEventPrompt_PlayerInnerThoughts.prompt>
+  <DiaryEventPrompt_PlayerInnerThoughts.enhancement>Оставайся в рамках переданного чувства или идеи. Не выдумывай внешнюю причину, диагноз, решение или исход.</DiaryEventPrompt_PlayerInnerThoughts.enhancement>
+  <DiaryEventPrompt_PlayerSocial.label>запись игрока об отношениях</DiaryEventPrompt_PlayerSocial.label>
+  <DiaryEventPrompt_PlayerSocial.prompt>Напиши переданный игроком социальный момент как дневниковую запись от первого лица.</DiaryEventPrompt_PlayerSocial.prompt>
+  <DiaryEventPrompt_PlayerSocial.enhancement>Используй только людей, отношения и взаимодействие, прямо переданные игроком. Не выдумывай реплики, мотивы или предысторию.</DiaryEventPrompt_PlayerSocial.enhancement>
+  <DiaryEventPrompt_PlayerWork.label>запись игрока о работе</DiaryEventPrompt_PlayerWork.label>
+  <DiaryEventPrompt_PlayerWork.prompt>Напиши переданный игроком рабочий момент как дневниковую запись от первого лица.</DiaryEventPrompt_PlayerWork.prompt>
+  <DiaryEventPrompt_PlayerWork.enhancement>Используй только переданные задачу и детали. Не выдумывай завершение, рост навыка, инструменты, ошибки или результат.</DiaryEventPrompt_PlayerWork.enhancement>
+  <DiaryEventPrompt_PlayerHealth.label>запись игрока о здоровье</DiaryEventPrompt_PlayerHealth.label>
+  <DiaryEventPrompt_PlayerHealth.prompt>Напиши переданный игроком момент, связанный со здоровьем, как дневниковую запись от первого лица.</DiaryEventPrompt_PlayerHealth.prompt>
+  <DiaryEventPrompt_PlayerHealth.enhancement>Используй только переданные симптомы, травмы, лечение и изменения. Не выдумывай диагноз, причину, процедуру, выздоровление или прогноз.</DiaryEventPrompt_PlayerHealth.enhancement>
+  <DiaryEventPrompt_PlayerCombat.label>запись игрока о бое</DiaryEventPrompt_PlayerCombat.label>
+  <DiaryEventPrompt_PlayerCombat.prompt>Напиши переданный игроком боевой момент как дневниковую запись от первого лица.</DiaryEventPrompt_PlayerCombat.prompt>
+  <DiaryEventPrompt_PlayerCombat.enhancement>Используй только переданные опасность, участников, действия и исход. Не предполагай налёт, появление врага, тактику, ранения, победу или поражение.</DiaryEventPrompt_PlayerCombat.enhancement>
+  <DiaryEventPrompt_PlayerColony.label>запись игрока о колонии</DiaryEventPrompt_PlayerColony.label>
+  <DiaryEventPrompt_PlayerColony.prompt>Напиши переданное игроком дело колонии как дневниковую запись от первого лица.</DiaryEventPrompt_PlayerColony.prompt>
+  <DiaryEventPrompt_PlayerColony.enhancement>Используй только переданные общий план, проблему или достижение. Не предполагай задание, награду, кризис, голосование или исход.</DiaryEventPrompt_PlayerColony.enhancement>
+  <DiaryEventPrompt_PlayerReflection.label>размышление игрока</DiaryEventPrompt_PlayerReflection.label>
+  <DiaryEventPrompt_PlayerReflection.prompt>Напиши переданное игроком размышление как дневниковую запись от первого лица.</DiaryEventPrompt_PlayerReflection.prompt>
+  <DiaryEventPrompt_PlayerReflection.enhancement>Следуй масштабу, заданному игроком. Не предполагай, что речь идёт о дне, сезоне, годе, вехе или любом неназванном событии.</DiaryEventPrompt_PlayerReflection.enhancement>
 </LanguageData>

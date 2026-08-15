@@ -717,7 +717,10 @@ namespace PawnDiary
         /// at most two localized fact lines. Gated by the single player switch (injection only) and
         /// by template projectability, exactly like the narrative/belief context builders.
         /// </summary>
-        private void ApplyRelevantPastForEvent(DiaryEvent diaryEvent)
+        private void ApplyRelevantPastForEvent(
+            DiaryEvent diaryEvent,
+            bool recordDiagnostics = true,
+            bool createMissingKnowledgeState = true)
         {
             try
             {
@@ -725,15 +728,26 @@ namespace PawnDiary
                 // Dispatch later applies the selected lane's Full/Balanced/Compact feature policy.
                 KnowledgePolicySnapshot policy = DiaryKnowledgePolicy.Snapshot(
                     applyGlobalMemorySetting: false);
-                if (!policy.injectionEnabled || !EventProjectsMemoryContext(diaryEvent))
+                if (!policy.injectionEnabled || !EventProjectsMemoryContext(
+                    diaryEvent, readOnlyKnowledge: !createMissingKnowledgeState))
                 {
                     return;
                 }
 
-                ApplyRelevantPastForRole(diaryEvent, DiaryEvent.InitiatorRole, policy);
+                ApplyRelevantPastForRole(
+                    diaryEvent,
+                    DiaryEvent.InitiatorRole,
+                    policy,
+                    recordDiagnostics,
+                    createMissingKnowledgeState);
                 if (!diaryEvent.solo && !string.IsNullOrWhiteSpace(diaryEvent.recipientPawnId))
                 {
-                    ApplyRelevantPastForRole(diaryEvent, DiaryEvent.RecipientRole, policy);
+                    ApplyRelevantPastForRole(
+                        diaryEvent,
+                        DiaryEvent.RecipientRole,
+                        policy,
+                        recordDiagnostics,
+                        createMissingKnowledgeState);
                 }
             }
             catch (Exception e)
@@ -749,13 +763,19 @@ namespace PawnDiary
         /// the exact generation-time template resolution so the prediction cannot drift. Neutral
         /// death/arrival and title pages never render the block, so retrieval skips them.
         /// </summary>
-        private static bool EventProjectsMemoryContext(DiaryEvent diaryEvent)
+        private static bool EventProjectsMemoryContext(
+            DiaryEvent diaryEvent,
+            bool readOnlyKnowledge = false)
         {
-            return DiaryPipelineAdapters.ProjectsMemoryContext(diaryEvent);
+            return DiaryPipelineAdapters.ProjectsMemoryContext(diaryEvent, readOnlyKnowledge);
         }
 
-        private void ApplyRelevantPastForRole(DiaryEvent diaryEvent, string povRole,
-            KnowledgePolicySnapshot policy)
+        private void ApplyRelevantPastForRole(
+            DiaryEvent diaryEvent,
+            string povRole,
+            KnowledgePolicySnapshot policy,
+            bool recordDiagnostics,
+            bool createMissingKnowledgeState)
         {
             string pawnId = povRole == DiaryEvent.RecipientRole
                 ? diaryEvent.recipientPawnId
@@ -765,13 +785,18 @@ namespace PawnDiary
                 return;
             }
 
-            PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
+            PawnDiaryRecord diary = createMissingKnowledgeState
+                ? FindDiaryByPawnId(pawnId)
+                : LookupDiaryByPawnId(pawnId);
             if (diary == null)
             {
                 return;
             }
 
-            PawnKnowledgeState state = EnsureKnowledgeState(diary);
+            PawnKnowledgeState state = createMissingKnowledgeState
+                ? EnsureKnowledgeState(diary)
+                : diary.KnowledgeStateOrNull();
+            if (state == null) return;
             string otherPawnId = povRole == DiaryEvent.RecipientRole
                 ? diaryEvent.initiatorPawnId
                 : diaryEvent.recipientPawnId;
@@ -838,7 +863,7 @@ namespace PawnDiary
                 report.selectedRecordIds.Add(result.selected[i].recordId);
             }
 
-            knowledgeReportsByPawnId[pawnId] = report;
+            if (recordDiagnostics) knowledgeReportsByPawnId[pawnId] = report;
 
             if (result.selected.Count == 0)
             {
@@ -935,6 +960,13 @@ namespace PawnDiary
         {
             PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
             return diary != null ? EnsureKnowledgeState(diary) : null;
+        }
+
+        /// <summary>Read-only prompt-preview lookup that never creates or normalizes saved state.</summary>
+        internal PawnKnowledgeState KnowledgeStateForPawnIdReadOnly(string pawnId)
+        {
+            PawnDiaryRecord diary = LookupDiaryByPawnId(pawnId);
+            return diary?.KnowledgeStateOrNull();
         }
 
         /// <summary>Culture snapshot + last retrieval report for the dev tab (§7).</summary>

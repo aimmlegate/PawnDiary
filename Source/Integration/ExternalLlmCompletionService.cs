@@ -192,6 +192,19 @@ namespace PawnDiary.Integration
         }
 
         /// <summary>
+        /// Returns the same detached lane choice Begin would use. Internal prompt composers use this
+        /// only to resolve per-lane context policy before assembling a request; credentials never cross
+        /// a UI/public DTO boundary.
+        /// </summary>
+        internal static ApiEndpointConfig ResolveEndpointSnapshot(
+            PawnDiarySettings settings,
+            int laneIndex)
+        {
+            ApiEndpointConfig endpoint = settings == null ? null : ResolveEndpoint(settings, laneIndex);
+            return endpoint?.Copy();
+        }
+
+        /// <summary>
         /// Returns a copy of the handle's current result. A terminal (Succeeded/Failed) result is dropped
         /// after this read to bound memory, so poll until terminal, then apply. Unknown = untracked handle.
         /// </summary>

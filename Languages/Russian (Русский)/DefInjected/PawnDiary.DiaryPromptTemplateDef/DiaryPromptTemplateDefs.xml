@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
+  <DiaryPromptTemplate_SoloDefault.label>стандартный</DiaryPromptTemplate_SoloDefault.label>
+  <DiaryPromptTemplate_SoloDefault.description>Краткая дневниковая запись от первого лица об обычном моменте.</DiaryPromptTemplate_SoloDefault.description>
+  <DiaryPromptTemplate_SoloImportant.label>расширенный</DiaryPromptTemplate_SoloImportant.label>
+  <DiaryPromptTemplate_SoloImportant.description>Более длинная запись от первого лица, придающая важному моменту больший вес.</DiaryPromptTemplate_SoloImportant.description>
+  <DiaryPromptTemplate_SoloInternalState.label>самоанализ</DiaryPromptTemplate_SoloInternalState.label>
+  <DiaryPromptTemplate_SoloInternalState.description>Запись от первого лица, сосредоточенная на чувствах и внутреннем состоянии поселенца.</DiaryPromptTemplate_SoloInternalState.description>
   <DiaryPromptTemplate_PairDefault.fields.0.label>событие</DiaryPromptTemplate_PairDefault.fields.0.label>
   <DiaryPromptTemplate_PairDefault.fields.1.label>точка зрения</DiaryPromptTemplate_PairDefault.fields.1.label>
   <DiaryPromptTemplate_PairDefault.fields.2.label>роль</DiaryPromptTemplate_PairDefault.fields.2.label>
