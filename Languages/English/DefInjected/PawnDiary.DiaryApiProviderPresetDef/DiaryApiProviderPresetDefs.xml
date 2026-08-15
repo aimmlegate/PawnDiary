@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <PawnDiary_ApiPreset_CustomOpenAi.label>Custom OpenAI-compatible</PawnDiary_ApiPreset_CustomOpenAi.label>
+  <PawnDiary_ApiPreset_CustomOpenAi.description>OpenAI-compatible Chat Completions. Temperature and optional OpenAI reasoning controls are available; the model stays editable for proxies.</PawnDiary_ApiPreset_CustomOpenAi.description>
+  <PawnDiary_ApiPreset_OpenAiResponses.label>OpenAI Responses</PawnDiary_ApiPreset_OpenAiResponses.label>
+  <PawnDiary_ApiPreset_OpenAiResponses.description>OpenAI Responses API. Temperature and optional OpenAI reasoning controls are available; the model stays editable.</PawnDiary_ApiPreset_OpenAiResponses.description>
+  <PawnDiary_ApiPreset_Anthropic.label>Anthropic</PawnDiary_ApiPreset_Anthropic.label>
+  <PawnDiary_ApiPreset_Anthropic.description>Anthropic Messages. Pawn Diary omits the global temperature and generic OpenAI reasoning controls for this protocol.</PawnDiary_ApiPreset_Anthropic.description>
+  <PawnDiary_ApiPreset_Gemini.label>Gemini Developer API (API key)</PawnDiary_ApiPreset_Gemini.label>
+  <PawnDiary_ApiPreset_Gemini.description>Gemini generateContent. Temperature is sent only after model discovery reports a supported maximum; generic OpenAI reasoning is hidden and Gemini thinking is managed automatically.</PawnDiary_ApiPreset_Gemini.description>
+  <PawnDiary_ApiPreset_Ollama.label>Ollama native</PawnDiary_ApiPreset_Ollama.label>
+  <PawnDiary_ApiPreset_Ollama.description>Ollama native chat. Temperature and the configured output-token cap are sent; generic OpenAI reasoning is hidden and native thinking is managed automatically.</PawnDiary_ApiPreset_Ollama.description>
+</LanguageData>

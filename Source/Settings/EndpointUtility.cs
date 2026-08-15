@@ -27,6 +27,23 @@ namespace PawnDiary
             return RewriteEndpointPath(endpoint, null);
         }
 
+        /// <summary>
+        /// Normalizes an editable saved-row URL for its explicitly selected provider protocol. The
+        /// row model travels with this provider-aware contract because Gemini embeds it in the full
+        /// action path; the canonical action suffix is removed as one unit. No URL shape can select or
+        /// change the row's protocol.
+        /// </summary>
+        public static string NormalizeBaseEndpoint(
+            string endpoint,
+            string modelName,
+            ApiCompatibilityMode mode)
+        {
+            return LlmProtocolDispatcher.NormalizeBaseEndpoint(
+                endpoint,
+                modelName,
+                ProtocolModeFor(mode));
+        }
+
         /// <summary>Builds the full model-list URL for the selected compatibility mode.</summary>
         public static string BuildModelsUrl(string endpoint, ApiCompatibilityMode mode)
         {

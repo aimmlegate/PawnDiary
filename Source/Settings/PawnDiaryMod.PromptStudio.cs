@@ -46,7 +46,7 @@ namespace PawnDiary
                 if (Widgets.ButtonText(toggleRect, toggleKey.Translate()))
                 {
                     Settings.showPromptStudio = !Settings.showPromptStudio;
-                    lastSettingsContentHeight = EstimateSettingsContentHeight();
+                    lastSettingsContentHeight = EstimateSettingsContentHeight(listing.ColumnWidth);
                     settingsScrollPosition.y = 0f;
                 }
             }

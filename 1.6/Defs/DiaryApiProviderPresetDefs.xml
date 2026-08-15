@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Presets shown by the settings window's Add API menu. Connection defaults live here so endpoint
+  hosts and menu order can be updated without rebuilding the assembly. Stable protocol/auth pairings
+  are validated in code, and model/key deliberately are not fields: every new lane starts blank.
+  Labels and descriptions are localized through DefInjected.
+-->
+<Defs>
+
+  <PawnDiary.DiaryApiProviderPresetDef>
+    <defName>PawnDiary_ApiPreset_CustomOpenAi</defName>
+    <label>Custom OpenAI-compatible</label>
+    <description>OpenAI-compatible Chat Completions. Temperature and optional OpenAI reasoning controls are available; the model stays editable for proxies.</description>
+    <displayOrder>10</displayOrder>
+    <apiMode>OpenAIChatCompletions</apiMode>
+    <baseUrl>http://localhost:1234/v1</baseUrl>
+    <authMode>BearerToken</authMode>
+  </PawnDiary.DiaryApiProviderPresetDef>
+
+  <PawnDiary.DiaryApiProviderPresetDef>
+    <defName>PawnDiary_ApiPreset_OpenAiResponses</defName>
+    <label>OpenAI Responses</label>
+    <description>OpenAI Responses API. Temperature and optional OpenAI reasoning controls are available; the model stays editable.</description>
+    <displayOrder>20</displayOrder>
+    <apiMode>OpenAIResponses</apiMode>
+    <baseUrl>https://api.openai.com/v1</baseUrl>
+    <authMode>BearerToken</authMode>
+  </PawnDiary.DiaryApiProviderPresetDef>
+
+  <PawnDiary.DiaryApiProviderPresetDef>
+    <defName>PawnDiary_ApiPreset_Anthropic</defName>
+    <label>Anthropic</label>
+    <description>Anthropic Messages. Pawn Diary omits the global temperature and generic OpenAI reasoning controls for this protocol.</description>
+    <displayOrder>30</displayOrder>
+    <apiMode>AnthropicMessages</apiMode>
+    <baseUrl>https://api.anthropic.com</baseUrl>
+    <authMode>CustomHeader</authMode>
+    <customAuthHeaderName>x-api-key</customAuthHeaderName>
+  </PawnDiary.DiaryApiProviderPresetDef>
+
+  <PawnDiary.DiaryApiProviderPresetDef>
+    <defName>PawnDiary_ApiPreset_Gemini</defName>
+    <label>Gemini Developer API (API key)</label>
+    <description>Gemini generateContent. Temperature is sent only after model discovery reports a supported maximum; generic OpenAI reasoning is hidden and Gemini thinking is managed automatically.</description>
+    <displayOrder>40</displayOrder>
+    <apiMode>GeminiGenerateContent</apiMode>
+    <baseUrl>https://generativelanguage.googleapis.com/v1beta</baseUrl>
+    <authMode>CustomHeader</authMode>
+    <customAuthHeaderName>x-goog-api-key</customAuthHeaderName>
+  </PawnDiary.DiaryApiProviderPresetDef>
+
+  <PawnDiary.DiaryApiProviderPresetDef>
+    <defName>PawnDiary_ApiPreset_Ollama</defName>
+    <label>Ollama native</label>
+    <description>Ollama native chat. Temperature and the configured output-token cap are sent; generic OpenAI reasoning is hidden and native thinking is managed automatically.</description>
+    <displayOrder>50</displayOrder>
+    <apiMode>OllamaChat</apiMode>
+    <baseUrl>http://localhost:11434</baseUrl>
+    <authMode>None</authMode>
+  </PawnDiary.DiaryApiProviderPresetDef>
+
+</Defs>

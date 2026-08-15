@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,17 +13,20 @@ using System.Threading.Tasks;
 namespace PawnDiary
 {
     /// <summary>
-    /// Canonical identity key for one API lane under a specific comparison mode. Different call sites
-    /// intentionally compare different fields: generation gates include effective auth, model-list
-    /// fetches use exact raw row values, and UI connection tests also include reasoning effort.
+    /// Canonical opaque identity key for one API lane under a specific comparison mode. Different call
+    /// sites intentionally compare different fields: generation gates include effective auth,
+    /// model-list fetches use exact raw row values, and UI connection tests also include reasoning
+    /// effort. The completed comparison material is hashed before storage so credentials never remain
+    /// in an in-memory dictionary key or escape through <see cref="ToString"/>. Player-facing endpoint
+    /// labels use the separate <see cref="ApiLaneLabels"/> redaction path below.
     /// </summary>
     internal struct ApiLaneIdentity : IEquatable<ApiLaneIdentity>
     {
         private readonly string key;
 
-        private ApiLaneIdentity(string key)
+        private ApiLaneIdentity(string comparisonMaterial)
         {
-            this.key = key ?? string.Empty;
+            key = Fingerprint(comparisonMaterial ?? string.Empty);
         }
 
         /// <summary>True for a default identity created because there was no request or row to key.</summary>
@@ -192,6 +197,17 @@ namespace PawnDiary
         private static string Join(params string[] parts)
         {
             return string.Join("\n", parts ?? new string[0]);
+        }
+
+        private static string Fingerprint(string comparisonMaterial)
+        {
+            // SHA-256 preserves every existing equality distinction without retaining the URL, model,
+            // or key that created it. Base64 is compact and safe for dictionary keys/debug inspection.
+            using (SHA256 hash = SHA256.Create())
+            {
+                return Convert.ToBase64String(
+                    hash.ComputeHash(Encoding.UTF8.GetBytes(comparisonMaterial ?? string.Empty)));
+            }
         }
     }
 

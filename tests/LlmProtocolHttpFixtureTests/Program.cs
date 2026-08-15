@@ -48,6 +48,8 @@ namespace LlmProtocolHttpFixtureTests
             await TestPersistedOllamaFamilyOnFreshRequest();
             await TestGenerationNativeErrorRedactionAndCollision();
             await TestSingleCompletionRetryCapAndCancellation();
+            await TestConfiguredDeadlineExpiresPhysicalSend();
+            await TestQueuedMultiLaneFailover();
             await TestOpenAiModelDiscoveryCompatibility();
             await TestAnthropicModelPaginationAndHeaders();
             await TestGeminiModelPaginationAndCapabilities();
@@ -491,6 +493,38 @@ namespace LlmProtocolHttpFixtureTests
                 AssertEqual("native transient retry uses two physical sends", 2, retry.Requests.Count);
                 AssertEqual("native retry URL stays stable", retry.Requests[0].Url, retry.Requests[1].Url);
 
+                const string malformedSecret = "malformed-generation-secret";
+                ApiEndpointConfig malformedEndpoint = Endpoint(
+                    "https://malformed.api.anthropic.com/v1",
+                    malformedSecret,
+                    "claude-malformed",
+                    ApiCompatibilityMode.AnthropicMessages,
+                    ApiAuthMode.CustomHeader,
+                    "x-api-key");
+                ScriptedExchange malformed = new ScriptedExchange(Response(
+                    HttpStatusCode.OK,
+                    "{broken " + malformedSecret + " RAW_MALFORMED_BODY_MUST_NOT_LEAK"));
+                LlmClient.SendAsyncOverrideForTests = malformed.SendAsync;
+                Exception malformedError = await ExpectThrowsAsync<Exception>(
+                    "malformed successful native generation response",
+                    () => LlmClient.SendSingleCompletion(
+                        malformedEndpoint,
+                        string.Empty,
+                        "Malformed fixture",
+                        64,
+                        10,
+                        0.4f,
+                        3,
+                        0.01d,
+                        CancellationToken.None));
+                AssertEqual("malformed successful generation is not retried", 1, malformed.Requests.Count);
+                AssertContains("malformed successful generation has sanitized diagnostic",
+                    malformedError.Message, "malformed JSON");
+                AssertNotContains("malformed successful generation excludes exact key",
+                    malformedError.Message, malformedSecret);
+                AssertNotContains("malformed successful generation excludes raw body",
+                    malformedError.Message, "RAW_MALFORMED_BODY_MUST_NOT_LEAK");
+
                 string oversized = new string('x', (1024 * 1024) + 1);
                 ScriptedExchange responseCap = new ScriptedExchange(Response(HttpStatusCode.OK, oversized));
                 LlmClient.SendAsyncOverrideForTests = responseCap.SendAsync;
@@ -550,6 +584,192 @@ namespace LlmProtocolHttpFixtureTests
                     "Still ready.",
                     afterCancellationText);
                 AssertEqual("post-cancellation request sends immediately", 1, afterCancellation.Requests.Count);
+            }
+            finally
+            {
+                LlmClient.SendAsyncOverrideForTests = null;
+                LlmClient.EndSession();
+            }
+        }
+
+        private static async Task TestConfiguredDeadlineExpiresPhysicalSend()
+        {
+            ApiEndpointConfig endpoint = Endpoint(
+                "https://deadline-fixture.invalid/v1",
+                "deadline-secret",
+                "claude-deadline",
+                ApiCompatibilityMode.AnthropicMessages,
+                ApiAuthMode.CustomHeader,
+                "x-api-key");
+            int physicalSends = 0;
+            bool transportTokenCancelled = false;
+            string physicalUrl = string.Empty;
+            DateTime startedUtc = DateTime.UtcNow;
+            LlmClient.BeginSession();
+            try
+            {
+                LlmClient.SendAsyncOverrideForTests = async (request, option, cancellationToken) =>
+                {
+                    physicalSends++;
+                    physicalUrl = request.RequestUri.AbsoluteUri;
+                    try
+                    {
+                        await Task.Delay(Timeout.Infinite, cancellationToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        transportTokenCancelled = cancellationToken.IsCancellationRequested;
+                        throw;
+                    }
+
+                    return Response(HttpStatusCode.OK, "{}");
+                };
+
+                Exception deadlineError = await ExpectThrowsAsync<Exception>(
+                    "configured generation deadline",
+                    () => LlmClient.SendSingleCompletion(
+                        endpoint,
+                        string.Empty,
+                        "Deadline fixture",
+                        64,
+                        0,
+                        0.4f,
+                        1,
+                        0.01d,
+                        CancellationToken.None));
+
+                double elapsedSeconds = (DateTime.UtcNow - startedUtc).TotalSeconds;
+                AssertContains(
+                    "configured deadline returns timeout diagnostic",
+                    deadlineError.Message,
+                    "Timed out waiting for the model");
+                AssertNotContains(
+                    "configured deadline excludes exact key",
+                    deadlineError.Message,
+                    endpoint.apiKey);
+                AssertEqual("configured deadline reaches one physical send", 1, physicalSends);
+                AssertEqual(
+                    "configured deadline physical URL",
+                    "https://deadline-fixture.invalid/v1/messages",
+                    physicalUrl);
+                AssertTrue("configured deadline cancels transport token", transportTokenCancelled);
+                AssertTrue("configured deadline honors five-second minimum", elapsedSeconds >= 4d);
+                AssertTrue("configured deadline remains bounded", elapsedSeconds < 15d);
+            }
+            finally
+            {
+                LlmClient.SendAsyncOverrideForTests = null;
+                LlmClient.EndSession();
+            }
+        }
+
+        private static async Task TestQueuedMultiLaneFailover()
+        {
+            ApiEndpointConfig primary = Endpoint(
+                "https://failover-primary.invalid/v1",
+                "primary-secret",
+                "claude-primary",
+                ApiCompatibilityMode.AnthropicMessages,
+                ApiAuthMode.CustomHeader,
+                "x-api-key");
+            ApiEndpointConfig secondary = Endpoint(
+                "https://failover-secondary.invalid/v1beta",
+                "secondary-secret",
+                "models/gemini-secondary",
+                ApiCompatibilityMode.GeminiGenerateContent,
+                ApiAuthMode.CustomHeader,
+                "x-goog-api-key");
+            ScriptedExchange exchange = new ScriptedExchange(
+                Response(
+                    HttpStatusCode.BadRequest,
+                    "{\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\","
+                        + "\"message\":\"primary rejected fixture\"}}"),
+                Response(
+                    HttpStatusCode.OK,
+                    "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":"
+                        + "\"Failover succeeded.\"}]},\"finishReason\":\"STOP\"}]}"));
+            LlmGenerationRequest request = new LlmGenerationRequest
+            {
+                eventId = "fixture-failover-event",
+                povRole = "primary",
+                systemPrompt = "Failover system fixture",
+                rawText = "Failover user fixture",
+                endpointUrl = primary.url,
+                modelName = primary.model,
+                providerModelFamily = primary.ProviderModelFamilyForCurrentLane(),
+                apiKey = primary.apiKey,
+                authMode = primary.authMode,
+                customAuthHeaderName = primary.customAuthHeaderName,
+                apiMode = primary.apiMode,
+                reasoningEffort = primary.reasoningEffort,
+                reasoningTag = primary.reasoningTag,
+                failoverTargets = new List<ApiEndpointConfig> { secondary },
+                timeoutSeconds = 10,
+                maxTokens = 64,
+                temperature = 0.4f
+            };
+
+            LlmClient.BeginSession();
+            try
+            {
+                LlmClient.SendAsyncOverrideForTests = exchange.SendAsync;
+                LlmClient.Enqueue(request);
+
+                LlmGenerationResult completed = null;
+                DateTime pollDeadlineUtc = DateTime.UtcNow.AddSeconds(5);
+                while (DateTime.UtcNow < pollDeadlineUtc
+                    && !LlmClient.TryDequeueCompleted(out completed))
+                {
+                    await Task.Delay(10);
+                }
+
+                AssertTrue("queued failover publishes a bounded result", completed != null);
+                AssertEqual("queued failover makes two physical sends", 2, exchange.Requests.Count);
+                AssertEqual(
+                    "queued failover primary URL",
+                    "https://failover-primary.invalid/v1/messages",
+                    exchange.Requests[0].Url);
+                AssertEqual(
+                    "queued failover secondary URL",
+                    "https://failover-secondary.invalid/v1beta/models/gemini-secondary:generateContent",
+                    exchange.Requests[1].Url);
+                AssertContains(
+                    "queued failover primary uses Anthropic body",
+                    exchange.Requests[0].Body,
+                    "\"model\":\"claude-primary\"");
+                AssertContains(
+                    "queued failover secondary uses Gemini body",
+                    exchange.Requests[1].Body,
+                    "\"generationConfig\"");
+                AssertTrue("queued failover result succeeds", completed.success);
+                AssertEqual(
+                    "queued failover result text",
+                    "Failover succeeded.",
+                    completed.generatedText);
+                AssertEqual(
+                    "queued failover result endpoint is secondary",
+                    secondary.url,
+                    completed.endpointUrl);
+                AssertEqual(
+                    "queued failover result model is secondary",
+                    secondary.model,
+                    completed.modelName);
+                AssertEqual(
+                    "queued failover result mode is secondary",
+                    ApiCompatibilityMode.GeminiGenerateContent,
+                    completed.apiMode);
+                AssertEqual(
+                    "queued failover result auth mode is secondary",
+                    ApiAuthMode.CustomHeader,
+                    completed.authMode);
+                AssertEqual(
+                    "queued failover result custom header is secondary",
+                    "x-goog-api-key",
+                    completed.customAuthHeaderName);
+                AssertEqual(
+                    "queued failover result preserves sent prompt",
+                    "Failover user fixture",
+                    completed.sentRawText);
             }
             finally
             {
@@ -715,6 +935,43 @@ namespace LlmProtocolHttpFixtureTests
             AssertNotContains("model collision excludes secret", collision.Message, "collision-secret");
             ModelListClient.SendAsyncOverrideForTests = null;
 
+            int cancellationPages = 0;
+            using (CancellationTokenSource callerCancellation = new CancellationTokenSource())
+            {
+                ModelListClient.SendAsyncOverrideForTests = async (request, option, token) =>
+                {
+                    cancellationPages++;
+                    if (cancellationPages == 1)
+                    {
+                        return Response(
+                            HttpStatusCode.OK,
+                            "{\"data\":[],\"has_more\":true,\"last_id\":\"next-page\"}");
+                    }
+
+                    callerCancellation.Cancel();
+                    await Task.Delay(Timeout.Infinite, token);
+                    return Response(HttpStatusCode.OK, "{}");
+                };
+                try
+                {
+                    await ExpectThrowsAsync<OperationCanceledException>(
+                        "paginated model-list caller cancellation",
+                        () => ModelListClient.FetchModels(
+                            "https://api.anthropic.com/v1",
+                            string.Empty,
+                            ApiAuthMode.None,
+                            string.Empty,
+                            ApiCompatibilityMode.AnthropicMessages,
+                            30,
+                            callerCancellation.Token));
+                }
+                finally
+                {
+                    ModelListClient.SendAsyncOverrideForTests = null;
+                }
+            }
+            AssertEqual("paginated model-list cancellation reaches second page", 2, cancellationPages);
+
             const string errorSecret = "model-native-secret";
             ScriptedExchange nativeError = new ScriptedExchange(Response(
                 HttpStatusCode.BadRequest,
@@ -732,6 +989,27 @@ namespace LlmProtocolHttpFixtureTests
             AssertNotContains("native model error redacts key", error.Message, errorSecret);
             AssertContains("native model error redaction marker", error.Message, "<redacted>");
             AssertNotContains("native model error excludes raw body field", error.Message, "RAW_MODEL_BODY_MUST_NOT_LEAK");
+
+            const string malformedSecret = "malformed-model-secret";
+            ScriptedExchange malformed = new ScriptedExchange(Response(
+                HttpStatusCode.OK,
+                "{broken " + malformedSecret + " RAW_MALFORMED_MODEL_BODY_MUST_NOT_LEAK"));
+            InvalidOperationException malformedError = await ExpectThrowsAsync<InvalidOperationException>(
+                "malformed native model response",
+                () => FetchModels(
+                    "https://generativelanguage.googleapis.com/v1beta",
+                    malformedSecret,
+                    ApiAuthMode.CustomHeader,
+                    "x-goog-api-key",
+                    ApiCompatibilityMode.GeminiGenerateContent,
+                    malformed));
+            AssertEqual("malformed native model response sends once", 1, malformed.Requests.Count);
+            AssertContains("malformed native model response has sanitized diagnostic",
+                malformedError.Message, "malformed JSON");
+            AssertNotContains("malformed native model response excludes exact key",
+                malformedError.Message, malformedSecret);
+            AssertNotContains("malformed native model response excludes raw body",
+                malformedError.Message, "RAW_MALFORMED_MODEL_BODY_MUST_NOT_LEAK");
 
             ScriptedExchange repeatedCursor = new ScriptedExchange(
                 Response(HttpStatusCode.OK, "{\"data\":[],\"has_more\":true,\"last_id\":\"repeat\"}"),
@@ -869,6 +1147,56 @@ namespace LlmProtocolHttpFixtureTests
                     openAiEndpoint,
                     ApiCompatibilityMode.OpenAIChatCompletions,
                     "raw-model") == null);
+
+            const string sigSecret = "arbitrary-sig-query-value-must-not-remain";
+            const string fragmentSecret = "fragment-value-must-not-remain";
+            const string opaqueModel = "opaque-cache-model";
+            string opaqueEndpoint = "https://opaque-cache.example/v1?sig="
+                + sigSecret + "#" + fragmentSecret;
+            ModelCapabilityCache.Update(
+                opaqueEndpoint,
+                ApiCompatibilityMode.OpenAIChatCompletions,
+                opaqueModel,
+                new ModelProtocolCapability(null, 444, null));
+            AssertTrue(
+                "opaque cache fingerprint preserves exact arbitrary query identity",
+                ModelCapabilityCache.Get(
+                    opaqueEndpoint,
+                    ApiCompatibilityMode.OpenAIChatCompletions,
+                    opaqueModel) != null);
+            AssertTrue(
+                "opaque cache fingerprint distinguishes arbitrary sig changes",
+                ModelCapabilityCache.Get(
+                    "https://opaque-cache.example/v1?sig=rotated#" + fragmentSecret,
+                    ApiCompatibilityMode.OpenAIChatCompletions,
+                    opaqueModel) == null);
+            AssertTrue(
+                "opaque cache fingerprint distinguishes fragment changes",
+                ModelCapabilityCache.Get(
+                    "https://opaque-cache.example/v1?sig=" + sigSecret + "#rotated",
+                    ApiCompatibilityMode.OpenAIChatCompletions,
+                    opaqueModel) == null);
+
+            MethodInfo cacheKey = typeof(ModelCapabilityCache).GetMethod(
+                "CacheKey",
+                BindingFlags.NonPublic | BindingFlags.Static);
+            AssertTrue("capability cache key helper is discoverable", cacheKey != null);
+            string opaqueKey = (string)cacheKey.Invoke(
+                null,
+                new object[]
+                {
+                    opaqueEndpoint,
+                    ApiCompatibilityMode.OpenAIChatCompletions,
+                    opaqueModel
+                });
+            AssertNotContains("capability cache key excludes raw URL host",
+                opaqueKey, "opaque-cache.example");
+            AssertNotContains("capability cache key excludes arbitrary sig value",
+                opaqueKey, sigSecret);
+            AssertNotContains("capability cache key excludes fragment value",
+                opaqueKey, fragmentSecret);
+            AssertNotContains("capability cache key excludes raw model",
+                opaqueKey, opaqueModel);
         }
 
         private static void TestNativeFinishMetadataPolicy()

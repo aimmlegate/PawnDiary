@@ -109,6 +109,45 @@ namespace PawnDiary
                 : model;
         }
 
+        /// <summary>
+        /// Normalizes one saved row to an editable provider base URL. Only canonical request suffixes
+        /// for the already-selected protocol are removed; this never infers a protocol from the URL.
+        /// Query strings and fragments remain in their legal positions.
+        /// </summary>
+        public static string NormalizeBaseEndpoint(
+            string endpoint,
+            string modelName,
+            LlmProtocolMode mode)
+        {
+            LlmProtocolMode normalized = NormalizeMode(mode);
+            switch (normalized)
+            {
+                case LlmProtocolMode.AnthropicMessages:
+                    return RewriteNativeUrl(
+                        endpoint,
+                        DefaultAnthropicEndpoint,
+                        normalized,
+                        null,
+                        modelName);
+                case LlmProtocolMode.GeminiGenerateContent:
+                    return RewriteNativeUrl(
+                        endpoint,
+                        DefaultGeminiEndpoint,
+                        normalized,
+                        null,
+                        modelName);
+                case LlmProtocolMode.OllamaChat:
+                    return RewriteNativeUrl(
+                        endpoint,
+                        DefaultOllamaEndpoint,
+                        normalized,
+                        null,
+                        modelName);
+                default:
+                    return EndpointUtility.NormalizeBaseEndpoint(endpoint);
+            }
+        }
+
         /// <summary>Builds a provider- and model-aware generation URL.</summary>
         public static string BuildGenerationUrl(string endpoint, string modelName, LlmProtocolMode mode)
         {
@@ -292,6 +331,13 @@ namespace PawnDiary
             string modelName)
         {
             string normalized = (basePath ?? string.Empty).TrimEnd('/');
+            if (target == null)
+            {
+                // A null target is the settings-normalization sentinel: return the recognized native
+                // base without appending a generation or model-list suffix.
+                return normalized;
+            }
+
             switch (NormalizeMode(mode))
             {
                 case LlmProtocolMode.AnthropicMessages:

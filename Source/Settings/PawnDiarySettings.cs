@@ -789,7 +789,10 @@ namespace PawnDiary
             {
                 if (endpoint != null)
                 {
-                    endpoint.url = EndpointUtility.NormalizeBaseEndpoint(endpoint.url);
+                    endpoint.url = EndpointUtility.NormalizeBaseEndpoint(
+                        endpoint.url,
+                        endpoint.model,
+                        endpoint.apiMode);
                 }
             }
         }

@@ -8,6 +8,8 @@
 // background generation thread. ConcurrentDictionary plus immutable values keeps that safe.
 using System;
 using System.Collections.Concurrent;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace PawnDiary
 {
@@ -61,7 +63,8 @@ namespace PawnDiary
 
     /// <summary>
     /// Static in-memory cache mapping a normalized (protocol, endpoint, modelId) tuple to provider
-    /// capability metadata. Keys deliberately contain no authentication material.
+    /// capability metadata. Dictionary keys are opaque fingerprints: no endpoint, model, query,
+    /// fragment, or authentication text remains in the process-wide key string.
     /// </summary>
     internal static class ModelCapabilityCache
     {
@@ -119,14 +122,14 @@ namespace PawnDiary
                 endpointUrl,
                 normalizedMode,
                 string.Empty);
-            // A player can save a complete proxy URL containing query auth. The cache must retain
-            // non-secret routing parameters (tenant/api-version) but never keep recognized key/token
-            // values in its process-wide identity string.
+            // Recognized credential values are normalized away first so key rotation keeps using the
+            // same provider capability. The completed tuple is then fingerprinted, which preserves all
+            // remaining routing/mode/model distinctions without retaining arbitrary URL material.
             string safeModelsUrl = SanitizeModelsUrlForCache(modelsUrl);
             string canonicalModel = LlmProtocolDispatcher.CanonicalModelName(
                 modelId,
                 EndpointUtility.ProtocolModeFor(normalizedMode));
-            return normalizedMode + "|" + safeModelsUrl + "|" + canonicalModel;
+            return Fingerprint(normalizedMode + "|" + safeModelsUrl + "|" + canonicalModel);
         }
 
         private static string SanitizeModelsUrlForCache(string value)
@@ -173,6 +176,15 @@ namespace PawnDiary
             return url.Substring(0, queryIndex + 1)
                 + string.Join("&", parameters)
                 + fragment;
+        }
+
+        private static string Fingerprint(string normalizedMaterial)
+        {
+            using (SHA256 hash = SHA256.Create())
+            {
+                return Convert.ToBase64String(
+                    hash.ComputeHash(Encoding.UTF8.GetBytes(normalizedMaterial ?? string.Empty)));
+            }
         }
     }
 }

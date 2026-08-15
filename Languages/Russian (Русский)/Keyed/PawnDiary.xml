@@ -313,6 +313,16 @@
   <PawnDiary.Settings.MoveApiUp>Вверх</PawnDiary.Settings.MoveApiUp>
   <PawnDiary.Settings.MoveApiDown>Вниз</PawnDiary.Settings.MoveApiDown>
   <PawnDiary.Settings.AddApi>+ Добавить подключение</PawnDiary.Settings.AddApi>
+  <PawnDiary.Settings.ApiPreset.CustomOpenAi>Пользовательский OpenAI-совместимый</PawnDiary.Settings.ApiPreset.CustomOpenAi>
+  <PawnDiary.Settings.ApiPreset.CustomOpenAi.Description>OpenAI-совместимый Chat Completions. Доступны температура и дополнительные элементы управления рассуждением OpenAI; модель можно указать вручную для прокси.</PawnDiary.Settings.ApiPreset.CustomOpenAi.Description>
+  <PawnDiary.Settings.ApiPreset.OpenAiResponses>OpenAI Responses</PawnDiary.Settings.ApiPreset.OpenAiResponses>
+  <PawnDiary.Settings.ApiPreset.OpenAiResponses.Description>OpenAI Responses API. Доступны температура и дополнительные элементы управления рассуждением OpenAI; модель можно указать вручную.</PawnDiary.Settings.ApiPreset.OpenAiResponses.Description>
+  <PawnDiary.Settings.ApiPreset.Anthropic>Anthropic</PawnDiary.Settings.ApiPreset.Anthropic>
+  <PawnDiary.Settings.ApiPreset.Anthropic.Description>Anthropic Messages. Pawn Diary не отправляет глобальную температуру и общие элементы управления рассуждением OpenAI для этого протокола.</PawnDiary.Settings.ApiPreset.Anthropic.Description>
+  <PawnDiary.Settings.ApiPreset.Gemini>Gemini Developer API (ключ API)</PawnDiary.Settings.ApiPreset.Gemini>
+  <PawnDiary.Settings.ApiPreset.Gemini.Description>Gemini generateContent. Температура отправляется только после того, как поиск моделей сообщит допустимый максимум; общие элементы рассуждения OpenAI скрыты, а thinking Gemini настраивается автоматически.</PawnDiary.Settings.ApiPreset.Gemini.Description>
+  <PawnDiary.Settings.ApiPreset.Ollama>Нативный Ollama</PawnDiary.Settings.ApiPreset.Ollama>
+  <PawnDiary.Settings.ApiPreset.Ollama.Description>Нативный чат Ollama. Отправляются температура и заданный предел выходных токенов; общие элементы рассуждения OpenAI скрыты, а нативный thinking настраивается автоматически.</PawnDiary.Settings.ApiPreset.Ollama.Description>
   <PawnDiary.Settings.RemoveApi>− Удалить</PawnDiary.Settings.RemoveApi>
   <PawnDiary.Settings.Endpoint>Адрес API</PawnDiary.Settings.Endpoint>
   <PawnDiary.Settings.ApiKey>Ключ API</PawnDiary.Settings.ApiKey>

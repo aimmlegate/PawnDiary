@@ -134,6 +134,66 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Proves the real Def loader registered the five provider presets and the adapter retains
+        /// localized text while producing blank-model, blank-key lane defaults.
+        /// </summary>
+        [Test]
+        public static void ApiProviderPresetsAreLoaded()
+        {
+            string[] expectedKeys =
+            {
+                ApiProviderPresetPolicy.CustomOpenAiPresetKey,
+                ApiProviderPresetPolicy.OpenAiResponsesPresetKey,
+                ApiProviderPresetPolicy.AnthropicPresetKey,
+                ApiProviderPresetPolicy.GeminiPresetKey,
+                ApiProviderPresetPolicy.OllamaPresetKey
+            };
+            ApiCompatibilityMode[] expectedModes =
+            {
+                ApiCompatibilityMode.OpenAIChatCompletions,
+                ApiCompatibilityMode.OpenAIResponses,
+                ApiCompatibilityMode.AnthropicMessages,
+                ApiCompatibilityMode.GeminiGenerateContent,
+                ApiCompatibilityMode.OllamaChat
+            };
+            ApiAuthMode[] expectedAuthModes =
+            {
+                ApiAuthMode.BearerToken,
+                ApiAuthMode.BearerToken,
+                ApiAuthMode.CustomHeader,
+                ApiAuthMode.CustomHeader,
+                ApiAuthMode.None
+            };
+            string[] expectedHeaders =
+            {
+                string.Empty,
+                string.Empty,
+                LlmProtocolDispatcher.AnthropicApiKeyHeaderName,
+                LlmProtocolDispatcher.GeminiApiKeyHeaderName,
+                string.Empty
+            };
+            for (int i = 0; i < expectedKeys.Length; i++)
+            {
+                RequireDef<DiaryApiProviderPresetDef>(expectedKeys[i]);
+            }
+
+            List<DiaryApiProviderPresetView> views = DiaryApiProviderPresets.ForUi();
+            Assert.That(views.Count == expectedKeys.Length);
+            for (int i = 0; i < views.Count; i++)
+            {
+                DiaryApiProviderPresetView view = views[i];
+                Assert.That(view.preset != null && view.preset.presetKey == expectedKeys[i]);
+                Assert.That(view.preset.apiMode == expectedModes[i]);
+                Assert.That(view.preset.authMode == expectedAuthModes[i]);
+                Assert.That(view.preset.customAuthHeaderName == expectedHeaders[i]);
+                Assert.That(!string.IsNullOrWhiteSpace(view.label));
+                Assert.That(!string.IsNullOrWhiteSpace(view.description));
+                ApiProviderLaneDefaults lane = ApiProviderPresetPolicy.CreateLane(view.preset);
+                Assert.That(lane.enabled && lane.model == string.Empty && lane.apiKey == string.Empty);
+            }
+        }
+
+        /// <summary>
         /// Exercises malformed and partial frequency Defs at the impure XML-to-pure-snapshot edge.
         /// The pure policy has broader arithmetic coverage; these cases prove the RimWorld adapter
         /// trims stable keys, copies rows, ignores unknown rows, and retains safe fallback behavior.

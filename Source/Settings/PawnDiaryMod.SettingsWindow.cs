@@ -170,7 +170,11 @@ namespace PawnDiary
             // Self-measuring scroll height: render the content, then remember how tall it actually
             // was (lastSettingsContentHeight) and reuse that next frame. This replaces a hardcoded
             // height that was too short once the settings page gained expandable editors.
-            float viewHeight = Mathf.Max(lastSettingsContentHeight, EstimateSettingsContentHeight(), inRect.height);
+            float contentWidth = Mathf.Max(0f, inRect.width - 16f);
+            float viewHeight = Mathf.Max(
+                lastSettingsContentHeight,
+                EstimateSettingsContentHeight(contentWidth),
+                inRect.height);
             Rect viewRect = new Rect(0f, 0f, inRect.width - 16f, viewHeight); // 16px reserved for the scrollbar
             Listing_Standard listing = new Listing_Standard();
             Widgets.BeginScrollView(outRect, ref settingsScrollPosition, viewRect);
@@ -425,7 +429,7 @@ namespace PawnDiary
         /// height is still measured from <see cref="Listing_Standard.CurHeight"/> after drawing,
         /// but this estimate prevents one-frame stale heights when sections are opened.
         /// </summary>
-        private float EstimateSettingsContentHeight()
+        private float EstimateSettingsContentHeight(float contentWidth)
         {
             Settings.EnsureEndpointsList();
 
@@ -437,7 +441,14 @@ namespace PawnDiary
             {
                 foreach (ApiEndpointConfig endpoint in Settings.apiEndpoints)
                 {
-                    height += ApiEndpointRowHeight(endpoint, 0) + 6f;
+                    string modeHelpText = endpoint == null
+                        ? string.Empty
+                        : DiaryApiProviderPresets.DescriptionForMode(endpoint.apiMode);
+                    height += ApiEndpointRowHeight(
+                        endpoint,
+                        0,
+                        modeHelpText,
+                        contentWidth) + 6f;
                 }
 
                 height += 38f; // Add API / Reset row

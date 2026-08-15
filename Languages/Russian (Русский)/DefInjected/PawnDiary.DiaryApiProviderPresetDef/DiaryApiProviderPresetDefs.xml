@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <PawnDiary_ApiPreset_CustomOpenAi.label>Пользовательский OpenAI-совместимый</PawnDiary_ApiPreset_CustomOpenAi.label>
+  <PawnDiary_ApiPreset_CustomOpenAi.description>OpenAI-совместимый Chat Completions. Доступны температура и дополнительные элементы управления рассуждением OpenAI; модель можно указать вручную для прокси.</PawnDiary_ApiPreset_CustomOpenAi.description>
+  <PawnDiary_ApiPreset_OpenAiResponses.label>OpenAI Responses</PawnDiary_ApiPreset_OpenAiResponses.label>
+  <PawnDiary_ApiPreset_OpenAiResponses.description>OpenAI Responses API. Доступны температура и дополнительные элементы управления рассуждением OpenAI; модель можно указать вручную.</PawnDiary_ApiPreset_OpenAiResponses.description>
+  <PawnDiary_ApiPreset_Anthropic.label>Anthropic</PawnDiary_ApiPreset_Anthropic.label>
+  <PawnDiary_ApiPreset_Anthropic.description>Anthropic Messages. Pawn Diary не отправляет глобальную температуру и общие элементы управления рассуждением OpenAI для этого протокола.</PawnDiary_ApiPreset_Anthropic.description>
+  <PawnDiary_ApiPreset_Gemini.label>Gemini Developer API (ключ API)</PawnDiary_ApiPreset_Gemini.label>
+  <PawnDiary_ApiPreset_Gemini.description>Gemini generateContent. Температура отправляется только после того, как поиск моделей сообщит допустимый максимум; общие элементы рассуждения OpenAI скрыты, а thinking Gemini настраивается автоматически.</PawnDiary_ApiPreset_Gemini.description>
+  <PawnDiary_ApiPreset_Ollama.label>Нативный Ollama</PawnDiary_ApiPreset_Ollama.label>
+  <PawnDiary_ApiPreset_Ollama.description>Нативный чат Ollama. Отправляются температура и заданный предел выходных токенов; общие элементы рассуждения OpenAI скрыты, а нативный thinking настраивается автоматически.</PawnDiary_ApiPreset_Ollama.description>
+</LanguageData>

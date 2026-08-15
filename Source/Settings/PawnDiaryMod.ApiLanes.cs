@@ -16,10 +16,9 @@ namespace PawnDiary
         // means every key starts masked. Session-only UI state; never saved.
         private static readonly HashSet<ApiEndpointConfig> revealedApiKeys = new HashSet<ApiEndpointConfig>();
 
-        // Last-seen signature per row (url|apiKey|authMode|customAuthHeaderName|apiMode), keyed by
-        // the ApiEndpointConfig instance so it survives reordering. Compared each frame to detect
-        // when a player edits the URL/key/auth of a configured row, so a background capability
-        // refresh fires once per change rather than per keystroke. Session-only UI state; never saved.
+        // Last-seen opaque fetch identity per row, keyed by the ApiEndpointConfig instance so it
+        // survives reordering. Compared each frame to detect connection edits without retaining the
+        // raw key or key-bearing URL in this dictionary. Session-only UI state; never saved.
         private static readonly Dictionary<ApiEndpointConfig, string> lastSeenRowSignature = new Dictionary<ApiEndpointConfig, string>();
 
         /// <summary>
@@ -43,7 +42,7 @@ namespace PawnDiary
                 // The model editor changes the content height by several rows. Reset the cached
                 // height immediately so the scroll view does not spend a frame using the collapsed
                 // size, which can leave RimWorld's scrollbar in a bad state after the first click.
-                lastSettingsContentHeight = EstimateSettingsContentHeight();
+                lastSettingsContentHeight = EstimateSettingsContentHeight(listing.ColumnWidth);
                 settingsScrollPosition.y = 0f;
             }
             listing.GapLine(6f);
@@ -109,7 +108,7 @@ namespace PawnDiary
 
             if (Widgets.ButtonText(addRect, "PawnDiary.Settings.AddApi".Translate()))
             {
-                Settings.apiEndpoints.Add(new ApiEndpointConfig(PawnDiarySettings.DefaultEndpointUrl, string.Empty, string.Empty));
+                ShowAddApiPresetMenu(listing.ColumnWidth);
             }
 
             if (Widgets.ButtonText(resetRect, "PawnDiary.Settings.ResetConnection".Translate()))
@@ -120,6 +119,42 @@ namespace PawnDiary
 
             listing.Gap(6f);
             DrawRequestTuningBlock(listing);
+        }
+
+        /// <summary>Opens the localized five-provider catalog used to create one blank-model lane.</summary>
+        private void ShowAddApiPresetMenu(float contentWidth)
+        {
+            List<DiaryApiProviderPresetView> presets = DiaryApiProviderPresets.ForUi();
+            List<FloatMenuOption> options = new List<FloatMenuOption>(presets.Count);
+            for (int i = 0; i < presets.Count; i++)
+            {
+                DiaryApiProviderPresetView captured = presets[i];
+                options.Add(new FloatMenuOption(captured.label ?? string.Empty, delegate
+                {
+                    ApiProviderLaneDefaults defaults =
+                        ApiProviderPresetPolicy.CreateLane(captured.preset);
+                    ApiEndpointConfig endpoint = new ApiEndpointConfig(
+                        defaults.url,
+                        defaults.apiKey,
+                        defaults.model)
+                    {
+                        enabled = defaults.enabled,
+                        authMode = defaults.authMode,
+                        customAuthHeaderName = defaults.customAuthHeaderName,
+                        apiMode = defaults.apiMode
+                    };
+
+                    // Adding a row makes any index-owned picker/test status obsolete. The new row has
+                    // no model yet, so there is intentionally no capability request until the player
+                    // fetches or enters one.
+                    apiConnectionController.CancelUiState();
+                    Settings.apiEndpoints.Add(endpoint);
+                    lastSeenRowSignature[endpoint] = RowConnectionSignature(endpoint);
+                    lastSettingsContentHeight = EstimateSettingsContentHeight(contentWidth);
+                }));
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
         }
 
         /// <summary>
@@ -157,11 +192,14 @@ namespace PawnDiary
         /// <summary>The connection-identity fields whose change should re-fetch capability.</summary>
         private static string RowConnectionSignature(ApiEndpointConfig endpoint)
         {
-            return (endpoint.url ?? string.Empty)
-                + "|" + (endpoint.apiKey ?? string.Empty)
-                + "|" + endpoint.authMode
-                + "|" + (endpoint.customAuthHeaderName ?? string.Empty)
-                + "|" + ApiEndpointPolicy.NormalizeApiMode(endpoint.apiMode);
+            return ApiLaneIdentity.ForFetchTarget(
+                endpoint?.url,
+                endpoint?.apiKey,
+                endpoint == null ? ApiAuthMode.BearerToken : endpoint.authMode,
+                endpoint?.customAuthHeaderName,
+                endpoint == null
+                    ? ApiCompatibilityMode.OpenAIChatCompletions
+                    : endpoint.apiMode).ToString();
         }
 
         /// <summary>Persists any already-discovered family for the row's exact current model choice.</summary>
@@ -308,8 +346,15 @@ namespace PawnDiary
         /// </summary>
         private void DrawCompactApiEndpointRow(Listing_Standard listing, int index, ApiEndpointConfig endpoint, ref int removeIndex, ref int moveIndex, ref int moveDelta)
         {
+            const float labelWidth = 94f;
             int statusLineCount = ApiRowStatusLineCount(index);
-            Rect blockRect = listing.GetRect(ApiEndpointRowHeight(endpoint, statusLineCount));
+            string modeHelpText = DiaryApiProviderPresets.DescriptionForMode(endpoint.apiMode);
+            float modeHelpHeight = ApiModeHelpHeight(modeHelpText, listing.ColumnWidth);
+            Rect blockRect = listing.GetRect(ApiEndpointRowHeight(
+                endpoint,
+                statusLineCount,
+                modeHelpText,
+                listing.ColumnWidth));
             Widgets.DrawMenuSection(blockRect);
 
             Rect innerRect = blockRect.ContractedBy(8f);
@@ -347,15 +392,28 @@ namespace PawnDiary
 
             float y = headerRect.yMax + gap;
             Rect modeRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
-            DrawCompatibilityModeRow(modeRect, endpoint, 94f);
+            DrawCompatibilityModeRow(modeRect, endpoint, labelWidth);
 
-            y += lineHeight + gap;
+            y = modeRect.yMax;
+            if (modeHelpHeight > 0f)
+            {
+                y += gap;
+                Rect helpRect = new Rect(
+                    innerRect.x + labelWidth,
+                    y,
+                    Mathf.Max(0f, innerRect.width - labelWidth),
+                    modeHelpHeight);
+                DrawApiModeHelp(helpRect, modeHelpText);
+                y = helpRect.yMax;
+            }
+
+            y += gap;
             Rect contextDetailRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
-            DrawLaneContextDetailRow(contextDetailRect, endpoint, 94f);
+            DrawLaneContextDetailRow(contextDetailRect, endpoint, labelWidth);
 
             y += lineHeight + gap;
             Rect endpointRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
-            endpoint.url = DrawCompactTextField(endpointRect, "PawnDiary.Settings.Endpoint".Translate(), endpoint.url, 94f);
+            endpoint.url = DrawCompactTextField(endpointRect, "PawnDiary.Settings.Endpoint".Translate(), endpoint.url, labelWidth);
 
             y += lineHeight + gap;
             Rect modelLineRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
@@ -365,7 +423,7 @@ namespace PawnDiary
             Rect fetchRect = new Rect(pickRect.x - gap - fetchButtonWidth, modelLineRect.y, fetchButtonWidth, modelLineRect.height);
             Rect modelRect = new Rect(modelLineRect.x, modelLineRect.y, fetchRect.x - modelLineRect.x - gap, modelLineRect.height);
             string previousModel = endpoint.model;
-            endpoint.model = DrawCompactTextField(modelRect, "PawnDiary.Settings.ModelName".Translate(), endpoint.model, 94f);
+            endpoint.model = DrawCompactTextField(modelRect, "PawnDiary.Settings.ModelName".Translate(), endpoint.model, labelWidth);
             if (!string.Equals(previousModel, endpoint.model, StringComparison.Ordinal))
             {
                 RememberCachedProviderModelFamily(endpoint);
@@ -377,12 +435,12 @@ namespace PawnDiary
             Rect testRect = new Rect(keyRect.xMax - pickButtonWidth, keyRect.y, pickButtonWidth, keyRect.height);
             Rect revealRect = new Rect(testRect.x - gap - fetchButtonWidth, keyRect.y, fetchButtonWidth, keyRect.height);
             Rect keyFieldRect = new Rect(keyRect.x, keyRect.y, revealRect.x - keyRect.x - gap, keyRect.height);
-            DrawApiKeyField(keyFieldRect, revealRect, endpoint, 94f);
+            DrawApiKeyField(keyFieldRect, revealRect, endpoint, labelWidth);
             DrawConnectionTestButton(testRect, index);
 
             y += lineHeight + gap;
             Rect authRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
-            DrawAuthModeRow(authRect, endpoint, 94f);
+            DrawAuthModeRow(authRect, endpoint, labelWidth);
 
             if (HasApiAdvancedRow(endpoint))
             {
@@ -395,7 +453,7 @@ namespace PawnDiary
             if (statusLineCount > 0)
             {
                 y += lineHeight + gap;
-                Rect statusRect = new Rect(innerRect.x + 94f, y, innerRect.width - 94f, 22f);
+                Rect statusRect = new Rect(innerRect.x + labelWidth, y, innerRect.width - labelWidth, 22f);
                 DrawApiRowStatuses(statusRect, index);
             }
 
@@ -457,24 +515,38 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns the fixed height needed by one framed API row. Kept as a helper so drawing and
-        /// scroll-height estimation agree when reasoning/thinking controls appear.
+        /// Returns the measured height needed by one framed API row. Drawing and scroll estimation
+        /// pass the same localized help text and content width, so wrapped native-provider help cannot
+        /// overlap the next row at narrow widths or larger accessibility fonts.
         /// </summary>
-        private static float ApiEndpointRowHeight(ApiEndpointConfig endpoint, int statusLineCount)
+        private static float ApiEndpointRowHeight(
+            ApiEndpointConfig endpoint,
+            int statusLineCount,
+            string modeHelpText,
+            float contentWidth)
         {
             float height = HasApiAdvancedRow(endpoint) ? 280f : 247f;
+            float helpHeight = ApiModeHelpHeight(modeHelpText, contentWidth);
+            if (helpHeight > 0f)
+            {
+                // One additional existing row-gap separates the inserted help line from controls.
+                height += helpHeight + 5f;
+            }
+
             return height + (Mathf.Max(0, statusLineCount) * 26f);
         }
 
         private static bool HasApiAdvancedRow(ApiEndpointConfig endpoint)
         {
             return endpoint != null
-                && (endpoint.apiMode == ApiCompatibilityMode.OpenAIChatCompletions
-                    || endpoint.apiMode == ApiCompatibilityMode.OpenAIResponses);
+                && ApiProviderPresetPolicy.ModeUi(endpoint.apiMode).showOpenAiReasoningControls;
         }
 
         /// <summary>Draws the compatibility-mode selector for one API lane.</summary>
-        private static void DrawCompatibilityModeRow(Rect rect, ApiEndpointConfig endpoint, float labelWidth)
+        private void DrawCompatibilityModeRow(
+            Rect rect,
+            ApiEndpointConfig endpoint,
+            float labelWidth)
         {
             Rect labelRect = new Rect(rect.x, rect.y, labelWidth, rect.height);
             Rect buttonRect = new Rect(labelRect.xMax + 4f, rect.y, rect.width - labelWidth - 4f, rect.height);
@@ -484,19 +556,89 @@ namespace PawnDiary
                 List<FloatMenuOption> options = new List<FloatMenuOption>
                 {
                     ApiCompatibilityOption(endpoint, ApiCompatibilityMode.OpenAIChatCompletions),
-                    ApiCompatibilityOption(endpoint, ApiCompatibilityMode.OpenAIResponses)
+                    ApiCompatibilityOption(endpoint, ApiCompatibilityMode.OpenAIResponses),
+                    ApiCompatibilityOption(endpoint, ApiCompatibilityMode.AnthropicMessages),
+                    ApiCompatibilityOption(endpoint, ApiCompatibilityMode.GeminiGenerateContent),
+                    ApiCompatibilityOption(endpoint, ApiCompatibilityMode.OllamaChat)
                 };
                 Find.WindowStack.Add(new FloatMenu(options));
             }
         }
 
-        private static FloatMenuOption ApiCompatibilityOption(ApiEndpointConfig endpoint, ApiCompatibilityMode mode)
+        private FloatMenuOption ApiCompatibilityOption(
+            ApiEndpointConfig endpoint,
+            ApiCompatibilityMode mode)
         {
             return new FloatMenuOption(ApiCompatibilityLabel(mode).Translate(), delegate
             {
-                endpoint.apiMode = PawnDiarySettings.NormalizeApiMode(mode);
-                endpoint.reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort);
+                ApiCompatibilityMode normalized = PawnDiarySettings.NormalizeApiMode(mode);
+                if (endpoint == null || endpoint.apiMode == normalized)
+                {
+                    return;
+                }
+
+                // Fetch lists, test results, and capability requests are tied to the old protocol.
+                // Cancel those before changing the one saved field; URL/model/key/auth/header remain
+                // exactly as the player configured them. The old opaque signature intentionally stays
+                // in lastSeenRowSignature so next frame refreshes capability for the new protocol.
+                apiConnectionController.CancelUiState();
+                endpoint.apiMode = normalized;
             });
+        }
+
+        /// <summary>Measures wrapped provider help using the same Tiny font used to draw it.</summary>
+        private static float ApiModeHelpHeight(string text, float contentWidth)
+        {
+            // The block is contracted by 8 px on both sides and help starts after the existing 94 px
+            // label column. Returning zero keeps extremely narrow/corrupt layouts safe.
+            float width = contentWidth - 16f - 94f;
+            if (string.IsNullOrWhiteSpace(text) || width <= 1f)
+            {
+                return 0f;
+            }
+
+            GameFont previousFont = Text.Font;
+            bool previousWordWrap = Text.WordWrap;
+            try
+            {
+                Text.Font = GameFont.Tiny;
+                Text.WordWrap = true;
+                return Mathf.Ceil(Text.CalcHeight(text, width));
+            }
+            finally
+            {
+                Text.WordWrap = previousWordWrap;
+                Text.Font = previousFont;
+            }
+        }
+
+        /// <summary>Draws localized provider behavior help without leaking GUI font/color state.</summary>
+        private static void DrawApiModeHelp(Rect rect, string text)
+        {
+            if (rect.width <= 1f || rect.height <= 0f || string.IsNullOrWhiteSpace(text))
+            {
+                return;
+            }
+
+            GameFont previousFont = Text.Font;
+            TextAnchor previousAnchor = Text.Anchor;
+            bool previousWordWrap = Text.WordWrap;
+            Color previousColor = GUI.color;
+            try
+            {
+                Text.Font = GameFont.Tiny;
+                Text.Anchor = TextAnchor.UpperLeft;
+                Text.WordWrap = true;
+                GUI.color = HintColor;
+                Widgets.Label(rect, text);
+            }
+            finally
+            {
+                GUI.color = previousColor;
+                Text.WordWrap = previousWordWrap;
+                Text.Anchor = previousAnchor;
+                Text.Font = previousFont;
+            }
         }
 
         private static string ApiCompatibilityLabel(ApiCompatibilityMode mode)

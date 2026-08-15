@@ -328,6 +328,16 @@
   <PawnDiary.Settings.MoveApiUp>Up</PawnDiary.Settings.MoveApiUp>
   <PawnDiary.Settings.MoveApiDown>Down</PawnDiary.Settings.MoveApiDown>
   <PawnDiary.Settings.AddApi>+ Add API</PawnDiary.Settings.AddApi>
+  <PawnDiary.Settings.ApiPreset.CustomOpenAi>Custom OpenAI-compatible</PawnDiary.Settings.ApiPreset.CustomOpenAi>
+  <PawnDiary.Settings.ApiPreset.CustomOpenAi.Description>OpenAI-compatible Chat Completions. Temperature and optional OpenAI reasoning controls are available; the model stays editable for proxies.</PawnDiary.Settings.ApiPreset.CustomOpenAi.Description>
+  <PawnDiary.Settings.ApiPreset.OpenAiResponses>OpenAI Responses</PawnDiary.Settings.ApiPreset.OpenAiResponses>
+  <PawnDiary.Settings.ApiPreset.OpenAiResponses.Description>OpenAI Responses API. Temperature and optional OpenAI reasoning controls are available; the model stays editable.</PawnDiary.Settings.ApiPreset.OpenAiResponses.Description>
+  <PawnDiary.Settings.ApiPreset.Anthropic>Anthropic</PawnDiary.Settings.ApiPreset.Anthropic>
+  <PawnDiary.Settings.ApiPreset.Anthropic.Description>Anthropic Messages. Pawn Diary omits the global temperature and generic OpenAI reasoning controls for this protocol.</PawnDiary.Settings.ApiPreset.Anthropic.Description>
+  <PawnDiary.Settings.ApiPreset.Gemini>Gemini Developer API (API key)</PawnDiary.Settings.ApiPreset.Gemini>
+  <PawnDiary.Settings.ApiPreset.Gemini.Description>Gemini generateContent. Temperature is sent only after model discovery reports a supported maximum; generic OpenAI reasoning is hidden and Gemini thinking is managed automatically.</PawnDiary.Settings.ApiPreset.Gemini.Description>
+  <PawnDiary.Settings.ApiPreset.Ollama>Ollama native</PawnDiary.Settings.ApiPreset.Ollama>
+  <PawnDiary.Settings.ApiPreset.Ollama.Description>Ollama native chat. Temperature and the configured output-token cap are sent; generic OpenAI reasoning is hidden and native thinking is managed automatically.</PawnDiary.Settings.ApiPreset.Ollama.Description>
   <PawnDiary.Settings.RemoveApi>- Remove</PawnDiary.Settings.RemoveApi>
   <PawnDiary.Settings.Endpoint>Endpoint</PawnDiary.Settings.Endpoint>
   <PawnDiary.Settings.ApiKey>API key</PawnDiary.Settings.ApiKey>

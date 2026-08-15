@@ -1767,9 +1767,24 @@ namespace PawnDiary
                     }
                     catch (Exception ex) when (IsTransientException(ex))
                     {
-                        if (callerCancellation.IsCancellationRequested)
+                        if (session.Cancellation.IsCancellationRequested
+                            || request.sessionId != currentSession.Id
+                            || callerCancellation.IsCancellationRequested)
                         {
                             return new LaneResult { Cancelled = true };
+                        }
+
+                        if (ex is OperationCanceledException
+                            && request.cancellationToken.IsCancellationRequested)
+                        {
+                            // The shared wall-clock deadline cancelled the physical HTTP send. Mono's
+                            // TaskCanceledException text is runtime-specific (often just "A task was
+                            // canceled"), so collapse it to the same stable, player-safe diagnostic
+                            // used when the deadline expires during admission or retry backoff.
+                            return FinishTransientLaneFailure(
+                                request,
+                                "Timed out waiting for the model.",
+                                0);
                         }
 
                         lastError = RedactRequestSecrets(request, ex.Message);

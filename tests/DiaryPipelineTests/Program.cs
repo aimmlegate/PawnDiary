@@ -119,6 +119,7 @@ namespace DiaryPipelineTests
             TestApiLaneIdentityAndLabels();
             TestApiLaneImport();
             TestApiEndpointPolicy();
+            TestApiProviderPresetPolicy();
             TestApiRequestAuth();
             TestPromptSettingsMenuPolicy();
             TestTuningOverrideMigration();
@@ -7132,6 +7133,7 @@ namespace DiaryPipelineTests
 
         private static void TestApiLaneIdentityAndLabels()
         {
+            AssertTrue("default lane identity remains empty", default(ApiLaneIdentity).Empty);
             AssertEqual("gate normalizes endpoint suffix and trims model",
                 ApiLaneIdentity.ForGate(
                     "HTTPS://EXAMPLE.test/v1/chat/completions/",
@@ -7198,6 +7200,35 @@ namespace DiaryPipelineTests
             AssertEqual("connection test normalizes mode and reasoning",
                 ApiLaneIdentity.ForConnectionTest("https://example.test/v1", "k", "m", ApiAuthMode.CustomHeader, "x-api-key", (ApiCompatibilityMode)999, " HIGH "),
                 ApiLaneIdentity.ForConnectionTest("https://example.test/v1", "k", "m", ApiAuthMode.CustomHeader, "x-api-key", ApiCompatibilityMode.OpenAIChatCompletions, "high"));
+
+            const string identityKey = "credential-must-not-remain-in-identity";
+            const string queryCredential = "query-secret-must-not-remain-in-identity";
+            ApiLaneIdentity opaque = ApiLaneIdentity.ForConnectionTest(
+                "https://example.test/v1?x-goog-api-key=" + queryCredential,
+                identityKey,
+                "model",
+                ApiAuthMode.CustomHeader,
+                "x-goog-api-key",
+                ApiCompatibilityMode.GeminiGenerateContent,
+                "default");
+            AssertTrue("constructed lane identity is nonempty", !opaque.Empty);
+            AssertTrue("lane identity string excludes exact API key",
+                opaque.ToString().IndexOf(identityKey, StringComparison.Ordinal) < 0);
+            AssertTrue("lane identity string excludes query credential",
+                opaque.ToString().IndexOf(queryCredential, StringComparison.Ordinal) < 0);
+            AssertTrue("opaque lane identity still distinguishes query credential changes",
+                ApiLaneIdentity.ForFetchTarget(
+                    "https://example.test/v1?key=first-secret",
+                    string.Empty,
+                    ApiAuthMode.None,
+                    string.Empty,
+                    ApiCompatibilityMode.OpenAIChatCompletions)
+                != ApiLaneIdentity.ForFetchTarget(
+                    "https://example.test/v1?key=second-secret",
+                    string.Empty,
+                    ApiAuthMode.None,
+                    string.Empty,
+                    ApiCompatibilityMode.OpenAIChatCompletions));
             AssertEqual("label strips query and fragment",
                 "m [OpenAIResponses] @ https://example.test/v1/responses",
                 ApiLaneLabels.Label("https://example.test/v1?key=secret#frag", "m", ApiCompatibilityMode.OpenAIResponses));

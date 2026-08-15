@@ -16,6 +16,7 @@ namespace NetworkAuxiliaryTests
             TestEndpointDefaultsAndSuffixes();
             TestEndpointQueryAndFragmentPlacement();
             TestEndpointPathOnlyNormalization();
+            TestProviderAwareBaseNormalization();
             TestMalformedEndpointFallback();
             TestTelemetryDedupeAndCompletion();
             TestTelemetryCapsAndRollback();
@@ -104,6 +105,105 @@ namespace NetworkAuxiliaryTests
                 EndpointUtility.BuildModelsUrl(
                     "https://api.example.test/", ApiCompatibilityMode.OpenAIChatCompletions),
                 "/models",
+                string.Empty,
+                string.Empty);
+        }
+
+        private static void TestProviderAwareBaseNormalization()
+        {
+            const string openAiFull = "https://api.example.test/v1/responses?tenant=a#pick";
+            AssertEqual(
+                "provider-aware OpenAI normalization preserves legacy bytes",
+                EndpointUtility.NormalizeBaseEndpoint(openAiFull),
+                EndpointUtility.NormalizeBaseEndpoint(
+                    openAiFull,
+                    "gpt-test",
+                    ApiCompatibilityMode.OpenAIResponses));
+            AssertEqual(
+                "unknown provider mode uses OpenAI normalization",
+                EndpointUtility.NormalizeBaseEndpoint(openAiFull),
+                EndpointUtility.NormalizeBaseEndpoint(
+                    openAiFull,
+                    "gpt-test",
+                    (ApiCompatibilityMode)999));
+
+            string anthropicDefault = EndpointUtility.NormalizeBaseEndpoint(
+                " ",
+                "claude-test",
+                ApiCompatibilityMode.AnthropicMessages);
+            AssertEqual("blank Anthropic endpoint uses provider host",
+                "api.anthropic.com", new Uri(anthropicDefault).Host);
+            AssertUri(
+                "Anthropic full message path becomes versioned base",
+                EndpointUtility.NormalizeBaseEndpoint(
+                    "https://proxy.example/claude/v1/messages?tenant=a#pick",
+                    "claude-test",
+                    ApiCompatibilityMode.AnthropicMessages),
+                "/claude/v1",
+                "?tenant=a",
+                "#pick");
+            AssertUri(
+                "Anthropic model-list path becomes versioned base",
+                EndpointUtility.NormalizeBaseEndpoint(
+                    "https://api.anthropic.com/v1/models",
+                    "claude-test",
+                    ApiCompatibilityMode.AnthropicMessages),
+                "/v1",
+                string.Empty,
+                string.Empty);
+
+            AssertUri(
+                "Gemini matching full model action becomes base",
+                EndpointUtility.NormalizeBaseEndpoint(
+                    "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?tenant=a#pick",
+                    "models/gemini-pro",
+                    ApiCompatibilityMode.GeminiGenerateContent),
+                "/v1beta",
+                "?tenant=a",
+                "#pick");
+            AssertUri(
+                "Gemini model-list path becomes base",
+                EndpointUtility.NormalizeBaseEndpoint(
+                    "https://proxy.example/gemini/v1beta/models",
+                    "gemini-pro",
+                    ApiCompatibilityMode.GeminiGenerateContent),
+                "/gemini/v1beta",
+                string.Empty,
+                string.Empty);
+            AssertUri(
+                "Gemini canonical action suffix strips without URL mode inference",
+                EndpointUtility.NormalizeBaseEndpoint(
+                    "https://proxy.example/v1beta/models/other:generateContent",
+                    "gemini-pro",
+                    ApiCompatibilityMode.GeminiGenerateContent),
+                "/v1beta",
+                string.Empty,
+                string.Empty);
+
+            AssertUri(
+                "Ollama chat path becomes API base",
+                EndpointUtility.NormalizeBaseEndpoint(
+                    "http://localhost:11434/api/chat?tenant=a#pick",
+                    "llama-test",
+                    ApiCompatibilityMode.OllamaChat),
+                "/api",
+                "?tenant=a",
+                "#pick");
+            AssertEqual(
+                "host-only Ollama tags path keeps query and fragment",
+                "localhost:11434/api?tenant=a#pick",
+                EndpointUtility.NormalizeBaseEndpoint(
+                    "localhost:11434/api/tags?tenant=a#pick",
+                    "llama-test",
+                    ApiCompatibilityMode.OllamaChat));
+
+            AssertUri(
+                "Chat mode never infers Anthropic from URL",
+                EndpointUtility.NormalizeBaseEndpoint(
+                    "https://api.anthropic.com/v1/messages",
+                    "claude-test",
+                    ApiCompatibilityMode.OpenAIChatCompletions),
+                "/v1/messages",
                 string.Empty,
                 string.Empty);
         }

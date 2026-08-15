@@ -1337,15 +1337,24 @@ namespace PawnDiary.RimTests
             {
                 apiEndpoints = new List<ApiEndpointConfig>
                 {
-                    new ApiEndpointConfig("https://api.anthropic.com", "anthropic-key", "claude-test")
+                    new ApiEndpointConfig(
+                        "https://api.anthropic.com/v1/messages?tenant=a#pick",
+                        "anthropic-key",
+                        "claude-test")
                     {
                         apiMode = ApiCompatibilityMode.AnthropicMessages
                     },
-                    new ApiEndpointConfig("https://generativelanguage.googleapis.com/v1beta", "gemini-key", "gemini-test")
+                    new ApiEndpointConfig(
+                        "https://generativelanguage.googleapis.com/v1beta/models/gemini-test:generateContent?tenant=g#pick",
+                        "gemini-key",
+                        "gemini-test")
                     {
                         apiMode = ApiCompatibilityMode.GeminiGenerateContent
                     },
-                    new ApiEndpointConfig("http://localhost:11434", string.Empty, "ollama-test")
+                    new ApiEndpointConfig(
+                        "http://localhost:11434/api/chat?tenant=o#pick",
+                        string.Empty,
+                        "ollama-test")
                     {
                         apiMode = ApiCompatibilityMode.OllamaChat,
                         authMode = ApiAuthMode.None
@@ -1369,11 +1378,19 @@ namespace PawnDiary.RimTests
                 "geminiGenerateContent",
                 "ollamaChat"
             };
+            string[] expectedBaseUrls =
+            {
+                "https://api.anthropic.com/v1?tenant=a#pick",
+                "https://generativelanguage.googleapis.com/v1beta?tenant=g#pick",
+                "http://localhost:11434/api?tenant=o#pick"
+            };
             for (int i = 0; i < expectedModes.Length; i++)
             {
                 ApiEndpointConfig row = loaded.apiEndpoints[i];
                 Require(row != null && row.apiMode == expectedModes[i],
                     "native-provider mode " + expectedModes[i] + " did not survive Scribe.");
+                AssertStr(expectedBaseUrls[i], row.url,
+                    "native-provider normalized base URL for " + expectedModes[i]);
                 ApiEndpointConfig copy = row.Copy();
                 Require(copy != row && copy.apiMode == expectedModes[i],
                     "detached API-row copy lost native-provider mode " + expectedModes[i] + ".");
@@ -1421,6 +1438,65 @@ namespace PawnDiary.RimTests
                 shape + " retired-Ollama mode did not conservatively normalize to OpenAI Chat.");
             AssertStr("http://localhost:11434/v1", row.url,
                 shape + " OpenAI-compatible Ollama URL");
+        }
+
+        /// <summary>
+        /// Existing OpenAI modes remain stable through real settings Scribe, while a hand-edited
+        /// future numeric provider value falls back to Chat without changing the row's URL or model.
+        /// </summary>
+        [Test]
+        public static void OpenAiSettingsRemainStableAndUnknownProviderModeFallsBack()
+        {
+            PawnDiarySettings original = new PawnDiarySettings
+            {
+                apiEndpoints = new List<ApiEndpointConfig>
+                {
+                    new ApiEndpointConfig(
+                        "http://localhost:11434/v1",
+                        "chat-key",
+                        "openai-compatible-ollama")
+                    {
+                        apiMode = ApiCompatibilityMode.OpenAIChatCompletions
+                    },
+                    new ApiEndpointConfig(
+                        "https://api.example.test/v1",
+                        "responses-key",
+                        "responses-model")
+                    {
+                        apiMode = ApiCompatibilityMode.OpenAIResponses
+                    }
+                }
+            };
+
+            PawnDiarySettings loaded = ScribeRoundTrip(original);
+            Require(loaded.apiEndpoints != null && loaded.apiEndpoints.Count == 2,
+                "OpenAI provider rows did not round-trip.");
+            Require(loaded.apiEndpoints[0].apiMode == ApiCompatibilityMode.OpenAIChatCompletions,
+                "existing OpenAI Chat row changed protocol during Scribe.");
+            AssertStr("http://localhost:11434/v1", loaded.apiEndpoints[0].url,
+                "existing OpenAI-compatible Ollama URL");
+            AssertStr("openai-compatible-ollama", loaded.apiEndpoints[0].model,
+                "existing OpenAI-compatible Ollama model");
+            Require(loaded.apiEndpoints[1].apiMode == ApiCompatibilityMode.OpenAIResponses,
+                "existing OpenAI Responses row changed protocol during Scribe.");
+            AssertStr("responses-model", loaded.apiEndpoints[1].model,
+                "existing OpenAI Responses model");
+
+            PawnDiarySettings unknown = LoadSettingsWithRawProviderMode("999", false);
+            Require(unknown.apiEndpoints != null && unknown.apiEndpoints.Count == 1,
+                "unknown-provider fixture lost its endpoint row.");
+            ApiEndpointConfig unknownRow = unknown.apiEndpoints[0];
+            Require(unknownRow != null
+                    && unknownRow.apiMode == ApiCompatibilityMode.OpenAIChatCompletions,
+                "unknown provider mode did not fall back to OpenAI Chat.");
+            AssertStr("http://localhost:11434/v1", unknownRow.url,
+                "unknown-provider fallback URL");
+            AssertStr("legacy-ollama", unknownRow.model,
+                "unknown-provider fallback model");
+
+            string resavedXml = SaveScribeXml(unknown);
+            Require(resavedXml.IndexOf("<apiMode>999</apiMode>", StringComparison.Ordinal) < 0,
+                "unknown provider mode was written back after fallback.");
         }
 
         /// <summary>
