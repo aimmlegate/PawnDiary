@@ -182,10 +182,10 @@ namespace PawnDiary.RimTests
         /// <summary>
         /// §4.2 SoloDefault shape. A matched, non-important, non-combat solo event with no internal-state
         /// or batch marker selects SoloDefault, which is uncapped (no template token override) and — unlike
-        /// SoloImportant — omits the "you" (PawnSummary) field even when a summary is supplied.
+        /// SoloImportant. As a player-selectable template it now carries the shared PawnSummary field.
         /// </summary>
         [Test]
-        public static void NonImportantGroupSelectsDefaultTemplateWithoutPawnSummary()
+        public static void NonImportantGroupSelectsDefaultTemplateWithPawnSummary()
         {
             DiaryEvent diaryEvent = MakeSoloEvent("note=quiet", "PawnDiaryTest_Default");
 
@@ -201,8 +201,8 @@ namespace PawnDiary.RimTests
                 "SoloDefault carries no template token cap.");
             RequireContains(plan.userPrompt, PovTextSentinel,
                 "SoloDefault should render the 'what happened' text.");
-            RequireNotContains(plan.userPrompt, PawnSummarySentinel,
-                "SoloDefault omits the PawnSummary field, so the injected summary must not render.");
+            RequireContains(plan.userPrompt, PawnSummarySentinel,
+                "SoloDefault now renders PawnSummary for every selectable player-composer template.");
         }
 
         // ----- builders + assertions --------------------------------------------------------------

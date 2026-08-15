@@ -66,6 +66,10 @@ namespace PawnDiary.RimTests
             typeof(DiaryGameComponent).GetMethod(
                 "ApplyKnowledgeEviction",
                 BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly MethodInfo QueuePairwiseGenerationMethod =
+            typeof(DiaryGameComponent).GetMethod(
+                "QueuePairwiseGeneration",
+                BindingFlags.Instance | BindingFlags.NonPublic);
 
         private static PawnDiaryRimTestScope scope;
         private static Pawn pawnA;
@@ -81,10 +85,10 @@ namespace PawnDiary.RimTests
                 throw new AssertionException("Knowledge flow tests require a loaded map with a colony.");
             }
 
-            if (FindDiaryMethod == null)
+            if (FindDiaryMethod == null || QueuePairwiseGenerationMethod == null)
             {
                 throw new AssertionException(
-                    "Reflection handle for DiaryGameComponent.FindDiary is null — method was renamed.");
+                    "A required DiaryGameComponent test seam is null — a private method was renamed.");
             }
 
             pawnA = scope.CreateAdultColonist();
@@ -382,7 +386,16 @@ namespace PawnDiary.RimTests
                 "Creating a background did not invalidate diary/profile caches.");
 
             scope.EnablePromptCapture();
+            // SetUp uses CreateAdultColonist(), whose generation switch is deliberately off so most
+            // knowledge-only fixtures cannot contact a provider. This assertion explicitly exercises
+            // the prompt path, so make both disposable owners live and enable them only after prompt-test
+            // mode is active; QueuePairwiseGeneration can then capture without sending a real request.
+            scope.SpawnAsLiveColonist(pawnA);
+            scope.SpawnAsLiveColonist(pawnB);
+            scope.Component.SetDiaryGenerationEnabled(pawnA, true);
+            scope.Component.SetDiaryGenerationEnabled(pawnB, true);
             DiaryEvent first = AddRomancePairEvent(pawnA, pawnB, "Spouse", "married");
+            QueuePairwiseGenerationMethod.Invoke(scope.Component, new object[] { first });
             string firstFrozen = first.MemoryContextForRole(DiaryEvent.InitiatorRole);
             Require(firstFrozen.IndexOf(originalBackground, StringComparison.Ordinal) >= 0,
                 "The Full/template-enabled event did not freeze the background fallback: "

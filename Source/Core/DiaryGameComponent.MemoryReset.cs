@@ -236,12 +236,21 @@ namespace PawnDiary
             // save/load. They hold detached facts, so clear them even when Biotech is not currently active:
             // a later DLC-enabled load must never replay pre-wipe autobiography. Births can carry two
             // independent writers, and the pure policy preserves the other adult plus only their context.
-            pendingBiotechGrowthMoments = BiotechPendingWriterResetPolicy.RemoveGrowthWriter(
-                pendingBiotechGrowthMoments,
-                pawnId);
-            pendingBiotechBirths = BiotechPendingWriterResetPolicy.RemoveBirthWriter(
-                pendingBiotechBirths,
-                pawnId);
+            // Apply the detached result in place: the component's saved queue remains the one canonical
+            // collection while observers already holding that list see the boundary atomically.
+            List<PendingBiotechGrowthMoment> survivingGrowth =
+                BiotechPendingWriterResetPolicy.RemoveGrowthWriter(
+                    pendingBiotechGrowthMoments,
+                    pawnId);
+            pendingBiotechGrowthMoments.Clear();
+            pendingBiotechGrowthMoments.AddRange(survivingGrowth);
+
+            List<PendingBiotechBirthState> survivingBirths =
+                BiotechPendingWriterResetPolicy.RemoveBirthWriter(
+                    pendingBiotechBirths,
+                    pawnId);
+            pendingBiotechBirths.Clear();
+            pendingBiotechBirths.AddRange(survivingBirths);
         }
 
         /// <summary>

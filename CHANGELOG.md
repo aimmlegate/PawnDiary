@@ -9,6 +9,7 @@ pre-release version ladder for project history.
 ## 2026-08-15
 
 - **Player diary composer.** Journal pages can now be written or edited with friendly entry types, or generated as reviewable drafts from Pawn Diary context or an exact full prompt before saving, with multiline-safe editing, filter-aware reveal, and XML/settings-respecting model, template, and token routing.
+- **Memory-reset and test-suite hardening.** Brainwipe now preserves surviving shared pending memories while clearing the reset pawn, and RimTest fixtures track the current composer, save, and prompt contracts.
 
 ## 2026-08-14
 

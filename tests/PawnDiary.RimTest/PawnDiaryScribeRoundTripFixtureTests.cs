@@ -766,7 +766,8 @@ namespace PawnDiary.RimTests
                 "manual hot entryTypeKey");
             Require(hotLoadedView.Important,
                 "The hot manual page lost the Combat importance override after Scribe.");
-            AssertStr("Raid", hotLoadedView.TextDecorationContext?.domain,
+            AssertStr(DiaryEventDomainClassifier.PlayerEntry,
+                hotLoadedView.TextDecorationContext?.domain,
                 "manual hot entry type decoration domain");
 
             ArchivedDiaryEntry archived = new ArchivedDiaryEntry
@@ -820,7 +821,8 @@ namespace PawnDiary.RimTests
             DiaryEntryView archiveLoadedView = archiveLoaded.ToView();
             Require(archiveLoadedView.Important,
                 "The archived manual page lost the Combat importance override after Scribe.");
-            AssertStr("Raid", archiveLoadedView.TextDecorationContext?.domain,
+            AssertStr(DiaryEventDomainClassifier.PlayerEntry,
+                archiveLoadedView.TextDecorationContext?.domain,
                 "manual archive entry type decoration domain");
         }
 

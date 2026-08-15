@@ -87,7 +87,7 @@ namespace PawnDiary.RimTests
             DiaryEntryView edited = page.ToViewFor(firstPawn.GetUniqueLoadID());
             PawnDiaryRimTestScope.Require(
                 edited != null
-                    && string.Equals(edited.GeneratedText, "First line.\nSecond line.", StringComparison.Ordinal)
+                    && string.Equals(edited.GeneratedText, "First line.\n\nSecond line.", StringComparison.Ordinal)
                     && string.Equals(edited.Title, "New title", StringComparison.Ordinal)
                     && DiaryEvent.RoleEquals(edited.LlmStatus, DiaryEvent.CompleteStatus)
                     && string.IsNullOrEmpty(edited.LlmPrompt)
@@ -303,7 +303,7 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 compacted != null
                     && string.Equals(compacted.generatedText,
-                        "First manual page.\nIt keeps paragraphs.", StringComparison.Ordinal)
+                        "First manual page.\n\nIt keeps paragraphs.", StringComparison.Ordinal)
                     && DiaryEvent.RoleEquals(compacted.status, DiaryEvent.CompleteStatus)
                     && string.IsNullOrEmpty(compacted.title)
                     && compacted.tick == expectedTick
@@ -1524,7 +1524,7 @@ namespace PawnDiary.RimTests
                 completed != null
                     && completed.status == PlayerEntryDraftStatus.Succeeded
                     && string.Equals(completed.text,
-                        "REVIEWED_DRAFT_FIRST.\nREVIEWED_DRAFT_SECOND.",
+                        "REVIEWED_DRAFT_FIRST.\n\nREVIEWED_DRAFT_SECOND.",
                         StringComparison.Ordinal),
                 "A successful transient completion did not become a clean review-only body.");
             RequireNoComposerPersistence(
@@ -1842,7 +1842,7 @@ namespace PawnDiary.RimTests
                     && archived.tick == originalTick
                     && string.Equals(archived.date, originalDate, StringComparison.Ordinal)
                     && string.Equals(archived.generatedText,
-                        "Canonical archive first.\nCanonical archive second.", StringComparison.Ordinal)
+                        "Canonical archive first.\n\nCanonical archive second.", StringComparison.Ordinal)
                     && string.Equals(archived.title,
                         "Edited archive title", StringComparison.Ordinal)
                     && DiaryEvent.RoleEquals(archived.status, DiaryEvent.CompleteStatus)

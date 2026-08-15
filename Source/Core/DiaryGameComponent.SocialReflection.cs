@@ -901,7 +901,15 @@ namespace PawnDiary
             socialReflectionWriterCooldowns.RemoveAll(row => row != null
                 && string.Equals(row.writerPawnId, pawnId, StringComparison.Ordinal));
             socialReflectionPairCooldowns.RemoveAll(row => row != null
-                && SocialReflectionPolicy.PairKeyContainsPawn(row.pairKey, pawnId));
+                && SocialReflectionPolicy.PairKeyContainsPawn(row.pairKey, pawnId)
+                // A pair reservation belongs to the accepted writer, not equally to both pawns in
+                // the unordered key. If the reset pawn is only another writer's subject, preserve
+                // that writer's pending memory and the exact reservation that still owns it.
+                && !pendingSocialReflections.Exists(pending => pending != null
+                    && string.Equals(
+                        pending.sourceKey,
+                        row.reservationSourceKey,
+                        StringComparison.Ordinal)));
         }
 
         private void CancelPendingSocialReflection(
