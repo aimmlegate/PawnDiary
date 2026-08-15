@@ -789,10 +789,19 @@ namespace PawnDiary
             {
                 if (endpoint != null)
                 {
+                    // Provider discovery binds its family to the exact URL/mode/model tuple. Verify
+                    // that metadata against the player's current row before rewriting a full native
+                    // request URL to its equivalent base; otherwise the harmless rewrite looks like
+                    // a player edit and discards family-only behavior for renamed models.
+                    string validatedProviderFamily = endpoint.ProviderModelFamilyForCurrentLane();
                     endpoint.url = EndpointUtility.NormalizeBaseEndpoint(
                         endpoint.url,
                         endpoint.model,
                         endpoint.apiMode);
+                    if (!string.IsNullOrEmpty(validatedProviderFamily))
+                    {
+                        endpoint.RememberProviderModelFamily(validatedProviderFamily);
+                    }
                 }
             }
         }

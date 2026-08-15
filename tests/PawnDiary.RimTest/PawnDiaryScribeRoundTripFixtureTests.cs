@@ -1327,8 +1327,8 @@ namespace PawnDiary.RimTests
         // ---- Global settings round-trip ------------------------------------------------------------
 
         /// <summary>
-        /// Native-provider ordinals 3/4/5 survive real settings Scribe and detached row copies. This
-        /// guards the append-only enum contract independently of the pure token tests.
+        /// Native-provider ordinals 3/4/5 survive real settings Scribe and detached row copies. The
+        /// Ollama row also proves URL canonicalization preserves a discovered family for a renamed model.
         /// </summary>
         [Test]
         public static void NativeProviderModesRoundTripAndCopyWithoutOrdinalDrift()
@@ -1354,13 +1354,14 @@ namespace PawnDiary.RimTests
                     new ApiEndpointConfig(
                         "http://localhost:11434/api/chat?tenant=o#pick",
                         string.Empty,
-                        "ollama-test")
+                        "renamed-reasoning-alias:latest")
                     {
                         apiMode = ApiCompatibilityMode.OllamaChat,
                         authMode = ApiAuthMode.None
                     }
                 }
             };
+            original.apiEndpoints[2].RememberProviderModelFamily("gptoss");
 
             PawnDiarySettings loaded = ScribeRoundTrip(original);
             Require(loaded.apiEndpoints != null && loaded.apiEndpoints.Count == 3,
@@ -1395,6 +1396,10 @@ namespace PawnDiary.RimTests
                 Require(copy != row && copy.apiMode == expectedModes[i],
                     "detached API-row copy lost native-provider mode " + expectedModes[i] + ".");
             }
+            AssertStr("gptoss", loaded.apiEndpoints[2].ProviderModelFamilyForCurrentLane(),
+                "normalized Ollama row provider family");
+            AssertStr("gptoss", loaded.apiEndpoints[2].Copy().ProviderModelFamilyForCurrentLane(),
+                "normalized detached Ollama row provider family");
 
             DiaryApiSetupSnapshot snapshot = IntegrationApiSettings.BuildSetupSnapshot(loaded);
             Require(snapshot != null && snapshot.lanes != null && snapshot.lanes.Count == 3,

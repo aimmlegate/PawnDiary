@@ -276,6 +276,20 @@ namespace LlmProtocolHttpFixtureTests
                 string.Empty,
                 edited.ProviderModelFamilyForCurrentLane());
 
+            PawnDiarySettings normalizationFixture = new PawnDiarySettings
+            {
+                apiEndpoints = new List<ApiEndpointConfig> { endpoint }
+            };
+            normalizationFixture.NormalizeEndpointUrls();
+            AssertEqual(
+                "native URL normalization stores the equivalent base",
+                "http://fresh-provider-family.invalid:11434/api",
+                endpoint.url);
+            AssertEqual(
+                "native URL normalization preserves the validated provider family",
+                "gptoss",
+                endpoint.ProviderModelFamilyForCurrentLane());
+
             ScriptedExchange persistedFallback = new ScriptedExchange(Response(
                 HttpStatusCode.OK,
                 "{\"message\":{\"content\":\"persisted family ok\"},\"done\":true}"));
