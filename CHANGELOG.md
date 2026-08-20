@@ -9,6 +9,7 @@ pre-release version ladder for project history.
 ## 2026-08-20
 
 - **Provider-aware API setup.** Selecting a supported protocol now applies its recommended authentication format automatically, including Gemini's `x-goog-api-key` header.
+- **Bonded-animal names.** Relation-backed thought labels now substitute the bonded animal's visible name instead of leaking RimWorld's `{0}` placeholder.
 
 ## 2026-08-15
 

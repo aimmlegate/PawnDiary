@@ -5,8 +5,9 @@
 // signal stores the ThoughtDef's OWN defName on the DiaryEvent (payload.DefName, e.g.
 // "NewColonyOptimism"), NOT the "thoughtPositive" group name — verified in ThoughtSignal.Emit, which
 // calls AddSoloEvent(pawn, null, payload.DefName, ...). All isolation/teardown lives in the shared
-// PawnDiaryRimTestScope harness; each test only fires a real vanilla trigger and asserts the
-// persisted DiaryEvent.
+// PawnDiaryRimTestScope harness. Flow cases fire the real vanilla trigger; the focused label
+// regression constructs the exact live Thought_Memory shape so it can assert the persisted event
+// without requiring a real animal death in the user's loaded game.
 //
 // Coverage-matrix ID (design/TEST_COVERAGE_PLAN.md §3): EVT-03 Thought immediate/ambient. This suite proves
 // the solo page for a vanilla-accepted configured memory (with its mood/context facts), the
@@ -24,6 +25,8 @@
 //     re-gain (the postfix fires with a valid memory); the second diary event is then dropped by Pawn
 //     Diary's own transient dedup key ("thought|<pawnId>|NewColonyOptimism"), not by vanilla stacking.
 using System;
+using PawnDiary.Capture;
+using PawnDiary.Ingestion;
 using RimWorld;
 using RimTestRedux;
 using Verse;
@@ -33,9 +36,9 @@ namespace PawnDiary.RimTests
     /// <summary>
     /// Proves that a real vanilla temporary-memory gain reaches Pawn Diary's persisted event store as
     /// one solo page carrying the thought's defName and mood facts, that a thought below the configured
-    /// magnitude threshold is dropped, and that a duplicate gain inside the dedup window does not
-    /// double. Requires a loaded game because the production capture pipeline intentionally ignores
-    /// events at the main menu.
+    /// magnitude threshold is dropped, that a duplicate gain inside the dedup window does not double,
+    /// and that social-memory placeholders resolve through the live other pawn. Requires a loaded game
+    /// because the production capture pipeline intentionally ignores events at the main menu.
     /// </summary>
     [TestSuite]
     public static class PawnDiaryThoughtFlowTests
@@ -49,6 +52,12 @@ namespace PawnDiary.RimTests
         // listed under thoughtPositive.matchDefNames. RequireDef fails loudly if the base game did not
         // load it, so the test never silently passes against a missing trigger.
         private const string ThoughtDefName = "NewColonyOptimism";
+
+        // This core social memory owns a stage label with a positional placeholder:
+        // "bonded animal {0} died". Thought_Memory.LabelCap must replace it with otherPawn.LabelShort.
+        private const string BondedAnimalThoughtDefName = "BondedAnimalDied";
+        private const string AnimalKindDefName = "LabradorRetriever";
+        private const string AnimalFixtureName = "Biscuit";
 
         // The Thought signal policy Def whose minMoodOffset the below-threshold case raises. Its fields
         // are public and read live by DiarySignalPolicies.ForKey, so setting one is a valid, restorable
@@ -185,6 +194,41 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Regression: relation-backed thought labels are resolved from the live memory, so the
+        /// bonded animal's visible name reaches the saved label, raw event text, and prompt context
+        /// instead of vanilla's unformatted <c>{0}</c> placeholder.
+        /// </summary>
+        [Test]
+        public static void BondedAnimalThoughtFormatsTheAnimalName()
+        {
+            ThoughtDef thoughtDef = RequireDef<ThoughtDef>(BondedAnimalThoughtDefName);
+            PawnKindDef animalKind = RequireDef<PawnKindDef>(AnimalKindDefName);
+            Pawn animal = scope.CreateTrackedPawn(animalKind, null);
+            animal.Name = new NameSingle(AnimalFixtureName);
+
+            Thought_Memory memory = ThoughtMaker.MakeThought(thoughtDef) as Thought_Memory;
+            PawnDiaryRimTestScope.Require(memory != null,
+                BondedAnimalThoughtDefName + " did not create a Thought_Memory fixture.");
+            memory.pawn = pawn;
+            memory.otherPawn = animal;
+
+            ThoughtSignal signal = new ThoughtSignal(pawn, memory);
+            PawnDiaryRimTestScope.Require(signal.Payload != null,
+                "The bonded-animal memory did not produce a valid ThoughtSignal payload.");
+
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => signal.Emit(scope.Component, CaptureDecision.GenerateSolo),
+                BondedAnimalThoughtDefName,
+                pawn,
+                null);
+
+            string visibleName = animal.LabelShortCap;
+            RequireFormattedAnimalName("interaction label", diaryEvent.interactionLabel, visibleName);
+            RequireFormattedAnimalName("raw event text", diaryEvent.initiatorText, visibleName);
+            RequireFormattedAnimalName("game context", diaryEvent.gameContext, visibleName);
+        }
+
+        /// <summary>
         /// Fires the real vanilla trigger: adds a temporary memory of <paramref name="thoughtDef"/> to
         /// the pawn, exactly as the mod's own debug action does. The ThoughtGainPatch postfix observes
         /// this call and submits a <see cref="ThoughtSignal"/> for accepted memories.
@@ -209,6 +253,18 @@ namespace PawnDiary.RimTests
             {
                 memories.RemoveMemoriesOfDef(thoughtDef);
             }
+        }
+
+        private static void RequireFormattedAnimalName(string field, string value, string visibleName)
+        {
+            PawnDiaryRimTestScope.Require(
+                !string.IsNullOrWhiteSpace(value)
+                    && value.IndexOf(visibleName, StringComparison.OrdinalIgnoreCase) >= 0,
+                "The bonded-animal " + field + " did not contain the visible name '" + visibleName
+                    + "': " + (value ?? "<null>"));
+            PawnDiaryRimTestScope.Require(
+                value.IndexOf("{0}", StringComparison.Ordinal) < 0,
+                "The bonded-animal " + field + " leaked vanilla's {0} placeholder: " + value);
         }
 
         private static TDef RequireDef<TDef>(string defName) where TDef : Def

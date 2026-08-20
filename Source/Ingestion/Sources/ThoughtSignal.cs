@@ -97,7 +97,7 @@ namespace PawnDiary.Ingestion
                 DownstreamCovered = downstreamGroup.Length > 0 && PawnDiaryMod.Settings != null
                     && PawnDiaryMod.Settings.IsGroupEnabled(downstreamGroup),
             };
-            thoughtLabel = ResolveThoughtLabel(thought.def);
+            thoughtLabel = ResolveThoughtLabel(thought);
             beliefEvidence = BeliefEventEvidenceFactory.ForThought(
                 payload.PawnId,
                 payload.Tick,
@@ -189,23 +189,24 @@ namespace PawnDiary.Ingestion
             sink.QueueSolo(thoughtEvent, DiaryEvent.InitiatorRole);
         }
 
-        // ThoughtDef.LabelCap normally resolves through the Def's localized label/stages, but a
-        // malformed or transient modded ThoughtDef can throw inside RimWorld's Label getter even
-        // though the ThoughtDef itself is non-null. Keep the capture and use the stable defName as a
-        // last-resort technical label; one broken Def should not escape to DiaryPatchSafety and drop
-        // the whole thought event. The warning is keyed by exception type so a hot thought hook cannot
-        // flood Player.log when several memories share the same malformed shape.
-        private static string ResolveThoughtLabel(ThoughtDef thoughtDef)
+        // Read the live memory, not only its ThoughtDef: RimWorld formats relation placeholders such
+        // as BondedAnimalDied's "bonded animal {0} died" through Thought_Memory.LabelCap, using the
+        // memory's otherPawn as {0}. Reading thought.def.LabelCap would leak the raw placeholder and
+        // discard the animal's visible name. A malformed or transient modded memory can still throw
+        // inside RimWorld's Label getter, so keep the capture and use the stable defName as a last-
+        // resort technical label. The warning is keyed by exception type so this hot hook cannot flood
+        // Player.log when several memories share the same malformed shape.
+        private static string ResolveThoughtLabel(Thought_Memory memory)
         {
-            string fallback = DiaryLineCleaner.CleanLine(thoughtDef?.defName);
-            if (thoughtDef == null)
+            string fallback = DiaryLineCleaner.CleanLine(memory?.def?.defName);
+            if (memory == null)
             {
                 return fallback;
             }
 
             try
             {
-                string label = DiaryLineCleaner.CleanLine(thoughtDef.LabelCap.Resolve());
+                string label = DiaryLineCleaner.CleanLine(memory.LabelCap);
                 return string.IsNullOrWhiteSpace(label) ? fallback : label;
             }
             catch (Exception e)
