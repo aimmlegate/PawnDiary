@@ -37,6 +37,13 @@ namespace PawnDiary
         public ApiCompatibilityMode apiMode;
     }
 
+    /// <summary>Recommended API-key transport for one provider protocol.</summary>
+    internal sealed class ApiProviderAuthDefaults
+    {
+        public ApiAuthMode authMode;
+        public string customAuthHeaderName = string.Empty;
+    }
+
     /// <summary>Provider-specific visibility and sampling behavior consumed by the lane editor.</summary>
     internal sealed class ApiProviderModeUiSnapshot
     {
@@ -154,6 +161,23 @@ namespace PawnDiary
                     : string.Empty,
                 enabled = true,
                 apiMode = effective.apiMode
+            };
+        }
+
+        /// <summary>
+        /// Returns the provider's recommended API-key transport. The settings UI applies this when the
+        /// player explicitly changes protocol, while keeping their endpoint, model, and key text intact.
+        /// </summary>
+        public static ApiProviderAuthDefaults AuthDefaultsForMode(ApiCompatibilityMode mode)
+        {
+            ApiProviderPresetSnapshot preset =
+                FallbackFor(PresetKeyForMode(mode)) ?? FallbackCatalog[0];
+            return new ApiProviderAuthDefaults
+            {
+                authMode = preset.authMode,
+                customAuthHeaderName = preset.authMode == ApiAuthMode.CustomHeader
+                    ? preset.customAuthHeaderName
+                    : string.Empty
             };
         }
 

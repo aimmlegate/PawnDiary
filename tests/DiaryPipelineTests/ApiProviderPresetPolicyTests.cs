@@ -46,6 +46,30 @@ namespace DiaryPipelineTests
             AssertEqual("preset lane leaves key blank", string.Empty, anthropic.apiKey);
             AssertTrue("preset lane starts enabled", anthropic.enabled);
 
+            ApiProviderAuthDefaults openAiAuth = ApiProviderPresetPolicy.AuthDefaultsForMode(
+                ApiCompatibilityMode.OpenAIResponses);
+            AssertEqual("OpenAI Responses defaults to bearer auth",
+                ApiAuthMode.BearerToken, openAiAuth.authMode);
+            AssertEqual("OpenAI Responses clears custom auth header", string.Empty,
+                openAiAuth.customAuthHeaderName);
+            ApiProviderAuthDefaults anthropicAuth = ApiProviderPresetPolicy.AuthDefaultsForMode(
+                ApiCompatibilityMode.AnthropicMessages);
+            AssertEqual("Anthropic defaults to custom-header auth",
+                ApiAuthMode.CustomHeader, anthropicAuth.authMode);
+            AssertEqual("Anthropic defaults to x-api-key", "x-api-key",
+                anthropicAuth.customAuthHeaderName);
+            ApiProviderAuthDefaults geminiAuth = ApiProviderPresetPolicy.AuthDefaultsForMode(
+                ApiCompatibilityMode.GeminiGenerateContent);
+            AssertEqual("Gemini defaults to custom-header auth",
+                ApiAuthMode.CustomHeader, geminiAuth.authMode);
+            AssertEqual("Gemini defaults to x-goog-api-key", "x-goog-api-key",
+                geminiAuth.customAuthHeaderName);
+            ApiProviderAuthDefaults ollamaAuth = ApiProviderPresetPolicy.AuthDefaultsForMode(
+                ApiCompatibilityMode.OllamaChat);
+            AssertEqual("Ollama defaults to no auth", ApiAuthMode.None, ollamaAuth.authMode);
+            AssertEqual("Ollama clears custom auth header", string.Empty,
+                ollamaAuth.customAuthHeaderName);
+
             ApiProviderPresetSnapshot validCustom = PresetFixture(
                 ApiProviderPresetPolicy.CustomOpenAiPresetKey,
                 5,

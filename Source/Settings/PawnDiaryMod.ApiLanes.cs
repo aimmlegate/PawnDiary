@@ -578,11 +578,16 @@ namespace PawnDiary
                 }
 
                 // Fetch lists, test results, and capability requests are tied to the old protocol.
-                // Cancel those before changing the one saved field; URL/model/key/auth/header remain
-                // exactly as the player configured them. The old opaque signature intentionally stays
-                // in lastSeenRowSignature so next frame refreshes capability for the new protocol.
+                // Keep endpoint/model/key text intact, but select the supported provider's recommended
+                // auth automatically (for example Gemini uses x-goog-api-key). Players can still
+                // override it afterwards for a proxy. The old opaque signature intentionally stays in
+                // lastSeenRowSignature so next frame refreshes capability for the new protocol/auth.
                 apiConnectionController.CancelUiState();
+                ApiProviderAuthDefaults authDefaults =
+                    ApiProviderPresetPolicy.AuthDefaultsForMode(normalized);
                 endpoint.apiMode = normalized;
+                endpoint.authMode = authDefaults.authMode;
+                endpoint.customAuthHeaderName = authDefaults.customAuthHeaderName;
             });
         }
 

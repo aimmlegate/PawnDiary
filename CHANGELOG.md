@@ -6,6 +6,10 @@ Companion: [repowiki/README.md](repowiki/README.md) describes the current state.
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-08-20
+
+- **Provider-aware API setup.** Selecting a supported protocol now applies its recommended authentication format automatically, including Gemini's `x-goog-api-key` header.
+
 ## 2026-08-15
 
 - **Player diary composer.** Journal pages can now be written or edited with friendly entry types, or generated as reviewable drafts from Pawn Diary context or an exact full prompt before saving, with multiline-safe editing, filter-aware reveal, and XML/settings-respecting model, template, and token routing.
