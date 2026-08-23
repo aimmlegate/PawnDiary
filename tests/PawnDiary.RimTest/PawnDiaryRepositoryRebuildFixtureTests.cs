@@ -432,10 +432,23 @@ namespace PawnDiary.RimTests
                 LoadVarsWithScribe(path, () => Scribe_Deep.Look(ref loaded, KnowledgeLabel));
                 Require(loaded != null, "The knowledge state must round-trip through Scribe.");
                 Require(loaded.schemaVersion == 1,
-                    "A missing legacy schema key must load as v1 before normalization, not inherit v2.");
+                    "A missing legacy schema key must load as v1 before normalization, not inherit v3.");
                 loaded.Normalize();
-                Require(loaded.schemaVersion == PawnKnowledgeState.CurrentSchemaVersion,
-                    "Normalize must migrate the per-state schema additively to v2.");
+                // Memory plan §T6.1: loading 1/2 must NOT eagerly bump — the owner stays wholly
+                // legacy and retryable until component migration swaps the complete state.
+                Require(loaded.schemaVersion == 1,
+                    "Normalize must not stamp the per-state schema; component migration owns that commit.");
+                Require(!loaded.IsCurrentSchema(),
+                    "A legacy-loaded state must not report the current memory schema.");
+                Require(PawnKnowledgeStateSchemaPolicy.IsMigrationPending(loaded.schemaVersion),
+                    "The policy must classify a v1 load as migration-pending.");
+                PawnKnowledgeState fresh = PawnKnowledgeState.CreateCurrent("PawnFresh");
+                Require(fresh.schemaVersion == PawnKnowledgeState.CurrentSchemaVersion
+                        && fresh.structuralRevision == 1
+                        && fresh.statusRevision == 1
+                        && fresh.requestCancellationGeneration == 1
+                        && fresh.completedDiaryEntryOrdinal == 1,
+                    "New envelopes must initialize directly to current shape with positive invariants.");
 
                 Require(loaded.originCultureDefName == "Rustican"
                         && loaded.originCultureSource == "captured"

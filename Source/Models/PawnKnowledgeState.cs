@@ -11,6 +11,7 @@
 // New to C#/RimWorld? See AGENTS.md ("IExposable"): ExposeData is called for BOTH save and load;
 // Scribe_* mirrors each field to XML. PostLoadInit-style repair lives in Normalize(), called by
 // the owning record after load.
+using System;
 using System.Collections.Generic;
 using Verse;
 
@@ -213,10 +214,14 @@ namespace PawnDiary
     public class PawnKnowledgeState : IExposable
     {
         /// <summary>
-        /// Current save schema for this state. Version 1 = the redesign's clean start; version 2
-        /// adds provenance/scope to each record and defaults old rows to captured/contextual.
+        /// Current save schema for this state (memory plan §T6.1). Version 1 = the redesign's
+        /// clean start; version 2 adds provenance/scope to each record; version 3 adds the unified
+        /// memory envelope (epoch, standalone blocks, thread roots, background, awareness,
+        /// episodes, guards, archive rows). Version 3 is the ONLY writable shape; loading 1/2 must
+        /// stay legacy until component migration commits that owner atomically — Normalize() is
+        /// therefore forbidden from bumping the saved version eagerly.
         /// </summary>
-        public const int CurrentSchemaVersion = 2;
+        public const int CurrentSchemaVersion = 3;
 
         public string pawnId = string.Empty;
         public int schemaVersion = CurrentSchemaVersion;
@@ -225,6 +230,62 @@ namespace PawnDiary
         public string originCultureSource = string.Empty;
         public string adoptedCultureDefName = string.Empty;
         public List<ImportantMemoryRecord> records = new List<ImportantMemoryRecord>();
+
+        // ---- Unified memory envelope (§T6.1). Additive tokens; old saves load defaults. ----
+
+        /// <summary>Blank until this owner receives an autobiographical epoch through the checked
+        /// allocator; never reused once issued.</summary>
+        public string autobiographicalEpochToken = string.Empty;
+        /// <summary>True only for an inert resolved-owner Imported envelope; mutually exclusive
+        /// with epochFenceOnly.</summary>
+        public bool archiveOnly;
+        /// <summary>True only for an empty target epoch/cancellation fence envelope.</summary>
+        public bool epochFenceOnly;
+        /// <summary>Bumped before Brainwipe clears target data so old-epoch work fails closed.</summary>
+        public long requestCancellationGeneration;
+        /// <summary>Display-affecting structural mutations advance this checked revision.</summary>
+        public long structuralRevision;
+        /// <summary>Narrative inclusion/status changes advance this separate revision.</summary>
+        public long statusRevision;
+        /// <summary>One-based owner-local completed automatic diary-entry counter; starts at 1.</summary>
+        public long completedDiaryEntryOrdinal;
+        public List<SavedMemoryBlock> standaloneBlocks = new List<SavedMemoryBlock>();
+        public List<SavedMemoryThreadRoot> threadRoots = new List<SavedMemoryThreadRoot>();
+        /// <summary>The one player-authored background prose row (never a memory record).</summary>
+        public string playerBackground = string.Empty;
+        public List<SavedMemoryAwarenessSnapshot> ownerAwarenessSnapshots =
+            new List<SavedMemoryAwarenessSnapshot>();
+        public List<SavedMemoryCaptureEpisode> openCaptureEpisodes =
+            new List<SavedMemoryCaptureEpisode>();
+        public List<SavedMemoryRepetitionGuardRow> repetitionGuardRows =
+            new List<SavedMemoryRepetitionGuardRow>();
+        public List<SavedImportedMemoryRow> importedArchiveRows =
+            new List<SavedImportedMemoryRow>();
+        /// <summary>Nonnegative signed-64 diagnostic bitmask; unknown bits make state inert.</summary>
+        public long migrationDiagnosticFlags;
+
+        /// <summary>
+        /// Creates a current-shape (version 3) envelope per §T6.0/T6.1 factory rules: positive
+        /// current invariants start at 1 because zero means missing/invalid for these fields.
+        /// </summary>
+        public static PawnKnowledgeState CreateCurrent(string ownerPawnId)
+        {
+            return new PawnKnowledgeState
+            {
+                pawnId = ownerPawnId ?? string.Empty,
+                schemaVersion = CurrentSchemaVersion,
+                requestCancellationGeneration = 1,
+                structuralRevision = 1,
+                statusRevision = 1,
+                completedDiaryEntryOrdinal = 1
+            };
+        }
+
+        /// <summary>True when this envelope already carries the only writable current schema.</summary>
+        public bool IsCurrentSchema()
+        {
+            return schemaVersion == CurrentSchemaVersion;
+        }
 
         public void ExposeData()
         {
@@ -236,16 +297,43 @@ namespace PawnDiary
             Scribe_Values.Look(ref originCultureSource, "originCultureSource");
             Scribe_Values.Look(ref adoptedCultureDefName, "adoptedCulture");
             Scribe_Collections.Look(ref records, "records", LookMode.Deep);
+
+            // Unified-memory additive tokens (§T6.1). Missing keys on pre-feature saves read the
+            // zero-value defaults; migration owns every semantic stamp.
+            Scribe_Values.Look(
+                ref autobiographicalEpochToken, "autobiographicalEpochToken", string.Empty);
+            Scribe_Values.Look(ref archiveOnly, "archiveOnly", false);
+            Scribe_Values.Look(ref epochFenceOnly, "epochFenceOnly", false);
+            Scribe_Values.Look(
+                ref requestCancellationGeneration, "requestCancellationGeneration", 0);
+            Scribe_Values.Look(ref structuralRevision, "structuralRevision", 0);
+            Scribe_Values.Look(ref statusRevision, "statusRevision", 0);
+            Scribe_Values.Look(ref completedDiaryEntryOrdinal, "completedDiaryEntryOrdinal", 0);
+            Scribe_Collections.Look(ref standaloneBlocks, "standaloneBlocks", LookMode.Deep);
+            Scribe_Collections.Look(ref threadRoots, "threadRoots", LookMode.Deep);
+            Scribe_Values.Look(ref playerBackground, "playerBackground", string.Empty);
+            Scribe_Collections.Look(
+                ref ownerAwarenessSnapshots, "ownerAwarenessSnapshots", LookMode.Deep);
+            Scribe_Collections.Look(ref openCaptureEpisodes, "openCaptureEpisodes", LookMode.Deep);
+            Scribe_Collections.Look(ref repetitionGuardRows, "repetitionGuardRows", LookMode.Deep);
+            Scribe_Collections.Look(ref importedArchiveRows, "importedArchiveRows", LookMode.Deep);
+            Scribe_Values.Look(ref migrationDiagnosticFlags, "migrationDiagnosticFlags", 0);
         }
 
-        /// <summary>Load repair: null lists, per-record normalization, and dedup-key uniqueness
-        /// (a hand-edited or interrupted save must not double a record).</summary>
+        /// <summary>
+        /// Load repair: null lists, per-record normalization, dedup-key uniqueness, and null-safe
+        /// healing of the unified-memory collections. Deliberately does NOT change schemaVersion:
+        /// §T6.1 forbids the old eager bump because a v1/v2 owner must stay wholly legacy and
+        /// retryable until component migration swaps the complete owner state in one commit.
+        /// </summary>
         public void Normalize()
         {
             pawnId = pawnId ?? string.Empty;
             originCultureDefName = originCultureDefName ?? string.Empty;
             originCultureSource = originCultureSource ?? string.Empty;
             adoptedCultureDefName = adoptedCultureDefName ?? string.Empty;
+            autobiographicalEpochToken = autobiographicalEpochToken ?? string.Empty;
+            playerBackground = playerBackground ?? string.Empty;
             records = records ?? new List<ImportantMemoryRecord>();
             HashSet<string> seen = new HashSet<string>();
             for (int i = records.Count - 1; i >= 0; i--)
@@ -264,9 +352,30 @@ namespace PawnDiary
                 }
             }
 
-            if (schemaVersion < CurrentSchemaVersion)
+            NormalizeList(standaloneBlocks, row => row.Normalize());
+            NormalizeList(threadRoots, row => row.Normalize());
+            NormalizeList(ownerAwarenessSnapshots, row => row.Normalize());
+            NormalizeList(openCaptureEpisodes, row => row.Normalize());
+            NormalizeList(repetitionGuardRows, row => row.Normalize());
+            NormalizeList(importedArchiveRows, row => row.Normalize());
+        }
+
+        private static void NormalizeList<T>(List<T> rows, Action<T> repair) where T : class
+        {
+            if (rows == null)
             {
-                schemaVersion = CurrentSchemaVersion;
+                return;
+            }
+
+            for (int i = rows.Count - 1; i >= 0; i--)
+            {
+                if (rows[i] == null)
+                {
+                    rows.RemoveAt(i);
+                    continue;
+                }
+
+                repair(rows[i]);
             }
         }
 

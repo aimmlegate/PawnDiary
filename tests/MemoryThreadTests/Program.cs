@@ -34,6 +34,10 @@ namespace MemoryThreadTests
                 TestSettingsAndCapacityContracts();
                 TestShippedXmlContractsAndReachability();
                 TestM0CatalogShape();
+                TestSavedScalarSchemaRegistry();
+                TestOwnerEnvelopeSchemaPolicy();
+                TestSummaryFingerprint();
+                TestIdentityCarrierRegistry();
 
                 Console.WriteLine("MemoryThreadTests passed " + assertions + " assertions.");
                 return 0;
@@ -1262,6 +1266,587 @@ namespace MemoryThreadTests
                 {
                     AssertTrue("catalog.payload.not-free-text." + path, !freeText[path]);
                 }
+            }
+        }
+
+        private static void TestSavedScalarSchemaRegistry()
+        {
+            // The code-owned registry must stay in exact byte-parity with the frozen M0 payload
+            // catalog: same row names, same field names, same atom kinds, no extra/missing paths.
+            string payloadPath = System.IO.Path.Combine(
+                RepoRoot(),
+                "benchmarks", "MemoryThreadBenchmarks", "Catalog",
+                "memory-payload-atom-catalog-v1.json");
+            var payload = System.Text.Json.JsonDocument.Parse(System.IO.File.ReadAllText(payloadPath));
+            Dictionary<string, string> catalogKinds =
+                new Dictionary<string, string>(StringComparer.Ordinal);
+            HashSet<string> catalogRows = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var type in payload.RootElement.GetProperty("types").EnumerateArray())
+            {
+                catalogRows.Add(type.GetProperty("name").GetString());
+            }
+
+            foreach (var atom in payload.RootElement.GetProperty("atomRows").EnumerateArray())
+            {
+                catalogKinds[atom.GetProperty("canonicalFieldPath").GetString()] =
+                    atom.GetProperty("atomKindToken").GetString();
+            }
+
+            IReadOnlyList<MemorySavedRowFields> rows = MemorySavedScalarSchema.Rows();
+            AssertEqual("schema.row-count", 32, rows.Count);
+            int registryAtoms = 0;
+            foreach (MemorySavedRowFields row in rows)
+            {
+                AssertTrue("schema.row-known." + row.rowName, catalogRows.Contains(row.rowName));
+                AssertTrue("schema.row-fields." + row.rowName, row.atoms.Length > 0);
+                foreach (MemorySavedFieldAtom atom in row.atoms)
+                {
+                    registryAtoms++;
+                    string path = row.rowName + "." + atom.fieldNameToken;
+                    string kind;
+                    AssertTrue("schema.path-frozen." + path,
+                        catalogKinds.TryGetValue(path, out kind));
+                    if (!catalogKinds.ContainsKey(path))
+                    {
+                        continue;
+                    }
+
+                    AssertEqual("schema.kind." + path, KindToken(atom.atomKind), kind);
+                }
+            }
+
+            AssertEqual("schema.atom-count", 399, registryAtoms);
+            AssertEqual("schema.catalog-atom-count", 399, catalogKinds.Count);
+
+            // §T6.0's exhaustive Boolean set must equal the registry's bool atoms exactly.
+            string[] expectedBooleans =
+            {
+                "PawnKnowledgeState.archiveOnly",
+                "PawnKnowledgeState.epochFenceOnly",
+                "SavedMemoryChapter.closed",
+                "SavedMemoryBlock.ageUnknown",
+                "SavedMemoryBlock.playerEdited",
+                "SavedMemoryBlock.suppressed",
+                "SavedMemoryBlock.requiredLifecycleLandmark",
+                "SavedMemoryCanonicalFact.majorTurningPoint",
+                "SavedMemoryCanonicalFact.reversal",
+                "SavedMemoryFactContribution.ageUnknown",
+                "SavedMemoryFactContribution.majorTurningPoint",
+                "SavedMemoryFactContribution.reversal",
+                "SavedImportedMemoryRow.ageUnknown",
+                "SavedImportedSummaryContributionEvidenceV1.ageUnknown",
+                "SavedImportedSummaryContributionEvidenceV1.majorTurningPoint",
+                "SavedImportedSummaryContributionEvidenceV1.reversal",
+                "SavedMemoryAppliedPolicyStateV1.saveNewMemories",
+                "SavedMemoryAppliedPolicyStateV1.useMemoriesInWriting",
+                "SavedMemoryAppliedPolicyStateV1.usePawnBackground",
+                "SavedMemoryAppliedPolicyStateV1.allowExtraMemoryAiRequests",
+                "SavedMemoryAppliedPolicyStateV1.occasionalMemoryReflections",
+                "DiaryGameComponentMemory.unresolvedArchiveReattributionDisabled",
+                "SavedMemoryAttemptAuditRow.potentialExposure",
+                "SavedGlobalFactionSnapshot.defeated",
+                "SavedGlobalFactionSnapshot.removed",
+                "SavedActiveLogicalAttemptV1.potentialExposureApplied",
+                "SavedActiveLogicalAttemptV1.narrativeUseApplied",
+                "SavedActiveLogicalAttemptV1.resultApplied"
+            };
+            HashSet<string> boolPaths = new HashSet<string>(StringComparer.Ordinal);
+            foreach (MemorySavedRowFields row in rows)
+            {
+                foreach (MemorySavedFieldAtom atom in row.atoms)
+                {
+                    if (atom.atomKind == MemorySavedAtomKind.Bool)
+                    {
+                        boolPaths.Add(row.rowName + "." + atom.fieldNameToken);
+                    }
+                }
+            }
+
+            AssertEqual("schema.bool-set.count", expectedBooleans.Length, boolPaths.Count);
+            foreach (string expected in expectedBooleans)
+            {
+                AssertTrue("schema.bool-set.contains." + expected, boolPaths.Contains(expected));
+            }
+
+            // Spot-check the declared logical widths from §T6.0.
+            AssertEqual("schema.width.bool", 1,
+                MemorySavedScalarSchema.LogicalWidthBytes(MemorySavedAtomKind.Bool));
+            AssertEqual("schema.width.int32", 4,
+                MemorySavedScalarSchema.LogicalWidthBytes(MemorySavedAtomKind.Int32));
+            AssertEqual("schema.width.int64", 8,
+                MemorySavedScalarSchema.LogicalWidthBytes(MemorySavedAtomKind.Int64));
+            AssertEqual("schema.width.nullable-row-presence", 1,
+                MemorySavedScalarSchema.LogicalWidthBytes(MemorySavedAtomKind.NullableRow));
+            AssertEqual("schema.width.string", 0,
+                MemorySavedScalarSchema.LogicalWidthBytes(MemorySavedAtomKind.String));
+        }
+
+        private static void TestOwnerEnvelopeSchemaPolicy()
+        {
+            // New objects initialize directly to the current writable shape (§T6.1).
+            PawnKnowledgeStateSchemaPolicy.VersionClass fresh =
+                PawnKnowledgeStateSchemaPolicy.Classify(
+                    PawnKnowledgeStateSchemaPolicy.CurrentVersion);
+            AssertEqual("envelope.fresh.current",
+                PawnKnowledgeStateSchemaPolicy.VersionClass.Current, fresh);
+
+            // Missing pre-feature data reads as shipped legacy version 1 (the Scribe default).
+            AssertEqual("envelope.missing.legacy",
+                PawnKnowledgeStateSchemaPolicy.VersionClass.LegacyPendingMigration,
+                PawnKnowledgeStateSchemaPolicy.Classify(1));
+            AssertEqual("envelope.v2.legacy",
+                PawnKnowledgeStateSchemaPolicy.VersionClass.LegacyPendingMigration,
+                PawnKnowledgeStateSchemaPolicy.Classify(2));
+
+            // Explicit zero stays raw malformed input until component migration resolves it.
+            AssertEqual("envelope.zero.raw",
+                PawnKnowledgeStateSchemaPolicy.VersionClass.RawLegacy,
+                PawnKnowledgeStateSchemaPolicy.Classify(0));
+
+            // A greater-than-current version is the whole-save downgrade failure boundary.
+            AssertEqual("envelope.future.newer",
+                PawnKnowledgeStateSchemaPolicy.VersionClass.NewerThanCurrent,
+                PawnKnowledgeStateSchemaPolicy.Classify(4));
+            AssertEqual("envelope.future.max",
+                PawnKnowledgeStateSchemaPolicy.VersionClass.NewerThanCurrent,
+                PawnKnowledgeStateSchemaPolicy.Classify(int.MaxValue));
+
+            // Only the current version may be written or stamped by a component commit.
+            for (int version = 0; version <= 4; version++)
+            {
+                bool canWrite =
+                    PawnKnowledgeStateSchemaPolicy.Classify(version)
+                    == PawnKnowledgeStateSchemaPolicy.VersionClass.Current;
+                AssertEqual("envelope.can-write." + version,
+                    version == PawnKnowledgeStateSchemaPolicy.CurrentVersion ? 1 : 0,
+                    canWrite ? 1 : 0);
+            }
+        }
+
+        private static void TestSummaryFingerprint()
+        {
+            MemorySummaryFingerprintContribution first =
+                Contribution("origin-rec-a", 0, "fact-kind", "pawn", "Pawn_B", "count_occurrences", "");
+            first.contributionId = RequireContributionId(first);
+            first.category = "personal";
+            first.importance = "medium";
+            MemorySummaryFingerprintContribution second =
+                Contribution("origin-rec-b", 3, "opinion", "pawn", "Pawn_C", "int64_range", "-42");
+            second.contributionId = RequireContributionId(second);
+            second.category = "relationships";
+            second.importance = "high";
+            second.subjectRefIds.Add("5:pawn6:Pawn_B");
+            second.provenanceRefIds.Add("7:capture_signal");
+
+            List<string> bucketKeys = new List<string> { "bucket-a", "bucket-b" };
+            string baseline;
+            AssertTrue("summaryfp.canonical.create",
+                MemorySummaryFingerprint.TryCreateCanonicalFactsFingerprint(
+                    1, bucketKeys, new[] { first, second }, out baseline));
+            AssertTrue("summaryfp.canonical.sha-shape",
+                baseline.Length == 64 && baseline == baseline.ToLowerInvariant());
+
+            // Deterministic: identical inputs produce identical bytes.
+            string repeat;
+            MemorySummaryFingerprint.TryCreateCanonicalFactsFingerprint(
+                1, bucketKeys, new[] { first, second }, out repeat);
+            AssertEqual("summaryfp.deterministic", baseline, repeat);
+
+            // Every hashed field is order-sensitive: permutation changes the digest...
+            string permutedContributions;
+            MemorySummaryFingerprint.TryCreateCanonicalFactsFingerprint(
+                1, bucketKeys, new[] { second, first }, out permutedContributions);
+            AssertTrue("summaryfp.contribution-order-sensitive", baseline != permutedContributions);
+            string permutedBuckets;
+            MemorySummaryFingerprint.TryCreateCanonicalFactsFingerprint(
+                1, new List<string> { "bucket-b", "bucket-a" }, new[] { first, second },
+                out permutedBuckets);
+            AssertTrue("summaryfp.bucket-order-sensitive", baseline != permutedBuckets);
+
+            // ...and so is every scalar payload field.
+            MemorySummaryFingerprintContribution changedValue =
+                Contribution("origin-rec-b", 3, "opinion", "pawn", "Pawn_C", "int64_range", "-43");
+            changedValue.contributionId = RequireContributionId(changedValue);
+            changedValue.category = "relationships";
+            changedValue.importance = "high";
+            changedValue.subjectRefIds.Add("5:pawn6:Pawn_B");
+            changedValue.provenanceRefIds.Add("7:capture_signal");
+            string changedValueDigest;
+            MemorySummaryFingerprint.TryCreateCanonicalFactsFingerprint(
+                1, bucketKeys, new[] { first, changedValue }, out changedValueDigest);
+            AssertTrue("summaryfp.value-sensitive", baseline != changedValueDigest);
+
+            string changedRevision;
+            MemorySummaryFingerprint.TryCreateCanonicalFactsFingerprint(
+                2, bucketKeys, new[] { first, second }, out changedRevision);
+            AssertTrue("summaryfp.reducer-sensitive", baseline != changedRevision);
+
+            // Exclusions: originChapterId is placement metadata and is NOT part of this API at all
+            // (compile-level exclusion); labels/wording have no input fields either.
+
+            // Projection fingerprint: mask + format revision + filtered contribution set.
+            string projection;
+            AssertTrue("summaryfp.projection.create",
+                MemorySummaryFingerprint.TryCreateProjectionFingerprint(
+                    1, 1, 0b0011, new[] { first }, out projection));
+            string projectionRepeat;
+            MemorySummaryFingerprint.TryCreateProjectionFingerprint(
+                1, 1, 0b0011, new[] { first }, out projectionRepeat);
+            AssertEqual("summaryfp.projection.stable", projection, projectionRepeat);
+            string projectionOtherMask;
+            MemorySummaryFingerprint.TryCreateProjectionFingerprint(
+                1, 1, 0b0001, new[] { first }, out projectionOtherMask);
+            AssertTrue("summaryfp.projection.mask-sensitive", projection != projectionOtherMask);
+            string projectionOtherFormat;
+            MemorySummaryFingerprint.TryCreateProjectionFingerprint(
+                1, 2, 0b0011, new[] { first }, out projectionOtherFormat);
+            AssertTrue("summaryfp.projection.format-sensitive", projection != projectionOtherFormat);
+            AssertTrue("summaryfp.projection.domain-distinct", projection != baseline);
+
+            // Unknown category bits fail closed (only the four known low bits may be set).
+            string refusedMask;
+            AssertTrue("summaryfp.projection.unknown-mask-refused",
+                !MemorySummaryFingerprint.TryCreateProjectionFingerprint(
+                    1, 1, 0b10000, new[] { first }, out refusedMask));
+
+            // Invalid inputs refuse instead of hashing garbage.
+            string refused;
+            AssertTrue("summaryfp.zero-reducer-refused",
+                !MemorySummaryFingerprint.TryCreateCanonicalFactsFingerprint(
+                    0, bucketKeys, new[] { first }, out refused));
+            MemorySummaryFingerprintContribution wrongId =
+                Contribution("origin-rec-b", 3, "opinion", "pawn", "Pawn_C", "int64_range", "-42");
+            wrongId.contributionId = RequireContributionId(wrongId) + "0";
+            wrongId.category = "relationships";
+            wrongId.importance = "high";
+            AssertTrue("summaryfp.id-mismatch-refused",
+                !MemorySummaryFingerprint.TryCreateCanonicalFactsFingerprint(
+                    1, bucketKeys, new[] { wrongId }, out refused));
+            MemorySummaryFingerprintContribution badCategory =
+                Contribution("origin-rec-b", 3, "opinion", "pawn", "Pawn_C", "int64_range", "-42");
+            badCategory.contributionId = RequireContributionId(badCategory);
+            badCategory.category = "weather";
+            badCategory.importance = "high";
+            AssertTrue("summaryfp.unknown-category-refused",
+                !MemorySummaryFingerprint.TryCreateCanonicalFactsFingerprint(
+                    1, bucketKeys, new[] { badCategory }, out refused));
+            MemorySummaryFingerprintContribution negativeTick =
+                Contribution("origin-rec-b", 3, "opinion", "pawn", "Pawn_C", "int64_range", "-42");
+            negativeTick.contributionId = RequireContributionId(negativeTick);
+            negativeTick.category = "relationships";
+            negativeTick.importance = "high";
+            negativeTick.originalEventTick = -5;
+            AssertTrue("summaryfp.negative-tick-without-ageunknown-refused",
+                !MemorySummaryFingerprint.TryCreateCanonicalFactsFingerprint(
+                    1, bucketKeys, new[] { negativeTick }, out refused));
+            MemorySummaryFingerprintContribution dupRefs =
+                Contribution("origin-rec-b", 3, "opinion", "pawn", "Pawn_C", "int64_range", "-42");
+            dupRefs.contributionId = RequireContributionId(dupRefs);
+            dupRefs.category = "relationships";
+            dupRefs.importance = "high";
+            dupRefs.subjectRefIds.Add("5:pawn6:Pawn_B");
+            dupRefs.subjectRefIds.Add("5:pawn6:Pawn_B");
+            AssertTrue("summaryfp.duplicate-subject-ref-refused",
+                !MemorySummaryFingerprint.TryCreateCanonicalFactsFingerprint(
+                    1, bucketKeys, new[] { dupRefs }, out refused));
+            string duplicateBucket;
+            AssertTrue("summaryfp.duplicate-bucket-refused",
+                !MemorySummaryFingerprint.TryCreateCanonicalFactsFingerprint(
+                    1, new List<string> { "bucket-a", "bucket-a" }, new[] { first },
+                    out duplicateBucket));
+        }
+
+        private static void TestIdentityCarrierRegistry()
+        {
+            // Each carrier family is a sole high-water witness at the detached-token level:
+            // envelope/root/block/awareness/guard/opportunity/request/audit tokens all arrive as
+            // epoch-token strings here, reservations arrive structurally (§T13.2 carrier table).
+            MemorySavedCarrierScanInput input = new MemorySavedCarrierScanInput
+            {
+                lastIssuedAutobiographicalEpochSequence = 5
+            };
+            input.epochTokenCarriers.Add(Epoch(9)); // a root/blocks/awareness witness beats 5
+            MemorySavedCarrierRegistryPlan plan =
+                MemorySavedIdentityCarrierRegistry.Plan(input);
+            AssertTrue("carrier.plan.publishable", plan.canPublish);
+            AssertEqual("carrier.normal-raises-high-water", 9L,
+                plan.repairedAutobiographicalHighWater);
+            AssertEqual("carrier.live-set.count", 1, plan.liveEpochTokens.Count);
+            AssertTrue("carrier.chain-empty-normal-mode", !plan.fallbackModeForced);
+            AssertTrue("carrier.no-repair-needed",
+                !plan.invalidFallbackChainNeedsRepair
+                && !plan.inconsistentFallbackRegistryNeedsRepair);
+
+            // Malformed carriers are inert witnesses: counted, never parsed into identity.
+            MemorySavedCarrierScanInput malformed = new MemorySavedCarrierScanInput
+            {
+                lastIssuedAutobiographicalEpochSequence = 5
+            };
+            malformed.epochTokenCarriers.Add("not-an-epoch");
+            malformed.epochTokenCarriers.Add(Epoch(7));
+            MemorySavedCarrierRegistryPlan malformedPlan =
+                MemorySavedIdentityCarrierRegistry.Plan(malformed);
+            AssertEqual("carrier.malformed-inert.high-water", 7L,
+                malformedPlan.repairedAutobiographicalHighWater);
+            AssertEqual("carrier.malformed-inert.counted", 1,
+                malformedPlan.malformedEpochCarrierCount);
+            AssertEqual("carrier.malformed-inert.live-set", 1,
+                malformedPlan.liveEpochTokens.Count);
+
+            // Permutation invariance: shuffled carriers produce an identical plan.
+            MemorySavedCarrierScanInput permuted = new MemorySavedCarrierScanInput
+            {
+                lastIssuedAutobiographicalEpochSequence = 5
+            };
+            permuted.epochTokenCarriers.AddRange(new[] { Epoch(3), Epoch(9), EpochFallback(0) });
+            permuted.legacyReservations.AddRange(new[]
+            {
+                new MemoryLegacyEpochReservationInput
+                    { ownerPawnId = "Pawn_A", reservedEpochSequence = 12 },
+                new MemoryLegacyEpochReservationInput
+                    { ownerPawnId = "Pawn_B", reservedEpochSequence = 11 }
+            });
+            MemorySavedCarrierScanInput reversed = new MemorySavedCarrierScanInput
+            {
+                lastIssuedAutobiographicalEpochSequence = 5
+            };
+            reversed.epochTokenCarriers.AddRange(new[] { EpochFallback(0), Epoch(9), Epoch(3) });
+            reversed.legacyReservations.Insert(0, new MemoryLegacyEpochReservationInput
+            {
+                ownerPawnId = "Pawn_B",
+                reservedEpochSequence = 11
+            });
+            reversed.legacyReservations.Insert(0, new MemoryLegacyEpochReservationInput
+            {
+                ownerPawnId = "Pawn_A",
+                reservedEpochSequence = 12
+            });
+            MemorySavedCarrierRegistryPlan permutedPlan =
+                MemorySavedIdentityCarrierRegistry.Plan(permuted);
+            MemorySavedCarrierRegistryPlan reversedPlan =
+                MemorySavedIdentityCarrierRegistry.Plan(reversed);
+            AssertTrue("carrier.permutation.tokens-equal",
+                string.Join("|", permutedPlan.liveEpochTokens)
+                == string.Join("|", reversedPlan.liveEpochTokens));
+            AssertEqual("carrier.permutation.reservations-equal", 2,
+                reversedPlan.normalizedReservations.Count);
+            AssertEqual("carrier.permutation.reservation-first", "Pawn_A|12",
+                reversedPlan.normalizedReservations[0].ownerPawnId + "|"
+                + reversedPlan.normalizedReservations[0].reservedEpochSequence);
+            AssertEqual("carrier.permutation.reservation-second", "Pawn_B|11",
+                reversedPlan.normalizedReservations[1].ownerPawnId + "|"
+                + reversedPlan.normalizedReservations[1].reservedEpochSequence);
+
+            // A valid nonempty fallback chain forces permanent fallback mode at MaxValue.
+            string chain = FallbackChainFixture("seed");
+            MemorySavedCarrierScanInput forced = new MemorySavedCarrierScanInput
+            {
+                lastIssuedAutobiographicalEpochSequence = 5,
+                lastIssuedAutobiographicalEpochFallbackChain = chain
+            };
+            forced.epochTokenCarriers.Add(Epoch(9));
+            MemorySavedCarrierRegistryPlan forcedPlan =
+                MemorySavedIdentityCarrierRegistry.Plan(forced);
+            AssertTrue("carrier.forced-fallback.mode", forcedPlan.fallbackModeForced);
+            AssertEqual("carrier.forced-fallback.max-value", long.MaxValue,
+                forcedPlan.repairedAutobiographicalHighWater);
+            AssertEqual("carrier.forced-fallback.chain-preserved", chain,
+                forcedPlan.effectiveFallbackChain);
+
+            // An invalid nonempty chain is repair-needed and never trusted.
+            MemorySavedCarrierScanInput invalidChain = new MemorySavedCarrierScanInput
+            {
+                lastIssuedAutobiographicalEpochSequence = 5,
+                lastIssuedAutobiographicalEpochFallbackChain = "NOT-A-HASH"
+            };
+            MemorySavedCarrierRegistryPlan invalidPlan =
+                MemorySavedIdentityCarrierRegistry.Plan(invalidChain);
+            AssertTrue("carrier.invalid-chain.flag", invalidPlan.invalidFallbackChainNeedsRepair);
+            AssertEqual("carrier.invalid-chain.chain-cleared", string.Empty,
+                invalidPlan.effectiveFallbackChain);
+            AssertEqual("carrier.invalid-chain.high-water-still-raised", 5L,
+                invalidPlan.repairedAutobiographicalHighWater);
+
+            // Empty chain + live fallback carriers is the inconsistent-repair state.
+            MemorySavedCarrierScanInput inconsistent = new MemorySavedCarrierScanInput
+            {
+                lastIssuedAutobiographicalEpochSequence = 5
+            };
+            inconsistent.epochTokenCarriers.Add(EpochFallback(2));
+            MemorySavedCarrierRegistryPlan inconsistentPlan =
+                MemorySavedIdentityCarrierRegistry.Plan(inconsistent);
+            AssertTrue("carrier.inconsistent.flag",
+                inconsistentPlan.inconsistentFallbackRegistryNeedsRepair);
+            AssertTrue("carrier.inconsistent.token-in-live-set",
+                inconsistentPlan.liveEpochTokens.Contains(EpochFallback(2)));
+
+            // Reservation repair: owners visit ordinally; each keeps its lowest unclaimed sequence.
+            MemorySavedCarrierScanInput reservations = new MemorySavedCarrierScanInput
+            {
+                lastIssuedAutobiographicalEpochSequence = 0
+            };
+            reservations.legacyReservations.AddRange(new[]
+            {
+                new MemoryLegacyEpochReservationInput
+                    { ownerPawnId = "Pawn_B", reservedEpochSequence = 20 },
+                new MemoryLegacyEpochReservationInput
+                    { ownerPawnId = "Pawn_B", reservedEpochSequence = 7 },
+                new MemoryLegacyEpochReservationInput
+                    { ownerPawnId = "Pawn_A", reservedEpochSequence = 20 },
+                new MemoryLegacyEpochReservationInput
+                    { ownerPawnId = "Pawn_A", reservedEpochSequence = 3 }
+            });
+            MemorySavedCarrierRegistryPlan reservationPlan =
+                MemorySavedIdentityCarrierRegistry.Plan(reservations);
+            AssertEqual("carrier.reservation.rows", 2,
+                reservationPlan.normalizedReservations.Count);
+            AssertEqual("carrier.reservation.first-owner", "Pawn_A",
+                reservationPlan.normalizedReservations[0].ownerPawnId);
+            AssertEqual("carrier.reservation.first-sequence", 3L,
+                reservationPlan.normalizedReservations[0].reservedEpochSequence);
+            AssertEqual("carrier.reservation.second-owner", "Pawn_B",
+                reservationPlan.normalizedReservations[1].ownerPawnId);
+            AssertEqual("carrier.reservation.second-sequence", 7L,
+                reservationPlan.normalizedReservations[1].reservedEpochSequence);
+            AssertEqual("carrier.reservation.raise-high-water", 20L,
+                reservationPlan.repairedAutobiographicalHighWater);
+
+            // Invalid reservations drop syntactically and never lower the high-water.
+            MemorySavedCarrierScanInput invalidReservation = new MemorySavedCarrierScanInput
+            {
+                lastIssuedAutobiographicalEpochSequence = 30
+            };
+            invalidReservation.legacyReservations.Add(new MemoryLegacyEpochReservationInput
+            {
+                ownerPawnId = "Pawn_A",
+                reservedEpochSequence = 0
+            });
+            invalidReservation.legacyReservations.Add(new MemoryLegacyEpochReservationInput
+            {
+                ownerPawnId = " ",
+                reservedEpochSequence = 99
+            });
+            MemorySavedCarrierRegistryPlan invalidReservationPlan =
+                MemorySavedIdentityCarrierRegistry.Plan(invalidReservation);
+            AssertEqual("carrier.reservation.invalid-dropped", 2,
+                invalidReservationPlan.droppedReservationCount);
+            AssertEqual("carrier.reservation.never-lowered", 30L,
+                invalidReservationPlan.repairedAutobiographicalHighWater);
+            AssertEqual("carrier.reservation.none-survive", 0,
+                invalidReservationPlan.normalizedReservations.Count);
+
+            // Faction generations raise monotonically; MaxValue is a typed saturation flag.
+            MemorySavedCarrierScanInput factions = new MemorySavedCarrierScanInput
+            {
+                globalFactionSnapshotAllocatorGeneration = 4
+            };
+            factions.factionAllocatorGenerationCarriers.AddRange(new long[] { 2, 17, 9 });
+            MemorySavedCarrierRegistryPlan factionPlan =
+                MemorySavedIdentityCarrierRegistry.Plan(factions);
+            AssertEqual("carrier.faction.raised", 17L,
+                factionPlan.globalFactionAllocatorGeneration);
+            AssertTrue("carrier.faction.not-saturated", !factionPlan.factionGenerationSaturated);
+            MemorySavedCarrierScanInput saturatedFactions = new MemorySavedCarrierScanInput
+            {
+                globalFactionSnapshotAllocatorGeneration = 1
+            };
+            saturatedFactions.factionAllocatorGenerationCarriers.Add(long.MaxValue);
+            MemorySavedCarrierRegistryPlan saturatedPlan =
+                MemorySavedIdentityCarrierRegistry.Plan(saturatedFactions);
+            AssertTrue("carrier.faction.saturated-flag",
+                saturatedPlan.factionGenerationSaturated);
+            AssertEqual("carrier.faction.saturated-no-wrap", long.MaxValue,
+                saturatedPlan.globalFactionAllocatorGeneration);
+
+            // High-water never lowers below the saved allocator value even without carriers.
+            MemorySavedCarrierScanInput empty = new MemorySavedCarrierScanInput
+            {
+                lastIssuedAutobiographicalEpochSequence = 41
+            };
+            MemorySavedCarrierRegistryPlan emptyPlan =
+                MemorySavedIdentityCarrierRegistry.Plan(empty);
+            AssertEqual("carrier.empty.keeps-saved-high-water", 41L,
+                emptyPlan.repairedAutobiographicalHighWater);
+        }
+
+        private static MemorySummaryFingerprintContribution Contribution(
+            string originRecordId,
+            int originFactOrdinal,
+            string factKind,
+            string subjectKind,
+            string subjectId,
+            string aggregation,
+            string canonicalValue)
+        {
+            string factId;
+            AssertTrue("summaryfp.helper.fact-id",
+                MemoryIdentityCodec.TryCreateFactId(
+                    "rule-x",
+                    "disc-y",
+                    factKind,
+                    subjectKind,
+                    subjectId,
+                    aggregation,
+                    out factId));
+            return new MemorySummaryFingerprintContribution
+            {
+                originRecordId = originRecordId,
+                originFactOrdinal = originFactOrdinal,
+                originFactId = factId,
+                canonicalValue = canonicalValue
+            };
+        }
+
+        private static string RequireContributionId(
+            MemorySummaryFingerprintContribution contribution)
+        {
+            string contributionId;
+            AssertTrue("summaryfp.helper.contribution-id",
+                MemoryIdentityCodec.TryCreateContributionId(
+                    contribution.originRecordId,
+                    contribution.originFactOrdinal,
+                    contribution.originFactId,
+                    out contributionId));
+            return contributionId;
+        }
+
+        private static string EpochFallback(long probe)
+        {
+            return OrdinalSegmentCodec.Segment("memory-epoch-fallback-v1")
+                + OrdinalSegmentCodec.Segment(new string('a', 64))
+                + OrdinalSegmentCodec.Segment(
+                    probe.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        private static string FallbackChainFixture(string seed)
+        {
+            using (System.Security.Cryptography.SHA256 sha =
+                System.Security.Cryptography.SHA256.Create())
+            {
+                byte[] digest = sha.ComputeHash(
+                    System.Text.Encoding.UTF8.GetBytes("chain-fixture:" + seed));
+                var builder = new System.Text.StringBuilder(digest.Length * 2);
+                foreach (byte value in digest)
+                {
+                    builder.Append(value.ToString("x2", System.Globalization.CultureInfo.InvariantCulture));
+                }
+
+                return builder.ToString();
+            }
+        }
+
+        private static string KindToken(MemorySavedAtomKind kind)
+        {
+            switch (kind)
+            {
+                case MemorySavedAtomKind.Bool: return "bool";
+                case MemorySavedAtomKind.Int32: return "int32";
+                case MemorySavedAtomKind.Int64: return "int64";
+                case MemorySavedAtomKind.String: return "string";
+                case MemorySavedAtomKind.Row: return "row";
+                case MemorySavedAtomKind.NullableRow: return "nullable_row";
+                case MemorySavedAtomKind.List: return "list";
+                default: throw new ArgumentOutOfRangeException("kind");
             }
         }
 

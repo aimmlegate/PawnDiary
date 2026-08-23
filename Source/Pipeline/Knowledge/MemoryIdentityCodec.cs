@@ -649,18 +649,31 @@ namespace PawnDiary
         /// <summary>Recognizes one canonical normal or fallback epoch token.</summary>
         public static bool TryValidateEpochToken(string epochToken, out bool isFallback)
         {
+            long ignoredSequence;
+            return TryParseEpochToken(epochToken, out isFallback, out ignoredSequence);
+        }
+
+        /// <summary>
+        /// Parses one canonical epoch token into its fallback flag and, for a NORMAL token, its
+        /// positive issued sequence. Fallback tokens carry no numeric sequence and report 0.
+        /// The §T13.2 carrier registry uses this to raise the saved allocator high-water.
+        /// </summary>
+        public static bool TryParseEpochToken(
+            string epochToken,
+            out bool isFallback,
+            out long normalSequence)
+        {
             isFallback = false;
+            normalSequence = 0;
             string[] values;
-            long numeric;
             if (TryReadExact(
                     epochToken,
                     new[] { MaximumRawIdentityCharacters, MaximumRawIdentityCharacters },
-                    out values)
-                && values[0] == EpochDomain
-                && TryParseCanonicalNonnegativeInt64(values[1], out numeric)
-                && numeric > 0)
+                    out values))
             {
-                return true;
+                return values[0] == EpochDomain
+                    && TryParseCanonicalNonnegativeInt64(values[1], out normalSequence)
+                    && normalSequence > 0;
             }
 
             if (TryReadExact(
@@ -673,9 +686,14 @@ namespace PawnDiary
                     },
                     out values)
                 && values[0] == EpochFallbackDomain
-                && IsLowercaseSha256(values[1])
-                && TryParseCanonicalNonnegativeInt64(values[2], out numeric))
+                && IsLowercaseSha256(values[1]))
             {
+                long ignoredProbe;
+                if (!TryParseCanonicalNonnegativeInt64(values[2], out ignoredProbe))
+                {
+                    return false;
+                }
+
                 isFallback = true;
                 return true;
             }
