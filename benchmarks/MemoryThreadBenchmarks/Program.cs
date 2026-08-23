@@ -138,7 +138,9 @@ namespace MemoryThreadBenchmarks
         {
             DirectoryInfo directory = new DirectoryInfo(AppContext.BaseDirectory);
             while (directory != null
-                && !File.Exists(Path.Combine(directory.FullName, "design", "MEMORY_SYSTEM_IMPLEMENTATION_PLAN.md")))
+                && (!File.Exists(Path.Combine(directory.FullName, "Source", "PawnDiary.csproj"))
+                    || !File.Exists(Path.Combine(directory.FullName, "benchmarks",
+                        "MemoryThreadBenchmarks", "Catalog", "memory-capacity-catalog-v1.json"))))
             {
                 directory = directory.Parent;
             }
