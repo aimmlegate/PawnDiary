@@ -53,11 +53,13 @@ namespace PawnDiary
 
         // ── Persistence ──────────────────────────────────────────────────────────────────────────────
 
-        /// <summary>Scribes the component-level schema version. The per-pawn state itself rides
+        /// <summary>Scribes the component-level schema version plus every unified-memory §T6.9
+        /// component field (see DiaryGameComponent.MemoryStore.cs). The per-pawn state itself rides
         /// PawnDiaryRecord.knowledgeState (Scribe_Deep), not this partial.</summary>
         private void ExposeKnowledgeData()
         {
             Scribe_Values.Look(ref knowledgeSchemaVersion, "knowledgeSchemaVersion", 0);
+            ExposeMemoryComponentData();
         }
 
         /// <summary>
@@ -98,6 +100,7 @@ namespace PawnDiary
         {
             knowledgeSchemaVersion = 2;
             knowledgeReportsByPawnId.Clear();
+            ResetMemoryComponentForNewGame();
         }
 
         // ── Capture: diary-event channel (called from the EventFactory funnels) ──────────────────────

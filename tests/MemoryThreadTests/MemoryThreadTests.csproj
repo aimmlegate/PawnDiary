@@ -14,6 +14,8 @@
     <Compile Include="..\..\Source\Models\Memory\MemorySavedScalarSchema.cs" Link="MemorySavedScalarSchema.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemorySummaryFingerprint.cs" Link="MemorySummaryFingerprint.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemorySavedIdentityCarrierRegistry.cs" Link="MemorySavedIdentityCarrierRegistry.cs" />
+    <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryLogicalPayloadSizer.cs" Link="MemoryLogicalPayloadSizer.cs" />
+    <Compile Include="..\..\Source\Pipeline\Knowledge\ActiveMemoryPayloadBudget.cs" Link="ActiveMemoryPayloadBudget.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\KnowledgeContracts.cs" Link="KnowledgeContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryThreadRoutingPolicy.cs" Link="MemoryThreadRoutingPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\SocialReflectionPolicy.cs" Link="SocialReflectionPolicy.cs" />

@@ -13,7 +13,7 @@ namespace PawnDiary
 {
     /// <summary>Bounded contribution evidence preserved for one imported Summary conflict
     /// (§T6.8). Field set matches SavedMemoryFactContribution minus derived mirrors.</summary>
-    public class SavedImportedSummaryContributionEvidenceV1 : IExposable
+    public partial class SavedImportedSummaryContributionEvidenceV1 : IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         public string contributionId = string.Empty;
@@ -70,7 +70,7 @@ namespace PawnDiary
 
     /// <summary>One inert Imported archive row (§T6.8). Archive rows have no thread, TTL, edit,
     /// suppression, recall, summary, or exposure state — they are browse-only except Dev Forget.</summary>
-    public class SavedImportedMemoryRow : IExposable
+    public partial class SavedImportedMemoryRow : IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         /// <summary>Generated once from the canonical tuple; invariant under input permutation.</summary>
@@ -212,7 +212,7 @@ namespace PawnDiary
     /// BEFORE any semantic mapping. Raw loading must not run ImportantMemoryRecord.Normalize() or
     /// align its parallel lists first — the detached preservation/migration plan owns that step.
     /// </summary>
-    public class SavedLegacyUnresolvedOwnerArchiveInputV1 : IExposable
+    public partial class SavedLegacyUnresolvedOwnerArchiveInputV1 : IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         /// <summary>Exactly exact_id | blank | conflicting.</summary>

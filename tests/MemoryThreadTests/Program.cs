@@ -38,6 +38,8 @@ namespace MemoryThreadTests
                 TestOwnerEnvelopeSchemaPolicy();
                 TestSummaryFingerprint();
                 TestIdentityCarrierRegistry();
+                TestLogicalPayloadSizer();
+                TestActivePayloadBudget();
 
                 Console.WriteLine("MemoryThreadTests passed " + assertions + " assertions.");
                 return 0;
@@ -1848,6 +1850,284 @@ namespace MemoryThreadTests
                 case MemorySavedAtomKind.List: return "list";
                 default: throw new ArgumentOutOfRangeException("kind");
             }
+        }
+
+        private sealed class SyntheticStateFactRow : IMemoryLogicalSizeSource
+        {
+            public string factKey = string.Empty;
+
+            public void CollectFields(MemoryLogicalSizeCollector collector)
+            {
+                collector.BeginRow("SavedMemoryStateFact");
+                collector.Int32("schemaVersion", 1);
+                collector.String("factKey", factKey);
+                collector.String("factValue", string.Empty);
+                collector.EndRow();
+            }
+        }
+
+        private sealed class SyntheticAwarenessRow : IMemoryLogicalSizeSource
+        {
+            public string snapshotId = string.Empty;
+            public bool hasFacts;
+            public int factCount;
+            public int factUnits;
+
+            public void CollectFields(MemoryLogicalSizeCollector collector)
+            {
+                collector.BeginRow("SavedMemoryAwarenessSnapshot");
+                collector.Int32("schemaVersion", 1);
+                collector.String("snapshotId", snapshotId);
+                collector.String("scopeKindToken", "relationship");
+                collector.String("subjectKind", "pawn");
+                collector.String("subjectId", "Pawn_A");
+                collector.String("factStreamToken", "body_history");
+                collector.Int64("captureInvalidationGeneration", 1);
+                collector.String("knownnessEvidenceToken", "direct");
+                collector.ListCount("stateFacts", hasFacts ? factCount : 0);
+                for (int i = 0; hasFacts && i < factCount; i++)
+                {
+                    collector.NestedRow(new SyntheticStateFactRow());
+                }
+
+                collector.Int64("firstObservedTick", 0);
+                collector.Int64("lastObservedTick", 0);
+                collector.String("lastSourceOccurrenceId", string.Empty);
+                collector.String("trackingStateToken", "tracked");
+                collector.Int64("snapshotRevision", 1);
+                collector.EndRow();
+            }
+        }
+
+        private static void TestLogicalPayloadSizer()
+        {
+            // Exact golden bytes for one minimal registered row: 64 framing + 4 + (4+0) + (4+0).
+            var minimal = new SyntheticStateFactRow();
+            MemoryLogicalSizeResult minimalResult = MemoryLogicalPayloadSizer.Size(minimal);
+            AssertTrue("sizer.minimal.valid", minimalResult.valid);
+            AssertEqual("sizer.minimal.golden-bytes", 76L, minimalResult.totalBytes);
+
+            // String charging is the exact UTF-8 byte count plus its 4-byte length prefix.
+            // "Ж" is 2 UTF-16 units but 2 UTF-8 bytes; 😀 is 2 units, 4 UTF-8 bytes.
+            var unicode = new SyntheticStateFactRow { factKey = "Ж😀" };
+            MemoryLogicalSizeResult unicodeResult = MemoryLogicalPayloadSizer.Size(unicode);
+            AssertTrue("sizer.unicode.valid", unicodeResult.valid);
+            AssertEqual("sizer.unicode.golden-bytes", 76L - 4 + 4 + 6, unicodeResult.totalBytes);
+
+            // Nullable presence: one byte when absent; presence byte plus nested row when present.
+            long childBytes = minimalResult.totalBytes;
+            MemoryLogicalSizeResult absent =
+                MemoryLogicalPayloadSizer.SizeNullableSingleton("rollingSummaryBlock", null);
+            AssertTrue("sizer.nullable-absent.valid", absent.valid);
+            AssertEqual("sizer.nullable-absent.bytes", 1L, absent.totalBytes);
+            MemoryLogicalSizeResult present =
+                MemoryLogicalPayloadSizer.SizeNullableSingleton("rollingSummaryBlock", minimal);
+            AssertTrue("sizer.nullable-present.valid", present.valid);
+            AssertEqual("sizer.nullable-present.bytes", 1 + childBytes, present.totalBytes);
+
+            // Deep-list charging: 4-byte count prefix plus one full nested row each.
+            var list = new SyntheticAwarenessRow { hasFacts = true, factCount = 2 };
+            MemoryLogicalSizeResult listResult = MemoryLogicalPayloadSizer.Size(list);
+            AssertTrue("sizer.deep-list.valid", listResult.valid);
+            // Awareness row framing+scalars: compute relative to one-fact variant below instead.
+            var single = new SyntheticAwarenessRow { hasFacts = true, factCount = 1 };
+            MemoryLogicalSizeResult singleResult = MemoryLogicalPayloadSizer.Size(single);
+            AssertEqual("sizer.deep-list.delta-per-row", childBytes,
+                listResult.totalBytes - singleResult.totalBytes);
+
+            // Raw wrapper escape hatch: presence byte plus 4 prefix + 2 per UTF-16 unit.
+            // 64 framing + 4 + (4+5) + 4 + 4 + 4 + 1 + (4 + 14) = 108.
+            var rawProbe = new RawProbeRow { units = 7 };
+            MemoryLogicalSizeResult rawResult = MemoryLogicalPayloadSizer.Size(rawProbe);
+            AssertTrue("sizer.raw.valid", rawResult.valid);
+            AssertEqual("sizer.raw.golden-bytes", 108L, rawResult.totalBytes);
+
+            // Shape violations fail closed with a path, never throw through the caller.
+            MemoryLogicalSizeResult wrongOrder =
+                MemoryLogicalPayloadSizer.Size(new WrongOrderRow());
+            AssertTrue("sizer.wrong-order.invalid", !wrongOrder.valid);
+            AssertTrue("sizer.wrong-order.path",
+                wrongOrder.errorPath.Contains("SavedMemoryStateFact"));
+            MemoryLogicalSizeResult missingField =
+                MemoryLogicalPayloadSizer.Size(new MissingFieldRow());
+            AssertTrue("sizer.missing-field.invalid", !missingField.valid);
+            MemoryLogicalSizeResult extraField = MemoryLogicalPayloadSizer.Size(new ExtraFieldRow());
+            AssertTrue("sizer.extra-field.invalid", !extraField.valid);
+            MemoryLogicalSizeResult badSurrogate =
+                MemoryLogicalPayloadSizer.Size(new SurrogateRow());
+            AssertTrue("sizer.surrogate.invalid", !badSurrogate.valid);
+            MemoryLogicalSizeResult negativeCount =
+                MemoryLogicalPayloadSizer.Size(new NegativeCountRow());
+            AssertTrue("sizer.negative-count.invalid", !negativeCount.valid);
+            MemoryLogicalSizeResult unregistered =
+                MemoryLogicalPayloadSizer.Size(new UnregisteredRow());
+            AssertTrue("sizer.unregistered-row.invalid", !unregistered.valid);
+
+            // Null source is invalid input, not a crash.
+            MemoryLogicalSizeResult nullResult = MemoryLogicalPayloadSizer.Size(null);
+            AssertTrue("sizer.null-source.invalid", !nullResult.valid);
+        }
+
+        private sealed class RawProbeRow : IMemoryLogicalSizeSource
+        {
+            public int units;
+
+            public void CollectFields(MemoryLogicalSizeCollector collector)
+            {
+                collector.BeginRow("SavedLegacyUnresolvedOwnerArchiveInputV1");
+                collector.Int32("schemaVersion", 1);
+                collector.String("savedOwnerIdentityKindToken", "blank");
+                collector.String("savedOwnerIdentityValue", string.Empty);
+                collector.Int32("sourceContainerOrdinal", -1);
+                collector.Int32("sourceRecordOrdinal", -1);
+                collector.NullablePresence("legacyRecord", true);
+                collector.UnregisteredRawRow(units);
+                collector.EndRow();
+            }
+        }
+
+        private sealed class WrongOrderRow : IMemoryLogicalSizeSource
+        {
+            public void CollectFields(MemoryLogicalSizeCollector collector)
+            {
+                collector.BeginRow("SavedMemoryStateFact");
+                collector.String("factKey", "x"); // registry expects schemaVersion first
+                collector.EndRow();
+            }
+        }
+
+        private sealed class MissingFieldRow : IMemoryLogicalSizeSource
+        {
+            public void CollectFields(MemoryLogicalSizeCollector collector)
+            {
+                collector.BeginRow("SavedMemoryStateFact");
+                collector.Int32("schemaVersion", 1);
+                collector.String("factKey", "x"); // never pushes factValue
+                collector.EndRow();
+            }
+        }
+
+        private sealed class ExtraFieldRow : IMemoryLogicalSizeSource
+        {
+            public void CollectFields(MemoryLogicalSizeCollector collector)
+            {
+                collector.BeginRow("SavedMemoryStateFact");
+                collector.Int32("schemaVersion", 1);
+                collector.String("factKey", "x");
+                collector.String("factValue", "y");
+                collector.Boolean("surprise", true); // not in the frozen schema
+                collector.EndRow();
+            }
+        }
+
+        private sealed class SurrogateRow : IMemoryLogicalSizeSource
+        {
+            public void CollectFields(MemoryLogicalSizeCollector collector)
+            {
+                collector.BeginRow("SavedMemoryStateFact");
+                collector.Int32("schemaVersion", 1);
+                collector.String("factKey", "\uD800"); // unpaired high surrogate
+                collector.String("factValue", string.Empty);
+                collector.EndRow();
+            }
+        }
+
+        private sealed class NegativeCountRow : IMemoryLogicalSizeSource
+        {
+            public void CollectFields(MemoryLogicalSizeCollector collector)
+            {
+                collector.BeginRow("SavedMemoryAwarenessSnapshot");
+                collector.Int32("schemaVersion", 1);
+                collector.String("snapshotId", string.Empty);
+                collector.String("scopeKindToken", string.Empty);
+                collector.String("subjectKind", string.Empty);
+                collector.String("subjectId", string.Empty);
+                collector.String("factStreamToken", string.Empty);
+                collector.Int64("captureInvalidationGeneration", 0);
+                collector.String("knownnessEvidenceToken", string.Empty);
+                collector.ListCount("stateFacts", -3);
+                collector.EndRow();
+            }
+        }
+
+        private sealed class UnregisteredRow : IMemoryLogicalSizeSource
+        {
+            public void CollectFields(MemoryLogicalSizeCollector collector)
+            {
+                collector.BeginRow("NotAFrozenRow");
+                collector.EndRow();
+            }
+        }
+
+        private static void TestActivePayloadBudget()
+        {
+            MemoryBudgetLimits limits = new MemoryBudgetLimits
+            {
+                activeOwnerBytes = 1000,
+                combinedOwnerBytes = 1200,
+                activeGlobalBytes = 5000,
+                combinedGlobalBytes = 6000
+            };
+            var globals = new MemoryPayloadBudgetTotals
+            {
+                globalActiveBytes = 3000,
+                globalImportedBytes = 1000
+            };
+
+            MemoryBudgetDecision admit = ActiveMemoryPayloadBudget.TryAdmit(
+                limits, ownerActiveBytesCurrent: 400, ownerImportedBytesCurrent: 100,
+                ownerDeltaActive: 300, ownerDeltaImported: 50, globalCurrent: globals);
+            AssertEqual("budget.admit.outcome", "admitted", admit.OutcomeToken());
+            AssertEqual("budget.admit.owner-active", 700L, admit.newOwnerActiveBytes);
+            AssertEqual("budget.admit.owner-imported", 150L, admit.newOwnerImportedBytes);
+            AssertEqual("budget.admit.global-active", 3300L, admit.newTotals.globalActiveBytes);
+            AssertEqual("budget.admit.global-imported", 1050L, admit.newTotals.globalImportedBytes);
+
+            // Owner active cap refuses without touching anything.
+            MemoryBudgetDecision ownerFull = ActiveMemoryPayloadBudget.TryAdmit(
+                limits, 900, 0, 200, 0, globals);
+            AssertEqual("budget.owner-active-full",
+                "owner_active_full", ownerFull.OutcomeToken());
+
+            // Owner combined (active + imported) cap refuses.
+            MemoryBudgetDecision ownerCombinedFull = ActiveMemoryPayloadBudget.TryAdmit(
+                limits, 900, 250, 100, 0, globals);
+            AssertEqual("budget.owner-combined-full",
+                "owner_combined_full", ownerCombinedFull.OutcomeToken());
+
+            // Global active and combined caps refuse independently of the per-owner caps.
+            var nearFullGlobals = new MemoryPayloadBudgetTotals
+            {
+                globalActiveBytes = 4500,
+                globalImportedBytes = 1000
+            };
+            MemoryBudgetDecision globalActiveFull = ActiveMemoryPayloadBudget.TryAdmit(
+                limits, 0, 0, 700, 0, nearFullGlobals);
+            AssertEqual("budget.global-active-full",
+                "global_active_full", globalActiveFull.OutcomeToken());
+            MemoryBudgetDecision globalCombinedFull = ActiveMemoryPayloadBudget.TryAdmit(
+                limits, 0, 0, 200, 900, nearFullGlobals);
+            AssertEqual("budget.global-combined-full",
+                "global_combined_full", globalCombinedFull.OutcomeToken());
+
+            // Negative deltas (expiry/removal) are legal and can move totals downward.
+            MemoryBudgetDecision shrink = ActiveMemoryPayloadBudget.TryAdmit(
+                limits, 400, 100, -300, -100, globals);
+            AssertEqual("budget.shrink.outcome", "admitted", shrink.OutcomeToken());
+            AssertEqual("budget.shrink.owner-active", 100L, shrink.newOwnerActiveBytes);
+            AssertEqual("budget.shrink.global-imported", 900L,
+                shrink.newTotals.globalImportedBytes);
+
+            // Invalid inputs fail closed.
+            MemoryBudgetDecision negativeCurrent = ActiveMemoryPayloadBudget.TryAdmit(
+                limits, -1, 0, 10, 0, globals);
+            AssertEqual("budget.negative-current", "invalid", negativeCurrent.OutcomeToken());
+            MemoryBudgetDecision badLimits = ActiveMemoryPayloadBudget.TryAdmit(
+                default(MemoryBudgetLimits), 0, 0, 10, 0, globals);
+            AssertEqual("budget.bad-limits", "invalid", badLimits.OutcomeToken());
+            MemoryBudgetDecision overflowDelta = ActiveMemoryPayloadBudget.TryAdmit(
+                limits, long.MaxValue - 5, 0, 100, 0, globals);
+            AssertEqual("budget.overflow", "invalid", overflowDelta.OutcomeToken());
         }
 
         private static MemoryRootIdentity Root(

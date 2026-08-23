@@ -14,7 +14,7 @@ namespace PawnDiary
     /// One versioned replaceable-current-state row for one exact fact stream (§T6.1.1). At most one
     /// row exists per canonical snapshotId key inside an owner envelope.
     /// </summary>
-    public class SavedMemoryAwarenessSnapshot : IExposable
+    public partial class SavedMemoryAwarenessSnapshot : IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         /// <summary>Length-prefixed ("memory-awareness-v1", owner, epoch, scope, subject, stream).</summary>
@@ -81,7 +81,7 @@ namespace PawnDiary
 
     /// <summary>One deterministic open capture-episode accumulator (§T6.1.1). At most one open
     /// episode per exact episodeId key.</summary>
-    public class SavedMemoryCaptureEpisode : IExposable
+    public partial class SavedMemoryCaptureEpisode : IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         public string episodeId = string.Empty;
@@ -166,7 +166,7 @@ namespace PawnDiary
     /// new allocator generation never merges with the old instance and neither Def name nor display
     /// label is ever identity.
     /// </summary>
-    public class SavedGlobalFactionSnapshot : IExposable
+    public partial class SavedGlobalFactionSnapshot : IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         public string factionInstanceId = string.Empty;

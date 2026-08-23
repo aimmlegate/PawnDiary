@@ -211,7 +211,7 @@ namespace PawnDiary
     }
 
     /// <summary>The per-pawn knowledge state (§4.1): culture provenance + important events.</summary>
-    public class PawnKnowledgeState : IExposable
+    public partial class PawnKnowledgeState : IExposable
     {
         /// <summary>
         /// Current save schema for this state (memory plan §T6.1). Version 1 = the redesign's

@@ -13,7 +13,7 @@ namespace PawnDiary
     /// <summary>The last memory policy tuple applied to this save (§T6.9). Types/defaults mirror
     /// MemorySettingsPolicyFieldsV1; a missing or malformed row means "apply the full deferred
     /// delta" rather than trusting default Booleans.</summary>
-    public class SavedMemoryAppliedPolicyStateV1 : IExposable
+    public partial class SavedMemoryAppliedPolicyStateV1 : IMemoryLogicalSizeSource
     {
         /// <summary>This row's version is exactly 1 by definition (§T6.0).</summary>
         public int schemaVersion = 1;
@@ -69,7 +69,7 @@ namespace PawnDiary
 
     /// <summary>One bounded Summary-wording opportunity row owned by the component (§T6.9). Rows
     /// serialize by owner ID, epoch, then opportunity key; at most one exists per owner/epoch.</summary>
-    public class SavedSummaryWordingOpportunityV1 : IExposable
+    public partial class SavedSummaryWordingOpportunityV1 : IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         public string ownerPawnId = string.Empty;
@@ -133,7 +133,7 @@ namespace PawnDiary
 
     /// <summary>One deduplicated diagnostic counter (§T6.9). Unknown bounded tokens fold into one
     /// allowlisted "other" row rather than retaining prose.</summary>
-    public class SavedMemoryDiagnosticCounter : IExposable
+    public partial class SavedMemoryDiagnosticCounter : IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         public string reasonToken = string.Empty;
@@ -159,7 +159,7 @@ namespace PawnDiary
     /// <summary>One TERMINAL transport attempt audit row for Dev diagnostics (§T6.9). Contains no
     /// prompt, response, endpoint, model credential, exception body, or live request object; the
     /// tuple (logicalRequestId, attemptOrdinal) is unique.</summary>
-    public class SavedMemoryAttemptAuditRow : IExposable
+    public partial class SavedMemoryAttemptAuditRow : IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         public string logicalRequestId = string.Empty;
@@ -201,7 +201,7 @@ namespace PawnDiary
 
     /// <summary>One pre-current-schema epoch reservation for an exact owner group (§T6.9). The epoch
     /// token itself is derived through the allocator and is deliberately not stored here.</summary>
-    public class SavedLegacyOwnerEpochReservation : IExposable
+    public partial class SavedLegacyOwnerEpochReservation : IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         public string ownerPawnId = string.Empty;
@@ -223,7 +223,7 @@ namespace PawnDiary
 
     /// <summary>One non-record-level narrative-repetition guard row (§T6.10). Unique by
     /// (ownerEpochToken, guardKind, guardKey); serialization order is that same ordinal tuple.</summary>
-    public class SavedMemoryRepetitionGuardRow : IExposable
+    public partial class SavedMemoryRepetitionGuardRow : IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         public string ownerEpochToken = string.Empty;

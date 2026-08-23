@@ -11,7 +11,7 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>One frozen prompt-memory evidence identity in exact rendered line order (§T6.11).</summary>
-    public class SavedFrozenEvidenceEntryV1 : IExposable
+    public partial class SavedFrozenEvidenceEntryV1 : IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         public string recordId = string.Empty;
@@ -35,7 +35,7 @@ namespace PawnDiary
     }
 
     /// <summary>One canonical repetition-guard identity reserved by a frozen variant (§T6.11).</summary>
-    public class SavedFrozenGuardEntryV1 : IExposable
+    public partial class SavedFrozenGuardEntryV1 : IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         public string guardKind = string.Empty;
@@ -56,7 +56,7 @@ namespace PawnDiary
     }
 
     /// <summary>One bounded diagnostic-provenance row in canonical line-first order (§T6.11).</summary>
-    public class SavedFrozenDiagnosticProvenanceV1 : IExposable
+    public partial class SavedFrozenDiagnosticProvenanceV1 : IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         public string provenanceKindToken = string.Empty;
@@ -91,7 +91,7 @@ namespace PawnDiary
 
     /// <summary>The frozen receipt plan of one variant: exact evidence set plus every required
     /// repetition guard (§T6.11).</summary>
-    public class SavedFrozenEvidenceReceiptPlanV1 : IExposable
+    public partial class SavedFrozenEvidenceReceiptPlanV1 : IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         public string evidenceSetFingerprint = string.Empty;
@@ -138,7 +138,7 @@ namespace PawnDiary
 
     /// <summary>One immutable frozen prompt variant (§T6.11). Retries reuse byte-identical strings
     /// and therefore the same variant key; lane/endpoint/model/credentials are deliberately absent.</summary>
-    public class SavedFrozenPromptVariantV1 : IExposable
+    public partial class SavedFrozenPromptVariantV1 : IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         /// <summary>Zero-based.</summary>
@@ -194,7 +194,7 @@ namespace PawnDiary
 
     /// <summary>One physical send attempt against one frozen variant (§T6.11). Attempt ordinal 0 is
     /// never a row; invocation/tick zeros are the pre-transition sentinels.</summary>
-    public class SavedActiveLogicalAttemptV1 : IExposable
+    public partial class SavedActiveLogicalAttemptV1 : IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         public int attemptOrdinal;
@@ -243,7 +243,7 @@ namespace PawnDiary
     /// One active memory logical request (§T6.11). A loaded session never reactivates or resends a
     /// saved row; load settlement normalizes it before coordinator/capture/dispatch eligibility.
     /// </summary>
-    public class SavedActiveLogicalRequestV1 : IExposable
+    public partial class SavedActiveLogicalRequestV1 : IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         public long logicalRequestSequence;
