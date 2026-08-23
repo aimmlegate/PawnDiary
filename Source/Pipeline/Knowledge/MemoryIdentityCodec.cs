@@ -402,6 +402,15 @@ namespace PawnDiary
                 allocatorGeneration = 0;
                 return false;
             }
+
+            string canonical;
+            if (!TryCreateFactionSubjectId(values[1], allocatorGeneration, out canonical)
+                || !string.Equals(subjectId, canonical, StringComparison.Ordinal))
+            {
+                allocatorGeneration = 0;
+                return false;
+            }
+
             factionInstanceId = values[1];
             return true;
         }

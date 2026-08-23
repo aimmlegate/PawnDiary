@@ -97,7 +97,7 @@ namespace MemoryThreadBenchmarks
         private sealed class FillResult
         {
             public ulong admittedBytes;
-            public ulong admittedSchemaCycles;
+            public ulong admittedCatalogCycles;
             public ulong visitedAtoms;
             public string firstRefusedPath = string.Empty;
         }
@@ -598,10 +598,10 @@ namespace MemoryThreadBenchmarks
                 {
                     List<LogicalAtom> combinedAtoms = ScopeTemplate(payload, "combined_global", mode);
                     List<LogicalAtom> ownerAtoms = ScopeTemplate(payload, "combined_owner", mode);
-                    FillResult combined = RunFullSchemaFill(
+                    FillResult combined = RunCatalogCycleSurrogateFill(
                         combinedAtoms,
                         ParseOne(candidate.values, "combinedGlobalBytes"));
-                    FillResult owner = RunFullSchemaFill(
+                    FillResult owner = RunCatalogCycleSurrogateFill(
                         ownerAtoms,
                         ParseOne(candidate.values, "combinedOwnerBytes"));
                     WorkInput work = BuildWorkInput(candidate, threadTarget, mode);
@@ -613,7 +613,7 @@ namespace MemoryThreadBenchmarks
                         textMode = mode,
                         combinedBytes = combined.admittedBytes,
                         ownerWorstBytes = owner.admittedBytes,
-                        ownerTypicalBytes = MeasureTypicalOwnerBytes(payload, threadTarget, mode),
+                        ownerTypicalBytes = MeasureTypicalOwnerBytes(payload),
                         combinedFill = combined,
                         time = time,
                         allocation = allocation
@@ -626,9 +626,12 @@ namespace MemoryThreadBenchmarks
                         candidate.rejection = commonFailure;
 
                     foreach (SyntheticScenario scenario in scenarios)
+                    foreach (string scenarioCoordinate in ApplicableScenarioCoordinates(
+                        scenario, threadTarget))
                     {
                         bool passed = RunSyntheticScenario(
                             scenario.scenarioId,
+                            scenarioCoordinate,
                             candidate.values,
                             threadTarget,
                             mode,
@@ -642,6 +645,7 @@ namespace MemoryThreadBenchmarks
                         audit.resultEncoding.Append(OrdinalSegmentCodec.Segment(
                             threadTarget.ToString(CultureInfo.InvariantCulture)));
                         audit.resultEncoding.Append(OrdinalSegmentCodec.Segment(mode));
+                        audit.resultEncoding.Append(OrdinalSegmentCodec.Segment(scenarioCoordinate));
                         audit.resultEncoding.Append(OrdinalSegmentCodec.Segment(passed ? "pass" : "fail"));
                         if (!passed && candidate.rejection.Length == 0)
                             candidate.rejection = scenario.expectedGate;
@@ -668,14 +672,34 @@ namespace MemoryThreadBenchmarks
                 else candidate.feasible = true;
             }
 
-            foreach (ScenarioAudit audit in audits.Values)
+            foreach (SyntheticScenario scenario in scenarios)
             {
-                long expectedCells = checked((long)candidates.Count * 3L * 3L);
-                if (audit.evaluatedCells != expectedCells || audit.passedCells != expectedCells)
+                ScenarioAudit audit = audits[scenario.scenarioId];
+                long coordinatesPerVector = scenario.scenarioId == "worst-case-owner-v1"
+                    ? 3L * 3L
+                    : checked(3L * 3L * scenario.coordinates.Count);
+                long expectedCells = checked((long)candidates.Count * coordinatesPerVector);
+                if (audit.evaluatedCells != expectedCells)
                     throw new InvalidOperationException(
-                        "Synthetic scenario did not pass every generated coordinate: " + audit.scenarioId);
+                        "Synthetic scenario coverage count drifted: " + audit.scenarioId);
             }
             return audits;
+        }
+
+        private static IEnumerable<string> ApplicableScenarioCoordinates(
+            SyntheticScenario scenario,
+            int threadTarget)
+        {
+            if (scenario.scenarioId != "worst-case-owner-v1") return scenario.coordinates;
+            string exact = "N=" + threadTarget.ToString(CultureInfo.InvariantCulture);
+            List<string> matching = scenario.coordinates.Where(coordinate =>
+                string.Equals(coordinate, exact, StringComparison.Ordinal)).ToList();
+            if (matching.Count != 1)
+            {
+                throw new InvalidOperationException(
+                    "Worst-case owner scenario must declare exactly one coordinate for " + exact);
+            }
+            return matching;
         }
 
         private static List<LogicalAtom> ScopeTemplate(
@@ -698,8 +722,11 @@ namespace MemoryThreadBenchmarks
             return result;
         }
 
-        private static FillResult RunFullSchemaFill(List<LogicalAtom> atoms, ulong cap)
+        private static FillResult RunCatalogCycleSurrogateFill(List<LogicalAtom> atoms, ulong cap)
         {
+            // M0 has contracts but no production reducer/schema walker yet. Repeating the complete
+            // catalog atom cycle gives a deterministic byte-boundary surrogate; it is deliberately
+            // named and reported as such so it cannot be mistaken for the T17.3 field-cap walk.
             if (cap == ulong.MaxValue) throw new InvalidOperationException("Unbounded payload cap.");
             FillResult result = new FillResult();
             foreach (LogicalAtom atom in atoms)
@@ -713,12 +740,12 @@ namespace MemoryThreadBenchmarks
                 }
                 result.admittedBytes = next;
             }
-            result.admittedSchemaCycles = 1;
+            result.admittedCatalogCycles = 1;
             ulong cycleBytes = result.admittedBytes;
             if (cycleBytes == 0) throw new InvalidOperationException("Zero-byte payload schema cycle.");
             ulong additionalCycles = (cap - result.admittedBytes) / cycleBytes;
             result.admittedBytes = checked(result.admittedBytes + additionalCycles * cycleBytes);
-            result.admittedSchemaCycles = checked(result.admittedSchemaCycles + additionalCycles);
+            result.admittedCatalogCycles = checked(result.admittedCatalogCycles + additionalCycles);
             foreach (LogicalAtom atom in atoms)
             {
                 result.visitedAtoms++;
@@ -731,7 +758,8 @@ namespace MemoryThreadBenchmarks
                 result.admittedBytes = next;
             }
             if (result.firstRefusedPath.Length == 0)
-                throw new InvalidOperationException("Full-schema fill failed to reach a refusal boundary.");
+                throw new InvalidOperationException(
+                    "Catalog-cycle surrogate failed to reach a refusal boundary.");
             ulong unchanged;
             if (TryAdmitLogicalAtom(cap, 1UL, cap, out unchanged) || unchanged != cap
                 || TryAdmitLogicalAtom(0UL, checked(cap + 1UL), cap, out unchanged) || unchanged != 0UL)
@@ -739,12 +767,12 @@ namespace MemoryThreadBenchmarks
             return result;
         }
 
-        private static ulong MeasureTypicalOwnerBytes(
-            PayloadAtomAudit payload,
-            int threadTarget,
-            string mode)
+        private static ulong MeasureTypicalOwnerBytes(PayloadAtomAudit payload)
         {
-            ulong roots = (ulong)Math.Min(12, threadTarget);
+            // T17.3 fixes the typical corpus at 20 owners, each with 12 roots and 12 blocks.
+            // This method returns the selected owner's charge, so the 20-owner population does not
+            // multiply the result and neither N nor the saturation text mode changes its shape.
+            const ulong roots = 12UL;
             ulong blocks = checked(roots * 12UL);
             checked
             {
@@ -814,6 +842,7 @@ namespace MemoryThreadBenchmarks
 
         private static bool RunSyntheticScenario(
             string scenarioId,
+            string scenarioCoordinate,
             Dictionary<string, string> values,
             int threadTarget,
             string mode,
@@ -824,28 +853,54 @@ namespace MemoryThreadBenchmarks
             switch (scenarioId)
             {
                 case "worst-case-owner-v1":
-                    return owner.admittedBytes <= ParseOne(values, "combinedOwnerBytes")
-                        && owner.firstRefusedPath.Length != 0
-                        && (threadTarget == 4 || threadTarget == 12 || threadTarget == 64);
+                    return ValidateWorstCaseOwnerScenario(
+                        scenarioCoordinate, threadTarget, values, owner);
                 case "exact-subject-collision-v1":
-                    return ValidateExactSubjectScenario();
+                    return ValidateExactSubjectScenario(scenarioCoordinate);
                 case "duplicate-root-v1":
-                    return ValidateDuplicateRootScenario();
+                    return ValidateDuplicateRootScenario(scenarioCoordinate);
                 case "summary-saturation-v1":
-                    return ValidateSummarySaturationScenario(values);
+                    return ValidateSummarySaturationScenario(scenarioCoordinate, values);
                 case "player-edited-saturation-v1":
-                    return ValidatePlayerEditedScenario(values);
+                    return ValidatePlayerEditedScenario(scenarioCoordinate, values);
                 case "global-faction-state-v1":
-                    return ValidateFactionScenario(values);
+                    return ValidateFactionScenario(scenarioCoordinate, values);
                 case "migration-overflow-v1":
-                    return ValidateMigrationOverflowScenario(values, payload, mode, combined);
+                    return ValidateMigrationOverflowScenario(
+                        scenarioCoordinate, values, payload, mode, combined);
                 default:
                     throw new InvalidOperationException(
                         "Synthetic scenario has no executable implementation: " + scenarioId);
             }
         }
 
-        private static bool ValidateExactSubjectScenario()
+        private static bool ValidateWorstCaseOwnerScenario(
+            string coordinate,
+            int threadTarget,
+            Dictionary<string, string> values,
+            FillResult owner)
+        {
+            int declaredTarget;
+            if (!coordinate.StartsWith("N=", StringComparison.Ordinal)
+                || !int.TryParse(
+                    coordinate.Substring(2),
+                    NumberStyles.None,
+                    CultureInfo.InvariantCulture,
+                    out declaredTarget)
+                || (declaredTarget != 4 && declaredTarget != 12 && declaredTarget != 64))
+            {
+                throw new InvalidOperationException(
+                    "Unknown worst-case-owner coordinate: " + coordinate);
+            }
+
+            // The N coordinate selects its matching authenticated outer N cell; it is not a
+            // decorative label or a second Cartesian copy of the same owner fixture.
+            return declaredTarget == threadTarget
+                && owner.admittedBytes <= ParseOne(values, "combinedOwnerBytes")
+                && owner.firstRefusedPath.Length != 0;
+        }
+
+        private static bool ValidateExactSubjectScenario(string coordinate)
         {
             MemoryThreadRouteRule route = new MemoryThreadRouteRule { subjectKind = "pawn" };
             route.equivalentExtractors.Add(new MemoryRouteExtractor { extractorToken = "primary" });
@@ -864,10 +919,20 @@ namespace MemoryThreadBenchmarks
             {
                 RouteCandidate("primary", "owner", "owner")
             });
-            return selected.isThreaded && selected.subjectId == "subject"
-                && selected.frozenLabel == "primary-label"
-                && collision.reasonToken == MemoryThreadRoutingPolicy.StandaloneAmbiguousIdentity
-                && ownerSelf.reasonToken == MemoryThreadRoutingPolicy.StandaloneOwnerSelf;
+            switch (coordinate)
+            {
+                case "same-label-different-id":
+                    return collision.reasonToken
+                        == MemoryThreadRoutingPolicy.StandaloneAmbiguousIdentity;
+                case "same-id-different-label":
+                    return selected.isThreaded && selected.subjectId == "subject"
+                        && selected.frozenLabel == "primary-label";
+                case "owner-self":
+                    return ownerSelf.reasonToken == MemoryThreadRoutingPolicy.StandaloneOwnerSelf;
+                default:
+                    throw new InvalidOperationException(
+                        "Unknown exact-subject coordinate: " + coordinate);
+            }
         }
 
         private static MemoryRouteCandidate RouteCandidate(
@@ -884,7 +949,7 @@ namespace MemoryThreadBenchmarks
             };
         }
 
-        private static bool ValidateDuplicateRootScenario()
+        private static bool ValidateDuplicateRootScenario(string coordinate)
         {
             MemoryEpochAllocationPlan epoch = MemoryIdentityCodec.PlanEpochAllocation(
                 new MemoryEpochAllocationRequest { ownerPawnId = "owner", lastIssuedSequence = 0 });
@@ -902,55 +967,142 @@ namespace MemoryThreadBenchmarks
                 || !MemoryIdentityCodec.TryCreateRootId(root, out first)
                 || !MemoryIdentityCodec.TryCreateRootId(root, out retry)) return false;
             root.primarySubjectId = "subject-b";
-            return first == retry
-                && MemoryIdentityCodec.TryCreateRootId(root, out other)
+            bool distinct = MemoryIdentityCodec.TryCreateRootId(root, out other)
                 && first != other;
+            switch (coordinate)
+            {
+                case "semantic-duplicate":
+                    return first == retry;
+                case "opaque-id-conflict":
+                    return distinct;
+                case "permutation":
+                    MemorySourceOccurrenceFallback fallback = new MemorySourceOccurrenceFallback
+                    {
+                        stableSignalToken = "fixture",
+                        eventTickInvariant = 1,
+                        sourceLocalSequenceInvariant = 1,
+                        factDiscriminator = "fact",
+                        sourceProvesUniqueness = true,
+                        subjects = new List<MemoryTypedSubject>
+                        {
+                            new MemoryTypedSubject { subjectKind = "pawn", subjectId = "subject-b" },
+                            new MemoryTypedSubject { subjectKind = "pawn", subjectId = "subject-a" }
+                        }
+                    };
+                    string ordered;
+                    string permuted;
+                    if (!MemoryIdentityCodec.TryCreateSourceOccurrenceFallback(
+                            fallback, out ordered)) return false;
+                    fallback.subjects.Reverse();
+                    return MemoryIdentityCodec.TryCreateSourceOccurrenceFallback(
+                            fallback, out permuted)
+                        && ordered == permuted;
+                default:
+                    throw new InvalidOperationException(
+                        "Unknown duplicate-root coordinate: " + coordinate);
+            }
         }
 
-        private static bool ValidateSummarySaturationScenario(Dictionary<string, string> values)
+        private static bool ValidateSummarySaturationScenario(
+            string coordinate,
+            Dictionary<string, string> values)
         {
             ulong buckets = ParseOne(values, "factBuckets");
             ulong contributions = ParseUnsignedTuple(
                 values["datedContributionDescriptorMatchCaps"])[0];
             ulong unchanged;
-            return buckets > 0 && contributions > 0
-                && TryAdmitLogicalAtom(0, buckets, buckets, out unchanged)
-                && unchanged == buckets
-                && !TryAdmitLogicalAtom(buckets, 1, buckets, out unchanged)
-                && unchanged == buckets
-                && !TryAdmitLogicalAtom(0, checked(contributions + 1), contributions, out unchanged)
-                && unchanged == 0;
+            MemoryRootIdentity root = new MemoryRootIdentity
+            {
+                ownerPawnId = "owner",
+                ownerEpochToken = OrdinalSegmentCodec.Segment("memory-epoch-v1")
+                    + OrdinalSegmentCodec.Segment("1"),
+                primarySubjectKind = "pawn",
+                primarySubjectId = "subject"
+            };
+            string first;
+            string second;
+            switch (coordinate)
+            {
+                case "rolling-one":
+                    return MemoryIdentityCodec.TryCreateRollingSummaryId(root, out first)
+                        && MemoryIdentityCodec.TryCreateRollingSummaryId(root, out second)
+                        && first == second;
+                case "closed-many":
+                    return MemoryIdentityCodec.TryCreateClosedSummaryId(root, 1, out first)
+                        && MemoryIdentityCodec.TryCreateClosedSummaryId(root, 2, out second)
+                        && first != second;
+                case "contribution-cap+1":
+                    return buckets > 0 && contributions > 0
+                        && TryAdmitLogicalAtom(0, buckets, buckets, out unchanged)
+                        && unchanged == buckets
+                        && !TryAdmitLogicalAtom(buckets, 1, buckets, out unchanged)
+                        && unchanged == buckets
+                        && !TryAdmitLogicalAtom(
+                            0, checked(contributions + 1), contributions, out unchanged)
+                        && unchanged == 0;
+                default:
+                    throw new InvalidOperationException(
+                        "Unknown summary-saturation coordinate: " + coordinate);
+            }
         }
 
-        private static bool ValidatePlayerEditedScenario(Dictionary<string, string> values)
+        private static bool ValidatePlayerEditedScenario(
+            string coordinate,
+            Dictionary<string, string> values)
         {
             ulong ownerEdited = ParseOne(values, "editedBlocksOwner");
             ulong globalEdited = ParseOne(values, "editedBlocksGlobal");
             ulong ownerCap = ParseOne(values, "manageableBlocksPerOwner");
             ulong globalCap = ParseUnsignedTuple(values["globalBlockCaps"])[0];
             ulong unchanged;
-            return ownerEdited <= ownerCap && globalEdited <= globalCap
-                && TryAdmitLogicalAtom(0, ownerEdited, ownerCap, out unchanged)
-                && !TryAdmitLogicalAtom(ownerCap, 1, ownerCap, out unchanged)
-                && unchanged == ownerCap;
+            switch (coordinate)
+            {
+                case "owner-cap":
+                    return ownerEdited <= ownerCap
+                        && TryAdmitLogicalAtom(0, ownerEdited, ownerCap, out unchanged);
+                case "global-cap":
+                    return globalEdited <= globalCap
+                        && TryAdmitLogicalAtom(0, globalEdited, globalCap, out unchanged);
+                case "protected-cap+1":
+                    return !TryAdmitLogicalAtom(ownerCap, 1, ownerCap, out unchanged)
+                        && unchanged == ownerCap;
+                default:
+                    throw new InvalidOperationException(
+                        "Unknown player-edited coordinate: " + coordinate);
+            }
         }
 
-        private static bool ValidateFactionScenario(Dictionary<string, string> values)
+        private static bool ValidateFactionScenario(
+            string coordinate,
+            Dictionary<string, string> values)
         {
             string one;
             string two;
             ulong cap = ParseOne(values, "factionSnapshots");
             ulong unchanged;
-            return cap > 0
-                && MemoryIdentityCodec.TryCreateFactionSubjectId("faction-instance", 1, out one)
-                && MemoryIdentityCodec.TryCreateFactionSubjectId("faction-instance", 2, out two)
-                && one != two
-                && TryAdmitLogicalAtom(0, cap, cap, out unchanged)
-                && !TryAdmitLogicalAtom(cap, 1, cap, out unchanged)
-                && unchanged == cap;
+            switch (coordinate)
+            {
+                case "same-def-different-instance":
+                    return MemoryIdentityCodec.TryCreateFactionSubjectId("faction-instance-a", 1, out one)
+                        && MemoryIdentityCodec.TryCreateFactionSubjectId("faction-instance-b", 1, out two)
+                        && one != two;
+                case "generation-reuse":
+                    return MemoryIdentityCodec.TryCreateFactionSubjectId("faction-instance", 1, out one)
+                        && MemoryIdentityCodec.TryCreateFactionSubjectId("faction-instance", 2, out two)
+                        && one != two;
+                case "cap+1":
+                    return cap > 0
+                        && TryAdmitLogicalAtom(0, cap, cap, out unchanged)
+                        && !TryAdmitLogicalAtom(cap, 1, cap, out unchanged)
+                        && unchanged == cap;
+                default:
+                    throw new InvalidOperationException(
+                        "Unknown faction-state coordinate: " + coordinate);
+            }
         }
 
         private static bool ValidateMigrationOverflowScenario(
+            string coordinate,
             Dictionary<string, string> values,
             PayloadAtomAudit payload,
             string mode,
@@ -969,8 +1121,20 @@ namespace MemoryThreadBenchmarks
                 && admitted == cap;
             bool refusedWhole = !TryAdmitLogicalAtom(prefix, checked(unitBytes + 1), cap, out admitted)
                 && admitted == prefix;
-            return resolvedRows <= globalRows && unknownRows <= globalRows
-                && combined.admittedBytes <= cap && wholeUnit && refusedWhole;
+            switch (coordinate)
+            {
+                case "resolved":
+                    return resolvedRows <= globalRows && wholeUnit;
+                case "unknown-owner":
+                    return unknownRows <= globalRows;
+                case "raw-sidecar":
+                    return combined.admittedBytes <= cap;
+                case "global-cap+1":
+                    return refusedWhole;
+                default:
+                    throw new InvalidOperationException(
+                        "Unknown migration-overflow coordinate: " + coordinate);
+            }
         }
 
         private static bool TryAdmitLogicalAtom(
@@ -1368,9 +1532,13 @@ namespace MemoryThreadBenchmarks
 
         private static void EnsureCleanRepository(string root)
         {
-            string status = Git(root, "status", "--porcelain", "--untracked-files=no");
+            // The SDK project glob compiles local .cs files, so an untracked source file can change
+            // the measured assembly just as surely as a tracked edit. Release evidence therefore
+            // requires the entire non-ignored worktree, including untracked paths, to be clean.
+            string status = Git(root, "status", "--porcelain=v1", "--untracked-files=all");
             if (!string.IsNullOrWhiteSpace(status))
-                throw new InvalidOperationException("Benchmark evidence requires a clean tracked worktree.");
+                throw new InvalidOperationException(
+                    "Benchmark evidence requires a clean committed worktree, including untracked files.");
         }
 
         private static void WriteEvidence(string root, Catalog catalog, List<Candidate> candidates,
@@ -1393,6 +1561,63 @@ namespace MemoryThreadBenchmarks
                 Path.Combine(catalogRoot, "memory-payload-atom-catalog-v1.json"));
             string harnessHash = HashFile(Assembly.GetExecutingAssembly().Location);
             string rimTestHash = HashFile(Path.Combine(root, "tests", "PawnDiary.RimTest", "Assemblies", "PawnDiary.RimTest.dll"));
+            string scenarioDefinitionsEncoding = BuildScenarioDefinitionsEncoding(scenarios);
+            string scenarioDefinitionsHash = Sha256Hex(
+                Encoding.UTF8.GetBytes(scenarioDefinitionsEncoding));
+            string implementationEncoding = BuildTupleEncoding(
+                "memory-benchmark-implementation-v1",
+                harnessHash,
+                rimTestHash,
+                fixtureHash,
+                scenarioDefinitionsHash,
+                atomHash);
+            string implementationHash = Sha256Hex(Encoding.UTF8.GetBytes(implementationEncoding));
+
+            string cpuIdentifier = NormalizeEnvironmentText(
+                Environment.GetEnvironmentVariable("PROCESSOR_IDENTIFIER")
+                    ?? RuntimeInformation.ProcessArchitecture.ToString(),
+                256,
+                "cpuIdentifier");
+            string osDescription = NormalizeEnvironmentText(
+                RuntimeInformation.OSDescription, 256, "osDescription");
+            string runtimeDescription = NormalizeEnvironmentText(
+                RuntimeInformation.FrameworkDescription, 256, "runtimeDescription");
+            string languageFolderName = NormalizeEnvironmentText(
+                Environment.GetEnvironmentVariable("PAWNDIARY_BENCHMARK_LANGUAGE_FOLDER")
+                    ?? CultureInfo.CurrentUICulture.Name,
+                128,
+                "languageFolderName");
+            string logicalProcessorCount = checked((ulong)Environment.ProcessorCount)
+                .ToString(CultureInfo.InvariantCulture);
+            string stopwatchFrequency = checked((ulong)Stopwatch.Frequency)
+                .ToString(CultureInfo.InvariantCulture);
+            string osArchitectureToken = ArchitectureToken(RuntimeInformation.OSArchitecture);
+            string processArchitectureToken = ArchitectureToken(
+                RuntimeInformation.ProcessArchitecture);
+            const string allocationCollectorKind = "GC.GetAllocatedBytesForCurrentThread";
+            const string allocationCollectorVersion = "dotnet-v1";
+            string resolutionWidthPixels = RequirePositiveEnvironmentInteger(
+                "PAWNDIARY_BENCHMARK_RESOLUTION_WIDTH_PIXELS");
+            string resolutionHeightPixels = RequirePositiveEnvironmentInteger(
+                "PAWNDIARY_BENCHMARK_RESOLUTION_HEIGHT_PIXELS");
+            string uiScaleFloat32Bits = RequireEightLowercaseHexEnvironment(
+                "PAWNDIARY_BENCHMARK_UI_SCALE_FLOAT32_BITS");
+            string environmentEncoding = BuildTupleEncoding(
+                "memory-benchmark-environment-v1",
+                cpuIdentifier,
+                logicalProcessorCount,
+                osDescription,
+                runtimeDescription,
+                osArchitectureToken,
+                processArchitectureToken,
+                stopwatchFrequency,
+                allocationCollectorKind,
+                allocationCollectorVersion,
+                languageFolderName,
+                resolutionWidthPixels,
+                resolutionHeightPixels,
+                uiScaleFloat32Bits);
+            string environmentHash = Sha256Hex(Encoding.UTF8.GetBytes(environmentEncoding));
             string resultDirectory = Path.Combine(root, "benchmarks", "results", "memory-system");
             Directory.CreateDirectory(resultDirectory);
             string jsonPath = Path.Combine(resultDirectory, sourceIdentity + "-pure.json");
@@ -1408,18 +1633,33 @@ namespace MemoryThreadBenchmarks
                 writer.WriteString("sourceCommitIdentity", sourceIdentity);
                 writer.WriteString("activationBuildState", MemorySystemActivationGate.BuildState);
                 writer.WriteString("configuration", "Release");
-                writer.WriteString("cpuIdentifier", Environment.GetEnvironmentVariable("PROCESSOR_IDENTIFIER") ?? "unknown");
+                writer.WriteString("cpuIdentifier", cpuIdentifier);
                 writer.WriteNumber("logicalProcessorCount", Environment.ProcessorCount);
-                writer.WriteString("osDescription", RuntimeInformation.OSDescription);
-                writer.WriteString("runtimeDescription", RuntimeInformation.FrameworkDescription);
+                writer.WriteString("osDescription", osDescription);
+                writer.WriteString("runtimeDescription", runtimeDescription);
+                writer.WriteString("osArchitectureToken", osArchitectureToken);
+                writer.WriteString("processArchitectureToken", processArchitectureToken);
                 writer.WriteNumber("stopwatchFrequency", Stopwatch.Frequency);
-                writer.WriteString("allocationCollectorKind", "GC.GetAllocatedBytesForCurrentThread");
-                writer.WriteString("allocationCollectorVersion", "dotnet-v1");
+                writer.WriteString("allocationCollectorKind", allocationCollectorKind);
+                writer.WriteString("allocationCollectorVersion", allocationCollectorVersion);
+                writer.WriteString("languageFolderName", languageFolderName);
+                writer.WriteNumber("resolutionWidthPixels", ulong.Parse(
+                    resolutionWidthPixels, NumberStyles.None, CultureInfo.InvariantCulture));
+                writer.WriteNumber("resolutionHeightPixels", ulong.Parse(
+                    resolutionHeightPixels, NumberStyles.None, CultureInfo.InvariantCulture));
+                writer.WriteString("uiScaleFloat32Bits", uiScaleFloat32Bits);
                 writer.WriteString("capacityCatalogSha256", capacityHash);
                 writer.WriteString("fixtureCatalogSha256", fixtureHash);
+                writer.WriteString("scenarioDefinitionsSha256", scenarioDefinitionsHash);
                 writer.WriteString("payloadAtomCatalogSha256", atomHash);
                 writer.WriteString("harnessAssemblySha256", harnessHash);
                 writer.WriteString("rimTestAssemblySha256", rimTestHash);
+                writer.WriteString("benchmarkImplementationEncoding", implementationEncoding);
+                writer.WriteString("benchmarkImplementationEncodingSha256", implementationHash);
+                writer.WriteString("benchmarkEnvironmentEncoding", environmentEncoding);
+                writer.WriteString("benchmarkEnvironmentEncodingSha256", environmentHash);
+                writer.WriteString("pureCoverageDisposition", "m0_surrogate_no_reducer_trace");
+                writer.WriteBoolean("retentionReducerTraceExecuted", false);
                 writer.WriteStartObject("payloadAtomAudit");
                 writer.WriteNumber("typeCount", payloadAtomAudit.typeCount);
                 writer.WriteNumber("atomCount", payloadAtomAudit.atomCount);
@@ -1444,9 +1684,10 @@ namespace MemoryThreadBenchmarks
                         writer.WriteString("expectedGate", scenario.expectedGate);
                         writer.WriteNumber("evaluatedCellCount", audit.evaluatedCells);
                         writer.WriteNumber("passedCellCount", audit.passedCells);
+                        writer.WriteNumber("declaredCoordinateCount", scenario.coordinates.Count);
                         writer.WriteString("resultFingerprint", audit.Fingerprint());
                         writer.WriteString("disposition", audit.evaluatedCells == audit.passedCells
-                            ? "pass_all_generated_vectors_all_N_text_modes"
+                            ? "pass_all_generated_vectors_all_N_text_modes_all_declared_coordinates"
                             : "fail");
                         writer.WriteEndObject();
                     }
@@ -1529,7 +1770,7 @@ namespace MemoryThreadBenchmarks
                         writer.WriteNumber("surrogateCombinedBytes", coordinate.combinedBytes);
                         writer.WriteNumber("surrogateOwnerTypicalBytes", coordinate.ownerTypicalBytes);
                         writer.WriteNumber("surrogateOwnerWorstBytes", coordinate.ownerWorstBytes);
-                        writer.WriteNumber("fullSchemaCycles", coordinate.combinedFill.admittedSchemaCycles);
+                        writer.WriteNumber("surrogateCatalogCycles", coordinate.combinedFill.admittedCatalogCycles);
                         writer.WriteNumber("visitedAtomCount", coordinate.combinedFill.visitedAtoms);
                         writer.WriteString("firstRefusedPath", coordinate.combinedFill.firstRefusedPath);
                         writer.WriteNumber("maximumIndivisibleItemMicroseconds", coordinate.time.maximum);
@@ -1558,8 +1799,10 @@ namespace MemoryThreadBenchmarks
             markdown.AppendLine("- Authenticated provisional manifest rows: " + manifestAudit.entries.Count.ToString(CultureInfo.InvariantCulture));
             markdown.AppendLine("- Provisional manifest audit fingerprint: `" + manifestAudit.fingerprint + "`");
             markdown.AppendLine("- Release-policy encoding SHA-256: `" + manifestAudit.releasePolicyEncodingHash + "`");
+            markdown.AppendLine("- Benchmark implementation encoding SHA-256: `" + implementationHash + "`");
+            markdown.AppendLine("- Benchmark environment encoding SHA-256: `" + environmentHash + "`");
             markdown.AppendLine();
-            markdown.AppendLine("The selected vector is provisional M0 surrogate evidence only. Exact loaded Scribe, OnGUI/render, and Unity allocation cells remain named pending fixtures for M1/M2/M9/M11; they are not reported as zero or waived.");
+            markdown.AppendLine("The selected vector is provisional M0 schema-cycle surrogate evidence only. Scenario coordinates execute their distinct M0 contract cases, but the M4 retention reducer does not exist yet, so summary/player-edited saturation is cap-boundary evidence rather than a retention trace. Exact loaded Scribe, OnGUI/render, and Unity allocation cells remain named pending fixtures for M1/M2/M9/M11; none is reported as zero or waived.");
             markdown.AppendLine();
             markdown.AppendLine("## Selected vector encoding");
             markdown.AppendLine(); markdown.AppendLine("```text"); markdown.Append(selected.encoding); markdown.AppendLine("```");
@@ -1607,9 +1850,96 @@ namespace MemoryThreadBenchmarks
 
         private static string HashTuple(string domain, params string[] fields)
         {
+            return Sha256Hex(Encoding.UTF8.GetBytes(BuildTupleEncoding(domain, fields)));
+        }
+
+        private static string BuildTupleEncoding(string domain, params string[] fields)
+        {
             StringBuilder builder = new StringBuilder(OrdinalSegmentCodec.Segment(domain));
             foreach (string field in fields) builder.Append(OrdinalSegmentCodec.Segment(field));
-            return Sha256Hex(Encoding.UTF8.GetBytes(builder.ToString()));
+            return builder.ToString();
+        }
+
+        private static string BuildScenarioDefinitionsEncoding(List<SyntheticScenario> scenarios)
+        {
+            StringBuilder builder = new StringBuilder(
+                OrdinalSegmentCodec.Segment("memory-m0-scenario-definitions-v1"));
+            builder.Append(OrdinalSegmentCodec.Segment(
+                scenarios.Count.ToString(CultureInfo.InvariantCulture)));
+            foreach (SyntheticScenario scenario in scenarios)
+            {
+                builder.Append(OrdinalSegmentCodec.Segment(scenario.scenarioId));
+                builder.Append(OrdinalSegmentCodec.Segment(scenario.expectedGate));
+                builder.Append(OrdinalSegmentCodec.Segment(
+                    scenario.coordinates.Count.ToString(CultureInfo.InvariantCulture)));
+                foreach (string coordinate in scenario.coordinates)
+                    builder.Append(OrdinalSegmentCodec.Segment(coordinate));
+            }
+            return builder.ToString();
+        }
+
+        private static string ArchitectureToken(Architecture architecture)
+        {
+            if (architecture == Architecture.X86) return "x86";
+            if (architecture == Architecture.X64) return "x64";
+            if (architecture == Architecture.Arm) return "arm";
+            if (architecture == Architecture.Arm64) return "arm64";
+            throw new InvalidOperationException("Unsupported benchmark architecture: " + architecture);
+        }
+
+        private static string NormalizeEnvironmentText(string value, int maximumUnits, string field)
+        {
+            if (value == null) value = string.Empty;
+            string normalized = value.Normalize(NormalizationForm.FormKC);
+            StringBuilder collapsed = new StringBuilder(normalized.Length);
+            bool pendingSpace = false;
+            foreach (char character in normalized)
+            {
+                if (char.IsWhiteSpace(character))
+                {
+                    pendingSpace = collapsed.Length > 0;
+                    continue;
+                }
+                if (pendingSpace) collapsed.Append(' ');
+                collapsed.Append(character);
+                pendingSpace = false;
+            }
+            string result = collapsed.ToString();
+            if (result.Length == 0 || result.Length > maximumUnits
+                || !MemoryIdentityCodec.IsWellFormedUtf16(result))
+            {
+                throw new InvalidOperationException(
+                    "Invalid benchmark environment field: " + field);
+            }
+            return result;
+        }
+
+        private static string RequirePositiveEnvironmentInteger(string variableName)
+        {
+            string value = Environment.GetEnvironmentVariable(variableName) ?? string.Empty;
+            ulong parsed;
+            if (value.Length == 0 || (value.Length > 1 && value[0] == '0')
+                || !ulong.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out parsed)
+                || parsed == 0)
+            {
+                throw new InvalidOperationException(
+                    "Evidence generation requires a positive invariant-decimal " + variableName + ".");
+            }
+            return value;
+        }
+
+        private static string RequireEightLowercaseHexEnvironment(string variableName)
+        {
+            string value = Environment.GetEnvironmentVariable(variableName) ?? string.Empty;
+            if (value.Length != 8 || value.Any(character =>
+                    !(character >= '0' && character <= '9')
+                    && !(character >= 'a' && character <= 'f')))
+            {
+                throw new InvalidOperationException(
+                    "Evidence generation requires eight lowercase hexadecimal digits in "
+                    + variableName + ".");
+            }
+            return value;
         }
 
         private static string HashFile(string path)

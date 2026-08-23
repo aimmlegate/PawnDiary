@@ -6,6 +6,10 @@ Companion: [repowiki/README.md](repowiki/README.md) describes the current state.
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-08-24
+
+- **Memory M0 review hardening.** Faction/constant-stream identity is now exact, every declared benchmark subcase executes independently, and evidence binds the complete implementation/environment tuple from a fully clean checkout.
+
 ## 2026-08-23
 
 - **Memory M0 contract hardening.** Canonical identities, stream routes, payload atoms, consumer declarations, and provisional-cap evidence now reject the reviewed invalid states and execute every declared pure scenario coordinate.

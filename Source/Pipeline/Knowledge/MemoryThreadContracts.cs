@@ -112,8 +112,18 @@ namespace PawnDiary
         /// <summary>True only for a known kind paired with a legal exact subject identity.</summary>
         public static bool IsValidRootSubject(string subjectKind, string subjectId)
         {
-            return IsKnownRootSubjectKind(subjectKind)
-                && (subjectKind != SubjectStream || IsKnownStreamSubjectToken(subjectId));
+            if (!IsKnownRootSubjectKind(subjectKind)) return false;
+            if (subjectKind == SubjectStream) return IsKnownStreamSubjectToken(subjectId);
+            if (subjectKind == SubjectFaction)
+            {
+                string ignoredFactionInstanceId;
+                long ignoredAllocatorGeneration;
+                return MemoryIdentityCodec.TryParseFactionSubjectId(
+                    subjectId,
+                    out ignoredFactionInstanceId,
+                    out ignoredAllocatorGeneration);
+            }
+            return true;
         }
 
         /// <summary>True only for an explicitly saved Summary role.</summary>

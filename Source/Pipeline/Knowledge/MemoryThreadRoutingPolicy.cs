@@ -103,9 +103,7 @@ namespace PawnDiary
                 || route.equivalentExtractors == null
                 || route.equivalentExtractors.Count == 0
                 || (route.subjectKind == MemoryContractTokens.SubjectStream
-                    && route.equivalentExtractors.Any(extractor =>
-                        extractor == null
-                        || !IsKnownStreamExtractor(extractor.extractorToken))))
+                    && !HasOneExactStreamSubject(route.equivalentExtractors)))
             {
                 return Standalone(StandaloneMissingIdentity);
             }
@@ -142,6 +140,19 @@ namespace PawnDiary
                     || !MemoryContractTokens.IsValidRootSubject(
                         candidate.subjectKind,
                         candidate.subjectId))
+                {
+                    return Standalone(StandaloneMissingIdentity);
+                }
+
+                string constantStreamSubject;
+                if (route.subjectKind == MemoryContractTokens.SubjectStream
+                    && (!TryGetKnownStreamSubject(
+                            candidate.extractorToken,
+                            out constantStreamSubject)
+                        || !string.Equals(
+                            candidate.subjectId,
+                            constantStreamSubject,
+                            StringComparison.Ordinal)))
                 {
                     return Standalone(StandaloneMissingIdentity);
                 }
@@ -280,6 +291,7 @@ namespace PawnDiary
             }
 
             HashSet<string> tokens = new HashSet<string>(StringComparer.Ordinal);
+            string declaredStreamSubject = null;
             foreach (MemoryRouteExtractor extractor in route.equivalentExtractors)
             {
                 if (extractor == null
@@ -291,22 +303,60 @@ namespace PawnDiary
 
                 if (route.subjectKind == MemoryContractTokens.SubjectStream)
                 {
-                    if (!IsKnownStreamExtractor(extractor.extractorToken))
+                    string streamSubject;
+                    if (!TryGetKnownStreamSubject(extractor.extractorToken, out streamSubject)
+                        || (declaredStreamSubject != null
+                            && !string.Equals(
+                                declaredStreamSubject,
+                                streamSubject,
+                                StringComparison.Ordinal)))
                     {
                         return false;
                     }
+                    declaredStreamSubject = streamSubject;
                 }
             }
             return true;
         }
 
-        private static bool IsKnownStreamExtractor(string extractorToken)
+        private static bool HasOneExactStreamSubject(
+            IEnumerable<MemoryRouteExtractor> extractors)
+        {
+            string declaredSubject = null;
+            foreach (MemoryRouteExtractor extractor in extractors)
+            {
+                string streamSubject;
+                if (extractor == null
+                    || !TryGetKnownStreamSubject(extractor.extractorToken, out streamSubject)
+                    || (declaredSubject != null
+                        && !string.Equals(
+                            declaredSubject,
+                            streamSubject,
+                            StringComparison.Ordinal)))
+                {
+                    return false;
+                }
+                declaredSubject = streamSubject;
+            }
+            return declaredSubject != null;
+        }
+
+        private static bool TryGetKnownStreamSubject(
+            string extractorToken,
+            out string streamSubject)
         {
             const string constantPrefix = "constant:";
-            return !string.IsNullOrEmpty(extractorToken)
-                && extractorToken.StartsWith(constantPrefix, StringComparison.Ordinal)
-                && MemoryContractTokens.IsKnownStreamSubjectToken(
-                    extractorToken.Substring(constantPrefix.Length));
+            streamSubject = string.Empty;
+            if (string.IsNullOrEmpty(extractorToken)
+                || !extractorToken.StartsWith(constantPrefix, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            string candidate = extractorToken.Substring(constantPrefix.Length);
+            if (!MemoryContractTokens.IsKnownStreamSubjectToken(candidate)) return false;
+            streamSubject = candidate;
+            return true;
         }
 
         private static bool TryParseCanonicalInt64(string value, out long parsed)

@@ -232,6 +232,8 @@ namespace MemoryThreadTests
                     new string('s', MemoryIdentityCodec.MaximumEmbeddedCompositeCharacters + 1)));
             AssertRejectsRoot("root.stream-not-allowlisted",
                 Root("Pawn_A", Epoch(1), "stream", "invented_stream"));
+            AssertRejectsRoot("root.faction-not-canonical",
+                Root("Pawn_A", Epoch(1), "faction", "Faction_17"));
 
             AssertTrue("root.trailing.reject",
                 !MemoryIdentityCodec.TryParseRootId(rootId + "1:x", out parsed));
@@ -338,6 +340,11 @@ namespace MemoryThreadTests
                 faction, out parsedFaction, out parsedGeneration));
             AssertEqual("faction.parse.id", "Faction_17", parsedFaction);
             AssertEqual("faction.parse.generation", 3L, parsedGeneration);
+            AssertTrue("faction.parse.empty-instance.reject",
+                !MemoryIdentityCodec.TryParseFactionSubjectId(
+                    "25:memory-faction-subject-v10:1:3",
+                    out parsedFaction,
+                    out parsedGeneration));
 
             MemoryRootIdentity root = Root("Pawn_A", Epoch(1), "faction", faction);
             string rolling;
@@ -367,7 +374,7 @@ namespace MemoryThreadTests
                 subjects = new List<MemoryTypedSubject>
                 {
                     Subject("pawn", "Pawn_B"),
-                    Subject("faction", "Faction_2"),
+                    Subject("faction", Faction("Faction_2", 1)),
                     Subject("pawn", "Pawn_B")
                 }
             };
@@ -376,7 +383,7 @@ namespace MemoryThreadTests
                 MemoryIdentityCodec.TryCreateSourceOccurrenceFallback(input, out first));
             AssertEqual(
                 "sourceFallback.golden",
-                "36:memory-source-occurrence-fallback-v112:death.family6:1234561:26:victim1:27:faction9:Faction_24:pawn6:Pawn_B",
+                "36:memory-source-occurrence-fallback-v112:death.family6:1234561:26:victim1:27:faction42:25:memory-faction-subject-v19:Faction_21:14:pawn6:Pawn_B",
                 first);
 
             input.subjects.Reverse();
@@ -880,6 +887,40 @@ namespace MemoryThreadTests
             });
             AssertEqual("route.stream.unknown.standalone",
                 MemoryThreadRoutingPolicy.StandaloneMissingIdentity, resolved.reasonToken);
+            resolved = MemoryThreadRoutingPolicy.Resolve("Pawn_A", streamRoute, new[]
+            {
+                Candidate("constant:body_history", "stream", "belief", "Belief")
+            });
+            AssertEqual("route.stream.wrong-allowlisted-constant.standalone",
+                MemoryThreadRoutingPolicy.StandaloneMissingIdentity, resolved.reasonToken);
+            resolved = MemoryThreadRoutingPolicy.Resolve(
+                "Pawn_A",
+                Route("stream", "constant:body_history", "constant:belief"),
+                new[]
+                {
+                    Candidate("constant:body_history", "stream", "body_history", "Body")
+                });
+            AssertEqual("route.stream.mixed-constants.standalone",
+                MemoryThreadRoutingPolicy.StandaloneMissingIdentity, resolved.reasonToken);
+
+            string canonicalFaction = Faction("Faction_1", 1);
+            resolved = MemoryThreadRoutingPolicy.Resolve(
+                "Pawn_A",
+                Route("faction", "context:faction_id"),
+                new[]
+                {
+                    Candidate("context:faction_id", "faction", canonicalFaction, "Union")
+                });
+            AssertTrue("route.faction.canonical", resolved.isThreaded);
+            resolved = MemoryThreadRoutingPolicy.Resolve(
+                "Pawn_A",
+                Route("faction", "context:faction_id"),
+                new[]
+                {
+                    Candidate("context:faction_id", "faction", "Faction_1", "Union")
+                });
+            AssertEqual("route.faction.noncanonical.standalone",
+                MemoryThreadRoutingPolicy.StandaloneMissingIdentity, resolved.reasonToken);
 
             // Relationship phase/label are not root fields: every phase about the same exact pawn
             // creates the byte-identical root, while equal labels on distinct IDs do not collide.
@@ -1244,6 +1285,17 @@ namespace MemoryThreadTests
             return OrdinalSegmentCodec.Segment("memory-epoch-v1")
                 + OrdinalSegmentCodec.Segment(sequence.ToString(
                     System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        private static string Faction(string factionInstanceId, long generation)
+        {
+            string subjectId;
+            AssertTrue("helper.faction.create",
+                MemoryIdentityCodec.TryCreateFactionSubjectId(
+                    factionInstanceId,
+                    generation,
+                    out subjectId));
+            return subjectId;
         }
 
         private static MemoryTypedSubject Subject(string kind, string id)
