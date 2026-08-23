@@ -1901,7 +1901,7 @@
         "active_global",
         "combined_global"
       ],
-      "atomKindToken": "row",
+      "atomKindToken": "nullable_row",
       "minimumRowFactoryId": "memory-min-row-savedmemoryblock-primarysubject-v1",
       "candidateValueEncoding": "1",
       "freeTextModeEligible": false
@@ -2702,7 +2702,7 @@
       "atomKindToken": "string",
       "minimumRowFactoryId": "",
       "candidateValueEncoding": "fixture-v1",
-      "freeTextModeEligible": true
+      "freeTextModeEligible": false
     },
     {
       "pathOrdinal": 150,
@@ -2744,7 +2744,7 @@
       "atomKindToken": "string",
       "minimumRowFactoryId": "",
       "candidateValueEncoding": "deterministic",
-      "freeTextModeEligible": true
+      "freeTextModeEligible": false
     },
     {
       "pathOrdinal": 153,
@@ -3337,7 +3337,7 @@
         "combined_owner",
         "combined_global"
       ],
-      "atomKindToken": "row",
+      "atomKindToken": "nullable_row",
       "minimumRowFactoryId": "memory-min-row-savedimportedmemoryrow-primarysubject-v1",
       "candidateValueEncoding": "1",
       "freeTextModeEligible": false
@@ -3715,7 +3715,7 @@
       "scopeMask": [
         "raw_compatibility"
       ],
-      "atomKindToken": "row",
+      "atomKindToken": "nullable_row",
       "minimumRowFactoryId": "memory-min-row-savedlegacyunresolvedownerarchiveinputv1-legacyrecord-v1",
       "candidateValueEncoding": "1",
       "freeTextModeEligible": false
@@ -3727,9 +3727,9 @@
         "active_global",
         "combined_global"
       ],
-      "atomKindToken": "string",
+      "atomKindToken": "int32",
       "minimumRowFactoryId": "",
-      "candidateValueEncoding": "fixture-v1",
+      "candidateValueEncoding": "1",
       "freeTextModeEligible": false
     },
     {
@@ -3931,9 +3931,9 @@
         "active_global",
         "combined_global"
       ],
-      "atomKindToken": "string",
+      "atomKindToken": "int32",
       "minimumRowFactoryId": "",
-      "candidateValueEncoding": "fixture-v1",
+      "candidateValueEncoding": "1",
       "freeTextModeEligible": false
     },
     {
@@ -3979,9 +3979,9 @@
         "active_global",
         "combined_global"
       ],
-      "atomKindToken": "string",
+      "atomKindToken": "int32",
       "minimumRowFactoryId": "",
-      "candidateValueEncoding": "fixture-v1",
+      "candidateValueEncoding": "1",
       "freeTextModeEligible": false
     },
     {
@@ -4567,9 +4567,9 @@
         "active_global",
         "combined_global"
       ],
-      "atomKindToken": "string",
+      "atomKindToken": "int32",
       "minimumRowFactoryId": "",
-      "candidateValueEncoding": "fixture-v1",
+      "candidateValueEncoding": "1",
       "freeTextModeEligible": false
     },
     {
@@ -5410,7 +5410,7 @@
       "atomKindToken": "string",
       "minimumRowFactoryId": "",
       "candidateValueEncoding": "fixture-v1",
-      "freeTextModeEligible": true
+      "freeTextModeEligible": false
     },
     {
       "pathOrdinal": 364,
@@ -5449,7 +5449,7 @@
         "active_global",
         "combined_global"
       ],
-      "atomKindToken": "row",
+      "atomKindToken": "nullable_row",
       "minimumRowFactoryId": "memory-min-row-savedfrozenpromptvariantv1-receiptplan-v1",
       "candidateValueEncoding": "1",
       "freeTextModeEligible": false

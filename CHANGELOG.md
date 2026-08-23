@@ -6,6 +6,10 @@ Companion: [repowiki/README.md](repowiki/README.md) describes the current state.
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-08-23
+
+- **Memory M0 contract hardening.** Canonical identities, stream routes, payload atoms, consumer declarations, and provisional-cap evidence now reject the reviewed invalid states and execute every declared pure scenario coordinate.
+
 ## 2026-08-20
 
 - **Provider-aware API setup.** Selecting a supported protocol now applies its recommended authentication format automatically, including Gemini's `x-goog-api-key` header.

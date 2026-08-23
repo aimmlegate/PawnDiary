@@ -30,6 +30,19 @@ namespace PawnDiary
         public const string SubjectFaction = "faction";
         public const string SubjectStream = "stream";
 
+        // Stream identities are saved tokens, not free-form Def data. Keeping the complete M0
+        // allowlist here lets pure route/root validation reject a typo before it becomes identity.
+        public const string StreamBodyHistory = "body_history";
+        public const string StreamColonyMembership = "colony_membership";
+        public const string StreamGrowth = "growth";
+        public const string StreamBelief = "belief";
+        public const string StreamIdeologyRole = "ideology_role";
+        public const string StreamRoyalTitle = "royal_title";
+        public const string StreamPsylink = "psylink";
+        public const string StreamGeneticIdentity = "genetic_identity";
+        public const string StreamMechlink = "mechlink";
+        public const string StreamPersonaBond = "persona_bond";
+
         public const string SummaryRoleNone = "none";
         public const string SummaryRoleRolling = "rolling";
         public const string SummaryRoleClosed = "closed";
@@ -61,6 +74,46 @@ namespace PawnDiary
         public static bool IsKnownRootSubjectKind(string value)
         {
             return value == SubjectPawn || value == SubjectFaction || value == SubjectStream;
+        }
+
+        /// <summary>Returns the declaration-order closed set of continuing stream identities.</summary>
+        public static List<string> StreamSubjectTokens()
+        {
+            return new List<string>
+            {
+                StreamBodyHistory,
+                StreamColonyMembership,
+                StreamGrowth,
+                StreamBelief,
+                StreamIdeologyRole,
+                StreamRoyalTitle,
+                StreamPsylink,
+                StreamGeneticIdentity,
+                StreamMechlink,
+                StreamPersonaBond
+            };
+        }
+
+        /// <summary>True only for one exact allowlisted continuing-stream token.</summary>
+        public static bool IsKnownStreamSubjectToken(string value)
+        {
+            return value == StreamBodyHistory
+                || value == StreamColonyMembership
+                || value == StreamGrowth
+                || value == StreamBelief
+                || value == StreamIdeologyRole
+                || value == StreamRoyalTitle
+                || value == StreamPsylink
+                || value == StreamGeneticIdentity
+                || value == StreamMechlink
+                || value == StreamPersonaBond;
+        }
+
+        /// <summary>True only for a known kind paired with a legal exact subject identity.</summary>
+        public static bool IsValidRootSubject(string subjectKind, string subjectId)
+        {
+            return IsKnownRootSubjectKind(subjectKind)
+                && (subjectKind != SubjectStream || IsKnownStreamSubjectToken(subjectId));
         }
 
         /// <summary>True only for an explicitly saved Summary role.</summary>

@@ -162,7 +162,9 @@ namespace PawnDiary
             if (identity == null
                 || !IsRequiredRaw(identity.ownerPawnId)
                 || !IsCanonicalEpochToken(identity.ownerEpochToken)
-                || !MemoryContractTokens.IsKnownRootSubjectKind(identity.primarySubjectKind)
+                || !MemoryContractTokens.IsValidRootSubject(
+                    identity.primarySubjectKind,
+                    identity.primarySubjectId)
                 || !IsRequiredComposite(identity.primarySubjectId)
                 || (identity.primarySubjectKind == MemoryContractTokens.SubjectPawn
                     && string.Equals(
@@ -296,7 +298,10 @@ namespace PawnDiary
         {
             chapterId = string.Empty;
             MemoryRootIdentity ignored;
-            if (chapterOrdinal < 0 || !TryParseRootId(rootId, out ignored))
+            if (chapterOrdinal <= 0
+                || string.IsNullOrEmpty(rootId)
+                || rootId.Length > MaximumEmbeddedCompositeCharacters
+                || !TryParseRootId(rootId, out ignored))
             {
                 return false;
             }
@@ -330,7 +335,8 @@ namespace PawnDiary
                     },
                     out values)
                 || values[0] != ChapterDomain
-                || !TryParseCanonicalNonnegativeInt64(values[2], out chapterOrdinal))
+                || !TryParseCanonicalNonnegativeInt64(values[2], out chapterOrdinal)
+                || chapterOrdinal <= 0)
             {
                 return false;
             }
@@ -424,7 +430,9 @@ namespace PawnDiary
                 ?? Enumerable.Empty<MemoryTypedSubject>())
             {
                 if (subject == null
-                    || !MemoryContractTokens.IsKnownRootSubjectKind(subject.subjectKind)
+                    || !MemoryContractTokens.IsValidRootSubject(
+                        subject.subjectKind,
+                        subject.subjectId)
                     || !IsRequiredComposite(subject.subjectId))
                 {
                     return false;
@@ -617,7 +625,10 @@ namespace PawnDiary
                 canMutate = true,
                 outcomeToken = MemoryEpochAllocationPlan.Fallback,
                 epochToken = epochToken,
-                nextSequence = request.lastIssuedSequence,
+                // A nonempty fallback chain permanently saturates the numeric allocator. Publishing
+                // long.MaxValue with the chain prevents a corrupt-low high-water from re-entering
+                // normal allocation after reload (T6.9).
+                nextSequence = long.MaxValue,
                 nextFallbackChain = nextChain,
                 repairedFallbackChain = repaired,
                 probeOrdinal = chosenProbe,
@@ -637,7 +648,8 @@ namespace PawnDiary
                     new[] { MaximumRawIdentityCharacters, MaximumRawIdentityCharacters },
                     out values)
                 && values[0] == EpochDomain
-                && TryParseCanonicalNonnegativeInt64(values[1], out numeric))
+                && TryParseCanonicalNonnegativeInt64(values[1], out numeric)
+                && numeric > 0)
             {
                 return true;
             }
@@ -1279,7 +1291,7 @@ namespace PawnDiary
             summaryId = string.Empty;
             string rootId;
             if (!TryCreateRootId(identity, out rootId)
-                || (chapterOrdinal.HasValue && chapterOrdinal.Value < 0))
+                || (chapterOrdinal.HasValue && chapterOrdinal.Value <= 0))
             {
                 return false;
             }

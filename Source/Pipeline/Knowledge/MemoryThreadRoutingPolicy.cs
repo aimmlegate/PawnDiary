@@ -58,12 +58,19 @@ namespace PawnDiary
     {
         public string consumerId = string.Empty;
         public List<string> eligibleSubjectKinds = new List<string>();
+        public List<string> eligibleWritingFormats = new List<string>();
         public bool allowsStandalone;
         public bool requiresCurrentStateRendering;
         public int fullMaximumLines;
         public int balancedMaximumLines;
         public int compactMaximumLines;
         public int offMaximumLines;
+        public string characterCapDimensionToken = string.Empty;
+        public bool requiresOwnerMatch;
+        public bool requiresEpochMatch;
+        public bool requiresCategoryEnabled;
+        public bool honorsSuppression;
+        public bool excludesCurrentEvent;
         public string usagePurposeToken = string.Empty;
         public bool createsExtraProviderRequest;
         public bool appliesCommonExclusionContract;
@@ -94,7 +101,11 @@ namespace PawnDiary
 
             if (!MemoryContractTokens.IsKnownRootSubjectKind(route.subjectKind)
                 || route.equivalentExtractors == null
-                || route.equivalentExtractors.Count == 0)
+                || route.equivalentExtractors.Count == 0
+                || (route.subjectKind == MemoryContractTokens.SubjectStream
+                    && route.equivalentExtractors.Any(extractor =>
+                        extractor == null
+                        || !IsKnownStreamExtractor(extractor.extractorToken))))
             {
                 return Standalone(StandaloneMissingIdentity);
             }
@@ -110,8 +121,8 @@ namespace PawnDiary
                 }
             }
 
-            Dictionary<string, MemoryRouteCandidate> distinct =
-                new Dictionary<string, MemoryRouteCandidate>(StringComparer.Ordinal);
+            HashSet<string> distinct = new HashSet<string>(StringComparer.Ordinal);
+            List<MemoryRouteCandidate> matching = new List<MemoryRouteCandidate>();
             foreach (MemoryRouteCandidate candidate in candidates
                 ?? Enumerable.Empty<MemoryRouteCandidate>())
             {
@@ -127,17 +138,18 @@ namespace PawnDiary
                     || string.IsNullOrWhiteSpace(candidate.subjectId)
                     || candidate.subjectId.Length
                         > MemoryIdentityCodec.MaximumEmbeddedCompositeCharacters
-                    || !MemoryIdentityCodec.IsWellFormedUtf16(candidate.subjectId))
+                    || !MemoryIdentityCodec.IsWellFormedUtf16(candidate.subjectId)
+                    || !MemoryContractTokens.IsValidRootSubject(
+                        candidate.subjectKind,
+                        candidate.subjectId))
                 {
                     return Standalone(StandaloneMissingIdentity);
                 }
 
                 string pair = OrdinalSegmentCodec.Segment(candidate.subjectKind)
                     + OrdinalSegmentCodec.Segment(candidate.subjectId);
-                if (!distinct.ContainsKey(pair))
-                {
-                    distinct.Add(pair, candidate);
-                }
+                distinct.Add(pair);
+                matching.Add(candidate);
             }
 
             if (distinct.Count == 0)
@@ -150,7 +162,21 @@ namespace PawnDiary
                 return Standalone(StandaloneAmbiguousIdentity);
             }
 
-            MemoryRouteCandidate selected = distinct.Values.First();
+            // Equivalent extractors are ordered fallbacks. Candidate collection order is an adapter
+            // detail, so choose the first declared extractor that resolved the sole exact identity.
+            MemoryRouteCandidate selected = null;
+            foreach (MemoryRouteExtractor extractor in route.equivalentExtractors)
+            {
+                selected = matching
+                    .Where(candidate => string.Equals(
+                        candidate.extractorToken,
+                        extractor.extractorToken,
+                        StringComparison.Ordinal))
+                    .OrderBy(candidate => candidate.frozenLabel ?? string.Empty, StringComparer.Ordinal)
+                    .FirstOrDefault();
+                if (selected != null) break;
+            }
+            if (selected == null) return Standalone(StandaloneMissingIdentity);
             if (route.subjectKind == MemoryContractTokens.SubjectPawn
                 && string.Equals(ownerPawnId, selected.subjectId, StringComparison.Ordinal))
             {
@@ -230,10 +256,7 @@ namespace PawnDiary
                         fact.aggregationToken,
                         fact.canonicalValueKind)))
                 return "memory_contract_invalid_fact";
-            if (rule.threadRoute != null
-                && (!MemoryContractTokens.IsKnownRootSubjectKind(rule.threadRoute.subjectKind)
-                    || rule.threadRoute.equivalentExtractors == null
-                    || rule.threadRoute.equivalentExtractors.Count == 0))
+            if (rule.threadRoute != null && !IsValidThreadRoute(rule.threadRoute))
                 return "memory_contract_invalid_route";
             if (rule.promptConsumerIds == null || rule.promptConsumerIds.Count == 0
                 || rule.promptConsumerIds.Any(id => MemoryRecallConsumerRegistry.Find(id) == null))
@@ -244,6 +267,46 @@ namespace PawnDiary
         private static MemoryRouteResolution Standalone(string reason)
         {
             return new MemoryRouteResolution { reasonToken = reason };
+        }
+
+        private static bool IsValidThreadRoute(MemoryThreadRouteRule route)
+        {
+            if (route == null
+                || !MemoryContractTokens.IsKnownRootSubjectKind(route.subjectKind)
+                || route.equivalentExtractors == null
+                || route.equivalentExtractors.Count == 0)
+            {
+                return false;
+            }
+
+            HashSet<string> tokens = new HashSet<string>(StringComparer.Ordinal);
+            foreach (MemoryRouteExtractor extractor in route.equivalentExtractors)
+            {
+                if (extractor == null
+                    || string.IsNullOrWhiteSpace(extractor.extractorToken)
+                    || !tokens.Add(extractor.extractorToken))
+                {
+                    return false;
+                }
+
+                if (route.subjectKind == MemoryContractTokens.SubjectStream)
+                {
+                    if (!IsKnownStreamExtractor(extractor.extractorToken))
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        private static bool IsKnownStreamExtractor(string extractorToken)
+        {
+            const string constantPrefix = "constant:";
+            return !string.IsNullOrEmpty(extractorToken)
+                && extractorToken.StartsWith(constantPrefix, StringComparison.Ordinal)
+                && MemoryContractTokens.IsKnownStreamSubjectToken(
+                    extractorToken.Substring(constantPrefix.Length));
         }
 
         private static bool TryParseCanonicalInt64(string value, out long parsed)
@@ -301,13 +364,20 @@ namespace PawnDiary
         {
             return new List<MemoryRecallConsumerContract>
             {
-                Entry(OrdinaryDiary, true, true, 2, 1, 0, 0, "normal_diary", false),
-                Entry(ExistingReflection, true, true, 2, 1, 0, 0, "reflection", false),
-                Entry(NarrativeArc, true, true, 2, 1, 0, 0, "arc", false),
-                Entry(Comparison, true, true, 2, 1, 0, 0, "comparison", false),
-                Entry(Anniversary, true, true, 2, 1, 0, 0, "anniversary", false),
-                Entry(QuietMemory, true, true, 2, 1, 0, 0, "quiet_memory", true),
-                Entry(SummaryWording, false, false, 0, 0, 0, 0, "summary_wording", true)
+                Entry(OrdinaryDiary, true, true, 2, 1, 0, 0,
+                    "blockWordingUnits", true, "normal_diary", false),
+                Entry(ExistingReflection, true, true, 2, 1, 0, 0,
+                    "blockWordingUnits", true, "reflection", false),
+                Entry(NarrativeArc, true, true, 2, 1, 0, 0,
+                    "blockWordingUnits", true, "arc", false),
+                Entry(Comparison, true, true, 2, 1, 0, 0,
+                    "blockWordingUnits", true, "comparison", false),
+                Entry(Anniversary, true, true, 2, 1, 0, 0,
+                    "blockWordingUnits", true, "anniversary", false),
+                Entry(QuietMemory, true, true, 2, 1, 0, 0,
+                    "blockWordingUnits", true, "quiet_memory", true),
+                Entry(SummaryWording, false, false, 0, 0, 0, 0,
+                    "summaryOptionalLlmWordingUnits", false, "summary_wording", true)
             };
         }
 
@@ -319,6 +389,8 @@ namespace PawnDiary
             int balanced,
             int compact,
             int off,
+            string characterCapDimension,
+            bool currentEventExclusion,
             string purpose,
             bool extraRequest)
         {
@@ -331,12 +403,21 @@ namespace PawnDiary
                     MemoryContractTokens.SubjectFaction,
                     MemoryContractTokens.SubjectStream
                 },
+                eligibleWritingFormats = full > 0 || balanced > 0
+                    ? new List<string> { "Full", "Balanced" }
+                    : new List<string>(),
                 allowsStandalone = standalone,
                 requiresCurrentStateRendering = currentState,
                 fullMaximumLines = full,
                 balancedMaximumLines = balanced,
                 compactMaximumLines = compact,
                 offMaximumLines = off,
+                characterCapDimensionToken = characterCapDimension,
+                requiresOwnerMatch = true,
+                requiresEpochMatch = true,
+                requiresCategoryEnabled = true,
+                honorsSuppression = true,
+                excludesCurrentEvent = currentEventExclusion,
                 usagePurposeToken = purpose,
                 createsExtraProviderRequest = extraRequest,
                 appliesCommonExclusionContract = true
@@ -349,12 +430,19 @@ namespace PawnDiary
             {
                 consumerId = source.consumerId,
                 eligibleSubjectKinds = new List<string>(source.eligibleSubjectKinds),
+                eligibleWritingFormats = new List<string>(source.eligibleWritingFormats),
                 allowsStandalone = source.allowsStandalone,
                 requiresCurrentStateRendering = source.requiresCurrentStateRendering,
                 fullMaximumLines = source.fullMaximumLines,
                 balancedMaximumLines = source.balancedMaximumLines,
                 compactMaximumLines = source.compactMaximumLines,
                 offMaximumLines = source.offMaximumLines,
+                characterCapDimensionToken = source.characterCapDimensionToken,
+                requiresOwnerMatch = source.requiresOwnerMatch,
+                requiresEpochMatch = source.requiresEpochMatch,
+                requiresCategoryEnabled = source.requiresCategoryEnabled,
+                honorsSuppression = source.honorsSuppression,
+                excludesCurrentEvent = source.excludesCurrentEvent,
                 usagePurposeToken = source.usagePurposeToken,
                 createsExtraProviderRequest = source.createsExtraProviderRequest,
                 appliesCommonExclusionContract = source.appliesCommonExclusionContract

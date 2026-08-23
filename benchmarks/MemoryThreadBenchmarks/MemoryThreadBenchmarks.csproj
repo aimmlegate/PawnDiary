@@ -11,6 +11,8 @@
   <ItemGroup>
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryThreadContracts.cs" Link="MemoryThreadContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryIdentityCodec.cs" Link="MemoryIdentityCodec.cs" />
+    <Compile Include="..\..\Source\Pipeline\Knowledge\KnowledgeContracts.cs" Link="KnowledgeContracts.cs" />
+    <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryThreadRoutingPolicy.cs" Link="MemoryThreadRoutingPolicy.cs" />
   </ItemGroup>
 
   <ItemGroup>

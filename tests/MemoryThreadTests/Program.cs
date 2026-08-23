@@ -149,6 +149,11 @@ namespace MemoryThreadTests
             AssertTrue("tokens.root.pawn", MemoryContractTokens.IsKnownRootSubjectKind("pawn"));
             AssertTrue("tokens.root.family-not-kind",
                 !MemoryContractTokens.IsKnownRootSubjectKind("family"));
+            AssertEqual("tokens.stream.count", 10, MemoryContractTokens.StreamSubjectTokens().Count);
+            AssertTrue("tokens.stream.body",
+                MemoryContractTokens.IsKnownStreamSubjectToken("body_history"));
+            AssertTrue("tokens.stream.unknown",
+                !MemoryContractTokens.IsKnownStreamSubjectToken("body-history"));
             AssertTrue("tokens.summary.rolling",
                 MemoryContractTokens.IsKnownSummaryRole("rolling"));
             AssertTrue("tokens.summary.future",
@@ -207,7 +212,7 @@ namespace MemoryThreadTests
                 && changedEpoch != rootId);
             AssertTrue("root.kind.distinguishes",
                 MemoryIdentityCodec.TryCreateRootId(
-                    Root("Pawn_A", Epoch(1), "stream", "Pawn_B"), out changedKind)
+                    Root("Pawn_A", Epoch(1), "stream", "body_history"), out changedKind)
                 && changedKind != rootId);
             AssertTrue("root.subject.distinguishes",
                 MemoryIdentityCodec.TryCreateRootId(
@@ -223,8 +228,10 @@ namespace MemoryThreadTests
                 Root(new string('a', MemoryIdentityCodec.MaximumRawIdentityCharacters + 1),
                     Epoch(1), "pawn", "Pawn_B"));
             AssertRejectsRoot("root.composite-cap+1",
-                Root("Pawn_A", Epoch(1), "stream",
+                Root("Pawn_A", Epoch(1), "pawn",
                     new string('s', MemoryIdentityCodec.MaximumEmbeddedCompositeCharacters + 1)));
+            AssertRejectsRoot("root.stream-not-allowlisted",
+                Root("Pawn_A", Epoch(1), "stream", "invented_stream"));
 
             AssertTrue("root.trailing.reject",
                 !MemoryIdentityCodec.TryParseRootId(rootId + "1:x", out parsed));
@@ -295,6 +302,18 @@ namespace MemoryThreadTests
             AssertEqual("chapter.parse.ordinal", 12L, ordinal);
             AssertTrue("chapter.negative.reject",
                 !MemoryIdentityCodec.TryCreateChapterId(rootId, -1, out chapterId));
+            AssertTrue("chapter.zero.reject",
+                !MemoryIdentityCodec.TryCreateChapterId(rootId, 0, out chapterId));
+            string oversizedEmbeddedRoot;
+            AssertTrue("chapter.oversized-root-fixture",
+                MemoryIdentityCodec.TryCreateRootId(
+                    Root("Pawn_A", Epoch(1), "pawn",
+                        new string('s', MemoryIdentityCodec.MaximumEmbeddedCompositeCharacters)),
+                    out oversizedEmbeddedRoot)
+                && oversizedEmbeddedRoot.Length
+                    > MemoryIdentityCodec.MaximumEmbeddedCompositeCharacters);
+            AssertTrue("chapter.oversized-embedded-root.reject",
+                !MemoryIdentityCodec.TryCreateChapterId(oversizedEmbeddedRoot, 1, out chapterId));
             AssertTrue("chapter.noncanonical-number.reject",
                 !MemoryIdentityCodec.TryParseChapterId(
                     OrdinalSegmentCodec.Segment("memory-chapter-v1")
@@ -332,6 +351,8 @@ namespace MemoryThreadTests
             AssertContains("summary.closed.domain", closed, "memory-summary-closed-v1");
             AssertTrue("summary.closed.negative",
                 !MemoryIdentityCodec.TryCreateClosedSummaryId(root, -1, out closed));
+            AssertTrue("summary.closed.zero",
+                !MemoryIdentityCodec.TryCreateClosedSummaryId(root, 0, out closed));
         }
 
         private static void TestSourceOccurrenceFallback()
@@ -400,6 +421,9 @@ namespace MemoryThreadTests
             AssertTrue("epoch.normal.leading-zero.reject",
                 !MemoryIdentityCodec.TryValidateEpochToken(
                     "15:memory-epoch-v12:01", out isFallback));
+            AssertTrue("epoch.normal.zero.reject",
+                !MemoryIdentityCodec.TryValidateEpochToken(
+                    "15:memory-epoch-v11:0", out isFallback));
 
             MemoryEpochAllocationRequest saturated = new MemoryEpochAllocationRequest
             {
@@ -483,6 +507,19 @@ namespace MemoryThreadTests
             emptyChainWithFallback.isTargetBrainwipe = true;
             AssertTrue("epoch.empty-chain.live-fallback.brainwipe",
                 MemoryIdentityCodec.PlanEpochAllocation(emptyChainWithFallback).canMutate);
+
+            MemoryEpochAllocationPlan corruptLowWithValidChain =
+                MemoryIdentityCodec.PlanEpochAllocation(new MemoryEpochAllocationRequest
+                {
+                    ownerPawnId = "Pawn_A",
+                    lastIssuedSequence = 7,
+                    fallbackChain = new string('0', 64)
+                });
+            AssertTrue("epoch.valid-chain.corrupt-low.mutates",
+                corruptLowWithValidChain.canMutate);
+            AssertEqual("epoch.valid-chain.raises-high-water",
+                long.MaxValue,
+                corruptLowWithValidChain.nextSequence);
         }
 
         private static void TestSyntheticAndRepairIdentity()
@@ -814,6 +851,36 @@ namespace MemoryThreadTests
             AssertEqual("route.absent.standalone",
                 MemoryThreadRoutingPolicy.StandaloneNoRoute, resolved.reasonToken);
 
+            MemoryThreadRouteRule orderedFallbacks = Route(
+                "pawn", "context:primary", "context:fallback");
+            resolved = MemoryThreadRoutingPolicy.Resolve("Pawn_A", orderedFallbacks, new[]
+            {
+                Candidate("context:fallback", "pawn", "Pawn_B", "Fallback label"),
+                Candidate("context:primary", "pawn", "Pawn_B", "Primary label")
+            });
+            AssertEqual("route.equivalent.declaration-order",
+                "Primary label", resolved.frozenLabel);
+            resolved = MemoryThreadRoutingPolicy.Resolve("Pawn_A", orderedFallbacks, new[]
+            {
+                Candidate("context:primary", "pawn", "Pawn_B", "Primary label"),
+                Candidate("context:fallback", "pawn", "Pawn_B", "Fallback label")
+            });
+            AssertEqual("route.equivalent.input-permutation",
+                "Primary label", resolved.frozenLabel);
+
+            MemoryThreadRouteRule streamRoute = Route("stream", "constant:body_history");
+            resolved = MemoryThreadRoutingPolicy.Resolve("Pawn_A", streamRoute, new[]
+            {
+                Candidate("constant:body_history", "stream", "body_history", "Body")
+            });
+            AssertTrue("route.stream.allowlisted", resolved.isThreaded);
+            resolved = MemoryThreadRoutingPolicy.Resolve("Pawn_A", streamRoute, new[]
+            {
+                Candidate("constant:body_history", "stream", "invented_stream", "Body")
+            });
+            AssertEqual("route.stream.unknown.standalone",
+                MemoryThreadRoutingPolicy.StandaloneMissingIdentity, resolved.reasonToken);
+
             // Relationship phase/label are not root fields: every phase about the same exact pawn
             // creates the byte-identical root, while equal labels on distinct IDs do not collide.
             string spouse;
@@ -944,6 +1011,18 @@ namespace MemoryThreadTests
                     MemoryThreadRoutingPolicy.ValidateRuleContract(rule));
             }
             AssertEqual("xml.capture.standalone", 1, standalone);
+            List<string> shippedStreamTokens = defs
+                .Select(def => def.Element("threadRoute"))
+                .Where(route => route != null && Text(route, "subjectKind") == "stream")
+                .SelectMany(route => route.Element("equivalentExtractors").Elements("li"))
+                .Select(row => row.Value.Substring("constant:".Length))
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(value => value, StringComparer.Ordinal)
+                .ToList();
+            AssertEqual("xml.stream.allowlist.parity",
+                string.Join("/", MemoryContractTokens.StreamSubjectTokens()
+                    .OrderBy(value => value, StringComparer.Ordinal)),
+                string.Join("/", shippedStreamTokens));
 
             List<MemoryRecallConsumerContract> consumers = MemoryRecallConsumerRegistry.All();
             AssertEqual("consumer.count", 7, consumers.Count);
@@ -955,6 +1034,29 @@ namespace MemoryThreadTests
                     consumer.appliesCommonExclusionContract);
                 AssertEqual("consumer.compact.zero." + consumer.consumerId, 0, consumer.compactMaximumLines);
                 AssertEqual("consumer.off.zero." + consumer.consumerId, 0, consumer.offMaximumLines);
+                AssertTrue("consumer.character-cap." + consumer.consumerId,
+                    !string.IsNullOrEmpty(consumer.characterCapDimensionToken));
+                AssertTrue("consumer.owner-check." + consumer.consumerId,
+                    consumer.requiresOwnerMatch);
+                AssertTrue("consumer.epoch-check." + consumer.consumerId,
+                    consumer.requiresEpochMatch);
+                AssertTrue("consumer.category-check." + consumer.consumerId,
+                    consumer.requiresCategoryEnabled);
+                AssertTrue("consumer.suppression-check." + consumer.consumerId,
+                    consumer.honorsSuppression);
+                if (consumer.consumerId == MemoryRecallConsumerRegistry.SummaryWording)
+                {
+                    AssertEqual("consumer.summary.formats", 0, consumer.eligibleWritingFormats.Count);
+                    AssertTrue("consumer.summary.current-event-not-applicable",
+                        !consumer.excludesCurrentEvent);
+                }
+                else
+                {
+                    AssertEqual("consumer.writing.formats." + consumer.consumerId,
+                        "Full/Balanced", string.Join("/", consumer.eligibleWritingFormats));
+                    AssertTrue("consumer.current-event." + consumer.consumerId,
+                        consumer.excludesCurrentEvent);
+                }
             }
 
             XDocument tuning = XDocument.Load(Path.Combine(root, "1.6", "Defs", "DiaryKnowledgeTuningDef.xml"));
@@ -1085,6 +1187,40 @@ namespace MemoryThreadTests
                     atomKinds["SavedFrozenPromptVariantV1.variantOrdinal"]);
                 AssertEqual("catalog.payload.kind.reflection-quiet-day", "int32",
                     atomKinds["PawnReflectionStateMemoryFields.lastQuietMemoryEvaluatedAbsoluteDay"]);
+                foreach (string path in new[]
+                {
+                    "SavedMemoryAttemptAuditRow.attemptOrdinal",
+                    "DiaryGameComponentMemory.memoryComponentSchemaVersion",
+                    "DiaryGameComponentMemory.memoryCoordinatorSchemaVersion",
+                    "DiaryGameComponentMemory.memoryDispatchSchemaVersion"
+                })
+                {
+                    AssertEqual("catalog.payload.kind.int32." + path, "int32", atomKinds[path]);
+                }
+                foreach (string path in new[]
+                {
+                    "SavedMemoryBlock.primarySubject",
+                    "SavedImportedMemoryRow.primarySubject",
+                    "SavedFrozenPromptVariantV1.receiptPlan",
+                    "SavedLegacyUnresolvedOwnerArchiveInputV1.legacyRecord"
+                })
+                {
+                    AssertEqual("catalog.payload.kind.nullable-row." + path,
+                        "nullable_row", atomKinds[path]);
+                }
+                Dictionary<string, bool> freeText = atoms.ToDictionary(
+                    atom => atom.GetProperty("canonicalFieldPath").GetString(),
+                    atom => atom.GetProperty("freeTextModeEligible").GetBoolean(),
+                    StringComparer.Ordinal);
+                foreach (string path in new[]
+                {
+                    "SavedMemorySummaryPayload.lastSettledWordingFingerprint",
+                    "SavedMemorySummaryPayload.lastWordingDispositionToken",
+                    "SavedFrozenPromptVariantV1.contextDetailIdentity"
+                })
+                {
+                    AssertTrue("catalog.payload.not-free-text." + path, !freeText[path]);
+                }
             }
         }
 

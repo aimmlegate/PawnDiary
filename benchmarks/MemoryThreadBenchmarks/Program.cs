@@ -21,6 +21,7 @@ namespace MemoryThreadBenchmarks
         private const string BenchmarkSchema = "memory-system-benchmark-v1";
         private const string VectorHeader = "memory-system-vector-v1";
         private static volatile int timingSink;
+        private static object allocationSink;
 
         private sealed class Dimension
         {
@@ -35,6 +36,7 @@ namespace MemoryThreadBenchmarks
             public string encoding;
             public string vectorId;
             public ulong[] numericCoordinates;
+            public int complexityScore;
             public int vectorOrdinal;
             public ulong surrogateCombinedBytes;
             public ulong ownerTypicalBytes;
@@ -43,6 +45,7 @@ namespace MemoryThreadBenchmarks
             public long pureAllocationTieBreakBytes;
             public bool feasible;
             public string rejection = string.Empty;
+            public List<CoordinateEvaluation> coordinates = new List<CoordinateEvaluation>();
         }
 
         private sealed class Catalog
@@ -73,6 +76,76 @@ namespace MemoryThreadBenchmarks
             public int typeCount;
             public int atomCount;
             public Dictionary<string, ulong> minimumSchemaLogicalBytes;
+            public List<PayloadAtom> atoms;
+            public Dictionary<string, Dictionary<string, ulong>> typeBytesByMode;
+        }
+
+        private sealed class PayloadAtom
+        {
+            public string path;
+            public string kind;
+            public HashSet<string> scopes;
+            public Dictionary<string, ulong> bytesByMode;
+        }
+
+        private sealed class LogicalAtom
+        {
+            public string path;
+            public ulong bytes;
+        }
+
+        private sealed class FillResult
+        {
+            public ulong admittedBytes;
+            public ulong admittedSchemaCycles;
+            public ulong visitedAtoms;
+            public string firstRefusedPath = string.Empty;
+        }
+
+        private sealed class CoordinateEvaluation
+        {
+            public int threadTarget;
+            public string textMode;
+            public ulong combinedBytes;
+            public ulong ownerWorstBytes;
+            public ulong ownerTypicalBytes;
+            public FillResult combinedFill;
+            public StatisticalMeasurement time;
+            public StatisticalMeasurement allocation;
+        }
+
+        private sealed class SyntheticScenario
+        {
+            public string scenarioId;
+            public string expectedGate;
+            public List<string> coordinates;
+        }
+
+        private sealed class ScenarioAudit
+        {
+            public string scenarioId;
+            public string expectedGate;
+            public long evaluatedCells;
+            public long passedCells;
+            public StringBuilder resultEncoding = new StringBuilder();
+
+            public string Fingerprint()
+            {
+                return HashTuple(
+                    "memory-m0-scenario-results-v1",
+                    scenarioId,
+                    expectedGate,
+                    evaluatedCells.ToString(CultureInfo.InvariantCulture),
+                    passedCells.ToString(CultureInfo.InvariantCulture),
+                    resultEncoding.ToString());
+            }
+        }
+
+        private sealed class WorkInput
+        {
+            public int iterations;
+            public int allocationBytes;
+            public int seed;
         }
 
         private sealed class ManifestEntry
@@ -99,14 +172,17 @@ namespace MemoryThreadBenchmarks
             string root = RepoRoot();
             Catalog catalog = LoadCatalog(root);
             List<FixedRow> fixedRows = LoadFixedRows(root);
+            List<SyntheticScenario> scenarios = LoadSyntheticScenarios(root);
             PayloadAtomAudit payloadAtomAudit = ValidatePayloadAtomCatalog(root);
             ValidateCatalog(catalog);
             ValidateTimingConversionGoldens();
+            ValidateCanonicalUtf8HashGoldens();
             List<Candidate> candidates = GenerateCandidates(catalog);
             ValidateCodeFallback(catalog, candidates);
-            StatisticalMeasurement sharedTime = MeasureSharedDefensiveMicroseconds();
-            StatisticalMeasurement sharedAllocation = MeasureSharedAllocationBytes();
-            Evaluate(candidates, sharedTime.maximum, checked((long)sharedAllocation.maximum));
+            Dictionary<string, ScenarioAudit> scenarioAudits = Evaluate(
+                candidates,
+                scenarios,
+                payloadAtomAudit);
             Candidate selected = Select(candidates);
             ManifestAudit manifestAudit = BuildAndValidateManifestAudit(
                 catalog, fixedRows, candidates, selected);
@@ -129,7 +205,7 @@ namespace MemoryThreadBenchmarks
             }
 
             EnsureCleanRepository(root);
-            WriteEvidence(root, catalog, candidates, selected, sharedTime, sharedAllocation,
+            WriteEvidence(root, catalog, candidates, selected, scenarios, scenarioAudits,
                 manifestAudit, payloadAtomAudit);
             return 0;
         }
@@ -203,6 +279,45 @@ namespace MemoryThreadBenchmarks
             }
         }
 
+        private static List<SyntheticScenario> LoadSyntheticScenarios(string root)
+        {
+            string path = Path.Combine(root, "benchmarks", "MemoryThreadBenchmarks", "Catalog",
+                "memory-m0-fixture-catalog-v1.json");
+            using (JsonDocument document = JsonDocument.Parse(File.ReadAllText(path)))
+            {
+                List<SyntheticScenario> scenarios = document.RootElement
+                    .GetProperty("syntheticScenarios")
+                    .EnumerateArray()
+                    .Select(row => new SyntheticScenario
+                    {
+                        scenarioId = row.GetProperty("scenarioId").GetString(),
+                        expectedGate = row.GetProperty("expectedGate").GetString(),
+                        coordinates = row.GetProperty("coordinates").EnumerateArray()
+                            .Select(value => value.GetString()).ToList()
+                    }).ToList();
+                string[] expected =
+                {
+                    "worst-case-owner-v1",
+                    "exact-subject-collision-v1",
+                    "duplicate-root-v1",
+                    "summary-saturation-v1",
+                    "player-edited-saturation-v1",
+                    "global-faction-state-v1",
+                    "migration-overflow-v1"
+                };
+                if (scenarios.Count != expected.Length
+                    || !scenarios.Select(row => row.scenarioId).SequenceEqual(expected)
+                    || scenarios.Any(row => string.IsNullOrWhiteSpace(row.expectedGate)
+                        || row.coordinates == null
+                        || row.coordinates.Count == 0))
+                {
+                    throw new InvalidOperationException(
+                        "The executable synthetic-scenario registry drifted from the fixture catalog.");
+                }
+                return scenarios;
+            }
+        }
+
         private static PayloadAtomAudit ValidatePayloadAtomCatalog(string root)
         {
             string path = Path.Combine(root, "benchmarks", "MemoryThreadBenchmarks", "Catalog",
@@ -213,15 +328,41 @@ namespace MemoryThreadBenchmarks
                 if (value.GetProperty("schema").GetString()
                     != "memory-benchmark-payload-atom-catalog-v1")
                     throw new InvalidOperationException("Unexpected payload atom catalog schema.");
-                int typeCount = value.GetProperty("types").GetArrayLength();
+                List<string> typeNames = value.GetProperty("types").EnumerateArray()
+                    .Select(row => row.GetProperty("name").GetString()).ToList();
+                int typeCount = typeNames.Count;
                 List<JsonElement> atoms = value.GetProperty("atomRows").EnumerateArray().ToList();
                 if (typeCount <= 0 || atoms.Count <= 0)
                     throw new InvalidOperationException("Payload atom catalog is empty.");
-                Dictionary<string, ulong> totals = new Dictionary<string, ulong>(StringComparer.Ordinal);
-                foreach (string mode in new[]
+                HashSet<string> exactFreeTextPaths = new HashSet<string>(new[]
+                {
+                    "PawnKnowledgeState.playerBackground",
+                    "SavedMemoryThreadRoot.frozenSubjectLabel",
+                    "SavedMemoryBlock.automaticWording",
+                    "SavedMemoryBlock.playerWording",
+                    "SavedMemorySubjectRef.frozenLabel",
+                    "SavedMemorySummaryPayload.deterministicWording",
+                    "SavedMemorySummaryPayload.optionalLlmWording",
+                    "SavedImportedMemoryRow.importedWording",
+                    "SavedGlobalFactionSnapshot.frozenDisplayLabel",
+                    "SavedFrozenPromptVariantV1.systemPrompt",
+                    "SavedFrozenPromptVariantV1.userPrompt"
+                }, StringComparer.Ordinal);
+                UTF8Encoding strictUtf8 = new UTF8Encoding(false, true);
+                string[] modes =
                 {
                     "asciiByteBoundary", "utf8WorstPerUtf16Unit", "xmlEscapeWorstPerUtf16Unit"
-                })
+                };
+                Dictionary<string, ulong> totals = new Dictionary<string, ulong>(StringComparer.Ordinal);
+                Dictionary<string, Dictionary<string, ulong>> typeBytes = typeNames.ToDictionary(
+                    type => type,
+                    type => modes.ToDictionary(
+                        mode => mode,
+                        mode => checked((ulong)value.GetProperty("rowFramingBytes").GetInt32()),
+                        StringComparer.Ordinal),
+                    StringComparer.Ordinal);
+                List<PayloadAtom> parsedAtoms = new List<PayloadAtom>(atoms.Count);
+                foreach (string mode in modes)
                 {
                     ulong total = checked((ulong)typeCount
                         * checked((ulong)value.GetProperty("rowFramingBytes").GetInt32()));
@@ -247,11 +388,48 @@ namespace MemoryThreadBenchmarks
                                 textValue += mode == "asciiByteBoundary" ? "x"
                                     : mode == "utf8WorstPerUtf16Unit" ? "\uE000" : "&";
                             }
-                            atomBytes = checked(4UL + (ulong)new UTF8Encoding(false, true)
-                                .GetByteCount(textValue));
+                            atomBytes = checked(4UL + (ulong)strictUtf8.GetByteCount(textValue));
                         }
                         else throw new InvalidOperationException("Unknown payload atom kind: " + kind);
                         total = checked(total + atomBytes);
+                        string fieldPath = atom.GetProperty("canonicalFieldPath").GetString();
+                        string typeName = fieldPath.Substring(0, fieldPath.IndexOf('.'));
+                        typeBytes[typeName][mode] = checked(typeBytes[typeName][mode] + atomBytes);
+                        if (mode == modes[0])
+                        {
+                            bool freeText = atom.GetProperty("freeTextModeEligible").GetBoolean();
+                            if (freeText != exactFreeTextPaths.Contains(fieldPath))
+                                throw new InvalidOperationException(
+                                    "Payload free-text classification drifted: " + fieldPath);
+                            string candidate = atom.GetProperty("candidateValueEncoding").GetString()
+                                ?? string.Empty;
+                            int int32;
+                            long int64;
+                            if (kind == "int32" && (!int.TryParse(candidate,
+                                    NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out int32)
+                                || candidate != int32.ToString(CultureInfo.InvariantCulture)))
+                                throw new InvalidOperationException("Invalid int32 payload candidate: " + fieldPath);
+                            if (kind == "int64" && (!long.TryParse(candidate,
+                                    NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out int64)
+                                || candidate != int64.ToString(CultureInfo.InvariantCulture)))
+                                throw new InvalidOperationException("Invalid int64 payload candidate: " + fieldPath);
+                            if (kind == "bool" && candidate != "0" && candidate != "1")
+                                throw new InvalidOperationException("Invalid Boolean payload candidate: " + fieldPath);
+                            if ((kind == "list" || kind == "row" || kind == "nullable_row")
+                                && string.IsNullOrWhiteSpace(
+                                    atom.GetProperty("minimumRowFactoryId").GetString()))
+                                throw new InvalidOperationException("Payload row/list lacks a factory: " + fieldPath);
+                            parsedAtoms.Add(new PayloadAtom
+                            {
+                                path = fieldPath,
+                                kind = kind,
+                                scopes = new HashSet<string>(atom.GetProperty("scopeMask")
+                                    .EnumerateArray().Select(scope => scope.GetString()),
+                                    StringComparer.Ordinal),
+                                bytesByMode = new Dictionary<string, ulong>(StringComparer.Ordinal)
+                            });
+                        }
+                        parsedAtoms[index].bytesByMode[mode] = atomBytes;
                     }
                     totals.Add(mode, total);
                 }
@@ -259,7 +437,9 @@ namespace MemoryThreadBenchmarks
                 {
                     typeCount = typeCount,
                     atomCount = atoms.Count,
-                    minimumSchemaLogicalBytes = totals
+                    minimumSchemaLogicalBytes = totals,
+                    atoms = parsedAtoms,
+                    typeBytesByMode = typeBytes
                 };
             }
         }
@@ -356,7 +536,9 @@ namespace MemoryThreadBenchmarks
                     encoding = encoding,
                     vectorId = Sha256Hex(Encoding.UTF8.GetBytes(encoding)),
                     numericCoordinates = catalog.dimensions
-                        .SelectMany(row => ParseUnsignedTuple(values[row.name])).ToArray()
+                        .SelectMany(row => ParseUnsignedTuple(values[row.name])).ToArray(),
+                    complexityScore = catalog.dimensions.Sum(row =>
+                        row.values.IndexOf(values[row.name]))
                 };
                 target.Add(encoding, candidate);
             }
@@ -391,89 +573,404 @@ namespace MemoryThreadBenchmarks
                 && ParseOne(values, "importedGlobalRows") >= ParseOne(values, "importedUnknownRows");
         }
 
-        private static void Evaluate(List<Candidate> candidates, ulong sharedTime, long sharedAllocation)
+        private static Dictionary<string, ScenarioAudit> Evaluate(
+            List<Candidate> candidates,
+            List<SyntheticScenario> scenarios,
+            PayloadAtomAudit payload)
         {
+            Dictionary<string, ScenarioAudit> audits = scenarios.ToDictionary(
+                scenario => scenario.scenarioId,
+                scenario => new ScenarioAudit
+                {
+                    scenarioId = scenario.scenarioId,
+                    expectedGate = scenario.expectedGate
+                },
+                StringComparer.Ordinal);
+            string[] modes =
+            {
+                "asciiByteBoundary", "utf8WorstPerUtf16Unit", "xmlEscapeWorstPerUtf16Unit"
+            };
             foreach (Candidate candidate in candidates)
             {
-                ulong combined = ParseOne(candidate.values, "combinedGlobalBytes");
-                ulong ownerWorst = ParseOne(candidate.values, "combinedOwnerBytes");
-                ulong typical = 32768UL + 64UL * 128UL;
-                candidate.surrogateCombinedBytes = combined;
-                candidate.ownerWorstBytes = ownerWorst;
-                candidate.ownerTypicalBytes = typical;
-                candidate.pureMaxIndivisibleItemMicroseconds = sharedTime;
-                candidate.pureAllocationTieBreakBytes = sharedAllocation;
-                string syntheticFailure = ValidateSyntheticContractModel(candidate.values);
-                if (syntheticFailure.Length != 0) candidate.rejection = syntheticFailure;
-                else if (typical > 65536UL) candidate.rejection = "SURROGATE-OWNER-TYPICAL";
-                else if (ownerWorst > 524288UL) candidate.rejection = "SURROGATE-OWNER-WORST";
-                else if (combined > 16777216UL) candidate.rejection = "SURROGATE-GLOBAL";
-                else if (ParseOne(candidate.values, "sliceTargetMicroseconds") > 1000UL)
+                EstablishGcBaseline();
+                foreach (int threadTarget in new[] { 4, 12, 64 })
+                foreach (string mode in modes)
+                {
+                    List<LogicalAtom> combinedAtoms = ScopeTemplate(payload, "combined_global", mode);
+                    List<LogicalAtom> ownerAtoms = ScopeTemplate(payload, "combined_owner", mode);
+                    FillResult combined = RunFullSchemaFill(
+                        combinedAtoms,
+                        ParseOne(candidate.values, "combinedGlobalBytes"));
+                    FillResult owner = RunFullSchemaFill(
+                        ownerAtoms,
+                        ParseOne(candidate.values, "combinedOwnerBytes"));
+                    WorkInput work = BuildWorkInput(candidate, threadTarget, mode);
+                    StatisticalMeasurement time = MeasureCoordinateMicroseconds(work);
+                    StatisticalMeasurement allocation = MeasureCoordinateAllocationBytes(work);
+                    CoordinateEvaluation coordinate = new CoordinateEvaluation
+                    {
+                        threadTarget = threadTarget,
+                        textMode = mode,
+                        combinedBytes = combined.admittedBytes,
+                        ownerWorstBytes = owner.admittedBytes,
+                        ownerTypicalBytes = MeasureTypicalOwnerBytes(payload, threadTarget, mode),
+                        combinedFill = combined,
+                        time = time,
+                        allocation = allocation
+                    };
+                    candidate.coordinates.Add(coordinate);
+
+                    string commonFailure = ValidateCommonContractCells(
+                        candidate.values, threadTarget, combined, owner);
+                    if (commonFailure.Length != 0 && candidate.rejection.Length == 0)
+                        candidate.rejection = commonFailure;
+
+                    foreach (SyntheticScenario scenario in scenarios)
+                    {
+                        bool passed = RunSyntheticScenario(
+                            scenario.scenarioId,
+                            candidate.values,
+                            threadTarget,
+                            mode,
+                            payload,
+                            combined,
+                            owner);
+                        ScenarioAudit audit = audits[scenario.scenarioId];
+                        audit.evaluatedCells++;
+                        if (passed) audit.passedCells++;
+                        audit.resultEncoding.Append(OrdinalSegmentCodec.Segment(candidate.vectorId));
+                        audit.resultEncoding.Append(OrdinalSegmentCodec.Segment(
+                            threadTarget.ToString(CultureInfo.InvariantCulture)));
+                        audit.resultEncoding.Append(OrdinalSegmentCodec.Segment(mode));
+                        audit.resultEncoding.Append(OrdinalSegmentCodec.Segment(passed ? "pass" : "fail"));
+                        if (!passed && candidate.rejection.Length == 0)
+                            candidate.rejection = scenario.expectedGate;
+                    }
+                }
+
+                candidate.surrogateCombinedBytes = candidate.coordinates.Max(row => row.combinedBytes);
+                candidate.ownerWorstBytes = candidate.coordinates.Max(row => row.ownerWorstBytes);
+                candidate.ownerTypicalBytes = candidate.coordinates.Max(row => row.ownerTypicalBytes);
+                candidate.pureMaxIndivisibleItemMicroseconds = candidate.coordinates
+                    .Max(row => row.time.maximum);
+                candidate.pureAllocationTieBreakBytes = checked((long)candidate.coordinates
+                    .Max(row => row.allocation.maximum));
+                if (candidate.rejection.Length != 0) continue;
+                if (candidate.ownerTypicalBytes > 65536UL)
+                    candidate.rejection = "SURROGATE-OWNER-TYPICAL";
+                else if (candidate.ownerWorstBytes > 524288UL)
+                    candidate.rejection = "SURROGATE-OWNER-WORST";
+                else if (candidate.surrogateCombinedBytes > 16777216UL)
+                    candidate.rejection = "SURROGATE-GLOBAL";
+                else if (ParseOne(candidate.values, "sliceTargetMicroseconds") > 1000UL
+                    || candidate.pureMaxIndivisibleItemMicroseconds > 2000UL)
                     candidate.rejection = "PERF-SLICE-SCHEDULER";
                 else candidate.feasible = true;
             }
+
+            foreach (ScenarioAudit audit in audits.Values)
+            {
+                long expectedCells = checked((long)candidates.Count * 3L * 3L);
+                if (audit.evaluatedCells != expectedCells || audit.passedCells != expectedCells)
+                    throw new InvalidOperationException(
+                        "Synthetic scenario did not pass every generated coordinate: " + audit.scenarioId);
+            }
+            return audits;
         }
 
-        private static string ValidateSyntheticContractModel(Dictionary<string, string> values)
+        private static List<LogicalAtom> ScopeTemplate(
+            PayloadAtomAudit payload,
+            string scope,
+            string mode)
+        {
+            List<LogicalAtom> result = new List<LogicalAtom>();
+            HashSet<string> framedTypes = new HashSet<string>(StringComparer.Ordinal);
+            foreach (PayloadAtom atom in payload.atoms)
+            {
+                if (!atom.scopes.Contains(scope)) continue;
+                string typeName = atom.path.Substring(0, atom.path.IndexOf('.'));
+                if (framedTypes.Add(typeName))
+                    result.Add(new LogicalAtom { path = typeName + ".$rowFraming", bytes = 64UL });
+                result.Add(new LogicalAtom { path = atom.path, bytes = atom.bytesByMode[mode] });
+            }
+            if (result.Count == 0 || result.All(atom => atom.bytes == 0))
+                throw new InvalidOperationException("Payload scope has no logical atoms: " + scope);
+            return result;
+        }
+
+        private static FillResult RunFullSchemaFill(List<LogicalAtom> atoms, ulong cap)
+        {
+            if (cap == ulong.MaxValue) throw new InvalidOperationException("Unbounded payload cap.");
+            FillResult result = new FillResult();
+            foreach (LogicalAtom atom in atoms)
+            {
+                result.visitedAtoms++;
+                ulong next;
+                if (!TryAdmitLogicalAtom(result.admittedBytes, atom.bytes, cap, out next))
+                {
+                    result.firstRefusedPath = atom.path;
+                    return result;
+                }
+                result.admittedBytes = next;
+            }
+            result.admittedSchemaCycles = 1;
+            ulong cycleBytes = result.admittedBytes;
+            if (cycleBytes == 0) throw new InvalidOperationException("Zero-byte payload schema cycle.");
+            ulong additionalCycles = (cap - result.admittedBytes) / cycleBytes;
+            result.admittedBytes = checked(result.admittedBytes + additionalCycles * cycleBytes);
+            result.admittedSchemaCycles = checked(result.admittedSchemaCycles + additionalCycles);
+            foreach (LogicalAtom atom in atoms)
+            {
+                result.visitedAtoms++;
+                ulong next;
+                if (!TryAdmitLogicalAtom(result.admittedBytes, atom.bytes, cap, out next))
+                {
+                    result.firstRefusedPath = atom.path;
+                    break;
+                }
+                result.admittedBytes = next;
+            }
+            if (result.firstRefusedPath.Length == 0)
+                throw new InvalidOperationException("Full-schema fill failed to reach a refusal boundary.");
+            ulong unchanged;
+            if (TryAdmitLogicalAtom(cap, 1UL, cap, out unchanged) || unchanged != cap
+                || TryAdmitLogicalAtom(0UL, checked(cap + 1UL), cap, out unchanged) || unchanged != 0UL)
+                throw new InvalidOperationException("Cap/cap+1 atomic-refusal golden failed.");
+            return result;
+        }
+
+        private static ulong MeasureTypicalOwnerBytes(
+            PayloadAtomAudit payload,
+            int threadTarget,
+            string mode)
+        {
+            ulong roots = (ulong)Math.Min(12, threadTarget);
+            ulong blocks = checked(roots * 12UL);
+            checked
+            {
+                // The typical corpus uses minimum-valid strings rather than the all-fields saturation
+                // candidates: every block has its primary subject, alternate blocks have one fact,
+                // and every fourth block has one provenance row.
+                return MinimumTypeBytes(payload, "PawnKnowledgeState")
+                    + MinimumTypeBytes(payload, "PawnReflectionStateMemoryFields")
+                    + roots * (MinimumTypeBytes(payload, "SavedMemoryThreadRoot")
+                        + MinimumTypeBytes(payload, "SavedMemoryChapter"))
+                    + blocks * (MinimumTypeBytes(payload, "SavedMemoryBlock")
+                        + MinimumTypeBytes(payload, "SavedMemorySubjectRef"))
+                    + ((blocks + 1UL) / 2UL)
+                        * MinimumTypeBytes(payload, "SavedMemoryCanonicalFact")
+                    + ((blocks + 3UL) / 4UL)
+                        * MinimumTypeBytes(payload, "SavedMemoryProvenance");
+            }
+        }
+
+        private static ulong MinimumTypeBytes(PayloadAtomAudit payload, string typeName)
+        {
+            ulong total = 64UL;
+            string prefix = typeName + ".";
+            foreach (PayloadAtom atom in payload.atoms.Where(row =>
+                row.path.StartsWith(prefix, StringComparison.Ordinal)))
+            {
+                total = checked(total + (atom.kind == "string"
+                    ? 4UL
+                    : atom.bytesByMode["asciiByteBoundary"]));
+            }
+            return total;
+        }
+
+        private static ulong TypeBytes(PayloadAtomAudit payload, string typeName, string mode)
+        {
+            Dictionary<string, ulong> byMode;
+            if (!payload.typeBytesByMode.TryGetValue(typeName, out byMode))
+                throw new InvalidOperationException("Unknown payload type: " + typeName);
+            return byMode[mode];
+        }
+
+        private static string ValidateCommonContractCells(
+            Dictionary<string, string> values,
+            int threadTarget,
+            FillResult combined,
+            FillResult owner)
         {
             ulong manageable = ParseOne(values, "manageableBlocksPerOwner");
-            foreach (ulong threadTarget in new[] { 4UL, 12UL, 64UL })
-                if (manageable < threadTarget) return "M0-RETENTION-ORDINARY";
+            if (manageable < (ulong)threadTarget) return "M0-RETENTION-ORDINARY";
             if (ParseOne(values, "editedBlocksOwner") > manageable
                 || ParseOne(values, "editedBlocksGlobal")
                     > ParseUnsignedTuple(values["globalBlockCaps"])[0])
                 return "M0-RETENTION-EMERGENCY";
-
-            ulong combinedOwner = ParseOne(values, "combinedOwnerBytes");
-            ulong combinedGlobal = ParseOne(values, "combinedGlobalBytes");
-            if (combinedOwner == ulong.MaxValue || combinedGlobal == ulong.MaxValue)
+            if (combined.admittedBytes > ParseOne(values, "combinedGlobalBytes")
+                || owner.admittedBytes > ParseOne(values, "combinedOwnerBytes")
+                || combined.firstRefusedPath.Length == 0
+                || owner.firstRefusedPath.Length == 0)
                 return "M0-CAP-PLUS-ONE";
-            // At-cap admits; cap+1 refuses without changing the admitted prefix.
-            ulong admitted;
-            if (!TryAdmitLogicalAtom(0, combinedOwner, combinedOwner, out admitted)
-                || admitted != combinedOwner
-                || TryAdmitLogicalAtom(0, combinedOwner + 1UL, combinedOwner, out admitted)
-                || admitted != 0
-                || TryAdmitLogicalAtom(0, combinedGlobal + 1UL, combinedGlobal, out admitted)
-                || admitted != 0)
-                return "M0-ATOMIC-REFUSAL";
-
             ulong[] ownerSlots = ParseUnsignedTuple(values["ownerSlotTriple"]);
             if (ownerSlots[1] != ownerSlots[0] + 1UL || ownerSlots[2] > ownerSlots[0])
                 return "M0-BRAINWIPE-TARGET-ONLY";
             if (ParseOne(values, "sliceWorkItems") == 0
                 || ParseOne(values, "sliceTargetMicroseconds") == 0)
                 return "M0-SCHEDULER-STOP";
+            return string.Empty;
+        }
 
+        private static bool RunSyntheticScenario(
+            string scenarioId,
+            Dictionary<string, string> values,
+            int threadTarget,
+            string mode,
+            PayloadAtomAudit payload,
+            FillResult combined,
+            FillResult owner)
+        {
+            switch (scenarioId)
+            {
+                case "worst-case-owner-v1":
+                    return owner.admittedBytes <= ParseOne(values, "combinedOwnerBytes")
+                        && owner.firstRefusedPath.Length != 0
+                        && (threadTarget == 4 || threadTarget == 12 || threadTarget == 64);
+                case "exact-subject-collision-v1":
+                    return ValidateExactSubjectScenario();
+                case "duplicate-root-v1":
+                    return ValidateDuplicateRootScenario();
+                case "summary-saturation-v1":
+                    return ValidateSummarySaturationScenario(values);
+                case "player-edited-saturation-v1":
+                    return ValidatePlayerEditedScenario(values);
+                case "global-faction-state-v1":
+                    return ValidateFactionScenario(values);
+                case "migration-overflow-v1":
+                    return ValidateMigrationOverflowScenario(values, payload, mode, combined);
+                default:
+                    throw new InvalidOperationException(
+                        "Synthetic scenario has no executable implementation: " + scenarioId);
+            }
+        }
+
+        private static bool ValidateExactSubjectScenario()
+        {
+            MemoryThreadRouteRule route = new MemoryThreadRouteRule { subjectKind = "pawn" };
+            route.equivalentExtractors.Add(new MemoryRouteExtractor { extractorToken = "primary" });
+            route.equivalentExtractors.Add(new MemoryRouteExtractor { extractorToken = "fallback" });
+            MemoryRouteResolution selected = MemoryThreadRoutingPolicy.Resolve("owner", route, new[]
+            {
+                RouteCandidate("fallback", "subject", "fallback-label"),
+                RouteCandidate("primary", "subject", "primary-label")
+            });
+            MemoryRouteResolution collision = MemoryThreadRoutingPolicy.Resolve("owner", route, new[]
+            {
+                RouteCandidate("primary", "subject-a", "same-label"),
+                RouteCandidate("fallback", "subject-b", "same-label")
+            });
+            MemoryRouteResolution ownerSelf = MemoryThreadRoutingPolicy.Resolve("owner", route, new[]
+            {
+                RouteCandidate("primary", "owner", "owner")
+            });
+            return selected.isThreaded && selected.subjectId == "subject"
+                && selected.frozenLabel == "primary-label"
+                && collision.reasonToken == MemoryThreadRoutingPolicy.StandaloneAmbiguousIdentity
+                && ownerSelf.reasonToken == MemoryThreadRoutingPolicy.StandaloneOwnerSelf;
+        }
+
+        private static MemoryRouteCandidate RouteCandidate(
+            string extractor,
+            string subjectId,
+            string label)
+        {
+            return new MemoryRouteCandidate
+            {
+                extractorToken = extractor,
+                subjectKind = "pawn",
+                subjectId = subjectId,
+                frozenLabel = label
+            };
+        }
+
+        private static bool ValidateDuplicateRootScenario()
+        {
             MemoryEpochAllocationPlan epoch = MemoryIdentityCodec.PlanEpochAllocation(
                 new MemoryEpochAllocationRequest { ownerPawnId = "owner", lastIssuedSequence = 0 });
-            if (!epoch.canMutate) return "M0-CODEC-CANONICAL";
             MemoryRootIdentity root = new MemoryRootIdentity
             {
-                ownerPawnId = "owner", ownerEpochToken = epoch.epochToken,
-                primarySubjectKind = "pawn", primarySubjectId = "subject-a"
+                ownerPawnId = "owner",
+                ownerEpochToken = epoch.epochToken,
+                primarySubjectKind = "pawn",
+                primarySubjectId = "subject-a"
             };
-            string rootIdA;
-            string rootIdRetry;
-            if (!MemoryIdentityCodec.TryCreateRootId(root, out rootIdA)
-                || !MemoryIdentityCodec.TryCreateRootId(root, out rootIdRetry)
-                || rootIdA != rootIdRetry)
-                return "M0-TOKEN-ROUNDTRIP";
+            string first;
+            string retry;
+            string other;
+            if (!epoch.canMutate
+                || !MemoryIdentityCodec.TryCreateRootId(root, out first)
+                || !MemoryIdentityCodec.TryCreateRootId(root, out retry)) return false;
             root.primarySubjectId = "subject-b";
-            string rootIdB;
-            if (!MemoryIdentityCodec.TryCreateRootId(root, out rootIdB) || rootIdA == rootIdB)
-                return "M0-ROUTE-EXACT";
-            string factionOne;
-            string factionTwo;
-            if (!MemoryIdentityCodec.TryCreateFactionSubjectId("faction-instance", 1, out factionOne)
-                || !MemoryIdentityCodec.TryCreateFactionSubjectId("faction-instance", 2, out factionTwo)
-                || factionOne == factionTwo)
-                return "M0-DTO-BOUNDS";
+            return first == retry
+                && MemoryIdentityCodec.TryCreateRootId(root, out other)
+                && first != other;
+        }
 
-            if (ParseOne(values, "importedOwnerRows") > ParseOne(values, "importedGlobalRows")
-                || ParseOne(values, "importedUnknownRows") > ParseOne(values, "importedGlobalRows"))
-                return "M0-RETENTION-EMERGENCY";
-            return string.Empty;
+        private static bool ValidateSummarySaturationScenario(Dictionary<string, string> values)
+        {
+            ulong buckets = ParseOne(values, "factBuckets");
+            ulong contributions = ParseUnsignedTuple(
+                values["datedContributionDescriptorMatchCaps"])[0];
+            ulong unchanged;
+            return buckets > 0 && contributions > 0
+                && TryAdmitLogicalAtom(0, buckets, buckets, out unchanged)
+                && unchanged == buckets
+                && !TryAdmitLogicalAtom(buckets, 1, buckets, out unchanged)
+                && unchanged == buckets
+                && !TryAdmitLogicalAtom(0, checked(contributions + 1), contributions, out unchanged)
+                && unchanged == 0;
+        }
+
+        private static bool ValidatePlayerEditedScenario(Dictionary<string, string> values)
+        {
+            ulong ownerEdited = ParseOne(values, "editedBlocksOwner");
+            ulong globalEdited = ParseOne(values, "editedBlocksGlobal");
+            ulong ownerCap = ParseOne(values, "manageableBlocksPerOwner");
+            ulong globalCap = ParseUnsignedTuple(values["globalBlockCaps"])[0];
+            ulong unchanged;
+            return ownerEdited <= ownerCap && globalEdited <= globalCap
+                && TryAdmitLogicalAtom(0, ownerEdited, ownerCap, out unchanged)
+                && !TryAdmitLogicalAtom(ownerCap, 1, ownerCap, out unchanged)
+                && unchanged == ownerCap;
+        }
+
+        private static bool ValidateFactionScenario(Dictionary<string, string> values)
+        {
+            string one;
+            string two;
+            ulong cap = ParseOne(values, "factionSnapshots");
+            ulong unchanged;
+            return cap > 0
+                && MemoryIdentityCodec.TryCreateFactionSubjectId("faction-instance", 1, out one)
+                && MemoryIdentityCodec.TryCreateFactionSubjectId("faction-instance", 2, out two)
+                && one != two
+                && TryAdmitLogicalAtom(0, cap, cap, out unchanged)
+                && !TryAdmitLogicalAtom(cap, 1, cap, out unchanged)
+                && unchanged == cap;
+        }
+
+        private static bool ValidateMigrationOverflowScenario(
+            Dictionary<string, string> values,
+            PayloadAtomAudit payload,
+            string mode,
+            FillResult combined)
+        {
+            ulong resolvedRows = ParseOne(values, "importedOwnerRows");
+            ulong unknownRows = ParseOne(values, "importedUnknownRows");
+            ulong globalRows = ParseOne(values, "importedGlobalRows");
+            ulong unitBytes = checked(TypeBytes(payload, "SavedImportedMemoryRow", mode)
+                * resolvedRows);
+            ulong cap = ParseOne(values, "combinedGlobalBytes");
+            ulong prefix = unitBytes <= cap ? cap - unitBytes : 0;
+            ulong admitted;
+            bool wholeUnit = unitBytes <= cap
+                && TryAdmitLogicalAtom(prefix, unitBytes, cap, out admitted)
+                && admitted == cap;
+            bool refusedWhole = !TryAdmitLogicalAtom(prefix, checked(unitBytes + 1), cap, out admitted)
+                && admitted == prefix;
+            return resolvedRows <= globalRows && unknownRows <= globalRows
+                && combined.admittedBytes <= cap && wholeUnit && refusedWhole;
         }
 
         private static bool TryAdmitLogicalAtom(
@@ -496,7 +993,16 @@ namespace MemoryThreadBenchmarks
                 .ThenBy(row => row.pureAllocationTieBreakBytes)
                 .ThenBy(row => row, new NumericVectorComparer())
                 .FirstOrDefault();
-            if (selected == null) throw new InvalidOperationException("No provisionally feasible vector.");
+            if (selected == null)
+            {
+                string failures = string.Join(", ", candidates
+                    .GroupBy(row => row.rejection, StringComparer.Ordinal)
+                    .OrderByDescending(group => group.Count())
+                    .Select(group => group.Key + "=" + group.Count().ToString(
+                        CultureInfo.InvariantCulture)));
+                throw new InvalidOperationException(
+                    "No provisionally feasible vector. Rejections: " + failures);
+            }
             return selected;
         }
 
@@ -713,17 +1219,32 @@ namespace MemoryThreadBenchmarks
             if (match == null) throw new InvalidOperationException("Code fallback is not one normalized generated vector.");
         }
 
-        private static StatisticalMeasurement MeasureSharedDefensiveMicroseconds()
+        private static WorkInput BuildWorkInput(Candidate candidate, int threadTarget, string mode)
+        {
+            int modeOrdinal = mode == "asciiByteBoundary" ? 0
+                : mode == "utf8WorstPerUtf16Unit" ? 1 : 2;
+            int seed = int.Parse(candidate.vectorId.Substring(0, 7), NumberStyles.HexNumber,
+                CultureInfo.InvariantCulture);
+            return new WorkInput
+            {
+                iterations = checked(64 + candidate.complexityScore * 4
+                    + threadTarget + modeOrdinal * 8),
+                allocationBytes = checked(32 + candidate.complexityScore * 8
+                    + threadTarget + modeOrdinal * 16),
+                seed = seed
+            };
+        }
+
+        private static StatisticalMeasurement MeasureCoordinateMicroseconds(WorkInput input)
         {
             const int warmups = 25;
             const int observations = 200;
-            EstablishGcBaseline();
-            for (int index = 0; index < warmups; index++) TimingOperation();
+            for (int index = 0; index < warmups; index++) TimingOperation(input);
             List<ulong> samples = new List<ulong>(observations);
             for (int index = 0; index < observations; index++)
             {
                 long start = Stopwatch.GetTimestamp();
-                TimingOperation();
+                TimingOperation(input);
                 long elapsed = Stopwatch.GetTimestamp() - start;
                 if (elapsed < 0) throw new InvalidOperationException("Stopwatch moved backwards.");
                 samples.Add(ToConservativeMicroseconds(elapsed, Stopwatch.Frequency));
@@ -731,21 +1252,22 @@ namespace MemoryThreadBenchmarks
             return Summarize(samples);
         }
 
-        private static StatisticalMeasurement MeasureSharedAllocationBytes()
+        private static StatisticalMeasurement MeasureCoordinateAllocationBytes(WorkInput input)
         {
             const int warmups = 25;
             const int pairs = 200;
-            EstablishGcBaseline();
-            for (int index = 0; index < warmups; index++) TimingOperation();
+            for (int index = 0; index < warmups; index++) AllocationCandidate(input);
             List<ulong> samples = new List<ulong>(pairs);
             for (int pair = 0; pair < pairs; pair++)
             {
                 bool candidateFirst = (pair & 1) != 0;
                 long firstBefore = GC.GetAllocatedBytesForCurrentThread();
-                TimingOperation();
+                if (candidateFirst) AllocationCandidate(input);
+                else AllocationControl(input);
                 long first = GC.GetAllocatedBytesForCurrentThread() - firstBefore;
                 long secondBefore = GC.GetAllocatedBytesForCurrentThread();
-                TimingOperation();
+                if (candidateFirst) AllocationControl(input);
+                else AllocationCandidate(input);
                 long second = GC.GetAllocatedBytesForCurrentThread() - secondBefore;
                 long candidate = candidateFirst ? first : second;
                 long control = candidateFirst ? second : first;
@@ -779,11 +1301,25 @@ namespace MemoryThreadBenchmarks
             };
         }
 
-        private static void TimingOperation()
+        private static void TimingOperation(WorkInput input)
         {
-            int value = timingSink;
-            for (int index = 0; index < 256; index++) value = unchecked(value * 31 + index);
+            int value = timingSink ^ input.seed;
+            for (int index = 0; index < input.iterations; index++)
+                value = unchecked(value * 31 + index);
             timingSink = value;
+        }
+
+        private static void AllocationCandidate(WorkInput input)
+        {
+            byte[] bytes = new byte[input.allocationBytes];
+            bytes[0] = unchecked((byte)input.seed);
+            bytes[bytes.Length - 1] = unchecked((byte)input.iterations);
+            allocationSink = bytes;
+        }
+
+        private static void AllocationControl(WorkInput input)
+        {
+            timingSink = unchecked(timingSink ^ input.seed ^ input.iterations);
         }
 
         private static ulong ToConservativeMicroseconds(long rawTicks, long frequency)
@@ -815,6 +1351,21 @@ namespace MemoryThreadBenchmarks
                 throw new InvalidOperationException("Timing conversion failed to reject overflow.");
         }
 
+        private static void ValidateCanonicalUtf8HashGoldens()
+        {
+            UTF8Encoding utf8 = new UTF8Encoding(false, true);
+            byte[] lf = utf8.GetBytes("{\n  \"value\": 1\n}\n");
+            byte[] crlf = utf8.GetBytes("{\r\n  \"value\": 1\r\n}\r\n");
+            byte[] bareCr = utf8.GetBytes("{\r  \"value\": 1\r}\r");
+            string expected = Sha256Hex(CanonicalUtf8Bytes(lf));
+            if (Sha256Hex(CanonicalUtf8Bytes(crlf)) != expected
+                || Sha256Hex(CanonicalUtf8Bytes(bareCr)) != expected)
+            {
+                throw new InvalidOperationException(
+                    "Canonical UTF-8 hashing is not newline-independent.");
+            }
+        }
+
         private static void EnsureCleanRepository(string root)
         {
             string status = Git(root, "status", "--porcelain", "--untracked-files=no");
@@ -823,8 +1374,8 @@ namespace MemoryThreadBenchmarks
         }
 
         private static void WriteEvidence(string root, Catalog catalog, List<Candidate> candidates,
-            Candidate selected, StatisticalMeasurement sharedTime,
-            StatisticalMeasurement sharedAllocation, ManifestAudit manifestAudit,
+            Candidate selected, List<SyntheticScenario> scenarios,
+            Dictionary<string, ScenarioAudit> scenarioAudits, ManifestAudit manifestAudit,
             PayloadAtomAudit payloadAtomAudit)
         {
             string objectFormat = Git(root, "rev-parse", "--show-object-format").Trim();
@@ -834,9 +1385,12 @@ namespace MemoryThreadBenchmarks
                 throw new InvalidOperationException("Invalid full Git object identity.");
             string sourceIdentity = HashTuple("memory-source-commit-v1", objectFormat, commit);
             string catalogRoot = Path.Combine(root, "benchmarks", "MemoryThreadBenchmarks", "Catalog");
-            string capacityHash = HashFile(Path.Combine(catalogRoot, "memory-capacity-catalog-v1.json"));
-            string fixtureHash = HashFile(Path.Combine(catalogRoot, "memory-m0-fixture-catalog-v1.json"));
-            string atomHash = HashFile(Path.Combine(catalogRoot, "memory-payload-atom-catalog-v1.json"));
+            string capacityHash = HashCanonicalUtf8File(
+                Path.Combine(catalogRoot, "memory-capacity-catalog-v1.json"));
+            string fixtureHash = HashCanonicalUtf8File(
+                Path.Combine(catalogRoot, "memory-m0-fixture-catalog-v1.json"));
+            string atomHash = HashCanonicalUtf8File(
+                Path.Combine(catalogRoot, "memory-payload-atom-catalog-v1.json"));
             string harnessHash = HashFile(Assembly.GetExecutingAssembly().Location);
             string rimTestHash = HashFile(Path.Combine(root, "tests", "PawnDiary.RimTest", "Assemblies", "PawnDiary.RimTest.dll"));
             string resultDirectory = Path.Combine(root, "benchmarks", "results", "memory-system");
@@ -882,12 +1436,18 @@ namespace MemoryThreadBenchmarks
                     writer.WritePropertyName("syntheticScenarios");
                     fixtureCatalog.RootElement.GetProperty("syntheticScenarios").WriteTo(writer);
                     writer.WriteStartArray("syntheticScenarioResults");
-                    foreach (JsonElement scenario in fixtureCatalog.RootElement
-                        .GetProperty("syntheticScenarios").EnumerateArray())
+                    foreach (SyntheticScenario scenario in scenarios)
                     {
+                        ScenarioAudit audit = scenarioAudits[scenario.scenarioId];
                         writer.WriteStartObject();
-                        writer.WriteString("scenarioId", scenario.GetProperty("scenarioId").GetString());
-                        writer.WriteString("disposition", "pass_all_survivors_all_N_text_modes");
+                        writer.WriteString("scenarioId", scenario.scenarioId);
+                        writer.WriteString("expectedGate", scenario.expectedGate);
+                        writer.WriteNumber("evaluatedCellCount", audit.evaluatedCells);
+                        writer.WriteNumber("passedCellCount", audit.passedCells);
+                        writer.WriteString("resultFingerprint", audit.Fingerprint());
+                        writer.WriteString("disposition", audit.evaluatedCells == audit.passedCells
+                            ? "pass_all_generated_vectors_all_N_text_modes"
+                            : "fail");
                         writer.WriteEndObject();
                     }
                     writer.WriteEndArray();
@@ -896,11 +1456,19 @@ namespace MemoryThreadBenchmarks
                     writer.WritePropertyName("loadedPendingFixtures");
                     fixtureCatalog.RootElement.GetProperty("loadedPendingFixtures").WriteTo(writer);
                 }
-                writer.WriteStartObject("sharedPureTimingMicroseconds");
-                WriteMeasurement(writer, sharedTime);
+                CoordinateEvaluation selectedTime = selected.coordinates
+                    .OrderByDescending(row => row.time.maximum).First();
+                CoordinateEvaluation selectedAllocation = selected.coordinates
+                    .OrderByDescending(row => row.allocation.maximum).First();
+                writer.WriteStartObject("selectedWorstPureTimingMicroseconds");
+                writer.WriteNumber("threadTarget", selectedTime.threadTarget);
+                writer.WriteString("textMode", selectedTime.textMode);
+                WriteMeasurement(writer, selectedTime.time);
                 writer.WriteEndObject();
-                writer.WriteStartObject("sharedPurePairedAllocationBytes");
-                WriteMeasurement(writer, sharedAllocation);
+                writer.WriteStartObject("selectedWorstPurePairedAllocationBytes");
+                writer.WriteNumber("threadTarget", selectedAllocation.threadTarget);
+                writer.WriteString("textMode", selectedAllocation.textMode);
+                WriteMeasurement(writer, selectedAllocation.allocation);
                 writer.WriteEndObject();
                 writer.WriteNumber("generatedVectorCount", candidates.Count);
                 writer.WriteNumber("provisionallyFeasibleVectorCount", candidates.Count(row => row.feasible));
@@ -953,11 +1521,20 @@ namespace MemoryThreadBenchmarks
                     writer.WriteNumber("pureMaxIndivisibleItemMicroseconds", candidate.pureMaxIndivisibleItemMicroseconds);
                     writer.WriteNumber("pureAllocationTieBreakBytes", candidate.pureAllocationTieBreakBytes);
                     writer.WriteStartArray("authenticatedCoordinates");
-                    foreach (int n in new[] { 4, 12, 64 })
-                    foreach (string mode in new[] { "asciiByteBoundary", "utf8WorstPerUtf16Unit", "xmlEscapeWorstPerUtf16Unit" })
+                    foreach (CoordinateEvaluation coordinate in candidate.coordinates)
                     {
-                        writer.WriteStartObject(); writer.WriteNumber("threadTarget", n); writer.WriteString("textMode", mode);
-                        writer.WriteNumber("surrogateCombinedBytes", candidate.surrogateCombinedBytes); writer.WriteEndObject();
+                        writer.WriteStartObject();
+                        writer.WriteNumber("threadTarget", coordinate.threadTarget);
+                        writer.WriteString("textMode", coordinate.textMode);
+                        writer.WriteNumber("surrogateCombinedBytes", coordinate.combinedBytes);
+                        writer.WriteNumber("surrogateOwnerTypicalBytes", coordinate.ownerTypicalBytes);
+                        writer.WriteNumber("surrogateOwnerWorstBytes", coordinate.ownerWorstBytes);
+                        writer.WriteNumber("fullSchemaCycles", coordinate.combinedFill.admittedSchemaCycles);
+                        writer.WriteNumber("visitedAtomCount", coordinate.combinedFill.visitedAtoms);
+                        writer.WriteString("firstRefusedPath", coordinate.combinedFill.firstRefusedPath);
+                        writer.WriteNumber("maximumIndivisibleItemMicroseconds", coordinate.time.maximum);
+                        writer.WriteNumber("maximumPairedAllocationBytes", coordinate.allocation.maximum);
+                        writer.WriteEndObject();
                     }
                     writer.WriteEndArray();
                     writer.WriteEndObject();
@@ -976,8 +1553,8 @@ namespace MemoryThreadBenchmarks
             markdown.AppendLine("- Provisionally feasible vectors: " + candidates.Count(row => row.feasible).ToString(CultureInfo.InvariantCulture));
             markdown.AppendLine("- Selected vector: `" + selected.vectorId + "`");
             markdown.AppendLine("- Surrogate combined-global bytes: " + selected.surrogateCombinedBytes.ToString(CultureInfo.InvariantCulture));
-            markdown.AppendLine("- Shared maximum indivisible pure item: " + sharedTime.maximum.ToString(CultureInfo.InvariantCulture) + " µs");
-            markdown.AppendLine("- Shared maximum paired allocation delta: " + sharedAllocation.maximum.ToString(CultureInfo.InvariantCulture) + " bytes");
+            markdown.AppendLine("- Selected maximum indivisible pure item: " + selected.pureMaxIndivisibleItemMicroseconds.ToString(CultureInfo.InvariantCulture) + " µs");
+            markdown.AppendLine("- Selected maximum paired allocation delta: " + selected.pureAllocationTieBreakBytes.ToString(CultureInfo.InvariantCulture) + " bytes");
             markdown.AppendLine("- Authenticated provisional manifest rows: " + manifestAudit.entries.Count.ToString(CultureInfo.InvariantCulture));
             markdown.AppendLine("- Provisional manifest audit fingerprint: `" + manifestAudit.fingerprint + "`");
             markdown.AppendLine("- Release-policy encoding SHA-256: `" + manifestAudit.releasePolicyEncodingHash + "`");
@@ -1039,6 +1616,24 @@ namespace MemoryThreadBenchmarks
         {
             if (!File.Exists(path)) throw new InvalidOperationException("Required benchmark identity file is missing: " + path);
             return Sha256Hex(File.ReadAllBytes(path));
+        }
+
+        private static string HashCanonicalUtf8File(string path)
+        {
+            if (!File.Exists(path))
+                throw new InvalidOperationException(
+                    "Required canonical UTF-8 identity file is missing: " + path);
+            return Sha256Hex(CanonicalUtf8Bytes(File.ReadAllBytes(path)));
+        }
+
+        private static byte[] CanonicalUtf8Bytes(byte[] bytes)
+        {
+            if (bytes == null) throw new InvalidOperationException("Canonical UTF-8 input is null.");
+            if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
+                throw new InvalidOperationException("Canonical catalog UTF-8 must not contain a BOM.");
+            string text = new UTF8Encoding(false, true).GetString(bytes);
+            string normalized = text.Replace("\r\n", "\n").Replace('\r', '\n');
+            return new UTF8Encoding(false, true).GetBytes(normalized);
         }
 
         private static string Sha256Hex(byte[] bytes)

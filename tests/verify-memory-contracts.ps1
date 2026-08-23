@@ -67,6 +67,10 @@ $knownKinds = @("event", "landmark", "summary")
 $knownCategories = @("personal", "relationships", "family", "factions")
 $knownImportance = @("low", "medium", "high")
 $knownSubjects = @("pawn", "faction", "stream")
+$knownStreamSubjects = @(
+    "body_history", "colony_membership", "growth", "belief", "ideology_role",
+    "royal_title", "psylink", "genetic_identity", "mechlink", "persona_bond"
+)
 $knownConsumers = @(
     "ordinary_diary", "existing_reflection", "narrative_arc", "comparison",
     "anniversary", "quiet_memory", "summary_wording"
@@ -83,6 +87,7 @@ Require ($defs.Count -eq 29) "Expected 29 shipped important-event Defs, found $(
 $defNames = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
 $eventFacts = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
 $standaloneCount = 0
+$seenStreamSubjects = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
 foreach ($def in $defs) {
     $defName = Child-Text $def "defName"
     Require (-not [string]::IsNullOrWhiteSpace($defName)) "A capture Def has no defName."
@@ -141,6 +146,14 @@ foreach ($def in $defs) {
             Require ($extractor.Value -ceq $extractor.Value.Trim()) "$defName has a noncanonical route extractor."
         }
         Require (($extractorValues | Sort-Object -Unique -CaseSensitive).Count -eq $extractorValues.Count) "$defName repeats a route extractor."
+        if ((Child-Text $route "subjectKind") -ceq "stream") {
+            foreach ($extractor in $extractorValues) {
+                Require ($extractor.StartsWith("constant:", [System.StringComparison]::Ordinal)) "$defName stream route is not an exact constant."
+                $streamToken = $extractor.Substring("constant:".Length)
+                Require ($knownStreamSubjects -ccontains $streamToken) "$defName names unknown stream '$streamToken'."
+                [void]$seenStreamSubjects.Add($streamToken)
+            }
+        }
     }
 
     $consumerElement = $def.Element([System.Xml.Linq.XName]"promptConsumerIds")
@@ -160,6 +173,7 @@ foreach ($def in $defs) {
     Require ($null -ne $russianInjected.Root.Element([System.Xml.Linq.XName]"$defName.lineTemplate")) "Missing Russian lineTemplate for $defName."
 }
 Require ($standaloneCount -eq 1) "Expected exactly one intentionally Standalone shipped capture rule."
+Require ((@($seenStreamSubjects | Sort-Object) -join '/') -ceq (@($knownStreamSubjects | Sort-Object) -join '/')) "The shipped stream-token set does not match the closed M0 allowlist."
 
 $dimensions = @($capacity.dimensions)
 Require ($dimensions.Count -eq 64) "Capacity catalog must contain exactly 64 dimensions."
@@ -249,6 +263,31 @@ Require ($atomKindByPath['SavedMemoryAppliedPolicyStateV1.saveNewMemories'] -ceq
 Require ($atomKindByPath['SavedActiveLogicalRequestV1.sessionId'] -ceq 'int64') "sessionId must be int64."
 Require ($atomKindByPath['SavedFrozenPromptVariantV1.variantOrdinal'] -ceq 'int32') "variantOrdinal must be int32."
 Require ($atomKindByPath['PawnReflectionStateMemoryFields.lastQuietMemoryEvaluatedAbsoluteDay'] -ceq 'int32') "Reflection quiet-day field must be int32."
+foreach ($path in @(
+    'SavedMemoryAttemptAuditRow.attemptOrdinal',
+    'DiaryGameComponentMemory.memoryComponentSchemaVersion',
+    'DiaryGameComponentMemory.memoryCoordinatorSchemaVersion',
+    'DiaryGameComponentMemory.memoryDispatchSchemaVersion'
+)) {
+    Require ($atomKindByPath[$path] -ceq 'int32') "$path must be int32."
+}
+foreach ($path in @(
+    'SavedMemoryBlock.primarySubject',
+    'SavedImportedMemoryRow.primarySubject',
+    'SavedFrozenPromptVariantV1.receiptPlan',
+    'SavedLegacyUnresolvedOwnerArchiveInputV1.legacyRecord'
+)) {
+    Require ($atomKindByPath[$path] -ceq 'nullable_row') "$path must include nullable-row presence bytes."
+}
+$atomByPath = @{}
+foreach ($atom in $atomRows) { $atomByPath[[string]$atom.canonicalFieldPath] = $atom }
+foreach ($path in @(
+    'SavedMemorySummaryPayload.lastSettledWordingFingerprint',
+    'SavedMemorySummaryPayload.lastWordingDispositionToken',
+    'SavedFrozenPromptVariantV1.contextDetailIdentity'
+)) {
+    Require (-not [bool]$atomByPath[$path].freeTextModeEligible) "$path is a stable token/identity, not free text."
+}
 
 $pending = @($fixture.loadedPendingFixtures)
 Require ($pending.Count -eq 5) "Every later loaded-only evidence family must have one exact pending fixture."
