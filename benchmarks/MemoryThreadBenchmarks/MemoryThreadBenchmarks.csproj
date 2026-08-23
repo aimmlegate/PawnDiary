@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <Optimize>true</Optimize>
+    <NoWarn>0649</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryThreadContracts.cs" Link="MemoryThreadContracts.cs" />
+    <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryIdentityCodec.cs" Link="MemoryIdentityCodec.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Catalog\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

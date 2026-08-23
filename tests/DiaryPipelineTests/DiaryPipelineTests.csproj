@@ -24,6 +24,8 @@
     <Compile Include="..\..\Source\Pipeline\ArtImmortalizationPolicy.cs" Link="ArtImmortalizationPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\AnniversaryPolicy.cs" Link="AnniversaryPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\SocialReflectionPolicy.cs" Link="SocialReflectionPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryThreadContracts.cs" Link="MemoryThreadContracts.cs" />
+    <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryIdentityCodec.cs" Link="MemoryIdentityCodec.cs" />
     <Compile Include="..\..\Source\Pipeline\SocialReflectionContextFormatter.cs" Link="SocialReflectionContextFormatter.cs" />
     <Compile Include="..\..\Source\Pipeline\DigestPacingPolicy.cs" Link="DigestPacingPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\DailyEmissionGuardPolicy.cs" Link="DailyEmissionGuardPolicy.cs" />

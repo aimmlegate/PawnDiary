@@ -72,6 +72,9 @@
     <Compile Include="..\..\Source\Pipeline\ArtImmortalizationPolicy.cs" Link="Pipeline\ArtImmortalizationPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\GameContextValue.cs" Link="Pipeline\GameContextValue.cs" />
     <Compile Include="..\..\Source\Pipeline\SocialReflectionPolicy.cs" Link="Pipeline\SocialReflectionPolicy.cs" />
+    <!-- Social Reflection now delegates its shipped framing bytes to the shared pure memory codec. -->
+    <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryThreadContracts.cs" Link="Pipeline\Knowledge\MemoryThreadContracts.cs" />
+    <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryIdentityCodec.cs" Link="Pipeline\Knowledge\MemoryIdentityCodec.cs" />
     <Compile Include="..\..\Source\Pipeline\SocialReflectionContextFormatter.cs" Link="Pipeline\SocialReflectionContextFormatter.cs" />
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContracts.cs" Link="Pipeline\NarrativeContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\RoyaltyContracts.cs" Link="Pipeline\RoyaltyContracts.cs" />

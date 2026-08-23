@@ -47,6 +47,19 @@ namespace PawnDiary
         /// it; "{other}" and "{&lt;factKey&gt;}" placeholders are substituted at render time.</summary>
         public string lineTemplate;
 
+        // Behavior-inert unified-memory metadata frozen in M0. Current capture ignores these fields;
+        // M7 will activate their detached pure projection after the persistence backend exists.
+        public string captureSourceToken;
+        public string memoryKind;
+        public string memoryCategory;
+        public string baseImportance;
+        public List<DiaryMemoryFactDescriptorRow> memoryFacts =
+            new List<DiaryMemoryFactDescriptorRow>();
+        public DiaryMemoryThreadRouteRow threadRoute;
+        public bool consolidationEligible;
+        public List<string> promptConsumerIds = new List<string>();
+        public bool authoritativePageOwned;
+
         public override IEnumerable<string> ConfigErrors()
         {
             foreach (string error in base.ConfigErrors())
@@ -96,13 +109,61 @@ namespace PawnDiary
                 signal = string.IsNullOrWhiteSpace(signal) ? KnowledgeTokens.SignalEvent : signal.Trim(),
                 order = order,
                 owners = string.IsNullOrWhiteSpace(owners) ? KnowledgeTokens.OwnersBoth : owners.Trim(),
-                lineTemplate = lineTemplate ?? string.Empty
+                lineTemplate = lineTemplate ?? string.Empty,
+                captureSourceToken = captureSourceToken ?? string.Empty,
+                memoryKind = memoryKind ?? string.Empty,
+                memoryCategory = memoryCategory ?? string.Empty,
+                baseImportance = baseImportance ?? string.Empty,
+                consolidationEligible = consolidationEligible,
+                authoritativePageOwned = authoritativePageOwned
             };
             CopyStrings(matchDefNames, rule.matchDefNames);
             CopyStrings(matchSuffixes, rule.matchSuffixes);
             CopyStrings(requireContext, rule.requireContext);
             CopyStrings(constantSubjectKeys, rule.constantSubjectKeys);
             CopyStrings(factKeys, rule.factKeys);
+            CopyMemoryTokensExact(promptConsumerIds, rule.promptConsumerIds);
+            if (memoryFacts != null)
+            {
+                for (int i = 0; i < memoryFacts.Count; i++)
+                {
+                    DiaryMemoryFactDescriptorRow row = memoryFacts[i];
+                    if (row == null) continue;
+                    MemoryFactDescriptor descriptor = new MemoryFactDescriptor
+                    {
+                        factKind = row.factKind ?? string.Empty,
+                        contextKey = row.contextKey ?? string.Empty,
+                        aggregationToken = row.aggregationToken ?? string.Empty,
+                        canonicalValueKind = row.canonicalValueKind ?? string.Empty
+                    };
+                    CopyMemoryTokensExact(row.allowedStates, descriptor.allowedStates);
+                    rule.memoryFacts.Add(descriptor);
+                }
+            }
+
+            if (threadRoute != null)
+            {
+                rule.threadRoute = new MemoryThreadRouteRule
+                {
+                    subjectKind = threadRoute.subjectKind ?? string.Empty,
+                    chapterPhasePolicy = threadRoute.chapterPhasePolicy ?? string.Empty,
+                    fallbackLabelSource = threadRoute.fallbackLabelSource ?? string.Empty
+                };
+                if (threadRoute.equivalentExtractors != null)
+                {
+                    for (int i = 0; i < threadRoute.equivalentExtractors.Count; i++)
+                    {
+                        string extractor = threadRoute.equivalentExtractors[i];
+                        if (extractor != null)
+                        {
+                            rule.threadRoute.equivalentExtractors.Add(new MemoryRouteExtractor
+                            {
+                                extractorToken = extractor
+                            });
+                        }
+                    }
+                }
+            }
             if (subjectKeys != null)
             {
                 for (int i = 0; i < subjectKeys.Count; i++)
@@ -153,6 +214,13 @@ namespace PawnDiary
                 }
             }
         }
+
+        private static void CopyMemoryTokensExact(List<string> source, List<string> target)
+        {
+            if (source == null) return;
+            for (int i = 0; i < source.Count; i++)
+                target.Add(source[i] ?? string.Empty);
+        }
     }
 
     /// <summary>One subject-key extraction row: gameContext key → "prefix:value" subject key.</summary>
@@ -167,6 +235,25 @@ namespace PawnDiary
     {
         public string contextKey;
         public string nameContextKey;
+    }
+
+    /// <summary>XML declaration of one deterministic canonical fact and aggregation grammar.</summary>
+    public class DiaryMemoryFactDescriptorRow
+    {
+        public string factKind;
+        public string contextKey;
+        public string aggregationToken;
+        public string canonicalValueKind;
+        public List<string> allowedStates = new List<string>();
+    }
+
+    /// <summary>XML declaration of one exact continuing-subject route.</summary>
+    public class DiaryMemoryThreadRouteRow
+    {
+        public string subjectKind;
+        public List<string> equivalentExtractors = new List<string>();
+        public string chapterPhasePolicy;
+        public string fallbackLabelSource;
     }
 
     /// <summary>
@@ -332,6 +419,34 @@ namespace PawnDiary
         public List<DiaryKnowledgeSubjectKeyRow> querySubjectKeys = new List<DiaryKnowledgeSubjectKeyRow>();
         /// <summary>Global-cap eviction scan cadence.</summary>
         public int evictionScanIntervalTicks = 150000;
+
+        // Unified-memory M0 policy. These values are loaded and parity-checked now but are not read by
+        // shipped behavior while MemorySystemActivationGate remains LegacyShadow.
+        public int minorMemoryLifetimeMinimumDays = 1;
+        public int minorMemoryLifetimeDefaultDays = 15;
+        public int minorMemoryLifetimeMaximumDays = 3600;
+        public int regularMemoryLifetimeMinimumDays = 1;
+        public int regularMemoryLifetimeDefaultDays = 60;
+        public int regularMemoryLifetimeMaximumDays = 3600;
+        public int memoryThreadTargetMinimum = 4;
+        public int memoryThreadTargetDefault = 12;
+        public int memoryThreadTargetMaximum = 64;
+        public int memoryReuseDaysMinimum = 1;
+        public int memoryReuseDaysDefault = 5;
+        public int memoryReuseDaysMaximum = 3600;
+        public int memoryRevisitEntryCountMinimum = 1;
+        public int memoryRevisitEntryCountDefault = 3;
+        public int memoryRevisitEntryCountMaximum = 1000;
+        public int quietReflectionChanceBasisPoints = 200;
+        public List<DiaryMemoryCapacityValueRow> memoryCapacityVector =
+            new List<DiaryMemoryCapacityValueRow>();
+    }
+
+    /// <summary>One ordered atomic capacity coordinate in the behavior-inert M0 vector.</summary>
+    public class DiaryMemoryCapacityValueRow
+    {
+        public string name;
+        public string valueEncoding;
     }
 
     /// <summary>

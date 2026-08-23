@@ -2055,4 +2055,94 @@
   <PawnDiary.Event.Biotech.Deathrest.Label>Interrupted deathrest</PawnDiary.Event.Biotech.Deathrest.Label>
   <PawnDiary.Event.Biotech.Deathrest.Text>{0}&apos;s deathrest was interrupted while still severely incomplete.</PawnDiary.Event.Biotech.Deathrest.Text>
   <PawnDiary.Event.Biotech.Deathrest.Phase.Interrupted>deathrest was interrupted before adequate recovery</PawnDiary.Event.Biotech.Deathrest.Phase.Interrupted>
+
+  <!-- Unified memory system M0 localization contract. These keys remain unreachable while the
+       internal activation gate is LegacyShadow; M8/M9 wire them into the settings and Library UI. -->
+  <PawnDiary.Memory.Settings.Page>Memory</PawnDiary.Memory.Settings.Page>
+  <PawnDiary.Memory.Settings.SaveNew>Save new memories</PawnDiary.Memory.Settings.SaveNew>
+  <PawnDiary.Memory.Settings.SaveNew.Desc>Save future episodic memories. Turning this off deletes nothing.</PawnDiary.Memory.Settings.SaveNew.Desc>
+  <PawnDiary.Memory.Settings.UseWriting>Use memories in writing</PawnDiary.Memory.Settings.UseWriting>
+  <PawnDiary.Memory.Settings.UseWriting.Desc>Allow eligible stored memories in Full and Balanced diary prompts.</PawnDiary.Memory.Settings.UseWriting.Desc>
+  <PawnDiary.Memory.Settings.UseBackground>Use pawn background</PawnDiary.Memory.Settings.UseBackground>
+  <PawnDiary.Memory.Settings.UseBackground.Desc>Independently include the pawn&apos;s player-authored background in Full and Balanced prompts.</PawnDiary.Memory.Settings.UseBackground.Desc>
+  <PawnDiary.Memory.Settings.AllowExtra>Allow extra memory AI requests</PawnDiary.Memory.Settings.AllowExtra>
+  <PawnDiary.Memory.Settings.AllowExtra.Desc>Allow additional requests for memory reflections and shorter wording for older summaries.</PawnDiary.Memory.Settings.AllowExtra.Desc>
+  <PawnDiary.Memory.Settings.Occasional>Occasional memory reflections</PawnDiary.Memory.Settings.Occasional>
+  <PawnDiary.Memory.Settings.Occasional.Desc>Sometimes lets a pawn write about an older memory when nothing else needs a diary entry.</PawnDiary.Memory.Settings.Occasional.Desc>
+  <PawnDiary.Memory.Settings.OpenLibrary>Open Library</PawnDiary.Memory.Settings.OpenLibrary>
+  <PawnDiary.Memory.Settings.NoGame>No game is loaded, so the Memory Library cannot be opened.</PawnDiary.Memory.Settings.NoGame>
+  <PawnDiary.Memory.Settings.Privacy>Memories and pawn background are stored locally. Using them in writing may send names, relationships, and factual context to the configured provider.</PawnDiary.Memory.Settings.Privacy>
+  <PawnDiary.Memory.Settings.ExtraCost>Extra memory requests may increase provider usage and cost.</PawnDiary.Memory.Settings.ExtraCost>
+  <PawnDiary.Memory.Settings.Disabled.UseWriting>Enable “Use memories in writing” to allow extra memory requests.</PawnDiary.Memory.Settings.Disabled.UseWriting>
+  <PawnDiary.Memory.Settings.Disabled.AllowExtra>Enable “Allow extra memory AI requests” to allow occasional memory reflections.</PawnDiary.Memory.Settings.Disabled.AllowExtra>
+  <PawnDiary.Memory.Settings.Compatibility>These memory settings were created by a newer Pawn Diary version and are inactive here.</PawnDiary.Memory.Settings.Compatibility>
+  <PawnDiary.Memory.Settings.Categories.Header>Memory categories</PawnDiary.Memory.Settings.Categories.Header>
+  <PawnDiary.Memory.Settings.Category.Personal>Personal events</PawnDiary.Memory.Settings.Category.Personal>
+  <PawnDiary.Memory.Settings.Category.Relationships>Relationships</PawnDiary.Memory.Settings.Category.Relationships>
+  <PawnDiary.Memory.Settings.Category.Family>Family</PawnDiary.Memory.Settings.Category.Family>
+  <PawnDiary.Memory.Settings.Category.Factions>Factions</PawnDiary.Memory.Settings.Category.Factions>
+  <PawnDiary.Memory.Settings.Category.Desc>Controls future capture and natural recall without deleting stored memories or pausing their age.</PawnDiary.Memory.Settings.Category.Desc>
+  <PawnDiary.Memory.Settings.Retention.Header>Memory retention</PawnDiary.Memory.Settings.Retention.Header>
+  <PawnDiary.Memory.Settings.Retention.Minor>Keep minor memories for</PawnDiary.Memory.Settings.Retention.Minor>
+  <PawnDiary.Memory.Settings.Retention.Regular>Keep regular memories for</PawnDiary.Memory.Settings.Retention.Regular>
+  <PawnDiary.Memory.Settings.Retention.ThreadTarget>Memories kept in each thread</PawnDiary.Memory.Settings.Retention.ThreadTarget>
+  <PawnDiary.Memory.Settings.Retention.DayUnit>{0} days</PawnDiary.Memory.Settings.Retention.DayUnit>
+  <PawnDiary.Memory.Settings.Retention.AgeHelp>Minor and regular memories are counted from when they happened. Using or suppressing a memory does not restart the time.</PawnDiary.Memory.Settings.Retention.AgeHelp>
+  <PawnDiary.Memory.Settings.Retention.ThreadHelp>Each thread keeps this many recent memories. Older unedited memories become part of its ongoing summary. Edited memories are kept and may temporarily exceed this number.</PawnDiary.Memory.Settings.Retention.ThreadHelp>
+  <PawnDiary.Memory.Settings.Retention.InvalidOrder>Minor memories cannot be kept longer than regular memories.</PawnDiary.Memory.Settings.Retention.InvalidOrder>
+  <PawnDiary.Memory.Settings.Retention.Important>Important memories have no normal age limit.</PawnDiary.Memory.Settings.Retention.Important>
+  <PawnDiary.Memory.Settings.Retention.Edited>Edited memories are protected from automatic forgetting.</PawnDiary.Memory.Settings.Retention.Edited>
+  <PawnDiary.Memory.Settings.Repetition.Header>Memory repetition</PawnDiary.Memory.Settings.Repetition.Header>
+  <PawnDiary.Memory.Settings.Repetition.Days>Days before reusing a memory</PawnDiary.Memory.Settings.Repetition.Days>
+  <PawnDiary.Memory.Settings.Repetition.Entries>Entries before revisiting the same person or topic</PawnDiary.Memory.Settings.Repetition.Entries>
+  <PawnDiary.Memory.Settings.Repetition.Help>If every related memory is waiting, memory is simply omitted from that entry.</PawnDiary.Memory.Settings.Repetition.Help>
+  <PawnDiary.Memory.Settings.UseOriginal.Warning>This memory is already beyond its normal lifetime and may be forgotten during the next cleanup. Use the original wording?</PawnDiary.Memory.Settings.UseOriginal.Warning>
+
+  <PawnDiary.Memory.Library.Title>Memory Library</PawnDiary.Memory.Library.Title>
+  <PawnDiary.Memory.Library.Threads>Threads</PawnDiary.Memory.Library.Threads>
+  <PawnDiary.Memory.Library.Standalone>Standalone</PawnDiary.Memory.Library.Standalone>
+  <PawnDiary.Memory.Library.Imported>Imported</PawnDiary.Memory.Library.Imported>
+  <PawnDiary.Memory.Library.Search>Search memories</PawnDiary.Memory.Library.Search>
+  <PawnDiary.Memory.Library.Filter.All>All memories</PawnDiary.Memory.Library.Filter.All>
+  <PawnDiary.Memory.Library.Filter.Suppressed>Suppressed</PawnDiary.Memory.Library.Filter.Suppressed>
+  <PawnDiary.Memory.Library.Filter.Edited>Edited</PawnDiary.Memory.Library.Filter.Edited>
+  <PawnDiary.Memory.Library.Filter.Expiring>Expiring</PawnDiary.Memory.Library.Filter.Expiring>
+  <PawnDiary.Memory.Library.Sort.Recent>Most recent</PawnDiary.Memory.Library.Sort.Recent>
+  <PawnDiary.Memory.Library.Sort.Oldest>Oldest first</PawnDiary.Memory.Library.Sort.Oldest>
+  <PawnDiary.Memory.Library.Sort.Importance>Importance</PawnDiary.Memory.Library.Sort.Importance>
+  <PawnDiary.Memory.Library.Sort.Subject>Person or subject</PawnDiary.Memory.Library.Sort.Subject>
+  <PawnDiary.Memory.Library.Empty>This pawn has no memories in this view.</PawnDiary.Memory.Library.Empty>
+  <PawnDiary.Memory.Library.Loading>Preparing the Memory Library…</PawnDiary.Memory.Library.Loading>
+  <PawnDiary.Memory.Library.AdditionalOwners>{0} additional legacy owners are not shown.</PawnDiary.Memory.Library.AdditionalOwners>
+  <PawnDiary.Memory.Library.AdditionalColonists>{0} additional colonists without memories are not shown.</PawnDiary.Memory.Library.AdditionalColonists>
+  <PawnDiary.Memory.Library.UnknownOwner>Unknown owner</PawnDiary.Memory.Library.UnknownOwner>
+  <PawnDiary.Memory.Library.CurrentStatus>Current status</PawnDiary.Memory.Library.CurrentStatus>
+  <PawnDiary.Memory.Library.Chapter>Chapter {0}</PawnDiary.Memory.Library.Chapter>
+  <PawnDiary.Memory.Library.Position>{0} of {1}</PawnDiary.Memory.Library.Position>
+  <PawnDiary.Memory.Library.Back>Back</PawnDiary.Memory.Library.Back>
+  <PawnDiary.Memory.Library.Previous>Previous</PawnDiary.Memory.Library.Previous>
+  <PawnDiary.Memory.Library.Next>Next</PawnDiary.Memory.Library.Next>
+  <PawnDiary.Memory.Library.Importance.Minor>Minor</PawnDiary.Memory.Library.Importance.Minor>
+  <PawnDiary.Memory.Library.Importance.Regular>Regular</PawnDiary.Memory.Library.Importance.Regular>
+  <PawnDiary.Memory.Library.Importance.Important>Important</PawnDiary.Memory.Library.Importance.Important>
+  <PawnDiary.Memory.Library.Ttl.Never>No normal expiry</PawnDiary.Memory.Library.Ttl.Never>
+  <PawnDiary.Memory.Library.Ttl.Unknown>Age unknown</PawnDiary.Memory.Library.Ttl.Unknown>
+  <PawnDiary.Memory.Library.Ttl.Expired>Due to be forgotten</PawnDiary.Memory.Library.Ttl.Expired>
+  <PawnDiary.Memory.Library.Ttl.Remaining>{0} days remaining</PawnDiary.Memory.Library.Ttl.Remaining>
+  <PawnDiary.Memory.Library.Badge.Suppressed>Suppressed</PawnDiary.Memory.Library.Badge.Suppressed>
+  <PawnDiary.Memory.Library.Badge.Edited>Edited</PawnDiary.Memory.Library.Badge.Edited>
+  <PawnDiary.Memory.Library.Badge.RollingSummary>Ongoing summary</PawnDiary.Memory.Library.Badge.RollingSummary>
+  <PawnDiary.Memory.Library.Badge.ClosedSummary>Closed chapter summary</PawnDiary.Memory.Library.Badge.ClosedSummary>
+  <PawnDiary.Memory.Library.Action.Suppress>Suppress from writing</PawnDiary.Memory.Library.Action.Suppress>
+  <PawnDiary.Memory.Library.Action.Enable>Allow in writing</PawnDiary.Memory.Library.Action.Enable>
+  <PawnDiary.Memory.Library.Action.Edit>Edit wording</PawnDiary.Memory.Library.Action.Edit>
+  <PawnDiary.Memory.Library.Action.UseOriginal>Use original wording</PawnDiary.Memory.Library.Action.UseOriginal>
+  <PawnDiary.Memory.Library.Action.Forget>Forget</PawnDiary.Memory.Library.Action.Forget>
+  <PawnDiary.Memory.Library.Action.ForgetConfirm>Forget this memory permanently? Existing diary pages and other summaries will not change. This cannot be undone.</PawnDiary.Memory.Library.Action.ForgetConfirm>
+  <PawnDiary.Memory.Library.Action.CapFull>The change would exceed the memory storage limit. Your draft has been kept.</PawnDiary.Memory.Library.Action.CapFull>
+  <PawnDiary.Memory.Library.Action.Conflict>The memory changed while you were editing it. Review your saved draft before trying again.</PawnDiary.Memory.Library.Action.Conflict>
+  <PawnDiary.Memory.Library.Imported.ReadOnly>Imported legacy evidence is read-only.</PawnDiary.Memory.Library.Imported.ReadOnly>
+  <PawnDiary.Memory.Library.Imported.RawPreview>This legacy memory is too large or incomplete for the current format. Only a bounded preview is available.</PawnDiary.Memory.Library.Imported.RawPreview>
+  <PawnDiary.Memory.Library.Dev.Diagnostics>Copy diagnostics</PawnDiary.Memory.Library.Dev.Diagnostics>
+  <PawnDiary.Memory.Library.Dev.RejectionReasons>Rejection reasons</PawnDiary.Memory.Library.Dev.RejectionReasons>
 </LanguageData>

@@ -1,0 +1,436 @@
+{
+  "schema": "memory-m0-fixture-catalog-v1",
+  "benchmarkSchema": "memory-system-benchmark-v1",
+  "logicalPayloadSchema": "memory-logical-payload-v1",
+  "activationBuildState": "LegacyShadow",
+  "threadTargets": [
+    4,
+    12,
+    64
+  ],
+  "textModes": [
+    "asciiByteBoundary",
+    "utf8WorstPerUtf16Unit",
+    "xmlEscapeWorstPerUtf16Unit"
+  ],
+  "currentBaselineMetrics": [
+    {
+      "metricId": "current-save-size",
+      "observationKind": "loadedPending",
+      "fixtureId": "memory-scribe-roundtrip-v1",
+      "reason": "requires loaded Scribe spans"
+    },
+    {
+      "metricId": "current-load-time",
+      "observationKind": "loadedPending",
+      "fixtureId": "memory-scribe-roundtrip-v1",
+      "reason": "requires loaded FinalizeInit timing"
+    },
+    {
+      "metricId": "current-capture-throughput",
+      "observationKind": "pureExistingSuite",
+      "fixtureId": "DiaryPipelineTests",
+      "reason": "semantic throughput surrogate"
+    },
+    {
+      "metricId": "current-recall-scan-cost",
+      "observationKind": "pureExistingSuite",
+      "fixtureId": "PawnMemoryTests",
+      "reason": "detached selector surrogate"
+    },
+    {
+      "metricId": "current-prompt-size",
+      "observationKind": "pureExistingSuite",
+      "fixtureId": "DiaryPipelineTests.PromptFootprint",
+      "reason": "exact detached prompt fixture"
+    },
+    {
+      "metricId": "current-ui-row-cost",
+      "observationKind": "loadedPending",
+      "fixtureId": "memory-library-loaded-v1",
+      "reason": "requires Unity OnGUI"
+    },
+    {
+      "metricId": "current-request-retry",
+      "observationKind": "pureExistingSuite",
+      "fixtureId": "LlmProtocolHttpFixtureTests",
+      "reason": "detached HTTP state-machine fixture"
+    }
+  ],
+  "syntheticScenarios": [
+    {
+      "scenarioId": "worst-case-owner-v1",
+      "expectedGate": "SURROGATE-OWNER-WORST",
+      "coordinates": [
+        "N=4",
+        "N=12",
+        "N=64"
+      ]
+    },
+    {
+      "scenarioId": "exact-subject-collision-v1",
+      "expectedGate": "M0-ROUTE-EXACT",
+      "coordinates": [
+        "same-label-different-id",
+        "same-id-different-label",
+        "owner-self"
+      ]
+    },
+    {
+      "scenarioId": "duplicate-root-v1",
+      "expectedGate": "M0-TOKEN-ROUNDTRIP",
+      "coordinates": [
+        "semantic-duplicate",
+        "opaque-id-conflict",
+        "permutation"
+      ]
+    },
+    {
+      "scenarioId": "summary-saturation-v1",
+      "expectedGate": "M0-CAP-PLUS-ONE",
+      "coordinates": [
+        "rolling-one",
+        "closed-many",
+        "contribution-cap+1"
+      ]
+    },
+    {
+      "scenarioId": "player-edited-saturation-v1",
+      "expectedGate": "M0-ATOMIC-REFUSAL",
+      "coordinates": [
+        "owner-cap",
+        "global-cap",
+        "protected-cap+1"
+      ]
+    },
+    {
+      "scenarioId": "global-faction-state-v1",
+      "expectedGate": "M0-DTO-BOUNDS",
+      "coordinates": [
+        "same-def-different-instance",
+        "generation-reuse",
+        "cap+1"
+      ]
+    },
+    {
+      "scenarioId": "migration-overflow-v1",
+      "expectedGate": "M0-RETENTION-EMERGENCY",
+      "coordinates": [
+        "resolved",
+        "unknown-owner",
+        "raw-sidecar",
+        "global-cap+1"
+      ]
+    }
+  ],
+  "fixedRows": [
+    {
+      "name": "activeDiaryRetention",
+      "disposition": "fixedProduct",
+      "value": "100",
+      "gate": "FIX-ACTIVE-DIARY-RETENTION-100"
+    },
+    {
+      "name": "threadTarget",
+      "disposition": "fixedProduct",
+      "value": "12",
+      "gate": "FIX-THREAD-TARGET"
+    },
+    {
+      "name": "rollingSummaryPerRoot",
+      "disposition": "fixedInvariant",
+      "value": "1",
+      "gate": "FIX-ROLLING-ONE"
+    },
+    {
+      "name": "summarySubjectLookupEntries",
+      "disposition": "derivedEquality",
+      "value": "distinctSubjects",
+      "gate": "FIX-SUMMARY-SUBJECT-LOOKUP"
+    },
+    {
+      "name": "summaryOpportunityPerOwner",
+      "disposition": "fixedInvariant",
+      "value": "1",
+      "gate": "FIX-SUMMARY-OPPORTUNITY-ONE"
+    },
+    {
+      "name": "settingsNumericDraftUnits",
+      "disposition": "fixedInvariant",
+      "value": "32",
+      "gate": "FIX-SETTINGS-DRAFT-32"
+    },
+    {
+      "name": "minorRegularLifetimeDays",
+      "disposition": "fixedProduct",
+      "value": "15/60",
+      "gate": "FIX-POLICY-LIFETIME-15-60"
+    },
+    {
+      "name": "quietReflectionBasisPoints",
+      "disposition": "fixedProduct",
+      "value": "200",
+      "gate": "FIX-QUIET-BP-200"
+    },
+    {
+      "name": "repetitionDaysEntries",
+      "disposition": "fixedProduct",
+      "value": "5/3",
+      "gate": "FIX-REPETITION-5-3"
+    },
+    {
+      "name": "brainwipeMetadataReserveBytes",
+      "disposition": "derivedEquality",
+      "value": "per-entry",
+      "gate": "FIX-BRAINWIPE-METADATA-RESERVE"
+    },
+    {
+      "name": "summarySearchScratchUnits",
+      "disposition": "derivedEquality",
+      "value": "normalizedSearchFieldUnits",
+      "gate": "FIX-SUMMARY-SEARCH-SCRATCH"
+    }
+  ],
+  "pureGateIds": [
+    "M0-CODEC-CANONICAL",
+    "M0-ROUTE-EXACT",
+    "M0-TOKEN-ROUNDTRIP",
+    "M0-VECTOR-GENERATOR",
+    "M0-CROSS-CAP-NORMALIZATION",
+    "M0-CAP-PLUS-ONE",
+    "M0-RETENTION-ORDINARY",
+    "M0-RETENTION-EMERGENCY",
+    "M0-ATOMIC-REFUSAL",
+    "M0-BRAINWIPE-TARGET-ONLY",
+    "M0-SCHEDULER-STOP",
+    "M0-DTO-BOUNDS",
+    "SURROGATE-OWNER-TYPICAL",
+    "SURROGATE-OWNER-WORST",
+    "SURROGATE-GLOBAL"
+  ],
+  "loadedPendingFixtures": [
+    {
+      "fixtureId": "memory-scribe-roundtrip-v1",
+      "availablePhase": "M1",
+      "gates": [
+        "SCRIBE-OWNER-TYPICAL",
+        "SCRIBE-OWNER-WORST",
+        "SCRIBE-GLOBAL"
+      ]
+    },
+    {
+      "fixtureId": "memory-dispatch-scribe-v1",
+      "availablePhase": "M2",
+      "gates": [
+        "SCRIBE-DISPATCH-ACTIVE",
+        "PERF-ACCEPTED-PROMPT-RETENTION"
+      ]
+    },
+    {
+      "fixtureId": "memory-library-loaded-v1",
+      "availablePhase": "M9",
+      "gates": [
+        "PERF-LIBRARY-COLD",
+        "PERF-LIBRARY-WARM",
+        "ALLOC-LIBRARY-WARM",
+        "PERF-REPAINT",
+        "DTO-LIST-STRINGS",
+        "DTO-DETAIL-STRINGS"
+      ]
+    },
+    {
+      "fixtureId": "memory-accepted-prompt-scribe-v1",
+      "availablePhase": "M11",
+      "gates": [
+        "SCRIBE-ACCEPTED-PROMPT-OWNER",
+        "SCRIBE-ACCEPTED-PROMPT-GLOBAL"
+      ]
+    },
+    {
+      "fixtureId": "memory-defensive-ceiling-loaded-v1",
+      "availablePhase": "M11",
+      "gates": [
+        "PERF-SLICE-SCHEDULER",
+        "PERF-INDEX-REBUILD",
+        "PERF-BRAINWIPE"
+      ]
+    }
+  ],
+  "requestStateMachine": {
+    "schema": "memory-request-state-machine-v1",
+    "identities": [
+      "logicalRequestId",
+      "logicalRequestKey",
+      "evidenceEpochToken",
+      "variantOrdinal",
+      "variantKey",
+      "attemptOrdinal",
+      "invocationSequence",
+      "evidenceSetFingerprint",
+      "receiptPlanFingerprint",
+      "diagnosticProvenanceFingerprint",
+      "permitFingerprint"
+    ],
+    "states": [
+      "staged",
+      "activated",
+      "invocation_committed",
+      "settlement_pending"
+    ],
+    "transitions": [
+      "staged>activated",
+      "staged>settlement_pending",
+      "activated>invocation_committed",
+      "activated>settlement_pending",
+      "invocation_committed>settlement_pending"
+    ],
+    "attemptStates": [
+      "prepared",
+      "invocation_committed",
+      "receipt_applied",
+      "terminal_pending"
+    ],
+    "invariants": [
+      "commit_before_activation",
+      "permit_before_send",
+      "receipt_before_result",
+      "one_narrative_winner",
+      "brainwipe_epoch_fence",
+      "regenerate_static_prompt"
+    ]
+  },
+  "settings": {
+    "schema": "memory-settings-policy-fields-v1",
+    "currentVersion": 1,
+    "fields": [
+      "saveNewMemories",
+      "useMemoriesInWriting",
+      "usePawnBackground",
+      "allowExtraMemoryAiRequests",
+      "occasionalMemoryReflections",
+      "memoryCategoryMask",
+      "captureInvalidationGenerationPersonal",
+      "captureInvalidationGenerationRelationships",
+      "captureInvalidationGenerationFamily",
+      "captureInvalidationGenerationFactions",
+      "optionalRequestInvalidationGeneration",
+      "minorMemoryLifetimeDays",
+      "regularMemoryLifetimeDays",
+      "memoryThreadTarget",
+      "memoryReuseDays",
+      "memoryRevisitEntryCount"
+    ],
+    "releaseDefaults": [
+      "1",
+      "1",
+      "1",
+      "0",
+      "0",
+      "15",
+      "1",
+      "1",
+      "1",
+      "1",
+      "1",
+      "15",
+      "60",
+      "12",
+      "5",
+      "3"
+    ],
+    "migration": {
+      "missingOrVersionZero": "release_defaults_v1",
+      "unknownFutureVersion": "inert_preserve_raw",
+      "invalidKnownNumeric": "clamp_to_xml_range",
+      "publish": "single_main_thread_settings_mutation"
+    }
+  },
+  "requiredLocalizationKeys": [
+    "PawnDiary.Memory.Settings.Page",
+    "PawnDiary.Memory.Settings.SaveNew",
+    "PawnDiary.Memory.Settings.SaveNew.Desc",
+    "PawnDiary.Memory.Settings.UseWriting",
+    "PawnDiary.Memory.Settings.UseWriting.Desc",
+    "PawnDiary.Memory.Settings.UseBackground",
+    "PawnDiary.Memory.Settings.UseBackground.Desc",
+    "PawnDiary.Memory.Settings.AllowExtra",
+    "PawnDiary.Memory.Settings.AllowExtra.Desc",
+    "PawnDiary.Memory.Settings.Occasional",
+    "PawnDiary.Memory.Settings.Occasional.Desc",
+    "PawnDiary.Memory.Settings.OpenLibrary",
+    "PawnDiary.Memory.Settings.NoGame",
+    "PawnDiary.Memory.Settings.Privacy",
+    "PawnDiary.Memory.Settings.ExtraCost",
+    "PawnDiary.Memory.Settings.Disabled.UseWriting",
+    "PawnDiary.Memory.Settings.Disabled.AllowExtra",
+    "PawnDiary.Memory.Settings.Compatibility",
+    "PawnDiary.Memory.Settings.Categories.Header",
+    "PawnDiary.Memory.Settings.Category.Personal",
+    "PawnDiary.Memory.Settings.Category.Relationships",
+    "PawnDiary.Memory.Settings.Category.Family",
+    "PawnDiary.Memory.Settings.Category.Factions",
+    "PawnDiary.Memory.Settings.Category.Desc",
+    "PawnDiary.Memory.Settings.Retention.Header",
+    "PawnDiary.Memory.Settings.Retention.Minor",
+    "PawnDiary.Memory.Settings.Retention.Regular",
+    "PawnDiary.Memory.Settings.Retention.ThreadTarget",
+    "PawnDiary.Memory.Settings.Retention.DayUnit",
+    "PawnDiary.Memory.Settings.Retention.AgeHelp",
+    "PawnDiary.Memory.Settings.Retention.ThreadHelp",
+    "PawnDiary.Memory.Settings.Retention.InvalidOrder",
+    "PawnDiary.Memory.Settings.Retention.Important",
+    "PawnDiary.Memory.Settings.Retention.Edited",
+    "PawnDiary.Memory.Settings.Repetition.Header",
+    "PawnDiary.Memory.Settings.Repetition.Days",
+    "PawnDiary.Memory.Settings.Repetition.Entries",
+    "PawnDiary.Memory.Settings.Repetition.Help",
+    "PawnDiary.Memory.Settings.UseOriginal.Warning",
+    "PawnDiary.Memory.Library.Title",
+    "PawnDiary.Memory.Library.Threads",
+    "PawnDiary.Memory.Library.Standalone",
+    "PawnDiary.Memory.Library.Imported",
+    "PawnDiary.Memory.Library.Search",
+    "PawnDiary.Memory.Library.Filter.All",
+    "PawnDiary.Memory.Library.Filter.Suppressed",
+    "PawnDiary.Memory.Library.Filter.Edited",
+    "PawnDiary.Memory.Library.Filter.Expiring",
+    "PawnDiary.Memory.Library.Sort.Recent",
+    "PawnDiary.Memory.Library.Sort.Oldest",
+    "PawnDiary.Memory.Library.Sort.Importance",
+    "PawnDiary.Memory.Library.Sort.Subject",
+    "PawnDiary.Memory.Library.Empty",
+    "PawnDiary.Memory.Library.Loading",
+    "PawnDiary.Memory.Library.AdditionalOwners",
+    "PawnDiary.Memory.Library.AdditionalColonists",
+    "PawnDiary.Memory.Library.UnknownOwner",
+    "PawnDiary.Memory.Library.CurrentStatus",
+    "PawnDiary.Memory.Library.Chapter",
+    "PawnDiary.Memory.Library.Position",
+    "PawnDiary.Memory.Library.Back",
+    "PawnDiary.Memory.Library.Previous",
+    "PawnDiary.Memory.Library.Next",
+    "PawnDiary.Memory.Library.Importance.Minor",
+    "PawnDiary.Memory.Library.Importance.Regular",
+    "PawnDiary.Memory.Library.Importance.Important",
+    "PawnDiary.Memory.Library.Ttl.Never",
+    "PawnDiary.Memory.Library.Ttl.Unknown",
+    "PawnDiary.Memory.Library.Ttl.Expired",
+    "PawnDiary.Memory.Library.Ttl.Remaining",
+    "PawnDiary.Memory.Library.Badge.Suppressed",
+    "PawnDiary.Memory.Library.Badge.Edited",
+    "PawnDiary.Memory.Library.Badge.RollingSummary",
+    "PawnDiary.Memory.Library.Badge.ClosedSummary",
+    "PawnDiary.Memory.Library.Action.Suppress",
+    "PawnDiary.Memory.Library.Action.Enable",
+    "PawnDiary.Memory.Library.Action.Edit",
+    "PawnDiary.Memory.Library.Action.UseOriginal",
+    "PawnDiary.Memory.Library.Action.Forget",
+    "PawnDiary.Memory.Library.Action.ForgetConfirm",
+    "PawnDiary.Memory.Library.Action.CapFull",
+    "PawnDiary.Memory.Library.Action.Conflict",
+    "PawnDiary.Memory.Library.Imported.ReadOnly",
+    "PawnDiary.Memory.Library.Imported.RawPreview",
+    "PawnDiary.Memory.Library.Dev.Diagnostics",
+    "PawnDiary.Memory.Library.Dev.RejectionReasons"
+  ]
+}

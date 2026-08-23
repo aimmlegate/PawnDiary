@@ -12,7 +12,8 @@
   `lineTemplate` is the localized canonical fact line ("{other}" = the other pawn's saved name,
   "{<factKey>}" = that captured fact row). DefInjected translates label + lineTemplate.
 
-  eventKind tokens are SAVED DATA - never rename them.
+  eventKind tokens are SAVED DATA - never rename them. The memoryKind/category/importance/fact/route/
+  consumer fields below are behavior-inert M0 contracts until the unified system activates in M11.
 -->
 <Defs>
 
@@ -27,6 +28,11 @@
     <order>10</order>
     <matchDefNames><li>Lover</li></matchDefNames>
     <owners>both</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>relationships</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>relation.lover.gained</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>pawn</subjectKind><equivalentExtractors><li>counterpart_pawn</li></equivalentExtractors><chapterPhasePolicy>relationship_phase</chapterPhasePolicy><fallbackLabelSource>counterpart_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <lineTemplate>became lovers with {other}</lineTemplate>
   </PawnDiary.DiaryImportantEventDef>
 
@@ -39,6 +45,11 @@
     <order>10</order>
     <matchDefNames><li>Fiance</li></matchDefNames>
     <owners>both</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>relationships</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>relation.fiance.gained</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>pawn</subjectKind><equivalentExtractors><li>counterpart_pawn</li></equivalentExtractors><chapterPhasePolicy>relationship_phase</chapterPhasePolicy><fallbackLabelSource>counterpart_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <lineTemplate>became engaged to {other}</lineTemplate>
   </PawnDiary.DiaryImportantEventDef>
 
@@ -51,6 +62,11 @@
     <order>10</order>
     <matchDefNames><li>Spouse</li></matchDefNames>
     <owners>both</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>relationships</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>relation.spouse.gained</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>pawn</subjectKind><equivalentExtractors><li>counterpart_pawn</li></equivalentExtractors><chapterPhasePolicy>relationship_phase</chapterPhasePolicy><fallbackLabelSource>counterpart_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <lineTemplate>married {other}</lineTemplate>
   </PawnDiary.DiaryImportantEventDef>
 
@@ -63,6 +79,11 @@
     <order>10</order>
     <matchDefNames><li>ExLover</li></matchDefNames>
     <owners>both</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>relationships</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>relation.lover.lost</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>pawn</subjectKind><equivalentExtractors><li>counterpart_pawn</li></equivalentExtractors><chapterPhasePolicy>relationship_phase</chapterPhasePolicy><fallbackLabelSource>counterpart_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <lineTemplate>broke up with {other}</lineTemplate>
   </PawnDiary.DiaryImportantEventDef>
 
@@ -75,6 +96,11 @@
     <order>10</order>
     <matchDefNames><li>ExSpouse</li></matchDefNames>
     <owners>both</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>relationships</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>relation.spouse.lost</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>pawn</subjectKind><equivalentExtractors><li>counterpart_pawn</li></equivalentExtractors><chapterPhasePolicy>relationship_phase</chapterPhasePolicy><fallbackLabelSource>counterpart_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <lineTemplate>divorced {other}</lineTemplate>
   </PawnDiary.DiaryImportantEventDef>
 
@@ -87,6 +113,11 @@
     <order>20</order>
     <matchDefNames><li>BiotechPsychicBondFormed</li></matchDefNames>
     <owners>both</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>relationships</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>bond.psychic.formed</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>pawn</subjectKind><equivalentExtractors><li>counterpart_pawn</li></equivalentExtractors><chapterPhasePolicy>relationship_phase</chapterPhasePolicy><fallbackLabelSource>counterpart_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <constantSubjectKeys><li>bond:psychic</li></constantSubjectKeys>
     <lineTemplate>formed a psychic bond with {other}</lineTemplate>
   </PawnDiary.DiaryImportantEventDef>
@@ -100,6 +131,11 @@
     <order>20</order>
     <matchDefNames><li>BiotechPsychicBondRuptured</li></matchDefNames>
     <owners>both</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>relationships</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>bond.psychic.ruptured</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>pawn</subjectKind><equivalentExtractors><li>counterpart_pawn</li></equivalentExtractors><chapterPhasePolicy>relationship_phase</chapterPhasePolicy><fallbackLabelSource>counterpart_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <constantSubjectKeys><li>bond:psychic</li></constantSubjectKeys>
     <lineTemplate>the psychic bond with {other} was torn</lineTemplate>
   </PawnDiary.DiaryImportantEventDef>
@@ -120,6 +156,11 @@
       <li>BabyBorn</li>
     </matchDefNames>
     <owners>both</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>family</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>family.birth</factKind><contextKey>child_id</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>pawn</subjectKind><equivalentExtractors><li>context:child_id</li></equivalentExtractors><chapterPhasePolicy>family_lifecycle</chapterPhasePolicy><fallbackLabelSource>context:child_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <subjectKeys>
       <li><contextKey>child_id</contextKey><prefix>pawn</prefix></li>
     </subjectKeys>
@@ -142,6 +183,11 @@
     <order>10</order>
     <matchDefNames><li>PawnDiary_DeathFamily</li></matchDefNames>
     <owners>provided</owners>
+    <captureSourceToken>deathFamily</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>family</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>death.family</factKind><contextKey>relation</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>pawn</subjectKind><equivalentExtractors><li>extra_participant:victim</li></equivalentExtractors><chapterPhasePolicy>family_lifecycle</chapterPhasePolicy><fallbackLabelSource>context:victim</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <factKeys>
       <li>relation</li>
       <li>victim</li>
@@ -159,6 +205,10 @@
     <order>10</order>
     <matchDefNames><li>PawnDiary_DeathInstigator</li></matchDefNames>
     <owners>provided</owners>
+    <captureSourceToken>deathInstigator</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>death.killed</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <factKeys>
       <li>victim</li>
       <li>weapon</li>
@@ -182,6 +232,11 @@
     <order>40</order>
     <requireContext><li>part_kind=missingpart</li></requireContext>
     <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>body.part.lost</factKind><contextKey>part_def</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:body_history</li></equivalentExtractors><chapterPhasePolicy>body_state</chapterPhasePolicy><fallbackLabelSource>context:body_part</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <subjectKeys>
       <li><contextKey>part_def</contextKey><prefix>part</prefix></li>
     </subjectKeys>
@@ -201,6 +256,11 @@
     <order>40</order>
     <requireContext><li>part_kind=addedpart</li></requireContext>
     <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>body.part.installed</factKind><contextKey>hediff</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:body_history</li></equivalentExtractors><chapterPhasePolicy>body_state</chapterPhasePolicy><fallbackLabelSource>context:label</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <subjectKeys>
       <li><contextKey>part_def</contextKey><prefix>part</prefix></li>
       <li><contextKey>hediff</contextKey><prefix>implant</prefix></li>
@@ -224,6 +284,11 @@
     <order>41</order>
     <requireContext><li>part_kind=organicpart</li></requireContext>
     <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>body.part.installed</factKind><contextKey>hediff</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:body_history</li></equivalentExtractors><chapterPhasePolicy>body_state</chapterPhasePolicy><fallbackLabelSource>context:label</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <subjectKeys>
       <li><contextKey>part_def</contextKey><prefix>part</prefix></li>
       <li><contextKey>hediff</contextKey><prefix>implant</prefix></li>
@@ -246,6 +311,11 @@
     <order>10</order>
     <matchSuffixes><li>_addedpart</li></matchSuffixes>
     <owners>provided</owners>
+    <captureSourceToken>hediffRemoved</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>body.part.removed</factKind><contextKey>hediff</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:body_history</li></equivalentExtractors><chapterPhasePolicy>body_state</chapterPhasePolicy><fallbackLabelSource>context:label</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>false</authoritativePageOwned>
     <subjectKeys>
       <li><contextKey>part_def</contextKey><prefix>part</prefix></li>
       <li><contextKey>hediff</contextKey><prefix>implant</prefix></li>
@@ -271,6 +341,11 @@
       <li>Sterilized</li>
     </matchDefNames>
     <owners>provided</owners>
+    <captureSourceToken>hediffQuiet</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>body.condition.permanent</factKind><contextKey>hediff</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:body_history</li></equivalentExtractors><chapterPhasePolicy>body_state</chapterPhasePolicy><fallbackLabelSource>context:label</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>false</authoritativePageOwned>
     <subjectKeys>
       <li><contextKey>hediff</contextKey><prefix>hediff</prefix></li>
     </subjectKeys>
@@ -289,6 +364,11 @@
     <order>50</order>
     <matchDefNames><li>PawnDiary_Arrival</li></matchDefNames>
     <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>status.faction.joined</factKind><contextKey>arrival_source</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:colony_membership</li></equivalentExtractors><chapterPhasePolicy>membership_state</chapterPhasePolicy><fallbackLabelSource>owner</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <constantSubjectKeys><li>faction</li></constantSubjectKeys>
     <factKeys><li>arrival_source</li></factKeys>
     <lineTemplate>joined the colony</lineTemplate>
@@ -303,6 +383,11 @@
     <order>50</order>
     <matchDefNames><li>BiotechGrowthMoment</li></matchDefNames>
     <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>status.growth</factKind><contextKey>growth_stage</contextKey><aggregationToken>int64_range</aggregationToken><canonicalValueKind>int64</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:growth</li></equivalentExtractors><chapterPhasePolicy>growth_stage</chapterPhasePolicy><fallbackLabelSource>owner</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <factKeys>
       <li>growth_stage</li>
       <li>selected_trait</li>
@@ -321,6 +406,11 @@
     <order>10</order>
     <matchDefNames><li>PawnDiary_IdeoConversion</li></matchDefNames>
     <owners>provided</owners>
+    <captureSourceToken>ideoConversion</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>status.ideo.converted</factKind><contextKey>new_ideo</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:belief</li></equivalentExtractors><chapterPhasePolicy>belief_state</chapterPhasePolicy><fallbackLabelSource>context:new_ideo</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <subjectKeys>
       <li><contextKey>new_culture</contextKey><prefix>culture</prefix></li>
     </subjectKeys>
@@ -340,6 +430,11 @@
     <order>10</order>
     <matchDefNames><li>PawnDiary_RoleAssigned</li></matchDefNames>
     <owners>provided</owners>
+    <captureSourceToken>roleAssigned</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>status.role.gained</factKind><contextKey>role</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:ideology_role</li></equivalentExtractors><chapterPhasePolicy>role_state</chapterPhasePolicy><fallbackLabelSource>context:role</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <constantSubjectKeys><li>role</li></constantSubjectKeys>
     <factKeys>
       <li>role</li>
@@ -357,6 +452,11 @@
     <order>10</order>
     <matchDefNames><li>PawnDiary_RoleUnassigned</li></matchDefNames>
     <owners>provided</owners>
+    <captureSourceToken>roleUnassigned</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>status.role.lost</factKind><contextKey>role</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:ideology_role</li></equivalentExtractors><chapterPhasePolicy>role_state</chapterPhasePolicy><fallbackLabelSource>context:role</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <constantSubjectKeys><li>role</li></constantSubjectKeys>
     <factKeys>
       <li>role</li>
@@ -377,6 +477,11 @@
       <li>RoyalTitlePromoted</li>
     </matchDefNames>
     <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>status.title.advanced</factKind><contextKey>new_value</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:royal_title</li></equivalentExtractors><chapterPhasePolicy>title_state</chapterPhasePolicy><fallbackLabelSource>context:new_value</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <constantSubjectKeys><li>title</li></constantSubjectKeys>
     <factKeys>
       <li>previous_value</li>
@@ -397,6 +502,11 @@
       <li>RoyalTitleLost</li>
     </matchDefNames>
     <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>status.title.lost</factKind><contextKey>previous_value</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:royal_title</li></equivalentExtractors><chapterPhasePolicy>title_state</chapterPhasePolicy><fallbackLabelSource>context:previous_value</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <constantSubjectKeys><li>title</li></constantSubjectKeys>
     <factKeys>
       <li>previous_value</li>
@@ -414,6 +524,11 @@
     <order>50</order>
     <matchDefNames><li>PsylinkLevel</li></matchDefNames>
     <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>status.psylink</factKind><contextKey>new_value</contextKey><aggregationToken>int64_range</aggregationToken><canonicalValueKind>int64</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:psylink</li></equivalentExtractors><chapterPhasePolicy>psylink_state</chapterPhasePolicy><fallbackLabelSource>owner</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <constantSubjectKeys><li>psylink</li></constantSubjectKeys>
     <factKeys>
       <li>previous_value</li>
@@ -431,6 +546,11 @@
     <order>50</order>
     <matchDefNames><li>XenotypeChanged</li></matchDefNames>
     <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>body.xenotype</factKind><contextKey>new_value</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:genetic_identity</li></equivalentExtractors><chapterPhasePolicy>genetic_state</chapterPhasePolicy><fallbackLabelSource>context:new_value</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <constantSubjectKeys><li>xenotype</li></constantSubjectKeys>
     <factKeys>
       <li>previous_value</li>
@@ -448,6 +568,11 @@
     <order>50</order>
     <matchDefNames><li>GeneIdentityChanged</li></matchDefNames>
     <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>body.genes</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:genetic_identity</li></equivalentExtractors><chapterPhasePolicy>genetic_state</chapterPhasePolicy><fallbackLabelSource>owner</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <constantSubjectKeys><li>xenotype</li></constantSubjectKeys>
     <lineTemplate>genes were significantly rewritten</lineTemplate>
   </PawnDiary.DiaryImportantEventDef>
@@ -461,6 +586,11 @@
     <order>50</order>
     <matchDefNames><li>BiotechMechlinkInstalled</li></matchDefNames>
     <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>status.mechlink.gained</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:mechlink</li></equivalentExtractors><chapterPhasePolicy>mechlink_state</chapterPhasePolicy><fallbackLabelSource>owner</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <constantSubjectKeys><li>mechlink</li></constantSubjectKeys>
     <lineTemplate>became a mechanitor</lineTemplate>
   </PawnDiary.DiaryImportantEventDef>
@@ -474,6 +604,11 @@
     <order>50</order>
     <matchDefNames><li>BiotechMechlinkRemoved</li></matchDefNames>
     <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>status.mechlink.lost</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:mechlink</li></equivalentExtractors><chapterPhasePolicy>mechlink_state</chapterPhasePolicy><fallbackLabelSource>owner</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <constantSubjectKeys><li>mechlink</li></constantSubjectKeys>
     <lineTemplate>lost the mechlink</lineTemplate>
   </PawnDiary.DiaryImportantEventDef>
@@ -487,6 +622,11 @@
     <order>50</order>
     <matchDefNames><li>PersonaWeaponBondFormed</li></matchDefNames>
     <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>bond.persona.formed</factKind><contextKey>persona_weapon_id</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:persona_bond</li></equivalentExtractors><chapterPhasePolicy>persona_bond_state</chapterPhasePolicy><fallbackLabelSource>context:persona_weapon_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <constantSubjectKeys><li>bond:persona</li></constantSubjectKeys>
     <subjectKeys>
       <li><contextKey>persona_weapon_id</contextKey><prefix>weapon</prefix></li>
@@ -504,6 +644,11 @@
     <order>50</order>
     <matchDefNames><li>PersonaWeaponBondEnded</li></matchDefNames>
     <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>bond.persona.ended</factKind><contextKey>persona_weapon_id</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:persona_bond</li></equivalentExtractors><chapterPhasePolicy>persona_bond_state</chapterPhasePolicy><fallbackLabelSource>context:persona_weapon_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
     <constantSubjectKeys><li>bond:persona</li></constantSubjectKeys>
     <subjectKeys>
       <li><contextKey>persona_weapon_id</contextKey><prefix>weapon</prefix></li>

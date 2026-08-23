@@ -718,8 +718,7 @@ namespace PawnDiary
 
         private static string Segment(string value)
         {
-            string clean = value ?? string.Empty;
-            return clean.Length.ToString(CultureInfo.InvariantCulture) + ":" + clean;
+            return OrdinalSegmentCodec.Segment(value);
         }
 
         private static bool TryReadSegment(
@@ -728,30 +727,11 @@ namespace PawnDiary
             out int valueStart,
             out int valueLength)
         {
-            valueStart = 0;
-            valueLength = 0;
-            if (offset < 0 || offset >= key.Length) return false;
-
-            int length = 0;
-            int digitCount = 0;
-            while (offset < key.Length && key[offset] != ':')
-            {
-                char value = key[offset];
-                if (value < '0' || value > '9' || length > (int.MaxValue - 9) / 10)
-                    return false;
-                length = (length * 10) + (value - '0');
-                digitCount++;
-                offset++;
-            }
-            if (digitCount == 0 || offset >= key.Length || key[offset] != ':' || length <= 0)
-                return false;
-
-            offset++;
-            valueStart = offset;
-            valueLength = length;
-            if (length > key.Length - offset) return false;
-            offset += length;
-            return true;
+            return OrdinalSegmentCodec.TryReadLegacyNonEmptySegment(
+                key,
+                ref offset,
+                out valueStart,
+                out valueLength);
         }
 
         private static bool SegmentValueEquals(

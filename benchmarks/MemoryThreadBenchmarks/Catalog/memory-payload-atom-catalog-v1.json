@@ -1,0 +1,5906 @@
+{
+  "schema": "memory-benchmark-payload-atom-catalog-v1",
+  "logicalPayloadSchema": "memory-logical-payload-v1",
+  "rowFramingBytes": 64,
+  "scalarWidths": {
+    "bool": 1,
+    "int32": 4,
+    "int64": 8,
+    "listCount": 4,
+    "stringByteLength": 4,
+    "nullablePresence": 1
+  },
+  "types": [
+    {
+      "name": "PawnKnowledgeState",
+      "scope": "active_owner",
+      "fields": [
+        "schemaVersion",
+        "pawnId",
+        "autobiographicalEpochToken",
+        "archiveOnly",
+        "epochFenceOnly",
+        "requestCancellationGeneration",
+        "structuralRevision",
+        "statusRevision",
+        "completedDiaryEntryOrdinal",
+        "standaloneBlocks",
+        "threadRoots",
+        "playerBackground",
+        "ownerAwarenessSnapshots",
+        "openCaptureEpisodes",
+        "repetitionGuardRows",
+        "importedArchiveRows",
+        "migrationDiagnosticFlags"
+      ]
+    },
+    {
+      "name": "SavedMemoryAwarenessSnapshot",
+      "scope": "active_owner",
+      "fields": [
+        "schemaVersion",
+        "snapshotId",
+        "scopeKindToken",
+        "subjectKind",
+        "subjectId",
+        "factStreamToken",
+        "captureInvalidationGeneration",
+        "knownnessEvidenceToken",
+        "stateFacts",
+        "firstObservedTick",
+        "lastObservedTick",
+        "lastSourceOccurrenceId",
+        "trackingStateToken",
+        "snapshotRevision"
+      ]
+    },
+    {
+      "name": "SavedMemoryCaptureEpisode",
+      "scope": "active_owner",
+      "fields": [
+        "schemaVersion",
+        "episodeId",
+        "captureRuleId",
+        "scopeKindToken",
+        "factStreamToken",
+        "category",
+        "captureInvalidationGeneration",
+        "episodeKindToken",
+        "subjectKind",
+        "subjectId",
+        "pairOrStreamKey",
+        "directionToken",
+        "baselineFacts",
+        "currentFacts",
+        "firstObservedTick",
+        "lastObservedTick",
+        "lastSourceOccurrenceId",
+        "episodeRevision"
+      ]
+    },
+    {
+      "name": "SavedMemoryStateFact",
+      "scope": "active_owner",
+      "fields": [
+        "schemaVersion",
+        "factKey",
+        "factValue"
+      ]
+    },
+    {
+      "name": "SavedMemoryThreadRoot",
+      "scope": "active_owner",
+      "fields": [
+        "schemaVersion",
+        "rootId",
+        "ownerPawnId",
+        "ownerEpochToken",
+        "subjectKind",
+        "subjectId",
+        "frozenSubjectLabel",
+        "structuralRevision",
+        "statusRevision",
+        "lastAppliedReducerRevision",
+        "nextChapterOrdinal",
+        "chapters",
+        "visibleBlocks",
+        "rollingSummaryBlock"
+      ]
+    },
+    {
+      "name": "SavedMemoryChapter",
+      "scope": "active_owner",
+      "fields": [
+        "schemaVersion",
+        "chapterId",
+        "ordinal",
+        "phaseToken",
+        "openedTick",
+        "lastActivityTick",
+        "closedTick",
+        "closureReasonToken",
+        "closed",
+        "closedSummaryRecordId"
+      ]
+    },
+    {
+      "name": "SavedMemoryBlock",
+      "scope": "active_owner",
+      "fields": [
+        "schemaVersion",
+        "recordId",
+        "sourceOccurrenceId",
+        "sourceEventId",
+        "captureRuleId",
+        "factDiscriminator",
+        "ownerPawnId",
+        "ownerEpochToken",
+        "kind",
+        "summaryRole",
+        "category",
+        "importance",
+        "originalEventTick",
+        "ageUnknown",
+        "rootId",
+        "chapterId",
+        "primarySubject",
+        "secondarySubjects",
+        "facts",
+        "provenance",
+        "automaticWording",
+        "playerWording",
+        "playerEdited",
+        "suppressed",
+        "requiredLifecycleLandmark",
+        "formatRevision",
+        "lastAutomaticIncludedTick",
+        "lastAutomaticIncludedEntryOrdinal",
+        "automaticInclusionCount",
+        "providerExposureState",
+        "lastProviderExposureTick",
+        "summaryPayload"
+      ]
+    },
+    {
+      "name": "SavedMemorySubjectRef",
+      "scope": "active_owner",
+      "fields": [
+        "schemaVersion",
+        "subjectRefId",
+        "subjectKind",
+        "subjectId",
+        "frozenLabel",
+        "roleToken",
+        "knownnessToken"
+      ]
+    },
+    {
+      "name": "SavedMemoryCanonicalFact",
+      "scope": "active_owner",
+      "fields": [
+        "schemaVersion",
+        "factId",
+        "factKind",
+        "canonicalSubjectKind",
+        "canonicalSubjectId",
+        "aggregationToken",
+        "canonicalValueKind",
+        "canonicalValue",
+        "majorTurningPoint",
+        "reversal"
+      ]
+    },
+    {
+      "name": "SavedMemoryProvenance",
+      "scope": "active_owner",
+      "fields": [
+        "schemaVersion",
+        "provenanceRefId",
+        "sourceKindToken",
+        "sourceOccurrenceId",
+        "sourceEventId",
+        "captureRuleId",
+        "factDiscriminator",
+        "integrationToken"
+      ]
+    },
+    {
+      "name": "SavedMemorySummaryPayload",
+      "scope": "active_owner",
+      "fields": [
+        "schemaVersion",
+        "reducerRevision",
+        "factsRevision",
+        "canonicalFactsFingerprint",
+        "factBuckets",
+        "subjectRefs",
+        "provenanceRefs",
+        "derivedCategoryMask",
+        "highestSurvivingImportance",
+        "earliestSurvivingTick",
+        "latestSurvivingTick",
+        "deterministicWording",
+        "optionalLlmWording",
+        "optionalLlmFingerprint",
+        "optionalLlmFormatRevision",
+        "optionalLlmCategoryMask",
+        "lastSettledWordingFingerprint",
+        "lastSettledWordingReducerRevision",
+        "lastSettledWordingFormatRevision",
+        "lastWordingDispositionToken"
+      ]
+    },
+    {
+      "name": "SavedMemoryFactBucket",
+      "scope": "active_owner",
+      "fields": [
+        "schemaVersion",
+        "bucketKey",
+        "factKind",
+        "canonicalSubjectKind",
+        "canonicalSubjectId",
+        "aggregationToken",
+        "contributions",
+        "derivedCount",
+        "derivedRangeMin",
+        "derivedRangeMax",
+        "earliestSurvivingTick",
+        "latestSurvivingTick"
+      ]
+    },
+    {
+      "name": "SavedMemoryFactContribution",
+      "scope": "active_owner",
+      "fields": [
+        "schemaVersion",
+        "contributionId",
+        "originChapterId",
+        "originRecordId",
+        "originFactOrdinal",
+        "originFactId",
+        "originalEventTick",
+        "ageUnknown",
+        "category",
+        "importance",
+        "canonicalValue",
+        "majorTurningPoint",
+        "reversal",
+        "sourceOccurrenceId",
+        "subjectRefIds",
+        "provenanceRefIds"
+      ]
+    },
+    {
+      "name": "SavedImportedMemoryRow",
+      "scope": "combined_owner",
+      "fields": [
+        "schemaVersion",
+        "archiveRecordId",
+        "savedOwnerIdentityKindToken",
+        "savedOwnerIdentityValue",
+        "reattributionGeneration",
+        "originalRecordId",
+        "sourceOccurrenceId",
+        "sourceEventId",
+        "originalEventTick",
+        "ageUnknown",
+        "importedWording",
+        "originalKindToken",
+        "originalSummaryRoleToken",
+        "originalCategoryToken",
+        "originalImportanceToken",
+        "routePolicyToken",
+        "primarySubject",
+        "secondarySubjects",
+        "canonicalFacts",
+        "provenance",
+        "summaryContributionEvidence",
+        "sourceTypeToken",
+        "conflictFingerprint",
+        "overflowRowCount",
+        "overflowLogicalBytes",
+        "diagnosticTokens",
+        "migrationReasonToken"
+      ]
+    },
+    {
+      "name": "SavedImportedSummaryContributionEvidenceV1",
+      "scope": "combined_owner",
+      "fields": [
+        "schemaVersion",
+        "contributionId",
+        "originChapterId",
+        "originRecordId",
+        "originFactOrdinal",
+        "originFactId",
+        "originalEventTick",
+        "ageUnknown",
+        "category",
+        "importance",
+        "canonicalValue",
+        "majorTurningPoint",
+        "reversal",
+        "sourceOccurrenceId",
+        "subjectRefIds",
+        "provenanceRefIds"
+      ]
+    },
+    {
+      "name": "SavedLegacyUnresolvedOwnerArchiveInputV1",
+      "scope": "raw_sidecar",
+      "fields": [
+        "schemaVersion",
+        "savedOwnerIdentityKindToken",
+        "savedOwnerIdentityValue",
+        "sourceContainerOrdinal",
+        "sourceRecordOrdinal",
+        "legacyRecord"
+      ]
+    },
+    {
+      "name": "DiaryGameComponentMemory",
+      "scope": "active_global",
+      "fields": [
+        "memoryComponentSchemaVersion",
+        "lastIssuedAutobiographicalEpochSequence",
+        "lastIssuedAutobiographicalEpochFallbackChain",
+        "globalFactionSnapshotAllocatorGeneration",
+        "globalFactionSnapshots",
+        "legacyOwnerEpochReservations",
+        "globalOptionalRequestCancellationGeneration",
+        "lastAppliedMemoryPolicyRevision",
+        "lastAppliedMemoryPolicyFingerprint",
+        "lastAppliedMemoryPolicyState",
+        "unresolvedOwnerArchiveRows",
+        "unresolvedArchiveMigrationState",
+        "rawUnresolvedOwnerArchiveInput",
+        "rawUnresolvedArchiveReattributionGeneration",
+        "unresolvedArchiveReattributionGeneration",
+        "unresolvedArchiveStructuralRevision",
+        "unresolvedArchiveReattributionDisabled",
+        "memoryCoordinatorSchemaVersion",
+        "summaryWordingOpportunities",
+        "memoryDiagnosticCounters",
+        "memoryAttemptAuditRows",
+        "memoryDispatchSchemaVersion",
+        "lastIssuedMemoryLogicalRequestSequence",
+        "activeMemoryCoordinatorRequests"
+      ]
+    },
+    {
+      "name": "SavedMemoryAppliedPolicyStateV1",
+      "scope": "active_global",
+      "fields": [
+        "schemaVersion",
+        "saveNewMemories",
+        "useMemoriesInWriting",
+        "usePawnBackground",
+        "allowExtraMemoryAiRequests",
+        "occasionalMemoryReflections",
+        "memoryCategoryMask",
+        "captureInvalidationGenerationPersonal",
+        "captureInvalidationGenerationRelationships",
+        "captureInvalidationGenerationFamily",
+        "captureInvalidationGenerationFactions",
+        "optionalRequestInvalidationGeneration",
+        "minorMemoryLifetimeDays",
+        "regularMemoryLifetimeDays",
+        "memoryThreadTarget",
+        "memoryReuseDays",
+        "memoryRevisitEntryCount"
+      ]
+    },
+    {
+      "name": "SavedSummaryWordingOpportunityV1",
+      "scope": "active_global",
+      "fields": [
+        "schemaVersion",
+        "ownerPawnId",
+        "ownerEpochToken",
+        "ownerCancellationGeneration",
+        "globalCancellationGeneration",
+        "optionalRequestInvalidationGeneration",
+        "rootId",
+        "summaryRecordId",
+        "expectedRootStructuralRevision",
+        "expectedSummaryFactsRevision",
+        "expectedReducerRevision",
+        "expectedFormatRevision",
+        "expectedCategoryMask",
+        "projectionFingerprint",
+        "requestedTick",
+        "dueTick",
+        "expiryTick",
+        "configuredPriority",
+        "salience",
+        "opportunityKey"
+      ]
+    },
+    {
+      "name": "SavedMemoryDiagnosticCounter",
+      "scope": "active_global",
+      "fields": [
+        "schemaVersion",
+        "reasonToken",
+        "scopeToken",
+        "saturatedCount"
+      ]
+    },
+    {
+      "name": "SavedMemoryAttemptAuditRow",
+      "scope": "active_global",
+      "fields": [
+        "schemaVersion",
+        "logicalRequestId",
+        "requestPurposeToken",
+        "ownerPawnId",
+        "ownerEpochToken",
+        "attemptOrdinal",
+        "variantKey",
+        "invocationTick",
+        "terminalTick",
+        "outcomeToken",
+        "potentialExposure"
+      ]
+    },
+    {
+      "name": "SavedGlobalFactionSnapshot",
+      "scope": "active_global",
+      "fields": [
+        "schemaVersion",
+        "factionInstanceId",
+        "allocatorGeneration",
+        "factionDefName",
+        "frozenDisplayLabel",
+        "goodwill",
+        "relationKindToken",
+        "leaderPawnId",
+        "defeated",
+        "removed",
+        "observedTick",
+        "trackingStateToken",
+        "snapshotRevision"
+      ]
+    },
+    {
+      "name": "SavedLegacyOwnerEpochReservation",
+      "scope": "active_global",
+      "fields": [
+        "schemaVersion",
+        "ownerPawnId",
+        "reservedEpochSequence"
+      ]
+    },
+    {
+      "name": "SavedMemoryRepetitionGuardRow",
+      "scope": "active_owner",
+      "fields": [
+        "schemaVersion",
+        "ownerEpochToken",
+        "guardKind",
+        "guardKey",
+        "lastAutomaticIncludedTick",
+        "lastAutomaticIncludedEntryOrdinal",
+        "automaticInclusionCount",
+        "lastSourceOccurrenceId",
+        "lastCommittedLogicalRequestId",
+        "lastCommittedEvidenceSetFingerprint"
+      ]
+    },
+    {
+      "name": "PawnReflectionStateMemoryFields",
+      "scope": "active_owner",
+      "fields": [
+        "memoryReflectionSchemaVersion",
+        "memoryOwnerEpochToken",
+        "lastQuietMemoryEvaluatedAbsoluteDay",
+        "lastQuietMemoryActivatedAbsoluteQuadrum",
+        "lastQuietMemoryDecisionKey"
+      ]
+    },
+    {
+      "name": "SavedActiveLogicalRequestV1",
+      "scope": "active_dispatch",
+      "fields": [
+        "schemaVersion",
+        "logicalRequestSequence",
+        "logicalRequestId",
+        "logicalRequestKey",
+        "requestPurposeToken",
+        "sessionId",
+        "eventIdOrOpportunityKey",
+        "povRoleToken",
+        "ownerPawnId",
+        "ownerEpochToken",
+        "evidenceEpochToken",
+        "ownerCancellationGeneration",
+        "globalCancellationGeneration",
+        "optionalRequestInvalidationGeneration",
+        "requestStateToken",
+        "lastIssuedAttemptOrdinal",
+        "narrativeUseWinnerAttemptOrdinal",
+        "narrativeUseWinnerVariantKey",
+        "frozenVariants",
+        "activeAttempts",
+        "reservedEvidenceEntries",
+        "reservedGuardEntries"
+      ]
+    },
+    {
+      "name": "SavedFrozenPromptVariantV1",
+      "scope": "active_dispatch",
+      "fields": [
+        "schemaVersion",
+        "variantOrdinal",
+        "variantKey",
+        "templateIdentity",
+        "contextDetailIdentity",
+        "systemPrompt",
+        "userPrompt",
+        "receiptPlan",
+        "diagnosticProvenance"
+      ]
+    },
+    {
+      "name": "SavedFrozenEvidenceReceiptPlanV1",
+      "scope": "active_dispatch",
+      "fields": [
+        "schemaVersion",
+        "evidenceSetFingerprint",
+        "evidenceEntries",
+        "guardEntries"
+      ]
+    },
+    {
+      "name": "SavedFrozenEvidenceEntryV1",
+      "scope": "active_dispatch",
+      "fields": [
+        "schemaVersion",
+        "recordId",
+        "sourceOccurrenceId",
+        "rootIdOrEmpty"
+      ]
+    },
+    {
+      "name": "SavedFrozenGuardEntryV1",
+      "scope": "active_dispatch",
+      "fields": [
+        "schemaVersion",
+        "guardKind",
+        "guardKey"
+      ]
+    },
+    {
+      "name": "SavedFrozenDiagnosticProvenanceV1",
+      "scope": "active_dispatch",
+      "fields": [
+        "schemaVersion",
+        "provenanceKindToken",
+        "sourceId",
+        "recordIdOrEmpty",
+        "sourceOccurrenceIdOrEmpty",
+        "rootIdOrEmpty",
+        "lineOrdinal"
+      ]
+    },
+    {
+      "name": "SavedActiveLogicalAttemptV1",
+      "scope": "active_dispatch",
+      "fields": [
+        "schemaVersion",
+        "attemptOrdinal",
+        "variantKey",
+        "attemptOriginToken",
+        "predecessorAttemptOrdinal",
+        "attemptStateToken",
+        "invocationSequence",
+        "invocationTick",
+        "terminalTick",
+        "terminalOutcomeToken",
+        "potentialExposureApplied",
+        "narrativeUseApplied",
+        "resultApplied"
+      ]
+    }
+  ],
+  "atomRows": [
+    {
+      "pathOrdinal": 0,
+      "canonicalFieldPath": "PawnKnowledgeState.schemaVersion",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 1,
+      "canonicalFieldPath": "PawnKnowledgeState.pawnId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 2,
+      "canonicalFieldPath": "PawnKnowledgeState.autobiographicalEpochToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 3,
+      "canonicalFieldPath": "PawnKnowledgeState.archiveOnly",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 4,
+      "canonicalFieldPath": "PawnKnowledgeState.epochFenceOnly",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 5,
+      "canonicalFieldPath": "PawnKnowledgeState.requestCancellationGeneration",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 6,
+      "canonicalFieldPath": "PawnKnowledgeState.structuralRevision",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 7,
+      "canonicalFieldPath": "PawnKnowledgeState.statusRevision",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 8,
+      "canonicalFieldPath": "PawnKnowledgeState.completedDiaryEntryOrdinal",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 9,
+      "canonicalFieldPath": "PawnKnowledgeState.standaloneBlocks",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-pawnknowledgestate-standaloneblocks-v1",
+      "candidateValueEncoding": "memory-min-row-pawnknowledgestate-standaloneblocks-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 10,
+      "canonicalFieldPath": "PawnKnowledgeState.threadRoots",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-pawnknowledgestate-threadroots-v1",
+      "candidateValueEncoding": "memory-min-row-pawnknowledgestate-threadroots-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 11,
+      "canonicalFieldPath": "PawnKnowledgeState.playerBackground",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": true
+    },
+    {
+      "pathOrdinal": 12,
+      "canonicalFieldPath": "PawnKnowledgeState.ownerAwarenessSnapshots",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-pawnknowledgestate-ownerawarenesssnapshots-v1",
+      "candidateValueEncoding": "memory-min-row-pawnknowledgestate-ownerawarenesssnapshots-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 13,
+      "canonicalFieldPath": "PawnKnowledgeState.openCaptureEpisodes",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-pawnknowledgestate-opencaptureepisodes-v1",
+      "candidateValueEncoding": "memory-min-row-pawnknowledgestate-opencaptureepisodes-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 14,
+      "canonicalFieldPath": "PawnKnowledgeState.repetitionGuardRows",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-pawnknowledgestate-repetitionguardrows-v1",
+      "candidateValueEncoding": "memory-min-row-pawnknowledgestate-repetitionguardrows-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 15,
+      "canonicalFieldPath": "PawnKnowledgeState.importedArchiveRows",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-pawnknowledgestate-importedarchiverows-v1",
+      "candidateValueEncoding": "memory-min-row-pawnknowledgestate-importedarchiverows-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 16,
+      "canonicalFieldPath": "PawnKnowledgeState.migrationDiagnosticFlags",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 17,
+      "canonicalFieldPath": "SavedMemoryAwarenessSnapshot.schemaVersion",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 18,
+      "canonicalFieldPath": "SavedMemoryAwarenessSnapshot.snapshotId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 19,
+      "canonicalFieldPath": "SavedMemoryAwarenessSnapshot.scopeKindToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "pawn",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 20,
+      "canonicalFieldPath": "SavedMemoryAwarenessSnapshot.subjectKind",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "pawn",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 21,
+      "canonicalFieldPath": "SavedMemoryAwarenessSnapshot.subjectId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 22,
+      "canonicalFieldPath": "SavedMemoryAwarenessSnapshot.factStreamToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 23,
+      "canonicalFieldPath": "SavedMemoryAwarenessSnapshot.captureInvalidationGeneration",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 24,
+      "canonicalFieldPath": "SavedMemoryAwarenessSnapshot.knownnessEvidenceToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "observed",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 25,
+      "canonicalFieldPath": "SavedMemoryAwarenessSnapshot.stateFacts",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedmemoryawarenesssnapshot-statefacts-v1",
+      "candidateValueEncoding": "memory-min-row-savedmemoryawarenesssnapshot-statefacts-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 26,
+      "canonicalFieldPath": "SavedMemoryAwarenessSnapshot.firstObservedTick",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 27,
+      "canonicalFieldPath": "SavedMemoryAwarenessSnapshot.lastObservedTick",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 28,
+      "canonicalFieldPath": "SavedMemoryAwarenessSnapshot.lastSourceOccurrenceId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 29,
+      "canonicalFieldPath": "SavedMemoryAwarenessSnapshot.trackingStateToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "active",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 30,
+      "canonicalFieldPath": "SavedMemoryAwarenessSnapshot.snapshotRevision",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 31,
+      "canonicalFieldPath": "SavedMemoryCaptureEpisode.schemaVersion",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 32,
+      "canonicalFieldPath": "SavedMemoryCaptureEpisode.episodeId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 33,
+      "canonicalFieldPath": "SavedMemoryCaptureEpisode.captureRuleId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 34,
+      "canonicalFieldPath": "SavedMemoryCaptureEpisode.scopeKindToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "pawn",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 35,
+      "canonicalFieldPath": "SavedMemoryCaptureEpisode.factStreamToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 36,
+      "canonicalFieldPath": "SavedMemoryCaptureEpisode.category",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "personal",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 37,
+      "canonicalFieldPath": "SavedMemoryCaptureEpisode.captureInvalidationGeneration",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 38,
+      "canonicalFieldPath": "SavedMemoryCaptureEpisode.episodeKindToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "state_change",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 39,
+      "canonicalFieldPath": "SavedMemoryCaptureEpisode.subjectKind",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "pawn",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 40,
+      "canonicalFieldPath": "SavedMemoryCaptureEpisode.subjectId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 41,
+      "canonicalFieldPath": "SavedMemoryCaptureEpisode.pairOrStreamKey",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 42,
+      "canonicalFieldPath": "SavedMemoryCaptureEpisode.directionToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "outbound",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 43,
+      "canonicalFieldPath": "SavedMemoryCaptureEpisode.baselineFacts",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedmemorycaptureepisode-baselinefacts-v1",
+      "candidateValueEncoding": "memory-min-row-savedmemorycaptureepisode-baselinefacts-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 44,
+      "canonicalFieldPath": "SavedMemoryCaptureEpisode.currentFacts",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedmemorycaptureepisode-currentfacts-v1",
+      "candidateValueEncoding": "memory-min-row-savedmemorycaptureepisode-currentfacts-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 45,
+      "canonicalFieldPath": "SavedMemoryCaptureEpisode.firstObservedTick",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 46,
+      "canonicalFieldPath": "SavedMemoryCaptureEpisode.lastObservedTick",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 47,
+      "canonicalFieldPath": "SavedMemoryCaptureEpisode.lastSourceOccurrenceId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 48,
+      "canonicalFieldPath": "SavedMemoryCaptureEpisode.episodeRevision",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 49,
+      "canonicalFieldPath": "SavedMemoryStateFact.schemaVersion",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 50,
+      "canonicalFieldPath": "SavedMemoryStateFact.factKey",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 51,
+      "canonicalFieldPath": "SavedMemoryStateFact.factValue",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 52,
+      "canonicalFieldPath": "SavedMemoryThreadRoot.schemaVersion",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 53,
+      "canonicalFieldPath": "SavedMemoryThreadRoot.rootId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 54,
+      "canonicalFieldPath": "SavedMemoryThreadRoot.ownerPawnId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 55,
+      "canonicalFieldPath": "SavedMemoryThreadRoot.ownerEpochToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 56,
+      "canonicalFieldPath": "SavedMemoryThreadRoot.subjectKind",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "pawn",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 57,
+      "canonicalFieldPath": "SavedMemoryThreadRoot.subjectId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 58,
+      "canonicalFieldPath": "SavedMemoryThreadRoot.frozenSubjectLabel",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": true
+    },
+    {
+      "pathOrdinal": 59,
+      "canonicalFieldPath": "SavedMemoryThreadRoot.structuralRevision",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 60,
+      "canonicalFieldPath": "SavedMemoryThreadRoot.statusRevision",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 61,
+      "canonicalFieldPath": "SavedMemoryThreadRoot.lastAppliedReducerRevision",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 62,
+      "canonicalFieldPath": "SavedMemoryThreadRoot.nextChapterOrdinal",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 63,
+      "canonicalFieldPath": "SavedMemoryThreadRoot.chapters",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedmemorythreadroot-chapters-v1",
+      "candidateValueEncoding": "memory-min-row-savedmemorythreadroot-chapters-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 64,
+      "canonicalFieldPath": "SavedMemoryThreadRoot.visibleBlocks",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedmemorythreadroot-visibleblocks-v1",
+      "candidateValueEncoding": "memory-min-row-savedmemorythreadroot-visibleblocks-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 65,
+      "canonicalFieldPath": "SavedMemoryThreadRoot.rollingSummaryBlock",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "nullable_row",
+      "minimumRowFactoryId": "memory-min-row-savedmemorythreadroot-rollingsummaryblock-v1",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 66,
+      "canonicalFieldPath": "SavedMemoryChapter.schemaVersion",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 67,
+      "canonicalFieldPath": "SavedMemoryChapter.chapterId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 68,
+      "canonicalFieldPath": "SavedMemoryChapter.ordinal",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 69,
+      "canonicalFieldPath": "SavedMemoryChapter.phaseToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "open",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 70,
+      "canonicalFieldPath": "SavedMemoryChapter.openedTick",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 71,
+      "canonicalFieldPath": "SavedMemoryChapter.lastActivityTick",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 72,
+      "canonicalFieldPath": "SavedMemoryChapter.closedTick",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 73,
+      "canonicalFieldPath": "SavedMemoryChapter.closureReasonToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "none",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 74,
+      "canonicalFieldPath": "SavedMemoryChapter.closed",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 75,
+      "canonicalFieldPath": "SavedMemoryChapter.closedSummaryRecordId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 76,
+      "canonicalFieldPath": "SavedMemoryBlock.schemaVersion",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 77,
+      "canonicalFieldPath": "SavedMemoryBlock.recordId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 78,
+      "canonicalFieldPath": "SavedMemoryBlock.sourceOccurrenceId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 79,
+      "canonicalFieldPath": "SavedMemoryBlock.sourceEventId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 80,
+      "canonicalFieldPath": "SavedMemoryBlock.captureRuleId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 81,
+      "canonicalFieldPath": "SavedMemoryBlock.factDiscriminator",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 82,
+      "canonicalFieldPath": "SavedMemoryBlock.ownerPawnId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 83,
+      "canonicalFieldPath": "SavedMemoryBlock.ownerEpochToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 84,
+      "canonicalFieldPath": "SavedMemoryBlock.kind",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "event",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 85,
+      "canonicalFieldPath": "SavedMemoryBlock.summaryRole",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "none",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 86,
+      "canonicalFieldPath": "SavedMemoryBlock.category",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "personal",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 87,
+      "canonicalFieldPath": "SavedMemoryBlock.importance",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "low",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 88,
+      "canonicalFieldPath": "SavedMemoryBlock.originalEventTick",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 89,
+      "canonicalFieldPath": "SavedMemoryBlock.ageUnknown",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 90,
+      "canonicalFieldPath": "SavedMemoryBlock.rootId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 91,
+      "canonicalFieldPath": "SavedMemoryBlock.chapterId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 92,
+      "canonicalFieldPath": "SavedMemoryBlock.primarySubject",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "row",
+      "minimumRowFactoryId": "memory-min-row-savedmemoryblock-primarysubject-v1",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 93,
+      "canonicalFieldPath": "SavedMemoryBlock.secondarySubjects",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedmemoryblock-secondarysubjects-v1",
+      "candidateValueEncoding": "memory-min-row-savedmemoryblock-secondarysubjects-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 94,
+      "canonicalFieldPath": "SavedMemoryBlock.facts",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedmemoryblock-facts-v1",
+      "candidateValueEncoding": "memory-min-row-savedmemoryblock-facts-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 95,
+      "canonicalFieldPath": "SavedMemoryBlock.provenance",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedmemoryblock-provenance-v1",
+      "candidateValueEncoding": "memory-min-row-savedmemoryblock-provenance-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 96,
+      "canonicalFieldPath": "SavedMemoryBlock.automaticWording",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": true
+    },
+    {
+      "pathOrdinal": 97,
+      "canonicalFieldPath": "SavedMemoryBlock.playerWording",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": true
+    },
+    {
+      "pathOrdinal": 98,
+      "canonicalFieldPath": "SavedMemoryBlock.playerEdited",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 99,
+      "canonicalFieldPath": "SavedMemoryBlock.suppressed",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 100,
+      "canonicalFieldPath": "SavedMemoryBlock.requiredLifecycleLandmark",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 101,
+      "canonicalFieldPath": "SavedMemoryBlock.formatRevision",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 102,
+      "canonicalFieldPath": "SavedMemoryBlock.lastAutomaticIncludedTick",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 103,
+      "canonicalFieldPath": "SavedMemoryBlock.lastAutomaticIncludedEntryOrdinal",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 104,
+      "canonicalFieldPath": "SavedMemoryBlock.automaticInclusionCount",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 105,
+      "canonicalFieldPath": "SavedMemoryBlock.providerExposureState",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "not_sent",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 106,
+      "canonicalFieldPath": "SavedMemoryBlock.lastProviderExposureTick",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 107,
+      "canonicalFieldPath": "SavedMemoryBlock.summaryPayload",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "nullable_row",
+      "minimumRowFactoryId": "memory-min-row-savedmemoryblock-summarypayload-v1",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 108,
+      "canonicalFieldPath": "SavedMemorySubjectRef.schemaVersion",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 109,
+      "canonicalFieldPath": "SavedMemorySubjectRef.subjectRefId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 110,
+      "canonicalFieldPath": "SavedMemorySubjectRef.subjectKind",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "pawn",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 111,
+      "canonicalFieldPath": "SavedMemorySubjectRef.subjectId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 112,
+      "canonicalFieldPath": "SavedMemorySubjectRef.frozenLabel",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": true
+    },
+    {
+      "pathOrdinal": 113,
+      "canonicalFieldPath": "SavedMemorySubjectRef.roleToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 114,
+      "canonicalFieldPath": "SavedMemorySubjectRef.knownnessToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "known",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 115,
+      "canonicalFieldPath": "SavedMemoryCanonicalFact.schemaVersion",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 116,
+      "canonicalFieldPath": "SavedMemoryCanonicalFact.factId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 117,
+      "canonicalFieldPath": "SavedMemoryCanonicalFact.factKind",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 118,
+      "canonicalFieldPath": "SavedMemoryCanonicalFact.canonicalSubjectKind",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "pawn",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 119,
+      "canonicalFieldPath": "SavedMemoryCanonicalFact.canonicalSubjectId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 120,
+      "canonicalFieldPath": "SavedMemoryCanonicalFact.aggregationToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "count_occurrences",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 121,
+      "canonicalFieldPath": "SavedMemoryCanonicalFact.canonicalValueKind",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "empty",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 122,
+      "canonicalFieldPath": "SavedMemoryCanonicalFact.canonicalValue",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 123,
+      "canonicalFieldPath": "SavedMemoryCanonicalFact.majorTurningPoint",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 124,
+      "canonicalFieldPath": "SavedMemoryCanonicalFact.reversal",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 125,
+      "canonicalFieldPath": "SavedMemoryProvenance.schemaVersion",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 126,
+      "canonicalFieldPath": "SavedMemoryProvenance.provenanceRefId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 127,
+      "canonicalFieldPath": "SavedMemoryProvenance.sourceKindToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "capture_signal",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 128,
+      "canonicalFieldPath": "SavedMemoryProvenance.sourceOccurrenceId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 129,
+      "canonicalFieldPath": "SavedMemoryProvenance.sourceEventId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 130,
+      "canonicalFieldPath": "SavedMemoryProvenance.captureRuleId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 131,
+      "canonicalFieldPath": "SavedMemoryProvenance.factDiscriminator",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 132,
+      "canonicalFieldPath": "SavedMemoryProvenance.integrationToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 133,
+      "canonicalFieldPath": "SavedMemorySummaryPayload.schemaVersion",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 134,
+      "canonicalFieldPath": "SavedMemorySummaryPayload.reducerRevision",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 135,
+      "canonicalFieldPath": "SavedMemorySummaryPayload.factsRevision",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 136,
+      "canonicalFieldPath": "SavedMemorySummaryPayload.canonicalFactsFingerprint",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 137,
+      "canonicalFieldPath": "SavedMemorySummaryPayload.factBuckets",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedmemorysummarypayload-factbuckets-v1",
+      "candidateValueEncoding": "memory-min-row-savedmemorysummarypayload-factbuckets-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 138,
+      "canonicalFieldPath": "SavedMemorySummaryPayload.subjectRefs",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedmemorysummarypayload-subjectrefs-v1",
+      "candidateValueEncoding": "memory-min-row-savedmemorysummarypayload-subjectrefs-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 139,
+      "canonicalFieldPath": "SavedMemorySummaryPayload.provenanceRefs",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedmemorysummarypayload-provenancerefs-v1",
+      "candidateValueEncoding": "memory-min-row-savedmemorysummarypayload-provenancerefs-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 140,
+      "canonicalFieldPath": "SavedMemorySummaryPayload.derivedCategoryMask",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 141,
+      "canonicalFieldPath": "SavedMemorySummaryPayload.highestSurvivingImportance",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 142,
+      "canonicalFieldPath": "SavedMemorySummaryPayload.earliestSurvivingTick",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 143,
+      "canonicalFieldPath": "SavedMemorySummaryPayload.latestSurvivingTick",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 144,
+      "canonicalFieldPath": "SavedMemorySummaryPayload.deterministicWording",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": true
+    },
+    {
+      "pathOrdinal": 145,
+      "canonicalFieldPath": "SavedMemorySummaryPayload.optionalLlmWording",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": true
+    },
+    {
+      "pathOrdinal": 146,
+      "canonicalFieldPath": "SavedMemorySummaryPayload.optionalLlmFingerprint",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 147,
+      "canonicalFieldPath": "SavedMemorySummaryPayload.optionalLlmFormatRevision",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 148,
+      "canonicalFieldPath": "SavedMemorySummaryPayload.optionalLlmCategoryMask",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 149,
+      "canonicalFieldPath": "SavedMemorySummaryPayload.lastSettledWordingFingerprint",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": true
+    },
+    {
+      "pathOrdinal": 150,
+      "canonicalFieldPath": "SavedMemorySummaryPayload.lastSettledWordingReducerRevision",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 151,
+      "canonicalFieldPath": "SavedMemorySummaryPayload.lastSettledWordingFormatRevision",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 152,
+      "canonicalFieldPath": "SavedMemorySummaryPayload.lastWordingDispositionToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "deterministic",
+      "freeTextModeEligible": true
+    },
+    {
+      "pathOrdinal": 153,
+      "canonicalFieldPath": "SavedMemoryFactBucket.schemaVersion",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 154,
+      "canonicalFieldPath": "SavedMemoryFactBucket.bucketKey",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 155,
+      "canonicalFieldPath": "SavedMemoryFactBucket.factKind",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 156,
+      "canonicalFieldPath": "SavedMemoryFactBucket.canonicalSubjectKind",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "pawn",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 157,
+      "canonicalFieldPath": "SavedMemoryFactBucket.canonicalSubjectId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 158,
+      "canonicalFieldPath": "SavedMemoryFactBucket.aggregationToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "count_occurrences",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 159,
+      "canonicalFieldPath": "SavedMemoryFactBucket.contributions",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedmemoryfactbucket-contributions-v1",
+      "candidateValueEncoding": "memory-min-row-savedmemoryfactbucket-contributions-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 160,
+      "canonicalFieldPath": "SavedMemoryFactBucket.derivedCount",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 161,
+      "canonicalFieldPath": "SavedMemoryFactBucket.derivedRangeMin",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 162,
+      "canonicalFieldPath": "SavedMemoryFactBucket.derivedRangeMax",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 163,
+      "canonicalFieldPath": "SavedMemoryFactBucket.earliestSurvivingTick",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 164,
+      "canonicalFieldPath": "SavedMemoryFactBucket.latestSurvivingTick",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 165,
+      "canonicalFieldPath": "SavedMemoryFactContribution.schemaVersion",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 166,
+      "canonicalFieldPath": "SavedMemoryFactContribution.contributionId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 167,
+      "canonicalFieldPath": "SavedMemoryFactContribution.originChapterId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 168,
+      "canonicalFieldPath": "SavedMemoryFactContribution.originRecordId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 169,
+      "canonicalFieldPath": "SavedMemoryFactContribution.originFactOrdinal",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 170,
+      "canonicalFieldPath": "SavedMemoryFactContribution.originFactId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 171,
+      "canonicalFieldPath": "SavedMemoryFactContribution.originalEventTick",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 172,
+      "canonicalFieldPath": "SavedMemoryFactContribution.ageUnknown",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 173,
+      "canonicalFieldPath": "SavedMemoryFactContribution.category",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "personal",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 174,
+      "canonicalFieldPath": "SavedMemoryFactContribution.importance",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "low",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 175,
+      "canonicalFieldPath": "SavedMemoryFactContribution.canonicalValue",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 176,
+      "canonicalFieldPath": "SavedMemoryFactContribution.majorTurningPoint",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 177,
+      "canonicalFieldPath": "SavedMemoryFactContribution.reversal",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 178,
+      "canonicalFieldPath": "SavedMemoryFactContribution.sourceOccurrenceId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 179,
+      "canonicalFieldPath": "SavedMemoryFactContribution.subjectRefIds",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedmemoryfactcontribution-subjectrefids-v1",
+      "candidateValueEncoding": "memory-min-row-savedmemoryfactcontribution-subjectrefids-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 180,
+      "canonicalFieldPath": "SavedMemoryFactContribution.provenanceRefIds",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedmemoryfactcontribution-provenancerefids-v1",
+      "candidateValueEncoding": "memory-min-row-savedmemoryfactcontribution-provenancerefids-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 181,
+      "canonicalFieldPath": "SavedImportedMemoryRow.schemaVersion",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 182,
+      "canonicalFieldPath": "SavedImportedMemoryRow.archiveRecordId",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 183,
+      "canonicalFieldPath": "SavedImportedMemoryRow.savedOwnerIdentityKindToken",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "pawn",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 184,
+      "canonicalFieldPath": "SavedImportedMemoryRow.savedOwnerIdentityValue",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 185,
+      "canonicalFieldPath": "SavedImportedMemoryRow.reattributionGeneration",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 186,
+      "canonicalFieldPath": "SavedImportedMemoryRow.originalRecordId",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 187,
+      "canonicalFieldPath": "SavedImportedMemoryRow.sourceOccurrenceId",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 188,
+      "canonicalFieldPath": "SavedImportedMemoryRow.sourceEventId",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 189,
+      "canonicalFieldPath": "SavedImportedMemoryRow.originalEventTick",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 190,
+      "canonicalFieldPath": "SavedImportedMemoryRow.ageUnknown",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 191,
+      "canonicalFieldPath": "SavedImportedMemoryRow.importedWording",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": true
+    },
+    {
+      "pathOrdinal": 192,
+      "canonicalFieldPath": "SavedImportedMemoryRow.originalKindToken",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "event",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 193,
+      "canonicalFieldPath": "SavedImportedMemoryRow.originalSummaryRoleToken",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "none",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 194,
+      "canonicalFieldPath": "SavedImportedMemoryRow.originalCategoryToken",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "personal",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 195,
+      "canonicalFieldPath": "SavedImportedMemoryRow.originalImportanceToken",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "low",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 196,
+      "canonicalFieldPath": "SavedImportedMemoryRow.routePolicyToken",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "standalone",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 197,
+      "canonicalFieldPath": "SavedImportedMemoryRow.primarySubject",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "row",
+      "minimumRowFactoryId": "memory-min-row-savedimportedmemoryrow-primarysubject-v1",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 198,
+      "canonicalFieldPath": "SavedImportedMemoryRow.secondarySubjects",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedimportedmemoryrow-secondarysubjects-v1",
+      "candidateValueEncoding": "memory-min-row-savedimportedmemoryrow-secondarysubjects-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 199,
+      "canonicalFieldPath": "SavedImportedMemoryRow.canonicalFacts",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedimportedmemoryrow-canonicalfacts-v1",
+      "candidateValueEncoding": "memory-min-row-savedimportedmemoryrow-canonicalfacts-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 200,
+      "canonicalFieldPath": "SavedImportedMemoryRow.provenance",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedimportedmemoryrow-provenance-v1",
+      "candidateValueEncoding": "memory-min-row-savedimportedmemoryrow-provenance-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 201,
+      "canonicalFieldPath": "SavedImportedMemoryRow.summaryContributionEvidence",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "nullable_row",
+      "minimumRowFactoryId": "memory-min-row-savedimportedmemoryrow-summarycontributionevidence-v1",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 202,
+      "canonicalFieldPath": "SavedImportedMemoryRow.sourceTypeToken",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "legacy",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 203,
+      "canonicalFieldPath": "SavedImportedMemoryRow.conflictFingerprint",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 204,
+      "canonicalFieldPath": "SavedImportedMemoryRow.overflowRowCount",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 205,
+      "canonicalFieldPath": "SavedImportedMemoryRow.overflowLogicalBytes",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 206,
+      "canonicalFieldPath": "SavedImportedMemoryRow.diagnosticTokens",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedimportedmemoryrow-diagnostictokens-v1",
+      "candidateValueEncoding": "memory-min-row-savedimportedmemoryrow-diagnostictokens-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 207,
+      "canonicalFieldPath": "SavedImportedMemoryRow.migrationReasonToken",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "legacy_import",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 208,
+      "canonicalFieldPath": "SavedImportedSummaryContributionEvidenceV1.schemaVersion",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 209,
+      "canonicalFieldPath": "SavedImportedSummaryContributionEvidenceV1.contributionId",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 210,
+      "canonicalFieldPath": "SavedImportedSummaryContributionEvidenceV1.originChapterId",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 211,
+      "canonicalFieldPath": "SavedImportedSummaryContributionEvidenceV1.originRecordId",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 212,
+      "canonicalFieldPath": "SavedImportedSummaryContributionEvidenceV1.originFactOrdinal",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 213,
+      "canonicalFieldPath": "SavedImportedSummaryContributionEvidenceV1.originFactId",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 214,
+      "canonicalFieldPath": "SavedImportedSummaryContributionEvidenceV1.originalEventTick",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 215,
+      "canonicalFieldPath": "SavedImportedSummaryContributionEvidenceV1.ageUnknown",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 216,
+      "canonicalFieldPath": "SavedImportedSummaryContributionEvidenceV1.category",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "personal",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 217,
+      "canonicalFieldPath": "SavedImportedSummaryContributionEvidenceV1.importance",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "low",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 218,
+      "canonicalFieldPath": "SavedImportedSummaryContributionEvidenceV1.canonicalValue",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 219,
+      "canonicalFieldPath": "SavedImportedSummaryContributionEvidenceV1.majorTurningPoint",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 220,
+      "canonicalFieldPath": "SavedImportedSummaryContributionEvidenceV1.reversal",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 221,
+      "canonicalFieldPath": "SavedImportedSummaryContributionEvidenceV1.sourceOccurrenceId",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 222,
+      "canonicalFieldPath": "SavedImportedSummaryContributionEvidenceV1.subjectRefIds",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedimportedsummarycontributionevidencev1-subjectrefids-v1",
+      "candidateValueEncoding": "memory-min-row-savedimportedsummarycontributionevidencev1-subjectrefids-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 223,
+      "canonicalFieldPath": "SavedImportedSummaryContributionEvidenceV1.provenanceRefIds",
+      "scopeMask": [
+        "combined_owner",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedimportedsummarycontributionevidencev1-provenancerefids-v1",
+      "candidateValueEncoding": "memory-min-row-savedimportedsummarycontributionevidencev1-provenancerefids-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 224,
+      "canonicalFieldPath": "SavedLegacyUnresolvedOwnerArchiveInputV1.schemaVersion",
+      "scopeMask": [
+        "raw_compatibility"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 225,
+      "canonicalFieldPath": "SavedLegacyUnresolvedOwnerArchiveInputV1.savedOwnerIdentityKindToken",
+      "scopeMask": [
+        "raw_compatibility"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "pawn",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 226,
+      "canonicalFieldPath": "SavedLegacyUnresolvedOwnerArchiveInputV1.savedOwnerIdentityValue",
+      "scopeMask": [
+        "raw_compatibility"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 227,
+      "canonicalFieldPath": "SavedLegacyUnresolvedOwnerArchiveInputV1.sourceContainerOrdinal",
+      "scopeMask": [
+        "raw_compatibility"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 228,
+      "canonicalFieldPath": "SavedLegacyUnresolvedOwnerArchiveInputV1.sourceRecordOrdinal",
+      "scopeMask": [
+        "raw_compatibility"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 229,
+      "canonicalFieldPath": "SavedLegacyUnresolvedOwnerArchiveInputV1.legacyRecord",
+      "scopeMask": [
+        "raw_compatibility"
+      ],
+      "atomKindToken": "row",
+      "minimumRowFactoryId": "memory-min-row-savedlegacyunresolvedownerarchiveinputv1-legacyrecord-v1",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 230,
+      "canonicalFieldPath": "DiaryGameComponentMemory.memoryComponentSchemaVersion",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 231,
+      "canonicalFieldPath": "DiaryGameComponentMemory.lastIssuedAutobiographicalEpochSequence",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 232,
+      "canonicalFieldPath": "DiaryGameComponentMemory.lastIssuedAutobiographicalEpochFallbackChain",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 233,
+      "canonicalFieldPath": "DiaryGameComponentMemory.globalFactionSnapshotAllocatorGeneration",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 234,
+      "canonicalFieldPath": "DiaryGameComponentMemory.globalFactionSnapshots",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-diarygamecomponentmemory-globalfactionsnapshots-v1",
+      "candidateValueEncoding": "memory-min-row-diarygamecomponentmemory-globalfactionsnapshots-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 235,
+      "canonicalFieldPath": "DiaryGameComponentMemory.legacyOwnerEpochReservations",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-diarygamecomponentmemory-legacyownerepochreservations-v1",
+      "candidateValueEncoding": "memory-min-row-diarygamecomponentmemory-legacyownerepochreservations-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 236,
+      "canonicalFieldPath": "DiaryGameComponentMemory.globalOptionalRequestCancellationGeneration",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 237,
+      "canonicalFieldPath": "DiaryGameComponentMemory.lastAppliedMemoryPolicyRevision",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 238,
+      "canonicalFieldPath": "DiaryGameComponentMemory.lastAppliedMemoryPolicyFingerprint",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 239,
+      "canonicalFieldPath": "DiaryGameComponentMemory.lastAppliedMemoryPolicyState",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "nullable_row",
+      "minimumRowFactoryId": "memory-min-row-diarygamecomponentmemory-lastappliedmemorypolicystate-v1",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 240,
+      "canonicalFieldPath": "DiaryGameComponentMemory.unresolvedOwnerArchiveRows",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-diarygamecomponentmemory-unresolvedownerarchiverows-v1",
+      "candidateValueEncoding": "memory-min-row-diarygamecomponentmemory-unresolvedownerarchiverows-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 241,
+      "canonicalFieldPath": "DiaryGameComponentMemory.unresolvedArchiveMigrationState",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 242,
+      "canonicalFieldPath": "DiaryGameComponentMemory.rawUnresolvedOwnerArchiveInput",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-diarygamecomponentmemory-rawunresolvedownerarchiveinput-v1",
+      "candidateValueEncoding": "memory-min-row-diarygamecomponentmemory-rawunresolvedownerarchiveinput-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 243,
+      "canonicalFieldPath": "DiaryGameComponentMemory.rawUnresolvedArchiveReattributionGeneration",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 244,
+      "canonicalFieldPath": "DiaryGameComponentMemory.unresolvedArchiveReattributionGeneration",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 245,
+      "canonicalFieldPath": "DiaryGameComponentMemory.unresolvedArchiveStructuralRevision",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 246,
+      "canonicalFieldPath": "DiaryGameComponentMemory.unresolvedArchiveReattributionDisabled",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 247,
+      "canonicalFieldPath": "DiaryGameComponentMemory.memoryCoordinatorSchemaVersion",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 248,
+      "canonicalFieldPath": "DiaryGameComponentMemory.summaryWordingOpportunities",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-diarygamecomponentmemory-summarywordingopportunities-v1",
+      "candidateValueEncoding": "memory-min-row-diarygamecomponentmemory-summarywordingopportunities-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 249,
+      "canonicalFieldPath": "DiaryGameComponentMemory.memoryDiagnosticCounters",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-diarygamecomponentmemory-memorydiagnosticcounters-v1",
+      "candidateValueEncoding": "memory-min-row-diarygamecomponentmemory-memorydiagnosticcounters-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 250,
+      "canonicalFieldPath": "DiaryGameComponentMemory.memoryAttemptAuditRows",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-diarygamecomponentmemory-memoryattemptauditrows-v1",
+      "candidateValueEncoding": "memory-min-row-diarygamecomponentmemory-memoryattemptauditrows-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 251,
+      "canonicalFieldPath": "DiaryGameComponentMemory.memoryDispatchSchemaVersion",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 252,
+      "canonicalFieldPath": "DiaryGameComponentMemory.lastIssuedMemoryLogicalRequestSequence",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 253,
+      "canonicalFieldPath": "DiaryGameComponentMemory.activeMemoryCoordinatorRequests",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-diarygamecomponentmemory-activememorycoordinatorrequests-v1",
+      "candidateValueEncoding": "memory-min-row-diarygamecomponentmemory-activememorycoordinatorrequests-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 254,
+      "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.schemaVersion",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 255,
+      "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.saveNewMemories",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 256,
+      "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.useMemoriesInWriting",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 257,
+      "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.usePawnBackground",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 258,
+      "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.allowExtraMemoryAiRequests",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 259,
+      "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.occasionalMemoryReflections",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 260,
+      "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.memoryCategoryMask",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 261,
+      "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.captureInvalidationGenerationPersonal",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 262,
+      "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.captureInvalidationGenerationRelationships",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 263,
+      "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.captureInvalidationGenerationFamily",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 264,
+      "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.captureInvalidationGenerationFactions",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 265,
+      "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.optionalRequestInvalidationGeneration",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 266,
+      "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.minorMemoryLifetimeDays",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 267,
+      "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.regularMemoryLifetimeDays",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 268,
+      "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.memoryThreadTarget",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 269,
+      "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.memoryReuseDays",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 270,
+      "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.memoryRevisitEntryCount",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 271,
+      "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.schemaVersion",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 272,
+      "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.ownerPawnId",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 273,
+      "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.ownerEpochToken",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 274,
+      "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.ownerCancellationGeneration",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 275,
+      "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.globalCancellationGeneration",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 276,
+      "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.optionalRequestInvalidationGeneration",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 277,
+      "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.rootId",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 278,
+      "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.summaryRecordId",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 279,
+      "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.expectedRootStructuralRevision",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 280,
+      "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.expectedSummaryFactsRevision",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 281,
+      "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.expectedReducerRevision",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 282,
+      "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.expectedFormatRevision",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 283,
+      "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.expectedCategoryMask",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 284,
+      "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.projectionFingerprint",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 285,
+      "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.requestedTick",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 286,
+      "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.dueTick",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 287,
+      "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.expiryTick",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 288,
+      "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.configuredPriority",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 289,
+      "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.salience",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 290,
+      "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.opportunityKey",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 291,
+      "canonicalFieldPath": "SavedMemoryDiagnosticCounter.schemaVersion",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 292,
+      "canonicalFieldPath": "SavedMemoryDiagnosticCounter.reasonToken",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 293,
+      "canonicalFieldPath": "SavedMemoryDiagnosticCounter.scopeToken",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 294,
+      "canonicalFieldPath": "SavedMemoryDiagnosticCounter.saturatedCount",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 295,
+      "canonicalFieldPath": "SavedMemoryAttemptAuditRow.schemaVersion",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 296,
+      "canonicalFieldPath": "SavedMemoryAttemptAuditRow.logicalRequestId",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 297,
+      "canonicalFieldPath": "SavedMemoryAttemptAuditRow.requestPurposeToken",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "normal_diary",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 298,
+      "canonicalFieldPath": "SavedMemoryAttemptAuditRow.ownerPawnId",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 299,
+      "canonicalFieldPath": "SavedMemoryAttemptAuditRow.ownerEpochToken",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 300,
+      "canonicalFieldPath": "SavedMemoryAttemptAuditRow.attemptOrdinal",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 301,
+      "canonicalFieldPath": "SavedMemoryAttemptAuditRow.variantKey",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 302,
+      "canonicalFieldPath": "SavedMemoryAttemptAuditRow.invocationTick",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 303,
+      "canonicalFieldPath": "SavedMemoryAttemptAuditRow.terminalTick",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 304,
+      "canonicalFieldPath": "SavedMemoryAttemptAuditRow.outcomeToken",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "success",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 305,
+      "canonicalFieldPath": "SavedMemoryAttemptAuditRow.potentialExposure",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 306,
+      "canonicalFieldPath": "SavedGlobalFactionSnapshot.schemaVersion",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 307,
+      "canonicalFieldPath": "SavedGlobalFactionSnapshot.factionInstanceId",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 308,
+      "canonicalFieldPath": "SavedGlobalFactionSnapshot.allocatorGeneration",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 309,
+      "canonicalFieldPath": "SavedGlobalFactionSnapshot.factionDefName",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 310,
+      "canonicalFieldPath": "SavedGlobalFactionSnapshot.frozenDisplayLabel",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": true
+    },
+    {
+      "pathOrdinal": 311,
+      "canonicalFieldPath": "SavedGlobalFactionSnapshot.goodwill",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 312,
+      "canonicalFieldPath": "SavedGlobalFactionSnapshot.relationKindToken",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 313,
+      "canonicalFieldPath": "SavedGlobalFactionSnapshot.leaderPawnId",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 314,
+      "canonicalFieldPath": "SavedGlobalFactionSnapshot.defeated",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 315,
+      "canonicalFieldPath": "SavedGlobalFactionSnapshot.removed",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 316,
+      "canonicalFieldPath": "SavedGlobalFactionSnapshot.observedTick",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 317,
+      "canonicalFieldPath": "SavedGlobalFactionSnapshot.trackingStateToken",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "active",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 318,
+      "canonicalFieldPath": "SavedGlobalFactionSnapshot.snapshotRevision",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 319,
+      "canonicalFieldPath": "SavedLegacyOwnerEpochReservation.schemaVersion",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 320,
+      "canonicalFieldPath": "SavedLegacyOwnerEpochReservation.ownerPawnId",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 321,
+      "canonicalFieldPath": "SavedLegacyOwnerEpochReservation.reservedEpochSequence",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 322,
+      "canonicalFieldPath": "SavedMemoryRepetitionGuardRow.schemaVersion",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 323,
+      "canonicalFieldPath": "SavedMemoryRepetitionGuardRow.ownerEpochToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 324,
+      "canonicalFieldPath": "SavedMemoryRepetitionGuardRow.guardKind",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 325,
+      "canonicalFieldPath": "SavedMemoryRepetitionGuardRow.guardKey",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 326,
+      "canonicalFieldPath": "SavedMemoryRepetitionGuardRow.lastAutomaticIncludedTick",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 327,
+      "canonicalFieldPath": "SavedMemoryRepetitionGuardRow.lastAutomaticIncludedEntryOrdinal",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 328,
+      "canonicalFieldPath": "SavedMemoryRepetitionGuardRow.automaticInclusionCount",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 329,
+      "canonicalFieldPath": "SavedMemoryRepetitionGuardRow.lastSourceOccurrenceId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 330,
+      "canonicalFieldPath": "SavedMemoryRepetitionGuardRow.lastCommittedLogicalRequestId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 331,
+      "canonicalFieldPath": "SavedMemoryRepetitionGuardRow.lastCommittedEvidenceSetFingerprint",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 332,
+      "canonicalFieldPath": "PawnReflectionStateMemoryFields.memoryReflectionSchemaVersion",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 333,
+      "canonicalFieldPath": "PawnReflectionStateMemoryFields.memoryOwnerEpochToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 334,
+      "canonicalFieldPath": "PawnReflectionStateMemoryFields.lastQuietMemoryEvaluatedAbsoluteDay",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 335,
+      "canonicalFieldPath": "PawnReflectionStateMemoryFields.lastQuietMemoryActivatedAbsoluteQuadrum",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 336,
+      "canonicalFieldPath": "PawnReflectionStateMemoryFields.lastQuietMemoryDecisionKey",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 337,
+      "canonicalFieldPath": "SavedActiveLogicalRequestV1.schemaVersion",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 338,
+      "canonicalFieldPath": "SavedActiveLogicalRequestV1.logicalRequestSequence",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 339,
+      "canonicalFieldPath": "SavedActiveLogicalRequestV1.logicalRequestId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 340,
+      "canonicalFieldPath": "SavedActiveLogicalRequestV1.logicalRequestKey",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 341,
+      "canonicalFieldPath": "SavedActiveLogicalRequestV1.requestPurposeToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "normal_diary",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 342,
+      "canonicalFieldPath": "SavedActiveLogicalRequestV1.sessionId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 343,
+      "canonicalFieldPath": "SavedActiveLogicalRequestV1.eventIdOrOpportunityKey",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 344,
+      "canonicalFieldPath": "SavedActiveLogicalRequestV1.povRoleToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "initiator",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 345,
+      "canonicalFieldPath": "SavedActiveLogicalRequestV1.ownerPawnId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 346,
+      "canonicalFieldPath": "SavedActiveLogicalRequestV1.ownerEpochToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 347,
+      "canonicalFieldPath": "SavedActiveLogicalRequestV1.evidenceEpochToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 348,
+      "canonicalFieldPath": "SavedActiveLogicalRequestV1.ownerCancellationGeneration",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 349,
+      "canonicalFieldPath": "SavedActiveLogicalRequestV1.globalCancellationGeneration",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 350,
+      "canonicalFieldPath": "SavedActiveLogicalRequestV1.optionalRequestInvalidationGeneration",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 351,
+      "canonicalFieldPath": "SavedActiveLogicalRequestV1.requestStateToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "staged",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 352,
+      "canonicalFieldPath": "SavedActiveLogicalRequestV1.lastIssuedAttemptOrdinal",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 353,
+      "canonicalFieldPath": "SavedActiveLogicalRequestV1.narrativeUseWinnerAttemptOrdinal",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 354,
+      "canonicalFieldPath": "SavedActiveLogicalRequestV1.narrativeUseWinnerVariantKey",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 355,
+      "canonicalFieldPath": "SavedActiveLogicalRequestV1.frozenVariants",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedactivelogicalrequestv1-frozenvariants-v1",
+      "candidateValueEncoding": "memory-min-row-savedactivelogicalrequestv1-frozenvariants-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 356,
+      "canonicalFieldPath": "SavedActiveLogicalRequestV1.activeAttempts",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedactivelogicalrequestv1-activeattempts-v1",
+      "candidateValueEncoding": "memory-min-row-savedactivelogicalrequestv1-activeattempts-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 357,
+      "canonicalFieldPath": "SavedActiveLogicalRequestV1.reservedEvidenceEntries",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedactivelogicalrequestv1-reservedevidenceentries-v1",
+      "candidateValueEncoding": "memory-min-row-savedactivelogicalrequestv1-reservedevidenceentries-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 358,
+      "canonicalFieldPath": "SavedActiveLogicalRequestV1.reservedGuardEntries",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedactivelogicalrequestv1-reservedguardentries-v1",
+      "candidateValueEncoding": "memory-min-row-savedactivelogicalrequestv1-reservedguardentries-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 359,
+      "canonicalFieldPath": "SavedFrozenPromptVariantV1.schemaVersion",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 360,
+      "canonicalFieldPath": "SavedFrozenPromptVariantV1.variantOrdinal",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 361,
+      "canonicalFieldPath": "SavedFrozenPromptVariantV1.variantKey",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 362,
+      "canonicalFieldPath": "SavedFrozenPromptVariantV1.templateIdentity",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 363,
+      "canonicalFieldPath": "SavedFrozenPromptVariantV1.contextDetailIdentity",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": true
+    },
+    {
+      "pathOrdinal": 364,
+      "canonicalFieldPath": "SavedFrozenPromptVariantV1.systemPrompt",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": true
+    },
+    {
+      "pathOrdinal": 365,
+      "canonicalFieldPath": "SavedFrozenPromptVariantV1.userPrompt",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": true
+    },
+    {
+      "pathOrdinal": 366,
+      "canonicalFieldPath": "SavedFrozenPromptVariantV1.receiptPlan",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "row",
+      "minimumRowFactoryId": "memory-min-row-savedfrozenpromptvariantv1-receiptplan-v1",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 367,
+      "canonicalFieldPath": "SavedFrozenPromptVariantV1.diagnosticProvenance",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedfrozenpromptvariantv1-diagnosticprovenance-v1",
+      "candidateValueEncoding": "memory-min-row-savedfrozenpromptvariantv1-diagnosticprovenance-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 368,
+      "canonicalFieldPath": "SavedFrozenEvidenceReceiptPlanV1.schemaVersion",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 369,
+      "canonicalFieldPath": "SavedFrozenEvidenceReceiptPlanV1.evidenceSetFingerprint",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 370,
+      "canonicalFieldPath": "SavedFrozenEvidenceReceiptPlanV1.evidenceEntries",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedfrozenevidencereceiptplanv1-evidenceentries-v1",
+      "candidateValueEncoding": "memory-min-row-savedfrozenevidencereceiptplanv1-evidenceentries-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 371,
+      "canonicalFieldPath": "SavedFrozenEvidenceReceiptPlanV1.guardEntries",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "list",
+      "minimumRowFactoryId": "memory-min-row-savedfrozenevidencereceiptplanv1-guardentries-v1",
+      "candidateValueEncoding": "memory-min-row-savedfrozenevidencereceiptplanv1-guardentries-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 372,
+      "canonicalFieldPath": "SavedFrozenEvidenceEntryV1.schemaVersion",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 373,
+      "canonicalFieldPath": "SavedFrozenEvidenceEntryV1.recordId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 374,
+      "canonicalFieldPath": "SavedFrozenEvidenceEntryV1.sourceOccurrenceId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 375,
+      "canonicalFieldPath": "SavedFrozenEvidenceEntryV1.rootIdOrEmpty",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 376,
+      "canonicalFieldPath": "SavedFrozenGuardEntryV1.schemaVersion",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 377,
+      "canonicalFieldPath": "SavedFrozenGuardEntryV1.guardKind",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 378,
+      "canonicalFieldPath": "SavedFrozenGuardEntryV1.guardKey",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 379,
+      "canonicalFieldPath": "SavedFrozenDiagnosticProvenanceV1.schemaVersion",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 380,
+      "canonicalFieldPath": "SavedFrozenDiagnosticProvenanceV1.provenanceKindToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "memory",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 381,
+      "canonicalFieldPath": "SavedFrozenDiagnosticProvenanceV1.sourceId",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 382,
+      "canonicalFieldPath": "SavedFrozenDiagnosticProvenanceV1.recordIdOrEmpty",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 383,
+      "canonicalFieldPath": "SavedFrozenDiagnosticProvenanceV1.sourceOccurrenceIdOrEmpty",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 384,
+      "canonicalFieldPath": "SavedFrozenDiagnosticProvenanceV1.rootIdOrEmpty",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 385,
+      "canonicalFieldPath": "SavedFrozenDiagnosticProvenanceV1.lineOrdinal",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 386,
+      "canonicalFieldPath": "SavedActiveLogicalAttemptV1.schemaVersion",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 387,
+      "canonicalFieldPath": "SavedActiveLogicalAttemptV1.attemptOrdinal",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 388,
+      "canonicalFieldPath": "SavedActiveLogicalAttemptV1.variantKey",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "fixture-v1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 389,
+      "canonicalFieldPath": "SavedActiveLogicalAttemptV1.attemptOriginToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "initial",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 390,
+      "canonicalFieldPath": "SavedActiveLogicalAttemptV1.predecessorAttemptOrdinal",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int32",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 391,
+      "canonicalFieldPath": "SavedActiveLogicalAttemptV1.attemptStateToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "prepared",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 392,
+      "canonicalFieldPath": "SavedActiveLogicalAttemptV1.invocationSequence",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 393,
+      "canonicalFieldPath": "SavedActiveLogicalAttemptV1.invocationTick",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 394,
+      "canonicalFieldPath": "SavedActiveLogicalAttemptV1.terminalTick",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 395,
+      "canonicalFieldPath": "SavedActiveLogicalAttemptV1.terminalOutcomeToken",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "string",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "success",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 396,
+      "canonicalFieldPath": "SavedActiveLogicalAttemptV1.potentialExposureApplied",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 397,
+      "canonicalFieldPath": "SavedActiveLogicalAttemptV1.narrativeUseApplied",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 398,
+      "canonicalFieldPath": "SavedActiveLogicalAttemptV1.resultApplied",
+      "scopeMask": [
+        "active_owner",
+        "combined_owner",
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "bool",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    }
+  ]
+}

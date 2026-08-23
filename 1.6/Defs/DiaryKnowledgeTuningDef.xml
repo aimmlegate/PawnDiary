@@ -28,6 +28,94 @@
     <playerAuthoredMemoryMaxChars>450</playerAuthoredMemoryMaxChars>
     <evictionScanIntervalTicks>150000</evictionScanIntervalTicks>
 
+    <!-- Unified memory M0 product defaults. Current shipped behavior does not consume these until
+         the one-release activation gate flips in M11. Whole-day values remain UI policy, never ticks. -->
+    <minorMemoryLifetimeMinimumDays>1</minorMemoryLifetimeMinimumDays>
+    <minorMemoryLifetimeDefaultDays>15</minorMemoryLifetimeDefaultDays>
+    <minorMemoryLifetimeMaximumDays>3600</minorMemoryLifetimeMaximumDays>
+    <regularMemoryLifetimeMinimumDays>1</regularMemoryLifetimeMinimumDays>
+    <regularMemoryLifetimeDefaultDays>60</regularMemoryLifetimeDefaultDays>
+    <regularMemoryLifetimeMaximumDays>3600</regularMemoryLifetimeMaximumDays>
+    <memoryThreadTargetMinimum>4</memoryThreadTargetMinimum>
+    <memoryThreadTargetDefault>12</memoryThreadTargetDefault>
+    <memoryThreadTargetMaximum>64</memoryThreadTargetMaximum>
+    <memoryReuseDaysMinimum>1</memoryReuseDaysMinimum>
+    <memoryReuseDaysDefault>5</memoryReuseDaysDefault>
+    <memoryReuseDaysMaximum>3600</memoryReuseDaysMaximum>
+    <memoryRevisitEntryCountMinimum>1</memoryRevisitEntryCountMinimum>
+    <memoryRevisitEntryCountDefault>3</memoryRevisitEntryCountDefault>
+    <memoryRevisitEntryCountMaximum>1000</memoryRevisitEntryCountMaximum>
+    <quietReflectionChanceBasisPoints>200</quietReflectionChanceBasisPoints>
+
+    <!-- M0's provisional production vector. Each slash-delimited tuple is one atomic coordinate;
+         tests require this exact order and code-owned ceilings remain strictly separate. -->
+    <memoryCapacityVector>
+      <li><name>eventFacts</name><valueEncoding>4</valueEncoding></li>
+      <li><name>blockProvenanceRows</name><valueEncoding>2</valueEncoding></li>
+      <li><name>factKeyValueUnits</name><valueEncoding>48/128</valueEncoding></li>
+      <li><name>secondarySubjects</name><valueEncoding>4</valueEncoding></li>
+      <li><name>factBuckets</name><valueEncoding>16</valueEncoding></li>
+      <li><name>datedContributionDescriptorMatchCaps</name><valueEncoding>32/32/32</valueEncoding></li>
+      <li><name>distinctSubjects</name><valueEncoding>4</valueEncoding></li>
+      <li><name>subjectRefsPerContribution</name><valueEncoding>2</valueEncoding></li>
+      <li><name>provenanceTotal</name><valueEncoding>16</valueEncoding></li>
+      <li><name>provenancePerContribution</name><valueEncoding>2</valueEncoding></li>
+      <li><name>summaryDeterministicWordingUnits</name><valueEncoding>240</valueEncoding></li>
+      <li><name>summaryOptionalLlmWordingUnits</name><valueEncoding>240</valueEncoding></li>
+      <li><name>blockWordingUnits</name><valueEncoding>240</valueEncoding></li>
+      <li><name>playerBackgroundUnits</name><valueEncoding>225</valueEncoding></li>
+      <li><name>frozenDisplayLabelUnits</name><valueEncoding>80</valueEncoding></li>
+      <li><name>rawIdentitySegmentUnits</name><valueEncoding>128</valueEncoding></li>
+      <li><name>compositeKeyUnits</name><valueEncoding>1024/2048</valueEncoding></li>
+      <li><name>libraryWindowRows</name><valueEncoding>64</valueEncoding></li>
+      <li><name>chapterHeaderWindowRows</name><valueEncoding>32</valueEncoding></li>
+      <li><name>cachedOwnerStates</name><valueEncoding>4</valueEncoding></li>
+      <li><name>sliceWorkItems</name><valueEncoding>30</valueEncoding></li>
+      <li><name>sliceTargetMicroseconds</name><valueEncoding>375</valueEncoding></li>
+      <li><name>manageableBlocksPerOwner</name><valueEncoding>128</valueEncoding></li>
+      <li><name>globalBlockCaps</name><valueEncoding>5000/6000</valueEncoding></li>
+      <li><name>editedBlocksOwner</name><valueEncoding>32</valueEncoding></li>
+      <li><name>editedBlocksGlobal</name><valueEncoding>1000</valueEncoding></li>
+      <li><name>activeOwnerBytes</name><valueEncoding>196608</valueEncoding></li>
+      <li><name>combinedOwnerBytes</name><valueEncoding>262144</valueEncoding></li>
+      <li><name>activeGlobalBytes</name><valueEncoding>6291456</valueEncoding></li>
+      <li><name>combinedGlobalBytes</name><valueEncoding>8388608</valueEncoding></li>
+      <li><name>libraryCommandEntries</name><valueEncoding>32</valueEncoding></li>
+      <li><name>guardRowsOwnerGlobal</name><valueEncoding>512/10000</valueEncoding></li>
+      <li><name>coordinatorOpportunitiesOwnerGlobal</name><valueEncoding>2/1000</valueEncoding></li>
+      <li><name>attemptAuditRowsPerRequestGlobal</name><valueEncoding>4/1024</valueEncoding></li>
+      <li><name>runtimeQueueEntries</name><valueEncoding>128</valueEncoding></li>
+      <li><name>activeRequestsOwnerGlobal</name><valueEncoding>8/128</valueEncoding></li>
+      <li><name>frozenVariantAttemptCaps</name><valueEncoding>4/4</valueEncoding></li>
+      <li><name>frozenEvidenceGuardDiagnosticCaps</name><valueEncoding>2/8/16</valueEncoding></li>
+      <li><name>frozenPromptUnits</name><valueEncoding>4096</valueEncoding></li>
+      <li><name>acceptedPromptPairsEscapedBytesGlobal</name><valueEncoding>500/4194304</valueEncoding></li>
+      <li><name>factionSnapshots</name><valueEncoding>256</valueEncoding></li>
+      <li><name>dirtyObservationKeys</name><valueEncoding>1024</valueEncoding></li>
+      <li><name>legacyEpochReservations</name><valueEncoding>64</valueEncoding></li>
+      <li><name>awarenessFacts</name><valueEncoding>4</valueEncoding></li>
+      <li><name>awarenessRows</name><valueEncoding>128</valueEncoding></li>
+      <li><name>openEpisodes</name><valueEncoding>16</valueEncoding></li>
+      <li><name>ownerSlotTriple</name><valueEncoding>1000/1001/1000</valueEncoding></li>
+      <li><name>searchQueryBounds</name><valueEncoding>80/160</valueEncoding></li>
+      <li><name>rowPreviewUnits</name><valueEncoding>120</valueEncoding></li>
+      <li><name>normalizedSearchFieldUnits</name><valueEncoding>120</valueEncoding></li>
+      <li><name>rowSearchProjectionUnits</name><valueEncoding>480</valueEncoding></li>
+      <li><name>currentStatusFieldTextCaps</name><valueEncoding>4/240</valueEncoding></li>
+      <li><name>devReasonCountTextCaps</name><valueEncoding>8/80</valueEncoding></li>
+      <li><name>copyDiagnosticUnits</name><valueEncoding>2000</valueEncoding></li>
+      <li><name>importedTextUnits</name><valueEncoding>2000</valueEncoding></li>
+      <li><name>importedOwnerCount</name><valueEncoding>1000</valueEncoding></li>
+      <li><name>importedOwnerRows</name><valueEncoding>256</valueEncoding></li>
+      <li><name>importedUnknownRows</name><valueEncoding>1000</valueEncoding></li>
+      <li><name>importedGlobalRows</name><valueEncoding>10000</valueEncoding></li>
+      <li><name>importedPreviewChunkUnits</name><valueEncoding>240/1000</valueEncoding></li>
+      <li><name>importedSearchScratchUnits</name><valueEncoding>49152</valueEncoding></li>
+      <li><name>importedOwnerUnknownBytes</name><valueEncoding>262144/2097152</valueEncoding></li>
+      <li><name>importedGlobalBytes</name><valueEncoding>8388608</valueEncoding></li>
+      <li><name>libraryOwnerEntries</name><valueEncoding>2048</valueEncoding></li>
+    </memoryCapacityVector>
+
     <!-- Relevant-past prompt block (§3.2): at most two dated fact lines. -->
     <relevantPastMaxLines>2</relevantPastMaxLines>
     <relevantPastMaxChars>500</relevantPastMaxChars>

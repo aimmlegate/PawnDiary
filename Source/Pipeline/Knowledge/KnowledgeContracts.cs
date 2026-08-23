@@ -140,6 +140,31 @@ namespace PawnDiary
         public string nameContextKey = string.Empty;
     }
 
+    /// <summary>One XML-projected canonical memory-fact declaration.</summary>
+    internal sealed class MemoryFactDescriptor
+    {
+        public string factKind = string.Empty;
+        public string contextKey = string.Empty;
+        public string aggregationToken = string.Empty;
+        public string canonicalValueKind = string.Empty;
+        public List<string> allowedStates = new List<string>();
+    }
+
+    /// <summary>One exact extractor field declared by a memory capture rule.</summary>
+    internal sealed class MemoryRouteExtractor
+    {
+        public string extractorToken = string.Empty;
+    }
+
+    /// <summary>The optional, rule-owned exact route declaration for one promptable capture rule.</summary>
+    internal sealed class MemoryThreadRouteRule
+    {
+        public string subjectKind = string.Empty;
+        public List<MemoryRouteExtractor> equivalentExtractors = new List<MemoryRouteExtractor>();
+        public string chapterPhasePolicy = string.Empty;
+        public string fallbackLabelSource = string.Empty;
+    }
+
     /// <summary>
     /// Pure copy of one DiaryImportantEventDef row: the XML-owned allowlist entry describing one
     /// important event kind (§2.1) — its capture channel, matchers, owners, and rendering.
@@ -174,6 +199,19 @@ namespace PawnDiary
         public List<string> factKeys = new List<string>();
         /// <summary>Localized one-line template, e.g. "married {other}" / "lost {part_label}".</summary>
         public string lineTemplate = string.Empty;
+
+        // Unified-memory M0 metadata. The shipped classifier does not consume these fields until the
+        // M7 activation slice; keeping them in the detached rule now makes XML reachability and route
+        // contracts executable without changing current capture behavior.
+        public string captureSourceToken = string.Empty;
+        public string memoryKind = string.Empty;
+        public string memoryCategory = string.Empty;
+        public string baseImportance = string.Empty;
+        public List<MemoryFactDescriptor> memoryFacts = new List<MemoryFactDescriptor>();
+        public MemoryThreadRouteRule threadRoute;
+        public bool consolidationEligible;
+        public List<string> promptConsumerIds = new List<string>();
+        public bool authoritativePageOwned;
     }
 
     /// <summary>
