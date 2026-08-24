@@ -50,6 +50,8 @@ namespace LlmProtocolHttpFixtureTests
             TestRequestAwareDiagnosticRedaction();
             await TestSingleCompletionRetryCapAndCancellation();
             await TestConfiguredDeadlineExpiresPhysicalSend();
+            await TestTransactionalGenerationStaging();
+            await TestMemoryPermitAndReceiptGate();
             await TestQueuedMultiLaneFailover();
             await TestOpenAiModelDiscoveryCompatibility();
             await TestAnthropicModelPaginationAndHeaders();
@@ -60,6 +62,269 @@ namespace LlmProtocolHttpFixtureTests
             TestCapabilityCacheIdentityAndSecretExclusion();
             TestConnectionSignatureIncludesProtocolMode();
             TestNativeFinishMetadataPolicy();
+        }
+
+        private static async Task TestTransactionalGenerationStaging()
+        {
+            ScriptedExchange exchange = new ScriptedExchange(Response(
+                HttpStatusCode.OK,
+                "{\"choices\":[{\"message\":{\"content\":\"Staged OK\"}}]}"));
+            LlmGenerationRequest request = new LlmGenerationRequest
+            {
+                eventId = "fixture-staged-event",
+                povRole = DiaryEvent.InitiatorRole,
+                systemPrompt = "Staged system fixture",
+                rawText = "Staged user fixture",
+                endpointUrl = "https://staged.invalid/v1",
+                modelName = "staged-model",
+                apiMode = ApiCompatibilityMode.OpenAIChatCompletions,
+                authMode = ApiAuthMode.BearerToken,
+                apiKey = "staged-secret",
+                timeoutSeconds = 10,
+                maxTokens = 64,
+                temperature = 0.2f
+            };
+
+            LlmClient.BeginSession();
+            try
+            {
+                LlmClient.SendAsyncOverrideForTests = exchange.SendAsync;
+                LlmStagedGenerationRequest staged;
+                AssertEqual(
+                    "transactional request stages",
+                    LlmRequestStageOutcome.Staged,
+                    LlmClient.TryStage(request, out staged));
+                AssertTrue("staged request owns dedup key", LlmClient.IsInFlight(
+                    request.eventId,
+                    request.povRole));
+
+                LlmStagedGenerationRequest duplicate;
+                AssertEqual(
+                    "staged request rejects duplicate",
+                    LlmRequestStageOutcome.Duplicate,
+                    LlmClient.TryStage(new LlmGenerationRequest
+                    {
+                        eventId = request.eventId,
+                        povRole = request.povRole
+                    }, out duplicate));
+
+                await Task.Delay(50);
+                LlmGenerationResult premature;
+                AssertEqual("no HTTP before activation", 0, exchange.Requests.Count);
+                AssertFalse(
+                    "no completion before activation",
+                    LlmClient.TryDequeueCompleted(out premature));
+
+                AssertTrue("staged request activates", LlmClient.Activate(staged));
+                AssertFalse("staged request cannot activate twice", LlmClient.Activate(staged));
+                LlmGenerationResult completed = null;
+                DateTime deadlineUtc = DateTime.UtcNow.AddSeconds(5);
+                while (DateTime.UtcNow < deadlineUtc
+                    && !LlmClient.TryDequeueCompleted(out completed))
+                {
+                    await Task.Delay(10);
+                }
+
+                AssertEqual("activation permits one HTTP send", 1, exchange.Requests.Count);
+                AssertTrue("activated request completes", completed != null && completed.success);
+                AssertEqual("activated request result", "Staged OK", completed.generatedText);
+
+                LlmGenerationRequest cancelledRequest = new LlmGenerationRequest
+                {
+                    eventId = "fixture-cancelled-stage",
+                    povRole = DiaryEvent.NeutralRole,
+                    endpointUrl = request.endpointUrl,
+                    modelName = request.modelName,
+                    timeoutSeconds = 10,
+                    maxTokens = 64
+                };
+                LlmStagedGenerationRequest cancelled;
+                AssertEqual(
+                    "second request stages",
+                    LlmRequestStageOutcome.Staged,
+                    LlmClient.TryStage(cancelledRequest, out cancelled));
+                AssertTrue("invisible stage cancels", LlmClient.CancelStaged(cancelled));
+                AssertFalse("cancel releases dedup key", LlmClient.IsInFlight(
+                    cancelledRequest.eventId,
+                    cancelledRequest.povRole));
+                AssertFalse("cancelled stage cannot activate", LlmClient.Activate(cancelled));
+                await Task.Delay(50);
+                AssertEqual("cancelled stage never sends", 1, exchange.Requests.Count);
+            }
+            finally
+            {
+                LlmClient.SendAsyncOverrideForTests = null;
+                LlmClient.EndSession();
+            }
+        }
+
+        private static async Task TestMemoryPermitAndReceiptGate()
+        {
+            ScriptedExchange exchange = new ScriptedExchange(Response(
+                HttpStatusCode.OK,
+                "{\"choices\":[{\"message\":{\"content\":\"Memory gate OK\"}}]}"));
+            List<MemoryEvidenceIdentity> noEvidence = new List<MemoryEvidenceIdentity>();
+            List<MemoryGuardIdentity> noGuards = new List<MemoryGuardIdentity>();
+            List<MemoryDiagnosticIdentity> noDiagnostics = new List<MemoryDiagnosticIdentity>();
+            string logicalRequestId;
+            string evidenceEpochToken;
+            string logicalRequestKey;
+            string evidenceSetFingerprint;
+            string receiptPlanFingerprint;
+            string diagnosticFingerprint;
+            string variantKey;
+            string ownerEpochToken = OrdinalSegmentCodec.Segment("memory-epoch-v1")
+                + OrdinalSegmentCodec.Segment("1");
+            AssertTrue("fixture logical request id encodes",
+                MemoryIdentityCodec.TryCreateLogicalRequestId(1, out logicalRequestId));
+            AssertTrue("fixture evidence epoch encodes",
+                MemoryIdentityCodec.TryCreateEvidenceEpochToken(
+                    MemoryDispatchTokens.ManualRegenerate,
+                    "fixture-memory-gate-event",
+                    DiaryEvent.InitiatorRole,
+                    "Pawn_MemoryGate",
+                    ownerEpochToken,
+                    noEvidence,
+                    noGuards,
+                    out evidenceEpochToken));
+            AssertTrue("fixture logical key encodes",
+                MemoryIdentityCodec.TryCreateLogicalRequestKey(
+                    MemoryDispatchTokens.ManualRegenerate,
+                    "fixture-memory-gate-event",
+                    DiaryEvent.InitiatorRole,
+                    "Pawn_MemoryGate",
+                    ownerEpochToken,
+                    evidenceEpochToken,
+                    out logicalRequestKey));
+            AssertTrue("fixture evidence set fingerprints",
+                MemoryIdentityCodec.TryCreateEvidenceSetFingerprint(
+                    noEvidence, out evidenceSetFingerprint));
+            AssertTrue("fixture receipt fingerprints",
+                MemoryIdentityCodec.TryCreateReceiptPlanFingerprint(
+                    noEvidence, noGuards, out receiptPlanFingerprint));
+            AssertTrue("fixture diagnostics fingerprint",
+                MemoryIdentityCodec.TryCreateDiagnosticProvenanceFingerprint(
+                    noDiagnostics, out diagnosticFingerprint));
+            AssertTrue("fixture variant key encodes",
+                MemoryIdentityCodec.TryCreatePromptVariantKey(
+                    logicalRequestId,
+                    0,
+                    MemoryDispatchTokens.ManualRegenerate,
+                    "template-fixture",
+                    "detail-fixture",
+                    "Exact memory system fixture",
+                    "Exact memory user fixture",
+                    receiptPlanFingerprint,
+                    diagnosticFingerprint,
+                    out variantKey));
+
+            MemoryDispatchTransportContext context = new MemoryDispatchTransportContext
+            {
+                logicalRequestId = logicalRequestId,
+                logicalRequestKey = logicalRequestKey,
+                requestPurposeToken = MemoryDispatchTokens.ManualRegenerate,
+                eventIdOrOpportunityKey = "fixture-memory-gate-event",
+                povRoleToken = DiaryEvent.InitiatorRole,
+                ownerPawnId = "Pawn_MemoryGate",
+                ownerEpochToken = ownerEpochToken,
+                evidenceEpochToken = evidenceEpochToken,
+                ownerCancellationGeneration = 1,
+                globalCancellationGeneration = 1,
+                optionalRequestInvalidationGeneration = 0,
+                primaryVariantKey = variantKey
+            };
+            LlmGenerationRequest request = new LlmGenerationRequest
+            {
+                eventId = context.eventIdOrOpportunityKey,
+                povRole = context.povRoleToken,
+                systemPrompt = "Exact memory system fixture",
+                rawText = "Exact memory user fixture",
+                endpointUrl = "https://memory-gate.invalid/v1",
+                modelName = "memory-gate-model",
+                apiMode = ApiCompatibilityMode.OpenAIChatCompletions,
+                authMode = ApiAuthMode.None,
+                timeoutSeconds = 10,
+                retryAttempts = 1,
+                maxTokens = 64,
+                temperature = 0.2f,
+                memoryDispatch = context
+            };
+
+            LlmClient.BeginSession();
+            try
+            {
+                LlmClient.SendAsyncOverrideForTests = exchange.SendAsync;
+                LlmStagedGenerationRequest staged;
+                AssertEqual("memory gate stages", LlmRequestStageOutcome.Staged,
+                    LlmClient.TryStage(request, out staged));
+                AssertTrue("memory gate activates", LlmClient.Activate(staged));
+
+                MemoryInvocationPermitRequest permitRequest = null;
+                DateTime deadline = DateTime.UtcNow.AddSeconds(5);
+                while (DateTime.UtcNow < deadline
+                    && !MemoryDispatchRuntimeBridge.TryDequeuePermit(out permitRequest))
+                    await Task.Delay(10);
+                AssertTrue("worker requests main-thread permit", permitRequest != null);
+                AssertEqual("permit wait prevents physical send", 0, exchange.Requests.Count);
+                LlmGenerationResult premature;
+                AssertFalse("permit wait prevents result", LlmClient.TryDequeueCompleted(out premature));
+
+                MemoryInvocationCommitPermitV1 permit = new MemoryInvocationCommitPermitV1
+                {
+                    logicalRequestId = context.logicalRequestId,
+                    logicalRequestKey = context.logicalRequestKey,
+                    requestPurposeToken = context.requestPurposeToken,
+                    sessionId = request.sessionId,
+                    eventIdOrOpportunityKey = context.eventIdOrOpportunityKey,
+                    povRoleToken = context.povRoleToken,
+                    ownerPawnId = context.ownerPawnId,
+                    ownerEpochToken = context.ownerEpochToken,
+                    evidenceEpochToken = context.evidenceEpochToken,
+                    ownerCancellationGeneration = context.ownerCancellationGeneration,
+                    globalCancellationGeneration = context.globalCancellationGeneration,
+                    optionalRequestInvalidationGeneration = 0,
+                    attemptOrdinal = 1,
+                    variantKey = context.primaryVariantKey,
+                    receiptPlanFingerprint = receiptPlanFingerprint,
+                    invocationSequence = 1,
+                    invocationTick = 42,
+                    narrativeUseWinnerAttemptOrdinal = 0
+                };
+                AssertTrue("fixture permit fingerprints",
+                    MemoryIdentityCodec.TryCreateInvocationPermitFingerprint(
+                        permit.ToIdentity(), out permit.permitFingerprint));
+                MemoryDispatchRuntimeBridge.ResolvePermit(permitRequest, permit);
+
+                MemoryInvocationReceiptRequest receiptRequest = null;
+                while (DateTime.UtcNow < deadline
+                    && !MemoryDispatchRuntimeBridge.TryDequeueReceipt(out receiptRequest))
+                    await Task.Delay(10);
+                AssertEqual("permit allows exactly one physical send", 1, exchange.Requests.Count);
+                AssertTrue("worker reports invoked receipt", receiptRequest != null);
+                AssertFalse("receipt wait prevents terminal result",
+                    LlmClient.TryDequeueCompleted(out premature));
+                AssertEqual("receipt echoes exact permit", permit.permitFingerprint,
+                    receiptRequest.permit.permitFingerprint);
+                MemoryDispatchRuntimeBridge.ResolveReceipt(receiptRequest, true);
+
+                LlmGenerationResult completed = null;
+                while (DateTime.UtcNow < deadline
+                    && !LlmClient.TryDequeueCompleted(out completed))
+                    await Task.Delay(10);
+                AssertTrue("receipt acknowledgment releases result",
+                    completed != null && completed.success);
+                AssertEqual("result echoes exact invocation permit", permit.permitFingerprint,
+                    completed.memoryInvocationPermit.permitFingerprint);
+                AssertEqual("result preserves exact system prompt", request.systemPrompt,
+                    completed.sentSystemPrompt);
+                AssertEqual("result preserves exact user prompt", request.rawText,
+                    completed.sentRawText);
+            }
+            finally
+            {
+                LlmClient.SendAsyncOverrideForTests = null;
+                LlmClient.EndSession();
+            }
         }
 
         private static async Task TestGenerationPhysicalExchange()

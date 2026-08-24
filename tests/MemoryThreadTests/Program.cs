@@ -29,6 +29,8 @@ namespace MemoryThreadTests
                 TestEpochAllocationIdentity();
                 TestSyntheticAndRepairIdentity();
                 TestRequestIdentity();
+                TestMemoryDispatchPolicy();
+                TestAcceptedPromptRetention();
                 TestExactRoutePolicy();
                 TestFactGrammar();
                 TestSettingsAndCapacityContracts();
@@ -821,6 +823,366 @@ namespace MemoryThreadTests
             AssertTrue("permit.pre-invocation.reject",
                 !MemoryIdentityCodec.TryCreateInvocationPermitFingerprint(
                     permit, out requestKey));
+        }
+
+        private static void TestMemoryDispatchPolicy()
+        {
+            MemoryLogicalRequestSnapshot request = BuildDispatchRequest();
+            AssertTrue("dispatch.valid", MemoryDispatchPolicy.ValidateRequest(request));
+
+            request.reservedEvidence.Reverse();
+            AssertTrue("dispatch.reservation-order.reject",
+                !MemoryDispatchPolicy.ValidateRequest(request));
+            request.reservedEvidence.Reverse();
+
+            MemoryLogicalAttemptSnapshot first;
+            AssertTrue("dispatch.attempt.initial.plan",
+                MemoryDispatchPolicy.TryPlanPreparedAttempt(
+                    request,
+                    request.variants[0].variantKey,
+                    MemoryDispatchTokens.Initial,
+                    0,
+                    out first));
+            request.attempts.Add(first);
+            request.lastIssuedAttemptOrdinal = 1;
+            AssertTrue("dispatch.prepared.valid", MemoryDispatchPolicy.ValidateRequest(request));
+
+            MemoryDispatchFenceSnapshot fence = DispatchFence(request);
+            MemoryInvocationCommitPlan invocation = MemoryDispatchPolicy.PlanInvocationCommit(
+                request,
+                1,
+                fence,
+                0,
+                600);
+            AssertTrue("dispatch.invocation.can-commit", invocation.canCommit);
+            AssertEqual("dispatch.invocation.sequence", 1L, invocation.nextInvocationSequence);
+            AssertTrue("dispatch.invocation.potential", invocation.applyPotentialExposure);
+            AssertTrue("dispatch.invocation.narrative", invocation.applyNarrativeUse);
+            AssertEqual("dispatch.invocation.winner", 1,
+                invocation.narrativeUseWinnerAttemptOrdinal);
+            AssertTrue("dispatch.permit.fingerprint",
+                MemoryDispatchPolicy.PermitFingerprintIsValid(invocation.permit));
+
+            first.attemptStateToken =
+                MemoryRequestStateMachineContracts.AttemptInvocationCommitted;
+            first.invocationSequence = invocation.nextInvocationSequence;
+            first.invocationTick = invocation.permit.invocationTick;
+            first.potentialExposureApplied = invocation.applyPotentialExposure;
+            first.narrativeUseApplied = invocation.applyNarrativeUse;
+            request.requestStateToken = MemoryRequestStateMachineContracts.InvocationCommitted;
+            request.narrativeUseWinnerAttemptOrdinal =
+                invocation.narrativeUseWinnerAttemptOrdinal;
+            request.narrativeUseWinnerVariantKey =
+                invocation.narrativeUseWinnerVariantKey;
+            AssertTrue("dispatch.committed.valid", MemoryDispatchPolicy.ValidateRequest(request));
+
+            MemoryTerminalCallbackPlan terminal = MemoryDispatchPolicy.PlanTerminalCallback(
+                request,
+                invocation.permit,
+                fence,
+                MemoryDispatchTokens.Success,
+                true);
+            AssertTrue("dispatch.terminal.accepted", terminal.accepted);
+            AssertTrue("dispatch.terminal.confirmed", terminal.applyConfirmedExposure);
+            AssertTrue("dispatch.terminal.result", terminal.applyResult);
+            AssertEqual("dispatch.terminal.receipt-first",
+                "confirmed_exposure_receipt", terminal.orderedOperations[0]);
+            AssertEqual("dispatch.terminal.result-second",
+                "result_publication", terminal.orderedOperations[1]);
+
+            first.resultApplied = true;
+            MemoryTerminalCallbackPlan duplicate = MemoryDispatchPolicy.PlanTerminalCallback(
+                request,
+                invocation.permit,
+                fence,
+                MemoryDispatchTokens.Success,
+                true);
+            AssertTrue("dispatch.terminal.duplicate", duplicate.duplicate);
+            AssertTrue("dispatch.terminal.duplicate.no-result", !duplicate.applyResult);
+            first.resultApplied = false;
+
+            fence.ownerCancellationGeneration++;
+            MemoryTerminalCallbackPlan stale = MemoryDispatchPolicy.PlanTerminalCallback(
+                request,
+                invocation.permit,
+                fence,
+                MemoryDispatchTokens.Success,
+                true);
+            AssertTrue("dispatch.terminal.old-epoch-reject", !stale.accepted);
+            AssertEqual("dispatch.terminal.old-epoch-outcome",
+                MemoryDispatchTokens.Stale, stale.outcomeToken);
+            fence.ownerCancellationGeneration--;
+
+            string originalPermitFingerprint = invocation.permit.permitFingerprint;
+            invocation.permit.invocationTick++;
+            AssertTrue("dispatch.permit.single-field-reject",
+                !MemoryDispatchPolicy.PermitFingerprintIsValid(invocation.permit));
+            invocation.permit.invocationTick--;
+            invocation.permit.permitFingerprint = originalPermitFingerprint;
+
+            MemoryRuntimeSendEnvelope envelope = new MemoryRuntimeSendEnvelope(invocation.permit);
+            AssertTrue("dispatch.send-claim.first", envelope.TryClaimPhysicalSend());
+            AssertTrue("dispatch.send-claim.duplicate-reject", !envelope.TryClaimPhysicalSend());
+
+            first.attemptStateToken = MemoryRequestStateMachineContracts.AttemptTerminalPending;
+            MemoryLogicalAttemptSnapshot failover;
+            AssertTrue("dispatch.attempt.failover.plan",
+                MemoryDispatchPolicy.TryPlanPreparedAttempt(
+                    request,
+                    request.variants[1].variantKey,
+                    MemoryDispatchTokens.Failover,
+                    1,
+                    out failover));
+            request.attempts.Add(failover);
+            request.lastIssuedAttemptOrdinal = 2;
+            MemoryInvocationCommitPlan failoverInvocation =
+                MemoryDispatchPolicy.PlanInvocationCommit(request, 2, fence, 1, 601);
+            AssertTrue("dispatch.failover.can-commit", failoverInvocation.canCommit);
+            AssertEqual("dispatch.failover.sequence", 2L,
+                failoverInvocation.nextInvocationSequence);
+            AssertEqual("dispatch.failover.keeps-first-winner", 1,
+                failoverInvocation.narrativeUseWinnerAttemptOrdinal);
+            AssertTrue("dispatch.failover.no-second-narrative",
+                !failoverInvocation.applyNarrativeUse);
+
+            MemoryInvocationCommitPlan saturated = MemoryDispatchPolicy.PlanInvocationCommit(
+                request,
+                2,
+                fence,
+                long.MaxValue,
+                602);
+            AssertTrue("dispatch.invocation.saturation-refuses", !saturated.canCommit);
+            AssertEqual("dispatch.invocation.saturation-outcome",
+                MemoryDispatchTokens.SequenceSaturated, saturated.outcomeToken);
+
+            MemoryLogicalRequestSnapshot beforeLoad = BuildDispatchRequest();
+            MemoryLogicalAttemptSnapshot neverInvoked;
+            MemoryDispatchPolicy.TryPlanPreparedAttempt(
+                beforeLoad,
+                beforeLoad.variants[0].variantKey,
+                MemoryDispatchTokens.Initial,
+                0,
+                out neverInvoked);
+            beforeLoad.attempts.Add(neverInvoked);
+            beforeLoad.lastIssuedAttemptOrdinal = 1;
+            MemoryLoadSettlementPlan beforeSettlement =
+                MemoryDispatchPolicy.PlanLoadedRequestSettlement(beforeLoad);
+            AssertTrue("dispatch.load.before.valid", beforeSettlement.valid);
+            AssertTrue("dispatch.load.before.no-exposure",
+                !beforeSettlement.hadCommittedInvocation
+                && beforeSettlement.potentialExposureAttemptOrdinals.Count == 0);
+            AssertTrue("dispatch.load.before.retryable",
+                beforeSettlement.restoreNormalPovRetryable);
+
+            MemoryLogicalRequestSnapshot afterLoad = BuildDispatchRequest();
+            MemoryLogicalAttemptSnapshot invoked;
+            MemoryDispatchPolicy.TryPlanPreparedAttempt(
+                afterLoad,
+                afterLoad.variants[0].variantKey,
+                MemoryDispatchTokens.Initial,
+                0,
+                out invoked);
+            invoked.attemptStateToken =
+                MemoryRequestStateMachineContracts.AttemptInvocationCommitted;
+            invoked.invocationSequence = 3;
+            invoked.invocationTick = 700;
+            afterLoad.attempts.Add(invoked);
+            afterLoad.lastIssuedAttemptOrdinal = 1;
+            afterLoad.requestStateToken = MemoryRequestStateMachineContracts.InvocationCommitted;
+            MemoryLoadSettlementPlan afterSettlement =
+                MemoryDispatchPolicy.PlanLoadedRequestSettlement(afterLoad);
+            AssertTrue("dispatch.load.after.valid", afterSettlement.valid);
+            AssertTrue("dispatch.load.after.exposed", afterSettlement.hadCommittedInvocation);
+            AssertEqual("dispatch.load.after.receipt-count", 1,
+                afterSettlement.potentialExposureAttemptOrdinals.Count);
+            AssertEqual("dispatch.load.after.earliest-winner", 1,
+                afterSettlement.repairedNarrativeUseWinnerAttemptOrdinal);
+            AssertTrue("dispatch.load.after.never-retry",
+                !afterSettlement.restoreNormalPovRetryable);
+        }
+
+        private static void TestAcceptedPromptRetention()
+        {
+            DiaryAcceptedPromptUnit initiator = new DiaryAcceptedPromptUnit
+            {
+                eventTick = 10,
+                eventId = "event-a",
+                povRole = "initiator",
+                systemPrompt = "s&<",
+                userPrompt = "u>"
+            };
+            DiaryAcceptedPromptUnit recipient = new DiaryAcceptedPromptUnit
+            {
+                eventTick = 10,
+                eventId = "event-a",
+                povRole = "recipient",
+                systemPrompt = "system",
+                userPrompt = string.Empty
+            };
+            DiaryAcceptedPromptUnit neutral = new DiaryAcceptedPromptUnit
+            {
+                eventTick = 10,
+                eventId = "event-a",
+                povRole = "neutral",
+                systemPrompt = "system",
+                userPrompt = "user"
+            };
+            DiaryAcceptedPromptRetentionPlan countPlan =
+                DiaryAcceptedPromptRetentionPolicy.Plan(
+                    new[] { neutral, recipient, initiator }, 2, long.MaxValue);
+            AssertTrue("accepted.retention.count.valid", countPlan.valid);
+            AssertEqual("accepted.retention.count.one-cleared", 1,
+                countPlan.clearOldestPrefix.Count);
+            AssertTrue("accepted.retention.role-order",
+                ReferenceEquals(initiator, countPlan.clearOldestPrefix[0]));
+
+            long escapedCharge = DiaryAcceptedPromptRetentionPolicy.Charge(initiator);
+            AssertEqual("accepted.retention.xml-escaped-charge",
+                256L + 10L + 5L, escapedCharge);
+            DiaryAcceptedPromptRetentionPlan bytePlan =
+                DiaryAcceptedPromptRetentionPolicy.Plan(
+                    new[] { initiator }, 1, escapedCharge - 1);
+            AssertTrue("accepted.retention.byte.valid", bytePlan.valid);
+            AssertEqual("accepted.retention.byte-clears-whole-unit", 1,
+                bytePlan.clearOldestPrefix.Count);
+            AssertEqual("accepted.retention.byte-empty-total", 0L,
+                bytePlan.retainedEscapedBytes);
+            AssertTrue("accepted.retention.legacy-half-counted",
+                DiaryAcceptedPromptRetentionPolicy.Charge(recipient)
+                    > DiaryAcceptedPromptRetentionPolicy.AcceptedPromptPairOverheadV1);
+        }
+
+        private static MemoryLogicalRequestSnapshot BuildDispatchRequest()
+        {
+            MemoryLogicalRequestSnapshot request = new MemoryLogicalRequestSnapshot
+            {
+                logicalRequestSequence = 17,
+                requestPurposeToken = MemoryDispatchTokens.NormalDiary,
+                sessionId = 9,
+                eventIdOrOpportunityKey = "Event_Dispatch_17",
+                povRoleToken = "initiator",
+                ownerPawnId = "Pawn_Dispatch",
+                ownerEpochToken = Epoch(17),
+                ownerCancellationGeneration = 4,
+                globalCancellationGeneration = 7,
+                optionalRequestInvalidationGeneration = 0,
+                requestStateToken = MemoryRequestStateMachineContracts.Activated
+            };
+            AssertTrue("dispatch.helper.request-id",
+                MemoryIdentityCodec.TryCreateLogicalRequestId(
+                    request.logicalRequestSequence, out request.logicalRequestId));
+
+            MemoryEvidenceIdentity firstEvidence = new MemoryEvidenceIdentity
+            {
+                recordId = "record-a",
+                sourceOccurrenceId = "source-a",
+                rootIdOrEmpty = "root-a"
+            };
+            MemoryEvidenceIdentity secondEvidence = new MemoryEvidenceIdentity
+            {
+                recordId = "record-b",
+                sourceOccurrenceId = "source-b",
+                rootIdOrEmpty = "root-b"
+            };
+            MemoryGuardIdentity guard = new MemoryGuardIdentity
+            {
+                guardKind = "record",
+                guardKey = "guard-a"
+            };
+            request.reservedEvidence.Add(firstEvidence);
+            request.reservedEvidence.Add(secondEvidence);
+            request.reservedGuards.Add(guard);
+
+            request.variants.Add(BuildDispatchVariant(
+                request, 0, "detail-full", "system-full", "user-full",
+                new List<MemoryEvidenceIdentity> { secondEvidence, firstEvidence }, guard));
+            request.variants.Add(BuildDispatchVariant(
+                request, 1, "detail-compact", "system-compact", "user-compact",
+                new List<MemoryEvidenceIdentity> { firstEvidence }, guard));
+
+            AssertTrue("dispatch.helper.evidence-epoch",
+                MemoryIdentityCodec.TryCreateEvidenceEpochToken(
+                    request.requestPurposeToken,
+                    request.eventIdOrOpportunityKey,
+                    request.povRoleToken,
+                    request.ownerPawnId,
+                    request.ownerEpochToken,
+                    request.reservedEvidence,
+                    request.reservedGuards,
+                    out request.evidenceEpochToken));
+            AssertTrue("dispatch.helper.request-key",
+                MemoryIdentityCodec.TryCreateLogicalRequestKey(
+                    request.requestPurposeToken,
+                    request.eventIdOrOpportunityKey,
+                    request.povRoleToken,
+                    request.ownerPawnId,
+                    request.ownerEpochToken,
+                    request.evidenceEpochToken,
+                    out request.logicalRequestKey));
+            return request;
+        }
+
+        private static MemoryFrozenPromptVariantSnapshot BuildDispatchVariant(
+            MemoryLogicalRequestSnapshot request,
+            int ordinal,
+            string detail,
+            string systemPrompt,
+            string userPrompt,
+            List<MemoryEvidenceIdentity> evidence,
+            MemoryGuardIdentity guard)
+        {
+            MemoryFrozenPromptVariantSnapshot variant =
+                new MemoryFrozenPromptVariantSnapshot
+                {
+                    variantOrdinal = ordinal,
+                    templateIdentity = "template-v1",
+                    contextDetailIdentity = detail,
+                    systemPrompt = systemPrompt,
+                    userPrompt = userPrompt
+                };
+            variant.receipt.evidence.AddRange(evidence);
+            variant.receipt.guards.Add(guard);
+            AssertTrue("dispatch.helper.evidence-fingerprint." + ordinal,
+                MemoryIdentityCodec.TryCreateEvidenceSetFingerprint(
+                    variant.receipt.evidence,
+                    out variant.receipt.evidenceSetFingerprint));
+            AssertTrue("dispatch.helper.receipt-fingerprint." + ordinal,
+                MemoryIdentityCodec.TryCreateReceiptPlanFingerprint(
+                    variant.receipt.evidence,
+                    variant.receipt.guards,
+                    out variant.receipt.receiptPlanFingerprint));
+            string diagnosticFingerprint;
+            AssertTrue("dispatch.helper.diagnostic-fingerprint." + ordinal,
+                MemoryIdentityCodec.TryCreateDiagnosticProvenanceFingerprint(
+                    variant.diagnostics, out diagnosticFingerprint));
+            AssertTrue("dispatch.helper.variant-key." + ordinal,
+                MemoryIdentityCodec.TryCreatePromptVariantKey(
+                    request.logicalRequestId,
+                    ordinal,
+                    request.requestPurposeToken,
+                    variant.templateIdentity,
+                    variant.contextDetailIdentity,
+                    variant.systemPrompt,
+                    variant.userPrompt,
+                    variant.receipt.receiptPlanFingerprint,
+                    diagnosticFingerprint,
+                    out variant.variantKey));
+            return variant;
+        }
+
+        private static MemoryDispatchFenceSnapshot DispatchFence(
+            MemoryLogicalRequestSnapshot request)
+        {
+            return new MemoryDispatchFenceSnapshot
+            {
+                sessionId = request.sessionId,
+                ownerPawnId = request.ownerPawnId,
+                ownerEpochToken = request.ownerEpochToken,
+                ownerCancellationGeneration = request.ownerCancellationGeneration,
+                globalCancellationGeneration = request.globalCancellationGeneration,
+                optionalRequestInvalidationGeneration =
+                    request.optionalRequestInvalidationGeneration
+            };
         }
 
         private static void TestExactRoutePolicy()

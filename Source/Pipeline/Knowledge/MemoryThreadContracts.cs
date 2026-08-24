@@ -143,6 +143,12 @@ namespace PawnDiary
 
         // M0–M10 compile contracts and shadow fixtures, but public behavior stays on the shipped path.
         public const string BuildState = LegacyShadow;
+
+        /// <summary>
+        /// Runtime-shaped read avoids unreachable-code warnings at dormant integration seams while
+        /// keeping the single M11 activation edit obvious and reviewable.
+        /// </summary>
+        public static bool IsCurrentRelease => BuildState == CurrentRelease;
     }
 
     /// <summary>
@@ -237,7 +243,7 @@ namespace PawnDiary
                 "attemptAuditRowsPerRequestGlobal=4/1024", "runtimeQueueEntries=128",
                 "activeRequestsOwnerGlobal=8/128", "frozenVariantAttemptCaps=4/4",
                 "frozenEvidenceGuardDiagnosticCaps=2/8/16", "frozenPromptUnits=4096",
-                "acceptedPromptPairsEscapedBytesGlobal=500/4194304", "factionSnapshots=256",
+                "acceptedPromptPairsEscapedBytesGlobal=2000/16777216", "factionSnapshots=256",
                 "dirtyObservationKeys=1024", "legacyEpochReservations=64",
                 "awarenessFacts=4", "awarenessRows=128", "openEpisodes=16",
                 "ownerSlotTriple=1000/1001/1000", "searchQueryBounds=80/160",

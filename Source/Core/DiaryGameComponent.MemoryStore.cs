@@ -869,6 +869,32 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Returns every currently saved autobiographical epoch carrier after high-water repair.
+        /// Target Brainwipe passes this detached set to the checked allocator so a corrupt-low
+        /// counter or fallback-chain repair cannot reuse an old epoch.
+        /// </summary>
+        private List<string> SnapshotAutobiographicalEpochCarriers()
+        {
+            List<string> carriers = new List<string>();
+            if (diaries != null)
+            {
+                for (int index = 0; index < diaries.Count; index++)
+                {
+                    PawnDiaryRecord diary = diaries[index];
+                    if (diary?.knowledgeState != null)
+                    {
+                        AddKnowledgeEpochTokenCarriers(carriers, diary.knowledgeState);
+                    }
+                    AddEpochToken(carriers, diary?.reflectionState?.memoryOwnerEpochToken);
+                }
+            }
+            AddEpochTokens(carriers, summaryWordingOpportunities, row => row?.ownerEpochToken);
+            AddEpochTokens(carriers, memoryAttemptAuditRows, row => row?.ownerEpochToken);
+            AddRequestEpochTokens(carriers, activeMemoryCoordinatorRequests);
+            return carriers;
+        }
+
         private static void AddEpochToken(List<string> carriers, string token)
         {
             if (!string.IsNullOrEmpty(token))

@@ -399,6 +399,8 @@ namespace PawnDiary
             MarkRoyaltyObservationUnavailable();
             BootstrapOdysseyForLoadedSave();
             BootstrapAnomalyForLoadedSave();
+            SettleLoadedMemoryDispatchRows();
+            ApplyAcceptedPromptRetention();
             // Do NOT BeginSession here: the constructor already started this Game's session and
             // cancelled any requests left over from a previous Game. Loaded events have had their
             // "pending" status normalized back to "not generated" (DiaryGenerationStatus, via
@@ -1012,6 +1014,11 @@ namespace PawnDiary
 
         private void DrainCompletedLlmWork()
         {
+            // M2 workers cannot cross the physical-send boundary or continue past an invoked attempt
+            // until these saved-state transactions reply. Drain them before terminal page results so
+            // a result can never overtake its matching receipt.
+            DrainMemoryDispatchHandoffs();
+
             LlmGenerationResult result;
             while (LlmClient.TryDequeueCompleted(out result))
             {

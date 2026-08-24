@@ -27,6 +27,13 @@ namespace PawnDiary
 
             string pawnId = pawn.GetUniqueLoadID();
             int memoryBoundaryTick = Find.TickManager?.TicksGame ?? 0;
+            // Observe the player-authored singleton before the M2 fence clears the unified envelope.
+            // The public Brainwipe notice must remain truthful even though dispatch invalidation now
+            // deliberately happens before the rest of the historical cleanup.
+            bool removedPlayerBackground = HasCanonicalBackgroundMemory(
+                FindDiaryByPawnId(pawnId)?.KnowledgeStateOrNull(),
+                pawnId);
+            AdvanceMemoryDispatchFenceForBrainwipe(pawn, pawnId);
             ResetProgressionMemoryForPawn(pawnId, memoryBoundaryTick);
             ResetSharedArcMemoryForPawn(pawnId, memoryBoundaryTick);
             RebaselineDayStartOpinionsForPawn(pawn);
@@ -63,7 +70,6 @@ namespace PawnDiary
             // Culture provenance describes identity rather than an episodic memory, so retain it while
             // dropping the durable important-event records and player background used as factual prompts.
             PawnKnowledgeState knowledge = diary.KnowledgeStateOrNull();
-            bool removedPlayerBackground = HasCanonicalBackgroundMemory(knowledge, pawnId);
             knowledge?.records?.Clear();
 
             // Reset every scheduler/cache whose values refer to now-forgotten pages. Fresh reflection
@@ -83,6 +89,224 @@ namespace PawnDiary
             SetCachedCommandStatus(pawnId, 0, 0, 0);
             DiaryStateVersion.Bump();
             return removedPlayerBackground;
+        }
+
+        /// <summary>
+        /// M2 hard fence: allocate a fresh owner epoch, advance target cancellation, clear every
+        /// old-epoch request/prompt, and publish an empty current envelope before ordinary Brainwipe
+        /// cleanup runs. No new memory is captured; M11 owns the first post-wipe Landmark.
+        /// </summary>
+        private void AdvanceMemoryDispatchFenceForBrainwipe(Pawn pawn, string pawnId)
+        {
+            if (pawn == null || string.IsNullOrWhiteSpace(pawnId))
+            {
+                return;
+            }
+
+            // T11.5 forbids the historical missing-diary early return from skipping the epoch fence.
+            PawnDiaryRecord ensured = FindDiary(pawn, true);
+            if (ensured == null)
+            {
+                return;
+            }
+
+            CollectAndPublishAllocatorCarriers();
+            List<string> liveEpochs = SnapshotAutobiographicalEpochCarriers();
+            MemoryEpochAllocationPlan epochPlan = MemoryIdentityCodec.PlanEpochAllocation(
+                new MemoryEpochAllocationRequest
+                {
+                    ownerPawnId = pawnId,
+                    lastIssuedSequence = lastIssuedAutobiographicalEpochSequence,
+                    fallbackChain = lastIssuedAutobiographicalEpochFallbackChain ?? string.Empty,
+                    liveEpochCarriers = liveEpochs,
+                    isTargetBrainwipe = true
+                });
+            if (!epochPlan.canMutate)
+            {
+                // A target wipe must not reuse an epoch. Leave the existing hard page cleanup in
+                // place, cancel exact active rows below, and record one bounded internal diagnostic.
+                RecordMemoryDiagnostic("other", "owner");
+                CancelOldEpochDispatchRows(pawnId);
+                return;
+            }
+
+            long greatestCancellation = 0;
+            List<PawnDiaryRecord> holders = new List<PawnDiaryRecord>();
+            for (int index = 0; diaries != null && index < diaries.Count; index++)
+            {
+                PawnDiaryRecord diary = diaries[index];
+                if (diary == null
+                    || (!string.Equals(diary.pawnId, pawnId, StringComparison.Ordinal)
+                        && !string.Equals(
+                            diary.knowledgeState?.pawnId,
+                            pawnId,
+                            StringComparison.Ordinal)))
+                {
+                    continue;
+                }
+
+                holders.Add(diary);
+                if (diary.knowledgeState != null
+                    && diary.knowledgeState.requestCancellationGeneration
+                        > greatestCancellation)
+                {
+                    greatestCancellation =
+                        diary.knowledgeState.requestCancellationGeneration;
+                }
+            }
+            GreatestRequestCancellation(
+                pawnId, activeMemoryCoordinatorRequests, ref greatestCancellation);
+            IReadOnlyList<DiaryEvent> hotEvents = events?.AllEvents;
+            for (int index = 0; hotEvents != null && index < hotEvents.Count; index++)
+            {
+                DiaryEvent diaryEvent = hotEvents[index];
+                GreatestRequestCancellation(
+                    pawnId,
+                    diaryEvent?.ActiveMemoryLogicalRequestForRole(DiaryEvent.InitiatorRole),
+                    ref greatestCancellation);
+                GreatestRequestCancellation(
+                    pawnId,
+                    diaryEvent?.ActiveMemoryLogicalRequestForRole(DiaryEvent.RecipientRole),
+                    ref greatestCancellation);
+                GreatestRequestCancellation(
+                    pawnId,
+                    diaryEvent?.ActiveMemoryLogicalRequestForRole(DiaryEvent.NeutralRole),
+                    ref greatestCancellation);
+            }
+
+            long nextCancellation = greatestCancellation == long.MaxValue
+                ? 1
+                : Math.Max(1, greatestCancellation + 1);
+
+            // Publish allocator/fence fields before old autobiographical payload is cleared.
+            lastIssuedAutobiographicalEpochSequence = epochPlan.nextSequence;
+            lastIssuedAutobiographicalEpochFallbackChain =
+                epochPlan.nextFallbackChain ?? string.Empty;
+            if (unresolvedArchiveReattributionGeneration < long.MaxValue)
+            {
+                unresolvedArchiveReattributionGeneration++;
+            }
+            else
+            {
+                unresolvedArchiveReattributionDisabled = true;
+            }
+
+            for (int index = 0; index < holders.Count; index++)
+            {
+                PawnDiaryRecord holder = holders[index];
+                PawnKnowledgeState state = holder.knowledgeState
+                    ?? PawnKnowledgeState.CreateCurrent(pawnId);
+                holder.knowledgeState = state;
+                ClearUnifiedMemoryEnvelope(state);
+                state.schemaVersion = PawnKnowledgeState.CurrentSchemaVersion;
+                state.pawnId = pawnId;
+                state.completedDiaryEntryOrdinal = 1;
+                if (index == 0)
+                {
+                    state.autobiographicalEpochToken = epochPlan.epochToken;
+                    state.epochFenceOnly = true;
+                    state.requestCancellationGeneration = nextCancellation;
+                    state.structuralRevision = 1;
+                    state.statusRevision = 1;
+                }
+
+                PawnReflectionState reflection = holder.reflectionState;
+                if (reflection != null)
+                {
+                    reflection.memoryReflectionSchemaVersion = index == 0 ? 1 : 0;
+                    reflection.memoryOwnerEpochToken = index == 0
+                        ? epochPlan.epochToken
+                        : string.Empty;
+                    reflection.lastQuietMemoryEvaluatedAbsoluteDay = -1;
+                    reflection.lastQuietMemoryActivatedAbsoluteQuadrum = -1;
+                    reflection.lastQuietMemoryDecisionKey = string.Empty;
+                }
+            }
+
+            CancelOldEpochDispatchRows(pawnId);
+            RebuildMemorySizeIndexes();
+        }
+
+        private static void ClearUnifiedMemoryEnvelope(PawnKnowledgeState state)
+        {
+            state.autobiographicalEpochToken = string.Empty;
+            state.archiveOnly = false;
+            state.epochFenceOnly = false;
+            state.requestCancellationGeneration = 0;
+            state.structuralRevision = 0;
+            state.statusRevision = 0;
+            state.completedDiaryEntryOrdinal = 1;
+            state.records?.Clear();
+            state.standaloneBlocks?.Clear();
+            state.threadRoots?.Clear();
+            state.playerBackground = string.Empty;
+            state.ownerAwarenessSnapshots?.Clear();
+            state.openCaptureEpisodes?.Clear();
+            state.repetitionGuardRows?.Clear();
+            state.importedArchiveRows?.Clear();
+            state.migrationDiagnosticFlags = 0;
+        }
+
+        private void CancelOldEpochDispatchRows(string pawnId)
+        {
+            activeMemoryCoordinatorRequests?.RemoveAll(
+                request => request != null
+                    && string.Equals(request.ownerPawnId, pawnId, StringComparison.Ordinal));
+            summaryWordingOpportunities?.RemoveAll(
+                opportunity => opportunity != null
+                    && string.Equals(
+                        opportunity.ownerPawnId,
+                        pawnId,
+                        StringComparison.Ordinal));
+
+            IReadOnlyList<DiaryEvent> hotEvents = events?.AllEvents;
+            for (int index = 0; hotEvents != null && index < hotEvents.Count; index++)
+            {
+                DiaryEvent diaryEvent = hotEvents[index];
+                if (diaryEvent == null) continue;
+                CancelOldEpochEventRole(diaryEvent, DiaryEvent.InitiatorRole, pawnId);
+                CancelOldEpochEventRole(diaryEvent, DiaryEvent.RecipientRole, pawnId);
+                CancelOldEpochEventRole(diaryEvent, DiaryEvent.NeutralRole, pawnId);
+            }
+        }
+
+        private static void CancelOldEpochEventRole(
+            DiaryEvent diaryEvent,
+            string povRole,
+            string pawnId)
+        {
+            SavedActiveLogicalRequestV1 request =
+                diaryEvent.ActiveMemoryLogicalRequestForRole(povRole);
+            bool ownsRole = string.Equals(
+                diaryEvent.PawnIdForRole(povRole), pawnId, StringComparison.Ordinal);
+            bool ownsRequest = request != null
+                && string.Equals(request.ownerPawnId, pawnId, StringComparison.Ordinal);
+            if (!ownsRole && !ownsRequest) return;
+
+            diaryEvent.SetActiveMemoryLogicalRequestForRole(povRole, null);
+            diaryEvent.SetAcceptedPromptPair(povRole, string.Empty, string.Empty);
+        }
+
+        private static void GreatestRequestCancellation(
+            string pawnId,
+            List<SavedActiveLogicalRequestV1> requests,
+            ref long greatest)
+        {
+            for (int index = 0; requests != null && index < requests.Count; index++)
+                GreatestRequestCancellation(pawnId, requests[index], ref greatest);
+        }
+
+        private static void GreatestRequestCancellation(
+            string pawnId,
+            SavedActiveLogicalRequestV1 request,
+            ref long greatest)
+        {
+            if (request != null
+                && string.Equals(request.ownerPawnId, pawnId, StringComparison.Ordinal)
+                && request.ownerCancellationGeneration > greatest)
+            {
+                greatest = request.ownerCancellationGeneration;
+            }
         }
 
         private static bool HasCanonicalBackgroundMemory(

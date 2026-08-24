@@ -11,6 +11,8 @@
   <ItemGroup>
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryThreadContracts.cs" Link="MemoryThreadContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryIdentityCodec.cs" Link="MemoryIdentityCodec.cs" />
+    <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryDispatchPolicy.cs" Link="MemoryDispatchPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryAcceptedPromptRetentionPolicy.cs" Link="DiaryAcceptedPromptRetentionPolicy.cs" />
     <Compile Include="..\..\Source\Models\Memory\MemorySavedScalarSchema.cs" Link="MemorySavedScalarSchema.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemorySummaryFingerprint.cs" Link="MemorySummaryFingerprint.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemorySavedIdentityCarrierRegistry.cs" Link="MemorySavedIdentityCarrierRegistry.cs" />

@@ -442,14 +442,35 @@ namespace PawnDiary
     }
 
     /// <summary>
-    /// Lock-free bounded FIFO used by the HTTP dispatcher. Capacity is reserved before enqueueing so
-    /// a burst can never create an unbounded collection of requests or one task per request.
+    /// Opaque ownership token for one capacity-reserved transport item. A staged item is invisible
+    /// until its owning main-thread transaction calls <see cref="BoundedTransportQueue{T}.Activate"/>.
+    /// </summary>
+    internal sealed class StagedTransportQueueItem<T>
+    {
+        internal readonly BoundedTransportQueue<T> owner;
+        internal readonly T item;
+        // 0 = staged, 1 = active/visible, 2 = cancelled or consumed.
+        internal int state;
+
+        internal StagedTransportQueueItem(BoundedTransportQueue<T> owner, T item)
+        {
+            this.owner = owner;
+            this.item = item;
+        }
+    }
+
+    /// <summary>
+    /// Bounded FIFO used by the HTTP dispatcher. <see cref="TryStage"/> reserves capacity without
+    /// making work visible, so the main thread can commit the matching saved state before
+    /// <see cref="Activate"/> lets any worker dequeue it. The historical <see cref="TryEnqueue"/>
+    /// remains an atomic stage-and-activate convenience for callers that own no saved transaction.
     /// </summary>
     internal sealed class BoundedTransportQueue<T>
     {
         private readonly ConcurrentQueue<T> queue = new ConcurrentQueue<T>();
         private readonly int capacity;
-        private int count;
+        private int reservedCount;
+        private int visibleCount;
 
         public BoundedTransportQueue(int capacity)
         {
@@ -468,36 +489,94 @@ namespace PawnDiary
 
         public int Count
         {
-            get { return Volatile.Read(ref count); }
+            get { return Volatile.Read(ref visibleCount); }
         }
 
-        /// <summary>Returns false immediately when all bounded queue slots are reserved.</summary>
-        public bool TryEnqueue(T item)
+        /// <summary>Active plus staged slots; this value never exceeds <see cref="Capacity"/>.</summary>
+        public int ReservedCount
         {
+            get { return Volatile.Read(ref reservedCount); }
+        }
+
+        /// <summary>
+        /// Reserves one bounded slot without publishing the item to consumers. Returns false
+        /// immediately when active and staged work already owns every slot.
+        /// </summary>
+        public bool TryStage(T item, out StagedTransportQueueItem<T> staged)
+        {
+            staged = null;
             while (true)
             {
-                int observed = Volatile.Read(ref count);
+                int observed = Volatile.Read(ref reservedCount);
                 if (observed >= capacity)
                 {
                     return false;
                 }
 
-                if (Interlocked.CompareExchange(ref count, observed + 1, observed) != observed)
+                if (Interlocked.CompareExchange(
+                        ref reservedCount,
+                        observed + 1,
+                        observed) != observed)
                 {
                     continue;
                 }
 
-                try
-                {
-                    queue.Enqueue(item);
-                    return true;
-                }
-                catch
-                {
-                    Interlocked.Decrement(ref count);
-                    throw;
-                }
+                staged = new StagedTransportQueueItem<T>(this, item);
+                return true;
             }
+        }
+
+        /// <summary>
+        /// Publishes one still-staged item exactly once. A cancelled, consumed, foreign, or already
+        /// active handle is rejected without changing capacity.
+        /// </summary>
+        public bool Activate(StagedTransportQueueItem<T> staged)
+        {
+            if (staged == null
+                || !ReferenceEquals(staged.owner, this)
+                || Interlocked.CompareExchange(ref staged.state, 1, 0) != 0)
+            {
+                return false;
+            }
+
+            try
+            {
+                queue.Enqueue(staged.item);
+                Interlocked.Increment(ref visibleCount);
+                return true;
+            }
+            catch
+            {
+                Volatile.Write(ref staged.state, 2);
+                Interlocked.Decrement(ref reservedCount);
+                throw;
+            }
+        }
+
+        /// <summary>Releases one invisible staged slot. Active work cannot be cancelled here.</summary>
+        public bool Cancel(StagedTransportQueueItem<T> staged)
+        {
+            if (staged == null
+                || !ReferenceEquals(staged.owner, this)
+                || Interlocked.CompareExchange(ref staged.state, 2, 0) != 0)
+            {
+                return false;
+            }
+
+            Interlocked.Decrement(ref reservedCount);
+            return true;
+        }
+
+        /// <summary>Returns false immediately when all bounded queue slots are reserved.</summary>
+        public bool TryEnqueue(T item)
+        {
+            StagedTransportQueueItem<T> staged;
+            if (!TryStage(item, out staged))
+            {
+                return false;
+            }
+
+            return Activate(staged);
         }
 
         /// <summary>Removes one item and releases its bounded queue slot.</summary>
@@ -508,7 +587,8 @@ namespace PawnDiary
                 return false;
             }
 
-            Interlocked.Decrement(ref count);
+            Interlocked.Decrement(ref visibleCount);
+            Interlocked.Decrement(ref reservedCount);
             return true;
         }
     }

@@ -145,6 +145,18 @@ namespace PawnDiary
         /// detail differs per lane; the background worker only selects between pre-rendered strings.
         /// </summary>
         public Dictionary<ApiLaneIdentity, LlmPromptVariant> promptVariants;
+
+        /// <summary>
+        /// Optional detached M2 identity. Null keeps the mature non-memory request path exact;
+        /// non-null requests require a saved-state permit before every physical HTTP attempt.
+        /// </summary>
+        public MemoryDispatchTransportContext memoryDispatch;
+
+        // Worker-only M2 cursor. These values are never Scribed or used by ordinary requests; they
+        // let retries/failovers name their exact predecessor while the saved row owns ordinals.
+        internal int memoryLastAttemptOrdinal;
+        internal string memoryLastVariantKey;
+        internal MemoryInvocationCommitPermitV1 memoryLastPermit;
     }
 
     /// <summary>
@@ -216,6 +228,52 @@ namespace PawnDiary
         /// prompt when failover lands on a lane with a different context-detail override.
         /// </summary>
         public string sentRawText;
+
+        /// <summary>System half of the exact prompt pair sent to the successful lane.</summary>
+        public string sentSystemPrompt;
+
+        /// <summary>
+        /// Exact final-attempt permit whose receipt was acknowledged before this result was queued.
+        /// Null identifies the unchanged legacy/non-memory transport path.
+        /// </summary>
+        public MemoryInvocationCommitPermitV1 memoryInvocationPermit;
+    }
+
+    /// <summary>
+    /// Typed synchronous outcomes from the transport staging boundary. Only <see cref="Staged"/>
+    /// returns an ownership handle that the main thread may activate after committing saved state.
+    /// </summary>
+    internal enum LlmRequestStageOutcome
+    {
+        Staged,
+        Inactive,
+        Duplicate,
+        Full,
+        Invalid
+    }
+
+    /// <summary>
+    /// Opaque handle for one capacity-reserved, deduplicated generation request. The request remains
+    /// invisible to workers until <see cref="LlmClient.Activate"/> succeeds.
+    /// </summary>
+    internal sealed class LlmStagedGenerationRequest
+    {
+        internal readonly LlmGenerationRequest request;
+        internal readonly object session;
+        internal readonly string pendingKey;
+        internal readonly StagedTransportQueueItem<LlmGenerationRequest> queueItem;
+
+        internal LlmStagedGenerationRequest(
+            LlmGenerationRequest request,
+            object session,
+            string pendingKey,
+            StagedTransportQueueItem<LlmGenerationRequest> queueItem)
+        {
+            this.request = request;
+            this.session = session;
+            this.pendingKey = pendingKey;
+            this.queueItem = queueItem;
+        }
     }
 
     /// <summary>
@@ -275,6 +333,9 @@ namespace PawnDiary
 
         /// <summary>Monotonically increasing ID so stale results from previous sessions are ignored.</summary>
         private static long currentSessionId;
+
+        /// <summary>Current loaded-game transport session, read only by the main-thread permit gate.</summary>
+        internal static long CurrentSessionId => currentSession.Id;
 
         /// <summary>
         /// Everything owned by one loaded-game transport session. Replacing this object on
@@ -377,6 +438,7 @@ namespace PawnDiary
             }
 
             ClearCompleted();
+            MemoryDispatchRuntimeBridge.RejectSession(oldSession.Id);
             try
             {
                 oldSession.Cancellation.Cancel();
@@ -1200,18 +1262,22 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Accepts a generation request into the current session's bounded FIFO, stamps its total
-        /// wall-clock deadline, deduplicates it, and wakes a bounded dispatch-worker pool.
+        /// Validates, stamps, deduplicates, and reserves capacity for one request without exposing it
+        /// to a worker. The main-thread owner must either <see cref="Activate"/> after committing its
+        /// saved state or <see cref="CancelStaged"/> if that commit cannot complete.
         /// </summary>
-        public static void Enqueue(LlmGenerationRequest request)
+        internal static LlmRequestStageOutcome TryStage(
+            LlmGenerationRequest request,
+            out LlmStagedGenerationRequest staged)
         {
+            staged = null;
             if (request == null || string.IsNullOrWhiteSpace(request.eventId) || string.IsNullOrWhiteSpace(request.povRole))
             {
                 DiaryTelemetry.Record(
                     DiaryTelemetryOutcome.LlmQueueInvalid,
                     "llm.enqueue",
                     RequestKind(request));
-                return;
+                return LlmRequestStageOutcome.Invalid;
             }
 
             LlmTransportSession session = currentSession;
@@ -1221,7 +1287,7 @@ namespace PawnDiary
                     DiaryTelemetryOutcome.LlmQueueInactive,
                     "llm.enqueue",
                     RequestKind(request));
-                return;
+                return LlmRequestStageOutcome.Inactive;
             }
 
             request.sessionId = session.Id;
@@ -1244,16 +1310,95 @@ namespace PawnDiary
                     "llm.enqueue",
                     RequestKind(request));
                 LogDebug("Skipped duplicate queued request event=" + request.eventId + " role=" + request.povRole + " session=" + request.sessionId);
-                return;
+                return LlmRequestStageOutcome.Duplicate;
             }
 
-            if (!session.WorkQueue.TryEnqueue(request))
+            StagedTransportQueueItem<LlmGenerationRequest> queueItem;
+            if (!session.WorkQueue.TryStage(request, out queueItem))
             {
                 session.PendingKeys.TryRemove(pendingKey, out _);
                 DiaryTelemetry.Record(
                     DiaryTelemetryOutcome.LlmQueueFull,
                     "llm.enqueue",
                     RequestKind(request));
+                LogDebug("Rejected request because bounded queue is full event=" + request.eventId
+                    + " role=" + request.povRole + " capacity=" + MaxQueuedRequests);
+                return LlmRequestStageOutcome.Full;
+            }
+
+            staged = new LlmStagedGenerationRequest(request, session, pendingKey, queueItem);
+            LogDebug("Staged request event=" + request.eventId + " role=" + request.povRole
+                + " session=" + request.sessionId);
+            return LlmRequestStageOutcome.Staged;
+        }
+
+        /// <summary>
+        /// Makes one staged request visible exactly once. Session replacement between stage and
+        /// activation cancels the invisible reservation instead of letting stale work run.
+        /// </summary>
+        internal static bool Activate(LlmStagedGenerationRequest staged)
+        {
+            LlmTransportSession session = staged?.session as LlmTransportSession;
+            if (staged == null
+                || session == null
+                || !ReferenceEquals(session, currentSession)
+                || !session.AcceptsGeneration
+                || session.Cancellation.IsCancellationRequested)
+            {
+                CancelStaged(staged);
+                return false;
+            }
+
+            if (!session.WorkQueue.Activate(staged.queueItem))
+            {
+                return false;
+            }
+
+            DiaryTelemetry.Record(
+                DiaryTelemetryOutcome.LlmQueueAccepted,
+                "llm.enqueue",
+                RequestKind(staged.request));
+            LogDebug("Activated request event=" + staged.request.eventId
+                + " role=" + staged.request.povRole
+                + " primary=" + LaneLabel(staged.request));
+            EnsureDispatchWorkers(session);
+            return true;
+        }
+
+        /// <summary>Releases one unactivated request's queue slot and in-flight dedup claim.</summary>
+        internal static bool CancelStaged(LlmStagedGenerationRequest staged)
+        {
+            LlmTransportSession session = staged?.session as LlmTransportSession;
+            if (staged == null || session == null)
+            {
+                return false;
+            }
+
+            bool cancelled = session.WorkQueue.Cancel(staged.queueItem);
+            if (cancelled)
+            {
+                session.PendingKeys.TryRemove(staged.pendingKey, out _);
+            }
+
+            return cancelled;
+        }
+
+        /// <summary>
+        /// Compatibility convenience for callers with no separate saved-state transaction. It
+        /// stages and immediately activates while preserving the historical queue-full completion.
+        /// </summary>
+        public static void Enqueue(LlmGenerationRequest request)
+        {
+            LlmStagedGenerationRequest staged;
+            LlmRequestStageOutcome outcome = TryStage(request, out staged);
+            if (outcome == LlmRequestStageOutcome.Staged)
+            {
+                Activate(staged);
+                return;
+            }
+
+            if (outcome == LlmRequestStageOutcome.Full && request != null)
+            {
                 Completed.Enqueue(new LlmGenerationResult
                 {
                     eventId = request.eventId,
@@ -1263,17 +1408,7 @@ namespace PawnDiary
                     error = "The LLM request queue is full. Try again after the current backlog finishes.",
                     isTitleRequest = request.isTitleRequest
                 });
-                LogDebug("Rejected request because bounded queue is full event=" + request.eventId
-                    + " role=" + request.povRole + " capacity=" + MaxQueuedRequests);
-                return;
             }
-
-            DiaryTelemetry.Record(
-                DiaryTelemetryOutcome.LlmQueueAccepted,
-                "llm.enqueue",
-                RequestKind(request));
-            LogDebug("Enqueued request event=" + request.eventId + " role=" + request.povRole + " primary=" + LaneLabel(request));
-            EnsureDispatchWorkers(session);
         }
 
         private static string RequestKind(LlmGenerationRequest request)
@@ -1431,6 +1566,7 @@ namespace PawnDiary
             public string RawText;
             public string Error;
             public bool Cancelled; // session ended mid-flight — abort entirely, no failover
+            public MemoryInvocationCommitPermitV1 MemoryPermit;
         }
 
         /// <summary>Runtime failure count and backoff deadline for one API lane.</summary>
@@ -1456,6 +1592,7 @@ namespace PawnDiary
         {
             public string CleanText;
             public string RawText;
+            public MemoryInvocationCommitPermitV1 MemoryPermit;
         }
 
         /// <summary>
@@ -1548,7 +1685,9 @@ namespace PawnDiary
                             authMode = request.authMode,
                             customAuthHeaderName = request.customAuthHeaderName,
                             isTitleRequest = request.isTitleRequest,
-                            sentRawText = request.rawText
+                            sentRawText = request.rawText,
+                            sentSystemPrompt = request.systemPrompt,
+                            memoryInvocationPermit = outcome.MemoryPermit
                         });
                         return;
                     }
@@ -1584,7 +1723,8 @@ namespace PawnDiary
                     // and write it to the log, and a networking message can echo the key-bearing
                     // request URL (query-param auth).
                     error = RedactRequestSecrets(request, lastError ?? "Unknown network error."),
-                    isTitleRequest = request.isTitleRequest
+                    isTitleRequest = request.isTitleRequest,
+                    memoryInvocationPermit = request.memoryLastPermit
                 });
                 LogDebug("All lanes failed event=" + request.eventId + " role=" + request.povRole + " lastError=" + TrimForLog(request, lastError));
             }
@@ -1604,7 +1744,8 @@ namespace PawnDiary
                         sessionId = request.sessionId,
                         success = false,
                         error = RedactRequestSecrets(request, ex.Message),
-                        isTitleRequest = request.isTitleRequest
+                        isTitleRequest = request.isTitleRequest,
+                        memoryInvocationPermit = request.memoryLastPermit
                     });
                 }
 
@@ -1753,7 +1894,19 @@ namespace PawnDiary
 
                     try
                     {
+                        request.memoryLastPermit = null;
                         SendResponse response = await SendOnce(request, request.cancellationToken);
+                        MemoryInvocationCommitPermitV1 memoryPermit = response.MemoryPermit;
+                        if (memoryPermit != null
+                            && !await MemoryDispatchRuntimeBridge.PublishReceiptAsync(
+                                request.sessionId,
+                                memoryPermit,
+                                MemoryDispatchTokens.Success,
+                                true,
+                                request.cancellationToken))
+                        {
+                            return new LaneResult { Cancelled = true };
+                        }
                         if (session.Cancellation.IsCancellationRequested
                             || request.sessionId != currentSession.Id
                             || callerCancellation.IsCancellationRequested)
@@ -1769,10 +1922,30 @@ namespace PawnDiary
                                 0);
                         }
 
-                        return new LaneResult { Success = true, Text = response.CleanText, RawText = response.RawText };
+                        return new LaneResult
+                        {
+                            Success = true,
+                            Text = response.CleanText,
+                            RawText = response.RawText,
+                            MemoryPermit = memoryPermit
+                        };
+                    }
+                    catch (LlmMemoryInvocationDeniedException)
+                    {
+                        return new LaneResult { Cancelled = true };
                     }
                     catch (LlmPermanentException ex)
                     {
+                        if (request.memoryLastPermit != null
+                            && !await MemoryDispatchRuntimeBridge.PublishReceiptAsync(
+                                request.sessionId,
+                                request.memoryLastPermit,
+                                MemoryDispatchTokens.ProviderError,
+                                false,
+                                request.cancellationToken))
+                        {
+                            return new LaneResult { Cancelled = true };
+                        }
                         return new LaneResult
                         {
                             Success = false,
@@ -1781,6 +1954,18 @@ namespace PawnDiary
                     }
                     catch (Exception ex) when (IsTransientException(ex))
                     {
+                        if (request.memoryLastPermit != null
+                            && !await MemoryDispatchRuntimeBridge.PublishReceiptAsync(
+                                request.sessionId,
+                                request.memoryLastPermit,
+                                ex is OperationCanceledException
+                                    ? MemoryDispatchTokens.Timeout
+                                    : MemoryDispatchTokens.ProviderError,
+                                false,
+                                request.sessionCancellationToken))
+                        {
+                            return new LaneResult { Cancelled = true };
+                        }
                         if (session.Cancellation.IsCancellationRequested
                             || request.sessionId != currentSession.Id
                             || callerCancellation.IsCancellationRequested)
@@ -1868,6 +2053,16 @@ namespace PawnDiary
                     }
                     catch (Exception ex) // unexpected / non-transient
                     {
+                        if (request.memoryLastPermit != null
+                            && !await MemoryDispatchRuntimeBridge.PublishReceiptAsync(
+                                request.sessionId,
+                                request.memoryLastPermit,
+                                MemoryDispatchTokens.ProviderError,
+                                false,
+                                request.sessionCancellationToken))
+                        {
+                            return new LaneResult { Cancelled = true };
+                        }
                         return new LaneResult
                         {
                             Success = false,
@@ -2030,6 +2225,32 @@ namespace PawnDiary
                 ApiRequestAuth.ApplyProtocolHeaders(message, protocolHeaders);
 
                 message.Content = new StringContent(BuildRequestJson(request), Encoding.UTF8, "application/json");
+                MemoryInvocationCommitPermitV1 memoryPermit = null;
+                if (request.memoryDispatch != null)
+                {
+                    ApiLaneIdentity lane = LaneIdentity(request);
+                    string variantKey = request.memoryDispatch.VariantKeyFor(lane);
+                    string origin = request.memoryLastAttemptOrdinal == 0
+                        ? MemoryDispatchTokens.Initial
+                        : string.Equals(request.memoryLastVariantKey, variantKey,
+                            StringComparison.Ordinal)
+                            ? MemoryDispatchTokens.Retry
+                            : MemoryDispatchTokens.Failover;
+                    memoryPermit = await MemoryDispatchRuntimeBridge.RequestPermitAsync(
+                        request,
+                        origin,
+                        request.memoryLastAttemptOrdinal,
+                        cancellationToken);
+                    MemoryRuntimeSendEnvelope sendEnvelope = memoryPermit == null
+                        ? null
+                        : new MemoryRuntimeSendEnvelope(memoryPermit);
+                    if (sendEnvelope == null || !sendEnvelope.TryClaimPhysicalSend())
+                        throw new LlmMemoryInvocationDeniedException();
+
+                    request.memoryLastAttemptOrdinal = memoryPermit.attemptOrdinal;
+                    request.memoryLastVariantKey = memoryPermit.variantKey;
+                    request.memoryLastPermit = memoryPermit;
+                }
                 using (HttpResponseMessage response = await SendHttpAsync(
                     message,
                     HttpCompletionOption.ResponseHeadersRead,
@@ -2139,7 +2360,8 @@ namespace PawnDiary
                     return new SendResponse
                     {
                         RawText = responsePlan.rawVisibleResponse,
-                        CleanText = responsePlan.generatedText
+                        CleanText = responsePlan.generatedText,
+                        MemoryPermit = memoryPermit
                     };
                 }
             }
@@ -2531,6 +2753,11 @@ namespace PawnDiary
                 : base(message)
             {
             }
+        }
+
+        /// <summary>Internal control flow when the main-thread M2 fence refuses physical send.</summary>
+        private sealed class LlmMemoryInvocationDeniedException : Exception
+        {
         }
     }
 }

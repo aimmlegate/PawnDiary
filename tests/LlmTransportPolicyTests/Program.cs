@@ -14,9 +14,10 @@ namespace LlmTransportPolicyTests
         private static async Task<int> Main()
         {
             await TestStableResizableAdmissionGate();
-            await TestCancelledAdmissionDoesNotStrandGate();
-            TestBoundedQueue();
-            TestTransportPolicy();
+                await TestCancelledAdmissionDoesNotStrandGate();
+                TestBoundedQueue();
+                TestTransactionalQueueStaging();
+                TestTransportPolicy();
             TestExactSecretRedaction();
 
             Console.WriteLine("LlmTransportPolicyTests passed " + assertions + " assertions.");
@@ -84,6 +85,46 @@ namespace LlmTransportPolicyTests
             AssertTrue("third item dequeues", queue.TryDequeue(out item));
             AssertEqual("third FIFO item", "third", item);
             AssertEqual("bounded queue ends empty", 0, queue.Count);
+        }
+
+        private static void TestTransactionalQueueStaging()
+        {
+            BoundedTransportQueue<string> queue = new BoundedTransportQueue<string>(2);
+            StagedTransportQueueItem<string> first;
+            StagedTransportQueueItem<string> second;
+            StagedTransportQueueItem<string> overflow;
+
+            AssertTrue("stage reserves first slot", queue.TryStage("first", out first));
+            AssertEqual("staged item is not visible", 0, queue.Count);
+            AssertEqual("staged item owns capacity", 1, queue.ReservedCount);
+            string item;
+            AssertFalse("worker cannot dequeue before activation", queue.TryDequeue(out item));
+
+            AssertTrue("stage reserves second slot", queue.TryStage("second", out second));
+            AssertFalse("staged capacity rejects overflow", queue.TryStage("overflow", out overflow));
+            AssertEqual("reserved count remains bounded", 2, queue.ReservedCount);
+
+            AssertTrue("activation publishes exact staged item", queue.Activate(first));
+            AssertFalse("activation is exactly once", queue.Activate(first));
+            AssertEqual("one activated item is visible", 1, queue.Count);
+            AssertTrue("activated item dequeues", queue.TryDequeue(out item));
+            AssertEqual("activated payload preserved", "first", item);
+            AssertEqual("dequeue releases only consumed reservation", 1, queue.ReservedCount);
+
+            AssertTrue("cancelling invisible stage releases capacity", queue.Cancel(second));
+            AssertFalse("cancel is exactly once", queue.Cancel(second));
+            AssertFalse("cancelled stage cannot activate", queue.Activate(second));
+            AssertEqual("all transactional reservations released", 0, queue.ReservedCount);
+            AssertTrue("released staged slot can be reused", queue.TryEnqueue("third"));
+            AssertTrue("legacy enqueue remains visible", queue.TryDequeue(out item));
+            AssertEqual("legacy enqueue payload preserved", "third", item);
+
+            BoundedTransportQueue<string> foreignQueue = new BoundedTransportQueue<string>(1);
+            StagedTransportQueueItem<string> foreign;
+            AssertTrue("foreign stage created", foreignQueue.TryStage("foreign", out foreign));
+            AssertFalse("queue rejects foreign activation", queue.Activate(foreign));
+            AssertFalse("queue rejects foreign cancellation", queue.Cancel(foreign));
+            AssertTrue("owner can cancel foreign stage", foreignQueue.Cancel(foreign));
         }
 
         private static void TestTransportPolicy()

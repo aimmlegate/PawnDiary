@@ -89,7 +89,7 @@
       <li><name>frozenVariantAttemptCaps</name><valueEncoding>4/4</valueEncoding></li>
       <li><name>frozenEvidenceGuardDiagnosticCaps</name><valueEncoding>2/8/16</valueEncoding></li>
       <li><name>frozenPromptUnits</name><valueEncoding>4096</valueEncoding></li>
-      <li><name>acceptedPromptPairsEscapedBytesGlobal</name><valueEncoding>500/4194304</valueEncoding></li>
+      <li><name>acceptedPromptPairsEscapedBytesGlobal</name><valueEncoding>2000/16777216</valueEncoding></li>
       <li><name>factionSnapshots</name><valueEncoding>256</valueEncoding></li>
       <li><name>dirtyObservationKeys</name><valueEncoding>1024</valueEncoding></li>
       <li><name>legacyEpochReservations</name><valueEncoding>64</valueEncoding></li>

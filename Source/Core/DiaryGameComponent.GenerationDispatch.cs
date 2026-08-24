@@ -35,7 +35,8 @@ namespace PawnDiary
         private void QueuePrompt(DiaryEvent diaryEvent, string povRole, PromptPlanFactory promptPlanFactory,
             ApiEndpointConfig primaryOverride = null, Dictionary<string, DiaryBoundsCacheEntry> boundsCache = null,
             Dictionary<string, Pawn> livePawnsById = null,
-            Action<PromptContextDetailLevel, bool> prepareSelectedPlan = null)
+            Action<PromptContextDetailLevel, bool> prepareSelectedPlan = null,
+            SavedActiveLogicalRequestV1 stagedMemoryRequest = null)
         {
             if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole) || promptPlanFactory == null)
             {
@@ -152,21 +153,6 @@ namespace PawnDiary
             }
 
             string rawText = promptPlan.userPrompt ?? string.Empty;
-            diaryEvent.SetPrompt(povRole, rawText);
-            LogApiDebug(
-                "Queue event=" + diaryEvent.eventId
-                + " role=" + povRole
-                + " primary=" + LaneLabel(target)
-                + " context=" + contextDetailLevel
-                + " reason=" + selectionReason
-                + " failovers=[" + LaneList(failoverTargets) + "]");
-
-            diaryEvent.SetLlmMeta(
-                povRole,
-                EndpointUtility.BuildGenerationUrl(target.url, target.model, target.apiMode),
-                target.model);
-            diaryEvent.MarkQueued(povRole);
-
             DiaryResponseRules responseRules = promptPlan.responseRules
                 ?? DiaryResponseRules.ForRequest(diaryEvent.eventId, povRole, false, settings.maxTokens);
             if (string.IsNullOrWhiteSpace(responseRules.eventId))
@@ -181,7 +167,7 @@ namespace PawnDiary
             }
 
             int requestMaxTokens = responseRules.maxTokens > 0 ? responseRules.maxTokens : settings.maxTokens;
-            LlmClient.Enqueue(new LlmGenerationRequest
+            LlmGenerationRequest request = new LlmGenerationRequest
             {
                 eventId = diaryEvent.eventId,
                 povRole = povRole,
@@ -207,8 +193,100 @@ namespace PawnDiary
                 temperature = settings.temperature,
                 responseRules = responseRules,
                 promptVariants = promptVariants
-            });
+            };
+            if (stagedMemoryRequest != null
+                && !TryBindMemoryTransportContext(
+                    request, stagedMemoryRequest, promptVariants))
+            {
+                return;
+            }
+
+            // Reserve bounded transport capacity and dedup ownership first, but keep the request
+            // invisible. Only after the event's matching prompt/lane/pending state is committed do
+            // we activate the queue item, so a worker can never outrun its main-thread owner row.
+            LlmStagedGenerationRequest staged;
+            LlmRequestStageOutcome stageOutcome = LlmClient.TryStage(request, out staged);
+            if (stageOutcome != LlmRequestStageOutcome.Staged)
+            {
+                LogApiDebug(
+                    "Could not stage request event=" + diaryEvent.eventId
+                    + " role=" + povRole
+                    + " outcome=" + stageOutcome);
+                return;
+            }
+
+            diaryEvent.SetPrompt(povRole, rawText);
+            diaryEvent.SetLlmMeta(
+                povRole,
+                EndpointUtility.BuildGenerationUrl(target.url, target.model, target.apiMode),
+                target.model);
+            diaryEvent.MarkQueued(povRole);
+
+            if (stagedMemoryRequest != null)
+            {
+                // The complete detached row is published only after transport capacity is staged.
+                // Its Activated state is committed before the transport handle becomes visible.
+                diaryEvent.SetActiveMemoryLogicalRequestForRole(povRole, stagedMemoryRequest);
+                if (!MemoryDispatchSavedAdapter.TryActivate(stagedMemoryRequest))
+                {
+                    diaryEvent.SetActiveMemoryLogicalRequestForRole(povRole, null);
+                    LlmClient.CancelStaged(staged);
+                    diaryEvent.RollBackQueuedBeforeActivation(povRole);
+                    NotifyEntryStatusChanged(diaryEvent, povRole);
+                    return;
+                }
+            }
+
+            if (!LlmClient.Activate(staged))
+            {
+                // Session replacement can race the tiny stage->commit window. Restore only transient
+                // queue fields; an older visible page remains intact and no send is claimed.
+                diaryEvent.RollBackQueuedBeforeActivation(povRole);
+                if (stagedMemoryRequest != null)
+                    diaryEvent.SetActiveMemoryLogicalRequestForRole(povRole, null);
+                NotifyEntryStatusChanged(diaryEvent, povRole);
+                return;
+            }
+
+            LogApiDebug(
+                "Queue event=" + diaryEvent.eventId
+                + " role=" + povRole
+                + " primary=" + LaneLabel(target)
+                + " context=" + contextDetailLevel
+                + " reason=" + selectionReason
+                + " failovers=[" + LaneList(failoverTargets) + "]");
             NotifyEntryStatusChanged(diaryEvent, povRole);
+        }
+
+        /// <summary>
+        /// M2 manual replay: route one already-accepted exact prompt pair through current transport
+        /// settings. The factory ignores context detail, so retries/failovers cannot rebuild or alter
+        /// historical memory, settings, background, suppression, or wording state.
+        /// </summary>
+        private bool QueueStaticRegenerationPrompt(
+            DiaryEvent diaryEvent,
+            string povRole,
+            string acceptedSystemPrompt,
+            string acceptedUserPrompt)
+        {
+            if (diaryEvent == null
+                || string.IsNullOrWhiteSpace(acceptedSystemPrompt)
+                || string.IsNullOrWhiteSpace(acceptedUserPrompt)) return false;
+
+            QueuePrompt(
+                diaryEvent,
+                povRole,
+                ignored => new DiaryPromptPlan
+                {
+                    systemPrompt = acceptedSystemPrompt,
+                    userPrompt = acceptedUserPrompt,
+                    responseRules = DiaryResponseRules.ForRequest(
+                        diaryEvent.eventId,
+                        povRole,
+                        false,
+                        PawnDiaryMod.Settings?.maxTokens ?? 0)
+                });
+            return diaryEvent.IsPending(povRole);
         }
 
         private static DiaryPromptPlan PromptPlanForContextLevel(
@@ -408,13 +486,30 @@ namespace PawnDiary
                 return DiaryTelemetryOutcome.LlmResultApplied;
             }
 
-            if (!result.success)
+            SavedActiveLogicalRequestV1 memoryRequest;
+            if (!TryBeginMemoryResultApply(diaryEvent, result, out memoryRequest))
             {
-                HandleFailedMainGeneration(diaryEvent, result);
+                // A late session/request/epoch callback is consumed but cannot restore text or
+                // recreate memory state. Brainwipe and replacement requests deliberately land here.
                 return DiaryTelemetryOutcome.LlmResultApplied;
             }
 
-            if (result.sentRawText != null)
+            if (!result.success)
+            {
+                HandleFailedMainGeneration(diaryEvent, result);
+                if (memoryRequest != null)
+                    diaryEvent.SetActiveMemoryLogicalRequestForRole(result.povRole, null);
+                return DiaryTelemetryOutcome.LlmResultApplied;
+            }
+
+            if (MemorySystemActivationGate.IsCurrentRelease
+                && result.sentSystemPrompt != null && result.sentRawText != null)
+            {
+                diaryEvent.SetAcceptedPromptPair(
+                    result.povRole, result.sentSystemPrompt, result.sentRawText);
+                ApplyAcceptedPromptRetention();
+            }
+            else if (result.sentRawText != null)
             {
                 diaryEvent.SetPrompt(result.povRole, result.sentRawText);
             }
@@ -441,6 +536,8 @@ namespace PawnDiary
             }
 
             NotifyEntryStatusChanged(diaryEvent, result.povRole);
+            if (memoryRequest != null)
+                diaryEvent.SetActiveMemoryLogicalRequestForRole(result.povRole, null);
 
             // Generated speech Social-log injection is currently hidden/disabled. RimWorld accepts
             // the synthetic PlayLog row, but it does not reliably appear in the Social tab UI.
@@ -682,8 +779,6 @@ namespace PawnDiary
                 }
             }
 
-            diaryEvent.MarkTitleQueued(povRole);
-
             DiaryPromptPlan titlePlan = DiaryPromptBuilder.BuildTitlePromptPlan(diaryEvent, povRole, TitleMaxTokens);
             DiaryResponseRules titleRules = titlePlan.responseRules
                 ?? DiaryResponseRules.ForRequest(diaryEvent.eventId, povRole, true, TitleMaxTokens);
@@ -696,7 +791,7 @@ namespace PawnDiary
             titleRules.maxTokens = TitleMaxTokens;
             titleRules.trimIncompleteSentence = false;
 
-            LlmClient.Enqueue(new LlmGenerationRequest
+            LlmGenerationRequest request = new LlmGenerationRequest
             {
                 eventId = diaryEvent.eventId,
                 povRole = povRole,
@@ -718,7 +813,22 @@ namespace PawnDiary
                 lowThinkingHeadroomTokens = DiaryTuning.LowThinkingHeadroomTokens,
                 temperature = settings.temperature,
                 responseRules = titleRules
-            });
+            };
+
+            LlmStagedGenerationRequest staged;
+            if (LlmClient.TryStage(request, out staged) != LlmRequestStageOutcome.Staged)
+            {
+                return false;
+            }
+
+            diaryEvent.MarkTitleQueued(povRole);
+            if (!LlmClient.Activate(staged))
+            {
+                diaryEvent.RollBackTitleQueuedBeforeActivation(povRole);
+                NotifyEntryStatusChanged(diaryEvent, povRole);
+                return false;
+            }
+
             NotifyEntryStatusChanged(diaryEvent, povRole);
             return true;
         }

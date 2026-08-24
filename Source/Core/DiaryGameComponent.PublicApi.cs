@@ -974,6 +974,44 @@ namespace PawnDiary
                 return false;
             }
 
+            if (MemorySystemActivationGate.IsCurrentRelease)
+            {
+                string initiatorSystem = diaryEvent.AcceptedSystemPromptForRole(
+                    DiaryEvent.InitiatorRole);
+                string initiatorUser = diaryEvent.PromptForRole(DiaryEvent.InitiatorRole);
+                string recipientSystem = diaryEvent.AcceptedSystemPromptForRole(
+                    DiaryEvent.RecipientRole);
+                string recipientUser = diaryEvent.PromptForRole(DiaryEvent.RecipientRole);
+                bool replayInitiator = initiatorEnabled
+                    && !string.IsNullOrWhiteSpace(initiatorSystem)
+                    && !string.IsNullOrWhiteSpace(initiatorUser);
+                bool replayRecipient = recipientEnabled
+                    && !string.IsNullOrWhiteSpace(recipientSystem)
+                    && !string.IsNullOrWhiteSpace(recipientUser);
+                if (!replayInitiator && !replayRecipient) return false;
+
+                if (replayInitiator)
+                {
+                    diaryEvent.PrepareForRegeneration(DiaryEvent.InitiatorRole);
+                    QueueStaticRegenerationPrompt(
+                        diaryEvent,
+                        DiaryEvent.InitiatorRole,
+                        initiatorSystem,
+                        initiatorUser);
+                }
+                if (replayRecipient)
+                {
+                    diaryEvent.PrepareForRegeneration(DiaryEvent.RecipientRole);
+                    QueueStaticRegenerationPrompt(
+                        diaryEvent,
+                        DiaryEvent.RecipientRole,
+                        recipientSystem,
+                        recipientUser);
+                }
+                return diaryEvent.IsPending(DiaryEvent.InitiatorRole)
+                    || diaryEvent.IsPending(DiaryEvent.RecipientRole);
+            }
+
             if (initiatorEnabled)
             {
                 diaryEvent.PrepareForRegeneration(DiaryEvent.InitiatorRole);
@@ -1002,6 +1040,17 @@ namespace PawnDiary
                 || !DiaryGenerationEnabledFor(diaryEvent, povRole, boundsCache, livePawnsById))
             {
                 return false;
+            }
+
+            if (MemorySystemActivationGate.IsCurrentRelease)
+            {
+                string acceptedSystem = diaryEvent.AcceptedSystemPromptForRole(povRole);
+                string acceptedUser = diaryEvent.PromptForRole(povRole);
+                if (string.IsNullOrWhiteSpace(acceptedSystem)
+                    || string.IsNullOrWhiteSpace(acceptedUser)) return false;
+                diaryEvent.PrepareForRegeneration(povRole);
+                return QueueStaticRegenerationPrompt(
+                    diaryEvent, povRole, acceptedSystem, acceptedUser);
             }
 
             diaryEvent.PrepareForRegeneration(povRole);

@@ -106,6 +106,12 @@ namespace PawnDiary
         {
             // Generation-pipeline fields, persisted for every role (including neutral).
             public string prompt;
+            // M2 additive exact accepted pair. The existing prompt is the accepted user string;
+            // this companion stores its exact system string. Both remain absent in LegacyShadow.
+            internal string acceptedSystemPrompt;
+            // M2 additive transactional owner row. It is committed while transport work is staged,
+            // before that work becomes visible to a background dispatcher.
+            internal SavedActiveLogicalRequestV1 activeMemoryLogicalRequest;
             public string generatedText;
             public string rawResponse;
             public string status;
@@ -430,6 +436,10 @@ namespace PawnDiary
             Scribe_Values.Look(ref slot.previousEntryEnding, prefix + "PreviousEntryEnding");
             Scribe_Values.Look(ref slot.weapon, prefix + "Weapon");
             Scribe_Values.Look(ref slot.prompt, prefix + "Prompt");
+            Scribe_Values.Look(ref slot.acceptedSystemPrompt, prefix + "AcceptedSystemPrompt");
+            Scribe_Deep.Look(
+                ref slot.activeMemoryLogicalRequest,
+                prefix + "ActiveMemoryLogicalRequest");
             Scribe_Values.Look(ref slot.generatedText, prefix + "GeneratedText");
             Scribe_Values.Look(ref slot.rawResponse, prefix + "RawResponse");
             Scribe_Values.Look(ref slot.status, prefix + "Status");
@@ -482,6 +492,10 @@ namespace PawnDiary
             Scribe_Values.Look(ref slot.text, "neutralText");
             Scribe_Values.Look(ref slot.entryTypeKey, "neutralEntryTypeKey");
             Scribe_Values.Look(ref slot.prompt, "neutralPrompt");
+            Scribe_Values.Look(ref slot.acceptedSystemPrompt, "neutralAcceptedSystemPrompt");
+            Scribe_Deep.Look(
+                ref slot.activeMemoryLogicalRequest,
+                "neutralActiveMemoryLogicalRequest");
             Scribe_Values.Look(ref slot.generatedText, "neutralGeneratedText");
             Scribe_Values.Look(ref slot.rawResponse, "neutralRawResponse");
             Scribe_Values.Look(ref slot.status, "neutralStatus");
@@ -515,6 +529,9 @@ namespace PawnDiary
             slot.llmModel = DiarySaveNormalization.NormalizeString(slot.llmModel);
             slot.rawResponse = DiarySaveNormalization.NormalizeString(slot.rawResponse);
             slot.prompt = DiarySaveNormalization.NormalizeString(slot.prompt);
+            slot.acceptedSystemPrompt = DiarySaveNormalization.NormalizeString(
+                slot.acceptedSystemPrompt);
+            slot.activeMemoryLogicalRequest?.Normalize();
             slot.title = DiarySaveNormalization.NormalizeString(slot.title);
             slot.titleError = DiarySaveNormalization.NormalizeString(slot.titleError);
             // Normalize statuses: treat stale "pending" or empty as not_generated, and upgrade to
@@ -612,6 +629,44 @@ namespace PawnDiary
         public string PromptForRole(string povRole)
         {
             return SlotFor(povRole).prompt ?? string.Empty;
+        }
+
+        /// <summary>Returns the exact accepted system prompt paired with this POV's saved user prompt.</summary>
+        internal string AcceptedSystemPromptForRole(string povRole)
+        {
+            return SlotFor(povRole).acceptedSystemPrompt ?? string.Empty;
+        }
+
+        /// <summary>
+        /// Atomically replaces the exact accepted system/user prompt pair after receipt settlement.
+        /// Blank halves clear the pair so a partial historical prompt is never Regenerate-eligible.
+        /// </summary>
+        internal void SetAcceptedPromptPair(string povRole, string systemPrompt, string userPrompt)
+        {
+            ref PovSlot slot = ref SlotFor(povRole);
+            if (string.IsNullOrWhiteSpace(systemPrompt) || string.IsNullOrWhiteSpace(userPrompt))
+            {
+                slot.acceptedSystemPrompt = string.Empty;
+                slot.prompt = string.Empty;
+                return;
+            }
+
+            slot.acceptedSystemPrompt = systemPrompt;
+            slot.prompt = userPrompt;
+        }
+
+        /// <summary>Returns the M2 request row owned by one POV, or null when no request is active.</summary>
+        internal SavedActiveLogicalRequestV1 ActiveMemoryLogicalRequestForRole(string povRole)
+        {
+            return SlotFor(povRole).activeMemoryLogicalRequest;
+        }
+
+        /// <summary>Commits or clears the one active M2 logical request owned by this POV.</summary>
+        internal void SetActiveMemoryLogicalRequestForRole(
+            string povRole,
+            SavedActiveLogicalRequestV1 request)
+        {
+            SlotFor(povRole).activeMemoryLogicalRequest = request;
         }
 
         /// <summary>
@@ -784,6 +839,38 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Rolls back only queue-time fields when staged work cannot be activated. Existing visible
+        /// prose/title survives and the POV stays retryable without claiming that a send occurred.
+        /// </summary>
+        internal void RollBackQueuedBeforeActivation(string povRole)
+        {
+            ref PovSlot slot = ref SlotFor(povRole);
+            if (!RoleEquals(slot.status, PendingStatus))
+            {
+                return;
+            }
+
+            DiaryStateVersion.Bump();
+            slot.prompt = string.Empty;
+            slot.status = NotGeneratedStatus;
+            slot.error = null;
+            slot.llmEndpoint = string.Empty;
+            slot.llmModel = string.Empty;
+        }
+
+        /// <summary>Restores an unactivated title request to its retryable pre-queue state.</summary>
+        internal void RollBackTitleQueuedBeforeActivation(string povRole)
+        {
+            ref PovSlot slot = ref SlotFor(povRole);
+            if (RoleEquals(slot.titleStatus, PendingStatus))
+            {
+                DiaryStateVersion.Bump();
+                slot.titleStatus = NotGeneratedStatus;
+                slot.titleError = null;
+            }
+        }
+
+        /// <summary>
         /// True only when this POV is terminally skipped for the exact supplied reason. This read-only
         /// twin of <see cref="TryResetSkippedForReason"/> lets inspection UI predict recoverable work
         /// without repairing saved generation state during a draw pass.
@@ -924,6 +1011,8 @@ namespace PawnDiary
             slot.generatedText = text;
             slot.rawResponse = string.Empty;
             slot.prompt = string.Empty;
+            slot.acceptedSystemPrompt = string.Empty;
+            slot.activeMemoryLogicalRequest = null;
             slot.status = CompleteStatus;
             slot.error = null;
             slot.automaticGenerationRetryAttempts = 0;
@@ -953,6 +1042,8 @@ namespace PawnDiary
             slot.generatedText = text;
             slot.rawResponse = string.Empty;
             slot.prompt = string.Empty;
+            slot.acceptedSystemPrompt = string.Empty;
+            slot.activeMemoryLogicalRequest = null;
             slot.status = CompleteStatus;
             slot.error = null;
             slot.automaticGenerationRetryAttempts = 0;

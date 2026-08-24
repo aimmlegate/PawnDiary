@@ -5,6 +5,7 @@
 // pawn records can be kept consistent.
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Verse;
 
 namespace PawnDiary
@@ -45,6 +46,7 @@ namespace PawnDiary
         {
             bool changed = ApplyActiveEventLimit();
             changed = ApplyArchivedEventLimit() || changed;
+            changed = ApplyAcceptedPromptRetention() || changed;
             if (!changed)
             {
                 return;
@@ -84,6 +86,80 @@ namespace PawnDiary
                 ? PawnDiarySettings.DefaultMaxArchivedDiaryEvents
                 : PawnDiarySettings.ClampArchivedDiaryEventLimit(settings.maxArchivedDiaryEvents);
             return archive.TrimPerPawnLimit(perPawnLimit);
+        }
+
+        /// <summary>
+        /// Enforces the one global M2 accepted-prompt suffix. Half-pairs count and are cleared as a
+        /// unit; generated page text remains untouched and compact archive rows never receive prompts.
+        /// </summary>
+        private bool ApplyAcceptedPromptRetention()
+        {
+            int pairCap = DiaryAcceptedPromptRetentionPolicy.ProductionPairCap;
+            long byteCap = DiaryAcceptedPromptRetentionPolicy.ProductionEscapedByteCap;
+            DiaryKnowledgeTuningDef tuning = DefDatabase<DiaryKnowledgeTuningDef>
+                .GetNamedSilentFail(DiaryKnowledgePolicy.TuningDefName);
+            for (int index = 0; tuning?.memoryCapacityVector != null
+                && index < tuning.memoryCapacityVector.Count; index++)
+            {
+                DiaryMemoryCapacityValueRow row = tuning.memoryCapacityVector[index];
+                if (row == null || !string.Equals(
+                    row.name,
+                    "acceptedPromptPairsEscapedBytesGlobal",
+                    StringComparison.Ordinal)) continue;
+                string[] parts = (row.valueEncoding ?? string.Empty).Split('/');
+                int parsedPairs;
+                long parsedBytes;
+                if (parts.Length == 2
+                    && int.TryParse(parts[0], NumberStyles.None,
+                        CultureInfo.InvariantCulture, out parsedPairs)
+                    && long.TryParse(parts[1], NumberStyles.None,
+                        CultureInfo.InvariantCulture, out parsedBytes)
+                    && parsedPairs >= 0 && parsedBytes >= 0)
+                {
+                    pairCap = parsedPairs;
+                    byteCap = parsedBytes;
+                }
+                break;
+            }
+
+            List<DiaryAcceptedPromptUnit> units = new List<DiaryAcceptedPromptUnit>();
+            IReadOnlyList<DiaryEvent> allEvents = events?.AllEvents;
+            for (int index = 0; allEvents != null && index < allEvents.Count; index++)
+            {
+                DiaryEvent diaryEvent = allEvents[index];
+                AddAcceptedPromptUnit(units, diaryEvent, DiaryEvent.InitiatorRole);
+                AddAcceptedPromptUnit(units, diaryEvent, DiaryEvent.RecipientRole);
+                AddAcceptedPromptUnit(units, diaryEvent, DiaryEvent.NeutralRole);
+            }
+            DiaryAcceptedPromptRetentionPlan plan =
+                DiaryAcceptedPromptRetentionPolicy.Plan(units, pairCap, byteCap);
+            if (!plan.valid || plan.clearOldestPrefix.Count == 0) return false;
+            for (int index = 0; index < plan.clearOldestPrefix.Count; index++)
+            {
+                DiaryAcceptedPromptUnit unit = plan.clearOldestPrefix[index];
+                events.FindEvent(unit.eventId)?.SetAcceptedPromptPair(
+                    unit.povRole, string.Empty, string.Empty);
+            }
+            return true;
+        }
+
+        private static void AddAcceptedPromptUnit(
+            List<DiaryAcceptedPromptUnit> units,
+            DiaryEvent diaryEvent,
+            string povRole)
+        {
+            if (diaryEvent == null) return;
+            string system = diaryEvent.AcceptedSystemPromptForRole(povRole);
+            string user = diaryEvent.PromptForRole(povRole);
+            if (string.IsNullOrEmpty(system) && string.IsNullOrEmpty(user)) return;
+            units.Add(new DiaryAcceptedPromptUnit
+            {
+                eventTick = diaryEvent.tick,
+                eventId = diaryEvent.eventId ?? string.Empty,
+                povRole = povRole,
+                systemPrompt = system,
+                userPrompt = user
+            });
         }
 
         /// <summary>

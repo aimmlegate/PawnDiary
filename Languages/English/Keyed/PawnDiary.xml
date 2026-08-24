@@ -2147,4 +2147,5 @@
   <PawnDiary.Memory.Library.Imported.RawPreview>This legacy memory is too large or incomplete for the current format. Only a bounded preview is available.</PawnDiary.Memory.Library.Imported.RawPreview>
   <PawnDiary.Memory.Library.Dev.Diagnostics>Copy diagnostics</PawnDiary.Memory.Library.Dev.Diagnostics>
   <PawnDiary.Memory.Library.Dev.RejectionReasons>Rejection reasons</PawnDiary.Memory.Library.Dev.RejectionReasons>
+  <PawnDiary.Error.GenerationInterruptedAfterSend>The previous game session ended after this request may have reached the provider. It was not sent again.</PawnDiary.Error.GenerationInterruptedAfterSend>
 </LanguageData>
