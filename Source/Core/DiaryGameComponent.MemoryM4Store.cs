@@ -64,8 +64,6 @@ namespace PawnDiary
             new Dictionary<string, SavedMemoryChapter>(StringComparer.Ordinal);
         private readonly Dictionary<string, SavedMemoryBlock> memoryM4SourceFactDedupByKey =
             new Dictionary<string, SavedMemoryBlock>(StringComparer.Ordinal);
-        private readonly HashSet<string> memoryM4OwnersWithDuplicateCanonicalRoots =
-            new HashSet<string>(StringComparer.Ordinal);
         private long memoryM4IndexGeneration = 1;
         private bool memoryM4IndexesDirty = true;
         private int memoryM4GlobalActiveBlockCount;
@@ -89,7 +87,6 @@ namespace PawnDiary
             memoryM4StandaloneByQualifiedRecord.Clear();
             memoryM4ChapterByQualifiedId.Clear();
             memoryM4SourceFactDedupByKey.Clear();
-            memoryM4OwnersWithDuplicateCanonicalRoots.Clear();
             memoryM4GlobalActiveBlockCount = 0;
             memoryM4GlobalEditedBlockCount = 0;
             for (int i = 0; diaries != null && i < diaries.Count; i++)
@@ -100,7 +97,7 @@ namespace PawnDiary
                     || string.IsNullOrWhiteSpace(diary.pawnId)
                     || memoryM4OwnerById.ContainsKey(diary.pawnId)) continue;
                 memoryM4OwnerById.Add(diary.pawnId, state);
-                IndexOwner(state, diary.pawnId);
+                IndexOwner(state);
             }
             memoryM4IndexesDirty = false;
             if (memoryM4IndexGeneration < long.MaxValue) memoryM4IndexGeneration++;
@@ -394,14 +391,25 @@ namespace PawnDiary
                     projected.Add(root);
                 }
             MemoryThreadRepairResult repair = MemoryThreadRepairPolicy.Repair(projected, policy);
-            if (repair.refused || !repair.changed) return false;
+            if (repair.refused)
+            {
+                // A refusing owner is retried every maintenance cycle and never converges. Leave one
+                // bounded marker so the state is visible instead of silently burning a work item.
+                RecordMemoryDiagnosticOnce("repair_refused", "owner");
+                return false;
+            }
+            if (!repair.changed) return false;
             List<SavedMemoryThreadRoot> replacements = new List<SavedMemoryThreadRoot>();
             for (int i = 0; i < repair.activeRoots.Count; i++)
                 replacements.Add(FromReducerRoot(repair.activeRoots[i], BuildOriginalRegistryRoot(
                     owner.threadRoots, repair.activeRoots[i], policy)));
             // Authored conflict archive persistence belongs to M6 migration/library UI. Until then,
             // fail closed rather than discard its quarantined payload from a current save.
-            if (repair.archivedRoots.Count > 0) return false;
+            if (repair.archivedRoots.Count > 0)
+            {
+                RecordMemoryDiagnosticOnce("legacy_authored_conflict", "owner");
+                return false;
+            }
             long revision;
             if (!TryIncrement(owner.structuralRevision, out revision)) return false;
             owner.threadRoots = replacements;
@@ -418,7 +426,7 @@ namespace PawnDiary
             if (memoryM4IndexesDirty) RebuildMemoryM4Indexes();
         }
 
-        private void IndexOwner(PawnKnowledgeState state, string indexedOwnerPawnId)
+        private void IndexOwner(PawnKnowledgeState state)
         {
             for (int i = 0; state.standaloneBlocks != null && i < state.standaloneBlocks.Count; i++)
             {
@@ -444,8 +452,6 @@ namespace PawnDiary
                 {
                     if (!memoryM4RootByCanonicalId.ContainsKey(canonical))
                         memoryM4RootByCanonicalId.Add(canonical, root);
-                    else
-                        memoryM4OwnersWithDuplicateCanonicalRoots.Add(indexedOwnerPawnId);
                 }
                 for (int j = 0; root.chapters != null && j < root.chapters.Count; j++)
                 {
@@ -1424,7 +1430,7 @@ namespace PawnDiary
                     }
                     int existingIndex = FindSavedBlockIndex(
                         combined.visibleBlocks, source.recordId);
-                    MemoryReducerBlock selected = FindReducerBlock(selectedRoot, source.recordId);
+                    MemoryReducerBlock selected = FindReducerBlock(selectedRoot, source, policy);
                     if (existingIndex >= 0 && selected != null
                         && ShouldReplacePublicationSource(
                             combined.visibleBlocks[existingIndex], source, selected, policy))
@@ -1438,7 +1444,7 @@ namespace PawnDiary
                     else if (combined.rollingSummaryBlock != null)
                     {
                         MemoryReducerBlock selected = FindReducerBlock(
-                            selectedRoot, source.recordId);
+                            selectedRoot, source, policy);
                         if (selected != null && ShouldReplacePublicationSource(
                             combined.rollingSummaryBlock, source, selected, policy))
                             combined.rollingSummaryBlock = CloneSavedBlock(source);
@@ -1466,15 +1472,35 @@ namespace PawnDiary
             return MemoryThreadRepairPolicy.FindPublicationSourceIndex(choices, selected) == 1;
         }
 
+        /// <summary>
+        /// Finds the published block that one saved row became. An ordinary record keeps its record
+        /// id through repair, so the exact lookup answers it. A Summary row has its id rebuilt from
+        /// the canonical root and chapter ordinal, so that case falls back to a payload match.
+        /// </summary>
         private static MemoryReducerBlock FindReducerBlock(
             MemoryReducerRoot root,
-            string recordId)
+            SavedMemoryBlock saved,
+            MemoryReducerPolicy policy)
         {
-            for (int i = 0; root?.visibleBlocks != null && i < root.visibleBlocks.Count; i++)
-                if (root.visibleBlocks[i].recordId == recordId) return root.visibleBlocks[i];
-            return root?.rollingSummaryBlock != null
-                && root.rollingSummaryBlock.recordId == recordId
-                ? root.rollingSummaryBlock : null;
+            if (root == null || saved == null) return null;
+            for (int i = 0; root.visibleBlocks != null && i < root.visibleBlocks.Count; i++)
+                if (root.visibleBlocks[i].recordId == saved.recordId) return root.visibleBlocks[i];
+            if (root.rollingSummaryBlock != null
+                && root.rollingSummaryBlock.recordId == saved.recordId)
+                return root.rollingSummaryBlock;
+            if (saved.kind != MemoryContractTokens.KindSummary) return null;
+            List<MemoryReducerBlock> probe = new List<MemoryReducerBlock>
+            {
+                ToReducerBlock(saved,
+                    policy.maximumSubjectRefsPerContribution,
+                    policy.maximumProvenanceRefsPerContribution)
+            };
+            for (int i = 0; root.visibleBlocks != null && i < root.visibleBlocks.Count; i++)
+                if (MemoryThreadRepairPolicy.FindPublicationSourceIndex(
+                    probe, root.visibleBlocks[i]) == 0) return root.visibleBlocks[i];
+            return root.rollingSummaryBlock != null
+                && MemoryThreadRepairPolicy.FindPublicationSourceIndex(
+                    probe, root.rollingSummaryBlock) == 0 ? root.rollingSummaryBlock : null;
         }
 
         private static int FindSavedBlockIndex(

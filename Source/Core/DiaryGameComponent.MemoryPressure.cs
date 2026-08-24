@@ -77,6 +77,10 @@ namespace PawnDiary
                 return string.Compare(left.owner.pawnId, right.owner.pawnId, StringComparison.Ordinal);
             });
             MemoryReducerPolicy policy = BuildMemoryReducerPolicy(nowTick);
+            // A projected admission only earns publication by making room. If every cap already
+            // reads as satisfied here, this loop and the capacity gate disagree about the same
+            // graph — fail closed on the capacity refusal rather than admit past it silently.
+            bool released = false;
             int ownerBlockCap = (int)ReadCapacityLong("manageableBlocksPerOwner", 128, 1024);
             int ownerEditedCap = (int)ReadCapacityLong("editedBlocksOwner", 32, 128);
             long ownerActiveCap = ReadCapacityLong("activeOwnerBytes", 196608, 2097152);
@@ -122,6 +126,7 @@ namespace PawnDiary
                         return result;
                     }
                     owner.changed = true;
+                    released = true;
                 }
                 if (!ownerSatisfied)
                 {
@@ -190,6 +195,7 @@ namespace PawnDiary
                     }
                     work[i].changed = true;
                     any = true;
+                    released = true;
                 }
                 if (!any)
                 {
@@ -203,6 +209,7 @@ namespace PawnDiary
                 return result;
             }
 
+            if (projectedOwner != null && !released) return result;
             List<MemoryPressureOwnerWork> changed = work.FindAll(row => row.changed);
             if (changed.Count == 0) return result;
             for (int i = 0; i < changed.Count; i++)

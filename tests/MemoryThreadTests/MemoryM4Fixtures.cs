@@ -50,6 +50,7 @@ namespace MemoryThreadTests
             TestIterativePressurePrefixPlanning();
             TestRepairPlacementRemapAndOpenOrder();
             TestRepairPublicationWinnerAndDiagnostic();
+            TestChapterCursorNeverRewinds();
             return assertions;
         }
 
@@ -912,10 +913,16 @@ namespace MemoryThreadTests
                 "newer_reducer_revision", summaryResult.reasonToken);
             Equal("m4.revision.newer-summary-atomic", summaryBefore,
                 MemoryThreadReducer.CanonicalState(summary));
-            False("m4.revision.newer-root-not-repaired",
-                MemoryThreadRepairPolicy.NeedsRepair(root));
-            False("m4.revision.newer-summary-not-repaired",
-                MemoryThreadRepairPolicy.NeedsRepair(summary));
+            MemoryThreadRepairResult rootRepair = MemoryThreadRepairPolicy.Repair(
+                new List<MemoryReducerRoot> { root }, close);
+            True("m4.revision.newer-root-not-repaired", rootRepair.refused);
+            Equal("m4.revision.newer-root-repair-reason",
+                "newer_reducer_revision", rootRepair.reasonToken);
+            MemoryThreadRepairResult summaryRepair = MemoryThreadRepairPolicy.Repair(
+                new List<MemoryReducerRoot> { summary }, close);
+            True("m4.revision.newer-summary-not-repaired", summaryRepair.refused);
+            Equal("m4.revision.newer-summary-repair-reason",
+                "newer_reducer_revision", summaryRepair.reasonToken);
         }
 
         private static void TestIterativePressurePrefixPlanning()
@@ -977,9 +984,6 @@ namespace MemoryThreadTests
             closedSummary.sourceOccurrenceId = "legacy-summary-source";
             closedSummary.summaryPayload.factBuckets[0].contributions[0].originChapterId =
                 "legacy-chapter";
-            True("m4.repair.single-malformed-queued",
-                MemoryThreadRepairPolicy.NeedsRepair(malformed));
-
             MemoryThreadRepairResult repaired = MemoryThreadRepairPolicy.Repair(
                 new List<MemoryReducerRoot> { malformed }, close);
             True("m4.repair.placement.accepted", !repaired.refused);
@@ -1046,6 +1050,55 @@ namespace MemoryThreadTests
                 OpenChapterId(orderedA.activeRoots[0]));
         }
 
+        private static void TestChapterCursorNeverRewinds()
+        {
+            // Invariant cleanup deletes the newest closed chapter once its summary ages out. The
+            // cursor must stay a high-water mark: rewinding it to max+1 would hand the next chapter
+            // the retired chapter's exact id, and the same closed-summary record id once it closes.
+            MemoryReducerRoot root = Root(10);
+            root.visibleBlocks.Add(Block(
+                root, 1, 5, MemoryContractTokens.ImportanceImportant, false));
+            string retiredChapterId;
+            MemoryIdentityCodec.TryCreateChapterId(root.rootId, 2, out retiredChapterId);
+            root.chapters.Add(new MemoryReducerChapter
+            {
+                chapterId = retiredChapterId,
+                ordinal = 2,
+                openedTick = 20,
+                lastActivityTick = 30,
+                closed = true,
+                closedTick = 30,
+                closureReasonToken = MemoryChapterTokens.Inactivity
+            });
+            root.nextChapterOrdinal = 3;
+
+            MemoryReducerPolicy policy = Policy(100, 100000, 100000);
+            MemoryThreadReductionResult reduced = MemoryThreadReducer.Reduce(root, policy);
+            True("m4.cursor.cleanup-accepted", !reduced.refused);
+            Equal("m4.cursor.cleanup-retires-chapter", 1, reduced.replacement.chapters.Count);
+            Equal("m4.cursor.cleanup-keeps-cursor", 3L, reduced.replacement.nextChapterOrdinal);
+
+            MemoryThreadRepairResult repair = MemoryThreadRepairPolicy.Repair(
+                new List<MemoryReducerRoot> { reduced.replacement }, policy);
+            True("m4.cursor.repair-accepted", !repair.refused);
+            Equal("m4.cursor.repair-keeps-cursor", 3L,
+                repair.activeRoots[0].nextChapterOrdinal);
+            string nextChapterId;
+            MemoryIdentityCodec.TryCreateChapterId(
+                repair.activeRoots[0].rootId, repair.activeRoots[0].nextChapterOrdinal,
+                out nextChapterId);
+            True("m4.cursor.no-identity-reuse", nextChapterId != retiredChapterId);
+
+            // A cursor at or below the surviving maximum is corrupt input and is still raised.
+            MemoryReducerRoot rewound = reduced.replacement.Clone();
+            rewound.nextChapterOrdinal = 1;
+            MemoryThreadRepairResult raised = MemoryThreadRepairPolicy.Repair(
+                new List<MemoryReducerRoot> { rewound }, policy);
+            True("m4.cursor.raise-accepted", !raised.refused);
+            Equal("m4.cursor.raised-above-maximum", 2L,
+                raised.activeRoots[0].nextChapterOrdinal);
+        }
+
         private static void TestRepairPublicationWinnerAndDiagnostic()
         {
             MemoryReducerRoot automaticRoot = Root(100);
@@ -1072,6 +1125,29 @@ namespace MemoryThreadTests
             Equal("m4.repair.publish.diagnostic-token",
                 MemoryThreadRepairPolicy.AutomaticConflictDiagnosticToken,
                 MemoryThreadRepairPolicy.DiagnosticReason(repair));
+
+            // The physical rows a duplicate carries still hold their pre-repair placement, and the
+            // adapter matches them against the post-repair winner. Ignoring exactly the fields
+            // repair rewrites is what keeps that lookup from silently falling back to first-wins.
+            MemoryReducerBlock legacyRoot = editedRoot.visibleBlocks[0].Clone();
+            legacyRoot.rootId = "legacy-root-id";
+            Equal("m4.repair.publish.legacy-root-id-matches", 0,
+                MemoryThreadRepairPolicy.FindPublicationSourceIndex(
+                    new List<MemoryReducerBlock> { legacyRoot }, desired));
+            MemoryReducerBlock legacyChapter = editedRoot.visibleBlocks[0].Clone();
+            legacyChapter.chapterId = "legacy-chapter-id";
+            Equal("m4.repair.publish.legacy-chapter-id-matches", 0,
+                MemoryThreadRepairPolicy.FindPublicationSourceIndex(
+                    new List<MemoryReducerBlock> { legacyChapter }, desired));
+            MemoryReducerBlock flagless = editedRoot.visibleBlocks[0].Clone();
+            flagless.playerEdited = false;
+            Equal("m4.repair.publish.normalized-flag-matches", 0,
+                MemoryThreadRepairPolicy.FindPublicationSourceIndex(
+                    new List<MemoryReducerBlock> { flagless }, desired));
+            // Neutralizing placement must never blur two genuinely different records together.
+            Equal("m4.repair.publish.distinct-payload-rejected", -1,
+                MemoryThreadRepairPolicy.FindPublicationSourceIndex(
+                    new List<MemoryReducerBlock> { automaticRoot.visibleBlocks[0] }, desired));
         }
 
         private static void TestElapsedMaintenanceSlices()

@@ -1090,6 +1090,7 @@ namespace PawnDiary
             "size_invalid",
             "capacity_refused",
             "newer_reducer_revision",
+            "repair_refused",
             MemoryThreadRepairPolicy.AutomaticConflictDiagnosticToken,
             "other"
         };

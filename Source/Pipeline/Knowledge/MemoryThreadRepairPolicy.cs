@@ -34,39 +34,56 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns whether one current-reducer root needs deterministic shape/placement repair.
-        /// Unknown newer reducer revisions are intentionally inert and never enter this repair path.
-        /// </summary>
-        internal static bool NeedsRepair(MemoryReducerRoot source)
-        {
-            if (source == null || MemoryThreadReducer.HasUnknownNewerReducerRevision(source))
-                return false;
-            string canonicalRootId;
-            if (!TryCreateCanonicalRootId(source, out canonicalRootId)) return false;
-            MemoryReducerRoot repaired;
-            string ignored;
-            return TryCanonicalizeRootPlacement(
-                    source, canonicalRootId, out repaired, out ignored)
-                && !string.Equals(
-                    MemoryThreadReducer.CanonicalState(source),
-                    MemoryThreadReducer.CanonicalState(repaired),
-                    StringComparison.Ordinal);
-        }
-
-        /// <summary>
-        /// Finds the physical source row whose canonical content matches the repair-selected block.
-        /// Suppression is excluded because repair combines that flag with logical OR after choosing
-        /// authored/factual content.
+        /// Finds the physical source row whose content matches the repair-selected block.
+        /// The comparison deliberately ignores every field repair itself rewrites — root/chapter
+        /// placement, rebuilt summary identity, the normalized authored flag, and suppression
+        /// (which repair combines with logical OR). Comparing those would make a saved row from a
+        /// non-canonical duplicate never match its own winner, silently falling back to first-wins.
         /// </summary>
         internal static int FindPublicationSourceIndex(
             List<MemoryReducerBlock> candidates,
             MemoryReducerBlock selected)
         {
             if (candidates == null || selected == null) return -1;
+            MemoryReducerBlock target = NeutralizeRepairPlacement(selected);
             for (int i = 0; i < candidates.Count; i++)
-                if (candidates[i] != null
-                    && SameBlockIgnoringSuppression(candidates[i], selected)) return i;
+                if (candidates[i] != null && SameBlock(
+                    NeutralizeRepairPlacement(candidates[i]), target)) return i;
             return -1;
+        }
+
+        /// <summary>
+        /// Blanks the placement/identity fields that repair owns so two rows can be compared on the
+        /// payload the player and the prompt actually see.
+        /// </summary>
+        private static MemoryReducerBlock NeutralizeRepairPlacement(MemoryReducerBlock block)
+        {
+            MemoryReducerBlock copy = block.Clone();
+            copy.suppressed = false;
+            copy.rootId = string.Empty;
+            copy.chapterId = string.Empty;
+            NormalizePlayerWordingFlag(copy);
+            if (copy.kind == MemoryContractTokens.KindSummary)
+            {
+                // Closed/rolling summary ids are derived from the canonical root and chapter ordinal,
+                // so repair rebuilds them. An ordinary record keeps its id and stays discriminating.
+                copy.recordId = string.Empty;
+                copy.sourceOccurrenceId = string.Empty;
+            }
+            NeutralizeContributionChapterIds(copy.summaryPayload);
+            return copy;
+        }
+
+        private static void NeutralizeContributionChapterIds(MemoryReducerSummary summary)
+        {
+            for (int i = 0; summary?.factBuckets != null && i < summary.factBuckets.Count; i++)
+            {
+                MemoryReducerBucket bucket = summary.factBuckets[i];
+                for (int j = 0; bucket?.contributions != null
+                    && j < bucket.contributions.Count; j++)
+                    if (bucket.contributions[j] != null)
+                        bucket.contributions[j].originChapterId = string.Empty;
+            }
         }
 
         /// <summary>
@@ -274,7 +291,11 @@ namespace PawnDiary
                 reason = "chapter_sequence_saturated";
                 return false;
             }
-            root.nextChapterOrdinal = maximumOrdinal + 1;
+            // The cursor is a monotonic high-water mark, never max+1. Invariant cleanup may delete
+            // the newest closed chapter once its summary ages out, and rewinding the cursor would
+            // hand the next chapter that dead chapter's exact id — and, when it closes, the same
+            // closed-summary record id. Identity reuse is what the whole codec exists to prevent.
+            root.nextChapterOrdinal = Math.Max(source.nextChapterOrdinal, maximumOrdinal + 1);
 
             MemoryRootIdentity identity = new MemoryRootIdentity
             {
@@ -352,6 +373,12 @@ namespace PawnDiary
             return true;
         }
 
+        /// <summary>
+        /// Makes the authored flag agree with the authored prose, which the reducer contract
+        /// requires. Prose without the flag gains protection. The inverse — a flag with no prose —
+        /// carries no player text to preserve, so repair clears it rather than protecting an empty
+        /// row forever; that is the only direction where repair drops a protection marker.
+        /// </summary>
         private static void NormalizePlayerWordingFlag(MemoryReducerBlock block)
         {
             if (string.IsNullOrWhiteSpace(block.playerWording))

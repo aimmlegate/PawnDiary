@@ -200,16 +200,7 @@ namespace PawnDiary
                 return plan;
             }
 
-            List<MemoryPressureAtom> candidates = new List<MemoryPressureAtom>();
-            for (int i = 0; i < request.atoms.Count; i++)
-            {
-                MemoryPressureAtom atom = request.atoms[i];
-                if (atom != null && !atom.playerEdited && atom.logicalBytes >= 0
-                    && atom.blockUnits >= 0 && MemoryContractTokens.IsKnownImportance(atom.importance)
-                    && !string.IsNullOrEmpty(atom.ownerPawnId)
-                    && !string.IsNullOrEmpty(atom.recordId)) candidates.Add(atom);
-            }
-            candidates.Sort(ComparePressureAtom);
+            List<MemoryPressureAtom> candidates = EvictableAtoms(request.atoms);
             long releasedBytes = 0;
             int releasedBlocks = 0;
             List<MemoryPressureAtom> chosen = new List<MemoryPressureAtom>();
@@ -245,16 +236,7 @@ namespace PawnDiary
         {
             MemoryPressurePlan plan = new MemoryPressurePlan();
             if (suppliedAtoms == null) return plan;
-            List<MemoryPressureAtom> candidates = new List<MemoryPressureAtom>();
-            for (int i = 0; i < suppliedAtoms.Count; i++)
-            {
-                MemoryPressureAtom atom = suppliedAtoms[i];
-                if (atom != null && !atom.playerEdited && atom.logicalBytes >= 0
-                    && atom.blockUnits >= 0 && MemoryContractTokens.IsKnownImportance(atom.importance)
-                    && !string.IsNullOrEmpty(atom.ownerPawnId)
-                    && !string.IsNullOrEmpty(atom.recordId)) candidates.Add(atom);
-            }
-            candidates.Sort(ComparePressureAtom);
+            List<MemoryPressureAtom> candidates = EvictableAtoms(suppliedAtoms);
             if (candidates.Count == 0)
             {
                 plan.protectedSaturation = true;
@@ -266,6 +248,26 @@ namespace PawnDiary
             plan.releasedBlocks = selected.blockUnits;
             plan.removals.Add(selected);
             return plan;
+        }
+
+        /// <summary>
+        /// The one eviction-candidate filter shared by both planners, already in the frozen
+        /// low -> medium -> unedited high, then oldest-tick, then ordinal-identity order.
+        /// Player-edited atoms are never candidates.
+        /// </summary>
+        private static List<MemoryPressureAtom> EvictableAtoms(List<MemoryPressureAtom> atoms)
+        {
+            List<MemoryPressureAtom> candidates = new List<MemoryPressureAtom>();
+            for (int i = 0; atoms != null && i < atoms.Count; i++)
+            {
+                MemoryPressureAtom atom = atoms[i];
+                if (atom != null && !atom.playerEdited && atom.logicalBytes >= 0
+                    && atom.blockUnits >= 0 && MemoryContractTokens.IsKnownImportance(atom.importance)
+                    && !string.IsNullOrEmpty(atom.ownerPawnId)
+                    && !string.IsNullOrEmpty(atom.recordId)) candidates.Add(atom);
+            }
+            candidates.Sort(ComparePressureAtom);
+            return candidates;
         }
 
         private static List<KnowledgeRecordStub> UsableStubs(List<KnowledgeRecordStub> records)
