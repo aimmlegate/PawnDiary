@@ -989,10 +989,12 @@ namespace PawnDiary
                     && !string.IsNullOrWhiteSpace(recipientSystem)
                     && !string.IsNullOrWhiteSpace(recipientUser);
                 if (!replayInitiator && !replayRecipient) return false;
+                if (PromptTestModeEnabled()) return false;
 
                 if (replayInitiator)
                 {
-                    diaryEvent.PrepareForRegeneration(DiaryEvent.InitiatorRole);
+                    diaryEvent.PrepareForAcceptedPromptRegeneration(
+                        DiaryEvent.InitiatorRole);
                     QueueStaticRegenerationPrompt(
                         diaryEvent,
                         DiaryEvent.InitiatorRole,
@@ -1001,7 +1003,8 @@ namespace PawnDiary
                 }
                 if (replayRecipient)
                 {
-                    diaryEvent.PrepareForRegeneration(DiaryEvent.RecipientRole);
+                    diaryEvent.PrepareForAcceptedPromptRegeneration(
+                        DiaryEvent.RecipientRole);
                     QueueStaticRegenerationPrompt(
                         diaryEvent,
                         DiaryEvent.RecipientRole,
@@ -1048,7 +1051,8 @@ namespace PawnDiary
                 string acceptedUser = diaryEvent.PromptForRole(povRole);
                 if (string.IsNullOrWhiteSpace(acceptedSystem)
                     || string.IsNullOrWhiteSpace(acceptedUser)) return false;
-                diaryEvent.PrepareForRegeneration(povRole);
+                if (PromptTestModeEnabled()) return false;
+                diaryEvent.PrepareForAcceptedPromptRegeneration(povRole);
                 return QueueStaticRegenerationPrompt(
                     diaryEvent, povRole, acceptedSystem, acceptedUser);
             }

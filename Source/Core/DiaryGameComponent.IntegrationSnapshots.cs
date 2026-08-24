@@ -269,6 +269,7 @@ namespace PawnDiary
                 return false;
             }
 
+            SettleActiveMemoryRequestForPageReplacement(diaryEvent, povRole);
             diaryEvent.MarkInjectedTextComplete(povRole, cleanedText);
             MarkGeneratedEntryUnread(diaryEvent, povRole);
 

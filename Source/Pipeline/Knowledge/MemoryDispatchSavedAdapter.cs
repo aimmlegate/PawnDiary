@@ -183,10 +183,14 @@ namespace PawnDiary
         /// </summary>
         public static bool MarkReceiptApplied(
             SavedActiveLogicalRequestV1 saved,
-            int attemptOrdinal)
+            int attemptOrdinal,
+            string outcomeToken,
+            long terminalTick)
         {
             SavedActiveLogicalAttemptV1 attempt = FindAttempt(saved, attemptOrdinal);
-            if (attempt == null)
+            if (attempt == null
+                || !MemoryDispatchTokens.IsTerminalOutcome(outcomeToken)
+                || terminalTick <= 0)
             {
                 return false;
             }
@@ -195,12 +199,51 @@ namespace PawnDiary
                 || attempt.attemptStateToken
                     == MemoryRequestStateMachineContracts.AttemptTerminalPending)
             {
-                return true;
+                // The first receipt owns terminal time. A duplicate main-thread drain can occur on a
+                // later game tick; it is idempotent only when the stable outcome token still matches.
+                return attempt.terminalTick > 0
+                    && string.Equals(
+                        attempt.terminalOutcomeToken,
+                        outcomeToken,
+                        System.StringComparison.Ordinal);
             }
             if (attempt.attemptStateToken
                 != MemoryRequestStateMachineContracts.AttemptInvocationCommitted) return false;
             attempt.attemptStateToken = MemoryRequestStateMachineContracts.AttemptReceiptApplied;
+            attempt.terminalTick = terminalTick;
+            attempt.terminalOutcomeToken = outcomeToken;
             return true;
+        }
+
+        /// <summary>
+        /// Returns true unless a loaded saved row proves that no invocation permit was committed.
+        /// Invalid or incomplete rows fail closed so load recovery cannot automatically resend work
+        /// that may already have crossed the conservative exposure boundary.
+        /// </summary>
+        public static bool LoadedRequestMayHaveBeenInvoked(SavedActiveLogicalRequestV1 saved)
+        {
+            if (saved == null || saved.activeAttempts == null
+                || !MemoryDispatchPolicy.ValidateRequest(ToSnapshot(saved))) return true;
+            for (int index = 0; index < saved.activeAttempts.Count; index++)
+            {
+                SavedActiveLogicalAttemptV1 attempt = saved.activeAttempts[index];
+                if (attempt == null
+                    || attempt.invocationSequence > 0
+                    || attempt.invocationTick > 0
+                    || attempt.potentialExposureApplied
+                    || attempt.narrativeUseApplied
+                    || attempt.resultApplied
+                    || attempt.terminalTick > 0
+                    || !string.IsNullOrEmpty(attempt.terminalOutcomeToken)
+                    || attempt.attemptStateToken
+                        != MemoryRequestStateMachineContracts.AttemptPrepared)
+                {
+                    return true;
+                }
+            }
+
+            return saved.requestStateToken != MemoryRequestStateMachineContracts.Staged
+                && saved.requestStateToken != MemoryRequestStateMachineContracts.Activated;
         }
 
         /// <summary>Marks result publication once, only after the receipt-applied state.</summary>

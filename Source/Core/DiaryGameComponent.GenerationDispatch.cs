@@ -200,6 +200,12 @@ namespace PawnDiary
             {
                 return;
             }
+            if (stagedMemoryRequest != null
+                && !CanAdmitActiveMemoryRequest(stagedMemoryRequest))
+            {
+                RecordMemoryDiagnostic("other", "owner");
+                return;
+            }
 
             // Reserve bounded transport capacity and dedup ownership first, but keep the request
             // invisible. Only after the event's matching prompt/lane/pending state is committed do
@@ -230,11 +236,13 @@ namespace PawnDiary
                 if (!MemoryDispatchSavedAdapter.TryActivate(stagedMemoryRequest))
                 {
                     diaryEvent.SetActiveMemoryLogicalRequestForRole(povRole, null);
+                    RebuildMemorySizeIndexes();
                     LlmClient.CancelStaged(staged);
                     diaryEvent.RollBackQueuedBeforeActivation(povRole);
                     NotifyEntryStatusChanged(diaryEvent, povRole);
                     return;
                 }
+                RebuildMemorySizeIndexes();
             }
 
             if (!LlmClient.Activate(staged))
@@ -243,7 +251,10 @@ namespace PawnDiary
                 // queue fields; an older visible page remains intact and no send is claimed.
                 diaryEvent.RollBackQueuedBeforeActivation(povRole);
                 if (stagedMemoryRequest != null)
+                {
                     diaryEvent.SetActiveMemoryLogicalRequestForRole(povRole, null);
+                    RebuildMemorySizeIndexes();
+                }
                 NotifyEntryStatusChanged(diaryEvent, povRole);
                 return;
             }
@@ -272,6 +283,9 @@ namespace PawnDiary
             if (diaryEvent == null
                 || string.IsNullOrWhiteSpace(acceptedSystemPrompt)
                 || string.IsNullOrWhiteSpace(acceptedUserPrompt)) return false;
+            // Prompt-test mode writes a combined inspection blob into DiaryEvent.prompt. That field is
+            // the accepted user half in CurrentRelease, so static replay must leave the exact pair alone.
+            if (PromptTestModeEnabled()) return false;
 
             QueuePrompt(
                 diaryEvent,
@@ -491,14 +505,59 @@ namespace PawnDiary
             {
                 // A late session/request/epoch callback is consumed but cannot restore text or
                 // recreate memory state. Brainwipe and replacement requests deliberately land here.
+                SavedActiveLogicalRequestV1 invalidExactRequest = diaryEvent
+                    .ActiveMemoryLogicalRequestForRole(result.povRole);
+                if (!string.IsNullOrWhiteSpace(result.memoryLogicalRequestId)
+                    && invalidExactRequest != null
+                    && string.Equals(
+                        invalidExactRequest.logicalRequestId,
+                        result.memoryLogicalRequestId,
+                        StringComparison.Ordinal))
+                {
+                    // Exact live ownership plus failed validation is corruption, not an obsolete
+                    // callback. Settle it terminally so orphan recovery cannot turn the fail-closed
+                    // decision into an automatic resend.
+                    AppendTerminalMemoryAttemptAudits(
+                        invalidExactRequest,
+                        MemoryDispatchTokens.Invalid,
+                        Math.Max(1, Find.TickManager?.TicksGame ?? 0));
+                    diaryEvent.SetActiveMemoryLogicalRequestForRole(result.povRole, null);
+                    MemoryDispatchRuntimeBridge.ReleaseLogicalRequestSendEnvelopes(
+                        invalidExactRequest.logicalRequestId);
+                    RebuildMemorySizeIndexes();
+                    diaryEvent.MarkSkipped(
+                        result.povRole,
+                        "PawnDiary.Error.MemoryDispatchStopped".Translate());
+                    NotifyEntryStatusChanged(diaryEvent, result.povRole);
+                    if (!diaryEvent.solo
+                        && DiaryEvent.RoleEquals(
+                            result.povRole, DiaryEvent.InitiatorRole)
+                        && diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole))
+                    {
+                        diaryEvent.MarkSkipped(
+                            DiaryEvent.RecipientRole,
+                            "PawnDiary.Error.SkippedInitiatorFailed".Translate());
+                        NotifyEntryStatusChanged(
+                            diaryEvent, DiaryEvent.RecipientRole);
+                    }
+                }
                 return DiaryTelemetryOutcome.LlmResultApplied;
             }
 
             if (!result.success)
             {
-                HandleFailedMainGeneration(diaryEvent, result);
                 if (memoryRequest != null)
+                {
+                    AppendTerminalMemoryAttemptAudits(
+                        memoryRequest,
+                        MemoryDispatchTokens.ProviderError,
+                        Math.Max(1, Find.TickManager?.TicksGame ?? 0));
                     diaryEvent.SetActiveMemoryLogicalRequestForRole(result.povRole, null);
+                    MemoryDispatchRuntimeBridge.ReleaseSendEnvelope(
+                        result.memoryInvocationPermit);
+                    RebuildMemorySizeIndexes();
+                }
+                HandleFailedMainGeneration(diaryEvent, result);
                 return DiaryTelemetryOutcome.LlmResultApplied;
             }
 
@@ -537,7 +596,16 @@ namespace PawnDiary
 
             NotifyEntryStatusChanged(diaryEvent, result.povRole);
             if (memoryRequest != null)
+            {
+                AppendTerminalMemoryAttemptAudits(
+                    memoryRequest,
+                    MemoryDispatchTokens.Success,
+                    Math.Max(1, Find.TickManager?.TicksGame ?? 0));
                 diaryEvent.SetActiveMemoryLogicalRequestForRole(result.povRole, null);
+                MemoryDispatchRuntimeBridge.ReleaseSendEnvelope(
+                    result.memoryInvocationPermit);
+                RebuildMemorySizeIndexes();
+            }
 
             // Generated speech Social-log injection is currently hidden/disabled. RimWorld accepts
             // the synthetic PlayLog row, but it does not reliably appear in the Social tab UI.
@@ -565,21 +633,61 @@ namespace PawnDiary
         /// </summary>
         private void HandleFailedMainGeneration(DiaryEvent diaryEvent, LlmGenerationResult result)
         {
+            if (result.memoryDispatchTerminalFailure)
+            {
+                string terminalError = string.IsNullOrWhiteSpace(result.error)
+                    ? "PawnDiary.Error.MemoryDispatchStopped".Translate().ToString()
+                    : result.error;
+                diaryEvent.MarkSkipped(
+                    result.povRole,
+                    terminalError);
+                NotifyEntryStatusChanged(diaryEvent, result.povRole);
+                if (!diaryEvent.solo
+                    && DiaryEvent.RoleEquals(result.povRole, DiaryEvent.InitiatorRole)
+                    && diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole))
+                {
+                    diaryEvent.MarkSkipped(
+                        DiaryEvent.RecipientRole,
+                        "PawnDiary.Error.SkippedInitiatorFailed".Translate());
+                    NotifyEntryStatusChanged(diaryEvent, DiaryEvent.RecipientRole);
+                }
+                return;
+            }
+
             int retryLimit = DiaryGenerationStatus.NormalizeAutomaticRetryLimit(
                 DiaryTuning.Current.automaticGenerationRetryLimit);
             int attemptsAlreadyScheduled =
                 diaryEvent.AutomaticGenerationRetryAttemptsForRole(result.povRole);
             if (DiaryGenerationStatus.CanScheduleAutomaticRetry(attemptsAlreadyScheduled, retryLimit))
             {
-                int retryNumber = diaryEvent.RecordAutomaticGenerationRetry(result.povRole);
-                diaryEvent.PrepareForAutomaticRegeneration(result.povRole);
-                NotifyEntryStatusChanged(diaryEvent, result.povRole);
-                EnsureGenerationQueued(diaryEvent, result.povRole);
-                LogApiDebug(
-                    "Automatically requeued failed generation event=" + diaryEvent.eventId
-                    + " role=" + result.povRole
-                    + " retry=" + retryNumber + "/" + retryLimit);
-                return;
+                string acceptedSystem = diaryEvent.AcceptedSystemPromptForRole(result.povRole);
+                string acceptedUser = diaryEvent.PromptForRole(result.povRole);
+                bool replayAcceptedPair = MemorySystemActivationGate.IsCurrentRelease
+                    && !string.IsNullOrWhiteSpace(acceptedSystem)
+                    && !string.IsNullOrWhiteSpace(acceptedUser);
+                // Prompt-test capture reuses DiaryEvent.prompt for a combined inspection blob. Do not
+                // make a preserved accepted pair queueable when static replay is deliberately disabled,
+                // or the recurring normal scan can overwrite only its user half on the next pass.
+                if (!replayAcceptedPair || !PromptTestModeEnabled())
+                {
+                    int retryNumber = diaryEvent.RecordAutomaticGenerationRetry(result.povRole);
+                    diaryEvent.PrepareForAutomaticRegeneration(result.povRole);
+                    NotifyEntryStatusChanged(diaryEvent, result.povRole);
+                    if (replayAcceptedPair)
+                    {
+                        QueueStaticRegenerationPrompt(
+                            diaryEvent, result.povRole, acceptedSystem, acceptedUser);
+                    }
+                    else
+                    {
+                        EnsureGenerationQueued(diaryEvent, result.povRole);
+                    }
+                    LogApiDebug(
+                        "Automatically requeued failed generation event=" + diaryEvent.eventId
+                        + " role=" + result.povRole
+                        + " retry=" + retryNumber + "/" + retryLimit);
+                    return;
+                }
             }
 
             string error = string.IsNullOrWhiteSpace(result.error)

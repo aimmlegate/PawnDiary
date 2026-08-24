@@ -14,10 +14,11 @@ namespace LlmTransportPolicyTests
         private static async Task<int> Main()
         {
             await TestStableResizableAdmissionGate();
-                await TestCancelledAdmissionDoesNotStrandGate();
-                TestBoundedQueue();
-                TestTransactionalQueueStaging();
-                TestTransportPolicy();
+            await TestCancelledAdmissionDoesNotStrandGate();
+            TestBoundedQueue();
+            TestTransactionalQueueStaging();
+            await TestConcurrentActivationCountNeverNegative();
+            TestTransportPolicy();
             TestExactSecretRedaction();
 
             Console.WriteLine("LlmTransportPolicyTests passed " + assertions + " assertions.");
@@ -125,6 +126,37 @@ namespace LlmTransportPolicyTests
             AssertFalse("queue rejects foreign activation", queue.Activate(foreign));
             AssertFalse("queue rejects foreign cancellation", queue.Cancel(foreign));
             AssertTrue("owner can cancel foreign stage", foreignQueue.Cancel(foreign));
+        }
+
+        private static async Task TestConcurrentActivationCountNeverNegative()
+        {
+            BoundedTransportQueue<int> queue = new BoundedTransportQueue<int>(1);
+            int observedNegative = 0;
+            for (int iteration = 0; iteration < 2000; iteration++)
+            {
+                StagedTransportQueueItem<int> staged;
+                AssertTrue("concurrent stage " + iteration,
+                    queue.TryStage(iteration, out staged));
+                Task<bool> consumer = Task.Run(() =>
+                {
+                    int item;
+                    while (!queue.TryDequeue(out item))
+                    {
+                        if (queue.Count < 0) Interlocked.Exchange(ref observedNegative, 1);
+                        Thread.Yield();
+                    }
+                    if (queue.Count < 0) Interlocked.Exchange(ref observedNegative, 1);
+                    return item == iteration;
+                });
+                Task<bool> activator = Task.Run(() => queue.Activate(staged));
+                AssertTrue("concurrent activation " + iteration, await activator);
+                AssertTrue("concurrent payload " + iteration, await consumer);
+                if (queue.Count < 0) Interlocked.Exchange(ref observedNegative, 1);
+            }
+            AssertEqual("activation/dequeue race never publishes a negative count",
+                0, observedNegative);
+            AssertEqual("concurrent queue ends empty", 0, queue.Count);
+            AssertEqual("concurrent reservations end empty", 0, queue.ReservedCount);
         }
 
         private static void TestTransportPolicy()

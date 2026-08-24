@@ -890,7 +890,17 @@ namespace MemoryThreadTests
             AssertEqual("dispatch.terminal.result-second",
                 "result_publication", terminal.orderedOperations[1]);
 
+            first.attemptStateToken =
+                MemoryRequestStateMachineContracts.AttemptReceiptApplied;
+            first.terminalTick = 650;
+            first.terminalOutcomeToken = MemoryDispatchTokens.Success;
+            AssertTrue("dispatch.receipt-state.valid",
+                MemoryDispatchPolicy.ValidateRequest(request));
             first.resultApplied = true;
+            first.attemptStateToken =
+                MemoryRequestStateMachineContracts.AttemptTerminalPending;
+            AssertTrue("dispatch.terminal-state.valid",
+                MemoryDispatchPolicy.ValidateRequest(request));
             MemoryTerminalCallbackPlan duplicate = MemoryDispatchPolicy.PlanTerminalCallback(
                 request,
                 invocation.permit,
@@ -899,7 +909,34 @@ namespace MemoryThreadTests
                 true);
             AssertTrue("dispatch.terminal.duplicate", duplicate.duplicate);
             AssertTrue("dispatch.terminal.duplicate.no-result", !duplicate.applyResult);
+            MemoryTerminalCallbackPlan relabeledDuplicate =
+                MemoryDispatchPolicy.PlanTerminalCallback(
+                    request,
+                    invocation.permit,
+                    fence,
+                    MemoryDispatchTokens.ProviderError,
+                    false);
+            AssertTrue("dispatch.terminal.duplicate-outcome-change.reject",
+                !relabeledDuplicate.accepted && !relabeledDuplicate.duplicate);
             first.resultApplied = false;
+            first.attemptStateToken =
+                MemoryRequestStateMachineContracts.AttemptInvocationCommitted;
+            first.terminalTick = 0;
+            first.terminalOutcomeToken = string.Empty;
+
+            first.attemptStateToken =
+                MemoryRequestStateMachineContracts.AttemptReceiptApplied;
+            first.terminalTick = 651;
+            first.terminalOutcomeToken = string.Empty;
+            AssertTrue("dispatch.receipt-missing-outcome.reject",
+                !MemoryDispatchPolicy.ValidateRequest(request));
+            first.terminalOutcomeToken = "unknown-terminal";
+            AssertTrue("dispatch.receipt-unknown-outcome.reject",
+                !MemoryDispatchPolicy.ValidateRequest(request));
+            first.attemptStateToken =
+                MemoryRequestStateMachineContracts.AttemptInvocationCommitted;
+            first.terminalTick = 0;
+            first.terminalOutcomeToken = string.Empty;
 
             fence.ownerCancellationGeneration++;
             MemoryTerminalCallbackPlan stale = MemoryDispatchPolicy.PlanTerminalCallback(
@@ -925,6 +962,9 @@ namespace MemoryThreadTests
             AssertTrue("dispatch.send-claim.duplicate-reject", !envelope.TryClaimPhysicalSend());
 
             first.attemptStateToken = MemoryRequestStateMachineContracts.AttemptTerminalPending;
+            first.terminalTick = 652;
+            first.terminalOutcomeToken = MemoryDispatchTokens.Success;
+            first.resultApplied = true;
             MemoryLogicalAttemptSnapshot failover;
             AssertTrue("dispatch.attempt.failover.plan",
                 MemoryDispatchPolicy.TryPlanPreparedAttempt(

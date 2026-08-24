@@ -8,6 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-08-24
 
+- **Memory M2 review hardening.** Make request schemas, epochs, byte admission, receipts, page replacement, load/Brainwipe settlement, terminal audits, exact regeneration, and session/physical-send races fail closed.
 - **Memory M2 transactional dispatch.** Add frozen prompt provenance, staged commit-before-activation, exact pre-send invocation permits, ordered idempotent exposure/use receipts, static Regenerate inputs, bounded prompt retention, load settlement, and Brainwipe epoch fencing while capture remains LegacyShadow.
 - **Memory M1 review hardening.** Preserve adversarial legacy evidence through dry-run planning, recursively refuse newer nested schemas and repair allocator high-water, and make deduplication, report identity, sizing, reservations, and owner/global byte accounting fail closed.
 - **Memory M1 persistence envelope.** Additive saved schema (epoch/threads/blocks/summaries/current-truth/archive/dispatch rows) with registry-validated logical sizing, component §T6.9 store seam, identity-carrier high-water repair, and report-only legacy migration planning — all behavior-inert behind LegacyShadow with loaded Scribe fixtures awaiting a user-run session.

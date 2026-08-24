@@ -88,10 +88,15 @@ namespace PawnDiary.RimTests
                 "Committed permit fingerprint is invalid.");
             Require(!MemoryDispatchSavedAdapter.MarkResultApplied(saved, 1),
                 "Result publication was allowed before its receipt.");
-            Require(MemoryDispatchSavedAdapter.MarkReceiptApplied(saved, 1),
+            Require(MemoryDispatchSavedAdapter.MarkReceiptApplied(
+                    saved, 1, MemoryDispatchTokens.Success, 500),
                 "Invocation receipt did not apply.");
-            Require(MemoryDispatchSavedAdapter.MarkReceiptApplied(saved, 1),
+            Require(MemoryDispatchSavedAdapter.MarkReceiptApplied(
+                    saved, 1, MemoryDispatchTokens.Success, 501),
                 "Idempotent receipt replay was rejected.");
+            Require(!MemoryDispatchSavedAdapter.MarkReceiptApplied(
+                    saved, 1, MemoryDispatchTokens.ProviderError, 501),
+                "A duplicate receipt changed its committed terminal outcome.");
             Require(MemoryDispatchSavedAdapter.MarkResultApplied(saved, 1),
                 "Result did not publish after receipt.");
             Require(!MemoryDispatchSavedAdapter.MarkResultApplied(saved, 1),
@@ -137,6 +142,89 @@ namespace PawnDiary.RimTests
                     && load.outcomeToken
                         == MemoryDispatchTokens.LoadInterruptedAfterInvocation,
                 "A loaded invoked request was not terminally settled without resend.");
+        }
+
+        [Test]
+        public static void InvalidLoadedRowsFailClosedAndFutureSchemasRejectEarly()
+        {
+            SavedActiveLogicalRequestV1 definitelyBeforeInvocation = NewSavedRequest();
+            Require(!MemoryDispatchSavedAdapter.LoadedRequestMayHaveBeenInvoked(
+                    definitelyBeforeInvocation),
+                "A valid staged row was not recognized as safely pre-invocation.");
+
+            SavedActiveLogicalRequestV1 malformedInvoked = NewSavedRequest();
+            malformedInvoked.activeAttempts.Add(new SavedActiveLogicalAttemptV1
+            {
+                schemaVersion = 1,
+                attemptOrdinal = 1,
+                variantKey = malformedInvoked.frozenVariants[0].variantKey,
+                attemptOriginToken = MemoryDispatchTokens.Initial,
+                attemptStateToken = MemoryRequestStateMachineContracts.AttemptInvocationCommitted,
+                invocationSequence = 1,
+                invocationTick = 99
+            });
+            Require(MemoryDispatchSavedAdapter.LoadedRequestMayHaveBeenInvoked(malformedInvoked),
+                "Malformed loaded invocation evidence was allowed to retry.");
+
+            SavedActiveLogicalRequestV1 missingIssuedAttempt = NewSavedRequest();
+            missingIssuedAttempt.requestStateToken =
+                MemoryRequestStateMachineContracts.Activated;
+            missingIssuedAttempt.lastIssuedAttemptOrdinal = 1;
+            Require(MemoryDispatchSavedAdapter.LoadedRequestMayHaveBeenInvoked(
+                    missingIssuedAttempt),
+                "An invalid activated row with a missing issued attempt was allowed to retry.");
+
+            SavedActiveLogicalRequestV1 missingWinnerAttempt = NewSavedRequest();
+            missingWinnerAttempt.requestStateToken =
+                MemoryRequestStateMachineContracts.Activated;
+            missingWinnerAttempt.narrativeUseWinnerAttemptOrdinal = 1;
+            missingWinnerAttempt.narrativeUseWinnerVariantKey =
+                missingWinnerAttempt.frozenVariants[0].variantKey;
+            Require(MemoryDispatchSavedAdapter.LoadedRequestMayHaveBeenInvoked(
+                    missingWinnerAttempt),
+                "An invalid activated row with missing winner evidence was allowed to retry.");
+
+            SavedActiveLogicalRequestV1 futureOuter = NewSavedRequest();
+            futureOuter.schemaVersion = 2;
+            RequireThrowsNewer(() =>
+                DiaryGameComponent.RequireActiveMemoryRequestNotNewer(futureOuter));
+
+            SavedActiveLogicalRequestV1 futureNested = NewSavedRequest();
+            futureNested.frozenVariants[0].schemaVersion = 2;
+            RequireThrowsNewer(() =>
+                DiaryGameComponent.RequireActiveMemoryRequestNotNewer(futureNested));
+        }
+
+        [Test]
+        public static void AcceptedPromptPairSurvivesRegenerationPreparationAndRollback()
+        {
+            DiaryEvent diaryEvent = new DiaryEvent();
+            diaryEvent.SetAcceptedPromptPair(
+                DiaryEvent.InitiatorRole, "accepted-system", "accepted-user");
+            diaryEvent.PrepareForAcceptedPromptRegeneration(DiaryEvent.InitiatorRole);
+            Require(diaryEvent.AcceptedSystemPromptForRole(DiaryEvent.InitiatorRole)
+                    == "accepted-system"
+                && diaryEvent.PromptForRole(DiaryEvent.InitiatorRole) == "accepted-user",
+                "Regeneration preparation split the exact accepted prompt pair.");
+            diaryEvent.RollBackQueuedBeforeActivation(DiaryEvent.InitiatorRole);
+            Require(diaryEvent.AcceptedSystemPromptForRole(DiaryEvent.InitiatorRole)
+                    == "accepted-system"
+                && diaryEvent.PromptForRole(DiaryEvent.InitiatorRole) == "accepted-user",
+                "Activation rollback split the exact accepted prompt pair.");
+        }
+
+        private static void RequireThrowsNewer(Action action)
+        {
+            try
+            {
+                action();
+                throw new InvalidOperationException(
+                    "A newer nested M2 schema was accepted by an older build.");
+            }
+            catch (DiaryGameComponent.NewerPawnDiarySaveFormatException)
+            {
+                // Expected conservative downgrade boundary.
+            }
         }
 
         private static SavedActiveLogicalRequestV1 NewSavedRequest()

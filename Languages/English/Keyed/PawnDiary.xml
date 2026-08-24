@@ -2148,4 +2148,5 @@
   <PawnDiary.Memory.Library.Dev.Diagnostics>Copy diagnostics</PawnDiary.Memory.Library.Dev.Diagnostics>
   <PawnDiary.Memory.Library.Dev.RejectionReasons>Rejection reasons</PawnDiary.Memory.Library.Dev.RejectionReasons>
   <PawnDiary.Error.GenerationInterruptedAfterSend>The previous game session ended after this request may have reached the provider. It was not sent again.</PawnDiary.Error.GenerationInterruptedAfterSend>
+  <PawnDiary.Error.MemoryDispatchStopped>This memory-aware request stopped at its safety boundary and was not sent again.</PawnDiary.Error.MemoryDispatchStopped>
 </LanguageData>

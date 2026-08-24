@@ -192,7 +192,8 @@ namespace PawnDiary
             bool textChanged = mutation.textChanged;
             bool hotChanged = hotRoleMatches
                 && (HasHotEntryReference(pawnId, eventId) || archived != null)
-                && ((!textChanged || diaryEvent.ReplaceWithManualText(hotRole, cleanedBody, cleanedTitle))
+                && ((!textChanged || ReplaceHotEntryWithManualText(
+                        diaryEvent, hotRole, cleanedBody, cleanedTitle))
                     && (!typeChanged || diaryEvent.TrySetEntryTypeKey(
                         hotRole, requestedEntryTypeKey, bumpVersion: !textChanged)));
             bool archiveChanged = false;
@@ -319,7 +320,8 @@ namespace PawnDiary
                 || (requireEntryType
                     && !diaryEvent.TrySetEntryTypeKey(
                         DiaryEvent.InitiatorRole, requestedEntryType.entryTypeKey, bumpVersion: false))
-                || !diaryEvent.ReplaceWithManualText(
+                || !ReplaceHotEntryWithManualText(
+                    diaryEvent,
                     DiaryEvent.InitiatorRole,
                     cleanedBody,
                     cleanedTitle))
@@ -345,6 +347,21 @@ namespace PawnDiary
 
             NotifyManualEntryStatusChanged(eventId, pawnId, DiaryEvent.InitiatorRole);
             return true;
+        }
+
+        /// <summary>
+        /// Makes a player-authored page replacement the terminal owner of this POV while preserving
+        /// the M2 audit/exposure history of any provider work that already crossed its permit fence.
+        /// </summary>
+        private bool ReplaceHotEntryWithManualText(
+            DiaryEvent diaryEvent,
+            string povRole,
+            string body,
+            string title)
+        {
+            if (diaryEvent == null) return false;
+            SettleActiveMemoryRequestForPageReplacement(diaryEvent, povRole);
+            return diaryEvent.ReplaceWithManualText(povRole, body, title);
         }
 
         private bool HasHotEntryReference(string pawnId, string eventId)

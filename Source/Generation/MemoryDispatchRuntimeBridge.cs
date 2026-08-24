@@ -131,6 +131,11 @@ namespace PawnDiary
             new ConcurrentQueue<MemoryInvocationPermitRequest>();
         private static readonly ConcurrentQueue<MemoryInvocationReceiptRequest> ReceiptRequests =
             new ConcurrentQueue<MemoryInvocationReceiptRequest>();
+        private static readonly ConcurrentDictionary<string, MemoryRuntimeSendEnvelope>
+            SendEnvelopesByPermitFingerprint =
+                new ConcurrentDictionary<string, MemoryRuntimeSendEnvelope>(StringComparer.Ordinal);
+        private static readonly object SessionFenceLock = new object();
+        private static long rejectedThroughSessionId;
 
         internal static async Task<MemoryInvocationCommitPermitV1> RequestPermitAsync(
             LlmGenerationRequest request,
@@ -155,7 +160,12 @@ namespace PawnDiary
                 request.rawText,
                 attemptOriginToken,
                 predecessorAttemptOrdinal);
-            PermitRequests.Enqueue(pending);
+            lock (SessionFenceLock)
+            {
+                if (cancellationToken.IsCancellationRequested
+                    || request.sessionId <= rejectedThroughSessionId) return null;
+                PermitRequests.Enqueue(pending);
+            }
             return await AwaitReply(pending.completion, cancellationToken);
         }
 
@@ -174,8 +184,66 @@ namespace PawnDiary
 
             MemoryInvocationReceiptRequest pending = new MemoryInvocationReceiptRequest(
                 sessionId, permit, outcomeToken, providerReturnedUsableResult);
-            ReceiptRequests.Enqueue(pending);
+            lock (SessionFenceLock)
+            {
+                if (cancellationToken.IsCancellationRequested
+                    || sessionId <= rejectedThroughSessionId) return false;
+                ReceiptRequests.Enqueue(pending);
+            }
+            // Keep the physical-send claim across both accepted and rejected receipt handoffs.
+            // Accepted claims leave only after result application; stale claims leave through the
+            // main-thread logical-request/session fence. A mismatched duplicate receipt must never
+            // reopen a same-permit send window merely because its callback was rejected.
             return await AwaitReply(pending.completion, cancellationToken);
+        }
+
+        /// <summary>
+        /// Shares one compare-exchange owner for every equal permit while its result is outstanding.
+        /// The bounded transport lifecycle removes the entry after terminal result application or
+        /// session replacement, so duplicate scheduling cannot manufacture a fresh claim object.
+        /// </summary>
+        internal static MemoryRuntimeSendEnvelope GetOrCreateSendEnvelope(
+            MemoryInvocationCommitPermitV1 permit)
+        {
+            if (!MemoryDispatchPolicy.PermitFingerprintIsValid(permit)) return null;
+            lock (SessionFenceLock)
+            {
+                if (permit.sessionId <= rejectedThroughSessionId) return null;
+                return SendEnvelopesByPermitFingerprint.GetOrAdd(
+                    permit.permitFingerprint,
+                    ignored => new MemoryRuntimeSendEnvelope(permit));
+            }
+        }
+
+        /// <summary>
+        /// Releases an acknowledged claim only after the main thread has terminally applied the
+        /// matching result and removed its active saved row. Receipt acknowledgment alone is too
+        /// early: equal duplicate work must remain unable to manufacture a fresh envelope during
+        /// the receipt-to-result handoff.
+        /// </summary>
+        internal static void ReleaseSendEnvelope(MemoryInvocationCommitPermitV1 permit)
+        {
+            if (permit == null || string.IsNullOrEmpty(permit.permitFingerprint)) return;
+            MemoryRuntimeSendEnvelope ignored;
+            SendEnvelopesByPermitFingerprint.TryRemove(
+                permit.permitFingerprint, out ignored);
+        }
+
+        /// <summary>Releases every runtime claim for a logical request after a main-thread fence
+        /// (for example Brainwipe) has made all of its permits permanently stale.</summary>
+        internal static void ReleaseLogicalRequestSendEnvelopes(string logicalRequestId)
+        {
+            if (string.IsNullOrWhiteSpace(logicalRequestId)) return;
+            foreach (KeyValuePair<string, MemoryRuntimeSendEnvelope> pair
+                in SendEnvelopesByPermitFingerprint)
+            {
+                if (!string.Equals(
+                    pair.Value?.permit?.logicalRequestId,
+                    logicalRequestId,
+                    StringComparison.Ordinal)) continue;
+                MemoryRuntimeSendEnvelope ignored;
+                SendEnvelopesByPermitFingerprint.TryRemove(pair.Key, out ignored);
+            }
         }
 
         internal static bool TryDequeuePermit(out MemoryInvocationPermitRequest request)
@@ -203,27 +271,44 @@ namespace PawnDiary
         /// <summary>Rejects queued handoffs from replaced sessions so no worker remains stranded.</summary>
         internal static void RejectSession(long sessionId)
         {
-            List<MemoryInvocationPermitRequest> keepPermits =
-                new List<MemoryInvocationPermitRequest>();
-            MemoryInvocationPermitRequest permit;
-            while (PermitRequests.TryDequeue(out permit))
+            lock (SessionFenceLock)
             {
-                if (permit.sessionId == sessionId) permit.completion.TrySetResult(null);
-                else keepPermits.Add(permit);
-            }
-            for (int index = 0; index < keepPermits.Count; index++)
-                PermitRequests.Enqueue(keepPermits[index]);
+                if (sessionId > rejectedThroughSessionId)
+                    rejectedThroughSessionId = sessionId;
 
-            List<MemoryInvocationReceiptRequest> keepReceipts =
-                new List<MemoryInvocationReceiptRequest>();
-            MemoryInvocationReceiptRequest receipt;
-            while (ReceiptRequests.TryDequeue(out receipt))
-            {
-                if (receipt.sessionId == sessionId) receipt.completion.TrySetResult(false);
-                else keepReceipts.Add(receipt);
+                List<MemoryInvocationPermitRequest> keepPermits =
+                    new List<MemoryInvocationPermitRequest>();
+                MemoryInvocationPermitRequest permit;
+                while (PermitRequests.TryDequeue(out permit))
+                {
+                    if (permit.sessionId <= rejectedThroughSessionId)
+                        permit.completion.TrySetResult(null);
+                    else keepPermits.Add(permit);
+                }
+                for (int index = 0; index < keepPermits.Count; index++)
+                    PermitRequests.Enqueue(keepPermits[index]);
+
+                List<MemoryInvocationReceiptRequest> keepReceipts =
+                    new List<MemoryInvocationReceiptRequest>();
+                MemoryInvocationReceiptRequest receipt;
+                while (ReceiptRequests.TryDequeue(out receipt))
+                {
+                    if (receipt.sessionId <= rejectedThroughSessionId)
+                        receipt.completion.TrySetResult(false);
+                    else keepReceipts.Add(receipt);
+                }
+                for (int index = 0; index < keepReceipts.Count; index++)
+                    ReceiptRequests.Enqueue(keepReceipts[index]);
+
+                foreach (KeyValuePair<string, MemoryRuntimeSendEnvelope> pair
+                    in SendEnvelopesByPermitFingerprint)
+                {
+                    if ((pair.Value?.permit?.sessionId ?? long.MaxValue)
+                        > rejectedThroughSessionId) continue;
+                    MemoryRuntimeSendEnvelope ignored;
+                    SendEnvelopesByPermitFingerprint.TryRemove(pair.Key, out ignored);
+                }
             }
-            for (int index = 0; index < keepReceipts.Count; index++)
-                ReceiptRequests.Enqueue(keepReceipts[index]);
         }
 
         private static async Task<T> AwaitReply<T>(

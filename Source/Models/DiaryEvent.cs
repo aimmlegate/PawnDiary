@@ -531,6 +531,8 @@ namespace PawnDiary
             slot.prompt = DiarySaveNormalization.NormalizeString(slot.prompt);
             slot.acceptedSystemPrompt = DiarySaveNormalization.NormalizeString(
                 slot.acceptedSystemPrompt);
+            DiaryGameComponent.RequireActiveMemoryRequestNotNewer(
+                slot.activeMemoryLogicalRequest);
             slot.activeMemoryLogicalRequest?.Normalize();
             slot.title = DiarySaveNormalization.NormalizeString(slot.title);
             slot.titleError = DiarySaveNormalization.NormalizeString(slot.titleError);
@@ -851,7 +853,12 @@ namespace PawnDiary
             }
 
             DiaryStateVersion.Bump();
-            slot.prompt = string.Empty;
+            // A current-release accepted pair is durable provenance, not transient queue metadata.
+            // Preserve its user half when staged Regenerate work loses the activation race.
+            if (string.IsNullOrWhiteSpace(slot.acceptedSystemPrompt))
+            {
+                slot.prompt = string.Empty;
+            }
             slot.status = NotGeneratedStatus;
             slot.error = null;
             slot.llmEndpoint = string.Empty;
@@ -910,7 +917,17 @@ namespace PawnDiary
         /// </summary>
         public void PrepareForRegeneration(string povRole)
         {
-            PrepareForRegeneration(povRole, true);
+            PrepareForRegeneration(povRole, true, false);
+        }
+
+        /// <summary>
+        /// Resets transient generation state while retaining the exact accepted prompt pair used by
+        /// current-release Regenerate. Queue refusal can therefore be retried without reconstructing
+        /// or losing provenance.
+        /// </summary>
+        internal void PrepareForAcceptedPromptRegeneration(string povRole)
+        {
+            PrepareForRegeneration(povRole, true, true);
         }
 
         /// <summary>
@@ -919,10 +936,16 @@ namespace PawnDiary
         /// </summary>
         internal void PrepareForAutomaticRegeneration(string povRole)
         {
-            PrepareForRegeneration(povRole, false);
+            bool preserveAcceptedPair = !string.IsNullOrWhiteSpace(
+                    AcceptedSystemPromptForRole(povRole))
+                && !string.IsNullOrWhiteSpace(PromptForRole(povRole));
+            PrepareForRegeneration(povRole, false, preserveAcceptedPair);
         }
 
-        private void PrepareForRegeneration(string povRole, bool resetAutomaticRetryAttempts)
+        private void PrepareForRegeneration(
+            string povRole,
+            bool resetAutomaticRetryAttempts,
+            bool preserveAcceptedPrompt)
         {
             if (string.IsNullOrWhiteSpace(povRole))
             {
@@ -931,7 +954,11 @@ namespace PawnDiary
 
             DiaryStateVersion.Bump();
             ref PovSlot slot = ref SlotFor(povRole);
-            slot.prompt = string.Empty;
+            if (!preserveAcceptedPrompt)
+            {
+                slot.prompt = string.Empty;
+                slot.acceptedSystemPrompt = string.Empty;
+            }
             slot.rawResponse = string.Empty;
             slot.status = NotGeneratedStatus;
             slot.error = null;

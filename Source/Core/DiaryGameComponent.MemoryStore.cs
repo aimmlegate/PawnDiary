@@ -13,6 +13,7 @@
 // nothing here captures, recalls, schedules, or mutates gameplay behavior.
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Verse;
 
 namespace PawnDiary
@@ -508,43 +509,59 @@ namespace PawnDiary
             // they can be excluded from the component subtotal without breaking registry order.
             try
             {
-                long ownerAttributed = 0;
+                long ownerAttributedComponentBytes = 0;
+                long externallyStoredComponentBytes = 0;
                 for (int i = 0;
                     activeMemoryCoordinatorRequests != null
                         && i < activeMemoryCoordinatorRequests.Count;
                     i++)
                 {
-                    SavedActiveLogicalRequestV1 request = activeMemoryCoordinatorRequests[i];
-                    if (request == null || string.IsNullOrWhiteSpace(request.ownerPawnId)
-                        || currentOwnerIds == null
-                        || !currentOwnerIds.Contains(request.ownerPawnId))
-                    {
-                        // Ownerless/orphaned metadata remains component/global-only. Only a request
-                        // with a corresponding current owner can move into that owner's subtotal.
-                        continue;
-                    }
+                    if (!TryAttributeActiveRequestBytes(
+                            activeMemoryCoordinatorRequests[i],
+                            currentOwnerIds,
+                            activeRequestBytesByOwner,
+                            storedInsideComponentRow: true,
+                            ref ownerAttributedComponentBytes,
+                            ref externallyStoredComponentBytes)) return -1;
+                }
 
-                    MemoryLogicalSizeResult result = MemoryLogicalPayloadSizer.Size(request);
-                    if (!result.valid)
-                    {
-                        RecordMemoryDiagnostic("size_invalid", "component");
-                        return -1;
-                    }
-
-                    ownerAttributed = checked(ownerAttributed + result.totalBytes);
-                    long prior = activeRequestBytesByOwner.TryGetValue(
-                        request.ownerPawnId, out long measured)
-                        ? measured
-                        : 0;
-                    activeRequestBytesByOwner[request.ownerPawnId] =
-                        checked(prior + result.totalBytes);
+                IReadOnlyList<DiaryEvent> hotEvents = events?.AllEvents;
+                for (int index = 0; hotEvents != null && index < hotEvents.Count; index++)
+                {
+                    DiaryEvent diaryEvent = hotEvents[index];
+                    if (!TryAttributeActiveRequestBytes(
+                            diaryEvent?.ActiveMemoryLogicalRequestForRole(
+                                DiaryEvent.InitiatorRole),
+                            currentOwnerIds,
+                            activeRequestBytesByOwner,
+                            storedInsideComponentRow: false,
+                            ref ownerAttributedComponentBytes,
+                            ref externallyStoredComponentBytes)
+                        || !TryAttributeActiveRequestBytes(
+                            diaryEvent?.ActiveMemoryLogicalRequestForRole(
+                                DiaryEvent.RecipientRole),
+                            currentOwnerIds,
+                            activeRequestBytesByOwner,
+                            storedInsideComponentRow: false,
+                            ref ownerAttributedComponentBytes,
+                            ref externallyStoredComponentBytes)
+                        || !TryAttributeActiveRequestBytes(
+                            diaryEvent?.ActiveMemoryLogicalRequestForRole(
+                                DiaryEvent.NeutralRole),
+                            currentOwnerIds,
+                            activeRequestBytesByOwner,
+                            storedInsideComponentRow: false,
+                            ref ownerAttributedComponentBytes,
+                            ref externallyStoredComponentBytes)) return -1;
                 }
 
                 // Unknown Imported rows (including their one list framing prefix) move from the
                 // registered component walk into globalImportedBytes. Owner-attributed request rows
                 // likewise move to the exact owner. Each physical byte therefore appears once.
-                long componentBytes = checked(whole.totalBytes - ownerAttributed);
+                long componentBytes = checked(
+                    whole.totalBytes - ownerAttributedComponentBytes);
                 componentBytes = checked(componentBytes - unknownArchive.totalBytes);
+                componentBytes = checked(componentBytes + externallyStoredComponentBytes);
                 if (componentBytes < 0)
                 {
                     RecordMemoryDiagnostic("size_invalid", "component");
@@ -558,6 +575,49 @@ namespace PawnDiary
                 RecordMemoryDiagnostic("size_invalid", "component");
                 return -1;
             }
+        }
+
+        private bool TryAttributeActiveRequestBytes(
+            SavedActiveLogicalRequestV1 request,
+            HashSet<string> currentOwnerIds,
+            Dictionary<string, long> activeRequestBytesByOwner,
+            bool storedInsideComponentRow,
+            ref long ownerAttributedComponentBytes,
+            ref long externallyStoredComponentBytes)
+        {
+            if (request == null) return true;
+            MemoryLogicalSizeResult result = MemoryLogicalPayloadSizer.Size(request);
+            if (!result.valid)
+            {
+                RecordMemoryDiagnostic("size_invalid", "component");
+                return false;
+            }
+
+            bool currentOwner = !string.IsNullOrWhiteSpace(request.ownerPawnId)
+                && currentOwnerIds != null
+                && currentOwnerIds.Contains(request.ownerPawnId);
+            if (currentOwner)
+            {
+                long prior = activeRequestBytesByOwner.TryGetValue(
+                    request.ownerPawnId, out long measured)
+                    ? measured
+                    : 0;
+                activeRequestBytesByOwner[request.ownerPawnId] =
+                    checked(prior + result.totalBytes);
+                if (storedInsideComponentRow)
+                {
+                    ownerAttributedComponentBytes = checked(
+                        ownerAttributedComponentBytes + result.totalBytes);
+                }
+            }
+            else if (!storedInsideComponentRow)
+            {
+                // A DiaryEvent request is physically outside the registered component row. Orphaned
+                // or ownerless metadata still belongs to the component/global subtotal exactly once.
+                externallyStoredComponentBytes = checked(
+                    externallyStoredComponentBytes + result.totalBytes);
+            }
+            return true;
         }
 
         /// <summary>
@@ -688,6 +748,266 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Checks the current exact active-request row and byte budgets before a detached staged row
+        /// becomes canonical. All totals come from the shared logical sizer; malformed indexes or
+        /// capacity values fail closed rather than admitting against an undercount.
+        /// </summary>
+        private bool CanAdmitActiveMemoryRequest(SavedActiveLogicalRequestV1 request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.ownerPawnId)) return false;
+            MemoryLogicalSizeResult requestSize = MemoryLogicalPayloadSizer.Size(request);
+            if (!requestSize.valid || requestSize.totalBytes < 0) return false;
+
+            RebuildMemorySizeIndexes();
+            MemoryOwnerByteTotals owner = GetOwnerByteTotals(request.ownerPawnId);
+            MemoryPayloadBudgetTotals global = GetGlobalBudgetTotals();
+            if (!owner.valid || global.globalActiveBytes < 0
+                || global.globalImportedBytes < 0) return false;
+
+            int ownerRequests = 0;
+            int globalRequests = 0;
+            CountActiveRequests(activeMemoryCoordinatorRequests, request.ownerPawnId,
+                ref ownerRequests, ref globalRequests);
+            IReadOnlyList<DiaryEvent> hotEvents = events?.AllEvents;
+            for (int index = 0; hotEvents != null && index < hotEvents.Count; index++)
+            {
+                DiaryEvent diaryEvent = hotEvents[index];
+                CountActiveRequest(diaryEvent?.ActiveMemoryLogicalRequestForRole(
+                    DiaryEvent.InitiatorRole), request.ownerPawnId,
+                    ref ownerRequests, ref globalRequests);
+                CountActiveRequest(diaryEvent?.ActiveMemoryLogicalRequestForRole(
+                    DiaryEvent.RecipientRole), request.ownerPawnId,
+                    ref ownerRequests, ref globalRequests);
+                CountActiveRequest(diaryEvent?.ActiveMemoryLogicalRequestForRole(
+                    DiaryEvent.NeutralRole), request.ownerPawnId,
+                    ref ownerRequests, ref globalRequests);
+            }
+
+            int ownerRequestCap;
+            int globalRequestCap;
+            ReadCapacityPair(
+                "activeRequestsOwnerGlobal",
+                8,
+                128,
+                32,
+                512,
+                out ownerRequestCap,
+                out globalRequestCap);
+            if (ownerRequests >= ownerRequestCap || globalRequests >= globalRequestCap)
+                return false;
+
+            MemoryBudgetLimits limits = new MemoryBudgetLimits
+            {
+                activeOwnerBytes = ReadCapacityLong(
+                    "activeOwnerBytes", 196608, 2097152),
+                combinedOwnerBytes = ReadCapacityLong(
+                    "combinedOwnerBytes", 262144, 4194304),
+                activeGlobalBytes = ReadCapacityLong(
+                    "activeGlobalBytes", 6291456, 25165824),
+                combinedGlobalBytes = ReadCapacityLong(
+                    "combinedGlobalBytes", 8388608, 33554432)
+            };
+            MemoryBudgetDecision decision = ActiveMemoryPayloadBudget.TryAdmit(
+                limits,
+                owner.activeBytes,
+                owner.importedBytes,
+                requestSize.totalBytes,
+                0,
+                global);
+            return decision.outcome == MemoryBudgetOutcome.Admitted;
+        }
+
+        private static void CountActiveRequests(
+            List<SavedActiveLogicalRequestV1> requests,
+            string ownerPawnId,
+            ref int ownerCount,
+            ref int globalCount)
+        {
+            for (int index = 0; requests != null && index < requests.Count; index++)
+                CountActiveRequest(requests[index], ownerPawnId, ref ownerCount, ref globalCount);
+        }
+
+        private static void CountActiveRequest(
+            SavedActiveLogicalRequestV1 request,
+            string ownerPawnId,
+            ref int ownerCount,
+            ref int globalCount)
+        {
+            if (request == null) return;
+            globalCount++;
+            if (string.Equals(request.ownerPawnId, ownerPawnId, StringComparison.Ordinal))
+                ownerCount++;
+        }
+
+        /// <summary>
+        /// Moves terminal attempt metadata into the bounded Dev audit before its active request row
+        /// is removed. Duplicate callback/load settlement is idempotent by request ID + ordinal.
+        /// </summary>
+        private void AppendTerminalMemoryAttemptAudits(
+            SavedActiveLogicalRequestV1 request,
+            string fallbackOutcomeToken,
+            long fallbackTerminalTick)
+        {
+            if (request == null || request.activeAttempts == null) return;
+            memoryAttemptAuditRows = memoryAttemptAuditRows
+                ?? new List<SavedMemoryAttemptAuditRow>();
+            long safeTerminalTick = Math.Max(1, fallbackTerminalTick);
+            for (int index = 0; index < request.activeAttempts.Count; index++)
+            {
+                SavedActiveLogicalAttemptV1 attempt = request.activeAttempts[index];
+                if (attempt == null || attempt.attemptOrdinal <= 0
+                    || AuditContains(request.logicalRequestId, attempt.attemptOrdinal)) continue;
+                string outcome = MemoryDispatchTokens.IsTerminalOutcome(
+                        attempt.terminalOutcomeToken)
+                    ? attempt.terminalOutcomeToken
+                    : fallbackOutcomeToken;
+                if (!MemoryDispatchTokens.IsTerminalOutcome(outcome))
+                    outcome = MemoryDispatchTokens.Invalid;
+                memoryAttemptAuditRows.Add(new SavedMemoryAttemptAuditRow
+                {
+                    schemaVersion = 1,
+                    logicalRequestId = request.logicalRequestId ?? string.Empty,
+                    requestPurposeToken = request.requestPurposeToken ?? string.Empty,
+                    ownerPawnId = request.ownerPawnId ?? string.Empty,
+                    ownerEpochToken = request.ownerEpochToken ?? string.Empty,
+                    attemptOrdinal = attempt.attemptOrdinal,
+                    variantKey = attempt.variantKey ?? string.Empty,
+                    invocationTick = attempt.invocationTick,
+                    terminalTick = attempt.terminalTick > 0
+                        ? attempt.terminalTick
+                        : safeTerminalTick,
+                    outcomeToken = outcome,
+                    potentialExposure = attempt.potentialExposureApplied
+                });
+            }
+
+            int perRequestCap;
+            int globalCap;
+            ReadCapacityPair(
+                "attemptAuditRowsPerRequestGlobal",
+                4,
+                1024,
+                16,
+                4096,
+                out perRequestCap,
+                out globalCap);
+            TrimMemoryAttemptAudits(perRequestCap, globalCap);
+        }
+
+        private bool AuditContains(string logicalRequestId, int attemptOrdinal)
+        {
+            for (int index = 0;
+                memoryAttemptAuditRows != null && index < memoryAttemptAuditRows.Count;
+                index++)
+            {
+                SavedMemoryAttemptAuditRow row = memoryAttemptAuditRows[index];
+                if (row != null && row.attemptOrdinal == attemptOrdinal
+                    && string.Equals(row.logicalRequestId, logicalRequestId,
+                        StringComparison.Ordinal)) return true;
+            }
+            return false;
+        }
+
+        private void TrimMemoryAttemptAudits(int perRequestCap, int globalCap)
+        {
+            memoryAttemptAuditRows.Sort(CompareMemoryAttemptAuditAge);
+            Dictionary<string, int> countByRequest =
+                new Dictionary<string, int>(StringComparer.Ordinal);
+            for (int index = 0; index < memoryAttemptAuditRows.Count; index++)
+            {
+                string requestId = memoryAttemptAuditRows[index]?.logicalRequestId
+                    ?? string.Empty;
+                countByRequest[requestId] = countByRequest.TryGetValue(
+                    requestId, out int count) ? count + 1 : 1;
+            }
+            for (int index = 0; index < memoryAttemptAuditRows.Count;)
+            {
+                string requestId = memoryAttemptAuditRows[index]?.logicalRequestId
+                    ?? string.Empty;
+                if (countByRequest[requestId] > perRequestCap)
+                {
+                    memoryAttemptAuditRows.RemoveAt(index);
+                    countByRequest[requestId]--;
+                }
+                else index++;
+            }
+            while (memoryAttemptAuditRows.Count > globalCap)
+                memoryAttemptAuditRows.RemoveAt(0);
+        }
+
+        private static int CompareMemoryAttemptAuditAge(
+            SavedMemoryAttemptAuditRow left,
+            SavedMemoryAttemptAuditRow right)
+        {
+            if (ReferenceEquals(left, right)) return 0;
+            if (left == null) return -1;
+            if (right == null) return 1;
+            int compared = left.terminalTick.CompareTo(right.terminalTick);
+            if (compared != 0) return compared;
+            compared = string.CompareOrdinal(left.logicalRequestId, right.logicalRequestId);
+            return compared != 0
+                ? compared
+                : left.attemptOrdinal.CompareTo(right.attemptOrdinal);
+        }
+
+        private static long ReadCapacityLong(
+            string name,
+            long fallback,
+            long defensiveCeiling)
+        {
+            DiaryKnowledgeTuningDef tuning = DefDatabase<DiaryKnowledgeTuningDef>
+                .GetNamedSilentFail(DiaryKnowledgePolicy.TuningDefName);
+            for (int index = 0; tuning?.memoryCapacityVector != null
+                && index < tuning.memoryCapacityVector.Count; index++)
+            {
+                DiaryMemoryCapacityValueRow row = tuning.memoryCapacityVector[index];
+                long parsed;
+                if (row != null && string.Equals(row.name, name, StringComparison.Ordinal)
+                    && long.TryParse(row.valueEncoding, NumberStyles.None,
+                        CultureInfo.InvariantCulture, out parsed)
+                    && parsed >= 0 && parsed <= defensiveCeiling) return parsed;
+            }
+            return fallback;
+        }
+
+        private static void ReadCapacityPair(
+            string name,
+            int firstFallback,
+            int secondFallback,
+            int firstDefensiveCeiling,
+            int secondDefensiveCeiling,
+            out int first,
+            out int second)
+        {
+            first = firstFallback;
+            second = secondFallback;
+            DiaryKnowledgeTuningDef tuning = DefDatabase<DiaryKnowledgeTuningDef>
+                .GetNamedSilentFail(DiaryKnowledgePolicy.TuningDefName);
+            for (int index = 0; tuning?.memoryCapacityVector != null
+                && index < tuning.memoryCapacityVector.Count; index++)
+            {
+                DiaryMemoryCapacityValueRow row = tuning.memoryCapacityVector[index];
+                if (row == null || !string.Equals(row.name, name, StringComparison.Ordinal))
+                    continue;
+                string[] parts = (row.valueEncoding ?? string.Empty).Split('/');
+                int parsedFirst;
+                int parsedSecond;
+                if (parts.Length == 2
+                    && int.TryParse(parts[0], NumberStyles.None,
+                        CultureInfo.InvariantCulture, out parsedFirst)
+                    && int.TryParse(parts[1], NumberStyles.None,
+                        CultureInfo.InvariantCulture, out parsedSecond)
+                    && parsedFirst >= 0 && parsedFirst <= firstDefensiveCeiling
+                    && parsedSecond >= 0 && parsedSecond <= secondDefensiveCeiling)
+                {
+                    first = parsedFirst;
+                    second = parsedSecond;
+                }
+                return;
+            }
+        }
+
         /// <summary>Sizes one deep list of rows with the shared framing/count rule; validity of
         /// every element propagates (invalid → valid=false) so callers never admit on partials.</summary>
         private static MemoryLogicalSizeResult SizeListValidated<T>(List<T> rows)
@@ -809,6 +1129,7 @@ namespace PawnDiary
             }
 
             AddRequestEpochTokens(input.epochTokenCarriers, activeMemoryCoordinatorRequests);
+            AddEventRequestEpochTokens(input.epochTokenCarriers);
 
             MemorySavedCarrierRegistryPlan plan =
                 MemorySavedIdentityCarrierRegistry.Plan(input);
@@ -892,7 +1213,23 @@ namespace PawnDiary
             AddEpochTokens(carriers, summaryWordingOpportunities, row => row?.ownerEpochToken);
             AddEpochTokens(carriers, memoryAttemptAuditRows, row => row?.ownerEpochToken);
             AddRequestEpochTokens(carriers, activeMemoryCoordinatorRequests);
+            AddEventRequestEpochTokens(carriers);
             return carriers;
+        }
+
+        private void AddEventRequestEpochTokens(List<string> carriers)
+        {
+            IReadOnlyList<DiaryEvent> hotEvents = events?.AllEvents;
+            for (int index = 0; hotEvents != null && index < hotEvents.Count; index++)
+            {
+                DiaryEvent diaryEvent = hotEvents[index];
+                AddEpochToken(carriers, diaryEvent?.ActiveMemoryLogicalRequestForRole(
+                    DiaryEvent.InitiatorRole)?.ownerEpochToken);
+                AddEpochToken(carriers, diaryEvent?.ActiveMemoryLogicalRequestForRole(
+                    DiaryEvent.RecipientRole)?.ownerEpochToken);
+                AddEpochToken(carriers, diaryEvent?.ActiveMemoryLogicalRequestForRole(
+                    DiaryEvent.NeutralRole)?.ownerEpochToken);
+            }
         }
 
         private static void AddEpochToken(List<string> carriers, string token)

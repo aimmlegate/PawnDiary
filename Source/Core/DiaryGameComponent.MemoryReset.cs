@@ -30,9 +30,7 @@ namespace PawnDiary
             // Observe the player-authored singleton before the M2 fence clears the unified envelope.
             // The public Brainwipe notice must remain truthful even though dispatch invalidation now
             // deliberately happens before the rest of the historical cleanup.
-            bool removedPlayerBackground = HasCanonicalBackgroundMemory(
-                FindDiaryByPawnId(pawnId)?.KnowledgeStateOrNull(),
-                pawnId);
+            bool removedPlayerBackground = HasCanonicalBackgroundMemory(pawnId);
             AdvanceMemoryDispatchFenceForBrainwipe(pawn, pawnId);
             ResetProgressionMemoryForPawn(pawnId, memoryBoundaryTick);
             ResetSharedArcMemoryForPawn(pawnId, memoryBoundaryTick);
@@ -77,6 +75,14 @@ namespace PawnDiary
             diary.arcSchedule = new PawnArcScheduleState();
             diary.beliefState = new PawnBeliefState();
             diary.reflectionState = new PawnReflectionState();
+            // AdvanceMemoryDispatchFenceForBrainwipe published the new owner epoch before cleanup.
+            // Replacing the reflection scheduler must preserve that same fence; otherwise its blank
+            // defaults can make old-epoch reflection work look current again after the wipe.
+            string currentOwnerEpoch =
+                knowledge?.autobiographicalEpochToken ?? string.Empty;
+            diary.reflectionState.memoryReflectionSchemaVersion =
+                string.IsNullOrEmpty(currentOwnerEpoch) ? 0 : 1;
+            diary.reflectionState.memoryOwnerEpochToken = currentOwnerEpoch;
 
             archive.RemoveForPawn(pawnId);
             // A surviving partner's compact page must not retain a clickable preview of memories the
@@ -249,6 +255,22 @@ namespace PawnDiary
 
         private void CancelOldEpochDispatchRows(string pawnId)
         {
+            long terminalTick = Math.Max(1, Find.TickManager?.TicksGame ?? 0);
+            for (int index = 0; activeMemoryCoordinatorRequests != null
+                && index < activeMemoryCoordinatorRequests.Count; index++)
+            {
+                SavedActiveLogicalRequestV1 request = activeMemoryCoordinatorRequests[index];
+                if (request == null || !string.Equals(
+                    request.ownerPawnId, pawnId, StringComparison.Ordinal)) continue;
+                MemoryDispatchRuntimeBridge.ReleaseLogicalRequestSendEnvelopes(
+                    request.logicalRequestId);
+                AppendTerminalMemoryAttemptAudits(
+                    request,
+                    MemoryDispatchSavedAdapter.LoadedRequestMayHaveBeenInvoked(request)
+                        ? MemoryDispatchTokens.CancelledPostInvocation
+                        : MemoryDispatchTokens.CancelledPreInvocation,
+                    terminalTick);
+            }
             activeMemoryCoordinatorRequests?.RemoveAll(
                 request => request != null
                     && string.Equals(request.ownerPawnId, pawnId, StringComparison.Ordinal));
@@ -270,7 +292,7 @@ namespace PawnDiary
             }
         }
 
-        private static void CancelOldEpochEventRole(
+        private void CancelOldEpochEventRole(
             DiaryEvent diaryEvent,
             string povRole,
             string pawnId)
@@ -283,6 +305,17 @@ namespace PawnDiary
                 && string.Equals(request.ownerPawnId, pawnId, StringComparison.Ordinal);
             if (!ownsRole && !ownsRequest) return;
 
+            if (request != null)
+            {
+                MemoryDispatchRuntimeBridge.ReleaseLogicalRequestSendEnvelopes(
+                    request.logicalRequestId);
+                AppendTerminalMemoryAttemptAudits(
+                    request,
+                    MemoryDispatchSavedAdapter.LoadedRequestMayHaveBeenInvoked(request)
+                        ? MemoryDispatchTokens.CancelledPostInvocation
+                        : MemoryDispatchTokens.CancelledPreInvocation,
+                    Math.Max(1, Find.TickManager?.TicksGame ?? 0));
+            }
             diaryEvent.SetActiveMemoryLogicalRequestForRole(povRole, null);
             diaryEvent.SetAcceptedPromptPair(povRole, string.Empty, string.Empty);
         }
@@ -309,27 +342,42 @@ namespace PawnDiary
             }
         }
 
-        private static bool HasCanonicalBackgroundMemory(
-            PawnKnowledgeState state,
-            string ownerPawnId)
+        private bool HasCanonicalBackgroundMemory(string ownerPawnId)
         {
-            if (state?.records == null)
+            if (string.IsNullOrWhiteSpace(ownerPawnId))
             {
                 return false;
             }
 
-            for (int i = 0; i < state.records.Count; i++)
+            // Duplicate legacy containers can survive until migration. The Brainwipe notice is
+            // truthful if any exact owner holder contains either the current unified singleton or
+            // the pre-current canonical record; scanning one lookup winner can miss the other.
+            for (int holderIndex = 0; diaries != null && holderIndex < diaries.Count; holderIndex++)
             {
-                ImportantMemoryRecord record = state.records[i];
-                if (record != null && PlayerMemoryPolicy.IsCanonicalBackstory(
-                    ownerPawnId,
-                    record.recordId,
-                    record.dedupKey,
-                    record.eventKind,
-                    record.sourceKind,
-                    record.recallScope))
+                PawnDiaryRecord holder = diaries[holderIndex];
+                PawnKnowledgeState state = holder?.knowledgeState;
+                bool exactOwner = string.Equals(
+                        holder?.pawnId, ownerPawnId, StringComparison.Ordinal)
+                    || string.Equals(
+                        state?.pawnId, ownerPawnId, StringComparison.Ordinal);
+                if (!exactOwner || state == null) continue;
+                if (!string.IsNullOrWhiteSpace(state.playerBackground)) return true;
+
+                for (int recordIndex = 0;
+                    state.records != null && recordIndex < state.records.Count;
+                    recordIndex++)
                 {
-                    return true;
+                    ImportantMemoryRecord record = state.records[recordIndex];
+                    if (record != null && PlayerMemoryPolicy.IsCanonicalBackstory(
+                        ownerPawnId,
+                        record.recordId,
+                        record.dedupKey,
+                        record.eventKind,
+                        record.sourceKind,
+                        record.recallScope))
+                    {
+                        return true;
+                    }
                 }
             }
 

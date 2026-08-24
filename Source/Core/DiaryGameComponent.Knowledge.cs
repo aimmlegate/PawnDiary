@@ -208,6 +208,35 @@ namespace PawnDiary
                 activeMemoryCoordinatorRequests,
                 r => r.SchemaVersionForBoundaryCheck,
                 RequireNestedSchemas);
+
+            IReadOnlyList<DiaryEvent> hotEvents = events?.AllEvents;
+            for (int index = 0; hotEvents != null && index < hotEvents.Count; index++)
+            {
+                RequireActiveMemoryRequestNotNewer(
+                    hotEvents[index]?.ActiveMemoryLogicalRequestForRole(
+                        DiaryEvent.InitiatorRole));
+                RequireActiveMemoryRequestNotNewer(
+                    hotEvents[index]?.ActiveMemoryLogicalRequestForRole(
+                        DiaryEvent.RecipientRole));
+                RequireActiveMemoryRequestNotNewer(
+                    hotEvents[index]?.ActiveMemoryLogicalRequestForRole(
+                        DiaryEvent.NeutralRole));
+            }
+        }
+
+        /// <summary>
+        /// Applies the same recursive downgrade boundary to component- and DiaryEvent-owned M2 rows.
+        /// DiaryEvent invokes this before load normalization so an older build never mutates a newer
+        /// outer or nested schema before the component-level safety sweep runs.
+        /// </summary>
+        internal static void RequireActiveMemoryRequestNotNewer(
+            SavedActiveLogicalRequestV1 request)
+        {
+            RequireRowNotNewer(request, r => r.SchemaVersionForBoundaryCheck);
+            if (request != null)
+            {
+                RequireNestedSchemas(request);
+            }
         }
 
         private static void RequireNotNewer<T>(

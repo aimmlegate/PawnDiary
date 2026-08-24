@@ -238,8 +238,9 @@ namespace PawnDiary
     }
 
     /// <summary>
-    /// One bounded runtime send envelope. Only the compare-exchange winner may cross into SendAsync,
-    /// even if a worker or an equal permit is scheduled twice.
+    /// One bounded runtime send envelope. The runtime bridge shares this envelope by permit
+    /// fingerprint, so only the compare-exchange winner may cross into SendAsync when equal permit
+    /// work is scheduled concurrently.
     /// </summary>
     internal sealed class MemoryRuntimeSendEnvelope
     {
@@ -535,6 +536,18 @@ namespace PawnDiary
                 return plan;
             }
 
+            bool receiptAlreadyRecorded = attempt.attemptStateToken
+                    == MemoryRequestStateMachineContracts.AttemptReceiptApplied
+                || attempt.attemptStateToken
+                    == MemoryRequestStateMachineContracts.AttemptTerminalPending;
+            if (receiptAlreadyRecorded
+                && !Equal(attempt.terminalOutcomeToken, terminalOutcomeToken))
+            {
+                // The first receipt owns the stable terminal outcome. A later callback may be an
+                // idempotent replay, but cannot relabel success/timeout/provider failure.
+                return plan;
+            }
+
             if (attempt.resultApplied)
             {
                 plan.duplicate = true;
@@ -692,9 +705,21 @@ namespace PawnDiary
                 if (attempt == null || attempt.attemptOrdinal != expectedOrdinal
                     || Variant(request, attempt.variantKey) == null
                     || !MemoryDispatchTokens.IsAttemptOrigin(attempt.attemptOriginToken)
-                    || !IsAttemptState(attempt.attemptStateToken)
-                    || attempt.terminalTick != 0
-                    || !string.IsNullOrEmpty(attempt.terminalOutcomeToken))
+                    || !IsAttemptState(attempt.attemptStateToken))
+                {
+                    return false;
+                }
+
+                bool receiptApplied = attempt.attemptStateToken
+                        == MemoryRequestStateMachineContracts.AttemptReceiptApplied
+                    || attempt.attemptStateToken
+                        == MemoryRequestStateMachineContracts.AttemptTerminalPending;
+                if (receiptApplied
+                    ? attempt.terminalTick <= 0
+                        || !MemoryDispatchTokens.IsTerminalOutcome(
+                            attempt.terminalOutcomeToken)
+                    : attempt.terminalTick != 0
+                        || !string.IsNullOrEmpty(attempt.terminalOutcomeToken))
                 {
                     return false;
                 }
@@ -728,6 +753,15 @@ namespace PawnDiary
                         || attempt.potentialExposureApplied
                         || attempt.narrativeUseApplied
                         || attempt.resultApplied)
+                {
+                    return false;
+                }
+                if ((attempt.attemptStateToken
+                        == MemoryRequestStateMachineContracts.AttemptReceiptApplied
+                        && attempt.resultApplied)
+                    || (attempt.attemptStateToken
+                        == MemoryRequestStateMachineContracts.AttemptTerminalPending
+                        && !attempt.resultApplied))
                 {
                     return false;
                 }

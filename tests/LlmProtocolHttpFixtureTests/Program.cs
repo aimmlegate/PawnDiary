@@ -313,18 +313,236 @@ namespace LlmProtocolHttpFixtureTests
                     await Task.Delay(10);
                 AssertTrue("receipt acknowledgment releases result",
                     completed != null && completed.success);
+                AssertEqual("memory success echoes its acknowledged terminal outcome",
+                    MemoryDispatchTokens.Success,
+                    completed.memoryDispatchTerminalOutcomeToken);
                 AssertEqual("result echoes exact invocation permit", permit.permitFingerprint,
                     completed.memoryInvocationPermit.permitFingerprint);
                 AssertEqual("result preserves exact system prompt", request.systemPrompt,
                     completed.sentSystemPrompt);
                 AssertEqual("result preserves exact user prompt", request.rawText,
                     completed.sentRawText);
+                MemoryRuntimeSendEnvelope receiptHandoffEnvelope =
+                    MemoryDispatchRuntimeBridge.GetOrCreateSendEnvelope(permit);
+                AssertFalse("receipt acknowledgment retains physical-send claim until result apply",
+                    receiptHandoffEnvelope.TryClaimPhysicalSend());
+                MemoryDispatchRuntimeBridge.ReleaseSendEnvelope(permit);
+
+                LlmGenerationRequest deniedRequest = MemoryGateRequest(
+                    context, "https://memory-denied.invalid/v1");
+                LlmStagedGenerationRequest deniedStage;
+                AssertEqual("denied memory request stages", LlmRequestStageOutcome.Staged,
+                    LlmClient.TryStage(deniedRequest, out deniedStage));
+                AssertTrue("denied memory request activates", LlmClient.Activate(deniedStage));
+                permitRequest = null;
+                deadline = DateTime.UtcNow.AddSeconds(5);
+                while (DateTime.UtcNow < deadline
+                    && !MemoryDispatchRuntimeBridge.TryDequeuePermit(out permitRequest))
+                    await Task.Delay(10);
+                AssertTrue("denied request reaches permit gate", permitRequest != null);
+                MemoryDispatchRuntimeBridge.ResolvePermit(permitRequest, null);
+                completed = null;
+                while (DateTime.UtcNow < deadline
+                    && !LlmClient.TryDequeueCompleted(out completed))
+                    await Task.Delay(10);
+                AssertTrue("live permit denial settles a failure result",
+                    completed != null && !completed.success
+                    && completed.memoryDispatchTerminalFailure);
+                AssertEqual("permit denial never sends", 1, exchange.Requests.Count);
+                AssertFalse("permit denial releases pending ownership",
+                    LlmClient.IsInFlight(deniedRequest.eventId, deniedRequest.povRole));
+
+                ScriptedExchange failedExchange = new ScriptedExchange(Response(
+                    HttpStatusCode.ServiceUnavailable,
+                    "{\"error\":\"retryable fixture\"}"));
+                LlmClient.SendAsyncOverrideForTests = failedExchange.SendAsync;
+                LlmGenerationRequest failedRequest = MemoryGateRequest(
+                    context, "https://memory-failure.invalid/v1");
+                failedRequest.failoverTargets = new List<ApiEndpointConfig>
+                {
+                    new ApiEndpointConfig(
+                        "https://memory-failover.invalid/v1", string.Empty, "failover-model")
+                };
+                LlmStagedGenerationRequest failedStage;
+                AssertEqual("post-permit failure stages", LlmRequestStageOutcome.Staged,
+                    LlmClient.TryStage(failedRequest, out failedStage));
+                AssertTrue("post-permit failure activates", LlmClient.Activate(failedStage));
+                permitRequest = null;
+                deadline = DateTime.UtcNow.AddSeconds(5);
+                while (DateTime.UtcNow < deadline
+                    && !MemoryDispatchRuntimeBridge.TryDequeuePermit(out permitRequest))
+                    await Task.Delay(10);
+                AssertTrue("post-permit failure reaches permit gate", permitRequest != null);
+                MemoryInvocationCommitPermitV1 failedPermit = CopyPermit(
+                    permit, 2, 2, 43);
+                MemoryDispatchRuntimeBridge.ResolvePermit(permitRequest, failedPermit);
+                receiptRequest = null;
+                while (DateTime.UtcNow < deadline
+                    && !MemoryDispatchRuntimeBridge.TryDequeueReceipt(out receiptRequest))
+                    await Task.Delay(10);
+                AssertTrue("post-permit provider failure publishes receipt",
+                    receiptRequest != null
+                    && receiptRequest.outcomeToken == MemoryDispatchTokens.ProviderError);
+                MemoryDispatchRuntimeBridge.ResolveReceipt(receiptRequest, true);
+                completed = null;
+                while (DateTime.UtcNow < deadline
+                    && !LlmClient.TryDequeueCompleted(out completed))
+                    await Task.Delay(10);
+                AssertTrue("post-permit provider failure is terminal",
+                    completed != null && !completed.success
+                    && completed.memoryDispatchTerminalFailure);
+                AssertEqual("provider failure echoes its acknowledged terminal outcome",
+                    MemoryDispatchTokens.ProviderError,
+                    completed.memoryDispatchTerminalOutcomeToken);
+                AssertEqual("possible exposure forbids retry and failover", 1,
+                    failedExchange.Requests.Count);
+                await Task.Delay(50);
+                AssertFalse("terminal failure requests no second permit",
+                    MemoryDispatchRuntimeBridge.TryDequeuePermit(out permitRequest));
+
+                ScriptedExchange deadlineExchange = new ScriptedExchange(Response(
+                    HttpStatusCode.OK,
+                    "{\"choices\":[{\"message\":{\"content\":\"too late\"}}]}"));
+                LlmClient.SendAsyncOverrideForTests = deadlineExchange.SendAsync;
+                LlmGenerationRequest deadlineRequest = MemoryGateRequest(
+                    context, "https://memory-deadline.invalid/v1");
+                deadlineRequest.timeoutSeconds = LlmTransportPolicy.MinimumTimeoutSeconds;
+                LlmStagedGenerationRequest deadlineStage;
+                AssertEqual("deadline memory request stages", LlmRequestStageOutcome.Staged,
+                    LlmClient.TryStage(deadlineRequest, out deadlineStage));
+                AssertTrue("deadline memory request activates", LlmClient.Activate(deadlineStage));
+                permitRequest = null;
+                deadline = DateTime.UtcNow.AddSeconds(2);
+                while (DateTime.UtcNow < deadline
+                    && !MemoryDispatchRuntimeBridge.TryDequeuePermit(out permitRequest))
+                    await Task.Delay(10);
+                AssertTrue("deadline request waits at permit gate", permitRequest != null);
+                await Task.Delay(TimeSpan.FromSeconds(
+                    LlmTransportPolicy.MinimumTimeoutSeconds + 0.2d));
+                MemoryInvocationCommitPermitV1 deadlinePermit = CopyPermit(
+                    permit, 3, 3, 44);
+                MemoryDispatchRuntimeBridge.ResolvePermit(permitRequest, deadlinePermit);
+                receiptRequest = null;
+                deadline = DateTime.UtcNow.AddSeconds(3);
+                while (DateTime.UtcNow < deadline
+                    && !MemoryDispatchRuntimeBridge.TryDequeueReceipt(out receiptRequest))
+                    await Task.Delay(10);
+                AssertTrue("deadline after permit decision still publishes terminal receipt",
+                    receiptRequest != null
+                    && receiptRequest.outcomeToken == MemoryDispatchTokens.Timeout);
+                AssertEqual("expired permit wait never crosses HTTP boundary", 0,
+                    deadlineExchange.Requests.Count);
+                MemoryDispatchRuntimeBridge.ResolveReceipt(receiptRequest, true);
+                completed = null;
+                while (DateTime.UtcNow < deadline
+                    && !LlmClient.TryDequeueCompleted(out completed))
+                    await Task.Delay(10);
+                AssertTrue("expired permit wait settles terminal page result",
+                    completed != null && !completed.success
+                    && completed.memoryDispatchTerminalFailure);
+                AssertEqual("deadline failure echoes timeout instead of relabeling it",
+                    MemoryDispatchTokens.Timeout,
+                    completed.memoryDispatchTerminalOutcomeToken);
+
+                MemoryInvocationCommitPermitV1 probePermit = CopyPermit(
+                    permit, 4, 4, 45);
+                MemoryRuntimeSendEnvelope firstEnvelope =
+                    MemoryDispatchRuntimeBridge.GetOrCreateSendEnvelope(probePermit);
+                MemoryRuntimeSendEnvelope duplicateEnvelope =
+                    MemoryDispatchRuntimeBridge.GetOrCreateSendEnvelope(probePermit);
+                AssertTrue("equal permits share one runtime CAS envelope",
+                    ReferenceEquals(firstEnvelope, duplicateEnvelope));
+                AssertTrue("shared envelope first physical claim succeeds",
+                    firstEnvelope.TryClaimPhysicalSend());
+                AssertFalse("shared envelope duplicate physical claim fails",
+                    duplicateEnvelope.TryClaimPhysicalSend());
+
+                // RejectSession is a durable runtime tombstone, not merely a one-time queue sweep.
+                // Work that reaches either enqueue after the sweep must be refused in place.
+                MemoryDispatchRuntimeBridge.RejectSession(probePermit.sessionId);
+                CancellationToken alreadyCancelled = new CancellationToken(true);
+                MemoryInvocationCommitPermitV1 latePermit =
+                    await MemoryDispatchRuntimeBridge.RequestPermitAsync(
+                        failedRequest,
+                        MemoryDispatchTokens.Initial,
+                        0,
+                        alreadyCancelled);
+                AssertTrue("rejected session refuses a late permit enqueue", latePermit == null);
+                AssertFalse("late rejected permit leaves no queued handoff",
+                    MemoryDispatchRuntimeBridge.TryDequeuePermit(out permitRequest));
+                AssertFalse("rejected session refuses a late receipt enqueue",
+                    await MemoryDispatchRuntimeBridge.PublishReceiptAsync(
+                        probePermit.sessionId,
+                        probePermit,
+                        MemoryDispatchTokens.ProviderError,
+                        false,
+                        alreadyCancelled));
+                AssertFalse("late rejected receipt leaves no queued handoff",
+                    MemoryDispatchRuntimeBridge.TryDequeueReceipt(out receiptRequest));
+                AssertTrue("rejected session cannot recreate a physical-send envelope",
+                    MemoryDispatchRuntimeBridge.GetOrCreateSendEnvelope(probePermit) == null);
             }
             finally
             {
                 LlmClient.SendAsyncOverrideForTests = null;
                 LlmClient.EndSession();
             }
+        }
+
+        private static LlmGenerationRequest MemoryGateRequest(
+            MemoryDispatchTransportContext context,
+            string endpointUrl)
+        {
+            return new LlmGenerationRequest
+            {
+                eventId = context.eventIdOrOpportunityKey,
+                povRole = context.povRoleToken,
+                systemPrompt = "Exact memory system fixture",
+                rawText = "Exact memory user fixture",
+                endpointUrl = endpointUrl,
+                modelName = "memory-gate-model",
+                apiMode = ApiCompatibilityMode.OpenAIChatCompletions,
+                authMode = ApiAuthMode.None,
+                timeoutSeconds = 10,
+                retryAttempts = 3,
+                maxTokens = 64,
+                temperature = 0.2f,
+                memoryDispatch = context
+            };
+        }
+
+        private static MemoryInvocationCommitPermitV1 CopyPermit(
+            MemoryInvocationCommitPermitV1 source,
+            int attemptOrdinal,
+            long invocationSequence,
+            long invocationTick)
+        {
+            MemoryInvocationCommitPermitV1 copy = new MemoryInvocationCommitPermitV1
+            {
+                logicalRequestId = source.logicalRequestId,
+                logicalRequestKey = source.logicalRequestKey,
+                requestPurposeToken = source.requestPurposeToken,
+                sessionId = source.sessionId,
+                eventIdOrOpportunityKey = source.eventIdOrOpportunityKey,
+                povRoleToken = source.povRoleToken,
+                ownerPawnId = source.ownerPawnId,
+                ownerEpochToken = source.ownerEpochToken,
+                evidenceEpochToken = source.evidenceEpochToken,
+                ownerCancellationGeneration = source.ownerCancellationGeneration,
+                globalCancellationGeneration = source.globalCancellationGeneration,
+                optionalRequestInvalidationGeneration =
+                    source.optionalRequestInvalidationGeneration,
+                attemptOrdinal = attemptOrdinal,
+                variantKey = source.variantKey,
+                receiptPlanFingerprint = source.receiptPlanFingerprint,
+                invocationSequence = invocationSequence,
+                invocationTick = invocationTick,
+                narrativeUseWinnerAttemptOrdinal = source.narrativeUseWinnerAttemptOrdinal
+            };
+            AssertTrue("copied fixture permit fingerprints",
+                MemoryIdentityCodec.TryCreateInvocationPermitFingerprint(
+                    copy.ToIdentity(), out copy.permitFingerprint));
+            return copy;
         }
 
         private static async Task TestGenerationPhysicalExchange()

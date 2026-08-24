@@ -400,7 +400,12 @@ namespace PawnDiary
             BootstrapOdysseyForLoadedSave();
             BootstrapAnomalyForLoadedSave();
             SettleLoadedMemoryDispatchRows();
-            ApplyAcceptedPromptRetention();
+            if (ApplyAcceptedPromptRetention())
+            {
+                // Load-time cap enforcement mutates persisted prompt state just like the settings
+                // path; publish the same cache/version invalidation even before the first game tick.
+                DiaryStateVersion.Bump();
+            }
             // Do NOT BeginSession here: the constructor already started this Game's session and
             // cancelled any requests left over from a previous Game. Loaded events have had their
             // "pending" status normalized back to "not generated" (DiaryGenerationStatus, via

@@ -94,36 +94,156 @@ namespace PawnDiary
         private void SettleLoadedMemoryDispatchRows()
         {
             memoryInvocationSequenceForSession = 0;
+            bool changed = false;
             IReadOnlyList<DiaryEvent> hotEvents = events?.AllEvents;
             for (int index = 0; hotEvents != null && index < hotEvents.Count; index++)
             {
                 DiaryEvent diaryEvent = hotEvents[index];
-                SettleLoadedMemoryDispatchRole(diaryEvent, DiaryEvent.InitiatorRole);
-                SettleLoadedMemoryDispatchRole(diaryEvent, DiaryEvent.RecipientRole);
-                SettleLoadedMemoryDispatchRole(diaryEvent, DiaryEvent.NeutralRole);
+                changed = SettleLoadedMemoryDispatchRole(
+                    diaryEvent, DiaryEvent.InitiatorRole) || changed;
+                changed = SettleLoadedMemoryDispatchRole(
+                    diaryEvent, DiaryEvent.RecipientRole) || changed;
+                changed = SettleLoadedMemoryDispatchRole(
+                    diaryEvent, DiaryEvent.NeutralRole) || changed;
             }
 
             // Optional coordinator work has no player page to restore. Deterministic fallback state
             // already exists, so every loaded row settles/drops and none enters the transport queue.
+            long terminalTick = Math.Max(1, Verse.Find.TickManager?.TicksGame ?? 0);
+            for (int index = 0; activeMemoryCoordinatorRequests != null
+                && index < activeMemoryCoordinatorRequests.Count; index++)
+            {
+                SavedActiveLogicalRequestV1 saved = activeMemoryCoordinatorRequests[index];
+                MemoryLoadSettlementPlan plan = MemoryDispatchPolicy.PlanLoadedRequestSettlement(
+                    MemoryDispatchSavedAdapter.ToSnapshot(saved));
+                if (plan.valid) ApplyLoadedMemorySettlementAccounting(saved, plan);
+                AppendTerminalMemoryAttemptAudits(
+                    saved,
+                    plan.valid
+                        ? plan.outcomeToken
+                        : MemoryDispatchTokens.Invalid,
+                    terminalTick);
+                changed = true;
+            }
             activeMemoryCoordinatorRequests?.Clear();
+            RebuildMemorySizeIndexes();
+            if (changed) DiaryStateVersion.Bump();
         }
 
-        private static void SettleLoadedMemoryDispatchRole(
+        private bool SettleLoadedMemoryDispatchRole(
             DiaryEvent diaryEvent,
             string povRole)
         {
             SavedActiveLogicalRequestV1 saved =
                 diaryEvent?.ActiveMemoryLogicalRequestForRole(povRole);
-            if (saved == null) return;
+            if (saved == null) return false;
             MemoryLoadSettlementPlan plan = MemoryDispatchPolicy.PlanLoadedRequestSettlement(
                 MemoryDispatchSavedAdapter.ToSnapshot(saved));
-            diaryEvent.SetActiveMemoryLogicalRequestForRole(povRole, null);
-            if (plan.valid && plan.hadCommittedInvocation)
+            bool mayHaveBeenInvoked = plan.valid
+                ? plan.hadCommittedInvocation
+                : MemoryDispatchSavedAdapter.LoadedRequestMayHaveBeenInvoked(saved);
+            if (plan.valid) ApplyLoadedMemorySettlementAccounting(saved, plan);
+            AppendTerminalMemoryAttemptAudits(
+                saved,
+                plan.valid
+                    ? plan.outcomeToken
+                    : MemoryDispatchTokens.Invalid,
+                Math.Max(1, Verse.Find.TickManager?.TicksGame ?? 0));
+            if (mayHaveBeenInvoked)
             {
-                diaryEvent.MarkFailed(
+                diaryEvent.MarkSkipped(
                     povRole,
                     "PawnDiary.Error.GenerationInterruptedAfterSend".Translate());
+                if (!diaryEvent.solo
+                    && DiaryEvent.RoleEquals(povRole, DiaryEvent.InitiatorRole)
+                    && diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole))
+                {
+                    diaryEvent.MarkSkipped(
+                        DiaryEvent.RecipientRole,
+                        "PawnDiary.Error.SkippedInitiatorFailed".Translate());
+                }
             }
+            diaryEvent.SetActiveMemoryLogicalRequestForRole(povRole, null);
+            return true;
+        }
+
+        /// <summary>
+        /// Applies only the accounting deltas explicitly planned from a valid loaded request. Rows
+        /// are never reactivated; the repaired exposure/winner state is committed before terminal
+        /// audit and removal so load cannot forget a prior provider boundary.
+        /// </summary>
+        private void ApplyLoadedMemorySettlementAccounting(
+            SavedActiveLogicalRequestV1 saved,
+            MemoryLoadSettlementPlan plan)
+        {
+            if (saved == null || plan == null || !plan.valid || !plan.hadCommittedInvocation)
+                return;
+            PawnKnowledgeState state = FindCurrentMemoryEnvelope(saved.ownerPawnId);
+            SavedActiveLogicalAttemptV1 winner = FindSavedAttempt(
+                saved, plan.repairedNarrativeUseWinnerAttemptOrdinal);
+            for (int index = 0; index < plan.potentialExposureAttemptOrdinals.Count; index++)
+            {
+                SavedActiveLogicalAttemptV1 attempt = FindSavedAttempt(
+                    saved, plan.potentialExposureAttemptOrdinals[index]);
+                if (attempt == null)
+                {
+                    RecordMemoryDiagnostic("other", "owner");
+                    continue;
+                }
+                SavedFrozenPromptVariantV1 variant = FindVariant(saved, attempt?.variantKey);
+                MemoryInvocationCommitPlan mutation = new MemoryInvocationCommitPlan
+                {
+                    applyPotentialExposure = true,
+                    applyNarrativeUse = ReferenceEquals(attempt, winner)
+                        && !attempt.narrativeUseApplied
+                };
+                if (!CanApplyInvocationAccounting(state, variant, mutation))
+                {
+                    RecordMemoryDiagnostic("other", "owner");
+                    continue;
+                }
+                ApplyInvocationAccounting(
+                    state, variant, mutation, saved, Math.Max(1, attempt.invocationTick));
+                attempt.potentialExposureApplied = true;
+                if (mutation.applyNarrativeUse) attempt.narrativeUseApplied = true;
+            }
+
+            if (winner != null && !winner.narrativeUseApplied)
+            {
+                SavedFrozenPromptVariantV1 variant = FindVariant(saved, winner.variantKey);
+                MemoryInvocationCommitPlan mutation = new MemoryInvocationCommitPlan
+                {
+                    applyNarrativeUse = true
+                };
+                if (CanApplyInvocationAccounting(state, variant, mutation))
+                {
+                    ApplyInvocationAccounting(
+                        state, variant, mutation, saved, Math.Max(1, winner.invocationTick));
+                    winner.narrativeUseApplied = true;
+                }
+                else
+                {
+                    RecordMemoryDiagnostic("other", "owner");
+                }
+            }
+            if (winner != null)
+            {
+                saved.narrativeUseWinnerAttemptOrdinal = winner.attemptOrdinal;
+                saved.narrativeUseWinnerVariantKey = winner.variantKey ?? string.Empty;
+            }
+        }
+
+        private static SavedActiveLogicalAttemptV1 FindSavedAttempt(
+            SavedActiveLogicalRequestV1 saved,
+            int attemptOrdinal)
+        {
+            for (int index = 0; saved?.activeAttempts != null
+                && index < saved.activeAttempts.Count; index++)
+            {
+                SavedActiveLogicalAttemptV1 attempt = saved.activeAttempts[index];
+                if (attempt != null && attempt.attemptOrdinal == attemptOrdinal) return attempt;
+            }
+            return null;
         }
 
         /// <summary>Drains permits before receipts; workers await each main-thread decision.</summary>
@@ -236,6 +356,7 @@ namespace PawnDiary
 
             ApplyInvocationAccounting(state, variant, committed, saved, invocationTick);
             memoryInvocationSequenceForSession = committed.nextInvocationSequence;
+            RebuildMemorySizeIndexes();
             return committed.permit;
         }
 
@@ -262,6 +383,7 @@ namespace PawnDiary
                     pending.providerReturnedUsableResult);
             if (!plan.accepted) return plan.duplicate;
 
+            bool accountingChanged = false;
             if (plan.applyConfirmedExposure)
             {
                 SavedFrozenPromptVariantV1 variant = FindVariant(saved, permit.variantKey);
@@ -269,8 +391,15 @@ namespace PawnDiary
                     FindCurrentMemoryEnvelope(saved.ownerPawnId),
                     variant,
                     permit.invocationTick);
+                accountingChanged = true;
             }
-            return MemoryDispatchSavedAdapter.MarkReceiptApplied(saved, permit.attemptOrdinal);
+            bool applied = MemoryDispatchSavedAdapter.MarkReceiptApplied(
+                saved,
+                permit.attemptOrdinal,
+                pending.outcomeToken,
+                Math.Max(1, Verse.Find.TickManager?.TicksGame ?? 0));
+            if (applied || accountingChanged) RebuildMemorySizeIndexes();
+            return applied;
         }
 
         /// <summary>
@@ -284,8 +413,35 @@ namespace PawnDiary
         {
             saved = null;
             MemoryInvocationCommitPermitV1 permit = result?.memoryInvocationPermit;
-            if (permit == null) return true;
             saved = diaryEvent?.ActiveMemoryLogicalRequestForRole(result.povRole);
+            bool hasMemoryIdentity = !string.IsNullOrWhiteSpace(
+                result?.memoryLogicalRequestId);
+            if (permit == null)
+            {
+                if (!hasMemoryIdentity) return true;
+                // A live pre-permit lane/queue failure may return without a physical-attempt row.
+                // It owns the exact active logical request and may settle/retry only when that saved
+                // row is valid and proves no invocation was committed.
+                return saved != null
+                    && string.Equals(
+                        saved.logicalRequestId,
+                        result.memoryLogicalRequestId,
+                        StringComparison.Ordinal)
+                    && MemoryDispatchPolicy.ValidateRequest(
+                        MemoryDispatchSavedAdapter.ToSnapshot(saved))
+                    && !MemoryDispatchSavedAdapter.LoadedRequestMayHaveBeenInvoked(saved);
+            }
+            if (!hasMemoryIdentity
+                || !string.Equals(
+                    saved?.logicalRequestId,
+                    result.memoryLogicalRequestId,
+                    StringComparison.Ordinal)) return false;
+            string terminalOutcome = result.memoryDispatchTerminalOutcomeToken;
+            if (!MemoryDispatchTokens.IsTerminalOutcome(terminalOutcome)
+                || result.success != string.Equals(
+                    terminalOutcome,
+                    MemoryDispatchTokens.Success,
+                    StringComparison.Ordinal)) return false;
             MemoryDispatchFenceSnapshot fence = CurrentFence(saved);
             MemoryTerminalCallbackPlan plan = fence == null
                 ? new MemoryTerminalCallbackPlan()
@@ -293,12 +449,37 @@ namespace PawnDiary
                     saved,
                     permit,
                     fence,
-                    result.success
-                        ? MemoryDispatchTokens.Success
-                        : MemoryDispatchTokens.ProviderError,
+                    terminalOutcome,
                     result.success);
-            return plan.accepted && MemoryDispatchSavedAdapter.MarkResultApplied(
+            bool applied = plan.accepted && MemoryDispatchSavedAdapter.MarkResultApplied(
                 saved, permit.attemptOrdinal);
+            if (applied) RebuildMemorySizeIndexes();
+            return applied;
+        }
+
+        /// <summary>
+        /// Settles one active M2 owner before player-authored or integration-authored prose replaces
+        /// its page. The replacement itself remains authoritative; late provider callbacks then find
+        /// neither saved ownership nor a live physical-send claim to restore.
+        /// </summary>
+        internal void SettleActiveMemoryRequestForPageReplacement(
+            DiaryEvent diaryEvent,
+            string povRole)
+        {
+            SavedActiveLogicalRequestV1 saved = diaryEvent?
+                .ActiveMemoryLogicalRequestForRole(povRole);
+            if (saved == null) return;
+
+            AppendTerminalMemoryAttemptAudits(
+                saved,
+                MemoryDispatchSavedAdapter.LoadedRequestMayHaveBeenInvoked(saved)
+                    ? MemoryDispatchTokens.CancelledPostInvocation
+                    : MemoryDispatchTokens.CancelledPreInvocation,
+                Math.Max(1, Verse.Find.TickManager?.TicksGame ?? 0));
+            diaryEvent.SetActiveMemoryLogicalRequestForRole(povRole, null);
+            MemoryDispatchRuntimeBridge.ReleaseLogicalRequestSendEnvelopes(
+                saved.logicalRequestId);
+            RebuildMemorySizeIndexes();
         }
 
         private static bool TransportIdentityMatches(

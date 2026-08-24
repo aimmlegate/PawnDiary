@@ -541,13 +541,16 @@ namespace PawnDiary
 
             try
             {
-                queue.Enqueue(staged.item);
+                // Publish the visible count before the queue node. A concurrent worker can otherwise
+                // dequeue between Enqueue and Increment and transiently drive Count negative.
                 Interlocked.Increment(ref visibleCount);
+                queue.Enqueue(staged.item);
                 return true;
             }
             catch
             {
                 Volatile.Write(ref staged.state, 2);
+                Interlocked.Decrement(ref visibleCount);
                 Interlocked.Decrement(ref reservedCount);
                 throw;
             }
