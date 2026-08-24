@@ -94,6 +94,18 @@ namespace PawnDiary
 
                 knowledgeSchemaVersion = 2;
             }
+
+            // M1 phase gate: report-only legacy migration planning. Publishes bounded diagnostics
+            // and never stamps an owner while MemorySystemActivationGate is LegacyShadow.
+            try
+            {
+                RunMemoryMigrationDryRunReport();
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[Pawn Diary] Memory migration dry-run report failed: " + e,
+                    "PawnDiary.MemoryMigration.DryRun".GetHashCode());
+            }
         }
 
         private void ResetKnowledgeForNewGame()

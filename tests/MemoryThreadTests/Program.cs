@@ -40,6 +40,8 @@ namespace MemoryThreadTests
                 TestIdentityCarrierRegistry();
                 TestLogicalPayloadSizer();
                 TestActivePayloadBudget();
+                TestLegacyMigrationDryRun();
+                TestImportedBudget();
 
                 Console.WriteLine("MemoryThreadTests passed " + assertions + " assertions.");
                 return 0;
@@ -2128,6 +2130,316 @@ namespace MemoryThreadTests
             MemoryBudgetDecision overflowDelta = ActiveMemoryPayloadBudget.TryAdmit(
                 limits, long.MaxValue - 5, 0, 100, 0, globals);
             AssertEqual("budget.overflow", "invalid", overflowDelta.OutcomeToken());
+        }
+
+        private static MemoryLegacyRuleMapEntry RuleMapEntry(string eventKind, string ruleId)
+        {
+            var entry = new MemoryLegacyRuleMapEntry
+            {
+                eventKind = eventKind,
+                captureRuleId = ruleId,
+                memoryKind = "event",
+                category = "relationships",
+                baseImportance = "medium"
+            };
+            var descriptor = new MemoryFactDescriptor
+            {
+                factKind = "relation",
+                contextKey = "other",
+                aggregationToken = "latest_state",
+                canonicalValueKind = "state"
+            };
+            descriptor.allowedStates.Add("spouse");
+            entry.factDescriptors.Add(descriptor);
+            return entry;
+        }
+
+        private static MemoryLegacyRecordSnapshot LegacyRecord(
+            string recordId,
+            string dedupKey,
+            string sourceEventId,
+            string eventKind)
+        {
+            return new MemoryLegacyRecordSnapshot
+            {
+                recordId = recordId,
+                dedupKey = dedupKey,
+                sourceEventId = sourceEventId,
+                eventKind = eventKind,
+                topicKey = "relationship",
+                tick = 5000,
+                participantIds = new List<string> { "Pawn_B" },
+                factKeys = new List<string> { "other" },
+                factValues = new List<string> { "spouse" }
+            };
+        }
+
+        private static void TestLegacyMigrationDryRun()
+        {
+            var input = new MemoryLegacyOwnerMigrationInput
+            {
+                ownerPawnId = "Pawn_A",
+                ownerEpochToken = Epoch(1),
+                ruleMap = new List<MemoryLegacyRuleMapEntry>
+                {
+                    RuleMapEntry("relation.spouse.gained", "MarriageRule")
+                }
+            };
+            // One authored row plus one byte-identical automatic duplicate of another occurrence.
+            var authored = LegacyRecord("rec-1", "dedup-1", "evt-9", "relation.spouse.gained");
+            authored.manualTextOverride = "Our wedding, in my words.";
+            input.records.Add(authored);
+            // An irreconcilable second AUTHORING of the SAME occurrence archives as an alternate.
+            var authoredAlternate =
+                LegacyRecord("rec-1b", "dedup-1b", "evt-9", "relation.spouse.gained");
+            authoredAlternate.manualTextOverride = "A different telling of our wedding.";
+            input.records.Add(authoredAlternate);
+            input.records.Add(LegacyRecord("rec-2", "dedup-2", "evt-8", "relation.spouse.gained"));
+            input.records.Add(LegacyRecord("rec-3", "dedup-3", "evt-8", "relation.spouse.gained"));
+            // A CONFLICTING unedited automatic alternate under the same occurrence drops.
+            var conflictingAuto =
+                LegacyRecord("rec-4", "dedup-4", "evt-8", "relation.spouse.gained");
+            conflictingAuto.factValues = new List<string> { "fiance" };
+            input.records.Add(conflictingAuto);
+
+            MemoryLegacyMigrationReport report =
+                MemoryThreadMigrationPolicy.PlanDryRun(input);
+            AssertTrue("migration.report.valid",
+                report != null && !report.ownerRemainsRaw);
+            // Two active winners (evt-8 + evt-9) plus one archived authored alternate row.
+            AssertEqual("migration.report.rows", 3, report.rows.Count);
+            int activeWinners = 0;
+            foreach (MemoryLegacyMappedRecord reportRow in report.rows)
+            {
+                if (reportRow.disposition == MemoryLegacyMappedRecord.DispositionActive)
+                {
+                    activeWinners++;
+                }
+            }
+            AssertEqual("migration.active-winners", 2, activeWinners);
+            // Byte-equal duplicates collapse silently; only a conflicting unedited
+            // alternate counts as a bounded drop (§T8.4 step 5).
+            AssertEqual("migration.automatic-duplicate-dropped", 1,
+                report.droppedAutomaticAlternateCount);
+
+            // Occurrence identity precedence: the valid sourceEventId IS the occurrence id.
+            MemoryLegacyMappedRecord first = report.rows[0];
+            AssertEqual("migration.occurrence-arm-source-event", "evt-8",
+                first.sourceOccurrenceId);
+            AssertEqual("migration.rule-id-from-map", "MarriageRule", first.captureRuleId);
+            AssertEqual("migration.kind-from-map", "event", first.kindToken);
+            AssertEqual("migration.importance-from-map", "medium", first.importanceToken);
+            AssertTrue("migration.tick-known", !first.ageUnknown);
+            AssertEqual("migration.original-tick-preserved", 5000L, first.originalEventTick);
+
+            // Canonical fact reconstruction through the rule descriptor.
+            AssertEqual("migration.fact-count", 1, first.facts.Count);
+            if (first.facts.Count == 1)
+            {
+                AssertEqual("migration.fact-value", "spouse", first.facts[0].canonicalValue);
+                AssertEqual("migration.fact-ordinal-zero-based", 0,
+                    first.facts[0].originFactOrdinal);
+                AssertTrue("migration.fact-id-framed",
+                    first.facts[0].factId.Contains(":MarriageRule"));
+                AssertTrue("migration.provenance-framed",
+                    first.provenanceRefId.StartsWith("24:memory-provenance-ref-v1",
+                        StringComparison.Ordinal));
+            }
+
+            // Authored alternate archives rather than becoming a second active identity.
+            bool hasArchiveRow = false;
+            foreach (MemoryLegacyMappedRecord row in report.rows)
+            {
+                if (row.disposition == MemoryLegacyMappedRecord.DispositionArchiveAuthored)
+                {
+                    hasArchiveRow = true;
+                }
+            }
+            AssertTrue("migration.authored-conflict-present", hasArchiveRow);
+
+            // Idempotence: an equal rerun is fingerprint-identical (§T13.5 fixtures).
+            MemoryLegacyMigrationReport repeat =
+                MemoryThreadMigrationPolicy.PlanDryRun(input);
+            AssertTrue("migration.idempotent-rerun", report.IsIdempotentWith(repeat));
+
+            // Unknown/removed-mod kind: conservative Landmark/Important with a generic rule id.
+            var unknownInput = new MemoryLegacyOwnerMigrationInput
+            {
+                ownerPawnId = "Pawn_A",
+                records = new List<MemoryLegacyRecordSnapshot>
+                {
+                    LegacyRecord("rec-x", "dedup-x", "", "removedmod.kind")
+                }
+            };
+            MemoryLegacyMigrationReport unknownReport =
+                MemoryThreadMigrationPolicy.PlanDryRun(unknownInput);
+            AssertEqual("migration.unknown-kind.count", 1, unknownReport.unmappedEventKindCount);
+            MemoryLegacyMappedRecord unknownRow = unknownReport.rows[0];
+            AssertEqual("migration.unknown-kind.landmark", "landmark", unknownRow.kindToken);
+            AssertEqual("migration.unknown-kind.important", "high", unknownRow.importanceToken);
+            AssertTrue("migration.unknown-kind.generic-rule-framed",
+                unknownRow.captureRuleId.Contains("memory-legacy-capture-rule-v1"));
+            AssertTrue("migration.discriminator-framed",
+                unknownRow.factDiscriminator.Contains("memory-legacy-fact-discriminator-v1"));
+
+            // Missing/zero tick becomes ageUnknown Important — never a guessed date (§T15.2).
+            var corruptTick = LegacyRecord("rec-t", "dedup-t", "evt-t", "relation.spouse.gained");
+            corruptTick.tick = 0;
+            var corruptInput = new MemoryLegacyOwnerMigrationInput
+            {
+                ownerPawnId = "Pawn_A",
+                ruleMap = new List<MemoryLegacyRuleMapEntry>
+                {
+                    RuleMapEntry("relation.spouse.gained", "MarriageRule")
+                },
+                records = new List<MemoryLegacyRecordSnapshot> { corruptTick }
+            };
+            MemoryLegacyMigrationReport corruptReport =
+                MemoryThreadMigrationPolicy.PlanDryRun(corruptInput);
+            AssertTrue("migration.corrupt-tick.age-unknown",
+                corruptReport.rows[0].ageUnknown);
+            AssertEqual("migration.corrupt-tick.upgraded-important", "high",
+                corruptReport.rows[0].importanceToken);
+
+            // Identity never depends on input position: an exact REVERSAL of the same row
+            // multiset produces the fingerprint-identical plan (§T13.5 permutation fixtures).
+            var permuted = new MemoryLegacyOwnerMigrationInput
+            {
+                ownerPawnId = "Pawn_A",
+                ownerEpochToken = Epoch(1),
+                ruleMap = input.ruleMap
+            };
+            for (int i = input.records.Count - 1; i >= 0; i--)
+            {
+                MemoryLegacyRecordSnapshot source = input.records[i];
+                var copy = new MemoryLegacyRecordSnapshot
+                {
+                    recordId = source.recordId,
+                    dedupKey = source.dedupKey,
+                    sourceEventId = source.sourceEventId,
+                    sourceKind = source.sourceKind,
+                    recallScope = source.recallScope,
+                    eventKind = source.eventKind,
+                    topicKey = source.topicKey,
+                    tick = source.tick,
+                    manualTextOverride = source.manualTextOverride
+                };
+                copy.participantIds.AddRange(source.participantIds);
+                copy.subjectKeys.AddRange(source.subjectKeys);
+                copy.factKeys.AddRange(source.factKeys);
+                copy.factValues.AddRange(source.factValues);
+                permuted.records.Add(copy);
+            }
+
+            MemoryLegacyMigrationReport permutedReport =
+                MemoryThreadMigrationPolicy.PlanDryRun(permuted);
+AssertEqual("migration.permutation.fingerprint",
+                report.reportFingerprint, permutedReport.reportFingerprint);
+        }
+
+        private static void TestImportedBudget()
+        {
+            var caps = new
+            {
+                maxOwnerRows = 10,
+                maxGlobalRows = 20,
+                ownerBytes = 1000L,
+                globalBytes = 2000L,
+                combinedCurrent = 0L,
+                combinedCap = 3000L
+            };
+
+            // Ordering: tick ascending, ageUnknown last, unresolved unit last of all.
+            var units = new List<MemoryImportedAdmissionUnit>
+            {
+                new MemoryImportedAdmissionUnit
+                {
+                    ownerPawnId = "Pawn_B", sourceIndex = 0,
+                    earliestAuthoredTick = 100, rowCount = 5, logicalBytes = 400
+                },
+                new MemoryImportedAdmissionUnit
+                {
+                    ownerPawnId = "Pawn_A", sourceIndex = 1,
+                    earliestAuthoredTick = 50, anyAgeUnknown = true, rowCount = 3,
+                    logicalBytes = 300
+                },
+                new MemoryImportedAdmissionUnit
+                {
+                    ownerPawnId = string.Empty, sourceIndex = 2,
+                    earliestAuthoredTick = 10, rowCount = 2, logicalBytes = 200
+                },
+                new MemoryImportedAdmissionUnit
+                {
+                    ownerPawnId = "Pawn_A", sourceIndex = 3,
+                    earliestAuthoredTick = 60, rowCount = 4, logicalBytes = 350
+                }
+            };
+
+            MemoryImportedAdmissionDecision decision = ImportedPayloadBudget.PlanAdmission(
+                units, caps.maxOwnerRows, caps.maxGlobalRows,
+                caps.ownerBytes, caps.globalBytes, caps.combinedCurrent, caps.combinedCap);
+            AssertEqual("import.admit.all.outcome",
+                nameof(MemoryImportedAdmissionOutcome.Admitted), decision.outcome.ToString());
+            AssertEqual("import.admit.all.rows", 14L, decision.totalRows);
+            AssertEqual("import.admit.all.bytes", 1250L, decision.totalBytes);
+            for (int i = 0; i < units.Count; i++)
+            {
+                AssertTrue("import.admitted." + i, decision.admitted[i]);
+            }
+
+            // Whole-unit rule: a unit over its OWNER cap stays pending while unrelated earlier
+            // units remain admitted; no prefix of one owner ever commits (§T13.5).
+            var oversizedOwnerUnit = new List<MemoryImportedAdmissionUnit>
+            {
+                new MemoryImportedAdmissionUnit
+                {
+                    ownerPawnId = "Pawn_B", sourceIndex = 0,
+                    earliestAuthoredTick = 10, rowCount = 4, logicalBytes = 100
+                },
+                new MemoryImportedAdmissionUnit
+                {
+                    ownerPawnId = "Pawn_C", sourceIndex = 1,
+                    earliestAuthoredTick = 20, rowCount = 99, logicalBytes = 100
+                },
+                new MemoryImportedAdmissionUnit
+                {
+                    ownerPawnId = "Pawn_A", sourceIndex = 2,
+                    earliestAuthoredTick = 30, rowCount = 2, logicalBytes = 50
+                }
+            };
+            MemoryImportedAdmissionDecision partial = ImportedPayloadBudget.PlanAdmission(
+                oversizedOwnerUnit, caps.maxOwnerRows, caps.maxGlobalRows,
+                caps.ownerBytes, caps.globalBytes, caps.combinedCurrent, caps.combinedCap);
+            AssertEqual("import.partial.outcome", "Pending", partial.outcome.ToString());
+            AssertTrue("import.partial.first-admitted", partial.admitted[0]);
+            AssertTrue("import.partial.oversized-pending", !partial.admitted[1]);
+            AssertTrue("import.partial.later-still-committed", partial.admitted[2]);
+
+            // Global byte cap exhaustion flips later units to pending without invalidating earlier.
+            var tightGlobal = new List<MemoryImportedAdmissionUnit>
+            {
+                new MemoryImportedAdmissionUnit
+                {
+                    ownerPawnId = "Pawn_A", sourceIndex = 0,
+                    earliestAuthoredTick = 10, rowCount = 1, logicalBytes = 900
+                },
+                new MemoryImportedAdmissionUnit
+                {
+                    ownerPawnId = "Pawn_B", sourceIndex = 1,
+                    earliestAuthoredTick = 20, rowCount = 1, logicalBytes = 500
+                }
+            };
+            MemoryImportedAdmissionDecision exhausted = ImportedPayloadBudget.PlanAdmission(
+                tightGlobal, caps.maxOwnerRows, caps.maxGlobalRows,
+                1000L, 1200L, caps.combinedCurrent, caps.combinedCap);
+            AssertTrue("import.exhaust.first-admitted", exhausted.admitted[0]);
+            AssertTrue("import.exhaust.second-pending", !exhausted.admitted[1]);
+
+            // Invalid configuration fails closed.
+            MemoryImportedAdmissionDecision invalid = ImportedPayloadBudget.PlanAdmission(
+                units, 0, caps.maxGlobalRows, caps.ownerBytes, caps.globalBytes,
+                caps.combinedCurrent, caps.combinedCap);
+            AssertEqual("import.invalid-caps", "Invalid", invalid.outcome.ToString());
         }
 
         private static MemoryRootIdentity Root(

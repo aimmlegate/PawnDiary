@@ -8,6 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-08-24
 
+- **Memory M1 persistence envelope.** Additive saved schema (epoch/threads/blocks/summaries/current-truth/archive/dispatch rows) with registry-validated logical sizing, component §T6.9 store seam, identity-carrier high-water repair, and report-only legacy migration planning — all behavior-inert behind LegacyShadow with loaded Scribe fixtures awaiting a user-run session.
 - **Memory M0 review hardening.** Faction/constant-stream identity is now exact, every declared benchmark subcase executes independently, and evidence binds the complete implementation/environment tuple from a fully clean checkout.
 
 ## 2026-08-23
