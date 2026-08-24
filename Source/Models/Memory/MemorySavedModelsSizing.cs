@@ -98,9 +98,12 @@ namespace PawnDiary
         {
             int count = MemorySavedSizingUtil.NonNullCount(refs);
             c.ListCount(name, count);
-            for (int i = 0; i < count; i++)
+            for (int i = 0; refs != null && i < refs.Count; i++)
             {
-                c.ValueListStringElement(refs[i]);
+                if (refs[i] != null)
+                {
+                    c.ValueListStringElement(refs[i]);
+                }
             }
         }
 
@@ -170,7 +173,7 @@ namespace PawnDiary
         {
             int count = MemorySavedSizingUtil.NonNullCount(rows);
             c.ListCount(fieldName, count);
-            for (int i = 0; rows != null && i < count; i++)
+            for (int i = 0; rows != null && i < rows.Count; i++)
             {
                 if (rows[i] != null)
                 {
@@ -268,7 +271,7 @@ namespace PawnDiary
         {
             int count = MemorySavedSizingUtil.NonNullCount(rows);
             c.ListCount("secondarySubjects", count);
-            for (int i = 0; rows != null && i < count; i++)
+            for (int i = 0; rows != null && i < rows.Count; i++)
             {
                 if (rows[i] != null)
                 {
@@ -283,7 +286,7 @@ namespace PawnDiary
         {
             int count = MemorySavedSizingUtil.NonNullCount(rows);
             c.ListCount(fieldName, count);
-            for (int i = 0; rows != null && i < count; i++)
+            for (int i = 0; rows != null && i < rows.Count; i++)
             {
                 if (rows[i] != null)
                 {
@@ -369,7 +372,7 @@ namespace PawnDiary
         {
             int count = MemorySavedSizingUtil.NonNullCount(rows);
             c.ListCount(fieldName, count);
-            for (int i = 0; rows != null && i < count; i++)
+            for (int i = 0; rows != null && i < rows.Count; i++)
             {
                 if (rows[i] != null)
                 {
@@ -409,7 +412,7 @@ namespace PawnDiary
         {
             int count = MemorySavedSizingUtil.NonNullCount(rows);
             c.ListCount(fieldName, count);
-            for (int i = 0; rows != null && i < count; i++)
+            for (int i = 0; rows != null && i < rows.Count; i++)
             {
                 if (rows[i] != null)
                 {
@@ -647,9 +650,12 @@ namespace PawnDiary
         {
             int count = MemorySavedSizingUtil.NonNullCount(values);
             c.ListCount(fieldName, count);
-            for (int i = 0; values != null && i < count; i++)
+            for (int i = 0; values != null && i < values.Count; i++)
             {
-                c.ValueListStringElement(values[i]);
+                if (values[i] != null)
+                {
+                    c.ValueListStringElement(values[i]);
+                }
             }
         }
     }
@@ -686,7 +692,7 @@ namespace PawnDiary
 
             int secondary = MemorySavedSizingUtil.NonNullCount(secondarySubjects);
             c.ListCount("secondarySubjects", secondary);
-            for (int i = 0; secondarySubjects != null && i < secondary; i++)
+            for (int i = 0; secondarySubjects != null && i < secondarySubjects.Count; i++)
             {
                 if (secondarySubjects[i] != null)
                 {
@@ -696,7 +702,7 @@ namespace PawnDiary
 
             int factCount = MemorySavedSizingUtil.NonNullCount(canonicalFacts);
             c.ListCount("canonicalFacts", factCount);
-            for (int i = 0; canonicalFacts != null && i < factCount; i++)
+            for (int i = 0; canonicalFacts != null && i < canonicalFacts.Count; i++)
             {
                 if (canonicalFacts[i] != null)
                 {
@@ -706,7 +712,7 @@ namespace PawnDiary
 
             int provCount = MemorySavedSizingUtil.NonNullCount(provenance);
             c.ListCount("provenance", provCount);
-            for (int i = 0; provenance != null && i < provCount; i++)
+            for (int i = 0; provenance != null && i < provenance.Count; i++)
             {
                 if (provenance[i] != null)
                 {
@@ -727,9 +733,12 @@ namespace PawnDiary
             c.Int64("overflowLogicalBytes", overflowLogicalBytes);
             int diagnosticCount = MemorySavedSizingUtil.NonNullCount(diagnosticTokens);
             c.ListCount("diagnosticTokens", diagnosticCount);
-            for (int i = 0; diagnosticTokens != null && i < diagnosticCount; i++)
+            for (int i = 0; diagnosticTokens != null && i < diagnosticTokens.Count; i++)
             {
-                c.ValueListStringElement(diagnosticTokens[i]);
+                if (diagnosticTokens[i] != null)
+                {
+                    c.ValueListStringElement(diagnosticTokens[i]);
+                }
             }
 
             c.String("migrationReasonToken", migrationReasonToken);
@@ -944,7 +953,7 @@ namespace PawnDiary
 
             int diagnostics = MemorySavedSizingUtil.NonNullCount(diagnosticProvenance);
             c.ListCount("diagnosticProvenance", diagnostics);
-            for (int i = 0; diagnosticProvenance != null && i < diagnostics; i++)
+            for (int i = 0; diagnosticProvenance != null && i < diagnosticProvenance.Count; i++)
             {
                 if (diagnosticProvenance[i] != null)
                 {
@@ -1029,7 +1038,9 @@ namespace PawnDiary
             int evidenceCount =
                 MemorySavedSizingUtil.NonNullCount(reservedEvidenceEntries);
             c.ListCount("reservedEvidenceEntries", evidenceCount);
-            for (int i = 0; reservedEvidenceEntries != null && i < evidenceCount; i++)
+            for (int i = 0;
+                reservedEvidenceEntries != null && i < reservedEvidenceEntries.Count;
+                i++)
             {
                 if (reservedEvidenceEntries[i] != null)
                 {
@@ -1039,7 +1050,7 @@ namespace PawnDiary
 
             int guardCount = MemorySavedSizingUtil.NonNullCount(reservedGuardEntries);
             c.ListCount("reservedGuardEntries", guardCount);
-            for (int i = 0; reservedGuardEntries != null && i < guardCount; i++)
+            for (int i = 0; reservedGuardEntries != null && i < reservedGuardEntries.Count; i++)
             {
                 if (reservedGuardEntries[i] != null)
                 {
@@ -1088,7 +1099,7 @@ namespace PawnDiary
         {
             int count = MemorySavedSizingUtil.NonNullCount(rows);
             c.ListCount(fieldName, count);
-            for (int i = 0; rows != null && i < count; i++)
+            for (int i = 0; rows != null && i < rows.Count; i++)
             {
                 if (rows[i] != null)
                 {
@@ -1102,7 +1113,7 @@ namespace PawnDiary
         {
             int count = MemorySavedSizingUtil.NonNullCount(rows);
             c.ListCount("threadRoots", count);
-            for (int i = 0; rows != null && i < count; i++)
+            for (int i = 0; rows != null && i < rows.Count; i++)
             {
                 if (rows[i] != null)
                 {
@@ -1116,7 +1127,7 @@ namespace PawnDiary
         {
             int count = MemorySavedSizingUtil.NonNullCount(rows);
             c.ListCount("ownerAwarenessSnapshots", count);
-            for (int i = 0; rows != null && i < count; i++)
+            for (int i = 0; rows != null && i < rows.Count; i++)
             {
                 if (rows[i] != null)
                 {
@@ -1130,7 +1141,7 @@ namespace PawnDiary
         {
             int count = MemorySavedSizingUtil.NonNullCount(rows);
             c.ListCount("openCaptureEpisodes", count);
-            for (int i = 0; rows != null && i < count; i++)
+            for (int i = 0; rows != null && i < rows.Count; i++)
             {
                 if (rows[i] != null)
                 {
@@ -1144,7 +1155,7 @@ namespace PawnDiary
         {
             int count = MemorySavedSizingUtil.NonNullCount(rows);
             c.ListCount("repetitionGuardRows", count);
-            for (int i = 0; rows != null && i < count; i++)
+            for (int i = 0; rows != null && i < rows.Count; i++)
             {
                 if (rows[i] != null)
                 {
@@ -1158,7 +1169,7 @@ namespace PawnDiary
         {
             int count = MemorySavedSizingUtil.NonNullCount(rows);
             c.ListCount("importedArchiveRows", count);
-            for (int i = 0; rows != null && i < count; i++)
+            for (int i = 0; rows != null && i < rows.Count; i++)
             {
                 if (rows[i] != null)
                 {

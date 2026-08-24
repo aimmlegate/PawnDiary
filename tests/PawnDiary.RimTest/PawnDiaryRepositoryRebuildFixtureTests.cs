@@ -475,9 +475,9 @@ namespace PawnDiary.RimTests
                 Require(loaded.HasDedupKey(first.dedupKey),
                     "The dedup index view must see the loaded record.");
 
-                // Hand-edited save repair on a LEGACY envelope (§T13.1 stage 1): null lists and
-                // missing tokens heal, but nothing is deduplicated or dropped — the detached
-                // migration planner must see the complete raw evidence before it resolves anything.
+                // Hand-edited save repair on a LEGACY envelope (§T13.1/T6.8): null list references
+                // heal, but semantic strings/tokens and cardinality stay raw. The detached migration
+                // planner must see that evidence before any defaulting or alignment occurs.
                 loaded.records.Add(NewKnowledgeRecord("rec-1", "relation.spouse.gained", 200));
                 loaded.records.Add(new ImportantMemoryRecord
                 {
@@ -501,11 +501,10 @@ namespace PawnDiary.RimTests
                 ImportantMemoryRecord repaired = loaded.records[3];
                 Require(repaired.participantIds != null && repaired.factKeys != null,
                     "Normalize must heal null record lists.");
-                Require(repaired.manualTextOverride == string.Empty,
-                    "Normalize must heal a null memory-text override to an empty string.");
-                Require(repaired.sourceKind == KnowledgeTokens.SourceKindCaptured
-                        && repaired.recallScope == KnowledgeTokens.RecallScopeContextual,
-                    "Unknown/missing additive tokens must repair to captured/contextual.");
+                Require(repaired.manualTextOverride == null,
+                    "Legacy shape repair must not normalize raw authored text before planning.");
+                Require(repaired.sourceKind == "future-source" && repaired.recallScope == null,
+                    "Unknown/missing legacy tokens must remain raw for detached migration planning.");
 
                 // The same hand-edited rows on a CURRENT (v3) envelope: strict normalization owns
                 // dedup/drop, so the duplicate dedup key, the id-less row, and the null hole all

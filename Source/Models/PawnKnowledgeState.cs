@@ -69,9 +69,14 @@ namespace PawnDiary
             Scribe_Values.Look(ref manualTextOverride, "manualTextOverride");
         }
 
-        /// <summary>Repairs nulls and keeps the parallel lists aligned after a hand-edited save.</summary>
+        /// <summary>
+        /// Repairs the complete current-schema row. Legacy migration must call
+        /// <see cref="NormalizeLoadedShape"/> instead so unknown tokens and malformed parallel-list
+        /// cardinality remain available to the detached migration planner (§T6.8/§T13.1).
+        /// </summary>
         public void Normalize()
         {
+            NormalizeLoadedShape();
             recordId = recordId ?? string.Empty;
             dedupKey = dedupKey ?? string.Empty;
             sourceEventId = sourceEventId ?? string.Empty;
@@ -82,13 +87,22 @@ namespace PawnDiary
             dateLabel = dateLabel ?? string.Empty;
             fallbackSummary = fallbackSummary ?? string.Empty;
             manualTextOverride = manualTextOverride ?? string.Empty;
+            AlignParallel(participantIds, participantNames);
+            AlignParallel(factKeys, factValues);
+        }
+
+        /// <summary>
+        /// Null-safe shape repair for a raw legacy row. It deliberately does not normalize strings,
+        /// choose semantic token defaults, or align/truncate parallel lists: the migration planner
+        /// must see the exact loaded evidence and may keep the whole owner raw and retryable.
+        /// </summary>
+        internal void NormalizeLoadedShape()
+        {
             participantIds = participantIds ?? new List<string>();
             participantNames = participantNames ?? new List<string>();
             subjectKeys = subjectKeys ?? new List<string>();
             factKeys = factKeys ?? new List<string>();
             factValues = factValues ?? new List<string>();
-            AlignParallel(participantIds, participantNames);
-            AlignParallel(factKeys, factValues);
         }
 
         private static void AlignParallel(List<string> keys, List<string> values)
@@ -367,11 +381,19 @@ namespace PawnDiary
                     continue;
                 }
 
-                record.Normalize();
-                if (current
-                    && (string.IsNullOrWhiteSpace(record.recordId) || !seen.Add(record.dedupKey)))
+                if (current)
                 {
-                    records.RemoveAt(i);
+                    record.Normalize();
+                    if (string.IsNullOrWhiteSpace(record.recordId) || !seen.Add(record.dedupKey))
+                    {
+                        records.RemoveAt(i);
+                    }
+                }
+                else
+                {
+                    // §T6.8 is stricter than ordinary shape repair: keep unknown source/scope
+                    // tokens and unequal participant/fact lists intact until detached planning.
+                    record.NormalizeLoadedShape();
                 }
             }
 

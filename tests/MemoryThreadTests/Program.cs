@@ -1732,6 +1732,8 @@ namespace MemoryThreadTests
                 reservationPlan.normalizedReservations[1].reservedEpochSequence);
             AssertEqual("carrier.reservation.raise-high-water", 20L,
                 reservationPlan.repairedAutobiographicalHighWater);
+            AssertEqual("carrier.reservation.valid-collisions-counted", 2,
+                reservationPlan.droppedReservationCount);
 
             // Invalid reservations drop syntactically and never lower the high-water.
             MemorySavedCarrierScanInput invalidReservation = new MemorySavedCarrierScanInput
@@ -2206,6 +2208,315 @@ namespace MemoryThreadTests
             };
         }
 
+        private static MemoryLegacyRecordSnapshot CloneLegacyRecord(
+            MemoryLegacyRecordSnapshot source)
+        {
+            var copy = new MemoryLegacyRecordSnapshot
+            {
+                recordId = source.recordId,
+                dedupKey = source.dedupKey,
+                sourceEventId = source.sourceEventId,
+                sourceKind = source.sourceKind,
+                recallScope = source.recallScope,
+                eventKind = source.eventKind,
+                topicKey = source.topicKey,
+                tick = source.tick,
+                dateLabel = source.dateLabel,
+                fallbackSummary = source.fallbackSummary,
+                manualTextOverride = source.manualTextOverride
+            };
+            copy.participantIds.AddRange(source.participantIds ?? new List<string>());
+            copy.participantNames.AddRange(source.participantNames ?? new List<string>());
+            copy.subjectKeys.AddRange(source.subjectKeys ?? new List<string>());
+            copy.factKeys.AddRange(source.factKeys ?? new List<string>());
+            copy.factValues.AddRange(source.factValues ?? new List<string>());
+            return copy;
+        }
+
+        private static MemoryLegacyMappedRecord CloneMappedRecord(
+            MemoryLegacyMappedRecord source)
+        {
+            var copy = new MemoryLegacyMappedRecord
+            {
+                disposition = source.disposition,
+                sourceOccurrenceId = source.sourceOccurrenceId,
+                captureRuleId = source.captureRuleId,
+                factDiscriminator = source.factDiscriminator,
+                kindToken = source.kindToken,
+                categoryToken = source.categoryToken,
+                importanceToken = source.importanceToken,
+                originalEventTick = source.originalEventTick,
+                ageUnknown = source.ageUnknown,
+                playerEdited = source.playerEdited,
+                suppressed = source.suppressed,
+                provenanceRefId = source.provenanceRefId,
+                importedWording = source.importedWording,
+                originRecordId = source.originRecordId,
+                dedupKey = source.dedupKey,
+                originSourceEventId = source.originSourceEventId,
+                sourceKind = source.sourceKind,
+                recallScope = source.recallScope,
+                eventKind = source.eventKind,
+                topicKey = source.topicKey,
+                dateLabel = source.dateLabel,
+                fallbackSummary = source.fallbackSummary,
+                backgroundText = source.backgroundText
+            };
+            copy.participantIds.AddRange(source.participantIds ?? new List<string>());
+            copy.participantNames.AddRange(source.participantNames ?? new List<string>());
+            copy.subjectKeys.AddRange(source.subjectKeys ?? new List<string>());
+            copy.factKeys.AddRange(source.factKeys ?? new List<string>());
+            copy.factValues.AddRange(source.factValues ?? new List<string>());
+            foreach (MemoryLegacyMappedFact fact
+                in source.facts ?? new List<MemoryLegacyMappedFact>())
+            {
+                copy.facts.Add(new MemoryLegacyMappedFact
+                {
+                    originFactOrdinal = fact.originFactOrdinal,
+                    factId = fact.factId,
+                    factKind = fact.factKind,
+                    canonicalSubjectKind = fact.canonicalSubjectKind,
+                    canonicalSubjectId = fact.canonicalSubjectId,
+                    aggregationToken = fact.aggregationToken,
+                    canonicalValueKind = fact.canonicalValueKind,
+                    canonicalValue = fact.canonicalValue
+                });
+            }
+
+            return copy;
+        }
+
+        private static void AssertMigrationReportsEqual(
+            string label,
+            MemoryLegacyMigrationReport expected,
+            MemoryLegacyMigrationReport actual)
+        {
+            AssertEqual(label + ".owner", expected.ownerPawnId, actual.ownerPawnId);
+            AssertEqual(label + ".epoch", expected.ownerEpochToken, actual.ownerEpochToken);
+            AssertEqual(label + ".max-tick", expected.maxKnownTick, actual.maxKnownTick);
+            AssertEqual(label + ".raw", expected.ownerRemainsRaw, actual.ownerRemainsRaw);
+            AssertEqual(label + ".drops", expected.droppedAutomaticAlternateCount,
+                actual.droppedAutomaticAlternateCount);
+            AssertEqual(label + ".archives", expected.archivedAuthoredConflictCount,
+                actual.archivedAuthoredConflictCount);
+            AssertEqual(label + ".unmapped", expected.unmappedEventKindCount,
+                actual.unmappedEventKindCount);
+            AssertEqual(label + ".invalid-facts", expected.invalidFactValueCount,
+                actual.invalidFactValueCount);
+            AssertEqual(label + ".row-count", expected.rows.Count, actual.rows.Count);
+            for (int i = 0; i < expected.rows.Count; i++)
+            {
+                AssertMappedRowsEqual(label + ".row-" + i, expected.rows[i], actual.rows[i]);
+            }
+        }
+
+        private static void AssertMappedRowsEqual(
+            string label,
+            MemoryLegacyMappedRecord expected,
+            MemoryLegacyMappedRecord actual)
+        {
+            AssertEqual(label + ".disposition", expected.disposition, actual.disposition);
+            AssertEqual(label + ".occurrence", expected.sourceOccurrenceId, actual.sourceOccurrenceId);
+            AssertEqual(label + ".rule", expected.captureRuleId, actual.captureRuleId);
+            AssertEqual(label + ".discriminator", expected.factDiscriminator, actual.factDiscriminator);
+            AssertEqual(label + ".kind", expected.kindToken, actual.kindToken);
+            AssertEqual(label + ".category", expected.categoryToken, actual.categoryToken);
+            AssertEqual(label + ".importance", expected.importanceToken, actual.importanceToken);
+            AssertEqual(label + ".tick", expected.originalEventTick, actual.originalEventTick);
+            AssertEqual(label + ".age", expected.ageUnknown, actual.ageUnknown);
+            AssertEqual(label + ".edited", expected.playerEdited, actual.playerEdited);
+            AssertEqual(label + ".suppressed", expected.suppressed, actual.suppressed);
+            AssertEqual(label + ".provenance", expected.provenanceRefId, actual.provenanceRefId);
+            AssertEqual(label + ".wording", expected.importedWording, actual.importedWording);
+            AssertEqual(label + ".origin-record", expected.originRecordId, actual.originRecordId);
+            AssertEqual(label + ".dedup", expected.dedupKey, actual.dedupKey);
+            AssertEqual(label + ".source-event", expected.originSourceEventId,
+                actual.originSourceEventId);
+            AssertEqual(label + ".source-kind", expected.sourceKind, actual.sourceKind);
+            AssertEqual(label + ".recall-scope", expected.recallScope, actual.recallScope);
+            AssertEqual(label + ".event-kind", expected.eventKind, actual.eventKind);
+            AssertEqual(label + ".topic", expected.topicKey, actual.topicKey);
+            AssertEqual(label + ".date", expected.dateLabel, actual.dateLabel);
+            AssertEqual(label + ".fallback", expected.fallbackSummary, actual.fallbackSummary);
+            AssertStringListsEqual(label + ".participant-ids", expected.participantIds,
+                actual.participantIds);
+            AssertStringListsEqual(label + ".participant-names", expected.participantNames,
+                actual.participantNames);
+            AssertStringListsEqual(label + ".subjects", expected.subjectKeys, actual.subjectKeys);
+            AssertStringListsEqual(label + ".fact-keys", expected.factKeys, actual.factKeys);
+            AssertStringListsEqual(label + ".fact-values", expected.factValues, actual.factValues);
+            AssertEqual(label + ".background", expected.backgroundText, actual.backgroundText);
+            AssertEqual(label + ".fact-count", expected.facts.Count, actual.facts.Count);
+            for (int i = 0; i < expected.facts.Count; i++)
+            {
+                MemoryLegacyMappedFact left = expected.facts[i];
+                MemoryLegacyMappedFact right = actual.facts[i];
+                AssertEqual(label + ".fact-ordinal-" + i,
+                    left.originFactOrdinal, right.originFactOrdinal);
+                AssertEqual(label + ".fact-id-" + i, left.factId, right.factId);
+                AssertEqual(label + ".fact-kind-" + i, left.factKind, right.factKind);
+                AssertEqual(label + ".fact-subject-kind-" + i,
+                    left.canonicalSubjectKind, right.canonicalSubjectKind);
+                AssertEqual(label + ".fact-subject-id-" + i,
+                    left.canonicalSubjectId, right.canonicalSubjectId);
+                AssertEqual(label + ".fact-aggregation-" + i,
+                    left.aggregationToken, right.aggregationToken);
+                AssertEqual(label + ".fact-value-kind-" + i,
+                    left.canonicalValueKind, right.canonicalValueKind);
+                AssertEqual(label + ".fact-value-" + i,
+                    left.canonicalValue, right.canonicalValue);
+            }
+        }
+
+        private static void AssertStringListsEqual(
+            string label, List<string> expected, List<string> actual)
+        {
+            int expectedCount = expected?.Count ?? 0;
+            int actualCount = actual?.Count ?? 0;
+            AssertEqual(label + ".count", expectedCount, actualCount);
+            for (int i = 0; i < expectedCount; i++)
+            {
+                AssertEqual(label + ".item-" + i, expected[i], actual[i]);
+            }
+        }
+
+        private static void AssertAuthoredLegacyFieldDifference(
+            string label,
+            Action<MemoryLegacyRecordSnapshot> mutate,
+            Func<MemoryLegacyMappedRecord, string> reportValue)
+        {
+            MemoryLegacyRecordSnapshot baseline =
+                LegacyRecord("rec-field", "dedup-field", "evt-field", "relation.spouse.gained");
+            baseline.manualTextOverride = "authored wording";
+            baseline.dateLabel = "date-a";
+            baseline.fallbackSummary = "fallback-a";
+            baseline.participantNames.Add("B");
+            MemoryLegacyRecordSnapshot changed = CloneLegacyRecord(baseline);
+            mutate(changed);
+
+            MemoryLegacyRuleMapEntry fieldRule =
+                RuleMapEntry("relation.spouse.gained", "MarriageRule");
+            fieldRule.factDescriptors[0].allowedStates.Add("friend");
+            var alternateKeyDescriptor = new MemoryFactDescriptor
+            {
+                factKind = "relation",
+                contextKey = "other-two",
+                aggregationToken = "latest_state",
+                canonicalValueKind = "state"
+            };
+            alternateKeyDescriptor.allowedStates.Add("spouse");
+            alternateKeyDescriptor.allowedStates.Add("friend");
+            fieldRule.factDescriptors.Add(alternateKeyDescriptor);
+
+            var pair = new MemoryLegacyOwnerMigrationInput
+            {
+                ownerPawnId = "Pawn_Field",
+                ruleMap = new List<MemoryLegacyRuleMapEntry>
+                {
+                    fieldRule
+                },
+                records = new List<MemoryLegacyRecordSnapshot> { baseline, changed }
+            };
+            MemoryLegacyMigrationReport pairReport =
+                MemoryThreadMigrationPolicy.PlanDryRun(pair);
+            AssertTrue(label + ".owner-current", !pairReport.ownerRemainsRaw);
+            AssertEqual(label + ".rows", 2, pairReport.rows.Count);
+            AssertEqual(label + ".archive", 1, pairReport.archivedAuthoredConflictCount);
+            AssertTrue(label + ".both-values",
+                !string.Equals(
+                    reportValue(pairReport.rows[0]),
+                    reportValue(pairReport.rows[1]),
+                    StringComparison.Ordinal));
+
+            var baselineOnly = new MemoryLegacyOwnerMigrationInput
+            {
+                ownerPawnId = "Pawn_Field",
+                ruleMap = pair.ruleMap,
+                records = new List<MemoryLegacyRecordSnapshot> { CloneLegacyRecord(baseline) }
+            };
+            var changedOnly = new MemoryLegacyOwnerMigrationInput
+            {
+                ownerPawnId = "Pawn_Field",
+                ruleMap = pair.ruleMap,
+                records = new List<MemoryLegacyRecordSnapshot> { CloneLegacyRecord(changed) }
+            };
+            AssertTrue(label + ".fingerprint-distinct",
+                !string.Equals(
+                    MemoryThreadMigrationPolicy.PlanDryRun(baselineOnly).reportFingerprint,
+                    MemoryThreadMigrationPolicy.PlanDryRun(changedOnly).reportFingerprint,
+                    StringComparison.Ordinal));
+        }
+
+        private static void AssertMappedReportFieldChangesIdentity(
+            string label, Action<MemoryLegacyMappedRecord> mutate)
+        {
+            var baseline = new MemoryLegacyMappedRecord
+            {
+                disposition = MemoryLegacyMappedRecord.DispositionArchiveAuthored,
+                sourceOccurrenceId = "occurrence",
+                captureRuleId = "rule",
+                factDiscriminator = "discriminator",
+                kindToken = "event",
+                categoryToken = "personal",
+                importanceToken = "medium",
+                originalEventTick = 12,
+                playerEdited = true,
+                provenanceRefId = "provenance",
+                importedWording = "wording",
+                originRecordId = "record",
+                dedupKey = "dedup",
+                originSourceEventId = "source-event",
+                sourceKind = "captured",
+                recallScope = "contextual",
+                eventKind = "event-kind",
+                topicKey = "topic",
+                dateLabel = "date",
+                fallbackSummary = "fallback",
+                backgroundText = "background"
+            };
+            baseline.participantIds.Add("Pawn_A");
+            baseline.participantNames.Add("A");
+            baseline.subjectKeys.Add("subject");
+            baseline.factKeys.Add("fact-key");
+            baseline.factValues.Add("fact-value");
+            baseline.facts.Add(new MemoryLegacyMappedFact
+            {
+                originFactOrdinal = 0,
+                factId = "fact-id",
+                factKind = "fact-kind",
+                canonicalSubjectKind = "stream",
+                canonicalSubjectId = "subject-id",
+                aggregationToken = "latest-state",
+                canonicalValueKind = "state",
+                canonicalValue = "value"
+            });
+            MemoryLegacyMappedRecord changed = CloneMappedRecord(baseline);
+            mutate(changed);
+
+            AssertTrue(label + ".canonical-encoding",
+                !string.Equals(
+                    MemoryThreadMigrationPolicy.CanonicalMappedRecordEncoding(baseline),
+                    MemoryThreadMigrationPolicy.CanonicalMappedRecordEncoding(changed),
+                    StringComparison.Ordinal));
+            AssertTrue(label + ".compare", MemoryThreadMigrationPolicy.CompareRows(
+                baseline, changed) != 0);
+            var baselineReport = new MemoryLegacyMigrationReport
+            {
+                ownerPawnId = "Pawn_Report",
+                rows = new List<MemoryLegacyMappedRecord> { baseline }
+            };
+            var changedReport = new MemoryLegacyMigrationReport
+            {
+                ownerPawnId = "Pawn_Report",
+                rows = new List<MemoryLegacyMappedRecord> { changed }
+            };
+            AssertTrue(label + ".fingerprint",
+                !string.Equals(
+                    MemoryThreadMigrationPolicy.Fingerprint(baselineReport),
+                    MemoryThreadMigrationPolicy.Fingerprint(changedReport),
+                    StringComparison.Ordinal));
+        }
+
         private static void TestLegacyMigrationDryRun()
         {
             var input = new MemoryLegacyOwnerMigrationInput
@@ -2226,8 +2537,10 @@ namespace MemoryThreadTests
                 LegacyRecord("rec-1b", "dedup-1b", "evt-9", "relation.spouse.gained");
             authoredAlternate.manualTextOverride = "A different telling of our wedding.";
             input.records.Add(authoredAlternate);
-            input.records.Add(LegacyRecord("rec-2", "dedup-2", "evt-8", "relation.spouse.gained"));
-            input.records.Add(LegacyRecord("rec-3", "dedup-3", "evt-8", "relation.spouse.gained"));
+            MemoryLegacyRecordSnapshot automatic =
+                LegacyRecord("rec-2", "dedup-2", "evt-8", "relation.spouse.gained");
+            input.records.Add(automatic);
+            input.records.Add(CloneLegacyRecord(automatic));
             // A CONFLICTING unedited automatic alternate under the same occurrence drops.
             var conflictingAuto =
                 LegacyRecord("rec-4", "dedup-4", "evt-8", "relation.spouse.gained");
@@ -2255,7 +2568,9 @@ namespace MemoryThreadTests
                 report.droppedAutomaticAlternateCount);
 
             // Occurrence identity precedence: the valid sourceEventId IS the occurrence id.
-            MemoryLegacyMappedRecord first = report.rows[0];
+            MemoryLegacyMappedRecord first = report.rows.First(row =>
+                row.disposition == MemoryLegacyMappedRecord.DispositionActive
+                && row.sourceOccurrenceId == "evt-8");
             AssertEqual("migration.occurrence-arm-source-event", "evt-8",
                 first.sourceOccurrenceId);
             AssertEqual("migration.rule-id-from-map", "MarriageRule", first.captureRuleId);
@@ -2343,30 +2658,167 @@ namespace MemoryThreadTests
             };
             for (int i = input.records.Count - 1; i >= 0; i--)
             {
-                MemoryLegacyRecordSnapshot source = input.records[i];
-                var copy = new MemoryLegacyRecordSnapshot
-                {
-                    recordId = source.recordId,
-                    dedupKey = source.dedupKey,
-                    sourceEventId = source.sourceEventId,
-                    sourceKind = source.sourceKind,
-                    recallScope = source.recallScope,
-                    eventKind = source.eventKind,
-                    topicKey = source.topicKey,
-                    tick = source.tick,
-                    manualTextOverride = source.manualTextOverride
-                };
-                copy.participantIds.AddRange(source.participantIds);
-                copy.subjectKeys.AddRange(source.subjectKeys);
-                copy.factKeys.AddRange(source.factKeys);
-                copy.factValues.AddRange(source.factValues);
-                permuted.records.Add(copy);
+                permuted.records.Add(CloneLegacyRecord(input.records[i]));
             }
 
             MemoryLegacyMigrationReport permutedReport =
                 MemoryThreadMigrationPolicy.PlanDryRun(permuted);
-AssertEqual("migration.permutation.fingerprint",
+            AssertMigrationReportsEqual("migration.permutation.full", report, permutedReport);
+            AssertEqual("migration.permutation.fingerprint",
                 report.reportFingerprint, permutedReport.reportFingerprint);
+
+            // Every formerly omitted preserved field must prevent authored collapse and must alter
+            // the complete report fingerprint when it is the only input difference.
+            AssertAuthoredLegacyFieldDifference(
+                "migration.authored.source-kind",
+                row => row.sourceKind = "future-source",
+                row => row.sourceKind);
+            AssertAuthoredLegacyFieldDifference(
+                "migration.authored.recall-scope",
+                row => row.recallScope = "future-scope",
+                row => row.recallScope);
+            AssertAuthoredLegacyFieldDifference(
+                "migration.authored.participant-id",
+                row => row.participantIds[0] = "Pawn_C",
+                row => string.Join("\u001f", row.participantIds));
+            AssertAuthoredLegacyFieldDifference(
+                "migration.authored.participant-name",
+                row => row.participantNames[0] = "C",
+                row => string.Join("\u001f", row.participantNames));
+            AssertAuthoredLegacyFieldDifference(
+                "migration.authored.date-label",
+                row => row.dateLabel = "date-b",
+                row => row.dateLabel);
+            AssertAuthoredLegacyFieldDifference(
+                "migration.authored.fallback",
+                row => row.fallbackSummary = "fallback-b",
+                row => row.fallbackSummary);
+            AssertAuthoredLegacyFieldDifference(
+                "migration.authored.origin-record",
+                row => row.recordId = "rec-field-2",
+                row => row.originRecordId);
+            AssertAuthoredLegacyFieldDifference(
+                "migration.authored.dedup",
+                row => row.dedupKey = "dedup-field-2",
+                row => row.dedupKey);
+            AssertAuthoredLegacyFieldDifference(
+                "migration.authored.event-kind",
+                row => row.eventKind = "removed-mod-event-kind",
+                row => row.eventKind);
+            AssertAuthoredLegacyFieldDifference(
+                "migration.authored.topic",
+                row => row.topicKey = "topic-b",
+                row => row.topicKey);
+            AssertAuthoredLegacyFieldDifference(
+                "migration.authored.tick",
+                row => row.tick = 5001,
+                row => row.originalEventTick.ToString(
+                    System.Globalization.CultureInfo.InvariantCulture));
+            AssertAuthoredLegacyFieldDifference(
+                "migration.authored.subject-list",
+                row => row.subjectKeys.Add("part:Heart"),
+                row => string.Join("\u001f", row.subjectKeys));
+            AssertAuthoredLegacyFieldDifference(
+                "migration.authored.fact-key-list",
+                row => row.factKeys[0] = "other-two",
+                row => string.Join("\u001f", row.factKeys));
+            AssertAuthoredLegacyFieldDifference(
+                "migration.authored.fact-value-list",
+                row => row.factValues[0] = "friend",
+                row => string.Join("\u001f", row.factValues));
+            AssertAuthoredLegacyFieldDifference(
+                "migration.authored.manual-wording",
+                row => row.manualTextOverride = "second authored wording",
+                row => row.importedWording);
+
+            // CompareRows and Fingerprint previously used different incomplete field subsets.
+            // Exercise every field that either old path omitted, with no second row difference.
+            AssertMappedReportFieldChangesIdentity(
+                "migration.report.dedup", row => row.dedupKey = "dedup-2");
+            AssertMappedReportFieldChangesIdentity(
+                "migration.report.source-event",
+                row => row.originSourceEventId = "source-event-2");
+            AssertMappedReportFieldChangesIdentity(
+                "migration.report.source-kind", row => row.sourceKind = "player");
+            AssertMappedReportFieldChangesIdentity(
+                "migration.report.recall-scope", row => row.recallScope = "full");
+            AssertMappedReportFieldChangesIdentity(
+                "migration.report.event-kind", row => row.eventKind = "event-kind-2");
+            AssertMappedReportFieldChangesIdentity(
+                "migration.report.topic", row => row.topicKey = "topic-2");
+            AssertMappedReportFieldChangesIdentity(
+                "migration.report.date", row => row.dateLabel = "date-2");
+            AssertMappedReportFieldChangesIdentity(
+                "migration.report.fallback", row => row.fallbackSummary = "fallback-2");
+            AssertMappedReportFieldChangesIdentity(
+                "migration.report.participant-id", row => row.participantIds[0] = "Pawn_B");
+            AssertMappedReportFieldChangesIdentity(
+                "migration.report.participant-name", row => row.participantNames[0] = "B");
+            AssertMappedReportFieldChangesIdentity(
+                "migration.report.subject-list", row => row.subjectKeys[0] = "subject-2");
+            AssertMappedReportFieldChangesIdentity(
+                "migration.report.fact-key-list", row => row.factKeys[0] = "fact-key-2");
+            AssertMappedReportFieldChangesIdentity(
+                "migration.report.fact-value-list", row => row.factValues[0] = "fact-value-2");
+            AssertMappedReportFieldChangesIdentity(
+                "migration.report.background", row => row.backgroundText = "background-2");
+            AssertMappedReportFieldChangesIdentity(
+                "migration.report.fact-kind", row => row.facts[0].factKind = "fact-kind-2");
+            AssertMappedReportFieldChangesIdentity(
+                "migration.report.fact-subject-kind",
+                row => row.facts[0].canonicalSubjectKind = "pawn");
+            AssertMappedReportFieldChangesIdentity(
+                "migration.report.fact-subject-id",
+                row => row.facts[0].canonicalSubjectId = "subject-id-2");
+            AssertMappedReportFieldChangesIdentity(
+                "migration.report.fact-aggregation",
+                row => row.facts[0].aggregationToken = "ordinal-set");
+
+            // Structural safety is validated before winner selection. These two shapes cover the
+            // old evasion path (malformed automatic alternate loses to authored winner) and the
+            // obvious malformed-winner path, in both input permutations.
+            MemoryLegacyRecordSnapshot validAuthored =
+                LegacyRecord("rec-valid", "dedup-valid", "evt-shape", "relation.spouse.gained");
+            validAuthored.manualTextOverride = "valid authored";
+            MemoryLegacyRecordSnapshot malformedAlternate =
+                LegacyRecord("rec-malformed", "dedup-malformed", "evt-shape", "relation.spouse.gained");
+            malformedAlternate.factValues.Clear();
+            var unsafeAlternate = new MemoryLegacyOwnerMigrationInput
+            {
+                ownerPawnId = "Pawn_Shape",
+                ruleMap = input.ruleMap,
+                records = new List<MemoryLegacyRecordSnapshot>
+                    { validAuthored, malformedAlternate }
+            };
+            var unsafeAlternateReversed = new MemoryLegacyOwnerMigrationInput
+            {
+                ownerPawnId = "Pawn_Shape",
+                ruleMap = input.ruleMap,
+                records = new List<MemoryLegacyRecordSnapshot>
+                    { CloneLegacyRecord(malformedAlternate), CloneLegacyRecord(validAuthored) }
+            };
+            MemoryLegacyMigrationReport unsafeReport =
+                MemoryThreadMigrationPolicy.PlanDryRun(unsafeAlternate);
+            MemoryLegacyMigrationReport unsafeReversedReport =
+                MemoryThreadMigrationPolicy.PlanDryRun(unsafeAlternateReversed);
+            AssertTrue("migration.unsafe-alternate.owner-raw", unsafeReport.ownerRemainsRaw);
+            AssertMigrationReportsEqual(
+                "migration.unsafe-alternate.permutation", unsafeReport, unsafeReversedReport);
+
+            MemoryLegacyRecordSnapshot malformedWinner = CloneLegacyRecord(malformedAlternate);
+            malformedWinner.manualTextOverride = "authored malformed winner";
+            MemoryLegacyRecordSnapshot validAutomatic =
+                LegacyRecord("rec-auto", "dedup-auto", "evt-shape-winner", "relation.spouse.gained");
+            malformedWinner.sourceEventId = "evt-shape-winner";
+            var unsafeWinner = new MemoryLegacyOwnerMigrationInput
+            {
+                ownerPawnId = "Pawn_Shape",
+                ruleMap = input.ruleMap,
+                records = new List<MemoryLegacyRecordSnapshot>
+                    { malformedWinner, validAutomatic }
+            };
+            AssertTrue("migration.unsafe-winner.owner-raw",
+                MemoryThreadMigrationPolicy.PlanDryRun(unsafeWinner).ownerRemainsRaw);
         }
 
         private static void TestImportedBudget()
@@ -2496,6 +2948,78 @@ AssertEqual("migration.permutation.fingerprint",
                 twoUnresolvedUnits, caps.maxOwnerRows, caps.maxGlobalRows,
                 caps.ownerBytes, caps.globalBytes, caps.combinedCurrent, caps.combinedCap);
             AssertEqual("import.two-unresolved-invalid", "Invalid", twoUnresolved.outcome.ToString());
+
+            // Every candidate and committed addition is checked. A combined or cumulative overflow
+            // invalidates the WHOLE decision; it may never masquerade as Pending or Admitted.
+            var combinedOverflowUnits = new List<MemoryImportedAdmissionUnit>
+            {
+                new MemoryImportedAdmissionUnit
+                {
+                    ownerPawnId = "Pawn_Max", sourceIndex = 0,
+                    earliestAuthoredTick = 1, rowCount = 1, logicalBytes = long.MaxValue
+                }
+            };
+            MemoryImportedAdmissionDecision combinedOverflow =
+                ImportedPayloadBudget.PlanAdmission(
+                    combinedOverflowUnits,
+                    int.MaxValue,
+                    int.MaxValue,
+                    long.MaxValue,
+                    long.MaxValue,
+                    1,
+                    long.MaxValue);
+            AssertEqual("import.overflow.combined-invalid", "Invalid",
+                combinedOverflow.outcome.ToString());
+
+            var cumulativeOverflowUnits = new List<MemoryImportedAdmissionUnit>
+            {
+                new MemoryImportedAdmissionUnit
+                {
+                    ownerPawnId = "Pawn_A", sourceIndex = 0,
+                    earliestAuthoredTick = 1, rowCount = 1,
+                    logicalBytes = (long.MaxValue / 2) + 1
+                },
+                new MemoryImportedAdmissionUnit
+                {
+                    ownerPawnId = "Pawn_B", sourceIndex = 1,
+                    earliestAuthoredTick = 2, rowCount = 1,
+                    logicalBytes = (long.MaxValue / 2) + 1
+                }
+            };
+            MemoryImportedAdmissionDecision cumulativeOverflow =
+                ImportedPayloadBudget.PlanAdmission(
+                    cumulativeOverflowUnits,
+                    int.MaxValue,
+                    int.MaxValue,
+                    long.MaxValue,
+                    long.MaxValue,
+                    0,
+                    long.MaxValue);
+            AssertEqual("import.overflow.cumulative-invalid", "Invalid",
+                cumulativeOverflow.outcome.ToString());
+
+            var exactBoundaryUnits = new List<MemoryImportedAdmissionUnit>
+            {
+                new MemoryImportedAdmissionUnit
+                {
+                    ownerPawnId = "Pawn_Boundary", sourceIndex = 0,
+                    earliestAuthoredTick = 1, rowCount = 1,
+                    logicalBytes = long.MaxValue - 1
+                }
+            };
+            MemoryImportedAdmissionDecision exactBoundary =
+                ImportedPayloadBudget.PlanAdmission(
+                    exactBoundaryUnits,
+                    int.MaxValue,
+                    int.MaxValue,
+                    long.MaxValue,
+                    long.MaxValue,
+                    1,
+                    long.MaxValue);
+            AssertEqual("import.overflow.exact-boundary-admitted", "Admitted",
+                exactBoundary.outcome.ToString());
+            AssertEqual("import.overflow.exact-boundary-bytes", long.MaxValue - 1,
+                exactBoundary.totalBytes);
         }
 
         private static MemoryRootIdentity Root(

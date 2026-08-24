@@ -142,14 +142,23 @@ namespace PawnDiary
                         ? 0
                         : (ownerBytes.TryGetValue(unit.ownerPawnId, out long bytes) ? bytes : 0);
 
-                    bool fitsRows = totalRows + unit.rowCount <= maxGlobalRows
-                        && (isUnresolved || ownerRowTotal + unit.rowCount <= maxOwnerRows);
+                    long candidateTotalRows = CheckedAdd(totalRows, unit.rowCount);
+                    long candidateOwnerRows = isUnresolved
+                        ? 0
+                        : CheckedAdd(ownerRowTotal, unit.rowCount);
+                    long candidateTotalBytes = CheckedAdd(totalBytes, unit.logicalBytes);
+                    long candidateOwnerBytes = isUnresolved
+                        ? 0
+                        : CheckedAdd(ownerByteTotal, unit.logicalBytes);
+                    long candidateCombinedBytes =
+                        CheckedAdd(globalCombinedBytesCurrent, candidateTotalBytes);
+
+                    bool fitsRows = candidateTotalRows <= maxGlobalRows
+                        && (isUnresolved || candidateOwnerRows <= maxOwnerRows);
                     bool fitsBytes =
-                        totalBytes + unit.logicalBytes <= importedGlobalBytesCap
-                        && (isUnresolved
-                            || ownerByteTotal + unit.logicalBytes <= importedOwnerBytesCap)
-                        && globalCombinedBytesCurrent + totalBytes + unit.logicalBytes
-                            <= combinedGlobalBytesCap;
+                        candidateTotalBytes <= importedGlobalBytesCap
+                        && (isUnresolved || candidateOwnerBytes <= importedOwnerBytesCap)
+                        && candidateCombinedBytes <= combinedGlobalBytesCap;
 
                     if (!fitsRows || !fitsBytes)
                     {
@@ -160,12 +169,12 @@ namespace PawnDiary
                     }
 
                     decision.admitted[inputIndex] = true;
-                    totalRows += unit.rowCount;
-                    totalBytes += unit.logicalBytes;
+                    totalRows = candidateTotalRows;
+                    totalBytes = candidateTotalBytes;
                     if (!isUnresolved)
                     {
-                        ownerRows[unit.ownerPawnId] = ownerRowTotal + unit.rowCount;
-                        ownerBytes[unit.ownerPawnId] = ownerByteTotal + unit.logicalBytes;
+                        ownerRows[unit.ownerPawnId] = candidateOwnerRows;
+                        ownerBytes[unit.ownerPawnId] = candidateOwnerBytes;
                     }
                 }
 
@@ -178,6 +187,11 @@ namespace PawnDiary
                 // Byte totals never wrap; overflow is Invalid input, never an admission.
                 return refused;
             }
+        }
+
+        private static long CheckedAdd(long left, long right)
+        {
+            return checked(left + right);
         }
 
         private static int CompareUnits(

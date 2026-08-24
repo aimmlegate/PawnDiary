@@ -223,6 +223,9 @@ namespace PawnDiary
                 if (currentOwnerResolved
                     || claimedSequences.Contains(reservation.reservedEpochSequence))
                 {
+                    // Every syntactically valid row that cannot survive the independent owner/
+                    // sequence uniqueness rules is one deterministic collision diagnostic.
+                    skippedCollisions++;
                     continue;
                 }
 

@@ -109,7 +109,7 @@ namespace PawnDiary
             }
         }
 
-        private static MemoryLegacyRecordSnapshot SnapshotLegacyRecord(ImportantMemoryRecord record)
+        internal static MemoryLegacyRecordSnapshot SnapshotLegacyRecord(ImportantMemoryRecord record)
         {
             var snapshot = new MemoryLegacyRecordSnapshot
             {

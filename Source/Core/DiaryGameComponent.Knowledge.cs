@@ -95,23 +95,14 @@ namespace PawnDiary
                 knowledgeSchemaVersion = 2;
             }
 
-            // M1 phase gate: allocator-carrier repair FIRST (§T13.2 — before any allocation,
-            // reservation, migration, or Brainwipe), then a fail-closed newer-schema boundary
-            // (§14.6: refuse whole load rather than discard unknown XML), then report-only legacy
-            // migration planning, then transient byte-index rebuild. Publishes bounded diagnostics
-            // and never stamps an owner while MemorySystemActivationGate is LegacyShadow.
+            // The outer ExposeData PostLoadInit boundary already performed the recursive §14.6
+            // newer-schema refusal before any repository/index publication. This M1 phase gate now
+            // repairs allocator carriers before report-only migration planning and index rebuild.
             try
             {
-                ScanForNewerMemorySchemas();
                 CollectAndPublishAllocatorCarriers();
                 RunMemoryMigrationDryRunReport();
                 RebuildMemorySizeIndexes();
-            }
-            catch (NewerPawnDiarySaveFormatException)
-            {
-                // §14.6: fail the WHOLE save load closed before gameplay with one localized
-                // error; the source save file stays untouched.
-                throw;
             }
             catch (Exception e)
             {
@@ -135,7 +126,7 @@ namespace PawnDiary
         /// nodes, so ANY row whose schemaVersion exceeds this build's current value fails the
         /// whole save load closed BEFORE FinalizeInit/gameplay and before any mutation.
         /// </summary>
-        private void ScanForNewerMemorySchemas()
+        internal void ScanForNewerMemorySchemas()
         {
             if (memoryComponentSchemaVersion > 1
                 || memoryCoordinatorSchemaVersion > 1
@@ -168,12 +159,27 @@ namespace PawnDiary
                             + " (" + (diary.pawnId ?? "?") + " schema " + state.schemaVersion + ")");
                     }
 
-                    RequireNotNewer(state.threadRoots, r => r.SchemaVersionForBoundaryCheck);
-                    RequireNotNewer(state.standaloneBlocks, r => r.SchemaVersionForBoundaryCheck);
-                    RequireNotNewer(state.ownerAwarenessSnapshots, r => r.SchemaVersionForBoundaryCheck);
-                    RequireNotNewer(state.openCaptureEpisodes, r => r.SchemaVersionForBoundaryCheck);
+                    RequireNotNewer(
+                        state.threadRoots,
+                        r => r.SchemaVersionForBoundaryCheck,
+                        RequireNestedSchemas);
+                    RequireNotNewer(
+                        state.standaloneBlocks,
+                        r => r.SchemaVersionForBoundaryCheck,
+                        RequireNestedSchemas);
+                    RequireNotNewer(
+                        state.ownerAwarenessSnapshots,
+                        r => r.SchemaVersionForBoundaryCheck,
+                        RequireNestedSchemas);
+                    RequireNotNewer(
+                        state.openCaptureEpisodes,
+                        r => r.SchemaVersionForBoundaryCheck,
+                        RequireNestedSchemas);
                     RequireNotNewer(state.repetitionGuardRows, r => r.SchemaVersionForBoundaryCheck);
-                    RequireNotNewer(state.importedArchiveRows, r => r.SchemaVersionForBoundaryCheck);
+                    RequireNotNewer(
+                        state.importedArchiveRows,
+                        r => r.SchemaVersionForBoundaryCheck,
+                        RequireNestedSchemas);
                     if (diary.reflectionState != null
                         && diary.reflectionState.memoryReflectionSchemaVersion > 1)
                     {
@@ -187,15 +193,28 @@ namespace PawnDiary
 
             RequireNotNewer(globalFactionSnapshots, r => r.SchemaVersionForBoundaryCheck);
             RequireNotNewer(legacyOwnerEpochReservations, r => r.SchemaVersionForBoundaryCheck);
-            RequireNotNewer(unresolvedOwnerArchiveRows, r => r.SchemaVersionForBoundaryCheck);
+            RequireRowNotNewer(
+                lastAppliedMemoryPolicyState,
+                r => r.SchemaVersionForBoundaryCheck);
+            RequireNotNewer(
+                unresolvedOwnerArchiveRows,
+                r => r.SchemaVersionForBoundaryCheck,
+                RequireNestedSchemas);
             RequireNotNewer(rawUnresolvedOwnerArchiveInput, r => r.SchemaVersionForBoundaryCheck);
             RequireNotNewer(summaryWordingOpportunities, r => r.SchemaVersionForBoundaryCheck);
             RequireNotNewer(memoryDiagnosticCounters, r => r.SchemaVersionForBoundaryCheck);
             RequireNotNewer(memoryAttemptAuditRows, r => r.SchemaVersionForBoundaryCheck);
-            RequireNotNewer(activeMemoryCoordinatorRequests, r => r.SchemaVersionForBoundaryCheck);
+            RequireNotNewer(
+                activeMemoryCoordinatorRequests,
+                r => r.SchemaVersionForBoundaryCheck,
+                RequireNestedSchemas);
         }
 
-        private static void RequireNotNewer<T>(List<T> rows, Func<T, int> schemaVersionOf)
+        private static void RequireNotNewer<T>(
+            List<T> rows,
+            Func<T, int> schemaVersionOf,
+            Action<T> requireNested = null)
+            where T : class
         {
             if (rows == null)
             {
@@ -204,14 +223,128 @@ namespace PawnDiary
 
             for (int i = 0; i < rows.Count; i++)
             {
-                if (rows[i] != null && schemaVersionOf(rows[i]) > 1)
+                T row = rows[i];
+                if (row == null)
                 {
-                    throw new NewerPawnDiarySaveFormatException(
-                        "[Pawn Diary] " + "PawnDiary.SaveFormatNewer".Translate()
-                        + " (" + rows[i].GetType().Name + " schema "
-                        + schemaVersionOf(rows[i]) + ")");
+                    continue;
                 }
+
+                RequireRowNotNewer(row, schemaVersionOf);
+                requireNested?.Invoke(row);
             }
+        }
+
+        private static void RequireRowNotNewer<T>(T row, Func<T, int> schemaVersionOf)
+            where T : class
+        {
+            if (row == null)
+            {
+                return;
+            }
+
+            int schemaVersion = schemaVersionOf(row);
+            if (schemaVersion > 1)
+            {
+                throw new NewerPawnDiarySaveFormatException(
+                    "[Pawn Diary] " + "PawnDiary.SaveFormatNewer".Translate()
+                    + " (" + row.GetType().Name + " schema " + schemaVersion + ")");
+            }
+        }
+
+        private static void RequireNestedSchemas(SavedMemoryThreadRoot root)
+        {
+            RequireNotNewer(root.chapters, r => r.SchemaVersionForBoundaryCheck);
+            RequireNotNewer(
+                root.visibleBlocks,
+                r => r.SchemaVersionForBoundaryCheck,
+                RequireNestedSchemas);
+            RequireRowNotNewer(
+                root.rollingSummaryBlock,
+                r => r.SchemaVersionForBoundaryCheck);
+            if (root.rollingSummaryBlock != null)
+            {
+                RequireNestedSchemas(root.rollingSummaryBlock);
+            }
+        }
+
+        private static void RequireNestedSchemas(SavedMemoryBlock block)
+        {
+            RequireRowNotNewer(block.primarySubject, r => r.SchemaVersionForBoundaryCheck);
+            RequireNotNewer(block.secondarySubjects, r => r.SchemaVersionForBoundaryCheck);
+            RequireNotNewer(block.facts, r => r.SchemaVersionForBoundaryCheck);
+            RequireNotNewer(block.provenance, r => r.SchemaVersionForBoundaryCheck);
+            RequireRowNotNewer(block.summaryPayload, r => r.SchemaVersionForBoundaryCheck);
+            if (block.summaryPayload != null)
+            {
+                RequireNestedSchemas(block.summaryPayload);
+            }
+        }
+
+        private static void RequireNestedSchemas(SavedMemorySummaryPayload payload)
+        {
+            RequireNotNewer(
+                payload.factBuckets,
+                r => r.SchemaVersionForBoundaryCheck,
+                RequireNestedSchemas);
+            RequireNotNewer(payload.subjectRefs, r => r.SchemaVersionForBoundaryCheck);
+            RequireNotNewer(payload.provenanceRefs, r => r.SchemaVersionForBoundaryCheck);
+        }
+
+        private static void RequireNestedSchemas(SavedMemoryFactBucket bucket)
+        {
+            RequireNotNewer(bucket.contributions, r => r.SchemaVersionForBoundaryCheck);
+        }
+
+        private static void RequireNestedSchemas(SavedMemoryAwarenessSnapshot snapshot)
+        {
+            RequireNotNewer(snapshot.stateFacts, r => r.SchemaVersionForBoundaryCheck);
+        }
+
+        private static void RequireNestedSchemas(SavedMemoryCaptureEpisode episode)
+        {
+            RequireNotNewer(episode.baselineFacts, r => r.SchemaVersionForBoundaryCheck);
+            RequireNotNewer(episode.currentFacts, r => r.SchemaVersionForBoundaryCheck);
+        }
+
+        private static void RequireNestedSchemas(SavedImportedMemoryRow row)
+        {
+            RequireRowNotNewer(row.primarySubject, r => r.SchemaVersionForBoundaryCheck);
+            RequireNotNewer(row.secondarySubjects, r => r.SchemaVersionForBoundaryCheck);
+            RequireNotNewer(row.canonicalFacts, r => r.SchemaVersionForBoundaryCheck);
+            RequireNotNewer(row.provenance, r => r.SchemaVersionForBoundaryCheck);
+            RequireRowNotNewer(
+                row.summaryContributionEvidence,
+                r => r.SchemaVersionForBoundaryCheck);
+        }
+
+        private static void RequireNestedSchemas(SavedActiveLogicalRequestV1 request)
+        {
+            RequireNotNewer(
+                request.frozenVariants,
+                r => r.SchemaVersionForBoundaryCheck,
+                RequireNestedSchemas);
+            RequireNotNewer(request.activeAttempts, r => r.SchemaVersionForBoundaryCheck);
+            RequireNotNewer(request.reservedEvidenceEntries, r => r.SchemaVersionForBoundaryCheck);
+            RequireNotNewer(request.reservedGuardEntries, r => r.SchemaVersionForBoundaryCheck);
+        }
+
+        private static void RequireNestedSchemas(SavedFrozenPromptVariantV1 variant)
+        {
+            RequireRowNotNewer(variant.receiptPlan, r => r.SchemaVersionForBoundaryCheck);
+            if (variant.receiptPlan != null)
+            {
+                RequireNestedSchemas(variant.receiptPlan);
+            }
+
+            RequireNotNewer(
+                variant.diagnosticProvenance,
+                r => r.SchemaVersionForBoundaryCheck);
+        }
+
+        private static void RequireNestedSchemas(SavedFrozenEvidenceReceiptPlanV1 receipt)
+        {
+            RequireNotNewer(receipt.evidenceEntries, r => r.SchemaVersionForBoundaryCheck);
+            RequireNotNewer(receipt.guardEntries, r => r.SchemaVersionForBoundaryCheck);
         }
 
         private void ResetKnowledgeForNewGame()

@@ -408,14 +408,8 @@ namespace PawnDiary
         internal void RebuildMemorySizeIndexes()
         {
             memoryByteTotalsByOwner.Clear();
-            memoryComponentActiveBytesTotal = SizeComponentMemoryBytes();
-
-            if (diaries == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < diaries.Count; i++)
+            var currentOwners = new Dictionary<string, PawnKnowledgeState>(StringComparer.Ordinal);
+            for (int i = 0; diaries != null && i < diaries.Count; i++)
             {
                 PawnDiaryRecord diary = diaries[i];
                 if (diary == null || string.IsNullOrWhiteSpace(diary.pawnId)
@@ -425,8 +419,29 @@ namespace PawnDiary
                     continue;
                 }
 
-                MemoryOwnerByteTotals totals = MeasureOwner(diary.knowledgeState);
-                memoryByteTotalsByOwner[diary.pawnId] = totals;
+                // Duplicate containers group by exact owner before publication. The physical first
+                // holder is the current lookup owner (§T13.2), so request bytes are never added once
+                // per duplicate container.
+                if (!currentOwners.ContainsKey(diary.pawnId))
+                {
+                    currentOwners.Add(diary.pawnId, diary.knowledgeState);
+                }
+            }
+
+            var currentOwnerIds = new HashSet<string>(currentOwners.Keys, StringComparer.Ordinal);
+            Dictionary<string, long> activeRequestBytesByOwner;
+            memoryComponentActiveBytesTotal = SizeComponentMemoryBytes(
+                currentOwnerIds,
+                out activeRequestBytesByOwner);
+
+            foreach (KeyValuePair<string, PawnKnowledgeState> owner in currentOwners)
+            {
+                long requestBytes = activeRequestBytesByOwner.TryGetValue(
+                    owner.Key, out long measuredRequestBytes)
+                    ? measuredRequestBytes
+                    : 0;
+                MemoryOwnerByteTotals totals = MeasureOwner(owner.Value, requestBytes);
+                memoryByteTotalsByOwner[owner.Key] = totals;
                 if (!totals.valid)
                 {
                     RecordMemoryDiagnostic("size_invalid", "owner");
@@ -434,35 +449,36 @@ namespace PawnDiary
             }
         }
 
-        private MemoryOwnerByteTotals MeasureOwner(PawnKnowledgeState state)
+        private MemoryOwnerByteTotals MeasureOwner(
+            PawnKnowledgeState state, long ownerAttributedActiveRequestBytes)
         {
             var totals = new MemoryOwnerByteTotals { valid = false, activeBytes = 0, importedBytes = 0 };
             MemoryLogicalSizeResult whole =
                 MemoryLogicalPayloadSizer.Size(state);
-
-            // Imported rows are charged to importedBytes, excluded from activeOwnerBytes (§T17.5).
-            long imported = 0;
-            for (int i = 0; state.importedArchiveRows != null && i < state.importedArchiveRows.Count; i++)
+            MemoryLogicalSizeResult imported = SizeListValidated(state?.importedArchiveRows);
+            if (!whole.valid || !imported.valid || ownerAttributedActiveRequestBytes < 0)
             {
-                if (state.importedArchiveRows[i] == null)
-                {
-                    continue;
-                }
+                return totals;
+            }
 
-                MemoryLogicalSizeResult row =
-                    MemoryLogicalPayloadSizer.Size(state.importedArchiveRows[i]);
-                if (!row.valid)
+            try
+            {
+                long activeWithoutRequests = checked(whole.totalBytes - imported.totalBytes);
+                if (activeWithoutRequests < 0)
                 {
-                    totals.valid = false;
                     return totals;
                 }
 
-                imported += row.totalBytes;
+                totals.activeBytes = checked(
+                    activeWithoutRequests + ownerAttributedActiveRequestBytes);
+                totals.importedBytes = imported.totalBytes;
+                totals.valid = true;
+            }
+            catch (OverflowException)
+            {
+                // Any overflow invalidates the complete owner index; never publish a smaller total.
             }
 
-            totals.valid = whole.valid;
-            totals.activeBytes = whole.valid ? whole.totalBytes - imported : 0;
-            totals.importedBytes = imported;
             return totals;
         }
 
@@ -473,10 +489,16 @@ namespace PawnDiary
         /// active-request bytes so they are charged exactly once to their owners. Returns -1 when
         /// ANY nested walk is invalid (invalid budget state propagates; never a silent undercount).
         /// </summary>
-        private long SizeComponentMemoryBytes()
+        private long SizeComponentMemoryBytes(
+            HashSet<string> currentOwnerIds,
+            out Dictionary<string, long> activeRequestBytesByOwner)
         {
+            activeRequestBytesByOwner =
+                new Dictionary<string, long>(StringComparer.Ordinal);
             MemoryLogicalSizeResult whole = MemoryLogicalPayloadSizer.Size(this);
-            if (!whole.valid)
+            MemoryLogicalSizeResult unknownArchive =
+                SizeListValidated(unresolvedOwnerArchiveRows);
+            if (!whole.valid || !unknownArchive.valid)
             {
                 RecordMemoryDiagnostic("size_invalid", "component");
                 return -1;
@@ -484,33 +506,58 @@ namespace PawnDiary
 
             // Owner-attributed request rows ride activeOwnerBytes (§T17.5); measure them here so
             // they can be excluded from the component subtotal without breaking registry order.
-            long ownerAttributed = 0;
-            for (int i = 0; i < activeMemoryCoordinatorRequests.Count; i++)
+            try
             {
-                SavedActiveLogicalRequestV1 request = activeMemoryCoordinatorRequests[i];
-                if (request == null || string.IsNullOrWhiteSpace(request.ownerPawnId))
+                long ownerAttributed = 0;
+                for (int i = 0;
+                    activeMemoryCoordinatorRequests != null
+                        && i < activeMemoryCoordinatorRequests.Count;
+                    i++)
                 {
-                    continue;
+                    SavedActiveLogicalRequestV1 request = activeMemoryCoordinatorRequests[i];
+                    if (request == null || string.IsNullOrWhiteSpace(request.ownerPawnId)
+                        || currentOwnerIds == null
+                        || !currentOwnerIds.Contains(request.ownerPawnId))
+                    {
+                        // Ownerless/orphaned metadata remains component/global-only. Only a request
+                        // with a corresponding current owner can move into that owner's subtotal.
+                        continue;
+                    }
+
+                    MemoryLogicalSizeResult result = MemoryLogicalPayloadSizer.Size(request);
+                    if (!result.valid)
+                    {
+                        RecordMemoryDiagnostic("size_invalid", "component");
+                        return -1;
+                    }
+
+                    ownerAttributed = checked(ownerAttributed + result.totalBytes);
+                    long prior = activeRequestBytesByOwner.TryGetValue(
+                        request.ownerPawnId, out long measured)
+                        ? measured
+                        : 0;
+                    activeRequestBytesByOwner[request.ownerPawnId] =
+                        checked(prior + result.totalBytes);
                 }
 
-                MemoryLogicalSizeResult result = MemoryLogicalPayloadSizer.Size(request);
-                if (!result.valid)
+                // Unknown Imported rows (including their one list framing prefix) move from the
+                // registered component walk into globalImportedBytes. Owner-attributed request rows
+                // likewise move to the exact owner. Each physical byte therefore appears once.
+                long componentBytes = checked(whole.totalBytes - ownerAttributed);
+                componentBytes = checked(componentBytes - unknownArchive.totalBytes);
+                if (componentBytes < 0)
                 {
                     RecordMemoryDiagnostic("size_invalid", "component");
                     return -1;
                 }
 
-                ownerAttributed += result.totalBytes;
+                return componentBytes;
             }
-
-            long componentBytes = whole.totalBytes - ownerAttributed;
-            if (componentBytes < 0)
+            catch (OverflowException)
             {
                 RecordMemoryDiagnostic("size_invalid", "component");
                 return -1;
             }
-
-            return componentBytes;
         }
 
         /// <summary>
@@ -596,26 +643,6 @@ namespace PawnDiary
                 return new MemoryPayloadBudgetTotals { globalActiveBytes = -1, globalImportedBytes = 0 };
             }
 
-            long owners = 0;
-            long imported = 0;
-            bool anyInvalid = false;
-            foreach (MemoryOwnerByteTotals totals in memoryByteTotalsByOwner.Values)
-            {
-                if (!totals.valid)
-                {
-                    anyInvalid = true;
-                    continue;
-                }
-
-                owners += totals.activeBytes;
-                imported += totals.importedBytes;
-            }
-
-            if (anyInvalid)
-            {
-                return new MemoryPayloadBudgetTotals { globalActiveBytes = -1, globalImportedBytes = 0 };
-            }
-
             // Unknown-archive bytes count once toward global combined (§T17.5); invalid rows
             // inside it invalidate the whole Unknown unit rather than undercounting.
             MemoryLogicalSizeResult unknownRows = SizeListValidated(unresolvedOwnerArchiveRows);
@@ -626,10 +653,33 @@ namespace PawnDiary
 
             try
             {
+                long owners = 0;
+                long imported = 0;
+                foreach (MemoryOwnerByteTotals totals in memoryByteTotalsByOwner.Values)
+                {
+                    if (!totals.valid || totals.activeBytes < 0 || totals.importedBytes < 0)
+                    {
+                        return new MemoryPayloadBudgetTotals
+                            { globalActiveBytes = -1, globalImportedBytes = 0 };
+                    }
+
+                    owners = checked(owners + totals.activeBytes);
+                    imported = checked(imported + totals.importedBytes);
+                }
+
+                long globalActive = checked(owners + memoryComponentActiveBytesTotal);
+                long globalImported = checked(imported + unknownRows.totalBytes);
+                // Prove the combined value is representable now; downstream admission must never
+                // receive two individually valid subtotals whose sum wraps.
+                checked
+                {
+                    long ignoredCombined = globalActive + globalImported;
+                }
+
                 return new MemoryPayloadBudgetTotals
                 {
-                    globalActiveBytes = checked(owners + memoryComponentActiveBytesTotal),
-                    globalImportedBytes = checked(imported + unknownRows.totalBytes)
+                    globalActiveBytes = globalActive,
+                    globalImportedBytes = globalImported
                 };
             }
             catch (OverflowException)
@@ -643,22 +693,28 @@ namespace PawnDiary
         private static MemoryLogicalSizeResult SizeListValidated<T>(List<T> rows)
             where T : class, IMemoryLogicalSizeSource
         {
-            var collectorTotal = MemorySavedSizingUtil.NonNullCount(rows);
             long bytes = 4; // list-count prefix
-            for (int i = 0; rows != null && i < rows.Count; i++)
+            try
             {
-                if (rows[i] == null)
+                for (int i = 0; rows != null && i < rows.Count; i++)
                 {
-                    continue;
-                }
+                    if (rows[i] == null)
+                    {
+                        continue;
+                    }
 
-                MemoryLogicalSizeResult result = MemoryLogicalPayloadSizer.Size(rows[i]);
-                if (!result.valid)
-                {
-                    return MemoryLogicalSizeResult.Invalid("list-element:" + i);
-                }
+                    MemoryLogicalSizeResult result = MemoryLogicalPayloadSizer.Size(rows[i]);
+                    if (!result.valid)
+                    {
+                        return MemoryLogicalSizeResult.Invalid("list-element:" + i);
+                    }
 
-                bytes += result.totalBytes;
+                    bytes = checked(bytes + result.totalBytes);
+                }
+            }
+            catch (OverflowException)
+            {
+                return MemoryLogicalSizeResult.Invalid("list-total:overflow");
             }
 
             return new MemoryLogicalSizeResult
@@ -731,11 +787,7 @@ namespace PawnDiary
                         continue;
                     }
 
-                    AddEpochToken(input.epochTokenCarriers, state.autobiographicalEpochToken);
-                    AddEpochTokens(input.epochTokenCarriers, state.threadRoots, r => r?.ownerEpochToken);
-                    AddEpochTokens(input.epochTokenCarriers, state.standaloneBlocks, b => b?.ownerEpochToken);
-                    AddEpochTokens(input.epochTokenCarriers, state.ownerAwarenessSnapshots, r => null);
-                    AddEpochTokens(input.epochTokenCarriers, state.repetitionGuardRows, r => r?.ownerEpochToken);
+                    AddKnowledgeEpochTokenCarriers(input.epochTokenCarriers, state);
                     if (diary.reflectionState != null)
                     {
                         AddEpochToken(input.epochTokenCarriers,
@@ -784,6 +836,36 @@ namespace PawnDiary
             if (plan.factionGenerationSaturated)
             {
                 RecordMemoryDiagnostic("other", "component");
+            }
+        }
+
+        /// <summary>
+        /// Recursively collects every direct epoch-token field inside one owner envelope. In
+        /// particular, root-owned visible/rolling blocks are carriers in their own right and may be
+        /// the sole high-water witness in a corrupt-low save (§T13.2).
+        /// </summary>
+        internal static void AddKnowledgeEpochTokenCarriers(
+            List<string> carriers, PawnKnowledgeState state)
+        {
+            if (carriers == null || state == null)
+            {
+                return;
+            }
+
+            AddEpochToken(carriers, state.autobiographicalEpochToken);
+            AddEpochTokens(carriers, state.standaloneBlocks, b => b?.ownerEpochToken);
+            AddEpochTokens(carriers, state.repetitionGuardRows, r => r?.ownerEpochToken);
+            for (int i = 0; state.threadRoots != null && i < state.threadRoots.Count; i++)
+            {
+                SavedMemoryThreadRoot root = state.threadRoots[i];
+                if (root == null)
+                {
+                    continue;
+                }
+
+                AddEpochToken(carriers, root.ownerEpochToken);
+                AddEpochTokens(carriers, root.visibleBlocks, b => b?.ownerEpochToken);
+                AddEpochToken(carriers, root.rollingSummaryBlock?.ownerEpochToken);
             }
         }
 

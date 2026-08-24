@@ -538,11 +538,12 @@ namespace PawnDiary
                     observedConditionCooldownUntilTick = new Dictionary<string, int>();
                 }
 
-                // Post-load rebuilds derive transient indexes from loaded data; a throw here must not
-                // abort the whole game load, so degrade to whatever loaded and log once. The null
-                // guards above stay outside the try because the rest of the session depends on them.
+                // Refuse any newer nested memory schema before repository/index publication. This
+                // exact exception must escape the ordinary rebuild isolation catch: an older build
+                // cannot preserve unknown child XML and must fail the whole load closed (§14.6).
                 try
                 {
+                    ScanForNewerMemorySchemas();
                     // The pawnId->record index is not serialized; rebuild it from the loaded diaries
                     // first so the per-pawn lookups below resolve in O(1).
                     RebuildDiaryIndex();
@@ -569,6 +570,10 @@ namespace PawnDiary
                     PruneStaleGeneratedSpeechPlayLogState();
                     RebuildCommandStatusCache();
                     RunDiaryIntegrityAudit("post_load", true);
+                }
+                catch (NewerPawnDiarySaveFormatException)
+                {
+                    throw;
                 }
                 catch (Exception e)
                 {

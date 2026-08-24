@@ -11,10 +11,15 @@
 // - thread root/chapter/block/payload rows round-trip their stable tokens;
 // - dispatch request/variant/attempt rows round-trip;
 // - the raw unresolved-owner wrapper preserves its nested shipped legacy record untouched;
+// - malformed legacy Scribe evidence reaches dry-run planning unchanged and remains retryable;
+// - nested allocator/schema carriers cannot hide from recursive component scans;
+// - owner/global byte accounting and null-hole sizing follow the frozen one-charge policy;
 // - the logical-size walker validates a fully populated envelope against the frozen registry.
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
+using System.Runtime.Serialization;
 using PawnDiary;
 using RimTestRedux;
 using Verse;
@@ -153,6 +158,186 @@ namespace PawnDiary.RimTests
         }
 
         [Test]
+        public static void LegacyRawEvidenceReachesDryRunAndRemainsRetryable()
+        {
+            var legacy = new PawnKnowledgeState
+            {
+                pawnId = "Pawn_Legacy_Raw",
+                schemaVersion = 1
+            };
+            ImportantMemoryRecord raw = NewLegacyRecord();
+            raw.sourceKind = "removed-mod-source";
+            raw.recallScope = "removed-mod-scope";
+            raw.participantNames.RemoveAt(raw.participantNames.Count - 1);
+            raw.factValues.RemoveAt(raw.factValues.Count - 1);
+            legacy.records.Add(raw);
+
+            RunWithTempFile(path =>
+            {
+                PawnKnowledgeState saved = legacy;
+                SaveWithScribe(path, () => Scribe_Deep.Look(ref saved, Label));
+                PawnKnowledgeState loaded = null;
+                LoadVarsWithScribe(path, () => Scribe_Deep.Look(ref loaded, Label));
+                Require(loaded != null && loaded.schemaVersion == 1,
+                    "The adversarial legacy envelope must load as retryable v1.");
+
+                loaded.Normalize();
+                ImportantMemoryRecord loadedRaw = loaded.records[0];
+                Require(loadedRaw.sourceKind == "removed-mod-source"
+                        && loadedRaw.recallScope == "removed-mod-scope",
+                    "Legacy Normalize changed unknown semantic tokens before planning.");
+                Require(loadedRaw.participantIds.Count == 2
+                        && loadedRaw.participantNames.Count == 1
+                        && loadedRaw.factKeys.Count == 2
+                        && loadedRaw.factValues.Count == 1,
+                    "Legacy Normalize aligned/truncated malformed parallel-list evidence.");
+
+                MemoryLegacyRecordSnapshot snapshot =
+                    DiaryGameComponent.SnapshotLegacyRecord(loadedRaw);
+                Require(snapshot.sourceKind == "removed-mod-source"
+                        && snapshot.recallScope == "removed-mod-scope"
+                        && snapshot.participantIds.Count == 2
+                        && snapshot.participantNames.Count == 1
+                        && snapshot.factKeys.Count == 2
+                        && snapshot.factValues.Count == 1,
+                    "The production dry-run snapshot did not receive the original legacy shape.");
+                MemoryLegacyMigrationReport report =
+                    MemoryThreadMigrationPolicy.PlanDryRun(new MemoryLegacyOwnerMigrationInput
+                    {
+                        ownerPawnId = loaded.pawnId,
+                        records = new List<MemoryLegacyRecordSnapshot> { snapshot }
+                    });
+                Require(report.ownerRemainsRaw,
+                    "Unequal fact-key/value evidence must keep the complete owner raw.");
+
+                // A failed dry-run stamps/clears nothing. Save the loaded owner again and prove the
+                // exact malformed evidence remains available for a later migration retry.
+                PawnKnowledgeState retrySaved = loaded;
+                SaveWithScribe(path, () => Scribe_Deep.Look(ref retrySaved, Label));
+                PawnKnowledgeState retryLoaded = null;
+                LoadVarsWithScribe(path, () => Scribe_Deep.Look(ref retryLoaded, Label));
+                Require(retryLoaded.schemaVersion == 1
+                        && retryLoaded.records.Count == 1
+                        && retryLoaded.records[0].sourceKind == "removed-mod-source"
+                        && retryLoaded.records[0].recallScope == "removed-mod-scope"
+                        && retryLoaded.records[0].participantIds.Count == 2
+                        && retryLoaded.records[0].participantNames.Count == 1
+                        && retryLoaded.records[0].factKeys.Count == 2
+                        && retryLoaded.records[0].factValues.Count == 1,
+                    "A refused legacy migration was not byte-shape retryable on the next save/load.");
+            });
+        }
+
+        [Test]
+        public static void NestedBlocksAreAllocatorHighWaterCarriers()
+        {
+            PawnKnowledgeState state = PawnKnowledgeState.CreateCurrent("Pawn_Carrier");
+            state.autobiographicalEpochToken = string.Empty;
+            var root = new SavedMemoryThreadRoot
+            {
+                ownerPawnId = "Pawn_Carrier",
+                ownerEpochToken = string.Empty
+            };
+            root.visibleBlocks.Add(new SavedMemoryBlock
+            {
+                ownerPawnId = "Pawn_Carrier",
+                ownerEpochToken = EpochToken(41)
+            });
+            root.rollingSummaryBlock = new SavedMemoryBlock
+            {
+                ownerPawnId = "Pawn_Carrier",
+                ownerEpochToken = EpochToken(99)
+            };
+            state.threadRoots.Add(root);
+
+            var carriers = new List<string>();
+            DiaryGameComponent.AddKnowledgeEpochTokenCarriers(carriers, state);
+            MemorySavedCarrierRegistryPlan plan = MemorySavedIdentityCarrierRegistry.Plan(
+                new MemorySavedCarrierScanInput
+                {
+                    lastIssuedAutobiographicalEpochSequence = 3,
+                    epochTokenCarriers = carriers
+                });
+            Require(plan.canPublish && plan.repairedAutobiographicalHighWater == 99,
+                "A nested visible/rolling block did not raise the allocator high-water.");
+        }
+
+        [Test]
+        public static void NestedNewerSchemasAbortBeforePublication()
+        {
+            RunWithTempFile(path =>
+            {
+                PawnKnowledgeState source = PawnKnowledgeState.CreateCurrent("Pawn_Future_Fact");
+                SavedMemoryBlock block = NewBlock("rec-future", null);
+                block.summaryPayload.factBuckets[0].contributions[0].schemaVersion = 2;
+                source.standaloneBlocks.Add(block);
+                PawnKnowledgeState saved = source;
+                SaveWithScribe(path, () => Scribe_Deep.Look(ref saved, Label));
+                PawnKnowledgeState loaded = null;
+                LoadVarsWithScribe(path, () => Scribe_Deep.Look(ref loaded, Label));
+                RequireNewerSchemaRefused(
+                    "deep summary contribution",
+                    NewMemoryComponent(
+                        new List<PawnDiaryRecord>
+                        {
+                            new PawnDiaryRecord
+                            {
+                                pawnId = "Pawn_Future_Fact",
+                                knowledgeState = loaded
+                            }
+                        },
+                        null,
+                        null));
+            });
+
+            RunWithTempFile(path =>
+            {
+                var request = new SavedActiveLogicalRequestV1 { ownerPawnId = "Pawn_Request" };
+                var receipt = new SavedFrozenEvidenceReceiptPlanV1();
+                receipt.guardEntries.Add(new SavedFrozenGuardEntryV1 { schemaVersion = 2 });
+                request.frozenVariants.Add(new SavedFrozenPromptVariantV1
+                {
+                    receiptPlan = receipt
+                });
+                SavedActiveLogicalRequestV1 saved = request;
+                SaveWithScribe(path, () => Scribe_Deep.Look(ref saved, "futureRequest"));
+                SavedActiveLogicalRequestV1 loaded = null;
+                LoadVarsWithScribe(path, () => Scribe_Deep.Look(ref loaded, "futureRequest"));
+                RequireNewerSchemaRefused(
+                    "nested request receipt row",
+                    NewMemoryComponent(null,
+                        new List<SavedActiveLogicalRequestV1> { loaded }, null));
+            });
+
+            RunWithTempFile(path =>
+            {
+                PawnKnowledgeState source = PawnKnowledgeState.CreateCurrent("Pawn_Future_Archive");
+                var archive = new SavedImportedMemoryRow
+                {
+                    primarySubject = new SavedMemorySubjectRef { schemaVersion = 2 }
+                };
+                source.importedArchiveRows.Add(archive);
+                PawnKnowledgeState saved = source;
+                SaveWithScribe(path, () => Scribe_Deep.Look(ref saved, Label));
+                PawnKnowledgeState loaded = null;
+                LoadVarsWithScribe(path, () => Scribe_Deep.Look(ref loaded, Label));
+                RequireNewerSchemaRefused(
+                    "nested archive subject",
+                    NewMemoryComponent(
+                        new List<PawnDiaryRecord>
+                        {
+                            new PawnDiaryRecord
+                            {
+                                pawnId = "Pawn_Future_Archive",
+                                knowledgeState = loaded
+                            }
+                        },
+                        null,
+                        null));
+            });
+        }
+
+        [Test]
         public static void DispatchRequestRowRoundTrips()
         {
             var attempt = new SavedActiveLogicalAttemptV1
@@ -254,6 +439,118 @@ namespace PawnDiary.RimTests
                 Require(loaded.sourceContainerOrdinal == 2 && loaded.sourceRecordOrdinal == 5,
                     "Input-local diagnostic coordinates are preserved as-is.");
             });
+        }
+
+        [Test]
+        public static void LogicalSizingVisitsRowsAfterNullHoles()
+        {
+            var contributionA = new SavedMemoryFactContribution
+            {
+                contributionId = "contribution-a",
+                canonicalValue = "alpha"
+            };
+            var contributionB = new SavedMemoryFactContribution
+            {
+                contributionId = "contribution-b",
+                canonicalValue = "beta"
+            };
+
+            Require(SizeOf(NewBucket(contributionA))
+                    == SizeOf(NewBucket(null, contributionA)),
+                "A null-first nested row hid the later contribution from logical sizing.");
+            Require(SizeOf(NewBucket(contributionA, contributionB))
+                    == SizeOf(NewBucket(contributionA, null, contributionB)),
+                "A null-middle nested row hid the later contribution from logical sizing.");
+            Require(SizeOf(NewBucket(contributionA))
+                    == SizeOf(NewBucket(contributionA, null)),
+                "A null-last nested row changed the frozen non-null list encoding.");
+
+            Require(SizeOf(NewContributionWithSubjectRefs("subject-a"))
+                    == SizeOf(NewContributionWithSubjectRefs(null, "subject-a")),
+                "A null-first value-list entry hid the later string from logical sizing.");
+            Require(SizeOf(NewContributionWithSubjectRefs("subject-a", "subject-b"))
+                    == SizeOf(NewContributionWithSubjectRefs("subject-a", null, "subject-b")),
+                "A null-middle value-list entry hid the later string from logical sizing.");
+            Require(SizeOf(NewContributionWithSubjectRefs("subject-a"))
+                    == SizeOf(NewContributionWithSubjectRefs("subject-a", null)),
+                "A null-last value-list entry changed the frozen non-null list encoding.");
+
+            var evidenceA = new SavedFrozenEvidenceEntryV1 { recordId = "record-a" };
+            var evidenceB = new SavedFrozenEvidenceEntryV1 { recordId = "record-b" };
+            Require(SizeOf(NewRequestWithEvidence(evidenceA))
+                    == SizeOf(NewRequestWithEvidence(null, evidenceA)),
+                "A null-first request row hid the later reserved evidence entry.");
+            Require(SizeOf(NewRequestWithEvidence(evidenceA, evidenceB))
+                    == SizeOf(NewRequestWithEvidence(evidenceA, null, evidenceB)),
+                "A null-middle request row hid the later reserved evidence entry.");
+            Require(SizeOf(NewRequestWithEvidence(evidenceA))
+                    == SizeOf(NewRequestWithEvidence(evidenceA, null)),
+                "A null-last request row changed the frozen non-null list encoding.");
+        }
+
+        [Test]
+        public static void MemoryBudgetAccountingChargesEachPhysicalByteOnce()
+        {
+            const string ownerId = "Pawn_Accounting";
+            SavedActiveLogicalRequestV1 ownerRequest = NewRequestWithEvidence(
+                new SavedFrozenEvidenceEntryV1 { recordId = "owner-evidence" });
+            ownerRequest.ownerPawnId = ownerId;
+            long requestBytes = SizeOf(ownerRequest);
+
+            DiaryGameComponent ownerBaseline = NewMemoryComponent(
+                NewCurrentDiaryList(ownerId), null, null);
+            ownerBaseline.RebuildMemorySizeIndexes();
+            DiaryGameComponent ownerWithRequest = NewMemoryComponent(
+                NewCurrentDiaryList(ownerId),
+                new List<SavedActiveLogicalRequestV1> { ownerRequest },
+                null);
+            ownerWithRequest.RebuildMemorySizeIndexes();
+
+            DiaryGameComponent.MemoryOwnerByteTotals baselineOwner =
+                ownerBaseline.GetOwnerByteTotals(ownerId);
+            DiaryGameComponent.MemoryOwnerByteTotals requestOwner =
+                ownerWithRequest.GetOwnerByteTotals(ownerId);
+            MemoryPayloadBudgetTotals baselineGlobal = ownerBaseline.GetGlobalBudgetTotals();
+            MemoryPayloadBudgetTotals requestGlobal = ownerWithRequest.GetGlobalBudgetTotals();
+            Require(baselineOwner.valid && requestOwner.valid
+                    && baselineGlobal.GlobalCombined() >= 0
+                    && requestGlobal.GlobalCombined() >= 0,
+                "Owner-attributed request accounting produced an invalid measured unit.");
+            Require(requestOwner.activeBytes - baselineOwner.activeBytes == requestBytes,
+                "An active request was not charged exactly once to its physical owner.");
+            Require(requestOwner.importedBytes == baselineOwner.importedBytes,
+                "An active request changed the owner's Imported byte subtotal.");
+            Require(requestGlobal.globalActiveBytes - baselineGlobal.globalActiveBytes
+                    == requestBytes,
+                "An active request was lost or double-counted in global active bytes.");
+            Require(requestGlobal.GlobalCombined() - baselineGlobal.GlobalCombined()
+                    == requestBytes,
+                "An active request was lost or double-counted in global combined bytes.");
+
+            var unknownA = new SavedImportedMemoryRow { archiveRecordId = "unknown-a" };
+            var unknownB = new SavedImportedMemoryRow { archiveRecordId = "unknown-b" };
+            long unknownABytes = SizeOf(unknownA);
+            long unknownBBytes = SizeOf(unknownB);
+            MemoryPayloadBudgetTotals emptyUnknown = RebuildAndGetGlobal(
+                new List<SavedImportedMemoryRow>());
+            MemoryPayloadBudgetTotals oneUnknown = RebuildAndGetGlobal(
+                new List<SavedImportedMemoryRow> { unknownA });
+            MemoryPayloadBudgetTotals manyUnknown = RebuildAndGetGlobal(
+                new List<SavedImportedMemoryRow> { unknownA, unknownB });
+            Require(emptyUnknown.globalImportedBytes == 4,
+                "The empty Unknown archive must charge its one four-byte list prefix.");
+            Require(oneUnknown.globalImportedBytes == 4 + unknownABytes,
+                "One Unknown archive row must charge one list prefix plus one row.");
+            Require(manyUnknown.globalImportedBytes == 4 + unknownABytes + unknownBBytes,
+                "Multiple Unknown archive rows must share one list prefix and charge each row once.");
+            Require(emptyUnknown.globalActiveBytes == oneUnknown.globalActiveBytes
+                    && oneUnknown.globalActiveBytes == manyUnknown.globalActiveBytes,
+                "Unknown Imported rows leaked into the component/global active subtotal.");
+            Require(oneUnknown.GlobalCombined() - emptyUnknown.GlobalCombined()
+                    == unknownABytes
+                    && manyUnknown.GlobalCombined() - oneUnknown.GlobalCombined()
+                    == unknownBBytes,
+                "Unknown archive rows were lost or counted twice in global combined bytes.");
         }
 
         [Test]
@@ -416,6 +713,113 @@ namespace PawnDiary.RimTests
             record.factValues.Add("spouse");
             record.factValues.Add("married");
             return record;
+        }
+
+        private static SavedMemoryFactBucket NewBucket(
+            params SavedMemoryFactContribution[] contributions)
+        {
+            return new SavedMemoryFactBucket
+            {
+                bucketKey = "null-hole-bucket",
+                contributions = new List<SavedMemoryFactContribution>(contributions)
+            };
+        }
+
+        private static SavedMemoryFactContribution NewContributionWithSubjectRefs(
+            params string[] subjectRefIds)
+        {
+            return new SavedMemoryFactContribution
+            {
+                contributionId = "null-hole-contribution",
+                subjectRefIds = new List<string>(subjectRefIds)
+            };
+        }
+
+        private static SavedActiveLogicalRequestV1 NewRequestWithEvidence(
+            params SavedFrozenEvidenceEntryV1[] evidenceEntries)
+        {
+            return new SavedActiveLogicalRequestV1
+            {
+                logicalRequestId = "null-hole-request",
+                reservedEvidenceEntries =
+                    new List<SavedFrozenEvidenceEntryV1>(evidenceEntries)
+            };
+        }
+
+        private static long SizeOf(IMemoryLogicalSizeSource source)
+        {
+            MemoryLogicalSizeResult result = MemoryLogicalPayloadSizer.Size(source);
+            Require(result.valid,
+                "Logical sizing failed for an adversarial fixture: " + result.errorPath);
+            return result.totalBytes;
+        }
+
+        private static List<PawnDiaryRecord> NewCurrentDiaryList(string ownerId)
+        {
+            return new List<PawnDiaryRecord>
+            {
+                new PawnDiaryRecord
+                {
+                    pawnId = ownerId,
+                    knowledgeState = PawnKnowledgeState.CreateCurrent(ownerId)
+                }
+            };
+        }
+
+        private static MemoryPayloadBudgetTotals RebuildAndGetGlobal(
+            List<SavedImportedMemoryRow> unknownRows)
+        {
+            DiaryGameComponent component = NewMemoryComponent(null, null, unknownRows);
+            component.RebuildMemorySizeIndexes();
+            MemoryPayloadBudgetTotals totals = component.GetGlobalBudgetTotals();
+            Require(totals.GlobalCombined() >= 0,
+                "Unknown archive accounting produced an invalid global measured unit.");
+            return totals;
+        }
+
+        private static DiaryGameComponent NewMemoryComponent(
+            List<PawnDiaryRecord> ownerDiaries,
+            List<SavedActiveLogicalRequestV1> activeRequests,
+            List<SavedImportedMemoryRow> unknownRows)
+        {
+            // The real constructor starts an LLM/game session, which a fixture must never do. This
+            // allocation creates only the inert persistence shell needed by the pure index rebuild.
+            var component = (DiaryGameComponent)FormatterServices.GetUninitializedObject(
+                typeof(DiaryGameComponent));
+            SetPrivateField(component, "diaries",
+                ownerDiaries ?? new List<PawnDiaryRecord>());
+            SetPrivateField(component, "activeMemoryCoordinatorRequests",
+                activeRequests ?? new List<SavedActiveLogicalRequestV1>());
+            SetPrivateField(component, "unresolvedOwnerArchiveRows",
+                unknownRows ?? new List<SavedImportedMemoryRow>());
+            SetPrivateField(component, "memoryByteTotalsByOwner",
+                new Dictionary<string, DiaryGameComponent.MemoryOwnerByteTotals>(
+                    StringComparer.Ordinal));
+            return component;
+        }
+
+        private static void RequireNewerSchemaRefused(
+            string label, DiaryGameComponent component)
+        {
+            try
+            {
+                component.ScanForNewerMemorySchemas();
+            }
+            catch (DiaryGameComponent.NewerPawnDiarySaveFormatException)
+            {
+                return;
+            }
+
+            throw new AssertionException(
+                "A newer nested " + label + " did not abort the whole memory load boundary.");
+        }
+
+        private static void SetPrivateField(object target, string fieldName, object value)
+        {
+            FieldInfo field = target.GetType().GetField(
+                fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+            Require(field != null, "Fixture could not find private field: " + fieldName);
+            field.SetValue(target, value);
         }
 
         private static string EpochToken(long sequence)

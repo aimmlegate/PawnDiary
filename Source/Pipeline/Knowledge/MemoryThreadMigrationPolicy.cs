@@ -114,6 +114,8 @@ namespace PawnDiary
         public string originRecordId = string.Empty;
         public string dedupKey = string.Empty;
         public string originSourceEventId = string.Empty;
+        public string sourceKind = string.Empty;
+        public string recallScope = string.Empty;
         public string eventKind = string.Empty;
         public string topicKey = string.Empty;
         public string dateLabel = string.Empty;
@@ -206,6 +208,15 @@ namespace PawnDiary
                     continue;
                 }
 
+                // Structural safety belongs to the complete INPUT set, not only the eventual
+                // winner. Otherwise a malformed automatic alternate could lose selection and be
+                // silently dropped while the owner was incorrectly declared migratable (§T13.1).
+                if (!HasSafeParallelListShape(snapshot))
+                {
+                    report.ownerRemainsRaw = true;
+                    continue;
+                }
+
                 string occurrence = ResolveOccurrenceId(report.ownerPawnId, snapshot, report);
                 if (occurrence == null)
                 {
@@ -294,52 +305,15 @@ namespace PawnDiary
             return report;
         }
 
-        private static int CompareRows(
+        internal static int CompareRows(
             MemoryLegacyMappedRecord left, MemoryLegacyMappedRecord right)
         {
-            int compare = string.CompareOrdinal(
-                left.sourceOccurrenceId ?? string.Empty,
-                right.sourceOccurrenceId ?? string.Empty);
-            if (compare != 0) return compare;
-            compare = string.CompareOrdinal(left.disposition ?? string.Empty, right.disposition ?? string.Empty);
-            if (compare != 0) return compare;
-            compare = string.CompareOrdinal(left.captureRuleId ?? string.Empty, right.captureRuleId ?? string.Empty);
-            if (compare != 0) return compare;
-            compare = string.CompareOrdinal(left.factDiscriminator ?? string.Empty, right.factDiscriminator ?? string.Empty);
-            if (compare != 0) return compare;
-            compare = string.CompareOrdinal(left.kindToken ?? string.Empty, right.kindToken ?? string.Empty);
-            if (compare != 0) return compare;
-            compare = string.CompareOrdinal(left.categoryToken ?? string.Empty, right.categoryToken ?? string.Empty);
-            if (compare != 0) return compare;
-            compare = string.CompareOrdinal(left.importanceToken ?? string.Empty, right.importanceToken ?? string.Empty);
-            if (compare != 0) return compare;
-            compare = left.originalEventTick.CompareTo(right.originalEventTick);
-            if (compare != 0) return compare;
-            compare = left.ageUnknown.CompareTo(right.ageUnknown);
-            if (compare != 0) return compare;
-            compare = left.playerEdited.CompareTo(right.playerEdited);
-            if (compare != 0) return compare;
-            compare = left.suppressed.CompareTo(right.suppressed);
-            if (compare != 0) return compare;
-            compare = string.CompareOrdinal(left.provenanceRefId ?? string.Empty, right.provenanceRefId ?? string.Empty);
-            if (compare != 0) return compare;
-            compare = string.CompareOrdinal(left.importedWording ?? string.Empty, right.importedWording ?? string.Empty);
-            if (compare != 0) return compare;
-            compare = string.CompareOrdinal(left.originRecordId ?? string.Empty, right.originRecordId ?? string.Empty);
-            if (compare != 0) return compare;
-            compare = left.facts.Count.CompareTo(right.facts.Count);
-            for (int i = 0; compare == 0 && i < left.facts.Count && i < right.facts.Count; i++)
-            {
-                compare = string.CompareOrdinal(left.facts[i].factId ?? string.Empty, right.facts[i].factId ?? string.Empty);
-                if (compare != 0) return compare;
-                compare = left.facts[i].originFactOrdinal.CompareTo(right.facts[i].originFactOrdinal);
-                if (compare != 0) return compare;
-                compare = string.CompareOrdinal(left.facts[i].canonicalValue ?? string.Empty, right.facts[i].canonicalValue ?? string.Empty);
-                if (compare != 0) return compare;
-                compare = string.CompareOrdinal(left.facts[i].canonicalValueKind ?? string.Empty, right.facts[i].canonicalValueKind ?? string.Empty);
-            }
-
-            return compare;
+            // Ordering and fingerprinting share this ONE exhaustive row encoding. Adding a report
+            // field without adding it here therefore cannot make two distinct reports compare equal
+            // in one place but hash differently in another.
+            return string.CompareOrdinal(
+                CanonicalMappedRecordEncoding(left),
+                CanonicalMappedRecordEncoding(right));
         }
 
         /// <summary>T13.3 arm 1: valid sourceEventId wins; then dedup-key; then recordId; then the
@@ -571,6 +545,8 @@ namespace PawnDiary
             mapped.originRecordId = Safe(snapshot.recordId);
             mapped.dedupKey = Safe(snapshot.dedupKey);
             mapped.originSourceEventId = Safe(snapshot.sourceEventId);
+            mapped.sourceKind = Safe(snapshot.sourceKind);
+            mapped.recallScope = Safe(snapshot.recallScope);
             mapped.eventKind = Safe(snapshot.eventKind);
             mapped.topicKey = Safe(snapshot.topicKey);
             mapped.dateLabel = Safe(snapshot.dateLabel);
@@ -727,13 +703,22 @@ namespace PawnDiary
             MemoryLegacyRecordSnapshot left,
             MemoryLegacyRecordSnapshot right)
         {
-            // Complete semantic duplicate predicate over identity + payload-relevant fields.
-            // Player wording disagreement is precisely the authored-conflict case, so the manual
-            // override participates here rather than collapsing two authorings into one (§T8.4).
+            // Complete semantic equality over every frozen legacy field. Identity precedence may
+            // group rows under one occurrence, but no preserved payload field may disappear merely
+            // because the other row won canonical selection (§T8.4/§T13.4).
             return left != null && right != null
+                && string.Equals(left.recordId, right.recordId, StringComparison.Ordinal)
+                && string.Equals(left.dedupKey, right.dedupKey, StringComparison.Ordinal)
+                && string.Equals(left.sourceEventId, right.sourceEventId, StringComparison.Ordinal)
+                && string.Equals(left.sourceKind, right.sourceKind, StringComparison.Ordinal)
+                && string.Equals(left.recallScope, right.recallScope, StringComparison.Ordinal)
                 && string.Equals(left.eventKind, right.eventKind, StringComparison.Ordinal)
                 && string.Equals(left.topicKey, right.topicKey, StringComparison.Ordinal)
                 && left.tick == right.tick
+                && string.Equals(left.dateLabel, right.dateLabel, StringComparison.Ordinal)
+                && string.Equals(left.fallbackSummary, right.fallbackSummary, StringComparison.Ordinal)
+                && SameLists(left.participantIds, right.participantIds)
+                && SameLists(left.participantNames, right.participantNames)
                 && SameLists(left.subjectKeys, right.subjectKeys)
                 && SameLists(left.factKeys, right.factKeys)
                 && SameLists(left.factValues, right.factValues)
@@ -742,6 +727,12 @@ namespace PawnDiary
                     right.manualTextOverride,
                     StringComparison.Ordinal)
                 && mapped != null;
+        }
+
+        private static bool HasSafeParallelListShape(MemoryLegacyRecordSnapshot snapshot)
+        {
+            return snapshot != null
+                && (snapshot.factKeys?.Count ?? 0) == (snapshot.factValues?.Count ?? 0);
         }
 
         /// <summary>
@@ -852,7 +843,6 @@ namespace PawnDiary
             AppendList(builder, snapshot.subjectKeys);
             AppendList(builder, snapshot.factKeys);
             AppendList(builder, snapshot.factValues);
-            AppendField(builder, snapshot.manualTextOverride);
             return builder.ToString();
         }
 
@@ -953,9 +943,67 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Complete canonical row encoding used by BOTH report ordering and fingerprinting. It
+        /// includes every scalar, every preserved legacy list, and every nested fact field.
+        /// </summary>
+        internal static string CanonicalMappedRecordEncoding(MemoryLegacyMappedRecord row)
+        {
+            var builder = new System.Text.StringBuilder();
+            row = row ?? new MemoryLegacyMappedRecord();
+            AppendField(builder, row.disposition);
+            AppendField(builder, row.sourceOccurrenceId);
+            AppendField(builder, row.captureRuleId);
+            AppendField(builder, row.factDiscriminator);
+            AppendField(builder, row.kindToken);
+            AppendField(builder, row.categoryToken);
+            AppendField(builder, row.importanceToken);
+            AppendField(builder, row.originalEventTick.ToString(
+                System.Globalization.CultureInfo.InvariantCulture));
+            AppendField(builder, row.ageUnknown ? "1" : "0");
+            AppendField(builder, row.playerEdited ? "1" : "0");
+            AppendField(builder, row.suppressed ? "1" : "0");
+            AppendField(builder, row.provenanceRefId);
+            AppendField(builder, row.importedWording);
+            AppendField(builder, row.originRecordId);
+            AppendField(builder, row.dedupKey);
+            AppendField(builder, row.originSourceEventId);
+            AppendField(builder, row.sourceKind);
+            AppendField(builder, row.recallScope);
+            AppendField(builder, row.eventKind);
+            AppendField(builder, row.topicKey);
+            AppendField(builder, row.dateLabel);
+            AppendField(builder, row.fallbackSummary);
+            AppendList(builder, row.participantIds);
+            AppendList(builder, row.participantNames);
+            AppendList(builder, row.subjectKeys);
+            AppendList(builder, row.factKeys);
+            AppendList(builder, row.factValues);
+            AppendField(builder, row.backgroundText);
+
+            List<MemoryLegacyMappedFact> facts = row.facts ?? new List<MemoryLegacyMappedFact>();
+            AppendField(builder, facts.Count.ToString(
+                System.Globalization.CultureInfo.InvariantCulture));
+            for (int i = 0; i < facts.Count; i++)
+            {
+                MemoryLegacyMappedFact fact = facts[i] ?? new MemoryLegacyMappedFact();
+                AppendField(builder, fact.originFactOrdinal.ToString(
+                    System.Globalization.CultureInfo.InvariantCulture));
+                AppendField(builder, fact.factId);
+                AppendField(builder, fact.factKind);
+                AppendField(builder, fact.canonicalSubjectKind);
+                AppendField(builder, fact.canonicalSubjectId);
+                AppendField(builder, fact.aggregationToken);
+                AppendField(builder, fact.canonicalValueKind);
+                AppendField(builder, fact.canonicalValue);
+            }
+
+            return builder.ToString();
+        }
+
         /// <summary>Canonical report fingerprint: framed ordinal serialization hashed with SHA-256.
         /// Equal plans (idempotent rerun) produce equal fingerprints (§T13.5 fixtures).</summary>
-        private static string Fingerprint(MemoryLegacyMigrationReport report)
+        internal static string Fingerprint(MemoryLegacyMigrationReport report)
         {
             var builder = new System.Text.StringBuilder();
             builder.Append(OrdinalSegmentCodec.Segment("memory-legacy-migration-report-v1"));
@@ -981,36 +1029,8 @@ namespace PawnDiary
                 report.rows.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)));
             foreach (MemoryLegacyMappedRecord row in report.rows)
             {
-                builder.Append(OrdinalSegmentCodec.Segment(row.disposition ?? string.Empty));
-                builder.Append(OrdinalSegmentCodec.Segment(row.sourceOccurrenceId ?? string.Empty));
-                builder.Append(OrdinalSegmentCodec.Segment(row.captureRuleId ?? string.Empty));
-                builder.Append(OrdinalSegmentCodec.Segment(row.factDiscriminator ?? string.Empty));
-                builder.Append(OrdinalSegmentCodec.Segment(row.kindToken ?? string.Empty));
-                builder.Append(OrdinalSegmentCodec.Segment(row.categoryToken ?? string.Empty));
-                builder.Append(OrdinalSegmentCodec.Segment(row.importanceToken ?? string.Empty));
                 builder.Append(OrdinalSegmentCodec.Segment(
-                    row.originalEventTick.ToString(System.Globalization.CultureInfo.InvariantCulture)));
-                builder.Append(OrdinalSegmentCodec.Segment(row.ageUnknown ? "1" : "0"));
-                builder.Append(OrdinalSegmentCodec.Segment(row.playerEdited ? "1" : "0"));
-                builder.Append(OrdinalSegmentCodec.Segment(row.suppressed ? "1" : "0"));
-                builder.Append(OrdinalSegmentCodec.Segment(row.provenanceRefId ?? string.Empty));
-                builder.Append(OrdinalSegmentCodec.Segment(row.importedWording ?? string.Empty));
-                builder.Append(OrdinalSegmentCodec.Segment(row.backgroundText ?? string.Empty));
-                builder.Append(OrdinalSegmentCodec.Segment(row.originRecordId ?? string.Empty));
-                builder.Append(OrdinalSegmentCodec.Segment(row.dedupKey ?? string.Empty));
-                builder.Append(OrdinalSegmentCodec.Segment(row.eventKind ?? string.Empty));
-                builder.Append(OrdinalSegmentCodec.Segment(
-                    row.facts.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)));
-                foreach (MemoryLegacyMappedFact fact in row.facts)
-                {
-                    builder.Append(OrdinalSegmentCodec.Segment(fact.factId ?? string.Empty));
-                    builder.Append(OrdinalSegmentCodec.Segment(
-                        fact.originFactOrdinal.ToString(
-                            System.Globalization.CultureInfo.InvariantCulture)));
-                    builder.Append(OrdinalSegmentCodec.Segment(fact.canonicalValue ?? string.Empty));
-                    builder.Append(OrdinalSegmentCodec.Segment(
-                        fact.canonicalValueKind ?? string.Empty));
-                }
+                    CanonicalMappedRecordEncoding(row)));
             }
 
             try
