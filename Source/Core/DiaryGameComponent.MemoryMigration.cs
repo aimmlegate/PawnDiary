@@ -8,14 +8,17 @@
 // never creates events/pages/requests. The M11 commit slice will reuse these exact plans.
 using System;
 using System.Collections.Generic;
+using Verse;
 
 namespace PawnDiary
 {
     public partial class DiaryGameComponent
     {
         /// <summary>
-        /// Runs the bounded per-owner dry-run migration report over every still-legacy envelope.
-        /// Failure-isolated like every other load repair: a throw here must never abort the load.
+        /// Runs the bounded per-owner dry-run migration report over every envelope that still
+        /// carries legacy records. Duplicate containers group by exact ordinal pawn ID FIRST
+        /// (§T13.2), owners process in ordinal order up to the bounded cap, and failure is
+        /// isolated like every other load repair: a throw here must never abort the load.
         /// </summary>
         private void RunMemoryMigrationDryRunReport()
         {
@@ -25,52 +28,84 @@ namespace PawnDiary
             }
 
             List<MemoryLegacyRuleMapEntry> ruleMap = SnapshotLegacyRuleMap();
-            int reportedOwners = 0;
-            for (int i = 0; i < diaries.Count && reportedOwners < 64; i++)
+            long maxKnownTick = Find.TickManager != null ? Find.TickManager.TicksGame : 0;
+
+            // Group ALL containers by exact owner id before planning (§T13.2 duplicate-container
+            // rule). A current-shape envelope whose records list still holds LegacyShadow-era
+            // captures participates too — mixed-format rows must never hide from the planner.
+            SortedDictionary<string, List<MemoryLegacyRecordSnapshot>> ownersByPawnId =
+                new SortedDictionary<string, List<MemoryLegacyRecordSnapshot>>(
+                    StringComparer.Ordinal);
+            foreach (PawnDiaryRecord diary in diaries)
             {
-                PawnDiaryRecord diary = diaries[i];
                 if (diary == null || string.IsNullOrWhiteSpace(diary.pawnId)
                     || diary.knowledgeState == null
-                    || diary.knowledgeState.IsCurrentSchema()
                     || diary.knowledgeState.records == null
                     || diary.knowledgeState.records.Count == 0)
                 {
                     continue;
                 }
 
-                var input = new MemoryLegacyOwnerMigrationInput
+                if (!ownersByPawnId.TryGetValue(diary.pawnId, out var bucket))
                 {
-                    ownerPawnId = diary.pawnId ?? string.Empty,
-                    ownerEpochToken =
-                        diary.knowledgeState.autobiographicalEpochToken ?? string.Empty
-                };
+                    bucket = new List<MemoryLegacyRecordSnapshot>();
+                    ownersByPawnId[diary.pawnId] = bucket;
+                }
+
                 foreach (ImportantMemoryRecord record in diary.knowledgeState.records)
                 {
                     // Raw-preservation rule (§T13.1): the snapshot copies the loaded shape as-is —
                     // no semantic Normalize of tokens, no list alignment beyond null-safety.
-                    input.records.Add(SnapshotLegacyRecord(record));
+                    bucket.Add(SnapshotLegacyRecord(record));
                 }
+            }
+
+            int reportedOwners = 0;
+            bool truncated = false;
+            foreach (KeyValuePair<string, List<MemoryLegacyRecordSnapshot>> owner
+                in ownersByPawnId)
+            {
+                if (reportedOwners >= 64)
+                {
+                    truncated = true;
+                    break;
+                }
+
+                var input = new MemoryLegacyOwnerMigrationInput
+                {
+                    ownerPawnId = owner.Key,
+                    // Epoch resolution/reservation arrives with the M11 commit slice; dry-run
+                    // reports mapping only and never stamps this token.
+                    ownerEpochToken = string.Empty,
+                    maxKnownTick = maxKnownTick,
+                    ruleMap = ruleMap
+                };
+                input.records.AddRange(owner.Value);
 
                 MemoryLegacyMigrationReport report =
                     MemoryThreadMigrationPolicy.PlanDryRun(input);
                 RecordMemoryDiagnostic("legacy_dry_run", "owner");
                 if (report.ownerRemainsRaw)
                 {
-                    RecordMemoryDiagnostic("legacy_owner_raw", diary.pawnId ?? "owner");
+                    RecordMemoryDiagnostic("legacy_owner_raw", "owner");
                 }
 
                 if (report.droppedAutomaticAlternateCount > 0)
                 {
-                    RecordMemoryDiagnostic(
-                        "legacy_automatic_duplicate", diary.pawnId ?? "owner");
+                    RecordMemoryDiagnostic("legacy_automatic_duplicate", "owner");
                 }
 
                 if (report.archivedAuthoredConflictCount > 0)
                 {
-                    RecordMemoryDiagnostic("legacy_authored_conflict", diary.pawnId ?? "owner");
+                    RecordMemoryDiagnostic("legacy_authored_conflict", "owner");
                 }
 
                 reportedOwners++;
+            }
+
+            if (truncated)
+            {
+                RecordMemoryDiagnostic("legacy_report_truncated", "component");
             }
         }
 
@@ -86,9 +121,12 @@ namespace PawnDiary
                 eventKind = record.eventKind ?? string.Empty,
                 topicKey = record.topicKey ?? string.Empty,
                 tick = record.tick,
+                dateLabel = record.dateLabel ?? string.Empty,
+                fallbackSummary = record.fallbackSummary ?? string.Empty,
                 manualTextOverride = record.manualTextOverride ?? string.Empty
             };
             CopySafe(record.participantIds, snapshot.participantIds);
+            CopySafe(record.participantNames, snapshot.participantNames);
             CopySafe(record.subjectKeys, snapshot.subjectKeys);
             CopySafe(record.factKeys, snapshot.factKeys);
             CopySafe(record.factValues, snapshot.factValues);

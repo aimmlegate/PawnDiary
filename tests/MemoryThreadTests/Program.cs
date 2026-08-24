@@ -1298,27 +1298,45 @@ namespace MemoryThreadTests
 
             IReadOnlyList<MemorySavedRowFields> rows = MemorySavedScalarSchema.Rows();
             AssertEqual("schema.row-count", 32, rows.Count);
-            int registryAtoms = 0;
-            foreach (MemorySavedRowFields row in rows)
-            {
-                AssertTrue("schema.row-known." + row.rowName, catalogRows.Contains(row.rowName));
-                AssertTrue("schema.row-fields." + row.rowName, row.atoms.Length > 0);
-                foreach (MemorySavedFieldAtom atom in row.atoms)
-                {
-                    registryAtoms++;
-                    string path = row.rowName + "." + atom.fieldNameToken;
-                    string kind;
-                    AssertTrue("schema.path-frozen." + path,
-                        catalogKinds.TryGetValue(path, out kind));
-                    if (!catalogKinds.ContainsKey(path))
-                    {
-                        continue;
-                    }
 
-                    AssertEqual("schema.kind." + path, KindToken(atom.atomKind), kind);
+            // ORDERED parity against the frozen catalog: type order, field order inside every
+            // type, and atom-kind sequences must match index-for-index — sets would silently
+            // pass a reordered schema (§T6.0 "exactly once" is an ordered contract).
+            var orderedTypes = new List<(string name, List<string> fields)>();
+            foreach (var type in payload.RootElement.GetProperty("types").EnumerateArray())
+            {
+                var fieldList = new List<string>();
+                foreach (var field in type.GetProperty("fields").EnumerateArray())
+                {
+                    fieldList.Add(field.GetString());
+                }
+                orderedTypes.Add((type.GetProperty("name").GetString(), fieldList));
+            }
+            AssertEqual("schema.type-order.count", orderedTypes.Count, rows.Count);
+            for (int i = 0; i < orderedTypes.Count && i < rows.Count; i++)
+            {
+                AssertEqual("schema.type-order." + i, orderedTypes[i].name, rows[i].rowName);
+                AssertEqual("schema.field-order.count." + orderedTypes[i].name,
+                    orderedTypes[i].fields.Count, rows[i].atoms.Length);
+                for (int j = 0; j < orderedTypes[i].fields.Count
+                        && j < rows[i].atoms.Length; j++)
+                {
+                    AssertEqual("schema.field-order." + orderedTypes[i].name + "." + j,
+                        orderedTypes[i].fields[j], rows[i].atoms[j].fieldNameToken);
+                    AssertEqual(
+                        "schema.kind-order." + orderedTypes[i].name + "."
+                        + rows[i].atoms[j].fieldNameToken,
+                        catalogKinds[orderedTypes[i].name + "." + orderedTypes[i].fields[j]],
+                        KindToken(rows[i].atoms[j].atomKind));
                 }
             }
 
+            // Flattened atom-path order must equal the frozen atomRows ordinal sequence too.
+            int registryAtoms = 0;
+            foreach (MemorySavedRowFields row in rows)
+            {
+                registryAtoms += row.atoms.Length;
+            }
             AssertEqual("schema.atom-count", 399, registryAtoms);
             AssertEqual("schema.catalog-atom-count", 399, catalogKinds.Count);
 
@@ -1739,7 +1757,16 @@ namespace MemoryThreadTests
             AssertEqual("carrier.reservation.none-survive", 0,
                 invalidReservationPlan.normalizedReservations.Count);
 
-            // Faction generations raise monotonically; MaxValue is a typed saturation flag.
+            // Faction generations raise monotonically; MaxValue is a typed saturation flag —
+            // from the SAVED allocator alone, without any carrier repeating the value.
+            MemorySavedCarrierScanInput saturatedSaved = new MemorySavedCarrierScanInput
+            {
+                globalFactionSnapshotAllocatorGeneration = long.MaxValue
+            };
+            MemorySavedCarrierRegistryPlan savedSaturatedPlan =
+                MemorySavedIdentityCarrierRegistry.Plan(saturatedSaved);
+            AssertTrue("carrier.faction.saved-max-saturated",
+                savedSaturatedPlan.factionGenerationSaturated);
             MemorySavedCarrierScanInput factions = new MemorySavedCarrierScanInput
             {
                 globalFactionSnapshotAllocatorGeneration = 4
@@ -1937,12 +1964,12 @@ namespace MemoryThreadTests
             AssertEqual("sizer.deep-list.delta-per-row", childBytes,
                 listResult.totalBytes - singleResult.totalBytes);
 
-            // Raw wrapper escape hatch: presence byte plus 4 prefix + 2 per UTF-16 unit.
-            // 64 framing + 4 + (4+5) + 4 + 4 + 4 + 1 + (4 + 14) = 108.
-            var rawProbe = new RawProbeRow { units = 7 };
+            // Raw wrapper escape hatch: exact legacy walker bytes via UnregisteredRawBytes.
+            // 64 framing + 4 + (4+5) + 4 + 4 + 4 + 1 + (4 prefix + 7 bytes) = 101.
+            var rawProbe = new RawProbeRow { bytes = 7 };
             MemoryLogicalSizeResult rawResult = MemoryLogicalPayloadSizer.Size(rawProbe);
             AssertTrue("sizer.raw.valid", rawResult.valid);
-            AssertEqual("sizer.raw.golden-bytes", 108L, rawResult.totalBytes);
+            AssertEqual("sizer.raw.golden-bytes", 101L, rawResult.totalBytes);
 
             // Shape violations fail closed with a path, never throw through the caller.
             MemoryLogicalSizeResult wrongOrder =
@@ -1972,7 +1999,7 @@ namespace MemoryThreadTests
 
         private sealed class RawProbeRow : IMemoryLogicalSizeSource
         {
-            public int units;
+            public long bytes = 7;
 
             public void CollectFields(MemoryLogicalSizeCollector collector)
             {
@@ -1983,7 +2010,8 @@ namespace MemoryThreadTests
                 collector.Int32("sourceContainerOrdinal", -1);
                 collector.Int32("sourceRecordOrdinal", -1);
                 collector.NullablePresence("legacyRecord", true);
-                collector.UnregisteredRawRow(units);
+                collector.UnregisteredRawBytes(bytes);
+                collector.ClearPendingChild();
                 collector.EndRow();
             }
         }
@@ -2127,6 +2155,10 @@ namespace MemoryThreadTests
             MemoryBudgetDecision badLimits = ActiveMemoryPayloadBudget.TryAdmit(
                 default(MemoryBudgetLimits), 0, 0, 10, 0, globals);
             AssertEqual("budget.bad-limits", "invalid", badLimits.OutcomeToken());
+            // A removal larger than current totals would go negative: invalid, never admitted.
+            MemoryBudgetDecision negativeAfterDelta = ActiveMemoryPayloadBudget.TryAdmit(
+                limits, 100, 0, -400, 0, globals);
+            AssertEqual("budget.negative-after-delta", "invalid", negativeAfterDelta.OutcomeToken());
             MemoryBudgetDecision overflowDelta = ActiveMemoryPayloadBudget.TryAdmit(
                 limits, long.MaxValue - 5, 0, 100, 0, globals);
             AssertEqual("budget.overflow", "invalid", overflowDelta.OutcomeToken());
@@ -2370,7 +2402,8 @@ AssertEqual("migration.permutation.fingerprint",
                 },
                 new MemoryImportedAdmissionUnit
                 {
-                    ownerPawnId = "Pawn_A", sourceIndex = 3,
+                    // §T17.5: one unit per resolved owner, so this fourth unit uses its own ID.
+                    ownerPawnId = "Pawn_D", sourceIndex = 3,
                     earliestAuthoredTick = 60, rowCount = 4, logicalBytes = 350
                 }
             };
@@ -2435,11 +2468,34 @@ AssertEqual("migration.permutation.fingerprint",
             AssertTrue("import.exhaust.first-admitted", exhausted.admitted[0]);
             AssertTrue("import.exhaust.second-pending", !exhausted.admitted[1]);
 
-            // Invalid configuration fails closed.
+            // Invalid configuration fails closed: bad caps, duplicate owner units, and more
+            // than one unresolved unit each refuse the whole round (§T17.5 whole-unit rules).
             MemoryImportedAdmissionDecision invalid = ImportedPayloadBudget.PlanAdmission(
                 units, 0, caps.maxGlobalRows, caps.ownerBytes, caps.globalBytes,
                 caps.combinedCurrent, caps.combinedCap);
             AssertEqual("import.invalid-caps", "Invalid", invalid.outcome.ToString());
+            var duplicateOwnerUnits = new List<MemoryImportedAdmissionUnit>
+            {
+                new MemoryImportedAdmissionUnit
+                    { ownerPawnId = "Pawn_A", sourceIndex = 0, earliestAuthoredTick = 10, rowCount = 1, logicalBytes = 10 },
+                new MemoryImportedAdmissionUnit
+                    { ownerPawnId = "Pawn_A", sourceIndex = 1, earliestAuthoredTick = 20, rowCount = 1, logicalBytes = 10 }
+            };
+            MemoryImportedAdmissionDecision duplicateOwner = ImportedPayloadBudget.PlanAdmission(
+                duplicateOwnerUnits, caps.maxOwnerRows, caps.maxGlobalRows,
+                caps.ownerBytes, caps.globalBytes, caps.combinedCurrent, caps.combinedCap);
+            AssertEqual("import.duplicate-owner-invalid", "Invalid", duplicateOwner.outcome.ToString());
+            var twoUnresolvedUnits = new List<MemoryImportedAdmissionUnit>
+            {
+                new MemoryImportedAdmissionUnit
+                    { ownerPawnId = string.Empty, sourceIndex = 0, earliestAuthoredTick = 10, rowCount = 1, logicalBytes = 10 },
+                new MemoryImportedAdmissionUnit
+                    { ownerPawnId = string.Empty, sourceIndex = 1, earliestAuthoredTick = 20, rowCount = 1, logicalBytes = 10 }
+            };
+            MemoryImportedAdmissionDecision twoUnresolved = ImportedPayloadBudget.PlanAdmission(
+                twoUnresolvedUnits, caps.maxOwnerRows, caps.maxGlobalRows,
+                caps.ownerBytes, caps.globalBytes, caps.combinedCurrent, caps.combinedCap);
+            AssertEqual("import.two-unresolved-invalid", "Invalid", twoUnresolved.outcome.ToString());
         }
 
         private static MemoryRootIdentity Root(

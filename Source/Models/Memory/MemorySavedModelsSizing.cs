@@ -10,6 +10,7 @@
 // The two RAW legacy wrapper leaves are deliberately NOT registered schema rows: their exact
 // current-schema encoding does not exist until migration stamps them (§T6.8), so they charge a
 // documented UTF-16-unit estimate through UnregisteredRawRow instead of pretending to be atoms.
+using System;
 using System.Collections.Generic;
 using Verse;
 
@@ -17,6 +18,9 @@ namespace PawnDiary
 {
     public partial class SavedMemoryStateFact
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedMemoryStateFact");
@@ -29,6 +33,9 @@ namespace PawnDiary
 
     public partial class SavedMemorySubjectRef
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedMemorySubjectRef");
@@ -45,6 +52,9 @@ namespace PawnDiary
 
     public partial class SavedMemoryCanonicalFact
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedMemoryCanonicalFact");
@@ -64,6 +74,9 @@ namespace PawnDiary
 
     public partial class SavedMemoryProvenance
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedMemoryProvenance");
@@ -83,13 +96,16 @@ namespace PawnDiary
     {
         internal void SizeRefList(MemoryLogicalSizeCollector c, string name, List<string> refs)
         {
-            int count = refs == null ? 0 : refs.Count;
+            int count = MemorySavedSizingUtil.NonNullCount(refs);
             c.ListCount(name, count);
             for (int i = 0; i < count; i++)
             {
                 c.ValueListStringElement(refs[i]);
             }
         }
+
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
 
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
@@ -116,6 +132,9 @@ namespace PawnDiary
 
     public partial class SavedMemoryFactBucket
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedMemoryFactBucket");
@@ -125,7 +144,7 @@ namespace PawnDiary
             c.String("canonicalSubjectKind", canonicalSubjectKind);
             c.String("canonicalSubjectId", canonicalSubjectId);
             c.String("aggregationToken", aggregationToken);
-            c.ListCount("contributions", contributions == null ? 0 : contributions.Count);
+            c.ListCount("contributions", MemorySavedSizingUtil.NonNullCount(contributions));
             for (int i = 0; contributions != null && i < contributions.Count; i++)
             {
                 if (contributions[i] != null)
@@ -149,7 +168,7 @@ namespace PawnDiary
             MemoryLogicalSizeCollector c, string fieldName, List<T> rows)
             where T : class, IMemoryLogicalSizeSource
         {
-            int count = rows == null ? 0 : rows.Count;
+            int count = MemorySavedSizingUtil.NonNullCount(rows);
             c.ListCount(fieldName, count);
             for (int i = 0; rows != null && i < count; i++)
             {
@@ -159,6 +178,9 @@ namespace PawnDiary
                 }
             }
         }
+
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
 
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
@@ -189,6 +211,9 @@ namespace PawnDiary
 
     public partial class SavedMemoryBlock
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedMemoryBlock");
@@ -241,7 +266,7 @@ namespace PawnDiary
         private static void SizeSubjectList(
             MemoryLogicalSizeCollector c, List<SavedMemorySubjectRef> rows)
         {
-            int count = rows == null ? 0 : rows.Count;
+            int count = MemorySavedSizingUtil.NonNullCount(rows);
             c.ListCount("secondarySubjects", count);
             for (int i = 0; rows != null && i < count; i++)
             {
@@ -256,7 +281,7 @@ namespace PawnDiary
             MemoryLogicalSizeCollector c, string fieldName, List<T> rows)
             where T : class, IMemoryLogicalSizeSource
         {
-            int count = rows == null ? 0 : rows.Count;
+            int count = MemorySavedSizingUtil.NonNullCount(rows);
             c.ListCount(fieldName, count);
             for (int i = 0; rows != null && i < count; i++)
             {
@@ -270,6 +295,9 @@ namespace PawnDiary
 
     public partial class SavedMemoryChapter
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedMemoryChapter");
@@ -289,6 +317,9 @@ namespace PawnDiary
 
     public partial class SavedMemoryThreadRoot
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedMemoryThreadRoot");
@@ -303,7 +334,7 @@ namespace PawnDiary
             c.Int64("statusRevision", statusRevision);
             c.Int32("lastAppliedReducerRevision", lastAppliedReducerRevision);
             c.Int64("nextChapterOrdinal", nextChapterOrdinal);
-            c.ListCount("chapters", chapters == null ? 0 : chapters.Count);
+            c.ListCount("chapters", MemorySavedSizingUtil.NonNullCount(chapters));
             for (int i = 0; chapters != null && i < chapters.Count; i++)
             {
                 if (chapters[i] != null)
@@ -312,7 +343,7 @@ namespace PawnDiary
                 }
             }
 
-            c.ListCount("visibleBlocks", visibleBlocks == null ? 0 : visibleBlocks.Count);
+            c.ListCount("visibleBlocks", MemorySavedSizingUtil.NonNullCount(visibleBlocks));
             for (int i = 0; visibleBlocks != null && i < visibleBlocks.Count; i++)
             {
                 if (visibleBlocks[i] != null)
@@ -336,7 +367,7 @@ namespace PawnDiary
         private static void SizeFacts(
             MemoryLogicalSizeCollector c, string fieldName, List<SavedMemoryStateFact> rows)
         {
-            int count = rows == null ? 0 : rows.Count;
+            int count = MemorySavedSizingUtil.NonNullCount(rows);
             c.ListCount(fieldName, count);
             for (int i = 0; rows != null && i < count; i++)
             {
@@ -346,6 +377,9 @@ namespace PawnDiary
                 }
             }
         }
+
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
 
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
@@ -373,7 +407,7 @@ namespace PawnDiary
         private static void SizeFacts(
             MemoryLogicalSizeCollector c, string fieldName, List<SavedMemoryStateFact> rows)
         {
-            int count = rows == null ? 0 : rows.Count;
+            int count = MemorySavedSizingUtil.NonNullCount(rows);
             c.ListCount(fieldName, count);
             for (int i = 0; rows != null && i < count; i++)
             {
@@ -383,6 +417,9 @@ namespace PawnDiary
                 }
             }
         }
+
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
 
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
@@ -411,6 +448,9 @@ namespace PawnDiary
 
     public partial class SavedGlobalFactionSnapshot
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedGlobalFactionSnapshot");
@@ -433,6 +473,9 @@ namespace PawnDiary
 
     public partial class SavedMemoryAppliedPolicyStateV1
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedMemoryAppliedPolicyStateV1");
@@ -464,6 +507,9 @@ namespace PawnDiary
 
     public partial class SavedSummaryWordingOpportunityV1
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedSummaryWordingOpportunityV1");
@@ -494,6 +540,9 @@ namespace PawnDiary
 
     public partial class SavedMemoryDiagnosticCounter
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedMemoryDiagnosticCounter");
@@ -507,6 +556,9 @@ namespace PawnDiary
 
     public partial class SavedMemoryAttemptAuditRow
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedMemoryAttemptAuditRow");
@@ -527,6 +579,9 @@ namespace PawnDiary
 
     public partial class SavedLegacyOwnerEpochReservation
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedLegacyOwnerEpochReservation");
@@ -539,6 +594,9 @@ namespace PawnDiary
 
     public partial class SavedMemoryRepetitionGuardRow
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedMemoryRepetitionGuardRow");
@@ -559,6 +617,9 @@ namespace PawnDiary
 
     public partial class SavedImportedSummaryContributionEvidenceV1
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedImportedSummaryContributionEvidenceV1");
@@ -584,7 +645,7 @@ namespace PawnDiary
         private static void SizeValueList(
             MemoryLogicalSizeCollector c, string fieldName, List<string> values)
         {
-            int count = values == null ? 0 : values.Count;
+            int count = MemorySavedSizingUtil.NonNullCount(values);
             c.ListCount(fieldName, count);
             for (int i = 0; values != null && i < count; i++)
             {
@@ -595,6 +656,9 @@ namespace PawnDiary
 
     public partial class SavedImportedMemoryRow
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedImportedMemoryRow");
@@ -620,7 +684,7 @@ namespace PawnDiary
                 c.NestedRow(primarySubject);
             }
 
-            int secondary = secondarySubjects == null ? 0 : secondarySubjects.Count;
+            int secondary = MemorySavedSizingUtil.NonNullCount(secondarySubjects);
             c.ListCount("secondarySubjects", secondary);
             for (int i = 0; secondarySubjects != null && i < secondary; i++)
             {
@@ -630,7 +694,7 @@ namespace PawnDiary
                 }
             }
 
-            int factCount = canonicalFacts == null ? 0 : canonicalFacts.Count;
+            int factCount = MemorySavedSizingUtil.NonNullCount(canonicalFacts);
             c.ListCount("canonicalFacts", factCount);
             for (int i = 0; canonicalFacts != null && i < factCount; i++)
             {
@@ -640,7 +704,7 @@ namespace PawnDiary
                 }
             }
 
-            int provCount = provenance == null ? 0 : provenance.Count;
+            int provCount = MemorySavedSizingUtil.NonNullCount(provenance);
             c.ListCount("provenance", provCount);
             for (int i = 0; provenance != null && i < provCount; i++)
             {
@@ -661,7 +725,7 @@ namespace PawnDiary
             c.String("conflictFingerprint", conflictFingerprint);
             c.Int64("overflowRowCount", overflowRowCount);
             c.Int64("overflowLogicalBytes", overflowLogicalBytes);
-            int diagnosticCount = diagnosticTokens == null ? 0 : diagnosticTokens.Count;
+            int diagnosticCount = MemorySavedSizingUtil.NonNullCount(diagnosticTokens);
             c.ListCount("diagnosticTokens", diagnosticCount);
             for (int i = 0; diagnosticTokens != null && i < diagnosticCount; i++)
             {
@@ -676,10 +740,14 @@ namespace PawnDiary
     public partial class SavedLegacyUnresolvedOwnerArchiveInputV1
     {
         /// <summary>
-        /// Raw pre-schema leaves keep their legacy encoding until migration stamps them (§T6.8),
-        /// so this wrapper charges the nested ImportantMemoryRecord as measured UTF-16 units via
-        /// the collector's unregistered-raw-row escape instead of fake schema atoms.
+        /// Raw pre-schema leaves keep their legacy encoding until migration stamps them (T6.8),
+        /// so this wrapper charges the nested ImportantMemoryRecord with its COMPLETE frozen
+        /// logical walker - framing, scalars, string prefixes, exact UTF-8, list counts - through
+        /// the collector's raw-bytes escape instead of fake schema atoms.
         /// </summary>
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedLegacyUnresolvedOwnerArchiveInputV1");
@@ -691,54 +759,91 @@ namespace PawnDiary
             c.NullablePresence("legacyRecord", legacyRecord != null);
             if (legacyRecord != null)
             {
-                c.UnregisteredRawRow(LegacyRecordUtf16Units(legacyRecord));
+                c.UnregisteredRawBytes(LegacyRecordLogicalBytes(legacyRecord));
+                c.ClearPendingChild();
             }
 
             c.EndRow();
         }
 
-        internal static int LegacyRecordUtf16Units(ImportantMemoryRecord record)
+        internal const long LegacyRowFramingBytes = 64;
+        internal const long LegacyPrefixBytes = 4;
+
+        /// <summary>Complete T6.8 logical walker for one shipped legacy record; checked.</summary>
+        internal static long LegacyRecordLogicalBytes(ImportantMemoryRecord record)
         {
             if (record == null)
             {
                 return 0;
             }
 
-            int units = (record.recordId ?? string.Empty).Length
-                + (record.dedupKey ?? string.Empty).Length
-                + (record.sourceEventId ?? string.Empty).Length
-                + (record.sourceKind ?? string.Empty).Length
-                + (record.recallScope ?? string.Empty).Length
-                + (record.eventKind ?? string.Empty).Length
-                + (record.topicKey ?? string.Empty).Length
-                + (record.dateLabel ?? string.Empty).Length
-                + (record.fallbackSummary ?? string.Empty).Length
-                + (record.manualTextOverride ?? string.Empty).Length;
-            units += SumUnits(record.participantIds) + SumUnits(record.participantNames)
-                + SumUnits(record.subjectKeys) + SumUnits(record.factKeys)
-                + SumUnits(record.factValues);
-            return units;
+            checked
+            {
+                long total = LegacyRowFramingBytes;
+                total += 4; // tick (int32)
+                total += LegacyString(record.recordId);
+                total += LegacyString(record.dedupKey);
+                total += LegacyString(record.sourceEventId);
+                total += LegacyString(record.sourceKind);
+                total += LegacyString(record.recallScope);
+                total += LegacyString(record.eventKind);
+                total += LegacyString(record.topicKey);
+                total += LegacyString(record.dateLabel);
+                total += LegacyString(record.fallbackSummary);
+                total += LegacyString(record.manualTextOverride);
+                total += LegacyList(record.participantIds);
+                total += LegacyList(record.participantNames);
+                total += LegacyList(record.subjectKeys);
+                total += LegacyList(record.factKeys);
+                total += LegacyList(record.factValues);
+                return total;
+            }
         }
 
-        private static int SumUnits(List<string> values)
+        /// <summary>4-byte UTF-8 length prefix plus exact UTF-8 bytes; a (hand-edited) unpaired
+        /// surrogate falls back to 2 bytes per UTF-16 unit rather than throwing mid-load.</summary>
+        private static long LegacyString(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return LegacyPrefixBytes;
+            }
+
+            try
+            {
+                return LegacyPrefixBytes
+                    + new System.Text.UTF8Encoding(false, true).GetByteCount(value);
+            }
+            catch (ArgumentException)
+            {
+                return LegacyPrefixBytes + 2L * value.Length;
+            }
+        }
+
+        private static long LegacyList(List<string> values)
         {
             if (values == null)
             {
-                return 0;
+                return LegacyPrefixBytes;
             }
 
-            int total = 0;
-            for (int i = 0; i < values.Count; i++)
+            checked
             {
-                total += values[i] == null ? 0 : values[i].Length;
-            }
+                long total = LegacyPrefixBytes;
+                for (int i = 0; i < values.Count; i++)
+                {
+                    total += LegacyString(values[i]);
+                }
 
-            return total;
+                return total;
+            }
         }
     }
-
     public partial class SavedFrozenEvidenceEntryV1
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedFrozenEvidenceEntryV1");
@@ -752,6 +857,9 @@ namespace PawnDiary
 
     public partial class SavedFrozenGuardEntryV1
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedFrozenGuardEntryV1");
@@ -764,6 +872,9 @@ namespace PawnDiary
 
     public partial class SavedFrozenDiagnosticProvenanceV1
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedFrozenDiagnosticProvenanceV1");
@@ -780,12 +891,15 @@ namespace PawnDiary
 
     public partial class SavedFrozenEvidenceReceiptPlanV1
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedFrozenEvidenceReceiptPlanV1");
             c.Int32("schemaVersion", schemaVersion);
             c.String("evidenceSetFingerprint", evidenceSetFingerprint);
-            c.ListCount("evidenceEntries", evidenceEntries == null ? 0 : evidenceEntries.Count);
+            c.ListCount("evidenceEntries", MemorySavedSizingUtil.NonNullCount(evidenceEntries));
             for (int i = 0; evidenceEntries != null && i < evidenceEntries.Count; i++)
             {
                 if (evidenceEntries[i] != null)
@@ -794,7 +908,7 @@ namespace PawnDiary
                 }
             }
 
-            c.ListCount("guardEntries", guardEntries == null ? 0 : guardEntries.Count);
+            c.ListCount("guardEntries", MemorySavedSizingUtil.NonNullCount(guardEntries));
             for (int i = 0; guardEntries != null && i < guardEntries.Count; i++)
             {
                 if (guardEntries[i] != null)
@@ -809,6 +923,9 @@ namespace PawnDiary
 
     public partial class SavedFrozenPromptVariantV1
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedFrozenPromptVariantV1");
@@ -825,7 +942,7 @@ namespace PawnDiary
                 c.NestedRow(receiptPlan);
             }
 
-            int diagnostics = diagnosticProvenance == null ? 0 : diagnosticProvenance.Count;
+            int diagnostics = MemorySavedSizingUtil.NonNullCount(diagnosticProvenance);
             c.ListCount("diagnosticProvenance", diagnostics);
             for (int i = 0; diagnosticProvenance != null && i < diagnostics; i++)
             {
@@ -841,6 +958,9 @@ namespace PawnDiary
 
     public partial class SavedActiveLogicalAttemptV1
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedActiveLogicalAttemptV1");
@@ -863,6 +983,9 @@ namespace PawnDiary
 
     public partial class SavedActiveLogicalRequestV1
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             c.BeginRow("SavedActiveLogicalRequestV1");
@@ -885,7 +1008,7 @@ namespace PawnDiary
             c.Int32("lastIssuedAttemptOrdinal", lastIssuedAttemptOrdinal);
             c.Int32("narrativeUseWinnerAttemptOrdinal", narrativeUseWinnerAttemptOrdinal);
             c.String("narrativeUseWinnerVariantKey", narrativeUseWinnerVariantKey);
-            c.ListCount("frozenVariants", frozenVariants == null ? 0 : frozenVariants.Count);
+            c.ListCount("frozenVariants", MemorySavedSizingUtil.NonNullCount(frozenVariants));
             for (int i = 0; frozenVariants != null && i < frozenVariants.Count; i++)
             {
                 if (frozenVariants[i] != null)
@@ -894,7 +1017,7 @@ namespace PawnDiary
                 }
             }
 
-            c.ListCount("activeAttempts", activeAttempts == null ? 0 : activeAttempts.Count);
+            c.ListCount("activeAttempts", MemorySavedSizingUtil.NonNullCount(activeAttempts));
             for (int i = 0; activeAttempts != null && i < activeAttempts.Count; i++)
             {
                 if (activeAttempts[i] != null)
@@ -904,7 +1027,7 @@ namespace PawnDiary
             }
 
             int evidenceCount =
-                reservedEvidenceEntries == null ? 0 : reservedEvidenceEntries.Count;
+                MemorySavedSizingUtil.NonNullCount(reservedEvidenceEntries);
             c.ListCount("reservedEvidenceEntries", evidenceCount);
             for (int i = 0; reservedEvidenceEntries != null && i < evidenceCount; i++)
             {
@@ -914,7 +1037,7 @@ namespace PawnDiary
                 }
             }
 
-            int guardCount = reservedGuardEntries == null ? 0 : reservedGuardEntries.Count;
+            int guardCount = MemorySavedSizingUtil.NonNullCount(reservedGuardEntries);
             c.ListCount("reservedGuardEntries", guardCount);
             for (int i = 0; reservedGuardEntries != null && i < guardCount; i++)
             {
@@ -930,6 +1053,9 @@ namespace PawnDiary
 
     public partial class PawnKnowledgeState : IExposable, IMemoryLogicalSizeSource
     {
+        /// <summary>Boundary-check accessor for the §14.6 newer-save scan.</summary>
+        public int SchemaVersionForBoundaryCheck => schemaVersion;
+
         void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
             // NOTE: the envelope is sized as "PawnKnowledgeState" minus its culture fields, which
@@ -960,7 +1086,7 @@ namespace PawnDiary
         private static void SizeBlocks(
             MemoryLogicalSizeCollector c, string fieldName, List<SavedMemoryBlock> rows)
         {
-            int count = rows == null ? 0 : rows.Count;
+            int count = MemorySavedSizingUtil.NonNullCount(rows);
             c.ListCount(fieldName, count);
             for (int i = 0; rows != null && i < count; i++)
             {
@@ -974,7 +1100,7 @@ namespace PawnDiary
         private static void SizeRoots(
             MemoryLogicalSizeCollector c, List<SavedMemoryThreadRoot> rows)
         {
-            int count = rows == null ? 0 : rows.Count;
+            int count = MemorySavedSizingUtil.NonNullCount(rows);
             c.ListCount("threadRoots", count);
             for (int i = 0; rows != null && i < count; i++)
             {
@@ -988,7 +1114,7 @@ namespace PawnDiary
         private static void SizeAwareness(
             MemoryLogicalSizeCollector c, List<SavedMemoryAwarenessSnapshot> rows)
         {
-            int count = rows == null ? 0 : rows.Count;
+            int count = MemorySavedSizingUtil.NonNullCount(rows);
             c.ListCount("ownerAwarenessSnapshots", count);
             for (int i = 0; rows != null && i < count; i++)
             {
@@ -1002,7 +1128,7 @@ namespace PawnDiary
         private static void SizeEpisodes(
             MemoryLogicalSizeCollector c, List<SavedMemoryCaptureEpisode> rows)
         {
-            int count = rows == null ? 0 : rows.Count;
+            int count = MemorySavedSizingUtil.NonNullCount(rows);
             c.ListCount("openCaptureEpisodes", count);
             for (int i = 0; rows != null && i < count; i++)
             {
@@ -1016,7 +1142,7 @@ namespace PawnDiary
         private static void SizeGuards(
             MemoryLogicalSizeCollector c, List<SavedMemoryRepetitionGuardRow> rows)
         {
-            int count = rows == null ? 0 : rows.Count;
+            int count = MemorySavedSizingUtil.NonNullCount(rows);
             c.ListCount("repetitionGuardRows", count);
             for (int i = 0; rows != null && i < count; i++)
             {
@@ -1030,7 +1156,7 @@ namespace PawnDiary
         private static void SizeArchive(
             MemoryLogicalSizeCollector c, List<SavedImportedMemoryRow> rows)
         {
-            int count = rows == null ? 0 : rows.Count;
+            int count = MemorySavedSizingUtil.NonNullCount(rows);
             c.ListCount("importedArchiveRows", count);
             for (int i = 0; rows != null && i < count; i++)
             {
@@ -1039,6 +1165,30 @@ namespace PawnDiary
                     c.NestedRow(rows[i]);
                 }
             }
+        }
+    }
+
+    /// <summary>Shared walker helpers. Null list elements are never Scribed as rows, so counts
+    /// charged for sizing exclude them — otherwise the walk undercounts against reality.</summary>
+    internal static class MemorySavedSizingUtil
+    {
+        public static int NonNullCount<T>(List<T> rows) where T : class
+        {
+            if (rows == null)
+            {
+                return 0;
+            }
+
+            int count = 0;
+            for (int i = 0; i < rows.Count; i++)
+            {
+                if (rows[i] != null)
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
     }
 }

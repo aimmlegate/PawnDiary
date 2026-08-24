@@ -57,7 +57,54 @@ namespace PawnDiary
             public string rowName;
             public MemorySavedRowFields fields;
             public int nextAtom;
+            /// <summary>Composite field awaiting nested child row(s); children validate by name.</summary>
+            public string pendingChildField;
         }
+
+        /// <summary>Registered element-row type per composite field. A child pushed under the
+        /// wrong field is a shape violation, exactly like a wrong scalar (§T6.0).</summary>
+        private static readonly Dictionary<string, string> CompositeFieldRows =
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                { "stateFacts", "SavedMemoryStateFact" },
+                { "baselineFacts", "SavedMemoryStateFact" },
+                { "currentFacts", "SavedMemoryStateFact" },
+                { "contributions", "SavedMemoryFactContribution" },
+                { "factBuckets", "SavedMemoryFactBucket" },
+                { "subjectRefs", "SavedMemorySubjectRef" },
+                { "provenanceRefs", "SavedMemoryProvenance" },
+                { "secondarySubjects", "SavedMemorySubjectRef" },
+                { "facts", "SavedMemoryCanonicalFact" },
+                { "provenance", "SavedMemoryProvenance" },
+                { "primarySubject", "SavedMemorySubjectRef" },
+                { "rollingSummaryBlock", "SavedMemoryBlock" },
+                { "chapters", "SavedMemoryChapter" },
+                { "visibleBlocks", "SavedMemoryBlock" },
+                { "summaryPayload", "SavedMemorySummaryPayload" },
+                { "standaloneBlocks", "SavedMemoryBlock" },
+                { "threadRoots", "SavedMemoryThreadRoot" },
+                { "ownerAwarenessSnapshots", "SavedMemoryAwarenessSnapshot" },
+                { "openCaptureEpisodes", "SavedMemoryCaptureEpisode" },
+                { "repetitionGuardRows", "SavedMemoryRepetitionGuardRow" },
+                { "importedArchiveRows", "SavedImportedMemoryRow" },
+                { "globalFactionSnapshots", "SavedGlobalFactionSnapshot" },
+                { "legacyOwnerEpochReservations", "SavedLegacyOwnerEpochReservation" },
+                { "unresolvedOwnerArchiveRows", "SavedImportedMemoryRow" },
+                { "rawUnresolvedOwnerArchiveInput", "SavedLegacyUnresolvedOwnerArchiveInputV1" },
+                { "summaryContributionEvidence", "SavedImportedSummaryContributionEvidenceV1" },
+                { "summaryWordingOpportunities", "SavedSummaryWordingOpportunityV1" },
+                { "memoryDiagnosticCounters", "SavedMemoryDiagnosticCounter" },
+                { "memoryAttemptAuditRows", "SavedMemoryAttemptAuditRow" },
+                { "activeMemoryCoordinatorRequests", "SavedActiveLogicalRequestV1" },
+                { "frozenVariants", "SavedFrozenPromptVariantV1" },
+                { "activeAttempts", "SavedActiveLogicalAttemptV1" },
+                { "reservedEvidenceEntries", "SavedFrozenEvidenceEntryV1" },
+                { "reservedGuardEntries", "SavedFrozenGuardEntryV1" },
+                { "diagnosticProvenance", "SavedFrozenDiagnosticProvenanceV1" },
+                { "receiptPlan", "SavedFrozenEvidenceReceiptPlanV1" },
+                { "evidenceEntries", "SavedFrozenEvidenceEntryV1" },
+                { "guardEntries", "SavedFrozenGuardEntryV1" }
+            };
 
         private readonly Stack<Frame> stack = new Stack<Frame>();
         private readonly Stack<string> pathStack = new Stack<string>();
@@ -78,11 +125,37 @@ namespace PawnDiary
         public void BeginRow(string rowName)
         {
             MemorySavedRowFields fields = MemorySavedScalarSchema.Row(rowName);
-            string parent = CurrentPath();
-            string path = parent.Length == 0 ? rowName : parent + "." + rowName;
+            string parentPath = CurrentPath();
+            string path = parentPath.Length == 0 ? rowName : parentPath + "." + rowName;
             if (fields == null)
             {
                 throw MemoryLogicalSizeException(path + ": row is not registered");
+            }
+
+            if (stack.Count > 0)
+            {
+                Frame parent = stack.Peek();
+                if (parent.pendingChildField == null)
+                {
+                    throw MemoryLogicalSizeException(
+                        path + ": nested row outside a composite field");
+                }
+
+                if (!CompositeFieldRows.TryGetValue(
+                        parent.pendingChildField, out string expectedRow)
+                    || !string.Equals(expectedRow, rowName, StringComparison.Ordinal))
+                {
+                    throw MemoryLogicalSizeException(
+                        path + ": expected '" + expectedRow + "' for field '"
+                        + parent.pendingChildField + "'");
+                }
+
+                // Nullable singletons bind exactly one child; lists keep binding until EndRow.
+                int lastAtom = Math.Max(0, parent.nextAtom - 1);
+                if (parent.fields.atoms[lastAtom].atomKind == MemorySavedAtomKind.NullableRow)
+                {
+                    parent.pendingChildField = null;
+                }
             }
 
             if (!AddChecked(RowFramingAllowanceBytes, path))
@@ -95,17 +168,26 @@ namespace PawnDiary
             pathStack.Push(path);
         }
 
-        /// <summary>Ends the current row; every registered field must have been pushed exactly once.</summary>
+        /// <summary>Ends the current row: every registered field sized, no dangling child binding,
+        /// and (at top level) exactly one fully closed root row.</summary>
         public void EndRow()
         {
-            if (stack.Count == 0 || stack.Peek().nextAtom != stack.Peek().fields.atoms.Length)
+            if (stack.Count == 0
+                || stack.Peek().nextAtom != stack.Peek().fields.atoms.Length
+                || stack.Peek().pendingChildField != null)
             {
                 throw MemoryLogicalSizeException(
-                    CurrentPath() + ": not every registered field was sized");
+                    CurrentPath() + ": not every registered field/child was sized");
             }
 
             stack.Pop();
             pathStack.Pop();
+        }
+
+        /// <summary>True when no row is currently open — a completed top-level walk.</summary>
+        public bool IsComplete()
+        {
+            return stack.Count == 0;
         }
 
         public void Boolean(string fieldName, bool ignoredValue)
@@ -139,7 +221,8 @@ namespace PawnDiary
             AddOrThrow(StringCharge(CurrentPath(), value));
         }
 
-        /// <summary>Charges the 4-byte list-count prefix of a list field.</summary>
+        /// <summary>Charges the 4-byte list-count prefix of a list field and binds subsequent
+        /// nested child rows to this field's registered element type.</summary>
         public void ListCount(string fieldName, int count)
         {
             Next(MemorySavedAtomKind.List, fieldName);
@@ -149,29 +232,39 @@ namespace PawnDiary
             }
 
             AddOrThrow(LengthPrefixBytes);
+            if (stack.Count > 0)
+            {
+                stack.Peek().pendingChildField = fieldName;
+            }
         }
 
-        /// <summary>Charges one nullable-presence byte; the caller then sizes the payload when present.</summary>
+        /// <summary>Charges one nullable-presence byte and binds the single following child row
+        /// (when present) to this field's registered type.</summary>
         public void NullablePresence(string fieldName, bool present)
         {
             Next(MemorySavedAtomKind.NullableRow, fieldName);
             AddOrThrow(1);
+            if (present && stack.Count > 0)
+            {
+                stack.Peek().pendingChildField = fieldName;
+            }
         }
 
         /// <summary>
-        /// Escape hatch for RAW pre-schema legacy leaves only (§T6.8 raw wrappers): charges
-        /// 4 length-prefix bytes plus 2 bytes per UTF-16 unit. Never valid for current-schema rows,
-        /// which must use the registered field methods.
+        /// Escape hatch for RAW pre-schema legacy leaves only (§T6.8 raw wrappers): charges the
+        /// caller-computed EXACT legacy logical bytes plus the shared 4-byte length prefix. The
+        /// wrapper derives bytes with the complete frozen §T6.8 walker (framing, scalars, string
+        /// prefixes, exact UTF-8). Never valid for current-schema rows.
         /// </summary>
-        public void UnregisteredRawRow(int utf16Units)
+        public void UnregisteredRawBytes(long rawBytes)
         {
-            if (utf16Units < 0)
+            if (rawBytes < 0)
             {
                 throw new MemoryLogicalSizeValidationException(
-                    CurrentPath() + ": negative raw unit count");
+                    CurrentPath() + ": negative raw byte count");
             }
 
-            long bytes = LengthPrefixBytes + 2L * utf16Units;
+            long bytes = LengthPrefixBytes + rawBytes;
             string path = CurrentPath();
             if (bytes < 0 || !AddChecked(bytes, path))
             {
@@ -189,6 +282,16 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>Clears a pending composite-child binding. Required after the RAW-bytes
+        /// escape (no registered child follows); registered NestedRow paths consume it instead.</summary>
+        public void ClearPendingChild()
+        {
+            if (stack.Count > 0)
+            {
+                stack.Peek().pendingChildField = null;
+            }
+        }
+
         /// <summary>Sizes one nested row (deep list element or singleton payload).</summary>
         public void NestedRow(IMemoryLogicalSizeSource child)
         {
@@ -203,6 +306,8 @@ namespace PawnDiary
             }
 
             Frame frame = stack.Peek();
+            // A scalar/list-count push after nested children ends that composite's binding.
+            frame.pendingChildField = null;
             if (frame.nextAtom >= frame.fields.atoms.Length)
             {
                 throw MemoryLogicalSizeException(PathFor(fieldName) + ": extra field");
@@ -315,6 +420,11 @@ namespace PawnDiary
             try
             {
                 source.CollectFields(collector);
+                if (!collector.IsComplete())
+                {
+                    throw new MemoryLogicalSizeValidationException(
+                        "unclosed row at end of walk");
+                }
             }
             catch (MemoryLogicalSizeValidationException exception)
             {

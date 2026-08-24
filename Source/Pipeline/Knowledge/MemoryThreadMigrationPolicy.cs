@@ -30,7 +30,11 @@ namespace PawnDiary
         public string eventKind = string.Empty;
         public string topicKey = string.Empty;
         public int tick;
+        /// <summary>Frozen §T6.8 payload preserved whole for planning/winner comparison.</summary>
+        public string dateLabel = string.Empty;
+        public string fallbackSummary = string.Empty;
         public List<string> participantIds = new List<string>();
+        public List<string> participantNames = new List<string>();
         public List<string> subjectKeys = new List<string>();
         public List<string> factKeys = new List<string>();
         public List<string> factValues = new List<string>();
@@ -59,6 +63,9 @@ namespace PawnDiary
         public string ownerPawnId = string.Empty;
         /// <summary>Already-reserved/reused epoch token for the group (empty while unresolved).</summary>
         public string ownerEpochToken = string.Empty;
+        /// <summary>Load-time tick boundary: ticks above it are future/corrupt and map to
+        /// ageUnknown/Important instead of a guessed date (§T15.2).</summary>
+        public long maxKnownTick = long.MaxValue;
         public List<MemoryLegacyRecordSnapshot> records = new List<MemoryLegacyRecordSnapshot>();
         /// <summary>Frozen memory-legacy-map-v1 catalog rows keyed by eventKind.</summary>
         public List<MemoryLegacyRuleMapEntry> ruleMap = new List<MemoryLegacyRuleMapEntry>();
@@ -83,6 +90,9 @@ namespace PawnDiary
         public const string DispositionActive = "active";
         public const string DispositionArchiveAuthored = "archive_authored";
         public const string DispositionDropAutomatic = "drop_automatic_unedited";
+        /// <summary>The legacy singleton/player-background row migrates to the envelope's
+        /// playerBackground field, never a thread/block (§T15.2/§T13.3).</summary>
+        public const string DispositionPlayerBackground = "player_background";
 
         public string disposition = DispositionActive;
         public string sourceOccurrenceId = string.Empty;
@@ -97,6 +107,25 @@ namespace PawnDiary
         public bool suppressed;
         public List<MemoryLegacyMappedFact> facts = new List<MemoryLegacyMappedFact>();
         public string provenanceRefId = string.Empty;
+
+        // ---- Full Imported-candidate evidence for authored alternates (§T6.8/§T13.4): every
+        // distinct authored alternate archives with its complete bounded payload, never a stub. ----
+        public string importedWording = string.Empty;
+        public string originRecordId = string.Empty;
+        public string dedupKey = string.Empty;
+        public string originSourceEventId = string.Empty;
+        public string eventKind = string.Empty;
+        public string topicKey = string.Empty;
+        public string dateLabel = string.Empty;
+        public string fallbackSummary = string.Empty;
+        public List<string> participantIds = new List<string>();
+        public List<string> participantNames = new List<string>();
+        public List<string> subjectKeys = new List<string>();
+        public List<string> factKeys = new List<string>();
+        public List<string> factValues = new List<string>();
+
+        /// <summary>Background-singleton wording (manual override, else capture fallback).</summary>
+        public string backgroundText = string.Empty;
     }
 
     /// <summary>The bounded dry-run report for one owner group.</summary>
@@ -104,6 +133,8 @@ namespace PawnDiary
     {
         public string ownerPawnId = string.Empty;
         public string ownerEpochToken = string.Empty;
+        /// <summary>Load-time tick boundary echoed for fingerprint-stable future-tick mapping.</summary>
+        public long maxKnownTick = long.MaxValue;
         public List<MemoryLegacyMappedRecord> rows = new List<MemoryLegacyMappedRecord>();
         public int droppedAutomaticAlternateCount;
         public int archivedAuthoredConflictCount;
@@ -141,7 +172,8 @@ namespace PawnDiary
             MemoryLegacyMigrationReport report = new MemoryLegacyMigrationReport
             {
                 ownerPawnId = Safe(input?.ownerPawnId),
-                ownerEpochToken = Safe(input?.ownerEpochToken)
+                ownerEpochToken = Safe(input?.ownerEpochToken),
+                maxKnownTick = input?.maxKnownTick ?? long.MaxValue
             };
             if (input == null || string.IsNullOrWhiteSpace(report.ownerPawnId))
             {
@@ -212,7 +244,6 @@ namespace PawnDiary
                     || IsPlayerSource(winner.sourceKind);
                 mapped.playerEdited |= winnerAuthored;
 
-                int archiveStubCount = 0;
                 foreach (MemoryLegacyRecordSnapshot alternate in group.Value)
                 {
                     if (ReferenceEquals(alternate, winner))
@@ -231,9 +262,17 @@ namespace PawnDiary
                         || IsPlayerSource(alternate.sourceKind);
                     if (alternateAuthored || winnerAuthored)
                     {
-                        // Preserve every irreconcilable AUTHORED alternate as an archive stub
-                        // (§T13.4); bounded diagnostic, never a second active identity.
-                        archiveStubCount++;
+                        // Every irreconcilable AUTHORED alternative archives as one COMPLETE
+                        // Imported candidate carrying its own bounded payload (§T6.8/§T13.4) —
+                        // never a payload-free stub and never a second active identity.
+                        var archived = new MemoryLegacyMappedRecord
+                        {
+                            disposition = MemoryLegacyMappedRecord.DispositionArchiveAuthored,
+                            sourceOccurrenceId = occurrence,
+                            playerEdited = alternateAuthored
+                        };
+                        FillImportedEvidence(archived, alternate);
+                        report.rows.Add(archived);
                         report.archivedAuthoredConflictCount++;
                     }
                     else
@@ -242,15 +281,6 @@ namespace PawnDiary
                         // rather than becoming permanent rows (§T6.8/§T8.4).
                         report.droppedAutomaticAlternateCount++;
                     }
-                }
-
-                if (archiveStubCount > 0)
-                {
-                    report.rows.Add(new MemoryLegacyMappedRecord
-                    {
-                        disposition = MemoryLegacyMappedRecord.DispositionArchiveAuthored,
-                        sourceOccurrenceId = occurrence
-                    });
                 }
 
                 report.rows.Add(mapped);
@@ -293,6 +323,10 @@ namespace PawnDiary
             if (compare != 0) return compare;
             compare = string.CompareOrdinal(left.provenanceRefId ?? string.Empty, right.provenanceRefId ?? string.Empty);
             if (compare != 0) return compare;
+            compare = string.CompareOrdinal(left.importedWording ?? string.Empty, right.importedWording ?? string.Empty);
+            if (compare != 0) return compare;
+            compare = string.CompareOrdinal(left.originRecordId ?? string.Empty, right.originRecordId ?? string.Empty);
+            if (compare != 0) return compare;
             compare = left.facts.Count.CompareTo(right.facts.Count);
             for (int i = 0; compare == 0 && i < left.facts.Count && i < right.facts.Count; i++)
             {
@@ -334,8 +368,9 @@ namespace PawnDiary
                     + OrdinalSegmentCodec.Segment(snapshot.recordId);
             }
 
-            // Hash the normalized occurrence tuple: kinds/scopes/topic/tick + sorted distinct
-            // participants + subject keys + fact KEYS. Values/names/labels are payload (§T13.3).
+            // Hash the normalized occurrence tuple: kinds/scopes/topic/tick plus FRAMED list
+            // counts and members, so a value can never move between sets without changing the
+            // tuple (§T13.3 arm 1). Values/names/labels stay payload.
             var tupleParts = new List<string>
             {
                 Safe(snapshot.sourceKind),
@@ -344,9 +379,17 @@ namespace PawnDiary
                 Safe(snapshot.topicKey),
                 snapshot.tick.ToString(System.Globalization.CultureInfo.InvariantCulture)
             };
-            tupleParts.AddRange(SortedDistinct(snapshot.participantIds));
-            tupleParts.AddRange(SortedDistinct(snapshot.subjectKeys));
-            tupleParts.AddRange(SortedDistinct(snapshot.factKeys));
+            // Framed set sizes first, then members — one count per distinct list so values can
+            // never migrate between sets without changing the tuple (§T13.3 arm 1).
+            List<string> participants = SortedDistinct(snapshot.participantIds);
+            List<string> subjects = SortedDistinct(snapshot.subjectKeys);
+            List<string> factKeys = SortedDistinct(snapshot.factKeys);
+            tupleParts.Add(participants.Count.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            tupleParts.AddRange(participants);
+            tupleParts.Add(subjects.Count.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            tupleParts.AddRange(subjects);
+            tupleParts.Add(factKeys.Count.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            tupleParts.AddRange(factKeys);
 
             var framed = new System.Text.StringBuilder();
             foreach (string part in tupleParts)
@@ -380,6 +423,40 @@ namespace PawnDiary
             string occurrence,
             Dictionary<string, MemoryLegacyRuleMapEntry> map)
         {
+            // Unequal parallel fact lists are structurally unsafe input: the WHOLE owner stays
+            // raw/unstamped rather than mapping a truncated shape (§T13.3/§T13.5).
+            int keyCount = snapshot.factKeys?.Count ?? 0;
+            int valueCount = snapshot.factValues?.Count ?? 0;
+            if (keyCount != valueCount)
+            {
+                report.ownerRemainsRaw = true;
+                return null;
+            }
+
+            // The legacy singleton/player-background row becomes the envelope's playerBackground
+            // field — never a thread/block and never an active memory record (§T15.2/§T13.3).
+            bool isBackground = IsPlayerSource(snapshot.sourceKind)
+                || string.Equals(
+                    snapshot.recallScope, KnowledgeTokens.RecallScopeBackground,
+                    StringComparison.OrdinalIgnoreCase);
+            if (isBackground)
+            {
+                var background = new MemoryLegacyMappedRecord
+                {
+                    disposition = MemoryLegacyMappedRecord.DispositionPlayerBackground,
+                    sourceOccurrenceId = occurrence,
+                    playerEdited = !string.IsNullOrWhiteSpace(snapshot.manualTextOverride),
+                    originalEventTick = snapshot.tick > 0 ? snapshot.tick : 0,
+                    ageUnknown = snapshot.tick <= 0
+                };
+                FillImportedEvidence(background, snapshot);
+                background.backgroundText =
+                    !string.IsNullOrWhiteSpace(snapshot.manualTextOverride)
+                        ? snapshot.manualTextOverride
+                        : (snapshot.fallbackSummary ?? string.Empty);
+                return background;
+            }
+
             MemoryLegacyRuleMapEntry rule = null;
             if (!string.IsNullOrWhiteSpace(snapshot.eventKind)
                 && !map.TryGetValue(snapshot.eventKind.Trim(), out rule))
@@ -433,8 +510,9 @@ namespace PawnDiary
                 || IsPlayerSource(snapshot.sourceKind);
             mapped.suppressed = false; // absent suppression becomes false (§T15.2)
 
-            // Tick handling: missing/zero/corrupt ticks become ageUnknown Important, not guesses.
-            if (snapshot.tick > 0)
+            // Tick handling: missing/zero/FUTURE/corrupt ticks become ageUnknown Important, never
+            // a guessed date (§T15.2). The load-time boundary arrives via input.maxKnownTick.
+            if (snapshot.tick > 0 && snapshot.tick <= report.maxKnownTick)
             {
                 mapped.originalEventTick = snapshot.tick;
                 mapped.ageUnknown = false;
@@ -446,10 +524,21 @@ namespace PawnDiary
                 mapped.importanceToken = MemoryContractTokens.ImportanceImportant;
             }
 
-            MapFacts(report, mapped, snapshot, rule);
+            bool anyInvalidFacts = MapFacts(report, mapped, snapshot, rule);
             if (report.ownerRemainsRaw)
             {
                 return null;
+            }
+
+            // An AUTHORED row whose fact values fail the current grammar keeps its evidence as an
+            // archived Imported candidate instead of silently losing facts (§T13.4).
+            if (mapped.playerEdited && anyInvalidFacts)
+            {
+                mapped.disposition = MemoryLegacyMappedRecord.DispositionArchiveAuthored;
+                mapped.facts.Clear();
+                FillImportedEvidence(mapped, snapshot);
+                report.archivedAuthoredConflictCount++;
+                return mapped;
             }
 
             // Provenance row: legacy_migration with the derived occurrence/rule/discriminator and
@@ -467,18 +556,59 @@ namespace PawnDiary
                 return null;
             }
 
+            FillImportedEvidence(mapped, snapshot);
             return mapped;
         }
 
-        private static void MapFacts(
+        /// <summary>Copies the complete frozen legacy payload onto the row so authored alternates
+        /// round-trip as full Imported candidates (§T6.8) and winner comparison sees every field.</summary>
+        private static void FillImportedEvidence(
+            MemoryLegacyMappedRecord mapped, MemoryLegacyRecordSnapshot snapshot)
+        {
+            mapped.importedWording = !string.IsNullOrWhiteSpace(snapshot.manualTextOverride)
+                ? snapshot.manualTextOverride
+                : (snapshot.fallbackSummary ?? string.Empty);
+            mapped.originRecordId = Safe(snapshot.recordId);
+            mapped.dedupKey = Safe(snapshot.dedupKey);
+            mapped.originSourceEventId = Safe(snapshot.sourceEventId);
+            mapped.eventKind = Safe(snapshot.eventKind);
+            mapped.topicKey = Safe(snapshot.topicKey);
+            mapped.dateLabel = Safe(snapshot.dateLabel);
+            mapped.fallbackSummary = Safe(snapshot.fallbackSummary);
+            CopyList(snapshot.participantIds, mapped.participantIds);
+            CopyList(snapshot.participantNames, mapped.participantNames);
+            CopyList(snapshot.subjectKeys, mapped.subjectKeys);
+            CopyList(snapshot.factKeys, mapped.factKeys);
+            CopyList(snapshot.factValues, mapped.factValues);
+        }
+
+        private static void CopyList(List<string> source, List<string> target)
+        {
+            if (source == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < source.Count; i++)
+            {
+                target.Add(source[i] ?? string.Empty);
+            }
+        }
+
+        /// <summary>Maps legacy fact key/value pairs through the rule's descriptors. Returns true
+        /// when at least one value failed the current grammar (callers decide the conservative
+        /// disposition for authored rows); safely parsed automatic data without a descriptor drops
+        /// with one bounded diagnostic rather than guessing a grammar (§T13.3).</summary>
+        private static bool MapFacts(
             MemoryLegacyMigrationReport report,
             MemoryLegacyMappedRecord mapped,
             MemoryLegacyRecordSnapshot snapshot,
             MemoryLegacyRuleMapEntry rule)
         {
+            bool anyInvalid = false;
             if (snapshot.factKeys == null || snapshot.factValues == null)
             {
-                return;
+                return false;
             }
 
             var candidates = new List<MemoryLegacyMappedFact>();
@@ -493,12 +623,14 @@ namespace PawnDiary
                     // Safely parsed automatic data without a current descriptor drops with one
                     // bounded diagnostic rather than guessing a grammar (§T13.3).
                     report.invalidFactValueCount++;
+                    anyInvalid = true;
                     continue;
                 }
 
                 if (!MemoryThreadRoutingPolicy.IsValidCanonicalValue(descriptor, value))
                 {
                     report.invalidFactValueCount++;
+                    anyInvalid = true;
                     continue;
                 }
 
@@ -514,7 +646,7 @@ namespace PawnDiary
                         out factId))
                 {
                     report.ownerRemainsRaw = true;
-                    return;
+                    return true;
                 }
 
                 candidates.Add(new MemoryLegacyMappedFact
@@ -530,7 +662,9 @@ namespace PawnDiary
             }
 
             // Canonical order is the complete fact identity/payload tuple; byte-equal duplicates
-            // collapse; ordinals are zero-based in that canonical order (§T13.3 step 4).
+            // collapse; a conflicting VALUE under one fact identity is an §T8.4 collision — the
+            // alternate drops with one bounded diagnostic, never two facts under one identity
+            // (§T13.3 step 4). Ordinals are zero-based in the surviving canonical order.
             candidates.Sort((left, right) =>
             {
                 int compare = string.CompareOrdinal(left.factId, right.factId);
@@ -540,24 +674,31 @@ namespace PawnDiary
                 return string.CompareOrdinal(left.canonicalValueKind, right.canonicalValueKind);
             });
 
-            string previousKey = null;
+            MemoryLegacyMappedFact previous = null;
             foreach (MemoryLegacyMappedFact fact in candidates)
             {
-                if (previousKey != null
-                    && string.Equals(previousKey, fact.factId, StringComparison.Ordinal)
-                    && fact.originFactOrdinal >= 0)
+                if (previous != null
+                    && string.Equals(previous.factId, fact.factId, StringComparison.Ordinal))
                 {
-                    // Byte-equal duplicate under one fact identity collapses.
-                    if (fact.canonicalValue.Length == 0)
+                    bool byteEqual =
+                        string.Equals(previous.canonicalValue, fact.canonicalValue, StringComparison.Ordinal)
+                        && string.Equals(previous.canonicalValueKind, fact.canonicalValueKind, StringComparison.Ordinal);
+                    if (byteEqual)
                     {
                         continue;
                     }
+
+                    // Same canonical identity, different payload: collision, drop this alternate.
+                    report.invalidFactValueCount++;
+                    continue;
                 }
 
-                previousKey = fact.factId;
+                previous = fact;
                 fact.originFactOrdinal = mapped.facts.Count;
                 mapped.facts.Add(fact);
             }
+
+            return anyInvalid;
         }
 
         private static MemoryFactDescriptor FindDescriptor(
@@ -688,12 +829,23 @@ namespace PawnDiary
             return true;
         }
 
-        /// <summary>The canonical saved-field comparison tuple: identity is equal inside a group,
-        /// so this covers topic/tick ordering keys plus payload lists and authored wording.</summary>
+        /// <summary>The COMPLETE canonical saved-field comparison tuple (§T8.4 step 8): every
+        /// identity and payload field participates, so equal keys can never retain an
+        /// input-position-dependent row under permutation.</summary>
         private static string CanonicalTuple(MemoryLegacyRecordSnapshot snapshot)
         {
             var builder = new System.Text.StringBuilder();
+            AppendField(builder, snapshot.recordId);
+            AppendField(builder, snapshot.dedupKey);
+            AppendField(builder, snapshot.sourceEventId);
+            AppendField(builder, snapshot.sourceKind);
+            AppendField(builder, snapshot.recallScope);
+            AppendField(builder, snapshot.eventKind);
             AppendField(builder, snapshot.topicKey);
+            AppendField(builder, snapshot.dateLabel);
+            AppendField(builder, snapshot.fallbackSummary);
+            AppendField(builder, snapshot.manualTextOverride);
+            AppendList(builder, snapshot.participantNames);
             builder.Append(OrdinalSegmentCodec.Segment(
                 snapshot.tick.ToString(System.Globalization.CultureInfo.InvariantCulture)));
             AppendList(builder, snapshot.participantIds);
@@ -810,6 +962,8 @@ namespace PawnDiary
             builder.Append(OrdinalSegmentCodec.Segment(report.ownerPawnId ?? string.Empty));
             builder.Append(OrdinalSegmentCodec.Segment(report.ownerEpochToken ?? string.Empty));
             builder.Append(OrdinalSegmentCodec.Segment(
+                report.maxKnownTick.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            builder.Append(OrdinalSegmentCodec.Segment(
                 report.ownerRemainsRaw ? "1" : "0"));
             builder.Append(OrdinalSegmentCodec.Segment(
                 report.droppedAutomaticAlternateCount.ToString(
@@ -840,6 +994,11 @@ namespace PawnDiary
                 builder.Append(OrdinalSegmentCodec.Segment(row.playerEdited ? "1" : "0"));
                 builder.Append(OrdinalSegmentCodec.Segment(row.suppressed ? "1" : "0"));
                 builder.Append(OrdinalSegmentCodec.Segment(row.provenanceRefId ?? string.Empty));
+                builder.Append(OrdinalSegmentCodec.Segment(row.importedWording ?? string.Empty));
+                builder.Append(OrdinalSegmentCodec.Segment(row.backgroundText ?? string.Empty));
+                builder.Append(OrdinalSegmentCodec.Segment(row.originRecordId ?? string.Empty));
+                builder.Append(OrdinalSegmentCodec.Segment(row.dedupKey ?? string.Empty));
+                builder.Append(OrdinalSegmentCodec.Segment(row.eventKind ?? string.Empty));
                 builder.Append(OrdinalSegmentCodec.Segment(
                     row.facts.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)));
                 foreach (MemoryLegacyMappedFact fact in row.facts)

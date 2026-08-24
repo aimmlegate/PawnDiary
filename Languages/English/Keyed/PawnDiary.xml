@@ -2058,7 +2058,9 @@
 
   <!-- Unified memory system M0 localization contract. These keys remain unreachable while the
        internal activation gate is LegacyShadow; M8/M9 wire them into the settings and Library UI. -->
-  <PawnDiary.Memory.Settings.Page>Memory</PawnDiary.Memory.Settings.Page>
+  <!-- §14.6 newer-save boundary: whole-load refusal message (code appends the offending schema). -->
+    <PawnDiary.SaveFormatNewer>This save was written by a NEWER version of Pawn Diary. Update the mod (or remove it and restore a backup) before loading. Loading is refused to protect your save.</PawnDiary.SaveFormatNewer>
+    <PawnDiary.Memory.Settings.Page>Memory</PawnDiary.Memory.Settings.Page>
   <PawnDiary.Memory.Settings.SaveNew>Save new memories</PawnDiary.Memory.Settings.SaveNew>
   <PawnDiary.Memory.Settings.SaveNew.Desc>Save future episodic memories. Turning this off deletes nothing.</PawnDiary.Memory.Settings.SaveNew.Desc>
   <PawnDiary.Memory.Settings.UseWriting>Use memories in writing</PawnDiary.Memory.Settings.UseWriting>

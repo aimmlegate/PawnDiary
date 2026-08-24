@@ -95,16 +95,122 @@ namespace PawnDiary
                 knowledgeSchemaVersion = 2;
             }
 
-            // M1 phase gate: report-only legacy migration planning. Publishes bounded diagnostics
+            // M1 phase gate: allocator-carrier repair FIRST (§T13.2 — before any allocation,
+            // reservation, migration, or Brainwipe), then a fail-closed newer-schema boundary
+            // (§14.6: refuse whole load rather than discard unknown XML), then report-only legacy
+            // migration planning, then transient byte-index rebuild. Publishes bounded diagnostics
             // and never stamps an owner while MemorySystemActivationGate is LegacyShadow.
             try
             {
+                ScanForNewerMemorySchemas();
+                CollectAndPublishAllocatorCarriers();
                 RunMemoryMigrationDryRunReport();
+                RebuildMemorySizeIndexes();
+            }
+            catch (NewerPawnDiarySaveFormatException)
+            {
+                // §14.6: fail the WHOLE save load closed before gameplay with one localized
+                // error; the source save file stays untouched.
+                throw;
             }
             catch (Exception e)
             {
-                Log.ErrorOnce("[Pawn Diary] Memory migration dry-run report failed: " + e,
-                    "PawnDiary.MemoryMigration.DryRun".GetHashCode());
+                Log.ErrorOnce("[Pawn Diary] Memory load-repair pipeline failed: " + e,
+                    "PawnDiary.MemoryLoadRepair".GetHashCode());
+            }
+        }
+
+        /// <summary>Thrown when any saved memory row carries a schema version newer than this
+        /// build understands; RimWorld surfaces the exception as a failed load (§14.6).</summary>
+        internal sealed class NewerPawnDiarySaveFormatException : Exception
+        {
+            public NewerPawnDiarySaveFormatException(string message)
+                : base(message)
+            {
+            }
+        }
+
+        /// <summary>
+        /// §14.6 downgrade boundary: ordinary IExposable loading cannot preserve unknown child
+        /// nodes, so ANY row whose schemaVersion exceeds this build's current value fails the
+        /// whole save load closed BEFORE FinalizeInit/gameplay and before any mutation.
+        /// </summary>
+        private void ScanForNewerMemorySchemas()
+        {
+            if (memoryComponentSchemaVersion > 1
+                || memoryCoordinatorSchemaVersion > 1
+                || memoryDispatchSchemaVersion > 1)
+            {
+                throw new NewerPawnDiarySaveFormatException(
+                    "[Pawn Diary] " + "PawnDiary.SaveFormatNewer".Translate()
+                    + " (component schema "
+                    + Math.Max(memoryComponentSchemaVersion,
+                        Math.Max(memoryCoordinatorSchemaVersion, memoryDispatchSchemaVersion))
+                    + ")");
+            }
+
+            if (diaries != null)
+            {
+                for (int i = 0; i < diaries.Count; i++)
+                {
+                    PawnDiaryRecord diary = diaries[i];
+                    PawnKnowledgeState state = diary?.knowledgeState;
+                    if (state == null)
+                    {
+                        continue;
+                    }
+
+                    if (PawnKnowledgeStateSchemaPolicy.Classify(state.schemaVersion)
+                        == PawnKnowledgeStateSchemaPolicy.VersionClass.NewerThanCurrent)
+                    {
+                        throw new NewerPawnDiarySaveFormatException(
+                            "[Pawn Diary] " + "PawnDiary.SaveFormatNewer".Translate()
+                            + " (" + (diary.pawnId ?? "?") + " schema " + state.schemaVersion + ")");
+                    }
+
+                    RequireNotNewer(state.threadRoots, r => r.SchemaVersionForBoundaryCheck);
+                    RequireNotNewer(state.standaloneBlocks, r => r.SchemaVersionForBoundaryCheck);
+                    RequireNotNewer(state.ownerAwarenessSnapshots, r => r.SchemaVersionForBoundaryCheck);
+                    RequireNotNewer(state.openCaptureEpisodes, r => r.SchemaVersionForBoundaryCheck);
+                    RequireNotNewer(state.repetitionGuardRows, r => r.SchemaVersionForBoundaryCheck);
+                    RequireNotNewer(state.importedArchiveRows, r => r.SchemaVersionForBoundaryCheck);
+                    if (diary.reflectionState != null
+                        && diary.reflectionState.memoryReflectionSchemaVersion > 1)
+                    {
+                        throw new NewerPawnDiarySaveFormatException(
+                            "[Pawn Diary] " + "PawnDiary.SaveFormatNewer".Translate()
+                            + " (reflection schema "
+                            + diary.reflectionState.memoryReflectionSchemaVersion + ")");
+                    }
+                }
+            }
+
+            RequireNotNewer(globalFactionSnapshots, r => r.SchemaVersionForBoundaryCheck);
+            RequireNotNewer(legacyOwnerEpochReservations, r => r.SchemaVersionForBoundaryCheck);
+            RequireNotNewer(unresolvedOwnerArchiveRows, r => r.SchemaVersionForBoundaryCheck);
+            RequireNotNewer(rawUnresolvedOwnerArchiveInput, r => r.SchemaVersionForBoundaryCheck);
+            RequireNotNewer(summaryWordingOpportunities, r => r.SchemaVersionForBoundaryCheck);
+            RequireNotNewer(memoryDiagnosticCounters, r => r.SchemaVersionForBoundaryCheck);
+            RequireNotNewer(memoryAttemptAuditRows, r => r.SchemaVersionForBoundaryCheck);
+            RequireNotNewer(activeMemoryCoordinatorRequests, r => r.SchemaVersionForBoundaryCheck);
+        }
+
+        private static void RequireNotNewer<T>(List<T> rows, Func<T, int> schemaVersionOf)
+        {
+            if (rows == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < rows.Count; i++)
+            {
+                if (rows[i] != null && schemaVersionOf(rows[i]) > 1)
+                {
+                    throw new NewerPawnDiarySaveFormatException(
+                        "[Pawn Diary] " + "PawnDiary.SaveFormatNewer".Translate()
+                        + " (" + rows[i].GetType().Name + " schema "
+                        + schemaVersionOf(rows[i]) + ")");
+                }
             }
         }
 

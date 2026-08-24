@@ -31,6 +31,19 @@ namespace PawnDiary
         public int pendingMajorArcRequestedTick = -1;
         public string pendingMajorArcAvoidEventId = string.Empty;
 
+        // ---- Unified-memory quiet-cadence fields (memory plan §T6.10). Additive tokens; the
+        // component-owned Summary opportunity row stays in DiaryGameComponent — this row never
+        // saves a second opportunity list. Cadence sentinels are -1 pre-feature. ----
+
+        /// <summary>Current 1; missing pre-feature default 0.</summary>
+        public int memoryReflectionSchemaVersion;
+        /// <summary>Blank until this owner's group epoch resolves through migration.</summary>
+        public string memoryOwnerEpochToken = string.Empty;
+        public int lastQuietMemoryEvaluatedAbsoluteDay = -1;
+        public int lastQuietMemoryActivatedAbsoluteQuadrum = -1;
+        /// <summary>64 lowercase hex decision key, or empty while unevaluated.</summary>
+        public string lastQuietMemoryDecisionKey = string.Empty;
+
         /// <summary>Serializes additive N4 state. Missing old-save fields keep safe silent defaults.</summary>
         public void ExposeData()
         {
@@ -46,6 +59,16 @@ namespace PawnDiary
             Scribe_Values.Look(ref pendingMajorArc, "pendingMajorArc", false);
             Scribe_Values.Look(ref pendingMajorArcRequestedTick, "pendingMajorArcRequestedTick", -1);
             Scribe_Values.Look(ref pendingMajorArcAvoidEventId, "pendingMajorArcAvoidEventId");
+            Scribe_Values.Look(ref memoryReflectionSchemaVersion,
+                "memoryReflectionSchemaVersion", 0);
+            Scribe_Values.Look(ref memoryOwnerEpochToken,
+                "memoryOwnerEpochToken", string.Empty);
+            Scribe_Values.Look(ref lastQuietMemoryEvaluatedAbsoluteDay,
+                "lastQuietMemoryEvaluatedAbsoluteDay", -1);
+            Scribe_Values.Look(ref lastQuietMemoryActivatedAbsoluteQuadrum,
+                "lastQuietMemoryActivatedAbsoluteQuadrum", -1);
+            Scribe_Values.Look(ref lastQuietMemoryDecisionKey,
+                "lastQuietMemoryDecisionKey", string.Empty);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -64,6 +87,8 @@ namespace PawnDiary
             lastDayTick = Math.Max(-1, lastDayTick);
             pendingMajorArcRequestedTick = Math.Max(-1, pendingMajorArcRequestedTick);
             pendingMajorArcAvoidEventId = CleanRelatedEventId(pendingMajorArcAvoidEventId);
+            memoryOwnerEpochToken = memoryOwnerEpochToken ?? string.Empty;
+            lastQuietMemoryDecisionKey = lastQuietMemoryDecisionKey ?? string.Empty;
             if (!pendingMajorArc || pendingMajorArcRequestedTick < 0)
             {
                 ClearPendingMajorArc();

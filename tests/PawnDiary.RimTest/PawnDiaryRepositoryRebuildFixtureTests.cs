@@ -396,11 +396,11 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
-        /// The per-pawn knowledge state (MEMORY_SYSTEM_REDESIGN_PLAN §2.2, §4.1) round-trips
-        /// through real Scribe preserving culture provenance, important-event records, and a
-        /// player/editor-authored memory-text override. Normalize() repairs a hand-edited save:
-        /// null lists/text heal, parallel fact lists realign,
-        /// and duplicated dedup keys collapse to one record.
+        /// The per-pawn knowledge state (MEMORY_SYSTEM_REDESIGN_PLAN §2.2, §4.1; memory plan §T6.1)
+        /// round-trips through real Scribe preserving culture provenance, important-event records,
+        /// and a player/editor-authored memory-text override. Normalize() heals shapes; for a
+        /// LEGACY v1/v2 envelope it must NOT dedup/drop records (§T13.1 raw preservation) nor stamp
+        /// the schema current.
         /// </summary>
         [Test]
         public static void KnowledgeStateRoundTripsPreservesCultureAndDedups()

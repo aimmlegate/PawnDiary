@@ -67,88 +67,117 @@ namespace PawnDiary
             };
             if (units == null || maxOwnerRows <= 0 || maxGlobalRows <= 0
                 || importedOwnerBytesCap <= 0 || importedGlobalBytesCap <= 0
-                || combinedGlobalBytesCap <= 0)
+                || combinedGlobalBytesCap <= 0 || globalCombinedBytesCurrent < 0)
             {
                 return refused;
             }
 
-            // Deterministic unit order: tick ascending with ageUnknown last, then owner ordinal,
-            // then input index; the empty-owner unresolved unit always sorts last (§T17.5).
-            List<MemoryImportedAdmissionUnit> ordered =
-                new List<MemoryImportedAdmissionUnit>(units);
-            ordered.Sort(CompareUnits);
-
-            var decision = new MemoryImportedAdmissionDecision
+            // Whole-unit invariants: exactly ONE unresolved unit and at most one unit per owner
+            // (§T17.5). Duplicates would otherwise let a prefix of one owner commit.
+            var seenOwners = new HashSet<string>(StringComparer.Ordinal);
+            int unresolvedCount = 0;
+            foreach (MemoryImportedAdmissionUnit unit in units)
             {
-                outcome = MemoryImportedAdmissionOutcome.Admitted,
-                admitted = new List<bool>(new bool[units.Count])
-            };
-
-            Dictionary<string, long> ownerRows = new Dictionary<string, long>(StringComparer.Ordinal);
-            Dictionary<string, long> ownerBytes = new Dictionary<string, long>(StringComparer.Ordinal);
-            long totalRows = 0;
-            long totalBytes = 0;
-
-            foreach (MemoryImportedAdmissionUnit unit in ordered)
-            {
-                int inputIndex = units.IndexOf(unit);
                 if (!IsValidUnit(unit))
                 {
-                    decision.outcome = MemoryImportedAdmissionOutcome.Invalid;
                     return refused;
                 }
 
-                bool isUnresolved = string.IsNullOrEmpty(unit.ownerPawnId);
-
-                long ownerRowTotal;
-                long ownerByteTotal;
-                if (!isUnresolved)
+                if (string.IsNullOrEmpty(unit.ownerPawnId))
                 {
-                    ownerRows.TryGetValue(unit.ownerPawnId, out ownerRowTotal);
-                    ownerBytes.TryGetValue(unit.ownerPawnId, out ownerByteTotal);
+                    unresolvedCount++;
+                    if (unresolvedCount > 1)
+                    {
+                        return refused;
+                    }
                 }
-                else
+                else if (!seenOwners.Add(unit.ownerPawnId))
                 {
-                    ownerRowTotal = 0;
-                    ownerByteTotal = 0;
+                    return refused;
                 }
 
-                bool fitsRows = totalRows + unit.rowCount <= maxGlobalRows
-                    && (isUnresolved || ownerRowTotal + unit.rowCount <= maxOwnerRows);
-                bool fitsBytes = true;
-                checked
+                if (!IsValidUnit(unit))
                 {
-                    fitsBytes = totalBytes + unit.logicalBytes <= importedGlobalBytesCap
-                        && (isUnresolved || ownerByteTotal + unit.logicalBytes <= importedOwnerBytesCap)
-                        && globalCombinedBytesCurrent + totalBytes + unit.logicalBytes
-                            <= combinedGlobalBytesCap;
-                }
-
-                if (!fitsRows || !fitsBytes)
-                {
-                    // Whole-unit rule: leave this complete unit raw/pending; earlier unrelated
-                    // units stay committed; never a prefix of one owner (§T13.5).
-                    decision.outcome = MemoryImportedAdmissionOutcome.Pending;
-                    continue;
-                }
-
-                decision.admitted[inputIndex] = true;
-                totalRows += unit.rowCount;
-                totalBytes += unit.logicalBytes;
-                if (!isUnresolved)
-                {
-                    ownerRows[unit.ownerPawnId] =
-                        (ownerRows.TryGetValue(unit.ownerPawnId, out long rows) ? rows : 0)
-                        + unit.rowCount;
-                    ownerBytes[unit.ownerPawnId] =
-                        (ownerBytes.TryGetValue(unit.ownerPawnId, out long bytes) ? bytes : 0)
-                        + unit.logicalBytes;
+                    return refused;
                 }
             }
 
-            decision.totalRows = totalRows;
-            decision.totalBytes = totalBytes;
-            return decision;
+            try
+            {
+                // Deterministic whole-unit order: tick ascending with ageUnknown last, then owner
+                // ordinal, then input index; the empty-owner unresolved unit always sorts last
+                // (§T17.5). Sorting (index, unit) pairs keeps admitted[] mapping stable even for
+                // tuple-equal units.
+                var ordered = new List<(int index, MemoryImportedAdmissionUnit unit)>();
+                for (int i = 0; i < units.Count; i++)
+                {
+                    ordered.Add((i, units[i]));
+                }
+
+                ordered.Sort((left, right) =>
+                {
+                    int compare = CompareUnits(left.unit, right.unit);
+                    return compare != 0 ? compare : left.index.CompareTo(right.index);
+                });
+
+                var decision = new MemoryImportedAdmissionDecision
+                {
+                    outcome = MemoryImportedAdmissionOutcome.Admitted,
+                    admitted = new List<bool>(new bool[units.Count])
+                };
+
+                var ownerRows = new Dictionary<string, long>(StringComparer.Ordinal);
+                var ownerBytes = new Dictionary<string, long>(StringComparer.Ordinal);
+                long totalRows = 0;
+                long totalBytes = 0;
+
+                foreach ((int inputIndex, MemoryImportedAdmissionUnit unit) in ordered)
+                {
+                    bool isUnresolved = string.IsNullOrEmpty(unit.ownerPawnId);
+
+                    long ownerRowTotal = isUnresolved
+                        ? 0
+                        : (ownerRows.TryGetValue(unit.ownerPawnId, out long rows) ? rows : 0);
+                    long ownerByteTotal = isUnresolved
+                        ? 0
+                        : (ownerBytes.TryGetValue(unit.ownerPawnId, out long bytes) ? bytes : 0);
+
+                    bool fitsRows = totalRows + unit.rowCount <= maxGlobalRows
+                        && (isUnresolved || ownerRowTotal + unit.rowCount <= maxOwnerRows);
+                    bool fitsBytes =
+                        totalBytes + unit.logicalBytes <= importedGlobalBytesCap
+                        && (isUnresolved
+                            || ownerByteTotal + unit.logicalBytes <= importedOwnerBytesCap)
+                        && globalCombinedBytesCurrent + totalBytes + unit.logicalBytes
+                            <= combinedGlobalBytesCap;
+
+                    if (!fitsRows || !fitsBytes)
+                    {
+                        // Whole-unit rule: leave this complete unit raw/pending; earlier unrelated
+                        // units stay committed; never a prefix of one owner (§T13.5).
+                        decision.outcome = MemoryImportedAdmissionOutcome.Pending;
+                        continue;
+                    }
+
+                    decision.admitted[inputIndex] = true;
+                    totalRows += unit.rowCount;
+                    totalBytes += unit.logicalBytes;
+                    if (!isUnresolved)
+                    {
+                        ownerRows[unit.ownerPawnId] = ownerRowTotal + unit.rowCount;
+                        ownerBytes[unit.ownerPawnId] = ownerByteTotal + unit.logicalBytes;
+                    }
+                }
+
+                decision.totalRows = totalRows;
+                decision.totalBytes = totalBytes;
+                return decision;
+            }
+            catch (OverflowException)
+            {
+                // Byte totals never wrap; overflow is Invalid input, never an admission.
+                return refused;
+            }
         }
 
         private static int CompareUnits(

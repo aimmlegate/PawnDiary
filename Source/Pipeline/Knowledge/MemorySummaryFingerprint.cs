@@ -102,7 +102,7 @@ namespace PawnDiary
         /// </summary>
         public static bool TryCreateProjectionFingerprint(
             int reducerRevision,
-            int formatRevision,
+            long formatRevision,
             int categoryMask,
             IReadOnlyList<MemorySummaryFingerprintContribution> enabledContributions,
             out string fingerprint)

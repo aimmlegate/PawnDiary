@@ -17,7 +17,7 @@ using Verse;
 
 namespace PawnDiary
 {
-    public partial class DiaryGameComponent
+    public partial class DiaryGameComponent : IMemoryLogicalSizeSource
     {
         // ---- Saved §T6.9 component fields (tokens = field names) ----
 
@@ -284,8 +284,9 @@ namespace PawnDiary
                 unresolvedArchiveStructuralRevision = 1;
             }
 
-            // Taxonomy derivation: mixed payload is inert MigrationPending until one atomic plan
-            // chooses a complete representation (§T6.9); otherwise derive from what is present.
+            // Taxonomy derivation (§T6.9): mixed payload is inert MigrationPending until one
+            // atomic plan chooses a complete representation; an already-CURRENT state with both
+            // lists empty stays Current (empty-but-valid), never regressing to LegacyRaw.
             bool hasCurrent = unresolvedOwnerArchiveRows.Count > 0;
             bool hasRaw = rawUnresolvedOwnerArchiveInput.Count > 0;
             if (hasCurrent && hasRaw)
@@ -300,7 +301,8 @@ namespace PawnDiary
             {
                 unresolvedArchiveMigrationState = MemoryArchiveStates.LegacyRaw;
             }
-            else if (unresolvedArchiveMigrationState != MemoryArchiveStates.MigrationPending)
+            else if (unresolvedArchiveMigrationState != MemoryArchiveStates.MigrationPending
+                && unresolvedArchiveMigrationState != MemoryArchiveStates.Current)
             {
                 unresolvedArchiveMigrationState = MemoryArchiveStates.LegacyRaw;
             }
@@ -423,7 +425,12 @@ namespace PawnDiary
                     continue;
                 }
 
-                memoryByteTotalsByOwner[diary.pawnId] = MeasureOwner(diary.knowledgeState);
+                MemoryOwnerByteTotals totals = MeasureOwner(diary.knowledgeState);
+                memoryByteTotalsByOwner[diary.pawnId] = totals;
+                if (!totals.valid)
+                {
+                    RecordMemoryDiagnostic("size_invalid", "owner");
+                }
             }
         }
 
@@ -459,55 +466,116 @@ namespace PawnDiary
             return totals;
         }
 
-        /// <summary>Component-global active memory metadata bytes (§T17.5): faction snapshots,
-        /// opportunities, diagnostics, audit rows, and ownerless active requests. Unresolved
-        /// Imported rows are excluded (they are Unknown-archive bytes).</summary>
+        /// <summary>
+        /// Sizes the component-global memory metadata through the REGISTERED
+        /// DiaryGameComponentMemory row shape (§T17.5): every §T6.9 scalar, the applied-policy
+        /// singleton, and each owned list with its framing — then subtracts owner-attributed
+        /// active-request bytes so they are charged exactly once to their owners. Returns -1 when
+        /// ANY nested walk is invalid (invalid budget state propagates; never a silent undercount).
+        /// </summary>
         private long SizeComponentMemoryBytes()
         {
-            long total = 0;
-            total += SizeList(globalFactionSnapshots);
-            total += SizeList(summaryWordingOpportunities);
-            total += SizeList(memoryDiagnosticCounters);
-            total += SizeList(memoryAttemptAuditRows);
+            MemoryLogicalSizeResult whole = MemoryLogicalPayloadSizer.Size(this);
+            if (!whole.valid)
+            {
+                RecordMemoryDiagnostic("size_invalid", "component");
+                return -1;
+            }
+
+            // Owner-attributed request rows ride activeOwnerBytes (§T17.5); measure them here so
+            // they can be excluded from the component subtotal without breaking registry order.
+            long ownerAttributed = 0;
             for (int i = 0; i < activeMemoryCoordinatorRequests.Count; i++)
             {
                 SavedActiveLogicalRequestV1 request = activeMemoryCoordinatorRequests[i];
-                // Neutral/ownerless rows charge component-global; owner-attributed nested rows are
-                // already charged to their owner (§T17.5), so skip rows carrying a nonblank owner.
-                if (request == null
-                    || !string.IsNullOrWhiteSpace(request.ownerPawnId))
+                if (request == null || string.IsNullOrWhiteSpace(request.ownerPawnId))
                 {
                     continue;
                 }
 
                 MemoryLogicalSizeResult result = MemoryLogicalPayloadSizer.Size(request);
-                if (result.valid)
+                if (!result.valid)
                 {
-                    total += result.totalBytes;
+                    RecordMemoryDiagnostic("size_invalid", "component");
+                    return -1;
                 }
+
+                ownerAttributed += result.totalBytes;
             }
 
-            return total;
+            long componentBytes = whole.totalBytes - ownerAttributed;
+            if (componentBytes < 0)
+            {
+                RecordMemoryDiagnostic("size_invalid", "component");
+                return -1;
+            }
+
+            return componentBytes;
         }
 
-        private static long SizeList<T>(List<T> rows) where T : class, IMemoryLogicalSizeSource
+        /// <summary>
+        /// Registry-ordered logical-size walker for the component's saved §T6.9 memory fields.
+        /// This class also implements IMemoryLogicalSizeSource for the §T17.5 walk; field
+        /// names/order mirror the frozen DiaryGameComponentMemory catalog row exactly.
+        /// </summary>
+        void IMemoryLogicalSizeSource.CollectFields(MemoryLogicalSizeCollector c)
         {
-            long total = 4; // list-count prefix
-            for (int i = 0; rows != null && i < rows.Count; i++)
+            c.BeginRow("DiaryGameComponentMemory");
+            c.Int32("memoryComponentSchemaVersion", memoryComponentSchemaVersion);
+            c.Int64("lastIssuedAutobiographicalEpochSequence",
+                lastIssuedAutobiographicalEpochSequence);
+            c.String("lastIssuedAutobiographicalEpochFallbackChain",
+                lastIssuedAutobiographicalEpochFallbackChain ?? string.Empty);
+            c.Int64("globalFactionSnapshotAllocatorGeneration",
+                globalFactionSnapshotAllocatorGeneration);
+            SizeRows(c, "globalFactionSnapshots", globalFactionSnapshots);
+            SizeRows(c, "legacyOwnerEpochReservations", legacyOwnerEpochReservations);
+            c.Int64("globalOptionalRequestCancellationGeneration",
+                globalOptionalRequestCancellationGeneration);
+            c.Int64("lastAppliedMemoryPolicyRevision", lastAppliedMemoryPolicyRevision);
+            c.String("lastAppliedMemoryPolicyFingerprint",
+                lastAppliedMemoryPolicyFingerprint ?? string.Empty);
+            c.NullablePresence("lastAppliedMemoryPolicyState",
+                lastAppliedMemoryPolicyState != null);
+            if (lastAppliedMemoryPolicyState != null)
             {
-                if (rows[i] == null)
-                {
-                    continue;
-                }
-
-                MemoryLogicalSizeResult result = MemoryLogicalPayloadSizer.Size(rows[i]);
-                if (result.valid)
-                {
-                    total += result.totalBytes;
-                }
+                c.NestedRow(lastAppliedMemoryPolicyState);
             }
 
-            return total;
+            SizeRows(c, "unresolvedOwnerArchiveRows", unresolvedOwnerArchiveRows);
+            c.String("unresolvedArchiveMigrationState", unresolvedArchiveMigrationState ?? string.Empty);
+            SizeRows(c, "rawUnresolvedOwnerArchiveInput", rawUnresolvedOwnerArchiveInput);
+            c.Int64("rawUnresolvedArchiveReattributionGeneration",
+                rawUnresolvedArchiveReattributionGeneration);
+            c.Int64("unresolvedArchiveReattributionGeneration",
+                unresolvedArchiveReattributionGeneration);
+            c.Int64("unresolvedArchiveStructuralRevision", unresolvedArchiveStructuralRevision);
+            c.Boolean("unresolvedArchiveReattributionDisabled",
+                unresolvedArchiveReattributionDisabled);
+            c.Int32("memoryCoordinatorSchemaVersion", memoryCoordinatorSchemaVersion);
+            SizeRows(c, "summaryWordingOpportunities", summaryWordingOpportunities);
+            SizeRows(c, "memoryDiagnosticCounters", memoryDiagnosticCounters);
+            SizeRows(c, "memoryAttemptAuditRows", memoryAttemptAuditRows);
+            c.Int32("memoryDispatchSchemaVersion", memoryDispatchSchemaVersion);
+            c.Int64("lastIssuedMemoryLogicalRequestSequence",
+                lastIssuedMemoryLogicalRequestSequence);
+            SizeRows(c, "activeMemoryCoordinatorRequests", activeMemoryCoordinatorRequests);
+            c.EndRow();
+        }
+
+        private static void SizeRows<T>(
+            MemoryLogicalSizeCollector c, string fieldName, List<T> rows)
+            where T : class, IMemoryLogicalSizeSource
+        {
+            int count = MemorySavedSizingUtil.NonNullCount(rows);
+            c.ListCount(fieldName, count);
+            for (int i = 0; rows != null && i < rows.Count; i++)
+            {
+                if (rows[i] != null)
+                {
+                    c.NestedRow(rows[i]);
+                }
+            }
         }
 
         /// <summary>The measured unit pair for one exact owner, or invalid when unenrolled.</summary>
@@ -521,55 +589,258 @@ namespace PawnDiary
 
         internal MemoryPayloadBudgetTotals GetGlobalBudgetTotals()
         {
-            long owners = 0;
-            foreach (MemoryOwnerByteTotals totals in memoryByteTotalsByOwner.Values)
+            // -1 component/owner bytes mean an invalid walk somewhere: propagate invalid budget
+            // state (negative total) instead of admitting against a silent undercount (§T17.5).
+            if (memoryComponentActiveBytesTotal < 0)
             {
-                if (totals.valid)
-                {
-                    owners += totals.activeBytes;
-                }
+                return new MemoryPayloadBudgetTotals { globalActiveBytes = -1, globalImportedBytes = 0 };
             }
 
-            return new MemoryPayloadBudgetTotals
+            long owners = 0;
+            long imported = 0;
+            bool anyInvalid = false;
+            foreach (MemoryOwnerByteTotals totals in memoryByteTotalsByOwner.Values)
             {
-                globalActiveBytes = checked(owners + memoryComponentActiveBytesTotal),
-                globalImportedBytes = GlobalImportedBytes()
+                if (!totals.valid)
+                {
+                    anyInvalid = true;
+                    continue;
+                }
+
+                owners += totals.activeBytes;
+                imported += totals.importedBytes;
+            }
+
+            if (anyInvalid)
+            {
+                return new MemoryPayloadBudgetTotals { globalActiveBytes = -1, globalImportedBytes = 0 };
+            }
+
+            // Unknown-archive bytes count once toward global combined (§T17.5); invalid rows
+            // inside it invalidate the whole Unknown unit rather than undercounting.
+            MemoryLogicalSizeResult unknownRows = SizeListValidated(unresolvedOwnerArchiveRows);
+            if (!unknownRows.valid)
+            {
+                return new MemoryPayloadBudgetTotals { globalActiveBytes = -1, globalImportedBytes = 0 };
+            }
+
+            try
+            {
+                return new MemoryPayloadBudgetTotals
+                {
+                    globalActiveBytes = checked(owners + memoryComponentActiveBytesTotal),
+                    globalImportedBytes = checked(imported + unknownRows.totalBytes)
+                };
+            }
+            catch (OverflowException)
+            {
+                return new MemoryPayloadBudgetTotals { globalActiveBytes = -1, globalImportedBytes = 0 };
+            }
+        }
+
+        /// <summary>Sizes one deep list of rows with the shared framing/count rule; validity of
+        /// every element propagates (invalid → valid=false) so callers never admit on partials.</summary>
+        private static MemoryLogicalSizeResult SizeListValidated<T>(List<T> rows)
+            where T : class, IMemoryLogicalSizeSource
+        {
+            var collectorTotal = MemorySavedSizingUtil.NonNullCount(rows);
+            long bytes = 4; // list-count prefix
+            for (int i = 0; rows != null && i < rows.Count; i++)
+            {
+                if (rows[i] == null)
+                {
+                    continue;
+                }
+
+                MemoryLogicalSizeResult result = MemoryLogicalPayloadSizer.Size(rows[i]);
+                if (!result.valid)
+                {
+                    return MemoryLogicalSizeResult.Invalid("list-element:" + i);
+                }
+
+                bytes += result.totalBytes;
+            }
+
+            return new MemoryLogicalSizeResult
+            {
+                valid = true,
+                totalBytes = bytes,
+                errorPath = string.Empty
             };
         }
 
-        private long GlobalImportedBytes()
+        /// <summary>Allowlisted reason tokens (§T6.9: unknown bounded tokens fold into "other"
+        /// rather than retaining prose). Extend only with new stable, reviewed reasons.</summary>
+        private static readonly string[] DiagnosticReasonAllowlist =
         {
-            long imported = 0;
-            foreach (MemoryOwnerByteTotals totals in memoryByteTotalsByOwner.Values)
+            "legacy_dry_run",
+            "legacy_owner_raw",
+            "legacy_automatic_duplicate",
+            "legacy_authored_conflict",
+            "legacy_report_truncated",
+            "size_invalid",
+            "other"
+        };
+
+        private const int MaximumDiagnosticCounterRows = 64;
+
+        // ---- §T13.2 allocator-carrier registry: exhaustive scan → pure plan → atomic publish ----
+
+        /// <summary>
+        /// Walks EVERY §T13.2 carrier family in the loaded save (envelope/root/block/guard/
+        /// awareness-episode/opportunity/request/audit epoch tokens, reservation sequences,
+        /// faction generations), plans the repaired high-waters through the pure registry, and —
+        /// when the plan is publishable — commits high-water/reservation repairs in one block.
+        /// Must run BEFORE any epoch allocation, reservation, semantic migration, or Brainwipe.
+        /// </summary>
+        internal void CollectAndPublishAllocatorCarriers()
+        {
+            var input = new MemorySavedCarrierScanInput
             {
-                if (totals.valid)
+                lastIssuedAutobiographicalEpochSequence = lastIssuedAutobiographicalEpochSequence,
+                lastIssuedAutobiographicalEpochFallbackChain =
+                    lastIssuedAutobiographicalEpochFallbackChain ?? string.Empty,
+                globalFactionSnapshotAllocatorGeneration = globalFactionSnapshotAllocatorGeneration
+            };
+
+            foreach (SavedLegacyOwnerEpochReservation reservation in legacyOwnerEpochReservations)
+            {
+                input.legacyReservations.Add(new MemoryLegacyEpochReservationInput
                 {
-                    imported += totals.importedBytes;
+                    ownerPawnId = reservation.ownerPawnId ?? string.Empty,
+                    reservedEpochSequence = reservation.reservedEpochSequence
+                });
+            }
+
+            foreach (SavedGlobalFactionSnapshot snapshot in globalFactionSnapshots)
+            {
+                if (snapshot != null)
+                {
+                    input.factionAllocatorGenerationCarriers.Add(snapshot.allocatorGeneration);
                 }
             }
 
-            // Unknown-archive bytes count once toward global combined (§T17.5).
-            imported += SizeList(unresolvedOwnerArchiveRows);
-            return imported;
+            if (diaries != null)
+            {
+                for (int i = 0; i < diaries.Count; i++)
+                {
+                    PawnDiaryRecord diary = diaries[i];
+                    PawnKnowledgeState state = diary?.knowledgeState;
+                    if (state == null)
+                    {
+                        continue;
+                    }
+
+                    AddEpochToken(input.epochTokenCarriers, state.autobiographicalEpochToken);
+                    AddEpochTokens(input.epochTokenCarriers, state.threadRoots, r => r?.ownerEpochToken);
+                    AddEpochTokens(input.epochTokenCarriers, state.standaloneBlocks, b => b?.ownerEpochToken);
+                    AddEpochTokens(input.epochTokenCarriers, state.ownerAwarenessSnapshots, r => null);
+                    AddEpochTokens(input.epochTokenCarriers, state.repetitionGuardRows, r => r?.ownerEpochToken);
+                    if (diary.reflectionState != null)
+                    {
+                        AddEpochToken(input.epochTokenCarriers,
+                            diary.reflectionState.memoryOwnerEpochToken);
+                    }
+                }
+            }
+
+            for (int i = 0; i < summaryWordingOpportunities.Count; i++)
+            {
+                AddEpochToken(input.epochTokenCarriers,
+                    summaryWordingOpportunities[i]?.ownerEpochToken);
+            }
+
+            for (int i = 0; i < memoryAttemptAuditRows.Count; i++)
+            {
+                AddEpochToken(input.epochTokenCarriers,
+                    memoryAttemptAuditRows[i]?.ownerEpochToken);
+            }
+
+            AddRequestEpochTokens(input.epochTokenCarriers, activeMemoryCoordinatorRequests);
+
+            MemorySavedCarrierRegistryPlan plan =
+                MemorySavedIdentityCarrierRegistry.Plan(input);
+            if (!plan.canPublish)
+            {
+                RecordMemoryDiagnostic("other", "component");
+                return;
+            }
+
+            // Atomic publication of every repaired allocator field (§T13.2).
+            lastIssuedAutobiographicalEpochSequence = plan.repairedAutobiographicalHighWater;
+            lastIssuedAutobiographicalEpochFallbackChain = plan.effectiveFallbackChain;
+            globalFactionSnapshotAllocatorGeneration = plan.globalFactionAllocatorGeneration;
+            legacyOwnerEpochReservations.Clear();
+            for (int i = 0; i < plan.normalizedReservations.Count; i++)
+            {
+                legacyOwnerEpochReservations.Add(new SavedLegacyOwnerEpochReservation
+                {
+                    schemaVersion = 1,
+                    ownerPawnId = plan.normalizedReservations[i].ownerPawnId,
+                    reservedEpochSequence = plan.normalizedReservations[i].reservedEpochSequence
+                });
+            }
+
+            if (plan.factionGenerationSaturated)
+            {
+                RecordMemoryDiagnostic("other", "component");
+            }
         }
 
-        /// <summary>Adds or coalesces one bounded diagnostic counter (unknown tokens fold into the
-        /// allowlisted "other" row rather than retaining prose; counts stick at MaxValue, §T6.9).</summary>
-        internal void RecordMemoryDiagnostic(string reasonToken, string scopeToken)
+        private static void AddEpochToken(List<string> carriers, string token)
         {
-            const string OtherReason = "other";
-            if (string.IsNullOrWhiteSpace(reasonToken))
+            if (!string.IsNullOrEmpty(token))
             {
-                reasonToken = OtherReason;
+                carriers.Add(token);
+            }
+        }
+
+        private static void AddEpochTokens<T>(
+            List<string> carriers, List<T> rows, Func<T, string> selector) where T : class
+        {
+            if (rows == null)
+            {
+                return;
             }
 
-            if (string.IsNullOrWhiteSpace(scopeToken))
+            for (int i = 0; i < rows.Count; i++)
             {
-                scopeToken = OtherReason;
+                T row = rows[i];
+                if (row != null)
+                {
+                    AddEpochToken(carriers, selector(row));
+                }
             }
-            else
+        }
+
+        private static void AddRequestEpochTokens(
+            List<string> carriers, List<SavedActiveLogicalRequestV1> requests)
+        {
+            if (requests == null)
             {
-                scopeToken = scopeToken.Trim();
+                return;
+            }
+
+            for (int i = 0; i < requests.Count; i++)
+            {
+                AddEpochToken(carriers, requests[i]?.ownerEpochToken);
+            }
+        }
+
+        /// <summary>Adds or coalesces one bounded diagnostic counter. Unknown reason/scope tokens
+        /// fold into the allowlisted "other" row (never prose/pawnIds); rows cap at 64 with
+        /// overflow coalescing; counts stick at long.MaxValue (§T6.9).</summary>
+        internal void RecordMemoryDiagnostic(string reasonToken, string scopeToken)
+        {
+            if (!IsAllowlistedReason(reasonToken))
+            {
+                reasonToken = "other";
+            }
+
+            // Scopes are component-level buckets, never raw owner ids or free text.
+            if (scopeToken != "owner" && scopeToken != "component")
+            {
+                scopeToken = "other";
             }
 
             for (int i = 0; i < memoryDiagnosticCounters.Count; i++)
@@ -587,6 +858,13 @@ namespace PawnDiary
                 }
             }
 
+            if (memoryDiagnosticCounters.Count >= MaximumDiagnosticCounterRows)
+            {
+                // Row-cap overflow coalesces into one allowlisted saturated row.
+                RecordMemoryDiagnostic("other", "other");
+                return;
+            }
+
             memoryDiagnosticCounters.Add(new SavedMemoryDiagnosticCounter
             {
                 schemaVersion = 1,
@@ -594,6 +872,19 @@ namespace PawnDiary
                 scopeToken = scopeToken,
                 saturatedCount = 1
             });
+        }
+
+        private static bool IsAllowlistedReason(string reasonToken)
+        {
+            for (int i = 0; i < DiagnosticReasonAllowlist.Length; i++)
+            {
+                if (string.Equals(DiagnosticReasonAllowlist[i], reasonToken, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

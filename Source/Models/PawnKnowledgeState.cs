@@ -291,40 +291,50 @@ namespace PawnDiary
         {
             // Keep the missing-key default pinned to the actual legacy schema. Using the current
             // value here would make an old save silently appear pre-migrated before Normalize().
+            // T6.0 string defaults: explicit empties so a missing token never loads as null.
             Scribe_Values.Look(ref schemaVersion, "schemaVersion", 1);
-            Scribe_Values.Look(ref pawnId, "pawnId");
-            Scribe_Values.Look(ref originCultureDefName, "originCulture");
-            Scribe_Values.Look(ref originCultureSource, "originCultureSource");
-            Scribe_Values.Look(ref adoptedCultureDefName, "adoptedCulture");
+            Scribe_Values.Look(ref pawnId, "pawnId", string.Empty);
+            Scribe_Values.Look(ref originCultureDefName, "originCulture", string.Empty);
+            Scribe_Values.Look(ref originCultureSource, "originCultureSource", string.Empty);
+            Scribe_Values.Look(ref adoptedCultureDefName, "adoptedCulture", string.Empty);
             Scribe_Collections.Look(ref records, "records", LookMode.Deep);
 
-            // Unified-memory additive tokens (§T6.1). Missing keys on pre-feature saves read the
-            // zero-value defaults; migration owns every semantic stamp.
-            Scribe_Values.Look(
-                ref autobiographicalEpochToken, "autobiographicalEpochToken", string.Empty);
-            Scribe_Values.Look(ref archiveOnly, "archiveOnly", false);
-            Scribe_Values.Look(ref epochFenceOnly, "epochFenceOnly", false);
-            Scribe_Values.Look(
-                ref requestCancellationGeneration, "requestCancellationGeneration", 0);
-            Scribe_Values.Look(ref structuralRevision, "structuralRevision", 0);
-            Scribe_Values.Look(ref statusRevision, "statusRevision", 0);
-            Scribe_Values.Look(ref completedDiaryEntryOrdinal, "completedDiaryEntryOrdinal", 0);
-            Scribe_Collections.Look(ref standaloneBlocks, "standaloneBlocks", LookMode.Deep);
-            Scribe_Collections.Look(ref threadRoots, "threadRoots", LookMode.Deep);
-            Scribe_Values.Look(ref playerBackground, "playerBackground", string.Empty);
-            Scribe_Collections.Look(
-                ref ownerAwarenessSnapshots, "ownerAwarenessSnapshots", LookMode.Deep);
-            Scribe_Collections.Look(ref openCaptureEpisodes, "openCaptureEpisodes", LookMode.Deep);
-            Scribe_Collections.Look(ref repetitionGuardRows, "repetitionGuardRows", LookMode.Deep);
-            Scribe_Collections.Look(ref importedArchiveRows, "importedArchiveRows", LookMode.Deep);
-            Scribe_Values.Look(ref migrationDiagnosticFlags, "migrationDiagnosticFlags", 0);
+            // Unified-memory additive tokens (§T6.1). READ always (missing keys read the
+            // zero-value defaults); WRITE only for current-shape envelopes — §19.1 forbids
+            // serializing a mixed/partial current schema beside un-migrated legacy data, so a
+            // v1/v2 owner saves byte-shape-equivalent to its legacy form until migration commits.
+            bool writeMemoryFields =
+                Scribe.mode != LoadSaveMode.Saving || IsCurrentSchema();
+            if (writeMemoryFields)
+            {
+                Scribe_Values.Look(
+                    ref autobiographicalEpochToken, "autobiographicalEpochToken", string.Empty);
+                Scribe_Values.Look(ref archiveOnly, "archiveOnly", false);
+                Scribe_Values.Look(ref epochFenceOnly, "epochFenceOnly", false);
+                Scribe_Values.Look(
+                    ref requestCancellationGeneration, "requestCancellationGeneration", 0);
+                Scribe_Values.Look(ref structuralRevision, "structuralRevision", 0);
+                Scribe_Values.Look(ref statusRevision, "statusRevision", 0);
+                Scribe_Values.Look(ref completedDiaryEntryOrdinal, "completedDiaryEntryOrdinal", 0);
+                Scribe_Collections.Look(ref standaloneBlocks, "standaloneBlocks", LookMode.Deep);
+                Scribe_Collections.Look(ref threadRoots, "threadRoots", LookMode.Deep);
+                Scribe_Values.Look(ref playerBackground, "playerBackground", string.Empty);
+                Scribe_Collections.Look(
+                    ref ownerAwarenessSnapshots, "ownerAwarenessSnapshots", LookMode.Deep);
+                Scribe_Collections.Look(ref openCaptureEpisodes, "openCaptureEpisodes", LookMode.Deep);
+                Scribe_Collections.Look(ref repetitionGuardRows, "repetitionGuardRows", LookMode.Deep);
+                Scribe_Collections.Look(ref importedArchiveRows, "importedArchiveRows", LookMode.Deep);
+                Scribe_Values.Look(ref migrationDiagnosticFlags, "migrationDiagnosticFlags", 0);
+            }
         }
 
         /// <summary>
-        /// Load repair: null lists, per-record normalization, dedup-key uniqueness, and null-safe
-        /// healing of the unified-memory collections. Deliberately does NOT change schemaVersion:
-        /// §T6.1 forbids the old eager bump because a v1/v2 owner must stay wholly legacy and
-        /// retryable until component migration swaps the complete owner state in one commit.
+        /// Load repair. For CURRENT envelopes: null lists, per-record normalization, dedup-key
+        /// uniqueness, and null-safe healing of the unified-memory collections. For LEGACY v1/v2
+        /// envelopes (§T13.1 stage-1 rules): null/parallel-list shape healing ONLY — records are
+        /// deliberately NOT deduplicated or dropped here, because the detached migration planner
+        /// must see the complete raw evidence before any semantic resolution; Deliberately does
+        /// NOT change schemaVersion either way (§T6.1 forbids the eager bump).
         /// </summary>
         public void Normalize()
         {
@@ -334,8 +344,20 @@ namespace PawnDiary
             adoptedCultureDefName = adoptedCultureDefName ?? string.Empty;
             autobiographicalEpochToken = autobiographicalEpochToken ?? string.Empty;
             playerBackground = playerBackground ?? string.Empty;
+            standaloneBlocks = standaloneBlocks ?? new List<SavedMemoryBlock>();
+            threadRoots = threadRoots ?? new List<SavedMemoryThreadRoot>();
+            ownerAwarenessSnapshots = ownerAwarenessSnapshots
+                ?? new List<SavedMemoryAwarenessSnapshot>();
+            openCaptureEpisodes = openCaptureEpisodes
+                ?? new List<SavedMemoryCaptureEpisode>();
+            repetitionGuardRows = repetitionGuardRows
+                ?? new List<SavedMemoryRepetitionGuardRow>();
+            importedArchiveRows = importedArchiveRows
+                ?? new List<SavedImportedMemoryRow>();
             records = records ?? new List<ImportantMemoryRecord>();
-            HashSet<string> seen = new HashSet<string>();
+
+            bool current = IsCurrentSchema();
+            HashSet<string> seen = current ? new HashSet<string>() : null;
             for (int i = records.Count - 1; i >= 0; i--)
             {
                 ImportantMemoryRecord record = records[i];
@@ -346,7 +368,8 @@ namespace PawnDiary
                 }
 
                 record.Normalize();
-                if (string.IsNullOrWhiteSpace(record.recordId) || !seen.Add(record.dedupKey))
+                if (current
+                    && (string.IsNullOrWhiteSpace(record.recordId) || !seen.Add(record.dedupKey)))
                 {
                     records.RemoveAt(i);
                 }

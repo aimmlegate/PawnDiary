@@ -156,6 +156,11 @@ namespace PawnDiary
             plan.globalFactionAllocatorGeneration = input.globalFactionSnapshotAllocatorGeneration > 0
                 ? input.globalFactionSnapshotAllocatorGeneration
                 : 0;
+            // A SAVED high-water at MaxValue is itself saturation — carriers need not repeat it.
+            if (plan.globalFactionAllocatorGeneration == long.MaxValue)
+            {
+                plan.factionGenerationSaturated = true;
+            }
             foreach (long generation
                 in input.factionAllocatorGenerationCarriers ?? new List<long>())
             {
@@ -175,8 +180,10 @@ namespace PawnDiary
                 }
             }
 
-            plan.normalizedReservations = NormalizeReservations(validReservations);
-            plan.canPublish = true;
+            plan.normalizedReservations = NormalizeReservations(validReservations, out int skippedCollisions);
+            plan.droppedReservationCount += skippedCollisions;
+            plan.canPublish = !plan.invalidFallbackChainNeedsRepair
+                && !plan.inconsistentFallbackRegistryNeedsRepair;
             return plan;
         }
 
@@ -187,7 +194,8 @@ namespace PawnDiary
         /// guessed here.
         /// </summary>
         private static List<MemoryLegacyEpochReservationInput> NormalizeReservations(
-            List<MemoryLegacyEpochReservationInput> validReservations)
+            List<MemoryLegacyEpochReservationInput> validReservations,
+            out int skippedCollisions)
         {
             // Ascending owner, then ascending sequence, so each owner's candidate list is ordered.
             validReservations.Sort((left, right) =>
@@ -200,6 +208,7 @@ namespace PawnDiary
 
             List<MemoryLegacyEpochReservationInput> normalized =
                 new List<MemoryLegacyEpochReservationInput>();
+            skippedCollisions = 0;
             HashSet<long> claimedSequences = new HashSet<long>();
             string currentOwner = null;
             bool currentOwnerResolved = false;

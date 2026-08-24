@@ -20,7 +20,7 @@ namespace PawnDiary
     /// catalog registers the shorter corpus name <c>SavedMemoryStateFact</c>, which wins because
     /// the catalog is the verified atom registry. Serialized tokens are unaffected either way.
     /// </summary>
-    public partial class SavedMemoryStateFact : IMemoryLogicalSizeSource
+    public partial class SavedMemoryStateFact : IExposable, IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         public string factKey = string.Empty;
@@ -42,7 +42,7 @@ namespace PawnDiary
     }
 
     /// <summary>One typed exact subject reference on a block or Summary payload (§T6.5).</summary>
-    public partial class SavedMemorySubjectRef : IMemoryLogicalSizeSource
+    public partial class SavedMemorySubjectRef : IExposable, IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         public string subjectRefId = string.Empty;
@@ -77,7 +77,7 @@ namespace PawnDiary
     }
 
     /// <summary>One immutable canonical fact on an Event/Landmark block (§T6.5).</summary>
-    public partial class SavedMemoryCanonicalFact : IMemoryLogicalSizeSource
+    public partial class SavedMemoryCanonicalFact : IExposable, IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         public string factId = string.Empty;
@@ -117,7 +117,7 @@ namespace PawnDiary
     }
 
     /// <summary>One provenance row on an Event/Landmark block or Summary payload (§T6.5).</summary>
-    public partial class SavedMemoryProvenance : IMemoryLogicalSizeSource
+    public partial class SavedMemoryProvenance : IExposable, IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         public string provenanceRefId = string.Empty;
@@ -154,7 +154,7 @@ namespace PawnDiary
     }
 
     /// <summary>One dated contribution inside a Summary fact bucket (§T6.7).</summary>
-    public partial class SavedMemoryFactContribution : IMemoryLogicalSizeSource
+    public partial class SavedMemoryFactContribution : IExposable, IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         public string contributionId = string.Empty;
@@ -211,7 +211,7 @@ namespace PawnDiary
     }
 
     /// <summary>One aggregation bucket of a Summary payload (§T6.7).</summary>
-    public partial class SavedMemoryFactBucket : IMemoryLogicalSizeSource
+    public partial class SavedMemoryFactBucket : IExposable, IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         public string bucketKey = string.Empty;
@@ -268,7 +268,7 @@ namespace PawnDiary
     }
 
     /// <summary>The sole canonical structured source of one Summary block (§T6.6).</summary>
-    public partial class SavedMemorySummaryPayload : IMemoryLogicalSizeSource
+    public partial class SavedMemorySummaryPayload : IExposable, IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         public int reducerRevision;
@@ -366,7 +366,7 @@ namespace PawnDiary
     }
 
     /// <summary>One active standalone Event/Landmark/Summary memory block (§T6.4).</summary>
-    public partial class SavedMemoryBlock : IMemoryLogicalSizeSource
+    public partial class SavedMemoryBlock : IExposable, IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         public string recordId = string.Empty;
@@ -512,7 +512,7 @@ namespace PawnDiary
     }
 
     /// <summary>One flat chapter metadata row inside a thread root (§T6.3).</summary>
-    public partial class SavedMemoryChapter : IMemoryLogicalSizeSource
+    public partial class SavedMemoryChapter : IExposable, IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         public string chapterId = string.Empty;
@@ -552,7 +552,7 @@ namespace PawnDiary
     }
 
     /// <summary>One exact-subject thread root: flat chapters plus visible blocks (§T6.2).</summary>
-    public partial class SavedMemoryThreadRoot : IMemoryLogicalSizeSource
+    public partial class SavedMemoryThreadRoot : IExposable, IMemoryLogicalSizeSource
     {
         public int schemaVersion = 1;
         /// <summary>Recomputed from the canonical tuple during repair; never a second root's key.</summary>

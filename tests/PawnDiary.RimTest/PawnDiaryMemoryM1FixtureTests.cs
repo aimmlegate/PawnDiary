@@ -394,7 +394,9 @@ namespace PawnDiary.RimTests
 
         private static ImportantMemoryRecord NewLegacyRecord()
         {
-            return new ImportantMemoryRecord
+            // Complete frozen §T6.8 shape: parallel participant/fact lists populated so the
+            // round-trip proves nothing is dropped or realigned before migration planning.
+            ImportantMemoryRecord record = new ImportantMemoryRecord
             {
                 recordId = "legacy-rec-1",
                 dedupKey = "dedup-1",
@@ -404,6 +406,16 @@ namespace PawnDiary.RimTests
                 tick = 9876,
                 dateLabel = "Aprimday 12"
             };
+            record.participantIds.Add("Pawn_B");
+            record.participantIds.Add("Pawn_C");
+            record.participantNames.Add("B");
+            record.participantNames.Add("C");
+            record.subjectKeys.Add("part:Heart");
+            record.factKeys.Add("relation");
+            record.factKeys.Add("status");
+            record.factValues.Add("spouse");
+            record.factValues.Add("married");
+            return record;
         }
 
         private static string EpochToken(long sequence)

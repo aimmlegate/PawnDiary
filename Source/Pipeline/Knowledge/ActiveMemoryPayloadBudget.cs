@@ -16,9 +16,17 @@ namespace PawnDiary
         public long globalActiveBytes;
         public long globalImportedBytes;
 
+        /// <summary>Checked combined total; -1 signals overflow (callers treat as invalid).</summary>
         public long GlobalCombined()
         {
-            return globalActiveBytes + globalImportedBytes;
+            try
+            {
+                return checked(globalActiveBytes + globalImportedBytes);
+            }
+            catch (OverflowException)
+            {
+                return -1;
+            }
         }
     }
 
@@ -103,6 +111,14 @@ namespace PawnDiary
                 || !CheckedAdd(globalCurrent.globalActiveBytes, ownerDeltaActive, out long globalActiveNew)
                 || !CheckedAdd(
                     globalCurrent.globalImportedBytes, ownerDeltaImported, out long globalImportedNew))
+            {
+                return refused;
+            }
+
+            // A removal larger than the current totals would produce negative bytes — corrupt
+            // input, not a shrink (§T17.5 totals are nonnegative). Refuse before any cap check.
+            if (ownerActiveNew < 0 || ownerImportedNew < 0
+                || globalActiveNew < 0 || globalImportedNew < 0)
             {
                 return refused;
             }
