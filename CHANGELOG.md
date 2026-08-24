@@ -6,6 +6,10 @@ Companion: [repowiki/README.md](repowiki/README.md) describes the current state.
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-08-25
+
+- **Memory M4 review hardening.** Make admission pressure candidate-aware, repair publication/remapping deterministic and authored-safe, clean empty metadata, measure logical eviction effects exactly, reject newer reducer revisions, and surface bounded repair diagnostics.
+
 ## 2026-08-24
 
 - **Memory M4 bounded thread backend.** Add exact roots/chapters, deterministic summaries, original-tick TTL, edited-safe hard-pressure refusal, atomic saved-store indexes, and elapsed maintenance behind LegacyShadow.

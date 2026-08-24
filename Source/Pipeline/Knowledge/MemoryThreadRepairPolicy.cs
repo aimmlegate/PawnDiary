@@ -23,6 +23,52 @@ namespace PawnDiary
     /// <summary>Repairs exact-root duplicates without consulting live game objects.</summary>
     internal static class MemoryThreadRepairPolicy
     {
+        /// <summary>Stable bounded-diagnostic token for discarded automatic repair alternates.</summary>
+        internal const string AutomaticConflictDiagnosticToken = "repair_automatic_conflict";
+
+        /// <summary>Maps a pure repair result to its bounded component diagnostic, if any.</summary>
+        internal static string DiagnosticReason(MemoryThreadRepairResult result)
+        {
+            return result != null && result.automaticConflictDroppedCount > 0
+                ? AutomaticConflictDiagnosticToken : string.Empty;
+        }
+
+        /// <summary>
+        /// Returns whether one current-reducer root needs deterministic shape/placement repair.
+        /// Unknown newer reducer revisions are intentionally inert and never enter this repair path.
+        /// </summary>
+        internal static bool NeedsRepair(MemoryReducerRoot source)
+        {
+            if (source == null || MemoryThreadReducer.HasUnknownNewerReducerRevision(source))
+                return false;
+            string canonicalRootId;
+            if (!TryCreateCanonicalRootId(source, out canonicalRootId)) return false;
+            MemoryReducerRoot repaired;
+            string ignored;
+            return TryCanonicalizeRootPlacement(
+                    source, canonicalRootId, out repaired, out ignored)
+                && !string.Equals(
+                    MemoryThreadReducer.CanonicalState(source),
+                    MemoryThreadReducer.CanonicalState(repaired),
+                    StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Finds the physical source row whose canonical content matches the repair-selected block.
+        /// Suppression is excluded because repair combines that flag with logical OR after choosing
+        /// authored/factual content.
+        /// </summary>
+        internal static int FindPublicationSourceIndex(
+            List<MemoryReducerBlock> candidates,
+            MemoryReducerBlock selected)
+        {
+            if (candidates == null || selected == null) return -1;
+            for (int i = 0; i < candidates.Count; i++)
+                if (candidates[i] != null
+                    && SameBlockIgnoringSuppression(candidates[i], selected)) return i;
+            return -1;
+        }
+
         /// <summary>
         /// Produces an input-permutation-independent active root set. Invalid raw identity refuses
         /// the whole plan; conflicting payload is archived, and compatible rows reduce normally.
@@ -44,26 +90,39 @@ namespace PawnDiary
                     result.reasonToken = "null_root";
                     return result;
                 }
+                if (MemoryThreadReducer.HasUnknownNewerReducerRevision(source))
+                {
+                    result.refused = true;
+                    result.reasonToken = "newer_reducer_revision";
+                    return result;
+                }
                 string canonicalRootId;
-                if (!MemoryIdentityCodec.TryCreateRootId(new MemoryRootIdentity
-                    {
-                        ownerPawnId = source.ownerPawnId,
-                        ownerEpochToken = source.ownerEpochToken,
-                        primarySubjectKind = source.subjectKind,
-                        primarySubjectId = source.subjectId
-                    }, out canonicalRootId))
+                if (!TryCreateCanonicalRootId(source, out canonicalRootId))
                 {
                     result.refused = true;
                     result.reasonToken = "invalid_root_identity";
                     return result;
                 }
+                MemoryReducerRoot canonicalized;
+                string canonicalizeReason;
+                if (!TryCanonicalizeRootPlacement(
+                    source, canonicalRootId, out canonicalized, out canonicalizeReason))
+                {
+                    result.refused = true;
+                    result.reasonToken = canonicalizeReason;
+                    return result;
+                }
+                result.changed |= !string.Equals(
+                    MemoryThreadReducer.CanonicalState(source),
+                    MemoryThreadReducer.CanonicalState(canonicalized),
+                    StringComparison.Ordinal);
                 List<MemoryReducerRoot> group;
                 if (!groups.TryGetValue(canonicalRootId, out group))
                 {
                     group = new List<MemoryReducerRoot>();
                     groups.Add(canonicalRootId, group);
                 }
-                group.Add(CanonicalizeRootPlacement(source, canonicalRootId));
+                group.Add(canonicalized);
             }
 
             foreach (KeyValuePair<string, List<MemoryReducerRoot>> pair in groups)
@@ -99,7 +158,22 @@ namespace PawnDiary
                     }
                 }
 
-                NormalizeOrder(merged);
+                MemoryReducerRoot normalized;
+                string normalizeReason;
+                if (!TryCanonicalizeRootPlacement(
+                    merged, pair.Key, out normalized, out normalizeReason))
+                {
+                    result.refused = true;
+                    result.reasonToken = normalizeReason;
+                    result.activeRoots.Clear();
+                    result.archivedRoots.Clear();
+                    return result;
+                }
+                result.changed |= !string.Equals(
+                    MemoryThreadReducer.CanonicalState(merged),
+                    MemoryThreadReducer.CanonicalState(normalized),
+                    StringComparison.Ordinal);
+                merged = normalized;
                 MemoryThreadReductionResult reduced = MemoryThreadReducer.Reduce(merged, policy);
                 if (reduced.refused)
                 {
@@ -116,17 +190,286 @@ namespace PawnDiary
             return result;
         }
 
-        private static MemoryReducerRoot CanonicalizeRootPlacement(
+        private static bool TryCreateCanonicalRootId(
             MemoryReducerRoot source,
-            string canonicalRootId)
+            out string canonicalRootId)
+        {
+            return MemoryIdentityCodec.TryCreateRootId(new MemoryRootIdentity
+            {
+                ownerPawnId = source.ownerPawnId,
+                ownerEpochToken = source.ownerEpochToken,
+                primarySubjectKind = source.subjectKind,
+                primarySubjectId = source.subjectId
+            }, out canonicalRootId);
+        }
+
+        private static bool TryCanonicalizeRootPlacement(
+            MemoryReducerRoot source,
+            string canonicalRootId,
+            out MemoryReducerRoot repaired,
+            out string reason)
         {
             MemoryReducerRoot root = source.Clone();
+            repaired = null;
+            reason = "invalid_repair_placement";
             root.rootId = canonicalRootId;
+            List<MemoryReducerChapter> chapters = new List<MemoryReducerChapter>();
+            for (int i = 0; root.chapters != null && i < root.chapters.Count; i++)
+            {
+                if (root.chapters[i] == null)
+                {
+                    reason = "null_chapter";
+                    return false;
+                }
+                chapters.Add(root.chapters[i].Clone());
+            }
+            chapters.Sort(CompareRepairChapterCandidate);
+
+            Dictionary<string, string> chapterIdMap =
+                new Dictionary<string, string>(StringComparer.Ordinal);
+            Dictionary<long, string> ordinalMap = new Dictionary<long, string>();
+            HashSet<long> usedOrdinals = new HashSet<long>();
+            List<MemoryReducerChapter> pending = new List<MemoryReducerChapter>();
+            long maximumOrdinal = 0;
+            for (int i = 0; i < chapters.Count; i++)
+            {
+                MemoryReducerChapter chapter = chapters[i];
+                if (chapter.ordinal > 0 && usedOrdinals.Add(chapter.ordinal))
+                {
+                    maximumOrdinal = Math.Max(maximumOrdinal, chapter.ordinal);
+                    continue;
+                }
+                pending.Add(chapter);
+            }
+            for (int i = 0; i < pending.Count; i++)
+            {
+                if (maximumOrdinal == long.MaxValue)
+                {
+                    reason = "chapter_sequence_saturated";
+                    return false;
+                }
+                maximumOrdinal++;
+                pending[i].ordinal = maximumOrdinal;
+                usedOrdinals.Add(maximumOrdinal);
+            }
+
+            for (int i = 0; i < chapters.Count; i++)
+            {
+                MemoryReducerChapter chapter = chapters[i];
+                string oldId = chapter.chapterId ?? string.Empty;
+                string newId;
+                if (!MemoryIdentityCodec.TryCreateChapterId(
+                    canonicalRootId, chapter.ordinal, out newId))
+                {
+                    reason = "invalid_chapter";
+                    return false;
+                }
+                if (!chapterIdMap.ContainsKey(oldId)) chapterIdMap.Add(oldId, newId);
+                if (!ordinalMap.ContainsKey(chapter.ordinal)) ordinalMap.Add(chapter.ordinal, newId);
+                chapter.chapterId = newId;
+            }
+            root.chapters = chapters;
+            if (maximumOrdinal == long.MaxValue)
+            {
+                reason = "chapter_sequence_saturated";
+                return false;
+            }
+            root.nextChapterOrdinal = maximumOrdinal + 1;
+
+            MemoryRootIdentity identity = new MemoryRootIdentity
+            {
+                ownerPawnId = root.ownerPawnId,
+                ownerEpochToken = root.ownerEpochToken,
+                primarySubjectKind = root.subjectKind,
+                primarySubjectId = root.subjectId
+            };
             for (int i = 0; i < root.visibleBlocks.Count; i++)
-                root.visibleBlocks[i].rootId = canonicalRootId;
-            if (root.rollingSummaryBlock != null)
-                root.rollingSummaryBlock.rootId = canonicalRootId;
-            return root;
+            {
+                if (!TryRemapBlock(
+                    root.visibleBlocks[i], false, identity, canonicalRootId,
+                    chapterIdMap, ordinalMap, out reason)) return false;
+            }
+            if (root.rollingSummaryBlock != null
+                && !TryRemapBlock(
+                    root.rollingSummaryBlock, true, identity, canonicalRootId,
+                    chapterIdMap, ordinalMap, out reason)) return false;
+
+            NormalizeOpenChapters(root);
+            RebindClosedSummaryReferences(root);
+            NormalizeOrder(root);
+            repaired = root;
+            reason = string.Empty;
+            return true;
+        }
+
+        private static bool TryRemapBlock(
+            MemoryReducerBlock block,
+            bool rollingSlot,
+            MemoryRootIdentity identity,
+            string canonicalRootId,
+            Dictionary<string, string> chapterIdMap,
+            Dictionary<long, string> ordinalMap,
+            out string reason)
+        {
+            reason = "invalid_block";
+            if (block == null) return false;
+            block.rootId = canonicalRootId;
+            if (rollingSlot)
+            {
+                if (!string.IsNullOrWhiteSpace(block.playerWording))
+                {
+                    reason = "authored_rolling_summary";
+                    return false;
+                }
+                block.playerEdited = false;
+                block.playerWording = string.Empty;
+                block.chapterId = string.Empty;
+                if (!MemoryIdentityCodec.TryCreateRollingSummaryId(identity, out block.recordId)
+                    || !MemoryIdentityCodec.TryCreateRollingSummarySourceId(
+                        identity, out block.sourceOccurrenceId)) return false;
+            }
+            else
+            {
+                NormalizePlayerWordingFlag(block);
+                string remappedChapter;
+                if (!TryRemapChapterId(
+                    block.chapterId, chapterIdMap, ordinalMap, out remappedChapter)) return false;
+                block.chapterId = remappedChapter;
+                if (block.kind == MemoryContractTokens.KindSummary)
+                {
+                    long ordinal;
+                    string ignoredRoot;
+                    if (!MemoryIdentityCodec.TryParseChapterId(
+                            remappedChapter, out ignoredRoot, out ordinal)
+                        || !MemoryIdentityCodec.TryCreateClosedSummaryId(
+                            identity, ordinal, out block.recordId)
+                        || !MemoryIdentityCodec.TryCreateClosedSummarySourceId(
+                            identity, ordinal, out block.sourceOccurrenceId)) return false;
+                }
+            }
+            RemapContributionChapterIds(block.summaryPayload, chapterIdMap, ordinalMap);
+            reason = string.Empty;
+            return true;
+        }
+
+        private static void NormalizePlayerWordingFlag(MemoryReducerBlock block)
+        {
+            if (string.IsNullOrWhiteSpace(block.playerWording))
+            {
+                block.playerWording = string.Empty;
+                block.playerEdited = false;
+            }
+            else
+            {
+                block.playerEdited = true;
+            }
+        }
+
+        private static bool TryRemapChapterId(
+            string oldId,
+            Dictionary<string, string> chapterIdMap,
+            Dictionary<long, string> ordinalMap,
+            out string remapped)
+        {
+            if (chapterIdMap.TryGetValue(oldId ?? string.Empty, out remapped)) return true;
+            string ignoredRoot;
+            long ordinal;
+            return MemoryIdentityCodec.TryParseChapterId(oldId, out ignoredRoot, out ordinal)
+                && ordinalMap.TryGetValue(ordinal, out remapped);
+        }
+
+        private static void RemapContributionChapterIds(
+            MemoryReducerSummary summary,
+            Dictionary<string, string> chapterIdMap,
+            Dictionary<long, string> ordinalMap)
+        {
+            for (int i = 0; summary?.factBuckets != null && i < summary.factBuckets.Count; i++)
+            {
+                MemoryReducerBucket bucket = summary.factBuckets[i];
+                for (int j = 0; bucket?.contributions != null
+                    && j < bucket.contributions.Count; j++)
+                {
+                    MemoryReducerContribution contribution = bucket.contributions[j];
+                    string remapped;
+                    if (contribution != null && TryRemapChapterId(
+                        contribution.originChapterId, chapterIdMap, ordinalMap, out remapped))
+                        contribution.originChapterId = remapped;
+                }
+            }
+        }
+
+        private static void NormalizeOpenChapters(MemoryReducerRoot root)
+        {
+            if (root.chapters.Count == 0) return;
+            MemoryReducerChapter greatest = root.chapters[0];
+            for (int i = 1; i < root.chapters.Count; i++)
+                if (CompareOpenWinner(greatest, root.chapters[i]) < 0) greatest = root.chapters[i];
+            for (int i = 0; i < root.chapters.Count; i++)
+            {
+                MemoryReducerChapter chapter = root.chapters[i];
+                if (chapter.closed || ReferenceEquals(chapter, greatest) && !greatest.closed) continue;
+                chapter.closed = true;
+                chapter.closedTick = Math.Max(chapter.openedTick, chapter.lastActivityTick);
+                chapter.closureReasonToken = MemoryChapterTokens.Repair;
+                chapter.closedSummaryRecordId = string.Empty;
+            }
+        }
+
+        private static void RebindClosedSummaryReferences(MemoryReducerRoot root)
+        {
+            Dictionary<string, string> summaryByChapter =
+                new Dictionary<string, string>(StringComparer.Ordinal);
+            for (int i = 0; i < root.visibleBlocks.Count; i++)
+            {
+                MemoryReducerBlock block = root.visibleBlocks[i];
+                if (block != null && block.kind == MemoryContractTokens.KindSummary
+                    && block.summaryRole == MemoryContractTokens.SummaryRoleClosed
+                    && !summaryByChapter.ContainsKey(block.chapterId))
+                    summaryByChapter.Add(block.chapterId, block.recordId);
+            }
+            for (int i = 0; i < root.chapters.Count; i++)
+            {
+                MemoryReducerChapter chapter = root.chapters[i];
+                string summaryId;
+                chapter.closedSummaryRecordId = chapter.closed
+                    && summaryByChapter.TryGetValue(chapter.chapterId, out summaryId)
+                    ? summaryId : string.Empty;
+            }
+        }
+
+        private static int CompareRepairChapterCandidate(
+            MemoryReducerChapter left,
+            MemoryReducerChapter right)
+        {
+            bool leftValid = left.ordinal > 0;
+            bool rightValid = right.ordinal > 0;
+            int valid = rightValid.CompareTo(leftValid);
+            if (valid != 0) return valid;
+            int ordinal = left.ordinal.CompareTo(right.ordinal);
+            if (ordinal != 0) return ordinal;
+            int id = string.Compare(left.chapterId, right.chapterId, StringComparison.Ordinal);
+            if (id != 0) return id;
+            int opened = left.openedTick.CompareTo(right.openedTick);
+            if (opened != 0) return opened;
+            int activity = left.lastActivityTick.CompareTo(right.lastActivityTick);
+            if (activity != 0) return activity;
+            int closed = left.closed.CompareTo(right.closed);
+            if (closed != 0) return closed;
+            return string.Compare(
+                left.closureReasonToken, right.closureReasonToken, StringComparison.Ordinal);
+        }
+
+        private static int CompareOpenWinner(
+            MemoryReducerChapter left,
+            MemoryReducerChapter right)
+        {
+            int ordinal = left.ordinal.CompareTo(right.ordinal);
+            if (ordinal != 0) return ordinal;
+            int opened = left.openedTick.CompareTo(right.openedTick);
+            if (opened != 0) return opened;
+            int activity = left.lastActivityTick.CompareTo(right.lastActivityTick);
+            if (activity != 0) return activity;
+            return string.Compare(left.chapterId, right.chapterId, StringComparison.Ordinal);
         }
 
         private static bool TryMerge(MemoryReducerRoot target, MemoryReducerRoot candidate)

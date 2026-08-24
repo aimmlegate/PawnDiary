@@ -78,9 +78,10 @@ namespace PawnDiary
                         intervalTicks = intervalTicks
                     });
                 if (!dueCheck.due) return;
+                MemoryReducerPolicy policy = BuildMemoryReducerPolicy(nowTick);
                 if (MemoryMaintenancePolicy.ShouldRebuildSnapshot(
                     dueCheck, memoryMaintenanceHandles.Count))
-                    RebuildMemoryMaintenanceHandles();
+                    RebuildMemoryMaintenanceHandles(policy);
                 int maximumItems = (int)ReadCapacityLong("sliceWorkItems", 30, 240);
                 int targetMicroseconds = (int)ReadCapacityLong(
                     "sliceTargetMicroseconds", 375, 1000);
@@ -110,7 +111,6 @@ namespace PawnDiary
                 Stopwatch timer = Stopwatch.StartNew();
                 int processed = 0;
                 bool changed = false;
-                MemoryReducerPolicy policy = BuildMemoryReducerPolicy(nowTick);
                 for (int offset = 0; offset < plan.workItems; offset++)
                 {
                     // The first indivisible item always runs; before every later item, the elapsed
@@ -171,14 +171,34 @@ namespace PawnDiary
             }
         }
 
-        private void RebuildMemoryMaintenanceHandles()
+        private void RebuildMemoryMaintenanceHandles(MemoryReducerPolicy policy)
         {
             memoryMaintenanceHandles.Clear();
             foreach (KeyValuePair<string, PawnKnowledgeState> pair in memoryM4OwnerById)
             {
                 PawnKnowledgeState owner = pair.Value;
-                if (owner?.threadRoots != null
-                    && memoryM4OwnersWithDuplicateCanonicalRoots.Contains(pair.Key))
+                bool needsRepair = memoryM4OwnersWithDuplicateCanonicalRoots.Contains(pair.Key);
+                bool hasNewerReducer = false;
+                List<string> reducibleRootIds = new List<string>();
+                for (int i = 0; owner?.threadRoots != null && i < owner.threadRoots.Count; i++)
+                {
+                    SavedMemoryThreadRoot saved = owner.threadRoots[i];
+                    if (saved == null) continue;
+                    MemoryReducerRoot root = ToReducerRoot(saved, policy);
+                    if (MemoryThreadReducer.HasUnknownNewerReducerRevision(root))
+                    {
+                        hasNewerReducer = true;
+                        continue;
+                    }
+                    needsRepair |= MemoryThreadRepairPolicy.NeedsRepair(root);
+                    if (!string.IsNullOrEmpty(saved.rootId)) reducibleRootIds.Add(saved.rootId);
+                }
+                if (hasNewerReducer)
+                    RecordMemoryDiagnosticOnce("newer_reducer_revision", "owner");
+                // The M4 adapter publishes repair as one complete owner-root list. If an inert newer
+                // sibling exists, leave it byte-equivalent and continue ordinary reduction only for
+                // the understood roots; a later compatibility phase can isolate mixed repair safely.
+                if (owner?.threadRoots != null && needsRepair && !hasNewerReducer)
                 {
                     memoryMaintenanceHandles.Add(new MemoryMaintenanceHandle
                     {
@@ -194,14 +214,12 @@ namespace PawnDiary
                         rootId = string.Empty
                     });
                 }
-                for (int i = 0; owner?.threadRoots != null && i < owner.threadRoots.Count; i++)
+                for (int i = 0; i < reducibleRootIds.Count; i++)
                 {
-                    SavedMemoryThreadRoot root = owner.threadRoots[i];
-                    if (root == null || string.IsNullOrEmpty(root.rootId)) continue;
                     memoryMaintenanceHandles.Add(new MemoryMaintenanceHandle
                     {
                         ownerPawnId = pair.Key,
-                        rootId = root.rootId
+                        rootId = reducibleRootIds[i]
                     });
                 }
             }

@@ -272,18 +272,23 @@ namespace PawnDiary
                 state, replacementStandalone, replacementRoots, request.requiredLifecycleLandmark);
             if (capacity != MemoryStoreMutationOutcome.Admitted)
             {
-                // Before refusing optional capture, give the one component-wide emergency planner a
-                // chance to restore headroom from existing unedited atoms. A successful pressure
-                // commit invalidates this detached admission; the caller rederives once from the new
-                // revision instead of merging stale lists.
-                MemoryPressureCommitResult pressure = TryApplyMemoryPressureCaps(request.nowTick);
+                // Pressure must evaluate the complete projected admission, not the currently saved
+                // graph that is still exactly at its cap. The incoming record is excluded from this
+                // transaction's eviction candidates; either existing eligible atoms make room and
+                // the candidate publishes atomically, or no part of the detached plan publishes.
+                MemoryPressureCommitResult pressure = TryApplyMemoryPressureCaps(
+                    request.nowTick, state, replacementStandalone, replacementRoots,
+                    request.block.recordId);
                 result.outcome = pressure.changed
-                    ? MemoryStoreMutationOutcome.StaleRevision
+                    ? MemoryStoreMutationOutcome.Admitted
                     : pressure.protectedSaturation
                         ? request.requiredLifecycleLandmark
                             ? MemoryStoreMutationOutcome.RequiredLandmarkCapacityRefused
                             : MemoryStoreMutationOutcome.ProtectedSaturation
                         : capacity;
+                if (pressure.changed)
+                    result.committedOwnerStructuralRevision =
+                        pressure.committedOwnerStructuralRevision;
                 return result;
             }
 
@@ -320,11 +325,12 @@ namespace PawnDiary
             SavedMemoryThreadRoot prior = owner.threadRoots[rootIndex];
             MemoryThreadReductionResult reduction = MemoryThreadReducer.Reduce(
                 ToReducerRoot(prior, policy), policy);
-            if (reduction.refused || !reduction.changed) return false;
+            if (reduction.refused) return false;
             SavedMemoryThreadRoot replacement = FromReducerRoot(reduction.replacement, prior);
+            bool removeRoot = MemoryThreadReducer.IsRemovableEmptyRoot(reduction.replacement);
+            if (!reduction.changed && !removeRoot) return false;
             List<SavedMemoryThreadRoot> roots = new List<SavedMemoryThreadRoot>(owner.threadRoots);
-            if (replacement.visibleBlocks.Count == 0 && replacement.rollingSummaryBlock == null
-                && !HasOpenChapter(replacement)) roots.RemoveAt(rootIndex);
+            if (removeRoot) roots.RemoveAt(rootIndex);
             else roots[rootIndex] = replacement;
             long revision;
             if (!TryIncrement(owner.structuralRevision, out revision)) return false;
@@ -352,7 +358,10 @@ namespace PawnDiary
                     changed = true;
                     continue;
                 }
-                if (!block.playerEdited && block.kind != MemoryContractTokens.KindSummary
+                bool playerWordingAgrees = block.playerEdited
+                    == !string.IsNullOrWhiteSpace(block.playerWording);
+                if (playerWordingAgrees && !block.playerEdited
+                    && block.kind != MemoryContractTokens.KindSummary
                     && MemoryThreadReducer.IsExpired(
                         policy.nowTick, block.originalEventTick, block.ageUnknown,
                         block.importance, policy.minorLifetimeTicks, policy.regularLifetimeTicks))
@@ -373,17 +382,23 @@ namespace PawnDiary
         /// <summary>Repairs duplicate roots for one owner and swaps once on success.</summary>
         internal bool TryRepairSavedMemoryRoots(PawnKnowledgeState owner, MemoryReducerPolicy policy)
         {
-            if (owner == null || owner.threadRoots == null || owner.threadRoots.Count < 2) return false;
+            if (owner == null || owner.threadRoots == null || owner.threadRoots.Count == 0) return false;
             List<MemoryReducerRoot> projected = new List<MemoryReducerRoot>();
             for (int i = 0; i < owner.threadRoots.Count; i++)
                 if (owner.threadRoots[i] != null)
-                    projected.Add(ToReducerRoot(owner.threadRoots[i], policy));
+                {
+                    MemoryReducerRoot root = ToReducerRoot(owner.threadRoots[i], policy);
+                    // T7.2 is root-local, but this M4 repair publishes one complete owner list. Do not
+                    // let an understood sibling rewrite/reorder a newer inert root in that transaction.
+                    if (MemoryThreadReducer.HasUnknownNewerReducerRevision(root)) return false;
+                    projected.Add(root);
+                }
             MemoryThreadRepairResult repair = MemoryThreadRepairPolicy.Repair(projected, policy);
             if (repair.refused || !repair.changed) return false;
             List<SavedMemoryThreadRoot> replacements = new List<SavedMemoryThreadRoot>();
             for (int i = 0; i < repair.activeRoots.Count; i++)
                 replacements.Add(FromReducerRoot(repair.activeRoots[i], BuildOriginalRegistryRoot(
-                    owner.threadRoots, repair.activeRoots[i].rootId)));
+                    owner.threadRoots, repair.activeRoots[i], policy)));
             // Authored conflict archive persistence belongs to M6 migration/library UI. Until then,
             // fail closed rather than discard its quarantined payload from a current save.
             if (repair.archivedRoots.Count > 0) return false;
@@ -392,6 +407,9 @@ namespace PawnDiary
             owner.threadRoots = replacements;
             owner.structuralRevision = revision;
             memoryM4IndexesDirty = true;
+            string diagnosticReason = MemoryThreadRepairPolicy.DiagnosticReason(repair);
+            if (!string.IsNullOrEmpty(diagnosticReason))
+                RecordMemoryDiagnostic(diagnosticReason, "owner");
             return true;
         }
 
@@ -458,7 +476,7 @@ namespace PawnDiary
             if (!memoryM4SourceFactDedupByKey.ContainsKey(key))
                 memoryM4SourceFactDedupByKey.Add(key, block);
             memoryM4GlobalActiveBlockCount++;
-            if (block.playerEdited) memoryM4GlobalEditedBlockCount++;
+            if (IsPlayerAuthored(block)) memoryM4GlobalEditedBlockCount++;
         }
 
         private MemoryStoreMutationOutcome ValidateDetachedCapacity(
@@ -531,6 +549,7 @@ namespace PawnDiary
         {
             if (request == null || request.block == null || string.IsNullOrEmpty(request.ownerPawnId)
                 || request.nowTick < 0 || request.block.playerEdited
+                || !string.IsNullOrWhiteSpace(request.block.playerWording)
                 || request.block.kind == MemoryContractTokens.KindSummary
                 || !MemoryContractTokens.IsKnownKind(request.block.kind)
                 || !MemoryContractTokens.IsKnownCategory(request.block.category)
@@ -883,6 +902,8 @@ namespace PawnDiary
                 retained.ownerEpochToken = pure.ownerEpochToken;
                 retained.rootId = pure.rootId;
                 retained.chapterId = pure.chapterId;
+                retained.playerEdited = pure.playerEdited;
+                retained.playerWording = pure.playerWording;
                 retained.suppressed = pure.suppressed;
                 return retained;
             }
@@ -1344,8 +1365,10 @@ namespace PawnDiary
 
         private static SavedMemoryThreadRoot BuildOriginalRegistryRoot(
             List<SavedMemoryThreadRoot> roots,
-            string rootId)
+            MemoryReducerRoot selectedRoot,
+            MemoryReducerPolicy policy)
         {
+            string rootId = selectedRoot?.rootId ?? string.Empty;
             SavedMemoryThreadRoot combined = null;
             HashSet<string> chapters = new HashSet<string>(StringComparer.Ordinal);
             HashSet<string> records = new HashSet<string>(StringComparer.Ordinal);
@@ -1391,14 +1414,76 @@ namespace PawnDiary
                     }
                 for (int j = 0; candidate.visibleBlocks != null
                     && j < candidate.visibleBlocks.Count; j++)
-                    if (candidate.visibleBlocks[j] != null
-                        && records.Add(candidate.visibleBlocks[j].recordId))
-                        combined.visibleBlocks.Add(CloneSavedBlock(candidate.visibleBlocks[j]));
-                if (candidate.rollingSummaryBlock != null
-                    && records.Add(candidate.rollingSummaryBlock.recordId))
-                    combined.rollingSummaryBlock = CloneSavedBlock(candidate.rollingSummaryBlock);
+                {
+                    SavedMemoryBlock source = candidate.visibleBlocks[j];
+                    if (source == null) continue;
+                    if (records.Add(source.recordId))
+                    {
+                        combined.visibleBlocks.Add(CloneSavedBlock(source));
+                        continue;
+                    }
+                    int existingIndex = FindSavedBlockIndex(
+                        combined.visibleBlocks, source.recordId);
+                    MemoryReducerBlock selected = FindReducerBlock(selectedRoot, source.recordId);
+                    if (existingIndex >= 0 && selected != null
+                        && ShouldReplacePublicationSource(
+                            combined.visibleBlocks[existingIndex], source, selected, policy))
+                        combined.visibleBlocks[existingIndex] = CloneSavedBlock(source);
+                }
+                if (candidate.rollingSummaryBlock != null)
+                {
+                    SavedMemoryBlock source = candidate.rollingSummaryBlock;
+                    if (records.Add(source.recordId))
+                        combined.rollingSummaryBlock = CloneSavedBlock(source);
+                    else if (combined.rollingSummaryBlock != null)
+                    {
+                        MemoryReducerBlock selected = FindReducerBlock(
+                            selectedRoot, source.recordId);
+                        if (selected != null && ShouldReplacePublicationSource(
+                            combined.rollingSummaryBlock, source, selected, policy))
+                            combined.rollingSummaryBlock = CloneSavedBlock(source);
+                    }
+                }
             }
             return combined ?? new SavedMemoryThreadRoot();
+        }
+
+        private static bool ShouldReplacePublicationSource(
+            SavedMemoryBlock current,
+            SavedMemoryBlock candidate,
+            MemoryReducerBlock selected,
+            MemoryReducerPolicy policy)
+        {
+            List<MemoryReducerBlock> choices = new List<MemoryReducerBlock>
+            {
+                ToReducerBlock(current,
+                    policy.maximumSubjectRefsPerContribution,
+                    policy.maximumProvenanceRefsPerContribution),
+                ToReducerBlock(candidate,
+                    policy.maximumSubjectRefsPerContribution,
+                    policy.maximumProvenanceRefsPerContribution)
+            };
+            return MemoryThreadRepairPolicy.FindPublicationSourceIndex(choices, selected) == 1;
+        }
+
+        private static MemoryReducerBlock FindReducerBlock(
+            MemoryReducerRoot root,
+            string recordId)
+        {
+            for (int i = 0; root?.visibleBlocks != null && i < root.visibleBlocks.Count; i++)
+                if (root.visibleBlocks[i].recordId == recordId) return root.visibleBlocks[i];
+            return root?.rollingSummaryBlock != null
+                && root.rollingSummaryBlock.recordId == recordId
+                ? root.rollingSummaryBlock : null;
+        }
+
+        private static int FindSavedBlockIndex(
+            List<SavedMemoryBlock> blocks,
+            string recordId)
+        {
+            for (int i = 0; blocks != null && i < blocks.Count; i++)
+                if (blocks[i] != null && blocks[i].recordId == recordId) return i;
+            return -1;
         }
 
         private static bool HasOpenChapter(SavedMemoryThreadRoot root)
@@ -1440,15 +1525,21 @@ namespace PawnDiary
         {
             int count = 0;
             for (int i = 0; standalone != null && i < standalone.Count; i++)
-                if (standalone[i].playerEdited) count++;
+                if (IsPlayerAuthored(standalone[i])) count++;
             for (int i = 0; roots != null && i < roots.Count; i++)
             {
                 for (int j = 0; j < roots[i].visibleBlocks.Count; j++)
-                    if (roots[i].visibleBlocks[j].playerEdited) count++;
+                    if (IsPlayerAuthored(roots[i].visibleBlocks[j])) count++;
                 if (roots[i].rollingSummaryBlock != null
-                    && roots[i].rollingSummaryBlock.playerEdited) count++;
+                    && IsPlayerAuthored(roots[i].rollingSummaryBlock)) count++;
             }
             return count;
+        }
+
+        private static bool IsPlayerAuthored(SavedMemoryBlock block)
+        {
+            return block != null && (block.playerEdited
+                || !string.IsNullOrWhiteSpace(block.playerWording));
         }
 
         private static MemoryLogicalSizeResult SizeSavedBlockList(List<SavedMemoryBlock> rows)

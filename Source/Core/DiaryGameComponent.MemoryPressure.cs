@@ -18,6 +18,7 @@ namespace PawnDiary
             public List<SavedMemoryThreadRoot> priorRoots;
             public List<SavedMemoryBlock> standalone;
             public List<SavedMemoryThreadRoot> roots;
+            public string protectedAdmissionRecordId = string.Empty;
             public bool changed;
         }
 
@@ -25,30 +26,51 @@ namespace PawnDiary
         {
             public bool changed;
             public bool protectedSaturation;
+            public long committedOwnerStructuralRevision = -1;
         }
 
         /// <summary>
         /// Restores owner/global count and byte headroom through the exact emergency atom order.
         /// Every saved assignment is deferred until every owner plan and revision is proven.
         /// </summary>
-        private MemoryPressureCommitResult TryApplyMemoryPressureCaps(long nowTick)
+        private MemoryPressureCommitResult TryApplyMemoryPressureCaps(
+            long nowTick,
+            PawnKnowledgeState projectedOwner = null,
+            List<SavedMemoryBlock> projectedStandalone = null,
+            List<SavedMemoryThreadRoot> projectedRoots = null,
+            string protectedAdmissionRecordId = "")
         {
             MemoryPressureCommitResult result = new MemoryPressureCommitResult();
             EnsureMemoryM4Indexes();
             RebuildMemorySizeIndexes();
             List<MemoryPressureOwnerWork> work = new List<MemoryPressureOwnerWork>();
+            bool foundProjectedOwner = projectedOwner == null;
             foreach (KeyValuePair<string, PawnKnowledgeState> pair in memoryM4OwnerById)
             {
                 PawnKnowledgeState owner = pair.Value;
+                bool useProjection = ReferenceEquals(owner, projectedOwner);
+                foundProjectedOwner |= useProjection;
                 work.Add(new MemoryPressureOwnerWork
                 {
                     owner = owner,
                     expectedRevision = owner.structuralRevision,
                     priorStandalone = owner.standaloneBlocks,
                     priorRoots = owner.threadRoots,
-                    standalone = CloneSavedBlocks(owner.standaloneBlocks),
-                    roots = CloneSavedRoots(owner.threadRoots)
+                    standalone = CloneSavedBlocks(useProjection
+                        ? projectedStandalone : owner.standaloneBlocks),
+                    roots = CloneSavedRoots(useProjection
+                        ? projectedRoots : owner.threadRoots),
+                    protectedAdmissionRecordId = useProjection
+                        ? protectedAdmissionRecordId ?? string.Empty : string.Empty,
+                    // Publishing a projected admission is itself a change even before pressure
+                    // removes an older atom. No assignment occurs unless every cap is later proven.
+                    changed = useProjection
                 });
+            }
+            if (!foundProjectedOwner)
+            {
+                result.protectedSaturation = true;
+                return result;
             }
             work.Sort(delegate(MemoryPressureOwnerWork left, MemoryPressureOwnerWork right)
             {
@@ -88,15 +110,12 @@ namespace PawnDiary
                         return result;
                     }
                     List<MemoryPressureAtom> atoms = BuildPressureAtoms(owner);
-                    MemoryPressurePlan plan = KnowledgeEvictionPlanner.PlanMemoryPressure(
-                        new MemoryPressurePlanRequest
-                        {
-                            blocksToRelease = Math.Max(0, blocks - ownerBlockCap),
-                            bytesToRelease = Math.Max(
-                                Math.Max(0, active - ownerActiveCap),
-                                Math.Max(0, combined - ownerCombinedCap)),
-                            atoms = atoms
-                        });
+                    // Remove one canonical prefix atom, then remeasure the complete detached graph.
+                    // The last Summary contribution can release bucket/payload/block/chapter overhead
+                    // that its own row size cannot represent, so aggregate byte estimates must not
+                    // decide protected saturation.
+                    MemoryPressurePlan plan =
+                        KnowledgeEvictionPlanner.PlanNextMemoryPressureAtom(atoms);
                     if (!plan.canApply || !ApplyPressureRemovals(owner, plan.removals, policy))
                     {
                         result.protectedSaturation = true;
@@ -149,15 +168,8 @@ namespace PawnDiary
                 }
                 List<MemoryPressureAtom> atoms = new List<MemoryPressureAtom>();
                 for (int i = 0; i < work.Count; i++) atoms.AddRange(BuildPressureAtoms(work[i]));
-                MemoryPressurePlan plan = KnowledgeEvictionPlanner.PlanMemoryPressure(
-                    new MemoryPressurePlanRequest
-                    {
-                        blocksToRelease = Math.Max(0, blocks - globalSoft),
-                        bytesToRelease = Math.Max(
-                            Math.Max(0, active - globalActiveCap),
-                            Math.Max(0, combined - globalCombinedCap)),
-                        atoms = atoms
-                    });
+                MemoryPressurePlan plan =
+                    KnowledgeEvictionPlanner.PlanNextMemoryPressureAtom(atoms);
                 if (!plan.canApply)
                 {
                     result.protectedSaturation = true;
@@ -206,6 +218,9 @@ namespace PawnDiary
                 changed[i].owner.standaloneBlocks = changed[i].standalone;
                 changed[i].owner.threadRoots = changed[i].roots;
                 changed[i].owner.structuralRevision = changed[i].expectedRevision + 1;
+                if (ReferenceEquals(changed[i].owner, projectedOwner))
+                    result.committedOwnerStructuralRevision =
+                        changed[i].owner.structuralRevision;
             }
             memoryM4IndexesDirty = true;
             result.changed = true;
@@ -225,26 +240,49 @@ namespace PawnDiary
         {
             List<MemoryPressureAtom> atoms = new List<MemoryPressureAtom>();
             for (int i = 0; i < owner.standalone.Count; i++)
-                AddBlockPressureAtoms(owner.owner.pawnId, owner.standalone[i], atoms);
+                AddBlockPressureAtoms(owner.owner.pawnId, owner.standalone[i],
+                    owner.protectedAdmissionRecordId, atoms);
             for (int i = 0; i < owner.roots.Count; i++)
             {
                 SavedMemoryThreadRoot root = owner.roots[i];
+                if (HasUnknownNewerReducerRevision(root)) continue;
                 for (int j = 0; j < root.visibleBlocks.Count; j++)
-                    AddBlockPressureAtoms(owner.owner.pawnId, root.visibleBlocks[j], atoms);
-                AddBlockPressureAtoms(owner.owner.pawnId, root.rollingSummaryBlock, atoms);
+                    AddBlockPressureAtoms(owner.owner.pawnId, root.visibleBlocks[j],
+                        owner.protectedAdmissionRecordId, atoms);
+                AddBlockPressureAtoms(owner.owner.pawnId, root.rollingSummaryBlock,
+                    owner.protectedAdmissionRecordId, atoms);
             }
             MarkSummaryTerminalBlockUnits(atoms);
             return atoms;
         }
 
+        private static bool HasUnknownNewerReducerRevision(SavedMemoryThreadRoot root)
+        {
+            if (root == null) return false;
+            if (root.lastAppliedReducerRevision > MemoryThreadReducer.CurrentReducerRevision)
+                return true;
+            for (int i = 0; root.visibleBlocks != null && i < root.visibleBlocks.Count; i++)
+            {
+                SavedMemorySummaryPayload summary = root.visibleBlocks[i]?.summaryPayload;
+                if (summary != null
+                    && summary.reducerRevision > MemoryThreadReducer.CurrentReducerRevision)
+                    return true;
+            }
+            return root.rollingSummaryBlock?.summaryPayload != null
+                && root.rollingSummaryBlock.summaryPayload.reducerRevision
+                    > MemoryThreadReducer.CurrentReducerRevision;
+        }
+
         private static void AddBlockPressureAtoms(
             string ownerId,
             SavedMemoryBlock block,
+            string protectedAdmissionRecordId,
             List<MemoryPressureAtom> atoms)
         {
-            if (block == null || block.playerEdited) return;
+            if (block == null || IsPlayerAuthored(block)) return;
             if (block.kind != MemoryContractTokens.KindSummary)
             {
+                if (block.recordId == protectedAdmissionRecordId) return;
                 MemoryLogicalSizeResult size = MemoryLogicalPayloadSizer.Size(block);
                 if (!size.valid) return;
                 atoms.Add(new MemoryPressureAtom
@@ -268,7 +306,7 @@ namespace PawnDiary
                     && j < bucket.contributions.Count; j++)
                 {
                     SavedMemoryFactContribution c = bucket.contributions[j];
-                    if (c == null) continue;
+                    if (c == null || c.originRecordId == protectedAdmissionRecordId) continue;
                     MemoryLogicalSizeResult size = MemoryLogicalPayloadSizer.Size(c);
                     if (!size.valid) continue;
                     atoms.Add(new MemoryPressureAtom

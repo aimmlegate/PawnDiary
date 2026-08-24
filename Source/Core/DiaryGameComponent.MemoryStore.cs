@@ -1088,6 +1088,9 @@ namespace PawnDiary
             "legacy_authored_conflict",
             "legacy_report_truncated",
             "size_invalid",
+            "capacity_refused",
+            "newer_reducer_revision",
+            MemoryThreadRepairPolicy.AutomaticConflictDiagnosticToken,
             "other"
         };
 
@@ -1350,6 +1353,24 @@ namespace PawnDiary
                 scopeToken = scopeToken,
                 saturatedCount = 1
             });
+        }
+
+        /// <summary>
+        /// Adds one compatibility/repair diagnostic row without incrementing it on every maintenance
+        /// snapshot rebuild. The saved row itself is the bounded once-marker for this save.
+        /// </summary>
+        internal void RecordMemoryDiagnosticOnce(string reasonToken, string scopeToken)
+        {
+            string normalizedReason = IsAllowlistedReason(reasonToken) ? reasonToken : "other";
+            string normalizedScope = scopeToken == "owner" || scopeToken == "component"
+                ? scopeToken : "other";
+            for (int i = 0; i < memoryDiagnosticCounters.Count; i++)
+            {
+                SavedMemoryDiagnosticCounter counter = memoryDiagnosticCounters[i];
+                if (counter != null && counter.reasonToken == normalizedReason
+                    && counter.scopeToken == normalizedScope) return;
+            }
+            RecordMemoryDiagnostic(normalizedReason, normalizedScope);
         }
 
         private static bool IsAllowlistedReason(string reasonToken)

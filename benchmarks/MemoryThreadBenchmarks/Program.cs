@@ -1697,7 +1697,8 @@ namespace MemoryThreadBenchmarks
                 originalEventTick = tick,
                 rootId = root.rootId,
                 chapterId = root.chapters[0].chapterId,
-                playerEdited = edited
+                playerEdited = edited,
+                playerWording = edited ? "benchmark edited wording " + ordinal : string.Empty
             };
             block.facts.Add(new MemoryReducerFact
             {

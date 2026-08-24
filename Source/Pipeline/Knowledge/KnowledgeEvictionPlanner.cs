@@ -233,6 +233,41 @@ namespace PawnDiary
             return plan;
         }
 
+        /// <summary>
+        /// Selects exactly the next eligible atom in canonical pressure order. The runtime uses this
+        /// form when logical byte release depends on cleanup of a Summary bucket/container: it removes
+        /// one prefix atom, remeasures the complete detached graph, and only then decides whether a
+        /// further atom is required. This prevents an approximate contribution size from masquerading
+        /// as protected saturation.
+        /// </summary>
+        public static MemoryPressurePlan PlanNextMemoryPressureAtom(
+            List<MemoryPressureAtom> suppliedAtoms)
+        {
+            MemoryPressurePlan plan = new MemoryPressurePlan();
+            if (suppliedAtoms == null) return plan;
+            List<MemoryPressureAtom> candidates = new List<MemoryPressureAtom>();
+            for (int i = 0; i < suppliedAtoms.Count; i++)
+            {
+                MemoryPressureAtom atom = suppliedAtoms[i];
+                if (atom != null && !atom.playerEdited && atom.logicalBytes >= 0
+                    && atom.blockUnits >= 0 && MemoryContractTokens.IsKnownImportance(atom.importance)
+                    && !string.IsNullOrEmpty(atom.ownerPawnId)
+                    && !string.IsNullOrEmpty(atom.recordId)) candidates.Add(atom);
+            }
+            candidates.Sort(ComparePressureAtom);
+            if (candidates.Count == 0)
+            {
+                plan.protectedSaturation = true;
+                return plan;
+            }
+            MemoryPressureAtom selected = candidates[0];
+            plan.canApply = true;
+            plan.releasedBytes = selected.logicalBytes;
+            plan.releasedBlocks = selected.blockUnits;
+            plan.removals.Add(selected);
+            return plan;
+        }
+
         private static List<KnowledgeRecordStub> UsableStubs(List<KnowledgeRecordStub> records)
         {
             List<KnowledgeRecordStub> usable = new List<KnowledgeRecordStub>();

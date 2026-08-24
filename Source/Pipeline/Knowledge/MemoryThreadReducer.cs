@@ -422,6 +422,15 @@ namespace PawnDiary
         {
             MemoryThreadReductionResult result = new MemoryThreadReductionResult();
             MemoryReducerPolicy policy = (suppliedPolicy ?? new MemoryReducerPolicy()).Normalize();
+            if (HasUnknownNewerReducerRevision(input))
+            {
+                // A known-schema root written by a newer reducer is not old input that this build may
+                // normalize. Leave it byte-for-byte inert so an older build cannot silently downgrade
+                // facts or retention semantics it does not understand (T7.2).
+                result.refused = true;
+                result.reasonToken = "newer_reducer_revision";
+                return result;
+            }
             string invalid;
             if (!Validate(input, out invalid))
             {
@@ -477,6 +486,36 @@ namespace PawnDiary
             }
             result.replacement = root;
             return result;
+        }
+
+        /// <summary>
+        /// Returns true when a known-schema root or one of its Summary payloads was committed by a
+        /// reducer newer than this build. Callers must keep such a root inert rather than repairing it.
+        /// </summary>
+        internal static bool HasUnknownNewerReducerRevision(MemoryReducerRoot root)
+        {
+            if (root == null) return false;
+            if (root.lastAppliedReducerRevision > CurrentReducerRevision) return true;
+            for (int i = 0; root.visibleBlocks != null && i < root.visibleBlocks.Count; i++)
+            {
+                MemoryReducerSummary summary = root.visibleBlocks[i]?.summaryPayload;
+                if (summary != null && summary.reducerRevision > CurrentReducerRevision) return true;
+            }
+            return root.rollingSummaryBlock?.summaryPayload != null
+                && root.rollingSummaryBlock.summaryPayload.reducerRevision > CurrentReducerRevision;
+        }
+
+        /// <summary>
+        /// Reports whether invariant cleanup may remove the complete root after reduction. Closed,
+        /// unreferenced chapter metadata does not keep an otherwise empty root alive.
+        /// </summary>
+        internal static bool IsRemovableEmptyRoot(MemoryReducerRoot root)
+        {
+            if (root == null || root.visibleBlocks == null || root.chapters == null) return false;
+            if (root.visibleBlocks.Count != 0 || root.rollingSummaryBlock != null) return false;
+            for (int i = 0; i < root.chapters.Count; i++)
+                if (root.chapters[i] != null && !root.chapters[i].closed) return false;
+            return true;
         }
 
         private static MemoryThreadReductionResult RevisionSaturated(
@@ -602,6 +641,14 @@ namespace PawnDiary
                 || !recordIds.Add(block.recordId) || block.ownerPawnId != root.ownerPawnId
                 || block.ownerEpochToken != root.ownerEpochToken || block.rootId != root.rootId
                 || !MemoryContractTokens.IsKnownKind(block.kind)) return false;
+            bool hasPlayerWording = !string.IsNullOrWhiteSpace(block.playerWording);
+            if (block.playerEdited != hasPlayerWording)
+            {
+                // Authored prose without the protection flag could otherwise expire, fold, or evict.
+                // The inverse flag-only shape is equally ambiguous outside explicit repair.
+                reason = "invalid_player_wording";
+                return false;
+            }
             if (block.kind == MemoryContractTokens.KindSummary)
             {
                 string expected;
@@ -1563,6 +1610,43 @@ namespace PawnDiary
             if (root.rollingSummaryBlock != null && !root.rollingSummaryBlock.playerEdited
                 && TotalContributions(root.rollingSummaryBlock.summaryPayload) == 0)
                 root.rollingSummaryBlock = null;
+            RemoveUnreferencedClosedChapters(root);
+        }
+
+        private static void RemoveUnreferencedClosedChapters(MemoryReducerRoot root)
+        {
+            HashSet<string> referenced = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < root.visibleBlocks.Count; i++)
+            {
+                MemoryReducerBlock block = root.visibleBlocks[i];
+                if (block == null) continue;
+                if (!string.IsNullOrEmpty(block.chapterId)) referenced.Add(block.chapterId);
+                AddContributionChapterReferences(block.summaryPayload, referenced);
+            }
+            AddContributionChapterReferences(root.rollingSummaryBlock?.summaryPayload, referenced);
+            for (int i = root.chapters.Count - 1; i >= 0; i--)
+            {
+                MemoryReducerChapter chapter = root.chapters[i];
+                if (chapter != null && chapter.closed
+                    && string.IsNullOrEmpty(chapter.closedSummaryRecordId)
+                    && !referenced.Contains(chapter.chapterId)) root.chapters.RemoveAt(i);
+            }
+        }
+
+        private static void AddContributionChapterReferences(
+            MemoryReducerSummary summary,
+            HashSet<string> referenced)
+        {
+            for (int i = 0; summary?.factBuckets != null && i < summary.factBuckets.Count; i++)
+            {
+                MemoryReducerBucket bucket = summary.factBuckets[i];
+                for (int j = 0; bucket?.contributions != null
+                    && j < bucket.contributions.Count; j++)
+                {
+                    string chapterId = bucket.contributions[j]?.originChapterId;
+                    if (!string.IsNullOrEmpty(chapterId)) referenced.Add(chapterId);
+                }
+            }
         }
 
         private static void ClearClosedSummaryReference(MemoryReducerRoot root, string recordId)

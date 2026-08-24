@@ -44,6 +44,12 @@ namespace MemoryThreadTests
             TestRepairPreservesNonCollidingEvidence();
             TestSummaryReferenceBounds();
             TestContributionReferenceConstructionAndRefusal();
+            TestEmptyClosedChapterCleanup();
+            TestPlayerWordingAgreement();
+            TestUnknownNewerReducerRevisionsStayInert();
+            TestIterativePressurePrefixPlanning();
+            TestRepairPlacementRemapAndOpenOrder();
+            TestRepairPublicationWinnerAndDiagnostic();
             return assertions;
         }
 
@@ -326,6 +332,7 @@ namespace MemoryThreadTests
             Equal("m4.ttl.edit.tick-not-refreshed", 0L,
                 protectedResult.replacement.visibleBlocks[0].originalEventTick);
             protectedResult.replacement.visibleBlocks[0].playerEdited = false;
+            protectedResult.replacement.visibleBlocks[0].playerWording = string.Empty;
             MemoryThreadReductionResult unedited = MemoryThreadReducer.Reduce(
                 protectedResult.replacement, policy);
             Equal("m4.ttl.edit-unprotect.expires-original", 1, unedited.expiredBlocks);
@@ -535,6 +542,7 @@ namespace MemoryThreadTests
 
             MemoryReducerRoot authoredA = root.Clone();
             authoredA.visibleBlocks[0].playerEdited = true;
+            authoredA.visibleBlocks[0].playerWording = "authored winner";
             MemoryReducerRoot authoredB = authoredA.Clone();
             authoredB.visibleBlocks[0].facts[0].canonicalValue = "authored-conflict";
             MemoryThreadRepairResult archived = MemoryThreadRepairPolicy.Repair(
@@ -830,6 +838,242 @@ namespace MemoryThreadTests
                 MemoryThreadReducer.CanonicalState(root));
         }
 
+        private static void TestEmptyClosedChapterCleanup()
+        {
+            MemoryReducerRoot root = Root(10);
+            MemoryReducerChapter chapter = root.chapters[0];
+            chapter.closed = true;
+            chapter.closedTick = 10;
+            chapter.closureReasonToken = MemoryChapterTokens.Inactivity;
+            root.lastAppliedReducerRevision = MemoryThreadReducer.CurrentReducerRevision;
+
+            MemoryThreadReductionResult reduced = MemoryThreadReducer.Reduce(
+                root, Policy(10, 1000, 1000));
+            True("m4.cleanup.empty-chapter.accepted", !reduced.refused);
+            Equal("m4.cleanup.empty-chapter.removed", 0, reduced.replacement.chapters.Count);
+            True("m4.cleanup.empty-root-removable",
+                MemoryThreadReducer.IsRemovableEmptyRoot(reduced.replacement));
+        }
+
+        private static void TestPlayerWordingAgreement()
+        {
+            MemoryReducerRoot root = Root(10);
+            MemoryReducerBlock authored = Block(
+                root, 1, 1, MemoryContractTokens.ImportanceMinor, false);
+            authored.playerWording = "Authored wording must be protected.";
+            root.visibleBlocks.Add(authored);
+            string before = MemoryThreadReducer.CanonicalState(root);
+
+            MemoryThreadReductionResult reduced = MemoryThreadReducer.Reduce(
+                root, Policy(1000, 1, 1));
+            True("m4.wording.flag-disagreement-refused", reduced.refused);
+            Equal("m4.wording.flag-disagreement-reason",
+                "invalid_player_wording", reduced.reasonToken);
+            Equal("m4.wording.flag-disagreement-atomic", before,
+                MemoryThreadReducer.CanonicalState(root));
+
+            MemoryThreadRepairResult repair = MemoryThreadRepairPolicy.Repair(
+                new List<MemoryReducerRoot> { root }, Policy(1000, 1, 1));
+            True("m4.wording.repair-accepted", !repair.refused);
+            True("m4.wording.repair-protects-authored",
+                repair.activeRoots[0].visibleBlocks[0].playerEdited);
+            Equal("m4.wording.repair-preserves-text", authored.playerWording,
+                repair.activeRoots[0].visibleBlocks[0].playerWording);
+        }
+
+        private static void TestUnknownNewerReducerRevisionsStayInert()
+        {
+            MemoryReducerRoot root = Root(10);
+            root.lastAppliedReducerRevision = MemoryThreadReducer.CurrentReducerRevision + 1;
+            root.visibleBlocks.Add(Block(
+                root, 1, 1, MemoryContractTokens.ImportanceRegular, false));
+            string before = MemoryThreadReducer.CanonicalState(root);
+            MemoryThreadReductionResult rootResult = MemoryThreadReducer.Reduce(
+                root, Policy(10, 1000, 1000));
+            True("m4.revision.newer-root-refused", rootResult.refused);
+            Equal("m4.revision.newer-root-reason",
+                "newer_reducer_revision", rootResult.reasonToken);
+            Equal("m4.revision.newer-root-atomic", before,
+                MemoryThreadReducer.CanonicalState(root));
+
+            MemoryReducerRoot summarySource = Root(10);
+            summarySource.visibleBlocks.Add(Block(
+                summarySource, 1, 1, MemoryContractTokens.ImportanceRegular, false));
+            MemoryReducerPolicy close = Policy(11, 1000, 1000);
+            close.chapterInactivityTicks = 1;
+            MemoryReducerRoot summary = MemoryThreadReducer.Reduce(
+                summarySource, close).replacement;
+            summary.visibleBlocks[0].summaryPayload.reducerRevision =
+                MemoryThreadReducer.CurrentReducerRevision + 1;
+            string summaryBefore = MemoryThreadReducer.CanonicalState(summary);
+            MemoryThreadReductionResult summaryResult = MemoryThreadReducer.Reduce(summary, close);
+            True("m4.revision.newer-summary-refused", summaryResult.refused);
+            Equal("m4.revision.newer-summary-reason",
+                "newer_reducer_revision", summaryResult.reasonToken);
+            Equal("m4.revision.newer-summary-atomic", summaryBefore,
+                MemoryThreadReducer.CanonicalState(summary));
+            False("m4.revision.newer-root-not-repaired",
+                MemoryThreadRepairPolicy.NeedsRepair(root));
+            False("m4.revision.newer-summary-not-repaired",
+                MemoryThreadRepairPolicy.NeedsRepair(summary));
+        }
+
+        private static void TestIterativePressurePrefixPlanning()
+        {
+            List<MemoryPressureAtom> atoms = new List<MemoryPressureAtom>
+            {
+                new MemoryPressureAtom
+                {
+                    ownerPawnId = "owner",
+                    rootId = "root",
+                    recordId = "summary",
+                    contributionId = "old-contribution",
+                    importance = MemoryContractTokens.ImportanceMinor,
+                    originalEventTick = 1,
+                    logicalBytes = 5
+                },
+                new MemoryPressureAtom
+                {
+                    ownerPawnId = "owner",
+                    rootId = "root",
+                    recordId = "summary",
+                    contributionId = "new-contribution",
+                    importance = MemoryContractTokens.ImportanceRegular,
+                    originalEventTick = 2,
+                    logicalBytes = 5,
+                    blockUnits = 1
+                }
+            };
+
+            MemoryPressurePlan approximate = KnowledgeEvictionPlanner.PlanMemoryPressure(
+                new MemoryPressurePlanRequest
+                {
+                    bytesToRelease = 100,
+                    atoms = atoms
+                });
+            False("m4.pressure.summary-approximation-would-refuse", approximate.canApply);
+            MemoryPressurePlan next = KnowledgeEvictionPlanner.PlanNextMemoryPressureAtom(atoms);
+            True("m4.pressure.iterative-prefix-can-apply", next.canApply);
+            Equal("m4.pressure.iterative-prefix-one", 1, next.removals.Count);
+            Equal("m4.pressure.iterative-prefix-oldest", "old-contribution",
+                next.removals[0].contributionId);
+        }
+
+        private static void TestRepairPlacementRemapAndOpenOrder()
+        {
+            MemoryReducerRoot source = Root(10);
+            source.visibleBlocks.Add(Block(
+                source, 1, 1, MemoryContractTokens.ImportanceRegular, false));
+            MemoryReducerPolicy close = Policy(11, 1000, 1000);
+            close.chapterInactivityTicks = 1;
+            MemoryReducerRoot malformed = MemoryThreadReducer.Reduce(source, close).replacement;
+            MemoryReducerBlock closedSummary = malformed.visibleBlocks[0];
+            malformed.rootId = "legacy-root";
+            malformed.chapters[0].chapterId = "legacy-chapter";
+            malformed.chapters[0].closedSummaryRecordId = "legacy-summary";
+            closedSummary.rootId = "legacy-root";
+            closedSummary.chapterId = "legacy-chapter";
+            closedSummary.recordId = "legacy-summary";
+            closedSummary.sourceOccurrenceId = "legacy-summary-source";
+            closedSummary.summaryPayload.factBuckets[0].contributions[0].originChapterId =
+                "legacy-chapter";
+            True("m4.repair.single-malformed-queued",
+                MemoryThreadRepairPolicy.NeedsRepair(malformed));
+
+            MemoryThreadRepairResult repaired = MemoryThreadRepairPolicy.Repair(
+                new List<MemoryReducerRoot> { malformed }, close);
+            True("m4.repair.placement.accepted", !repaired.refused);
+            True("m4.repair.placement.changed", repaired.changed);
+            MemoryReducerRoot canonical = repaired.activeRoots[0];
+            string expectedRoot;
+            MemoryIdentityCodec.TryCreateRootId(new MemoryRootIdentity
+            {
+                ownerPawnId = canonical.ownerPawnId,
+                ownerEpochToken = canonical.ownerEpochToken,
+                primarySubjectKind = canonical.subjectKind,
+                primarySubjectId = canonical.subjectId
+            }, out expectedRoot);
+            string expectedChapter;
+            MemoryIdentityCodec.TryCreateChapterId(expectedRoot, 1, out expectedChapter);
+            string expectedSummary;
+            MemoryIdentityCodec.TryCreateClosedSummaryId(new MemoryRootIdentity
+            {
+                ownerPawnId = canonical.ownerPawnId,
+                ownerEpochToken = canonical.ownerEpochToken,
+                primarySubjectKind = canonical.subjectKind,
+                primarySubjectId = canonical.subjectId
+            }, 1, out expectedSummary);
+            Equal("m4.repair.placement.root", expectedRoot, canonical.rootId);
+            Equal("m4.repair.placement.chapter", expectedChapter,
+                canonical.chapters[0].chapterId);
+            Equal("m4.repair.placement.block-chapter", expectedChapter,
+                canonical.visibleBlocks[0].chapterId);
+            Equal("m4.repair.placement.summary-id", expectedSummary,
+                canonical.visibleBlocks[0].recordId);
+            Equal("m4.repair.placement.summary-pointer", expectedSummary,
+                canonical.chapters[0].closedSummaryRecordId);
+            Equal("m4.repair.placement.contribution-origin", expectedChapter,
+                canonical.visibleBlocks[0].summaryPayload.factBuckets[0]
+                    .contributions[0].originChapterId);
+
+            MemoryReducerRoot multipleOpen = Root(100);
+            multipleOpen.visibleBlocks.Add(Block(
+                multipleOpen, 2, 2, MemoryContractTokens.ImportanceRegular, false));
+            string secondChapterId;
+            MemoryIdentityCodec.TryCreateChapterId(multipleOpen.rootId, 2, out secondChapterId);
+            multipleOpen.chapters.Add(new MemoryReducerChapter
+            {
+                chapterId = secondChapterId,
+                ordinal = 2,
+                openedTick = 50,
+                lastActivityTick = 100
+            });
+            multipleOpen.nextChapterOrdinal = 3;
+            MemoryReducerRoot permuted = multipleOpen.Clone();
+            permuted.chapters.Reverse();
+            MemoryThreadRepairResult orderedA = MemoryThreadRepairPolicy.Repair(
+                new List<MemoryReducerRoot> { multipleOpen }, Policy(100, 1000, 1000));
+            MemoryThreadRepairResult orderedB = MemoryThreadRepairPolicy.Repair(
+                new List<MemoryReducerRoot> { permuted }, Policy(100, 1000, 1000));
+            True("m4.repair.open.accepted-a", !orderedA.refused);
+            True("m4.repair.open.accepted-b", !orderedB.refused);
+            Equal("m4.repair.open.permutation",
+                MemoryThreadReducer.CanonicalState(orderedA.activeRoots[0]),
+                MemoryThreadReducer.CanonicalState(orderedB.activeRoots[0]));
+            Equal("m4.repair.open.only-newest", 1,
+                OpenChapterCount(orderedA.activeRoots[0]));
+            Equal("m4.repair.open.newest-id", secondChapterId,
+                OpenChapterId(orderedA.activeRoots[0]));
+        }
+
+        private static void TestRepairPublicationWinnerAndDiagnostic()
+        {
+            MemoryReducerRoot automaticRoot = Root(100);
+            automaticRoot.visibleBlocks.Add(Block(
+                automaticRoot, 1, 10, MemoryContractTokens.ImportanceRegular, false));
+            MemoryReducerRoot editedRoot = automaticRoot.Clone();
+            editedRoot.visibleBlocks[0].playerEdited = true;
+            editedRoot.visibleBlocks[0].playerWording = "The authored winner.";
+            editedRoot.visibleBlocks[0].facts[0].canonicalValue = "authored-value";
+            MemoryThreadRepairResult repair = MemoryThreadRepairPolicy.Repair(
+                new List<MemoryReducerRoot> { automaticRoot, editedRoot },
+                Policy(100, 1000, 1000));
+            True("m4.repair.publish.accepted", !repair.refused);
+            MemoryReducerBlock desired = repair.activeRoots[0].visibleBlocks[0];
+            Equal("m4.repair.publish.authored-selected", "The authored winner.",
+                desired.playerWording);
+            Equal("m4.repair.publish.source-index", 1,
+                MemoryThreadRepairPolicy.FindPublicationSourceIndex(
+                    new List<MemoryReducerBlock>
+                    {
+                        automaticRoot.visibleBlocks[0],
+                        editedRoot.visibleBlocks[0]
+                    }, desired));
+            Equal("m4.repair.publish.diagnostic-token",
+                MemoryThreadRepairPolicy.AutomaticConflictDiagnosticToken,
+                MemoryThreadRepairPolicy.DiagnosticReason(repair));
+        }
+
         private static void TestElapsedMaintenanceSlices()
         {
             MemoryMaintenanceSlicePlan notDue = MemoryMaintenancePolicy.Plan(
@@ -1035,7 +1279,8 @@ namespace MemoryThreadTests
                 originalEventTick = tick,
                 rootId = root.rootId,
                 chapterId = root.chapters[0].chapterId,
-                playerEdited = edited
+                playerEdited = edited,
+                playerWording = edited ? "edited wording " + number : string.Empty
             };
             block.facts.Add(new MemoryReducerFact
             {
@@ -1120,6 +1365,21 @@ namespace MemoryThreadTests
             for (int i = 0; i < root.visibleBlocks.Count; i++)
                 if (root.visibleBlocks[i].playerEdited) total++;
             return total;
+        }
+
+        private static int OpenChapterCount(MemoryReducerRoot root)
+        {
+            int total = 0;
+            for (int i = 0; i < root.chapters.Count; i++)
+                if (!root.chapters[i].closed) total++;
+            return total;
+        }
+
+        private static string OpenChapterId(MemoryReducerRoot root)
+        {
+            for (int i = 0; i < root.chapters.Count; i++)
+                if (!root.chapters[i].closed) return root.chapters[i].chapterId;
+            return string.Empty;
         }
 
         private static int TotalContributions(MemoryReducerRoot root)
