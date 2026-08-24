@@ -49,6 +49,11 @@ namespace PawnMemoryTests
             TestSelectorSelfEcho();
             TestSelectorExcludedSourceEvents();
             TestSelectorBroadTopicNeverRecalls();
+            TestRecallV2ConsumerAndExactEligibilityContract();
+            TestRecallV2RepetitionBoundariesAndGuardCompleteness();
+            TestRecallV2FrozenRevalidationAndPairedPrivacy();
+            TestRecallV2CurrentTruthAndLegacyShadowComparison();
+            TestRecallV2AdversarialIdentityAndCapMatrix();
             TestQueryBuildFromRulesAndPolicy();
             TestSocialReflectionNeverClassifiesAsKnowledge();
             TestEvictionPerPawnCap();
@@ -1604,6 +1609,941 @@ namespace PawnMemoryTests
         }
 
         // ── Shipped-catalog contracts ────────────────────────────────────────────────────────────────
+
+        private static void TestRecallV2ConsumerAndExactEligibilityContract()
+        {
+            List<MemoryRecallConsumerContract> consumers = MemoryRecallConsumerRegistry.All();
+            AssertEqual("recallV2.consumer.count", 7, consumers.Count);
+            foreach (MemoryRecallConsumerContract consumer in consumers)
+            {
+                AssertTrue("recallV2.consumer.common." + consumer.consumerId,
+                    consumer.appliesCommonExclusionContract
+                    && consumer.requiresOwnerMatch
+                    && consumer.requiresEpochMatch
+                    && consumer.requiresCategoryEnabled
+                    && consumer.honorsSuppression);
+                AssertEqual("recallV2.consumer.compact." + consumer.consumerId,
+                    0, consumer.compactMaximumLines);
+                AssertEqual("recallV2.consumer.off." + consumer.consumerId,
+                    0, consumer.offMaximumLines);
+            }
+
+            MemoryRecallQueryV2 query = RecallQuery("Owner_A", MemoryRecallWritingFormats.Full);
+            MemoryRecallCandidateSnapshot exact = RecallCandidate("exact", "Owner_A", "source-exact", 10);
+            MemoryRecallCandidateSnapshot topicOnly = RecallCandidate("topic", "Owner_A", "source-topic", 20);
+            topicOnly.exactRoutes[0].subjectId = "Pawn_Other";
+            topicOnly.exactRoutes[0].routeKey = "route-other";
+            topicOnly.requiredStructuralGuards.Clear();
+            topicOnly.structuralGuardStates.Clear();
+            AddSubjectGuard(topicOnly, "Pawn_Other");
+            topicOnly.topicKeys.Add("body");
+            query.topicKeys.Add("body");
+            MemoryRecallSelectionResultV2 selected = ImportantMemorySelector.SelectV2(
+                query, new List<MemoryRecallCandidateSnapshot> { topicOnly, exact });
+            AssertEqual("recallV2.topic.never-door", 1, selected.selected.Count);
+            AssertEqual("recallV2.topic.exact-wins", "exact",
+                selected.selected[0].candidate.recordId);
+            AssertEqual("recallV2.topic.reject", MemoryRecallRejectReasons.NoExactRoute,
+                selected.report.First(row => row.recordId == "topic").rejectReason);
+
+            MemoryRecallQueryV2 selfRouteQuery = RecallQuery(
+                "Owner_A", MemoryRecallWritingFormats.Full);
+            selfRouteQuery.exactRoutes.Clear();
+            selfRouteQuery.exactRoutes.Add(RecallRoute("Owner_A"));
+            MemoryRecallCandidateSnapshot selfRoute = RecallCandidate(
+                "self-route", "Owner_A", "source-self-route", 25);
+            selfRoute.exactRoutes.Clear();
+            selfRoute.requiredStructuralGuards.Clear();
+            selfRoute.structuralGuardStates.Clear();
+            selfRoute.exactRoutes.Add(RecallRoute("Owner_A"));
+            AddSubjectGuard(selfRoute, "Owner_A");
+            selected = ImportantMemorySelector.SelectV2(
+                selfRouteQuery, new List<MemoryRecallCandidateSnapshot> { selfRoute });
+            AssertEqual("recallV2.owner-self-route-never-door",
+                MemoryRecallRejectReasons.NoExactRoute,
+                selected.report[0].rejectReason);
+
+            MemoryRecallCandidateSnapshot wrongOwner = RecallCandidate(
+                "wrong-owner", "Owner_B", "source-owner", 30);
+            MemoryRecallCandidateSnapshot wrongEpoch = RecallCandidate(
+                "wrong-epoch", "Owner_A", "source-epoch", 31);
+            wrongEpoch.ownerEpochToken = "epoch-2";
+            wrongEpoch.recordGuard.ownerEpochToken = "epoch-2";
+            wrongEpoch.structuralGuardStates[0].ownerEpochToken = "epoch-2";
+            MemoryRecallCandidateSnapshot suppressed = RecallCandidate(
+                "suppressed", "Owner_A", "source-suppressed", 32);
+            suppressed.suppressed = true;
+            MemoryRecallCandidateSnapshot self = RecallCandidate(
+                "self", "Owner_A", query.currentSourceOccurrenceId, 33);
+            MemoryRecallCandidateSnapshot ancestor = RecallCandidate(
+                "ancestor", "Owner_A", "source-ancestor", 34);
+            ancestor.sourceEventId = "event-ancestor";
+            query.excludedSourceEventIds.Add("event-ancestor");
+            selected = ImportantMemorySelector.SelectV2(query,
+                new List<MemoryRecallCandidateSnapshot>
+                {
+                    wrongOwner, wrongEpoch, suppressed, self, ancestor
+                });
+            AssertEqual("recallV2.exclusions.none", 0, selected.selected.Count);
+            AssertEqual("recallV2.owner.reject", MemoryRecallRejectReasons.OwnerMismatch,
+                selected.report[0].rejectReason);
+            AssertEqual("recallV2.epoch.reject", MemoryRecallRejectReasons.EpochMismatch,
+                selected.report[1].rejectReason);
+            AssertEqual("recallV2.suppress.reject", MemoryRecallRejectReasons.Suppressed,
+                selected.report[2].rejectReason);
+            AssertEqual("recallV2.self.reject", MemoryRecallRejectReasons.CurrentEvent,
+                selected.report[3].rejectReason);
+            AssertEqual("recallV2.ancestor.reject", MemoryRecallRejectReasons.CurrentEvent,
+                selected.report[4].rejectReason);
+
+            MemoryRecallCandidateSnapshot category = RecallCandidate(
+                "category", "Owner_A", "source-category", 40);
+            query.enabledCategories.Clear();
+            query.enabledCategories.Add(MemoryContractTokens.CategoryFamily);
+            selected = ImportantMemorySelector.SelectV2(
+                query, new List<MemoryRecallCandidateSnapshot> { category });
+            AssertEqual("recallV2.category.reject", MemoryRecallRejectReasons.CategoryDisabled,
+                selected.report[0].rejectReason);
+
+            query.enabledCategories.Add(MemoryContractTokens.CategoryPersonal);
+            MemoryRecallCandidateSnapshot oldThreadRow = RecallCandidate(
+                "old-thread", "Owner_A", "source-thread", 41);
+            MakeThreadCandidate(oldThreadRow, "root-1", "chapter-1");
+            oldThreadRow.isCurrentThreadProjection = false;
+            selected = ImportantMemorySelector.SelectV2(
+                query, new List<MemoryRecallCandidateSnapshot> { oldThreadRow });
+            AssertEqual("recallV2.thread-current-only",
+                MemoryRecallRejectReasons.InvalidThreadProjection,
+                selected.report[0].rejectReason);
+
+            MemoryRecallQueryV2 incompleteExclusionQuery = RecallQuery(
+                "Owner_A", MemoryRecallWritingFormats.Full);
+            incompleteExclusionQuery.currentSourceOccurrenceId = string.Empty;
+            selected = ImportantMemorySelector.SelectV2(
+                incompleteExclusionQuery,
+                new List<MemoryRecallCandidateSnapshot>
+                {
+                    RecallCandidate("self-contract", "Owner_A", "source-current", 44)
+                });
+            AssertEqual("recallV2.self-exclusion-contract-required",
+                MemoryRecallRejectReasons.InvalidQuery,
+                selected.report[0].rejectReason);
+
+            MemoryRecallQueryV2 subjectlessQuery = RecallQuery(
+                "Owner_A", MemoryRecallWritingFormats.Full);
+            MemoryRecallCandidateSnapshot subjectless = RecallCandidate(
+                "subjectless", "Owner_A", "source-subjectless", 45);
+            subjectless.exactRoutes[0].subjectKind = string.Empty;
+            subjectless.exactRoutes[0].subjectId = string.Empty;
+            selected = ImportantMemorySelector.SelectV2(
+                subjectlessQuery,
+                new List<MemoryRecallCandidateSnapshot> { subjectless });
+            AssertEqual("recallV2.subject-route-requires-subject",
+                MemoryRecallRejectReasons.MissingOrCorrupt,
+                selected.report[0].rejectReason);
+
+            // One detached owner snapshot must never contain two meanings for the same record ID.
+            // Treat both aliases as corrupt rather than letting rank/order choose a winner.
+            MemoryRecallCandidateSnapshot duplicateRecordFirst = RecallCandidate(
+                "duplicate-record", "Owner_A", "source-duplicate-first", 47);
+            MemoryRecallCandidateSnapshot duplicateRecordSecond = RecallCandidate(
+                "duplicate-record", "Owner_A", "source-duplicate-second", 46);
+            selected = ImportantMemorySelector.SelectV2(
+                RecallQuery("Owner_A", MemoryRecallWritingFormats.Full),
+                new List<MemoryRecallCandidateSnapshot>
+                {
+                    duplicateRecordFirst,
+                    duplicateRecordSecond
+                });
+            AssertEqual("recallV2.identity.duplicate-record-selects-none", 0,
+                selected.selected.Count);
+            AssertTrue("recallV2.identity.duplicate-records-fail-closed",
+                selected.report.All(row =>
+                    row.rejectReason == MemoryRecallRejectReasons.MissingOrCorrupt));
+
+            MemoryRecallQueryV2 malformedRouteQuery = RecallQuery(
+                "Owner_A", MemoryRecallWritingFormats.Full);
+            malformedRouteQuery.exactRoutes.Add(new MemoryRecallRouteIdentity
+            {
+                routeKind = "future-route",
+                routeKey = "future-route-key"
+            });
+            selected = ImportantMemorySelector.SelectV2(
+                malformedRouteQuery,
+                new List<MemoryRecallCandidateSnapshot>
+                {
+                    RecallCandidate("masked-query-route", "Owner_A", "source-masked-query", 48)
+                });
+            AssertEqual("recallV2.route.malformed-query-not-masked",
+                MemoryRecallRejectReasons.InvalidQuery,
+                selected.report[0].rejectReason);
+
+            MemoryRecallCandidateSnapshot duplicateRouteCandidate = RecallCandidate(
+                "duplicate-route", "Owner_A", "source-duplicate-route", 49);
+            duplicateRouteCandidate.exactRoutes.Add(RecallRoute("Pawn_B"));
+            selected = ImportantMemorySelector.SelectV2(
+                RecallQuery("Owner_A", MemoryRecallWritingFormats.Full),
+                new List<MemoryRecallCandidateSnapshot> { duplicateRouteCandidate });
+            AssertEqual("recallV2.route.duplicate-candidate-not-masked",
+                MemoryRecallRejectReasons.MissingOrCorrupt,
+                selected.report[0].rejectReason);
+        }
+
+        private static void TestRecallV2RepetitionBoundariesAndGuardCompleteness()
+        {
+            MemoryRepetitionPolicySnapshot policy = RecallRepetitionPolicy();
+            MemoryRepetitionGuardState record = GuardState(
+                "epoch-1",
+                MemoryRepetitionGuardKinds.Record,
+                MemoryRepetitionGuardPolicy.RecordKey("record-1"),
+                lastTick: 300000,
+                lastEntry: 7,
+                count: 1);
+            List<MemoryRepetitionGuardState> guards = new List<MemoryRepetitionGuardState>
+            {
+                GuardState("epoch-1", MemoryRepetitionGuardKinds.Root,
+                    MemoryRepetitionGuardPolicy.RootKey("root-1"), 1, 7, 1),
+                GuardState("epoch-1", MemoryRepetitionGuardKinds.Subject,
+                    MemoryRepetitionGuardPolicy.SubjectKey("pawn", "Pawn_B"), 1, 7, 1),
+                GuardState("epoch-1", MemoryRepetitionGuardKinds.Pair,
+                    MemoryRepetitionGuardPolicy.PairKey("Owner_A", "Pawn_B"), 1, 7, 1),
+                GuardState("epoch-1", MemoryRepetitionGuardKinds.Novelty,
+                    MemoryRepetitionGuardPolicy.NoveltyKey("root-1", "chapter-1"), 1, 7, 1)
+            };
+            MemoryRepetitionGuardEvaluation evaluation = MemoryRepetitionGuardPolicy.Evaluate(
+                "epoch-1", record, guards, policy);
+            AssertTrue("recallV2.guard.exact-boundaries-pass", evaluation.passes);
+            AssertEqual("recallV2.guard.all-five", 5, evaluation.guardEntries.Count);
+            AssertEqual("recallV2.guard.pair-order-invariant",
+                MemoryRepetitionGuardPolicy.PairKey("Owner_A", "Pawn_B"),
+                MemoryRepetitionGuardPolicy.PairKey("Pawn_B", "Owner_A"));
+
+            record.lastAutomaticIncludedTick = 300001;
+            evaluation = MemoryRepetitionGuardPolicy.Evaluate("epoch-1", record, guards, policy);
+            AssertEqual("recallV2.guard.time-before-boundary",
+                MemoryRepetitionRejectReasons.TimeDistance, evaluation.rejectReason);
+            record.lastAutomaticIncludedTick = 300000;
+            record.lastAutomaticIncludedEntryOrdinal = 8;
+            evaluation = MemoryRepetitionGuardPolicy.Evaluate("epoch-1", record, guards, policy);
+            AssertEqual("recallV2.guard.page-before-boundary",
+                MemoryRepetitionRejectReasons.EntryDistance, evaluation.rejectReason);
+            record.lastAutomaticIncludedEntryOrdinal = 7;
+            guards[1].lastAutomaticIncludedEntryOrdinal = 8;
+            evaluation = MemoryRepetitionGuardPolicy.Evaluate("epoch-1", record, guards, policy);
+            AssertEqual("recallV2.guard.subject-before-boundary",
+                MemoryRepetitionRejectReasons.EntryDistance, evaluation.rejectReason);
+            guards[1].lastAutomaticIncludedEntryOrdinal = 7;
+            guards[2].reserved = true;
+            evaluation = MemoryRepetitionGuardPolicy.Evaluate("epoch-1", record, guards, policy);
+            AssertEqual("recallV2.guard.reservation-hard",
+                MemoryRepetitionRejectReasons.Reserved, evaluation.rejectReason);
+            guards[2].reserved = false;
+            record.automaticInclusionCount = long.MaxValue;
+            evaluation = MemoryRepetitionGuardPolicy.Evaluate("epoch-1", record, guards, policy);
+            AssertEqual("recallV2.guard.saturation-hard",
+                MemoryRepetitionRejectReasons.Saturated, evaluation.rejectReason);
+            record.automaticInclusionCount = 0;
+            record.lastAutomaticIncludedTick = 0;
+            record.lastAutomaticIncludedEntryOrdinal = 0;
+            policy.completedDiaryEntryOrdinal = long.MaxValue;
+            evaluation = MemoryRepetitionGuardPolicy.Evaluate("epoch-1", record, guards, policy);
+            AssertEqual("recallV2.guard.owner-ordinal-saturation-hard",
+                MemoryRepetitionRejectReasons.Saturated, evaluation.rejectReason);
+            policy.completedDiaryEntryOrdinal = 10;
+            policy.memoryReuseDays = 35792;
+            evaluation = MemoryRepetitionGuardPolicy.Evaluate("epoch-1", record, guards, policy);
+            AssertEqual("recallV2.guard.days-defensive-cap",
+                MemoryRepetitionRejectReasons.InvalidPolicy, evaluation.rejectReason);
+            policy.memoryReuseDays = 5;
+            policy.memoryRevisitEntryCount = 1000001;
+            evaluation = MemoryRepetitionGuardPolicy.Evaluate("epoch-1", record, guards, policy);
+            AssertEqual("recallV2.guard.entries-defensive-cap",
+                MemoryRepetitionRejectReasons.InvalidPolicy, evaluation.rejectReason);
+            policy.memoryRevisitEntryCount = 3;
+
+            List<MemoryRepetitionGuardState> malformedGuards =
+                new List<MemoryRepetitionGuardState>
+                {
+                    GuardState("epoch-1", MemoryRepetitionGuardKinds.Root,
+                        "not-length-prefixed", 0, 0, 0)
+                };
+            evaluation = MemoryRepetitionGuardPolicy.Evaluate(
+                "epoch-1", record, malformedGuards, policy);
+            AssertEqual("recallV2.guard.malformed-key-fails-closed",
+                MemoryRepetitionRejectReasons.InvalidGuard, evaluation.rejectReason);
+
+            List<MemoryRepetitionGuardState> futureGuards =
+                new List<MemoryRepetitionGuardState>
+                {
+                    GuardState("epoch-1", "future_guard",
+                        MemoryRepetitionGuardPolicy.RootKey("future-root"), 0, 0, 0)
+                };
+            evaluation = MemoryRepetitionGuardPolicy.Evaluate(
+                "epoch-1", record, futureGuards, policy);
+            AssertEqual("recallV2.guard.future-kind-fails-closed",
+                MemoryRepetitionRejectReasons.InvalidGuard, evaluation.rejectReason);
+
+            List<MemoryRepetitionGuardState> staleGuards =
+                new List<MemoryRepetitionGuardState>
+                {
+                    GuardState("epoch-old", MemoryRepetitionGuardKinds.Root,
+                        MemoryRepetitionGuardPolicy.RootKey("stale-root"), 0, 0, 0)
+                };
+            evaluation = MemoryRepetitionGuardPolicy.Evaluate(
+                "epoch-1", record, staleGuards, policy);
+            AssertEqual("recallV2.guard.stale-epoch-fails-closed",
+                MemoryRepetitionRejectReasons.EpochMismatch, evaluation.rejectReason);
+
+            MemoryRepetitionGuardState duplicateGuard = GuardState(
+                "epoch-1",
+                MemoryRepetitionGuardKinds.Subject,
+                MemoryRepetitionGuardPolicy.SubjectKey(
+                    MemoryContractTokens.SubjectPawn, "Pawn_Duplicate"),
+                0, 0, 0);
+            evaluation = MemoryRepetitionGuardPolicy.Evaluate(
+                "epoch-1",
+                record,
+                new List<MemoryRepetitionGuardState> { duplicateGuard, duplicateGuard },
+                policy);
+            AssertEqual("recallV2.guard.duplicate-state-fails-closed",
+                MemoryRepetitionRejectReasons.DuplicateGuard, evaluation.rejectReason);
+
+            List<MemoryRepetitionGuardState> framedGuards =
+                new List<MemoryRepetitionGuardState>
+                {
+                    GuardState("epoch-1", MemoryRepetitionGuardKinds.Subject,
+                        MemoryRepetitionGuardPolicy.SubjectKey(
+                            MemoryContractTokens.SubjectPawn, "Pawn\nA:1"), 0, 0, 0),
+                    GuardState("epoch-1", MemoryRepetitionGuardKinds.Subject,
+                        MemoryRepetitionGuardPolicy.SubjectKey(
+                            MemoryContractTokens.SubjectPawn, "Pawn:A\n1"), 0, 0, 0)
+                };
+            evaluation = MemoryRepetitionGuardPolicy.Evaluate(
+                "epoch-1", record, framedGuards, policy);
+            AssertTrue("recallV2.guard.framed-identities-remain-distinct", evaluation.passes);
+            AssertEqual("recallV2.guard.framed-identities-all-returned", 3,
+                evaluation.guardEntries.Count);
+
+            MemoryRecallQueryV2 query = RecallQuery("Owner_A", MemoryRecallWritingFormats.Full);
+            MemoryRecallCandidateSnapshot bypass = RecallCandidate(
+                "bypass", "Owner_A", "source-bypass", 50);
+            bypass.structuralGuardStates.Clear();
+            MemoryRecallSelectionResultV2 selected = ImportantMemorySelector.SelectV2(
+                query, new List<MemoryRecallCandidateSnapshot> { bypass });
+            AssertEqual("recallV2.guard.missing-state-no-bypass",
+                MemoryRecallRejectReasons.GuardBypass,
+                selected.report[0].rejectReason);
+
+            MemoryRecallCandidateSnapshot extraState = RecallCandidate(
+                "extra-state", "Owner_A", "source-extra-state", 51);
+            extraState.structuralGuardStates.Add(GuardState(
+                "epoch-1",
+                MemoryRepetitionGuardKinds.Root,
+                MemoryRepetitionGuardPolicy.RootKey("unrelated-root"),
+                0, 0, 0));
+            selected = ImportantMemorySelector.SelectV2(
+                query, new List<MemoryRecallCandidateSnapshot> { extraState });
+            AssertEqual("recallV2.guard.extra-state-no-overcommit",
+                MemoryRecallRejectReasons.GuardBypass,
+                selected.report[0].rejectReason);
+        }
+
+        private static void TestRecallV2FrozenRevalidationAndPairedPrivacy()
+        {
+            MemoryRecallQueryV2 initiatorQuery = RecallQuery(
+                "Owner_A", MemoryRecallWritingFormats.Full);
+            MemoryRecallCandidateSnapshot sharedA = RecallCandidate(
+                "a-shared", "Owner_A", "source-shared", 100);
+            MemoryRecallCandidateSnapshot ownA = RecallCandidate(
+                "a-own", "Owner_A", "source-a", 90);
+            MemoryRecallCandidateSnapshot missingPair = RecallCandidate(
+                "a-missing-pair", "Owner_A", "source-missing-pair", 130);
+            MemoryRecallQueryV2 recipientQuery = RecallQuery(
+                "Owner_B", MemoryRecallWritingFormats.Full);
+            MemoryRecallCandidateSnapshot sharedB = RecallCandidate(
+                "b-shared", "Owner_B", "source-shared", 110);
+            MemoryRecallCandidateSnapshot ownB = RecallCandidate(
+                "b-own", "Owner_B", "source-b", 80);
+            MemoryRecallCandidateSnapshot crossOwner = RecallCandidate(
+                "cross-owner", "Owner_A", "source-cross", 120);
+            crossOwner.historicalText = string.Empty;
+            AddPairGuard(sharedA, "Owner_B");
+            AddPairGuard(ownA, "Owner_B");
+            AddPairGuard(sharedB, "Owner_A");
+            AddPairGuard(ownB, "Owner_A");
+            AddPairGuard(crossOwner, "Owner_B");
+            MemoryRecallPairedResultV2 paired = ImportantMemorySelector.SelectPairedV2(
+                initiatorQuery,
+                new List<MemoryRecallCandidateSnapshot> { missingPair, sharedA, ownA },
+                recipientQuery,
+                new List<MemoryRecallCandidateSnapshot> { sharedB, crossOwner, ownB });
+            AssertEqual("recallV2.pair.initiator.full-cap", 2, paired.initiator.selected.Count);
+            AssertEqual("recallV2.pair.missing-guard-no-bypass",
+                MemoryRecallRejectReasons.GuardBypass,
+                paired.initiator.report.First(row => row.recordId == "a-missing-pair").rejectReason);
+            AssertEqual("recallV2.pair.recipient.private-distinct", 1, paired.recipient.selected.Count);
+            AssertEqual("recallV2.pair.recipient-own", "b-own",
+                paired.recipient.selected[0].candidate.recordId);
+            AssertEqual("recallV2.pair.shared-rejected", MemoryRecallRejectReasons.CurrentEvent,
+                paired.recipient.report.First(row => row.recordId == "b-shared").rejectReason);
+            AssertEqual("recallV2.pair.cross-owner-rejected", MemoryRecallRejectReasons.OwnerMismatch,
+                paired.recipient.report.First(row => row.recordId == "cross-owner").rejectReason);
+
+            MemoryRecallQueryV2 balanced = RecallQuery(
+                "Owner_A", MemoryRecallWritingFormats.Balanced);
+            MemoryRecallCandidateSnapshot first = RecallCandidate(
+                "frozen-first", "Owner_A", "source-first", 200);
+            MemoryRecallCandidateSnapshot lower = RecallCandidate(
+                "not-frozen", "Owner_A", "source-lower", 100);
+            MemoryRecallSelectionResultV2 frozen = ImportantMemorySelector.SelectV2(
+                balanced, new List<MemoryRecallCandidateSnapshot> { lower, first });
+            AssertEqual("recallV2.freeze.balanced-one", 1, frozen.selected.Count);
+            MemoryRecallCandidateSnapshot currentFirst = RecallCandidate(
+                "frozen-first", "Owner_A", "source-first", 200);
+            currentFirst.suppressed = true;
+            MemoryRecallSelectionResultV2 revalidated = ImportantMemorySelector.RevalidateFrozenV2(
+                frozen,
+                balanced,
+                new List<MemoryRecallCandidateSnapshot> { currentFirst, lower });
+            AssertEqual("recallV2.freeze.no-replacement", 0, revalidated.selected.Count);
+            AssertEqual("recallV2.freeze.suppressed", MemoryRecallRejectReasons.Suppressed,
+                revalidated.report[0].rejectReason);
+
+            currentFirst.suppressed = false;
+            currentFirst.historicalText = "current player wording";
+            currentFirst.representedSourceOccurrenceIds.Add("later-thread-source");
+            revalidated = ImportantMemorySelector.RevalidateFrozenV2(
+                frozen, balanced, new List<MemoryRecallCandidateSnapshot> { currentFirst });
+            AssertEqual("recallV2.freeze.current-wording", "current player wording",
+                revalidated.selected[0].candidate.historicalText);
+            AssertEqual("recallV2.freeze.no-later-source-addition", 0,
+                revalidated.selected[0].candidate.representedSourceOccurrenceIds.Count);
+
+            MemoryRecallCandidateSnapshot crossOwnerDuplicate = RecallCandidate(
+                "frozen-first", "Owner_B", "source-first", 999);
+            revalidated = ImportantMemorySelector.RevalidateFrozenV2(
+                frozen,
+                balanced,
+                new List<MemoryRecallCandidateSnapshot>
+                {
+                    crossOwnerDuplicate,
+                    currentFirst
+                });
+            AssertEqual("recallV2.freeze.cross-owner-duplicate-ignored", 1,
+                revalidated.selected.Count);
+            AssertEqual("recallV2.freeze.owner-current-selected", "current player wording",
+                revalidated.selected[0].candidate.historicalText);
+
+            currentFirst.sourceOccurrenceId = "source-replaced";
+            revalidated = ImportantMemorySelector.RevalidateFrozenV2(
+                frozen, balanced, new List<MemoryRecallCandidateSnapshot> { currentFirst });
+            AssertEqual("recallV2.freeze.identity-change-no-replacement", 0,
+                revalidated.selected.Count);
+            AssertEqual("recallV2.freeze.identity-change-rejected",
+                MemoryRecallRejectReasons.FrozenCandidateMissing,
+                revalidated.report[0].rejectReason);
+
+            MemoryRecallQueryV2 otherOwnerQuery = RecallQuery(
+                "Owner_B", MemoryRecallWritingFormats.Balanced);
+            MemoryRecallCandidateSnapshot otherOwnerCurrent = RecallCandidate(
+                "frozen-first", "Owner_B", "source-first", 200);
+            revalidated = ImportantMemorySelector.RevalidateFrozenV2(
+                frozen,
+                otherOwnerQuery,
+                new List<MemoryRecallCandidateSnapshot> { otherOwnerCurrent });
+            AssertEqual("recallV2.freeze.cross-owner-envelope-no-read", 0,
+                revalidated.selected.Count);
+            AssertEqual("recallV2.freeze.cross-owner-envelope-rejected",
+                MemoryRecallRejectReasons.InvalidQuery,
+                revalidated.report[0].rejectReason);
+        }
+
+        private static void TestRecallV2CurrentTruthAndLegacyShadowComparison()
+        {
+            MemoryRecallQueryV2 query = RecallQuery("Owner_A", MemoryRecallWritingFormats.Full);
+            MemoryRecallCandidateSnapshot stale = RecallCandidate(
+                "stale", "Owner_A", "source-stale", 300);
+            stale.currentStateApplicable = true;
+            stale.currentStateContradictsHistorical = true;
+            stale.currentStateCanRender = false;
+            MemoryRecallSelectionResultV2 result = ImportantMemorySelector.SelectV2(
+                query, new List<MemoryRecallCandidateSnapshot> { stale });
+            AssertEqual("recallV2.current.reject-stale",
+                MemoryRecallRejectReasons.CurrentTruthUnavailable,
+                result.report[0].rejectReason);
+
+            MemoryRecallCandidateSnapshot missingCurrent = RecallCandidate(
+                "missing-current", "Owner_A", "source-missing-current", 300);
+            missingCurrent.currentStateApplicable = true;
+            missingCurrent.currentStateCanRender = true;
+            missingCurrent.currentStateText = "Now: current truth without provenance.";
+            result = ImportantMemorySelector.SelectV2(
+                query, new List<MemoryRecallCandidateSnapshot> { missingCurrent });
+            AssertEqual("recallV2.current.required-provenance-no-bypass",
+                MemoryRecallRejectReasons.CurrentTruthUnavailable,
+                result.report[0].rejectReason);
+
+            MemoryRecallCandidateSnapshot truthful = RecallCandidate(
+                "truthful", "Owner_A", "source-truth", 301);
+            truthful.historicalText = "Then: they were allies.";
+            truthful.currentStateApplicable = true;
+            truthful.currentStateContradictsHistorical = true;
+            truthful.currentStateCanRender = true;
+            truthful.currentStateText = "Now: they are hostile.";
+            truthful.currentStateSourceId = "snapshot-1";
+            result = ImportantMemorySelector.SelectV2(
+                query, new List<MemoryRecallCandidateSnapshot> { truthful });
+            MemoryRecallPromptLine rendered = ImportantMemoryLineRenderer.RenderV2(
+                result.selected[0], 200, 200);
+            AssertEqual("recallV2.current.history-separate", "Then: they were allies.",
+                rendered.historicalText);
+            AssertEqual("recallV2.current.truth-separate", "Now: they are hostile.",
+                rendered.currentStateText);
+
+            KnowledgeSelectionResult legacy = new KnowledgeSelectionResult();
+            legacy.selected.Add(Record("legacy-record", 1, subjectKey: "part:Leg"));
+            MemoryRecallShadowComparison comparison = ImportantMemorySelector.CompareLegacyAndV2(
+                legacy, result);
+            AssertEqual("recallV2.shadow.build-state", MemorySystemActivationGate.LegacyShadow,
+                comparison.buildState);
+            AssertTrue("recallV2.shadow.differs", comparison.differs);
+            AssertTrue("recallV2.shadow.publishes-legacy", comparison.publishesLegacy);
+            AssertEqual("recallV2.shadow.legacy-id", "legacy-record",
+                comparison.publishedRecordIds[0]);
+        }
+
+        /// <summary>
+        /// Pure selection accepts only detached adapter snapshots, so every malformed, absent,
+        /// duplicate, over-ceiling, or unknown-future field must reject one row instead of throwing
+        /// or letting a neighbouring row inherit the damage. Also pins the four-format selection cap
+        /// and the independence of the §10.3 pawn-background column.
+        /// </summary>
+        private static void TestRecallV2AdversarialIdentityAndCapMatrix()
+        {
+            // A represented-source list drives a hard exclusion. An absent list means "unknown", so
+            // it must fail closed rather than crash pure selection or read as "represents nothing".
+            MemoryRecallCandidateSnapshot absentSources = RecallCandidate(
+                "absent-sources", "Owner_A", "source-absent", 500);
+            absentSources.representedSourceOccurrenceIds = null;
+            MemoryRecallCandidateSnapshot healthyNeighbour = RecallCandidate(
+                "healthy-neighbour", "Owner_A", "source-healthy", 499);
+            MemoryRecallSelectionResultV2 result = ImportantMemorySelector.SelectV2(
+                RecallQuery("Owner_A", MemoryRecallWritingFormats.Full),
+                new List<MemoryRecallCandidateSnapshot> { absentSources, healthyNeighbour });
+            AssertEqual("recallV2.sources.absent-list-fails-closed",
+                MemoryRecallRejectReasons.MissingOrCorrupt,
+                result.report.First(row => row.recordId == "absent-sources").rejectReason);
+            AssertEqual("recallV2.sources.absent-list-does-not-abort-selection", 1,
+                result.selected.Count);
+            AssertEqual("recallV2.sources.neighbour-survives", "healthy-neighbour",
+                result.selected[0].candidate.recordId);
+
+            MemoryRecallCandidateSnapshot duplicateSource = RecallCandidate(
+                "duplicate-source", "Owner_A", "source-duplicate", 501);
+            duplicateSource.representedSourceOccurrenceIds.Add("represented-1");
+            duplicateSource.representedSourceOccurrenceIds.Add("represented-1");
+            MemoryRecallCandidateSnapshot selfRepresenting = RecallCandidate(
+                "self-representing", "Owner_A", "source-self-rep", 502);
+            selfRepresenting.representedSourceOccurrenceIds.Add("source-self-rep");
+            MemoryRecallCandidateSnapshot overCeilingRecord = RecallCandidate(
+                new string('r', MemoryIdentityCodec.MaximumEmbeddedCompositeCharacters + 1),
+                "Owner_A",
+                "source-over-ceiling",
+                503);
+            MemoryRecallCandidateSnapshot malformedSource = RecallCandidate(
+                "malformed-source", "Owner_A", "source-\uD800-lone", 504);
+            result = ImportantMemorySelector.SelectV2(
+                RecallQuery("Owner_A", MemoryRecallWritingFormats.Full),
+                new List<MemoryRecallCandidateSnapshot>
+                {
+                    duplicateSource, selfRepresenting, overCeilingRecord, malformedSource
+                });
+            AssertEqual("recallV2.identity.adversarial-selects-none", 0, result.selected.Count);
+            AssertTrue("recallV2.identity.adversarial-all-corrupt",
+                result.report.All(row =>
+                    row.rejectReason == MemoryRecallRejectReasons.MissingOrCorrupt));
+
+            // Record/source/root identities are already-encoded or opaque composite values, not
+            // raw pawn IDs. A valid value just above the raw ceiling must remain recallable while
+            // the embedded-composite ceiling above stays absolute.
+            string compositeRecord = new string(
+                'c',
+                MemoryIdentityCodec.MaximumRawIdentityCharacters + 1);
+            string compositeSource = new string(
+                's',
+                MemoryIdentityCodec.MaximumRawIdentityCharacters + 1);
+            string compositeRoot = new string(
+                't',
+                MemoryIdentityCodec.MaximumRawIdentityCharacters + 1);
+            string compositeNovelty = new string(
+                'n',
+                MemoryIdentityCodec.MaximumRawIdentityCharacters + 1);
+            MemoryRecallCandidateSnapshot compositeCandidate = RecallCandidate(
+                compositeRecord, "Owner_A", compositeSource, 504);
+            MakeThreadCandidate(compositeCandidate, compositeRoot, compositeNovelty);
+            result = ImportantMemorySelector.SelectV2(
+                RecallQuery("Owner_A", MemoryRecallWritingFormats.Full),
+                new List<MemoryRecallCandidateSnapshot>
+                {
+                    compositeCandidate
+                });
+            AssertEqual("recallV2.identity.composite-above-raw-accepted", 1,
+                result.selected.Count);
+
+            MemoryRecallQueryV2 missingExclusionList = RecallQuery(
+                "Owner_A", MemoryRecallWritingFormats.Full);
+            missingExclusionList.excludedSourceOccurrenceIds = null;
+            AssertEqual("recallV2.exclusion.null-list-fails-closed",
+                MemoryRecallRejectReasons.InvalidQuery,
+                ImportantMemorySelector.SelectV2(
+                    missingExclusionList,
+                    new List<MemoryRecallCandidateSnapshot>
+                    {
+                        RecallCandidate("null-exclusion", "Owner_A", "source-null", 504)
+                    }).report[0].rejectReason);
+
+            // A different owner may legitimately hold the same record ID. That lookalike must be
+            // rejected on ownership alone and must never mark the owner's own row ambiguous.
+            MemoryRecallCandidateSnapshot ownRow = RecallCandidate(
+                "shared-record-id", "Owner_A", "source-own", 505);
+            MemoryRecallCandidateSnapshot lookalike = RecallCandidate(
+                "shared-record-id", "Owner_B", "source-lookalike", 506);
+            result = ImportantMemorySelector.SelectV2(
+                RecallQuery("Owner_A", MemoryRecallWritingFormats.Full),
+                new List<MemoryRecallCandidateSnapshot> { lookalike, ownRow });
+            AssertEqual("recallV2.identity.cross-owner-lookalike-not-ambiguous", 1,
+                result.selected.Count);
+            AssertEqual("recallV2.identity.cross-owner-lookalike-rejected",
+                MemoryRecallRejectReasons.OwnerMismatch,
+                result.report.First(row => row.rejectReason.Length > 0).rejectReason);
+
+            // §10.3 selection column: Full/Balanced/Compact/Off are exactly 2/1/0/0.
+            string[] formats =
+            {
+                MemoryRecallWritingFormats.Full,
+                MemoryRecallWritingFormats.Balanced,
+                MemoryRecallWritingFormats.Compact,
+                MemoryRecallWritingFormats.Off
+            };
+            int[] expectedLines = { 2, 1, 0, 0 };
+            for (int index = 0; index < formats.Length; index++)
+            {
+                MemoryRecallSelectionResultV2 formatted = ImportantMemorySelector.SelectV2(
+                    RecallQuery("Owner_A", formats[index]),
+                    new List<MemoryRecallCandidateSnapshot>
+                    {
+                        RecallCandidate("cap-a", "Owner_A", "source-cap-a", 600),
+                        RecallCandidate("cap-b", "Owner_A", "source-cap-b", 599),
+                        RecallCandidate("cap-c", "Owner_A", "source-cap-c", 598)
+                    });
+                AssertEqual("recallV2.select.cap." + formats[index],
+                    expectedLines[index], formatted.selected.Count);
+                AssertEqual("recallV2.select.cap-never-overflows." + formats[index],
+                    expectedLines[index], formatted.lineCap);
+                if (expectedLines[index] == 0)
+                {
+                    AssertTrue("recallV2.select.memory-free-format." + formats[index],
+                        formatted.report.All(row =>
+                            row.rejectReason == MemoryRecallRejectReasons.FormatDisabled));
+                }
+            }
+
+            // `Use memories in writing` off silences episodic recall while the separate background
+            // switch keeps its own Full/Balanced eligibility.
+            MemoryRecallQueryV2 episodicOff = RecallQuery("Owner_A", MemoryRecallWritingFormats.Full);
+            episodicOff.useMemoriesInWriting = false;
+            result = ImportantMemorySelector.SelectV2(
+                episodicOff,
+                new List<MemoryRecallCandidateSnapshot>
+                {
+                    RecallCandidate("episodic-off", "Owner_A", "source-episodic-off", 601)
+                });
+            AssertEqual("recallV2.select.episodic-off-none", 0, result.selected.Count);
+            AssertEqual("recallV2.select.episodic-off-reason",
+                MemoryRecallRejectReasons.FormatDisabled, result.report[0].rejectReason);
+            AssertTrue("recallV2.background.survives-episodic-off",
+                MemoryContextPrompt.AllowsPawnBackground(MemoryRecallWritingFormats.Full, true)
+                && MemoryContextPrompt.AllowsPawnBackground(
+                    MemoryRecallWritingFormats.Balanced, true));
+
+            MemoryRecallQueryV2 unknownConsumer = RecallQuery(
+                "Owner_A", MemoryRecallWritingFormats.Full);
+            unknownConsumer.consumerId = "future_consumer";
+            AssertEqual("recallV2.consumer.unknown-fails-closed",
+                MemoryRecallRejectReasons.UnknownConsumer,
+                ImportantMemorySelector.SelectV2(
+                    unknownConsumer,
+                    new List<MemoryRecallCandidateSnapshot>
+                    {
+                        RecallCandidate("unknown-consumer", "Owner_A", "source-unknown-c", 602)
+                    }).report[0].rejectReason);
+            MemoryRecallQueryV2 unknownFormat = RecallQuery("Owner_A", "Verbose");
+            AssertEqual("recallV2.format.unknown-fails-closed",
+                MemoryRecallRejectReasons.InvalidQuery,
+                ImportantMemorySelector.SelectV2(
+                    unknownFormat,
+                    new List<MemoryRecallCandidateSnapshot>
+                    {
+                        RecallCandidate("unknown-format", "Owner_A", "source-unknown-f", 603)
+                    }).report[0].rejectReason);
+
+            // A pawn is never its own paired counterpart, so neither POV may read the other list.
+            MemoryRecallPairedResultV2 samePawn = ImportantMemorySelector.SelectPairedV2(
+                RecallQuery("Owner_A", MemoryRecallWritingFormats.Full),
+                new List<MemoryRecallCandidateSnapshot>
+                {
+                    RecallCandidate("same-owner-a", "Owner_A", "source-same-a", 604)
+                },
+                RecallQuery("Owner_A", MemoryRecallWritingFormats.Full),
+                new List<MemoryRecallCandidateSnapshot>
+                {
+                    RecallCandidate("same-owner-b", "Owner_A", "source-same-b", 605)
+                });
+            AssertEqual("recallV2.pair.same-owner-initiator-none", 0,
+                samePawn.initiator.selected.Count);
+            AssertEqual("recallV2.pair.same-owner-recipient-none", 0,
+                samePawn.recipient.selected.Count);
+            AssertTrue("recallV2.pair.same-owner-invalid",
+                samePawn.initiator.report[0].rejectReason == MemoryRecallRejectReasons.InvalidQuery
+                && samePawn.recipient.report[0].rejectReason
+                    == MemoryRecallRejectReasons.InvalidQuery);
+
+            MemoryRecallCandidateSnapshot duplicateRequirement = RecallCandidate(
+                "duplicate-requirement", "Owner_A", "source-duplicate-req", 606);
+            duplicateRequirement.requiredStructuralGuards.Add(new MemoryGuardIdentity
+            {
+                guardKind = MemoryRepetitionGuardKinds.Subject,
+                guardKey = MemoryRepetitionGuardPolicy.SubjectKey(
+                    MemoryContractTokens.SubjectPawn, "Pawn_B")
+            });
+            MemoryRecallCandidateSnapshot duplicateState = RecallCandidate(
+                "duplicate-state", "Owner_A", "source-duplicate-state", 607);
+            duplicateState.structuralGuardStates.Add(GuardState(
+                "epoch-1",
+                MemoryRepetitionGuardKinds.Subject,
+                MemoryRepetitionGuardPolicy.SubjectKey(MemoryContractTokens.SubjectPawn, "Pawn_B"),
+                0, 0, 0));
+            MemoryRecallCandidateSnapshot recordKindState = RecallCandidate(
+                "record-kind-state", "Owner_A", "source-record-kind", 608);
+            recordKindState.structuralGuardStates.Add(GuardState(
+                "epoch-1",
+                MemoryRepetitionGuardKinds.Record,
+                MemoryRepetitionGuardPolicy.RecordKey("record-kind-state"),
+                0, 0, 0));
+            result = ImportantMemorySelector.SelectV2(
+                RecallQuery("Owner_A", MemoryRecallWritingFormats.Full),
+                new List<MemoryRecallCandidateSnapshot>
+                {
+                    duplicateRequirement, duplicateState, recordKindState
+                });
+            AssertEqual("recallV2.guard.duplicate-and-extra-kinds-select-none", 0,
+                result.selected.Count);
+            AssertTrue("recallV2.guard.duplicate-and-extra-kinds-no-bypass",
+                result.report.All(row =>
+                    row.rejectReason == MemoryRecallRejectReasons.GuardBypass));
+
+            // Provenance and text describe each other in both directions. A current-state row that
+            // cannot fit its own bounded budget drops with its diagnostic, and the still-truthful
+            // historical sentence survives instead of losing the whole line at projection time.
+            MemoryRecallCandidateSnapshot boundedTruth = RecallCandidate(
+                "bounded-truth", "Owner_A", "source-bounded-truth", 609);
+            boundedTruth.historicalText = "Then: they shared a meal.";
+            boundedTruth.currentStateApplicable = true;
+            boundedTruth.currentStateCanRender = true;
+            boundedTruth.currentStateText = "Now: they still share meals.";
+            boundedTruth.currentStateSourceId = "snapshot-bounded";
+            MemoryRecallSelectedCandidate boundedSelected = ImportantMemorySelector.SelectV2(
+                RecallQuery("Owner_A", MemoryRecallWritingFormats.Full),
+                new List<MemoryRecallCandidateSnapshot> { boundedTruth }).selected[0];
+            AssertEqual("recallV2.current.plan-has-both-rows", 2, boundedSelected.diagnostics.Count);
+            MemoryRecallPromptLine droppedCurrent = ImportantMemoryLineRenderer.RenderV2(
+                boundedSelected, 200, 0);
+            AssertEqual("recallV2.current.dropped-text", string.Empty,
+                droppedCurrent.currentStateText);
+            AssertEqual("recallV2.current.dropped-provenance-too", 1,
+                droppedCurrent.diagnostics.Count);
+            AssertEqual("recallV2.current.history-still-rendered", "Then: they shared a meal.",
+                droppedCurrent.historicalText);
+            AssertEqual("recallV2.current.history-survives-projection", 1,
+                MemoryContextPrompt.ProjectV2(
+                    MemoryRecallWritingFormats.Full,
+                    string.Empty,
+                    "current-state instruction",
+                    new List<MemoryRecallPromptLine> { droppedCurrent },
+                    1000, 2, 8, 16).lines.Count);
+
+            // An unrenderable current state is never planned as provenance in the first place.
+            MemoryRecallCandidateSnapshot unrenderable = RecallCandidate(
+                "unrenderable-current", "Owner_A", "source-unrenderable", 610);
+            unrenderable.currentStateApplicable = true;
+            unrenderable.currentStateCanRender = false;
+            unrenderable.currentStateText = "Now: unrenderable.";
+            unrenderable.currentStateSourceId = "snapshot-unrenderable";
+            AssertEqual("recallV2.current.unrenderable-rejected-before-ranking",
+                MemoryRecallRejectReasons.CurrentTruthUnavailable,
+                ImportantMemorySelector.SelectV2(
+                    RecallQuery("Owner_A", MemoryRecallWritingFormats.Full),
+                    new List<MemoryRecallCandidateSnapshot> { unrenderable }).report[0].rejectReason);
+        }
+
+        private static MemoryRecallQueryV2 RecallQuery(string ownerPawnId, string writingFormat)
+        {
+            MemoryRecallQueryV2 query = new MemoryRecallQueryV2
+            {
+                ownerPawnId = ownerPawnId,
+                ownerEpochToken = "epoch-1",
+                consumerId = MemoryRecallConsumerRegistry.OrdinaryDiary,
+                writingFormat = writingFormat,
+                currentEventId = "event-current",
+                currentSourceOccurrenceId = "source-current",
+                repetitionPolicy = RecallRepetitionPolicy()
+            };
+            query.enabledCategories.Add(MemoryContractTokens.CategoryPersonal);
+            query.exactRoutes.Add(RecallRoute("Pawn_B"));
+            return query;
+        }
+
+        private static MemoryRepetitionPolicySnapshot RecallRepetitionPolicy()
+        {
+            return new MemoryRepetitionPolicySnapshot
+            {
+                currentTick = 600000,
+                completedDiaryEntryOrdinal = 10,
+                ticksPerDay = 60000,
+                memoryReuseDays = 5,
+                memoryRevisitEntryCount = 3,
+                recordMinimumReuseDays = 1,
+                recordMinimumEntryDistance = 1,
+                rootMinimumEntryDistance = 1,
+                subjectMinimumEntryDistance = 1,
+                pairMinimumEntryDistance = 1,
+                noveltyMinimumEntryDistance = 1
+            };
+        }
+
+        private static MemoryRecallCandidateSnapshot RecallCandidate(
+            string recordId,
+            string ownerPawnId,
+            string sourceOccurrenceId,
+            long tick)
+        {
+            MemoryRecallCandidateSnapshot candidate = new MemoryRecallCandidateSnapshot
+            {
+                ownerPawnId = ownerPawnId,
+                ownerEpochToken = "epoch-1",
+                recordId = recordId,
+                sourceOccurrenceId = sourceOccurrenceId,
+                kind = MemoryContractTokens.KindEvent,
+                importance = MemoryContractTokens.ImportanceRegular,
+                originalEventTick = tick,
+                historicalText = "historical " + recordId,
+                recordGuard = GuardState(
+                    "epoch-1",
+                    MemoryRepetitionGuardKinds.Record,
+                    MemoryRepetitionGuardPolicy.RecordKey(recordId),
+                    0, 0, 0)
+            };
+            candidate.categories.Add(MemoryContractTokens.CategoryPersonal);
+            candidate.exactRoutes.Add(RecallRoute("Pawn_B"));
+            AddSubjectGuard(candidate, "Pawn_B");
+            return candidate;
+        }
+
+        private static MemoryRecallRouteIdentity RecallRoute(string pawnId)
+        {
+            return new MemoryRecallRouteIdentity
+            {
+                routeKind = MemoryRecallRouteKinds.Participant,
+                subjectKind = MemoryContractTokens.SubjectPawn,
+                subjectId = pawnId,
+                routeKey = "route-" + pawnId
+            };
+        }
+
+        private static void AddSubjectGuard(
+            MemoryRecallCandidateSnapshot candidate,
+            string pawnId)
+        {
+            string key = MemoryRepetitionGuardPolicy.SubjectKey(
+                MemoryContractTokens.SubjectPawn,
+                pawnId);
+            candidate.requiredStructuralGuards.Add(new MemoryGuardIdentity
+            {
+                guardKind = MemoryRepetitionGuardKinds.Subject,
+                guardKey = key
+            });
+            candidate.structuralGuardStates.Add(GuardState(
+                candidate.ownerEpochToken,
+                MemoryRepetitionGuardKinds.Subject,
+                key,
+                0, 0, 0));
+        }
+
+        private static void AddPairGuard(
+            MemoryRecallCandidateSnapshot candidate,
+            string counterpartPawnId)
+        {
+            string key = MemoryRepetitionGuardPolicy.PairKey(
+                candidate.ownerPawnId,
+                counterpartPawnId);
+            candidate.requiredStructuralGuards.Add(new MemoryGuardIdentity
+            {
+                guardKind = MemoryRepetitionGuardKinds.Pair,
+                guardKey = key
+            });
+            candidate.structuralGuardStates.Add(GuardState(
+                candidate.ownerEpochToken,
+                MemoryRepetitionGuardKinds.Pair,
+                key,
+                0, 0, 0));
+        }
+
+        private static void MakeThreadCandidate(
+            MemoryRecallCandidateSnapshot candidate,
+            string rootId,
+            string noveltyId)
+        {
+            candidate.isThreadMember = true;
+            candidate.rootId = rootId;
+            candidate.chapterOrNoveltyId = noveltyId;
+            AddStructuralGuard(candidate, MemoryRepetitionGuardKinds.Root,
+                MemoryRepetitionGuardPolicy.RootKey(rootId));
+            AddStructuralGuard(candidate, MemoryRepetitionGuardKinds.Novelty,
+                MemoryRepetitionGuardPolicy.NoveltyKey(rootId, noveltyId));
+        }
+
+        private static void AddStructuralGuard(
+            MemoryRecallCandidateSnapshot candidate,
+            string kind,
+            string key)
+        {
+            candidate.requiredStructuralGuards.Add(new MemoryGuardIdentity
+            {
+                guardKind = kind,
+                guardKey = key
+            });
+            candidate.structuralGuardStates.Add(GuardState(
+                candidate.ownerEpochToken, kind, key, 0, 0, 0));
+        }
+
+        private static MemoryRepetitionGuardState GuardState(
+            string epoch,
+            string kind,
+            string key,
+            long lastTick,
+            long lastEntry,
+            long count)
+        {
+            return new MemoryRepetitionGuardState
+            {
+                ownerEpochToken = epoch,
+                guardKind = kind,
+                guardKey = key,
+                lastAutomaticIncludedTick = lastTick,
+                lastAutomaticIncludedEntryOrdinal = lastEntry,
+                automaticInclusionCount = count
+            };
+        }
 
         private static void TestShippedCatalogContract()
         {

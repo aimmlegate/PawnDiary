@@ -17,6 +17,81 @@ namespace PawnDiary
     internal static class ImportantMemoryLineRenderer
     {
         /// <summary>
+        /// Projects one selected Recall v2 candidate without blending replaceable current truth into
+        /// its historical sentence. Both strings are sanitized/bounded independently; contradictory
+        /// history without a renderable current-state line fails closed.
+        /// </summary>
+        public static MemoryRecallPromptLine RenderV2(
+            MemoryRecallSelectedCandidate selected,
+            int historicalMaximumCharacters,
+            int currentStateMaximumCharacters)
+        {
+            MemoryRecallCandidateSnapshot candidate = selected?.candidate;
+            if (candidate == null || selected.evidence == null) return null;
+
+            string historical = BoundedOneLine(
+                candidate.historicalText,
+                historicalMaximumCharacters);
+            string current = candidate.currentStateApplicable && candidate.currentStateCanRender
+                ? BoundedOneLine(
+                    candidate.currentStateText,
+                    currentStateMaximumCharacters)
+                : string.Empty;
+            if (historical.Length == 0
+                || (candidate.currentStateContradictsHistorical && current.Length == 0))
+            {
+                return null;
+            }
+
+            MemoryRecallPromptLine result = new MemoryRecallPromptLine
+            {
+                historicalText = historical,
+                currentStateText = current,
+                evidence = new MemoryEvidenceIdentity
+                {
+                    recordId = selected.evidence.recordId,
+                    sourceOccurrenceId = selected.evidence.sourceOccurrenceId,
+                    rootIdOrEmpty = selected.evidence.rootIdOrEmpty
+                }
+            };
+            for (int index = 0; selected.guards != null && index < selected.guards.Count; index++)
+            {
+                MemoryGuardIdentity guard = selected.guards[index];
+                result.guards.Add(guard == null ? null : new MemoryGuardIdentity
+                {
+                    guardKind = guard.guardKind,
+                    guardKey = guard.guardKey
+                });
+            }
+            for (int index = 0;
+                selected.diagnostics != null && index < selected.diagnostics.Count;
+                index++)
+            {
+                MemoryDiagnosticIdentity diagnostic = selected.diagnostics[index];
+                // A current-state row may lose its own bounded budget (a zero cap, or a cut that
+                // would orphan a surrogate pair) while the historical sentence still renders. The
+                // planned provenance must then drop with it: emitted text and emitted provenance
+                // always describe each other, and non-contradicted history stays usable alone.
+                if (diagnostic != null && current.Length == 0
+                    && diagnostic.provenanceKindToken == MemoryRecallDiagnosticKinds.CurrentState)
+                {
+                    continue;
+                }
+
+                result.diagnostics.Add(diagnostic == null ? null : new MemoryDiagnosticIdentity
+                {
+                    provenanceKindToken = diagnostic.provenanceKindToken,
+                    sourceId = diagnostic.sourceId,
+                    recordIdOrEmpty = diagnostic.recordIdOrEmpty,
+                    sourceOccurrenceIdOrEmpty = diagnostic.sourceOccurrenceIdOrEmpty,
+                    rootIdOrEmpty = diagnostic.rootIdOrEmpty,
+                    lineOrdinal = diagnostic.lineOrdinal
+                });
+            }
+            return result;
+        }
+
+        /// <summary>
         /// Uses a nonblank player/editor-authored text override first, otherwise renders the record
         /// through <paramref name="template"/>; a blank template (or a render that collapses to
         /// nothing) falls back to the record's capture-time summary. The result is trimmed to
@@ -162,6 +237,15 @@ namespace PawnDiary
             // Placeholder stripping can leave doubled spaces ("lost  suddenly"); collapse them so
             // the prompt line stays clean.
             return CollapseSpaces(builder.ToString());
+        }
+
+        private static string BoundedOneLine(string value, int maximumCharacters)
+        {
+            string line = PromptTextSanitizer.OneLine(value);
+            if (maximumCharacters <= 0) return string.Empty;
+            return line.Length <= maximumCharacters
+                ? line
+                : TextTruncation.SafePrefix(line, maximumCharacters).TrimEnd();
         }
 
         private static string ResolveToken(ImportantMemoryRecordSnapshot record, string token)

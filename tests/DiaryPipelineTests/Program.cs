@@ -24,6 +24,7 @@ namespace DiaryPipelineTests
             TestBeliefCombinedDlcPromptFixtures();
             TestMemoryContextProjectabilityAndTemplates();
             TestMemoryContextIsOptionalAndLayerControlled();
+            TestRecallV2PromptProjectionCapsAndCurrentTruth();
             TestQualityWavePovContextContracts();
             TestIdentitySummaryPolicy();
             TestMoodSnapshotPolicy();
@@ -1803,6 +1804,334 @@ namespace DiaryPipelineTests
             });
             AssertTrue("empty recall costs no prompt field",
                 !silentPlan.userPrompt.Contains("memory:"));
+        }
+
+        /// <summary>
+        /// M3's dormant prompt projector owns the canonical 2/1/0/0 line matrix and carries only
+        /// provenance whose complete line survived every cap. Current truth remains a separate row.
+        /// </summary>
+        private static void TestRecallV2PromptProjectionCapsAndCurrentTruth()
+        {
+            List<MemoryRecallPromptLine> lines = new List<MemoryRecallPromptLine>
+            {
+                RecallPromptLine("r1", "s1", "Then: allies.", "Now: hostile."),
+                RecallPromptLine("r2", "s2", "Then: rescued me.", string.Empty),
+                RecallPromptLine("r3", "s3", "Then: traded medicine.", string.Empty)
+            };
+            string[] formats =
+            {
+                MemoryRecallWritingFormats.Full,
+                MemoryRecallWritingFormats.Balanced,
+                MemoryRecallWritingFormats.Compact,
+                MemoryRecallWritingFormats.Off
+            };
+            int[] expectedLines = { 2, 1, 0, 0 };
+            for (int index = 0; index < formats.Length; index++)
+            {
+                MemoryRecallPromptProjection projection = MemoryContextPrompt.ProjectV2(
+                    formats[index],
+                    "memory instruction",
+                    "current-state instruction",
+                    lines,
+                    1000,
+                    2,
+                    8,
+                    16);
+                AssertEqual("recallV2.prompt.lines." + formats[index],
+                    expectedLines[index], projection.lines.Count);
+                AssertEqual("recallV2.prompt.evidence." + formats[index],
+                    expectedLines[index], projection.evidence.Count);
+                AssertTrue("recallV2.prompt.cap." + formats[index],
+                    projection.text.Length <= 1000);
+            }
+
+            MemoryRecallPromptProjection firstOnly = MemoryContextPrompt.ProjectV2(
+                MemoryRecallWritingFormats.Full,
+                "memory instruction",
+                "current-state instruction",
+                new List<MemoryRecallPromptLine> { lines[0] },
+                1000,
+                2,
+                8,
+                16);
+            AssertEqual("recallV2.prompt.truth-separated",
+                "memory instruction\nThen: allies.\ncurrent-state instruction\nNow: hostile.",
+                firstOnly.text);
+            AssertEqual("recallV2.prompt.truth-diagnostic", 2,
+                firstOnly.diagnostics.Count);
+            AssertEqual("recallV2.prompt.current-provenance", "current_state",
+                firstOnly.diagnostics[0].provenanceKindToken);
+            AssertEqual("recallV2.prompt.history-provenance", "episodic_memory",
+                firstOnly.diagnostics[1].provenanceKindToken);
+
+            MemoryRecallPromptProjection characterBound = MemoryContextPrompt.ProjectV2(
+                MemoryRecallWritingFormats.Full,
+                "memory instruction",
+                "current-state instruction",
+                lines,
+                firstOnly.text.Length,
+                2,
+                8,
+                16);
+            AssertEqual("recallV2.prompt.char-drops-whole-tail", 1,
+                characterBound.lines.Count);
+            AssertEqual("recallV2.prompt.char-exact-first", firstOnly.text,
+                characterBound.text);
+
+            MemoryRecallPromptProjection evidenceBound = MemoryContextPrompt.ProjectV2(
+                MemoryRecallWritingFormats.Full,
+                string.Empty,
+                string.Empty,
+                lines,
+                1000,
+                1,
+                8,
+                16);
+            AssertEqual("recallV2.prompt.evidence-cap", 1, evidenceBound.lines.Count);
+            AssertEqual("recallV2.prompt.evidence-no-overflow", 1,
+                evidenceBound.evidence.Count);
+
+            MemoryRecallPromptProjection guardBound = MemoryContextPrompt.ProjectV2(
+                MemoryRecallWritingFormats.Full,
+                string.Empty,
+                string.Empty,
+                lines,
+                1000,
+                2,
+                1,
+                16);
+            AssertEqual("recallV2.prompt.guard-cap-omits", 0, guardBound.lines.Count);
+            AssertEqual("recallV2.prompt.guard-cap-no-bypass", 0, guardBound.guards.Count);
+            AssertEqual("recallV2.prompt.instruction-without-memory", string.Empty,
+                MemoryContextPrompt.ProjectV2(
+                    MemoryRecallWritingFormats.Full,
+                    "memory instruction",
+                    "current-state instruction",
+                    new List<MemoryRecallPromptLine>(),
+                    1000,
+                    2,
+                    8,
+                    16).text);
+
+            // §10.3 has a separate pawn-background column. Its switch is independent of episodic
+            // recall: Full/Balanced allow it even when there are no episodic lines, while Compact,
+            // Off, unknown formats, and the background switch itself fail closed.
+            bool[] expectedBackground = { true, true, false, false };
+            for (int index = 0; index < formats.Length; index++)
+            {
+                AssertTrue("recallV2.background.allowed." + formats[index],
+                    MemoryContextPrompt.AllowsPawnBackground(formats[index], true)
+                        == expectedBackground[index]);
+                AssertTrue("recallV2.background.setting-off." + formats[index],
+                    !MemoryContextPrompt.AllowsPawnBackground(formats[index], false));
+                AssertEqual("recallV2.background.does-not-consume-line." + formats[index],
+                    expectedLines[index],
+                    MemoryContextPrompt.MaximumLines(formats[index]));
+            }
+            AssertTrue("recallV2.background.unknown-format-closed",
+                !MemoryContextPrompt.AllowsPawnBackground("Verbose", true));
+            AssertTrue("recallV2.background.independent-of-episodic-lines",
+                MemoryContextPrompt.AllowsPawnBackground(
+                    MemoryRecallWritingFormats.Balanced, true)
+                && MemoryContextPrompt.ProjectV2(
+                    MemoryRecallWritingFormats.Balanced,
+                    string.Empty,
+                    string.Empty,
+                    new List<MemoryRecallPromptLine>(),
+                    1000,
+                    1,
+                    1,
+                    1).lines.Count == 0);
+
+            MemoryRecallPromptLine missingCurrentProvenance = RecallPromptLine(
+                "r-current-missing", "s-current-missing", "Then: nearby.", "Now: gone.");
+            missingCurrentProvenance.diagnostics.RemoveAll(row =>
+                row.provenanceKindToken == MemoryRecallDiagnosticKinds.CurrentState);
+            MemoryRecallPromptProjection missingCurrentProjection = MemoryContextPrompt.ProjectV2(
+                MemoryRecallWritingFormats.Full,
+                string.Empty,
+                "current-state instruction",
+                new List<MemoryRecallPromptLine> { missingCurrentProvenance },
+                1000,
+                2,
+                8,
+                16);
+            AssertEqual("recallV2.prompt.current-truth-requires-provenance", 0,
+                missingCurrentProjection.lines.Count);
+            AssertEqual("recallV2.prompt.current-truth-provenance-fails-closed", string.Empty,
+                missingCurrentProjection.text);
+
+            // Raw identities may legally contain the old newline delimiter. Distinct evidence
+            // tuples must remain distinct after canonical framing instead of losing one line as a
+            // false duplicate.
+            MemoryRecallPromptLine framedFirst = RecallPromptLine(
+                "record\npart", "source", "First framed memory.", string.Empty);
+            framedFirst.evidence.rootIdOrEmpty = "root";
+            framedFirst.diagnostics[0].recordIdOrEmpty = framedFirst.evidence.recordId;
+            framedFirst.diagnostics[0].rootIdOrEmpty = framedFirst.evidence.rootIdOrEmpty;
+            MemoryRecallPromptLine framedSecond = RecallPromptLine(
+                "record", "part", "Second framed memory.", string.Empty);
+            framedSecond.evidence.rootIdOrEmpty = "source\nroot";
+            framedSecond.diagnostics[0].rootIdOrEmpty = framedSecond.evidence.rootIdOrEmpty;
+            MemoryRecallPromptProjection framedProjection = MemoryContextPrompt.ProjectV2(
+                MemoryRecallWritingFormats.Full,
+                string.Empty,
+                string.Empty,
+                new List<MemoryRecallPromptLine> { framedFirst, framedSecond },
+                1000,
+                2,
+                8,
+                16);
+            AssertEqual("recallV2.prompt.evidence-framing-no-delimiter-collision", 2,
+                framedProjection.lines.Count);
+
+            MemoryRecallPromptLine orphanCurrentProvenance = RecallPromptLine(
+                "r-orphan-current", "s-orphan-current", "Then: present.", string.Empty);
+            orphanCurrentProvenance.diagnostics.Add(new MemoryDiagnosticIdentity
+            {
+                provenanceKindToken = MemoryRecallDiagnosticKinds.CurrentState,
+                sourceId = "snapshot-orphan-current",
+                recordIdOrEmpty = orphanCurrentProvenance.evidence.recordId,
+                sourceOccurrenceIdOrEmpty =
+                    orphanCurrentProvenance.evidence.sourceOccurrenceId,
+                rootIdOrEmpty = orphanCurrentProvenance.evidence.rootIdOrEmpty
+            });
+            AssertEqual("recallV2.prompt.current-provenance-requires-text", 0,
+                MemoryContextPrompt.ProjectV2(
+                    MemoryRecallWritingFormats.Full,
+                    string.Empty,
+                    string.Empty,
+                    new List<MemoryRecallPromptLine> { orphanCurrentProvenance },
+                    1000, 2, 8, 16).lines.Count);
+
+            MemoryRecallPromptLine unknownDiagnostic = RecallPromptLine(
+                "r-future-diagnostic", "s-future-diagnostic", "Then: known.", string.Empty);
+            unknownDiagnostic.diagnostics.Add(new MemoryDiagnosticIdentity
+            {
+                provenanceKindToken = "future_provenance",
+                sourceId = "future-source",
+                recordIdOrEmpty = unknownDiagnostic.evidence.recordId,
+                sourceOccurrenceIdOrEmpty = unknownDiagnostic.evidence.sourceOccurrenceId,
+                rootIdOrEmpty = unknownDiagnostic.evidence.rootIdOrEmpty
+            });
+            AssertEqual("recallV2.prompt.future-provenance-fails-closed", 0,
+                MemoryContextPrompt.ProjectV2(
+                    MemoryRecallWritingFormats.Full,
+                    string.Empty,
+                    string.Empty,
+                    new List<MemoryRecallPromptLine> { unknownDiagnostic },
+                    1000, 2, 8, 16).lines.Count);
+
+            MemoryRecallPromptLine malformedEvidence = RecallPromptLine(
+                "r-malformed", "s-malformed", "Then: malformed.", string.Empty);
+            malformedEvidence.evidence.recordId = "record-\uD800";
+            malformedEvidence.diagnostics[0].recordIdOrEmpty = malformedEvidence.evidence.recordId;
+            AssertEqual("recallV2.prompt.malformed-utf16-evidence-fails-closed", 0,
+                MemoryContextPrompt.ProjectV2(
+                    MemoryRecallWritingFormats.Full,
+                    string.Empty,
+                    string.Empty,
+                    new List<MemoryRecallPromptLine> { malformedEvidence },
+                    1000, 2, 8, 16).lines.Count);
+
+            MemoryRecallPromptLine malformedGuard = RecallPromptLine(
+                "r-malformed-guard", "s-malformed-guard", "Then: guarded.", string.Empty);
+            malformedGuard.guards[0].guardKey = "not-length-prefixed";
+            AssertEqual("recallV2.prompt.malformed-guard-fails-closed", 0,
+                MemoryContextPrompt.ProjectV2(
+                    MemoryRecallWritingFormats.Full,
+                    string.Empty,
+                    string.Empty,
+                    new List<MemoryRecallPromptLine> { malformedGuard },
+                    1000, 2, 8, 16).lines.Count);
+
+            AssertEqual("recallV2.prompt.diagnostic-cap-exact-n", 1,
+                MemoryContextPrompt.ProjectV2(
+                    MemoryRecallWritingFormats.Full,
+                    string.Empty,
+                    string.Empty,
+                    new List<MemoryRecallPromptLine> { lines[0] },
+                    1000, 1, 2, 2).lines.Count);
+            AssertEqual("recallV2.prompt.diagnostic-cap-n-plus-one-omits", 0,
+                MemoryContextPrompt.ProjectV2(
+                    MemoryRecallWritingFormats.Full,
+                    string.Empty,
+                    string.Empty,
+                    new List<MemoryRecallPromptLine> { lines[0] },
+                    1000, 1, 2, 1).lines.Count);
+            AssertEqual("recallV2.prompt.character-cap-n-minus-one-omits", 0,
+                MemoryContextPrompt.ProjectV2(
+                    MemoryRecallWritingFormats.Full,
+                    "memory instruction",
+                    "current-state instruction",
+                    new List<MemoryRecallPromptLine> { lines[0] },
+                    firstOnly.text.Length - 1, 1, 2, 2).lines.Count);
+
+            MemoryRecallPromptLine guardFramedFirst = RecallPromptLine(
+                "guard\nrecord", "guard-source", "First guarded memory.", string.Empty);
+            MemoryRecallPromptLine guardFramedSecond = RecallPromptLine(
+                "guard", "record\nguard-source", "Second guarded memory.", string.Empty);
+            MemoryRecallPromptProjection guardFramedProjection = MemoryContextPrompt.ProjectV2(
+                MemoryRecallWritingFormats.Full,
+                string.Empty,
+                string.Empty,
+                new List<MemoryRecallPromptLine> { guardFramedFirst, guardFramedSecond },
+                1000, 2, 4, 4);
+            AssertEqual("recallV2.prompt.guard-framing-keeps-lines", 2,
+                guardFramedProjection.lines.Count);
+            AssertEqual("recallV2.prompt.guard-framing-keeps-identities", 4,
+                guardFramedProjection.guards.Count);
+        }
+
+        private static MemoryRecallPromptLine RecallPromptLine(
+            string recordId,
+            string sourceOccurrenceId,
+            string historicalText,
+            string currentStateText)
+        {
+            MemoryRecallPromptLine line = new MemoryRecallPromptLine
+            {
+                historicalText = historicalText,
+                currentStateText = currentStateText,
+                evidence = new MemoryEvidenceIdentity
+                {
+                    recordId = recordId,
+                    sourceOccurrenceId = sourceOccurrenceId,
+                    rootIdOrEmpty = "root-" + recordId
+                }
+            };
+            line.guards.Add(new MemoryGuardIdentity
+            {
+                guardKind = MemoryRepetitionGuardKinds.Record,
+                guardKey = MemoryRepetitionGuardPolicy.RecordKey(recordId)
+            });
+            line.guards.Add(new MemoryGuardIdentity
+            {
+                guardKind = MemoryRepetitionGuardKinds.Subject,
+                guardKey = MemoryRepetitionGuardPolicy.SubjectKey(
+                    MemoryContractTokens.SubjectPawn,
+                    "subject-" + recordId)
+            });
+            line.diagnostics.Add(new MemoryDiagnosticIdentity
+            {
+                provenanceKindToken = MemoryRecallDiagnosticKinds.EpisodicMemory,
+                sourceId = sourceOccurrenceId,
+                recordIdOrEmpty = recordId,
+                sourceOccurrenceIdOrEmpty = sourceOccurrenceId,
+                rootIdOrEmpty = "root-" + recordId
+            });
+            if (!string.IsNullOrWhiteSpace(currentStateText))
+            {
+                line.diagnostics.Add(new MemoryDiagnosticIdentity
+                {
+                    provenanceKindToken = MemoryRecallDiagnosticKinds.CurrentState,
+                    sourceId = "snapshot-" + recordId,
+                    recordIdOrEmpty = recordId,
+                    sourceOccurrenceIdOrEmpty = sourceOccurrenceId,
+                    rootIdOrEmpty = "root-" + recordId
+                });
+            }
+            return line;
         }
 
         private static int BeliefContextScore(string domain, string gameContext)

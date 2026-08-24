@@ -26,6 +26,7 @@
     <Compile Include="..\..\Source\Pipeline\SocialReflectionPolicy.cs" Link="SocialReflectionPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryThreadContracts.cs" Link="MemoryThreadContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryIdentityCodec.cs" Link="MemoryIdentityCodec.cs" />
+    <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryRepetitionGuardPolicy.cs" Link="MemoryRepetitionGuardPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\SocialReflectionContextFormatter.cs" Link="SocialReflectionContextFormatter.cs" />
     <Compile Include="..\..\Source\Pipeline\DigestPacingPolicy.cs" Link="DigestPacingPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\DailyEmissionGuardPolicy.cs" Link="DailyEmissionGuardPolicy.cs" />
