@@ -400,7 +400,8 @@ namespace PawnDiary.RimTests
         /// round-trips through real Scribe preserving culture provenance, important-event records,
         /// and a player/editor-authored memory-text override. Normalize() heals shapes; for a
         /// LEGACY v1/v2 envelope it must NOT dedup/drop records (§T13.1 raw preservation) nor stamp
-        /// the schema current.
+        /// the schema current, while a CURRENT (v3) envelope still collapses duplicate dedup keys,
+        /// id-less rows, and null holes.
         /// </summary>
         [Test]
         public static void KnowledgeStateRoundTripsPreservesCultureAndDedups()
@@ -474,7 +475,9 @@ namespace PawnDiary.RimTests
                 Require(loaded.HasDedupKey(first.dedupKey),
                     "The dedup index view must see the loaded record.");
 
-                // Hand-edited save repair: a duplicated dedup key collapses, null lists heal.
+                // Hand-edited save repair on a LEGACY envelope (§T13.1 stage 1): null lists and
+                // missing tokens heal, but nothing is deduplicated or dropped — the detached
+                // migration planner must see the complete raw evidence before it resolves anything.
                 loaded.records.Add(NewKnowledgeRecord("rec-1", "relation.spouse.gained", 200));
                 loaded.records.Add(new ImportantMemoryRecord
                 {
@@ -490,10 +493,12 @@ namespace PawnDiary.RimTests
                     manualTextOverride = null,
                 });
                 loaded.Normalize();
-                Require(loaded.records.Count == 3,
-                    "Normalize must drop the duplicated dedup key (2 originals + repaired rec-3), got "
+                Require(loaded.records.Count == 4,
+                    "A legacy Normalize must keep every raw row (2 originals + duplicate + rec-3), got "
                     + loaded.records.Count + ".");
-                ImportantMemoryRecord repaired = loaded.records[2];
+                Require(loaded.records[2].dedupKey == loaded.records[0].dedupKey,
+                    "The duplicated dedup key must survive stage-1 repair for the migration planner.");
+                ImportantMemoryRecord repaired = loaded.records[3];
                 Require(repaired.participantIds != null && repaired.factKeys != null,
                     "Normalize must heal null record lists.");
                 Require(repaired.manualTextOverride == string.Empty,
@@ -501,6 +506,28 @@ namespace PawnDiary.RimTests
                 Require(repaired.sourceKind == KnowledgeTokens.SourceKindCaptured
                         && repaired.recallScope == KnowledgeTokens.RecallScopeContextual,
                     "Unknown/missing additive tokens must repair to captured/contextual.");
+
+                // The same hand-edited rows on a CURRENT (v3) envelope: strict normalization owns
+                // dedup/drop, so the duplicate dedup key, the id-less row, and the null hole all
+                // collapse. The scan runs back-to-front, so the LAST row written for a dedup key is
+                // the one that survives.
+                PawnKnowledgeState currentState = PawnKnowledgeState.CreateCurrent("PawnA");
+                currentState.records.Add(NewKnowledgeRecord("rec-1", "relation.spouse.gained", 200));
+                currentState.records.Add(NewKnowledgeRecord("rec-2", "body.part.lost", 300));
+                ImportantMemoryRecord laterDuplicate =
+                    NewKnowledgeRecord("rec-1", "relation.spouse.gained", 200);
+                laterDuplicate.fallbackSummary = "later duplicate";
+                currentState.records.Add(laterDuplicate);
+                currentState.records.Add(NewKnowledgeRecord(string.Empty, "body.part.lost", 400));
+                currentState.records.Add(null);
+                currentState.Normalize();
+                Require(currentState.records.Count == 2,
+                    "A current-schema Normalize must drop the duplicate, the id-less row, and the "
+                    + "null hole, got " + currentState.records.Count + ".");
+                Require(currentState.records[0].recordId == "rec-2"
+                        && currentState.records[1].recordId == "rec-1"
+                        && currentState.records[1].fallbackSummary == "later duplicate",
+                    "Current-schema dedup must keep the last row written for a duplicated key.");
 
                 // Profile draft seeding is read-only: detached snapshots tolerate raw null lists
                 // without first mutating the save model through Normalize().
