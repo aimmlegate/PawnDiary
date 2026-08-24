@@ -51,10 +51,16 @@ namespace PawnDiary.RimTests
             typeof(DiaryGameComponent).GetMethod(
                 "HasCompletedMainTextNeedingTitle",
                 PrivateStatic);
-        private static readonly MethodInfo LlmEnqueueMethod =
+        // Transactional dispatch split queueing into two main-thread steps: QueueTitleRequest reserves a
+        // bounded transport slot with TryStage, commits its saved "title queued" state, and only then
+        // publishes the request to the background workers with Activate. Activate is therefore the last
+        // boundary before provider IO and the one this fixture intercepts. LlmClient.Enqueue still exists,
+        // but only as a stage-and-activate convenience for callers that own no saved transaction — no
+        // diary queue path reaches it any more, so patching it would suppress nothing.
+        private static readonly MethodInfo LlmActivateMethod =
             typeof(LlmClient).GetMethod(
-                "Enqueue",
-                BindingFlags.Static | BindingFlags.Public);
+                "Activate",
+                PrivateStatic);
         private static readonly MethodInfo ResetProfileVoiceDraftMethod =
             typeof(Dialog_PawnWritingStyle).GetMethod("ResetToBase", PrivateInstance);
         private static readonly MethodInfo SaveProfileDraftMethod =
@@ -523,10 +529,10 @@ namespace PawnDiary.RimTests
         [Test]
         public static void ResumeQueuesMissingTitleForCompletedNeutralArrival()
         {
-            if (LlmEnqueueMethod == null)
+            if (LlmActivateMethod == null)
             {
                 throw new AssertionException(
-                    "The profile fixture could not locate the LLM enqueue transport boundary.");
+                    "The profile fixture could not locate the LLM activation transport boundary.");
             }
 
             string pawnId = pawn.GetUniqueLoadID();
@@ -574,10 +580,10 @@ namespace PawnDiary.RimTests
                 interceptedTitlePovRole = DiaryEvent.NeutralRole;
                 interceptedTitleRequest = null;
                 transportIntercept.Patch(
-                    LlmEnqueueMethod,
+                    LlmActivateMethod,
                     prefix: new HarmonyMethod(
                         typeof(PawnDiaryPawnProfileGenerationFixtureTests),
-                        nameof(InterceptLlmEnqueueWithoutProvider)));
+                        nameof(InterceptLlmActivationWithoutProvider)));
 
                 settings.generateTitles = true;
                 settings.apiEndpoints = new List<ApiEndpointConfig>
@@ -811,11 +817,17 @@ namespace PawnDiary.RimTests
 
         /// <summary>
         /// Harmony prefix used only by the title-resume fixture. It captures the target request at the
-        /// last boundary before background transport and suppresses every enqueue while installed, so a
-        /// failing assertion can never contact either the synthetic endpoint or the player's providers.
+        /// last boundary before background transport and suppresses every activation while installed, so
+        /// a failing assertion can never contact either the synthetic endpoint or the player's providers.
+        /// The staged slot is cancelled instead of published, which releases its bounded-queue
+        /// reservation and in-flight dedup claim; reporting success (__result = true) still exercises the
+        /// production caller's committed "title queued" bookkeeping.
         /// </summary>
-        private static bool InterceptLlmEnqueueWithoutProvider(LlmGenerationRequest request)
+        private static bool InterceptLlmActivationWithoutProvider(
+            LlmStagedGenerationRequest staged,
+            ref bool __result)
         {
+            LlmGenerationRequest request = staged?.request;
             if (request != null
                 && request.isTitleRequest
                 && string.Equals(request.eventId, interceptedTitleEventId, StringComparison.Ordinal)
@@ -824,6 +836,8 @@ namespace PawnDiary.RimTests
                 interceptedTitleRequest = request;
             }
 
+            LlmClient.CancelStaged(staged);
+            __result = true;
             return false;
         }
 
