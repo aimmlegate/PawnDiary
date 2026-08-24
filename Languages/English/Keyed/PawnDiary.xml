@@ -2149,4 +2149,6 @@
   <PawnDiary.Memory.Library.Dev.RejectionReasons>Rejection reasons</PawnDiary.Memory.Library.Dev.RejectionReasons>
   <PawnDiary.Error.GenerationInterruptedAfterSend>The previous game session ended after this request may have reached the provider. It was not sent again.</PawnDiary.Error.GenerationInterruptedAfterSend>
   <PawnDiary.Error.MemoryDispatchStopped>This memory-aware request stopped at its safety boundary and was not sent again.</PawnDiary.Error.MemoryDispatchStopped>
+  <PawnDiary.Memory.SettingsSaveFailed>Pawn Diary settings could not be saved. Your previous memory policy remains active.</PawnDiary.Memory.SettingsSaveFailed>
+  <PawnDiary.Memory.SettingsFutureVersion>This Pawn Diary settings file was written by a newer memory-system version. Memory features are disabled and the file will not be overwritten.</PawnDiary.Memory.SettingsFutureVersion>
 </LanguageData>

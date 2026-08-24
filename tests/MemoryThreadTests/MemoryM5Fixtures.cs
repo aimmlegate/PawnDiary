@@ -1,0 +1,534 @@
+// Pure Phase M5 settings fixtures. These compile the production normalizer/provider without Verse and
+// exercise migration, dependency, generation, fail-closed, and deferred-reconciliation boundaries.
+using System;
+using System.Collections.Generic;
+using PawnDiary;
+
+namespace MemoryThreadTests
+{
+    internal static class MemoryM5Fixtures
+    {
+        private static int assertions;
+
+        public static int Run()
+        {
+            assertions = 0;
+            BoundsAndNumericNormalization();
+            VersionZeroMigration();
+            DependenciesAndCategoryGates();
+            CommitGenerationsAreExactAndSticky();
+            FutureVersionsFailClosed();
+            ReconciliationIsIdempotentAndBounded();
+            PublicationIsIndivisible();
+            LibraryUnicodeCursorAndFingerprintRules();
+            LibraryFilteringPagingAndTtlRules();
+            LibraryIndexVisibilityAndCounts();
+            LibraryMutationRules();
+            return assertions;
+        }
+
+        private static void BoundsAndNumericNormalization()
+        {
+            MemorySettingsBounds malformed = new MemorySettingsBounds
+            {
+                minorMinimumDays = 999999,
+                minorDefaultDays = -5,
+                minorMaximumDays = 0,
+                regularMinimumDays = 50,
+                regularDefaultDays = 2,
+                regularMaximumDays = 20,
+                threadTargetMinimum = 100,
+                threadTargetDefault = -1,
+                threadTargetMaximum = 2,
+                reuseMinimumDays = 40000,
+                reuseDefaultDays = 0,
+                reuseMaximumDays = int.MaxValue,
+                revisitMinimumEntries = int.MaxValue,
+                revisitDefaultEntries = -1,
+                revisitMaximumEntries = 0
+            };
+            MemorySettingsBounds bounds = MemoryPolicyNormalizer.NormalizeBounds(malformed);
+            Equal("m5.bounds.minor", 1, bounds.minorMinimumDays);
+            Equal("m5.bounds.minor.max", 1, bounds.minorMaximumDays);
+            Equal("m5.bounds.regular.min", 20, bounds.regularMinimumDays);
+            Equal("m5.bounds.regular.default", 20, bounds.regularDefaultDays);
+            Equal("m5.bounds.target.min", 4, bounds.threadTargetMinimum);
+            Equal("m5.bounds.target.max", 4, bounds.threadTargetMaximum);
+            Equal("m5.bounds.reuse.max", 35791, bounds.reuseMaximumDays);
+            Equal("m5.bounds.revisit.min", 1, bounds.revisitMinimumEntries);
+
+            MemorySettingsPolicyFieldsV1 fields = new MemorySettingsPolicyFieldsV1
+            {
+                minorMemoryLifetimeDays = 100,
+                regularMemoryLifetimeDays = 10,
+                memoryThreadTarget = 1000,
+                memoryReuseDays = -1,
+                memoryRevisitEntryCount = int.MaxValue,
+                memoryCategoryMask = -1,
+                captureInvalidationGenerationPersonal = 0
+            };
+            MemoryPolicySnapshot normalized = MemoryPolicyNormalizer.Normalize(1, fields,
+                new MemorySettingsBounds());
+            Equal("m5.normalize.minor.le.regular", 10, normalized.minorMemoryLifetimeDays);
+            Equal("m5.normalize.target", 64, normalized.memoryThreadTarget);
+            Equal("m5.normalize.reuse", 1, normalized.memoryReuseDays);
+            Equal("m5.normalize.revisit", 1000, normalized.memoryRevisitEntryCount);
+            Equal("m5.normalize.mask", 15, normalized.memoryCategoryMask);
+            Equal("m5.normalize.generation", 1L,
+                normalized.captureInvalidationGenerationPersonal);
+            Equal("m5.normalize.ticks", 600000L, normalized.minorMemoryLifetimeTicks);
+        }
+
+        private static void VersionZeroMigration()
+        {
+            for (int mode = 0; mode <= 3; mode++)
+            {
+                MemorySettingsPolicyFieldsV1 on = MemoryPolicyNormalizer.MigrateVersionZero(
+                    true, mode, new MemorySettingsBounds());
+                Equal("m5.migrate.mode." + mode, mode == 0 || mode == 1,
+                    on.useMemoriesInWriting);
+                Equal("m5.migrate.extra." + mode, false, on.allowExtraMemoryAiRequests);
+                Equal("m5.migrate.categories." + mode, 15, on.memoryCategoryMask);
+                Equal("m5.migrate.ttl." + mode, 15, on.minorMemoryLifetimeDays);
+            }
+            MemorySettingsPolicyFieldsV1 masterOff = MemoryPolicyNormalizer.MigrateVersionZero(
+                false, 0, new MemorySettingsBounds());
+            Equal("m5.migrate.master.off", false, masterOff.useMemoriesInWriting);
+            Equal("m5.migrate.save.independent", true, masterOff.saveNewMemories);
+            Equal("m5.migrate.background.independent", true, masterOff.usePawnBackground);
+        }
+
+        private static void DependenciesAndCategoryGates()
+        {
+            MemorySettingsPolicyFieldsV1 values = new MemorySettingsPolicyFieldsV1
+            {
+                useMemoriesInWriting = false,
+                allowExtraMemoryAiRequests = true,
+                occasionalMemoryReflections = true,
+                memoryCategoryMask = MemoryCategoryBits.Personal | MemoryCategoryBits.Family
+            };
+            MemoryPolicySnapshot off = MemoryPolicyNormalizer.Normalize(1, values,
+                new MemorySettingsBounds());
+            Equal("m5.dependency.extra", false, off.allowExtraMemoryAiRequests);
+            Equal("m5.dependency.quiet", false, off.occasionalMemoryReflections);
+            Equal("m5.recall.use.off", false, off.AllowsRecall(MemoryCategoryBits.Personal));
+            Equal("m5.capture.personal", true, off.AllowsCapture(MemoryCategoryBits.Personal));
+            Equal("m5.capture.family", true, off.AllowsCapture(MemoryCategoryBits.Family));
+            Equal("m5.capture.relationships", false,
+                off.AllowsCapture(MemoryCategoryBits.Relationships));
+
+            values.useMemoriesInWriting = true;
+            values.allowExtraMemoryAiRequests = true;
+            values.occasionalMemoryReflections = true;
+            MemoryPolicySnapshot on = MemoryPolicyNormalizer.Normalize(1, values,
+                new MemorySettingsBounds());
+            Equal("m5.optional.on", true, on.AllowsOptionalRequests);
+            Equal("m5.quiet.on", true, on.AllowsOccasionalReflections);
+            Equal("m5.recall.family", true, on.AllowsRecall(MemoryCategoryBits.Family));
+            Equal("m5.recall.unknown", false, on.AllowsRecall(16));
+        }
+
+        private static void CommitGenerationsAreExactAndSticky()
+        {
+            MemorySettingsPolicyFieldsV1 prior = new MemorySettingsPolicyFieldsV1
+            {
+                allowExtraMemoryAiRequests = true,
+                optionalRequestInvalidationGeneration = 7,
+                captureInvalidationGenerationPersonal = 10,
+                captureInvalidationGenerationRelationships = 20,
+                captureInvalidationGenerationFamily = 30,
+                captureInvalidationGenerationFactions = 40
+            };
+            MemorySettingsPolicyFieldsV1 draft = MemoryPolicyNormalizer.Copy(prior);
+            draft.saveNewMemories = false;
+            draft.allowExtraMemoryAiRequests = false;
+            MemorySettingsCommitPlan plan = MemoryPolicyNormalizer.PrepareCommit(
+                1, prior, draft, new MemorySettingsBounds());
+            Equal("m5.commit.valid", true, plan.valid);
+            Equal("m5.commit.mask", 15, plan.changedCaptureMask);
+            Equal("m5.commit.personal", 11L,
+                plan.candidate.captureInvalidationGenerationPersonal);
+            Equal("m5.commit.relationships", 21L,
+                plan.candidate.captureInvalidationGenerationRelationships);
+            Equal("m5.commit.family", 31L,
+                plan.candidate.captureInvalidationGenerationFamily);
+            Equal("m5.commit.factions", 41L,
+                plan.candidate.captureInvalidationGenerationFactions);
+            Equal("m5.commit.optional", 8L,
+                plan.candidate.optionalRequestInvalidationGeneration);
+
+            MemorySettingsCommitPlan retry = MemoryPolicyNormalizer.PrepareCommit(
+                1, plan.candidate, plan.candidate, new MemorySettingsBounds());
+            Equal("m5.commit.retry.capture", 11L,
+                retry.candidate.captureInvalidationGenerationPersonal);
+            Equal("m5.commit.retry.optional", 8L,
+                retry.candidate.optionalRequestInvalidationGeneration);
+
+            MemorySettingsPolicyFieldsV1 saturated = MemoryPolicyNormalizer.Copy(prior);
+            saturated.captureInvalidationGenerationPersonal = long.MaxValue;
+            saturated.optionalRequestInvalidationGeneration = long.MaxValue;
+            MemorySettingsPolicyFieldsV1 saturatedDraft = MemoryPolicyNormalizer.Copy(saturated);
+            saturatedDraft.memoryCategoryMask &= ~MemoryCategoryBits.Personal;
+            saturatedDraft.allowExtraMemoryAiRequests = false;
+            MemorySettingsCommitPlan max = MemoryPolicyNormalizer.PrepareCommit(
+                1, saturated, saturatedDraft, new MemorySettingsBounds());
+            Equal("m5.commit.max.capture", long.MaxValue,
+                max.candidate.captureInvalidationGenerationPersonal);
+            Equal("m5.commit.max.optional", long.MaxValue,
+                max.candidate.optionalRequestInvalidationGeneration);
+            Equal("m5.commit.max.gate", false,
+                max.snapshot.AllowsCapture(MemoryCategoryBits.Personal));
+        }
+
+        private static void FutureVersionsFailClosed()
+        {
+            MemorySettingsPolicyFieldsV1 allOn =
+                MemorySettingsPolicyFieldsV1.CreateBenchmarkProfile(12);
+            MemoryPolicySnapshot future = MemoryPolicyNormalizer.Normalize(2, allOn,
+                new MemorySettingsBounds());
+            Equal("m5.future.compat", true, future.compatibilityFailClosed);
+            Equal("m5.future.capture", false,
+                future.AllowsCapture(MemoryCategoryBits.Personal));
+            Equal("m5.future.recall", false,
+                future.AllowsRecall(MemoryCategoryBits.Personal));
+            Equal("m5.future.optional", false, future.AllowsOptionalRequests);
+            MemorySettingsCommitPlan refused = MemoryPolicyNormalizer.PrepareCommit(
+                2, allOn, allOn, new MemorySettingsBounds());
+            Equal("m5.future.write.refused", false, refused.valid);
+            Equal("m5.future.write.marker", true, refused.futureVersion);
+        }
+
+        private static void ReconciliationIsIdempotentAndBounded()
+        {
+            MemoryPolicySnapshot published = MemoryPolicyNormalizer.Normalize(
+                1, new MemorySettingsPolicyFieldsV1(), new MemorySettingsBounds());
+            MemoryPolicyReconciliationPlan first = MemoryPolicyNormalizer.PlanReconciliation(
+                null, string.Empty, 0, published);
+            Equal("m5.reconcile.first.valid", true, first.valid);
+            Equal("m5.reconcile.first.capture", 15, first.captureGenerationMismatchMask);
+            Equal("m5.reconcile.first.purge", true, first.purgeUnsentOptionalWork);
+            Equal("m5.reconcile.first.revision", 1L, first.nextAppliedRevision);
+
+            MemoryPolicyReconciliationPlan same = MemoryPolicyNormalizer.PlanReconciliation(
+                published.ToFields(), published.fingerprint, 1, published);
+            Equal("m5.reconcile.same", true, same.alreadyApplied);
+            Equal("m5.reconcile.same.revision", 1L, same.nextAppliedRevision);
+
+            MemorySettingsPolicyFieldsV1 old = published.ToFields();
+            old.captureInvalidationGenerationFamily--;
+            old.optionalRequestInvalidationGeneration--;
+            old.minorMemoryLifetimeDays++;
+            old.memoryThreadTarget++;
+            MemoryPolicyReconciliationPlan delta = MemoryPolicyNormalizer.PlanReconciliation(
+                old, "different", 5, published);
+            Equal("m5.reconcile.family", MemoryCategoryBits.Family,
+                delta.captureGenerationMismatchMask);
+            Equal("m5.reconcile.purge", true, delta.purgeUnsentOptionalWork);
+            Equal("m5.reconcile.ttl", true, delta.markLifetimeMaintenanceDirty);
+            Equal("m5.reconcile.target", true, delta.markThreadTargetMaintenanceDirty);
+
+            MemoryPolicyReconciliationPlan max = MemoryPolicyNormalizer.PlanReconciliation(
+                old, "different", long.MaxValue, published);
+            Equal("m5.reconcile.max", true, max.revisionSaturated);
+            Equal("m5.reconcile.max.value", long.MaxValue, max.nextAppliedRevision);
+        }
+
+        private static void PublicationIsIndivisible()
+        {
+            MemorySettingsPolicyFieldsV1 first = new MemorySettingsPolicyFieldsV1();
+            MemoryEffectivePolicyProvider.Reset(1, first, new MemorySettingsBounds());
+            Equal("m5.publish.reset.revision", 1L,
+                MemoryEffectivePolicyProvider.PublicationRevision);
+            string firstFingerprint = MemoryEffectivePolicyProvider.Current.fingerprint;
+            MemoryPolicySnapshot equivalent = MemoryPolicyNormalizer.Normalize(
+                1, first, new MemorySettingsBounds());
+            Equal("m5.publish.same.ok", true,
+                MemoryEffectivePolicyProvider.Publish(equivalent));
+            Equal("m5.publish.same.revision", 1L,
+                MemoryEffectivePolicyProvider.PublicationRevision);
+
+            first.memoryThreadTarget = 13;
+            MemoryPolicySnapshot changed = MemoryPolicyNormalizer.Normalize(
+                1, first, new MemorySettingsBounds());
+            Equal("m5.publish.changed.ok", true,
+                MemoryEffectivePolicyProvider.Publish(changed));
+            Equal("m5.publish.changed.preflight", true,
+                MemoryEffectivePolicyProvider.CanPublish(changed));
+            Equal("m5.publish.changed.revision", 2L,
+                MemoryEffectivePolicyProvider.PublicationRevision);
+            Equal("m5.publish.changed.target", 13,
+                MemoryEffectivePolicyProvider.Current.memoryThreadTarget);
+            Equal("m5.publish.changed.fingerprint", false,
+                string.Equals(firstFingerprint,
+                    MemoryEffectivePolicyProvider.Current.fingerprint,
+                    StringComparison.Ordinal));
+        }
+
+        private static void LibraryUnicodeCursorAndFingerprintRules()
+        {
+            string normalized = MemoryLibraryPolicy.NormalizeSearch(
+                "  \uFB00oo\tBAR\uD800  baz  ", 80, 160);
+            Equal("m5.library.search.formkc", "FFOO BAR\uFFFD BAZ", normalized);
+            Equal("m5.library.search.scalar.clamp", "A\uD83D\uDE00",
+                MemoryLibraryPolicy.NormalizeSearch("a\uD83D\uDE00b", 2, 3));
+
+            string first = MemoryLibraryPolicy.StreamFingerprint("active", "Threads", "64");
+            string same = MemoryLibraryPolicy.StreamFingerprint("active", "Threads", "64");
+            string changed = MemoryLibraryPolicy.StreamFingerprint("active", "Threads", "32");
+            Equal("m5.library.fingerprint.stable", first, same);
+            Equal("m5.library.fingerprint.changed", false,
+                string.Equals(first, changed, StringComparison.Ordinal));
+            Equal("m5.library.fingerprint.shape", 64, first.Length);
+
+            MemoryLibraryCursorPlan invalidFresh = MemoryLibraryPolicy.NormalizeRowCursor(
+                1, 10, 64, 0, 20);
+            Equal("m5.library.cursor.fresh.nonzero", false, invalidFresh.valid);
+            MemoryLibraryCursorPlan clamped = MemoryLibraryPolicy.NormalizeRowCursor(
+                5, 200, 64, 7, 70);
+            Equal("m5.library.cursor.clamp", 64, clamped.count);
+            Equal("m5.library.cursor.return", 64, clamped.returnedCount);
+            Equal("m5.library.cursor.more", true, clamped.hasMore);
+            MemoryLibraryCursorPlan end = MemoryLibraryPolicy.NormalizeRowCursor(
+                70, 5, 64, 7, 70);
+            Equal("m5.library.cursor.end.valid", true, end.valid);
+            Equal("m5.library.cursor.end.empty", 0, end.returnedCount);
+            Equal("m5.library.cursor.end.previous", true, end.hasPrevious);
+            Equal("m5.library.cursor.end.more", false, end.hasMore);
+
+            const string text = "A\uD83D\uDE00BC";
+            MemoryLibraryTextCursorPlan textFirst = MemoryLibraryPolicy.NormalizeTextCursor(
+                text, 0, 2, 4, 0);
+            Equal("m5.library.text.first.end", 1, textFirst.end);
+            Equal("m5.library.text.first.more", true, textFirst.hasMore);
+            MemoryLibraryTextCursorPlan split = MemoryLibraryPolicy.NormalizeTextCursor(
+                text, 2, 2, 4, 1);
+            Equal("m5.library.text.split", false, split.valid);
+            MemoryLibraryTextCursorPlan emoji = MemoryLibraryPolicy.NormalizeTextCursor(
+                text, 1, 2, 4, 1);
+            Equal("m5.library.text.emoji.width", 2, emoji.count);
+
+            MemoryLibraryPublicationClock clock = new MemoryLibraryPublicationClock();
+            Equal("m5.library.clock.first", true, clock.TryAllocate(out long revision1));
+            Equal("m5.library.clock.first.value", 1L, revision1);
+            Equal("m5.library.clock.second", true, clock.TryAllocate(out long revision2));
+            Equal("m5.library.clock.second.value", 2L, revision2);
+            clock.Reset();
+            Equal("m5.library.clock.reset", 0L, clock.LastIssuedRevision);
+        }
+
+        private static void LibraryFilteringPagingAndTtlRules()
+        {
+            MemoryBlockRow row = NewLibraryBlock("r1", 100, "Minor", false, false, "ALPHA");
+            row.projectedCategoryMask = MemoryCategoryBits.Personal;
+            Equal("m5.library.filter.all", true,
+                MemoryLibraryPolicy.MatchesFilters(row, new MemoryLibraryFilters()));
+            Equal("m5.library.filter.category", false,
+                MemoryLibraryPolicy.MatchesFilters(row, new MemoryLibraryFilters
+                {
+                    categoryMask = MemoryCategoryBits.Family
+                }));
+            row.playerEdited = true;
+            Equal("m5.library.filter.edited", true,
+                MemoryLibraryPolicy.MatchesFilters(row, new MemoryLibraryFilters
+                {
+                    stateToken = "edited"
+                }));
+            Equal("m5.library.filter.unknown", false,
+                MemoryLibraryPolicy.MatchesFilters(row, new MemoryLibraryFilters
+                {
+                    stateToken = "future"
+                }));
+
+            Equal("m5.library.ttl.minor", 700L,
+                MemoryLibraryPolicy.FutureExpiryTick(100, false, false,
+                    MemoryLibraryPolicy.ImportanceMinor, 600, 1200, 200));
+            Equal("m5.library.ttl.due", long.MaxValue,
+                MemoryLibraryPolicy.FutureExpiryTick(100, false, false,
+                    MemoryLibraryPolicy.ImportanceMinor, 50, 1200, 200));
+            Equal("m5.library.ttl.edited", long.MaxValue,
+                MemoryLibraryPolicy.FutureExpiryTick(100, false, true,
+                    MemoryLibraryPolicy.ImportanceMinor, 600, 1200, 200));
+            Equal("m5.library.ttl.daywins", 500L,
+                MemoryLibraryPolicy.TtlValidUntil(500, 700));
+        }
+
+        private static void LibraryIndexVisibilityAndCounts()
+        {
+            MemoryLibraryOwnerIndexInput input = new MemoryLibraryOwnerIndexInput
+            {
+                primaryHandle = new MemoryLibraryOwnerHandle("active", "pawn", "epoch"),
+                ownerEpochKey = new MemoryOwnerEpochKey
+                    { ownerPawnId = "pawn", epochToken = "epoch" },
+                displayName = "Owner",
+                lifecycleToken = "active",
+                structuralRevision = 4,
+                statusRevision = 5
+            };
+            MemoryLibraryRootIndexInput root = new MemoryLibraryRootIndexInput
+            {
+                header = new MemoryThreadHeaderRow
+                {
+                    rootHandle = new MemoryRootHandle
+                        { ownerPawnId = "pawn", epochToken = "epoch", rootId = "root" },
+                    subjectLabel = "Subject",
+                    normalizedSearch = "SUBJECT",
+                    latestActivityTick = 200,
+                    structuralRevision = 9
+                }
+            };
+            root.children.Add(NewLibraryBlock("c1", 100, "Minor", false, false, "ALPHA"));
+            root.children.Add(NewLibraryBlock("c2", 200, "Regular", false, true, "BETA"));
+            input.roots.Add(root);
+            input.standalone.Add(NewLibraryBlock("s1", 150, "Important", false, false, "GAMMA"));
+            MemoryLibraryOwnerIndexSnapshot snapshot = MemoryLibraryIndexPolicy.BuildOwner(
+                input, new MemoryLibraryLimits());
+            Equal("m5.library.index.thread.count", 1, snapshot.ownerRow.threadCount);
+            Equal("m5.library.index.manageable", 2,
+                snapshot.roots[0].header.manageableMemoryCount);
+            Equal("m5.library.index.suppressed", 1,
+                snapshot.roots[0].header.suppressedCount);
+
+            MemoryLibraryListQuery headerHit = new MemoryLibraryListQuery
+            {
+                primaryHandle = input.primaryHandle,
+                activeOwnerEpochKey = input.ownerEpochKey,
+                viewTag = MemoryLibraryViews.Threads,
+                search = "subject",
+                listCount = 10
+            };
+            MemoryLibraryListResult found = MemoryLibraryIndexPolicy.QueryList(
+                snapshot, headerHit, 1, 2, 3, 4, 5, 1000, new MemoryLibraryLimits());
+            Equal("m5.library.index.header.hit", MemoryLibraryStatuses.Ready, found.status);
+            Equal("m5.library.index.header.total", 1, found.totalMatchedRows);
+
+            headerHit.filters.categoryMask = MemoryCategoryBits.Family;
+            MemoryLibraryListResult filtered = MemoryLibraryIndexPolicy.QueryList(
+                snapshot, headerHit, 1, 3, 3, 4, 5, 1000, new MemoryLibraryLimits());
+            Equal("m5.library.index.header.cannot.bypass", 0, filtered.totalEligibleRows);
+            Equal("m5.library.index.empty", "no_memories", filtered.emptyStateToken);
+
+            List<MemoryLibraryOwnerRow> owners = new List<MemoryLibraryOwnerRow>
+                { snapshot.ownerRow };
+            MemoryLibraryOwnerResult ownerPage = MemoryLibraryIndexPolicy.QueryOwners(
+                owners, new MemoryLibraryOwnerQuery { count = 10 }, 8,
+                new MemoryLibraryLimits(), 2, 3);
+            Equal("m5.library.owner.ready", MemoryLibraryStatuses.Ready, ownerPage.status);
+            Equal("m5.library.owner.omitted.raw", 2L,
+                ownerPage.additionalLegacyRawOwnersNotShown);
+            Equal("m5.library.owner.omitted.zero", 3L,
+                ownerPage.additionalZeroMemoryOwnersNotShown);
+        }
+
+        private static void LibraryMutationRules()
+        {
+            MemoryBlockRow standaloneEvent = NewLibraryBlock(
+                "event", 1, "Regular", false, false, "EVENT");
+            standaloneEvent.kind = "Event";
+            standaloneEvent.canSuppress = true;
+            standaloneEvent.canSaveWording = true;
+            standaloneEvent.canUseOriginal = true;
+            Equal("m5.library.command.suppress", true,
+                MemoryLibraryPolicy.CheckEligibility(
+                    MemoryLibraryActions.SetSuppressed, standaloneEvent, false,
+                    true, string.Empty, 480).eligible);
+            Equal("m5.library.command.blank", false,
+                MemoryLibraryPolicy.CheckEligibility(
+                    MemoryLibraryActions.SaveWording, standaloneEvent, false,
+                    false, "   ", 480).validAction);
+            Equal("m5.library.command.edit", true,
+                MemoryLibraryPolicy.CheckEligibility(
+                    MemoryLibraryActions.SaveWording, standaloneEvent, false,
+                    false, "kept wording", 480).eligible);
+            standaloneEvent.playerEdited = true;
+            Equal("m5.library.command.original", true,
+                MemoryLibraryPolicy.CheckEligibility(
+                    MemoryLibraryActions.UseOriginalWording, standaloneEvent, false,
+                    false, string.Empty, 480).eligible);
+            standaloneEvent.rollingSummary = true;
+            Equal("m5.library.command.rolling.original", false,
+                MemoryLibraryPolicy.CheckEligibility(
+                    MemoryLibraryActions.UseOriginalWording, standaloneEvent, false,
+                    false, string.Empty, 480).eligible);
+            Equal("m5.library.command.imported.forget", true,
+                MemoryLibraryPolicy.CheckEligibility(
+                    MemoryLibraryActions.ForgetPermanent, null, true,
+                    false, string.Empty, 480).eligible);
+
+            MemoryLibraryCommand command = new MemoryLibraryCommand
+            {
+                libraryClientToken = "client",
+                commandId = 1,
+                actionToken = MemoryLibraryActions.ForgetPermanent,
+                targetStructuralRevision = 5,
+                archiveHandle = new MemoryArchiveHandle
+                    { archiveScopeToken = "unresolvedImported", archiveRecordId = "a" }
+            };
+            MemoryLibraryCommandTargetState target = new MemoryLibraryCommandTargetState
+            {
+                commandShapeValid = true,
+                exists = false,
+                currentStructuralRevision = 6,
+                imported = true,
+                devAuthorized = false
+            };
+            Equal("m5.library.command.precedence.missing",
+                MemoryLibraryCommandStatuses.Missing,
+                MemoryLibraryPolicy.PlanCommandStatus(command, target, 480));
+            target.exists = true;
+            Equal("m5.library.command.precedence.stale",
+                MemoryLibraryCommandStatuses.Stale,
+                MemoryLibraryPolicy.PlanCommandStatus(command, target, 480));
+            target.currentStructuralRevision = 5;
+            Equal("m5.library.command.precedence.unauthorized",
+                MemoryLibraryCommandStatuses.Unauthorized,
+                MemoryLibraryPolicy.PlanCommandStatus(command, target, 480));
+            target.devAuthorized = true;
+            Equal("m5.library.command.precedence.success",
+                MemoryLibraryCommandStatuses.Success,
+                MemoryLibraryPolicy.PlanCommandStatus(command, target, 480));
+
+            Equal("m5.library.culture.none", "none",
+                MemoryLibraryPolicy.CultureStateToken(string.Empty, false));
+            Equal("m5.library.culture.unavailable", "unavailable",
+                MemoryLibraryPolicy.CultureStateToken("missing", false));
+            Equal("m5.library.culture.resolved", "resolved",
+                MemoryLibraryPolicy.CultureStateToken("known", true));
+            Equal("m5.library.culture.provenance", "unknown",
+                MemoryLibraryPolicy.CultureProvenanceToken("future"));
+        }
+
+        private static MemoryBlockRow NewLibraryBlock(
+            string id,
+            long tick,
+            string importance,
+            bool edited,
+            bool suppressed,
+            string search)
+        {
+            return new MemoryBlockRow
+            {
+                recordHandle = new MemoryRecordHandle
+                    { ownerPawnId = "pawn", epochToken = "epoch", recordId = id },
+                kind = "Event",
+                projectedCategoryMask = MemoryCategoryBits.Personal,
+                projectedHighestImportanceMask = MemoryLibraryPolicy.ImportanceMask(importance),
+                originalTick = tick,
+                activityTick = tick,
+                projectedNextExpiryTick = tick + 1000,
+                playerEdited = edited,
+                suppressed = suppressed,
+                normalizedSearch = search,
+                canSuppress = true,
+                canSaveWording = true,
+                canUseOriginal = edited
+            };
+        }
+
+        private static void Equal<T>(string label, T expected, T actual)
+        {
+            assertions++;
+            if (!object.Equals(expected, actual))
+                throw new InvalidOperationException(label + ": expected " + expected + ", got " + actual);
+        }
+    }
+}

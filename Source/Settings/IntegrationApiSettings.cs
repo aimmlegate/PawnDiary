@@ -193,11 +193,15 @@ namespace PawnDiary
             settings.apiEndpoints.Add(lane);
             int index = settings.apiEndpoints.Count - 1;
 
-            // Persist and apply, mirroring the lane-relevant steps of PawnDiaryMod.WriteSettings so the
-            // new lane takes effect for the next request and survives a restart.
+            // Publish through the same verified transaction as the settings window. A failed write
+            // removes this newly appended row so the API reports an honest read-only failure.
             settings.NormalizeEndpointUrls();
-            LlmClient.ApplyLaneConfiguration(settings.ActiveEndpoints());
-            settings.Write();
+            if (!PawnDiaryMod.PersistSettingsImmediately(settings))
+            {
+                settings.apiEndpoints.RemoveAt(index);
+                result.reason = "persistence_failed";
+                return result;
+            }
 
             result.added = true;
             result.index = index;
@@ -354,8 +358,7 @@ namespace PawnDiary
             }
 
             settings.SetGroupEnabled(group.defName, enabled);
-            settings.Write();
-            return true;
+            return PawnDiaryMod.PersistSettingsImmediately(settings);
         }
 
         /// <summary>
@@ -384,8 +387,7 @@ namespace PawnDiary
                 return false;
             }
 
-            settings.Write();
-            return true;
+            return PawnDiaryMod.PersistSettingsImmediately(settings);
         }
 
         /// <summary>
@@ -417,8 +419,7 @@ namespace PawnDiary
             }
 
             settings.SetGroupFrequencyOverride(group.defName, multiplier);
-            settings.Write();
-            return true;
+            return PawnDiaryMod.PersistSettingsImmediately(settings);
         }
 
         /// <summary>Clears one known settings-visible group's frequency override and persists.</summary>
@@ -437,8 +438,7 @@ namespace PawnDiary
             }
 
             settings.ResetGroupFrequencyOverride(group.defName);
-            settings.Write();
-            return true;
+            return PawnDiaryMod.PersistSettingsImmediately(settings);
         }
 
         private static DiaryInteractionGroupDef SettingsFrequencyGroup(string key)

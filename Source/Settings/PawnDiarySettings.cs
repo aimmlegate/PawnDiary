@@ -301,6 +301,33 @@ namespace PawnDiary
         // on purpose (§6): the old master value carries over.
         // DERIVED from contextDetailLevel — see ApplyForcedFeatureSwitches.
         public bool enableMemorySystem = true;
+        // Phase M5's complete versioned memory policy. These fields are intentionally not exposed in
+        // the settings window until M8, and LegacyShadow keeps shipped capture/recall behavior active.
+        public int memorySettingsSchemaVersion = MemoryPolicyNormalizer.CurrentSettingsSchemaVersion;
+        public bool saveNewMemories = true;
+        public bool useMemoriesInWriting = true;
+        public bool usePawnBackground = true;
+        public bool allowExtraMemoryAiRequests;
+        public bool occasionalMemoryReflections;
+        public bool memoryCategoryPersonal = true;
+        public bool memoryCategoryRelationships = true;
+        public bool memoryCategoryFamily = true;
+        public bool memoryCategoryFactions = true;
+        public long captureInvalidationGenerationPersonal = 1;
+        public long captureInvalidationGenerationRelationships = 1;
+        public long captureInvalidationGenerationFamily = 1;
+        public long captureInvalidationGenerationFactions = 1;
+        public long optionalRequestInvalidationGeneration = 1;
+        public int minorMemoryLifetimeDays = 15;
+        public int regularMemoryLifetimeDays = 60;
+        public int memoryThreadTarget = 12;
+        public int memoryReuseDays = 5;
+        public int memoryRevisitEntryCount = 3;
+        // LoadingVars can run before Def-backed M5 bounds are safe to read. Preserve the exact old
+        // master/mode presence once so the mod constructor can redo only that migration with XML bounds.
+        internal bool memoryVersionZeroMigrationNeedsDefBounds;
+        internal bool memoryVersionZeroLegacyMaster;
+        internal int memoryVersionZeroLegacyMode;
         // Global prompt-context detail level. Full preserves the original prompt shape; smaller levels
         // dynamically choose the most relevant optional fields for small local models. It is also the
         // ONE player-facing switch for the three optional writing layers above (live context hints,
@@ -438,6 +465,9 @@ namespace PawnDiary
 
         public override void ExposeData()
         {
+            // Version must be read first: version zero is the sole presence signal for all new fields.
+            Scribe_Values.Look(ref memorySettingsSchemaVersion,
+                "memorySettingsSchemaVersion", 0);
             Scribe_Collections.Look(ref apiEndpoints, "apiEndpoints", LookMode.Deep);
             Scribe_Values.Look(ref apiRoutingMode, "apiRoutingMode", ApiLaneRoutingMode.Balanced);
             Scribe_Values.Look(ref timeoutSeconds, "timeoutSeconds", 30);
@@ -462,6 +492,36 @@ namespace PawnDiary
             Scribe_Values.Look(ref enablePromptEnchantments, "enablePromptEnchantments", true);
             Scribe_Values.Look(ref enablePsychotypes, "enablePsychotypes", true);
             Scribe_Values.Look(ref enableMemorySystem, "enableMemorySystem", true);
+            Scribe_Values.Look(ref saveNewMemories, "saveNewMemories", true);
+            Scribe_Values.Look(ref useMemoriesInWriting, "useMemoriesInWriting", true);
+            Scribe_Values.Look(ref usePawnBackground, "usePawnBackground", true);
+            Scribe_Values.Look(ref allowExtraMemoryAiRequests,
+                "allowExtraMemoryAiRequests", false);
+            Scribe_Values.Look(ref occasionalMemoryReflections,
+                "occasionalMemoryReflections", false);
+            Scribe_Values.Look(ref memoryCategoryPersonal, "memoryCategoryPersonal", true);
+            Scribe_Values.Look(ref memoryCategoryRelationships,
+                "memoryCategoryRelationships", true);
+            Scribe_Values.Look(ref memoryCategoryFamily, "memoryCategoryFamily", true);
+            Scribe_Values.Look(ref memoryCategoryFactions, "memoryCategoryFactions", true);
+            Scribe_Values.Look(ref captureInvalidationGenerationPersonal,
+                "captureInvalidationGenerationPersonal", 1);
+            Scribe_Values.Look(ref captureInvalidationGenerationRelationships,
+                "captureInvalidationGenerationRelationships", 1);
+            Scribe_Values.Look(ref captureInvalidationGenerationFamily,
+                "captureInvalidationGenerationFamily", 1);
+            Scribe_Values.Look(ref captureInvalidationGenerationFactions,
+                "captureInvalidationGenerationFactions", 1);
+            Scribe_Values.Look(ref optionalRequestInvalidationGeneration,
+                "optionalRequestInvalidationGeneration", 1);
+            Scribe_Values.Look(ref minorMemoryLifetimeDays,
+                "minorMemoryLifetimeDays", 15);
+            Scribe_Values.Look(ref regularMemoryLifetimeDays,
+                "regularMemoryLifetimeDays", 60);
+            Scribe_Values.Look(ref memoryThreadTarget, "memoryThreadTarget", 12);
+            Scribe_Values.Look(ref memoryReuseDays, "memoryReuseDays", 5);
+            Scribe_Values.Look(ref memoryRevisitEntryCount,
+                "memoryRevisitEntryCount", 3);
             // The retired lore-seed toggle's "enableLoreSeeds" key is deliberately no longer read;
             // its saved value is ignored (design/MEMORY_SYSTEM_REDESIGN_PLAN.md §6).
             Scribe_Values.Look(ref contextDetailLevel, "contextDetailLevel", PromptContextDetailLevel.Full);
@@ -519,6 +579,28 @@ namespace PawnDiary
             psychotypePresets.ExposeData();
             advancedOverrides.ExposeData();
 
+            if (Scribe.mode == LoadSaveMode.LoadingVars)
+            {
+                if (memorySettingsSchemaVersion == 0)
+                {
+                    memoryVersionZeroMigrationNeedsDefBounds = true;
+                    memoryVersionZeroLegacyMaster = enableMemorySystem;
+                    memoryVersionZeroLegacyMode = (int)contextDetailLevel;
+                    ApplyMemoryPolicyFields(MemoryPolicyNormalizer.MigrateVersionZero(
+                        enableMemorySystem,
+                        (int)contextDetailLevel,
+                        new MemorySettingsBounds()));
+                    memorySettingsSchemaVersion =
+                        MemoryPolicyNormalizer.CurrentSettingsSchemaVersion;
+                }
+                else if (memorySettingsSchemaVersion
+                    == MemoryPolicyNormalizer.CurrentSettingsSchemaVersion)
+                {
+                    NormalizeMemoryPolicy(new MemorySettingsBounds());
+                }
+                // A newer version is retained inertly and must not be normalized or stamped down.
+            }
+
             ClampValues();
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -561,7 +643,7 @@ namespace PawnDiary
             }
 
             EnsureErrorReportInstallId();
-            Write();
+            PawnDiaryMod.PersistSettingsImmediately(this);
         }
 
         /// <summary>
@@ -804,6 +886,80 @@ namespace PawnDiary
                     }
                 }
             }
+        }
+
+        /// <summary>Projects the exact version-1 settings fields into the pure policy tuple.</summary>
+        internal MemorySettingsPolicyFieldsV1 MemoryPolicyFields()
+        {
+            int mask = 0;
+            if (memoryCategoryPersonal) mask |= MemoryCategoryBits.Personal;
+            if (memoryCategoryRelationships) mask |= MemoryCategoryBits.Relationships;
+            if (memoryCategoryFamily) mask |= MemoryCategoryBits.Family;
+            if (memoryCategoryFactions) mask |= MemoryCategoryBits.Factions;
+            return new MemorySettingsPolicyFieldsV1
+            {
+                saveNewMemories = saveNewMemories,
+                useMemoriesInWriting = useMemoriesInWriting,
+                usePawnBackground = usePawnBackground,
+                allowExtraMemoryAiRequests = allowExtraMemoryAiRequests,
+                occasionalMemoryReflections = occasionalMemoryReflections,
+                memoryCategoryMask = mask,
+                captureInvalidationGenerationPersonal = captureInvalidationGenerationPersonal,
+                captureInvalidationGenerationRelationships =
+                    captureInvalidationGenerationRelationships,
+                captureInvalidationGenerationFamily = captureInvalidationGenerationFamily,
+                captureInvalidationGenerationFactions = captureInvalidationGenerationFactions,
+                optionalRequestInvalidationGeneration = optionalRequestInvalidationGeneration,
+                minorMemoryLifetimeDays = minorMemoryLifetimeDays,
+                regularMemoryLifetimeDays = regularMemoryLifetimeDays,
+                memoryThreadTarget = memoryThreadTarget,
+                memoryReuseDays = memoryReuseDays,
+                memoryRevisitEntryCount = memoryRevisitEntryCount
+            };
+        }
+
+        /// <summary>Applies one complete normalized candidate; no consumer observes fields mid-copy.</summary>
+        internal void ApplyMemoryPolicyFields(MemorySettingsPolicyFieldsV1 fields)
+        {
+            MemorySettingsPolicyFieldsV1 value =
+                MemoryPolicyNormalizer.Copy(fields ?? new MemorySettingsPolicyFieldsV1());
+            saveNewMemories = value.saveNewMemories;
+            useMemoriesInWriting = value.useMemoriesInWriting;
+            usePawnBackground = value.usePawnBackground;
+            allowExtraMemoryAiRequests = value.allowExtraMemoryAiRequests;
+            occasionalMemoryReflections = value.occasionalMemoryReflections;
+            memoryCategoryPersonal =
+                (value.memoryCategoryMask & MemoryCategoryBits.Personal) != 0;
+            memoryCategoryRelationships =
+                (value.memoryCategoryMask & MemoryCategoryBits.Relationships) != 0;
+            memoryCategoryFamily =
+                (value.memoryCategoryMask & MemoryCategoryBits.Family) != 0;
+            memoryCategoryFactions =
+                (value.memoryCategoryMask & MemoryCategoryBits.Factions) != 0;
+            captureInvalidationGenerationPersonal =
+                value.captureInvalidationGenerationPersonal;
+            captureInvalidationGenerationRelationships =
+                value.captureInvalidationGenerationRelationships;
+            captureInvalidationGenerationFamily = value.captureInvalidationGenerationFamily;
+            captureInvalidationGenerationFactions = value.captureInvalidationGenerationFactions;
+            optionalRequestInvalidationGeneration = value.optionalRequestInvalidationGeneration;
+            minorMemoryLifetimeDays = value.minorMemoryLifetimeDays;
+            regularMemoryLifetimeDays = value.regularMemoryLifetimeDays;
+            memoryThreadTarget = value.memoryThreadTarget;
+            memoryReuseDays = value.memoryReuseDays;
+            memoryRevisitEntryCount = value.memoryRevisitEntryCount;
+        }
+
+        /// <summary>Normalizes current-version fields against one detached XML/code bounds snapshot.</summary>
+        internal MemoryPolicySnapshot NormalizeMemoryPolicy(MemorySettingsBounds bounds)
+        {
+            MemoryPolicySnapshot snapshot = MemoryPolicyNormalizer.Normalize(
+                memorySettingsSchemaVersion, MemoryPolicyFields(), bounds);
+            if (!snapshot.compatibilityFailClosed)
+            {
+                ApplyMemoryPolicyFields(snapshot.ToFields());
+            }
+            return snapshot;
         }
 
         /// <summary>

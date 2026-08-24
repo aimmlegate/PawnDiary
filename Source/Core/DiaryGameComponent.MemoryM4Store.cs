@@ -635,14 +635,21 @@ namespace PawnDiary
         {
             DiaryKnowledgeTuningDef tuning = Verse.DefDatabase<DiaryKnowledgeTuningDef>
                 .GetNamedSilentFail(DiaryKnowledgePolicy.TuningDefName);
-            int minorDays = tuning == null ? 15 : Math.Max(1, Math.Min(3600,
-                tuning.minorMemoryLifetimeDefaultDays));
-            int regularDays = tuning == null ? 60 : Math.Max(1, Math.Min(3600,
-                tuning.regularMemoryLifetimeDefaultDays));
+            MemoryPolicySnapshot effective = MemoryEffectivePolicyProvider.Current;
+            int minorDays = effective != null && !effective.compatibilityFailClosed
+                ? effective.minorMemoryLifetimeDays
+                : tuning == null ? 15 : Math.Max(1, Math.Min(3600,
+                    tuning.minorMemoryLifetimeDefaultDays));
+            int regularDays = effective != null && !effective.compatibilityFailClosed
+                ? effective.regularMemoryLifetimeDays
+                : tuning == null ? 60 : Math.Max(1, Math.Min(3600,
+                    tuning.regularMemoryLifetimeDefaultDays));
             int inactivityDays = tuning == null ? 15 : Math.Max(1, Math.Min(3600,
                 tuning.memoryChapterInactivityDays));
-            int target = tuning == null ? 12 : Math.Max(4, Math.Min(64,
-                tuning.memoryThreadTargetDefault));
+            int target = effective != null && !effective.compatibilityFailClosed
+                ? effective.memoryThreadTarget
+                : tuning == null ? 12 : Math.Max(4, Math.Min(64,
+                    tuning.memoryThreadTargetDefault));
             return new MemoryReducerPolicy
             {
                 nowTick = Math.Max(0, nowTick),

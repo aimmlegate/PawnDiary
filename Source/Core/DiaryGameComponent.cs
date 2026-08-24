@@ -398,6 +398,7 @@ namespace PawnDiary
             MarkRoyaltyObservationUnavailable();
             BootstrapOdysseyForLoadedSave();
             BootstrapAnomalyForLoadedSave();
+            ReconcilePublishedMemoryPolicy();
             SettleLoadedMemoryDispatchRows();
             if (ApplyAcceptedPromptRetention())
             {
@@ -725,6 +726,9 @@ namespace PawnDiary
                     "PawnDiary.Belief.Reset".GetHashCode());
             }
             ResetMemoryMaintenanceTransient(true);
+            ResetMemoryLibraryTransient();
+            ReconcilePublishedMemoryPolicy();
+            PawnDiaryMod.ResumeCommittedSettingsSideEffects();
         }
 
         public override void GameComponentTick()
@@ -734,6 +738,8 @@ namespace PawnDiary
             // logged once, while the game keeps ticking normally.
             try
             {
+                ReconcilePublishedMemoryPolicy();
+                PawnDiaryMod.ResumeCommittedSettingsSideEffects();
                 GameComponentTickInner();
                 MaybeRefreshErrorRedactionNames();
             }
@@ -757,6 +763,10 @@ namespace PawnDiary
 
             try
             {
+                ReconcilePublishedMemoryPolicy();
+                PawnDiaryMod.ResumeCommittedSettingsSideEffects();
+                RefreshMemoryLibraryPublications();
+                DrainMemoryLibraryCommands();
                 DrainCompletedLlmWork();
             }
             catch (Exception e)
@@ -840,7 +850,7 @@ namespace PawnDiary
             // Mark shown + persist up front so the notice never reappears even if the dialog is dismissed
             // without pressing a button, or fails to open at all.
             settings.errorReportingNoticeShown = true;
-            settings.Write();
+            PawnDiaryMod.PersistSettingsImmediately(settings);
 
             LongEventHandler.ExecuteWhenFinished(() =>
             {
@@ -853,7 +863,7 @@ namespace PawnDiary
                         () =>
                         {
                             settings.enableErrorReporting = false;
-                            settings.Write();
+                            PawnDiaryMod.PersistSettingsImmediately(settings);
                         },
                         "PawnDiary.ErrorReporting.NoticeTitle".Translate());
                     Find.WindowStack.Add(dialog);

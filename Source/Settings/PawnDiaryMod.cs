@@ -1,6 +1,8 @@
 // RimWorld mod entry point for Pawn Diary. The detailed settings UI is split into sibling
 // partial-class files, and settings-window API network state lives in ApiConnectionController.
 using System.Collections.Generic;
+using System.Reflection;
+using RimWorld;
 using UnityEngine;
 using Verse;
 
@@ -30,6 +32,10 @@ namespace PawnDiary
     /// </summary>
     public partial class PawnDiaryMod : Mod
     {
+        /// <summary>The loaded mod instance; settings persistence is a mod-owned transaction.</summary>
+        private static PawnDiaryMod instance;
+        private static bool futureMemorySettingsWarningShown;
+
         /// <summary>Shared settings instance available throughout the mod.</summary>
         public static PawnDiarySettings Settings;
 
@@ -97,6 +103,12 @@ namespace PawnDiary
         private Vector2 advancedBodyScroll;
         // Last persisted host mode, used to close the old surface only when the setting changes.
         private bool lastWrittenReaderWindowMode;
+        // Set only after the verified settings stage becomes the canonical file. Integration API
+        // callers use this result because Mod.WriteSettings itself cannot return a value.
+        private bool lastSettingsWritePersisted;
+        private string postCommitSideEffectKey = string.Empty;
+        private int postCommitSideEffectStep;
+        private bool postCommitPriorReaderWindowMode;
 
         // Measured pixel height of the settings content from the previous frame, used to size the
         // scroll view's inner rect. Starts generous so nothing clips before the first measurement;
@@ -124,11 +136,31 @@ namespace PawnDiary
         /// <summary>Initializes the mod, loading persisted settings from the save/config store.</summary>
         public PawnDiaryMod(ModContentPack content) : base(content)
         {
+            instance = this;
             ModContent = content;
             Settings = GetSettings<PawnDiarySettings>();
+            MemorySettingsBounds memoryBounds = MemoryPolicyDefAdapter.Bounds();
+            if (Settings.memoryVersionZeroMigrationNeedsDefBounds)
+            {
+                Settings.ApplyMemoryPolicyFields(MemoryPolicyNormalizer.MigrateVersionZero(
+                    Settings.memoryVersionZeroLegacyMaster,
+                    Settings.memoryVersionZeroLegacyMode,
+                    memoryBounds));
+                Settings.memoryVersionZeroMigrationNeedsDefBounds = false;
+            }
+            MemoryPolicySnapshot initialMemoryPolicy = Settings.NormalizeMemoryPolicy(memoryBounds);
+            MemoryEffectivePolicyProvider.Reset(
+                Settings.memorySettingsSchemaVersion,
+                initialMemoryPolicy.ToFields(),
+                memoryBounds);
+            if (initialMemoryPolicy.compatibilityFailClosed)
+                ShowFutureMemorySettingsWarningOnce();
             lastWrittenReaderWindowMode = Settings.useDiaryReaderWindow;
             apiConnectionController = new ApiConnectionController(() => Settings);
-            LlmClient.ApplyDebugLoggingSetting();
+            BeginPostCommitSideEffects(
+                "startup:" + (initialMemoryPolicy.fingerprint ?? string.Empty),
+                Settings.useDiaryReaderWindow);
+            ResumePostCommitSideEffects();
             // Classify the install source (Workshop vs local) here on the main thread so the error
             // reporter never reads the RimWorld ModContent object from its background send thread.
             DiaryErrorReporter.CacheInstallSource(content?.RootDir);
@@ -150,18 +182,177 @@ namespace PawnDiary
         /// </summary>
         public override void WriteSettings()
         {
+            lastSettingsWritePersisted = false;
             bool wasReaderWindowMode = lastWrittenReaderWindowMode;
             Settings.ClampValues();
             Settings.NormalizeEndpointUrls();
-            LlmClient.ApplyLaneConfiguration(Settings.ActiveEndpoints());
-            LlmClient.ApplyDebugLoggingSetting();
-            DiaryGameComponent.Instance?.ApplyDiaryEventLimitsFromSettings();
-            DiaryGameComponent.Instance?.QueueMissingTitlesFromSettings();
-            DiaryUiRouter.ApplyReaderWindowModeChange(
-                wasReaderWindowMode,
-                Settings.useDiaryReaderWindow);
-            lastWrittenReaderWindowMode = Settings.useDiaryReaderWindow;
-            base.WriteSettings();
+            MemorySettingsBounds bounds = MemoryPolicyDefAdapter.Bounds();
+            MemoryPolicySnapshot priorMemoryPolicy = MemoryEffectivePolicyProvider.Current;
+            MemorySettingsCommitPlan memoryCommit = MemoryPolicyNormalizer.PrepareCommit(
+                Settings.memorySettingsSchemaVersion,
+                priorMemoryPolicy.ToFields(),
+                Settings.MemoryPolicyFields(),
+                bounds);
+            if (!memoryCommit.valid || memoryCommit.futureVersion
+                || memoryCommit.snapshot.compatibilityFailClosed)
+            {
+                RejectSettingsWrite(priorMemoryPolicy,
+                    "unsupported memorySettingsSchemaVersion");
+                return;
+            }
+            if (!MemoryEffectivePolicyProvider.CanPublish(memoryCommit.snapshot))
+            {
+                RejectSettingsWrite(priorMemoryPolicy, "memory policy publication saturated");
+                return;
+            }
+            Settings.ApplyMemoryPolicyFields(memoryCommit.candidate);
+
+            MemorySettingsWriteResult write = MemorySettingsDurableWriter.TryWrite(
+                Content.FolderName,
+                GetType().Name,
+                Settings);
+            if (!write.persisted)
+            {
+                RejectSettingsWrite(priorMemoryPolicy, write.failure);
+                return;
+            }
+
+            lastSettingsWritePersisted = true;
+            if (!MemoryEffectivePolicyProvider.Publish(memoryCommit.snapshot))
+            {
+                Log.Error("[Pawn Diary] Persisted memory settings could not be published in-process.");
+            }
+            else
+            {
+                DiaryGameComponent.Instance?.ReconcilePublishedMemoryPolicy(memoryCommit.snapshot);
+            }
+            BeginPostCommitSideEffects(write.verifiedSha256, wasReaderWindowMode);
+            ResumePostCommitSideEffects();
+        }
+
+        /// <summary>Routes non-UI settings writes through the same durable transaction.</summary>
+        internal static bool PersistSettingsImmediately(PawnDiarySettings settings)
+        {
+            if (instance == null || settings == null || !ReferenceEquals(settings, Settings))
+                return false;
+            instance.WriteSettings();
+            return instance.lastSettingsWritePersisted;
+        }
+
+        private void RejectSettingsWrite(MemoryPolicySnapshot priorMemoryPolicy, string failure)
+        {
+            RestoreCompleteSettingsAfterFailedWrite(priorMemoryPolicy);
+            Log.Error("[Pawn Diary] Settings were not persisted: " + (failure ?? "unknown failure"));
+            Messages.Message(
+                "PawnDiary.Memory.SettingsSaveFailed".Translate(),
+                MessageTypeDefOf.RejectInput,
+                false);
+        }
+
+        private void RestoreCompleteSettingsAfterFailedWrite(MemoryPolicySnapshot priorMemoryPolicy)
+        {
+            try
+            {
+                PawnDiarySettings restored = LoadedModManager.ReadModSettings<PawnDiarySettings>(
+                    Content.FolderName, GetType().Name);
+                if (priorMemoryPolicy != null && !priorMemoryPolicy.compatibilityFailClosed)
+                {
+                    restored.memorySettingsSchemaVersion = priorMemoryPolicy.settingsSchemaVersion;
+                    restored.ApplyMemoryPolicyFields(priorMemoryPolicy.ToFields());
+                }
+                PropertyInfo ownerProperty = typeof(ModSettings).GetProperty(
+                    "Mod", BindingFlags.Public | BindingFlags.Instance);
+                FieldInfo settingsField = typeof(Mod).GetField(
+                    "modSettings", BindingFlags.NonPublic | BindingFlags.Instance);
+                if (ownerProperty == null || settingsField == null)
+                    throw new System.MissingMemberException(
+                        "Verse ModSettings ownership fields changed.");
+                ownerProperty.SetValue(restored, this, null);
+                settingsField.SetValue(this, restored);
+                Settings = restored;
+            }
+            catch (System.Exception exception)
+            {
+                // The canonical file is still untouched. Preserve at least the policy tuple if a future
+                // RimWorld revision prevents replacing the complete settings object through reflection.
+                if (priorMemoryPolicy != null && !priorMemoryPolicy.compatibilityFailClosed)
+                    Settings.ApplyMemoryPolicyFields(priorMemoryPolicy.ToFields());
+                Log.ErrorOnce(
+                    "[Pawn Diary] Could not restore the complete in-memory settings object: " + exception,
+                    "PawnDiary.Settings.Restore".GetHashCode());
+            }
+        }
+
+        private static void ShowFutureMemorySettingsWarningOnce()
+        {
+            if (futureMemorySettingsWarningShown) return;
+            futureMemorySettingsWarningShown = true;
+            LongEventHandler.ExecuteWhenFinished(() => Messages.Message(
+                "PawnDiary.Memory.SettingsFutureVersion".Translate(),
+                MessageTypeDefOf.RejectInput,
+                false));
+        }
+
+        private void BeginPostCommitSideEffects(string key, bool priorReaderWindowMode)
+        {
+            string normalized = key ?? string.Empty;
+            if (string.Equals(postCommitSideEffectKey, normalized,
+                System.StringComparison.Ordinal)) return;
+            postCommitSideEffectKey = normalized;
+            postCommitSideEffectStep = 0;
+            postCommitPriorReaderWindowMode = priorReaderWindowMode;
+        }
+
+        /// <summary>
+        /// Resumes the ordered shipped side effects for the current committed settings snapshot.
+        /// Completed steps never repeat in this process; component-owned steps wait for a loaded game.
+        /// </summary>
+        internal static void ResumeCommittedSettingsSideEffects()
+        {
+            instance?.ResumePostCommitSideEffects();
+        }
+
+        private void ResumePostCommitSideEffects()
+        {
+            try
+            {
+                while (postCommitSideEffectStep < 6)
+                {
+                    switch (postCommitSideEffectStep)
+                    {
+                        case 0:
+                            LlmClient.ApplyLaneConfiguration(Settings.ActiveEndpoints());
+                            break;
+                        case 1:
+                            LlmClient.ApplyDebugLoggingSetting();
+                            break;
+                        case 2:
+                            if (DiaryGameComponent.Instance == null) return;
+                            DiaryGameComponent.Instance.ApplyDiaryEventLimitsFromSettings();
+                            break;
+                        case 3:
+                            if (DiaryGameComponent.Instance == null) return;
+                            DiaryGameComponent.Instance.QueueMissingTitlesFromSettings();
+                            break;
+                        case 4:
+                            DiaryUiRouter.ApplyReaderWindowModeChange(
+                                postCommitPriorReaderWindowMode,
+                                Settings.useDiaryReaderWindow);
+                            break;
+                        case 5:
+                            lastWrittenReaderWindowMode = Settings.useDiaryReaderWindow;
+                            break;
+                    }
+                    postCommitSideEffectStep++;
+                }
+            }
+            catch (System.Exception exception)
+            {
+                Log.ErrorOnce(
+                    "[Pawn Diary] A committed settings side effect will be retried: " + exception,
+                    ("PawnDiary.Settings.SideEffect." + postCommitSideEffectKey + "." +
+                        postCommitSideEffectStep).GetHashCode());
+            }
         }
     }
 }

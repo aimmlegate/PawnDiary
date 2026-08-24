@@ -338,6 +338,7 @@ namespace PawnDiary
             lastIssuedMemoryLogicalRequestSequence = 0;
             activeMemoryCoordinatorRequests.Clear();
             ResetMemoryMaintenanceTransient(true);
+            ResetMemoryLibraryTransient();
             RebuildMemorySizeIndexes();
         }
 

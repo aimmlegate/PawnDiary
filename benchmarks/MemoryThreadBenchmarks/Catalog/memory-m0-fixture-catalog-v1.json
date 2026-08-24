@@ -385,6 +385,8 @@
     "PawnDiary.Memory.Settings.Repetition.Entries",
     "PawnDiary.Memory.Settings.Repetition.Help",
     "PawnDiary.Memory.Settings.UseOriginal.Warning",
+    "PawnDiary.Memory.SettingsSaveFailed",
+    "PawnDiary.Memory.SettingsFutureVersion",
     "PawnDiary.Memory.Library.Title",
     "PawnDiary.Memory.Library.Threads",
     "PawnDiary.Memory.Library.Standalone",
