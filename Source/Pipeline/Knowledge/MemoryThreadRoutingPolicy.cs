@@ -359,7 +359,8 @@ namespace PawnDiary
             return true;
         }
 
-        private static bool TryParseCanonicalInt64(string value, out long parsed)
+        /// <summary>Parses only the frozen invariant signed-decimal grammar used by memory facts.</summary>
+        internal static bool TryParseCanonicalInt64(string value, out long parsed)
         {
             parsed = 0;
             if (string.IsNullOrEmpty(value)

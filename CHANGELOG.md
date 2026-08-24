@@ -8,6 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-08-24
 
+- **Memory M4 bounded thread backend.** Add exact roots/chapters, deterministic summaries, original-tick TTL, edited-safe hard-pressure refusal, atomic saved-store indexes, and elapsed maintenance behind LegacyShadow.
 - **Memory M3 recall safeguards.** Add exact owner-private Recall v2 selection, truthful current-state projection, bounded format caps, and fail-closed repetition/diversity guards behind LegacyShadow.
 - **Memory M2 review hardening.** Make request schemas, epochs, byte admission, receipts, page replacement, load/Brainwipe settlement, terminal audits, exact regeneration, and session/physical-send races fail closed.
 - **Memory M2 transactional dispatch.** Add frozen prompt provenance, staged commit-before-activation, exact pre-send invocation permits, ordered idempotent exposure/use receipts, static Regenerate inputs, bounded prompt retention, load settlement, and Brainwipe epoch fencing while capture remains LegacyShadow.

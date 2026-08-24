@@ -439,6 +439,8 @@ namespace PawnDiary
     {
         public string recordId = string.Empty;
         public int tick;
+        /// <summary>Original owner-list ordinal; final tie-break and exact runtime deletion handle.</summary>
+        public int sourceIndex = -1;
         /// <summary>
         /// True for the owning pawn's exact canonical player/background singleton or a captured,
         /// contextual faction-joined lifecycle marker. Planners count protected rows toward caps but

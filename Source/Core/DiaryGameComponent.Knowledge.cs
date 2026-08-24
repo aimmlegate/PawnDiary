@@ -35,8 +35,6 @@ namespace PawnDiary
         private readonly Dictionary<string, KnowledgeDebugReport> knowledgeReportsByPawnId =
             new Dictionary<string, KnowledgeDebugReport>();
 
-        private int lastKnowledgeEvictionScanTick = -1;
-
         /// <summary>Dev-tab view of one retrieval run (§7).</summary>
         internal sealed class KnowledgeDebugReport
         {
@@ -935,61 +933,39 @@ namespace PawnDiary
                 return;
             }
 
-            int cap = Math.Max(0, configuredCap);
-            while (state.records.Count > cap && state.records.Count > 0)
+            state.records.RemoveAll(record => record == null);
+            KnowledgeOwnerLoad owner = new KnowledgeOwnerLoad
             {
-                if (!RemoveOldestRecord(state))
-                {
-                    // Protected player background and arrival lifecycle rows still count toward the
-                    // cap but may never be auto-evicted. Stop when no disposable row remains.
-                    break;
-                }
-            }
-        }
-
-        /// <summary>Removes the oldest evictable row; false means every remaining row is protected.</summary>
-        private static bool RemoveOldestRecord(PawnKnowledgeState state)
-        {
-            int oldestIndex = -1;
+                ownerPawnId = state.pawnId ?? string.Empty
+            };
             for (int i = 0; i < state.records.Count; i++)
             {
-                ImportantMemoryRecord candidate = state.records[i];
-                if (candidate == null)
+                ImportantMemoryRecord record = state.records[i];
+                owner.records.Add(new KnowledgeRecordStub
                 {
-                    oldestIndex = i;
-                    break;
-                }
-
-                if (PlayerMemoryPolicy.IsProtectedFromAutomaticEviction(
-                    state.pawnId,
-                    candidate.recordId,
-                    candidate.dedupKey,
-                    candidate.eventKind,
-                    candidate.sourceKind,
-                    candidate.recallScope))
-                {
-                    continue;
-                }
-
-                ImportantMemoryRecord oldest = oldestIndex >= 0
-                    ? state.records[oldestIndex]
-                    : null;
-                if (oldest == null
-                    || candidate.tick < oldest.tick
-                    || (candidate.tick == oldest.tick
-                        && string.CompareOrdinal(candidate.recordId, oldest.recordId) < 0))
-                {
-                    oldestIndex = i;
-                }
+                    recordId = record.recordId,
+                    tick = record.tick,
+                    sourceIndex = i,
+                    protectedFromAutomaticEviction =
+                        PlayerMemoryPolicy.IsProtectedFromAutomaticEviction(
+                            state.pawnId, record.recordId, record.dedupKey, record.eventKind,
+                            record.sourceKind, record.recallScope)
+                });
             }
-
-            if (oldestIndex < 0)
+            QualifiedKnowledgeEvictionPlan plan = KnowledgeEvictionPlanner.PlanQualified(
+                new List<KnowledgeOwnerLoad> { owner },
+                new KnowledgePolicySnapshot
+                {
+                    maxRecordsPerPawn = Math.Max(0, configuredCap),
+                    maxRecordsGlobal = int.MaxValue
+                });
+            if (plan.drops.Count == 0) return;
+            HashSet<int> drops = new HashSet<int>();
+            for (int i = 0; i < plan.drops.Count; i++) drops.Add(plan.drops[i].sourceIndex);
+            for (int i = state.records.Count - 1; i >= 0; i--)
             {
-                return false;
+                if (drops.Contains(i)) state.records.RemoveAt(i);
             }
-
-            state.records.RemoveAt(oldestIndex);
-            return true;
         }
 
         // ── Retrieval (§3) ───────────────────────────────────────────────────────────────────────────
@@ -1415,21 +1391,6 @@ namespace PawnDiary
 
         // ── Defensive limits (§2.3) ──────────────────────────────────────────────────────────────────
 
-        /// <summary>Cadenced global-cap scan; also runs before every save (mirrors the diary
-        /// event-limit pass). Elapsed-time cadence, not modulo, so dev time-skips stay safe.</summary>
-        private void MaybeRunKnowledgeEvictionScan(int nowTick)
-        {
-            int interval = DiaryKnowledgePolicy.EvictionScanIntervalTicks();
-            if (lastKnowledgeEvictionScanTick >= 0
-                && nowTick - lastKnowledgeEvictionScanTick < interval)
-            {
-                return;
-            }
-
-            lastKnowledgeEvictionScanTick = nowTick;
-            ApplyKnowledgeEviction();
-        }
-
         /// <summary>
         /// Applies the pure eviction plan: per-pawn caps, then the global cap with absent owners'
         /// oldest records first (§2.3). Absent = the owner pawn no longer exists in the game at
@@ -1476,6 +1437,7 @@ namespace PawnDiary
                             {
                                 recordId = record.recordId,
                                 tick = record.tick,
+                                sourceIndex = j,
                                 protectedFromAutomaticEviction =
                                     PlayerMemoryPolicy.IsProtectedFromAutomaticEviction(
                                         state.pawnId,
@@ -1497,20 +1459,34 @@ namespace PawnDiary
                     return;
                 }
 
-                KnowledgeEvictionPlan plan = KnowledgeEvictionPlanner.Plan(
+                QualifiedKnowledgeEvictionPlan plan = KnowledgeEvictionPlanner.PlanQualified(
                     loads, DiaryKnowledgePolicy.Snapshot());
-                if (plan.dropRecordIds.Count == 0)
+                if (plan.drops.Count == 0)
                 {
                     return;
                 }
 
-                HashSet<string> drops = new HashSet<string>(plan.dropRecordIds);
+                Dictionary<string, HashSet<int>> dropsByOwner =
+                    new Dictionary<string, HashSet<int>>(StringComparer.Ordinal);
+                for (int i = 0; i < plan.drops.Count; i++)
+                {
+                    KnowledgeEvictionHandle drop = plan.drops[i];
+                    HashSet<int> ownerDrops;
+                    if (!dropsByOwner.TryGetValue(drop.ownerPawnId, out ownerDrops))
+                    {
+                        ownerDrops = new HashSet<int>();
+                        dropsByOwner.Add(drop.ownerPawnId, ownerDrops);
+                    }
+                    ownerDrops.Add(drop.sourceIndex);
+                }
                 foreach (KeyValuePair<string, PawnKnowledgeState> pair in statesByOwner)
                 {
+                    HashSet<int> drops;
+                    dropsByOwner.TryGetValue(pair.Key, out drops);
                     List<ImportantMemoryRecord> records = pair.Value.records;
                     for (int i = records.Count - 1; i >= 0; i--)
                     {
-                        if (records[i] == null || drops.Contains(records[i].recordId))
+                        if (records[i] == null || (drops != null && drops.Contains(i)))
                         {
                             records.RemoveAt(i);
                         }

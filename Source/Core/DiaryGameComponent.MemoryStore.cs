@@ -159,6 +159,7 @@ namespace PawnDiary
         /// </summary>
         private void NormalizeLoadedMemoryComponent()
         {
+            ResetMemoryMaintenanceTransient(true);
             globalFactionSnapshots = globalFactionSnapshots ?? new List<SavedGlobalFactionSnapshot>();
             legacyOwnerEpochReservations =
                 legacyOwnerEpochReservations ?? new List<SavedLegacyOwnerEpochReservation>();
@@ -336,6 +337,7 @@ namespace PawnDiary
             memoryAttemptAuditRows.Clear();
             lastIssuedMemoryLogicalRequestSequence = 0;
             activeMemoryCoordinatorRequests.Clear();
+            ResetMemoryMaintenanceTransient(true);
             RebuildMemorySizeIndexes();
         }
 
@@ -447,6 +449,10 @@ namespace PawnDiary
                 {
                     RecordMemoryDiagnostic("size_invalid", "owner");
                 }
+            }
+            if (memoryM4IndexesDirty)
+            {
+                RebuildMemoryM4Indexes();
             }
         }
 
@@ -1006,6 +1012,33 @@ namespace PawnDiary
                 }
                 return;
             }
+        }
+
+        /// <summary>Reads one slash-delimited capacity-vector coordinate with defensive bounds.</summary>
+        private static long ReadCapacityTuplePart(
+            string name,
+            int partIndex,
+            long fallback,
+            long defensiveCeiling)
+        {
+            if (partIndex < 0) return fallback;
+            DiaryKnowledgeTuningDef tuning = DefDatabase<DiaryKnowledgeTuningDef>
+                .GetNamedSilentFail(DiaryKnowledgePolicy.TuningDefName);
+            for (int index = 0; tuning?.memoryCapacityVector != null
+                && index < tuning.memoryCapacityVector.Count; index++)
+            {
+                DiaryMemoryCapacityValueRow row = tuning.memoryCapacityVector[index];
+                if (row == null || !string.Equals(row.name, name, StringComparison.Ordinal)) continue;
+                string[] parts = (row.valueEncoding ?? string.Empty).Split('/');
+                long parsed;
+                return partIndex < parts.Length
+                    && long.TryParse(parts[partIndex], NumberStyles.None,
+                        CultureInfo.InvariantCulture, out parsed)
+                    && parsed >= 0 && parsed <= defensiveCeiling
+                        ? parsed
+                        : fallback;
+            }
+            return fallback;
         }
 
         /// <summary>Sizes one deep list of rows with the shared framing/count rule; validity of

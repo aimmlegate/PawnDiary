@@ -420,14 +420,16 @@ namespace PawnDiary
         /// <summary>Global-cap eviction scan cadence.</summary>
         public int evictionScanIntervalTicks = 150000;
 
-        // Unified-memory M0 policy. These values are loaded and parity-checked now but are not read by
-        // shipped behavior while MemorySystemActivationGate remains LegacyShadow.
+        // Unified-memory policy. M4 maintenance reads these for current-schema backend rows, while
+        // LegacyShadow still prevents normal capture/recall activation.
         public int minorMemoryLifetimeMinimumDays = 1;
         public int minorMemoryLifetimeDefaultDays = 15;
         public int minorMemoryLifetimeMaximumDays = 3600;
         public int regularMemoryLifetimeMinimumDays = 1;
         public int regularMemoryLifetimeDefaultDays = 60;
         public int regularMemoryLifetimeMaximumDays = 3600;
+        /// <summary>Elapsed inactivity before an open M4 chapter closes at its canonical due tick.</summary>
+        public int memoryChapterInactivityDays = 15;
         public int memoryThreadTargetMinimum = 4;
         public int memoryThreadTargetDefault = 12;
         public int memoryThreadTargetMaximum = 64;

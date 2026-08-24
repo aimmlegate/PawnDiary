@@ -230,6 +230,7 @@ namespace PawnDiary
             }
 
             CancelOldEpochDispatchRows(pawnId);
+            ResetMemoryMaintenanceTransient(true);
             RebuildMemorySizeIndexes();
         }
 

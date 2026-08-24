@@ -70,7 +70,6 @@ namespace PawnDiary
             "tale-batch flush",
             "ambient-thought flush",
             "event retention",
-            "knowledge eviction",
             "event-reference prune",
         };
 
@@ -608,7 +607,6 @@ namespace PawnDiary
                 FlushAllTaleBatches,
                 FlushAllAmbientThoughtNotes,
                 ApplyDiaryEventLimits,
-                ApplyKnowledgeEviction,
                 PruneDiaryEventRefs,
             };
 
@@ -726,6 +724,7 @@ namespace PawnDiary
                     "[Pawn Diary] Belief transient-state reset failed: " + exception,
                     "PawnDiary.Belief.Reset".GetHashCode());
             }
+            ResetMemoryMaintenanceTransient(true);
         }
 
         public override void GameComponentTick()
@@ -965,7 +964,7 @@ namespace PawnDiary
 
             RunRoyaltyPersonaReconciliationIfDue(now);
 
-            MaybeRunKnowledgeEvictionScan(now);
+            RunMemoryMaintenanceSlice(now);
 
             if (now >= nextOrphanRecoveryScanTick)
             {

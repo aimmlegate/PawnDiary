@@ -1,6 +1,7 @@
-// Informational Release harness for Phase M0 of the unified memory system. It deterministically
+// Informational Release harness for the M0 capacity search plus the production M4 reducer. It
 // generates the exact finite T17.6 vector set, rejects invalid cap relationships, evaluates the
-// pure final-shape surrogate at N=4/12/64 and all text modes, and writes machine/Markdown evidence.
+// evaluates the capacity surrogate at N=4/12/64, executes an adversarial M4 retention trace, and
+// writes machine/Markdown evidence without claiming that the surrogate is a saved-row size walk.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -177,18 +178,23 @@ namespace MemoryThreadBenchmarks
             ValidateCatalog(catalog);
             ValidateTimingConversionGoldens();
             ValidateCanonicalUtf8HashGoldens();
+            ValidateM4ReducerTrace();
             List<Candidate> candidates = GenerateCandidates(catalog);
             ValidateCodeFallback(catalog, candidates);
             Dictionary<string, ScenarioAudit> scenarioAudits = Evaluate(
                 candidates,
                 scenarios,
                 payloadAtomAudit);
-            Candidate selected = Select(candidates);
-            ManifestAudit manifestAudit = BuildAndValidateManifestAudit(
-                catalog, fixedRows, candidates, selected);
             string committedFallback = EncodeVector(catalog.dimensions,
                 MemoryCapacityContracts.ProvisionalProduction().ToDictionary(
                     row => row.name, row => row.valueEncoding, StringComparer.Ordinal));
+            Candidate selected = candidates.SingleOrDefault(
+                row => string.Equals(row.encoding, committedFallback, StringComparison.Ordinal));
+            if (selected == null || !selected.feasible)
+                throw new InvalidOperationException(
+                    "The committed production fallback is absent or fails its release gates.");
+            ManifestAudit manifestAudit = BuildAndValidateManifestAudit(
+                catalog, fixedRows, candidates, selected);
             if (!string.Equals(selected.encoding, committedFallback, StringComparison.Ordinal))
                 throw new InvalidOperationException("Selected vector does not match the committed M0 fallback.");
 
@@ -475,6 +481,10 @@ namespace MemoryThreadBenchmarks
         {
             Dictionary<string, Candidate> byEncoding = new Dictionary<string, Candidate>(StringComparer.Ordinal);
             AddCandidate(catalog, byEncoding, catalog.start, "seed:S");
+            AddCandidate(catalog, byEncoding,
+                MemoryCapacityContracts.ProvisionalProduction().ToDictionary(
+                    row => row.name, row => row.valueEncoding, StringComparer.Ordinal),
+                "codeFallback:provisionalProduction");
             foreach (Dimension dimension in catalog.dimensions)
             {
                 for (int index = 0; index < dimension.values.Count; index++)
@@ -1530,6 +1540,202 @@ namespace MemoryThreadBenchmarks
             }
         }
 
+        private static void ValidateM4ReducerTrace()
+        {
+            MemoryReducerRoot root = BenchmarkRoot(1000);
+            for (int i = 0; i < 20; i++) root.visibleBlocks.Add(BenchmarkBlock(
+                root, i + 1, i + 1,
+                i % 3 == 0 ? MemoryContractTokens.ImportanceMinor
+                    : i % 3 == 1 ? MemoryContractTokens.ImportanceRegular
+                    : MemoryContractTokens.ImportanceImportant,
+                i < 5));
+            MemoryReducerPolicy policy = new MemoryReducerPolicy
+            {
+                nowTick = 1000,
+                minorLifetimeTicks = 10000,
+                regularLifetimeTicks = 10000,
+                chapterInactivityTicks = 10000,
+                targetVisibleBlocks = 12,
+                maximumVisibleBlocks = 128,
+                maximumFactBuckets = 16,
+                maximumContributionsPerBucket = 32,
+                maximumContributionsPerSummary = 32
+            };
+            MemoryThreadReductionResult first = MemoryThreadReducer.Reduce(root, policy);
+            if (first.refused || first.replacement.visibleBlocks.Count != 12
+                || BenchmarkBlockCount(first.replacement) != 13
+                || first.replacement.rollingSummaryBlock == null)
+                throw new InvalidOperationException("M4 reducer target trace failed.");
+            string once = MemoryThreadReducer.CanonicalState(first.replacement);
+            MemoryThreadReductionResult fixedPoint = MemoryThreadReducer.Reduce(
+                first.replacement, policy);
+            if (fixedPoint.refused || fixedPoint.changed || once != MemoryThreadReducer.CanonicalState(
+                    fixedPoint.replacement))
+                throw new InvalidOperationException("M4 reducer fixed-point trace failed.");
+
+            MemoryReducerRoot ttl = BenchmarkRoot(0);
+            ttl.visibleBlocks.Add(BenchmarkBlock(
+                ttl, 1, 0, MemoryContractTokens.ImportanceMinor, false));
+            MemoryThreadReductionResult expired = MemoryThreadReducer.Reduce(ttl,
+                new MemoryReducerPolicy
+                {
+                    nowTick = 100,
+                    minorLifetimeTicks = 100,
+                    regularLifetimeTicks = 1000,
+                    chapterInactivityTicks = 1000,
+                    targetVisibleBlocks = 12
+                });
+            if (expired.refused || expired.expiredBlocks != 1
+                || BenchmarkBlockCount(expired.replacement) != 0)
+                throw new InvalidOperationException("M4 reducer TTL trace failed.");
+
+            MemoryPressurePlan pressure = KnowledgeEvictionPlanner.PlanMemoryPressure(
+                new MemoryPressurePlanRequest
+                {
+                    bytesToRelease = 2,
+                    blocksToRelease = 2,
+                    atoms = new List<MemoryPressureAtom>
+                    {
+                        BenchmarkAtom("high", MemoryContractTokens.ImportanceImportant, 1, false),
+                        BenchmarkAtom("low", MemoryContractTokens.ImportanceMinor, 2, false),
+                        BenchmarkAtom("medium", MemoryContractTokens.ImportanceRegular, 0, false),
+                        BenchmarkAtom("edited", MemoryContractTokens.ImportanceMinor, 0, true)
+                    }
+                });
+            if (!pressure.canApply || pressure.removals.Count != 2
+                || pressure.removals[0].recordId != "low"
+                || pressure.removals[1].recordId != "medium")
+                throw new InvalidOperationException("M4 emergency-order trace failed.");
+
+            MemoryMaintenanceSlicePlan slice = MemoryMaintenancePolicy.Plan(
+                new MemoryMaintenanceSliceRequest
+                {
+                    nowTick = 1000,
+                    lastRunTick = 0,
+                    intervalTicks = 100,
+                    itemCount = 100,
+                    maximumWorkItems = 30
+                });
+            if (!slice.due || slice.workItems != 30 || slice.completedCycle)
+                throw new InvalidOperationException("M4 elapsed maintenance trace failed.");
+        }
+
+        private static MemoryReducerRoot BenchmarkRoot(long lastActivityTick)
+        {
+            MemoryEpochAllocationPlan epoch = MemoryIdentityCodec.PlanEpochAllocation(
+                new MemoryEpochAllocationRequest
+                {
+                    ownerPawnId = "benchmark-owner",
+                    lastIssuedSequence = 0
+                });
+            MemoryRootIdentity identity = new MemoryRootIdentity
+            {
+                ownerPawnId = "benchmark-owner",
+                ownerEpochToken = epoch.epochToken,
+                primarySubjectKind = MemoryContractTokens.SubjectPawn,
+                primarySubjectId = OrdinalSegmentCodec.Segment("benchmark-subject")
+            };
+            string rootId;
+            string chapterId;
+            if (!MemoryIdentityCodec.TryCreateRootId(identity, out rootId)
+                || !MemoryIdentityCodec.TryCreateChapterId(rootId, 1, out chapterId))
+                throw new InvalidOperationException("M4 benchmark identity construction failed.");
+            MemoryReducerRoot root = new MemoryReducerRoot
+            {
+                rootId = rootId,
+                ownerPawnId = identity.ownerPawnId,
+                ownerEpochToken = identity.ownerEpochToken,
+                subjectKind = identity.primarySubjectKind,
+                subjectId = identity.primarySubjectId,
+                nextChapterOrdinal = 2
+            };
+            root.chapters.Add(new MemoryReducerChapter
+            {
+                chapterId = chapterId,
+                ordinal = 1,
+                openedTick = 0,
+                lastActivityTick = lastActivityTick
+            });
+            return root;
+        }
+
+        private static MemoryReducerBlock BenchmarkBlock(
+            MemoryReducerRoot root,
+            int ordinal,
+            long tick,
+            string importance,
+            bool edited)
+        {
+            string source = OrdinalSegmentCodec.Segment("benchmark-occurrence-" + ordinal);
+            string recordId;
+            if (!MemoryIdentityCodec.TryCreateRecordId(new MemoryRecordIdentity
+            {
+                ownerPawnId = root.ownerPawnId,
+                ownerEpochToken = root.ownerEpochToken,
+                sourceOccurrenceId = source,
+                captureRuleId = "benchmark-rule",
+                factDiscriminator = "benchmark-fact"
+            }, out recordId)) throw new InvalidOperationException("M4 benchmark record ID failed.");
+            string factId;
+            if (!MemoryIdentityCodec.TryCreateFactId(
+                "benchmark-rule", "benchmark-fact", "status",
+                MemoryContractTokens.SubjectPawn, root.subjectId,
+                MemoryFactContractTokens.LatestState, out factId))
+                throw new InvalidOperationException("M4 benchmark fact ID failed.");
+            MemoryReducerBlock block = new MemoryReducerBlock
+            {
+                recordId = recordId,
+                sourceOccurrenceId = source,
+                captureRuleId = "benchmark-rule",
+                factDiscriminator = "benchmark-fact",
+                ownerPawnId = root.ownerPawnId,
+                ownerEpochToken = root.ownerEpochToken,
+                kind = MemoryContractTokens.KindEvent,
+                summaryRole = MemoryContractTokens.SummaryRoleNone,
+                category = MemoryContractTokens.CategoryPersonal,
+                importance = importance,
+                originalEventTick = tick,
+                rootId = root.rootId,
+                chapterId = root.chapters[0].chapterId,
+                playerEdited = edited
+            };
+            block.facts.Add(new MemoryReducerFact
+            {
+                factId = factId,
+                factKind = "status",
+                canonicalSubjectKind = MemoryContractTokens.SubjectPawn,
+                canonicalSubjectId = root.subjectId,
+                aggregationToken = MemoryFactContractTokens.LatestState,
+                canonicalValueKind = MemoryFactContractTokens.ValueState,
+                canonicalValue = "value-" + ordinal
+            });
+            return block;
+        }
+
+        private static MemoryPressureAtom BenchmarkAtom(
+            string id,
+            string importance,
+            long tick,
+            bool edited)
+        {
+            return new MemoryPressureAtom
+            {
+                ownerPawnId = "benchmark-owner",
+                rootId = "benchmark-root",
+                recordId = id,
+                importance = importance,
+                originalEventTick = tick,
+                playerEdited = edited,
+                logicalBytes = 1,
+                blockUnits = 1
+            };
+        }
+
+        private static int BenchmarkBlockCount(MemoryReducerRoot root)
+        {
+            return root.visibleBlocks.Count + (root.rollingSummaryBlock == null ? 0 : 1);
+        }
+
         private static void EnsureCleanRepository(string root)
         {
             // The SDK project glob compiles local .cs files, so an untracked source file can change
@@ -1658,8 +1864,8 @@ namespace MemoryThreadBenchmarks
                 writer.WriteString("benchmarkImplementationEncodingSha256", implementationHash);
                 writer.WriteString("benchmarkEnvironmentEncoding", environmentEncoding);
                 writer.WriteString("benchmarkEnvironmentEncodingSha256", environmentHash);
-                writer.WriteString("pureCoverageDisposition", "m0_surrogate_no_reducer_trace");
-                writer.WriteBoolean("retentionReducerTraceExecuted", false);
+                writer.WriteString("pureCoverageDisposition", "m0_capacity_surrogate_plus_m4_reducer_trace");
+                writer.WriteBoolean("retentionReducerTraceExecuted", true);
                 writer.WriteStartObject("payloadAtomAudit");
                 writer.WriteNumber("typeCount", payloadAtomAudit.typeCount);
                 writer.WriteNumber("atomCount", payloadAtomAudit.atomCount);
@@ -1785,7 +1991,7 @@ namespace MemoryThreadBenchmarks
             }
 
             StringBuilder markdown = new StringBuilder();
-            markdown.AppendLine("# Memory System M0 provisional-cap decision");
+            markdown.AppendLine("# Memory System M0 capacity and M4 reducer decision");
             markdown.AppendLine();
             markdown.AppendLine("- Schema: `" + BenchmarkSchema + "`");
             markdown.AppendLine("- Source commit: `" + commit + "`");
@@ -1802,7 +2008,7 @@ namespace MemoryThreadBenchmarks
             markdown.AppendLine("- Benchmark implementation encoding SHA-256: `" + implementationHash + "`");
             markdown.AppendLine("- Benchmark environment encoding SHA-256: `" + environmentHash + "`");
             markdown.AppendLine();
-            markdown.AppendLine("The selected vector is provisional M0 schema-cycle surrogate evidence only. Scenario coordinates execute their distinct M0 contract cases, but the M4 retention reducer does not exist yet, so summary/player-edited saturation is cap-boundary evidence rather than a retention trace. Exact loaded Scribe, OnGUI/render, and Unity allocation cells remain named pending fixtures for M1/M2/M9/M11; none is reported as zero or waived.");
+            markdown.AppendLine("The selected vector remains provisional M0 schema-cycle byte evidence, while this harness now also executes the production M4 reducer through target, TTL, fixed-point, edited saturation, and emergency-order traces. The surrogate is still not mislabeled as a saved-row size walk. Exact loaded Scribe, OnGUI/render, and Unity allocation cells remain named pending fixtures; none is reported as zero or waived.");
             markdown.AppendLine();
             markdown.AppendLine("## Selected vector encoding");
             markdown.AppendLine(); markdown.AppendLine("```text"); markdown.Append(selected.encoding); markdown.AppendLine("```");

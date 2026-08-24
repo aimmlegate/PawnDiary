@@ -44,6 +44,7 @@ namespace MemoryThreadTests
                 TestActivePayloadBudget();
                 TestLegacyMigrationDryRun();
                 TestImportedBudget();
+                assertions += MemoryM4Fixtures.Run();
 
                 Console.WriteLine("MemoryThreadTests passed " + assertions + " assertions.");
                 return 0;

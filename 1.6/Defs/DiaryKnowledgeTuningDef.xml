@@ -28,14 +28,15 @@
     <playerAuthoredMemoryMaxChars>450</playerAuthoredMemoryMaxChars>
     <evictionScanIntervalTicks>150000</evictionScanIntervalTicks>
 
-    <!-- Unified memory M0 product defaults. Current shipped behavior does not consume these until
-         the one-release activation gate flips in M11. Whole-day values remain UI policy, never ticks. -->
+    <!-- Unified-memory product defaults. M4 maintenance reads these for any current-schema backend
+         rows, while LegacyShadow still prevents normal capture/recall activation. -->
     <minorMemoryLifetimeMinimumDays>1</minorMemoryLifetimeMinimumDays>
     <minorMemoryLifetimeDefaultDays>15</minorMemoryLifetimeDefaultDays>
     <minorMemoryLifetimeMaximumDays>3600</minorMemoryLifetimeMaximumDays>
     <regularMemoryLifetimeMinimumDays>1</regularMemoryLifetimeMinimumDays>
     <regularMemoryLifetimeDefaultDays>60</regularMemoryLifetimeDefaultDays>
     <regularMemoryLifetimeMaximumDays>3600</regularMemoryLifetimeMaximumDays>
+    <memoryChapterInactivityDays>15</memoryChapterInactivityDays>
     <memoryThreadTargetMinimum>4</memoryThreadTargetMinimum>
     <memoryThreadTargetDefault>12</memoryThreadTargetDefault>
     <memoryThreadTargetMaximum>64</memoryThreadTargetMaximum>
