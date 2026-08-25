@@ -23,7 +23,7 @@ namespace PawnDiary
         public int frozenDisplayLabelUtf16Units = 80;
         public int blockTextUtf16Units = 480;
         public int importedPreviewUtf16Units = 240;
-        public int importedSearchUtf16Units = 2000;
+        public int importedSearchScratchUtf16Units = 49152;
         public int importedTextChunkUtf16Units = 1000;
         public int commandEntries = 32;
     }
@@ -43,7 +43,7 @@ namespace PawnDiary
         public const int FrozenDisplayLabelUtf16Units = 320;
         public const int BlockTextUtf16Units = 1200;
         public const int ImportedPreviewUtf16Units = 1200;
-        public const int ImportedSearchUtf16Units = 8000;
+        public const int ImportedSearchScratchUtf16Units = 262144;
         public const int ImportedTextChunkUtf16Units = 4000;
         public const int CommandEntries = 128;
         public const int OwnerEntries = 8192;
@@ -59,6 +59,15 @@ namespace PawnDiary
         public int includedZero;
         public long omittedRaw;
         public long omittedZero;
+    }
+
+    /// <summary>Stable pure directory tiers; zero means the owner is omitted.</summary>
+    internal static class MemoryLibraryDirectoryTiers
+    {
+        public const int Omitted = 0;
+        public const int Data = 1;
+        public const int CompatibilityRaw = 2;
+        public const int ActiveZero = 3;
     }
 
     internal sealed class MemoryLibraryCursorPlan
@@ -140,6 +149,44 @@ namespace PawnDiary
                 omittedRaw = Math.Max(0L, (long)rawCount - raw),
                 omittedZero = Math.Max(0L, (long)zeroCount - zero)
             };
+        }
+
+        /// <summary>
+        /// Classifies one directory header without live game state. Inactive current-schema owners
+        /// retain saved culture as useful directory data even when they have no memory rows.
+        /// </summary>
+        public static int DirectoryTier(
+            bool unknown,
+            bool hasMemoryData,
+            bool inactiveCurrentWithSavedCulture,
+            bool hasCompatibilityRaw,
+            bool active)
+        {
+            if (unknown || hasMemoryData || inactiveCurrentWithSavedCulture)
+                return MemoryLibraryDirectoryTiers.Data;
+            if (hasCompatibilityRaw) return MemoryLibraryDirectoryTiers.CompatibilityRaw;
+            return active ? MemoryLibraryDirectoryTiers.ActiveZero
+                : MemoryLibraryDirectoryTiers.Omitted;
+        }
+
+        /// <summary>Exact scalar fence for a private list job before it may publish.</summary>
+        public static bool LibraryBuildFenceMatches(
+            int expectedDiaryStateVersion,
+            int currentDiaryStateVersion,
+            long expectedDirectoryRevision,
+            long currentDirectoryRevision,
+            long expectedSettingsRevision,
+            long currentSettingsRevision,
+            long expectedLanguageRevision,
+            long currentLanguageRevision,
+            long expectedTtlDayRevision,
+            long currentTtlDayRevision)
+        {
+            return expectedDiaryStateVersion == currentDiaryStateVersion
+                && expectedDirectoryRevision == currentDirectoryRevision
+                && expectedSettingsRevision == currentSettingsRevision
+                && expectedLanguageRevision == currentLanguageRevision
+                && expectedTtlDayRevision == currentTtlDayRevision;
         }
 
         /// <summary>Chooses the exact structural fence copied into an actionable block DTO.</summary>

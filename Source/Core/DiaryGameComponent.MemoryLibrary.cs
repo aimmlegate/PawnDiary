@@ -28,6 +28,7 @@ namespace PawnDiary
             internal long nextDayBoundary;
             internal long ttlValidUntilTickExclusive = long.MaxValue;
             internal string textContent = string.Empty;
+            internal MemoryLibraryListSelection listSelection;
         }
 
         private sealed class MemoryLibraryOwnerSource
@@ -83,6 +84,29 @@ namespace PawnDiary
                 new Dictionary<string, MemoryLibraryOwnerSource>(StringComparer.Ordinal);
         }
 
+        /// <summary>
+        /// One most-recent complete Imported search for a cached owner. All inputs are detached and
+        /// revision-fenced before the update loop advances one full-row scratch at a time.
+        /// </summary>
+        private sealed class MemoryLibraryListBuildJob
+        {
+            internal string ownerKey = string.Empty;
+            internal string ownerSourceFingerprint = string.Empty;
+            internal string streamFingerprint = string.Empty;
+            internal string contentFingerprint = string.Empty;
+            internal MemoryLibraryOwnerIndexSnapshot ownerSnapshot;
+            internal MemoryLibraryListQuery query;
+            internal MemoryLibraryLimits limits;
+            internal MemoryImportedListSelectionJob selectionJob;
+            internal int diaryStateVersion;
+            internal long directoryRevision;
+            internal long committedSettingsRevision;
+            internal long languageDisplayRevision;
+            internal long ttlDayRevision;
+            internal long nextDayBoundary;
+            internal long ttlValidUntilTickExclusive = long.MaxValue;
+        }
+
         private readonly MemoryLibraryPublicationClock memoryLibraryClock =
             new MemoryLibraryPublicationClock();
         private readonly Dictionary<string, MemoryLibraryOwnerIndexSnapshot> memoryLibraryOwners =
@@ -100,6 +124,9 @@ namespace PawnDiary
             new Dictionary<string, MemoryLibraryPublication>(StringComparer.Ordinal);
         private readonly Dictionary<string, MemoryLibraryPublication> memoryLibraryTextPublications =
             new Dictionary<string, MemoryLibraryPublication>(StringComparer.Ordinal);
+        private readonly Dictionary<string, MemoryLibraryListBuildJob> memoryLibraryListBuildJobs =
+            new Dictionary<string, MemoryLibraryListBuildJob>(StringComparer.Ordinal);
+        private readonly LinkedList<string> memoryLibraryListBuildOrder = new LinkedList<string>();
         private readonly Dictionary<string, MemoryCompatibilitySourcePublication>
             memoryLibraryCompatibilityPublications =
                 new Dictionary<string, MemoryCompatibilitySourcePublication>(StringComparer.Ordinal);
@@ -135,6 +162,8 @@ namespace PawnDiary
             memoryLibraryListPublications.Clear();
             memoryLibraryDetailPublications.Clear();
             memoryLibraryTextPublications.Clear();
+            memoryLibraryListBuildJobs.Clear();
+            memoryLibraryListBuildOrder.Clear();
             memoryLibraryCompatibilityPublications.Clear();
             memoryLibraryPendingCommands.Clear();
             memoryLibraryCommandResults.Clear();
@@ -170,6 +199,8 @@ namespace PawnDiary
                 AdvanceMemoryLibraryDirectoryBuild();
             if (!string.IsNullOrEmpty(memoryLibraryPendingOwnerBuildKey))
                 BuildPendingMemoryLibraryOwnerIndex();
+            if (memoryLibraryListBuildOrder.Count > 0)
+                AdvanceMemoryLibraryListBuild();
         }
 
         /// <summary>Returns one detached paged owner directory; never creates saved state.</summary>
@@ -194,6 +225,9 @@ namespace PawnDiary
         {
             if (query?.primaryHandle == null || !MemoryLibraryPolicy.ValidOwnerHandle(
                     query.primaryHandle))
+                return new MemoryLibraryListResult { status = MemoryLibraryStatuses.Invalid };
+            if (query.expectedDirectoryRevision < 0
+                || query.expectedListSnapshotRevision < 0)
                 return new MemoryLibraryListResult { status = MemoryLibraryStatuses.Invalid };
             if (memoryLibraryDirectoryRevision <= 0)
             {
@@ -282,6 +316,22 @@ namespace PawnDiary
                     || pinned.ownerSnapshot == null
                     || LibraryPublicationExpiredOrSuperseded(pinned))
                     return new MemoryLibraryListResult { status = MemoryLibraryStatuses.Stale };
+                if (query.viewTag == MemoryLibraryViews.Imported)
+                {
+                    if (pinned.listSelection == null)
+                        return new MemoryLibraryListResult { status = MemoryLibraryStatuses.Stale };
+                    return MemoryLibraryIndexPolicy.QueryListSelection(
+                        pinned.ownerSnapshot,
+                        query,
+                        pinned.listSelection,
+                        pinned.directoryRevision,
+                        pinned.revision,
+                        pinned.committedSettingsRevision,
+                        pinned.languageDisplayRevision,
+                        pinned.ttlDayRevision,
+                        pinned.nextDayBoundary,
+                        BuildMemoryLibraryLimits());
+                }
                 return MemoryLibraryIndexPolicy.QueryList(
                     pinned.ownerSnapshot,
                     query,
@@ -296,6 +346,60 @@ namespace PawnDiary
             long nextBoundary = NextMemoryLibraryDayBoundary();
             long settingsRevision = MemoryEffectivePolicyProvider.PublicationRevision;
             long ttlDayRevision = now / 60000L;
+            if (query.viewTag == MemoryLibraryViews.Imported)
+            {
+                if (query.expectedDirectoryRevision > 0
+                    && query.expectedDirectoryRevision != memoryLibraryDirectoryRevision)
+                    return new MemoryLibraryListResult { status = MemoryLibraryStatuses.Stale };
+                if (!memoryLibraryOwnerCacheFingerprints.TryGetValue(
+                        ownerKey, out string ownerSourceFingerprint))
+                {
+                    RequestMemoryLibraryOwnerBuild(ownerKey);
+                    return new MemoryLibraryListResult { status = MemoryLibraryStatuses.Preparing };
+                }
+                long ttlValidUntil = MemoryLibraryPolicy.TtlValidUntil(
+                    nextBoundary, owner.ownerEarliestFiniteExpiryTickExclusive);
+                string importedContentFingerprint = MemoryLibraryPolicy.StreamFingerprint(
+                    fingerprint,
+                    ownerSourceFingerprint,
+                    settingsRevision.ToString(CultureInfo.InvariantCulture),
+                    memoryLibraryLanguageDisplayRevision.ToString(CultureInfo.InvariantCulture),
+                    ttlDayRevision.ToString(CultureInfo.InvariantCulture),
+                    ttlValidUntil.ToString(CultureInfo.InvariantCulture));
+                if (memoryLibraryListPublications.TryGetValue(
+                        fingerprint, out MemoryLibraryPublication importedPublished)
+                    && importedPublished.ownerSnapshot != null
+                    && importedPublished.listSelection != null
+                    && string.Equals(importedPublished.fingerprint,
+                        importedContentFingerprint, StringComparison.Ordinal)
+                    && !LibraryPublicationExpiredOrSuperseded(importedPublished))
+                {
+                    CancelMemoryLibraryListBuild(ownerKey);
+                    MemoryLibraryListResult publishedResult =
+                        MemoryLibraryIndexPolicy.QueryListSelection(
+                            importedPublished.ownerSnapshot,
+                            query,
+                            importedPublished.listSelection,
+                            memoryLibraryDirectoryRevision,
+                            importedPublished.revision,
+                            importedPublished.committedSettingsRevision,
+                            importedPublished.languageDisplayRevision,
+                            importedPublished.ttlDayRevision,
+                            importedPublished.nextDayBoundary,
+                            BuildMemoryLibraryLimits());
+                    if (publishedResult.status == MemoryLibraryStatuses.Ready)
+                        publishedResult.directoryRevision = importedPublished.directoryRevision;
+                    return publishedResult;
+                }
+                if (memoryLibraryClock.LastIssuedRevision == long.MaxValue)
+                    return InvalidList("library_revision_saturated");
+                if (!RequestMemoryLibraryListBuild(
+                        ownerKey, ownerSourceFingerprint, fingerprint,
+                        importedContentFingerprint, owner, query, nextBoundary,
+                        ttlValidUntil, settingsRevision, ttlDayRevision))
+                    return new MemoryLibraryListResult { status = MemoryLibraryStatuses.Invalid };
+                return new MemoryLibraryListResult { status = MemoryLibraryStatuses.Preparing };
+            }
             MemoryLibraryListResult candidate = MemoryLibraryIndexPolicy.QueryList(
                 owner,
                 query,
@@ -1047,11 +1151,22 @@ namespace PawnDiary
                         || header.ownerRow.importedCount > 0;
                     bool compatibilityOnly = !hasData
                         && header.ownerRow.compatibilityHandle != null;
+                    bool inactiveCurrentWithSavedCulture = source.kind == "current"
+                        && !source.active
+                        && (!string.IsNullOrWhiteSpace(source.state?.originCultureDefName)
+                            || !string.IsNullOrWhiteSpace(source.state?.adoptedCultureDefName));
                     // Unknown is always in the guaranteed first tier, even when it currently carries
-                    // only unresolved raw status. Exact-owner compatibility-only rows use tier two.
-                    if (source.kind == "unknown" || hasData) job.data.Add(header);
-                    else if (compatibilityOnly) job.raw.Add(header);
-                    else if (source.active) job.zero.Add(header);
+                    // only unresolved raw status. Saved culture keeps inactive current/archive owners
+                    // discoverable; exact-owner compatibility-only rows otherwise use tier two.
+                    int tier = MemoryLibraryPolicy.DirectoryTier(
+                        source.kind == "unknown",
+                        hasData,
+                        inactiveCurrentWithSavedCulture,
+                        compatibilityOnly,
+                        source.active);
+                    if (tier == MemoryLibraryDirectoryTiers.Data) job.data.Add(header);
+                    else if (tier == MemoryLibraryDirectoryTiers.CompatibilityRaw) job.raw.Add(header);
+                    else if (tier == MemoryLibraryDirectoryTiers.ActiveZero) job.zero.Add(header);
                     source.ownerKey = OwnerIndexKey(header.ownerRow.primaryHandle);
                     source.sourceFingerprint = MemoryLibraryOwnerSourceFingerprint(source, job);
                     if (!string.IsNullOrEmpty(source.ownerKey))
@@ -1557,6 +1672,193 @@ namespace PawnDiary
             memoryLibraryPendingOwnerBuildKey = ownerKey;
         }
 
+        private bool RequestMemoryLibraryListBuild(
+            string ownerKey,
+            string ownerSourceFingerprint,
+            string streamFingerprint,
+            string contentFingerprint,
+            MemoryLibraryOwnerIndexSnapshot owner,
+            MemoryLibraryListQuery query,
+            long nextDayBoundary,
+            long ttlValidUntilTickExclusive,
+            long settingsRevision,
+            long ttlDayRevision)
+        {
+            if (memoryLibraryListBuildJobs.TryGetValue(
+                    ownerKey, out MemoryLibraryListBuildJob existing)
+                && string.Equals(existing.streamFingerprint,
+                    streamFingerprint, StringComparison.Ordinal)
+                && string.Equals(existing.contentFingerprint,
+                    contentFingerprint, StringComparison.Ordinal)) return true;
+            MemoryLibraryLimits limits = BuildMemoryLibraryLimits();
+            MemoryLibraryListQuery detachedQuery = CopyMemoryLibraryListQuery(query);
+            MemoryImportedListSelectionJob selection =
+                MemoryLibraryIndexPolicy.BeginImportedListSelection(
+                    owner, detachedQuery, limits);
+            if (selection == null) return false;
+            CancelMemoryLibraryListBuild(ownerKey);
+            memoryLibraryListBuildJobs[ownerKey] = new MemoryLibraryListBuildJob
+            {
+                ownerKey = ownerKey,
+                ownerSourceFingerprint = ownerSourceFingerprint,
+                streamFingerprint = streamFingerprint,
+                contentFingerprint = contentFingerprint,
+                ownerSnapshot = owner,
+                query = detachedQuery,
+                limits = limits,
+                selectionJob = selection,
+                diaryStateVersion = DiaryStateVersion.Current,
+                directoryRevision = memoryLibraryDirectoryRevision,
+                committedSettingsRevision = settingsRevision,
+                languageDisplayRevision = memoryLibraryLanguageDisplayRevision,
+                ttlDayRevision = ttlDayRevision,
+                nextDayBoundary = nextDayBoundary,
+                ttlValidUntilTickExclusive = ttlValidUntilTickExclusive
+            };
+            memoryLibraryListBuildOrder.AddLast(ownerKey);
+            return true;
+        }
+
+        private void AdvanceMemoryLibraryListBuild()
+        {
+            if (memoryLibraryListBuildOrder.First == null) return;
+            string ownerKey = memoryLibraryListBuildOrder.First.Value;
+            if (!memoryLibraryListBuildJobs.TryGetValue(
+                    ownerKey, out MemoryLibraryListBuildJob job))
+            {
+                memoryLibraryListBuildOrder.RemoveFirst();
+                return;
+            }
+            if (!MemoryLibraryListBuildStillCurrent(job))
+            {
+                CancelMemoryLibraryListBuild(ownerKey);
+                return;
+            }
+            int workCap = Math.Max(1, (int)ReadCapacityLong(
+                "sliceWorkItems", 60, MemoryLibraryLimitCeilings.SliceWorkItems));
+            long microseconds = Math.Max(1, ReadCapacityLong(
+                "sliceTargetMicroseconds", 750,
+                MemoryLibraryLimitCeilings.SliceTargetMicroseconds));
+            Stopwatch timer = Stopwatch.StartNew();
+            int completed = 0;
+            bool done = job.selectionJob.source.Count == 0;
+            while (!done && completed < workCap)
+            {
+                done = MemoryLibraryIndexPolicy.AdvanceImportedListSelection(
+                    job.selectionJob, job.limits);
+                completed++;
+                if (timer.ElapsedTicks * 1000000L / Stopwatch.Frequency >= microseconds) break;
+            }
+            if (!done)
+            {
+                memoryLibraryListBuildOrder.RemoveFirst();
+                memoryLibraryListBuildOrder.AddLast(ownerKey);
+                return;
+            }
+            MemoryLibraryListSelection selection =
+                MemoryLibraryIndexPolicy.CompleteImportedListSelection(job.selectionJob);
+            if (selection != null && MemoryLibraryListBuildStillCurrent(job))
+            {
+                // Validate the complete private result before consuming a global publication revision.
+                MemoryLibraryListResult candidate = MemoryLibraryIndexPolicy.QueryListSelection(
+                    job.ownerSnapshot,
+                    job.query,
+                    selection,
+                    job.directoryRevision,
+                    1,
+                    job.committedSettingsRevision,
+                    job.languageDisplayRevision,
+                    job.ttlDayRevision,
+                    job.nextDayBoundary,
+                    job.limits);
+                if (candidate.status == MemoryLibraryStatuses.Ready)
+                {
+                    MemoryLibraryPublication publication = ResolveCompleteLibraryPublication(
+                        memoryLibraryListPublications,
+                        job.streamFingerprint,
+                        job.contentFingerprint,
+                        job.ownerKey,
+                        job.ownerSnapshot,
+                        0,
+                        job.nextDayBoundary,
+                        job.ttlValidUntilTickExclusive,
+                        string.Empty);
+                    if (publication != null) publication.listSelection = selection;
+                }
+            }
+            CancelMemoryLibraryListBuild(ownerKey);
+        }
+
+        private bool MemoryLibraryListBuildStillCurrent(MemoryLibraryListBuildJob job)
+        {
+            long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            return job != null
+                && !MemoryLibrarySourceTupleChanged()
+                && MemoryLibraryPolicy.LibraryBuildFenceMatches(
+                    job.diaryStateVersion,
+                    DiaryStateVersion.Current,
+                    job.directoryRevision,
+                    memoryLibraryDirectoryRevision,
+                    job.committedSettingsRevision,
+                    MemoryEffectivePolicyProvider.PublicationRevision,
+                    job.languageDisplayRevision,
+                    memoryLibraryLanguageDisplayRevision,
+                    job.ttlDayRevision,
+                    now / 60000L)
+                && memoryLibraryOwners.TryGetValue(
+                    job.ownerKey, out MemoryLibraryOwnerIndexSnapshot owner)
+                && ReferenceEquals(owner, job.ownerSnapshot)
+                && memoryLibraryOwnerCacheFingerprints.TryGetValue(
+                    job.ownerKey, out string sourceFingerprint)
+                && string.Equals(sourceFingerprint,
+                    job.ownerSourceFingerprint, StringComparison.Ordinal);
+        }
+
+        private void CancelMemoryLibraryListBuild(string ownerKey)
+        {
+            if (string.IsNullOrEmpty(ownerKey)) return;
+            memoryLibraryListBuildJobs.Remove(ownerKey);
+            memoryLibraryListBuildOrder.Remove(ownerKey);
+        }
+
+        private static MemoryLibraryListQuery CopyMemoryLibraryListQuery(
+            MemoryLibraryListQuery source)
+        {
+            if (source == null) return null;
+            MemoryLibraryOwnerHandle handle = source.primaryHandle == null ? null
+                : new MemoryLibraryOwnerHandle(
+                    source.primaryHandle.scopeToken,
+                    source.primaryHandle.exactOwnerPawnIdOrEmpty,
+                    source.primaryHandle.epochTokenOrEmpty);
+            MemoryOwnerEpochKey epoch = source.activeOwnerEpochKey == null ? null
+                : new MemoryOwnerEpochKey
+                {
+                    ownerPawnId = source.activeOwnerEpochKey.ownerPawnId,
+                    epochToken = source.activeOwnerEpochKey.epochToken
+                };
+            MemoryLibraryFilters filters = source.filters == null
+                ? new MemoryLibraryFilters()
+                : new MemoryLibraryFilters
+                {
+                    importanceMask = source.filters.importanceMask,
+                    categoryMask = source.filters.categoryMask,
+                    stateToken = source.filters.stateToken ?? string.Empty
+                };
+            return new MemoryLibraryListQuery
+            {
+                primaryHandle = handle,
+                activeOwnerEpochKey = epoch,
+                viewTag = source.viewTag ?? string.Empty,
+                filters = filters,
+                search = source.search ?? string.Empty,
+                sortToken = source.sortToken ?? string.Empty,
+                listStart = source.listStart,
+                listCount = source.listCount,
+                expectedDirectoryRevision = source.expectedDirectoryRevision,
+                expectedListSnapshotRevision = 0
+            };
+        }
+
         private void BuildPendingMemoryLibraryOwnerIndex()
         {
             string key = memoryLibraryPendingOwnerBuildKey;
@@ -1624,6 +1926,7 @@ namespace PawnDiary
 
         private void InvalidateMemoryLibraryPublicationsForOwner(string ownerKey)
         {
+            CancelMemoryLibraryListBuild(ownerKey);
             RemoveMemoryLibraryPublications(memoryLibraryListPublications, ownerKey);
             RemoveMemoryLibraryPublications(memoryLibraryDetailPublications, ownerKey);
         }
@@ -2658,9 +2961,9 @@ namespace PawnDiary
                 importedPreviewUtf16Units = (int)ReadCapacityTuplePart(
                     "importedPreviewChunkUnits", 0, 240,
                     MemoryLibraryLimitCeilings.ImportedPreviewUtf16Units),
-                importedSearchUtf16Units = (int)ReadCapacityLong(
-                    "importedTextUnits", 2000,
-                    MemoryLibraryLimitCeilings.ImportedSearchUtf16Units),
+                importedSearchScratchUtf16Units = (int)ReadCapacityLong(
+                    "importedSearchScratchUnits", 49152,
+                    MemoryLibraryLimitCeilings.ImportedSearchScratchUtf16Units),
                 importedTextChunkUtf16Units = (int)ReadCapacityTuplePart(
                     "importedPreviewChunkUnits", 1, 1000,
                     MemoryLibraryLimitCeilings.ImportedTextChunkUtf16Units),

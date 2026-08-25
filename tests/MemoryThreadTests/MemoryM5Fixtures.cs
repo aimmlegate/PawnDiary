@@ -390,6 +390,9 @@ namespace MemoryThreadTests
             Equal("m5.library.ceiling.preview", DefensiveTuplePart(
                     "importedPreviewChunkUnits", 0),
                 MemoryLibraryLimitCeilings.ImportedPreviewUtf16Units.ToString());
+            Equal("m5.library.ceiling.imported.search.scratch",
+                DefensiveValue("importedSearchScratchUnits"),
+                MemoryLibraryLimitCeilings.ImportedSearchScratchUtf16Units.ToString());
             Equal("m5.library.ceiling.owners", DefensiveValue("libraryOwnerEntries"),
                 MemoryLibraryLimitCeilings.OwnerEntries.ToString());
             Equal("m5.library.ceiling.commands", DefensiveValue("libraryCommandEntries"),
@@ -415,6 +418,26 @@ namespace MemoryThreadTests
             Equal("m5.library.culture.adopted.changed", true,
                 MemoryLibraryPolicy.CultureProjectionChanged(
                     "origin", "captured", "old", "origin", "captured", "new"));
+            Equal("m5.library.directory.tier.unknown", MemoryLibraryDirectoryTiers.Data,
+                MemoryLibraryPolicy.DirectoryTier(true, false, false, true, false));
+            Equal("m5.library.directory.tier.dead.culture", MemoryLibraryDirectoryTiers.Data,
+                MemoryLibraryPolicy.DirectoryTier(false, false, true, false, false));
+            Equal("m5.library.directory.tier.away.culture", MemoryLibraryDirectoryTiers.Data,
+                MemoryLibraryPolicy.DirectoryTier(false, false, true, false, false));
+            Equal("m5.library.directory.tier.dead.empty", MemoryLibraryDirectoryTiers.Omitted,
+                MemoryLibraryPolicy.DirectoryTier(false, false, false, false, false));
+            Equal("m5.library.directory.tier.active.empty",
+                MemoryLibraryDirectoryTiers.ActiveZero,
+                MemoryLibraryPolicy.DirectoryTier(false, false, false, false, true));
+            Equal("m5.library.directory.tier.raw",
+                MemoryLibraryDirectoryTiers.CompatibilityRaw,
+                MemoryLibraryPolicy.DirectoryTier(false, false, false, true, false));
+            Equal("m5.library.build.fence.same", true,
+                MemoryLibraryPolicy.LibraryBuildFenceMatches(
+                    1, 1, 2, 2, 3, 3, 4, 4, 5, 5));
+            Equal("m5.library.build.fence.diary.changed", false,
+                MemoryLibraryPolicy.LibraryBuildFenceMatches(
+                    1, 2, 2, 2, 3, 3, 4, 4, 5, 5));
         }
 
         private static void LibraryFilteringPagingAndTtlRules()
@@ -663,16 +686,76 @@ namespace MemoryThreadTests
             Equal("m5.library.imported.result.preview.only", "short",
                 imported.rows[0].imported.preview);
 
+            snapshot.imported.Clear();
+            snapshot.imported.Add(new MemoryImportedSearchDescriptor
+            {
+                row = new MemoryImportedRow { preview = "first" },
+                rawSearchText = "ordinary"
+            });
+            snapshot.imported.Add(new MemoryImportedSearchDescriptor
+            {
+                row = new MemoryImportedRow { preview = "expanded" },
+                // U+FB03 expands from one raw UTF-16 unit to three NFKC units. The suffix is past
+                // the old 2,000-unit row cap but inside the canonical search-scratch capacity.
+                rawSearchText = new string('\uFB03', 700) + "needle"
+            });
+            MemoryLibraryListQuery expandedQuery = new MemoryLibraryListQuery
+            {
+                primaryHandle = input.primaryHandle,
+                viewTag = MemoryLibraryViews.Imported,
+                search = "needle",
+                listCount = 10
+            };
+            MemoryImportedListSelectionJob expandedJob =
+                MemoryLibraryIndexPolicy.BeginImportedListSelection(
+                    snapshot, expandedQuery, limits);
+            Equal("m5.library.imported.slice.first.incomplete", false,
+                MemoryLibraryIndexPolicy.AdvanceImportedListSelection(expandedJob, limits));
+            Equal("m5.library.imported.slice.one.row", 1, expandedJob.cursor);
+            Equal("m5.library.imported.slice.second.complete", true,
+                MemoryLibraryIndexPolicy.AdvanceImportedListSelection(expandedJob, limits));
+            MemoryLibraryListSelection expandedSelection =
+                MemoryLibraryIndexPolicy.CompleteImportedListSelection(expandedJob);
+            MemoryLibraryListResult expanded = MemoryLibraryIndexPolicy.QueryListSelection(
+                snapshot, expandedQuery, expandedSelection, 1, 2, 3, 4, 5, 1000, limits);
+            Equal("m5.library.imported.nfkc.suffix.match", 1, expanded.totalMatchedRows);
+            Equal("m5.library.imported.nfkc.preview.only", "expanded",
+                expanded.rows[0].imported.preview);
+            expandedQuery.listStart = 1;
+            Equal("m5.library.imported.fresh.cursor.must.start.zero", null,
+                MemoryLibraryIndexPolicy.BeginImportedListSelection(
+                    snapshot, expandedQuery, limits));
+            expandedQuery.listStart = 0;
+            expandedQuery.expectedListSnapshotRevision = -1;
+            Equal("m5.library.imported.negative.revision.invalid", null,
+                MemoryLibraryIndexPolicy.BeginImportedListSelection(
+                    snapshot, expandedQuery, limits));
+            expandedQuery.expectedListSnapshotRevision = 2;
+            expandedQuery.expectedDirectoryRevision = -1;
+            MemoryLibraryListResult negativeDirectory =
+                MemoryLibraryIndexPolicy.QueryListSelection(
+                    snapshot, expandedQuery, expandedSelection,
+                    1, 2, 3, 4, 5, 1000, limits);
+            Equal("m5.library.imported.negative.directory.invalid",
+                MemoryLibraryStatuses.Invalid, negativeDirectory.status);
+
             MemoryLibraryRootIndexInput orphanRoot = new MemoryLibraryRootIndexInput
             {
                 header = new MemoryThreadHeaderRow
                 {
                     rootHandle = new MemoryRootHandle
-                        { ownerPawnId = "pawn", epochToken = "epoch", rootId = "orphan" }
+                        { ownerPawnId = "pawn", epochToken = "epoch", rootId = "orphan" },
+                    latestActivityTick = 999
                 }
             };
+            orphanRoot.chapters.Add(NewChapter("kept-chapter", 1));
+            MemoryBlockRow kept = NewLibraryBlock(
+                "kept-child", 10, "Regular", false, false, "KEPT");
+            kept.rootHandle = orphanRoot.header.rootHandle;
+            kept.chapterId = "kept-chapter";
+            orphanRoot.children.Add(kept);
             MemoryBlockRow orphan = NewLibraryBlock(
-                "orphan-child", 300, "Regular", false, false, "ORPHAN");
+                "orphan-child", 999, "Important", false, false, "ORPHAN");
             orphan.rootHandle = orphanRoot.header.rootHandle;
             orphan.chapterId = "missing-chapter";
             orphanRoot.children.Add(orphan);
@@ -682,8 +765,23 @@ namespace MemoryThreadTests
                 ownerEpochKey = input.ownerEpochKey
             };
             orphanInput.roots.Add(orphanRoot);
+            MemoryLibraryOwnerIndexSnapshot repairedOrphan =
+                MemoryLibraryIndexPolicy.BuildOwner(orphanInput, limits);
+            Equal("m5.library.detail.orphan.header.manageable", 1,
+                repairedOrphan.roots[0].header.manageableMemoryCount);
+            Equal("m5.library.detail.orphan.header.counted", 1,
+                repairedOrphan.roots[0].header.targetCountedVisibleBlockCount);
+            Equal("m5.library.detail.orphan.header.importance",
+                MemoryLibraryPolicy.ImportanceRegular,
+                repairedOrphan.roots[0].header.highestImportanceMask);
+            Equal("m5.library.detail.orphan.header.latest", 10L,
+                repairedOrphan.roots[0].header.latestActivityTick);
+            Equal("m5.library.detail.orphan.owner.latest", 10L,
+                repairedOrphan.ownerRow.latestActivityTick);
+            Equal("m5.library.detail.orphan.owner.ttl", 1010L,
+                repairedOrphan.ownerEarliestFiniteExpiryTickExclusive);
             MemoryThreadDetailResult orphanResult = MemoryLibraryIndexPolicy.QueryThreadDetail(
-                MemoryLibraryIndexPolicy.BuildOwner(orphanInput, limits),
+                repairedOrphan,
                 new MemoryThreadDetailQuery
                 {
                     rootHandle = orphanRoot.header.rootHandle,
@@ -694,9 +792,17 @@ namespace MemoryThreadTests
                 new MemoryLibraryLimits { libraryWindowRows = 0, chapterHeaderRows = 0 });
             Equal("m5.library.detail.orphan.ready", MemoryLibraryStatuses.Ready,
                 orphanResult.status);
-            Equal("m5.library.detail.orphan.progress", 1, orphanResult.returnedCount);
-            Equal("m5.library.detail.orphan.no.zero.more", false,
-                orphanResult.returnedCount == 0 && orphanResult.hasMore);
+            Equal("m5.library.detail.orphan.not.returned", 1, orphanResult.returnedCount);
+            Equal("m5.library.detail.orphan.kept.child", "kept-child",
+                orphanResult.blocks[0].recordHandle.recordId);
+            Equal("m5.library.detail.orphan.kept.context", 1, orphanResult.chapters.Count);
+            Equal("m5.library.detail.orphan.terminal", false, orphanResult.hasMore);
+            Equal("m5.library.detail.orphan.total", 1, orphanResult.totalManageableCount);
+            Equal("m5.library.detail.orphan.shown", 1, orphanResult.shownManageableCount);
+            Equal("m5.library.detail.orphan.suppression", false,
+                orphanResult.allBlocksSuppressedForWriting);
+            Equal("m5.library.detail.orphan.ttl", 1000L,
+                orphanResult.ttlValidUntilTickExclusive);
         }
 
         private static void LibraryHandleAndRevisionRules()

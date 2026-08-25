@@ -30,10 +30,13 @@ namespace PawnDiary
             {
                 MemoryLibraryRootIndexInput root = result.roots[rootIndex];
                 if (root?.header == null) continue;
-                latest = Math.Max(latest, root.header.latestActivityTick);
+                // A chapter-linked child and its context are one domain unit. Repair the detached
+                // owner snapshot before deriving any counts, importance, TTL, or cursor metadata.
+                root.children = RepairOrphanChildren(root.children, root.chapters);
                 edited = 0;
                 suppressed = 0;
                 int highestImportance = 0;
+                long rootLatest = 0;
                 long rootEarliest = long.MaxValue;
                 for (int childIndex = 0; childIndex < root.children.Count; childIndex++)
                 {
@@ -41,7 +44,8 @@ namespace PawnDiary
                     if (child == null) continue;
                     if (child.playerEdited) edited++;
                     if (child.suppressed) suppressed++;
-                    latest = Math.Max(latest, Math.Max(child.activityTick, child.originalTick));
+                    rootLatest = Math.Max(
+                        rootLatest, Math.Max(child.activityTick, child.originalTick));
                     earliest = Math.Min(earliest, child.projectedNextExpiryTick);
                     rootEarliest = Math.Min(rootEarliest, child.projectedNextExpiryTick);
                     highestImportance = HighestImportance(
@@ -52,7 +56,9 @@ namespace PawnDiary
                 root.header.editedCount = edited;
                 root.header.suppressedCount = suppressed;
                 root.header.highestImportanceMask = highestImportance;
+                root.header.latestActivityTick = rootLatest;
                 root.rootEarliestFiniteExpiryTickExclusive = rootEarliest;
+                latest = Math.Max(latest, rootLatest);
             }
             for (int index = 0; index < result.standalone.Count; index++)
             {
@@ -151,7 +157,9 @@ namespace PawnDiary
             MemoryLibraryListResult result = new MemoryLibraryListResult();
             MemoryLibraryLimits cap = limits ?? new MemoryLibraryLimits();
             if (snapshot?.ownerRow == null || query == null || listRevision <= 0
-                || directoryRevision <= 0 || !MemoryLibraryPolicy.ValidOwnerHandle(query.primaryHandle))
+                || directoryRevision <= 0 || query.expectedDirectoryRevision < 0
+                || query.expectedListSnapshotRevision < 0
+                || !MemoryLibraryPolicy.ValidOwnerHandle(query.primaryHandle))
                 return result;
             if (query.expectedDirectoryRevision > 0
                 && query.expectedDirectoryRevision != directoryRevision)
@@ -178,23 +186,161 @@ namespace PawnDiary
                 query.search, cap.searchScalars, cap.searchUtf16Units);
             List<MemoryLibraryListRow> eligible = new List<MemoryLibraryListRow>();
             List<MemoryLibraryListRow> matched = new List<MemoryLibraryListRow>();
+            MemoryLibraryListSelection selection;
             if (query.viewTag == MemoryLibraryViews.Threads)
                 SelectRoots(snapshot.roots, query.filters, search, cap, eligible, matched);
             else if (query.viewTag == MemoryLibraryViews.Standalone)
                 SelectStandalone(snapshot.standalone, query.filters, search, cap, eligible, matched);
             else if (query.viewTag == MemoryLibraryViews.Imported)
-                SelectImported(snapshot.imported, search, cap, eligible, matched);
+            {
+                MemoryImportedListSelectionJob job = BeginImportedListSelection(
+                    snapshot, query, cap);
+                if (job == null) return result;
+                while (!AdvanceImportedListSelection(job, cap)) { }
+                selection = CompleteImportedListSelection(job);
+                if (selection == null) return result;
+                return QueryListSelection(
+                    snapshot, query, selection, directoryRevision, listRevision,
+                    committedSettingsRevision, languageRevision, ttlDayRevision,
+                    nextDayBoundary, cap);
+            }
             else return result;
 
-            matched.Sort((left, right) => CompareListRows(left, right, query.sortToken));
+            selection = new MemoryLibraryListSelection
+            {
+                totalEligibleRows = eligible.Count,
+                matched = matched
+            };
+            return QueryListSelection(
+                snapshot, query, selection, directoryRevision, listRevision,
+                committedSettingsRevision, languageRevision, ttlDayRevision,
+                nextDayBoundary, cap);
+        }
+
+        /// <summary>Starts one complete-domain Imported match without normalizing any row yet.</summary>
+        public static MemoryImportedListSelectionJob BeginImportedListSelection(
+            MemoryLibraryOwnerIndexSnapshot snapshot,
+            MemoryLibraryListQuery query,
+            MemoryLibraryLimits limits)
+        {
+            if (snapshot?.ownerRow == null || query == null
+                || query.viewTag != MemoryLibraryViews.Imported
+                || !MemoryLibraryPolicy.ValidOwnerHandle(query.primaryHandle)
+                || !SameHandle(snapshot.ownerRow.primaryHandle, query.primaryHandle)
+                || query.activeOwnerEpochKey != null
+                || query.expectedDirectoryRevision < 0
+                || query.expectedListSnapshotRevision < 0
+                || query.listStart < 0 || query.listCount <= 0
+                || query.expectedListSnapshotRevision == 0 && query.listStart != 0)
+                return null;
+            MemoryLibraryLimits cap = limits ?? new MemoryLibraryLimits();
+            return new MemoryImportedListSelectionJob
+            {
+                source = snapshot.imported ?? new List<MemoryImportedSearchDescriptor>(),
+                normalizedSearch = MemoryLibraryPolicy.NormalizeSearch(
+                    query.search, cap.searchScalars, cap.searchUtf16Units),
+                sortToken = query.sortToken ?? string.Empty
+            };
+        }
+
+        /// <summary>
+        /// Processes at most one complete Imported row. The normalized scratch is local to this call
+        /// and is never retained in the job or returned DTO.
+        /// </summary>
+        public static bool AdvanceImportedListSelection(
+            MemoryImportedListSelectionJob job,
+            MemoryLibraryLimits limits)
+        {
+            if (job == null) return true;
+            if (job.cursor >= job.source.Count) return true;
+            MemoryImportedSearchDescriptor descriptor = job.source[job.cursor++];
+            MemoryImportedRow row = descriptor?.row;
+            if (row == null) return job.cursor >= job.source.Count;
+            MemoryLibraryListRow item = new MemoryLibraryListRow
+            {
+                tag = MemoryLibraryRowTags.Imported,
+                imported = row
+            };
+            job.selection.totalEligibleRows++;
+            // Empty search admits every row without allocating or normalizing complete wording.
+            if (string.IsNullOrEmpty(job.normalizedSearch))
+            {
+                job.selection.matched.Add(item);
+                return job.cursor >= job.source.Count;
+            }
+            MemoryLibraryLimits cap = limits ?? new MemoryLibraryLimits();
+            string scratch = MemoryLibraryPolicy.NormalizeSearch(
+                descriptor.rawSearchText,
+                int.MaxValue,
+                cap.importedSearchScratchUtf16Units);
+            if (MemoryLibraryPolicy.SearchMatches(scratch, job.normalizedSearch))
+                job.selection.matched.Add(item);
+            return job.cursor >= job.source.Count;
+        }
+
+        /// <summary>Finalizes a fully scanned Imported selection in stable requested order.</summary>
+        public static MemoryLibraryListSelection CompleteImportedListSelection(
+            MemoryImportedListSelectionJob job)
+        {
+            if (job == null || job.cursor < job.source.Count) return null;
+            if (!job.selection.sorted)
+            {
+                job.selection.matched.Sort(
+                    (left, right) => CompareListRows(left, right, job.sortToken));
+                job.selection.sorted = true;
+            }
+            return job.selection;
+        }
+
+        /// <summary>Pages a complete selection without repeating complete-row search work.</summary>
+        public static MemoryLibraryListResult QueryListSelection(
+            MemoryLibraryOwnerIndexSnapshot snapshot,
+            MemoryLibraryListQuery query,
+            MemoryLibraryListSelection selection,
+            long directoryRevision,
+            long listRevision,
+            long committedSettingsRevision,
+            long languageRevision,
+            long ttlDayRevision,
+            long nextDayBoundary,
+            MemoryLibraryLimits limits)
+        {
+            MemoryLibraryListResult result = new MemoryLibraryListResult();
+            MemoryLibraryLimits cap = limits ?? new MemoryLibraryLimits();
+            if (snapshot?.ownerRow == null || query == null || selection == null
+                || listRevision <= 0 || directoryRevision <= 0
+                || query.expectedDirectoryRevision < 0
+                || query.expectedListSnapshotRevision < 0
+                || !MemoryLibraryPolicy.ValidOwnerHandle(query.primaryHandle)
+                || !SameHandle(snapshot.ownerRow.primaryHandle, query.primaryHandle)) return result;
+            if (query.expectedDirectoryRevision > 0
+                && query.expectedDirectoryRevision != directoryRevision
+                || query.expectedListSnapshotRevision > 0
+                && query.expectedListSnapshotRevision != listRevision)
+            {
+                result.status = MemoryLibraryStatuses.Stale;
+                return result;
+            }
+            bool activeView = query.viewTag == MemoryLibraryViews.Threads
+                || query.viewTag == MemoryLibraryViews.Standalone;
+            if (activeView && !MemoryLibraryPolicy.HandlesMatch(
+                    query.primaryHandle, query.activeOwnerEpochKey)
+                || query.viewTag == MemoryLibraryViews.Imported
+                && query.activeOwnerEpochKey != null) return result;
+            if (!selection.sorted)
+            {
+                selection.matched.Sort(
+                    (left, right) => CompareListRows(left, right, query.sortToken));
+                selection.sorted = true;
+            }
             MemoryLibraryCursorPlan cursor = MemoryLibraryPolicy.NormalizeRowCursor(
                 query.listStart, query.listCount,
                 Math.Max(1, Math.Min(cap.libraryWindowRows, cap.libraryWindowCeiling)),
-                query.expectedListSnapshotRevision, matched.Count);
+                query.expectedListSnapshotRevision, selection.matched.Count);
             if (!cursor.valid) return result;
             result.status = MemoryLibraryStatuses.Ready;
-            result.totalEligibleRows = eligible.Count;
-            result.totalMatchedRows = matched.Count;
+            result.totalEligibleRows = selection.totalEligibleRows;
+            result.totalMatchedRows = selection.matched.Count;
             result.ttlValidUntilTickExclusive = MemoryLibraryPolicy.TtlValidUntil(
                 nextDayBoundary, snapshot.ownerEarliestFiniteExpiryTickExclusive);
             result.returnedStart = cursor.start;
@@ -209,10 +355,10 @@ namespace PawnDiary
             result.committedSettingsRevision = committedSettingsRevision;
             result.languageDisplayRevision = languageRevision;
             result.ttlDayRevision = ttlDayRevision;
-            result.emptyStateToken = eligible.Count == 0
-                ? "no_memories" : matched.Count == 0 ? "no_matches" : "none";
+            result.emptyStateToken = selection.totalEligibleRows == 0
+                ? "no_memories" : selection.matched.Count == 0 ? "no_matches" : "none";
             for (int index = 0; index < cursor.returnedCount; index++)
-                result.rows.Add(matched[cursor.start + index]);
+                result.rows.Add(selection.matched[cursor.start + index]);
             return result;
         }
 
@@ -239,11 +385,19 @@ namespace PawnDiary
             bool headerHit = MemoryLibraryPolicy.SearchMatches(
                 root.header?.normalizedSearch, search);
             List<MemoryBlockRow> filtered = new List<MemoryBlockRow>();
+            HashSet<string> knownChapters = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; index < root.chapters.Count; index++)
+                if (!string.IsNullOrEmpty(root.chapters[index]?.chapterId))
+                    knownChapters.Add(root.chapters[index].chapterId);
             bool allSuppressed = root.children.Count > 0;
             for (int index = 0; index < root.children.Count; index++)
             {
                 MemoryBlockRow row = root.children[index];
                 if (row != null && !row.suppressed) allSuppressed = false;
+                // Chapter context and child form one complete packing unit. Corrupt detached rows
+                // are removed before counts/cursors so they cannot become orphans or stall paging.
+                if (!string.IsNullOrEmpty(row?.chapterId)
+                    && !knownChapters.Contains(row.chapterId)) continue;
                 if (MemoryLibraryPolicy.TryProjectRow(
                     row, query.filters, search, headerHit, cap, out MemoryBlockRow projected))
                 {
@@ -278,13 +432,9 @@ namespace PawnDiary
                     && includedChapters.Count < Math.Max(1, cap.chapterHeaderRows))
                 {
                     MemoryChapterRow chapter = FindChapter(root.chapters, block.chapterId);
-                    // Repair normally removes orphan placement references. If malformed detached input
-                    // still reaches the query, return the child without context so paging advances.
-                    if (chapter == null)
-                    {
-                        result.blocks.Add(block);
-                        continue;
-                    }
+                    // The pre-cursor repair above guarantees this lookup. Fail closed if a malformed
+                    // detached snapshot somehow changes while the pure query is packing it.
+                    if (chapter == null) continue;
                     MemoryChapterRow context = CopyChapter(chapter);
                     context.continuedFromPrevious = cursor.start > 0
                         && string.Equals(filtered[cursor.start - 1]?.chapterId,
@@ -384,33 +534,6 @@ namespace PawnDiary
                         tag = MemoryLibraryRowTags.Standalone,
                         standalone = matchedProjection
                     });
-            }
-        }
-
-        private static void SelectImported(
-            List<MemoryImportedSearchDescriptor> rows,
-            string search,
-            MemoryLibraryLimits limits,
-            List<MemoryLibraryListRow> eligible,
-            List<MemoryLibraryListRow> matched)
-        {
-            for (int index = 0; rows != null && index < rows.Count; index++)
-            {
-                MemoryImportedSearchDescriptor descriptor = rows[index];
-                MemoryImportedRow row = descriptor?.row;
-                if (row == null) continue;
-                MemoryLibraryListRow item = new MemoryLibraryListRow
-                {
-                    tag = MemoryLibraryRowTags.Imported,
-                    imported = row
-                };
-                eligible.Add(item);
-                // T15.7 permits one complete bounded normalization scratch for the current row only.
-                string scratch = MemoryLibraryPolicy.NormalizeSearch(
-                    descriptor.rawSearchText,
-                    int.MaxValue,
-                    (limits ?? new MemoryLibraryLimits()).importedSearchUtf16Units);
-                if (MemoryLibraryPolicy.SearchMatches(scratch, search)) matched.Add(item);
             }
         }
 
@@ -516,6 +639,26 @@ namespace PawnDiary
             for (int index = 0; rows != null && index < rows.Count; index++)
                 if (rows[index] != null && !rows[index].rollingSummary) result++;
             return result;
+        }
+
+        private static List<MemoryBlockRow> RepairOrphanChildren(
+            List<MemoryBlockRow> children,
+            List<MemoryChapterRow> chapters)
+        {
+            HashSet<string> known = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; chapters != null && index < chapters.Count; index++)
+                if (!string.IsNullOrEmpty(chapters[index]?.chapterId))
+                    known.Add(chapters[index].chapterId);
+            List<MemoryBlockRow> repaired = new List<MemoryBlockRow>();
+            for (int index = 0; children != null && index < children.Count; index++)
+            {
+                MemoryBlockRow child = children[index];
+                if (child == null) continue;
+                if (!string.IsNullOrEmpty(child.chapterId)
+                    && !known.Contains(child.chapterId)) continue;
+                repaired.Add(child);
+            }
+            return repaired;
         }
 
         private static int HighestImportance(int left, int right)

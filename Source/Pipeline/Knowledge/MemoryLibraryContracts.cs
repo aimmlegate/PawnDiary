@@ -273,6 +273,28 @@ namespace PawnDiary
         public string rawSearchText = string.Empty;
     }
 
+    /// <summary>
+    /// Incremental pure Imported matcher. It retains only bounded returned-row DTO references and
+    /// never stores a normalized copy of complete Imported wording.
+    /// </summary>
+    internal sealed class MemoryImportedListSelectionJob
+    {
+        public List<MemoryImportedSearchDescriptor> source =
+            new List<MemoryImportedSearchDescriptor>();
+        public string normalizedSearch = string.Empty;
+        public string sortToken = string.Empty;
+        public int cursor;
+        public MemoryLibraryListSelection selection = new MemoryLibraryListSelection();
+    }
+
+    /// <summary>Complete immutable-domain list selection reused by pinned cursor pages.</summary>
+    internal sealed class MemoryLibraryListSelection
+    {
+        public int totalEligibleRows;
+        public bool sorted;
+        public List<MemoryLibraryListRow> matched = new List<MemoryLibraryListRow>();
+    }
+
     internal sealed class MemoryLibraryListRow
     {
         public string tag = string.Empty;
