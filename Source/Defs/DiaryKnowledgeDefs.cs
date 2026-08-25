@@ -449,6 +449,10 @@ namespace PawnDiary
         public int memoryOpinionReversalChangePoints = 12;
         public int memoryOpinionEpisodeInactivityTicks = 60000;
         public int memoryOpinionEpisodeMaximumTicks = 300000;
+        /// <summary>
+        /// Exact base-game family-by-choice Def names. Plain strings remain safe without any DLC.
+        /// </summary>
+        public List<string> memoryFamilyRelationDefNames = new List<string>();
         public List<DiaryMemoryCapacityValueRow> memoryCapacityVector =
             new List<DiaryMemoryCapacityValueRow>();
     }
@@ -618,6 +622,7 @@ namespace PawnDiary
                     tuning.memoryOpinionEpisodeInactivityTicks;
                 snapshot.opinionEpisodeMaximumTicks =
                     tuning.memoryOpinionEpisodeMaximumTicks;
+                snapshot.familyRelationDefNames = tuning.memoryFamilyRelationDefNames;
             }
             return snapshot.Normalized();
         }

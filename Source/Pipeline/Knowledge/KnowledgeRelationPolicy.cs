@@ -117,6 +117,14 @@ namespace PawnDiary
     /// <summary>XML-owned M6 cadence and deterministic episode thresholds.</summary>
     internal sealed class KnowledgeObservationPolicySnapshot
     {
+        private static readonly string[] DefaultFamilyRelationDefNames =
+        {
+            "Stepparent",
+            "Stepchild",
+            "ParentInLaw",
+            "ChildInLaw"
+        };
+
         public const int MinimumReconciliationIntervalTicks = 250;
         public const int MaximumReconciliationIntervalTicks = 60000;
         public const int DefaultReconciliationIntervalTicks = 2500;
@@ -131,6 +139,8 @@ namespace PawnDiary
         public int maximumStateFacts = 4;
         public int maximumFactKeyCharacters = 48;
         public int maximumFactValueCharacters = 128;
+        public List<string> familyRelationDefNames =
+            new List<string>(DefaultFamilyRelationDefNames);
 
         /// <summary>Returns a bounded copy; malformed XML can never create zero-work or overflow loops.</summary>
         public KnowledgeObservationPolicySnapshot Normalized()
@@ -151,8 +161,42 @@ namespace PawnDiary
                     opinionEpisodeMaximumTicks, 1, 12000000, 300000),
                 maximumStateFacts = Clamp(maximumStateFacts, 1, 16, 4),
                 maximumFactKeyCharacters = Clamp(maximumFactKeyCharacters, 1, 192, 48),
-                maximumFactValueCharacters = Clamp(maximumFactValueCharacters, 1, 512, 128)
+                maximumFactValueCharacters = Clamp(maximumFactValueCharacters, 1, 512, 128),
+                familyRelationDefNames = NormalizeFamilyRelationDefNames(familyRelationDefNames)
             };
+        }
+
+        /// <summary>
+        /// Returns the bounded exact base-game family-by-choice allowlist. Malformed XML falls back
+        /// to the shipped vanilla set; plain Def names keep this policy detached and no-DLC safe.
+        /// </summary>
+        private static List<string> NormalizeFamilyRelationDefNames(IEnumerable<string> values)
+        {
+            const int maximumRows = 16;
+            const int maximumCharacters = 128;
+            SortedSet<string> normalized = new SortedSet<string>(StringComparer.Ordinal);
+            int inspected = 0;
+            if (values != null)
+            {
+                foreach (string value in values)
+                {
+                    inspected++;
+                    string clean = (value ?? string.Empty).Trim();
+                    if (inspected > maximumRows || !KnowledgeRelationPolicy.RequiredRaw(clean)
+                        || clean.Length > maximumCharacters)
+                    {
+                        normalized.Clear();
+                        break;
+                    }
+                    normalized.Add(clean);
+                }
+            }
+            if (normalized.Count == 0)
+            {
+                for (int i = 0; i < DefaultFamilyRelationDefNames.Length; i++)
+                    normalized.Add(DefaultFamilyRelationDefNames[i]);
+            }
+            return new List<string>(normalized);
         }
 
         /// <summary>
@@ -187,6 +231,14 @@ namespace PawnDiary
     {
         public bool removedFaction;
         public bool forceSilentBaseline;
+    }
+
+    /// <summary>Detached owner-revision result for one loaded M6 repair commit.</summary>
+    internal struct KnowledgeOwnerRepairRevisionPlan
+    {
+        public bool valid;
+        public bool canCommit;
+        public long nextRevision;
     }
 
     /// <summary>One plain canonical state fact used on both sides of the saved-model adapter.</summary>
@@ -653,11 +705,17 @@ namespace PawnDiary
             SortedSet<string> canonical = new SortedSet<string>(StringComparer.Ordinal);
             if (values != null)
             {
+                int inspected = 0;
                 foreach (string value in values)
                 {
+                    // Even a duplicate-only or malicious lazy enumerable is bounded. Refusal is
+                    // safe: callers publish capacity_untracked instead of a truncated exact set.
+                    inspected++;
+                    if (inspected > maximumCharacters) return false;
                     string cleaned = (value ?? string.Empty).Trim();
-                    if (!RequiredRaw(cleaned)) return false;
+                    if (!RequiredRaw(cleaned) || cleaned.Length > maximumCharacters) return false;
                     canonical.Add(cleaned);
+                    if (canonical.Count > maximumCharacters) return false;
                 }
             }
 
@@ -670,6 +728,65 @@ namespace PawnDiary
             if (builder.Length > maximumCharacters) return false;
             encoded = builder.ToString();
             return true;
+        }
+
+        /// <summary>
+        /// Classifies one visible relation as family without passing a live PawnRelationDef into
+        /// policy. Blood and spouse are stable schema flags; family-by-choice Def names are XML-owned.
+        /// </summary>
+        public static bool IsFamilyRelation(
+            bool familyByBlood,
+            bool spouse,
+            string relationDefName,
+            KnowledgeObservationPolicySnapshot policy)
+        {
+            if (familyByBlood || spouse) return true;
+            string clean = (relationDefName ?? string.Empty).Trim();
+            if (!RequiredRaw(clean)) return false;
+            KnowledgeObservationPolicySnapshot safe =
+                (policy ?? new KnowledgeObservationPolicySnapshot()).Normalized();
+            return safe.familyRelationDefNames.BinarySearch(clean, StringComparer.Ordinal) >= 0;
+        }
+
+        /// <summary>
+        /// Returns a bounded deterministic candidate order with every already-saved exact edge ahead
+        /// of newly discovered edges. Inputs are themselves adapter-capped; malformed IDs are ignored.
+        /// </summary>
+        public static List<string> PrioritizeObservationCandidateIds(
+            IEnumerable<string> savedIds,
+            IEnumerable<string> discoveredIds,
+            int cap)
+        {
+            int safeCap = Math.Max(0, cap);
+            List<string> result = new List<string>();
+            SortedSet<string> saved = BoundedCandidateIds(savedIds, safeCap);
+            SortedSet<string> discovered = BoundedCandidateIds(discoveredIds, safeCap);
+            foreach (string id in saved)
+            {
+                if (result.Count >= safeCap) break;
+                result.Add(id);
+            }
+            foreach (string id in discovered)
+            {
+                if (result.Count >= safeCap) break;
+                if (!saved.Contains(id)) result.Add(id);
+            }
+            return result;
+        }
+
+        private static SortedSet<string> BoundedCandidateIds(
+            IEnumerable<string> values,
+            int cap)
+        {
+            SortedSet<string> result = new SortedSet<string>(StringComparer.Ordinal);
+            int inspected = 0;
+            foreach (string value in values ?? new string[0])
+            {
+                if (inspected++ >= cap) break;
+                string clean = (value ?? string.Empty).Trim();
+                if (RequiredRaw(clean)) result.Add(clean);
+            }
+            return result;
         }
 
         /// <summary>True only for vanilla's complete base-game diplomacy relation vocabulary.</summary>
@@ -1933,7 +2050,7 @@ namespace PawnDiary
             return false;
         }
 
-        private static bool RequiredRaw(string value)
+        internal static bool RequiredRaw(string value)
         {
             return !string.IsNullOrWhiteSpace(value)
                 && value.Length <= MemoryIdentityCodec.MaximumRawIdentityCharacters
@@ -1945,6 +2062,43 @@ namespace PawnDiary
             return !string.IsNullOrWhiteSpace(value)
                 && value.Length <= MemoryIdentityCodec.MaximumEmbeddedCompositeCharacters
                 && MemoryIdentityCodec.IsWellFormedUtf16(value);
+        }
+
+        /// <summary>Plans the one owner revision bump shared by awareness and episode repair.</summary>
+        public static KnowledgeOwnerRepairRevisionPlan PlanOwnerRepairRevision(
+            long currentRevision,
+            bool repairChanged)
+        {
+            if (currentRevision <= 0)
+                return new KnowledgeOwnerRepairRevisionPlan();
+            if (!repairChanged)
+            {
+                return new KnowledgeOwnerRepairRevisionPlan
+                {
+                    valid = true,
+                    nextRevision = currentRevision
+                };
+            }
+            if (currentRevision == long.MaxValue)
+            {
+                return new KnowledgeOwnerRepairRevisionPlan
+                {
+                    valid = true,
+                    nextRevision = currentRevision
+                };
+            }
+            return new KnowledgeOwnerRepairRevisionPlan
+            {
+                valid = true,
+                canCommit = true,
+                nextRevision = currentRevision + 1
+            };
+        }
+
+        /// <summary>True only when another exact active owner slot can be admitted.</summary>
+        public static bool CanAdmitObservationOwner(int activeOwnerCount, int ownerCap)
+        {
+            return activeOwnerCount >= 0 && ownerCap > 0 && activeOwnerCount < ownerCap;
         }
 
         private static bool ValidEpoch(string value)

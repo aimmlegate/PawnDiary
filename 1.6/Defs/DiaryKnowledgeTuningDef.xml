@@ -57,6 +57,14 @@
     <memoryOpinionReversalChangePoints>12</memoryOpinionReversalChangePoints>
     <memoryOpinionEpisodeInactivityTicks>60000</memoryOpinionEpisodeInactivityTicks>
     <memoryOpinionEpisodeMaximumTicks>300000</memoryOpinionEpisodeMaximumTicks>
+    <!-- Base-game family-by-choice relations shown by vanilla's Social tab but not flagged as blood.
+         Exact string matching is harmless when another game version or mod omits one of these Defs. -->
+    <memoryFamilyRelationDefNames>
+      <li>Stepparent</li>
+      <li>Stepchild</li>
+      <li>ParentInLaw</li>
+      <li>ChildInLaw</li>
+    </memoryFamilyRelationDefNames>
 
     <!-- M0's provisional production vector. Each slash-delimited tuple is one atomic coordinate;
          tests require this exact order and code-owned ceilings remain strictly separate. -->

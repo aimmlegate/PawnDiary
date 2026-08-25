@@ -1340,6 +1340,12 @@ namespace PawnMemoryTests
                 int.Parse((string)def.Element("memoryOpinionEpisodeInactivityTicks")));
             AssertEqual("m6.xml.maximum", policy.opinionEpisodeMaximumTicks,
                 int.Parse((string)def.Element("memoryOpinionEpisodeMaximumTicks")));
+            List<string> xmlFamily = def.Element("memoryFamilyRelationDefNames")
+                .Elements("li").Select(row => ((string)row).Trim())
+                .OrderBy(value => value, StringComparer.Ordinal).ToList();
+            AssertEqual("m6.xml.family.count", policy.familyRelationDefNames.Count, xmlFamily.Count);
+            AssertEqual("m6.xml.family.exact", string.Join("|", policy.familyRelationDefNames),
+                string.Join("|", xmlFamily));
 
             KnowledgeObservationPolicySnapshot malformed =
                 new KnowledgeObservationPolicySnapshot
@@ -1353,7 +1359,8 @@ namespace PawnMemoryTests
                     opinionEpisodeMaximumTicks = int.MaxValue,
                     maximumStateFacts = 100,
                     maximumFactKeyCharacters = 0,
-                    maximumFactValueCharacters = 1000
+                    maximumFactValueCharacters = 1000,
+                    familyRelationDefNames = new List<string> { "", "Unsafe|Relation" }
                 };
             KnowledgeObservationPolicySnapshot normalized = malformed.Normalized();
             AssertEqual("m6.normalize.reconcile", 2500, normalized.reconciliationIntervalTicks);
@@ -1362,6 +1369,7 @@ namespace PawnMemoryTests
             AssertEqual("m6.normalize.factCount", 4, normalized.maximumStateFacts);
             AssertEqual("m6.normalize.factKey", 48, normalized.maximumFactKeyCharacters);
             AssertEqual("m6.normalize.factValue", 128, normalized.maximumFactValueCharacters);
+            AssertEqual("m6.normalize.familyFallback", 4, normalized.familyRelationDefNames.Count);
 
             KnowledgeOpinionBandThresholds bands = new KnowledgeOpinionBandThresholds();
             AssertEqual("m6.band.devoted", KnowledgeObservationTokens.OpinionDevoted,
@@ -1515,6 +1523,29 @@ namespace PawnMemoryTests
                 !KnowledgeRelationPolicy.OwnerAttachmentNeedsSilentBaseline(true, true));
             AssertTrue("m6.ownerAttach.ineligibleDoesNotAttach",
                 !KnowledgeRelationPolicy.OwnerAttachmentNeedsSilentBaseline(false, false));
+            AssertTrue("m6.ownerAdmission.belowCap",
+                KnowledgeRelationPolicy.CanAdmitObservationOwner(999, 1000));
+            AssertTrue("m6.ownerAdmission.atCap",
+                !KnowledgeRelationPolicy.CanAdmitObservationOwner(1000, 1000));
+
+            KnowledgeOwnerRepairRevisionPlan ordinaryRepair =
+                KnowledgeRelationPolicy.PlanOwnerRepairRevision(7, true);
+            AssertTrue("m6.repair.ownerRevisionAdvances",
+                ordinaryRepair.valid && ordinaryRepair.canCommit
+                    && ordinaryRepair.nextRevision == 8);
+            KnowledgeOwnerRepairRevisionPlan finalRepair =
+                KnowledgeRelationPolicy.PlanOwnerRepairRevision(long.MaxValue - 1, true);
+            AssertTrue("m6.repair.ownerRevisionFinalAdvance",
+                finalRepair.canCommit && finalRepair.nextRevision == long.MaxValue);
+            KnowledgeOwnerRepairRevisionPlan saturatedRepair =
+                KnowledgeRelationPolicy.PlanOwnerRepairRevision(long.MaxValue, true);
+            AssertTrue("m6.repair.ownerRevisionSaturated",
+                saturatedRepair.valid && !saturatedRepair.canCommit
+                    && saturatedRepair.nextRevision == long.MaxValue);
+            List<string> prioritized = KnowledgeRelationPolicy.PrioritizeObservationCandidateIds(
+                new[] { "Pawn_Z" }, new[] { "Pawn_B", "Pawn_A" }, 2);
+            AssertEqual("m6.candidates.savedEdgeFirst", "Pawn_Z", prioritized[0]);
+            AssertEqual("m6.candidates.discoveredLexicalFill", "Pawn_A", prioritized[1]);
 
             string epoch = M6Epoch("Pawn_ab");
             string first;
@@ -1551,6 +1582,29 @@ namespace PawnMemoryTests
             KnowledgeRelationPolicy.TryEncodeRelationDefSet(
                 new[] { "Parent", "Spouse" }, 128, out sortedAgain);
             AssertEqual("m6.identity.setDedup", sortedAgain, setSorted);
+            AssertTrue("m6.identity.setDuplicateInspectionBoundary",
+                KnowledgeRelationPolicy.TryEncodeRelationDefSet(
+                    Enumerable.Repeat("Spouse", 128), 128, out setSorted));
+            AssertTrue("m6.identity.setDuplicateInspectionOverflow",
+                !KnowledgeRelationPolicy.TryEncodeRelationDefSet(
+                    Enumerable.Repeat("Spouse", 129), 128, out setSorted));
+
+            KnowledgeObservationPolicySnapshot familyPolicy =
+                new KnowledgeObservationPolicySnapshot().Normalized();
+            AssertTrue("m6.family.blood",
+                KnowledgeRelationPolicy.IsFamilyRelation(true, false, "Unknown", familyPolicy));
+            AssertTrue("m6.family.spouse",
+                KnowledgeRelationPolicy.IsFamilyRelation(false, true, "Spouse", familyPolicy));
+            foreach (string relation in new[]
+                     { "Stepparent", "Stepchild", "ParentInLaw", "ChildInLaw" })
+            {
+                AssertTrue("m6.family.choice." + relation,
+                    KnowledgeRelationPolicy.IsFamilyRelation(
+                        false, false, relation, familyPolicy));
+            }
+            AssertTrue("m6.family.unknownSocialOnly",
+                !KnowledgeRelationPolicy.IsFamilyRelation(
+                    false, false, "ExLover", familyPolicy));
         }
 
         private static void TestM6FactCanonicalization()
