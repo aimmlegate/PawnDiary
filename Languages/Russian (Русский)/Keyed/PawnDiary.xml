@@ -2047,4 +2047,151 @@
   <PawnDiary.Memory.Settings.Repetition.Help>Если все связанные воспоминания ещё ожидают, в эту запись воспоминание просто не добавляется.</PawnDiary.Memory.Settings.Repetition.Help>
   <PawnDiary.Memory.SettingsSaveFailed>Не удалось сохранить настройки Pawn Diary. Прежняя политика памяти остаётся активной.</PawnDiary.Memory.SettingsSaveFailed>
   <PawnDiary.Memory.SettingsFutureVersion>Этот файл настроек Pawn Diary создан более новой версией системы памяти. Функции памяти отключены, а файл не будет перезаписан.</PawnDiary.Memory.SettingsFutureVersion>
+  <!-- M9: локализованная библиотека единой системы памяти. -->
+  <PawnDiary.Memory.Library.Title>Библиотека воспоминаний</PawnDiary.Memory.Library.Title>
+  <PawnDiary.Memory.Library.MemoriesAction>Воспоминания</PawnDiary.Memory.Library.MemoriesAction>
+  <PawnDiary.Memory.Library.Unavailable>Библиотека воспоминаний недоступна, пока не загружена игра с активной выпущенной системой памяти.</PawnDiary.Memory.Library.Unavailable>
+  <PawnDiary.Memory.Library.Threads>Цепочки</PawnDiary.Memory.Library.Threads>
+  <PawnDiary.Memory.Library.Standalone>Отдельные</PawnDiary.Memory.Library.Standalone>
+  <PawnDiary.Memory.Library.Imported>Импортированные</PawnDiary.Memory.Library.Imported>
+  <PawnDiary.Memory.Library.Back>Назад</PawnDiary.Memory.Library.Back>
+  <PawnDiary.Memory.Library.Previous>Назад</PawnDiary.Memory.Library.Previous>
+  <PawnDiary.Memory.Library.Next>Далее</PawnDiary.Memory.Library.Next>
+  <PawnDiary.Memory.Library.All>Все</PawnDiary.Memory.Library.All>
+  <PawnDiary.Memory.Library.AllSuppressed>Все воспоминания в этой цепочке исключены из текста.</PawnDiary.Memory.Library.AllSuppressed>
+  <PawnDiary.Memory.Library.BlockCard>{0} · {1}</PawnDiary.Memory.Library.BlockCard>
+  <PawnDiary.Memory.Library.BlockDetailMeta>{0} · {1} · {2} · {3} · {4}</PawnDiary.Memory.Library.BlockDetailMeta>
+  <PawnDiary.Memory.Library.Cancel>Отмена</PawnDiary.Memory.Library.Cancel>
+  <PawnDiary.Memory.Library.CategoryDisabled>категория отключена</PawnDiary.Memory.Library.CategoryDisabled>
+  <PawnDiary.Memory.Library.CategoryPersonal>Личное</PawnDiary.Memory.Library.CategoryPersonal>
+  <PawnDiary.Memory.Library.CategoryRelationships>Отношения</PawnDiary.Memory.Library.CategoryRelationships>
+  <PawnDiary.Memory.Library.CategoryFamily>Семья</PawnDiary.Memory.Library.CategoryFamily>
+  <PawnDiary.Memory.Library.CategoryFactions>Фракции</PawnDiary.Memory.Library.CategoryFactions>
+  <PawnDiary.Memory.Library.Chapter>Глава {0}</PawnDiary.Memory.Library.Chapter>
+  <PawnDiary.Memory.Library.ChapterUnknown>Глава</PawnDiary.Memory.Library.ChapterUnknown>
+  <PawnDiary.Memory.Library.ClosedSummary>Сводка закрытой главы</PawnDiary.Memory.Library.ClosedSummary>
+  <PawnDiary.Memory.Library.CommandBusy>Библиотека занята. Отделённый черновик сохранён.</PawnDiary.Memory.Library.CommandBusy>
+  <PawnDiary.Memory.Library.CommandMissing>Этого точного воспоминания больше нет.</PawnDiary.Memory.Library.CommandMissing>
+  <PawnDiary.Memory.Library.CommandRejected>Библиотека отклонила изменение. Сохранённые воспоминания не изменены.</PawnDiary.Memory.Library.CommandRejected>
+  <PawnDiary.Memory.Library.CommandStale>Воспоминание изменилось после открытия. Проверьте сохранённый черновик и повторите попытку.</PawnDiary.Memory.Library.CommandStale>
+  <PawnDiary.Memory.Library.CommandSuccess>Воспоминание обновлено.</PawnDiary.Memory.Library.CommandSuccess>
+  <PawnDiary.Memory.Library.CompatibilityPreview>{0}
+
+Сохранено строк: {1}; логических байт: {2}</PawnDiary.Memory.Library.CompatibilityPreview>
+  <PawnDiary.Memory.Library.CopyDiagnostics>Копировать диагностику</PawnDiary.Memory.Library.CopyDiagnostics>
+  <PawnDiary.Memory.Library.CulturalContext>Культурный контекст</PawnDiary.Memory.Library.CulturalContext>
+  <PawnDiary.Memory.Library.CultureOrigin>Происхождение: {0} ({1})</PawnDiary.Memory.Library.CultureOrigin>
+  <PawnDiary.Memory.Library.CultureOriginNoProvenance>Происхождение: {0}</PawnDiary.Memory.Library.CultureOriginNoProvenance>
+  <PawnDiary.Memory.Library.CultureAdopted>Принятая культура: {0}</PawnDiary.Memory.Library.CultureAdopted>
+  <PawnDiary.Memory.Library.CultureExplanation>Эта сохранённая культурная принадлежность может влиять на подходящие отсылки в будущих записях, но сама не является эпизодическим воспоминанием. Библиотека не определяет её по живому персонажу.</PawnDiary.Memory.Library.CultureExplanation>
+  <PawnDiary.Memory.Library.CultureUnknown>Неизвестно</PawnDiary.Memory.Library.CultureUnknown>
+  <PawnDiary.Memory.Library.CultureRecorded>записано</PawnDiary.Memory.Library.CultureRecorded>
+  <PawnDiary.Memory.Library.CultureInferred>выведено</PawnDiary.Memory.Library.CultureInferred>
+  <PawnDiary.Memory.Library.CultureUnavailable>недоступно</PawnDiary.Memory.Library.CultureUnavailable>
+  <PawnDiary.Memory.Library.CultureNone>нет</PawnDiary.Memory.Library.CultureNone>
+  <PawnDiary.Memory.Library.CurrentKnown>известно из сохранённых данных</PawnDiary.Memory.Library.CurrentKnown>
+  <PawnDiary.Memory.Library.CurrentUnknown>неизвестно</PawnDiary.Memory.Library.CurrentUnknown>
+  <PawnDiary.Memory.Library.DateUnknown>Дата неизвестна</PawnDiary.Memory.Library.DateUnknown>
+  <PawnDiary.Memory.Library.Day>День {0}</PawnDiary.Memory.Library.Day>
+  <PawnDiary.Memory.Library.DiagnosticsBody>Факты: {0}
+Субъекты: {1}
+Происхождение: {2}
+Исходная страница: {3}
+Автоматический текст: {4}
+Идентификаторы и причины: {5}</PawnDiary.Memory.Library.DiagnosticsBody>
+  <PawnDiary.Memory.Library.DiagnosticsUnavailable>Диагностика недоступна.</PawnDiary.Memory.Library.DiagnosticsUnavailable>
+  <PawnDiary.Memory.Library.DiagnosticsIdentity>владелец={0}; эпоха={1}; запись={2}; корень={3}; глава={4}</PawnDiary.Memory.Library.DiagnosticsIdentity>
+  <PawnDiary.Memory.Library.DiagnosticsState>вид={0}; структурная ревизия={1}; исходный тик={2}; исключено={3}; изменено={4}; срок={5}; предел текста={6}</PawnDiary.Memory.Library.DiagnosticsState>
+  <PawnDiary.Memory.Library.Edit>Изменить</PawnDiary.Memory.Library.Edit>
+  <PawnDiary.Memory.Library.EditConflict>Пока был открыт отделённый черновик, структура воспоминания изменилась. Текст сохранён для новой ревизии; проверьте его перед сохранением.</PawnDiary.Memory.Library.EditConflict>
+  <PawnDiary.Memory.Library.EditCapFull>Предел изменённых воспоминаний исчерпан. Верните исходный текст одному из уже изменённых воспоминаний, прежде чем изменять другое. Черновик сохранён.</PawnDiary.Memory.Library.EditCapFull>
+  <PawnDiary.Memory.Library.Edited>изменено</PawnDiary.Memory.Library.Edited>
+  <PawnDiary.Memory.Library.EmptyWording>Текст для показа отсутствует</PawnDiary.Memory.Library.EmptyWording>
+  <PawnDiary.Memory.Library.EventMemory>Событийное воспоминание</PawnDiary.Memory.Library.EventMemory>
+  <PawnDiary.Memory.Library.FilterCategory>Категория: {0}</PawnDiary.Memory.Library.FilterCategory>
+  <PawnDiary.Memory.Library.FilterImportance>Важность: {0}</PawnDiary.Memory.Library.FilterImportance>
+  <PawnDiary.Memory.Library.FilterState>Состояние: {0}</PawnDiary.Memory.Library.FilterState>
+  <PawnDiary.Memory.Library.Forget>Забыть</PawnDiary.Memory.Library.Forget>
+  <PawnDiary.Memory.Library.ForgetWarning>Навсегда забыть именно это воспоминание? Существующие страницы дневника и другие сводки не изменятся. Это действие необратимо.</PawnDiary.Memory.Library.ForgetWarning>
+  <PawnDiary.Memory.Library.HideCultureDiagnostics>Скрыть диагностику культуры</PawnDiary.Memory.Library.HideCultureDiagnostics>
+  <PawnDiary.Memory.Library.HideDiagnostics>Скрыть диагностику</PawnDiary.Memory.Library.HideDiagnostics>
+  <PawnDiary.Memory.Library.ImportanceMinor>Незначительное</PawnDiary.Memory.Library.ImportanceMinor>
+  <PawnDiary.Memory.Library.ImportanceRegular>Обычное</PawnDiary.Memory.Library.ImportanceRegular>
+  <PawnDiary.Memory.Library.ImportanceImportant>Важное</PawnDiary.Memory.Library.ImportanceImportant>
+  <PawnDiary.Memory.Library.ImportedCard>Импортировано · {0} · {1} · {2}</PawnDiary.Memory.Library.ImportedCard>
+  <PawnDiary.Memory.Library.ImportedDetailMeta>Источник: {0}
+Миграция: {1}</PawnDiary.Memory.Library.ImportedDetailMeta>
+  <PawnDiary.Memory.Library.ImportedSourceLegacy>унаследованные данные</PawnDiary.Memory.Library.ImportedSourceLegacy>
+  <PawnDiary.Memory.Library.ImportedSourceArchive>архив владельца</PawnDiary.Memory.Library.ImportedSourceArchive>
+  <PawnDiary.Memory.Library.ImportedReasonUnavailable>причина недоступна</PawnDiary.Memory.Library.ImportedReasonUnavailable>
+  <PawnDiary.Memory.Library.ImportedReasonMigration>сохранено при миграции</PawnDiary.Memory.Library.ImportedReasonMigration>
+  <PawnDiary.Memory.Library.ImportedPreviewUnavailable>Текст импортированного воспоминания недоступен</PawnDiary.Memory.Library.ImportedPreviewUnavailable>
+  <PawnDiary.Memory.Library.Invalid>Некорректный запрос библиотеки. Данные не изменены.</PawnDiary.Memory.Library.Invalid>
+  <PawnDiary.Memory.Library.LifetimeDue>ожидает забывания</PawnDiary.Memory.Library.LifetimeDue>
+  <PawnDiary.Memory.Library.LifetimeImportant>без обычного срока</PawnDiary.Memory.Library.LifetimeImportant>
+  <PawnDiary.Memory.Library.LifetimeMinor>незначительное · осталось дней: {0}</PawnDiary.Memory.Library.LifetimeMinor>
+  <PawnDiary.Memory.Library.LifetimeMixed>содержит разные сроки · следующее истечение: {0}</PawnDiary.Memory.Library.LifetimeMixed>
+  <PawnDiary.Memory.Library.LifetimeProtected>изменено · защищено</PawnDiary.Memory.Library.LifetimeProtected>
+  <PawnDiary.Memory.Library.LifetimeRegular>обычное · осталось дней: {0}</PawnDiary.Memory.Library.LifetimeRegular>
+  <PawnDiary.Memory.Library.LifetimeUnknown>дата неизвестна · хранится как важное</PawnDiary.Memory.Library.LifetimeUnknown>
+  <PawnDiary.Memory.Library.Missing>Это точное воспоминание больше недоступно.</PawnDiary.Memory.Library.Missing>
+  <PawnDiary.Memory.Library.Never>Никогда</PawnDiary.Memory.Library.Never>
+  <PawnDiary.Memory.Library.Newest>Сначала новые</PawnDiary.Memory.Library.Newest>
+  <PawnDiary.Memory.Library.NoBlocks>В этой цепочке нет подходящих воспоминаний.</PawnDiary.Memory.Library.NoBlocks>
+  <PawnDiary.Memory.Library.NoFilterMatches>Нет воспоминаний, подходящих под фильтры.</PawnDiary.Memory.Library.NoFilterMatches>
+  <PawnDiary.Memory.Library.NoMatches>Поиск не нашёл воспоминаний.</PawnDiary.Memory.Library.NoMatches>
+  <PawnDiary.Memory.Library.NoMemories>У владельца нет воспоминаний в этом представлении.</PawnDiary.Memory.Library.NoMemories>
+  <PawnDiary.Memory.Library.NoThreads>У этого поселенца пока нет цепочек воспоминаний.</PawnDiary.Memory.Library.NoThreads>
+  <PawnDiary.Memory.Library.NoStandalone>У этого поселенца нет отдельных воспоминаний.</PawnDiary.Memory.Library.NoStandalone>
+  <PawnDiary.Memory.Library.NoImported>У владельца нет импортированных воспоминаний.</PawnDiary.Memory.Library.NoImported>
+  <PawnDiary.Memory.Library.None>нет</PawnDiary.Memory.Library.None>
+  <PawnDiary.Memory.Library.NoOwnerMatches>Поиск не нашёл владельцев воспоминаний.</PawnDiary.Memory.Library.NoOwnerMatches>
+  <PawnDiary.Memory.Library.NoOwners>В этой игре нет владельцев библиотеки.</PawnDiary.Memory.Library.NoOwners>
+  <PawnDiary.Memory.Library.Oldest>Сначала старые</PawnDiary.Memory.Library.Oldest>
+  <PawnDiary.Memory.Library.OwnerButton>Владелец: {0}</PawnDiary.Memory.Library.OwnerButton>
+  <PawnDiary.Memory.Library.OwnerMenuRow>{0} · {1} · цепочек: {2} · отдельных: {3} · импортированных: {4}</PawnDiary.Memory.Library.OwnerMenuRow>
+  <PawnDiary.Memory.Library.OwnerActive>в колонии</PawnDiary.Memory.Library.OwnerActive>
+  <PawnDiary.Memory.Library.OwnerDeparted>выбыл/архив</PawnDiary.Memory.Library.OwnerDeparted>
+  <PawnDiary.Memory.Library.OwnerMigrationPending>ожидает миграции</PawnDiary.Memory.Library.OwnerMigrationPending>
+  <PawnDiary.Memory.Library.OwnerUnknown>состояние неизвестно</PawnDiary.Memory.Library.OwnerUnknown>
+  <PawnDiary.Memory.Library.OwnerSearchTip>Поиск в ограниченном каталоге владельцев. Совпадающие подписи не заменяют точную личность владельца.</PawnDiary.Memory.Library.OwnerSearchTip>
+  <PawnDiary.Memory.Library.Preparing>Подготовка библиотеки воспоминаний…</PawnDiary.Memory.Library.Preparing>
+  <PawnDiary.Memory.Library.ProviderPotential>может быть отправлено при выборе</PawnDiary.Memory.Library.ProviderPotential>
+  <PawnDiary.Memory.Library.ProviderNotSent>не отправлялось</PawnDiary.Memory.Library.ProviderNotSent>
+  <PawnDiary.Memory.Library.ProviderConfirmed>отправлено</PawnDiary.Memory.Library.ProviderConfirmed>
+  <PawnDiary.Memory.Library.ProviderUnknown>отправка поставщику неизвестна</PawnDiary.Memory.Library.ProviderUnknown>
+  <PawnDiary.Memory.Library.Refreshing>Обновление отделённого представления библиотеки…</PawnDiary.Memory.Library.Refreshing>
+  <PawnDiary.Memory.Library.RollingSummary>Текущая сводка</PawnDiary.Memory.Library.RollingSummary>
+  <PawnDiary.Memory.Library.Save>Сохранить</PawnDiary.Memory.Library.Save>
+  <PawnDiary.Memory.Library.SummaryChanging>Эта сводка всё ещё меняется.</PawnDiary.Memory.Library.SummaryChanging>
+  <PawnDiary.Memory.Library.ReadOnlyFacts>Записанный факт: {0}
+Источник: {1}</PawnDiary.Memory.Library.ReadOnlyFacts>
+  <PawnDiary.Memory.Library.SourceDiaryPage>связанная страница дневника</PawnDiary.Memory.Library.SourceDiaryPage>
+  <PawnDiary.Memory.Library.SourceUnavailable>связанной страницы нет</PawnDiary.Memory.Library.SourceUnavailable>
+  <PawnDiary.Memory.Library.SearchTip>Поиск в текущем представлении выбранного владельца.</PawnDiary.Memory.Library.SearchTip>
+  <PawnDiary.Memory.Library.SelectMemory>Выберите воспоминание для просмотра.</PawnDiary.Memory.Library.SelectMemory>
+  <PawnDiary.Memory.Library.SelectOwner>Выберите владельца</PawnDiary.Memory.Library.SelectOwner>
+  <PawnDiary.Memory.Library.ShowCultureDiagnostics>Диагностика культуры</PawnDiary.Memory.Library.ShowCultureDiagnostics>
+  <PawnDiary.Memory.Library.ShowDiagnostics>Показать диагностику</PawnDiary.Memory.Library.ShowDiagnostics>
+  <PawnDiary.Memory.Library.Showing>{0}–{1} из {2}</PawnDiary.Memory.Library.Showing>
+  <PawnDiary.Memory.Library.Position>{0} из {1}</PawnDiary.Memory.Library.Position>
+  <PawnDiary.Memory.Library.Sort>Сортировка: {0}</PawnDiary.Memory.Library.Sort>
+  <PawnDiary.Memory.Library.Suppress>Исключить</PawnDiary.Memory.Library.Suppress>
+  <PawnDiary.Memory.Library.Suppressed>исключено</PawnDiary.Memory.Library.Suppressed>
+  <PawnDiary.Memory.Library.ThreadCard>{0} · {1} · глав: {2} · воспоминаний: {3} · {4}</PawnDiary.Memory.Library.ThreadCard>
+  <PawnDiary.Memory.Library.RootPerson>Человек</PawnDiary.Memory.Library.RootPerson>
+  <PawnDiary.Memory.Library.RootFaction>Фракция</PawnDiary.Memory.Library.RootFaction>
+  <PawnDiary.Memory.Library.RootOngoingStory>Продолжающаяся история</PawnDiary.Memory.Library.RootOngoingStory>
+  <PawnDiary.Memory.Library.EditedCount>изменено: {0}</PawnDiary.Memory.Library.EditedCount>
+  <PawnDiary.Memory.Library.SuppressedCount>исключено: {0}</PawnDiary.Memory.Library.SuppressedCount>
+  <PawnDiary.Memory.Library.ThreadDetailHeader>Текущее состояние: {0}
+Показано управляемых воспоминаний: {1} из {2}</PawnDiary.Memory.Library.ThreadDetailHeader>
+  <PawnDiary.Memory.Library.UnknownOwner>Неизвестный владелец</PawnDiary.Memory.Library.UnknownOwner>
+  <PawnDiary.Memory.Library.UnknownSubject>Неизвестный субъект</PawnDiary.Memory.Library.UnknownSubject>
+  <PawnDiary.Memory.Library.Unsuppressed>доступно</PawnDiary.Memory.Library.Unsuppressed>
+  <PawnDiary.Memory.Library.Usage>Последнее автоматическое включение: {0}
+Автоматических включений: {1}; отправка поставщику: {2}</PawnDiary.Memory.Library.Usage>
+  <PawnDiary.Memory.Library.UseAgain>Снова использовать</PawnDiary.Memory.Library.UseAgain>
+  <PawnDiary.Memory.Library.UseOriginal>Вернуть исходный текст</PawnDiary.Memory.Library.UseOriginal>
+  <PawnDiary.Memory.Library.UseOriginalWarning>Срок изменённого воспоминания уже истёк, поэтому при следующей явной очистке оно может быть забыто. Вернуть исходный текст?</PawnDiary.Memory.Library.UseOriginalWarning>
 </LanguageData>

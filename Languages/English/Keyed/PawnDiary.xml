@@ -2148,6 +2148,143 @@
   <PawnDiary.Memory.Library.Imported.RawPreview>This legacy memory is too large or incomplete for the current format. Only a bounded preview is available.</PawnDiary.Memory.Library.Imported.RawPreview>
   <PawnDiary.Memory.Library.Dev.Diagnostics>Copy diagnostics</PawnDiary.Memory.Library.Dev.Diagnostics>
   <PawnDiary.Memory.Library.Dev.RejectionReasons>Rejection reasons</PawnDiary.Memory.Library.Dev.RejectionReasons>
+  <!-- M9: unified-memory Library. All query/status tokens are adapted to player-facing prose here. -->
+  <PawnDiary.Memory.Library.MemoriesAction>Memories</PawnDiary.Memory.Library.MemoriesAction>
+  <PawnDiary.Memory.Library.Unavailable>The Memory Library is unavailable until a game is loaded with the released memory system active.</PawnDiary.Memory.Library.Unavailable>
+  <PawnDiary.Memory.Library.All>All</PawnDiary.Memory.Library.All>
+  <PawnDiary.Memory.Library.AllSuppressed>Every memory in this thread is suppressed from writing.</PawnDiary.Memory.Library.AllSuppressed>
+  <PawnDiary.Memory.Library.BlockCard>{0} · {1}</PawnDiary.Memory.Library.BlockCard>
+  <PawnDiary.Memory.Library.BlockDetailMeta>{0} · {1} · {2} · {3} · {4}</PawnDiary.Memory.Library.BlockDetailMeta>
+  <PawnDiary.Memory.Library.Cancel>Cancel</PawnDiary.Memory.Library.Cancel>
+  <PawnDiary.Memory.Library.CategoryDisabled>category disabled</PawnDiary.Memory.Library.CategoryDisabled>
+  <PawnDiary.Memory.Library.CategoryPersonal>Personal</PawnDiary.Memory.Library.CategoryPersonal>
+  <PawnDiary.Memory.Library.CategoryRelationships>Relationships</PawnDiary.Memory.Library.CategoryRelationships>
+  <PawnDiary.Memory.Library.CategoryFamily>Family</PawnDiary.Memory.Library.CategoryFamily>
+  <PawnDiary.Memory.Library.CategoryFactions>Factions</PawnDiary.Memory.Library.CategoryFactions>
+  <PawnDiary.Memory.Library.ChapterUnknown>Chapter</PawnDiary.Memory.Library.ChapterUnknown>
+  <PawnDiary.Memory.Library.ClosedSummary>Closed chapter summary</PawnDiary.Memory.Library.ClosedSummary>
+  <PawnDiary.Memory.Library.CommandBusy>The Library is busy. Your detached draft has been kept.</PawnDiary.Memory.Library.CommandBusy>
+  <PawnDiary.Memory.Library.CommandMissing>This exact memory no longer exists.</PawnDiary.Memory.Library.CommandMissing>
+  <PawnDiary.Memory.Library.CommandRejected>The Library rejected this change. No saved memory was changed.</PawnDiary.Memory.Library.CommandRejected>
+  <PawnDiary.Memory.Library.CommandStale>The memory changed since it was opened. Review the retained draft and try again.</PawnDiary.Memory.Library.CommandStale>
+  <PawnDiary.Memory.Library.CommandSuccess>Memory updated.</PawnDiary.Memory.Library.CommandSuccess>
+  <PawnDiary.Memory.Library.CompatibilityPreview>{0}
+
+Preserved rows: {1}; logical bytes: {2}</PawnDiary.Memory.Library.CompatibilityPreview>
+  <PawnDiary.Memory.Library.CopyDiagnostics>Copy diagnostics</PawnDiary.Memory.Library.CopyDiagnostics>
+  <PawnDiary.Memory.Library.CulturalContext>Cultural context</PawnDiary.Memory.Library.CulturalContext>
+  <PawnDiary.Memory.Library.CultureOrigin>Origin: {0} ({1})</PawnDiary.Memory.Library.CultureOrigin>
+  <PawnDiary.Memory.Library.CultureOriginNoProvenance>Origin: {0}</PawnDiary.Memory.Library.CultureOriginNoProvenance>
+  <PawnDiary.Memory.Library.CultureAdopted>Adopted: {0}</PawnDiary.Memory.Library.CultureAdopted>
+  <PawnDiary.Memory.Library.CultureExplanation>This saved cultural identity may shape matching references in future writing, but it is not an episodic memory. The Library does not resolve it from a live pawn.</PawnDiary.Memory.Library.CultureExplanation>
+  <PawnDiary.Memory.Library.CultureUnknown>Unknown</PawnDiary.Memory.Library.CultureUnknown>
+  <PawnDiary.Memory.Library.CultureRecorded>recorded</PawnDiary.Memory.Library.CultureRecorded>
+  <PawnDiary.Memory.Library.CultureInferred>inferred</PawnDiary.Memory.Library.CultureInferred>
+  <PawnDiary.Memory.Library.CultureUnavailable>unavailable</PawnDiary.Memory.Library.CultureUnavailable>
+  <PawnDiary.Memory.Library.CultureNone>none</PawnDiary.Memory.Library.CultureNone>
+  <PawnDiary.Memory.Library.CurrentKnown>known from saved evidence</PawnDiary.Memory.Library.CurrentKnown>
+  <PawnDiary.Memory.Library.CurrentUnknown>unknown</PawnDiary.Memory.Library.CurrentUnknown>
+  <PawnDiary.Memory.Library.DateUnknown>Date unknown</PawnDiary.Memory.Library.DateUnknown>
+  <PawnDiary.Memory.Library.Day>Day {0}</PawnDiary.Memory.Library.Day>
+  <PawnDiary.Memory.Library.DiagnosticsBody>Facts: {0}
+Subjects: {1}
+Provenance: {2}
+Source page: {3}
+Automatic wording: {4}
+Identifiers and reasons: {5}</PawnDiary.Memory.Library.DiagnosticsBody>
+  <PawnDiary.Memory.Library.DiagnosticsUnavailable>No diagnostics are available.</PawnDiary.Memory.Library.DiagnosticsUnavailable>
+  <PawnDiary.Memory.Library.DiagnosticsIdentity>owner={0}; epoch={1}; record={2}; root={3}; chapter={4}</PawnDiary.Memory.Library.DiagnosticsIdentity>
+  <PawnDiary.Memory.Library.DiagnosticsState>kind={0}; structural revision={1}; original tick={2}; suppressed={3}; edited={4}; TTL={5}; edit cap={6}</PawnDiary.Memory.Library.DiagnosticsState>
+  <PawnDiary.Memory.Library.Edit>Edit</PawnDiary.Memory.Library.Edit>
+  <PawnDiary.Memory.Library.EditConflict>The memory changed structurally while this detached draft was open. Your text was retained against the latest revision; review it before saving.</PawnDiary.Memory.Library.EditConflict>
+  <PawnDiary.Memory.Library.EditCapFull>The edit limit is full. Use original wording on an existing edited memory before editing another one. Your draft has been kept.</PawnDiary.Memory.Library.EditCapFull>
+  <PawnDiary.Memory.Library.Edited>edited</PawnDiary.Memory.Library.Edited>
+  <PawnDiary.Memory.Library.EmptyWording>No display wording</PawnDiary.Memory.Library.EmptyWording>
+  <PawnDiary.Memory.Library.EventMemory>Event memory</PawnDiary.Memory.Library.EventMemory>
+  <PawnDiary.Memory.Library.FilterCategory>Category: {0}</PawnDiary.Memory.Library.FilterCategory>
+  <PawnDiary.Memory.Library.FilterImportance>Importance: {0}</PawnDiary.Memory.Library.FilterImportance>
+  <PawnDiary.Memory.Library.FilterState>State: {0}</PawnDiary.Memory.Library.FilterState>
+  <PawnDiary.Memory.Library.Forget>Forget</PawnDiary.Memory.Library.Forget>
+  <PawnDiary.Memory.Library.ForgetWarning>Forget this exact memory permanently? Existing diary pages and other summaries will not change. This cannot be undone.</PawnDiary.Memory.Library.ForgetWarning>
+  <PawnDiary.Memory.Library.HideCultureDiagnostics>Hide culture diagnostics</PawnDiary.Memory.Library.HideCultureDiagnostics>
+  <PawnDiary.Memory.Library.HideDiagnostics>Hide diagnostics</PawnDiary.Memory.Library.HideDiagnostics>
+  <PawnDiary.Memory.Library.ImportanceMinor>Minor</PawnDiary.Memory.Library.ImportanceMinor>
+  <PawnDiary.Memory.Library.ImportanceRegular>Regular</PawnDiary.Memory.Library.ImportanceRegular>
+  <PawnDiary.Memory.Library.ImportanceImportant>Important</PawnDiary.Memory.Library.ImportanceImportant>
+  <PawnDiary.Memory.Library.ImportedCard>Imported · {0} · {1} · {2}</PawnDiary.Memory.Library.ImportedCard>
+  <PawnDiary.Memory.Library.ImportedDetailMeta>Source: {0}
+Migration: {1}</PawnDiary.Memory.Library.ImportedDetailMeta>
+  <PawnDiary.Memory.Library.ImportedSourceLegacy>legacy evidence</PawnDiary.Memory.Library.ImportedSourceLegacy>
+  <PawnDiary.Memory.Library.ImportedSourceArchive>owner archive</PawnDiary.Memory.Library.ImportedSourceArchive>
+  <PawnDiary.Memory.Library.ImportedReasonUnavailable>reason unavailable</PawnDiary.Memory.Library.ImportedReasonUnavailable>
+  <PawnDiary.Memory.Library.ImportedReasonMigration>preserved during migration</PawnDiary.Memory.Library.ImportedReasonMigration>
+  <PawnDiary.Memory.Library.ImportedPreviewUnavailable>Imported wording unavailable</PawnDiary.Memory.Library.ImportedPreviewUnavailable>
+  <PawnDiary.Memory.Library.Invalid>This Library request was invalid and no data was changed.</PawnDiary.Memory.Library.Invalid>
+  <PawnDiary.Memory.Library.LifetimeDue>due to be forgotten</PawnDiary.Memory.Library.LifetimeDue>
+  <PawnDiary.Memory.Library.LifetimeImportant>no normal expiry</PawnDiary.Memory.Library.LifetimeImportant>
+  <PawnDiary.Memory.Library.LifetimeMinor>minor · {0} days remaining</PawnDiary.Memory.Library.LifetimeMinor>
+  <PawnDiary.Memory.Library.LifetimeMixed>contains different lifetimes · next expiry {0}</PawnDiary.Memory.Library.LifetimeMixed>
+  <PawnDiary.Memory.Library.LifetimeProtected>edited · protected</PawnDiary.Memory.Library.LifetimeProtected>
+  <PawnDiary.Memory.Library.LifetimeRegular>regular · {0} days remaining</PawnDiary.Memory.Library.LifetimeRegular>
+  <PawnDiary.Memory.Library.LifetimeUnknown>date unknown · kept as Important</PawnDiary.Memory.Library.LifetimeUnknown>
+  <PawnDiary.Memory.Library.Missing>This exact memory is no longer available.</PawnDiary.Memory.Library.Missing>
+  <PawnDiary.Memory.Library.Never>Never</PawnDiary.Memory.Library.Never>
+  <PawnDiary.Memory.Library.Newest>Newest</PawnDiary.Memory.Library.Newest>
+  <PawnDiary.Memory.Library.NoBlocks>No memories match inside this thread.</PawnDiary.Memory.Library.NoBlocks>
+  <PawnDiary.Memory.Library.NoFilterMatches>No memories match these filters.</PawnDiary.Memory.Library.NoFilterMatches>
+  <PawnDiary.Memory.Library.NoMatches>No memories match this search.</PawnDiary.Memory.Library.NoMatches>
+  <PawnDiary.Memory.Library.NoMemories>This owner has no memories in this view.</PawnDiary.Memory.Library.NoMemories>
+  <PawnDiary.Memory.Library.NoThreads>This pawn has no memory threads yet.</PawnDiary.Memory.Library.NoThreads>
+  <PawnDiary.Memory.Library.NoStandalone>This pawn has no standalone memories.</PawnDiary.Memory.Library.NoStandalone>
+  <PawnDiary.Memory.Library.NoImported>This owner has no imported memories.</PawnDiary.Memory.Library.NoImported>
+  <PawnDiary.Memory.Library.None>none</PawnDiary.Memory.Library.None>
+  <PawnDiary.Memory.Library.NoOwnerMatches>No memory owners match this search.</PawnDiary.Memory.Library.NoOwnerMatches>
+  <PawnDiary.Memory.Library.NoOwners>This game has no Library owners.</PawnDiary.Memory.Library.NoOwners>
+  <PawnDiary.Memory.Library.Oldest>Oldest</PawnDiary.Memory.Library.Oldest>
+  <PawnDiary.Memory.Library.OwnerButton>Owner: {0}</PawnDiary.Memory.Library.OwnerButton>
+  <PawnDiary.Memory.Library.OwnerMenuRow>{0} · {1} · {2} threads · {3} standalone · {4} imported</PawnDiary.Memory.Library.OwnerMenuRow>
+  <PawnDiary.Memory.Library.OwnerActive>current</PawnDiary.Memory.Library.OwnerActive>
+  <PawnDiary.Memory.Library.OwnerDeparted>departed/archive</PawnDiary.Memory.Library.OwnerDeparted>
+  <PawnDiary.Memory.Library.OwnerMigrationPending>migration pending</PawnDiary.Memory.Library.OwnerMigrationPending>
+  <PawnDiary.Memory.Library.OwnerUnknown>unknown state</PawnDiary.Memory.Library.OwnerUnknown>
+  <PawnDiary.Memory.Library.OwnerSearchTip>Search the bounded owner directory. Matching labels never replace exact owner identity.</PawnDiary.Memory.Library.OwnerSearchTip>
+  <PawnDiary.Memory.Library.Preparing>Preparing the Memory Library…</PawnDiary.Memory.Library.Preparing>
+  <PawnDiary.Memory.Library.ProviderPotential>may be sent when selected</PawnDiary.Memory.Library.ProviderPotential>
+  <PawnDiary.Memory.Library.ProviderNotSent>not sent</PawnDiary.Memory.Library.ProviderNotSent>
+  <PawnDiary.Memory.Library.ProviderConfirmed>sent</PawnDiary.Memory.Library.ProviderConfirmed>
+  <PawnDiary.Memory.Library.ProviderUnknown>provider exposure unavailable</PawnDiary.Memory.Library.ProviderUnknown>
+  <PawnDiary.Memory.Library.Refreshing>Refreshing this detached Library view…</PawnDiary.Memory.Library.Refreshing>
+  <PawnDiary.Memory.Library.RollingSummary>Ongoing summary</PawnDiary.Memory.Library.RollingSummary>
+  <PawnDiary.Memory.Library.Save>Save</PawnDiary.Memory.Library.Save>
+  <PawnDiary.Memory.Library.SummaryChanging>This summary is still changing.</PawnDiary.Memory.Library.SummaryChanging>
+  <PawnDiary.Memory.Library.ReadOnlyFacts>Recorded fact: {0}
+Source: {1}</PawnDiary.Memory.Library.ReadOnlyFacts>
+  <PawnDiary.Memory.Library.SourceDiaryPage>linked Diary page</PawnDiary.Memory.Library.SourceDiaryPage>
+  <PawnDiary.Memory.Library.SourceUnavailable>no linked page</PawnDiary.Memory.Library.SourceUnavailable>
+  <PawnDiary.Memory.Library.SearchTip>Search the selected owner's current Library view.</PawnDiary.Memory.Library.SearchTip>
+  <PawnDiary.Memory.Library.SelectMemory>Select a memory to inspect it.</PawnDiary.Memory.Library.SelectMemory>
+  <PawnDiary.Memory.Library.SelectOwner>Select owner</PawnDiary.Memory.Library.SelectOwner>
+  <PawnDiary.Memory.Library.ShowCultureDiagnostics>Culture diagnostics</PawnDiary.Memory.Library.ShowCultureDiagnostics>
+  <PawnDiary.Memory.Library.ShowDiagnostics>Show diagnostics</PawnDiary.Memory.Library.ShowDiagnostics>
+  <PawnDiary.Memory.Library.Showing>{0}–{1} of {2}</PawnDiary.Memory.Library.Showing>
+  <PawnDiary.Memory.Library.Sort>Sort: {0}</PawnDiary.Memory.Library.Sort>
+  <PawnDiary.Memory.Library.Suppress>Suppress</PawnDiary.Memory.Library.Suppress>
+  <PawnDiary.Memory.Library.Suppressed>suppressed</PawnDiary.Memory.Library.Suppressed>
+  <PawnDiary.Memory.Library.ThreadCard>{0} · {1} · {2} chapters · {3} memories · {4}</PawnDiary.Memory.Library.ThreadCard>
+  <PawnDiary.Memory.Library.RootPerson>Person</PawnDiary.Memory.Library.RootPerson>
+  <PawnDiary.Memory.Library.RootFaction>Faction</PawnDiary.Memory.Library.RootFaction>
+  <PawnDiary.Memory.Library.RootOngoingStory>Ongoing story</PawnDiary.Memory.Library.RootOngoingStory>
+  <PawnDiary.Memory.Library.EditedCount>{0} edited</PawnDiary.Memory.Library.EditedCount>
+  <PawnDiary.Memory.Library.SuppressedCount>{0} suppressed</PawnDiary.Memory.Library.SuppressedCount>
+  <PawnDiary.Memory.Library.ThreadDetailHeader>Current status: {0}
+Showing {1} of {2} manageable memories</PawnDiary.Memory.Library.ThreadDetailHeader>
+  <PawnDiary.Memory.Library.UnknownSubject>Unknown subject</PawnDiary.Memory.Library.UnknownSubject>
+  <PawnDiary.Memory.Library.Unsuppressed>available</PawnDiary.Memory.Library.Unsuppressed>
+  <PawnDiary.Memory.Library.Usage>Last automatically included: {0}
+Automatic inclusions: {1}; provider exposure: {2}</PawnDiary.Memory.Library.Usage>
+  <PawnDiary.Memory.Library.UseAgain>Use again</PawnDiary.Memory.Library.UseAgain>
+  <PawnDiary.Memory.Library.UseOriginal>Use original</PawnDiary.Memory.Library.UseOriginal>
+  <PawnDiary.Memory.Library.UseOriginalWarning>This edited memory is already beyond its normal lifetime and may be forgotten during the next explicit cleanup. Use its original wording?</PawnDiary.Memory.Library.UseOriginalWarning>
   <PawnDiary.Error.GenerationInterruptedAfterSend>The previous game session ended after this request may have reached the provider. It was not sent again.</PawnDiary.Error.GenerationInterruptedAfterSend>
   <PawnDiary.Error.MemoryDispatchStopped>This memory-aware request stopped at its safety boundary and was not sent again.</PawnDiary.Error.MemoryDispatchStopped>
   <PawnDiary.Memory.SettingsSaveFailed>Pawn Diary settings could not be saved. Your previous memory policy remains active.</PawnDiary.Memory.SettingsSaveFailed>

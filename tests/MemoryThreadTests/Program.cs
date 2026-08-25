@@ -47,6 +47,7 @@ namespace MemoryThreadTests
                 assertions += MemoryM4Fixtures.Run();
                 assertions += MemoryM5Fixtures.Run();
                 assertions += MemoryM8Fixtures.Run();
+                assertions += MemoryM9Fixtures.Run();
 
                 Console.WriteLine("MemoryThreadTests passed " + assertions + " assertions.");
                 return 0;

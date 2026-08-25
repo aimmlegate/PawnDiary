@@ -35,6 +35,7 @@
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryLibraryContracts.cs" Link="MemoryLibraryContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryLibraryPolicy.cs" Link="MemoryLibraryPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryLibraryIndexPolicy.cs" Link="MemoryLibraryIndexPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryLibraryUiPolicy.cs" Link="MemoryLibraryUiPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\SocialReflectionPolicy.cs" Link="SocialReflectionPolicy.cs" />
   </ItemGroup>
 </Project>

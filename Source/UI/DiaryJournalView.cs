@@ -425,6 +425,25 @@ namespace PawnDiary
                 headerRight = newEntryIconRect.x - Mathf.Max(0f, WritingStyleIconRightGap);
             }
 
+            // CurrentRelease-only navigation into the selected diary owner's unified memory. The
+            // Library remains absent in LegacyShadow; opening it does not route through settings or
+            // expose any Library implementation detail to the settings surface.
+            if (MemorySystemActivationGate.IsCurrentRelease && component != null
+                && !string.IsNullOrWhiteSpace(subject.PawnId))
+            {
+                float actionWidth = Mathf.Max(72f, UiStyle.memoryLibraryDiaryActionWidth);
+                Rect memoryRect = new Rect(
+                    headerRight - actionWidth,
+                    journalRect.y + 3f,
+                    actionWidth,
+                    Mathf.Max(24f, headerRect.height - 6f));
+                if (Widgets.ButtonText(memoryRect, "PawnDiary.Memory.Library.MemoriesAction".Translate()))
+                {
+                    Dialog_MemoryLibrary.OpenForOwner(subject.PawnId);
+                }
+                headerRight = memoryRect.x - Mathf.Max(0f, WritingStyleIconRightGap);
+            }
+
             headerRect.width = Mathf.Max(0f, headerRight - journalRect.x);
 
             Text.Font = GameFont.Medium;

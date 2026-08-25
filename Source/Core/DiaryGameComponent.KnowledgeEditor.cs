@@ -347,7 +347,28 @@ namespace PawnDiary
                 return null;
             }
 
-            PawnKnowledgeState state = ExistingKnowledgeStateForDev(pawn);
+            return LoreMemoryForDev(pawn.GetUniqueLoadID());
+        }
+
+        /// <summary>
+        /// Owner-id form used by the Library for living, dead, away, and archive-listed owners. The
+        /// lookup reuses the existing lore inspector projection and never resolves culture from a live
+        /// Pawn, creates a diary, or normalizes persisted state.
+        /// </summary>
+        internal LoreMemorySnapshotForDev LoreMemoryForDev(string ownerPawnId)
+        {
+            if (!Prefs.DevMode || string.IsNullOrWhiteSpace(ownerPawnId))
+            {
+                return null;
+            }
+
+            PawnDiaryRecord diary = LookupDiaryByPawnId(ownerPawnId);
+            PawnKnowledgeState state = diary?.KnowledgeStateOrNull();
+            if (state != null && !string.IsNullOrWhiteSpace(state.pawnId)
+                && !string.Equals(state.pawnId, ownerPawnId, StringComparison.Ordinal))
+            {
+                state = null;
+            }
             LoreMemorySnapshotForDev snapshot = new LoreMemorySnapshotForDev
             {
                 hasKnowledgeState = state != null,

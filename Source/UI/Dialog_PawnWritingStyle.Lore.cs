@@ -286,7 +286,7 @@ namespace PawnDiary
             return -1;
         }
 
-        private static string LoreStateText(LoreMemorySnapshotForDev lore)
+        internal static string LoreStateText(LoreMemorySnapshotForDev lore)
         {
             if (lore == null)
             {
@@ -350,7 +350,7 @@ namespace PawnDiary
             return FormatLoreFrame("PawnDiary.Dev.Lore.Profile", requested, source, status);
         }
 
-        private static string LoreTopicDetails(
+        internal static string LoreTopicDetails(
             LoreMemorySnapshotForDev lore,
             LoreMemoryTopicForDev topic)
         {
@@ -422,7 +422,7 @@ namespace PawnDiary
             builder.Append(FormatLoreFrame(key, value));
         }
 
-        private static string LoreLastMatchText(LoreMemorySnapshotForDev lore)
+        internal static string LoreLastMatchText(LoreMemorySnapshotForDev lore)
         {
             if (lore == null || !lore.hasLastPromptReport)
             {
@@ -435,7 +435,7 @@ namespace PawnDiary
                 LoreListText(lore.annotatedFieldSources));
         }
 
-        private static string LoreTopicLabel(LoreMemoryTopicForDev topic)
+        internal static string LoreTopicLabel(LoreMemoryTopicForDev topic)
         {
             if (topic == null)
             {

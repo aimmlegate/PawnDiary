@@ -726,7 +726,15 @@ namespace PawnDiary
                     "[Pawn Diary] Belief transient-state reset failed: " + exception,
                     "PawnDiary.Belief.Reset".GetHashCode());
             }
+            // Game-bound Library windows and command clients must never leak across loads. The M8
+            // callback seam is installed only for the released memory mode; LegacyShadow therefore
+            // remains completely unreachable without changing the activation gate.
+            Dialog_MemoryLibrary.ResetForGameTransition();
             PawnDiaryMod.ResetMemoryLibraryAction();
+            if (MemorySystemActivationGate.IsCurrentRelease)
+            {
+                PawnDiaryMod.OpenMemoryLibraryAction = Dialog_MemoryLibrary.Open;
+            }
             ResetMemoryMaintenanceTransient(true);
             ResetMemoryLibraryTransient();
             PawnDiaryMod.RefreshMemoryPolicyFromDefs();

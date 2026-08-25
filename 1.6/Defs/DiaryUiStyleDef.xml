@@ -109,6 +109,24 @@
     <settingsMemoryAdvancedSelectorGap>4</settingsMemoryAdvancedSelectorGap>
     <settingsMemoryWarningText><r>1</r><g>0.76</g><b>0.24</b><a>1</a></settingsMemoryWarningText>
 
+    <!-- Unified-memory Library: fixed-height cards permit hard-bounded virtualization. -->
+    <memoryLibraryWidth>1120</memoryLibraryWidth>
+    <memoryLibraryHeight>760</memoryLibraryHeight>
+    <memoryLibraryMinWidth>640</memoryLibraryMinWidth>
+    <memoryLibraryMinHeight>480</memoryLibraryMinHeight>
+    <memoryLibraryScreenMargin>48</memoryLibraryScreenMargin>
+    <memoryLibraryNarrowThreshold>820</memoryLibraryNarrowThreshold>
+    <memoryLibraryPaneGap>10</memoryLibraryPaneGap>
+    <memoryLibraryListFraction>0.42</memoryLibraryListFraction>
+    <memoryLibraryControlHeight>28</memoryLibraryControlHeight>
+    <memoryLibraryCulturePanelHeight>132</memoryLibraryCulturePanelHeight>
+    <memoryLibraryCardHeight>82</memoryLibraryCardHeight>
+    <memoryLibraryBlockCardHeight>96</memoryLibraryBlockCardHeight>
+    <memoryLibraryCardGap>6</memoryLibraryCardGap>
+    <memoryLibraryOverscanRows>2</memoryLibraryOverscanRows>
+    <memoryLibraryMaximumMaterializedRows>28</memoryLibraryMaximumMaterializedRows>
+    <memoryLibraryDiaryActionWidth>92</memoryLibraryDiaryActionWidth>
+
     <!-- Header/card dimensions -->
     <controlLineHeight>28</controlLineHeight>
     <controlGap>2</controlGap>

@@ -6,6 +6,10 @@ Companion: [repowiki/README.md](repowiki/README.md) describes the current state.
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-08-26
+
+- **Memory M9 Thread and TTL Library UI.** Add exact-owner thread/standalone/imported browsing, saved culture context, bounded virtualized cards, original-tick lifetime states, and revision-safe explicit edits/actions in English and Russian while activation remains LegacyShadow.
+
 ## 2026-08-25
 
 - **Memory observation list-churn guard.** Reconcile related and social candidates from bounded snapshots so reentrant pawn-list changes cannot abort `GameComponentTick`.

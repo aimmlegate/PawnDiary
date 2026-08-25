@@ -209,6 +209,26 @@ namespace PawnDiary
         public float settingsMemoryAdvancedSelectorGap = 4f;
         public DiaryUiColorSpec settingsMemoryWarningText = Color(1f, 0.76f, 0.24f, 1f);
 
+        // ---- Unified-memory Library ----
+        // Cards use fixed heights so the Library can compute a bounded visible window without
+        // measuring every memory in a large colony. Long text lives in the selected detail pane.
+        public float memoryLibraryWidth = 1120f;
+        public float memoryLibraryHeight = 760f;
+        public float memoryLibraryMinWidth = 640f;
+        public float memoryLibraryMinHeight = 480f;
+        public float memoryLibraryScreenMargin = 48f;
+        public float memoryLibraryNarrowThreshold = 820f;
+        public float memoryLibraryPaneGap = 10f;
+        public float memoryLibraryListFraction = 0.42f;
+        public float memoryLibraryControlHeight = 28f;
+        public float memoryLibraryCulturePanelHeight = 132f;
+        public float memoryLibraryCardHeight = 82f;
+        public float memoryLibraryBlockCardHeight = 96f;
+        public float memoryLibraryCardGap = 6f;
+        public int memoryLibraryOverscanRows = 2;
+        public int memoryLibraryMaximumMaterializedRows = 28;
+        public float memoryLibraryDiaryActionWidth = 92f;
+
         // ---- Control/header/card dimensions ----
         public float controlLineHeight = 28f;
         public float controlGap = 2f;
