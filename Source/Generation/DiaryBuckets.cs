@@ -124,22 +124,31 @@ namespace PawnDiary
         public static string OpinionBucket(int opinion)
         {
             DiaryTuningDef t = DiaryTuning.Current;
-            if (opinion >= t.opinionDevoted)
+            string band = KnowledgeRelationPolicy.OpinionBandToken(
+                opinion,
+                new KnowledgeOpinionBandThresholds
+                {
+                    devoted = t.opinionDevoted,
+                    friendly = t.opinionFriendly,
+                    neutralAbove = t.opinionNeutralAbove,
+                    strainedAbove = t.opinionStrainedAbove
+                });
+            if (band == KnowledgeObservationTokens.OpinionDevoted)
             {
                 return "PawnDiary.Bucket.Opinion.Devoted".Translate();
             }
 
-            if (opinion >= t.opinionFriendly)
+            if (band == KnowledgeObservationTokens.OpinionFriendly)
             {
                 return "PawnDiary.Bucket.Opinion.Friendly".Translate();
             }
 
-            if (opinion > t.opinionNeutralAbove)
+            if (band == KnowledgeObservationTokens.OpinionNeutral)
             {
                 return "PawnDiary.Bucket.Opinion.Neutral".Translate();
             }
 
-            if (opinion > t.opinionStrainedAbove)
+            if (band == KnowledgeObservationTokens.OpinionStrained)
             {
                 return "PawnDiary.Bucket.Opinion.Strained".Translate();
             }

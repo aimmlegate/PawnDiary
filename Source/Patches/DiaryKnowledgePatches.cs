@@ -1,7 +1,8 @@
 // Knowledge-capture Harmony patches (design/MEMORY_SYSTEM_REDESIGN_PLAN.md §2.1): the closed-list
 // gameplay signals that have no diary event of their own — ideological role changes, ideology
-// conversion (also the adopted-culture switch, §4.1), and implant/prosthetic removal. Death
-// fan-out and quiet-hediff capture ride the existing death/health patches instead.
+// conversion (also the adopted-culture switch, §4.1), implant/prosthetic removal, plus M6's
+// shadow-only social/faction dirty seams. Death fan-out and quiet-hediff capture ride the existing
+// death/health patches instead.
 //
 // All targets are base-game types compiled into Assembly-CSharp regardless of DLC ownership
 // (AGENTS.md "DLC-safety"): Precept_Role/Pawn_IdeoTracker hooks simply never fire without
@@ -11,10 +12,184 @@
 // New to this? See AGENTS.md ("Harmony patches"). PatchAll discovers these via [HarmonyPatch].
 using HarmonyLib;
 using RimWorld;
+using RimWorld.Planet;
 using Verse;
 
 namespace PawnDiary
 {
+    /// <summary>
+    /// Resolves Pawn_RelationsTracker's private owner once. A separate searched flag is required:
+    /// caching only a null FieldRef would repeat Harmony's full reflection scan on every relation.
+    /// </summary>
+    internal static class KnowledgeObservationPatchAccess
+    {
+        private static AccessTools.FieldRef<Pawn_RelationsTracker, Pawn> pawnField;
+        private static bool pawnFieldSearched;
+
+        /// <summary>Returns the tracker owner, or null when RimWorld changed the private field.</summary>
+        public static Pawn TrackerPawn(Pawn_RelationsTracker tracker)
+        {
+            if (tracker == null) return null;
+            if (!pawnFieldSearched)
+            {
+                pawnFieldSearched = true;
+                try
+                {
+                    pawnField = AccessTools.FieldRefAccess<Pawn_RelationsTracker, Pawn>("pawn");
+                }
+                catch (System.Exception)
+                {
+                    pawnField = null;
+                    Log.WarningOnce(
+                        "[Pawn Diary] Pawn_RelationsTracker.pawn changed; shadow social "
+                        + "observation will rely on periodic reconciliation.",
+                        "PawnDiary.MemoryObservation.RelationsPawn".GetHashCode());
+                }
+            }
+            return pawnField == null ? null : pawnField(tracker);
+        }
+    }
+
+    /// <summary>Formal relation addition dirties both exact directed snapshots.</summary>
+    [HarmonyPatch(typeof(Pawn_RelationsTracker), nameof(Pawn_RelationsTracker.AddDirectRelation),
+        new[] { typeof(PawnRelationDef), typeof(Pawn) })]
+    internal static class MemoryObservationRelationAddedPatch
+    {
+        /// <summary>Queues both directed views after vanilla commits the relation.</summary>
+        public static void Postfix(Pawn_RelationsTracker __instance, Pawn otherPawn)
+        {
+            if (!DiaryGameComponent.GamePlaying || otherPawn == null) return;
+            DiaryPatchSafety.Run("MemoryObservationRelationAddedPatch", () =>
+            {
+                DiaryGameComponent.Instance?.MarkMemoryObservationPairDirty(
+                    KnowledgeObservationPatchAccess.TrackerPawn(__instance), otherPawn);
+            });
+        }
+    }
+
+    /// <summary>Only a committed formal relation removal dirties the directed snapshots.</summary>
+    [HarmonyPatch(typeof(Pawn_RelationsTracker), nameof(Pawn_RelationsTracker.TryRemoveDirectRelation),
+        new[] { typeof(PawnRelationDef), typeof(Pawn) })]
+    internal static class MemoryObservationRelationRemovedPatch
+    {
+        /// <summary>Queues both directed views only when vanilla reports a successful removal.</summary>
+        public static void Postfix(
+            Pawn_RelationsTracker __instance,
+            Pawn otherPawn,
+            bool __result)
+        {
+            if (!__result || !DiaryGameComponent.GamePlaying || otherPawn == null) return;
+            DiaryPatchSafety.Run("MemoryObservationRelationRemovedPatch", () =>
+            {
+                DiaryGameComponent.Instance?.MarkMemoryObservationPairDirty(
+                    KnowledgeObservationPatchAccess.TrackerPawn(__instance), otherPawn);
+            });
+        }
+    }
+
+    /// <summary>Records exact old/new faction instances after Pawn.SetFaction commits.</summary>
+    [HarmonyPatch(typeof(Pawn), nameof(Pawn.SetFaction),
+        new[] { typeof(Faction), typeof(Pawn) })]
+    internal static class MemoryObservationPawnFactionPatch
+    {
+        /// <summary>Freezes the old exact faction reference before vanilla changes it.</summary>
+        public static void Prefix(Pawn __instance, out Faction __state)
+        {
+            __state = __instance?.Faction;
+        }
+
+        /// <summary>Queues exact old/new faction and related-owner reconciliation after commit.</summary>
+        public static void Postfix(Pawn __instance, Faction __state)
+        {
+            if (__instance == null || !DiaryGameComponent.GamePlaying
+                || __state == __instance.Faction) return;
+            DiaryPatchSafety.Run("MemoryObservationPawnFactionPatch", () =>
+            {
+                DiaryGameComponent.Instance?.MarkMemoryObservationPawnFactionChanged(
+                    __instance, __state, __instance.Faction);
+            });
+        }
+    }
+
+    /// <summary>Goodwill mutation is the common diplomacy sink for goodwill-using factions.</summary>
+    [HarmonyPatch(typeof(Faction), nameof(Faction.TryAffectGoodwillWith),
+        new[]
+        {
+            typeof(Faction), typeof(int), typeof(bool), typeof(bool),
+            typeof(HistoryEventDef), typeof(GlobalTargetInfo?)
+        })]
+    internal static class MemoryObservationFactionGoodwillPatch
+    {
+        /// <summary>Queues both exact faction instances after a successful goodwill mutation.</summary>
+        public static void Postfix(Faction __instance, Faction other, bool __result)
+        {
+            if (!__result || !DiaryGameComponent.GamePlaying) return;
+            DiaryPatchSafety.Run("MemoryObservationFactionGoodwillPatch", () =>
+            {
+                DiaryGameComponent.Instance?.MarkMemoryObservationFactionDirty(__instance, other);
+            });
+        }
+    }
+
+    /// <summary>Direct relation-kind mutation covers factions that do not use goodwill.</summary>
+    [HarmonyPatch(typeof(Faction), nameof(Faction.SetRelationDirect),
+        new[]
+        {
+            typeof(Faction), typeof(FactionRelationKind), typeof(bool), typeof(string),
+            typeof(GlobalTargetInfo?)
+        })]
+    internal static class MemoryObservationFactionRelationPatch
+    {
+        /// <summary>Queues both exact faction instances after direct relation-kind mutation.</summary>
+        public static void Postfix(Faction __instance, Faction other)
+        {
+            if (!DiaryGameComponent.GamePlaying) return;
+            DiaryPatchSafety.Run("MemoryObservationFactionRelationPatch", () =>
+            {
+                DiaryGameComponent.Instance?.MarkMemoryObservationFactionDirty(__instance, other);
+            });
+        }
+    }
+
+    /// <summary>Leader replacement after a death dirties only that exact faction instance.</summary>
+    [HarmonyPatch(typeof(Faction), nameof(Faction.Notify_LeaderDied))]
+    internal static class MemoryObservationFactionLeaderDiedPatch
+    {
+        /// <summary>Queues the exact faction after vanilla replaces or clears its dead leader.</summary>
+        public static void Postfix(Faction __instance)
+        {
+            if (!DiaryGameComponent.GamePlaying) return;
+            DiaryPatchSafety.Run("MemoryObservationFactionLeaderDiedPatch", () =>
+                DiaryGameComponent.Instance?.MarkMemoryObservationFactionDirty(__instance));
+        }
+    }
+
+    /// <summary>Non-death leader replacement uses the same exact-instance dirty path.</summary>
+    [HarmonyPatch(typeof(Faction), nameof(Faction.Notify_LeaderLost))]
+    internal static class MemoryObservationFactionLeaderLostPatch
+    {
+        /// <summary>Queues the exact faction after vanilla replaces or clears its lost leader.</summary>
+        public static void Postfix(Faction __instance)
+        {
+            if (!DiaryGameComponent.GamePlaying) return;
+            DiaryPatchSafety.Run("MemoryObservationFactionLeaderLostPatch", () =>
+                DiaryGameComponent.Instance?.MarkMemoryObservationFactionDirty(__instance));
+        }
+    }
+
+    /// <summary>FactionManager.Remove is private; string targeting plus the exact type avoids ambiguity.</summary>
+    [HarmonyPatch(typeof(FactionManager), "Remove", new[] { typeof(Faction) })]
+    internal static class MemoryObservationFactionRemovedPatch
+    {
+        /// <summary>Queues the removed exact instance after FactionManager commits removal.</summary>
+        public static void Postfix(Faction faction)
+        {
+            if (!DiaryGameComponent.GamePlaying || faction == null) return;
+            DiaryPatchSafety.Run("MemoryObservationFactionRemovedPatch", () =>
+                DiaryGameComponent.Instance?.MarkMemoryObservationFactionRemoved(faction));
+        }
+    }
+
     /// <summary>Ideological role appointment — capture-only, no diary page (§2.1).</summary>
     [HarmonyPatch(typeof(Precept_Role), nameof(Precept_Role.Notify_PawnAssigned))]
     internal static class PreceptRoleAssignedKnowledgePatch

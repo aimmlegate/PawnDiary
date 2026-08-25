@@ -66,6 +66,7 @@ namespace PawnDiary
         private sealed class MemoryLibraryDirectoryBuildJob
         {
             internal int diaryStateVersion;
+            internal long observationPublicationRevision;
             internal long settingsRevision;
             internal long ttlDayRevision;
             internal LoadedLanguage language;
@@ -99,6 +100,7 @@ namespace PawnDiary
             internal MemoryLibraryLimits limits;
             internal MemoryImportedListSelectionJob selectionJob;
             internal int diaryStateVersion;
+            internal long observationPublicationRevision;
             internal long directoryRevision;
             internal long committedSettingsRevision;
             internal long languageDisplayRevision;
@@ -142,6 +144,7 @@ namespace PawnDiary
         private bool memoryLibraryDirectoryBuildRequested;
         private string memoryLibraryPendingOwnerBuildKey = string.Empty;
         private int memoryLibraryObservedDiaryStateVersion = int.MinValue;
+        private long memoryLibraryObservedObservationPublicationRevision = -1;
         private long memoryLibraryObservedSettingsRevision = -1;
         private long memoryLibraryObservedTtlDayRevision = -1;
         private LoadedLanguage memoryLibraryObservedLanguage;
@@ -175,6 +178,7 @@ namespace PawnDiary
             memoryLibraryDirectoryBuildRequested = false;
             memoryLibraryPendingOwnerBuildKey = string.Empty;
             memoryLibraryObservedDiaryStateVersion = int.MinValue;
+            memoryLibraryObservedObservationPublicationRevision = -1;
             memoryLibraryObservedSettingsRevision = -1;
             memoryLibraryObservedTtlDayRevision = -1;
             memoryLibraryObservedLanguage = null;
@@ -193,7 +197,8 @@ namespace PawnDiary
             if (!MemoryPolicyIsReconciled()) return;
             if (memoryLibraryDirectoryRevision > 0 && MemoryLibrarySourceTupleChanged())
                 memoryLibraryDirectoryBuildRequested = true;
-            if (memoryLibraryDirectoryBuildRequested && memoryLibraryDirectoryBuildJob == null)
+            if (memoryLibraryDirectoryBuildRequested && memoryLibraryDirectoryBuildJob == null
+                && MemoryObservationPublicationIsStable)
                 memoryLibraryDirectoryBuildJob = StartMemoryLibraryDirectoryBuild();
             if (memoryLibraryDirectoryBuildJob != null)
                 AdvanceMemoryLibraryDirectoryBuild();
@@ -1052,6 +1057,8 @@ namespace PawnDiary
         {
             long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
             return memoryLibraryObservedDiaryStateVersion != DiaryStateVersion.Current
+                || memoryLibraryObservedObservationPublicationRevision
+                    != memoryObservationPublicationRevision
                 || memoryLibraryObservedSettingsRevision
                     != MemoryEffectivePolicyProvider.PublicationRevision
                 || memoryLibraryObservedTtlDayRevision != now / 60000L
@@ -1068,6 +1075,7 @@ namespace PawnDiary
             MemoryLibraryDirectoryBuildJob job = new MemoryLibraryDirectoryBuildJob
             {
                 diaryStateVersion = DiaryStateVersion.Current,
+                observationPublicationRevision = memoryObservationPublicationRevision,
                 settingsRevision = MemoryEffectivePolicyProvider.PublicationRevision,
                 ttlDayRevision = Math.Max(0, Find.TickManager?.TicksGame ?? 0) / 60000L,
                 language = LanguageDatabase.activeLanguage,
@@ -1130,6 +1138,12 @@ namespace PawnDiary
         {
             MemoryLibraryDirectoryBuildJob job = memoryLibraryDirectoryBuildJob;
             if (job == null) return;
+            if (!MemoryLibraryBuildStillCurrent(job))
+            {
+                memoryLibraryDirectoryBuildJob = null;
+                memoryLibraryDirectoryBuildRequested = true;
+                return;
+            }
             int workCap = Math.Max(1, (int)ReadCapacityLong(
                 "sliceWorkItems", 60, MemoryLibraryLimitCeilings.SliceWorkItems));
             long microseconds = Math.Max(1, ReadCapacityLong(
@@ -1189,7 +1203,10 @@ namespace PawnDiary
         {
             long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
             return job != null
+                && MemoryObservationPublicationIsStable
                 && job.diaryStateVersion == DiaryStateVersion.Current
+                && job.observationPublicationRevision
+                    == memoryObservationPublicationRevision
                 && job.settingsRevision == MemoryEffectivePolicyProvider.PublicationRevision
                 && job.ttlDayRevision == now / 60000L
                 && ReferenceEquals(job.language, LanguageDatabase.activeLanguage)
@@ -1253,6 +1270,8 @@ namespace PawnDiary
                 && memoryLibraryLanguageDisplayRevision < long.MaxValue)
                 memoryLibraryLanguageDisplayRevision++;
             memoryLibraryObservedDiaryStateVersion = job.diaryStateVersion;
+            memoryLibraryObservedObservationPublicationRevision =
+                job.observationPublicationRevision;
             memoryLibraryObservedSettingsRevision = job.settingsRevision;
             memoryLibraryObservedTtlDayRevision = job.ttlDayRevision;
             memoryLibraryObservedLanguage = job.language;
@@ -1708,6 +1727,7 @@ namespace PawnDiary
                 limits = limits,
                 selectionJob = selection,
                 diaryStateVersion = DiaryStateVersion.Current,
+                observationPublicationRevision = memoryObservationPublicationRevision,
                 directoryRevision = memoryLibraryDirectoryRevision,
                 committedSettingsRevision = settingsRevision,
                 languageDisplayRevision = memoryLibraryLanguageDisplayRevision,
@@ -1793,6 +1813,9 @@ namespace PawnDiary
         {
             long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
             return job != null
+                && MemoryObservationPublicationIsStable
+                && job.observationPublicationRevision
+                    == memoryObservationPublicationRevision
                 && !MemoryLibrarySourceTupleChanged()
                 && MemoryLibraryPolicy.LibraryBuildFenceMatches(
                     job.diaryStateVersion,

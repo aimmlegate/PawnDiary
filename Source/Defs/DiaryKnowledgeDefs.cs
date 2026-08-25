@@ -440,6 +440,15 @@ namespace PawnDiary
         public int memoryRevisitEntryCountDefault = 3;
         public int memoryRevisitEntryCountMaximum = 1000;
         public int quietReflectionChanceBasisPoints = 200;
+        // M6 replaceable-current-truth reconciliation. Values are copied into a plain snapshot
+        // before policy runs; no Def or settings object crosses into the pure layer.
+        public int memoryObservationReconciliationIntervalTicks = 2500;
+        public int memoryOpinionBandSustainTicks = 15000;
+        public int memoryOpinionHysteresisPoints = 5;
+        public int memoryOpinionCumulativeChangePoints = 20;
+        public int memoryOpinionReversalChangePoints = 12;
+        public int memoryOpinionEpisodeInactivityTicks = 60000;
+        public int memoryOpinionEpisodeMaximumTicks = 300000;
         public List<DiaryMemoryCapacityValueRow> memoryCapacityVector =
             new List<DiaryMemoryCapacityValueRow>();
     }
@@ -586,6 +595,31 @@ namespace PawnDiary
                 ? tuning.evictionScanIntervalTicks
                 : KnowledgePolicyNormalization.DefaultEvictionScanIntervalTicks;
             return KnowledgePolicyNormalization.EvictionScanIntervalTicks(configured);
+        }
+
+        /// <summary>Copies the XML-owned M6 shadow-observation policy into a pure bounded DTO.</summary>
+        public static KnowledgeObservationPolicySnapshot MemoryObservationSnapshot()
+        {
+            DiaryKnowledgeTuningDef tuning = DefDatabase<DiaryKnowledgeTuningDef>
+                .GetNamedSilentFail(TuningDefName);
+            KnowledgeObservationPolicySnapshot snapshot =
+                new KnowledgeObservationPolicySnapshot();
+            if (tuning != null)
+            {
+                snapshot.reconciliationIntervalTicks =
+                    tuning.memoryObservationReconciliationIntervalTicks;
+                snapshot.opinionBandSustainTicks = tuning.memoryOpinionBandSustainTicks;
+                snapshot.opinionHysteresisPoints = tuning.memoryOpinionHysteresisPoints;
+                snapshot.opinionCumulativeChangePoints =
+                    tuning.memoryOpinionCumulativeChangePoints;
+                snapshot.opinionReversalChangePoints =
+                    tuning.memoryOpinionReversalChangePoints;
+                snapshot.opinionEpisodeInactivityTicks =
+                    tuning.memoryOpinionEpisodeInactivityTicks;
+                snapshot.opinionEpisodeMaximumTicks =
+                    tuning.memoryOpinionEpisodeMaximumTicks;
+            }
+            return snapshot.Normalized();
         }
 
         /// <summary>All important-event rules (allowlist), copied once per session.</summary>

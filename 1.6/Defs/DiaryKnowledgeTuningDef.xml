@@ -48,6 +48,16 @@
     <memoryRevisitEntryCountMaximum>1000</memoryRevisitEntryCountMaximum>
     <quietReflectionChanceBasisPoints>200</quietReflectionChanceBasisPoints>
 
+    <!-- M6 shadow current-truth reconciliation. Opinion bands themselves remain the single shared
+         vocabulary in DiaryTuningDef.xml; these values own only episode timing/significance. -->
+    <memoryObservationReconciliationIntervalTicks>2500</memoryObservationReconciliationIntervalTicks>
+    <memoryOpinionBandSustainTicks>15000</memoryOpinionBandSustainTicks>
+    <memoryOpinionHysteresisPoints>5</memoryOpinionHysteresisPoints>
+    <memoryOpinionCumulativeChangePoints>20</memoryOpinionCumulativeChangePoints>
+    <memoryOpinionReversalChangePoints>12</memoryOpinionReversalChangePoints>
+    <memoryOpinionEpisodeInactivityTicks>60000</memoryOpinionEpisodeInactivityTicks>
+    <memoryOpinionEpisodeMaximumTicks>300000</memoryOpinionEpisodeMaximumTicks>
+
     <!-- M0's provisional production vector. Each slash-delimited tuple is one atomic coordinate;
          tests require this exact order and code-owned ceilings remain strictly separate. -->
     <memoryCapacityVector>

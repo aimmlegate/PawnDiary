@@ -51,6 +51,12 @@ namespace PawnDiary
             int playLogEntryId,
             int interactionTick)
         {
+            // M6 observes the exact directed pair independently of whether this interaction also
+            // qualifies for H7 prose. The shadow adapter remains capture/output-free.
+            if (GamePlaying && initiator != null && recipient != null)
+            {
+                MarkMemoryObservationPairDirty(initiator, recipient);
+            }
             if (!GamePlaying || initiator == null || recipient == null || interactionDef == null
                 || sourceGroup == null || !sourceGroup.socialReflectionEligible
                 || playLogEntryId < 0
@@ -336,12 +342,14 @@ namespace PawnDiary
             socialReflectionHandledSources =
                 new List<SocialReflectionHandledSourceState>();
             nextSocialReflectionSchedulerTick = 0;
+            ResetMemoryObservationForNewGame();
         }
 
         /// <summary>Resets only the transient wake-up hint after loading saved H7 rows.</summary>
         private void ResetSocialReflectionTransientState()
         {
             nextSocialReflectionSchedulerTick = 0;
+            ResetMemoryObservationTransientState();
         }
 
         /// <summary>
@@ -350,6 +358,7 @@ namespace PawnDiary
         /// </summary>
         private void TickSocialReflections(int now)
         {
+            TickMemoryObservation(now);
             EnsureSocialReflectionLists();
             if (pendingSocialReflections.Count == 0)
             {

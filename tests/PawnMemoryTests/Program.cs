@@ -64,6 +64,14 @@ namespace PawnMemoryTests
             TestCultureLegacyInferenceAndStability();
             TestCultureConversionReplacement();
             TestFamilyRelationDirection();
+            TestM6ObservationPolicyAndXmlParity();
+            TestM6ReconciliationSchedulingAndPublication();
+            TestM6VisibilityAndExactIdentity();
+            TestM6FactCanonicalization();
+            TestM6DuplicateRepairPolicy();
+            TestM6SilentBaselinesAndCapacityMarkers();
+            TestM6DeterministicOpinionEpisodes();
+            TestM6FactionOwnerAwarenessSeparation();
             TestAnnotationTopicDetectionPerField();
             TestAnnotationLocalizedTextTerms();
             TestAnnotationCapsAndPriority();
@@ -1309,6 +1317,1099 @@ namespace PawnMemoryTests
                 "relation.deathFanoutRejectsMalformedCount",
                 false,
                 KnowledgeRelationPolicy.CanEmitDeathFamilyOwner(-1));
+        }
+
+        private static void TestM6ObservationPolicyAndXmlParity()
+        {
+            KnowledgeObservationPolicySnapshot policy =
+                new KnowledgeObservationPolicySnapshot().Normalized();
+            XElement def = XDocument.Load(Path.Combine(
+                RepoRoot(), "1.6", "Defs", "DiaryKnowledgeTuningDef.xml"))
+                .Root.Element("PawnDiary.DiaryKnowledgeTuningDef");
+            AssertEqual("m6.xml.reconcile", policy.reconciliationIntervalTicks,
+                int.Parse((string)def.Element("memoryObservationReconciliationIntervalTicks")));
+            AssertEqual("m6.xml.sustain", policy.opinionBandSustainTicks,
+                int.Parse((string)def.Element("memoryOpinionBandSustainTicks")));
+            AssertEqual("m6.xml.hysteresis", policy.opinionHysteresisPoints,
+                int.Parse((string)def.Element("memoryOpinionHysteresisPoints")));
+            AssertEqual("m6.xml.cumulative", policy.opinionCumulativeChangePoints,
+                int.Parse((string)def.Element("memoryOpinionCumulativeChangePoints")));
+            AssertEqual("m6.xml.reversal", policy.opinionReversalChangePoints,
+                int.Parse((string)def.Element("memoryOpinionReversalChangePoints")));
+            AssertEqual("m6.xml.inactivity", policy.opinionEpisodeInactivityTicks,
+                int.Parse((string)def.Element("memoryOpinionEpisodeInactivityTicks")));
+            AssertEqual("m6.xml.maximum", policy.opinionEpisodeMaximumTicks,
+                int.Parse((string)def.Element("memoryOpinionEpisodeMaximumTicks")));
+
+            KnowledgeObservationPolicySnapshot malformed =
+                new KnowledgeObservationPolicySnapshot
+                {
+                    reconciliationIntervalTicks = 0,
+                    opinionBandSustainTicks = -1,
+                    opinionHysteresisPoints = 100,
+                    opinionCumulativeChangePoints = 0,
+                    opinionReversalChangePoints = 0,
+                    opinionEpisodeInactivityTicks = 0,
+                    opinionEpisodeMaximumTicks = int.MaxValue,
+                    maximumStateFacts = 100,
+                    maximumFactKeyCharacters = 0,
+                    maximumFactValueCharacters = 1000
+                };
+            KnowledgeObservationPolicySnapshot normalized = malformed.Normalized();
+            AssertEqual("m6.normalize.reconcile", 2500, normalized.reconciliationIntervalTicks);
+            AssertEqual("m6.normalize.sustain", 15000, normalized.opinionBandSustainTicks);
+            AssertEqual("m6.normalize.hysteresis", 5, normalized.opinionHysteresisPoints);
+            AssertEqual("m6.normalize.factCount", 4, normalized.maximumStateFacts);
+            AssertEqual("m6.normalize.factKey", 48, normalized.maximumFactKeyCharacters);
+            AssertEqual("m6.normalize.factValue", 128, normalized.maximumFactValueCharacters);
+
+            KnowledgeOpinionBandThresholds bands = new KnowledgeOpinionBandThresholds();
+            AssertEqual("m6.band.devoted", KnowledgeObservationTokens.OpinionDevoted,
+                KnowledgeRelationPolicy.OpinionBandToken(60, bands));
+            AssertEqual("m6.band.friendly.high", KnowledgeObservationTokens.OpinionFriendly,
+                KnowledgeRelationPolicy.OpinionBandToken(59, bands));
+            AssertEqual("m6.band.friendly.low", KnowledgeObservationTokens.OpinionFriendly,
+                KnowledgeRelationPolicy.OpinionBandToken(25, bands));
+            AssertEqual("m6.band.neutral.high", KnowledgeObservationTokens.OpinionNeutral,
+                KnowledgeRelationPolicy.OpinionBandToken(24, bands));
+            AssertEqual("m6.band.neutral.low", KnowledgeObservationTokens.OpinionNeutral,
+                KnowledgeRelationPolicy.OpinionBandToken(-9, bands));
+            AssertEqual("m6.band.strained.high", KnowledgeObservationTokens.OpinionStrained,
+                KnowledgeRelationPolicy.OpinionBandToken(-10, bands));
+            AssertEqual("m6.band.strained.low", KnowledgeObservationTokens.OpinionStrained,
+                KnowledgeRelationPolicy.OpinionBandToken(-39, bands));
+            AssertEqual("m6.band.hostile", KnowledgeObservationTokens.OpinionHostile,
+                KnowledgeRelationPolicy.OpinionBandToken(-40, bands));
+        }
+
+        private static void TestM6ReconciliationSchedulingAndPublication()
+        {
+            KnowledgeReconciliationSchedulePlan idle =
+                KnowledgeRelationPolicy.PlanReconciliationSchedule(
+                    1000, 900, false, false, 2500);
+            AssertTrue("m6.schedule.idleNoRequest", !idle.requestFullReconciliation);
+            KnowledgeReconciliationSchedulePlan due =
+                KnowledgeRelationPolicy.PlanReconciliationSchedule(
+                    3400, 900, false, false, 2500);
+            AssertTrue("m6.schedule.elapsedRequest", due.requestFullReconciliation);
+            AssertTrue("m6.schedule.elapsedNotSilent", !due.forceSilentBaseline);
+
+            KnowledgeReconciliationSchedulePlan first =
+                KnowledgeRelationPolicy.PlanReconciliationSchedule(
+                    100, -1, false, false, 2500);
+            AssertTrue("m6.schedule.firstRequest", first.requestFullReconciliation);
+            AssertTrue("m6.schedule.firstSilent", first.forceSilentBaseline);
+
+            KnowledgeReconciliationSchedulePlan rollback =
+                KnowledgeRelationPolicy.PlanReconciliationSchedule(
+                    100, 1000, false, false, 2500);
+            AssertTrue("m6.schedule.rollbackConsumesTick", rollback.consumeCompletedTick);
+            AssertTrue("m6.schedule.rollbackRequests", rollback.requestFullReconciliation);
+            AssertTrue("m6.schedule.rollbackSilent", rollback.forceSilentBaseline);
+            KnowledgeReconciliationSchedulePlan rollbackRunning =
+                KnowledgeRelationPolicy.PlanReconciliationSchedule(
+                    101, 1000, true, false, 2500);
+            AssertTrue("m6.schedule.rollbackRunningConsumesTick",
+                rollbackRunning.consumeCompletedTick);
+            AssertTrue("m6.schedule.rollbackRunningNoRestart",
+                !rollbackRunning.requestFullReconciliation);
+            KnowledgeReconciliationSchedulePlan rollbackFinishing =
+                KnowledgeRelationPolicy.PlanReconciliationSchedule(
+                    101, 1000, false, true, 2500);
+            AssertTrue("m6.schedule.rollbackFinishingNoRestart",
+                !rollbackFinishing.requestFullReconciliation);
+            KnowledgeReconciliationSchedulePlan consumed =
+                KnowledgeRelationPolicy.PlanReconciliationSchedule(
+                    102, -1, true, false, 2500);
+            AssertTrue("m6.schedule.consumedDoesNotRestart",
+                !consumed.requestFullReconciliation);
+
+            AssertTrue("m6.publication.completeBatch",
+                KnowledgeRelationPolicy.ShouldPublishCompletedObservationBatch(
+                    true, false, false, false));
+            AssertTrue("m6.publication.cleanNoop",
+                !KnowledgeRelationPolicy.ShouldPublishCompletedObservationBatch(
+                    false, false, false, false));
+            AssertTrue("m6.publication.queueDefers",
+                !KnowledgeRelationPolicy.ShouldPublishCompletedObservationBatch(
+                    true, true, false, false));
+            AssertTrue("m6.publication.scanDefers",
+                !KnowledgeRelationPolicy.ShouldPublishCompletedObservationBatch(
+                    true, false, true, false));
+            AssertTrue("m6.publication.finishDefers",
+                !KnowledgeRelationPolicy.ShouldPublishCompletedObservationBatch(
+                    true, false, false, true));
+
+            KnowledgeObservationWorkMergePlan exactOverridesBaseline =
+                KnowledgeRelationPolicy.MergeObservationWorkFlags(
+                    false, true, true, false);
+            AssertTrue("m6.dirtyMerge.removalSticky",
+                exactOverridesBaseline.removedFaction);
+            AssertTrue("m6.dirtyMerge.exactNotHidden",
+                !exactOverridesBaseline.forceSilentBaseline);
+            KnowledgeObservationWorkMergePlan baselinePair =
+                KnowledgeRelationPolicy.MergeObservationWorkFlags(
+                    false, true, false, true);
+            AssertTrue("m6.dirtyMerge.baselineRemainsSilent",
+                baselinePair.forceSilentBaseline);
+            AssertTrue("m6.dirtyMerge.noInventedRemoval",
+                !baselinePair.removedFaction);
+        }
+
+        private static void TestM6VisibilityAndExactIdentity()
+        {
+            KnowledgeRelationVisibilityInput visible = new KnowledgeRelationVisibilityInput
+            {
+                candidateHasName = true,
+                candidateEverSeenByPlayer = true
+            };
+            AssertTrue("m6.visibility.direct", KnowledgeRelationPolicy.IsKnownVisibleRelation(visible));
+            visible.candidateEverSeenByPlayer = false;
+            AssertTrue("m6.visibility.hiddenUnseen",
+                !KnowledgeRelationPolicy.IsKnownVisibleRelation(visible));
+            visible.candidateEverSeenByPlayer = true;
+            visible.candidateHidesRelations = true;
+            AssertTrue("m6.visibility.hiddenCandidate",
+                !KnowledgeRelationPolicy.IsKnownVisibleRelation(visible));
+            visible.candidateHidesRelations = false;
+            visible.ownerHidesRelations = true;
+            AssertTrue("m6.visibility.hiddenOwner",
+                !KnowledgeRelationPolicy.IsKnownVisibleRelation(visible));
+            visible.ownerHidesRelations = false;
+            visible.candidateNameIsNumerical = true;
+            AssertTrue("m6.visibility.numerical",
+                !KnowledgeRelationPolicy.IsKnownVisibleRelation(visible));
+            visible.candidateNameIsNumerical = false;
+            visible.candidateIsDeadAnimalWithoutCorpse = true;
+            AssertTrue("m6.visibility.missingDeadAnimal",
+                !KnowledgeRelationPolicy.IsKnownVisibleRelation(visible));
+            visible.candidateIsDeadAnimalWithoutCorpse = false;
+            AssertTrue("m6.knownness.visibleAloneNotEnough",
+                !KnowledgeRelationPolicy.IsKnownSocialEntry(visible));
+            visible.hasKnownRelation = true;
+            AssertTrue("m6.knownness.exactRelation",
+                KnowledgeRelationPolicy.IsKnownSocialEntry(visible));
+            visible.hasKnownRelation = false;
+            visible.candidateIsHumanlike = true;
+            visible.sharesSocialContext = true;
+            visible.ownerOpinionOfCandidate = 1;
+            AssertTrue("m6.knownness.socialCardOpinion",
+                KnowledgeRelationPolicy.IsKnownSocialEntry(visible));
+            visible.ownerOpinionOfCandidate = 0;
+            AssertTrue("m6.knownness.zeroOpinionHidden",
+                !KnowledgeRelationPolicy.IsKnownSocialEntry(visible));
+            visible.candidateOpinionOfOwner = -1;
+            AssertTrue("m6.knownness.inboundOpinion",
+                KnowledgeRelationPolicy.IsKnownSocialEntry(visible));
+            visible.sharesSocialContext = false;
+            AssertTrue("m6.knownness.offContextNotDiscovered",
+                !KnowledgeRelationPolicy.IsKnownSocialEntry(visible));
+            visible.candidateOpinionOfOwner = 0;
+            visible.previouslyKnown = true;
+            AssertTrue("m6.knownness.savedEdgeReconciles",
+                KnowledgeRelationPolicy.IsKnownSocialEntry(visible));
+
+            AssertTrue("m6.ownerAttach.firstEligibleIsSilent",
+                KnowledgeRelationPolicy.OwnerAttachmentNeedsSilentBaseline(false, true));
+            AssertTrue("m6.ownerAttach.alreadyAttachedIsOrdinary",
+                !KnowledgeRelationPolicy.OwnerAttachmentNeedsSilentBaseline(true, true));
+            AssertTrue("m6.ownerAttach.ineligibleDoesNotAttach",
+                !KnowledgeRelationPolicy.OwnerAttachmentNeedsSilentBaseline(false, false));
+
+            string epoch = M6Epoch("Pawn_ab");
+            string first;
+            string second;
+            AssertTrue("m6.identity.awareness.first", KnowledgeRelationPolicy.TryCreateAwarenessId(
+                "Pawn_ab", epoch, KnowledgeObservationTokens.ScopeRelationship,
+                KnowledgeObservationTokens.SubjectPawn, "Pawn_c",
+                KnowledgeObservationTokens.StreamDirectedSocial, out first));
+            AssertTrue("m6.identity.awareness.second", KnowledgeRelationPolicy.TryCreateAwarenessId(
+                "Pawn_a", epoch, KnowledgeObservationTokens.ScopeRelationship,
+                KnowledgeObservationTokens.SubjectPawn, "Pawn_bc",
+                KnowledgeObservationTokens.StreamDirectedSocial, out second));
+            AssertTrue("m6.identity.segmentCollision", !string.Equals(first, second, StringComparison.Ordinal));
+
+            string forward;
+            string reverse;
+            AssertTrue("m6.identity.pair.forward",
+                KnowledgeRelationPolicy.TryCreateDirectedPairKey("Pawn_A", "Pawn_B", out forward));
+            AssertTrue("m6.identity.pair.reverse",
+                KnowledgeRelationPolicy.TryCreateDirectedPairKey("Pawn_B", "Pawn_A", out reverse));
+            AssertTrue("m6.identity.pairDirected", !string.Equals(forward, reverse, StringComparison.Ordinal));
+
+            string setA;
+            string setB;
+            string setSorted;
+            AssertTrue("m6.identity.setA", KnowledgeRelationPolicy.TryEncodeRelationDefSet(
+                new[] { "ab", "c" }, 128, out setA));
+            AssertTrue("m6.identity.setB", KnowledgeRelationPolicy.TryEncodeRelationDefSet(
+                new[] { "a", "bc" }, 128, out setB));
+            AssertTrue("m6.identity.setNoCollision", setA != setB);
+            AssertTrue("m6.identity.setSorted", KnowledgeRelationPolicy.TryEncodeRelationDefSet(
+                new[] { "Spouse", "Parent", "Spouse" }, 128, out setSorted));
+            string sortedAgain;
+            KnowledgeRelationPolicy.TryEncodeRelationDefSet(
+                new[] { "Parent", "Spouse" }, 128, out sortedAgain);
+            AssertEqual("m6.identity.setDedup", sortedAgain, setSorted);
+        }
+
+        private static void TestM6FactCanonicalization()
+        {
+            KnowledgeObservationPolicySnapshot policy =
+                new KnowledgeObservationPolicySnapshot().Normalized();
+            List<KnowledgeStateFact> normalized;
+            AssertTrue("m6.facts.equalDuplicateCollapses",
+                KnowledgeRelationPolicy.TryNormalizeStateFacts(
+                    new[]
+                    {
+                        new KnowledgeStateFact
+                        {
+                            key = KnowledgeObservationTokens.FactConnectionKind,
+                            value = KnowledgeObservationTokens.ConnectionFamily
+                        },
+                        new KnowledgeStateFact
+                        {
+                            key = KnowledgeObservationTokens.FactConnectionKind,
+                            value = KnowledgeObservationTokens.ConnectionFamily
+                        }
+                    },
+                    KnowledgeObservationTokens.ScopeFaction,
+                    KnowledgeObservationTokens.SubjectFaction,
+                    KnowledgeObservationTokens.StreamFactionConnection,
+                    policy,
+                    out normalized));
+            AssertEqual("m6.facts.equalDuplicateOne", 1, normalized.Count);
+
+            AssertTrue("m6.facts.conflictRejected",
+                !KnowledgeRelationPolicy.TryNormalizeStateFacts(
+                    new[]
+                    {
+                        new KnowledgeStateFact
+                        {
+                            key = KnowledgeObservationTokens.FactConnectionKind,
+                            value = KnowledgeObservationTokens.ConnectionFamily
+                        },
+                        new KnowledgeStateFact
+                        {
+                            key = KnowledgeObservationTokens.FactConnectionKind,
+                            value = KnowledgeObservationTokens.ConnectionCurrent
+                        }
+                    },
+                    KnowledgeObservationTokens.ScopeFaction,
+                    KnowledgeObservationTokens.SubjectFaction,
+                    KnowledgeObservationTokens.StreamFactionConnection,
+                    policy,
+                    out normalized));
+            AssertEqual("m6.facts.conflictClears", 0, normalized.Count);
+
+            string relationSet;
+            KnowledgeRelationPolicy.TryEncodeRelationDefSet(
+                new[] { "Parent", "Spouse" }, 128, out relationSet);
+            AssertTrue("m6.facts.canonicalRelationSet",
+                KnowledgeRelationPolicy.TryNormalizeStateFacts(
+                    new[]
+                    {
+                        new KnowledgeStateFact
+                        {
+                            key = KnowledgeObservationTokens.FactRelationDefs,
+                            value = relationSet
+                        }
+                    },
+                    KnowledgeObservationTokens.ScopeRelative,
+                    KnowledgeObservationTokens.SubjectPawn,
+                    KnowledgeObservationTokens.StreamRelativeState,
+                    policy,
+                    out normalized));
+            AssertTrue("m6.facts.trailingRelationBytesRejected",
+                !KnowledgeRelationPolicy.TryNormalizeStateFacts(
+                    new[]
+                    {
+                        new KnowledgeStateFact
+                        {
+                            key = KnowledgeObservationTokens.FactRelationDefs,
+                            value = relationSet + "x"
+                        }
+                    },
+                    KnowledgeObservationTokens.ScopeRelative,
+                    KnowledgeObservationTokens.SubjectPawn,
+                    KnowledgeObservationTokens.StreamRelativeState,
+                    policy,
+                    out normalized));
+
+            List<KnowledgeStateFact> opinion = new List<KnowledgeStateFact>
+            {
+                new KnowledgeStateFact
+                {
+                    key = KnowledgeObservationTokens.FactOpinionBand,
+                    value = KnowledgeObservationTokens.OpinionNeutral
+                },
+                new KnowledgeStateFact
+                {
+                    key = KnowledgeObservationTokens.FactOpinionValue,
+                    value = "0"
+                }
+            };
+            AssertTrue("m6.facts.opinionEpisodeExact",
+                KnowledgeRelationPolicy.TryNormalizeOpinionEpisodeFacts(
+                    opinion, policy, out normalized));
+            AssertEqual("m6.facts.opinionEpisodeSortedFirst",
+                KnowledgeObservationTokens.FactOpinionBand, normalized[0].key);
+            opinion[1].value = "+0";
+            AssertTrue("m6.facts.noncanonicalOpinionRejected",
+                !KnowledgeRelationPolicy.TryNormalizeOpinionEpisodeFacts(
+                    opinion, policy, out normalized));
+            opinion.RemoveAt(1);
+            AssertTrue("m6.facts.incompleteEpisodeRejected",
+                !KnowledgeRelationPolicy.TryNormalizeOpinionEpisodeFacts(
+                    opinion, policy, out normalized));
+
+            string factionSubject;
+            MemoryIdentityCodec.TryCreateFactionSubjectId("Faction_17", 1, out factionSubject);
+            AssertTrue("m6.subject.exactFactionAccepted",
+                KnowledgeRelationPolicy.IsValidObservationSubject(
+                    KnowledgeObservationTokens.SubjectFaction, factionSubject));
+            AssertTrue("m6.subject.factionLabelRejected",
+                !KnowledgeRelationPolicy.IsValidObservationSubject(
+                    KnowledgeObservationTokens.SubjectFaction, "Same label"));
+            KnowledgeAwarenessState relative = new KnowledgeAwarenessState
+            {
+                scopeKindToken = KnowledgeObservationTokens.ScopeRelative,
+                trackingStateToken = KnowledgeObservationTokens.TrackingTracked,
+                stateFacts = new List<KnowledgeStateFact>
+                {
+                    new KnowledgeStateFact
+                    {
+                        key = KnowledgeObservationTokens.FactFactionSubject,
+                        value = factionSubject
+                    }
+                }
+            };
+            AssertTrue("m6.familyFaction.liveRelativeRetains",
+                !KnowledgeRelationPolicy.CanPruneFamilyFactionConnection(
+                    factionSubject, new[] { relative }));
+            relative.stateFacts[0].value = "none";
+            AssertTrue("m6.familyFaction.absentRelativePrunes",
+                KnowledgeRelationPolicy.CanPruneFamilyFactionConnection(
+                    factionSubject, new[] { relative }));
+            relative.trackingStateToken = KnowledgeObservationTokens.TrackingCapacityUntracked;
+            AssertTrue("m6.familyFaction.untrackedRelativeFailsClosed",
+                !KnowledgeRelationPolicy.CanPruneFamilyFactionConnection(
+                    factionSubject, new[] { relative }));
+            AssertTrue("m6.stream.scopeMismatchRejected",
+                !KnowledgeRelationPolicy.IsKnownObservationStreamShape(
+                    KnowledgeObservationTokens.ScopeRelative,
+                    KnowledgeObservationTokens.SubjectPawn,
+                    KnowledgeObservationTokens.StreamDirectedSocial));
+        }
+
+        private static void TestM6DuplicateRepairPolicy()
+        {
+            string epoch = M6Epoch("Pawn_A");
+            string awarenessId;
+            KnowledgeRelationPolicy.TryCreateAwarenessId(
+                "Pawn_A", epoch, KnowledgeObservationTokens.ScopeRelative,
+                KnowledgeObservationTokens.SubjectPawn, "Pawn_B",
+                KnowledgeObservationTokens.StreamRelativeState, out awarenessId);
+            KnowledgeAwarenessState first = new KnowledgeAwarenessState
+            {
+                snapshotId = awarenessId,
+                scopeKindToken = KnowledgeObservationTokens.ScopeRelative,
+                subjectKind = KnowledgeObservationTokens.SubjectPawn,
+                subjectId = "Pawn_B",
+                factStreamToken = KnowledgeObservationTokens.StreamRelativeState,
+                captureInvalidationGeneration = 1,
+                knownnessEvidenceToken = KnowledgeObservationTokens.EvidenceDirect,
+                stateFacts = new List<KnowledgeStateFact>
+                {
+                    new KnowledgeStateFact
+                    {
+                        key = KnowledgeObservationTokens.FactLifeState,
+                        value = KnowledgeObservationTokens.LifeAlive
+                    }
+                },
+                firstObservedTick = 20,
+                lastObservedTick = 100,
+                trackingStateToken = KnowledgeObservationTokens.TrackingTracked,
+                snapshotRevision = 4
+            };
+            KnowledgeAwarenessState conflicting = M6AwarenessCopy(first);
+            conflicting.firstObservedTick = 10;
+            KnowledgeAwarenessRepairPlan awarenessConflict =
+                KnowledgeRelationPolicy.PlanAwarenessDuplicateRepair(
+                    new[] { first, conflicting }, false, 7);
+            AssertTrue("m6.repair.awarenessConflict", awarenessConflict.conflict);
+            AssertEqual("m6.repair.awarenessCurrentGeneration", 7L,
+                awarenessConflict.repairMarker.captureInvalidationGeneration);
+            AssertEqual("m6.repair.awarenessMinimumFirst", 10L,
+                awarenessConflict.repairMarker.firstObservedTick);
+            AssertEqual("m6.repair.awarenessNoFacts", 0,
+                awarenessConflict.repairMarker.stateFacts.Count);
+            conflicting.lastObservedTick = 99;
+            KnowledgeAwarenessRepairPlan lowerRank =
+                KnowledgeRelationPolicy.PlanAwarenessDuplicateRepair(
+                    new[] { first, conflicting }, false, 7);
+            AssertTrue("m6.repair.awarenessLowerRankCollapses",
+                lowerRank.valid && !lowerRank.conflict && lowerRank.retainedIndex == 0);
+
+            string pairKey;
+            KnowledgeRelationPolicy.TryCreateDirectedPairKey("Pawn_A", "Pawn_B", out pairKey);
+            string episodeId;
+            KnowledgeRelationPolicy.TryCreateEpisodeId(
+                "Pawn_A", epoch,
+                KnowledgeObservationTokens.ScopeRelationship,
+                KnowledgeObservationTokens.StreamDirectedSocial,
+                KnowledgeObservationTokens.OpinionEpisodeRule,
+                KnowledgeObservationTokens.OpinionEpisodeKind,
+                KnowledgeObservationTokens.SubjectPawn,
+                "Pawn_B", pairKey, KnowledgeObservationTokens.DirectionRising,
+                out episodeId);
+            KnowledgeOpinionEpisodeState episode = new KnowledgeOpinionEpisodeState
+            {
+                episodeId = episodeId,
+                captureRuleId = KnowledgeObservationTokens.OpinionEpisodeRule,
+                scopeKindToken = KnowledgeObservationTokens.ScopeRelationship,
+                factStreamToken = KnowledgeObservationTokens.StreamDirectedSocial,
+                category = MemoryContractTokens.CategoryRelationships,
+                captureInvalidationGeneration = 1,
+                episodeKindToken = KnowledgeObservationTokens.OpinionEpisodeKind,
+                subjectKind = KnowledgeObservationTokens.SubjectPawn,
+                subjectId = "Pawn_B",
+                pairOrStreamKey = pairKey,
+                directionToken = KnowledgeObservationTokens.DirectionRising,
+                baselineFacts = M6OpinionFacts(0),
+                currentFacts = M6OpinionFacts(10),
+                firstObservedTick = 100,
+                lastObservedTick = 200,
+                episodeRevision = 2
+            };
+            KnowledgeOpinionEpisodeState episodeConflict = M6EpisodeCopy(episode);
+            episodeConflict.currentFacts = M6OpinionFacts(11);
+            KnowledgeEpisodeRepairPlan episodeRepair =
+                KnowledgeRelationPolicy.PlanEpisodeDuplicateRepair(
+                    "Pawn_A", epoch, new[] { episode, episodeConflict }, false, 3);
+            AssertTrue("m6.repair.episodeConflictDrops", episodeRepair.conflict
+                && episodeRepair.retainedIndex < 0);
+            string relationshipAwarenessId;
+            KnowledgeRelationPolicy.TryCreateAwarenessId(
+                "Pawn_A", epoch, KnowledgeObservationTokens.ScopeRelationship,
+                KnowledgeObservationTokens.SubjectPawn, "Pawn_B",
+                KnowledgeObservationTokens.StreamDirectedSocial,
+                out relationshipAwarenessId);
+            AssertEqual("m6.repair.episodeMarkerKey", relationshipAwarenessId,
+                episodeRepair.repairMarker.snapshotId);
+            AssertEqual("m6.repair.episodeMarkerGeneration", 3L,
+                episodeRepair.repairMarker.captureInvalidationGeneration);
+            KnowledgeAwarenessState episodeAwareness = new KnowledgeAwarenessState
+            {
+                snapshotId = relationshipAwarenessId,
+                scopeKindToken = KnowledgeObservationTokens.ScopeRelationship,
+                subjectKind = KnowledgeObservationTokens.SubjectPawn,
+                subjectId = "Pawn_B",
+                factStreamToken = KnowledgeObservationTokens.StreamDirectedSocial,
+                captureInvalidationGeneration = 1,
+                trackingStateToken = KnowledgeObservationTokens.TrackingTracked
+            };
+            AssertTrue("m6.repair.episodeTrackedPairRetained",
+                KnowledgeRelationPolicy.IsEpisodeBackedByTrackedAwareness(
+                    episodeAwareness, episode));
+            AssertEqual("m6.repair.episodeTrackedDisposition",
+                KnowledgeEpisodeBackingDisposition.Retain,
+                KnowledgeRelationPolicy.EpisodeBackingDisposition(
+                    episodeAwareness, episode, false));
+            episodeAwareness.trackingStateToken =
+                KnowledgeObservationTokens.TrackingCapacityUntracked;
+            AssertTrue("m6.repair.episodeCapacityPairDropped",
+                !KnowledgeRelationPolicy.IsEpisodeBackedByTrackedAwareness(
+                    episodeAwareness, episode));
+            episodeAwareness.trackingStateToken = KnowledgeObservationTokens.TrackingTracked;
+            episodeAwareness.captureInvalidationGeneration = 2;
+            AssertTrue("m6.repair.episodeGenerationMismatchDropped",
+                !KnowledgeRelationPolicy.IsEpisodeBackedByTrackedAwareness(
+                    episodeAwareness, episode));
+            AssertTrue("m6.repair.episodeMissingAwarenessDropped",
+                !KnowledgeRelationPolicy.IsEpisodeBackedByTrackedAwareness(null, episode));
+            AssertEqual("m6.repair.episodeMissingConflictNoMarker",
+                KnowledgeEpisodeBackingDisposition.DropWithoutMarker,
+                KnowledgeRelationPolicy.EpisodeBackingDisposition(null, episode, true));
+            AssertEqual("m6.repair.episodeExistingConflictMarker",
+                KnowledgeEpisodeBackingDisposition.PublishConflictMarker,
+                KnowledgeRelationPolicy.EpisodeBackingDisposition(
+                    episodeAwareness, episode, true));
+
+            KnowledgeFactionState faction = new KnowledgeFactionState
+            {
+                factionInstanceId = "Faction_17",
+                allocatorGeneration = 4,
+                factionDefName = "SameDef",
+                frozenDisplayLabel = "Same label",
+                goodwill = 10,
+                relationKindToken = KnowledgeObservationTokens.FactionRelationNeutral,
+                observedTick = 50,
+                trackingStateToken = KnowledgeObservationTokens.TrackingTracked,
+                snapshotRevision = 2
+            };
+            KnowledgeFactionState factionConflict = M6FactionCopy(faction);
+            factionConflict.goodwill = 20;
+            KnowledgeFactionRepairPlan factionRepair =
+                KnowledgeRelationPolicy.PlanFactionDuplicateRepair(
+                    new[] { faction, factionConflict }, false);
+            AssertTrue("m6.repair.factionConflict", factionRepair.conflict);
+            AssertEqual("m6.repair.factionExactInstance", "Faction_17",
+                factionRepair.repairMarker.factionInstanceId);
+            AssertEqual("m6.repair.factionMarker",
+                KnowledgeObservationTokens.TrackingCapacityUntracked,
+                factionRepair.repairMarker.trackingStateToken);
+        }
+
+        private static void TestM6SilentBaselinesAndCapacityMarkers()
+        {
+            KnowledgeObservationPolicySnapshot policy =
+                new KnowledgeObservationPolicySnapshot().Normalized();
+            string epoch = M6Epoch("Pawn_A");
+            KnowledgeCurrentTruthObservation first = new KnowledgeCurrentTruthObservation
+            {
+                ownerPawnId = "Pawn_A",
+                ownerEpochToken = epoch,
+                scopeKindToken = KnowledgeObservationTokens.ScopeRelative,
+                subjectKind = KnowledgeObservationTokens.SubjectPawn,
+                subjectId = "Pawn_B",
+                factStreamToken = KnowledgeObservationTokens.StreamRelativeState,
+                captureInvalidationGeneration = 1,
+                knownnessEvidenceToken = KnowledgeObservationTokens.EvidenceDirect,
+                stateFacts = new List<KnowledgeStateFact>
+                {
+                    new KnowledgeStateFact
+                    {
+                        key = KnowledgeObservationTokens.FactLifeState,
+                        value = KnowledgeObservationTokens.LifeAlive
+                    }
+                },
+                observedTick = 100,
+                captureAllowed = true
+            };
+            KnowledgeAwarenessPlan baseline = KnowledgeRelationPolicy.PlanCurrentTruth(
+                null, first, policy);
+            AssertTrue("m6.baseline.valid", baseline.valid);
+            AssertTrue("m6.baseline.silent", baseline.silentBaseline);
+            AssertEqual("m6.baseline.tracked", KnowledgeObservationTokens.TrackingTracked,
+                baseline.replacement.trackingStateToken);
+
+            first.observedTick = 110;
+            first.stateFacts[0].value = KnowledgeObservationTokens.LifeDead;
+            KnowledgeAwarenessPlan changed = KnowledgeRelationPolicy.PlanCurrentTruth(
+                baseline.replacement, first, policy);
+            AssertTrue("m6.change.notBaseline", !changed.silentBaseline);
+            AssertTrue("m6.change.detected", changed.authoritativeStateChanged);
+
+            first.captureAllowed = false;
+            first.observedTick = 120;
+            KnowledgeAwarenessPlan disabled = KnowledgeRelationPolicy.PlanCurrentTruth(
+                changed.replacement, first, policy);
+            AssertTrue("m6.disabled.silent", disabled.silentBaseline);
+            first.captureAllowed = true;
+            first.captureInvalidationGeneration = 2;
+            first.observedTick = 130;
+            KnowledgeAwarenessPlan reenabled = KnowledgeRelationPolicy.PlanCurrentTruth(
+                disabled.replacement, first, policy);
+            AssertTrue("m6.reenabled.silentGenerationBaseline", reenabled.silentBaseline);
+            AssertEqual("m6.reenabled.generation", 2L,
+                reenabled.replacement.captureInvalidationGeneration);
+
+            reenabled.replacement.snapshotRevision = long.MaxValue - 1;
+            first.observedTick = 140;
+            KnowledgeAwarenessPlan saturated = KnowledgeRelationPolicy.PlanCurrentTruth(
+                reenabled.replacement, first, policy);
+            AssertEqual("m6.saturation.marker",
+                KnowledgeObservationTokens.TrackingCapacityUntracked,
+                saturated.replacement.trackingStateToken);
+            AssertEqual("m6.saturation.noFacts", 0, saturated.replacement.stateFacts.Count);
+            AssertTrue("m6.saturation.silent", saturated.silentBaseline);
+            long saturatedLastTick = saturated.replacement.lastObservedTick;
+            first.observedTick = 145;
+            KnowledgeAwarenessPlan terminalNoOp = KnowledgeRelationPolicy.PlanCurrentTruth(
+                saturated.replacement, first, policy);
+            AssertTrue("m6.saturation.terminalValid", terminalNoOp.valid);
+            AssertTrue("m6.saturation.terminalNoSavedMutation",
+                !terminalNoOp.savedMutationRequired);
+            AssertEqual("m6.saturation.terminalTickStable",
+                saturatedLastTick, terminalNoOp.replacement.lastObservedTick);
+            AssertTrue("m6.saturation.maxMarkerNotRemovable",
+                !KnowledgeRelationPolicy.CanRemoveShadowSnapshot(long.MaxValue));
+            AssertTrue("m6.saturation.preterminalRemovable",
+                KnowledgeRelationPolicy.CanRemoveShadowSnapshot(long.MaxValue - 1));
+
+            first.stateFacts[0].value = new string('x', 129);
+            first.observedTick = 150;
+            KnowledgeAwarenessPlan oversized = KnowledgeRelationPolicy.PlanCurrentTruth(
+                null, first, policy);
+            AssertEqual("m6.oversize.marker",
+                KnowledgeObservationTokens.TrackingCapacityUntracked,
+                oversized.replacement.trackingStateToken);
+            AssertEqual("m6.oversize.noPartialFacts", 0, oversized.replacement.stateFacts.Count);
+        }
+
+        private static void TestM6DeterministicOpinionEpisodes()
+        {
+            KnowledgeObservationPolicySnapshot policy =
+                new KnowledgeObservationPolicySnapshot().Normalized();
+            KnowledgeOpinionBandThresholds bands = new KnowledgeOpinionBandThresholds();
+            string epoch = M6Epoch("Pawn_A");
+
+            KnowledgeOpinionPlan baseline = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                null, null, M6Opinion("Pawn_A", epoch, "Pawn_B", 0, 100), bands, policy);
+            AssertTrue("m6.opinion.baselineSilent", baseline.silentBaseline);
+            AssertTrue("m6.opinion.baselineNoEpisode", baseline.openEpisode == null);
+
+            KnowledgeOpinionPlan drift = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                baseline.replacement, null,
+                M6Opinion("Pawn_A", epoch, "Pawn_B", 3, 200), bands, policy);
+            AssertTrue("m6.opinion.pointDriftNoQualification", !drift.qualifiedForFutureCapture);
+            AssertTrue("m6.opinion.pointDriftAccumulates", drift.openEpisode != null);
+            KnowledgeOpinionPlan cumulative = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                drift.replacement, drift.openEpisode,
+                M6Opinion("Pawn_A", epoch, "Pawn_B", 21, 300), bands, policy);
+            AssertTrue("m6.opinion.cumulativeQualifies", cumulative.qualifiedForFutureCapture);
+            AssertEqual("m6.opinion.cumulativeReason", "cumulative",
+                cumulative.qualificationReasonToken);
+            AssertTrue("m6.opinion.cumulativeCloses", cumulative.openEpisode == null);
+
+            KnowledgeOpinionPlan bandBaseline = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                null, null, M6Opinion("Pawn_A", epoch, "Pawn_C", 20, 1000), bands, policy);
+            KnowledgeOpinionPlan crossing = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                bandBaseline.replacement, null,
+                M6Opinion("Pawn_A", epoch, "Pawn_C", 30, 1100), bands, policy);
+            AssertTrue("m6.opinion.bandNotImmediate", !crossing.qualifiedForFutureCapture);
+            KnowledgeOpinionPlan sustained = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                crossing.replacement, crossing.openEpisode,
+                M6Opinion("Pawn_A", epoch, "Pawn_C", 30,
+                    1100 + policy.opinionBandSustainTicks), bands, policy);
+            AssertTrue("m6.opinion.bandSustained", sustained.qualifiedForFutureCapture);
+            AssertEqual("m6.opinion.bandReason", "band_crossing",
+                sustained.qualificationReasonToken);
+
+            KnowledgeOpinionPlan reversalBaseline = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                null, null, M6Opinion("Pawn_A", epoch, "Pawn_D", 0, 2000), bands, policy);
+            KnowledgeOpinionPlan rising = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                reversalBaseline.replacement, null,
+                M6Opinion("Pawn_A", epoch, "Pawn_D", 10, 2100), bands, policy);
+            KnowledgeOpinionPlan reversal = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                rising.replacement, rising.openEpisode,
+                M6Opinion("Pawn_A", epoch, "Pawn_D", -5, 2200), bands, policy);
+            AssertTrue("m6.opinion.reversalQualifies", reversal.qualifiedForFutureCapture);
+            AssertEqual("m6.opinion.reversalReason", "reversal",
+                reversal.qualificationReasonToken);
+
+            KnowledgeOpinionPlan inactivityBaseline = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                null, null, M6Opinion("Pawn_A", epoch, "Pawn_E", 0, 3000), bands, policy);
+            KnowledgeOpinionPlan inactivityDrift = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                inactivityBaseline.replacement, null,
+                M6Opinion("Pawn_A", epoch, "Pawn_E", 3, 3100), bands, policy);
+            KnowledgeOpinionPlan inactivityExpired = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                inactivityDrift.replacement, inactivityDrift.openEpisode,
+                M6Opinion("Pawn_A", epoch, "Pawn_E", 4,
+                    inactivityDrift.openEpisode.lastObservedTick
+                        + policy.opinionEpisodeInactivityTicks),
+                bands,
+                policy);
+            AssertTrue("m6.opinion.inactivityCloses",
+                inactivityExpired.openEpisode == null);
+            AssertTrue("m6.opinion.inactivityNoQualification",
+                !inactivityExpired.qualifiedForFutureCapture);
+
+            KnowledgeOpinionPlan maximumBaseline = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                null, null, M6Opinion("Pawn_A", epoch, "Pawn_F", 0, 4000), bands, policy);
+            KnowledgeOpinionPlan maximumDrift = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                maximumBaseline.replacement, null,
+                M6Opinion("Pawn_A", epoch, "Pawn_F", 3, 4100), bands, policy);
+            KnowledgeOpinionEpisodeState maximumEpisode = M6EpisodeCopy(
+                maximumDrift.openEpisode);
+            maximumEpisode.firstObservedTick = 4100;
+            maximumEpisode.lastObservedTick = 4100
+                + policy.opinionEpisodeMaximumTicks - 1;
+            KnowledgeOpinionPlan maximumExpired = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                maximumDrift.replacement, maximumEpisode,
+                M6Opinion("Pawn_A", epoch, "Pawn_F", 4,
+                    4100 + policy.opinionEpisodeMaximumTicks),
+                bands,
+                policy);
+            AssertTrue("m6.opinion.maximumCloses", maximumExpired.openEpisode == null);
+            AssertTrue("m6.opinion.maximumNoQualification",
+                !maximumExpired.qualifiedForFutureCapture);
+
+            KnowledgeOpinionPlan smallReversalBaseline =
+                KnowledgeRelationPolicy.PlanDirectedOpinion(
+                    null, null, M6Opinion("Pawn_A", epoch, "Pawn_G", 0, 5000), bands, policy);
+            KnowledgeOpinionPlan smallReversalRising =
+                KnowledgeRelationPolicy.PlanDirectedOpinion(
+                    smallReversalBaseline.replacement, null,
+                    M6Opinion("Pawn_A", epoch, "Pawn_G", 5, 5100), bands, policy);
+            KnowledgeOpinionPlan smallReversalFalling =
+                KnowledgeRelationPolicy.PlanDirectedOpinion(
+                    smallReversalRising.replacement, smallReversalRising.openEpisode,
+                    M6Opinion("Pawn_A", epoch, "Pawn_G", 4, 5200), bands, policy);
+            AssertTrue("m6.opinion.smallReversalRestarts",
+                smallReversalFalling.openEpisode != null);
+            AssertTrue("m6.opinion.smallReversalNoQualification",
+                !smallReversalFalling.qualifiedForFutureCapture);
+            AssertEqual("m6.opinion.smallReversalDirection",
+                KnowledgeObservationTokens.DirectionFalling,
+                smallReversalFalling.openEpisode.directionToken);
+            AssertTrue("m6.opinion.smallReversalNewIdentity",
+                smallReversalFalling.openEpisode.episodeId
+                    != smallReversalRising.openEpisode.episodeId);
+
+            KnowledgeOpinionPlan downwardBaseline = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                null, null, M6Opinion("Pawn_A", epoch, "Pawn_H", 30, 6000), bands, policy);
+            KnowledgeOpinionPlan downwardCrossing = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                downwardBaseline.replacement, null,
+                M6Opinion("Pawn_A", epoch, "Pawn_H", 24, 6100), bands, policy);
+            long downwardSustainTick = 6100 + policy.opinionBandSustainTicks;
+            KnowledgeOpinionPlan downwardBoundary = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                downwardCrossing.replacement, downwardCrossing.openEpisode,
+                M6Opinion("Pawn_A", epoch, "Pawn_H",
+                    bands.friendly - policy.opinionHysteresisPoints,
+                    downwardSustainTick),
+                bands,
+                policy);
+            AssertTrue("m6.opinion.downwardBoundaryDoesNotQualify",
+                !downwardBoundary.qualifiedForFutureCapture);
+            AssertTrue("m6.opinion.downwardBoundaryRemainsOpen",
+                downwardBoundary.openEpisode != null);
+            KnowledgeOpinionPlan downwardBeyond = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                downwardBoundary.replacement, downwardBoundary.openEpisode,
+                M6Opinion("Pawn_A", epoch, "Pawn_H",
+                    bands.friendly - policy.opinionHysteresisPoints - 1,
+                    downwardSustainTick + 1),
+                bands,
+                policy);
+            AssertTrue("m6.opinion.downwardBeyondQualifies",
+                downwardBeyond.qualifiedForFutureCapture);
+            AssertEqual("m6.opinion.downwardBeyondReason", "band_crossing",
+                downwardBeyond.qualificationReasonToken);
+
+            KnowledgeOpinionObservation relationChange =
+                M6Opinion("Pawn_A", epoch, "Pawn_B", 21, 400);
+            relationChange.outboundRelationDefNames.Add("Spouse");
+            KnowledgeOpinionPlan formal = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                cumulative.replacement, null, relationChange, bands, policy);
+            AssertTrue("m6.opinion.formalCloses", formal.formalRelationChanged);
+            AssertTrue("m6.opinion.formalNoEpisode", formal.openEpisode == null);
+
+            KnowledgeOpinionObservation disabledObservation =
+                M6Opinion("Pawn_A", epoch, "Pawn_B", 25, 500);
+            disabledObservation.captureAllowed = false;
+            KnowledgeOpinionPlan disabled = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                formal.replacement, null, disabledObservation, bands, policy);
+            AssertTrue("m6.opinion.disabledSilent", disabled.silentBaseline);
+            AssertTrue("m6.opinion.disabledNoEpisode", disabled.openEpisode == null);
+            disabledObservation.captureAllowed = true;
+            disabledObservation.captureInvalidationGeneration = 2;
+            disabledObservation.observedTick = 600;
+            KnowledgeOpinionPlan reenabled = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                disabled.replacement, null, disabledObservation, bands, policy);
+            AssertTrue("m6.opinion.reenabledSilent", reenabled.silentBaseline);
+            AssertTrue("m6.opinion.reenabledNoBacklog", reenabled.openEpisode == null);
+
+            KnowledgeOpinionEpisodeState saturatedEpisode = M6EpisodeCopy(drift.openEpisode);
+            saturatedEpisode.episodeRevision = long.MaxValue - 1;
+            KnowledgeOpinionPlan saturatedAdvance = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                drift.replacement,
+                saturatedEpisode,
+                M6Opinion("Pawn_A", epoch, "Pawn_B", 4, 700),
+                bands,
+                policy);
+            AssertTrue("m6.opinion.saturatedEpisodeRemoved",
+                saturatedAdvance.openEpisode == null);
+            AssertEqual("m6.opinion.saturatedAwarenessMarker",
+                KnowledgeObservationTokens.TrackingCapacityUntracked,
+                saturatedAdvance.replacement.trackingStateToken);
+            AssertEqual("m6.opinion.saturatedAwarenessRevision",
+                long.MaxValue, saturatedAdvance.replacement.snapshotRevision);
+            AssertEqual("m6.opinion.saturatedAwarenessNoFacts",
+                0, saturatedAdvance.replacement.stateFacts.Count);
+            AssertTrue("m6.opinion.saturatedSilent", saturatedAdvance.silentBaseline);
+            AssertTrue("m6.opinion.saturatedNoQualification",
+                !saturatedAdvance.qualifiedForFutureCapture);
+            KnowledgeOpinionPlan saturatedNoOp = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                saturatedAdvance.replacement,
+                null,
+                M6Opinion("Pawn_A", epoch, "Pawn_B", 5, 800),
+                bands,
+                policy);
+            AssertTrue("m6.opinion.saturatedNoSavedMutation",
+                !saturatedNoOp.savedMutationRequired);
+            AssertTrue("m6.opinion.saturatedNoNewEpisode",
+                saturatedNoOp.openEpisode == null);
+        }
+
+        private static void TestM6FactionOwnerAwarenessSeparation()
+        {
+            AssertEqual("m6.faction.connectionLiveCurrent",
+                KnowledgeObservationTokens.ConnectionCurrent,
+                KnowledgeRelationPolicy.OwnerFactionConnectionKind(true));
+            AssertEqual("m6.faction.connectionStaleFormer",
+                KnowledgeObservationTokens.ConnectionRecentFormer,
+                KnowledgeRelationPolicy.OwnerFactionConnectionKind(false));
+            AssertEqual("m6.faction.familyCannotDowngradeCurrent",
+                KnowledgeObservationTokens.ConnectionCurrent,
+                KnowledgeRelationPolicy.PreferPersonalFactionConnection(
+                    KnowledgeObservationTokens.ConnectionCurrent,
+                    KnowledgeObservationTokens.ConnectionFamily));
+            AssertEqual("m6.faction.familyCannotDowngradeFormer",
+                KnowledgeObservationTokens.ConnectionRecentFormer,
+                KnowledgeRelationPolicy.PreferPersonalFactionConnection(
+                    KnowledgeObservationTokens.ConnectionRecentFormer,
+                    KnowledgeObservationTokens.ConnectionFamily));
+            AssertEqual("m6.faction.familyFillsUnknown",
+                KnowledgeObservationTokens.ConnectionFamily,
+                KnowledgeRelationPolicy.PreferPersonalFactionConnection(
+                    string.Empty,
+                    KnowledgeObservationTokens.ConnectionFamily));
+            AssertEqual("m6.faction.exactTransitionReplacesOld",
+                KnowledgeObservationTokens.ConnectionRecentFormer,
+                KnowledgeRelationPolicy.PreferPersonalFactionConnection(
+                    KnowledgeObservationTokens.ConnectionCurrent,
+                    KnowledgeObservationTokens.ConnectionRecentFormer));
+
+            long generation;
+            AssertTrue("m6.faction.allocate",
+                KnowledgeRelationPolicy.TryAllocateFactionGeneration(
+                    0, new long[0], out generation));
+            AssertEqual("m6.faction.allocateOne", 1L, generation);
+            AssertTrue("m6.faction.allocateCollisionRefused",
+                !KnowledgeRelationPolicy.TryAllocateFactionGeneration(
+                    0, new[] { 1L }, out generation));
+            AssertTrue("m6.faction.allocateSaturationRefused",
+                !KnowledgeRelationPolicy.TryAllocateFactionGeneration(
+                    long.MaxValue, new long[0], out generation));
+
+            string firstSubject;
+            string secondSubject;
+            AssertTrue("m6.faction.subjectFirst", MemoryIdentityCodec.TryCreateFactionSubjectId(
+                "Faction_17", 1, out firstSubject));
+            AssertTrue("m6.faction.subjectSecond", MemoryIdentityCodec.TryCreateFactionSubjectId(
+                "Faction_18", 1, out secondSubject));
+            AssertTrue("m6.faction.equalLabelDefNoCollision", firstSubject != secondSubject);
+
+            KnowledgeFactionObservation factionObservation = new KnowledgeFactionObservation
+            {
+                factionInstanceId = "Faction_17",
+                allocatorGeneration = 1,
+                factionDefName = "SameDef",
+                frozenDisplayLabel = "Same label",
+                goodwill = 10,
+                relationKindToken = "Neutral",
+                leaderPawnId = "Pawn_Leader",
+                observedTick = 10
+            };
+            KnowledgeFactionPlan factionBaseline = KnowledgeRelationPolicy.PlanFactionSnapshot(
+                null, factionObservation);
+            AssertTrue("m6.faction.baselineValid", factionBaseline.valid);
+            AssertTrue("m6.faction.baselineSilent", factionBaseline.silentBaseline);
+            AssertTrue("m6.faction.trackedCanInferMissingRemoval",
+                KnowledgeRelationPolicy.CanInferMissingFactionRemoval(
+                    factionBaseline.replacement));
+            factionObservation.relationKindToken = "FriendlyLabel";
+            AssertTrue("m6.faction.nonRelationLabelRejected",
+                !KnowledgeRelationPolicy.PlanFactionSnapshot(null, factionObservation).valid);
+            factionObservation.relationKindToken = KnowledgeObservationTokens.FactionRelationNeutral;
+            factionObservation.goodwill = 25;
+            factionObservation.observedTick = 20;
+            KnowledgeFactionPlan factionChanged = KnowledgeRelationPolicy.PlanFactionSnapshot(
+                factionBaseline.replacement, factionObservation);
+            AssertTrue("m6.faction.changeDetected", factionChanged.authoritativeStateChanged);
+            AssertTrue("m6.faction.changeNotBaseline", !factionChanged.silentBaseline);
+            factionChanged.replacement.snapshotRevision = long.MaxValue - 1;
+            factionObservation.observedTick = 30;
+            KnowledgeFactionPlan factionSaturated = KnowledgeRelationPolicy.PlanFactionSnapshot(
+                factionChanged.replacement, factionObservation);
+            AssertEqual("m6.faction.saturationMarker",
+                KnowledgeObservationTokens.TrackingCapacityUntracked,
+                factionSaturated.replacement.trackingStateToken);
+            AssertTrue("m6.faction.markerCannotInferMissingRemoval",
+                !KnowledgeRelationPolicy.CanInferMissingFactionRemoval(
+                    factionSaturated.replacement));
+            KnowledgeFactionState alreadyRemoved = M6FactionCopy(factionBaseline.replacement);
+            alreadyRemoved.removed = true;
+            AssertTrue("m6.faction.removedCannotInferRemovalAgain",
+                !KnowledgeRelationPolicy.CanInferMissingFactionRemoval(alreadyRemoved));
+            long factionSaturatedTick = factionSaturated.replacement.observedTick;
+            factionObservation.observedTick = 40;
+            KnowledgeFactionPlan factionTerminal = KnowledgeRelationPolicy.PlanFactionSnapshot(
+                factionSaturated.replacement, factionObservation);
+            AssertTrue("m6.faction.terminalNoSavedMutation",
+                !factionTerminal.savedMutationRequired);
+            AssertEqual("m6.faction.terminalTickStable",
+                factionSaturatedTick, factionTerminal.replacement.observedTick);
+
+            string epoch = M6Epoch("Pawn_A");
+            KnowledgeAwarenessPlan owner = KnowledgeRelationPolicy.PlanCurrentTruth(
+                null,
+                new KnowledgeCurrentTruthObservation
+                {
+                    ownerPawnId = "Pawn_A",
+                    ownerEpochToken = epoch,
+                    scopeKindToken = KnowledgeObservationTokens.ScopeFaction,
+                    subjectKind = KnowledgeObservationTokens.SubjectFaction,
+                    subjectId = firstSubject,
+                    factStreamToken = KnowledgeObservationTokens.StreamFactionConnection,
+                    captureInvalidationGeneration = 1,
+                    knownnessEvidenceToken = KnowledgeObservationTokens.EvidenceDirect,
+                    stateFacts = new List<KnowledgeStateFact>
+                    {
+                        new KnowledgeStateFact
+                        {
+                            key = KnowledgeObservationTokens.FactConnectionKind,
+                            value = KnowledgeObservationTokens.ConnectionFamily
+                        }
+                    },
+                    observedTick = 100,
+                    captureAllowed = true
+                },
+                new KnowledgeObservationPolicySnapshot());
+            AssertTrue("m6.faction.ownerValid", owner.valid);
+            AssertEqual("m6.faction.ownerOneConnectionFact", 1,
+                owner.replacement.stateFacts.Count);
+            AssertTrue("m6.faction.ownerNoGoodwillDuplication",
+                owner.replacement.stateFacts.All(f =>
+                    f.key.IndexOf("goodwill", StringComparison.OrdinalIgnoreCase) < 0
+                    && f.key.IndexOf("relation", StringComparison.OrdinalIgnoreCase) < 0));
+
+            string otherOwnerId;
+            AssertTrue("m6.faction.otherOwnerIdentity",
+                KnowledgeRelationPolicy.TryCreateAwarenessId(
+                    "Pawn_B", epoch, KnowledgeObservationTokens.ScopeFaction,
+                    KnowledgeObservationTokens.SubjectFaction, firstSubject,
+                    KnowledgeObservationTokens.StreamFactionConnection, out otherOwnerId));
+            AssertTrue("m6.faction.ownerScoped", owner.replacement.snapshotId != otherOwnerId);
+        }
+
+        private static KnowledgeAwarenessState M6AwarenessCopy(KnowledgeAwarenessState source)
+        {
+            return new KnowledgeAwarenessState
+            {
+                snapshotId = source.snapshotId,
+                scopeKindToken = source.scopeKindToken,
+                subjectKind = source.subjectKind,
+                subjectId = source.subjectId,
+                factStreamToken = source.factStreamToken,
+                captureInvalidationGeneration = source.captureInvalidationGeneration,
+                knownnessEvidenceToken = source.knownnessEvidenceToken,
+                stateFacts = source.stateFacts.Select(f => new KnowledgeStateFact
+                {
+                    key = f.key,
+                    value = f.value
+                }).ToList(),
+                firstObservedTick = source.firstObservedTick,
+                lastObservedTick = source.lastObservedTick,
+                lastSourceOccurrenceId = source.lastSourceOccurrenceId,
+                trackingStateToken = source.trackingStateToken,
+                snapshotRevision = source.snapshotRevision
+            };
+        }
+
+        private static List<KnowledgeStateFact> M6OpinionFacts(int opinion)
+        {
+            return new List<KnowledgeStateFact>
+            {
+                new KnowledgeStateFact
+                {
+                    key = KnowledgeObservationTokens.FactOpinionValue,
+                    value = opinion.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                },
+                new KnowledgeStateFact
+                {
+                    key = KnowledgeObservationTokens.FactOpinionBand,
+                    value = KnowledgeRelationPolicy.OpinionBandToken(
+                        opinion, new KnowledgeOpinionBandThresholds())
+                }
+            };
+        }
+
+        private static KnowledgeOpinionEpisodeState M6EpisodeCopy(
+            KnowledgeOpinionEpisodeState source)
+        {
+            return new KnowledgeOpinionEpisodeState
+            {
+                episodeId = source.episodeId,
+                captureRuleId = source.captureRuleId,
+                scopeKindToken = source.scopeKindToken,
+                factStreamToken = source.factStreamToken,
+                category = source.category,
+                captureInvalidationGeneration = source.captureInvalidationGeneration,
+                episodeKindToken = source.episodeKindToken,
+                subjectKind = source.subjectKind,
+                subjectId = source.subjectId,
+                pairOrStreamKey = source.pairOrStreamKey,
+                directionToken = source.directionToken,
+                baselineFacts = source.baselineFacts.Select(f => new KnowledgeStateFact
+                {
+                    key = f.key,
+                    value = f.value
+                }).ToList(),
+                currentFacts = source.currentFacts.Select(f => new KnowledgeStateFact
+                {
+                    key = f.key,
+                    value = f.value
+                }).ToList(),
+                firstObservedTick = source.firstObservedTick,
+                lastObservedTick = source.lastObservedTick,
+                lastSourceOccurrenceId = source.lastSourceOccurrenceId,
+                episodeRevision = source.episodeRevision
+            };
+        }
+
+        private static KnowledgeFactionState M6FactionCopy(KnowledgeFactionState source)
+        {
+            return new KnowledgeFactionState
+            {
+                factionInstanceId = source.factionInstanceId,
+                allocatorGeneration = source.allocatorGeneration,
+                factionDefName = source.factionDefName,
+                frozenDisplayLabel = source.frozenDisplayLabel,
+                goodwill = source.goodwill,
+                relationKindToken = source.relationKindToken,
+                leaderPawnId = source.leaderPawnId,
+                defeated = source.defeated,
+                removed = source.removed,
+                observedTick = source.observedTick,
+                trackingStateToken = source.trackingStateToken,
+                snapshotRevision = source.snapshotRevision
+            };
+        }
+
+        private static KnowledgeOpinionObservation M6Opinion(
+            string owner,
+            string epoch,
+            string subject,
+            int opinion,
+            long tick)
+        {
+            return new KnowledgeOpinionObservation
+            {
+                ownerPawnId = owner,
+                ownerEpochToken = epoch,
+                subjectPawnId = subject,
+                opinion = opinion,
+                captureInvalidationGeneration = 1,
+                observedTick = tick,
+                captureAllowed = true
+            };
+        }
+
+        private static string M6Epoch(string owner)
+        {
+            MemoryEpochAllocationPlan plan = MemoryIdentityCodec.PlanEpochAllocation(
+                new MemoryEpochAllocationRequest
+                {
+                    ownerPawnId = owner,
+                    lastIssuedSequence = 0,
+                    fallbackChain = string.Empty,
+                    liveEpochCarriers = new List<string>(),
+                    isTargetBrainwipe = false
+                });
+            AssertTrue("m6.epoch." + owner, plan.canMutate);
+            return plan.epochToken;
         }
 
         // ── Inline annotation (§4.3) ─────────────────────────────────────────────────────────────────
