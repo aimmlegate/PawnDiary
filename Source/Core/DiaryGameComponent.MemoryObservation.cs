@@ -1246,6 +1246,37 @@ namespace PawnDiary
             return true;
         }
 
+        /// <summary>
+        /// Takes a bounded prefix before candidate inspection calls back into modded pawn APIs. Those
+        /// calls may reentrantly add or remove a pawn from RimWorld's live list; iterating this detached
+        /// prefix prevents that routine churn from invalidating a List enumerator mid-pass.
+        /// </summary>
+        private static List<T> CopyBoundedMemoryObservationPrefix<T>(
+            IEnumerable<T> source,
+            int maximumRows)
+        {
+            int cap = Math.Max(0, maximumRows);
+            IList<T> indexed = source as IList<T>;
+            int count = indexed == null ? 0 : Math.Min(cap, indexed.Count);
+            List<T> result = new List<T>(count);
+            if (cap == 0 || source == null) return result;
+
+            // RimWorld exposes the relation/map/caravan sources as Lists. Copying by index avoids
+            // holding their version-checked enumerator across any later, potentially patched getter.
+            if (indexed != null)
+            {
+                for (int i = 0; i < count; i++) result.Add(indexed[i]);
+                return result;
+            }
+
+            foreach (T item in source)
+            {
+                if (result.Count >= cap) break;
+                result.Add(item);
+            }
+            return result;
+        }
+
         private SortedDictionary<string, Pawn> FullMemoryObservationCandidates(
             Pawn owner,
             int cap,
@@ -1269,7 +1300,9 @@ namespace PawnDiary
             {
                 int inspected = 0;
                 int inspectionCap = checked(Math.Max(cap, cap * 4));
-                foreach (Pawn related in owner.relations.RelatedPawns)
+                List<Pawn> relatedPawns = CopyBoundedMemoryObservationPrefix(
+                    owner.relations.RelatedPawns, inspectionCap);
+                foreach (Pawn related in relatedPawns)
                 {
                     if (inspected++ >= inspectionCap) break;
                     OfferBoundedMemoryObservationCandidate(
@@ -1293,7 +1326,9 @@ namespace PawnDiary
             int socialInspectionCap = checked(Math.Max(cap, cap * 4));
             if (remaining > 0)
             {
-                foreach (Pawn candidate in MemorySocialContextPawns(owner))
+                List<Pawn> socialPawns = CopyBoundedMemoryObservationPrefix(
+                    MemorySocialContextPawns(owner), socialInspectionCap);
+                foreach (Pawn candidate in socialPawns)
                 {
                     if (socialInspected++ >= socialInspectionCap) break;
                     if (IsCurrentMemorySocialCandidate(owner, candidate))

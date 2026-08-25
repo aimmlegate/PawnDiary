@@ -8,6 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-08-25
 
+- **Memory observation list-churn guard.** Reconcile related and social candidates from bounded snapshots so reentrant pawn-list changes cannot abort `GameComponentTick`.
 - **Memory M8 settings UI.** Add detached atomic normal/Advanced policy controls, bounded numeric drafts, dependency/cost/privacy/no-game explanations, responsive EN/RU layout, and loaded Scribe coverage while activation remains LegacyShadow.
 - **Memory M7 factual capture and routing.** Admit XML-owned four-category facts with exact occurrence deduplication, existing person/faction roots and chapter directives, authoritative-page reuse, owner-private social/family/faction observation, and silent disabled-interval baselines while activation remains LegacyShadow.
 - **Memory M6 shadow social, family, and faction state.** Add review-hardened privacy-gated directed/relative baselines, family-by-choice truth, deterministic opinion episodes, exact faction-instance truth with owner-only connections, and revision-safe atomic bounded silent reconciliation with batch-complete Library fencing while activation remains LegacyShadow.
