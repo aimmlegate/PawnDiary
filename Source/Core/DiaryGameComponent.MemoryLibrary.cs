@@ -75,6 +75,8 @@ namespace PawnDiary
             internal List<MemoryLibraryOwnerSource> work = new List<MemoryLibraryOwnerSource>();
             internal List<MemoryLibraryOwnerIndexSnapshot> data =
                 new List<MemoryLibraryOwnerIndexSnapshot>();
+            internal List<MemoryLibraryOwnerIndexSnapshot> raw =
+                new List<MemoryLibraryOwnerIndexSnapshot>();
             internal List<MemoryLibraryOwnerIndexSnapshot> zero =
                 new List<MemoryLibraryOwnerIndexSnapshot>();
             internal Dictionary<string, MemoryLibraryOwnerSource> sources =
@@ -417,7 +419,8 @@ namespace PawnDiary
             {
                 if (query.rootHandle != null) return result;
                 block = FindSavedBlock(owner.standaloneBlocks, query.recordHandle.recordId);
-                structural = owner.structuralRevision;
+                structural = MemoryLibraryPolicy.TargetStructuralRevision(
+                    false, owner.structuralRevision, 0);
                 status = owner.statusRevision;
             }
             else
@@ -432,7 +435,8 @@ namespace PawnDiary
                 block = FindSavedBlock(root.visibleBlocks, query.recordHandle.recordId)
                     ?? (root.rollingSummaryBlock?.recordId == query.recordHandle.recordId
                         ? root.rollingSummaryBlock : null);
-                structural = root.structuralRevision;
+                structural = MemoryLibraryPolicy.TargetStructuralRevision(
+                    true, owner.structuralRevision, root.structuralRevision);
                 status = root.statusRevision;
             }
             if (block == null)
@@ -447,7 +451,7 @@ namespace PawnDiary
             }
             MemoryLibraryLimits limits = BuildMemoryLibraryLimits();
             MemoryBlockRow row = BuildMemoryBlockRow(
-                block, root, owner.structuralRevision, PawnDiaryRecordName(owner.pawnId), limits);
+                block, root, structural, PawnDiaryRecordName(owner.pawnId), limits);
             if (query.projectionToken == "filtered")
             {
                 string normalizedSearch = MemoryLibraryPolicy.NormalizeSearch(
@@ -676,15 +680,7 @@ namespace PawnDiary
             MemoryLibraryCommandResult result = NewLibraryCommandResult(command);
             if (!ValidLibraryCommandEnvelope(command)) return result;
             bool imported = command.archiveHandle != null;
-            if (imported)
-            {
-                if (command.actionToken != MemoryLibraryActions.ForgetPermanent)
-                {
-                    result.status = MemoryLibraryCommandStatuses.Ineligible;
-                    return result;
-                }
-                return ForgetImportedMemory(command, result);
-            }
+            if (imported) return ForgetImportedMemory(command, result);
             return MutateActiveMemory(command, result);
         }
 
@@ -699,7 +695,8 @@ namespace PawnDiary
             PawnKnowledgeState owner = FindCurrentMemoryEnvelope(handle.ownerPawnId);
             if (owner == null || owner.autobiographicalEpochToken != handle.epochToken)
             {
-                result.status = MemoryLibraryCommandStatuses.Missing;
+                result.status = PlanMemoryLibraryCommandStatus(
+                    command, false, 0, false, null);
                 return result;
             }
 
@@ -714,7 +711,8 @@ namespace PawnDiary
             {
                 if (command.rootHandle != null) return result;
                 block = FindSavedBlock(detachedStandalone, handle.recordId);
-                targetRevision = owner.structuralRevision;
+                targetRevision = MemoryLibraryPolicy.TargetStructuralRevision(
+                    false, owner.structuralRevision, 0);
             }
             else
             {
@@ -722,47 +720,30 @@ namespace PawnDiary
                 root = FindSavedRoot(detachedRoots, command.rootHandle.rootId);
                 if (root == null)
                 {
-                    result.status = MemoryLibraryCommandStatuses.Missing;
+                    result.status = PlanMemoryLibraryCommandStatus(
+                        command, false, 0, false, null);
                     return result;
                 }
                 block = FindSavedBlock(root.visibleBlocks, handle.recordId)
                     ?? (root.rollingSummaryBlock?.recordId == handle.recordId
                         ? root.rollingSummaryBlock : null);
-                targetRevision = root.structuralRevision;
+                targetRevision = MemoryLibraryPolicy.TargetStructuralRevision(
+                    true, owner.structuralRevision, root.structuralRevision);
             }
             if (block == null)
             {
-                result.status = MemoryLibraryCommandStatuses.Missing;
+                result.status = PlanMemoryLibraryCommandStatus(
+                    command, false, targetRevision, false, null);
                 return result;
             }
-            if (targetRevision != command.targetStructuralRevision)
-            {
-                result.status = MemoryLibraryCommandStatuses.Stale;
-                return result;
-            }
+            MemoryLibraryLimits limits = BuildMemoryLibraryLimits();
             MemoryBlockRow dto = BuildMemoryBlockRow(
-                block, root, owner.structuralRevision, PawnDiaryRecordName(owner.pawnId),
-                BuildMemoryLibraryLimits());
-            MemoryLibraryMutationEligibility eligibility = MemoryLibraryPolicy.CheckEligibility(
-                command.actionToken,
-                dto,
-                false,
-                command.hasDesiredSuppressed,
-                command.wordingDraft,
-                BuildMemoryLibraryLimits().blockTextUtf16Units);
-            if (!eligibility.validAction)
+                block, root, targetRevision, PawnDiaryRecordName(owner.pawnId), limits);
+            string plannedStatus = PlanMemoryLibraryCommandStatus(
+                command, true, targetRevision, false, dto, limits);
+            if (plannedStatus != MemoryLibraryCommandStatuses.Success)
             {
-                result.status = MemoryLibraryCommandStatuses.Invalid;
-                return result;
-            }
-            if (!eligibility.eligible)
-            {
-                result.status = MemoryLibraryCommandStatuses.Ineligible;
-                return result;
-            }
-            if (command.actionToken == MemoryLibraryActions.ForgetPermanent && !Prefs.DevMode)
-            {
-                result.status = MemoryLibraryCommandStatuses.Unauthorized;
+                result.status = plannedStatus;
                 return result;
             }
             if (targetRevision == long.MaxValue
@@ -849,17 +830,14 @@ namespace PawnDiary
             {
                 result.status = resolveStatus == MemoryLibraryStatuses.Invalid
                     ? MemoryLibraryCommandStatuses.Invalid
-                    : MemoryLibraryCommandStatuses.Missing;
+                    : PlanMemoryLibraryCommandStatus(command, false, 0, true, null);
                 return result;
             }
-            if (structural != command.targetStructuralRevision)
+            string plannedStatus = PlanMemoryLibraryCommandStatus(
+                command, true, structural, true, null);
+            if (plannedStatus != MemoryLibraryCommandStatuses.Success)
             {
-                result.status = MemoryLibraryCommandStatuses.Stale;
-                return result;
-            }
-            if (!Prefs.DevMode)
-            {
-                result.status = MemoryLibraryCommandStatuses.Unauthorized;
+                result.status = plannedStatus;
                 return result;
             }
             if (structural == long.MaxValue)
@@ -901,6 +879,29 @@ namespace PawnDiary
             return result;
         }
 
+        private string PlanMemoryLibraryCommandStatus(
+            MemoryLibraryCommand command,
+            bool exists,
+            long structuralRevision,
+            bool imported,
+            MemoryBlockRow activeRow,
+            MemoryLibraryLimits limits = null)
+        {
+            MemoryLibraryLimits cap = limits ?? BuildMemoryLibraryLimits();
+            return MemoryLibraryPolicy.PlanCommandStatus(
+                command,
+                new MemoryLibraryCommandTargetState
+                {
+                    commandShapeValid = ValidLibraryCommandEnvelope(command),
+                    exists = exists,
+                    currentStructuralRevision = structuralRevision,
+                    imported = imported,
+                    devAuthorized = Prefs.DevMode,
+                    activeRow = activeRow
+                },
+                cap.blockTextUtf16Units);
+        }
+
         private void MarkMemoryLibraryMutationCommitted()
         {
             memoryLibraryDirectoryFingerprint = string.Empty;
@@ -928,6 +929,18 @@ namespace PawnDiary
                         + exception,
                     "PawnDiary.Memory.Library.IndexRebuild".GetHashCode());
             }
+            DiaryStateVersion.Bump();
+        }
+
+        /// <summary>
+        /// Invalidates only the saved culture/directory display projection. Owner memory snapshots and
+        /// their list/detail publications remain valid because culture is not memory/search identity.
+        /// </summary>
+        private void MarkMemoryLibraryCultureProjectionDirty()
+        {
+            memoryLibraryDirectoryBuildRequested = true;
+            // The global detached-state fence aborts an in-flight directory header build. Owner-cache
+            // fingerprints deliberately exclude it, so byte-equivalent memory publications survive.
             DiaryStateVersion.Bump();
         }
 
@@ -960,11 +973,16 @@ namespace PawnDiary
             };
             Dictionary<string, PawnDiaryRecord> firstDiary =
                 new Dictionary<string, PawnDiaryRecord>(StringComparer.Ordinal);
+            List<PawnDiaryRecord> orderedDiaries = new List<PawnDiaryRecord>();
             for (int index = 0; diaries != null && index < diaries.Count; index++)
             {
                 PawnDiaryRecord diary = diaries[index];
                 if (diary != null && !string.IsNullOrWhiteSpace(diary.pawnId)
-                    && !firstDiary.ContainsKey(diary.pawnId)) firstDiary.Add(diary.pawnId, diary);
+                    && !firstDiary.ContainsKey(diary.pawnId))
+                {
+                    firstDiary.Add(diary.pawnId, diary);
+                    orderedDiaries.Add(diary);
+                }
             }
             Dictionary<string, Pawn> active = new Dictionary<string, Pawn>(StringComparer.Ordinal);
             foreach (Pawn pawn in PawnsFinder
@@ -974,16 +992,17 @@ namespace PawnDiary
                 string id = pawn.GetUniqueLoadID();
                 if (!string.IsNullOrWhiteSpace(id) && !active.ContainsKey(id)) active.Add(id, pawn);
             }
-            foreach (KeyValuePair<string, PawnDiaryRecord> pair in firstDiary)
+            for (int index = 0; index < orderedDiaries.Count; index++)
             {
-                active.TryGetValue(pair.Key, out Pawn live);
-                PawnKnowledgeState state = pair.Value.knowledgeState;
+                PawnDiaryRecord diary = orderedDiaries[index];
+                active.TryGetValue(diary.pawnId, out Pawn live);
+                PawnKnowledgeState state = diary.knowledgeState;
                 job.work.Add(new MemoryLibraryOwnerSource
                 {
                     kind = state == null ? "zero" : state.IsCurrentSchema() ? "current" : "legacy",
-                    diary = pair.Value,
+                    diary = diary,
                     state = state,
-                    displayName = live?.LabelShortCap ?? pair.Value.pawnName ?? pair.Key,
+                    displayName = live?.LabelShortCap ?? diary.pawnName ?? diary.pawnId,
                     active = live != null
                 });
             }
@@ -1007,9 +1026,11 @@ namespace PawnDiary
         {
             MemoryLibraryDirectoryBuildJob job = memoryLibraryDirectoryBuildJob;
             if (job == null) return;
-            int workCap = Math.Max(1, (int)ReadCapacityLong("sliceWorkItems", 60, 120));
+            int workCap = Math.Max(1, (int)ReadCapacityLong(
+                "sliceWorkItems", 60, MemoryLibraryLimitCeilings.SliceWorkItems));
             long microseconds = Math.Max(1, ReadCapacityLong(
-                "sliceTargetMicroseconds", 750, 2000));
+                "sliceTargetMicroseconds", 750,
+                MemoryLibraryLimitCeilings.SliceTargetMicroseconds));
             Stopwatch timer = Stopwatch.StartNew();
             int completed = 0;
             MemoryLibraryLimits limits = BuildMemoryLibraryLimits();
@@ -1023,9 +1044,13 @@ namespace PawnDiary
                 {
                     bool hasData = header.ownerRow.threadCount > 0
                         || header.ownerRow.standaloneCount > 0
-                        || header.ownerRow.importedCount > 0
-                        || header.ownerRow.compatibilityHandle != null;
-                    if (hasData) job.data.Add(header);
+                        || header.ownerRow.importedCount > 0;
+                    bool compatibilityOnly = !hasData
+                        && header.ownerRow.compatibilityHandle != null;
+                    // Unknown is always in the guaranteed first tier, even when it currently carries
+                    // only unresolved raw status. Exact-owner compatibility-only rows use tier two.
+                    if (source.kind == "unknown" || hasData) job.data.Add(header);
+                    else if (compatibilityOnly) job.raw.Add(header);
                     else if (source.active) job.zero.Add(header);
                     source.ownerKey = OwnerIndexKey(header.ownerRow.primaryHandle);
                     source.sourceFingerprint = MemoryLibraryOwnerSourceFingerprint(source, job);
@@ -1062,19 +1087,22 @@ namespace PawnDiary
         {
             job.data.Sort(CompareOwnerSnapshots);
             job.zero.Sort(CompareOwnerSnapshots);
-            int cap = (int)ReadCapacityLong("libraryOwnerEntries", 2048, 8001);
+            int cap = Math.Max(1, (int)ReadCapacityLong(
+                "libraryOwnerEntries", 2048, MemoryLibraryLimitCeilings.OwnerEntries));
+            MemoryLibraryDirectoryCapPlan capPlan = MemoryLibraryPolicy.PlanDirectoryCap(
+                job.data.Count, job.raw.Count, job.zero.Count, cap);
             List<MemoryLibraryOwnerIndexSnapshot> indexed =
                 new List<MemoryLibraryOwnerIndexSnapshot>();
-            for (int index = 0; index < job.data.Count && indexed.Count < cap; index++)
+            for (int index = 0; index < capPlan.includedData; index++)
                 indexed.Add(job.data[index]);
-            memoryLibraryAdditionalLegacyRawOwners = Math.Max(0, job.data.Count - indexed.Count);
-            int includedZero = 0;
-            for (int index = 0; index < job.zero.Count && indexed.Count < cap; index++)
-            {
+            // Raw rows remain in source order: earliest raw source index, then the already-deduplicated
+            // exact owner. Zero-memory rows are sorted by their exact owner handle above.
+            for (int index = 0; index < capPlan.includedRaw; index++)
+                indexed.Add(job.raw[index]);
+            for (int index = 0; index < capPlan.includedZero; index++)
                 indexed.Add(job.zero[index]);
-                includedZero++;
-            }
-            memoryLibraryAdditionalZeroOwners = Math.Max(0, job.zero.Count - includedZero);
+            memoryLibraryAdditionalLegacyRawOwners = capPlan.omittedRaw;
+            memoryLibraryAdditionalZeroOwners = capPlan.omittedZero;
             ApplyMemoryCompatibilityPublications(job, indexed);
             string fingerprint = DirectoryFingerprint(indexed);
             bool changed = memoryLibraryDirectoryRevision <= 0
@@ -1157,6 +1185,7 @@ namespace PawnDiary
                 source.diary.pawnId, state, limits);
             return new MemoryLibraryOwnerIndexSnapshot
             {
+                directoryCultureSourceFingerprint = SavedCultureSourceFingerprint(state),
                 ownerRow = new MemoryLibraryOwnerRow
                 {
                     primaryHandle = primary,
@@ -1235,6 +1264,7 @@ namespace PawnDiary
                 handle, source.state.records, limits);
             return new MemoryLibraryOwnerIndexSnapshot
             {
+                directoryCultureSourceFingerprint = SavedCultureSourceFingerprint(source.state),
                 ownerRow = new MemoryLibraryOwnerRow
                 {
                     compatibilityHandle = handle,
@@ -1616,89 +1646,6 @@ namespace PawnDiary
                 if (string.Equals(OwnerIndexKey(memoryLibraryDirectory[index]?.primaryHandle),
                     key, StringComparison.Ordinal)) return memoryLibraryDirectory[index];
             return null;
-        }
-
-        private List<MemoryLibraryOwnerIndexSnapshot> BuildMemoryLibraryOwnerSnapshots(
-            MemoryLibraryLimits limits)
-        {
-            Dictionary<string, PawnDiaryRecord> firstDiary =
-                new Dictionary<string, PawnDiaryRecord>(StringComparer.Ordinal);
-            for (int index = 0; diaries != null && index < diaries.Count; index++)
-            {
-                PawnDiaryRecord diary = diaries[index];
-                if (diary != null && !string.IsNullOrWhiteSpace(diary.pawnId)
-                    && !firstDiary.ContainsKey(diary.pawnId)) firstDiary.Add(diary.pawnId, diary);
-            }
-            Dictionary<string, Pawn> active = new Dictionary<string, Pawn>(StringComparer.Ordinal);
-            foreach (Pawn pawn in PawnsFinder
-                .AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists)
-            {
-                if (pawn == null) continue;
-                string id = pawn.GetUniqueLoadID();
-                if (!string.IsNullOrWhiteSpace(id) && !active.ContainsKey(id)) active.Add(id, pawn);
-            }
-
-            List<MemoryLibraryOwnerIndexSnapshot> data =
-                new List<MemoryLibraryOwnerIndexSnapshot>();
-            List<MemoryLibraryOwnerIndexSnapshot> zero =
-                new List<MemoryLibraryOwnerIndexSnapshot>();
-            long legacyOmitted = 0;
-            foreach (KeyValuePair<string, PawnDiaryRecord> pair in firstDiary)
-            {
-                PawnDiaryRecord diary = pair.Value;
-                PawnKnowledgeState state = diary.knowledgeState;
-                Pawn live;
-                active.TryGetValue(pair.Key, out live);
-                string name = live?.LabelShortCap ?? diary.pawnName ?? pair.Key;
-                if (state != null && state.IsCurrentSchema())
-                {
-                    MemoryLibraryOwnerIndexSnapshot snapshot = MemoryLibraryIndexPolicy.BuildOwner(
-                        BuildOwnerInput(diary, state, name, live != null, limits), limits);
-                    if (snapshot != null)
-                    {
-                        bool hasData = snapshot.ownerRow.threadCount > 0
-                            || snapshot.ownerRow.standaloneCount > 0
-                            || snapshot.ownerRow.importedCount > 0
-                            || snapshot.ownerRow.compatibilityHandle != null;
-                        if (hasData) data.Add(snapshot);
-                        else if (live != null) zero.Add(snapshot);
-                    }
-                }
-                else if (state != null)
-                {
-                    data.Add(BuildCompatibilityOnlyOwner(diary, state, name));
-                }
-                else if (live != null)
-                {
-                    zero.Add(BuildZeroOwner(pair.Key, name));
-                }
-            }
-            foreach (KeyValuePair<string, Pawn> pair in active)
-                if (!firstDiary.ContainsKey(pair.Key))
-                    zero.Add(BuildZeroOwner(pair.Key, pair.Value.LabelShortCap));
-
-            if ((unresolvedOwnerArchiveRows != null && unresolvedOwnerArchiveRows.Count > 0)
-                || (rawUnresolvedOwnerArchiveInput != null
-                    && rawUnresolvedOwnerArchiveInput.Count > 0))
-                data.Add(BuildUnknownOwner(limits));
-
-            data.Sort(CompareOwnerSnapshots);
-            zero.Sort(CompareOwnerSnapshots);
-            int cap = (int)ReadCapacityLong("libraryOwnerEntries", 2048, 8001);
-            List<MemoryLibraryOwnerIndexSnapshot> result =
-                new List<MemoryLibraryOwnerIndexSnapshot>();
-            for (int index = 0; index < data.Count && result.Count < cap; index++)
-                result.Add(data[index]);
-            if (data.Count > result.Count) legacyOmitted = data.Count - result.Count;
-            int includedZero = 0;
-            for (int index = 0; index < zero.Count && result.Count < cap; index++)
-            {
-                result.Add(zero[index]);
-                includedZero++;
-            }
-            memoryLibraryAdditionalLegacyRawOwners = legacyOmitted;
-            memoryLibraryAdditionalZeroOwners = zero.Count - includedZero;
-            return result;
         }
 
         private MemoryLibraryOwnerIndexInput BuildOwnerInput(
@@ -2249,31 +2196,31 @@ namespace PawnDiary
                 (provenance.sourceOccurrenceId ?? string.Empty));
         }
 
-        private MemoryImportedRow BuildImportedRow(
+        private MemoryImportedSearchDescriptor BuildImportedRow(
             SavedImportedMemoryRow row,
             string scope,
             string ownerId,
             long structuralRevision,
             MemoryLibraryLimits limits)
         {
-            return new MemoryImportedRow
+            return new MemoryImportedSearchDescriptor
             {
-                archiveHandle = new MemoryArchiveHandle
+                row = new MemoryImportedRow
                 {
-                    archiveScopeToken = scope,
-                    exactOwnerPawnIdOrEmpty = ownerId ?? string.Empty,
-                    archiveRecordId = row.archiveRecordId ?? string.Empty
+                    archiveHandle = new MemoryArchiveHandle
+                    {
+                        archiveScopeToken = scope,
+                        exactOwnerPawnIdOrEmpty = ownerId ?? string.Empty,
+                        archiveRecordId = row.archiveRecordId ?? string.Empty
+                    },
+                    preview = MemoryLibraryPolicy.ClampUtf16CompleteScalar(
+                        row.importedWording, limits.importedPreviewUtf16Units),
+                    originalTick = row.originalEventTick,
+                    ageUnknown = row.ageUnknown,
+                    migrationReasonToken = row.migrationReasonToken ?? string.Empty,
+                    targetStructuralRevision = structuralRevision
                 },
-                preview = MemoryLibraryPolicy.ClampUtf16CompleteScalar(
-                    row.importedWording, limits.importedPreviewUtf16Units),
-                normalizedSearch = MemoryLibraryPolicy.NormalizeSearch(
-                    row.importedWording,
-                    int.MaxValue,
-                    limits.importedSearchUtf16Units),
-                originalTick = row.originalEventTick,
-                ageUnknown = row.ageUnknown,
-                migrationReasonToken = row.migrationReasonToken ?? string.Empty,
-                targetStructuralRevision = structuralRevision
+                rawSearchText = row.importedWording ?? string.Empty
             };
         }
 
@@ -2289,6 +2236,14 @@ namespace PawnDiary
             ResolveCultureDisplay(state?.adoptedCultureDefName, out result.adoptedStateToken,
                 out result.adoptedDisplayLabel, limits);
             return result;
+        }
+
+        private static string SavedCultureSourceFingerprint(PawnKnowledgeState state)
+        {
+            return MemoryLibraryPolicy.StreamFingerprint(
+                state?.originCultureDefName ?? string.Empty,
+                state?.originCultureSource ?? string.Empty,
+                state?.adoptedCultureDefName ?? string.Empty);
         }
 
         private static void ResolveCultureDisplay(
@@ -2323,30 +2278,6 @@ namespace PawnDiary
                 statusRevision = 0,
                 nextLocalizedDayBoundary = NextMemoryLibraryDayBoundary()
             }, BuildMemoryLibraryLimits());
-        }
-
-        private MemoryLibraryOwnerIndexSnapshot BuildCompatibilityOnlyOwner(
-            PawnDiaryRecord diary,
-            PawnKnowledgeState state,
-            string name)
-        {
-            MemoryLibraryOwnerHandle compatibility = new MemoryLibraryOwnerHandle(
-                MemoryLibraryScopes.LegacyRawExact, diary.pawnId, string.Empty);
-            return new MemoryLibraryOwnerIndexSnapshot
-            {
-                ownerRow = new MemoryLibraryOwnerRow
-                {
-                    compatibilityHandle = compatibility,
-                    displayName = MemoryLibraryPolicy.ClampUtf16CompleteScalar(
-                        name, BuildMemoryLibraryLimits().frozenDisplayLabelUtf16Units),
-                    lifecycleToken = "migration_pending",
-                    culture = BuildMemoryOwnerCultureDto(state, BuildMemoryLibraryLimits()),
-                    legacyRawPending = true,
-                    compatibilitySourcePayloadRevision = Math.Max(
-                        1, Math.Max(state.structuralRevision, state.statusRevision)),
-                    normalizedSearch = MemoryLibraryPolicy.NormalizeSearch(name, 80, 160)
-                }
-            };
         }
 
         private MemoryLibraryOwnerIndexSnapshot BuildUnknownOwner(MemoryLibraryLimits limits)
@@ -2416,6 +2347,7 @@ namespace PawnDiary
                 fields.Add(row.hasArchive ? "1" : "0");
                 fields.Add(row.legacyRawPending ? "1" : "0");
                 fields.Add(CultureFingerprint(row.culture));
+                fields.Add(rows[index]?.directoryCultureSourceFingerprint ?? string.Empty);
                 fields.Add(OwnerSnapshotFingerprint(rows[index]));
             }
             fields.Add(memoryLibraryAdditionalLegacyRawOwners.ToString(CultureInfo.InvariantCulture));
@@ -2460,11 +2392,12 @@ namespace PawnDiary
             for (int index = 0; snapshot?.imported != null
                 && index < snapshot.imported.Count; index++)
             {
-                MemoryImportedRow row = snapshot.imported[index];
+                MemoryImportedSearchDescriptor descriptor = snapshot.imported[index];
+                MemoryImportedRow row = descriptor?.row;
                 fields.Add("imported");
                 fields.Add(ArchiveHandleKey(row?.archiveHandle));
                 fields.Add(row?.preview ?? string.Empty);
-                fields.Add(row?.normalizedSearch ?? string.Empty);
+                fields.Add(descriptor?.rawSearchText ?? string.Empty);
                 fields.Add((row?.originalTick ?? 0).ToString(CultureInfo.InvariantCulture));
                 fields.Add(row != null && row.ageUnknown ? "1" : "0");
                 fields.Add(row?.migrationReasonToken ?? string.Empty);
@@ -2701,26 +2634,38 @@ namespace PawnDiary
         {
             return new MemoryLibraryLimits
             {
-                libraryWindowRows = (int)ReadCapacityLong("libraryWindowRows", 64, 256),
-                libraryWindowCeiling = 256,
-                chapterHeaderRows = (int)ReadCapacityLong(
-                    "chapterHeaderWindowRows", 32, 128),
-                searchScalars = (int)ReadCapacityTuplePart("searchQueryBounds", 0, 80, 320),
-                searchUtf16Units = (int)ReadCapacityTuplePart("searchQueryBounds", 1, 160, 640),
+                libraryWindowRows = Math.Max(1, (int)ReadCapacityLong(
+                    "libraryWindowRows", 64, MemoryLibraryLimitCeilings.LibraryWindowRows)),
+                libraryWindowCeiling = MemoryLibraryLimitCeilings.LibraryWindowRows,
+                chapterHeaderRows = Math.Max(1, (int)ReadCapacityLong(
+                    "chapterHeaderWindowRows", 32,
+                    MemoryLibraryLimitCeilings.ChapterHeaderRows)),
+                searchScalars = (int)ReadCapacityTuplePart(
+                    "searchQueryBounds", 0, 80, MemoryLibraryLimitCeilings.SearchScalars),
+                searchUtf16Units = (int)ReadCapacityTuplePart(
+                    "searchQueryBounds", 1, 160, MemoryLibraryLimitCeilings.SearchUtf16Units),
                 normalizedFieldUtf16Units = (int)ReadCapacityLong(
-                    "normalizedSearchFieldUnits", 120, 1200),
+                    "normalizedSearchFieldUnits", 120,
+                    MemoryLibraryLimitCeilings.NormalizedFieldUtf16Units),
                 rowProjectionUtf16Units = (int)ReadCapacityLong(
-                    "rowSearchProjectionUnits", 480, 4800),
+                    "rowSearchProjectionUnits", 480,
+                    MemoryLibraryLimitCeilings.RowProjectionUtf16Units),
                 frozenDisplayLabelUtf16Units = (int)ReadCapacityLong(
-                    "frozenDisplayLabelUnits", 80, 320),
-                blockTextUtf16Units = (int)ReadCapacityLong("blockWordingUnits", 240, 1200),
+                    "frozenDisplayLabelUnits", 80,
+                    MemoryLibraryLimitCeilings.FrozenDisplayLabelUtf16Units),
+                blockTextUtf16Units = (int)ReadCapacityLong(
+                    "blockWordingUnits", 240, MemoryLibraryLimitCeilings.BlockTextUtf16Units),
                 importedPreviewUtf16Units = (int)ReadCapacityTuplePart(
-                    "importedPreviewChunkUnits", 0, 240, 1000),
+                    "importedPreviewChunkUnits", 0, 240,
+                    MemoryLibraryLimitCeilings.ImportedPreviewUtf16Units),
                 importedSearchUtf16Units = (int)ReadCapacityLong(
-                    "importedTextUnits", 2000, 8000),
+                    "importedTextUnits", 2000,
+                    MemoryLibraryLimitCeilings.ImportedSearchUtf16Units),
                 importedTextChunkUtf16Units = (int)ReadCapacityTuplePart(
-                    "importedPreviewChunkUnits", 1, 1000, 4000),
-                commandEntries = (int)ReadCapacityLong("libraryCommandEntries", 32, 128)
+                    "importedPreviewChunkUnits", 1, 1000,
+                    MemoryLibraryLimitCeilings.ImportedTextChunkUtf16Units),
+                commandEntries = Math.Max(1, (int)ReadCapacityLong(
+                    "libraryCommandEntries", 32, MemoryLibraryLimitCeilings.CommandEntries))
             };
         }
 
@@ -2867,23 +2812,6 @@ namespace PawnDiary
                 if (OwnerIndexKey(memoryLibraryDirectory[index]?.compatibilityHandle) == key)
                     return memoryLibraryDirectory[index];
             return null;
-        }
-
-        private long CompatibilityRowCount(MemoryLibraryOwnerHandle handle)
-        {
-            if (handle.scopeToken == MemoryLibraryScopes.LegacyRawUnknown)
-                return rawUnresolvedOwnerArchiveInput?.Count ?? 0;
-            if (handle.scopeToken == MemoryLibraryScopes.InertCurrentExact)
-            {
-                PawnKnowledgeState owner = FindCurrentMemoryEnvelope(handle.exactOwnerPawnIdOrEmpty);
-                long count = 0;
-                for (int index = 0; owner?.threadRoots != null
-                    && index < owner.threadRoots.Count; index++)
-                    if (HasUnknownNewerReducerRevision(owner.threadRoots[index])) count++;
-                return count;
-            }
-            PawnDiaryRecord diary = LookupDiaryByPawnId(handle.exactOwnerPawnIdOrEmpty);
-            return diary?.knowledgeState?.records?.Count ?? 0;
         }
 
         private string PawnDiaryRecordName(string ownerId)

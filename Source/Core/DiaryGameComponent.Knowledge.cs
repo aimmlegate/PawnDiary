@@ -639,7 +639,10 @@ namespace PawnDiary
                 }
 
                 PawnKnowledgeState state = EnsureKnowledgeState(diary);
-                EnsureCultureResolved(pawn, previousCultureDefName);
+                string priorOrigin = state.originCultureDefName ?? string.Empty;
+                string priorSource = state.originCultureSource ?? string.Empty;
+                string priorAdopted = state.adoptedCultureDefName ?? string.Empty;
+                EnsureCultureResolved(pawn, previousCultureDefName, false);
                 // Conversion REPLACES the latest adopted culture; earlier adopted cultures are
                 // not retained (§4.1).
                 CultureStateSnapshot converted = CultureResolver.ApplyConversion(
@@ -647,6 +650,14 @@ namespace PawnDiary
                 state.originCultureDefName = converted.originCultureDefName;
                 state.originCultureSource = converted.originSource;
                 state.adoptedCultureDefName = converted.adoptedCultureDefName;
+                if (MemoryLibraryPolicy.CultureProjectionChanged(
+                    priorOrigin,
+                    priorSource,
+                    priorAdopted,
+                    state.originCultureDefName,
+                    state.originCultureSource,
+                    state.adoptedCultureDefName))
+                    MarkMemoryLibraryCultureProjectionDirty();
 
                 KnowledgeCaptureSignal signal = new KnowledgeCaptureSignal
                 {
@@ -831,7 +842,10 @@ namespace PawnDiary
         /// use their current ideology culture; otherwise the faction's allowed cultures decide.
         /// Pawns from a pre-redesign save resolve as "inferred".
         /// </summary>
-        private void EnsureCultureResolved(Pawn pawn, string capturedOriginCultureDefName = null)
+        private void EnsureCultureResolved(
+            Pawn pawn,
+            string capturedOriginCultureDefName = null,
+            bool notifyLibraryProjection = true)
         {
             if (pawn == null)
             {
@@ -864,8 +878,17 @@ namespace PawnDiary
             CultureStateSnapshot resolved = CultureResolver.ResolveOrigin(input);
             if (!string.IsNullOrWhiteSpace(resolved.originCultureDefName))
             {
+                bool changed = MemoryLibraryPolicy.CultureProjectionChanged(
+                    state.originCultureDefName,
+                    state.originCultureSource,
+                    state.adoptedCultureDefName,
+                    resolved.originCultureDefName,
+                    resolved.originSource,
+                    state.adoptedCultureDefName);
                 state.originCultureDefName = resolved.originCultureDefName;
                 state.originCultureSource = resolved.originSource;
+                if (changed && notifyLibraryProjection)
+                    MarkMemoryLibraryCultureProjectionDirty();
             }
         }
 

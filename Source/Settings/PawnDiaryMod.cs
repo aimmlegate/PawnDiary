@@ -35,6 +35,7 @@ namespace PawnDiary
         /// <summary>The loaded mod instance; settings persistence is a mod-owned transaction.</summary>
         private static PawnDiaryMod instance;
         private static bool futureMemorySettingsWarningShown;
+        private static bool memoryPolicyDefBoundsApplied;
 
         /// <summary>Shared settings instance available throughout the mod.</summary>
         public static PawnDiarySettings Settings;
@@ -137,17 +138,10 @@ namespace PawnDiary
         public PawnDiaryMod(ModContentPack content) : base(content)
         {
             instance = this;
+            memoryPolicyDefBoundsApplied = false;
             ModContent = content;
             Settings = GetSettings<PawnDiarySettings>();
             MemorySettingsBounds memoryBounds = MemoryPolicyDefAdapter.Bounds();
-            if (Settings.memoryVersionZeroMigrationNeedsDefBounds)
-            {
-                Settings.ApplyMemoryPolicyFields(MemoryPolicyNormalizer.MigrateVersionZero(
-                    Settings.memoryVersionZeroLegacyMaster,
-                    Settings.memoryVersionZeroLegacyMode,
-                    memoryBounds));
-                Settings.memoryVersionZeroMigrationNeedsDefBounds = false;
-            }
             MemoryPolicySnapshot initialMemoryPolicy = Settings.NormalizeMemoryPolicy(memoryBounds);
             MemoryEffectivePolicyProvider.Reset(
                 Settings.memorySettingsSchemaVersion,
@@ -155,18 +149,20 @@ namespace PawnDiary
                 memoryBounds);
             if (initialMemoryPolicy.compatibilityFailClosed)
                 ShowFutureMemorySettingsWarningOnce();
+            // Defs are unavailable in this background constructor. Queue the one canonical bounds
+            // refresh before any main-menu settings interaction can edit the loaded settings object.
+            LongEventHandler.ExecuteWhenFinished(RefreshMemoryPolicyFromDefs);
             lastWrittenReaderWindowMode = Settings.useDiaryReaderWindow;
             apiConnectionController = new ApiConnectionController(() => Settings);
             BeginPostCommitSideEffects(
                 "startup:" + (initialMemoryPolicy.fingerprint ?? string.Empty),
                 Settings.useDiaryReaderWindow);
             ResumePostCommitSideEffects();
-            // Classify the install source (Workshop vs local) here on the main thread so the error
-            // reporter never reads the RimWorld ModContent object from its background send thread.
+            // Classify the install source during play-data loading so the reporter never reads the
+            // RimWorld ModContent object from its later background send thread.
             DiaryErrorReporter.CacheInstallSource(content?.RootDir);
-            // Generate and persist the anonymous install id once, now, on the main thread. Doing it here
-            // (rather than lazily off-thread inside the reporter, which never wrote it) keeps one stable
-            // id per install so the server's distinct-install crash counts stay accurate.
+            // Generate the anonymous install id once; its helper defers persistence until play-data
+            // loading finishes, keeping Def reads, translation, and file-failure UI on the main thread.
             Settings.EnsureErrorReportInstallIdPersisted();
         }
 
@@ -262,10 +258,37 @@ namespace PawnDiary
         {
             RestoreCompleteSettingsAfterFailedWrite(priorMemoryPolicy);
             Log.Error("[Pawn Diary] Settings were not persisted: " + (failure ?? "unknown failure"));
-            Messages.Message(
+            // The mod constructor runs on a LongEvent background thread and may initiate the one-time
+            // install-id save. Keep localization and Messages on the finished/main-thread callback.
+            LongEventHandler.ExecuteWhenFinished(() => Messages.Message(
                 "PawnDiary.Memory.SettingsSaveFailed".Translate(),
                 MessageTypeDefOf.RejectInput,
-                false);
+                false));
+        }
+
+        /// <summary>
+        /// Re-normalizes loaded settings exactly once after XML Defs exist, preserving deferred v0
+        /// inputs until their canonical bounds are available and publishing before save reconciliation.
+        /// </summary>
+        internal static void RefreshMemoryPolicyFromDefs()
+        {
+            if (memoryPolicyDefBoundsApplied || Settings == null
+                || !MemoryPolicyDefAdapter.TryBounds(out MemorySettingsBounds bounds)) return;
+            if (Settings.memoryVersionZeroMigrationNeedsDefBounds)
+            {
+                Settings.ApplyMemoryPolicyFields(MemoryPolicyNormalizer.MigrateVersionZero(
+                    Settings.memoryVersionZeroLegacyMaster,
+                    Settings.memoryVersionZeroLegacyMode,
+                    bounds));
+                Settings.memoryVersionZeroMigrationNeedsDefBounds = false;
+            }
+            MemoryPolicySnapshot snapshot = Settings.NormalizeMemoryPolicy(bounds);
+            MemoryEffectivePolicyProvider.Reset(
+                Settings.memorySettingsSchemaVersion,
+                snapshot.ToFields(),
+                bounds);
+            memoryPolicyDefBoundsApplied = true;
+            if (snapshot.compatibilityFailClosed) ShowFutureMemorySettingsWarningOnce();
         }
 
         private void RestoreCompleteSettingsAfterFailedWrite(MemoryPolicySnapshot priorMemoryPolicy)

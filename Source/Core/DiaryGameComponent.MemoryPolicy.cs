@@ -18,6 +18,7 @@ namespace PawnDiary
         /// </summary>
         internal bool ReconcilePublishedMemoryPolicy(MemoryPolicySnapshot published = null)
         {
+            if (published == null && MemoryPolicyIsReconciled()) return true;
             MemoryPolicySnapshot policy = published ?? MemoryEffectivePolicyProvider.Current;
             MemorySettingsPolicyFieldsV1 applied = AppliedMemoryPolicyFields();
             MemoryPolicyReconciliationPlan plan = MemoryPolicyNormalizer.PlanReconciliation(

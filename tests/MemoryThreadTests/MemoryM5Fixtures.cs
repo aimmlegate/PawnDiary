@@ -22,6 +22,7 @@ namespace MemoryThreadTests
             DurableSettingsPredecessorRules();
             PublicationIsIndivisible();
             LibraryUnicodeCursorAndFingerprintRules();
+            LibraryDefensiveCeilingParityAndDirectoryPriority();
             LibraryFilteringPagingAndTtlRules();
             LibraryIndexVisibilityAndCounts();
             LibraryProjectionAndDetailReviewRules();
@@ -99,6 +100,30 @@ namespace MemoryThreadTests
             Equal("m5.migrate.master.off", false, masterOff.useMemoriesInWriting);
             Equal("m5.migrate.save.independent", true, masterOff.saveNewMemories);
             Equal("m5.migrate.background.independent", true, masterOff.usePawnBackground);
+
+            MemorySettingsBounds xmlBounds = new MemorySettingsBounds
+            {
+                minorMinimumDays = 2,
+                minorDefaultDays = 7,
+                minorMaximumDays = 30,
+                regularMinimumDays = 8,
+                regularDefaultDays = 45,
+                regularMaximumDays = 90,
+                threadTargetMinimum = 5,
+                threadTargetDefault = 17,
+                threadTargetMaximum = 40,
+                reuseMinimumDays = 2,
+                reuseDefaultDays = 6,
+                reuseMaximumDays = 20,
+                revisitMinimumEntries = 2,
+                revisitDefaultEntries = 8,
+                revisitMaximumEntries = 20
+            };
+            MemorySettingsPolicyFieldsV1 deferred = MemoryPolicyNormalizer.MigrateVersionZero(
+                true, 0, xmlBounds);
+            Equal("m5.migrate.deferred.xml.minor", 7, deferred.minorMemoryLifetimeDays);
+            Equal("m5.migrate.deferred.xml.regular", 45, deferred.regularMemoryLifetimeDays);
+            Equal("m5.migrate.deferred.xml.target", 17, deferred.memoryThreadTarget);
         }
 
         private static void DependenciesAndCategoryGates()
@@ -348,6 +373,50 @@ namespace MemoryThreadTests
             Equal("m5.library.clock.reset", 0L, clock.LastIssuedRevision);
         }
 
+        private static void LibraryDefensiveCeilingParityAndDirectoryPriority()
+        {
+            Equal("m5.library.ceiling.window", DefensiveValue("libraryWindowRows"),
+                MemoryLibraryLimitCeilings.LibraryWindowRows.ToString());
+            Equal("m5.library.ceiling.chapters", DefensiveValue("chapterHeaderWindowRows"),
+                MemoryLibraryLimitCeilings.ChapterHeaderRows.ToString());
+            Equal("m5.library.ceiling.normalized", DefensiveValue("normalizedSearchFieldUnits"),
+                MemoryLibraryLimitCeilings.NormalizedFieldUtf16Units.ToString());
+            Equal("m5.library.ceiling.projection", DefensiveValue("rowSearchProjectionUnits"),
+                MemoryLibraryLimitCeilings.RowProjectionUtf16Units.ToString());
+            Equal("m5.library.ceiling.slice.items", DefensiveValue("sliceWorkItems"),
+                MemoryLibraryLimitCeilings.SliceWorkItems.ToString());
+            Equal("m5.library.ceiling.slice.time", DefensiveValue("sliceTargetMicroseconds"),
+                MemoryLibraryLimitCeilings.SliceTargetMicroseconds.ToString());
+            Equal("m5.library.ceiling.preview", DefensiveTuplePart(
+                    "importedPreviewChunkUnits", 0),
+                MemoryLibraryLimitCeilings.ImportedPreviewUtf16Units.ToString());
+            Equal("m5.library.ceiling.owners", DefensiveValue("libraryOwnerEntries"),
+                MemoryLibraryLimitCeilings.OwnerEntries.ToString());
+            Equal("m5.library.ceiling.commands", DefensiveValue("libraryCommandEntries"),
+                MemoryLibraryLimitCeilings.CommandEntries.ToString());
+
+            MemoryLibraryDirectoryCapPlan plan = MemoryLibraryPolicy.PlanDirectoryCap(3, 4, 5, 6);
+            Equal("m5.library.directory.data.first", 3, plan.includedData);
+            Equal("m5.library.directory.raw.second", 3, plan.includedRaw);
+            Equal("m5.library.directory.zero.third", 0, plan.includedZero);
+            Equal("m5.library.directory.raw.omitted", 1L, plan.omittedRaw);
+            Equal("m5.library.directory.zero.omitted", 5L, plan.omittedZero);
+            MemoryLibraryDirectoryCapPlan corrupt = MemoryLibraryPolicy.PlanDirectoryCap(7, 2, 3, 6);
+            Equal("m5.library.directory.corrupt.data", 6, corrupt.includedData);
+            Equal("m5.library.directory.corrupt.raw.exact", 2L, corrupt.omittedRaw);
+
+            Equal("m5.library.revision.thread.root", 9L,
+                MemoryLibraryPolicy.TargetStructuralRevision(true, 4, 9));
+            Equal("m5.library.revision.standalone.owner", 4L,
+                MemoryLibraryPolicy.TargetStructuralRevision(false, 4, 9));
+            Equal("m5.library.culture.same", false,
+                MemoryLibraryPolicy.CultureProjectionChanged(
+                    "origin", "captured", "adopted", "origin", "captured", "adopted"));
+            Equal("m5.library.culture.adopted.changed", true,
+                MemoryLibraryPolicy.CultureProjectionChanged(
+                    "origin", "captured", "old", "origin", "captured", "new"));
+        }
+
         private static void LibraryFilteringPagingAndTtlRules()
         {
             MemoryBlockRow row = NewLibraryBlock("r1", 100, "Minor", false, false, "ALPHA");
@@ -565,17 +634,20 @@ namespace MemoryThreadTests
             Equal("m5.library.detail.chapter.actual.next", false,
                 capped.chapters[0].continuesInNext);
 
-            snapshot.imported.Add(new MemoryImportedRow
+            snapshot.imported.Add(new MemoryImportedSearchDescriptor
             {
-                archiveHandle = new MemoryArchiveHandle
+                row = new MemoryImportedRow
                 {
-                    archiveScopeToken = MemoryLibraryScopes.Active,
-                    exactOwnerPawnIdOrEmpty = "pawn",
-                    archiveRecordId = "long"
+                    archiveHandle = new MemoryArchiveHandle
+                    {
+                        archiveScopeToken = MemoryLibraryScopes.Active,
+                        exactOwnerPawnIdOrEmpty = "pawn",
+                        archiveRecordId = "long"
+                    },
+                    preview = "short",
+                    targetStructuralRevision = 1
                 },
-                preview = "short",
-                normalizedSearch = "SHORT LONG NEEDLE",
-                targetStructuralRevision = 1
+                rawSearchText = "short long needle"
             });
             MemoryLibraryListResult imported = MemoryLibraryIndexPolicy.QueryList(
                 snapshot,
@@ -588,6 +660,43 @@ namespace MemoryThreadTests
                 },
                 1, 2, 3, 4, 5, 1000, limits);
             Equal("m5.library.imported.long.search", 1, imported.totalMatchedRows);
+            Equal("m5.library.imported.result.preview.only", "short",
+                imported.rows[0].imported.preview);
+
+            MemoryLibraryRootIndexInput orphanRoot = new MemoryLibraryRootIndexInput
+            {
+                header = new MemoryThreadHeaderRow
+                {
+                    rootHandle = new MemoryRootHandle
+                        { ownerPawnId = "pawn", epochToken = "epoch", rootId = "orphan" }
+                }
+            };
+            MemoryBlockRow orphan = NewLibraryBlock(
+                "orphan-child", 300, "Regular", false, false, "ORPHAN");
+            orphan.rootHandle = orphanRoot.header.rootHandle;
+            orphan.chapterId = "missing-chapter";
+            orphanRoot.children.Add(orphan);
+            MemoryLibraryOwnerIndexInput orphanInput = new MemoryLibraryOwnerIndexInput
+            {
+                primaryHandle = input.primaryHandle,
+                ownerEpochKey = input.ownerEpochKey
+            };
+            orphanInput.roots.Add(orphanRoot);
+            MemoryThreadDetailResult orphanResult = MemoryLibraryIndexPolicy.QueryThreadDetail(
+                MemoryLibraryIndexPolicy.BuildOwner(orphanInput, limits),
+                new MemoryThreadDetailQuery
+                {
+                    rootHandle = orphanRoot.header.rootHandle,
+                    detailCount = 1
+                },
+                1,
+                1000,
+                new MemoryLibraryLimits { libraryWindowRows = 0, chapterHeaderRows = 0 });
+            Equal("m5.library.detail.orphan.ready", MemoryLibraryStatuses.Ready,
+                orphanResult.status);
+            Equal("m5.library.detail.orphan.progress", 1, orphanResult.returnedCount);
+            Equal("m5.library.detail.orphan.no.zero.more", false,
+                orphanResult.returnedCount == 0 && orphanResult.hasMore);
         }
 
         private static void LibraryHandleAndRevisionRules()
@@ -761,6 +870,23 @@ namespace MemoryThreadTests
                 ordinal = ordinal,
                 phaseToken = "open"
             };
+        }
+
+        private static string DefensiveValue(string name)
+        {
+            List<MemoryCapacityContractRow> rows = MemoryCapacityContracts.DefensiveCeilings();
+            for (int index = 0; index < rows.Count; index++)
+                if (string.Equals(rows[index].name, name, StringComparison.Ordinal))
+                    return rows[index].valueEncoding;
+            throw new InvalidOperationException("Missing defensive contract row: " + name);
+        }
+
+        private static string DefensiveTuplePart(string name, int index)
+        {
+            string[] parts = DefensiveValue(name).Split('/');
+            if (index < 0 || index >= parts.Length)
+                throw new InvalidOperationException("Missing defensive tuple part: " + name);
+            return parts[index];
         }
 
         private static void Equal<T>(string label, T expected, T actual)

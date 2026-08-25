@@ -630,10 +630,11 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Main-thread startup helper: generates the install id if missing and persists it immediately, so
-        /// the same value survives across sessions. Without this, the id was generated lazily off-thread by
+        /// Startup helper: generates the install id if missing and schedules persistence after play-data
+        /// loading. Without this, the id was generated lazily off-thread by
         /// the reporter but never written, so a player who never opened settings got a fresh id each run —
-        /// inflating the server's distinct-install counts. Call once from the mod constructor.
+        /// inflating the server's distinct-install counts. Deferral also keeps Def-backed memory
+        /// normalization and localized failure UI off the background mod-constructor thread.
         /// </summary>
         public void EnsureErrorReportInstallIdPersisted()
         {
@@ -643,7 +644,8 @@ namespace PawnDiary
             }
 
             EnsureErrorReportInstallId();
-            PawnDiaryMod.PersistSettingsImmediately(this);
+            LongEventHandler.ExecuteWhenFinished(() =>
+                PawnDiaryMod.PersistSettingsImmediately(this));
         }
 
         /// <summary>

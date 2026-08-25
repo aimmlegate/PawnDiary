@@ -28,6 +28,39 @@ namespace PawnDiary
         public int commandEntries = 32;
     }
 
+    /// <summary>
+    /// Stable defensive code ceilings mirrored by the canonical capacity registry. Production Def
+    /// reads and standalone fixtures share these names so the two layers cannot silently drift.
+    /// </summary>
+    internal static class MemoryLibraryLimitCeilings
+    {
+        public const int LibraryWindowRows = 256;
+        public const int ChapterHeaderRows = 128;
+        public const int SearchScalars = 320;
+        public const int SearchUtf16Units = 640;
+        public const int NormalizedFieldUtf16Units = 480;
+        public const int RowProjectionUtf16Units = 1920;
+        public const int FrozenDisplayLabelUtf16Units = 320;
+        public const int BlockTextUtf16Units = 1200;
+        public const int ImportedPreviewUtf16Units = 1200;
+        public const int ImportedSearchUtf16Units = 8000;
+        public const int ImportedTextChunkUtf16Units = 4000;
+        public const int CommandEntries = 128;
+        public const int OwnerEntries = 8192;
+        public const int SliceWorkItems = 240;
+        public const int SliceTargetMicroseconds = 1000;
+    }
+
+    /// <summary>Pure exact allocation counts for data, raw-status, then zero-owner publication.</summary>
+    internal sealed class MemoryLibraryDirectoryCapPlan
+    {
+        public int includedData;
+        public int includedRaw;
+        public int includedZero;
+        public long omittedRaw;
+        public long omittedZero;
+    }
+
     internal sealed class MemoryLibraryCursorPlan
     {
         public bool valid;
@@ -83,6 +116,58 @@ namespace PawnDiary
 
     internal static class MemoryLibraryPolicy
     {
+        /// <summary>
+        /// Applies the canonical directory priority. The capacity equation guarantees dataCount fits;
+        /// a corrupt over-cap input still never misreports omitted data as legacy raw status.
+        /// </summary>
+        public static MemoryLibraryDirectoryCapPlan PlanDirectoryCap(
+            int dataCount,
+            int rawCount,
+            int zeroCount,
+            int capacity)
+        {
+            int cap = Math.Max(1, capacity);
+            int data = Math.Max(0, Math.Min(dataCount, cap));
+            int remaining = cap - data;
+            int raw = Math.Max(0, Math.Min(rawCount, remaining));
+            remaining -= raw;
+            int zero = Math.Max(0, Math.Min(zeroCount, remaining));
+            return new MemoryLibraryDirectoryCapPlan
+            {
+                includedData = data,
+                includedRaw = raw,
+                includedZero = zero,
+                omittedRaw = Math.Max(0L, (long)rawCount - raw),
+                omittedZero = Math.Max(0L, (long)zeroCount - zero)
+            };
+        }
+
+        /// <summary>Chooses the exact structural fence copied into an actionable block DTO.</summary>
+        public static long TargetStructuralRevision(
+            bool threaded,
+            long ownerStructuralRevision,
+            long rootStructuralRevision)
+        {
+            return threaded ? rootStructuralRevision : ownerStructuralRevision;
+        }
+
+        /// <summary>True when the three saved culture display inputs changed ordinally.</summary>
+        public static bool CultureProjectionChanged(
+            string oldOrigin,
+            string oldSource,
+            string oldAdopted,
+            string newOrigin,
+            string newSource,
+            string newAdopted)
+        {
+            return !string.Equals(oldOrigin ?? string.Empty, newOrigin ?? string.Empty,
+                    StringComparison.Ordinal)
+                || !string.Equals(oldSource ?? string.Empty, newSource ?? string.Empty,
+                    StringComparison.Ordinal)
+                || !string.Equals(oldAdopted ?? string.Empty, newAdopted ?? string.Empty,
+                    StringComparison.Ordinal);
+        }
+
         public const string StreamFingerprintSchema = "memory-library-stream-fingerprint-v1";
         public const int ImportanceMinor = 1;
         public const int ImportanceRegular = 2;

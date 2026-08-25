@@ -398,6 +398,7 @@ namespace PawnDiary
             MarkRoyaltyObservationUnavailable();
             BootstrapOdysseyForLoadedSave();
             BootstrapAnomalyForLoadedSave();
+            PawnDiaryMod.RefreshMemoryPolicyFromDefs();
             ReconcilePublishedMemoryPolicy();
             SettleLoadedMemoryDispatchRows();
             if (ApplyAcceptedPromptRetention())
@@ -727,6 +728,7 @@ namespace PawnDiary
             }
             ResetMemoryMaintenanceTransient(true);
             ResetMemoryLibraryTransient();
+            PawnDiaryMod.RefreshMemoryPolicyFromDefs();
             ReconcilePublishedMemoryPolicy();
             PawnDiaryMod.ResumeCommittedSettingsSideEffects();
         }

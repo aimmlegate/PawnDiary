@@ -62,7 +62,7 @@ namespace PawnDiary
                 earliest = Math.Min(earliest, row.projectedNextExpiryTick);
             }
             for (int index = 0; index < result.imported.Count; index++)
-                latest = Math.Max(latest, result.imported[index]?.originalTick ?? 0);
+                latest = Math.Max(latest, result.imported[index]?.row?.originalTick ?? 0);
             result.ownerEarliestFiniteExpiryTickExclusive = earliest;
             result.ownerRow = new MemoryLibraryOwnerRow
             {
@@ -120,7 +120,7 @@ namespace PawnDiary
             matched.Sort((left, right) => CompareOwners(left, right, query.sortToken));
             MemoryLibraryCursorPlan cursor = MemoryLibraryPolicy.NormalizeRowCursor(
                 query.start, query.count,
-                Math.Min(cap.libraryWindowRows, cap.libraryWindowCeiling),
+                Math.Max(1, Math.Min(cap.libraryWindowRows, cap.libraryWindowCeiling)),
                 query.expectedDirectoryRevision, matched.Count);
             if (!cursor.valid) return result;
             result.status = MemoryLibraryStatuses.Ready;
@@ -183,13 +183,13 @@ namespace PawnDiary
             else if (query.viewTag == MemoryLibraryViews.Standalone)
                 SelectStandalone(snapshot.standalone, query.filters, search, cap, eligible, matched);
             else if (query.viewTag == MemoryLibraryViews.Imported)
-                SelectImported(snapshot.imported, search, eligible, matched);
+                SelectImported(snapshot.imported, search, cap, eligible, matched);
             else return result;
 
             matched.Sort((left, right) => CompareListRows(left, right, query.sortToken));
             MemoryLibraryCursorPlan cursor = MemoryLibraryPolicy.NormalizeRowCursor(
                 query.listStart, query.listCount,
-                Math.Min(cap.libraryWindowRows, cap.libraryWindowCeiling),
+                Math.Max(1, Math.Min(cap.libraryWindowRows, cap.libraryWindowCeiling)),
                 query.expectedListSnapshotRevision, matched.Count);
             if (!cursor.valid) return result;
             result.status = MemoryLibraryStatuses.Ready;
@@ -252,7 +252,7 @@ namespace PawnDiary
             }
             MemoryLibraryCursorPlan cursor = MemoryLibraryPolicy.NormalizeRowCursor(
                 query.detailStart, query.detailCount,
-                Math.Min(cap.libraryWindowRows, cap.libraryWindowCeiling),
+                Math.Max(1, Math.Min(cap.libraryWindowRows, cap.libraryWindowCeiling)),
                 query.expectedDetailSnapshotRevision, filtered.Count);
             if (!cursor.valid) return result;
             result.status = MemoryLibraryStatuses.Ready;
@@ -275,10 +275,16 @@ namespace PawnDiary
                 MemoryBlockRow block = filtered[cursor.start + index];
                 if (!string.IsNullOrEmpty(block.chapterId)
                     && !includedChapters.Contains(block.chapterId)
-                    && includedChapters.Count < cap.chapterHeaderRows)
+                    && includedChapters.Count < Math.Max(1, cap.chapterHeaderRows))
                 {
                     MemoryChapterRow chapter = FindChapter(root.chapters, block.chapterId);
-                    if (chapter == null) break;
+                    // Repair normally removes orphan placement references. If malformed detached input
+                    // still reaches the query, return the child without context so paging advances.
+                    if (chapter == null)
+                    {
+                        result.blocks.Add(block);
+                        continue;
+                    }
                     MemoryChapterRow context = CopyChapter(chapter);
                     context.continuedFromPrevious = cursor.start > 0
                         && string.Equals(filtered[cursor.start - 1]?.chapterId,
@@ -382,14 +388,16 @@ namespace PawnDiary
         }
 
         private static void SelectImported(
-            List<MemoryImportedRow> rows,
+            List<MemoryImportedSearchDescriptor> rows,
             string search,
+            MemoryLibraryLimits limits,
             List<MemoryLibraryListRow> eligible,
             List<MemoryLibraryListRow> matched)
         {
             for (int index = 0; rows != null && index < rows.Count; index++)
             {
-                MemoryImportedRow row = rows[index];
+                MemoryImportedSearchDescriptor descriptor = rows[index];
+                MemoryImportedRow row = descriptor?.row;
                 if (row == null) continue;
                 MemoryLibraryListRow item = new MemoryLibraryListRow
                 {
@@ -397,7 +405,12 @@ namespace PawnDiary
                     imported = row
                 };
                 eligible.Add(item);
-                if (MemoryLibraryPolicy.SearchMatches(row.normalizedSearch, search)) matched.Add(item);
+                // T15.7 permits one complete bounded normalization scratch for the current row only.
+                string scratch = MemoryLibraryPolicy.NormalizeSearch(
+                    descriptor.rawSearchText,
+                    int.MaxValue,
+                    (limits ?? new MemoryLibraryLimits()).importedSearchUtf16Units);
+                if (MemoryLibraryPolicy.SearchMatches(scratch, search)) matched.Add(item);
             }
         }
 

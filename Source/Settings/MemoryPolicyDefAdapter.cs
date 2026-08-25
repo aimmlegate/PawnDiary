@@ -11,11 +11,25 @@ namespace PawnDiary
     {
         public static MemorySettingsBounds Bounds()
         {
+            return TryBounds(out MemorySettingsBounds bounds)
+                ? bounds : new MemorySettingsBounds();
+        }
+
+        /// <summary>
+        /// Returns false while startup has not populated the Def database. Callers can then retain
+        /// version-zero migration evidence and retry at the first post-Def lifecycle boundary.
+        /// </summary>
+        public static bool TryBounds(out MemorySettingsBounds bounds)
+        {
             DiaryKnowledgeTuningDef tuning =
                 DefDatabase<DiaryKnowledgeTuningDef>.GetNamedSilentFail(
                     DiaryKnowledgePolicy.TuningDefName);
-            if (tuning == null) return new MemorySettingsBounds();
-            return new MemorySettingsBounds
+            if (tuning == null)
+            {
+                bounds = null;
+                return false;
+            }
+            bounds = new MemorySettingsBounds
             {
                 minorMinimumDays = tuning.minorMemoryLifetimeMinimumDays,
                 minorDefaultDays = tuning.minorMemoryLifetimeDefaultDays,
@@ -33,6 +47,7 @@ namespace PawnDiary
                 revisitDefaultEntries = tuning.memoryRevisitEntryCountDefault,
                 revisitMaximumEntries = tuning.memoryRevisitEntryCountMaximum
             };
+            return true;
         }
     }
 }

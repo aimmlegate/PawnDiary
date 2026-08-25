@@ -257,11 +257,20 @@ namespace PawnDiary
     {
         public MemoryArchiveHandle archiveHandle;
         public string preview = string.Empty;
-        public string normalizedSearch = string.Empty;
         public long originalTick;
         public bool ageUnknown;
         public string migrationReasonToken = string.Empty;
         public long targetStructuralRevision;
+    }
+
+    /// <summary>
+    /// Internal Imported index facts. Complete preserved wording stays separate from the bounded row
+    /// returned to callers and is normalized into one transient query scratch at a time.
+    /// </summary>
+    internal sealed class MemoryImportedSearchDescriptor
+    {
+        public MemoryImportedRow row;
+        public string rawSearchText = string.Empty;
     }
 
     internal sealed class MemoryLibraryListRow
@@ -486,7 +495,8 @@ namespace PawnDiary
         public long nextLocalizedDayBoundary = long.MaxValue;
         public List<MemoryLibraryRootIndexInput> roots = new List<MemoryLibraryRootIndexInput>();
         public List<MemoryBlockRow> standalone = new List<MemoryBlockRow>();
-        public List<MemoryImportedRow> imported = new List<MemoryImportedRow>();
+        public List<MemoryImportedSearchDescriptor> imported =
+            new List<MemoryImportedSearchDescriptor>();
     }
 
     internal sealed class MemoryLibraryRootIndexInput
@@ -501,9 +511,12 @@ namespace PawnDiary
     internal sealed class MemoryLibraryOwnerIndexSnapshot
     {
         public MemoryLibraryOwnerRow ownerRow;
+        /// <summary>Directory-only raw saved-culture identity; never returned or used by list caches.</summary>
+        public string directoryCultureSourceFingerprint = string.Empty;
         public long ownerEarliestFiniteExpiryTickExclusive = long.MaxValue;
         public List<MemoryLibraryRootIndexInput> roots = new List<MemoryLibraryRootIndexInput>();
         public List<MemoryBlockRow> standalone = new List<MemoryBlockRow>();
-        public List<MemoryImportedRow> imported = new List<MemoryImportedRow>();
+        public List<MemoryImportedSearchDescriptor> imported =
+            new List<MemoryImportedSearchDescriptor>();
     }
 }
