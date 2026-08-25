@@ -434,9 +434,11 @@ namespace PawnDiary.RimTests
 
                 DiaryEvent enabledEvent = AddRomancePairEvent(
                     pawnA, pawnB, "Lover", "lover");
-                Require(CountFactualOccurrence(stateA, enabledEvent.eventId) == 1
-                        && CountFactualOccurrence(stateB, enabledEvent.eventId) == 1,
-                    "An enabled relationship occurrence did not write exactly one row per owner.");
+                int enabledCountA = CountFactualOccurrence(stateA, enabledEvent.eventId);
+                int enabledCountB = CountFactualOccurrence(stateB, enabledEvent.eventId);
+                Require(enabledCountA == 1 && enabledCountB == 1,
+                    "An enabled relationship occurrence did not write exactly one row per owner "
+                    + "(A=" + enabledCountA + ", B=" + enabledCountB + ").");
 
                 CaptureKnowledgeForEventMethod.Invoke(
                     scope.Component, new object[] { enabledEvent, pawnA, pawnB });
@@ -1406,6 +1408,10 @@ namespace PawnDiary.RimTests
                 + OrdinalSegmentCodec.Segment(epochSequence.ToString(
                     System.Globalization.CultureInfo.InvariantCulture));
             diary.knowledgeState = state;
+            // The loaded component may already have indexed the diary's previous state object.
+            // This fixture replaces that saved reference directly, so invalidate the derived index
+            // exactly as production reference assignments do before exercising store admission.
+            scope.Component.MarkMemoryM4IndexesDirty();
             return state;
         }
 
