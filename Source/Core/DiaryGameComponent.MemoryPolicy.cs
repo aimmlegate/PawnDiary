@@ -31,13 +31,6 @@ namespace PawnDiary
                 return false;
             }
             if (plan.alreadyApplied) return true;
-            if (plan.advanceGlobalOptionalCancellation
-                && globalOptionalRequestCancellationGeneration == long.MaxValue)
-            {
-                RecordMemoryDiagnosticOnce("other", "policy_reconciling");
-                return false;
-            }
-
             List<SavedActiveLogicalRequestV1> retainedRequests =
                 PrepareRetainedOptionalRequests(plan.purgeUnsentOptionalWork);
             List<SavedSummaryWordingOpportunityV1> retainedOpportunities =
@@ -51,8 +44,11 @@ namespace PawnDiary
 
             if (plan.advanceGlobalOptionalCancellation)
             {
-                globalOptionalRequestCancellationGeneration = Math.Max(
-                    1, globalOptionalRequestCancellationGeneration + 1);
+                // Max is the permanent nonallocating sentinel. Reconciliation still settles every
+                // unsent row and publishes the applied marker so normal capture/recall remain usable.
+                globalOptionalRequestCancellationGeneration =
+                    MemoryPolicyNormalizer.AdvanceSaturatingGeneration(
+                        globalOptionalRequestCancellationGeneration);
             }
             if (plan.purgeUnsentOptionalWork)
             {

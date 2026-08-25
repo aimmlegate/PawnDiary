@@ -207,6 +207,8 @@ namespace PawnDiary
         public string kind = string.Empty;
         public string summaryRole = string.Empty;
         public int projectedCategoryMask;
+        /// <summary>Union of every importance represented by this exact returned projection.</summary>
+        public int projectedImportanceMask;
         public int projectedHighestImportanceMask;
         public long originalTick;
         public long activityTick;
@@ -223,9 +225,32 @@ namespace PawnDiary
         public long automaticInclusionCount;
         public string providerExposureState = string.Empty;
         public string normalizedSearch = string.Empty;
+        /// <summary>Whole-container fields only; Summary contribution fields remain scratch-only.</summary>
+        public string normalizedWholeSearch = string.Empty;
+        public List<MemorySummaryContributionDescriptor> summaryContributions =
+            new List<MemorySummaryContributionDescriptor>();
         public bool rollingSummary;
         public bool closedSummary;
         public bool ageUnknown;
+    }
+
+    /// <summary>
+    /// Bounded detached facts for one Summary contribution. Search fields remain unnormalized so a
+    /// query normalizes only one field into scratch at a time instead of retaining N normalized copies.
+    /// </summary>
+    internal sealed class MemorySummaryContributionDescriptor
+    {
+        public int sourceOrdinal;
+        public int categoryMask;
+        public int importanceMask;
+        public long originalTick;
+        public long nextExpiryTick = long.MaxValue;
+        public bool ageUnknown;
+        public string browsePreview = string.Empty;
+        public List<string> searchFields = new List<string>();
+        public List<string> factDescriptors = new List<string>();
+        public List<string> subjectDescriptors = new List<string>();
+        public List<string> provenanceDescriptors = new List<string>();
     }
 
     internal sealed class MemoryImportedRow
@@ -470,6 +495,7 @@ namespace PawnDiary
         public MemoryCurrentStatusDto currentStatus;
         public List<MemoryBlockRow> children = new List<MemoryBlockRow>();
         public List<MemoryChapterRow> chapters = new List<MemoryChapterRow>();
+        public long rootEarliestFiniteExpiryTickExclusive = long.MaxValue;
     }
 
     internal sealed class MemoryLibraryOwnerIndexSnapshot

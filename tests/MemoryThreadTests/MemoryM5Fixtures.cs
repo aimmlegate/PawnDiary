@@ -19,10 +19,13 @@ namespace MemoryThreadTests
             CommitGenerationsAreExactAndSticky();
             FutureVersionsFailClosed();
             ReconciliationIsIdempotentAndBounded();
+            DurableSettingsPredecessorRules();
             PublicationIsIndivisible();
             LibraryUnicodeCursorAndFingerprintRules();
             LibraryFilteringPagingAndTtlRules();
             LibraryIndexVisibilityAndCounts();
+            LibraryProjectionAndDetailReviewRules();
+            LibraryHandleAndRevisionRules();
             LibraryMutationRules();
             return assertions;
         }
@@ -231,6 +234,10 @@ namespace MemoryThreadTests
                 old, "different", long.MaxValue, published);
             Equal("m5.reconcile.max", true, max.revisionSaturated);
             Equal("m5.reconcile.max.value", long.MaxValue, max.nextAppliedRevision);
+            Equal("m5.reconcile.cancel.max", long.MaxValue,
+                MemoryPolicyNormalizer.AdvanceSaturatingGeneration(long.MaxValue));
+            Equal("m5.reconcile.cancel.zero", 2L,
+                MemoryPolicyNormalizer.AdvanceSaturatingGeneration(0));
         }
 
         private static void PublicationIsIndivisible()
@@ -262,6 +269,22 @@ namespace MemoryThreadTests
                 string.Equals(firstFingerprint,
                     MemoryEffectivePolicyProvider.Current.fingerprint,
                     StringComparison.Ordinal));
+        }
+
+        private static void DurableSettingsPredecessorRules()
+        {
+            Equal("m5.settings.predecessor.absent", true,
+                MemorySettingsCommitPolicy.PredecessorMatches(
+                    false, string.Empty, false, string.Empty));
+            Equal("m5.settings.predecessor.created.race", false,
+                MemorySettingsCommitPolicy.PredecessorMatches(
+                    false, string.Empty, true, "A"));
+            Equal("m5.settings.predecessor.same", true,
+                MemorySettingsCommitPolicy.PredecessorMatches(true, "A", true, "A"));
+            Equal("m5.settings.predecessor.changed", false,
+                MemorySettingsCommitPolicy.PredecessorMatches(true, "A", true, "B"));
+            Equal("m5.settings.predecessor.deleted", false,
+                MemorySettingsCommitPolicy.PredecessorMatches(true, "A", false, string.Empty));
         }
 
         private static void LibraryUnicodeCursorAndFingerprintRules()
@@ -306,6 +329,15 @@ namespace MemoryThreadTests
             MemoryLibraryTextCursorPlan emoji = MemoryLibraryPolicy.NormalizeTextCursor(
                 text, 1, 2, 4, 1);
             Equal("m5.library.text.emoji.width", 2, emoji.count);
+            MemoryLibraryTextCursorPlan boundedBack = MemoryLibraryPolicy.NormalizeTextCursor(
+                "ABCDEFGHIJK", 8, 100, 4, 1);
+            Equal("m5.library.text.previous.effective", 4, boundedBack.previousStart);
+            Equal("m5.library.text.count.identity", 2,
+                MemoryLibraryPolicy.NormalizeTextCount(1, 1000));
+            Equal("m5.library.text.count.identity.same",
+                MemoryLibraryPolicy.StreamFingerprint("archive", "2"),
+                MemoryLibraryPolicy.StreamFingerprint("archive",
+                    MemoryLibraryPolicy.NormalizeTextCount(1, 1000).ToString()));
 
             MemoryLibraryPublicationClock clock = new MemoryLibraryPublicationClock();
             Equal("m5.library.clock.first", true, clock.TryAllocate(out long revision1));
@@ -417,6 +449,181 @@ namespace MemoryThreadTests
                 ownerPage.additionalLegacyRawOwnersNotShown);
             Equal("m5.library.owner.omitted.zero", 3L,
                 ownerPage.additionalZeroMemoryOwnersNotShown);
+            Equal("m5.library.index.highest", MemoryLibraryPolicy.ImportanceRegular,
+                snapshot.roots[0].header.highestImportanceMask);
+        }
+
+        private static void LibraryProjectionAndDetailReviewRules()
+        {
+            MemoryLibraryLimits limits = new MemoryLibraryLimits();
+            MemoryBlockRow summary = NewLibraryBlock(
+                "summary", 200, "Important", false, false, "SUMMARY SUBJECT");
+            summary.kind = "Summary";
+            summary.normalizedWholeSearch = "SUMMARY SUBJECT";
+            summary.projectedCategoryMask = MemoryCategoryBits.Personal | MemoryCategoryBits.Family;
+            summary.projectedImportanceMask = MemoryLibraryPolicy.ImportanceMinor
+                | MemoryLibraryPolicy.ImportanceImportant;
+            summary.summaryContributions.Add(NewContribution(
+                0, MemoryCategoryBits.Personal, MemoryLibraryPolicy.ImportanceMinor,
+                100, 500, "minor alpha", "alpha detail"));
+            summary.summaryContributions.Add(NewContribution(
+                1, MemoryCategoryBits.Family, MemoryLibraryPolicy.ImportanceImportant,
+                200, 900, "important beta", "beta detail"));
+            bool projected = MemoryLibraryPolicy.TryProjectRow(
+                summary,
+                new MemoryLibraryFilters
+                {
+                    categoryMask = MemoryCategoryBits.Personal,
+                    importanceMask = MemoryLibraryPolicy.ImportanceMinor
+                },
+                MemoryLibraryPolicy.NormalizeSearch("alpha", 80, 160),
+                false,
+                limits,
+                out MemoryBlockRow minor);
+            Equal("m5.library.summary.projected", true, projected);
+            Equal("m5.library.summary.projected.count", 1, minor.summaryContributions.Count);
+            Equal("m5.library.summary.projected.category", MemoryCategoryBits.Personal,
+                minor.projectedCategoryMask);
+            Equal("m5.library.summary.projected.importance", MemoryLibraryPolicy.ImportanceMinor,
+                minor.projectedHighestImportanceMask);
+            Equal("m5.library.summary.projected.expiry", 500L,
+                minor.projectedNextExpiryTick);
+            Equal("m5.library.summary.unmatched.search", false,
+                MemoryLibraryPolicy.TryProjectRow(
+                    summary,
+                    new MemoryLibraryFilters { categoryMask = MemoryCategoryBits.Personal },
+                    MemoryLibraryPolicy.NormalizeSearch("beta", 80, 160),
+                    false,
+                    limits,
+                    out MemoryBlockRow ignored));
+
+            MemoryRootHandle rootHandle = new MemoryRootHandle
+                { ownerPawnId = "pawn", epochToken = "epoch", rootId = "detail" };
+            MemoryLibraryRootIndexInput root = new MemoryLibraryRootIndexInput
+            {
+                header = new MemoryThreadHeaderRow
+                {
+                    rootHandle = rootHandle,
+                    subjectLabel = "Subject",
+                    normalizedSearch = "SUBJECT",
+                    structuralRevision = 12
+                }
+            };
+            root.chapters.Add(NewChapter("personal", 0));
+            root.chapters.Add(NewChapter("family-a", 1));
+            root.chapters.Add(NewChapter("family-b", 2));
+            MemoryBlockRow personal = NewLibraryBlock(
+                "d0", 50, "Minor", false, false, "PERSONAL");
+            personal.rootHandle = rootHandle;
+            personal.chapterId = "personal";
+            personal.projectedNextExpiryTick = 500;
+            root.children.Add(personal);
+            for (int index = 1; index <= 3; index++)
+            {
+                MemoryBlockRow family = NewLibraryBlock(
+                    "d" + index, 100 + index,
+                    index == 1 ? "Important" : "Regular", false, false, "FAMILY");
+                family.rootHandle = rootHandle;
+                family.chapterId = index < 3 ? "family-a" : "family-b";
+                family.projectedCategoryMask = MemoryCategoryBits.Family;
+                family.projectedNextExpiryTick = 900 + index;
+                root.children.Add(family);
+            }
+            MemoryLibraryOwnerIndexInput input = new MemoryLibraryOwnerIndexInput
+            {
+                primaryHandle = new MemoryLibraryOwnerHandle("active", "pawn", "epoch"),
+                ownerEpochKey = new MemoryOwnerEpochKey
+                    { ownerPawnId = "pawn", epochToken = "epoch" }
+            };
+            input.roots.Add(root);
+            MemoryLibraryOwnerIndexSnapshot snapshot = MemoryLibraryIndexPolicy.BuildOwner(input, limits);
+            Equal("m5.library.detail.header.highest", MemoryLibraryPolicy.ImportanceImportant,
+                snapshot.roots[0].header.highestImportanceMask);
+
+            MemoryThreadDetailQuery query = new MemoryThreadDetailQuery
+            {
+                rootHandle = rootHandle,
+                filters = new MemoryLibraryFilters { categoryMask = MemoryCategoryBits.Family },
+                search = "subject",
+                detailCount = 1
+            };
+            MemoryThreadDetailResult first = MemoryLibraryIndexPolicy.QueryThreadDetail(
+                snapshot, query, 10, 1000, limits);
+            Equal("m5.library.detail.header.hit.count", 3, first.shownManageableCount);
+            Equal("m5.library.detail.root.ttl", 500L, first.ttlValidUntilTickExclusive);
+            Equal("m5.library.detail.chapter.next", true, first.chapters[0].continuesInNext);
+
+            query.detailStart = 1;
+            query.detailCount = 3;
+            query.expectedDetailSnapshotRevision = 10;
+            MemoryLibraryLimits oneHeader = new MemoryLibraryLimits { chapterHeaderRows = 1 };
+            MemoryThreadDetailResult capped = MemoryLibraryIndexPolicy.QueryThreadDetail(
+                snapshot, query, 10, 1000, oneHeader);
+            Equal("m5.library.detail.chapter.cap.count", 1, capped.returnedCount);
+            Equal("m5.library.detail.chapter.previous", true,
+                capped.chapters[0].continuedFromPrevious);
+            Equal("m5.library.detail.chapter.actual.next", false,
+                capped.chapters[0].continuesInNext);
+
+            snapshot.imported.Add(new MemoryImportedRow
+            {
+                archiveHandle = new MemoryArchiveHandle
+                {
+                    archiveScopeToken = MemoryLibraryScopes.Active,
+                    exactOwnerPawnIdOrEmpty = "pawn",
+                    archiveRecordId = "long"
+                },
+                preview = "short",
+                normalizedSearch = "SHORT LONG NEEDLE",
+                targetStructuralRevision = 1
+            });
+            MemoryLibraryListResult imported = MemoryLibraryIndexPolicy.QueryList(
+                snapshot,
+                new MemoryLibraryListQuery
+                {
+                    primaryHandle = input.primaryHandle,
+                    viewTag = MemoryLibraryViews.Imported,
+                    search = "needle",
+                    listCount = 10
+                },
+                1, 2, 3, 4, 5, 1000, limits);
+            Equal("m5.library.imported.long.search", 1, imported.totalMatchedRows);
+        }
+
+        private static void LibraryHandleAndRevisionRules()
+        {
+            Equal("m5.library.archive.unresolved.valid", true,
+                MemoryLibraryPolicy.ValidArchiveHandle(new MemoryArchiveHandle
+                {
+                    archiveScopeToken = MemoryLibraryScopes.UnresolvedImported,
+                    archiveRecordId = "row"
+                }));
+            Equal("m5.library.archive.unresolved.owner.invalid", false,
+                MemoryLibraryPolicy.ValidArchiveHandle(new MemoryArchiveHandle
+                {
+                    archiveScopeToken = MemoryLibraryScopes.UnresolvedImported,
+                    exactOwnerPawnIdOrEmpty = "pawn",
+                    archiveRecordId = "row"
+                }));
+            Equal("m5.library.archive.active.owner.required", false,
+                MemoryLibraryPolicy.ValidArchiveHandle(new MemoryArchiveHandle
+                {
+                    archiveScopeToken = MemoryLibraryScopes.Active,
+                    archiveRecordId = "row"
+                }));
+            Equal("m5.library.compat.first", true,
+                MemoryLibraryPolicy.TryNextCompatibilityRevision(0, false, out long first));
+            Equal("m5.library.compat.first.value", 1L, first);
+            Equal("m5.library.compat.same", true,
+                MemoryLibraryPolicy.TryNextCompatibilityRevision(7, true, out long same));
+            Equal("m5.library.compat.same.value", 7L, same);
+            Equal("m5.library.compat.changed", true,
+                MemoryLibraryPolicy.TryNextCompatibilityRevision(7, false, out long changed));
+            Equal("m5.library.compat.changed.value", 8L, changed);
+            Equal("m5.library.compat.max", false,
+                MemoryLibraryPolicy.TryNextCompatibilityRevision(
+                    long.MaxValue, false, out long saturated));
+            Equal("m5.library.compat.max.value", 0L, saturated);
         }
 
         private static void LibraryMutationRules()
@@ -521,6 +728,38 @@ namespace MemoryThreadTests
                 canSuppress = true,
                 canSaveWording = true,
                 canUseOriginal = edited
+            };
+        }
+
+        private static MemorySummaryContributionDescriptor NewContribution(
+            int ordinal,
+            int category,
+            int importance,
+            long tick,
+            long expiry,
+            string preview,
+            string search)
+        {
+            MemorySummaryContributionDescriptor result = new MemorySummaryContributionDescriptor
+            {
+                sourceOrdinal = ordinal,
+                categoryMask = category,
+                importanceMask = importance,
+                originalTick = tick,
+                nextExpiryTick = expiry,
+                browsePreview = preview
+            };
+            result.searchFields.Add(search);
+            return result;
+        }
+
+        private static MemoryChapterRow NewChapter(string id, long ordinal)
+        {
+            return new MemoryChapterRow
+            {
+                chapterId = id,
+                ordinal = ordinal,
+                phaseToken = "open"
             };
         }
 

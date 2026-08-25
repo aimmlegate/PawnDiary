@@ -1,11 +1,12 @@
 // DiaryGameComponent.MemoryLibrary.cs — main-thread M5 no-create Library repository adapter.
 //
-// Saved models never escape this partial. Ordinary update builds complete detached owner snapshots,
-// publishes them through one loaded-session revision clock, and drains queued commands outside IMGUI
-// draw. Queries page only immutable DTOs; opening or searching the Library never creates an owner,
-// allocates an epoch, resolves culture from live pawn state, or normalizes saved rows.
+// Saved models never escape this partial. Ordinary update slices requested directory work, builds only
+// selected complete owner snapshots into a bounded LRU, publishes immutable query views through one
+// loaded-session revision clock, and drains commands outside IMGUI draw. Queries never create an owner,
+// allocate an epoch, resolve culture from live pawn state, or normalize saved rows.
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using RimWorld;
 using Verse;
@@ -18,12 +19,77 @@ namespace PawnDiary
         {
             internal string fingerprint = string.Empty;
             internal long revision;
+            internal string ownerKey = string.Empty;
+            internal MemoryLibraryOwnerIndexSnapshot ownerSnapshot;
+            internal long directoryRevision;
+            internal long committedSettingsRevision;
+            internal long languageDisplayRevision;
+            internal long ttlDayRevision;
+            internal long nextDayBoundary;
+            internal long ttlValidUntilTickExclusive = long.MaxValue;
+            internal string textContent = string.Empty;
+        }
+
+        private sealed class MemoryLibraryOwnerSource
+        {
+            internal string kind = string.Empty;
+            internal string ownerKey = string.Empty;
+            internal string sourceFingerprint = string.Empty;
+            internal PawnDiaryRecord diary;
+            internal PawnKnowledgeState state;
+            internal string displayName = string.Empty;
+            internal bool active;
+            internal MemoryLibraryOwnerIndexSnapshot headerSnapshot;
+            internal MemoryCompatibilityCandidate compatibilityCandidate;
+        }
+
+        private sealed class MemoryCompatibilityCandidate
+        {
+            internal MemoryLibraryOwnerHandle handle;
+            internal string stateToken = string.Empty;
+            internal string reasonToken = string.Empty;
+            internal long rowCount;
+            internal long logicalByteCount;
+            internal bool countWasClamped;
+            internal string safePreview = string.Empty;
+            internal string sourceFingerprint = string.Empty;
+        }
+
+        private sealed class MemoryCompatibilitySourcePublication
+        {
+            internal string fingerprint = string.Empty;
+            internal long revision;
+            internal MemoryLegacyPendingDto pending;
+        }
+
+        private sealed class MemoryLibraryDirectoryBuildJob
+        {
+            internal int diaryStateVersion;
+            internal long settingsRevision;
+            internal long ttlDayRevision;
+            internal LoadedLanguage language;
+            internal int diaryCount;
+            internal int unresolvedCount;
+            internal int rawUnresolvedCount;
+            internal int cursor;
+            internal List<MemoryLibraryOwnerSource> work = new List<MemoryLibraryOwnerSource>();
+            internal List<MemoryLibraryOwnerIndexSnapshot> data =
+                new List<MemoryLibraryOwnerIndexSnapshot>();
+            internal List<MemoryLibraryOwnerIndexSnapshot> zero =
+                new List<MemoryLibraryOwnerIndexSnapshot>();
+            internal Dictionary<string, MemoryLibraryOwnerSource> sources =
+                new Dictionary<string, MemoryLibraryOwnerSource>(StringComparer.Ordinal);
         }
 
         private readonly MemoryLibraryPublicationClock memoryLibraryClock =
             new MemoryLibraryPublicationClock();
         private readonly Dictionary<string, MemoryLibraryOwnerIndexSnapshot> memoryLibraryOwners =
             new Dictionary<string, MemoryLibraryOwnerIndexSnapshot>(StringComparer.Ordinal);
+        private readonly Dictionary<string, MemoryLibraryOwnerSource> memoryLibraryOwnerSources =
+            new Dictionary<string, MemoryLibraryOwnerSource>(StringComparer.Ordinal);
+        private readonly Dictionary<string, string> memoryLibraryOwnerCacheFingerprints =
+            new Dictionary<string, string>(StringComparer.Ordinal);
+        private readonly LinkedList<string> memoryLibraryOwnerLru = new LinkedList<string>();
         private readonly List<MemoryLibraryOwnerRow> memoryLibraryDirectory =
             new List<MemoryLibraryOwnerRow>();
         private readonly Dictionary<string, MemoryLibraryPublication> memoryLibraryListPublications =
@@ -32,81 +98,86 @@ namespace PawnDiary
             new Dictionary<string, MemoryLibraryPublication>(StringComparer.Ordinal);
         private readonly Dictionary<string, MemoryLibraryPublication> memoryLibraryTextPublications =
             new Dictionary<string, MemoryLibraryPublication>(StringComparer.Ordinal);
+        private readonly Dictionary<string, MemoryCompatibilitySourcePublication>
+            memoryLibraryCompatibilityPublications =
+                new Dictionary<string, MemoryCompatibilitySourcePublication>(StringComparer.Ordinal);
         private readonly List<MemoryLibraryCommand> memoryLibraryPendingCommands =
             new List<MemoryLibraryCommand>();
         private readonly Dictionary<string, MemoryLibraryCommandResult> memoryLibraryCommandResults =
             new Dictionary<string, MemoryLibraryCommandResult>(StringComparer.Ordinal);
         private long memoryLibraryDirectoryRevision;
         private string memoryLibraryDirectoryFingerprint = string.Empty;
-        private bool memoryLibraryRevisionSaturated;
         private long memoryLibraryAdditionalLegacyRawOwners;
         private long memoryLibraryAdditionalZeroOwners;
+        private MemoryLibraryDirectoryBuildJob memoryLibraryDirectoryBuildJob;
+        private bool memoryLibraryDirectoryBuildRequested;
+        private string memoryLibraryPendingOwnerBuildKey = string.Empty;
+        private int memoryLibraryObservedDiaryStateVersion = int.MinValue;
+        private long memoryLibraryObservedSettingsRevision = -1;
+        private long memoryLibraryObservedTtlDayRevision = -1;
+        private LoadedLanguage memoryLibraryObservedLanguage;
+        private int memoryLibraryObservedDiaryCount = -1;
+        private int memoryLibraryObservedUnresolvedCount = -1;
+        private int memoryLibraryObservedRawUnresolvedCount = -1;
+        private long memoryLibraryLanguageDisplayRevision = 1;
 
         /// <summary>Clears every loaded-session publication/cache/command identity.</summary>
         private void ResetMemoryLibraryTransient()
         {
             memoryLibraryClock.Reset();
             memoryLibraryOwners.Clear();
+            memoryLibraryOwnerSources.Clear();
+            memoryLibraryOwnerCacheFingerprints.Clear();
+            memoryLibraryOwnerLru.Clear();
             memoryLibraryDirectory.Clear();
             memoryLibraryListPublications.Clear();
             memoryLibraryDetailPublications.Clear();
             memoryLibraryTextPublications.Clear();
+            memoryLibraryCompatibilityPublications.Clear();
             memoryLibraryPendingCommands.Clear();
             memoryLibraryCommandResults.Clear();
             memoryLibraryDirectoryRevision = 0;
             memoryLibraryDirectoryFingerprint = string.Empty;
-            memoryLibraryRevisionSaturated = false;
             memoryLibraryAdditionalLegacyRawOwners = 0;
             memoryLibraryAdditionalZeroOwners = 0;
+            memoryLibraryDirectoryBuildJob = null;
+            memoryLibraryDirectoryBuildRequested = false;
+            memoryLibraryPendingOwnerBuildKey = string.Empty;
+            memoryLibraryObservedDiaryStateVersion = int.MinValue;
+            memoryLibraryObservedSettingsRevision = -1;
+            memoryLibraryObservedTtlDayRevision = -1;
+            memoryLibraryObservedLanguage = null;
+            memoryLibraryObservedDiaryCount = -1;
+            memoryLibraryObservedUnresolvedCount = -1;
+            memoryLibraryObservedRawUnresolvedCount = -1;
+            memoryLibraryLanguageDisplayRevision = 1;
         }
 
         /// <summary>
-        /// Rebuilds the detached directory/index outside draw only when its complete source tuple changed.
+        /// Advances only requested dirty Library work outside draw. Directory headers are sliced and
+        /// selected owner indexes are built lazily into the bounded LRU.
         /// </summary>
         private void RefreshMemoryLibraryPublications()
         {
             if (!MemoryPolicyIsReconciled()) return;
-            MemoryLibraryLimits limits = BuildMemoryLibraryLimits();
-            List<MemoryLibraryOwnerIndexSnapshot> indexed = BuildMemoryLibraryOwnerSnapshots(limits);
-            string fingerprint = DirectoryFingerprint(indexed);
-            if (memoryLibraryDirectoryRevision > 0
-                && string.Equals(fingerprint, memoryLibraryDirectoryFingerprint,
-                    StringComparison.Ordinal)) return;
-            if (!memoryLibraryClock.TryAllocate(out long revision))
-            {
-                memoryLibraryRevisionSaturated = true;
-                return;
-            }
-
-            memoryLibraryOwners.Clear();
-            memoryLibraryDirectory.Clear();
-            for (int index = 0; index < indexed.Count; index++)
-            {
-                MemoryLibraryOwnerIndexSnapshot snapshot = indexed[index];
-                MemoryLibraryOwnerRow row = snapshot?.ownerRow;
-                if (row == null) continue;
-                memoryLibraryDirectory.Add(row);
-                string ownerKey = OwnerIndexKey(row.primaryHandle);
-                if (!string.IsNullOrEmpty(ownerKey)) memoryLibraryOwners[ownerKey] = snapshot;
-            }
-            memoryLibraryDirectoryRevision = revision;
-            memoryLibraryDirectoryFingerprint = fingerprint;
-            memoryLibraryListPublications.Clear();
-            memoryLibraryDetailPublications.Clear();
-            memoryLibraryTextPublications.Clear();
+            if (memoryLibraryDirectoryRevision > 0 && MemoryLibrarySourceTupleChanged())
+                memoryLibraryDirectoryBuildRequested = true;
+            if (memoryLibraryDirectoryBuildRequested && memoryLibraryDirectoryBuildJob == null)
+                memoryLibraryDirectoryBuildJob = StartMemoryLibraryDirectoryBuild();
+            if (memoryLibraryDirectoryBuildJob != null)
+                AdvanceMemoryLibraryDirectoryBuild();
+            if (!string.IsNullOrEmpty(memoryLibraryPendingOwnerBuildKey))
+                BuildPendingMemoryLibraryOwnerIndex();
         }
 
         /// <summary>Returns one detached paged owner directory; never creates saved state.</summary>
         internal MemoryLibraryOwnerResult QueryMemoryLibraryOwners(MemoryLibraryOwnerQuery query)
         {
-            if (memoryLibraryRevisionSaturated)
-                return new MemoryLibraryOwnerResult
-                {
-                    status = MemoryLibraryStatuses.Invalid,
-                    reasonToken = "library_revision_saturated"
-                };
             if (memoryLibraryDirectoryRevision <= 0)
+            {
+                memoryLibraryDirectoryBuildRequested = true;
                 return new MemoryLibraryOwnerResult { status = MemoryLibraryStatuses.Preparing };
+            }
             return MemoryLibraryIndexPolicy.QueryOwners(
                 memoryLibraryDirectory,
                 query,
@@ -119,25 +190,29 @@ namespace PawnDiary
         /// <summary>Returns one owner/view window pinned to a transient list publication.</summary>
         internal MemoryLibraryListResult QueryMemoryLibraryList(MemoryLibraryListQuery query)
         {
-            if (memoryLibraryRevisionSaturated)
-                return InvalidList("library_revision_saturated");
-            if (query?.primaryHandle == null || memoryLibraryDirectoryRevision <= 0)
+            if (query?.primaryHandle == null || !MemoryLibraryPolicy.ValidOwnerHandle(
+                    query.primaryHandle))
+                return new MemoryLibraryListResult { status = MemoryLibraryStatuses.Invalid };
+            if (memoryLibraryDirectoryRevision <= 0)
+            {
+                memoryLibraryDirectoryBuildRequested = true;
+                return new MemoryLibraryListResult { status = MemoryLibraryStatuses.Preparing };
+            }
+            MemoryLibraryOwnerRow directoryOwner = FindPrimaryDirectoryRow(query.primaryHandle);
+            if (directoryOwner == null)
                 return new MemoryLibraryListResult
                 {
-                    status = memoryLibraryDirectoryRevision <= 0
-                        ? MemoryLibraryStatuses.Preparing : MemoryLibraryStatuses.Invalid
+                    status = MemoryLibraryStatuses.Missing
                 };
             string ownerKey = OwnerIndexKey(query.primaryHandle);
-            if (!memoryLibraryOwners.TryGetValue(ownerKey, out MemoryLibraryOwnerIndexSnapshot owner))
-                return new MemoryLibraryListResult { status = MemoryLibraryStatuses.Missing };
 
             // The sole no-envelope active-owner form is proven by the current directory revision.
             bool zeroNoEpoch = query.primaryHandle.scopeToken == MemoryLibraryScopes.Active
                 && string.IsNullOrEmpty(query.primaryHandle.epochTokenOrEmpty)
                 && query.activeOwnerEpochKey == null
-                && owner.ownerRow.threadCount == 0
-                && owner.ownerRow.standaloneCount == 0
-                && owner.ownerRow.importedCount == 0;
+                && directoryOwner.threadCount == 0
+                && directoryOwner.standaloneCount == 0
+                && directoryOwner.importedCount == 0;
             if (zeroNoEpoch)
             {
                 if (query.listStart != 0 || query.expectedDirectoryRevision <= 0
@@ -146,78 +221,176 @@ namespace PawnDiary
                     return new MemoryLibraryListResult { status = MemoryLibraryStatuses.Invalid };
                 if (query.expectedDirectoryRevision != memoryLibraryDirectoryRevision)
                     return new MemoryLibraryListResult { status = MemoryLibraryStatuses.Stale };
-                long zeroRevision = ResolveLibraryPublication(
+                string zeroStream = ListQueryFingerprint(query, directoryOwner);
+                long zeroBoundary = NextMemoryLibraryDayBoundary();
+                string zeroContent = MemoryLibraryPolicy.StreamFingerprint(
+                    zeroStream,
+                    MemoryEffectivePolicyProvider.PublicationRevision
+                        .ToString(CultureInfo.InvariantCulture),
+                    memoryLibraryLanguageDisplayRevision.ToString(CultureInfo.InvariantCulture),
+                    (Math.Max(0, Find.TickManager?.TicksGame ?? 0) / 60000L)
+                        .ToString(CultureInfo.InvariantCulture),
+                    zeroBoundary.ToString(CultureInfo.InvariantCulture));
+                MemoryLibraryPublication zeroPublication = ResolveCompleteLibraryPublication(
                     memoryLibraryListPublications,
-                    ListQueryFingerprint(query, owner.ownerRow),
-                    query.expectedListSnapshotRevision);
-                if (zeroRevision <= 0)
+                    zeroStream,
+                    zeroContent,
+                    ownerKey,
+                    null,
+                    query.expectedListSnapshotRevision,
+                    zeroBoundary,
+                    zeroBoundary,
+                    string.Empty);
+                if (zeroPublication == null)
                     return query.expectedListSnapshotRevision > 0
                         ? new MemoryLibraryListResult { status = MemoryLibraryStatuses.Stale }
                         : InvalidList("library_revision_saturated");
+                if (query.expectedListSnapshotRevision > 0
+                    && LibraryPublicationExpiredOrSuperseded(zeroPublication))
+                    return new MemoryLibraryListResult { status = MemoryLibraryStatuses.Stale };
                 return new MemoryLibraryListResult
                 {
                     status = MemoryLibraryStatuses.Ready,
-                    directoryRevision = memoryLibraryDirectoryRevision,
-                    listSnapshotRevision = zeroRevision,
+                    directoryRevision = zeroPublication.directoryRevision,
+                    listSnapshotRevision = zeroPublication.revision,
+                    committedSettingsRevision = zeroPublication.committedSettingsRevision,
+                    languageDisplayRevision = zeroPublication.languageDisplayRevision,
+                    ttlDayRevision = zeroPublication.ttlDayRevision,
                     emptyStateToken = "no_memories",
-                    ttlValidUntilTickExclusive = NextMemoryLibraryDayBoundary()
+                    ttlValidUntilTickExclusive = zeroPublication.nextDayBoundary
                 };
             }
 
+            if (!memoryLibraryOwners.TryGetValue(ownerKey, out MemoryLibraryOwnerIndexSnapshot owner))
+            {
+                if (query.expectedListSnapshotRevision > 0)
+                    return new MemoryLibraryListResult { status = MemoryLibraryStatuses.Stale };
+                RequestMemoryLibraryOwnerBuild(ownerKey);
+                return new MemoryLibraryListResult { status = MemoryLibraryStatuses.Preparing };
+            }
+            TouchMemoryLibraryOwner(ownerKey);
+
             string fingerprint = ListQueryFingerprint(query, owner.ownerRow);
-            long revision = ResolveLibraryPublication(
-                memoryLibraryListPublications,
-                fingerprint,
-                query.expectedListSnapshotRevision);
-            if (revision <= 0)
-                return query.expectedListSnapshotRevision > 0
-                    ? new MemoryLibraryListResult { status = MemoryLibraryStatuses.Stale }
-                    : InvalidList("library_revision_saturated");
             long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
-            return MemoryLibraryIndexPolicy.QueryList(
+            if (query.expectedListSnapshotRevision > 0)
+            {
+                if (!memoryLibraryListPublications.TryGetValue(
+                        fingerprint, out MemoryLibraryPublication pinned)
+                    || pinned.revision != query.expectedListSnapshotRevision
+                    || pinned.ownerSnapshot == null
+                    || LibraryPublicationExpiredOrSuperseded(pinned))
+                    return new MemoryLibraryListResult { status = MemoryLibraryStatuses.Stale };
+                return MemoryLibraryIndexPolicy.QueryList(
+                    pinned.ownerSnapshot,
+                    query,
+                    pinned.directoryRevision,
+                    pinned.revision,
+                    pinned.committedSettingsRevision,
+                    pinned.languageDisplayRevision,
+                    pinned.ttlDayRevision,
+                    pinned.nextDayBoundary,
+                    BuildMemoryLibraryLimits());
+            }
+            long nextBoundary = NextMemoryLibraryDayBoundary();
+            long settingsRevision = MemoryEffectivePolicyProvider.PublicationRevision;
+            long ttlDayRevision = now / 60000L;
+            MemoryLibraryListResult candidate = MemoryLibraryIndexPolicy.QueryList(
                 owner,
                 query,
                 memoryLibraryDirectoryRevision,
-                revision,
-                MemoryEffectivePolicyProvider.PublicationRevision,
                 1,
-                now / 60000L,
-                NextMemoryLibraryDayBoundary(),
+                settingsRevision,
+                memoryLibraryLanguageDisplayRevision,
+                ttlDayRevision,
+                nextBoundary,
                 BuildMemoryLibraryLimits());
+            if (candidate.status != MemoryLibraryStatuses.Ready) return candidate;
+            string contentFingerprint = MemoryLibraryPolicy.StreamFingerprint(
+                fingerprint,
+                OwnerSnapshotFingerprint(owner),
+                settingsRevision.ToString(CultureInfo.InvariantCulture),
+                memoryLibraryLanguageDisplayRevision.ToString(CultureInfo.InvariantCulture),
+                ttlDayRevision.ToString(CultureInfo.InvariantCulture),
+                candidate.ttlValidUntilTickExclusive.ToString(CultureInfo.InvariantCulture));
+            MemoryLibraryPublication publication = ResolveCompleteLibraryPublication(
+                memoryLibraryListPublications,
+                fingerprint,
+                contentFingerprint,
+                ownerKey,
+                owner,
+                0,
+                nextBoundary,
+                candidate.ttlValidUntilTickExclusive,
+                string.Empty);
+            if (publication == null) return InvalidList("library_revision_saturated");
+            candidate.listSnapshotRevision = publication.revision;
+            candidate.directoryRevision = publication.directoryRevision;
+            return candidate;
         }
 
         /// <summary>Returns an independently paged selected-root detail stream.</summary>
         internal MemoryThreadDetailResult QueryMemoryThreadDetail(MemoryThreadDetailQuery query)
         {
-            if (memoryLibraryRevisionSaturated)
-                return new MemoryThreadDetailResult
-                {
-                    status = MemoryLibraryStatuses.Invalid,
-                    reasonToken = "library_revision_saturated"
-                };
             if (query?.rootHandle == null)
                 return new MemoryThreadDetailResult { status = MemoryLibraryStatuses.Invalid };
             string ownerKey = OwnerIndexKey(new MemoryLibraryOwnerHandle(
                 MemoryLibraryScopes.Active,
                 query.rootHandle.ownerPawnId,
                 query.rootHandle.epochToken));
-            if (!memoryLibraryOwners.TryGetValue(ownerKey, out MemoryLibraryOwnerIndexSnapshot owner))
+            if (!memoryLibraryOwnerSources.ContainsKey(ownerKey))
                 return new MemoryThreadDetailResult { status = MemoryLibraryStatuses.Missing };
+            if (!memoryLibraryOwners.TryGetValue(ownerKey, out MemoryLibraryOwnerIndexSnapshot owner))
+            {
+                if (query.expectedDetailSnapshotRevision > 0)
+                    return new MemoryThreadDetailResult { status = MemoryLibraryStatuses.Stale };
+                RequestMemoryLibraryOwnerBuild(ownerKey);
+                return new MemoryThreadDetailResult { status = MemoryLibraryStatuses.Preparing };
+            }
+            TouchMemoryLibraryOwner(ownerKey);
             string fingerprint = DetailQueryFingerprint(query);
-            long revision = ResolveLibraryPublication(
+            if (query.expectedDetailSnapshotRevision > 0)
+            {
+                if (!memoryLibraryDetailPublications.TryGetValue(
+                        fingerprint, out MemoryLibraryPublication pinned)
+                    || pinned.revision != query.expectedDetailSnapshotRevision
+                    || pinned.ownerSnapshot == null
+                    || LibraryPublicationExpiredOrSuperseded(pinned))
+                    return new MemoryThreadDetailResult { status = MemoryLibraryStatuses.Stale };
+                return MemoryLibraryIndexPolicy.QueryThreadDetail(
+                    pinned.ownerSnapshot, query, pinned.revision,
+                    pinned.nextDayBoundary, BuildMemoryLibraryLimits());
+            }
+            long nextBoundary = NextMemoryLibraryDayBoundary();
+            MemoryThreadDetailResult candidate = MemoryLibraryIndexPolicy.QueryThreadDetail(
+                owner, query, 1, nextBoundary, BuildMemoryLibraryLimits());
+            if (candidate.status != MemoryLibraryStatuses.Ready) return candidate;
+            string contentFingerprint = MemoryLibraryPolicy.StreamFingerprint(
+                fingerprint,
+                OwnerSnapshotFingerprint(owner),
+                MemoryEffectivePolicyProvider.PublicationRevision
+                    .ToString(CultureInfo.InvariantCulture),
+                memoryLibraryLanguageDisplayRevision.ToString(CultureInfo.InvariantCulture),
+                (Math.Max(0, Find.TickManager?.TicksGame ?? 0) / 60000L)
+                    .ToString(CultureInfo.InvariantCulture),
+                candidate.ttlValidUntilTickExclusive.ToString(CultureInfo.InvariantCulture));
+            MemoryLibraryPublication publication = ResolveCompleteLibraryPublication(
                 memoryLibraryDetailPublications,
                 fingerprint,
-                query.expectedDetailSnapshotRevision);
-            if (revision <= 0)
+                contentFingerprint,
+                ownerKey,
+                owner,
+                0,
+                nextBoundary,
+                candidate.ttlValidUntilTickExclusive,
+                string.Empty);
+            if (publication == null)
                 return new MemoryThreadDetailResult
                 {
-                    status = query.expectedDetailSnapshotRevision > 0
-                        ? MemoryLibraryStatuses.Stale : MemoryLibraryStatuses.Invalid,
-                    reasonToken = query.expectedDetailSnapshotRevision > 0
-                        ? string.Empty : "library_revision_saturated"
+                    status = MemoryLibraryStatuses.Invalid,
+                    reasonToken = "library_revision_saturated"
                 };
-            return MemoryLibraryIndexPolicy.QueryThreadDetail(
-                owner, query, revision, NextMemoryLibraryDayBoundary(), BuildMemoryLibraryLimits());
+            candidate.detailSnapshotRevision = publication.revision;
+            return candidate;
         }
 
         /// <summary>Returns one bounded active-block detail after exact placement/revision checks.</summary>
@@ -279,13 +452,15 @@ namespace PawnDiary
             {
                 string normalizedSearch = MemoryLibraryPolicy.NormalizeSearch(
                     query.search, limits.searchScalars, limits.searchUtf16Units);
-                if (!MemoryLibraryPolicy.MatchesFilters(row, query.filters)
-                    || !MemoryLibraryPolicy.SearchMatches(row.normalizedSearch, normalizedSearch))
+                if (!MemoryLibraryPolicy.TryProjectRow(
+                    row, query.filters, normalizedSearch, false, limits,
+                    out MemoryBlockRow projected))
                     return result;
+                row = projected;
             }
             result.status = MemoryLibraryStatuses.Ready;
             result.row = row;
-            result.detail = BuildMemoryBlockDetail(block, limits);
+            result.detail = BuildMemoryBlockDetail(block, limits, row);
             result.targetStructuralRevision = structural;
             result.targetStatusRevision = status;
             result.ttlValidUntilTickExclusive = MemoryLibraryPolicy.TtlValidUntil(
@@ -298,12 +473,14 @@ namespace PawnDiary
             MemoryImportedDetailQuery query)
         {
             MemoryImportedDetailResult result = new MemoryImportedDetailResult();
-            if (query?.archiveHandle == null) return result;
+            if (!MemoryLibraryPolicy.ValidArchiveHandle(query?.archiveHandle)) return result;
             SavedImportedMemoryRow row;
             long structural;
-            if (!TryFindImportedRow(query.archiveHandle, out row, out structural))
+            string resolveStatus = ResolveImportedRow(
+                query.archiveHandle, out row, out structural);
+            if (resolveStatus != MemoryLibraryStatuses.Ready)
             {
-                result.status = MemoryLibraryStatuses.Missing;
+                result.status = resolveStatus;
                 return result;
             }
             if (query.targetStructuralRevision <= 0) return result;
@@ -312,17 +489,34 @@ namespace PawnDiary
                 result.status = MemoryLibraryStatuses.Stale;
                 return result;
             }
+            MemoryLibraryLimits textLimits = BuildMemoryLibraryLimits();
+            int normalizedCount = MemoryLibraryPolicy.NormalizeTextCount(
+                query.textCount, textLimits.importedTextChunkUtf16Units);
+            if (normalizedCount <= 0) return result;
             string streamFingerprint = MemoryLibraryPolicy.StreamFingerprint(
                 ArchiveHandleKey(query.archiveHandle),
-                query.textCount.ToString(CultureInfo.InvariantCulture));
+                normalizedCount.ToString(CultureInfo.InvariantCulture));
             string contentFingerprint = MemoryLibraryPolicy.StreamFingerprint(
-                row.importedWording ?? string.Empty);
-            long revision = ResolveLibraryPublicationWithContent(
+                row.importedWording ?? string.Empty,
+                structural.ToString(CultureInfo.InvariantCulture));
+            string ownerKey = (query.archiveHandle.archiveScopeToken ?? string.Empty) + "|"
+                + (query.archiveHandle.exactOwnerPawnIdOrEmpty ?? string.Empty);
+            long boundary = NextMemoryLibraryDayBoundary();
+            MemoryLibraryPublication publication = ResolveCompleteLibraryPublication(
                 memoryLibraryTextPublications,
                 streamFingerprint,
                 contentFingerprint,
-                query.expectedArchiveTextSnapshotRevision);
-            if (revision <= 0)
+                ownerKey,
+                null,
+                query.expectedArchiveTextSnapshotRevision,
+                boundary,
+                boundary,
+                row.importedWording ?? string.Empty);
+            if (publication == null
+                || (query.expectedArchiveTextSnapshotRevision > 0
+                    && (!string.Equals(publication.fingerprint, contentFingerprint,
+                            StringComparison.Ordinal)
+                        || LibraryPublicationExpiredOrSuperseded(publication))))
             {
                 result.status = query.expectedArchiveTextSnapshotRevision > 0
                     ? MemoryLibraryStatuses.Stale : MemoryLibraryStatuses.Invalid;
@@ -330,12 +524,12 @@ namespace PawnDiary
                     ? string.Empty : "library_revision_saturated";
                 return result;
             }
-            string text = row.importedWording ?? string.Empty;
+            string text = publication.textContent;
             MemoryLibraryTextCursorPlan cursor = MemoryLibraryPolicy.NormalizeTextCursor(
                 text,
                 query.textStart,
                 query.textCount,
-                BuildMemoryLibraryLimits().importedTextChunkUtf16Units,
+                textLimits.importedTextChunkUtf16Units,
                 query.expectedArchiveTextSnapshotRevision);
             if (!cursor.valid) return result;
             result.status = MemoryLibraryStatuses.Ready;
@@ -347,7 +541,7 @@ namespace PawnDiary
             result.totalTextLength = text.Length;
             result.hasPrevious = cursor.hasPrevious;
             result.hasMore = cursor.hasMore;
-            result.archiveTextSnapshotRevision = revision;
+            result.archiveTextSnapshotRevision = publication.revision;
             result.targetStructuralRevision = structural;
             return result;
         }
@@ -356,7 +550,11 @@ namespace PawnDiary
         internal MemoryCompatibilityResult QueryMemoryCompatibility(MemoryCompatibilityQuery query)
         {
             MemoryCompatibilityResult result = new MemoryCompatibilityResult();
-            if (query?.compatibilityHandle == null) return result;
+            if (!MemoryLibraryPolicy.ValidOwnerHandle(query?.compatibilityHandle)
+                || (query.compatibilityHandle.scopeToken != MemoryLibraryScopes.LegacyRawExact
+                    && query.compatibilityHandle.scopeToken != MemoryLibraryScopes.LegacyRawUnknown
+                    && query.compatibilityHandle.scopeToken != MemoryLibraryScopes.InertCurrentExact))
+                return result;
             if (query.sourcePayloadRevision <= 0) return result;
             MemoryLibraryOwnerRow row = FindCompatibilityDirectoryRow(query.compatibilityHandle);
             if (row == null)
@@ -369,17 +567,35 @@ namespace PawnDiary
                 result.status = MemoryLibraryStatuses.Stale;
                 return result;
             }
-            long count = CompatibilityRowCount(query.compatibilityHandle);
+            string key = OwnerIndexKey(query.compatibilityHandle);
+            if (!memoryLibraryCompatibilityPublications.TryGetValue(
+                    key, out MemoryCompatibilitySourcePublication publication)
+                || publication?.pending == null)
+            {
+                result.status = MemoryLibraryStatuses.Missing;
+                return result;
+            }
+            if (publication.revision != row.compatibilitySourcePayloadRevision)
+            {
+                result.status = MemoryLibraryStatuses.Stale;
+                return result;
+            }
             result.status = MemoryLibraryStatuses.Ready;
             result.sourcePayloadRevision = row.compatibilitySourcePayloadRevision;
+            MemoryLegacyPendingDto pending = publication.pending;
             result.pending = new MemoryLegacyPendingDto
             {
-                handle = query.compatibilityHandle,
-                stateToken = "preparing",
-                reasonToken = query.compatibilityHandle.scopeToken,
-                rowCount = count,
-                logicalByteCount = 0,
-                sourcePayloadRevision = row.compatibilitySourcePayloadRevision
+                handle = new MemoryLibraryOwnerHandle(
+                    pending.handle?.scopeToken,
+                    pending.handle?.exactOwnerPawnIdOrEmpty,
+                    pending.handle?.epochTokenOrEmpty),
+                stateToken = pending.stateToken,
+                reasonToken = pending.reasonToken,
+                rowCount = pending.rowCount,
+                logicalByteCount = pending.logicalByteCount,
+                countWasClamped = pending.countWasClamped,
+                sourcePayloadRevision = pending.sourcePayloadRevision,
+                safePreview = pending.safePreview
             };
             return result;
         }
@@ -627,9 +843,13 @@ namespace PawnDiary
         {
             SavedImportedMemoryRow row;
             long structural;
-            if (!TryFindImportedRow(command.archiveHandle, out row, out structural))
+            string resolveStatus = ResolveImportedRow(
+                command.archiveHandle, out row, out structural);
+            if (resolveStatus != MemoryLibraryStatuses.Ready)
             {
-                result.status = MemoryLibraryCommandStatuses.Missing;
+                result.status = resolveStatus == MemoryLibraryStatuses.Invalid
+                    ? MemoryLibraryCommandStatuses.Invalid
+                    : MemoryLibraryCommandStatuses.Missing;
                 return result;
             }
             if (structural != command.targetStructuralRevision)
@@ -684,6 +904,13 @@ namespace PawnDiary
         private void MarkMemoryLibraryMutationCommitted()
         {
             memoryLibraryDirectoryFingerprint = string.Empty;
+            memoryLibraryDirectoryBuildRequested = true;
+            memoryLibraryOwners.Clear();
+            memoryLibraryOwnerCacheFingerprints.Clear();
+            memoryLibraryOwnerLru.Clear();
+            memoryLibraryListPublications.Clear();
+            memoryLibraryDetailPublications.Clear();
+            memoryLibraryTextPublications.Clear();
             memoryM4IndexesDirty = true;
             memoryMaintenanceDirty = true;
             try
@@ -702,6 +929,693 @@ namespace PawnDiary
                     "PawnDiary.Memory.Library.IndexRebuild".GetHashCode());
             }
             DiaryStateVersion.Bump();
+        }
+
+        private bool MemoryLibrarySourceTupleChanged()
+        {
+            long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            return memoryLibraryObservedDiaryStateVersion != DiaryStateVersion.Current
+                || memoryLibraryObservedSettingsRevision
+                    != MemoryEffectivePolicyProvider.PublicationRevision
+                || memoryLibraryObservedTtlDayRevision != now / 60000L
+                || !ReferenceEquals(memoryLibraryObservedLanguage, LanguageDatabase.activeLanguage)
+                || memoryLibraryObservedDiaryCount != (diaries?.Count ?? 0)
+                || memoryLibraryObservedUnresolvedCount
+                    != (unresolvedOwnerArchiveRows?.Count ?? 0)
+                || memoryLibraryObservedRawUnresolvedCount
+                    != (rawUnresolvedOwnerArchiveInput?.Count ?? 0);
+        }
+
+        private MemoryLibraryDirectoryBuildJob StartMemoryLibraryDirectoryBuild()
+        {
+            MemoryLibraryDirectoryBuildJob job = new MemoryLibraryDirectoryBuildJob
+            {
+                diaryStateVersion = DiaryStateVersion.Current,
+                settingsRevision = MemoryEffectivePolicyProvider.PublicationRevision,
+                ttlDayRevision = Math.Max(0, Find.TickManager?.TicksGame ?? 0) / 60000L,
+                language = LanguageDatabase.activeLanguage,
+                diaryCount = diaries?.Count ?? 0,
+                unresolvedCount = unresolvedOwnerArchiveRows?.Count ?? 0,
+                rawUnresolvedCount = rawUnresolvedOwnerArchiveInput?.Count ?? 0
+            };
+            Dictionary<string, PawnDiaryRecord> firstDiary =
+                new Dictionary<string, PawnDiaryRecord>(StringComparer.Ordinal);
+            for (int index = 0; diaries != null && index < diaries.Count; index++)
+            {
+                PawnDiaryRecord diary = diaries[index];
+                if (diary != null && !string.IsNullOrWhiteSpace(diary.pawnId)
+                    && !firstDiary.ContainsKey(diary.pawnId)) firstDiary.Add(diary.pawnId, diary);
+            }
+            Dictionary<string, Pawn> active = new Dictionary<string, Pawn>(StringComparer.Ordinal);
+            foreach (Pawn pawn in PawnsFinder
+                .AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists)
+            {
+                if (pawn == null) continue;
+                string id = pawn.GetUniqueLoadID();
+                if (!string.IsNullOrWhiteSpace(id) && !active.ContainsKey(id)) active.Add(id, pawn);
+            }
+            foreach (KeyValuePair<string, PawnDiaryRecord> pair in firstDiary)
+            {
+                active.TryGetValue(pair.Key, out Pawn live);
+                PawnKnowledgeState state = pair.Value.knowledgeState;
+                job.work.Add(new MemoryLibraryOwnerSource
+                {
+                    kind = state == null ? "zero" : state.IsCurrentSchema() ? "current" : "legacy",
+                    diary = pair.Value,
+                    state = state,
+                    displayName = live?.LabelShortCap ?? pair.Value.pawnName ?? pair.Key,
+                    active = live != null
+                });
+            }
+            foreach (KeyValuePair<string, Pawn> pair in active)
+            {
+                if (firstDiary.ContainsKey(pair.Key)) continue;
+                job.work.Add(new MemoryLibraryOwnerSource
+                {
+                    kind = "zero",
+                    displayName = pair.Value.LabelShortCap,
+                    active = true,
+                    diary = new PawnDiaryRecord { pawnId = pair.Key, pawnName = pair.Value.LabelShortCap }
+                });
+            }
+            if (job.unresolvedCount > 0 || job.rawUnresolvedCount > 0)
+                job.work.Add(new MemoryLibraryOwnerSource { kind = "unknown" });
+            return job;
+        }
+
+        private void AdvanceMemoryLibraryDirectoryBuild()
+        {
+            MemoryLibraryDirectoryBuildJob job = memoryLibraryDirectoryBuildJob;
+            if (job == null) return;
+            int workCap = Math.Max(1, (int)ReadCapacityLong("sliceWorkItems", 60, 120));
+            long microseconds = Math.Max(1, ReadCapacityLong(
+                "sliceTargetMicroseconds", 750, 2000));
+            Stopwatch timer = Stopwatch.StartNew();
+            int completed = 0;
+            MemoryLibraryLimits limits = BuildMemoryLibraryLimits();
+            while (job.cursor < job.work.Count && completed < workCap)
+            {
+                MemoryLibraryOwnerSource source = job.work[job.cursor++];
+                MemoryLibraryOwnerIndexSnapshot header = BuildMemoryLibraryDirectoryHeader(
+                    source, limits);
+                source.headerSnapshot = header;
+                if (header?.ownerRow != null)
+                {
+                    bool hasData = header.ownerRow.threadCount > 0
+                        || header.ownerRow.standaloneCount > 0
+                        || header.ownerRow.importedCount > 0
+                        || header.ownerRow.compatibilityHandle != null;
+                    if (hasData) job.data.Add(header);
+                    else if (source.active) job.zero.Add(header);
+                    source.ownerKey = OwnerIndexKey(header.ownerRow.primaryHandle);
+                    source.sourceFingerprint = MemoryLibraryOwnerSourceFingerprint(source, job);
+                    if (!string.IsNullOrEmpty(source.ownerKey))
+                        job.sources[source.ownerKey] = source;
+                }
+                completed++;
+                if (timer.ElapsedTicks * 1000000L / Stopwatch.Frequency >= microseconds) break;
+            }
+            if (job.cursor < job.work.Count) return;
+            if (!MemoryLibraryBuildStillCurrent(job))
+            {
+                memoryLibraryDirectoryBuildJob = null;
+                memoryLibraryDirectoryBuildRequested = true;
+                return;
+            }
+            PublishMemoryLibraryDirectory(job);
+        }
+
+        private bool MemoryLibraryBuildStillCurrent(MemoryLibraryDirectoryBuildJob job)
+        {
+            long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            return job != null
+                && job.diaryStateVersion == DiaryStateVersion.Current
+                && job.settingsRevision == MemoryEffectivePolicyProvider.PublicationRevision
+                && job.ttlDayRevision == now / 60000L
+                && ReferenceEquals(job.language, LanguageDatabase.activeLanguage)
+                && job.diaryCount == (diaries?.Count ?? 0)
+                && job.unresolvedCount == (unresolvedOwnerArchiveRows?.Count ?? 0)
+                && job.rawUnresolvedCount == (rawUnresolvedOwnerArchiveInput?.Count ?? 0);
+        }
+
+        private void PublishMemoryLibraryDirectory(MemoryLibraryDirectoryBuildJob job)
+        {
+            job.data.Sort(CompareOwnerSnapshots);
+            job.zero.Sort(CompareOwnerSnapshots);
+            int cap = (int)ReadCapacityLong("libraryOwnerEntries", 2048, 8001);
+            List<MemoryLibraryOwnerIndexSnapshot> indexed =
+                new List<MemoryLibraryOwnerIndexSnapshot>();
+            for (int index = 0; index < job.data.Count && indexed.Count < cap; index++)
+                indexed.Add(job.data[index]);
+            memoryLibraryAdditionalLegacyRawOwners = Math.Max(0, job.data.Count - indexed.Count);
+            int includedZero = 0;
+            for (int index = 0; index < job.zero.Count && indexed.Count < cap; index++)
+            {
+                indexed.Add(job.zero[index]);
+                includedZero++;
+            }
+            memoryLibraryAdditionalZeroOwners = Math.Max(0, job.zero.Count - includedZero);
+            ApplyMemoryCompatibilityPublications(job, indexed);
+            string fingerprint = DirectoryFingerprint(indexed);
+            bool changed = memoryLibraryDirectoryRevision <= 0
+                || !string.Equals(fingerprint, memoryLibraryDirectoryFingerprint,
+                    StringComparison.Ordinal);
+            long revision = memoryLibraryDirectoryRevision;
+            if (changed && !memoryLibraryClock.TryAllocate(out revision))
+            {
+                memoryLibraryDirectoryBuildJob = null;
+                memoryLibraryDirectoryBuildRequested = false;
+                return;
+            }
+            memoryLibraryDirectory.Clear();
+            Dictionary<string, MemoryLibraryOwnerSource> includedSources =
+                new Dictionary<string, MemoryLibraryOwnerSource>(StringComparer.Ordinal);
+            for (int index = 0; index < indexed.Count; index++)
+            {
+                MemoryLibraryOwnerRow row = indexed[index]?.ownerRow;
+                if (row == null) continue;
+                memoryLibraryDirectory.Add(row);
+                string key = OwnerIndexKey(row.primaryHandle);
+                if (!string.IsNullOrEmpty(key) && job.sources.TryGetValue(
+                    key, out MemoryLibraryOwnerSource source)) includedSources[key] = source;
+            }
+            memoryLibraryOwnerSources.Clear();
+            foreach (KeyValuePair<string, MemoryLibraryOwnerSource> pair in includedSources)
+                memoryLibraryOwnerSources[pair.Key] = pair.Value;
+            PruneMemoryLibraryOwnerCache();
+            memoryLibraryDirectoryRevision = revision;
+            memoryLibraryDirectoryFingerprint = fingerprint;
+            if (memoryLibraryObservedLanguage != null
+                && !ReferenceEquals(memoryLibraryObservedLanguage, job.language)
+                && memoryLibraryLanguageDisplayRevision < long.MaxValue)
+                memoryLibraryLanguageDisplayRevision++;
+            memoryLibraryObservedDiaryStateVersion = job.diaryStateVersion;
+            memoryLibraryObservedSettingsRevision = job.settingsRevision;
+            memoryLibraryObservedTtlDayRevision = job.ttlDayRevision;
+            memoryLibraryObservedLanguage = job.language;
+            memoryLibraryObservedDiaryCount = job.diaryCount;
+            memoryLibraryObservedUnresolvedCount = job.unresolvedCount;
+            memoryLibraryObservedRawUnresolvedCount = job.rawUnresolvedCount;
+            memoryLibraryDirectoryBuildJob = null;
+            memoryLibraryDirectoryBuildRequested = false;
+        }
+
+        private MemoryLibraryOwnerIndexSnapshot BuildMemoryLibraryDirectoryHeader(
+            MemoryLibraryOwnerSource source,
+            MemoryLibraryLimits limits)
+        {
+            if (source == null) return null;
+            if (source.kind == "zero")
+                return BuildZeroOwner(source.diary?.pawnId, source.displayName);
+            if (source.kind == "legacy")
+                return BuildLegacyCompatibilityHeader(source, limits);
+            if (source.kind == "unknown") return BuildUnknownOwnerHeader(source, limits);
+            PawnKnowledgeState state = source.state;
+            if (state == null || source.diary == null) return null;
+            bool inert = false;
+            int roots = 0;
+            long latest = 0;
+            for (int index = 0; state.threadRoots != null && index < state.threadRoots.Count; index++)
+            {
+                SavedMemoryThreadRoot root = state.threadRoots[index];
+                if (root == null) continue;
+                if (HasUnknownNewerReducerRevision(root)) { inert = true; continue; }
+                roots++;
+                latest = Math.Max(latest, LatestRootTick(root));
+            }
+            for (int index = 0; state.standaloneBlocks != null
+                && index < state.standaloneBlocks.Count; index++)
+                latest = Math.Max(latest, state.standaloneBlocks[index]?.originalEventTick ?? 0);
+            for (int index = 0; state.importedArchiveRows != null
+                && index < state.importedArchiveRows.Count; index++)
+                latest = Math.Max(latest, state.importedArchiveRows[index]?.originalEventTick ?? 0);
+            string scope = state.archiveOnly
+                ? MemoryLibraryScopes.ArchiveOnly : MemoryLibraryScopes.Active;
+            MemoryLibraryOwnerHandle primary = new MemoryLibraryOwnerHandle(
+                scope, source.diary.pawnId, state.autobiographicalEpochToken ?? string.Empty);
+            if (inert) source.compatibilityCandidate = BuildInertCompatibilityCandidate(
+                source.diary.pawnId, state, limits);
+            return new MemoryLibraryOwnerIndexSnapshot
+            {
+                ownerRow = new MemoryLibraryOwnerRow
+                {
+                    primaryHandle = primary,
+                    activeOwnerEpochKey = !state.archiveOnly
+                        && !string.IsNullOrWhiteSpace(state.autobiographicalEpochToken)
+                        ? new MemoryOwnerEpochKey
+                        {
+                            ownerPawnId = source.diary.pawnId,
+                            epochToken = state.autobiographicalEpochToken
+                        } : null,
+                    compatibilityHandle = inert ? new MemoryLibraryOwnerHandle(
+                        MemoryLibraryScopes.InertCurrentExact, source.diary.pawnId, string.Empty) : null,
+                    displayName = MemoryLibraryPolicy.ClampUtf16CompleteScalar(
+                        source.displayName, limits.frozenDisplayLabelUtf16Units),
+                    lifecycleToken = source.active ? "active" : state.archiveOnly ? "archive" : "saved",
+                    culture = BuildMemoryOwnerCultureDto(state, limits),
+                    threadCount = roots,
+                    standaloneCount = state.standaloneBlocks?.Count ?? 0,
+                    importedCount = state.importedArchiveRows?.Count ?? 0,
+                    latestActivityTick = latest,
+                    hasArchive = (state.importedArchiveRows?.Count ?? 0) > 0 || inert,
+                    legacyRawPending = inert,
+                    structuralRevision = state.structuralRevision,
+                    statusRevision = state.statusRevision,
+                    compatibilitySourcePayloadRevision = 0,
+                    normalizedSearch = MemoryLibraryPolicy.NormalizeSearch(
+                        source.displayName, limits.searchScalars, limits.searchUtf16Units)
+                }
+            };
+        }
+
+        private MemoryLibraryOwnerIndexSnapshot BuildUnknownOwnerHeader(
+            MemoryLibraryOwnerSource source,
+            MemoryLibraryLimits limits)
+        {
+            bool current = unresolvedOwnerArchiveRows != null
+                && unresolvedOwnerArchiveRows.Count > 0;
+            MemoryLibraryOwnerHandle compatibility = rawUnresolvedOwnerArchiveInput != null
+                && rawUnresolvedOwnerArchiveInput.Count > 0
+                ? new MemoryLibraryOwnerHandle(
+                    MemoryLibraryScopes.LegacyRawUnknown, string.Empty, string.Empty)
+                : null;
+            string display = MemoryLibraryPolicy.ClampUtf16CompleteScalar(
+                "PawnDiary.Memory.Library.UnknownOwner".Translate().ToString(),
+                limits.frozenDisplayLabelUtf16Units);
+            MemoryLibraryOwnerIndexSnapshot header = new MemoryLibraryOwnerIndexSnapshot
+            {
+                ownerRow = new MemoryLibraryOwnerRow
+                {
+                    primaryHandle = current ? new MemoryLibraryOwnerHandle(
+                        MemoryLibraryScopes.UnresolvedImported, string.Empty, string.Empty) : null,
+                    compatibilityHandle = compatibility,
+                    displayName = display,
+                    lifecycleToken = "unknown",
+                    importedCount = unresolvedOwnerArchiveRows?.Count ?? 0,
+                    hasArchive = true,
+                    legacyRawPending = compatibility != null,
+                    structuralRevision = unresolvedArchiveStructuralRevision,
+                    normalizedSearch = MemoryLibraryPolicy.NormalizeSearch(
+                        display, limits.searchScalars, limits.searchUtf16Units)
+                }
+            };
+            if (compatibility != null)
+                source.compatibilityCandidate = BuildUnknownCompatibilityCandidate(limits);
+            return header;
+        }
+
+        private MemoryLibraryOwnerIndexSnapshot BuildLegacyCompatibilityHeader(
+            MemoryLibraryOwnerSource source,
+            MemoryLibraryLimits limits)
+        {
+            if (source?.diary == null || source.state == null) return null;
+            MemoryLibraryOwnerHandle handle = new MemoryLibraryOwnerHandle(
+                MemoryLibraryScopes.LegacyRawExact, source.diary.pawnId, string.Empty);
+            source.compatibilityCandidate = BuildLegacyCompatibilityCandidate(
+                handle, source.state.records, limits);
+            return new MemoryLibraryOwnerIndexSnapshot
+            {
+                ownerRow = new MemoryLibraryOwnerRow
+                {
+                    compatibilityHandle = handle,
+                    displayName = MemoryLibraryPolicy.ClampUtf16CompleteScalar(
+                        source.displayName, limits.frozenDisplayLabelUtf16Units),
+                    lifecycleToken = "migration_pending",
+                    culture = BuildMemoryOwnerCultureDto(source.state, limits),
+                    legacyRawPending = true,
+                    normalizedSearch = MemoryLibraryPolicy.NormalizeSearch(
+                        source.displayName, limits.searchScalars, limits.searchUtf16Units)
+                }
+            };
+        }
+
+        private MemoryCompatibilityCandidate BuildLegacyCompatibilityCandidate(
+            MemoryLibraryOwnerHandle handle,
+            List<ImportantMemoryRecord> records,
+            MemoryLibraryLimits limits)
+        {
+            long bytes = 0;
+            bool clamped = false;
+            try
+            {
+                checked
+                {
+                    for (int index = 0; records != null && index < records.Count; index++)
+                        bytes += SavedLegacyUnresolvedOwnerArchiveInputV1
+                            .LegacyRecordLogicalBytes(records[index]);
+                }
+            }
+            catch (OverflowException)
+            {
+                bytes = long.MaxValue;
+                clamped = true;
+            }
+            List<string> fields = new List<string>();
+            for (int index = 0; records != null && index < records.Count; index++)
+                AddLegacyRecordFingerprint(fields, records[index]);
+            return new MemoryCompatibilityCandidate
+            {
+                handle = handle,
+                stateToken = "preparing",
+                reasonToken = MemoryLibraryScopes.LegacyRawExact,
+                rowCount = records?.Count ?? 0,
+                logicalByteCount = bytes,
+                countWasClamped = clamped,
+                safePreview = LegacyRecordPreview(
+                    records != null && records.Count > 0 ? records[0] : null, limits),
+                sourceFingerprint = MemoryLibraryPolicy.StreamFingerprint(fields.ToArray())
+            };
+        }
+
+        private MemoryCompatibilityCandidate BuildUnknownCompatibilityCandidate(
+            MemoryLibraryLimits limits)
+        {
+            MemoryLibraryOwnerHandle handle = new MemoryLibraryOwnerHandle(
+                MemoryLibraryScopes.LegacyRawUnknown, string.Empty, string.Empty);
+            MemoryLogicalSizeResult size = SizeListValidated(rawUnresolvedOwnerArchiveInput);
+            List<string> fields = new List<string>();
+            for (int index = 0; rawUnresolvedOwnerArchiveInput != null
+                && index < rawUnresolvedOwnerArchiveInput.Count; index++)
+            {
+                SavedLegacyUnresolvedOwnerArchiveInputV1 raw =
+                    rawUnresolvedOwnerArchiveInput[index];
+                fields.Add(raw?.savedOwnerIdentityKindToken ?? string.Empty);
+                fields.Add(raw?.savedOwnerIdentityValue ?? string.Empty);
+                fields.Add((raw?.sourceContainerOrdinal ?? -1)
+                    .ToString(CultureInfo.InvariantCulture));
+                fields.Add((raw?.sourceRecordOrdinal ?? -1)
+                    .ToString(CultureInfo.InvariantCulture));
+                AddLegacyRecordFingerprint(fields, raw?.legacyRecord);
+            }
+            return new MemoryCompatibilityCandidate
+            {
+                handle = handle,
+                stateToken = "preparing",
+                reasonToken = MemoryLibraryScopes.LegacyRawUnknown,
+                rowCount = rawUnresolvedOwnerArchiveInput?.Count ?? 0,
+                logicalByteCount = size.valid ? size.totalBytes : 0,
+                countWasClamped = !size.valid,
+                safePreview = LegacyRecordPreview(
+                    rawUnresolvedOwnerArchiveInput != null
+                        && rawUnresolvedOwnerArchiveInput.Count > 0
+                        ? rawUnresolvedOwnerArchiveInput[0]?.legacyRecord : null,
+                    limits),
+                sourceFingerprint = MemoryLibraryPolicy.StreamFingerprint(fields.ToArray())
+            };
+        }
+
+        private MemoryCompatibilityCandidate BuildInertCompatibilityCandidate(
+            string ownerId,
+            PawnKnowledgeState state,
+            MemoryLibraryLimits limits)
+        {
+            List<SavedMemoryThreadRoot> inert = new List<SavedMemoryThreadRoot>();
+            List<string> fields = new List<string>();
+            for (int index = 0; state?.threadRoots != null
+                && index < state.threadRoots.Count; index++)
+            {
+                SavedMemoryThreadRoot root = state.threadRoots[index];
+                if (!HasUnknownNewerReducerRevision(root)) continue;
+                inert.Add(root);
+                fields.Add(root.rootId ?? string.Empty);
+                fields.Add(root.lastAppliedReducerRevision.ToString(CultureInfo.InvariantCulture));
+                fields.Add(root.structuralRevision.ToString(CultureInfo.InvariantCulture));
+                fields.Add(root.statusRevision.ToString(CultureInfo.InvariantCulture));
+            }
+            MemoryLogicalSizeResult size = SizeListValidated(inert);
+            return new MemoryCompatibilityCandidate
+            {
+                handle = new MemoryLibraryOwnerHandle(
+                    MemoryLibraryScopes.InertCurrentExact, ownerId, string.Empty),
+                stateToken = "inert",
+                reasonToken = MemoryLibraryScopes.InertCurrentExact,
+                rowCount = inert.Count,
+                logicalByteCount = size.valid ? size.totalBytes : 0,
+                countWasClamped = !size.valid,
+                safePreview = string.Empty,
+                sourceFingerprint = MemoryLibraryPolicy.StreamFingerprint(fields.ToArray())
+            };
+        }
+
+        private void ApplyMemoryCompatibilityPublications(
+            MemoryLibraryDirectoryBuildJob job,
+            List<MemoryLibraryOwnerIndexSnapshot> indexed)
+        {
+            HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = indexed.Count - 1; index >= 0; index--)
+            {
+                MemoryLibraryOwnerIndexSnapshot snapshot = indexed[index];
+                MemoryLibraryOwnerSource source = null;
+                for (int workIndex = 0; workIndex < job.work.Count; workIndex++)
+                    if (ReferenceEquals(job.work[workIndex].headerSnapshot, snapshot))
+                    {
+                        source = job.work[workIndex];
+                        break;
+                    }
+                MemoryCompatibilityCandidate candidate = source?.compatibilityCandidate;
+                if (candidate == null) continue;
+                MemoryCompatibilitySourcePublication publication =
+                    PublishMemoryCompatibilityCandidate(candidate);
+                if (publication == null)
+                {
+                    snapshot.ownerRow.compatibilityHandle = null;
+                    snapshot.ownerRow.compatibilitySourcePayloadRevision = 0;
+                    snapshot.ownerRow.legacyRawPending = false;
+                    if (snapshot.ownerRow.primaryHandle == null) indexed.RemoveAt(index);
+                    continue;
+                }
+                string key = OwnerIndexKey(candidate.handle);
+                seen.Add(key);
+                snapshot.ownerRow.compatibilitySourcePayloadRevision = publication.revision;
+            }
+            List<string> removed = new List<string>();
+            foreach (string key in memoryLibraryCompatibilityPublications.Keys)
+                if (!seen.Contains(key)) removed.Add(key);
+            for (int index = 0; index < removed.Count; index++)
+                memoryLibraryCompatibilityPublications.Remove(removed[index]);
+        }
+
+        private MemoryCompatibilitySourcePublication PublishMemoryCompatibilityCandidate(
+            MemoryCompatibilityCandidate candidate)
+        {
+            string key = OwnerIndexKey(candidate?.handle);
+            if (string.IsNullOrEmpty(key)) return null;
+            string fingerprint = MemoryLibraryPolicy.StreamFingerprint(
+                key,
+                candidate.sourceFingerprint,
+                candidate.stateToken,
+                candidate.reasonToken,
+                candidate.rowCount.ToString(CultureInfo.InvariantCulture),
+                candidate.logicalByteCount.ToString(CultureInfo.InvariantCulture),
+                candidate.countWasClamped ? "1" : "0",
+                candidate.safePreview);
+            long existingRevision = 0;
+            bool byteEquivalent = false;
+            if (memoryLibraryCompatibilityPublications.TryGetValue(
+                key, out MemoryCompatibilitySourcePublication existing))
+            {
+                existingRevision = existing.revision;
+                byteEquivalent = string.Equals(
+                    existing.fingerprint, fingerprint, StringComparison.Ordinal);
+                if (byteEquivalent) return existing;
+            }
+            if (!MemoryLibraryPolicy.TryNextCompatibilityRevision(
+                    existingRevision, byteEquivalent, out long revision))
+            {
+                memoryLibraryCompatibilityPublications.Remove(key);
+                return null;
+            }
+            MemoryCompatibilitySourcePublication result =
+                new MemoryCompatibilitySourcePublication
+                {
+                    fingerprint = fingerprint,
+                    revision = revision,
+                    pending = new MemoryLegacyPendingDto
+                    {
+                        handle = new MemoryLibraryOwnerHandle(
+                            candidate.handle?.scopeToken,
+                            candidate.handle?.exactOwnerPawnIdOrEmpty,
+                            candidate.handle?.epochTokenOrEmpty),
+                        stateToken = candidate.stateToken,
+                        reasonToken = candidate.reasonToken,
+                        rowCount = candidate.rowCount,
+                        logicalByteCount = candidate.logicalByteCount,
+                        countWasClamped = candidate.countWasClamped,
+                        sourcePayloadRevision = revision,
+                        safePreview = candidate.safePreview
+                    }
+                };
+            memoryLibraryCompatibilityPublications[key] = result;
+            return result;
+        }
+
+        private static string LegacyRecordPreview(
+            ImportantMemoryRecord record,
+            MemoryLibraryLimits limits)
+        {
+            string value = !string.IsNullOrWhiteSpace(record?.manualTextOverride)
+                ? record.manualTextOverride
+                : !string.IsNullOrWhiteSpace(record?.fallbackSummary)
+                    ? record.fallbackSummary
+                    : record?.dateLabel ?? record?.topicKey ?? string.Empty;
+            return MemoryLibraryPolicy.ClampUtf16CompleteScalar(
+                value, limits.importedPreviewUtf16Units);
+        }
+
+        private static void AddLegacyRecordFingerprint(
+            List<string> fields,
+            ImportantMemoryRecord record)
+        {
+            if (fields == null) return;
+            fields.Add(record?.recordId ?? string.Empty);
+            fields.Add(record?.dedupKey ?? string.Empty);
+            fields.Add(record?.sourceEventId ?? string.Empty);
+            fields.Add(record?.sourceKind ?? string.Empty);
+            fields.Add(record?.recallScope ?? string.Empty);
+            fields.Add(record?.eventKind ?? string.Empty);
+            fields.Add(record?.topicKey ?? string.Empty);
+            fields.Add((record?.tick ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add(record?.dateLabel ?? string.Empty);
+            fields.Add(record?.fallbackSummary ?? string.Empty);
+            fields.Add(record?.manualTextOverride ?? string.Empty);
+            AddStringListFingerprint(fields, record?.participantIds);
+            AddStringListFingerprint(fields, record?.participantNames);
+            AddStringListFingerprint(fields, record?.subjectKeys);
+            AddStringListFingerprint(fields, record?.factKeys);
+            AddStringListFingerprint(fields, record?.factValues);
+        }
+
+        private static void AddStringListFingerprint(List<string> fields, List<string> values)
+        {
+            fields.Add((values?.Count ?? 0).ToString(CultureInfo.InvariantCulture));
+            for (int index = 0; values != null && index < values.Count; index++)
+                fields.Add(values[index] ?? string.Empty);
+        }
+
+        private static string MemoryLibraryOwnerSourceFingerprint(
+            MemoryLibraryOwnerSource source,
+            MemoryLibraryDirectoryBuildJob job)
+        {
+            PawnKnowledgeState state = source?.state;
+            List<string> fields = new List<string>
+            {
+                source?.kind ?? string.Empty,
+                source?.diary?.pawnId ?? string.Empty,
+                source?.displayName ?? string.Empty,
+                state?.autobiographicalEpochToken ?? string.Empty,
+                (state?.structuralRevision ?? 0).ToString(CultureInfo.InvariantCulture),
+                (state?.statusRevision ?? 0).ToString(CultureInfo.InvariantCulture),
+                (job?.settingsRevision ?? 0).ToString(CultureInfo.InvariantCulture),
+                (job?.ttlDayRevision ?? 0).ToString(CultureInfo.InvariantCulture),
+                job?.language?.ToString() ?? string.Empty
+            };
+            for (int index = 0; state?.threadRoots != null
+                && index < state.threadRoots.Count; index++)
+            {
+                SavedMemoryThreadRoot root = state.threadRoots[index];
+                fields.Add(root?.rootId ?? string.Empty);
+                fields.Add((root?.structuralRevision ?? 0).ToString(CultureInfo.InvariantCulture));
+                fields.Add((root?.statusRevision ?? 0).ToString(CultureInfo.InvariantCulture));
+            }
+            return MemoryLibraryPolicy.StreamFingerprint(fields.ToArray());
+        }
+
+        private void RequestMemoryLibraryOwnerBuild(string ownerKey)
+        {
+            if (string.IsNullOrEmpty(ownerKey) || !memoryLibraryOwnerSources.ContainsKey(ownerKey))
+                return;
+            memoryLibraryPendingOwnerBuildKey = ownerKey;
+        }
+
+        private void BuildPendingMemoryLibraryOwnerIndex()
+        {
+            string key = memoryLibraryPendingOwnerBuildKey;
+            memoryLibraryPendingOwnerBuildKey = string.Empty;
+            if (!memoryLibraryOwnerSources.TryGetValue(
+                key, out MemoryLibraryOwnerSource source)) return;
+            MemoryLibraryLimits limits = BuildMemoryLibraryLimits();
+            MemoryLibraryOwnerIndexSnapshot snapshot = source.kind == "current"
+                ? MemoryLibraryIndexPolicy.BuildOwner(BuildOwnerInput(
+                    source.diary, source.state, source.displayName, source.active, limits), limits)
+                : source.kind == "unknown" ? BuildUnknownOwner(limits)
+                : source.kind == "zero" ? BuildZeroOwner(source.diary?.pawnId, source.displayName)
+                : null;
+            if (snapshot == null) return;
+            MemoryLibraryOwnerRow directoryRow = FindPrimaryDirectoryRow(
+                snapshot.ownerRow?.primaryHandle);
+            if (directoryRow != null)
+            {
+                snapshot.ownerRow.compatibilityHandle = directoryRow.compatibilityHandle;
+                snapshot.ownerRow.compatibilitySourcePayloadRevision =
+                    directoryRow.compatibilitySourcePayloadRevision;
+                snapshot.ownerRow.legacyRawPending = directoryRow.legacyRawPending;
+            }
+            memoryLibraryOwners[key] = snapshot;
+            memoryLibraryOwnerCacheFingerprints[key] = source.sourceFingerprint;
+            TouchMemoryLibraryOwner(key);
+            int cap = Math.Max(1, (int)ReadCapacityLong("cachedOwnerStates", 6, 8));
+            while (memoryLibraryOwnerLru.Count > cap)
+            {
+                string evicted = memoryLibraryOwnerLru.First.Value;
+                memoryLibraryOwnerLru.RemoveFirst();
+                memoryLibraryOwners.Remove(evicted);
+                memoryLibraryOwnerCacheFingerprints.Remove(evicted);
+                InvalidateMemoryLibraryPublicationsForOwner(evicted);
+            }
+        }
+
+        private void TouchMemoryLibraryOwner(string ownerKey)
+        {
+            LinkedListNode<string> node = memoryLibraryOwnerLru.Find(ownerKey);
+            if (node != null) memoryLibraryOwnerLru.Remove(node);
+            memoryLibraryOwnerLru.AddLast(ownerKey);
+        }
+
+        private void PruneMemoryLibraryOwnerCache()
+        {
+            List<string> remove = new List<string>();
+            foreach (KeyValuePair<string, MemoryLibraryOwnerIndexSnapshot> pair in memoryLibraryOwners)
+            {
+                if (!memoryLibraryOwnerSources.TryGetValue(
+                        pair.Key, out MemoryLibraryOwnerSource source)
+                    || !memoryLibraryOwnerCacheFingerprints.TryGetValue(
+                        pair.Key, out string fingerprint)
+                    || !string.Equals(fingerprint, source.sourceFingerprint,
+                        StringComparison.Ordinal)) remove.Add(pair.Key);
+            }
+            for (int index = 0; index < remove.Count; index++)
+            {
+                memoryLibraryOwners.Remove(remove[index]);
+                memoryLibraryOwnerCacheFingerprints.Remove(remove[index]);
+                memoryLibraryOwnerLru.Remove(remove[index]);
+                InvalidateMemoryLibraryPublicationsForOwner(remove[index]);
+            }
+        }
+
+        private void InvalidateMemoryLibraryPublicationsForOwner(string ownerKey)
+        {
+            RemoveMemoryLibraryPublications(memoryLibraryListPublications, ownerKey);
+            RemoveMemoryLibraryPublications(memoryLibraryDetailPublications, ownerKey);
+        }
+
+        private static void RemoveMemoryLibraryPublications(
+            Dictionary<string, MemoryLibraryPublication> publications,
+            string ownerKey)
+        {
+            List<string> remove = new List<string>();
+            foreach (KeyValuePair<string, MemoryLibraryPublication> pair in publications)
+                if (string.Equals(pair.Value?.ownerKey, ownerKey, StringComparison.Ordinal))
+                    remove.Add(pair.Key);
+            for (int index = 0; index < remove.Count; index++) publications.Remove(remove[index]);
+        }
+
+        private MemoryLibraryOwnerRow FindPrimaryDirectoryRow(MemoryLibraryOwnerHandle handle)
+        {
+            string key = OwnerIndexKey(handle);
+            for (int index = 0; index < memoryLibraryDirectory.Count; index++)
+                if (string.Equals(OwnerIndexKey(memoryLibraryDirectory[index]?.primaryHandle),
+                    key, StringComparison.Ordinal)) return memoryLibraryDirectory[index];
+            return null;
         }
 
         private List<MemoryLibraryOwnerIndexSnapshot> BuildMemoryLibraryOwnerSnapshots(
@@ -993,23 +1907,6 @@ namespace PawnDiary
             for (int index = 0; block.secondarySubjects != null
                 && index < block.secondarySubjects.Count; index++)
                 searchFields.Add(block.secondarySubjects[index]?.frozenLabel ?? string.Empty);
-            if (summary)
-            {
-                for (int bucketIndex = 0; block.summaryPayload?.factBuckets != null
-                    && bucketIndex < block.summaryPayload.factBuckets.Count; bucketIndex++)
-                {
-                    SavedMemoryFactBucket bucket = block.summaryPayload.factBuckets[bucketIndex];
-                    for (int contributionIndex = 0; bucket?.contributions != null
-                        && contributionIndex < bucket.contributions.Count; contributionIndex++)
-                    {
-                        SavedMemoryFactContribution contribution =
-                            bucket.contributions[contributionIndex];
-                        if (contribution == null) continue;
-                        searchFields.Add(contribution.canonicalValue);
-                        searchFields.Add(contribution.category);
-                    }
-                }
-            }
             int dateTick = (int)Math.Max(0, Math.Min(int.MaxValue, block.originalEventTick));
             searchFields.Add(KnowledgeDateLabelAt(null, dateTick));
             searchFields.Add(block.category ?? string.Empty);
@@ -1020,6 +1917,29 @@ namespace PawnDiary
             bool canEdit = !rolling && (landmark || closed || (!threaded && eventKind));
             MemoryPolicySnapshot policy = MemoryEffectivePolicyProvider.Current;
             long expiry = SummaryFutureExpiry(block, policy);
+            List<MemorySummaryContributionDescriptor> contributions = summary
+                ? BuildSummaryContributionDescriptors(block, policy, limits)
+                : new List<MemorySummaryContributionDescriptor>();
+            int projectedCategoryMask = summary ? 0 : categoryMask;
+            int projectedImportanceMask = summary ? 0 : importance;
+            int projectedHighest = summary ? 0 : importance;
+            for (int index = 0; index < contributions.Count; index++)
+            {
+                projectedCategoryMask |= contributions[index].categoryMask;
+                projectedImportanceMask |= contributions[index].importanceMask;
+                projectedHighest = HigherLibraryImportance(
+                    projectedHighest, contributions[index].importanceMask);
+            }
+            if (summary && contributions.Count == 0)
+            {
+                projectedCategoryMask = categoryMask;
+                projectedImportanceMask = importance;
+                projectedHighest = importance;
+            }
+            string wholeSearch = MemoryLibraryPolicy.BuildSearchProjection(
+                searchFields,
+                limits.normalizedFieldUtf16Units,
+                limits.rowProjectionUtf16Units);
             return new MemoryBlockRow
             {
                 recordHandle = new MemoryRecordHandle
@@ -1038,8 +1958,9 @@ namespace PawnDiary
                 targetStructuralRevision = targetStructuralRevision,
                 kind = block.kind ?? string.Empty,
                 summaryRole = block.summaryRole ?? string.Empty,
-                projectedCategoryMask = categoryMask,
-                projectedHighestImportanceMask = importance,
+                projectedCategoryMask = projectedCategoryMask,
+                projectedImportanceMask = projectedImportanceMask,
+                projectedHighestImportanceMask = projectedHighest,
                 originalTick = summary
                     ? block.summaryPayload?.earliestSurvivingTick ?? block.originalEventTick
                     : block.originalEventTick,
@@ -1060,14 +1981,120 @@ namespace PawnDiary
                 lastAutomaticIncludedTick = block.lastAutomaticIncludedTick,
                 automaticInclusionCount = block.automaticInclusionCount,
                 providerExposureState = block.providerExposureState ?? string.Empty,
-                normalizedSearch = MemoryLibraryPolicy.BuildSearchProjection(
-                    searchFields,
-                    limits.normalizedFieldUtf16Units,
-                    limits.rowProjectionUtf16Units),
+                normalizedSearch = wholeSearch,
+                normalizedWholeSearch = wholeSearch,
+                summaryContributions = contributions,
                 rollingSummary = rolling,
                 closedSummary = closed,
                 ageUnknown = block.ageUnknown
             };
+        }
+
+        private List<MemorySummaryContributionDescriptor> BuildSummaryContributionDescriptors(
+            SavedMemoryBlock block,
+            MemoryPolicySnapshot policy,
+            MemoryLibraryLimits limits)
+        {
+            List<MemorySummaryContributionDescriptor> result =
+                new List<MemorySummaryContributionDescriptor>();
+            int cap = (int)ReadCapacityTuplePart(
+                "datedContributionDescriptorMatchCaps", 0, 32, 128);
+            Dictionary<string, SavedMemorySubjectRef> subjects =
+                new Dictionary<string, SavedMemorySubjectRef>(StringComparer.Ordinal);
+            for (int index = 0; block.summaryPayload?.subjectRefs != null
+                && index < block.summaryPayload.subjectRefs.Count; index++)
+            {
+                SavedMemorySubjectRef subject = block.summaryPayload.subjectRefs[index];
+                if (subject != null && !string.IsNullOrEmpty(subject.subjectRefId)
+                    && !subjects.ContainsKey(subject.subjectRefId))
+                    subjects.Add(subject.subjectRefId, subject);
+            }
+            Dictionary<string, SavedMemoryProvenance> provenance =
+                new Dictionary<string, SavedMemoryProvenance>(StringComparer.Ordinal);
+            for (int index = 0; block.summaryPayload?.provenanceRefs != null
+                && index < block.summaryPayload.provenanceRefs.Count; index++)
+            {
+                SavedMemoryProvenance item = block.summaryPayload.provenanceRefs[index];
+                if (item != null && !string.IsNullOrEmpty(item.provenanceRefId)
+                    && !provenance.ContainsKey(item.provenanceRefId))
+                    provenance.Add(item.provenanceRefId, item);
+            }
+            int ordinal = 0;
+            long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            for (int bucketIndex = 0; block.summaryPayload?.factBuckets != null
+                && bucketIndex < block.summaryPayload.factBuckets.Count; bucketIndex++)
+            {
+                SavedMemoryFactBucket bucket = block.summaryPayload.factBuckets[bucketIndex];
+                for (int index = 0; bucket?.contributions != null
+                    && index < bucket.contributions.Count && result.Count < cap; index++, ordinal++)
+                {
+                    SavedMemoryFactContribution contribution = bucket.contributions[index];
+                    if (contribution == null) continue;
+                    int importance = MemoryLibraryPolicy.ImportanceMask(contribution.importance);
+                    MemorySummaryContributionDescriptor descriptor =
+                        new MemorySummaryContributionDescriptor
+                        {
+                            sourceOrdinal = ordinal,
+                            categoryMask = MemoryCategoryBits.ForToken(contribution.category),
+                            importanceMask = importance,
+                            originalTick = contribution.originalEventTick,
+                            ageUnknown = contribution.ageUnknown,
+                            browsePreview = MemoryLibraryPolicy.ClampUtf16CompleteScalar(
+                                contribution.canonicalValue, limits.blockTextUtf16Units),
+                            nextExpiryTick = MemoryLibraryPolicy.FutureExpiryTick(
+                                contribution.originalEventTick,
+                                contribution.ageUnknown,
+                                block.playerEdited,
+                                importance,
+                                policy?.minorMemoryLifetimeTicks ?? long.MaxValue,
+                                policy?.regularMemoryLifetimeTicks ?? long.MaxValue,
+                                now)
+                        };
+                    descriptor.searchFields.Add(contribution.canonicalValue ?? string.Empty);
+                    descriptor.searchFields.Add(contribution.category ?? string.Empty);
+                    descriptor.searchFields.Add(contribution.importance ?? string.Empty);
+                    descriptor.searchFields.Add(KnowledgeDateLabelAt(null, (int)Math.Max(
+                        0, Math.Min(int.MaxValue, contribution.originalEventTick))));
+                    descriptor.factDescriptors.Add((bucket.factKind ?? string.Empty) + ":" +
+                        MemoryLibraryPolicy.ClampUtf16CompleteScalar(
+                            contribution.canonicalValue, limits.blockTextUtf16Units));
+                    for (int refIndex = 0; contribution.subjectRefIds != null
+                        && refIndex < contribution.subjectRefIds.Count; refIndex++)
+                    {
+                        if (!subjects.TryGetValue(contribution.subjectRefIds[refIndex],
+                            out SavedMemorySubjectRef subject)) continue;
+                        string label = MemoryLibraryPolicy.ClampUtf16CompleteScalar(
+                            subject.frozenLabel, limits.frozenDisplayLabelUtf16Units);
+                        descriptor.searchFields.Add(label);
+                        descriptor.subjectDescriptors.Add(
+                            (subject.subjectKind ?? string.Empty) + ":" + label);
+                    }
+                    for (int refIndex = 0; contribution.provenanceRefIds != null
+                        && refIndex < contribution.provenanceRefIds.Count; refIndex++)
+                    {
+                        if (!provenance.TryGetValue(contribution.provenanceRefIds[refIndex],
+                            out SavedMemoryProvenance item)) continue;
+                        descriptor.provenanceDescriptors.Add(
+                            (item.sourceKindToken ?? string.Empty) + ":" +
+                            (item.sourceOccurrenceId ?? string.Empty));
+                    }
+                    result.Add(descriptor);
+                }
+            }
+            return result;
+        }
+
+        private static int HigherLibraryImportance(int left, int right)
+        {
+            if ((left & MemoryLibraryPolicy.ImportanceImportant) != 0
+                || (right & MemoryLibraryPolicy.ImportanceImportant) != 0)
+                return MemoryLibraryPolicy.ImportanceImportant;
+            if ((left & MemoryLibraryPolicy.ImportanceRegular) != 0
+                || (right & MemoryLibraryPolicy.ImportanceRegular) != 0)
+                return MemoryLibraryPolicy.ImportanceRegular;
+            return (left & MemoryLibraryPolicy.ImportanceMinor) != 0
+                || (right & MemoryLibraryPolicy.ImportanceMinor) != 0
+                ? MemoryLibraryPolicy.ImportanceMinor : 0;
         }
 
         private long SummaryFutureExpiry(SavedMemoryBlock block, MemoryPolicySnapshot policy)
@@ -1108,13 +2135,14 @@ namespace PawnDiary
 
         private MemoryBlockDetail BuildMemoryBlockDetail(
             SavedMemoryBlock block,
-            MemoryLibraryLimits limits)
+            MemoryLibraryLimits limits,
+            MemoryBlockRow projection)
         {
             MemoryBlockDetail result = new MemoryBlockDetail
             {
                 automaticWording = MemoryLibraryPolicy.ClampUtf16CompleteScalar(
                     block.kind == MemoryContractTokens.KindSummary
-                        ? block.summaryPayload?.deterministicWording
+                        ? projection?.displayWording ?? block.summaryPayload?.deterministicWording
                         : block.automaticWording,
                     limits.blockTextUtf16Units),
                 playerWording = MemoryLibraryPolicy.ClampUtf16CompleteScalar(
@@ -1128,7 +2156,22 @@ namespace PawnDiary
                     (fact.factKind ?? string.Empty) + ":" +
                     MemoryLibraryPolicy.ClampUtf16CompleteScalar(fact.canonicalValue, 240));
             }
-            if (block.kind == MemoryContractTokens.KindSummary)
+            if (block.kind == MemoryContractTokens.KindSummary
+                && projection?.summaryContributions != null
+                && projection.summaryContributions.Count > 0)
+            {
+                for (int index = 0; index < projection.summaryContributions.Count
+                    && result.factDescriptors.Count < 16; index++)
+                {
+                    MemorySummaryContributionDescriptor descriptor =
+                        projection.summaryContributions[index];
+                    AddDistinctBounded(result.factDescriptors, descriptor?.factDescriptors, 16);
+                    AddDistinctBounded(result.subjectDescriptors, descriptor?.subjectDescriptors, 16);
+                    AddDistinctBounded(result.provenanceDescriptors,
+                        descriptor?.provenanceDescriptors, 8);
+                }
+            }
+            else if (block.kind == MemoryContractTokens.KindSummary)
             {
                 for (int bucketIndex = 0; block.summaryPayload?.factBuckets != null
                     && bucketIndex < block.summaryPayload.factBuckets.Count
@@ -1174,6 +2217,19 @@ namespace PawnDiary
             return result;
         }
 
+        private static void AddDistinctBounded(
+            List<string> target,
+            List<string> source,
+            int cap)
+        {
+            for (int index = 0; target != null && source != null
+                && index < source.Count && target.Count < cap; index++)
+            {
+                string value = source[index] ?? string.Empty;
+                if (!target.Contains(value)) target.Add(value);
+            }
+        }
+
         private static void AddSubjectDetail(
             List<string> target,
             SavedMemorySubjectRef subject,
@@ -1212,8 +2268,8 @@ namespace PawnDiary
                     row.importedWording, limits.importedPreviewUtf16Units),
                 normalizedSearch = MemoryLibraryPolicy.NormalizeSearch(
                     row.importedWording,
-                    limits.rowProjectionUtf16Units,
-                    limits.rowProjectionUtf16Units),
+                    int.MaxValue,
+                    limits.importedSearchUtf16Units),
                 originalTick = row.originalEventTick,
                 ageUnknown = row.ageUnknown,
                 migrationReasonToken = row.migrationReasonToken ?? string.Empty,
@@ -1370,14 +2426,30 @@ namespace PawnDiary
         private static string OwnerSnapshotFingerprint(MemoryLibraryOwnerIndexSnapshot snapshot)
         {
             List<string> fields = new List<string>();
+            MemoryLibraryOwnerRow owner = snapshot?.ownerRow;
+            fields.Add("owner");
+            fields.Add(OwnerIndexKey(owner?.primaryHandle));
+            fields.Add(OwnerEpochKey(owner?.activeOwnerEpochKey));
+            fields.Add(OwnerIndexKey(owner?.compatibilityHandle));
+            fields.Add(owner?.displayName ?? string.Empty);
+            fields.Add(owner?.lifecycleToken ?? string.Empty);
+            fields.Add((owner?.structuralRevision ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add((owner?.statusRevision ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add((owner?.compatibilitySourcePayloadRevision ?? 0)
+                .ToString(CultureInfo.InvariantCulture));
+            fields.Add((snapshot?.ownerEarliestFiniteExpiryTickExclusive ?? long.MaxValue)
+                .ToString(CultureInfo.InvariantCulture));
             for (int rootIndex = 0; snapshot?.roots != null
                 && rootIndex < snapshot.roots.Count; rootIndex++)
             {
                 MemoryLibraryRootIndexInput root = snapshot.roots[rootIndex];
-                fields.Add(RootHandleKey(root?.header?.rootHandle));
-                fields.Add(root?.header?.normalizedSearch ?? string.Empty);
-                fields.Add((root?.header?.structuralRevision ?? 0)
+                AddThreadHeaderFingerprintFields(fields, root?.header);
+                fields.Add((root?.rootEarliestFiniteExpiryTickExclusive ?? long.MaxValue)
                     .ToString(CultureInfo.InvariantCulture));
+                AddCurrentStatusFingerprintFields(fields, root?.currentStatus);
+                for (int chapterIndex = 0; root?.chapters != null
+                    && chapterIndex < root.chapters.Count; chapterIndex++)
+                    AddChapterFingerprintFields(fields, root.chapters[chapterIndex]);
                 for (int childIndex = 0; root?.children != null
                     && childIndex < root.children.Count; childIndex++)
                     AddBlockFingerprintFields(fields, root.children[childIndex]);
@@ -1389,28 +2461,139 @@ namespace PawnDiary
                 && index < snapshot.imported.Count; index++)
             {
                 MemoryImportedRow row = snapshot.imported[index];
+                fields.Add("imported");
                 fields.Add(ArchiveHandleKey(row?.archiveHandle));
                 fields.Add(row?.preview ?? string.Empty);
                 fields.Add(row?.normalizedSearch ?? string.Empty);
+                fields.Add((row?.originalTick ?? 0).ToString(CultureInfo.InvariantCulture));
+                fields.Add(row != null && row.ageUnknown ? "1" : "0");
+                fields.Add(row?.migrationReasonToken ?? string.Empty);
                 fields.Add((row?.targetStructuralRevision ?? 0)
                     .ToString(CultureInfo.InvariantCulture));
             }
             return MemoryLibraryPolicy.StreamFingerprint(fields.ToArray());
         }
 
+        private static void AddThreadHeaderFingerprintFields(
+            List<string> fields,
+            MemoryThreadHeaderRow header)
+        {
+            fields.Add("root");
+            fields.Add(RootHandleKey(header?.rootHandle));
+            fields.Add(header?.subjectLabel ?? string.Empty);
+            fields.Add(header?.subjectTypeToken ?? string.Empty);
+            fields.Add((header?.latestActivityTick ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add((header?.chapterCount ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add((header?.targetCountedVisibleBlockCount ?? 0)
+                .ToString(CultureInfo.InvariantCulture));
+            fields.Add((header?.manageableMemoryCount ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add((header?.highestImportanceMask ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add((header?.editedCount ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add((header?.suppressedCount ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add(header?.normalizedSearch ?? string.Empty);
+            fields.Add((header?.structuralRevision ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add((header?.statusRevision ?? 0).ToString(CultureInfo.InvariantCulture));
+        }
+
+        private static void AddCurrentStatusFingerprintFields(
+            List<string> fields,
+            MemoryCurrentStatusDto status)
+        {
+            fields.Add("status");
+            fields.Add(status?.statusToken ?? string.Empty);
+            for (int index = 0; status?.frozenDisplayFields != null
+                && index < status.frozenDisplayFields.Count; index++)
+                fields.Add(status.frozenDisplayFields[index] ?? string.Empty);
+            fields.Add(status?.knownnessEvidenceToken ?? string.Empty);
+            fields.Add((status?.sourceCaptureGeneration ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add((status?.capturedTick ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add((status?.statusSnapshotRevision ?? 0).ToString(CultureInfo.InvariantCulture));
+        }
+
+        private static void AddChapterFingerprintFields(
+            List<string> fields,
+            MemoryChapterRow chapter)
+        {
+            fields.Add("chapter");
+            fields.Add(chapter?.chapterId ?? string.Empty);
+            fields.Add((chapter?.ordinal ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add(chapter?.phaseToken ?? string.Empty);
+            fields.Add((chapter?.openedTick ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add((chapter?.lastActivityTick ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add((chapter?.closedTick ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add(chapter?.closureReasonToken ?? string.Empty);
+            fields.Add(chapter != null && chapter.closed ? "1" : "0");
+        }
+
         private static void AddBlockFingerprintFields(
             List<string> fields,
             MemoryBlockRow row)
         {
+            fields.Add("block");
             fields.Add(row?.recordHandle?.recordId ?? string.Empty);
+            fields.Add(RootHandleKey(row?.rootHandle));
+            fields.Add(row?.chapterId ?? string.Empty);
+            fields.Add(row?.kind ?? string.Empty);
+            fields.Add(row?.summaryRole ?? string.Empty);
+            fields.Add((row?.projectedCategoryMask ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add((row?.projectedImportanceMask ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add((row?.projectedHighestImportanceMask ?? 0)
+                .ToString(CultureInfo.InvariantCulture));
+            fields.Add((row?.originalTick ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add((row?.activityTick ?? 0).ToString(CultureInfo.InvariantCulture));
             fields.Add(row?.displayWording ?? string.Empty);
+            fields.Add(row?.primarySubjectLabel ?? string.Empty);
             fields.Add(row?.normalizedSearch ?? string.Empty);
+            fields.Add(row?.normalizedWholeSearch ?? string.Empty);
             fields.Add(row != null && row.playerEdited ? "1" : "0");
             fields.Add(row != null && row.suppressed ? "1" : "0");
+            fields.Add(row != null && row.canSuppress ? "1" : "0");
+            fields.Add(row != null && row.canSaveWording ? "1" : "0");
+            fields.Add(row != null && row.canUseOriginal ? "1" : "0");
+            fields.Add(row != null && row.canDevForget ? "1" : "0");
+            fields.Add((row?.lastAutomaticIncludedTick ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add((row?.automaticInclusionCount ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add(row?.providerExposureState ?? string.Empty);
+            fields.Add(row != null && row.rollingSummary ? "1" : "0");
+            fields.Add(row != null && row.closedSummary ? "1" : "0");
+            fields.Add(row != null && row.ageUnknown ? "1" : "0");
             fields.Add((row?.targetStructuralRevision ?? 0)
                 .ToString(CultureInfo.InvariantCulture));
             fields.Add((row?.projectedNextExpiryTick ?? long.MaxValue)
                 .ToString(CultureInfo.InvariantCulture));
+            for (int index = 0; row?.summaryContributions != null
+                && index < row.summaryContributions.Count; index++)
+                AddSummaryContributionFingerprintFields(fields, row.summaryContributions[index]);
+        }
+
+        private static void AddSummaryContributionFingerprintFields(
+            List<string> fields,
+            MemorySummaryContributionDescriptor contribution)
+        {
+            fields.Add("contribution");
+            fields.Add((contribution?.sourceOrdinal ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add((contribution?.categoryMask ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add((contribution?.importanceMask ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add((contribution?.originalTick ?? 0).ToString(CultureInfo.InvariantCulture));
+            fields.Add((contribution?.nextExpiryTick ?? long.MaxValue)
+                .ToString(CultureInfo.InvariantCulture));
+            fields.Add(contribution != null && contribution.ageUnknown ? "1" : "0");
+            fields.Add(contribution?.browsePreview ?? string.Empty);
+            AddStringListFingerprintFields(fields, "search", contribution?.searchFields);
+            AddStringListFingerprintFields(fields, "fact", contribution?.factDescriptors);
+            AddStringListFingerprintFields(fields, "subject", contribution?.subjectDescriptors);
+            AddStringListFingerprintFields(fields, "provenance", contribution?.provenanceDescriptors);
+        }
+
+        private static void AddStringListFingerprintFields(
+            List<string> fields,
+            string marker,
+            List<string> values)
+        {
+            fields.Add(marker ?? string.Empty);
+            fields.Add((values?.Count ?? 0).ToString(CultureInfo.InvariantCulture));
+            for (int index = 0; values != null && index < values.Count; index++)
+                fields.Add(values[index] ?? string.Empty);
         }
 
         private static string CultureFingerprint(MemoryOwnerCultureDto culture)
@@ -1421,70 +2604,67 @@ namespace PawnDiary
                 culture.adoptedDisplayLabel);
         }
 
-        private long ResolveLibraryPublication(
-            Dictionary<string, MemoryLibraryPublication> cache,
-            string fingerprint,
-            long expectedRevision)
-        {
-            if (expectedRevision < 0) return 0;
-            if (cache.TryGetValue(fingerprint, out MemoryLibraryPublication existing))
-                return expectedRevision == 0 || expectedRevision == existing.revision
-                    ? existing.revision : 0;
-            if (expectedRevision > 0) return 0;
-            return AllocateLibraryPublication(cache, fingerprint);
-        }
-
-        private long ResolveLibraryPublicationWithContent(
+        private MemoryLibraryPublication ResolveCompleteLibraryPublication(
             Dictionary<string, MemoryLibraryPublication> cache,
             string streamFingerprint,
             string contentFingerprint,
-            long expectedRevision)
+            string ownerKey,
+            MemoryLibraryOwnerIndexSnapshot ownerSnapshot,
+            long expectedRevision,
+            long nextDayBoundary,
+            long ttlValidUntilTickExclusive,
+            string textContent)
         {
-            if (expectedRevision < 0) return 0;
+            if (cache == null || expectedRevision < 0) return null;
             if (cache.TryGetValue(streamFingerprint, out MemoryLibraryPublication existing))
             {
-                if (!string.Equals(existing.fingerprint, contentFingerprint,
-                    StringComparison.Ordinal))
-                {
-                    if (expectedRevision > 0) return 0;
-                    cache.Remove(streamFingerprint);
-                    return AllocateLibraryPublication(
-                        cache, streamFingerprint, contentFingerprint);
-                }
-                return expectedRevision == 0 || expectedRevision == existing.revision
-                    ? existing.revision : 0;
+                if (expectedRevision > 0)
+                    return existing.revision == expectedRevision ? existing : null;
+                if (string.Equals(existing.fingerprint, contentFingerprint,
+                    StringComparison.Ordinal)) return existing;
+                cache.Remove(streamFingerprint);
             }
-            if (expectedRevision > 0) return 0;
-            return AllocateLibraryPublication(cache, streamFingerprint, contentFingerprint);
-        }
+            if (expectedRevision > 0) return null;
 
-        private long AllocateLibraryPublication(
-            Dictionary<string, MemoryLibraryPublication> cache,
-            string fingerprint)
-        {
-            return AllocateLibraryPublication(cache, fingerprint, fingerprint);
-        }
-
-        private long AllocateLibraryPublication(
-            Dictionary<string, MemoryLibraryPublication> cache,
-            string cacheKey,
-            string contentFingerprint)
-        {
-            if (cache.TryGetValue(cacheKey, out MemoryLibraryPublication existing))
-                return existing.revision;
-            int cap = Math.Max(1, (int)ReadCapacityLong("cachedOwnerStates", 4, 8));
-            if (cache.Count >= cap) cache.Clear();
+            // One most-recent stream of each kind per cached owner. Eviction makes every positive
+            // continuation for the superseded stream Stale without retaining history.
+            List<string> superseded = new List<string>();
+            foreach (KeyValuePair<string, MemoryLibraryPublication> pair in cache)
+                if (string.Equals(pair.Value?.ownerKey, ownerKey, StringComparison.Ordinal))
+                    superseded.Add(pair.Key);
+            for (int index = 0; index < superseded.Count; index++) cache.Remove(superseded[index]);
             if (!memoryLibraryClock.TryAllocate(out long revision))
             {
-                memoryLibraryRevisionSaturated = true;
-                return 0;
+                return null;
             }
-            cache[cacheKey] = new MemoryLibraryPublication
+            MemoryLibraryPublication published = new MemoryLibraryPublication
             {
-                fingerprint = contentFingerprint,
-                revision = revision
+                fingerprint = contentFingerprint ?? string.Empty,
+                revision = revision,
+                ownerKey = ownerKey ?? string.Empty,
+                ownerSnapshot = ownerSnapshot,
+                directoryRevision = memoryLibraryDirectoryRevision,
+                committedSettingsRevision = MemoryEffectivePolicyProvider.PublicationRevision,
+                languageDisplayRevision = memoryLibraryLanguageDisplayRevision,
+                ttlDayRevision = Math.Max(0, Find.TickManager?.TicksGame ?? 0) / 60000L,
+                nextDayBoundary = nextDayBoundary,
+                ttlValidUntilTickExclusive = ttlValidUntilTickExclusive,
+                textContent = textContent ?? string.Empty
             };
-            return revision;
+            cache[streamFingerprint] = published;
+            return published;
+        }
+
+        private bool LibraryPublicationExpiredOrSuperseded(
+            MemoryLibraryPublication publication)
+        {
+            if (publication == null) return true;
+            long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            return now >= publication.ttlValidUntilTickExclusive
+                || publication.committedSettingsRevision
+                    != MemoryEffectivePolicyProvider.PublicationRevision
+                || !ReferenceEquals(memoryLibraryObservedLanguage, LanguageDatabase.activeLanguage)
+                || publication.ttlDayRevision != now / 60000L;
         }
 
         private string ListQueryFingerprint(
@@ -1536,6 +2716,8 @@ namespace PawnDiary
                 blockTextUtf16Units = (int)ReadCapacityLong("blockWordingUnits", 240, 1200),
                 importedPreviewUtf16Units = (int)ReadCapacityTuplePart(
                     "importedPreviewChunkUnits", 0, 240, 1000),
+                importedSearchUtf16Units = (int)ReadCapacityLong(
+                    "importedTextUnits", 2000, 8000),
                 importedTextChunkUtf16Units = (int)ReadCapacityTuplePart(
                     "importedPreviewChunkUnits", 1, 1000, 4000),
                 commandEntries = (int)ReadCapacityLong("libraryCommandEntries", 32, 128)
@@ -1559,28 +2741,34 @@ namespace PawnDiary
             };
         }
 
-        private bool TryFindImportedRow(
+        private string ResolveImportedRow(
             MemoryArchiveHandle handle,
             out SavedImportedMemoryRow row,
             out long structuralRevision)
         {
             row = null;
             structuralRevision = 0;
-            if (handle == null || string.IsNullOrWhiteSpace(handle.archiveRecordId)) return false;
+            if (!MemoryLibraryPolicy.ValidArchiveHandle(handle))
+                return MemoryLibraryStatuses.Invalid;
             if (handle.archiveScopeToken == MemoryLibraryScopes.UnresolvedImported
                 && string.IsNullOrEmpty(handle.exactOwnerPawnIdOrEmpty))
             {
                 row = FindImported(unresolvedOwnerArchiveRows, handle.archiveRecordId);
                 structuralRevision = unresolvedArchiveStructuralRevision;
-                return row != null;
+                return row != null ? MemoryLibraryStatuses.Ready : MemoryLibraryStatuses.Missing;
             }
             if (handle.archiveScopeToken != MemoryLibraryScopes.Active
-                && handle.archiveScopeToken != MemoryLibraryScopes.ArchiveOnly) return false;
+                && handle.archiveScopeToken != MemoryLibraryScopes.ArchiveOnly)
+                return MemoryLibraryStatuses.Invalid;
             PawnKnowledgeState owner = FindCurrentMemoryEnvelope(handle.exactOwnerPawnIdOrEmpty);
-            if (owner == null) return false;
+            if (owner == null) return MemoryLibraryStatuses.Missing;
+            string exactScope = owner.archiveOnly
+                ? MemoryLibraryScopes.ArchiveOnly : MemoryLibraryScopes.Active;
+            if (!string.Equals(handle.archiveScopeToken, exactScope, StringComparison.Ordinal))
+                return MemoryLibraryStatuses.Invalid;
             row = FindImported(owner.importedArchiveRows, handle.archiveRecordId);
             structuralRevision = owner.structuralRevision;
-            return row != null;
+            return row != null ? MemoryLibraryStatuses.Ready : MemoryLibraryStatuses.Missing;
         }
 
         private static SavedImportedMemoryRow FindImported(

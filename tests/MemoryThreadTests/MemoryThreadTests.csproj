@@ -30,6 +30,7 @@
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryThreadRoutingPolicy.cs" Link="MemoryThreadRoutingPolicy.cs" />
     <Compile Include="..\..\Source\Settings\MemoryPolicyNormalizer.cs" Link="MemoryPolicyNormalizer.cs" />
     <Compile Include="..\..\Source\Settings\MemoryEffectivePolicyProvider.cs" Link="MemoryEffectivePolicyProvider.cs" />
+    <Compile Include="..\..\Source\Settings\MemorySettingsCommitPolicy.cs" Link="MemorySettingsCommitPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryLibraryContracts.cs" Link="MemoryLibraryContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryLibraryPolicy.cs" Link="MemoryLibraryPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryLibraryIndexPolicy.cs" Link="MemoryLibraryIndexPolicy.cs" />

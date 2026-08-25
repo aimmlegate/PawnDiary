@@ -218,16 +218,35 @@ namespace PawnDiary
             }
 
             lastSettingsWritePersisted = true;
-            if (!MemoryEffectivePolicyProvider.Publish(memoryCommit.snapshot))
-            {
-                Log.Error("[Pawn Diary] Persisted memory settings could not be published in-process.");
-            }
-            else
-            {
-                DiaryGameComponent.Instance?.ReconcilePublishedMemoryPolicy(memoryCommit.snapshot);
-            }
+            // Persistence is the linearization point. Initialize resumable non-memory work before
+            // touching the independently durable game component so a component exception cannot
+            // suppress lane/debug/event-limit/title/reader-mode application.
             BeginPostCommitSideEffects(write.verifiedSha256, wasReaderWindowMode);
-            ResumePostCommitSideEffects();
+            try
+            {
+                if (!MemoryEffectivePolicyProvider.Publish(memoryCommit.snapshot))
+                {
+                    Log.Error("[Pawn Diary] Persisted memory settings could not be published in-process.");
+                }
+                else
+                {
+                    try
+                    {
+                        DiaryGameComponent.Instance?.ReconcilePublishedMemoryPolicy(
+                            memoryCommit.snapshot);
+                    }
+                    catch (System.Exception exception)
+                    {
+                        // The saved fingerprint mismatch is the idempotent retry marker. The settings
+                        // file and published runtime policy stay committed.
+                        Log.Error("[Pawn Diary] Memory policy reconciliation will retry: " + exception);
+                    }
+                }
+            }
+            finally
+            {
+                ResumePostCommitSideEffects();
+            }
         }
 
         /// <summary>Routes non-UI settings writes through the same durable transaction.</summary>

@@ -356,23 +356,23 @@ namespace PawnDiary
             int newCapture = draft.saveNewMemories ? draft.memoryCategoryMask : 0;
             result.changedCaptureMask = oldCapture ^ newCapture;
             if ((result.changedCaptureMask & MemoryCategoryBits.Personal) != 0)
-                candidate.captureInvalidationGenerationPersonal = AdvanceGeneration(
+                candidate.captureInvalidationGenerationPersonal = AdvanceSaturatingGeneration(
                     candidate.captureInvalidationGenerationPersonal);
             if ((result.changedCaptureMask & MemoryCategoryBits.Relationships) != 0)
-                candidate.captureInvalidationGenerationRelationships = AdvanceGeneration(
+                candidate.captureInvalidationGenerationRelationships = AdvanceSaturatingGeneration(
                     candidate.captureInvalidationGenerationRelationships);
             if ((result.changedCaptureMask & MemoryCategoryBits.Family) != 0)
-                candidate.captureInvalidationGenerationFamily = AdvanceGeneration(
+                candidate.captureInvalidationGenerationFamily = AdvanceSaturatingGeneration(
                     candidate.captureInvalidationGenerationFamily);
             if ((result.changedCaptureMask & MemoryCategoryBits.Factions) != 0)
-                candidate.captureInvalidationGenerationFactions = AdvanceGeneration(
+                candidate.captureInvalidationGenerationFactions = AdvanceSaturatingGeneration(
                     candidate.captureInvalidationGenerationFactions);
 
             bool oldOptional = prior.AllowsOptionalRequests;
             bool newOptional = draft.AllowsOptionalRequests;
             result.optionalGenerationChanged = oldOptional != newOptional;
             if (result.optionalGenerationChanged)
-                candidate.optionalRequestInvalidationGeneration = AdvanceGeneration(
+                candidate.optionalRequestInvalidationGeneration = AdvanceSaturatingGeneration(
                     candidate.optionalRequestInvalidationGeneration);
 
             result.candidate = candidate;
@@ -497,7 +497,8 @@ namespace PawnDiary
             return value <= 0 ? 1 : value;
         }
 
-        private static long AdvanceGeneration(long value)
+        /// <summary>Advances a positive generation, retaining Max as a permanent sentinel.</summary>
+        public static long AdvanceSaturatingGeneration(long value)
         {
             value = PositiveGeneration(value);
             return value == long.MaxValue ? long.MaxValue : value + 1;

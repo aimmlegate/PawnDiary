@@ -8,6 +8,8 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Security.Cryptography;
+using System.Text;
+using System.Threading;
 using System.Xml;
 using Verse;
 
@@ -109,20 +111,14 @@ namespace PawnDiary
                     throw new InvalidDataException("The staged settings XML is incomplete.");
                 result.verifiedSha256 = Sha256(stagePath);
 
-                // Refuse to overwrite a settings writer that won while Scribe was staging. This is
-                // deliberately checked after every potentially slow serialization/verification step.
-                bool currentExists = File.Exists(canonicalPath);
-                if (currentExists != predecessorExisted
-                    || (currentExists && !string.Equals(
-                        Sha256(canonicalPath), predecessorSha256, StringComparison.Ordinal)))
-                    throw new IOException("The canonical settings file changed during publication.");
-
-                // Both operations are same-directory and therefore same-volume. File.Replace supplies
-                // the atomic overwrite path; File.Move is the create-only equivalent for first run.
-                if (File.Exists(canonicalPath))
-                    File.Replace(stagePath, canonicalPath, null);
-                else
-                    File.Move(stagePath, canonicalPath);
+                // The platform adapter serializes the compare-and-commit window across Pawn Diary
+                // processes. It rechecks the predecessor while owning that mutex and performs only the
+                // exact existing/absent primitive selected by the captured state.
+                MemorySettingsPlatformAdapter.Commit(
+                    canonicalPath,
+                    stagePath,
+                    predecessorExisted,
+                    predecessorSha256);
                 stagePath = string.Empty;
                 result.persisted = true;
             }
@@ -148,6 +144,69 @@ namespace PawnDiary
         }
 
         private static string Sha256(string path)
+        {
+            using (SHA256 hash = SHA256.Create())
+            using (FileStream stream = File.OpenRead(path))
+                return BitConverter.ToString(hash.ComputeHash(stream)).Replace("-", string.Empty);
+        }
+    }
+
+    /// <summary>
+    /// Windows same-volume settings commit boundary. A path-derived named mutex extends the in-process
+    /// lock across game processes, so every Pawn Diary writer compares the predecessor and replaces or
+    /// creates within one serialized platform operation.
+    /// </summary>
+    internal static class MemorySettingsPlatformAdapter
+    {
+        internal static void Commit(
+            string canonicalPath,
+            string stagePath,
+            bool predecessorExisted,
+            string predecessorSha256)
+        {
+            string mutexName = "Local\\PawnDiary.MemorySettings." + Sha256Text(
+                Path.GetFullPath(canonicalPath).ToUpperInvariant());
+            using (Mutex mutex = new Mutex(false, mutexName))
+            {
+                bool acquired = false;
+                try
+                {
+                    try { acquired = mutex.WaitOne(0); }
+                    catch (AbandonedMutexException) { acquired = true; }
+                    if (!acquired)
+                        throw new IOException("Another Pawn Diary settings commit is in progress.");
+
+                    bool currentExists = File.Exists(canonicalPath);
+                    string currentSha256 = currentExists
+                        ? Sha256File(canonicalPath) : string.Empty;
+                    if (!MemorySettingsCommitPolicy.PredecessorMatches(
+                            predecessorExisted,
+                            predecessorSha256,
+                            currentExists,
+                            currentSha256))
+                        throw new IOException(
+                            "The canonical settings file changed during publication.");
+
+                    if (predecessorExisted)
+                        File.Replace(stagePath, canonicalPath, null);
+                    else
+                        File.Move(stagePath, canonicalPath);
+                }
+                finally
+                {
+                    if (acquired) mutex.ReleaseMutex();
+                }
+            }
+        }
+
+        private static string Sha256Text(string value)
+        {
+            using (SHA256 hash = SHA256.Create())
+                return BitConverter.ToString(hash.ComputeHash(
+                    Encoding.UTF8.GetBytes(value ?? string.Empty))).Replace("-", string.Empty);
+        }
+
+        private static string Sha256File(string path)
         {
             using (SHA256 hash = SHA256.Create())
             using (FileStream stream = File.OpenRead(path))

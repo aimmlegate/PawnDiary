@@ -33,6 +33,8 @@ namespace PawnDiary
                 latest = Math.Max(latest, root.header.latestActivityTick);
                 edited = 0;
                 suppressed = 0;
+                int highestImportance = 0;
+                long rootEarliest = long.MaxValue;
                 for (int childIndex = 0; childIndex < root.children.Count; childIndex++)
                 {
                     MemoryBlockRow child = root.children[childIndex];
@@ -41,11 +43,16 @@ namespace PawnDiary
                     if (child.suppressed) suppressed++;
                     latest = Math.Max(latest, Math.Max(child.activityTick, child.originalTick));
                     earliest = Math.Min(earliest, child.projectedNextExpiryTick);
+                    rootEarliest = Math.Min(rootEarliest, child.projectedNextExpiryTick);
+                    highestImportance = HighestImportance(
+                        highestImportance, child.projectedHighestImportanceMask);
                 }
                 root.header.targetCountedVisibleBlockCount = CountNonRolling(root.children);
                 root.header.manageableMemoryCount = root.children.Count;
                 root.header.editedCount = edited;
                 root.header.suppressedCount = suppressed;
+                root.header.highestImportanceMask = highestImportance;
+                root.rootEarliestFiniteExpiryTickExclusive = rootEarliest;
             }
             for (int index = 0; index < result.standalone.Count; index++)
             {
@@ -172,9 +179,9 @@ namespace PawnDiary
             List<MemoryLibraryListRow> eligible = new List<MemoryLibraryListRow>();
             List<MemoryLibraryListRow> matched = new List<MemoryLibraryListRow>();
             if (query.viewTag == MemoryLibraryViews.Threads)
-                SelectRoots(snapshot.roots, query.filters, search, eligible, matched);
+                SelectRoots(snapshot.roots, query.filters, search, cap, eligible, matched);
             else if (query.viewTag == MemoryLibraryViews.Standalone)
-                SelectStandalone(snapshot.standalone, query.filters, search, eligible, matched);
+                SelectStandalone(snapshot.standalone, query.filters, search, cap, eligible, matched);
             else if (query.viewTag == MemoryLibraryViews.Imported)
                 SelectImported(snapshot.imported, search, eligible, matched);
             else return result;
@@ -229,18 +236,18 @@ namespace PawnDiary
             if (root == null) { result.status = MemoryLibraryStatuses.Missing; return result; }
             string search = MemoryLibraryPolicy.NormalizeSearch(
                 query.search, cap.searchScalars, cap.searchUtf16Units);
+            bool headerHit = MemoryLibraryPolicy.SearchMatches(
+                root.header?.normalizedSearch, search);
             List<MemoryBlockRow> filtered = new List<MemoryBlockRow>();
-            long earliest = long.MaxValue;
             bool allSuppressed = root.children.Count > 0;
             for (int index = 0; index < root.children.Count; index++)
             {
                 MemoryBlockRow row = root.children[index];
                 if (row != null && !row.suppressed) allSuppressed = false;
-                if (MemoryLibraryPolicy.MatchesFilters(row, query.filters)
-                    && MemoryLibraryPolicy.SearchMatches(row.normalizedSearch, search))
+                if (MemoryLibraryPolicy.TryProjectRow(
+                    row, query.filters, search, headerHit, cap, out MemoryBlockRow projected))
                 {
-                    filtered.Add(row);
-                    earliest = Math.Min(earliest, row.projectedNextExpiryTick);
+                    filtered.Add(projected);
                 }
             }
             MemoryLibraryCursorPlan cursor = MemoryLibraryPolicy.NormalizeRowCursor(
@@ -261,7 +268,7 @@ namespace PawnDiary
             result.hasMore = cursor.hasMore;
             result.detailSnapshotRevision = detailRevision;
             result.ttlValidUntilTickExclusive = MemoryLibraryPolicy.TtlValidUntil(
-                nextDayBoundary, earliest);
+                nextDayBoundary, root.rootEarliestFiniteExpiryTickExclusive);
             HashSet<string> includedChapters = new HashSet<string>(StringComparer.Ordinal);
             for (int index = 0; index < cursor.returnedCount; index++)
             {
@@ -273,8 +280,9 @@ namespace PawnDiary
                     MemoryChapterRow chapter = FindChapter(root.chapters, block.chapterId);
                     if (chapter == null) break;
                     MemoryChapterRow context = CopyChapter(chapter);
-                    context.continuedFromPrevious = cursor.start > 0;
-                    context.continuesInNext = cursor.hasMore;
+                    context.continuedFromPrevious = cursor.start > 0
+                        && string.Equals(filtered[cursor.start - 1]?.chapterId,
+                            block.chapterId, StringComparison.Ordinal);
                     context.returnedChildStart = result.blocks.Count;
                     context.returnedChildCount = 0;
                     result.chapters.Add(context);
@@ -291,6 +299,13 @@ namespace PawnDiary
             result.returnedCount = result.blocks.Count;
             result.nextStart = checked(result.returnedStart + result.returnedCount);
             result.hasMore = result.nextStart < filtered.Count;
+            for (int index = 0; index < result.chapters.Count; index++)
+            {
+                MemoryChapterRow chapter = result.chapters[index];
+                chapter.continuesInNext = result.hasMore
+                    && string.Equals(filtered[result.nextStart]?.chapterId,
+                        chapter.chapterId, StringComparison.Ordinal);
+            }
             return result;
         }
 
@@ -298,6 +313,7 @@ namespace PawnDiary
             List<MemoryLibraryRootIndexInput> roots,
             MemoryLibraryFilters filters,
             string search,
+            MemoryLibraryLimits limits,
             List<MemoryLibraryListRow> eligible,
             List<MemoryLibraryListRow> matched)
         {
@@ -307,12 +323,18 @@ namespace PawnDiary
                 if (root?.header == null) continue;
                 bool hasFiltered = false;
                 bool childSearch = false;
+                bool headerHit = MemoryLibraryPolicy.SearchMatches(
+                    root.header.normalizedSearch, search);
                 for (int child = 0; child < root.children.Count; child++)
                 {
                     MemoryBlockRow row = root.children[child];
-                    if (!MemoryLibraryPolicy.MatchesFilters(row, filters)) continue;
+                    if (!MemoryLibraryPolicy.TryProjectRow(
+                        row, filters, string.Empty, true, limits,
+                        out MemoryBlockRow ignored)) continue;
                     hasFiltered = true;
-                    if (MemoryLibraryPolicy.SearchMatches(row.normalizedSearch, search))
+                    if (MemoryLibraryPolicy.TryProjectRow(
+                        row, filters, search, headerHit, limits,
+                        out ignored))
                         childSearch = true;
                 }
                 if (!hasFiltered) continue;
@@ -323,8 +345,7 @@ namespace PawnDiary
                 };
                 eligible.Add(item);
                 if (string.IsNullOrEmpty(search)
-                    || childSearch
-                    || MemoryLibraryPolicy.SearchMatches(root.header.normalizedSearch, search))
+                    || childSearch || headerHit)
                     matched.Add(item);
             }
         }
@@ -333,20 +354,30 @@ namespace PawnDiary
             List<MemoryBlockRow> rows,
             MemoryLibraryFilters filters,
             string search,
+            MemoryLibraryLimits limits,
             List<MemoryLibraryListRow> eligible,
             List<MemoryLibraryListRow> matched)
         {
             for (int index = 0; rows != null && index < rows.Count; index++)
             {
                 MemoryBlockRow row = rows[index];
-                if (!MemoryLibraryPolicy.MatchesFilters(row, filters)) continue;
+                if (!MemoryLibraryPolicy.TryProjectRow(
+                    row, filters, string.Empty, true, limits,
+                    out MemoryBlockRow eligibleProjection)) continue;
                 MemoryLibraryListRow item = new MemoryLibraryListRow
                 {
                     tag = MemoryLibraryRowTags.Standalone,
-                    standalone = row
+                    standalone = eligibleProjection
                 };
                 eligible.Add(item);
-                if (MemoryLibraryPolicy.SearchMatches(row.normalizedSearch, search)) matched.Add(item);
+                if (MemoryLibraryPolicy.TryProjectRow(
+                    row, filters, search, false, limits,
+                    out MemoryBlockRow matchedProjection))
+                    matched.Add(new MemoryLibraryListRow
+                    {
+                        tag = MemoryLibraryRowTags.Standalone,
+                        standalone = matchedProjection
+                    });
             }
         }
 
@@ -472,6 +503,19 @@ namespace PawnDiary
             for (int index = 0; rows != null && index < rows.Count; index++)
                 if (rows[index] != null && !rows[index].rollingSummary) result++;
             return result;
+        }
+
+        private static int HighestImportance(int left, int right)
+        {
+            if ((left & MemoryLibraryPolicy.ImportanceImportant) != 0
+                || (right & MemoryLibraryPolicy.ImportanceImportant) != 0)
+                return MemoryLibraryPolicy.ImportanceImportant;
+            if ((left & MemoryLibraryPolicy.ImportanceRegular) != 0
+                || (right & MemoryLibraryPolicy.ImportanceRegular) != 0)
+                return MemoryLibraryPolicy.ImportanceRegular;
+            return (left & MemoryLibraryPolicy.ImportanceMinor) != 0
+                || (right & MemoryLibraryPolicy.ImportanceMinor) != 0
+                ? MemoryLibraryPolicy.ImportanceMinor : 0;
         }
 
         private static List<T> Copy<T>(List<T> source)

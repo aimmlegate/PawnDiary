@@ -23,6 +23,7 @@ namespace PawnDiary
         public int frozenDisplayLabelUtf16Units = 80;
         public int blockTextUtf16Units = 480;
         public int importedPreviewUtf16Units = 240;
+        public int importedSearchUtf16Units = 2000;
         public int importedTextChunkUtf16Units = 1000;
         public int commandEntries = 32;
     }
@@ -256,6 +257,13 @@ namespace PawnDiary
             return result;
         }
 
+        /// <summary>Normalizes text page size so a requested one-unit page can carry a scalar pair.</summary>
+        public static int NormalizeTextCount(int requestedCount, int countCap)
+        {
+            if (requestedCount <= 0 || countCap < 2) return 0;
+            return requestedCount == 1 ? 2 : Math.Min(requestedCount, countCap);
+        }
+
         /// <summary>Shared scalar-safe Imported text cursor.</summary>
         public static MemoryLibraryTextCursorPlan NormalizeTextCursor(
             string completeText,
@@ -269,7 +277,7 @@ namespace PawnDiary
             if (start < 0 || start > text.Length || requestedCount <= 0 || countCap < 2
                 || expectedRevision < 0 || (expectedRevision == 0 && start != 0)
                 || SplitsScalar(text, start)) return result;
-            int count = requestedCount == 1 ? 2 : Math.Min(requestedCount, countCap);
+            int count = NormalizeTextCount(requestedCount, countCap);
             int end;
             try { end = Math.Min(text.Length, checked(start + count)); }
             catch (OverflowException) { return result; }
@@ -278,7 +286,7 @@ namespace PawnDiary
             result.start = start;
             result.count = end - start;
             result.end = end;
-            result.previousStart = Math.Max(0, start - countCap);
+            result.previousStart = Math.Max(0, start - Math.Max(2, count));
             if (SplitsScalar(text, result.previousStart)) result.previousStart--;
             result.hasPrevious = start > 0;
             result.hasMore = end < text.Length;
@@ -325,6 +333,42 @@ namespace PawnDiary
                 && !string.IsNullOrWhiteSpace(key.epochToken);
         }
 
+        /// <summary>Validates the three exact current Imported handle shapes.</summary>
+        public static bool ValidArchiveHandle(MemoryArchiveHandle handle)
+        {
+            if (handle == null || string.IsNullOrWhiteSpace(handle.archiveRecordId)) return false;
+            if (handle.archiveScopeToken == MemoryLibraryScopes.UnresolvedImported)
+                return string.IsNullOrEmpty(handle.exactOwnerPawnIdOrEmpty);
+            return (handle.archiveScopeToken == MemoryLibraryScopes.Active
+                    || handle.archiveScopeToken == MemoryLibraryScopes.ArchiveOnly)
+                && !string.IsNullOrWhiteSpace(handle.exactOwnerPawnIdOrEmpty);
+        }
+
+        /// <summary>Plans one per-source compatibility revision without wrapping Max.</summary>
+        public static bool TryNextCompatibilityRevision(
+            long existingRevision,
+            bool byteEquivalent,
+            out long revision)
+        {
+            if (existingRevision <= 0)
+            {
+                revision = 1;
+                return true;
+            }
+            if (byteEquivalent)
+            {
+                revision = existingRevision;
+                return true;
+            }
+            if (existingRevision == long.MaxValue)
+            {
+                revision = 0;
+                return false;
+            }
+            revision = existingRevision + 1;
+            return true;
+        }
+
         public static int ImportanceMask(string importance)
         {
             if (string.Equals(importance, "Minor", StringComparison.OrdinalIgnoreCase))
@@ -340,8 +384,10 @@ namespace PawnDiary
         {
             if (row == null) return false;
             MemoryLibraryFilters value = filters ?? new MemoryLibraryFilters();
+            int importanceMask = row.projectedImportanceMask != 0
+                ? row.projectedImportanceMask : row.projectedHighestImportanceMask;
             if (value.importanceMask != 0
-                && (row.projectedHighestImportanceMask & value.importanceMask) == 0) return false;
+                && (importanceMask & value.importanceMask) == 0) return false;
             if (value.categoryMask != 0
                 && (row.projectedCategoryMask & value.categoryMask) == 0) return false;
             switch (value.stateToken ?? "all")
@@ -352,6 +398,182 @@ namespace PawnDiary
                 case "unsuppressed": return !row.suppressed;
                 default: return false;
             }
+        }
+
+        /// <summary>
+        /// Returns the exact row projection selected by filter/search. Summary contributions are
+        /// intersected rather than treating the container's highest importance as every contribution.
+        /// </summary>
+        public static bool TryProjectRow(
+            MemoryBlockRow row,
+            MemoryLibraryFilters filters,
+            string normalizedSearch,
+            bool wholeOrHeaderSearchHit,
+            MemoryLibraryLimits limits,
+            out MemoryBlockRow projected)
+        {
+            projected = null;
+            if (row == null || !MatchesState(row, filters)) return false;
+            if (row.summaryContributions == null || row.summaryContributions.Count == 0)
+            {
+                if (!MatchesFilters(row, filters)) return false;
+                string legacySearch = string.IsNullOrEmpty(row.normalizedWholeSearch)
+                    ? row.normalizedSearch : row.normalizedWholeSearch;
+                if (!wholeOrHeaderSearchHit && !SearchMatches(legacySearch, normalizedSearch))
+                    return false;
+                projected = row;
+                return true;
+            }
+
+            MemoryLibraryFilters value = filters ?? new MemoryLibraryFilters();
+            bool contributionFiltersActive = value.importanceMask != 0
+                || value.categoryMask != 0;
+            bool wholeSearch = wholeOrHeaderSearchHit || string.IsNullOrEmpty(normalizedSearch)
+                || SearchMatches(row.normalizedWholeSearch, normalizedSearch);
+            if (!contributionFiltersActive && wholeSearch)
+            {
+                projected = row;
+                return true;
+            }
+            List<MemorySummaryContributionDescriptor> eligible =
+                new List<MemorySummaryContributionDescriptor>();
+            for (int index = 0; index < row.summaryContributions.Count; index++)
+            {
+                MemorySummaryContributionDescriptor contribution = row.summaryContributions[index];
+                if (contribution == null) continue;
+                if (value.importanceMask != 0
+                    && (contribution.importanceMask & value.importanceMask) == 0) continue;
+                if (value.categoryMask != 0
+                    && (contribution.categoryMask & value.categoryMask) == 0) continue;
+                eligible.Add(contribution);
+            }
+            if (eligible.Count == 0) return false;
+
+            bool wholeHit = wholeSearch;
+            List<MemorySummaryContributionDescriptor> selected = eligible;
+            if (!wholeHit)
+            {
+                selected = new List<MemorySummaryContributionDescriptor>();
+                for (int index = 0; index < eligible.Count; index++)
+                    if (ContributionSearchMatches(eligible[index], normalizedSearch, limits))
+                        selected.Add(eligible[index]);
+                if (selected.Count == 0) return false;
+            }
+            projected = ProjectSummary(row, selected, limits);
+            return true;
+        }
+
+        private static bool MatchesState(MemoryBlockRow row, MemoryLibraryFilters filters)
+        {
+            string state = filters?.stateToken ?? "all";
+            switch (state)
+            {
+                case "all": return true;
+                case "edited": return row.playerEdited;
+                case "suppressed": return row.suppressed;
+                case "unsuppressed": return !row.suppressed;
+                default: return false;
+            }
+        }
+
+        private static bool ContributionSearchMatches(
+            MemorySummaryContributionDescriptor contribution,
+            string normalizedSearch,
+            MemoryLibraryLimits limits)
+        {
+            if (string.IsNullOrEmpty(normalizedSearch)) return true;
+            MemoryLibraryLimits cap = limits ?? new MemoryLibraryLimits();
+            for (int index = 0; contribution?.searchFields != null
+                && index < contribution.searchFields.Count; index++)
+            {
+                string scratch = NormalizeSearch(
+                    contribution.searchFields[index], int.MaxValue,
+                    cap.normalizedFieldUtf16Units);
+                if (SearchMatches(scratch, normalizedSearch)) return true;
+            }
+            return false;
+        }
+
+        private static MemoryBlockRow ProjectSummary(
+            MemoryBlockRow source,
+            List<MemorySummaryContributionDescriptor> selected,
+            MemoryLibraryLimits limits)
+        {
+            MemoryBlockRow result = CopyRow(source);
+            result.summaryContributions = new List<MemorySummaryContributionDescriptor>(selected);
+            result.projectedCategoryMask = 0;
+            result.projectedImportanceMask = 0;
+            result.projectedHighestImportanceMask = 0;
+            result.originalTick = long.MaxValue;
+            result.activityTick = 0;
+            result.projectedNextExpiryTick = long.MaxValue;
+            List<string> preview = new List<string>();
+            for (int index = 0; index < selected.Count; index++)
+            {
+                MemorySummaryContributionDescriptor contribution = selected[index];
+                result.projectedCategoryMask |= contribution.categoryMask;
+                result.projectedImportanceMask |= contribution.importanceMask;
+                result.projectedHighestImportanceMask = HigherImportance(
+                    result.projectedHighestImportanceMask, contribution.importanceMask);
+                result.originalTick = Math.Min(result.originalTick, contribution.originalTick);
+                result.activityTick = Math.Max(result.activityTick, contribution.originalTick);
+                result.projectedNextExpiryTick = Math.Min(
+                    result.projectedNextExpiryTick, contribution.nextExpiryTick);
+                if (!string.IsNullOrWhiteSpace(contribution.browsePreview))
+                    preview.Add(contribution.browsePreview);
+            }
+            if (result.originalTick == long.MaxValue) result.originalTick = 0;
+            MemoryLibraryLimits cap = limits ?? new MemoryLibraryLimits();
+            result.displayWording = ClampUtf16CompleteScalar(
+                string.Join("; ", preview.ToArray()), cap.blockTextUtf16Units);
+            result.normalizedSearch = BuildSearchProjection(
+                preview, cap.normalizedFieldUtf16Units, cap.rowProjectionUtf16Units);
+            return result;
+        }
+
+        private static int HigherImportance(int left, int right)
+        {
+            if ((left & ImportanceImportant) != 0 || (right & ImportanceImportant) != 0)
+                return ImportanceImportant;
+            if ((left & ImportanceRegular) != 0 || (right & ImportanceRegular) != 0)
+                return ImportanceRegular;
+            return (left & ImportanceMinor) != 0 || (right & ImportanceMinor) != 0
+                ? ImportanceMinor : 0;
+        }
+
+        private static MemoryBlockRow CopyRow(MemoryBlockRow source)
+        {
+            return new MemoryBlockRow
+            {
+                recordHandle = source.recordHandle,
+                rootHandle = source.rootHandle,
+                chapterId = source.chapterId,
+                targetStructuralRevision = source.targetStructuralRevision,
+                kind = source.kind,
+                summaryRole = source.summaryRole,
+                projectedCategoryMask = source.projectedCategoryMask,
+                projectedImportanceMask = source.projectedImportanceMask,
+                projectedHighestImportanceMask = source.projectedHighestImportanceMask,
+                originalTick = source.originalTick,
+                activityTick = source.activityTick,
+                projectedNextExpiryTick = source.projectedNextExpiryTick,
+                displayWording = source.displayWording,
+                primarySubjectLabel = source.primarySubjectLabel,
+                playerEdited = source.playerEdited,
+                suppressed = source.suppressed,
+                canSuppress = source.canSuppress,
+                canSaveWording = source.canSaveWording,
+                canUseOriginal = source.canUseOriginal,
+                canDevForget = source.canDevForget,
+                lastAutomaticIncludedTick = source.lastAutomaticIncludedTick,
+                automaticInclusionCount = source.automaticInclusionCount,
+                providerExposureState = source.providerExposureState,
+                normalizedSearch = source.normalizedSearch,
+                normalizedWholeSearch = source.normalizedWholeSearch,
+                rollingSummary = source.rollingSummary,
+                closedSummary = source.closedSummary,
+                ageUnknown = source.ageUnknown
+            };
         }
 
         /// <summary>Future expiry transition; already-due/unknown/edited/Important yields Max.</summary>
