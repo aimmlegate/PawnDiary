@@ -34,6 +34,28 @@ namespace PawnDiary
         }
     }
 
+    /// <summary>Stable XML-owned chapter placement directives consumed by M7 admission.</summary>
+    internal static class MemoryChapterDirectiveTokens
+    {
+        public const string ContinueCurrent = "continue_current";
+        public const string CloseAfterCurrentEvent = "close_after_current_event";
+        public const string CloseAndStartWithCurrentEvent = "close_and_start_with_current_event";
+        public const string StartNewAfterClosedRoot = "start_new_after_closed_root";
+        public const string RemainStandalone = "remain_standalone";
+
+        public static bool IsKnown(string value)
+        {
+            return value == ContinueCurrent || value == CloseAfterCurrentEvent
+                || value == CloseAndStartWithCurrentEvent
+                || value == StartNewAfterClosedRoot || value == RemainStandalone;
+        }
+
+        public static bool ClosesChapter(string value)
+        {
+            return value == CloseAfterCurrentEvent || value == CloseAndStartWithCurrentEvent;
+        }
+    }
+
     /// <summary>One exact candidate collected by an impure adapter for a declared extractor.</summary>
     internal sealed class MemoryRouteCandidate
     {
@@ -267,6 +289,11 @@ namespace PawnDiary
                         fact.aggregationToken,
                         fact.canonicalValueKind)))
                 return "memory_contract_invalid_fact";
+            HashSet<string> factKinds = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; index < rule.memoryFacts.Count; index++)
+                if (string.IsNullOrWhiteSpace(rule.memoryFacts[index].factKind)
+                    || !factKinds.Add(rule.memoryFacts[index].factKind))
+                    return "memory_contract_duplicate_fact_category";
             if (rule.threadRoute != null && !IsValidThreadRoute(rule.threadRoute))
                 return "memory_contract_invalid_route";
             if (rule.promptConsumerIds == null || rule.promptConsumerIds.Count == 0
@@ -285,7 +312,13 @@ namespace PawnDiary
             if (route == null
                 || !MemoryContractTokens.IsKnownRootSubjectKind(route.subjectKind)
                 || route.equivalentExtractors == null
-                || route.equivalentExtractors.Count == 0)
+                || route.equivalentExtractors.Count == 0
+                || string.IsNullOrWhiteSpace(route.chapterPhasePolicy)
+                || !MemoryChapterDirectiveTokens.IsKnown(route.chapterDirective)
+                || (MemoryChapterDirectiveTokens.ClosesChapter(route.chapterDirective)
+                    ? !MemoryChapterTokens.IsKnownClosureReason(
+                        route.chapterClosureReasonToken)
+                    : !string.IsNullOrEmpty(route.chapterClosureReasonToken)))
             {
                 return false;
             }

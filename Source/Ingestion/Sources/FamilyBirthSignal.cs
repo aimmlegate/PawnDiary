@@ -71,7 +71,8 @@ namespace PawnDiary.Ingestion
                 writerPawns.Count > 1 ? writerPawns[1] : null,
                 FamilyBirthEventData.DefName,
                 BirthContextFormatter.Build(snapshot, writers),
-                snapshot.birthTick);
+                snapshot.birthTick,
+                DedupKey);
             return true;
         }
 

@@ -214,7 +214,8 @@ namespace PawnDiary.Ingestion
                     secondPawn,
                     payload.DefName,
                     BuildKnowledgeGameContext(),
-                    payload.Tick);
+                    payload.Tick,
+                    DedupKey);
                 return true;
             }
             return false;

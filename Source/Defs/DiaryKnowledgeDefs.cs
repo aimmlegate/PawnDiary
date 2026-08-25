@@ -47,8 +47,7 @@ namespace PawnDiary
         /// it; "{other}" and "{&lt;factKey&gt;}" placeholders are substituted at render time.</summary>
         public string lineTemplate;
 
-        // Behavior-inert unified-memory metadata frozen in M0. Current capture ignores these fields;
-        // M7 will activate their detached pure projection after the persistence backend exists.
+        // Unified-memory metadata seeded in M0 and activated by M7 factual capture.
         public string captureSourceToken;
         public string memoryKind;
         public string memoryCategory;
@@ -59,6 +58,7 @@ namespace PawnDiary
         public bool consolidationEligible;
         public List<string> promptConsumerIds = new List<string>();
         public bool authoritativePageOwned;
+        public List<string> authoritativeRelationDefNames = new List<string>();
 
         public override IEnumerable<string> ConfigErrors()
         {
@@ -123,6 +123,8 @@ namespace PawnDiary
             CopyStrings(constantSubjectKeys, rule.constantSubjectKeys);
             CopyStrings(factKeys, rule.factKeys);
             CopyMemoryTokensExact(promptConsumerIds, rule.promptConsumerIds);
+            CopyMemoryTokensExact(
+                authoritativeRelationDefNames, rule.authoritativeRelationDefNames);
             if (memoryFacts != null)
             {
                 for (int i = 0; i < memoryFacts.Count; i++)
@@ -147,6 +149,9 @@ namespace PawnDiary
                 {
                     subjectKind = threadRoute.subjectKind ?? string.Empty,
                     chapterPhasePolicy = threadRoute.chapterPhasePolicy ?? string.Empty,
+                    chapterDirective = threadRoute.chapterDirective ?? string.Empty,
+                    chapterClosureReasonToken =
+                        threadRoute.chapterClosureReasonToken ?? string.Empty,
                     fallbackLabelSource = threadRoute.fallbackLabelSource ?? string.Empty
                 };
                 if (threadRoute.equivalentExtractors != null)
@@ -253,6 +258,8 @@ namespace PawnDiary
         public string subjectKind;
         public List<string> equivalentExtractors = new List<string>();
         public string chapterPhasePolicy;
+        public string chapterDirective = MemoryChapterDirectiveTokens.ContinueCurrent;
+        public string chapterClosureReasonToken;
         public string fallbackLabelSource;
     }
 

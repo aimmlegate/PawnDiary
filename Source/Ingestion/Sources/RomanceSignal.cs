@@ -85,7 +85,8 @@ namespace PawnDiary.Ingestion
             }
 
             sink.CaptureEventKnowledgeWithoutPage(
-                pawn, otherPawn, relationDef.defName, BuildKnowledgeContext(), payload.Tick);
+                pawn, otherPawn, relationDef.defName, BuildKnowledgeContext(), payload.Tick,
+                DedupKey);
             return true;
         }
 

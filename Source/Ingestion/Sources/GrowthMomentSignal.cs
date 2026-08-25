@@ -88,7 +88,8 @@ namespace PawnDiary.Ingestion
                 ? supporter
                 : shape == GrowthWriterShape.SupporterSolo ? child : supporter;
             sink.CaptureEventKnowledgeWithoutPage(
-                writer, partner, GrowthMomentEventData.DefName, context, payload.Tick);
+                writer, partner, GrowthMomentEventData.DefName, context, payload.Tick,
+                DedupKey);
             return true;
         }
 

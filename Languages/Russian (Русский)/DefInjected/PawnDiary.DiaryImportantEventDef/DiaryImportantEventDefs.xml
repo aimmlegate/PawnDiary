@@ -94,4 +94,19 @@
   <Diary_ImpEvent_PersonaBondEnded.label>связь с оружием оборвана</Diary_ImpEvent_PersonaBondEnded.label>
   <Diary_ImpEvent_PersonaBondEnded.lineTemplate>связь с {persona_weapon_name} оборвана</Diary_ImpEvent_PersonaBondEnded.lineTemplate>
 
+  <Diary_ImpEvent_MemoryOpinionEpisode.label>значимое изменение мнения</Diary_ImpEvent_MemoryOpinionEpisode.label>
+  <Diary_ImpEvent_MemoryOpinionEpisode.lineTemplate>мнение о {subject_name} надолго изменилось</Diary_ImpEvent_MemoryOpinionEpisode.lineTemplate>
+
+  <Diary_ImpEvent_MemoryFormalRelation.label>изменение отношений</Diary_ImpEvent_MemoryFormalRelation.label>
+  <Diary_ImpEvent_MemoryFormalRelation.lineTemplate>отношения с {subject_name} изменились</Diary_ImpEvent_MemoryFormalRelation.lineTemplate>
+
+  <Diary_ImpEvent_MemoryRelativeState.label>перемены у родственника</Diary_ImpEvent_MemoryRelativeState.label>
+  <Diary_ImpEvent_MemoryRelativeState.lineTemplate>обстоятельства {subject_name} изменились</Diary_ImpEvent_MemoryRelativeState.lineTemplate>
+
+  <Diary_ImpEvent_MemoryFactionDiplomacy.label>изменение отношений с фракцией</Diary_ImpEvent_MemoryFactionDiplomacy.label>
+  <Diary_ImpEvent_MemoryFactionDiplomacy.lineTemplate>отношения с {faction_name} изменились</Diary_ImpEvent_MemoryFactionDiplomacy.lineTemplate>
+
+  <Diary_ImpEvent_MemoryFactionLifecycle.label>решительные перемены во фракции</Diary_ImpEvent_MemoryFactionLifecycle.label>
+  <Diary_ImpEvent_MemoryFactionLifecycle.lineTemplate>статус {faction_name} решительно изменился</Diary_ImpEvent_MemoryFactionLifecycle.lineTemplate>
+
 </LanguageData>

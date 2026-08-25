@@ -35,6 +35,9 @@ namespace PawnDiary
         public string subjectKind = string.Empty;
         public string subjectId = string.Empty;
         public string frozenSubjectLabel = string.Empty;
+        public string chapterPhaseToken = string.Empty;
+        public string chapterDirective = string.Empty;
+        public string chapterClosureReasonToken = string.Empty;
         public bool requiredLifecycleLandmark;
         public long nowTick;
         public SavedMemoryBlock block;
@@ -177,12 +180,15 @@ namespace PawnDiary
                 return result;
             }
 
+            MemoryChapterAdmissionPlan chapterPlan = MemoryChapterPolicy.PlanAdmission(
+                request.chapterDirective, request.chapterClosureReasonToken);
+            if (!chapterPlan.valid) return result;
             MemoryPlacementPlan placement = MemoryThreadLookupPolicy.PlanPlacement(
                 new MemoryPlacementRequest
                 {
                     ownerPawnId = request.ownerPawnId,
                     ownerEpochToken = request.ownerEpochToken,
-                    routeReliable = request.routeReliable,
+                    routeReliable = request.routeReliable && !chapterPlan.remainStandalone,
                     subjectKind = request.subjectKind,
                     subjectId = request.subjectId
                 });
@@ -231,9 +237,14 @@ namespace PawnDiary
                     {
                         savedRoot = replacementRoots[rootIndex];
                     }
+                    if (chapterPlan.closeOpenBeforeAdmission)
+                        CloseOpenChapter(
+                            savedRoot, request.block.originalEventTick,
+                            chapterPlan.closureReasonToken);
                     bool chapterSequenceSaturated;
                     SavedMemoryChapter chapter = FindOrCreateOpenChapter(
-                        savedRoot, request.block.originalEventTick, out chapterSequenceSaturated);
+                        savedRoot, request.block.originalEventTick,
+                        request.chapterPhaseToken, out chapterSequenceSaturated);
                     if (chapter == null)
                     {
                         if (chapterSequenceSaturated)
@@ -247,6 +258,13 @@ namespace PawnDiary
                     if (!request.block.ageUnknown)
                         chapter.lastActivityTick = Math.Max(
                             chapter.lastActivityTick, request.block.originalEventTick);
+                    if (chapterPlan.closeAdmittingChapterAfterAdmission)
+                    {
+                        chapter.closed = true;
+                        chapter.closedTick = Math.Max(
+                            chapter.lastActivityTick, request.block.originalEventTick);
+                        chapter.closureReasonToken = chapterPlan.closureReasonToken;
+                    }
 
                     MemoryThreadReductionResult reduction = MemoryThreadReducer.Reduce(
                         ToReducerRoot(savedRoot, policy), policy);
@@ -565,7 +583,13 @@ namespace PawnDiary
                 || request.block.ownerPawnId != request.ownerPawnId
                 || request.block.ownerEpochToken != request.ownerEpochToken
                 || request.block.summaryRole != MemoryContractTokens.SummaryRoleNone
-                || request.block.summaryPayload != null) return false;
+                || request.block.summaryPayload != null
+                || string.IsNullOrWhiteSpace(request.chapterPhaseToken)
+                || !MemoryChapterDirectiveTokens.IsKnown(request.chapterDirective)
+                || (MemoryChapterDirectiveTokens.ClosesChapter(request.chapterDirective)
+                    ? !MemoryChapterTokens.IsKnownClosureReason(
+                        request.chapterClosureReasonToken)
+                    : !string.IsNullOrEmpty(request.chapterClosureReasonToken))) return false;
             MemoryRecordIdentity identity;
             if (!MemoryIdentityCodec.TryParseRecordId(request.block.recordId, out identity)
                 || identity.ownerPawnId != request.ownerPawnId
@@ -604,11 +628,17 @@ namespace PawnDiary
         private static SavedMemoryChapter FindOrCreateOpenChapter(
             SavedMemoryThreadRoot root,
             long originalEventTick,
+            string phaseToken,
             out bool sequenceSaturated)
         {
             sequenceSaturated = false;
             for (int i = root.chapters.Count - 1; i >= 0; i--)
-                if (!root.chapters[i].closed) return root.chapters[i];
+                if (!root.chapters[i].closed)
+                {
+                    if (string.IsNullOrEmpty(root.chapters[i].phaseToken))
+                        root.chapters[i].phaseToken = phaseToken ?? string.Empty;
+                    return root.chapters[i];
+                }
             if (root.nextChapterOrdinal <= 0) return null;
             long ordinal = root.nextChapterOrdinal;
             if (ordinal == long.MaxValue)
@@ -623,12 +653,31 @@ namespace PawnDiary
                 schemaVersion = 1,
                 chapterId = chapterId,
                 ordinal = ordinal,
+                phaseToken = phaseToken ?? string.Empty,
                 openedTick = Math.Max(0, originalEventTick),
                 lastActivityTick = Math.Max(0, originalEventTick)
             };
             root.chapters.Add(chapter);
             root.nextChapterOrdinal = ordinal + 1;
             return chapter;
+        }
+
+        /// <summary>Closes the sole open chapter on a detached root before a new phase is admitted.</summary>
+        private static void CloseOpenChapter(
+            SavedMemoryThreadRoot root,
+            long eventTick,
+            string reasonToken)
+        {
+            if (root?.chapters == null) return;
+            for (int i = root.chapters.Count - 1; i >= 0; i--)
+            {
+                SavedMemoryChapter chapter = root.chapters[i];
+                if (chapter == null || chapter.closed) continue;
+                chapter.closed = true;
+                chapter.closedTick = Math.Max(chapter.lastActivityTick, eventTick);
+                chapter.closureReasonToken = reasonToken ?? string.Empty;
+                return;
+            }
         }
 
         private MemoryReducerPolicy BuildMemoryReducerPolicy(long nowTick)

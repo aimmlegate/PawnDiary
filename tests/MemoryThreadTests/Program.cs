@@ -1420,7 +1420,7 @@ namespace MemoryThreadTests
             string root = RepoRoot();
             XDocument document = XDocument.Load(Path.Combine(root, "1.6", "Defs", "DiaryImportantEventDefs.xml"));
             List<XElement> defs = document.Root.Elements("PawnDiary.DiaryImportantEventDef").ToList();
-            AssertEqual("xml.capture.count", 29, defs.Count);
+            AssertEqual("xml.capture.count", 34, defs.Count);
             int standalone = 0;
             foreach (XElement def in defs)
             {
@@ -1453,6 +1453,10 @@ namespace MemoryThreadTests
                     {
                         subjectKind = Text(route, "subjectKind"),
                         chapterPhasePolicy = Text(route, "chapterPhasePolicy"),
+                        chapterDirective = string.IsNullOrEmpty(Text(route, "chapterDirective"))
+                            ? MemoryChapterDirectiveTokens.ContinueCurrent
+                            : Text(route, "chapterDirective"),
+                        chapterClosureReasonToken = Text(route, "chapterClosureReasonToken"),
                         fallbackLabelSource = Text(route, "fallbackLabelSource")
                     };
                     rule.threadRoute.equivalentExtractors.AddRange(
@@ -1464,6 +1468,9 @@ namespace MemoryThreadTests
                     MemoryThreadRoutingPolicy.ValidateRuleContract(rule));
             }
             AssertEqual("xml.capture.standalone", 1, standalone);
+            AssertEqual("xml.capture.four-categories", 4,
+                defs.Select(def => Text(def, "memoryCategory"))
+                    .Distinct(StringComparer.Ordinal).Count());
             List<string> shippedStreamTokens = defs
                 .Select(def => def.Element("threadRoute"))
                 .Where(route => route != null && Text(route, "subjectKind") == "stream")

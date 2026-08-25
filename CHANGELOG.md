@@ -8,6 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-08-25
 
+- **Memory M7 factual capture and routing.** Admit XML-owned four-category facts with exact occurrence deduplication, existing person/faction roots and chapter directives, authoritative-page reuse, owner-private social/family/faction observation, and silent disabled-interval baselines while activation remains LegacyShadow.
 - **Memory M6 shadow social, family, and faction state.** Add review-hardened privacy-gated directed/relative baselines, family-by-choice truth, deterministic opinion episodes, exact faction-instance truth with owner-only connections, and revision-safe atomic bounded silent reconciliation with batch-complete Library fencing while activation remains LegacyShadow.
 - **Memory M5 settings and Library backend.** Add review-hardened durable policy publication, generation-aware save reconciliation, and bounded no-create Library queries, culture projection, TTL/search indexes, directory priority, and queued typed mutations while activation remains LegacyShadow.
 - **Memory M4 review fixes.** Keep the chapter cursor a monotonic high-water mark so retired chapter/summary identities are never reissued, match a repair winner on payload instead of the placement repair itself rewrites, return the maintenance snapshot rebuild to bounded saved-row reads, refuse a projected admission that released nothing, and record repair refusals once.

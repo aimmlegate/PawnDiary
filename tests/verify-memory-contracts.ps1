@@ -81,11 +81,18 @@ $aggregationValues = @{
     int64_range = "int64"
     latest_state = "state"
 }
+$knownChapterDirectives = @(
+    "continue_current", "close_after_current_event", "close_and_start_with_current_event",
+    "start_new_after_closed_root", "remain_standalone"
+)
+$knownClosureReasons = @("formal_end", "reversal", "lifecycle", "inactivity", "repair")
 
 $defs = @($important.Root.Elements("PawnDiary.DiaryImportantEventDef"))
-Require ($defs.Count -eq 29) "Expected 29 shipped important-event Defs, found $($defs.Count)."
+Require ($defs.Count -eq 34) "Expected 34 shipped important-event Defs, found $($defs.Count)."
 $defNames = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
 $eventFacts = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+$factCategoryOwner = @{}
+$seenCategories = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
 $standaloneCount = 0
 $seenStreamSubjects = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
 foreach ($def in $defs) {
@@ -94,6 +101,7 @@ foreach ($def in $defs) {
     Require ($defNames.Add($defName)) "Duplicate capture Def: $defName"
     Require ($knownKinds -ccontains (Child-Text $def "memoryKind")) "$defName has invalid memoryKind."
     Require ($knownCategories -ccontains (Child-Text $def "memoryCategory")) "$defName has invalid memoryCategory."
+    [void]$seenCategories.Add((Child-Text $def "memoryCategory"))
     Require ($knownImportance -ccontains (Child-Text $def "baseImportance")) "$defName has invalid baseImportance."
     Require (-not [string]::IsNullOrWhiteSpace((Child-Text $def "captureSourceToken"))) "$defName has no captureSourceToken."
     foreach ($tokenField in @('captureSourceToken','memoryKind','memoryCategory','baseImportance')) {
@@ -120,6 +128,11 @@ foreach ($def in $defs) {
         Require ($aggregationValues[$aggregation] -ceq $valueKind) "$defName/$factKind has a mismatched value grammar."
         $compound = "$defName`0$factKind`0$(Child-Text $def 'memoryCategory')"
         Require ($eventFacts.Add($compound)) "$defName emits one fact/category twice."
+        $category = Child-Text $def 'memoryCategory'
+        if ($factCategoryOwner.ContainsKey($factKind)) {
+            Require ([string]$factCategoryOwner[$factKind] -ceq $category) "$factKind has more than one category owner."
+        }
+        else { $factCategoryOwner[$factKind] = $category }
         if ($aggregation -ceq "latest_state") {
             $states = $fact.Element([System.Xml.Linq.XName]"allowedStates")
             Require ($null -ne $states -and @($states.Elements("li")).Count -gt 0) "$defName/$factKind state grammar lacks an allowlist."
@@ -139,6 +152,15 @@ foreach ($def in $defs) {
             Require ($rawToken -ceq $rawToken.Trim()) "$defName/route/$tokenField has noncanonical surrounding whitespace."
         }
         Require ($knownSubjects -ccontains (Child-Text $route "subjectKind")) "$defName has an invalid route subject kind."
+        $directive = Child-Text $route "chapterDirective"
+        if ([string]::IsNullOrWhiteSpace($directive)) { $directive = "continue_current" }
+        $closureReason = Child-Text $route "chapterClosureReasonToken"
+        Require ($knownChapterDirectives -ccontains $directive) "$defName has an invalid chapter directive."
+        $closes = $directive -ceq "close_after_current_event" -or $directive -ceq "close_and_start_with_current_event"
+        if ($closes) {
+            Require ($knownClosureReasons -ccontains $closureReason) "$defName closing directive lacks a valid reason."
+        }
+        else { Require ([string]::IsNullOrEmpty($closureReason)) "$defName has a closure reason without a closing directive." }
         $extractors = $route.Element([System.Xml.Linq.XName]"equivalentExtractors")
         Require ($null -ne $extractors -and @($extractors.Elements("li")).Count -gt 0) "$defName has no exact route extractor."
         $extractorValues = @($extractors.Elements("li") | ForEach-Object { $_.Value.Trim() })
@@ -167,12 +189,22 @@ foreach ($def in $defs) {
         Require ($consumer.Value -ceq $consumer.Value.Trim()) "$defName has a noncanonical consumer token."
     }
 
+    $ownedRelations = $def.Element([System.Xml.Linq.XName]"authoritativeRelationDefNames")
+    if ($null -ne $ownedRelations) {
+        Require ((Child-Text $def "authoritativePageOwned") -ceq "true") "$defName owns relation Defs without an authoritative page."
+        Require ((Child-Text $def "memoryCategory") -ceq "relationships") "$defName owns relation Defs outside Relationships."
+        foreach ($relation in $ownedRelations.Elements("li")) {
+            Require (-not [string]::IsNullOrWhiteSpace($relation.Value) -and $relation.Value -ceq $relation.Value.Trim()) "$defName has an invalid authoritative relation Def name."
+        }
+    }
+
     # Existing Def prose uses source-English plus Russian DefInjected parity. New M0 fields are tokens,
     # not prose, so no second localization mechanism is introduced.
     Require ($null -ne $russianInjected.Root.Element([System.Xml.Linq.XName]"$defName.label")) "Missing Russian label for $defName."
     Require ($null -ne $russianInjected.Root.Element([System.Xml.Linq.XName]"$defName.lineTemplate")) "Missing Russian lineTemplate for $defName."
 }
 Require ($standaloneCount -eq 1) "Expected exactly one intentionally Standalone shipped capture rule."
+Require ($seenCategories.Count -eq 4) "The shipped capture catalog must own exactly four categories."
 Require ((@($seenStreamSubjects | Sort-Object) -join '/') -ceq (@($knownStreamSubjects | Sort-Object) -join '/')) "The shipped stream-token set does not match the closed M0 allowlist."
 
 $dimensions = @($capacity.dimensions)

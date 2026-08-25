@@ -31,6 +31,12 @@ namespace PawnDiary
         public const string SignalIdeoConversion = "ideoConversion";
         public const string SignalDeathInstigator = "deathInstigator";
         public const string SignalDeathFamily = "deathFamily";
+        // M7 detached observation channels. These never request or create a diary page.
+        public const string SignalMemoryOpinionEpisode = "memoryOpinionEpisode";
+        public const string SignalMemoryFormalRelation = "memoryFormalRelation";
+        public const string SignalMemoryRelativeState = "memoryRelativeState";
+        public const string SignalMemoryFactionDiplomacy = "memoryFactionDiplomacy";
+        public const string SignalMemoryFactionLifecycle = "memoryFactionLifecycle";
 
         // Event-kind tokens that runtime lifecycle code must recognize. Most event kinds remain
         // XML-only; arrival is special because the load bootstrap must treat its durable knowledge
@@ -162,6 +168,10 @@ namespace PawnDiary
         public string subjectKind = string.Empty;
         public List<MemoryRouteExtractor> equivalentExtractors = new List<MemoryRouteExtractor>();
         public string chapterPhasePolicy = string.Empty;
+        /// <summary>XML-owned placement instruction; see MemoryChapterDirectiveTokens.</summary>
+        public string chapterDirective = "continue_current";
+        /// <summary>Stable closure reason used only by a directive that closes a chapter.</summary>
+        public string chapterClosureReasonToken = string.Empty;
         public string fallbackLabelSource = string.Empty;
     }
 
@@ -200,9 +210,8 @@ namespace PawnDiary
         /// <summary>Localized one-line template, e.g. "married {other}" / "lost {part_label}".</summary>
         public string lineTemplate = string.Empty;
 
-        // Unified-memory M0 metadata. The shipped classifier does not consume these fields until the
-        // M7 activation slice; keeping them in the detached rule now makes XML reachability and route
-        // contracts executable without changing current capture behavior.
+        // Unified-memory metadata. M7 consumes this XML-owned contract while the legacy record remains
+        // active until M11 changes the public activation gate.
         public string captureSourceToken = string.Empty;
         public string memoryKind = string.Empty;
         public string memoryCategory = string.Empty;
@@ -212,6 +221,8 @@ namespace PawnDiary
         public bool consolidationEligible;
         public List<string> promptConsumerIds = new List<string>();
         public bool authoritativePageOwned;
+        /// <summary>Exact relation Def names whose observation transition this page route owns.</summary>
+        public List<string> authoritativeRelationDefNames = new List<string>();
     }
 
     /// <summary>
@@ -226,6 +237,14 @@ namespace PawnDiary
         /// <summary>Diary interactionDefName / hediff defName / channel-specific token.</summary>
         public string defName = string.Empty;
         public string sourceEventId = string.Empty;
+        /// <summary>
+        /// Canonical occurrence identity. Authoritative diary routes copy DiaryEvent.eventId here;
+        /// detached no-page adapters either supply their own durable identity or the bounded fallback
+        /// evidence below.
+        /// </summary>
+        public string sourceOccurrenceId = string.Empty;
+        public long sourceLocalSequenceInvariant;
+        public bool sourceProvesUniqueness;
         public int tick;
         /// <summary>Localized game-date label captured alongside the signal.</summary>
         public string dateLabel = string.Empty;
@@ -247,6 +266,67 @@ namespace PawnDiary
         public string ownerPawnId = string.Empty;
         public string matchedRuleDefName = string.Empty;
         public ImportantMemoryRecordSnapshot record = new ImportantMemoryRecordSnapshot();
+        /// <summary>Optional current-schema factual draft. Null means M7 policy refused safely.</summary>
+        public FactualMemoryDraft factual;
+    }
+
+    /// <summary>One detached exact subject ready for current-schema factual persistence.</summary>
+    internal sealed class FactualMemorySubjectDraft
+    {
+        public string subjectRefId = string.Empty;
+        public string subjectKind = string.Empty;
+        public string subjectId = string.Empty;
+        public string frozenLabel = string.Empty;
+        public string roleToken = string.Empty;
+        public string knownnessToken = string.Empty;
+    }
+
+    /// <summary>One detached canonical fact ready for current-schema factual persistence.</summary>
+    internal sealed class FactualMemoryFactDraft
+    {
+        public string factId = string.Empty;
+        public string factKind = string.Empty;
+        public string canonicalSubjectKind = string.Empty;
+        public string canonicalSubjectId = string.Empty;
+        public string aggregationToken = string.Empty;
+        public string canonicalValueKind = string.Empty;
+        public string canonicalValue = string.Empty;
+        public bool majorTurningPoint;
+        public bool reversal;
+    }
+
+    /// <summary>
+    /// Pure M7 classifier output. Verse/Scribe rows and settings remain outside this DTO; the main-thread
+    /// adapter may admit it only after resolving the owner's current autobiographical epoch.
+    /// </summary>
+    internal sealed class FactualMemoryDraft
+    {
+        public string ownerPawnId = string.Empty;
+        public string sourceOccurrenceId = string.Empty;
+        public string sourceEventId = string.Empty;
+        public string sourceKindToken = string.Empty;
+        public string captureRuleId = string.Empty;
+        public string factDiscriminator = string.Empty;
+        public string kind = string.Empty;
+        public string category = string.Empty;
+        public string importance = string.Empty;
+        public long originalEventTick;
+        public bool consolidationEligible;
+        public bool authoritativePageOwned;
+        public bool routeReliable;
+        public string routeReasonToken = string.Empty;
+        public string subjectKind = string.Empty;
+        public string subjectId = string.Empty;
+        public string frozenSubjectLabel = string.Empty;
+        public string chapterPhaseToken = string.Empty;
+        public string chapterDirective = string.Empty;
+        public string chapterClosureReasonToken = string.Empty;
+        public string automaticWording = string.Empty;
+        public FactualMemorySubjectDraft primarySubject;
+        public List<FactualMemorySubjectDraft> secondarySubjects =
+            new List<FactualMemorySubjectDraft>();
+        public List<FactualMemoryFactDraft> facts = new List<FactualMemoryFactDraft>();
+        public string provenanceRefId = string.Empty;
     }
 
     /// <summary>Retrieval query built from the CURRENT event (§3.1).</summary>

@@ -58,7 +58,8 @@ namespace PawnDiary.Ingestion
             if (payload != null && mutation != null)
             {
                 sink.CaptureEventKnowledgeWithoutPage(
-                    firstPawn, secondPawn, payload.DefName, BuildGameContext(), payload.Tick);
+                    firstPawn, secondPawn, payload.DefName, BuildGameContext(), payload.Tick,
+                    DedupKey);
                 return true;
             }
             return false;

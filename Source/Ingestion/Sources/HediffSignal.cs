@@ -94,7 +94,8 @@ namespace PawnDiary.Ingestion
                     null,
                     payload.DefName,
                     sink.BuildHediffKnowledgeContext(hediff, payload),
-                    payload.Tick);
+                    payload.Tick,
+                    DedupKey);
                 return true;
             }
             return false;

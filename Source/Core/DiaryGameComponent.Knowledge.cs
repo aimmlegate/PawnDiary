@@ -412,6 +412,7 @@ namespace PawnDiary
                     signal = KnowledgeTokens.SignalEvent,
                     defName = diaryEvent.interactionDefName ?? string.Empty,
                     sourceEventId = diaryEvent.eventId ?? string.Empty,
+                    sourceOccurrenceId = diaryEvent.eventId ?? string.Empty,
                     tick = diaryEvent.tick,
                     dateLabel = diaryEvent.date ?? string.Empty,
                     gameContext = diaryEvent.gameContext ?? string.Empty,
@@ -438,7 +439,7 @@ namespace PawnDiary
         /// because an arrival or first disabled page may be the pawn's first durable state.
         /// </summary>
         internal void CaptureEventKnowledgeWithoutPage(Pawn initiator, Pawn recipient, string defName,
-            string gameContext, int tick)
+            string gameContext, int tick, string sourceOwnedOccurrenceId = null)
         {
             if (string.IsNullOrWhiteSpace(defName))
             {
@@ -460,6 +461,12 @@ namespace PawnDiary
                 {
                     signal = KnowledgeTokens.SignalEvent,
                     defName = defName,
+                    // DiarySignals reach this seam only after source dedup accepts the occurrence.
+                    // A source whose dedup domain distinguishes same-tick occurrences carries that
+                    // stable key; otherwise the generic type/subject key proves the bounded fallback.
+                    sourceOccurrenceId = sourceOwnedOccurrenceId ?? string.Empty,
+                    sourceLocalSequenceInvariant = 0,
+                    sourceProvesUniqueness = true,
                     tick = Math.Max(0, tick),
                     dateLabel = KnowledgeDateLabelAt(initiator ?? recipient, tick),
                     gameContext = gameContext ?? string.Empty,
@@ -698,6 +705,25 @@ namespace PawnDiary
                 int tick = Find.TickManager.TicksGame;
                 string date = KnowledgeDateLabelNow(victim);
                 string victimId = victim.GetUniqueLoadID();
+                string deathOccurrenceId;
+                MemoryIdentityCodec.TryCreateSourceOccurrenceFallback(
+                    new MemorySourceOccurrenceFallback
+                    {
+                        stableSignalToken = "death",
+                        eventTickInvariant = tick,
+                        sourceLocalSequenceInvariant = 0,
+                        factDiscriminator = "death",
+                        sourceProvesUniqueness = true,
+                        subjects = new List<MemoryTypedSubject>
+                        {
+                            new MemoryTypedSubject
+                            {
+                                subjectKind = MemoryContractTokens.SubjectPawn,
+                                subjectId = victimId
+                            }
+                        }
+                    },
+                    out deathOccurrenceId);
 
                 Pawn instigator = dinfo.HasValue ? dinfo.Value.Instigator as Pawn : null;
                 if (instigator != null && instigator != victim
@@ -709,7 +735,8 @@ namespace PawnDiary
                         "victim=" + GameContextValue.Sanitize(victimName)
                         + (string.IsNullOrWhiteSpace(weaponLabel)
                             ? string.Empty
-                            : "; weapon=" + GameContextValue.Sanitize(weaponLabel)));
+                            : "; weapon=" + GameContextValue.Sanitize(weaponLabel)),
+                        deathOccurrenceId);
                 }
 
                 // Close family only (§2.1). PotentiallyRelatedPawns gives us candidates without first
@@ -767,7 +794,8 @@ namespace PawnDiary
                     EmitDeathSignal(KnowledgeTokens.SignalDeathFamily, "PawnDiary_DeathFamily",
                         other, victimId, victimName, tick, date,
                         "victim=" + GameContextValue.Sanitize(victimName)
-                        + "; relation=" + GameContextValue.Sanitize(relationLabel));
+                        + "; relation=" + GameContextValue.Sanitize(relationLabel),
+                        deathOccurrenceId);
                     familyOwnersEmitted++;
                 }
             }
@@ -779,12 +807,13 @@ namespace PawnDiary
         }
 
         private void EmitDeathSignal(string channel, string defName, Pawn owner, string victimId,
-            string victimName, int tick, string date, string context)
+            string victimName, int tick, string date, string context, string sourceOccurrenceId)
         {
             KnowledgeCaptureSignal signal = new KnowledgeCaptureSignal
             {
                 signal = channel,
                 defName = defName,
+                sourceOccurrenceId = sourceOccurrenceId ?? string.Empty,
                 tick = tick,
                 dateLabel = date,
                 gameContext = context,
@@ -910,7 +939,7 @@ namespace PawnDiary
         /// Stores classifier drafts on their owners: deterministic dedup (§2.2), per-pawn cap
         /// enforcement at insert (oldest of that owner drops first).
         /// </summary>
-        private void PersistDrafts(List<ImportantMemoryDraft> drafts)
+        private void PersistDrafts(List<ImportantMemoryDraft> drafts, bool persistLegacy = true)
         {
             if (drafts == null || drafts.Count == 0)
             {
@@ -925,6 +954,12 @@ namespace PawnDiary
                 {
                     continue;
                 }
+
+                // Current-schema factual capture is a shadow write until M11. It is independently
+                // gated by Save/category policy and never changes page or request scheduling.
+                PersistFactualDraft(draft.factual);
+
+                if (!persistLegacy) continue;
 
                 PawnDiaryRecord diary = FindDiaryByPawnId(draft.ownerPawnId);
                 if (diary == null)
@@ -941,6 +976,117 @@ namespace PawnDiary
                 state.records.Add(ImportantMemoryRecord.FromSnapshot(draft.record));
                 EnforcePerPawnKnowledgeCap(state, policy.maxRecordsPerPawn);
             }
+        }
+
+        /// <summary>
+        /// Maps one pure M7 draft into saved rows and asks the atomic owner store to admit it. Every
+        /// refusal is optional: authoritative pages and mandatory observation baselines stay committed.
+        /// </summary>
+        private void PersistFactualDraft(FactualMemoryDraft draft)
+        {
+            if (draft == null || string.IsNullOrWhiteSpace(draft.ownerPawnId)) return;
+            string captureStatus;
+            if (!MemoryCategoryAllowsCapture(draft.category, out captureStatus)) return;
+
+            PawnKnowledgeState state = FindCurrentMemoryEnvelope(draft.ownerPawnId);
+            if (state == null || string.IsNullOrEmpty(state.autobiographicalEpochToken)) return;
+            string recordId;
+            if (!MemoryIdentityCodec.TryCreateRecordId(
+                    new MemoryRecordIdentity
+                    {
+                        ownerPawnId = draft.ownerPawnId,
+                        ownerEpochToken = state.autobiographicalEpochToken,
+                        sourceOccurrenceId = draft.sourceOccurrenceId,
+                        captureRuleId = draft.captureRuleId,
+                        factDiscriminator = draft.factDiscriminator
+                    },
+                    out recordId)) return;
+
+            SavedMemoryBlock block = new SavedMemoryBlock
+            {
+                schemaVersion = 1,
+                recordId = recordId,
+                sourceOccurrenceId = draft.sourceOccurrenceId,
+                sourceEventId = draft.sourceEventId,
+                captureRuleId = draft.captureRuleId,
+                factDiscriminator = draft.factDiscriminator,
+                ownerPawnId = draft.ownerPawnId,
+                ownerEpochToken = state.autobiographicalEpochToken,
+                kind = draft.kind,
+                summaryRole = MemoryContractTokens.SummaryRoleNone,
+                category = draft.category,
+                importance = draft.importance,
+                originalEventTick = Math.Max(0, draft.originalEventTick),
+                automaticWording = draft.automaticWording ?? string.Empty,
+                primarySubject = ToSavedSubject(draft.primarySubject)
+            };
+            for (int i = 0; i < draft.secondarySubjects.Count; i++)
+            {
+                SavedMemorySubjectRef subject = ToSavedSubject(draft.secondarySubjects[i]);
+                if (subject != null) block.secondarySubjects.Add(subject);
+            }
+            for (int i = 0; i < draft.facts.Count; i++)
+            {
+                FactualMemoryFactDraft fact = draft.facts[i];
+                if (fact == null) return;
+                block.facts.Add(new SavedMemoryCanonicalFact
+                {
+                    schemaVersion = 1,
+                    factId = fact.factId,
+                    factKind = fact.factKind,
+                    canonicalSubjectKind = fact.canonicalSubjectKind,
+                    canonicalSubjectId = fact.canonicalSubjectId,
+                    aggregationToken = fact.aggregationToken,
+                    canonicalValueKind = fact.canonicalValueKind,
+                    canonicalValue = fact.canonicalValue,
+                    majorTurningPoint = fact.majorTurningPoint,
+                    reversal = fact.reversal
+                });
+            }
+            block.provenance.Add(new SavedMemoryProvenance
+            {
+                schemaVersion = 1,
+                provenanceRefId = draft.provenanceRefId,
+                sourceKindToken = draft.sourceKindToken,
+                sourceOccurrenceId = draft.sourceOccurrenceId,
+                sourceEventId = draft.sourceEventId,
+                captureRuleId = draft.captureRuleId,
+                factDiscriminator = draft.factDiscriminator,
+                integrationToken = string.Empty
+            });
+
+            TryAdmitMemoryBlock(new MemoryStoreAdmissionRequest
+            {
+                ownerPawnId = draft.ownerPawnId,
+                ownerEpochToken = state.autobiographicalEpochToken,
+                expectedOwnerStructuralRevision = state.structuralRevision,
+                expectedIndexGeneration = -1,
+                routeReliable = draft.routeReliable,
+                subjectKind = draft.subjectKind,
+                subjectId = draft.subjectId,
+                frozenSubjectLabel = draft.frozenSubjectLabel,
+                chapterPhaseToken = draft.chapterPhaseToken,
+                chapterDirective = draft.chapterDirective,
+                chapterClosureReasonToken = draft.chapterClosureReasonToken,
+                requiredLifecycleLandmark = block.requiredLifecycleLandmark,
+                nowTick = block.originalEventTick,
+                block = block
+            });
+        }
+
+        private static SavedMemorySubjectRef ToSavedSubject(FactualMemorySubjectDraft draft)
+        {
+            if (draft == null) return null;
+            return new SavedMemorySubjectRef
+            {
+                schemaVersion = 1,
+                subjectRefId = draft.subjectRefId,
+                subjectKind = draft.subjectKind,
+                subjectId = draft.subjectId,
+                frozenLabel = draft.frozenLabel,
+                roleToken = draft.roleToken,
+                knownnessToken = draft.knownnessToken
+            };
         }
 
         /// <summary>

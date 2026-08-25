@@ -730,6 +730,46 @@ namespace PawnDiary
             return true;
         }
 
+        /// <summary>Decodes only the canonical sorted relation-Def set written by this policy.</summary>
+        public static bool TryDecodeRelationDefSet(string value, out List<string> decoded)
+        {
+            decoded = new List<string>();
+            if (string.IsNullOrEmpty(value)) return false;
+            int offset = 0;
+            string domain;
+            string countText;
+            if (!OrdinalSegmentCodec.TryReadCanonicalSegment(
+                    value, ref offset, MemoryIdentityCodec.MaximumRawIdentityCharacters,
+                    false, out domain)
+                || domain != RelationSetDomain
+                || !OrdinalSegmentCodec.TryReadCanonicalSegment(
+                    value, ref offset, 20, false, out countText)) return false;
+            int count;
+            if (!int.TryParse(countText, NumberStyles.None, CultureInfo.InvariantCulture, out count)
+                || count < 0 || count > 128
+                || !string.Equals(count.ToString(CultureInfo.InvariantCulture), countText,
+                    StringComparison.Ordinal)) return false;
+            string previous = null;
+            for (int i = 0; i < count; i++)
+            {
+                string current;
+                if (!OrdinalSegmentCodec.TryReadCanonicalSegment(
+                        value, ref offset, MemoryIdentityCodec.MaximumRawIdentityCharacters,
+                        false, out current)
+                    || !RequiredRaw(current)
+                    || (previous != null && string.CompareOrdinal(previous, current) >= 0))
+                {
+                    decoded.Clear();
+                    return false;
+                }
+                decoded.Add(current);
+                previous = current;
+            }
+            if (offset == value.Length) return true;
+            decoded.Clear();
+            return false;
+        }
+
         /// <summary>
         /// Classifies one visible relation as family without passing a live PawnRelationDef into
         /// policy. Blood and spouse are stable schema flags; family-by-choice Def names are XML-owned.

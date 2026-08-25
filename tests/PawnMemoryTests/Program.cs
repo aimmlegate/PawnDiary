@@ -39,6 +39,8 @@ namespace PawnMemoryTests
             TestIdentityPrefilter();
             TestClassifierDedupDeterminism();
             TestClassifierFirstMatchOrder();
+            TestM7FactualCaptureAndExactRouting();
+            TestM7FactualRefusalAndAuthoritativeOwnership();
             TestLineRendererTemplatesAndFallback();
             TestComposeBlockCaps();
             TestSelectorEligibilityDoors();
@@ -117,7 +119,13 @@ namespace PawnMemoryTests
                     topicKey = (string)def.Element("topicKey") ?? string.Empty,
                     signal = (string)def.Element("signal") ?? KnowledgeTokens.SignalEvent,
                     owners = (string)def.Element("owners") ?? KnowledgeTokens.OwnersBoth,
-                    lineTemplate = (string)def.Element("lineTemplate") ?? string.Empty
+                    lineTemplate = (string)def.Element("lineTemplate") ?? string.Empty,
+                    captureSourceToken = (string)def.Element("captureSourceToken") ?? string.Empty,
+                    memoryKind = (string)def.Element("memoryKind") ?? string.Empty,
+                    memoryCategory = (string)def.Element("memoryCategory") ?? string.Empty,
+                    baseImportance = (string)def.Element("baseImportance") ?? string.Empty,
+                    consolidationEligible = ParseBool(def, "consolidationEligible"),
+                    authoritativePageOwned = ParseBool(def, "authoritativePageOwned")
                 };
                 int order;
                 if (int.TryParse((string)def.Element("order"), out order))
@@ -130,6 +138,43 @@ namespace PawnMemoryTests
                 rule.requireContext.AddRange(ListItems(def, "requireContext"));
                 rule.constantSubjectKeys.AddRange(ListItems(def, "constantSubjectKeys"));
                 rule.factKeys.AddRange(ListItems(def, "factKeys"));
+                rule.promptConsumerIds.AddRange(ListItems(def, "promptConsumerIds"));
+                rule.authoritativeRelationDefNames.AddRange(
+                    ListItems(def, "authoritativeRelationDefNames"));
+                XElement memoryFacts = def.Element("memoryFacts");
+                if (memoryFacts != null)
+                {
+                    foreach (XElement row in memoryFacts.Elements("li"))
+                    {
+                        MemoryFactDescriptor descriptor = new MemoryFactDescriptor
+                        {
+                            factKind = (string)row.Element("factKind") ?? string.Empty,
+                            contextKey = (string)row.Element("contextKey") ?? string.Empty,
+                            aggregationToken = (string)row.Element("aggregationToken") ?? string.Empty,
+                            canonicalValueKind = (string)row.Element("canonicalValueKind") ?? string.Empty
+                        };
+                        descriptor.allowedStates.AddRange(ListItems(row, "allowedStates"));
+                        rule.memoryFacts.Add(descriptor);
+                    }
+                }
+                XElement route = def.Element("threadRoute");
+                if (route != null)
+                {
+                    rule.threadRoute = new MemoryThreadRouteRule
+                    {
+                        subjectKind = (string)route.Element("subjectKind") ?? string.Empty,
+                        chapterPhasePolicy = (string)route.Element("chapterPhasePolicy") ?? string.Empty,
+                        chapterDirective = (string)route.Element("chapterDirective")
+                            ?? MemoryChapterDirectiveTokens.ContinueCurrent,
+                        chapterClosureReasonToken =
+                            (string)route.Element("chapterClosureReasonToken") ?? string.Empty,
+                        fallbackLabelSource =
+                            (string)route.Element("fallbackLabelSource") ?? string.Empty
+                    };
+                    rule.threadRoute.equivalentExtractors.AddRange(
+                        ListItems(route, "equivalentExtractors").Select(value =>
+                            new MemoryRouteExtractor { extractorToken = value }));
+                }
                 XElement subjectKeys = def.Element("subjectKeys");
                 if (subjectKeys != null)
                 {
@@ -162,6 +207,12 @@ namespace PawnMemoryTests
             return rules;
         }
 
+        private static bool ParseBool(XElement parent, string name)
+        {
+            bool parsed;
+            return bool.TryParse((string)parent.Element(name), out parsed) && parsed;
+        }
+
         private static IEnumerable<string> ListItems(XElement def, string name)
         {
             XElement list = def.Element(name);
@@ -178,6 +229,7 @@ namespace PawnMemoryTests
                 signal = KnowledgeTokens.SignalEvent,
                 defName = defName,
                 sourceEventId = eventId,
+                sourceOccurrenceId = eventId,
                 tick = tick,
                 dateLabel = "5 Jugtide 5501",
                 gameContext = context,
@@ -693,6 +745,172 @@ namespace PawnMemoryTests
             rules.RemoveAt(2);
             AssertEqual("order.tieOrdinal", "A",
                 ImportantEventClassifier.FirstMatch(signal, rules).defName);
+        }
+
+        private static void TestM7FactualCaptureAndExactRouting()
+        {
+            List<ImportantMemoryDraft> paired = Classify(EventSignal(
+                "Lover", string.Empty, "Pawn_A", "Pawn_B", "page-relationship-1", 4200));
+            AssertEqual("m7.event.paired-count", 2, paired.Count);
+            AssertTrue("m7.event.factual-present", paired.All(row => row.factual != null));
+            AssertTrue("m7.event.same-occurrence", paired.All(row =>
+                row.factual.sourceOccurrenceId == "page-relationship-1"
+                && row.factual.sourceEventId == "page-relationship-1"
+                && row.factual.sourceKindToken == "diary_event"));
+            AssertEqual("m7.event.owner-a-subject", "Pawn_B",
+                paired.First(row => row.ownerPawnId == "Pawn_A").factual.subjectId);
+            AssertEqual("m7.event.owner-b-subject", "Pawn_A",
+                paired.First(row => row.ownerPawnId == "Pawn_B").factual.subjectId);
+            AssertTrue("m7.event.private-fact-identities", paired[0].factual.facts[0].factId
+                != paired[1].factual.facts[0].factId);
+            AssertEqual("m7.event.category", MemoryContractTokens.CategoryRelationships,
+                paired[0].factual.category);
+            AssertEqual("m7.event.chapter-directive",
+                MemoryChapterDirectiveTokens.CloseAndStartWithCurrentEvent,
+                paired[0].factual.chapterDirective);
+            AssertEqual("m7.event.chapter-phase", "relationship_phase",
+                paired[0].factual.chapterPhaseToken);
+            string ownerARecord;
+            string ownerBRecord;
+            AssertTrue("m7.event.private-record-a", MemoryIdentityCodec.TryCreateRecordId(
+                new MemoryRecordIdentity
+                {
+                    ownerPawnId = paired[0].factual.ownerPawnId,
+                    ownerEpochToken = M6Epoch(paired[0].factual.ownerPawnId),
+                    sourceOccurrenceId = paired[0].factual.sourceOccurrenceId,
+                    captureRuleId = paired[0].factual.captureRuleId,
+                    factDiscriminator = paired[0].factual.factDiscriminator
+                }, out ownerARecord));
+            AssertTrue("m7.event.private-record-b", MemoryIdentityCodec.TryCreateRecordId(
+                new MemoryRecordIdentity
+                {
+                    ownerPawnId = paired[1].factual.ownerPawnId,
+                    ownerEpochToken = M6Epoch(paired[1].factual.ownerPawnId),
+                    sourceOccurrenceId = paired[1].factual.sourceOccurrenceId,
+                    captureRuleId = paired[1].factual.captureRuleId,
+                    factDiscriminator = paired[1].factual.factDiscriminator
+                }, out ownerBRecord));
+            AssertTrue("m7.event.paired-pov-private-dedup", ownerARecord != ownerBRecord);
+
+            KnowledgeCaptureSignal observation = new KnowledgeCaptureSignal
+            {
+                signal = KnowledgeTokens.SignalMemoryOpinionEpisode,
+                defName = "memory.opinion.episode",
+                providedOwnerPawnId = "Pawn_A",
+                tick = 4300,
+                sourceLocalSequenceInvariant = 7,
+                sourceProvesUniqueness = true,
+                gameContext = "subject_pawn_id=Pawn_B; subject_name=Brik; "
+                    + "episode_value=reason:cumulative|from:0|to:25|from_band:neutral|to_band:friendly"
+            };
+            ImportantMemoryDraft first = Classify(observation)[0];
+            ImportantMemoryDraft repeated = Classify(observation)[0];
+            AssertTrue("m7.fallback.factual", first.factual != null);
+            AssertEqual("m7.fallback.deterministic", first.factual.sourceOccurrenceId,
+                repeated.factual.sourceOccurrenceId);
+            AssertEqual("m7.fallback.no-page-link", string.Empty,
+                first.factual.sourceEventId);
+            AssertEqual("m7.fallback.capture-signal", "capture_signal",
+                first.factual.sourceKindToken);
+            AssertEqual("m7.fallback.exact-route", "Pawn_B", first.factual.subjectId);
+            AssertEqual("m7.fallback.chapter-phase", "opinion_episode",
+                first.factual.chapterPhaseToken);
+            AssertTrue("m7.fallback.factual-wording", first.factual.automaticWording.Contains("Brik"));
+        }
+
+        private static void TestM7FactualRefusalAndAuthoritativeOwnership()
+        {
+            ImportantEventRule ambiguous = M7TestRule();
+            ambiguous.threadRoute.equivalentExtractors.Add(
+                new MemoryRouteExtractor { extractorToken = "context:alternate_id" });
+            KnowledgeCaptureSignal signal = new KnowledgeCaptureSignal
+            {
+                signal = "m7Test",
+                defName = "m7.test",
+                providedOwnerPawnId = "Pawn_A",
+                sourceOccurrenceId = "occurrence-1",
+                tick = 5000,
+                gameContext = "subject_id=Pawn_B; alternate_id=Pawn_C"
+            };
+            ImportantMemoryDraft ambiguousDraft = ImportantEventClassifier.Classify(
+                signal, new List<ImportantEventRule> { ambiguous },
+                KnowledgePolicySnapshot.CreateDefault())[0];
+            AssertTrue("m7.ambiguous.factual-still-standalone",
+                ambiguousDraft.factual != null && !ambiguousDraft.factual.routeReliable);
+            AssertEqual("m7.ambiguous.never-guesses-secondary", "Pawn_A",
+                ambiguousDraft.factual.primarySubject.subjectId);
+
+            ImportantEventRule ownerSelf = M7TestRule();
+            signal.gameContext = "subject_id=Pawn_A";
+            ImportantMemoryDraft selfDraft = ImportantEventClassifier.Classify(
+                signal, new List<ImportantEventRule> { ownerSelf },
+                KnowledgePolicySnapshot.CreateDefault())[0];
+            AssertTrue("m7.owner-self.standalone",
+                selfDraft.factual != null && !selfDraft.factual.routeReliable);
+            AssertEqual("m7.owner-self.subject-owner", "Pawn_A",
+                selfDraft.factual.primarySubject.subjectId);
+
+            ImportantEventRule invalidValue = M7TestRule();
+            invalidValue.memoryFacts[0].contextKey = "required_value";
+            invalidValue.memoryFacts[0].aggregationToken = MemoryFactContractTokens.OrdinalSet;
+            invalidValue.memoryFacts[0].canonicalValueKind = MemoryFactContractTokens.ValueOrdinal;
+            signal.gameContext = "subject_id=Pawn_B";
+            ImportantMemoryDraft refused = ImportantEventClassifier.Classify(
+                signal, new List<ImportantEventRule> { invalidValue },
+                KnowledgePolicySnapshot.CreateDefault())[0];
+            AssertTrue("m7.invalid-value.legacy-survives", refused.record != null);
+            AssertTrue("m7.invalid-value.factual-refused", refused.factual == null);
+
+            AssertTrue("m7.page-ownership.romance",
+                ImportantEventClassifier.AuthoritativePageOwnsRelationTransition(
+                    new[] { "Lover" }, new[] { "ExLover" }, shippedRules));
+            AssertTrue("m7.page-ownership.non-page-social",
+                !ImportantEventClassifier.AuthoritativePageOwnsRelationTransition(
+                    new[] { "Friend" }, new[] { "Rival" }, shippedRules));
+
+            ImportantEventRule duplicateFact = M7TestRule();
+            duplicateFact.memoryFacts.Add(new MemoryFactDescriptor
+            {
+                factKind = "m7.fact",
+                aggregationToken = MemoryFactContractTokens.CountOccurrences,
+                canonicalValueKind = MemoryFactContractTokens.ValueEmpty
+            });
+            AssertEqual("m7.one-category-owner.duplicate-refused",
+                "memory_contract_duplicate_fact_category",
+                MemoryThreadRoutingPolicy.ValidateRuleContract(duplicateFact));
+        }
+
+        private static ImportantEventRule M7TestRule()
+        {
+            ImportantEventRule rule = new ImportantEventRule
+            {
+                defName = "M7_TestRule",
+                eventKind = "m7.test",
+                signal = "m7Test",
+                owners = KnowledgeTokens.OwnersProvided,
+                captureSourceToken = "test",
+                memoryKind = MemoryContractTokens.KindEvent,
+                memoryCategory = MemoryContractTokens.CategoryRelationships,
+                baseImportance = MemoryContractTokens.ImportanceRegular,
+                lineTemplate = "test"
+            };
+            rule.matchDefNames.Add("m7.test");
+            rule.memoryFacts.Add(new MemoryFactDescriptor
+            {
+                factKind = "m7.fact",
+                aggregationToken = MemoryFactContractTokens.CountOccurrences,
+                canonicalValueKind = MemoryFactContractTokens.ValueEmpty
+            });
+            rule.threadRoute = new MemoryThreadRouteRule
+            {
+                subjectKind = MemoryContractTokens.SubjectPawn,
+                chapterPhasePolicy = "test_phase",
+                fallbackLabelSource = "context:subject_name"
+            };
+            rule.threadRoute.equivalentExtractors.Add(
+                new MemoryRouteExtractor { extractorToken = "context:subject_id" });
+            rule.promptConsumerIds.Add(MemoryRecallConsumerRegistry.OrdinaryDiary);
+            return rule;
         }
 
         // ── Rendering (§3.2) ─────────────────────────────────────────────────────────────────────────
@@ -1533,6 +1751,19 @@ namespace PawnMemoryTests
             AssertTrue("m6.repair.ownerRevisionAdvances",
                 ordinaryRepair.valid && ordinaryRepair.canCommit
                     && ordinaryRepair.nextRevision == 8);
+            KnowledgeOwnerRepairRevisionPlan unchangedRepair =
+                KnowledgeRelationPolicy.PlanOwnerRepairRevision(7, false);
+            AssertTrue("m6.repair.ownerRevisionUnchanged",
+                unchangedRepair.valid && !unchangedRepair.canCommit
+                    && unchangedRepair.nextRevision == 7);
+            KnowledgeOwnerRepairRevisionPlan zeroRevisionRepair =
+                KnowledgeRelationPolicy.PlanOwnerRepairRevision(0, true);
+            AssertTrue("m6.repair.ownerRevisionZeroInvalid",
+                !zeroRevisionRepair.valid && !zeroRevisionRepair.canCommit);
+            KnowledgeOwnerRepairRevisionPlan negativeRevisionRepair =
+                KnowledgeRelationPolicy.PlanOwnerRepairRevision(-1, true);
+            AssertTrue("m6.repair.ownerRevisionNegativeInvalid",
+                !negativeRevisionRepair.valid && !negativeRevisionRepair.canCommit);
             KnowledgeOwnerRepairRevisionPlan finalRepair =
                 KnowledgeRelationPolicy.PlanOwnerRepairRevision(long.MaxValue - 1, true);
             AssertTrue("m6.repair.ownerRevisionFinalAdvance",
@@ -1591,6 +1822,9 @@ namespace PawnMemoryTests
 
             KnowledgeObservationPolicySnapshot familyPolicy =
                 new KnowledgeObservationPolicySnapshot().Normalized();
+            AssertTrue("m6.family.nullPolicyFallback",
+                KnowledgeRelationPolicy.IsFamilyRelation(
+                    false, false, "Stepparent", null));
             AssertTrue("m6.family.blood",
                 KnowledgeRelationPolicy.IsFamilyRelation(true, false, "Unknown", familyPolicy));
             AssertTrue("m6.family.spouse",
@@ -1605,6 +1839,15 @@ namespace PawnMemoryTests
             AssertTrue("m6.family.unknownSocialOnly",
                 !KnowledgeRelationPolicy.IsFamilyRelation(
                     false, false, "ExLover", familyPolicy));
+            KnowledgeObservationPolicySnapshot oversizedFamilyPolicy =
+                new KnowledgeObservationPolicySnapshot
+                {
+                    familyRelationDefNames = Enumerable.Range(0, 17)
+                        .Select(index => "FamilyChoice" + index)
+                        .ToList()
+                }.Normalized();
+            AssertEqual("m6.family.oversizedFallback", 4,
+                oversizedFamilyPolicy.familyRelationDefNames.Count);
         }
 
         private static void TestM6FactCanonicalization()

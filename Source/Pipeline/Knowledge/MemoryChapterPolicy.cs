@@ -45,9 +45,46 @@ namespace PawnDiary
         public string reasonToken = string.Empty;
     }
 
+    /// <summary>Pure interpretation of one XML chapter directive at an admission boundary.</summary>
+    internal sealed class MemoryChapterAdmissionPlan
+    {
+        public bool valid;
+        public bool remainStandalone;
+        public bool closeOpenBeforeAdmission;
+        public bool closeAdmittingChapterAfterAdmission;
+        public string closureReasonToken = string.Empty;
+    }
+
     /// <summary>Plans explicit or elapsed-inactivity chapter closure with overflow-safe arithmetic.</summary>
     internal static class MemoryChapterPolicy
     {
+        /// <summary>
+        /// Converts the closed XML directive vocabulary into store actions. A closure reason is
+        /// mandatory exactly when a directive closes a chapter; malformed policy refuses atomically.
+        /// </summary>
+        public static MemoryChapterAdmissionPlan PlanAdmission(
+            string directive,
+            string closureReasonToken)
+        {
+            MemoryChapterAdmissionPlan plan = new MemoryChapterAdmissionPlan();
+            if (!MemoryChapterDirectiveTokens.IsKnown(directive)) return plan;
+            bool closes = MemoryChapterDirectiveTokens.ClosesChapter(directive);
+            if (closes)
+            {
+                if (!MemoryChapterTokens.IsKnownClosureReason(closureReasonToken)) return plan;
+            }
+            else if (!string.IsNullOrEmpty(closureReasonToken)) return plan;
+
+            plan.valid = true;
+            plan.remainStandalone = directive == MemoryChapterDirectiveTokens.RemainStandalone;
+            plan.closeOpenBeforeAdmission =
+                directive == MemoryChapterDirectiveTokens.CloseAndStartWithCurrentEvent;
+            plan.closeAdmittingChapterAfterAdmission =
+                directive == MemoryChapterDirectiveTokens.CloseAfterCurrentEvent;
+            plan.closureReasonToken = closes ? closureReasonToken : string.Empty;
+            return plan;
+        }
+
         /// <summary>
         /// Explicit evidence wins in a stable order. Otherwise, inactivity closes at the exact
         /// boundary <c>age &gt;= lifetime</c>. A clock moving backwards is treated as zero elapsed.

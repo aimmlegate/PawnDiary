@@ -90,7 +90,8 @@ namespace PawnDiary.Ingestion
                 payload.DefName,
                 PersonaWeaponContextFormatter.Format(
                     weapon, previous, lifecycle, selectedTraits, localizedDuration, policy),
-                payload.Tick);
+                payload.Tick,
+                DedupKey);
             return true;
         }
 

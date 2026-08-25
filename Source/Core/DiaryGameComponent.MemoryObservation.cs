@@ -1,7 +1,8 @@
-// DiaryGameComponent.MemoryObservation.cs — Phase M6's impure shadow-current-truth adapter.
+// DiaryGameComponent.MemoryObservation.cs — M6 current truth plus M7 factual-capture adapter.
 // It observes live RimWorld pawns/factions only on the main thread, converts them immediately to
 // detached policy inputs, and commits bounded SavedMemoryAwarenessSnapshot/open-episode/global-
-// faction rows. It never creates a DiaryEvent, prompt fact, reflection, or LLM request.
+// faction rows. M7 may additionally admit a detached factual block, but this file never creates a
+// DiaryEvent, reflection opportunity, provider request, or prompt-format change.
 //
 // New to C#/RimWorld? See AGENTS.md ("architecture barriers" and "DLC-safety"). Every API used
 // here is base-game; no DLC tracker, DLC Def, or paid-content instance is required.
@@ -46,6 +47,10 @@ namespace PawnDiary
             public MemoryBudgetLimits limits;
             public MemoryPayloadBudgetTotals global;
             public int activeOwnerCount;
+            public long epochCarrierSequence = -1;
+            public string epochCarrierChain = string.Empty;
+            public List<string> epochCarriers;
+            public bool epochCarrierScanRefused;
             public readonly Dictionary<string, MemoryOwnerByteTotals> owners =
                 new Dictionary<string, MemoryOwnerByteTotals>(StringComparer.Ordinal);
         }
@@ -71,6 +76,13 @@ namespace PawnDiary
         {
             public int liveOffset;
             public int worldOffset;
+            public int liveRemaining;
+            public int worldRemaining;
+            public bool cycleActive;
+            public readonly SortedSet<string> requested =
+                new SortedSet<string>(StringComparer.Ordinal);
+            public readonly SortedDictionary<string, Pawn> found =
+                new SortedDictionary<string, Pawn>(StringComparer.Ordinal);
         }
 
         private readonly SortedDictionary<string, MemoryObservationWorkItem>
@@ -82,6 +94,11 @@ namespace PawnDiary
             new HashSet<string>(StringComparer.Ordinal);
         private readonly HashSet<string> memoryObservationOwnersNeedingSilentBaseline =
             new HashSet<string>(StringComparer.Ordinal);
+        private readonly HashSet<string> memoryObservationAwarenessKeysNeedingSilentBaseline =
+            new HashSet<string>(StringComparer.Ordinal);
+        private readonly HashSet<string> memoryObservationFactionKeysNeedingSilentBaseline =
+            new HashSet<string>(StringComparer.Ordinal);
+        private bool memoryObservationForceAllSettlementsSilent;
         private readonly Dictionary<string, MemoryObservationSavedCandidateCursor>
             memoryObservationSavedCandidateCursors =
                 new Dictionary<string, MemoryObservationSavedCandidateCursor>(StringComparer.Ordinal);
@@ -92,16 +109,29 @@ namespace PawnDiary
         private bool memoryObservationFinishFullAfterQueue;
         private bool memoryObservationBootstrapPending;
         private bool memoryObservationFullFactionsComplete;
+        private bool memoryObservationFullFactionSourceCaptured;
         private int memoryObservationFullFactionSourceIndex;
+        private readonly List<Faction> memoryObservationFullFactionSource =
+            new List<Faction>();
+        private bool memoryObservationFullFactionSourceOverflow;
         private readonly SortedDictionary<string, Faction> memoryObservationFullFactionCandidates =
             new SortedDictionary<string, Faction>(StringComparer.Ordinal);
         private readonly HashSet<string> memoryObservationFullSavedFactionIds =
             new HashSet<string>(StringComparer.Ordinal);
         private string memoryObservationFullFactionAfterId = string.Empty;
         private bool memoryObservationFullOwnersCollected;
+        private bool memoryObservationFullOwnerSourceCaptured;
         private int memoryObservationFullOwnerSourceIndex;
+        private readonly List<Pawn> memoryObservationFullOwnerSource = new List<Pawn>();
+        private readonly List<Pawn> memoryObservationFullLivePawnSource = new List<Pawn>();
+        private readonly List<Pawn> memoryObservationFullWorldPawnSource = new List<Pawn>();
+        private bool memoryObservationFullPawnSourcesCaptured;
+        private bool memoryObservationFullOwnerSourceOverflow;
         private readonly SortedDictionary<string, Pawn> memoryObservationFullOwners =
             new SortedDictionary<string, Pawn>(StringComparer.Ordinal);
+        private readonly SortedDictionary<string, Pawn> memoryObservationFullCurrentCandidates =
+            new SortedDictionary<string, Pawn>(StringComparer.Ordinal);
+        private bool memoryObservationFullCurrentCandidatesReady;
         private string memoryObservationFullOwnerAfterId = string.Empty;
         private string memoryObservationFullCurrentOwnerId = string.Empty;
         private bool memoryObservationFullOwnerFactionDone;
@@ -135,6 +165,9 @@ namespace PawnDiary
             memoryObservationSeenFactionIds.Clear();
             memoryObservationAttachedOwnerIds.Clear();
             memoryObservationOwnersNeedingSilentBaseline.Clear();
+            memoryObservationAwarenessKeysNeedingSilentBaseline.Clear();
+            memoryObservationFactionKeysNeedingSilentBaseline.Clear();
+            memoryObservationForceAllSettlementsSilent = false;
             memoryObservationSavedCandidateCursors.Clear();
             memoryObservationFullScanUnseenStartingOwnerIds.Clear();
             memoryObservationFullScanRequested = false;
@@ -157,6 +190,9 @@ namespace PawnDiary
             memoryObservationSeenFactionIds.Clear();
             memoryObservationAttachedOwnerIds.Clear();
             memoryObservationOwnersNeedingSilentBaseline.Clear();
+            memoryObservationAwarenessKeysNeedingSilentBaseline.Clear();
+            memoryObservationFactionKeysNeedingSilentBaseline.Clear();
+            memoryObservationForceAllSettlementsSilent = false;
             memoryObservationSavedCandidateCursors.Clear();
             memoryObservationFullScanUnseenStartingOwnerIds.Clear();
             memoryObservationFullScanRequested = false;
@@ -361,7 +397,8 @@ namespace PawnDiary
                 || ownerReattachmentSilent;
             if (work.kind == MemoryObservationWorkKind.Faction)
             {
-                ObserveGlobalFaction(work.faction, work.removedFaction, now, silent, budget);
+                ObserveGlobalFaction(
+                    work.faction, work.removedFaction, now, silent, capturePolicy, budget);
             }
             else if (work.kind == MemoryObservationWorkKind.PawnFaction)
             {
@@ -485,12 +522,17 @@ namespace PawnDiary
                     out snapshotId)) return;
             SavedMemoryAwarenessSnapshot previousSaved =
                 FindAwarenessSnapshot(state, snapshotId);
+            KnowledgeAwarenessState previousSocial = ToPlainAwareness(previousSaved);
             string pairKey;
             KnowledgeRelationPolicy.TryCreateDirectedPairKey(ownerId, subjectId, out pairKey);
             SavedMemoryCaptureEpisode priorEpisode = FindOpinionEpisode(state, pairKey);
             long generation = capturePolicy.CaptureGeneration(MemoryCategoryBits.Relationships);
+            string socialOccurrenceId = MemoryObservationOccurrenceId(
+                "social_observation", now,
+                previousSocial == null ? 1 : NextObservationSequence(previousSocial.snapshotRevision),
+                "social", ownerId, subjectId, null);
             KnowledgeOpinionPlan plan = KnowledgeRelationPolicy.PlanDirectedOpinion(
-                ToPlainAwareness(previousSaved),
+                previousSocial,
                 ToPlainOpinionEpisode(priorEpisode),
                 new KnowledgeOpinionObservation
                 {
@@ -502,17 +544,40 @@ namespace PawnDiary
                     inboundRelationDefNames = inbound,
                     captureInvalidationGeneration = generation,
                     observedTick = now,
+                    sourceOccurrenceId = socialOccurrenceId,
                     captureAllowed = capturePolicy.AllowsCapture(
                         MemoryCategoryBits.Relationships),
                     forceSilentBaseline = forceSilent
+                        || MemoryObservationSettlementNeedsSilent(
+                            memoryObservationAwarenessKeysNeedingSilentBaseline,
+                            snapshotId)
                 },
                 bands,
                 observationPolicy);
             if (plan.valid && plan.savedMutationRequired)
             {
-                // Intentionally ignore plan.qualifiedForFutureCapture: M6 owns shadow state only.
-                ApplyMemoryAwarenessPlan(enrollment, plan.replacement, plan.openEpisode,
-                    pairKey, budget);
+                bool settled = ApplyMemoryAwarenessPlan(
+                    enrollment, plan.replacement, plan.openEpisode, pairKey, budget);
+                RecordMemoryObservationSettlementResult(
+                    memoryObservationAwarenessKeysNeedingSilentBaseline,
+                    snapshotId, settled);
+                bool factualAttempted = false;
+                if (settled && plan.qualifiedForFutureCapture)
+                {
+                    CaptureOpinionEpisodeMemory(
+                        owner, subject, previousSocial, priorEpisode, plan,
+                        socialOccurrenceId, opinion, now);
+                    factualAttempted = true;
+                }
+                if (settled && plan.formalRelationChanged && !plan.silentBaseline
+                    && !AuthoritativePageOwnsSocialTransition(
+                        previousSocial, outbound, inbound))
+                {
+                    CaptureFormalRelationMemory(
+                        owner, subject, outbound, inbound, socialOccurrenceId, now);
+                    factualAttempted = true;
+                }
+                if (factualAttempted) RefreshMemoryObservationBudgetSession(budget);
             }
 
             bool family = HasVisibleFamilyRelation(owner, subject, observationPolicy);
@@ -532,11 +597,25 @@ namespace PawnDiary
                 relationSet = new string('x', observationPolicy.maximumFactValueCharacters + 1);
             }
             string factionSubject = FactionSubjectIdFor(subject.Faction);
-            KnowledgeAwarenessPlan relativePlan = KnowledgeRelationPolicy.PlanCurrentTruth(
-                FindPlainAwareness(state,
+            KnowledgeAwarenessState previousRelative = FindPlainAwareness(state,
                     KnowledgeObservationTokens.ScopeRelative,
                     KnowledgeObservationTokens.StreamRelativeState,
-                    subjectId),
+                    subjectId);
+            string relativeSnapshotId;
+            KnowledgeRelationPolicy.TryCreateAwarenessId(
+                ownerId, enrollment.epochToken,
+                KnowledgeObservationTokens.ScopeRelative,
+                KnowledgeObservationTokens.SubjectPawn,
+                subjectId,
+                KnowledgeObservationTokens.StreamRelativeState,
+                out relativeSnapshotId);
+            string relativeOccurrenceId = MemoryObservationOccurrenceId(
+                "relative_observation", now,
+                previousRelative == null ? 1
+                    : NextObservationSequence(previousRelative.snapshotRevision),
+                "relative", ownerId, subjectId, null);
+            KnowledgeAwarenessPlan relativePlan = KnowledgeRelationPolicy.PlanCurrentTruth(
+                previousRelative,
                 new KnowledgeCurrentTruthObservation
                 {
                     ownerPawnId = ownerId,
@@ -561,14 +640,35 @@ namespace PawnDiary
                         NewObservationFact(KnowledgeObservationTokens.FactRelationDefs, relationSet)
                     },
                     observedTick = now,
+                    sourceOccurrenceId = relativeOccurrenceId,
                     captureAllowed = capturePolicy.AllowsCapture(MemoryCategoryBits.Family),
                     forceSilentBaseline = forceSilent
+                        || MemoryObservationSettlementNeedsSilent(
+                            memoryObservationAwarenessKeysNeedingSilentBaseline,
+                            relativeSnapshotId)
                 },
                 observationPolicy);
             if (relativePlan.valid)
             {
+                bool relativeSettled = !relativePlan.savedMutationRequired;
                 if (relativePlan.savedMutationRequired)
-                    ApplyMemoryAwarenessPlan(enrollment, relativePlan.replacement, null, null, budget);
+                {
+                    relativeSettled = ApplyMemoryAwarenessPlan(
+                        enrollment, relativePlan.replacement, null, null, budget);
+                    RecordMemoryObservationSettlementResult(
+                        memoryObservationAwarenessKeysNeedingSilentBaseline,
+                        relativePlan.replacement?.snapshotId, relativeSettled);
+                }
+                if (relativeSettled && relativePlan.savedMutationRequired
+                    && relativePlan.authoritativeStateChanged && !relativePlan.silentBaseline
+                    && !AuthoritativePageOwnsRelativeTransition(
+                        previousRelative, relativePlan.replacement, union))
+                {
+                    CaptureRelativeStateMemory(
+                        owner, subject, relativePlan.replacement,
+                        relativeOccurrenceId, now);
+                    RefreshMemoryObservationBudgetSession(budget);
+                }
                 PruneOrphanedFamilyFactionConnections(state, budget);
             }
             if (subject.Faction != null && !subject.Faction.IsPlayer)
@@ -626,6 +726,14 @@ namespace PawnDiary
                 KnowledgeObservationTokens.ScopeFaction,
                 KnowledgeObservationTokens.StreamFactionConnection,
                 factionSubject);
+            string ownerFactionSnapshotId;
+            KnowledgeRelationPolicy.TryCreateAwarenessId(
+                SafePawnId(owner), enrollment.epochToken,
+                KnowledgeObservationTokens.ScopeFaction,
+                KnowledgeObservationTokens.SubjectFaction,
+                factionSubject,
+                KnowledgeObservationTokens.StreamFactionConnection,
+                out ownerFactionSnapshotId);
             string effectiveConnection = KnowledgeRelationPolicy.PreferPersonalFactionConnection(
                 FactValue(previous?.stateFacts,
                     KnowledgeObservationTokens.FactConnectionKind),
@@ -654,10 +762,19 @@ namespace PawnDiary
                     observedTick = now,
                     captureAllowed = capturePolicy.AllowsCapture(MemoryCategoryBits.Factions),
                     forceSilentBaseline = forceSilent
+                        || MemoryObservationSettlementNeedsSilent(
+                            memoryObservationAwarenessKeysNeedingSilentBaseline,
+                            ownerFactionSnapshotId)
                 },
                 observationPolicy);
             if (plan.valid && plan.savedMutationRequired)
-                ApplyMemoryAwarenessPlan(enrollment, plan.replacement, null, null, budget);
+            {
+                bool settled = ApplyMemoryAwarenessPlan(
+                    enrollment, plan.replacement, null, null, budget);
+                RecordMemoryObservationSettlementResult(
+                    memoryObservationAwarenessKeysNeedingSilentBaseline,
+                    plan.replacement?.snapshotId, settled);
+            }
         }
 
         private void ObserveGlobalFaction(
@@ -665,6 +782,7 @@ namespace PawnDiary
             bool removed,
             int now,
             bool forceSilent,
+            MemoryPolicySnapshot capturePolicy,
             MemoryObservationBudgetSession budget)
         {
             if (faction == null) return;
@@ -714,8 +832,12 @@ namespace PawnDiary
             int labelCap = (int)ReadCapacityLong("frozenDisplayLabelUnits", 80, 320);
             string label = DiaryLineCleaner.CleanLine(faction.Name);
             if (label.Length > labelCap) label = TextTruncation.SafePrefix(label, labelCap);
+            KnowledgeFactionState previousFaction = ToPlainFaction(previous);
+            string factionSettlementKey;
+            MemoryIdentityCodec.TryCreateFactionSubjectId(
+                instanceId, allocatorGeneration, out factionSettlementKey);
             KnowledgeFactionPlan plan = KnowledgeRelationPolicy.PlanFactionSnapshot(
-                ToPlainFaction(previous),
+                previousFaction,
                 new KnowledgeFactionObservation
                 {
                     factionInstanceId = instanceId,
@@ -728,16 +850,44 @@ namespace PawnDiary
                     defeated = faction.defeated,
                     removed = removed,
                     observedTick = now,
-                    forceSilentBaseline = forceSilent,
+                    forceSilentBaseline = forceSilent
+                        || MemoryObservationSettlementNeedsSilent(
+                            memoryObservationFactionKeysNeedingSilentBaseline,
+                            factionSettlementKey),
                     maximumFrozenDisplayLabelCharacters = labelCap
                 });
-            if (plan.valid && plan.savedMutationRequired
-                && ApplyGlobalFactionPlan(plan.replacement, budget)
-                && allocatedGeneration)
+            bool factionSettled = plan.valid && plan.savedMutationRequired
+                && ApplyGlobalFactionPlan(plan.replacement, budget);
+            if (plan.valid && plan.savedMutationRequired)
+            {
+                RecordMemoryObservationSettlementResult(
+                    memoryObservationFactionKeysNeedingSilentBaseline,
+                    factionSettlementKey, factionSettled);
+            }
+            if (factionSettled && allocatedGeneration)
             {
                 // Allocation and its first exact-key snapshot publish together. A cap refusal does
                 // not consume a generation and cannot grow the high-water on every reconciliation.
                 globalFactionSnapshotAllocatorGeneration = allocatorGeneration;
+            }
+            if (factionSettled && plan.authoritativeStateChanged && !plan.silentBaseline
+                && capturePolicy != null
+                && capturePolicy.AllowsCapture(MemoryCategoryBits.Factions))
+            {
+                string factionSubject;
+                if (MemoryIdentityCodec.TryCreateFactionSubjectId(
+                    instanceId, allocatorGeneration, out factionSubject))
+                {
+                    string occurrenceId = MemoryObservationOccurrenceId(
+                        "faction_observation", now,
+                        previousFaction == null ? 1
+                            : NextObservationSequence(previousFaction.snapshotRevision),
+                        "faction", null, null, factionSubject);
+                    CaptureFactionStateMemories(
+                        previousFaction, plan.replacement, factionSubject,
+                        occurrenceId, now);
+                    RefreshMemoryObservationBudgetSession(budget);
+                }
             }
         }
 
@@ -746,7 +896,8 @@ namespace PawnDiary
             MemoryObservationBudgetSession budget)
         {
             List<SavedGlobalFactionSnapshot> missing = new List<SavedGlobalFactionSnapshot>();
-            for (int i = 0; i < globalFactionSnapshots.Count; i++)
+            for (int i = 0; !memoryObservationFullFactionSourceOverflow
+                && i < globalFactionSnapshots.Count; i++)
             {
                 SavedGlobalFactionSnapshot row = globalFactionSnapshots[i];
                 if (KnowledgeRelationPolicy.CanInferMissingFactionRemoval(ToPlainFaction(row))
@@ -758,6 +909,10 @@ namespace PawnDiary
             for (int i = 0; i < missing.Count; i++)
             {
                 SavedGlobalFactionSnapshot row = missing[i];
+                string factionSettlementKey;
+                MemoryIdentityCodec.TryCreateFactionSubjectId(
+                    row.factionInstanceId, row.allocatorGeneration,
+                    out factionSettlementKey);
                 KnowledgeFactionPlan plan = KnowledgeRelationPolicy.PlanFactionSnapshot(
                     ToPlainFaction(row),
                     new KnowledgeFactionObservation
@@ -774,16 +929,25 @@ namespace PawnDiary
                         defeated = row.defeated,
                         removed = true,
                         observedTick = now,
-                        forceSilentBaseline = memoryObservationFullScanSilent,
+                        forceSilentBaseline = memoryObservationFullScanSilent
+                            || MemoryObservationSettlementNeedsSilent(
+                                memoryObservationFactionKeysNeedingSilentBaseline,
+                                factionSettlementKey),
                         maximumFrozenDisplayLabelCharacters = (int)ReadCapacityLong(
                             "frozenDisplayLabelUnits", 80, 320)
                     });
                 if (plan.valid && plan.savedMutationRequired)
-                    ApplyGlobalFactionPlan(plan.replacement, budget);
+                {
+                    bool settled = ApplyGlobalFactionPlan(plan.replacement, budget);
+                    RecordMemoryObservationSettlementResult(
+                        memoryObservationFactionKeysNeedingSilentBaseline,
+                        factionSettlementKey, settled);
+                }
             }
 
             foreach (string ownerId in memoryObservationFullScanUnseenStartingOwnerIds)
             {
+                if (memoryObservationFullOwnerSourceOverflow) break;
                 memoryObservationAttachedOwnerIds.Remove(ownerId);
                 memoryObservationOwnersNeedingSilentBaseline.Remove(ownerId);
                 memoryObservationSavedCandidateCursors.Remove(ownerId);
@@ -824,18 +988,27 @@ namespace PawnDiary
             if (!memoryObservationFullFactionsComplete)
             {
                 int factionCap = (int)ReadCapacityLong("factionSnapshots", 256, 1024);
-                List<Faction> factions = Find.FactionManager?.AllFactionsListForReading;
+                if (!memoryObservationFullFactionSourceCaptured)
+                {
+                    memoryObservationFullFactionSourceCaptured = true;
+                    memoryObservationFullFactionSourceOverflow =
+                        !TryCopyBoundedMemoryObservationSource(
+                            Find.FactionManager?.AllFactionsListForReading,
+                            memoryObservationFullFactionSource,
+                            checked(factionCap * 4));
+                }
                 int processed = 0;
-                while (factions != null
-                    && memoryObservationFullFactionSourceIndex < factions.Count
+                while (memoryObservationFullFactionSourceIndex
+                        < memoryObservationFullFactionSource.Count
                     && processed < scanCap)
                 {
                     OfferFullMemoryObservationFaction(
-                        factions[memoryObservationFullFactionSourceIndex++], factionCap);
+                        memoryObservationFullFactionSource[
+                            memoryObservationFullFactionSourceIndex++], factionCap);
                     processed++;
                 }
-                if (factions != null
-                    && memoryObservationFullFactionSourceIndex < factions.Count) return;
+                if (memoryObservationFullFactionSourceIndex
+                    < memoryObservationFullFactionSource.Count) return;
 
                 foreach (KeyValuePair<string, Faction> pair
                     in memoryObservationFullFactionCandidates)
@@ -856,28 +1029,49 @@ namespace PawnDiary
 
             if (!memoryObservationFullOwnersCollected)
             {
-                List<Pawn> ownerSource = SnapshotFreeColonists();
                 int ownerCap = (int)ReadCapacityTuplePart("ownerSlotTriple", 0, 1000, 4000);
+                if (!memoryObservationFullOwnerSourceCaptured)
+                {
+                    memoryObservationFullOwnerSourceCaptured = true;
+                    memoryObservationFullOwnerSourceOverflow =
+                        !TryCopyBoundedMemoryObservationSource(
+                            SnapshotFreeColonists(), memoryObservationFullOwnerSource,
+                            checked(ownerCap * 4));
+                }
                 int processed = 0;
-                while (ownerSource != null
-                    && memoryObservationFullOwnerSourceIndex < ownerSource.Count
+                while (memoryObservationFullOwnerSourceIndex
+                        < memoryObservationFullOwnerSource.Count
                     && processed < scanCap)
                 {
-                    Pawn candidate = ownerSource[memoryObservationFullOwnerSourceIndex++];
+                    Pawn candidate = memoryObservationFullOwnerSource[
+                        memoryObservationFullOwnerSourceIndex++];
                     if (candidate != null && IsDiaryEligible(candidate))
                         OfferBoundedMemoryObservationCandidate(
                             memoryObservationFullOwners, null, candidate, ownerCap, null);
                     processed++;
                 }
-                if (ownerSource != null
-                    && memoryObservationFullOwnerSourceIndex < ownerSource.Count) return;
+                if (memoryObservationFullOwnerSourceIndex
+                    < memoryObservationFullOwnerSource.Count) return;
                 memoryObservationFullOwnersCollected = true;
             }
 
             int candidateCap = (int)ReadCapacityLong("awarenessRows", 128, 512);
-            List<Pawn> livePawnSource =
-                PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive;
-            List<Pawn> worldPawnSource = Find.WorldPawns?.AllPawnsAliveOrDead;
+            if (!memoryObservationFullPawnSourcesCaptured)
+            {
+                memoryObservationFullPawnSourcesCaptured = true;
+                int ownerCap = (int)ReadCapacityTuplePart("ownerSlotTriple", 0, 1000, 4000);
+                int pawnSourceCap = checked(ownerCap * 256);
+                if (!TryCopyBoundedMemoryObservationSource(
+                        PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive,
+                        memoryObservationFullLivePawnSource, pawnSourceCap)
+                    || !TryCopyBoundedMemoryObservationSource(
+                        Find.WorldPawns?.AllPawnsAliveOrDead,
+                        memoryObservationFullWorldPawnSource, pawnSourceCap))
+                {
+                    memoryObservationFullLivePawnSource.Clear();
+                    memoryObservationFullWorldPawnSource.Clear();
+                }
+            }
             int ownersProcessed = 0;
             while (true)
             {
@@ -897,10 +1091,24 @@ namespace PawnDiary
                             queueCap)) return;
                 }
 
-                SortedDictionary<string, Pawn> candidates =
-                    FullMemoryObservationCandidates(
-                        owner, candidateCap, livePawnSource, worldPawnSource);
-                foreach (KeyValuePair<string, Pawn> candidate in candidates)
+                if (!memoryObservationFullCurrentCandidatesReady)
+                {
+                    bool candidatesComplete;
+                    SortedDictionary<string, Pawn> candidates =
+                        FullMemoryObservationCandidates(
+                            owner, candidateCap,
+                            memoryObservationFullLivePawnSource,
+                            memoryObservationFullWorldPawnSource,
+                            out candidatesComplete);
+                    if (!candidatesComplete) return;
+                    memoryObservationFullCurrentCandidates.Clear();
+                    foreach (KeyValuePair<string, Pawn> candidate in candidates)
+                        memoryObservationFullCurrentCandidates.Add(
+                            candidate.Key, candidate.Value);
+                    memoryObservationFullCurrentCandidatesReady = true;
+                }
+                foreach (KeyValuePair<string, Pawn> candidate
+                    in memoryObservationFullCurrentCandidates)
                 {
                     if (string.CompareOrdinal(
                             candidate.Key, memoryObservationFullCandidateAfterId) <= 0) continue;
@@ -915,12 +1123,13 @@ namespace PawnDiary
                 memoryObservationFullCurrentOwnerId = string.Empty;
                 memoryObservationFullOwnerFactionDone = false;
                 memoryObservationFullCandidateAfterId = string.Empty;
+                memoryObservationFullCurrentCandidates.Clear();
+                memoryObservationFullCurrentCandidatesReady = false;
                 ownersProcessed++;
             }
 
             memoryObservationFullScanRequested = false;
             memoryObservationFinishFullAfterQueue = true;
-            ResetMemoryObservationFullCursor();
         }
 
         private Pawn FindFullScanOwner(SortedDictionary<string, Pawn> owners)
@@ -983,7 +1192,10 @@ namespace PawnDiary
         private void ResetMemoryObservationFullCursor()
         {
             memoryObservationFullFactionsComplete = false;
+            memoryObservationFullFactionSourceCaptured = false;
             memoryObservationFullFactionSourceIndex = 0;
+            memoryObservationFullFactionSource.Clear();
+            memoryObservationFullFactionSourceOverflow = false;
             memoryObservationFullFactionCandidates.Clear();
             memoryObservationFullSavedFactionIds.Clear();
             int factionCap = (int)ReadCapacityLong("factionSnapshots", 256, 1024);
@@ -995,20 +1207,53 @@ namespace PawnDiary
             }
             memoryObservationFullFactionAfterId = string.Empty;
             memoryObservationFullOwnersCollected = false;
+            memoryObservationFullOwnerSourceCaptured = false;
             memoryObservationFullOwnerSourceIndex = 0;
+            memoryObservationFullOwnerSource.Clear();
+            memoryObservationFullLivePawnSource.Clear();
+            memoryObservationFullWorldPawnSource.Clear();
+            memoryObservationFullPawnSourcesCaptured = false;
+            memoryObservationFullOwnerSourceOverflow = false;
             memoryObservationFullOwners.Clear();
+            memoryObservationFullCurrentCandidates.Clear();
+            memoryObservationFullCurrentCandidatesReady = false;
             memoryObservationFullOwnerAfterId = string.Empty;
             memoryObservationFullCurrentOwnerId = string.Empty;
             memoryObservationFullOwnerFactionDone = false;
             memoryObservationFullCandidateAfterId = string.Empty;
+            foreach (MemoryObservationSavedCandidateCursor cursor
+                in memoryObservationSavedCandidateCursors.Values)
+            {
+                cursor.cycleActive = false;
+                cursor.requested.Clear();
+                cursor.found.Clear();
+            }
+        }
+
+        /// <summary>
+        /// Copies one live source once for a reconciliation pass. The persistent slice cursor then
+        /// indexes a stable list, so removals or reorderings between ticks cannot skip an identity.
+        /// </summary>
+        private static bool TryCopyBoundedMemoryObservationSource<T>(
+            List<T> source,
+            List<T> destination,
+            int maximumRows)
+        {
+            destination.Clear();
+            if (source == null) return true;
+            if (maximumRows < 0 || source.Count > maximumRows) return false;
+            for (int i = 0; i < source.Count; i++) destination.Add(source[i]);
+            return true;
         }
 
         private SortedDictionary<string, Pawn> FullMemoryObservationCandidates(
             Pawn owner,
             int cap,
             List<Pawn> livePawnSource,
-            List<Pawn> worldPawnSource)
+            List<Pawn> worldPawnSource,
+            out bool complete)
         {
+            complete = false;
             SortedDictionary<string, Pawn> result =
                 new SortedDictionary<string, Pawn>(StringComparer.Ordinal);
             // Existing exact edges own reconciliation priority. Otherwise a stable lexical prefix of
@@ -1016,7 +1261,8 @@ namespace PawnDiary
             PawnKnowledgeState state = FindDiaryByPawnId(SafePawnId(owner))?.KnowledgeStateOrNull();
             SortedDictionary<string, Pawn> savedCandidates =
                 ResolveSavedMemoryObservationCandidates(
-                    state, cap, livePawnSource, worldPawnSource);
+                    state, cap, livePawnSource, worldPawnSource, out complete);
+            if (!complete) return result;
             SortedDictionary<string, Pawn> relatedCandidates =
                 new SortedDictionary<string, Pawn>(StringComparer.Ordinal);
             if (savedCandidates.Count < cap && owner?.relations != null)
@@ -1069,8 +1315,10 @@ namespace PawnDiary
             PawnKnowledgeState state,
             int cap,
             List<Pawn> livePawnSource,
-            List<Pawn> worldPawnSource)
+            List<Pawn> worldPawnSource,
+            out bool complete)
         {
+            complete = false;
             SortedSet<string> requested = new SortedSet<string>(StringComparer.Ordinal);
             for (int i = 0; cap > 0 && state?.ownerAwarenessSnapshots != null
                 && i < state.ownerAwarenessSnapshots.Count; i++)
@@ -1086,7 +1334,11 @@ namespace PawnDiary
 
             SortedDictionary<string, Pawn> found =
                 new SortedDictionary<string, Pawn>(StringComparer.Ordinal);
-            if (requested.Count == 0) return found;
+            if (requested.Count == 0)
+            {
+                complete = true;
+                return found;
+            }
             string ownerId = state?.pawnId ?? string.Empty;
             MemoryObservationSavedCandidateCursor cursor;
             if (!memoryObservationSavedCandidateCursors.TryGetValue(ownerId, out cursor))
@@ -1097,13 +1349,46 @@ namespace PawnDiary
                     cursor = new MemoryObservationSavedCandidateCursor();
                     memoryObservationSavedCandidateCursors.Add(ownerId, cursor);
                 }
-                else cursor = new MemoryObservationSavedCandidateCursor();
+                else
+                {
+                    // A malformed owner directory beyond its configured cap cannot retain another
+                    // cursor. Skip saved-edge discovery for this owner instead of restarting forever.
+                    complete = true;
+                    return found;
+                }
+            }
+            if (!cursor.cycleActive || !cursor.requested.SetEquals(requested))
+            {
+                cursor.cycleActive = true;
+                cursor.requested.Clear();
+                foreach (string id in requested) cursor.requested.Add(id);
+                cursor.found.Clear();
+                cursor.liveRemaining = livePawnSource?.Count ?? 0;
+                cursor.worldRemaining = worldPawnSource?.Count ?? 0;
             }
             int scanCap = (int)ReadCapacityLong("sliceWorkItems", 30, 240);
-            IndexRequestedObservedPawns(
-                livePawnSource, requested, found, scanCap, ref cursor.liveOffset);
-            IndexRequestedObservedPawns(
-                worldPawnSource, requested, found, scanCap, ref cursor.worldOffset);
+            int remainingWork = Math.Max(1, scanCap);
+            int inspected = IndexRequestedObservedPawns(
+                livePawnSource, requested, cursor.found,
+                Math.Min(remainingWork, cursor.liveRemaining), ref cursor.liveOffset);
+            cursor.liveRemaining -= inspected;
+            remainingWork -= inspected;
+            if (remainingWork > 0 && cursor.found.Count < requested.Count)
+            {
+                inspected = IndexRequestedObservedPawns(
+                    worldPawnSource, requested, cursor.found,
+                    Math.Min(remainingWork, cursor.worldRemaining), ref cursor.worldOffset);
+                cursor.worldRemaining -= inspected;
+            }
+            if (cursor.found.Count < requested.Count
+                && (cursor.liveRemaining > 0 || cursor.worldRemaining > 0)) return found;
+
+            foreach (KeyValuePair<string, Pawn> pair in cursor.found)
+                found.Add(pair.Key, pair.Value);
+            cursor.cycleActive = false;
+            cursor.requested.Clear();
+            cursor.found.Clear();
+            complete = true;
             return found;
         }
 
@@ -1120,7 +1405,7 @@ namespace PawnDiary
             target.Remove(greatest);
         }
 
-        private static void IndexRequestedObservedPawns(
+        private static int IndexRequestedObservedPawns(
             List<Pawn> source,
             SortedSet<string> requested,
             SortedDictionary<string, Pawn> found,
@@ -1128,11 +1413,11 @@ namespace PawnDiary
             ref int offset)
         {
             if (source == null || requested == null || found == null
-                || found.Count >= requested.Count) return;
+                || found.Count >= requested.Count || scanCap <= 0) return 0;
             if (source.Count == 0)
             {
                 offset = 0;
-                return;
+                return 0;
             }
             int start = offset < 0 || offset >= source.Count ? 0 : offset;
             int inspected = 0;
@@ -1146,6 +1431,7 @@ namespace PawnDiary
                 inspected++;
             }
             offset = (start + inspected) % source.Count;
+            return inspected;
         }
 
         private static void AddMemoryObservationCandidate(
@@ -1294,6 +1580,41 @@ namespace PawnDiary
                 : string.Empty;
         }
 
+        /// <summary>
+        /// A failed mandatory settlement leaves its prior tracked value stale. The exact transient
+        /// fence makes the first later successful observation baseline-only instead of reconstructing
+        /// a transition across the capacity-refused interval.
+        /// </summary>
+        private bool MemoryObservationSettlementNeedsSilent(
+            HashSet<string> exactKeys,
+            string exactKey)
+        {
+            return memoryObservationForceAllSettlementsSilent
+                || (!string.IsNullOrEmpty(exactKey) && exactKeys.Contains(exactKey));
+        }
+
+        private void RecordMemoryObservationSettlementResult(
+            HashSet<string> exactKeys,
+            string exactKey,
+            bool settled)
+        {
+            if (string.IsNullOrEmpty(exactKey))
+            {
+                if (!settled) memoryObservationForceAllSettlementsSilent = true;
+                return;
+            }
+            if (settled)
+            {
+                exactKeys.Remove(exactKey);
+                return;
+            }
+            int cap = (int)ReadCapacityLong("dirtyObservationKeys", 1024, 4096);
+            if (exactKeys.Contains(exactKey) || exactKeys.Count < cap)
+                exactKeys.Add(exactKey);
+            else
+                memoryObservationForceAllSettlementsSilent = true;
+        }
+
         private MemoryObservationOwnerEnrollment PrepareMemoryObservationOwner(
             Pawn owner,
             MemoryObservationBudgetSession budget)
@@ -1332,17 +1653,30 @@ namespace PawnDiary
             // Epoch allocation must see every live carrier to remain collision-safe. Refuse a new
             // owner/epoch when corrupt saved collections would make that exact scan unbounded.
             int epochCarrierScanCap = checked(ownerCap * 256);
-            if (!CanBoundMemoryObservationEpochCarrierScan(epochCarrierScanCap)) return null;
-
             long expectedSequence = lastIssuedAutobiographicalEpochSequence;
             string expectedChain = lastIssuedAutobiographicalEpochFallbackChain ?? string.Empty;
+            if (budget == null) return null;
+            if (budget.epochCarriers == null
+                || budget.epochCarrierSequence != expectedSequence
+                || !string.Equals(
+                    budget.epochCarrierChain, expectedChain, StringComparison.Ordinal))
+            {
+                budget.epochCarrierSequence = expectedSequence;
+                budget.epochCarrierChain = expectedChain;
+                budget.epochCarriers = null;
+                budget.epochCarrierScanRefused =
+                    !CanBoundMemoryObservationEpochCarrierScan(epochCarrierScanCap);
+                if (!budget.epochCarrierScanRefused)
+                    budget.epochCarriers = SnapshotAutobiographicalEpochCarriers();
+            }
+            if (budget.epochCarrierScanRefused || budget.epochCarriers == null) return null;
             MemoryEpochAllocationPlan allocation = MemoryIdentityCodec.PlanEpochAllocation(
                 new MemoryEpochAllocationRequest
                 {
                     ownerPawnId = ownerId,
                     lastIssuedSequence = expectedSequence,
                     fallbackChain = expectedChain,
-                    liveEpochCarriers = SnapshotAutobiographicalEpochCarriers(),
+                    liveEpochCarriers = budget.epochCarriers,
                     isTargetBrainwipe = false
                 });
             if (!allocation.canMutate) return null;
@@ -1362,7 +1696,8 @@ namespace PawnDiary
         private bool CanBoundMemoryObservationEpochCarrierScan(int maximumRows)
         {
             int remaining = Math.Max(1, maximumRows);
-            if (!TryReserveMemoryObservationCarrierRows(diaries?.Count ?? 0, ref remaining)
+            if (!TryReserveScaledMemoryObservationCarrierRows(
+                    diaries?.Count ?? 0, 2, ref remaining)
                 || !TryReserveMemoryObservationCarrierRows(
                     summaryWordingOpportunities?.Count ?? 0, ref remaining)
                 || !TryReserveMemoryObservationCarrierRows(
@@ -1371,7 +1706,8 @@ namespace PawnDiary
                     activeMemoryCoordinatorRequests?.Count ?? 0, ref remaining)) return false;
 
             IReadOnlyList<DiaryEvent> hotEvents = events?.AllEvents;
-            if (!TryReserveMemoryObservationCarrierRows(hotEvents?.Count ?? 0, ref remaining))
+            if (!TryReserveScaledMemoryObservationCarrierRows(
+                    hotEvents?.Count ?? 0, 3, ref remaining))
                 return false;
             for (int index = 0; diaries != null && index < diaries.Count; index++)
             {
@@ -1381,8 +1717,8 @@ namespace PawnDiary
                         state.standaloneBlocks?.Count ?? 0, ref remaining)
                     || !TryReserveMemoryObservationCarrierRows(
                         state.repetitionGuardRows?.Count ?? 0, ref remaining)
-                    || !TryReserveMemoryObservationCarrierRows(
-                        state.threadRoots?.Count ?? 0, ref remaining)) return false;
+                    || !TryReserveScaledMemoryObservationCarrierRows(
+                        state.threadRoots?.Count ?? 0, 2, ref remaining)) return false;
                 for (int rootIndex = 0; state.threadRoots != null
                     && rootIndex < state.threadRoots.Count; rootIndex++)
                 {
@@ -1399,6 +1735,23 @@ namespace PawnDiary
             if (count < 0 || count > remaining) return false;
             remaining -= count;
             return true;
+        }
+
+        private static bool TryReserveScaledMemoryObservationCarrierRows(
+            int count,
+            int maximumTokensPerRow,
+            ref int remaining)
+        {
+            if (count < 0 || maximumTokensPerRow < 0) return false;
+            try
+            {
+                return TryReserveMemoryObservationCarrierRows(
+                    checked(count * maximumTokensPerRow), ref remaining);
+            }
+            catch (OverflowException)
+            {
+                return false;
+            }
         }
 
         private bool ApplyMemoryAwarenessPlan(
@@ -1484,6 +1837,7 @@ namespace PawnDiary
                 state.epochFenceOnly = false;
                 state.structuralRevision =
                     AdvanceMemoryObservationRevision(state.structuralRevision);
+                if (budget != null) budget.epochCarriers = null;
             }
             state.ownerAwarenessSnapshots = awareness;
             state.openCaptureEpisodes = episodes;
@@ -2245,6 +2599,318 @@ namespace PawnDiary
             source.removed = false;
             source.trackingStateToken = KnowledgeObservationTokens.TrackingCapacityUntracked;
             return source;
+        }
+
+        /// <summary>Creates the canonical no-page identity for one settled observation transition.</summary>
+        private static string MemoryObservationOccurrenceId(
+            string signalToken,
+            long tick,
+            long sequence,
+            string factDiscriminator,
+            string ownerPawnId,
+            string subjectPawnId,
+            string factionSubjectId)
+        {
+            if (sequence < 0) return string.Empty;
+            List<MemoryTypedSubject> subjects = new List<MemoryTypedSubject>();
+            if (!string.IsNullOrWhiteSpace(ownerPawnId))
+                subjects.Add(new MemoryTypedSubject
+                {
+                    subjectKind = MemoryContractTokens.SubjectPawn,
+                    subjectId = ownerPawnId
+                });
+            if (!string.IsNullOrWhiteSpace(subjectPawnId))
+                subjects.Add(new MemoryTypedSubject
+                {
+                    subjectKind = MemoryContractTokens.SubjectPawn,
+                    subjectId = subjectPawnId
+                });
+            if (!string.IsNullOrWhiteSpace(factionSubjectId))
+                subjects.Add(new MemoryTypedSubject
+                {
+                    subjectKind = MemoryContractTokens.SubjectFaction,
+                    subjectId = factionSubjectId
+                });
+            string occurrenceId;
+            return MemoryIdentityCodec.TryCreateSourceOccurrenceFallback(
+                new MemorySourceOccurrenceFallback
+                {
+                    stableSignalToken = signalToken ?? string.Empty,
+                    eventTickInvariant = Math.Max(0, tick),
+                    sourceLocalSequenceInvariant = sequence,
+                    factDiscriminator = factDiscriminator ?? string.Empty,
+                    subjects = subjects,
+                    sourceProvesUniqueness = true
+                },
+                out occurrenceId)
+                ? occurrenceId
+                : string.Empty;
+        }
+
+        private static long NextObservationSequence(long current)
+        {
+            if (current == long.MaxValue) return -1;
+            return current < 0 ? 1 : current + 1;
+        }
+
+        private void CaptureOpinionEpisodeMemory(
+            Pawn owner,
+            Pawn subject,
+            KnowledgeAwarenessState previous,
+            SavedMemoryCaptureEpisode priorEpisode,
+            KnowledgeOpinionPlan plan,
+            string sourceOccurrenceId,
+            int currentOpinion,
+            int now)
+        {
+            string baselineOpinion = SavedFactValue(
+                priorEpisode?.baselineFacts, KnowledgeObservationTokens.FactOpinionValue);
+            if (baselineOpinion.Length == 0)
+                baselineOpinion = FactValue(
+                    previous?.stateFacts, KnowledgeObservationTokens.FactOpinionValue);
+            string baselineBand = SavedFactValue(
+                priorEpisode?.baselineFacts, KnowledgeObservationTokens.FactOpinionBand);
+            if (baselineBand.Length == 0)
+                baselineBand = FactValue(
+                    previous?.stateFacts, KnowledgeObservationTokens.FactOpinionBand);
+            string currentBand = FactValue(
+                plan.replacement?.stateFacts, KnowledgeObservationTokens.FactOpinionBand);
+            string episodeValue = "reason:" + (plan.qualificationReasonToken ?? string.Empty)
+                + "|from:" + baselineOpinion
+                + "|to:" + currentOpinion.ToString(CultureInfo.InvariantCulture)
+                + "|from_band:" + baselineBand
+                + "|to_band:" + currentBand;
+            string subjectId = SafePawnId(subject);
+            string subjectName = DiaryLineCleaner.CleanLine(subject?.LabelShortCap);
+            string context = "subject_pawn_id=" + GameContextValue.Sanitize(subjectId)
+                + "; subject_name=" + GameContextValue.Sanitize(subjectName)
+                + "; episode_value=" + GameContextValue.Sanitize(episodeValue)
+                + (plan.qualificationReasonToken == "reversal" ? "; reversal=true" : string.Empty);
+            EmitObservationMemory(
+                KnowledgeTokens.SignalMemoryOpinionEpisode,
+                "memory.opinion.episode", owner, subject,
+                context, sourceOccurrenceId, now);
+        }
+
+        private bool AuthoritativePageOwnsSocialTransition(
+            KnowledgeAwarenessState previous,
+            List<string> outbound,
+            List<string> inbound)
+        {
+            List<string> prior = new List<string>();
+            List<string> decoded;
+            if (KnowledgeRelationPolicy.TryDecodeRelationDefSet(
+                    FactValue(previous?.stateFacts,
+                        KnowledgeObservationTokens.FactOutboundRelations), out decoded))
+                prior.AddRange(decoded);
+            if (KnowledgeRelationPolicy.TryDecodeRelationDefSet(
+                    FactValue(previous?.stateFacts,
+                        KnowledgeObservationTokens.FactInboundRelations), out decoded))
+                prior.AddRange(decoded);
+            List<string> current = new List<string>();
+            if (outbound != null) current.AddRange(outbound);
+            if (inbound != null) current.AddRange(inbound);
+            return ImportantEventClassifier.AuthoritativePageOwnsRelationTransition(
+                prior, current, DiaryKnowledgePolicy.ImportantEventRules());
+        }
+
+        private void CaptureFormalRelationMemory(
+            Pawn owner,
+            Pawn subject,
+            List<string> outbound,
+            List<string> inbound,
+            string sourceOccurrenceId,
+            int now)
+        {
+            string encodedOutbound;
+            string encodedInbound;
+            if (!KnowledgeRelationPolicy.TryEncodeRelationDefSet(
+                    outbound, 192, out encodedOutbound)
+                || !KnowledgeRelationPolicy.TryEncodeRelationDefSet(
+                    inbound, 192, out encodedInbound)) return;
+            string subjectId = SafePawnId(subject);
+            string subjectName = DiaryLineCleaner.CleanLine(subject?.LabelShortCap);
+            string relationValue = "out:" + encodedOutbound + "|in:" + encodedInbound;
+            string context = "subject_pawn_id=" + GameContextValue.Sanitize(subjectId)
+                + "; subject_name=" + GameContextValue.Sanitize(subjectName)
+                + "; relation_value=" + GameContextValue.Sanitize(relationValue);
+            EmitObservationMemory(
+                KnowledgeTokens.SignalMemoryFormalRelation,
+                "memory.formal.relation", owner, subject,
+                context, sourceOccurrenceId, now);
+        }
+
+        private bool AuthoritativePageOwnsRelativeTransition(
+            KnowledgeAwarenessState previous,
+            KnowledgeAwarenessState current,
+            List<string> currentRelations)
+        {
+            string priorLife = FactValue(
+                previous?.stateFacts, KnowledgeObservationTokens.FactLifeState);
+            string currentLife = FactValue(
+                current?.stateFacts, KnowledgeObservationTokens.FactLifeState);
+            if (priorLife == KnowledgeObservationTokens.LifeAlive
+                && currentLife == KnowledgeObservationTokens.LifeDead) return true;
+            List<string> previousRelations;
+            if (!KnowledgeRelationPolicy.TryDecodeRelationDefSet(
+                FactValue(previous?.stateFacts, KnowledgeObservationTokens.FactRelationDefs),
+                out previousRelations)) previousRelations = new List<string>();
+            return ImportantEventClassifier.AuthoritativePageOwnsRelationTransition(
+                previousRelations, currentRelations,
+                DiaryKnowledgePolicy.ImportantEventRules());
+        }
+
+        private void CaptureRelativeStateMemory(
+            Pawn owner,
+            Pawn subject,
+            KnowledgeAwarenessState current,
+            string sourceOccurrenceId,
+            int now)
+        {
+            string value = "life:" + FactValue(
+                    current.stateFacts, KnowledgeObservationTokens.FactLifeState)
+                + "|location:" + FactValue(
+                    current.stateFacts, KnowledgeObservationTokens.FactLocationState)
+                + "|faction:" + FactValue(
+                    current.stateFacts, KnowledgeObservationTokens.FactFactionSubject)
+                + "|relations:" + FactValue(
+                    current.stateFacts, KnowledgeObservationTokens.FactRelationDefs);
+            string subjectId = SafePawnId(subject);
+            string subjectName = DiaryLineCleaner.CleanLine(subject?.LabelShortCap);
+            string context = "subject_pawn_id=" + GameContextValue.Sanitize(subjectId)
+                + "; subject_name=" + GameContextValue.Sanitize(subjectName)
+                + "; relative_state_value=" + GameContextValue.Sanitize(value);
+            EmitObservationMemory(
+                KnowledgeTokens.SignalMemoryRelativeState,
+                "memory.relative.state", owner, subject,
+                context, sourceOccurrenceId, now);
+        }
+
+        private void CaptureFactionStateMemories(
+            KnowledgeFactionState previous,
+            KnowledgeFactionState current,
+            string factionSubjectId,
+            string sourceOccurrenceId,
+            int now)
+        {
+            if (current == null || diaries == null || sourceOccurrenceId.Length == 0) return;
+            bool diplomacyChanged = previous != null
+                && (previous.goodwill != current.goodwill
+                    || previous.relationKindToken != current.relationKindToken
+                    || previous.leaderPawnId != current.leaderPawnId);
+            bool lifecycleChanged = previous != null
+                && (previous.defeated != current.defeated || previous.removed != current.removed);
+            if (!diplomacyChanged && !lifecycleChanged) return;
+
+            string diplomacyValue = "relation:" + current.relationKindToken
+                + "|goodwill:" + current.goodwill.ToString(CultureInfo.InvariantCulture)
+                + "|leader:" + (current.leaderPawnId.Length == 0
+                    ? "none" : current.leaderPawnId);
+            string lifecycleValue = "defeated:" + (current.defeated ? "true" : "false")
+                + "|removed:" + (current.removed ? "true" : "false");
+            // Faction truth is global, but episodic faction memories are owner-private. Restrict
+            // fan-out to live first-person diary owners before checking their already-known exact
+            // faction edge; this cannot discover a relationship through a world scan.
+            HashSet<string> eligibleOwnerIds = new HashSet<string>(StringComparer.Ordinal);
+            List<Pawn> freeColonists = SnapshotFreeColonists();
+            for (int i = 0; freeColonists != null && i < freeColonists.Count; i++)
+            {
+                Pawn pawn = freeColonists[i];
+                if (IsDiaryEligible(pawn)) eligibleOwnerIds.Add(SafePawnId(pawn));
+            }
+            for (int i = 0; i < diaries.Count; i++)
+            {
+                PawnDiaryRecord diary = diaries[i];
+                PawnKnowledgeState state = diary?.knowledgeState;
+                if (diary == null || !eligibleOwnerIds.Contains(diary.pawnId)
+                    || state == null || !state.IsCurrentSchema()
+                    || string.IsNullOrEmpty(state.autobiographicalEpochToken)
+                    || !OwnerHasFactionConnection(state, factionSubjectId)) continue;
+                string common = "faction_subject_id=" + GameContextValue.Sanitize(factionSubjectId)
+                    + "; faction_name=" + GameContextValue.Sanitize(current.frozenDisplayLabel);
+                if (diplomacyChanged)
+                    EmitObservationMemory(
+                        KnowledgeTokens.SignalMemoryFactionDiplomacy,
+                        "memory.faction.diplomacy", diary.pawnId, null,
+                        common + "; faction_state_value="
+                            + GameContextValue.Sanitize(diplomacyValue),
+                        sourceOccurrenceId, now);
+                if (lifecycleChanged)
+                    EmitObservationMemory(
+                        KnowledgeTokens.SignalMemoryFactionLifecycle,
+                        "memory.faction.lifecycle", diary.pawnId, null,
+                        common + "; faction_lifecycle_value="
+                            + GameContextValue.Sanitize(lifecycleValue),
+                        sourceOccurrenceId, now);
+            }
+        }
+
+        private static bool OwnerHasFactionConnection(
+            PawnKnowledgeState state, string factionSubjectId)
+        {
+            List<SavedMemoryAwarenessSnapshot> rows = state?.ownerAwarenessSnapshots;
+            for (int i = 0; rows != null && i < rows.Count; i++)
+            {
+                SavedMemoryAwarenessSnapshot row = rows[i];
+                if (row == null
+                    || row.scopeKindToken != KnowledgeObservationTokens.ScopeFaction
+                    || row.subjectKind != KnowledgeObservationTokens.SubjectFaction
+                    || row.subjectId != factionSubjectId
+                    || row.factStreamToken != KnowledgeObservationTokens.StreamFactionConnection
+                    || row.trackingStateToken != KnowledgeObservationTokens.TrackingTracked) continue;
+                string connection = SavedFactValue(
+                    row.stateFacts, KnowledgeObservationTokens.FactConnectionKind);
+                return connection == KnowledgeObservationTokens.ConnectionCurrent
+                    || connection == KnowledgeObservationTokens.ConnectionRecentFormer
+                    || connection == KnowledgeObservationTokens.ConnectionFamily;
+            }
+            return false;
+        }
+
+        private void EmitObservationMemory(
+            string channel,
+            string defName,
+            Pawn owner,
+            Pawn subject,
+            string context,
+            string sourceOccurrenceId,
+            int now)
+        {
+            EmitObservationMemory(
+                channel, defName, SafePawnId(owner), subject,
+                context, sourceOccurrenceId, now);
+        }
+
+        private void EmitObservationMemory(
+            string channel,
+            string defName,
+            string ownerPawnId,
+            Pawn subject,
+            string context,
+            string sourceOccurrenceId,
+            int now)
+        {
+            if (string.IsNullOrWhiteSpace(ownerPawnId)
+                || string.IsNullOrWhiteSpace(sourceOccurrenceId)) return;
+            KnowledgeCaptureSignal signal = new KnowledgeCaptureSignal
+            {
+                signal = channel,
+                defName = defName,
+                sourceOccurrenceId = sourceOccurrenceId,
+                tick = Math.Max(0, now),
+                gameContext = context ?? string.Empty,
+                providedOwnerPawnId = ownerPawnId
+            };
+            string subjectId = SafePawnId(subject);
+            if (subjectId.Length > 0)
+                signal.extraParticipants.Add(new KnowledgeParticipant
+                {
+                    pawnId = subjectId,
+                    name = DiaryLineCleaner.CleanLine(subject.LabelShortCap)
+                });
+            PersistDrafts(ImportantEventClassifier.Classify(
+                signal, DiaryKnowledgePolicy.ImportantEventRules(),
+                DiaryKnowledgePolicy.Snapshot()), false);
         }
 
         private static KnowledgeStateFact NewObservationFact(string key, string value)

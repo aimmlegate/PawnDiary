@@ -96,6 +96,33 @@ namespace MemoryThreadTests
                 });
             Equal("m4.chapter.explicit-priority", MemoryChapterTokens.FormalEnd,
                 explicitReason.reasonToken);
+
+            MemoryChapterAdmissionPlan continuing = MemoryChapterPolicy.PlanAdmission(
+                MemoryChapterDirectiveTokens.ContinueCurrent, string.Empty);
+            True("m7.chapter.continue.valid", continuing.valid);
+            False("m7.chapter.continue.no-close-before", continuing.closeOpenBeforeAdmission);
+            False("m7.chapter.continue.no-close-after",
+                continuing.closeAdmittingChapterAfterAdmission);
+            MemoryChapterAdmissionPlan ending = MemoryChapterPolicy.PlanAdmission(
+                MemoryChapterDirectiveTokens.CloseAfterCurrentEvent,
+                MemoryChapterTokens.FormalEnd);
+            True("m7.chapter.end.valid", ending.valid);
+            True("m7.chapter.end.closes-after", ending.closeAdmittingChapterAfterAdmission);
+            MemoryChapterAdmissionPlan newPhase = MemoryChapterPolicy.PlanAdmission(
+                MemoryChapterDirectiveTokens.CloseAndStartWithCurrentEvent,
+                MemoryChapterTokens.Lifecycle);
+            True("m7.chapter.new-phase.valid", newPhase.valid);
+            True("m7.chapter.new-phase.closes-before", newPhase.closeOpenBeforeAdmission);
+            False("m7.chapter.new-phase.not-close-new",
+                newPhase.closeAdmittingChapterAfterAdmission);
+            True("m7.chapter.bad-reason-refused", !MemoryChapterPolicy.PlanAdmission(
+                MemoryChapterDirectiveTokens.CloseAfterCurrentEvent, string.Empty).valid);
+            True("m7.chapter.stray-reason-refused", !MemoryChapterPolicy.PlanAdmission(
+                MemoryChapterDirectiveTokens.ContinueCurrent,
+                MemoryChapterTokens.FormalEnd).valid);
+            True("m7.chapter.unknown-stray-reason-refused",
+                !MemoryChapterPolicy.PlanAdmission(
+                    MemoryChapterDirectiveTokens.ContinueCurrent, "unknown_reason").valid);
         }
 
         private static void TestBlockTtlBoundaries()

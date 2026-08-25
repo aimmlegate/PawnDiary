@@ -16,6 +16,7 @@
     <Compile Include="..\..\Source\Pipeline\Knowledge\ImportantMemoryLineRenderer.cs" Link="ImportantMemoryLineRenderer.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryThreadContracts.cs" Link="MemoryThreadContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryIdentityCodec.cs" Link="MemoryIdentityCodec.cs" />
+    <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryChapterPolicy.cs" Link="MemoryChapterPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryThreadRoutingPolicy.cs" Link="MemoryThreadRoutingPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryRepetitionGuardPolicy.cs" Link="MemoryRepetitionGuardPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\KnowledgeEvictionPlanner.cs" Link="KnowledgeEvictionPlanner.cs" />
