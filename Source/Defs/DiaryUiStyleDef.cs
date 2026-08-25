@@ -194,6 +194,21 @@ namespace PawnDiary
         public float settingsEventsRowHeight = 32f;
         public float settingsEventsRowGap = 3f;
 
+        // ---- Mod settings: Memory pages ----
+        // The Memory page contains long translated explanations and deliberately measures their
+        // actual height. These values own only the surrounding controls/spacing and remain editable
+        // without recompiling if a localization needs a roomier minimum-resolution layout.
+        public float settingsMemoryControlHeight = 28f;
+        public float settingsMemoryCheckboxSize = 24f;
+        public float settingsMemorySectionGap = 12f;
+        public float settingsMemoryBlockGap = 9f;
+        public float settingsMemoryChildIndent = 22f;
+        public float settingsMemoryNumericFieldWidth = 96f;
+        public float settingsMemoryOpenLibraryButtonWidth = 170f;
+        public float settingsMemoryAdvancedSelectorHeight = 32f;
+        public float settingsMemoryAdvancedSelectorGap = 4f;
+        public DiaryUiColorSpec settingsMemoryWarningText = Color(1f, 0.76f, 0.24f, 1f);
+
         // ---- Control/header/card dimensions ----
         public float controlLineHeight = 28f;
         public float controlGap = 2f;

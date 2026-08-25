@@ -29,6 +29,7 @@
     <Compile Include="..\..\Source\Pipeline\Knowledge\KnowledgeContracts.cs" Link="KnowledgeContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryThreadRoutingPolicy.cs" Link="MemoryThreadRoutingPolicy.cs" />
     <Compile Include="..\..\Source\Settings\MemoryPolicyNormalizer.cs" Link="MemoryPolicyNormalizer.cs" />
+    <Compile Include="..\..\Source\Settings\MemorySettingsDraft.cs" Link="MemorySettingsDraft.cs" />
     <Compile Include="..\..\Source\Settings\MemoryEffectivePolicyProvider.cs" Link="MemoryEffectivePolicyProvider.cs" />
     <Compile Include="..\..\Source\Settings\MemorySettingsCommitPolicy.cs" Link="MemorySettingsCommitPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryLibraryContracts.cs" Link="MemoryLibraryContracts.cs" />

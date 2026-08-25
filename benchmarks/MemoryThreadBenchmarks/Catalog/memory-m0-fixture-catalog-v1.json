@@ -375,6 +375,7 @@
     "PawnDiary.Memory.Settings.Retention.Regular",
     "PawnDiary.Memory.Settings.Retention.ThreadTarget",
     "PawnDiary.Memory.Settings.Retention.DayUnit",
+    "PawnDiary.Memory.Settings.Retention.DaySuffix",
     "PawnDiary.Memory.Settings.Retention.AgeHelp",
     "PawnDiary.Memory.Settings.Retention.ThreadHelp",
     "PawnDiary.Memory.Settings.Retention.InvalidOrder",

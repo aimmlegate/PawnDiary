@@ -1,6 +1,6 @@
 // Top-level settings-window layout for Pawn Diary. Detail renderers live in the sibling partial
-// files so the RimWorld Mod entry point is not also one monolithic IMGUI class. The window has five
-// top-level pages: Main, Prompts, Styles, Events, and Advanced.
+// files so the RimWorld Mod entry point is not also one monolithic IMGUI class. The dormant Memory
+// page becomes a sixth top-level page only when the unified-memory release gate is activated.
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -29,12 +29,28 @@ namespace PawnDiary
 
         /// <summary>
         /// Draws the settings window behind a compact tab button row.
-        /// Main holds connection/generation basics, Prompts holds all prompt editing, Styles holds
-        /// writing-style editing, Events holds automatic-capture filters, and Advanced holds
-        /// low-level XML parameters behind an opt-in gate.
+        /// Main holds connection/generation basics, Memory holds the detached unified-memory policy,
+        /// Prompts holds all prompt editing, Styles holds writing-style editing, Events holds
+        /// automatic-capture filters, and Advanced hosts both approved Memory groups and the existing
+        /// low-level XML editor. Memory surfaces stay absent while the release gate is dormant.
         /// </summary>
         public override void DoSettingsWindowContents(Rect inRect)
         {
+            // Draw the navigation before repairing any persistent setting. Memory pages edit only a
+            // detached draft, so an IMGUI Layout/Repaint pass on those pages must not mutate the live
+            // PawnDiarySettings object as an incidental side effect.
+            if (!MemorySystemActivationGate.IsCurrentRelease
+                && settingsTab == PawnDiarySettingsTab.Memory)
+            {
+                settingsTab = PawnDiarySettingsTab.Main;
+            }
+            Rect pageRect = DrawSettingsTabButtons(inRect);
+            if (settingsTab == PawnDiarySettingsTab.Memory)
+            {
+                DrawMemorySettingsTab(pageRect);
+                return;
+            }
+
             Settings.EnsureEndpointsList();
             Settings.personaPresets.EnsureList();
             // Apply any completed async API-tool results on the main thread before drawing rows.
@@ -49,7 +65,12 @@ namespace PawnDiary
                 apiConnectionController.RefreshCapabilityForUncachedRows();
             }
 
-            Rect pageRect = DrawSettingsTabButtons(inRect);
+            if (settingsTab == PawnDiarySettingsTab.Tuning)
+            {
+                DrawAdvancedSettingsTab(pageRect);
+                return;
+            }
+
             switch (settingsTab)
             {
                 case PawnDiarySettingsTab.Prompts:
@@ -61,9 +82,6 @@ namespace PawnDiary
                 case PawnDiarySettingsTab.Events:
                     DrawEventFiltersSettingsTab(pageRect);
                     return;
-                case PawnDiarySettingsTab.Tuning:
-                    DrawAdvancedSettingsTab(pageRect);
-                    return;
                 default:
                     DrawMainTab(pageRect);
                     return;
@@ -74,20 +92,44 @@ namespace PawnDiary
         private Rect DrawSettingsTabButtons(Rect inRect)
         {
             float x = inRect.x;
-            DrawSettingsTabButton(ref x, inRect.y, PawnDiarySettingsTab.Main, "PawnDiary.Settings.Tab.Main");
-            DrawSettingsTabButton(ref x, inRect.y, PawnDiarySettingsTab.Prompts, "PawnDiary.Settings.Tab.Prompts");
-            DrawSettingsTabButton(ref x, inRect.y, PawnDiarySettingsTab.Styles, "PawnDiary.Settings.Tab.Styles");
-            DrawSettingsTabButton(ref x, inRect.y, PawnDiarySettingsTab.Events, "PawnDiary.Settings.Tab.Events");
-            DrawSettingsTabButton(ref x, inRect.y, PawnDiarySettingsTab.Tuning, "PawnDiary.Settings.Tab.Tuning");
+            float y = inRect.y;
+            DrawSettingsTabButton(inRect, ref x, ref y,
+                PawnDiarySettingsTab.Main, "PawnDiary.Settings.Tab.Main");
+            if (MemorySystemActivationGate.IsCurrentRelease)
+            {
+                DrawSettingsTabButton(inRect, ref x, ref y,
+                    PawnDiarySettingsTab.Memory, "PawnDiary.Memory.Settings.Page");
+            }
+            DrawSettingsTabButton(inRect, ref x, ref y,
+                PawnDiarySettingsTab.Prompts, "PawnDiary.Settings.Tab.Prompts");
+            DrawSettingsTabButton(inRect, ref x, ref y,
+                PawnDiarySettingsTab.Styles, "PawnDiary.Settings.Tab.Styles");
+            DrawSettingsTabButton(inRect, ref x, ref y,
+                PawnDiarySettingsTab.Events, "PawnDiary.Settings.Tab.Events");
+            DrawSettingsTabButton(inRect, ref x, ref y,
+                PawnDiarySettingsTab.Tuning, "PawnDiary.Settings.Tab.Tuning");
 
+            float tabRowsHeight = y - inRect.y + SettingsTabHeight;
             return new Rect(
                 inRect.x,
-                inRect.y + SettingsTabHeight + 4f,
+                inRect.y + tabRowsHeight + 4f,
                 inRect.width,
-                inRect.height - SettingsTabHeight - 4f);
+                Mathf.Max(0f, inRect.height - tabRowsHeight - 4f));
         }
 
         private void DrawAdvancedSettingsTab(Rect inRect)
+        {
+            if (MemorySystemActivationGate.IsCurrentRelease)
+            {
+                DrawMemoryAdvancedSettingsTab(inRect);
+                return;
+            }
+
+            DrawExperimentalAdvancedSettingsBody(inRect);
+        }
+
+        /// <summary>Preserves the pre-M8 low-level Advanced editor without routing Memory fields into it.</summary>
+        private void DrawExperimentalAdvancedSettingsBody(Rect inRect)
         {
             if (Settings.showExperimentalAdvancedOverrides)
             {
@@ -130,10 +172,22 @@ namespace PawnDiary
             }
         }
 
-        private void DrawSettingsTabButton(ref float x, float y, PawnDiarySettingsTab tab, string labelKey)
+        private void DrawSettingsTabButton(
+            Rect availableRect,
+            ref float x,
+            ref float y,
+            PawnDiarySettingsTab tab,
+            string labelKey)
         {
             string label = labelKey.Translate().ToString();
-            float width = Mathf.Max(110f, Text.CalcSize(label).x + 28f);
+            float width = Mathf.Min(
+                availableRect.width,
+                Mathf.Max(110f, Text.CalcSize(label).x + 28f));
+            if (x > availableRect.x && x + width > availableRect.xMax)
+            {
+                x = availableRect.x;
+                y += SettingsTabHeight + 4f;
+            }
             Rect rect = new Rect(x, y, width, SettingsTabHeight);
             if (settingsTab == tab)
             {
@@ -146,11 +200,23 @@ namespace PawnDiary
 
             TextAnchor previousAnchor = Text.Anchor;
             Text.Anchor = TextAnchor.MiddleCenter;
-            Widgets.Label(rect, label);
+            Rect labelRect = new Rect(
+                rect.x + 6f,
+                rect.y,
+                Mathf.Max(0f, rect.width - 12f),
+                rect.height);
+            Widgets.LabelFit(labelRect, label);
             Text.Anchor = previousAnchor;
 
             if (Widgets.ButtonInvisible(rect))
             {
+                if (settingsTab != tab)
+                {
+                    CompleteOutstandingMemoryNumericEdit(
+                        memorySettingsDraft,
+                        MemoryPolicyDefAdapter.Bounds());
+                    GUI.FocusControl(string.Empty);
+                }
                 settingsTab = tab;
                 advancedFilter = string.Empty;
             }

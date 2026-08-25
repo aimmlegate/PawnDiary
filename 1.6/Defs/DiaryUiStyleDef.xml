@@ -96,6 +96,19 @@
     <settingsEventsRowHeight>32</settingsEventsRowHeight>
     <settingsEventsRowGap>3</settingsEventsRowGap>
 
+    <!-- Memory settings. Descriptions measure their translated text; these fields own only the
+         surrounding control sizes and gaps used by the responsive scroll pages. -->
+    <settingsMemoryControlHeight>28</settingsMemoryControlHeight>
+    <settingsMemoryCheckboxSize>24</settingsMemoryCheckboxSize>
+    <settingsMemorySectionGap>12</settingsMemorySectionGap>
+    <settingsMemoryBlockGap>9</settingsMemoryBlockGap>
+    <settingsMemoryChildIndent>22</settingsMemoryChildIndent>
+    <settingsMemoryNumericFieldWidth>96</settingsMemoryNumericFieldWidth>
+    <settingsMemoryOpenLibraryButtonWidth>170</settingsMemoryOpenLibraryButtonWidth>
+    <settingsMemoryAdvancedSelectorHeight>32</settingsMemoryAdvancedSelectorHeight>
+    <settingsMemoryAdvancedSelectorGap>4</settingsMemoryAdvancedSelectorGap>
+    <settingsMemoryWarningText><r>1</r><g>0.76</g><b>0.24</b><a>1</a></settingsMemoryWarningText>
+
     <!-- Header/card dimensions -->
     <controlLineHeight>28</controlLineHeight>
     <controlGap>2</controlGap>

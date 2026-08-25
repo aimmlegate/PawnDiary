@@ -301,8 +301,8 @@ namespace PawnDiary
         // on purpose (§6): the old master value carries over.
         // DERIVED from contextDetailLevel — see ApplyForcedFeatureSwitches.
         public bool enableMemorySystem = true;
-        // Phase M5's complete versioned memory policy. These fields are intentionally not exposed in
-        // the settings window until M8, and LegacyShadow keeps shipped capture/recall behavior active.
+        // Phase M5's complete versioned memory policy. M8 exposes a detached settings-window draft;
+        // LegacyShadow still keeps all shipped capture/recall behavior on the legacy path.
         public int memorySettingsSchemaVersion = MemoryPolicyNormalizer.CurrentSettingsSchemaVersion;
         public bool saveNewMemories = true;
         public bool useMemoriesInWriting = true;

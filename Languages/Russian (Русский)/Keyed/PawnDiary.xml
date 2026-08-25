@@ -2005,4 +2005,46 @@
   <PawnDiary.Event.Biotech.Deathrest.Label>Прерванный торпор</PawnDiary.Event.Biotech.Deathrest.Label>
   <PawnDiary.Event.Biotech.Deathrest.Text>Смертопокой {0} был прерван, пока восстановление оставалось крайне неполным.</PawnDiary.Event.Biotech.Deathrest.Text>
   <PawnDiary.Event.Biotech.Deathrest.Phase.Interrupted>торпор был прерван до достаточного восстановления</PawnDiary.Event.Biotech.Deathrest.Phase.Interrupted>
+  <!-- M8: настройки единой системы памяти. Страница остаётся скрыта до активации общего шлюза. -->
+  <PawnDiary.Memory.Settings.Page>Память</PawnDiary.Memory.Settings.Page>
+  <PawnDiary.Memory.Settings.SaveNew>Сохранять новые воспоминания</PawnDiary.Memory.Settings.SaveNew>
+  <PawnDiary.Memory.Settings.SaveNew.Desc>Сохранять будущие эпизодические воспоминания. Отключение ничего не удаляет.</PawnDiary.Memory.Settings.SaveNew.Desc>
+  <PawnDiary.Memory.Settings.UseWriting>Использовать воспоминания при написании</PawnDiary.Memory.Settings.UseWriting>
+  <PawnDiary.Memory.Settings.UseWriting.Desc>Добавлять подходящие сохранённые воспоминания и связанные с темой культурные отсылки в полные и сбалансированные запросы дневника. Сохранение воспоминаний и отслеживание культуры работают независимо.</PawnDiary.Memory.Settings.UseWriting.Desc>
+  <PawnDiary.Memory.Settings.UseBackground>Использовать предысторию поселенца</PawnDiary.Memory.Settings.UseBackground>
+  <PawnDiary.Memory.Settings.UseBackground.Desc>Независимо добавлять написанную игроком предысторию поселенца в полные и сбалансированные запросы.</PawnDiary.Memory.Settings.UseBackground.Desc>
+  <PawnDiary.Memory.Settings.AllowExtra>Разрешить дополнительные запросы ИИ о памяти</PawnDiary.Memory.Settings.AllowExtra>
+  <PawnDiary.Memory.Settings.AllowExtra.Desc>Разрешить дополнительные запросы для размышлений о воспоминаниях и более краткой формулировки старых сводок.</PawnDiary.Memory.Settings.AllowExtra.Desc>
+  <PawnDiary.Memory.Settings.Occasional>Редкие размышления о воспоминаниях</PawnDiary.Memory.Settings.Occasional>
+  <PawnDiary.Memory.Settings.Occasional.Desc>Иногда позволяет поселенцу написать о давнем воспоминании, когда для новой страницы дневника нет другого повода.</PawnDiary.Memory.Settings.Occasional.Desc>
+  <PawnDiary.Memory.Settings.OpenLibrary>Открыть библиотеку</PawnDiary.Memory.Settings.OpenLibrary>
+  <PawnDiary.Memory.Settings.NoGame>Игра не загружена, поэтому библиотеку воспоминаний открыть нельзя.</PawnDiary.Memory.Settings.NoGame>
+  <PawnDiary.Memory.Settings.Privacy>Воспоминания, предыстория поселенца и его культурная принадлежность остаются на этом компьютере. Если разрешить использовать их при написании, настроенному поставщику могут отправляться имена, отношения, фактический контекст и заданные в XML толкования культуры.</PawnDiary.Memory.Settings.Privacy>
+  <PawnDiary.Memory.Settings.ExtraCost>Дополнительные запросы о памяти могут увеличить использование услуг поставщика и расходы.</PawnDiary.Memory.Settings.ExtraCost>
+  <PawnDiary.Memory.Settings.Disabled.UseWriting>Включите «Использовать воспоминания при написании», чтобы разрешить дополнительные запросы о памяти.</PawnDiary.Memory.Settings.Disabled.UseWriting>
+  <PawnDiary.Memory.Settings.Disabled.AllowExtra>Включите «Разрешить дополнительные запросы ИИ о памяти», чтобы разрешить редкие размышления о воспоминаниях.</PawnDiary.Memory.Settings.Disabled.AllowExtra>
+  <PawnDiary.Memory.Settings.Compatibility>Эти настройки памяти созданы более новой версией Pawn Diary и здесь не действуют.</PawnDiary.Memory.Settings.Compatibility>
+  <PawnDiary.Memory.Settings.Categories.Header>Категории воспоминаний</PawnDiary.Memory.Settings.Categories.Header>
+  <PawnDiary.Memory.Settings.Category.Personal>Личные события</PawnDiary.Memory.Settings.Category.Personal>
+  <PawnDiary.Memory.Settings.Category.Relationships>Отношения</PawnDiary.Memory.Settings.Category.Relationships>
+  <PawnDiary.Memory.Settings.Category.Family>Семья</PawnDiary.Memory.Settings.Category.Family>
+  <PawnDiary.Memory.Settings.Category.Factions>Фракции</PawnDiary.Memory.Settings.Category.Factions>
+  <PawnDiary.Memory.Settings.Category.Desc>Управляет будущим сохранением и естественным припоминанием этой категории, не удаляя сохранённые воспоминания и не останавливая отсчёт их возраста.</PawnDiary.Memory.Settings.Category.Desc>
+  <PawnDiary.Memory.Settings.Retention.Header>Хранение воспоминаний</PawnDiary.Memory.Settings.Retention.Header>
+  <PawnDiary.Memory.Settings.Retention.Minor>Хранить незначительные воспоминания</PawnDiary.Memory.Settings.Retention.Minor>
+  <PawnDiary.Memory.Settings.Retention.Regular>Хранить обычные воспоминания</PawnDiary.Memory.Settings.Retention.Regular>
+  <PawnDiary.Memory.Settings.Retention.ThreadTarget>Воспоминаний в каждой цепочке</PawnDiary.Memory.Settings.Retention.ThreadTarget>
+  <PawnDiary.Memory.Settings.Retention.DayUnit>{0} дн.</PawnDiary.Memory.Settings.Retention.DayUnit>
+  <PawnDiary.Memory.Settings.Retention.DaySuffix>дн.</PawnDiary.Memory.Settings.Retention.DaySuffix>
+  <PawnDiary.Memory.Settings.Retention.AgeHelp>Срок незначительных и обычных воспоминаний отсчитывается от момента события. Использование или подавление воспоминания не запускает отсчёт заново.</PawnDiary.Memory.Settings.Retention.AgeHelp>
+  <PawnDiary.Memory.Settings.Retention.ThreadHelp>В каждой цепочке хранится указанное число недавних воспоминаний. Более старые неизменённые воспоминания входят в её продолжающуюся сводку. Изменённые воспоминания сохраняются, поэтому их число может временно превысить этот предел.</PawnDiary.Memory.Settings.Retention.ThreadHelp>
+  <PawnDiary.Memory.Settings.Retention.InvalidOrder>Незначительные воспоминания нельзя хранить дольше обычных.</PawnDiary.Memory.Settings.Retention.InvalidOrder>
+  <PawnDiary.Memory.Settings.Retention.Important>Для важных воспоминаний обычного ограничения по возрасту нет.</PawnDiary.Memory.Settings.Retention.Important>
+  <PawnDiary.Memory.Settings.Retention.Edited>Изменённые игроком воспоминания защищены от автоматического забывания.</PawnDiary.Memory.Settings.Retention.Edited>
+  <PawnDiary.Memory.Settings.Repetition.Header>Повторение воспоминаний</PawnDiary.Memory.Settings.Repetition.Header>
+  <PawnDiary.Memory.Settings.Repetition.Days>Дней до повторного использования воспоминания</PawnDiary.Memory.Settings.Repetition.Days>
+  <PawnDiary.Memory.Settings.Repetition.Entries>Записей до повторного обращения к тому же человеку или теме</PawnDiary.Memory.Settings.Repetition.Entries>
+  <PawnDiary.Memory.Settings.Repetition.Help>Если все связанные воспоминания ещё ожидают, в эту запись воспоминание просто не добавляется.</PawnDiary.Memory.Settings.Repetition.Help>
+  <PawnDiary.Memory.SettingsSaveFailed>Не удалось сохранить настройки Pawn Diary. Прежняя политика памяти остаётся активной.</PawnDiary.Memory.SettingsSaveFailed>
+  <PawnDiary.Memory.SettingsFutureVersion>Этот файл настроек Pawn Diary создан более новой версией системы памяти. Функции памяти отключены, а файл не будет перезаписан.</PawnDiary.Memory.SettingsFutureVersion>
 </LanguageData>

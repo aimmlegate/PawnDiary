@@ -1757,11 +1757,7 @@ namespace PawnDiary
 
         private static void WriteGlobalSettings()
         {
-            PawnDiaryMod mod = LoadedModManager.GetMod<PawnDiaryMod>();
-            if (mod != null)
-            {
-                mod.WriteSettings();
-            }
+            PawnDiaryMod.PersistSettingsImmediately(PawnDiaryMod.Settings);
         }
     }
 }

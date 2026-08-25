@@ -1620,6 +1620,76 @@ namespace PawnDiary.RimTests
         // ---- Global settings round-trip ------------------------------------------------------------
 
         /// <summary>
+        /// The complete current Memory policy survives the real ModSettings Scribe adapter as one
+        /// tuple. Pure M5/M8 fixtures own normalization and dependency math; this loaded fixture proves
+        /// that every M8-visible value plus its persisted invalidation generations is actually wired.
+        /// </summary>
+        [Test]
+        public static void CurrentMemorySettingsPolicyRoundTripsAllM8Fields()
+        {
+            PawnDiarySettings original = new PawnDiarySettings
+            {
+                memorySettingsSchemaVersion = MemoryPolicyNormalizer.CurrentSettingsSchemaVersion,
+                saveNewMemories = false,
+                useMemoriesInWriting = true,
+                usePawnBackground = false,
+                allowExtraMemoryAiRequests = true,
+                occasionalMemoryReflections = true,
+                memoryCategoryPersonal = false,
+                memoryCategoryRelationships = true,
+                memoryCategoryFamily = false,
+                memoryCategoryFactions = true,
+                captureInvalidationGenerationPersonal = 11,
+                captureInvalidationGenerationRelationships = 12,
+                captureInvalidationGenerationFamily = 13,
+                captureInvalidationGenerationFactions = 14,
+                optionalRequestInvalidationGeneration = 15,
+                minorMemoryLifetimeDays = 120,
+                regularMemoryLifetimeDays = 240,
+                memoryThreadTarget = 32,
+                memoryReuseDays = 9,
+                memoryRevisitEntryCount = 7
+            };
+
+            PawnDiarySettings loaded = ScribeRoundTrip(original);
+            Require(loaded.memorySettingsSchemaVersion
+                    == MemoryPolicyNormalizer.CurrentSettingsSchemaVersion,
+                "current Memory settings schema did not survive Scribe.");
+            Require(!loaded.saveNewMemories
+                    && loaded.useMemoriesInWriting
+                    && !loaded.usePawnBackground
+                    && loaded.allowExtraMemoryAiRequests
+                    && loaded.occasionalMemoryReflections,
+                "M8 normal-page Memory switches did not round-trip as one valid tuple.");
+            Require(!loaded.memoryCategoryPersonal
+                    && loaded.memoryCategoryRelationships
+                    && !loaded.memoryCategoryFamily
+                    && loaded.memoryCategoryFactions,
+                "M8 category switches did not round-trip.");
+            Require(loaded.captureInvalidationGenerationPersonal == 11
+                    && loaded.captureInvalidationGenerationRelationships == 12
+                    && loaded.captureInvalidationGenerationFamily == 13
+                    && loaded.captureInvalidationGenerationFactions == 14
+                    && loaded.optionalRequestInvalidationGeneration == 15,
+                "Memory settings invalidation generations did not round-trip.");
+            Require(loaded.minorMemoryLifetimeDays == 120
+                    && loaded.regularMemoryLifetimeDays == 240
+                    && loaded.memoryThreadTarget == 32
+                    && loaded.memoryReuseDays == 9
+                    && loaded.memoryRevisitEntryCount == 7,
+                "M8 retention/repetition integers did not round-trip.");
+
+            PawnDiarySettings reloaded = ScribeRoundTrip(loaded);
+            Require(reloaded.minorMemoryLifetimeDays == 120
+                    && reloaded.regularMemoryLifetimeDays == 240
+                    && reloaded.memoryThreadTarget == 32
+                    && reloaded.memoryReuseDays == 9
+                    && reloaded.memoryRevisitEntryCount == 7
+                    && reloaded.optionalRequestInvalidationGeneration == 15,
+                "a second Memory settings round-trip was not idempotent.");
+        }
+
+        /// <summary>
         /// Native-provider ordinals 3/4/5 survive real settings Scribe and detached row copies. The
         /// Ollama row also proves URL canonicalization preserves a discovered family for a renamed model.
         /// </summary>

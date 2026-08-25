@@ -70,6 +70,18 @@ namespace PawnDiary.RimTests
             typeof(DiaryGameComponent).GetMethod(
                 "QueuePairwiseGeneration",
                 BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly MethodInfo CaptureKnowledgeForEventMethod =
+            typeof(DiaryGameComponent).GetMethod(
+                "CaptureKnowledgeForEvent",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly FieldInfo ActiveMemoryCoordinatorRequestsField =
+            typeof(DiaryGameComponent).GetField(
+                "activeMemoryCoordinatorRequests",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly FieldInfo LastAppliedMemoryPolicyFingerprintField =
+            typeof(DiaryGameComponent).GetField(
+                "lastAppliedMemoryPolicyFingerprint",
+                BindingFlags.Instance | BindingFlags.NonPublic);
 
         private static PawnDiaryRimTestScope scope;
         private static Pawn pawnA;
@@ -355,6 +367,94 @@ namespace PawnDiary.RimTests
             finally
             {
                 Prefs.DevMode = originalDevMode;
+            }
+        }
+
+        /// <summary>
+        /// M7's current-schema shadow write obeys the category gate, never replays a disabled
+        /// occurrence after re-enable, admits one exact row per owner, and cannot create request work.
+        /// Re-invoking the same event proves the component store's exact-occurrence dedup boundary.
+        /// </summary>
+        [Test]
+        public static void FactualShadowCaptureHonorsCategoryDedupAndNeverQueuesRequests()
+        {
+            Require(CaptureKnowledgeForEventMethod != null
+                    && ActiveMemoryCoordinatorRequestsField != null
+                    && LastAppliedMemoryPolicyFingerprintField != null,
+                "An M7 component test seam was renamed or removed.");
+            Require(MemorySystemActivationGate.BuildState == MemorySystemActivationGate.LegacyShadow,
+                "The M7 fixture must remain a shadow-write test under LegacyShadow.");
+
+            PawnKnowledgeState stateA = SeedCurrentMemoryEnvelope(pawnA, 7101);
+            PawnKnowledgeState stateB = SeedCurrentMemoryEnvelope(pawnB, 7102);
+            MemoryPolicySnapshot priorPolicy = MemoryEffectivePolicyProvider.Current;
+            Require(priorPolicy != null && !priorPolicy.compatibilityFailClosed,
+                "The loaded Memory policy was unavailable or fail-closed.");
+            string priorAppliedFingerprint =
+                LastAppliedMemoryPolicyFingerprintField.GetValue(scope.Component) as string;
+            int requestsBefore = ActiveMemoryRequestCount();
+
+            MemorySettingsBounds bounds = MemoryPolicyDefAdapter.Bounds();
+            MemorySettingsPolicyFieldsV1 enabledFields = priorPolicy.ToFields();
+            enabledFields.saveNewMemories = true;
+            enabledFields.memoryCategoryMask |= MemoryCategoryBits.Relationships;
+            MemoryPolicySnapshot enabled = MemoryPolicyNormalizer.Normalize(
+                MemoryPolicyNormalizer.CurrentSettingsSchemaVersion,
+                enabledFields,
+                bounds);
+            MemorySettingsPolicyFieldsV1 disabledFields = enabled.ToFields();
+            disabledFields.memoryCategoryMask &= ~MemoryCategoryBits.Relationships;
+            MemoryPolicySnapshot disabled = MemoryPolicyNormalizer.Normalize(
+                MemoryPolicyNormalizer.CurrentSettingsSchemaVersion,
+                disabledFields,
+                bounds);
+
+            try
+            {
+                Require(MemoryEffectivePolicyProvider.Publish(disabled),
+                    "Could not publish the disabled-category fixture policy.");
+                LastAppliedMemoryPolicyFingerprintField.SetValue(
+                    scope.Component, disabled.fingerprint);
+                DiaryEvent disabledEvent = AddRomancePairEvent(
+                    pawnA, pawnB, "Spouse", "married");
+                Require(CountFactualOccurrence(stateA, disabledEvent.eventId) == 0
+                        && CountFactualOccurrence(stateB, disabledEvent.eventId) == 0,
+                    "A disabled relationship interval wrote current-schema factual rows.");
+                Require(CountKind(stateA, "relation.spouse.gained") == 1
+                        && CountKind(stateB, "relation.spouse.gained") == 1,
+                    "The M7 category gate incorrectly disabled the independent legacy shadow row.");
+
+                Require(MemoryEffectivePolicyProvider.Publish(enabled),
+                    "Could not publish the re-enabled category fixture policy.");
+                LastAppliedMemoryPolicyFingerprintField.SetValue(
+                    scope.Component, enabled.fingerprint);
+                Require(CountFactualOccurrence(stateA, disabledEvent.eventId) == 0
+                        && CountFactualOccurrence(stateB, disabledEvent.eventId) == 0,
+                    "Re-enabling a category replayed a factual row from the disabled interval.");
+
+                DiaryEvent enabledEvent = AddRomancePairEvent(
+                    pawnA, pawnB, "Lover", "lover");
+                Require(CountFactualOccurrence(stateA, enabledEvent.eventId) == 1
+                        && CountFactualOccurrence(stateB, enabledEvent.eventId) == 1,
+                    "An enabled relationship occurrence did not write exactly one row per owner.");
+
+                CaptureKnowledgeForEventMethod.Invoke(
+                    scope.Component, new object[] { enabledEvent, pawnA, pawnB });
+                Require(CountFactualOccurrence(stateA, enabledEvent.eventId) == 1
+                        && CountFactualOccurrence(stateB, enabledEvent.eventId) == 1,
+                    "Replaying one exact occurrence bypassed current-schema record dedup.");
+                Require(ActiveMemoryRequestCount() == requestsBefore
+                        && enabledEvent.ActiveMemoryLogicalRequestForRole(
+                            DiaryEvent.InitiatorRole) == null
+                        && enabledEvent.ActiveMemoryLogicalRequestForRole(
+                            DiaryEvent.RecipientRole) == null,
+                    "Factual capture created memory request work without a scheduler decision.");
+            }
+            finally
+            {
+                MemoryEffectivePolicyProvider.Publish(priorPolicy);
+                LastAppliedMemoryPolicyFingerprintField.SetValue(
+                    scope.Component, priorAppliedFingerprint ?? string.Empty);
             }
         }
 
@@ -1295,6 +1395,64 @@ namespace PawnDiary.RimTests
         private static PawnKnowledgeState KnowledgeFor(Pawn pawn)
         {
             return DiaryFor(pawn).EnsureKnowledgeState();
+        }
+
+        private static PawnKnowledgeState SeedCurrentMemoryEnvelope(Pawn pawn, long epochSequence)
+        {
+            PawnDiaryRecord diary = DiaryFor(pawn);
+            PawnKnowledgeState state = PawnKnowledgeState.CreateCurrent(pawn.GetUniqueLoadID());
+            state.autobiographicalEpochToken =
+                OrdinalSegmentCodec.Segment("memory-epoch-v1")
+                + OrdinalSegmentCodec.Segment(epochSequence.ToString(
+                    System.Globalization.CultureInfo.InvariantCulture));
+            diary.knowledgeState = state;
+            return state;
+        }
+
+        private static int ActiveMemoryRequestCount()
+        {
+            List<SavedActiveLogicalRequestV1> requests =
+                ActiveMemoryCoordinatorRequestsField.GetValue(scope.Component)
+                    as List<SavedActiveLogicalRequestV1>;
+            return requests?.Count ?? 0;
+        }
+
+        private static int CountFactualOccurrence(PawnKnowledgeState state, string occurrenceId)
+        {
+            int count = CountFactualOccurrence(state?.standaloneBlocks, occurrenceId);
+            for (int i = 0; state?.threadRoots != null && i < state.threadRoots.Count; i++)
+            {
+                SavedMemoryThreadRoot root = state.threadRoots[i];
+                count += CountFactualOccurrence(root?.visibleBlocks, occurrenceId);
+                if (root?.rollingSummaryBlock != null
+                    && string.Equals(
+                        root.rollingSummaryBlock.sourceOccurrenceId,
+                        occurrenceId,
+                        StringComparison.Ordinal))
+                {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        private static int CountFactualOccurrence(
+            List<SavedMemoryBlock> blocks,
+            string occurrenceId)
+        {
+            int count = 0;
+            for (int i = 0; blocks != null && i < blocks.Count; i++)
+            {
+                if (blocks[i] != null
+                    && string.Equals(
+                        blocks[i].sourceOccurrenceId,
+                        occurrenceId,
+                        StringComparison.Ordinal))
+                {
+                    count++;
+                }
+            }
+            return count;
         }
 
         private static PawnDiaryRecord DiaryFor(Pawn pawn)

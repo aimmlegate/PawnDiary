@@ -12,10 +12,20 @@ namespace PawnDiary
     internal enum PawnDiarySettingsTab
     {
         Main,
+        Memory,
         Prompts,
         Styles,
         Events,
         Tuning
+    }
+
+    /// <summary>Player-facing groups hosted inside the existing Advanced settings page.</summary>
+    internal enum MemoryAdvancedSettingsPage
+    {
+        Categories,
+        Retention,
+        Repetition,
+        ExperimentalTuning
     }
 
     /// <summary>Advanced field-list filter selected by the settings window.</summary>
@@ -36,6 +46,10 @@ namespace PawnDiary
         private static PawnDiaryMod instance;
         private static bool futureMemorySettingsWarningShown;
         private static bool memoryPolicyDefBoundsApplied;
+
+        // One detached draft is shared by the normal and Advanced Memory pages. It is deliberately
+        // not PawnDiarySettings: only the settings-window WriteSettings boundary may consume it.
+        private MemorySettingsDraft memorySettingsDraft;
 
         /// <summary>Shared settings instance available throughout the mod.</summary>
         public static PawnDiarySettings Settings;
@@ -58,8 +72,15 @@ namespace PawnDiary
         // Separate scroll positions keep each page from inheriting a surprising offset from another page.
         private Vector2 promptSettingsScrollPosition;
         private Vector2 styleSettingsScrollPosition;
+        private Vector2 memorySettingsScrollPosition;
+        private Vector2 memoryAdvancedScrollPosition;
         // Which top-level settings page is open.
         private PawnDiarySettingsTab settingsTab = PawnDiarySettingsTab.Main;
+        // Which approved Memory group is open inside Advanced. This is presentation-only state.
+        private MemoryAdvancedSettingsPage memoryAdvancedSettingsPage =
+            MemoryAdvancedSettingsPage.Categories;
+        // Named-control focus lets numeric fields normalize on focus loss without touching Settings.
+        private string focusedMemoryNumericControl = string.Empty;
         // Which Advanced group is selected in the Advanced-tab left rail, and the live name filter.
         private string selectedAdvancedGroupKey;
         private string advancedFilter;
@@ -118,6 +139,18 @@ namespace PawnDiary
         private float lastSettingsContentHeight = 5000f;
         private float lastPromptSettingsContentHeight = 1200f;
         private float lastStyleSettingsContentHeight = 1000f;
+        private float lastMemorySettingsContentHeight = 900f;
+        private float lastMemoryAdvancedContentHeight = 900f;
+
+        // M9 supplies the loaded-game dialog action. M8 can safely render/disable the entry point
+        // without referencing or reflecting over a Library window that does not exist yet.
+        internal static System.Action OpenMemoryLibraryAction;
+
+        /// <summary>Clears a game-owned Library opener before another game can reuse its closure.</summary>
+        internal static void ResetMemoryLibraryAction()
+        {
+            OpenMemoryLibraryAction = null;
+        }
 
         // Muted colors for secondary text and sub-headers, so the window reads as a hierarchy
         // instead of a flat wall of same-weight labels.
@@ -178,16 +211,34 @@ namespace PawnDiary
         /// </summary>
         public override void WriteSettings()
         {
+            WriteSettingsCore(true);
+        }
+
+        /// <summary>
+        /// Runs the one whole-settings transaction. Framework-driven window close consumes the
+        /// Memory UI draft; background/dev/API preference saves keep that draft detached.
+        /// </summary>
+        private void WriteSettingsCore(bool commitMemoryUiDraft)
+        {
             lastSettingsWritePersisted = false;
+            // A completed fetch/test can arrive while the detached Memory page is visible. Consume it
+            // at the framework Save boundary so closing from that page persists the same API result as
+            // closing from Main, without mutating PawnDiarySettings during Memory Layout/Repaint.
+            if (commitMemoryUiDraft)
+                apiConnectionController.ApplyPendingResults();
             bool wasReaderWindowMode = lastWrittenReaderWindowMode;
             Settings.ClampValues();
             Settings.NormalizeEndpointUrls();
             MemorySettingsBounds bounds = MemoryPolicyDefAdapter.Bounds();
             MemoryPolicySnapshot priorMemoryPolicy = MemoryEffectivePolicyProvider.Current;
+            MemorySettingsPolicyFieldsV1 requestedMemoryPolicy =
+                commitMemoryUiDraft && memorySettingsDraft != null
+                    ? memorySettingsDraft.BuildCommitFields(bounds)
+                    : priorMemoryPolicy.ToFields();
             MemorySettingsCommitPlan memoryCommit = MemoryPolicyNormalizer.PrepareCommit(
                 Settings.memorySettingsSchemaVersion,
                 priorMemoryPolicy.ToFields(),
-                Settings.MemoryPolicyFields(),
+                requestedMemoryPolicy,
                 bounds);
             if (!memoryCommit.valid || memoryCommit.futureVersion
                 || memoryCommit.snapshot.compatibilityFailClosed)
@@ -214,6 +265,8 @@ namespace PawnDiary
             }
 
             lastSettingsWritePersisted = true;
+            if (commitMemoryUiDraft)
+                memorySettingsDraft = null;
             // Persistence is the linearization point. Initialize resumable non-memory work before
             // touching the independently durable game component so a component exception cannot
             // suppress lane/debug/event-limit/title/reader-mode application.
@@ -250,8 +303,19 @@ namespace PawnDiary
         {
             if (instance == null || settings == null || !ReferenceEquals(settings, Settings))
                 return false;
-            instance.WriteSettings();
+            instance.WriteSettingsCore(false);
             return instance.lastSettingsWritePersisted;
+        }
+
+        /// <summary>Returns the current session draft, creating it from the immutable policy once.</summary>
+        private MemorySettingsDraft GetMemorySettingsDraft()
+        {
+            MemoryPolicySnapshot current = MemoryEffectivePolicyProvider.Current;
+            if (current == null || current.compatibilityFailClosed) return null;
+            if (memorySettingsDraft == null)
+                memorySettingsDraft = MemorySettingsDraft.FromSnapshot(
+                    current, MemoryPolicyDefAdapter.Bounds());
+            return memorySettingsDraft;
         }
 
         private void RejectSettingsWrite(MemoryPolicySnapshot priorMemoryPolicy, string failure)

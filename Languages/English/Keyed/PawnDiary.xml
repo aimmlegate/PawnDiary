@@ -2056,15 +2056,15 @@
   <PawnDiary.Event.Biotech.Deathrest.Text>{0}&apos;s deathrest was interrupted while still severely incomplete.</PawnDiary.Event.Biotech.Deathrest.Text>
   <PawnDiary.Event.Biotech.Deathrest.Phase.Interrupted>deathrest was interrupted before adequate recovery</PawnDiary.Event.Biotech.Deathrest.Phase.Interrupted>
 
-  <!-- Unified memory system M0 localization contract. These keys remain unreachable while the
-       internal activation gate is LegacyShadow; M8/M9 wire them into the settings and Library UI. -->
+  <!-- Unified memory system localization contract. The M8 settings UI is implemented but remains
+       unreachable while the internal activation gate is LegacyShadow; M9 owns the Library UI. -->
   <!-- §14.6 newer-save boundary: whole-load refusal message (code appends the offending schema). -->
     <PawnDiary.SaveFormatNewer>This save was written by a NEWER version of Pawn Diary. Update the mod (or remove it and restore a backup) before loading. Loading is refused to protect your save.</PawnDiary.SaveFormatNewer>
     <PawnDiary.Memory.Settings.Page>Memory</PawnDiary.Memory.Settings.Page>
   <PawnDiary.Memory.Settings.SaveNew>Save new memories</PawnDiary.Memory.Settings.SaveNew>
   <PawnDiary.Memory.Settings.SaveNew.Desc>Save future episodic memories. Turning this off deletes nothing.</PawnDiary.Memory.Settings.SaveNew.Desc>
   <PawnDiary.Memory.Settings.UseWriting>Use memories in writing</PawnDiary.Memory.Settings.UseWriting>
-  <PawnDiary.Memory.Settings.UseWriting.Desc>Allow eligible stored memories in Full and Balanced diary prompts.</PawnDiary.Memory.Settings.UseWriting.Desc>
+  <PawnDiary.Memory.Settings.UseWriting.Desc>Allow eligible stored memories and topic-triggered cultural references in Full and Balanced diary prompts. Saving memories and tracking culture stay independent.</PawnDiary.Memory.Settings.UseWriting.Desc>
   <PawnDiary.Memory.Settings.UseBackground>Use pawn background</PawnDiary.Memory.Settings.UseBackground>
   <PawnDiary.Memory.Settings.UseBackground.Desc>Independently include the pawn&apos;s player-authored background in Full and Balanced prompts.</PawnDiary.Memory.Settings.UseBackground.Desc>
   <PawnDiary.Memory.Settings.AllowExtra>Allow extra memory AI requests</PawnDiary.Memory.Settings.AllowExtra>
@@ -2073,7 +2073,7 @@
   <PawnDiary.Memory.Settings.Occasional.Desc>Sometimes lets a pawn write about an older memory when nothing else needs a diary entry.</PawnDiary.Memory.Settings.Occasional.Desc>
   <PawnDiary.Memory.Settings.OpenLibrary>Open Library</PawnDiary.Memory.Settings.OpenLibrary>
   <PawnDiary.Memory.Settings.NoGame>No game is loaded, so the Memory Library cannot be opened.</PawnDiary.Memory.Settings.NoGame>
-  <PawnDiary.Memory.Settings.Privacy>Memories and pawn background are stored locally. Using them in writing may send names, relationships, and factual context to the configured provider.</PawnDiary.Memory.Settings.Privacy>
+  <PawnDiary.Memory.Settings.Privacy>Memories, pawn background, and culture identity stay local. Enabling their use in writing may send names, relationships, factual context, and XML-authored cultural interpretations to the configured provider.</PawnDiary.Memory.Settings.Privacy>
   <PawnDiary.Memory.Settings.ExtraCost>Extra memory requests may increase provider usage and cost.</PawnDiary.Memory.Settings.ExtraCost>
   <PawnDiary.Memory.Settings.Disabled.UseWriting>Enable “Use memories in writing” to allow extra memory requests.</PawnDiary.Memory.Settings.Disabled.UseWriting>
   <PawnDiary.Memory.Settings.Disabled.AllowExtra>Enable “Allow extra memory AI requests” to allow occasional memory reflections.</PawnDiary.Memory.Settings.Disabled.AllowExtra>
@@ -2089,6 +2089,7 @@
   <PawnDiary.Memory.Settings.Retention.Regular>Keep regular memories for</PawnDiary.Memory.Settings.Retention.Regular>
   <PawnDiary.Memory.Settings.Retention.ThreadTarget>Memories kept in each thread</PawnDiary.Memory.Settings.Retention.ThreadTarget>
   <PawnDiary.Memory.Settings.Retention.DayUnit>{0} days</PawnDiary.Memory.Settings.Retention.DayUnit>
+  <PawnDiary.Memory.Settings.Retention.DaySuffix>days</PawnDiary.Memory.Settings.Retention.DaySuffix>
   <PawnDiary.Memory.Settings.Retention.AgeHelp>Minor and regular memories are counted from when they happened. Using or suppressing a memory does not restart the time.</PawnDiary.Memory.Settings.Retention.AgeHelp>
   <PawnDiary.Memory.Settings.Retention.ThreadHelp>Each thread keeps this many recent memories. Older unedited memories become part of its ongoing summary. Edited memories are kept and may temporarily exceed this number.</PawnDiary.Memory.Settings.Retention.ThreadHelp>
   <PawnDiary.Memory.Settings.Retention.InvalidOrder>Minor memories cannot be kept longer than regular memories.</PawnDiary.Memory.Settings.Retention.InvalidOrder>

@@ -726,6 +726,7 @@ namespace PawnDiary
                     "[Pawn Diary] Belief transient-state reset failed: " + exception,
                     "PawnDiary.Belief.Reset".GetHashCode());
             }
+            PawnDiaryMod.ResetMemoryLibraryAction();
             ResetMemoryMaintenanceTransient(true);
             ResetMemoryLibraryTransient();
             PawnDiaryMod.RefreshMemoryPolicyFromDefs();
