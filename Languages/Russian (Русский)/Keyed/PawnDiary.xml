@@ -2068,6 +2068,23 @@
   <PawnDiary.Memory.Library.CategoryFamily>Семья</PawnDiary.Memory.Library.CategoryFamily>
   <PawnDiary.Memory.Library.CategoryFactions>Фракции</PawnDiary.Memory.Library.CategoryFactions>
   <PawnDiary.Memory.Library.Chapter>Глава {0}</PawnDiary.Memory.Library.Chapter>
+  <PawnDiary.Memory.Library.ChapterContinued>продолжение</PawnDiary.Memory.Library.ChapterContinued>
+  <PawnDiary.Memory.Library.PhaseRelationship>этап отношений</PawnDiary.Memory.Library.PhaseRelationship>
+  <PawnDiary.Memory.Library.PhaseFamily>семейная история</PawnDiary.Memory.Library.PhaseFamily>
+  <PawnDiary.Memory.Library.PhaseBody>состояние тела</PawnDiary.Memory.Library.PhaseBody>
+  <PawnDiary.Memory.Library.PhaseMembership>статус в колонии</PawnDiary.Memory.Library.PhaseMembership>
+  <PawnDiary.Memory.Library.PhaseGrowth>этап взросления</PawnDiary.Memory.Library.PhaseGrowth>
+  <PawnDiary.Memory.Library.PhaseBelief>убеждения</PawnDiary.Memory.Library.PhaseBelief>
+  <PawnDiary.Memory.Library.PhaseRole>роль в идеологии</PawnDiary.Memory.Library.PhaseRole>
+  <PawnDiary.Memory.Library.PhaseTitle>королевский титул</PawnDiary.Memory.Library.PhaseTitle>
+  <PawnDiary.Memory.Library.PhasePsylink>уровень пси-связи</PawnDiary.Memory.Library.PhasePsylink>
+  <PawnDiary.Memory.Library.PhaseGenetic>генетическая идентичность</PawnDiary.Memory.Library.PhaseGenetic>
+  <PawnDiary.Memory.Library.PhaseMechlink>мех-связь</PawnDiary.Memory.Library.PhaseMechlink>
+  <PawnDiary.Memory.Library.PhasePersonaBond>связь с личностным оружием</PawnDiary.Memory.Library.PhasePersonaBond>
+  <PawnDiary.Memory.Library.PhaseOpinion>период отношений</PawnDiary.Memory.Library.PhaseOpinion>
+  <PawnDiary.Memory.Library.PhaseFormalRelationship>официальные отношения</PawnDiary.Memory.Library.PhaseFormalRelationship>
+  <PawnDiary.Memory.Library.PhaseFactionDiplomacy>дипломатия фракций</PawnDiary.Memory.Library.PhaseFactionDiplomacy>
+  <PawnDiary.Memory.Library.PhaseFactionLifecycle>история фракции</PawnDiary.Memory.Library.PhaseFactionLifecycle>
   <PawnDiary.Memory.Library.ChapterUnknown>Глава</PawnDiary.Memory.Library.ChapterUnknown>
   <PawnDiary.Memory.Library.ClosedSummary>Сводка закрытой главы</PawnDiary.Memory.Library.ClosedSummary>
   <PawnDiary.Memory.Library.CommandBusy>Библиотека занята. Отделённый черновик сохранён.</PawnDiary.Memory.Library.CommandBusy>
@@ -2091,6 +2108,7 @@
   <PawnDiary.Memory.Library.CultureNone>нет</PawnDiary.Memory.Library.CultureNone>
   <PawnDiary.Memory.Library.CurrentKnown>известно из сохранённых данных</PawnDiary.Memory.Library.CurrentKnown>
   <PawnDiary.Memory.Library.CurrentUnknown>неизвестно</PawnDiary.Memory.Library.CurrentUnknown>
+  <PawnDiary.Memory.Library.CurrentStatusSaved>{0} · сохранено: {1} · {2}</PawnDiary.Memory.Library.CurrentStatusSaved>
   <PawnDiary.Memory.Library.DateUnknown>Дата неизвестна</PawnDiary.Memory.Library.DateUnknown>
   <PawnDiary.Memory.Library.Day>День {0}</PawnDiary.Memory.Library.Day>
   <PawnDiary.Memory.Library.DiagnosticsBody>Факты: {0}

@@ -27,8 +27,10 @@ namespace PawnDiary
 
         private string preferredOwnerId = string.Empty;
         private MemoryLibraryOwnerRow preferredFallback;
+        private MemoryLibraryOwnerHandle ownerWalkHandle;
         private int ownerStart;
         private long ownerExpectedDirectoryRevision;
+        private long selectedOwnerValidatedDirectoryRevision;
         private MemoryLibraryOwnerResult owners;
         private MemoryLibraryOwnerRow selectedOwner;
 
@@ -39,9 +41,11 @@ namespace PawnDiary
         private long detailExpectedSnapshotRevision;
         private MemoryThreadDetailResult threadDetail;
         private MemoryBlockDetailResult blockDetail;
+        private MemoryBlockRow selectedBlockRow;
         private int importedTextStart;
         private long importedTextExpectedSnapshotRevision;
         private MemoryImportedDetailResult importedDetail;
+        private MemoryImportedRow selectedImportedRow;
         private MemoryCompatibilityResult compatibility;
         private LoreMemorySnapshotForDev lore;
 
@@ -53,6 +57,8 @@ namespace PawnDiary
         private long detachedRegularLifetimeTicks = 60L * 60000L;
         private int detachedCategoryMask = MemoryCategoryBits.KnownMask;
         private int detachedTextCap = 480;
+        private int detachedSearchScalarCap = 80;
+        private int detachedSearchUtf16Cap = 160;
         private bool detachedCompatibilityFailClosed;
         private bool loreExpanded;
         private bool diagnosticsExpanded;
@@ -62,6 +68,8 @@ namespace PawnDiary
 
         private Vector2 listScroll;
         private Vector2 detailScroll;
+        private Vector2 blockDetailScroll;
+        private Vector2 currentStatusScroll;
         private Vector2 loreScroll;
         private readonly Dictionary<string, string> cachedBlockBadges =
             new Dictionary<string, string>(StringComparer.Ordinal);
@@ -69,6 +77,9 @@ namespace PawnDiary
             new Dictionary<string, string>(StringComparer.Ordinal);
         private readonly Dictionary<long, string> cachedDateLabels =
             new Dictionary<long, string>();
+        private readonly Dictionary<string, string> cachedUsageLabels =
+            new Dictionary<string, string>(StringComparer.Ordinal);
+        private string cachedThreadHeaderText = string.Empty;
         private string displayCacheSignature = string.Empty;
         private int selectedLoreTopicIndex;
 
@@ -77,6 +88,10 @@ namespace PawnDiary
             component = source;
             preferredOwnerId = preferredExactOwnerId ?? string.Empty;
             openedGeneration = lifecycleGeneration;
+            MemoryLibraryLimits inputLimits = source?.MemoryLibraryInputLimitsForUi()
+                ?? new MemoryLibraryLimits();
+            detachedSearchScalarCap = Math.Max(1, inputLimits.searchScalars);
+            detachedSearchUtf16Cap = Math.Max(1, inputLimits.searchUtf16Units);
             forcePause = false;
             draggable = true;
             resizeable = false;
@@ -152,8 +167,10 @@ namespace PawnDiary
         {
             preferredOwnerId = ownerPawnId ?? string.Empty;
             preferredFallback = null;
+            ownerWalkHandle = null;
             ownerStart = 0;
             ownerExpectedDirectoryRevision = 0;
+            selectedOwnerValidatedDirectoryRevision = 0;
             session.ownerSearch = string.Empty;
             ownerSearchDirty = true;
         }
@@ -207,6 +224,10 @@ namespace PawnDiary
             cachedBlockBadges.Clear();
             cachedLifetimeLabels.Clear();
             cachedDateLabels.Clear();
+            cachedUsageLabels.Clear();
+            cachedThreadHeaderText = string.Empty;
+            selectedBlockRow = null;
+            selectedImportedRow = null;
             displayCacheSignature = string.Empty;
             base.PostClose();
         }
@@ -218,6 +239,7 @@ namespace PawnDiary
                 ownerStart = 0;
                 ownerExpectedDirectoryRevision = 0;
                 preferredFallback = null;
+                ownerWalkHandle = null;
                 ownerSearchDirty = false;
             }
             MemoryLibraryOwnerResult result = component.QueryMemoryLibraryOwners(
@@ -235,38 +257,62 @@ namespace PawnDiary
             {
                 ownerExpectedDirectoryRevision = 0;
                 ownerStart = 0;
+                preferredFallback = null;
+                selectedOwnerValidatedDirectoryRevision = 0;
+                if (string.IsNullOrWhiteSpace(session.ownerSearch)
+                    && string.IsNullOrWhiteSpace(preferredOwnerId)
+                    && session.selectedOwnerHandle != null)
+                    ownerWalkHandle = MemoryLibraryUiPolicy.Copy(session.selectedOwnerHandle);
                 return;
             }
             if (result.status != MemoryLibraryStatuses.Ready) return;
             ownerExpectedDirectoryRevision = result.directoryRevision;
 
             string before = OwnerKey(session.selectedOwnerHandle);
-            bool canonical = ownerStart == 0 && string.IsNullOrWhiteSpace(session.ownerSearch);
-            if (!string.IsNullOrWhiteSpace(preferredOwnerId) && canonical)
+            bool searchEmpty = string.IsNullOrWhiteSpace(session.ownerSearch);
+            bool canonical = ownerStart == 0 && searchEmpty;
+            bool needsValidation = canonical && session.selectedOwnerHandle != null
+                && selectedOwnerValidatedDirectoryRevision != result.directoryRevision;
+            if (needsValidation && ownerWalkHandle == null
+                && string.IsNullOrWhiteSpace(preferredOwnerId))
+                ownerWalkHandle = MemoryLibraryUiPolicy.Copy(session.selectedOwnerHandle);
+            bool walking = searchEmpty && (ownerWalkHandle != null
+                || !string.IsNullOrWhiteSpace(preferredOwnerId));
+            if (walking)
             {
-                if (preferredFallback == null && result.rows.Count > 0) preferredFallback = result.rows[0];
-                MemoryLibraryOwnerRow found = FindExactOwner(result.rows, preferredOwnerId);
-                if (found != null)
-                {
-                    session.SelectOwner(found);
-                    preferredOwnerId = string.Empty;
-                }
-                else if (result.hasMore)
+                MemoryLibraryUiOwnerWalkStep step = MemoryLibraryUiPolicy.PlanOwnerWalk(
+                    result.rows, result.hasMore, preferredFallback, ownerWalkHandle,
+                    preferredOwnerId);
+                preferredFallback = step.fallback;
+                if (step.continuePaging)
                 {
                     ownerStart = result.nextStart;
                     ownerExpectedDirectoryRevision = result.directoryRevision;
                     return;
                 }
-                else
+                if (step.selected != null)
                 {
-                    session.SelectOwner(preferredFallback);
-                    preferredOwnerId = string.Empty;
-                    ownerStart = 0;
+                    bool exactRefresh = ownerWalkHandle != null
+                        && (MemoryLibraryUiPolicy.Same(step.selected.primaryHandle, ownerWalkHandle)
+                            || MemoryLibraryUiPolicy.Same(
+                                step.selected.compatibilityHandle, ownerWalkHandle));
+                    if (exactRefresh)
+                        session.ReconcileOwnerDirectory(result, string.Empty, true);
+                    else
+                        session.SelectOwner(step.selected);
+                    selectedOwner = step.selected;
+                    selectedOwnerValidatedDirectoryRevision = result.directoryRevision;
                 }
+                preferredOwnerId = string.Empty;
+                ownerWalkHandle = null;
+                preferredFallback = null;
+                ownerStart = 0;
             }
             else
             {
                 session.ReconcileOwnerDirectory(result, string.Empty, canonical);
+                if (canonical && session.selectedOwnerHandle != null)
+                    selectedOwnerValidatedDirectoryRevision = result.directoryRevision;
             }
             if (!string.Equals(before, OwnerKey(session.selectedOwnerHandle), StringComparison.Ordinal))
                 ResetOwnerQueries();
@@ -302,7 +348,7 @@ namespace PawnDiary
                 listQueryDirty = false;
             }
             if (list != null && list.ttlValidUntilTickExclusive <= detachedNowTick)
-                listExpectedSnapshotRevision = 0;
+                RestartListStream();
             MemoryLibraryListResult result = component.QueryMemoryLibraryList(
                 new MemoryLibraryListQuery
                 {
@@ -321,7 +367,7 @@ namespace PawnDiary
             if (result == null) return;
             if (result.status == MemoryLibraryStatuses.Stale)
             {
-                listExpectedSnapshotRevision = 0;
+                RestartListStream();
                 return;
             }
             if (result.status == MemoryLibraryStatuses.Ready)
@@ -345,7 +391,7 @@ namespace PawnDiary
                 && session.selectedRootHandle != null)
             {
                 if (threadDetail != null && threadDetail.ttlValidUntilTickExclusive <= detachedNowTick)
-                    detailExpectedSnapshotRevision = 0;
+                    RestartDetailStream();
                 threadDetail = component.QueryMemoryThreadDetail(new MemoryThreadDetailQuery
                 {
                     rootHandle = MemoryLibraryUiPolicy.Copy(session.selectedRootHandle),
@@ -356,7 +402,7 @@ namespace PawnDiary
                     expectedDetailSnapshotRevision = Math.Max(0, detailExpectedSnapshotRevision)
                 });
                 if (threadDetail.status == MemoryLibraryStatuses.Stale)
-                    detailExpectedSnapshotRevision = 0;
+                    RestartDetailStream();
                 else if (threadDetail.status == MemoryLibraryStatuses.Ready)
                     detailExpectedSnapshotRevision = threadDetail.detailSnapshotRevision;
             }
@@ -366,6 +412,12 @@ namespace PawnDiary
                 MemoryBlockRow selected = FindSelectedBlockRow();
                 if (selected != null)
                 {
+                    if (selected.rootHandle != null
+                        && Same(selected.rootHandle, threadDetail?.header?.rootHandle)
+                        && threadDetail.header.structuralRevision > 0)
+                        selected.targetStructuralRevision = threadDetail.header.structuralRevision;
+                    else if (selected.rootHandle == null && list?.ownerStructuralRevision > 0)
+                        selected.targetStructuralRevision = list.ownerStructuralRevision;
                     MemoryBlockDetailResult refreshed = component.QueryMemoryBlockDetail(
                         new MemoryBlockDetailQuery
                         {
@@ -375,14 +427,15 @@ namespace PawnDiary
                             targetStructuralRevision = selected.targetStructuralRevision,
                             projectionToken = "full"
                         });
-                    if (refreshed.status == MemoryLibraryStatuses.Stale)
+                    blockDetail = refreshed;
+                    if (refreshed?.status == MemoryLibraryStatuses.Stale)
                     {
-                        listExpectedSnapshotRevision = 0;
-                        detailExpectedSnapshotRevision = 0;
+                        RestartListStream();
+                        RestartDetailStream();
                     }
-                    else if (refreshed.status == MemoryLibraryStatuses.Ready)
+                    else if (refreshed?.status == MemoryLibraryStatuses.Ready)
                     {
-                        blockDetail = refreshed;
+                        selectedBlockRow = refreshed.row;
                         MemoryLibraryUiPolicy.MergeDetailRefresh(session.editDraft, refreshed);
                     }
                 }
@@ -394,6 +447,8 @@ namespace PawnDiary
                 MemoryImportedRow row = FindSelectedImportedRow();
                 if (row != null)
                 {
+                    if (selectedOwner?.structuralRevision > 0)
+                        row.targetStructuralRevision = selectedOwner.structuralRevision;
                     importedDetail = component.QueryMemoryImportedDetail(
                         new MemoryImportedDetailQuery
                         {
@@ -404,7 +459,7 @@ namespace PawnDiary
                             targetStructuralRevision = row.targetStructuralRevision
                         });
                     if (importedDetail.status == MemoryLibraryStatuses.Stale)
-                        importedTextExpectedSnapshotRevision = 0;
+                        RestartImportedTextStream();
                     else if (importedDetail.status == MemoryLibraryStatuses.Ready)
                         importedTextExpectedSnapshotRevision = importedDetail.archiveTextSnapshotRevision;
                 }
@@ -462,9 +517,9 @@ namespace PawnDiary
                 && MemoryLibraryUiPolicy.ApplyEditCommandResult(session.editDraft, result);
             if (saved) session.editDraft = null;
             pendingAction = string.Empty;
-            listExpectedSnapshotRevision = 0;
-            detailExpectedSnapshotRevision = 0;
-            importedTextExpectedSnapshotRevision = 0;
+            RestartListStream();
+            RestartDetailStream();
+            RestartImportedTextStream();
         }
 
         private long AllocateCommandId()
@@ -492,17 +547,20 @@ namespace PawnDiary
         private void ResetOwnerQueries()
         {
             selectedOwner = null;
+            ownerWalkHandle = null;
             compatibility = null;
             lore = null;
             loreExpanded = false;
             selectedLoreTopicIndex = 0;
+            selectedBlockRow = null;
+            selectedImportedRow = null;
             ResetListQuery();
         }
 
         private void ResetListQuery()
         {
             listQueryDirty = true;
-            listExpectedSnapshotRevision = 0;
+            RestartListStream();
             list = null;
             listScroll = Vector2.zero;
             ResetDetailQuery();
@@ -511,11 +569,35 @@ namespace PawnDiary
         private void ResetDetailQuery()
         {
             detailQueryDirty = true;
-            detailExpectedSnapshotRevision = 0;
-            importedTextExpectedSnapshotRevision = 0;
+            RestartDetailStream();
+            RestartImportedTextStream();
             threadDetail = null;
             blockDetail = null;
             importedDetail = null;
+            detailScroll = Vector2.zero;
+            blockDetailScroll = Vector2.zero;
+            currentStatusScroll = Vector2.zero;
+        }
+
+        private void RestartListStream()
+        {
+            listStart = 0;
+            listExpectedSnapshotRevision = 0;
+            listScroll = Vector2.zero;
+        }
+
+        private void RestartDetailStream()
+        {
+            detailStart = 0;
+            detailExpectedSnapshotRevision = 0;
+            detailScroll = Vector2.zero;
+            currentStatusScroll = Vector2.zero;
+        }
+
+        private void RestartImportedTextStream()
+        {
+            importedTextStart = 0;
+            importedTextExpectedSnapshotRevision = 0;
             detailScroll = Vector2.zero;
         }
 
@@ -539,7 +621,11 @@ namespace PawnDiary
             {
                 for (int index = 0; index < threadDetail.blocks.Count; index++)
                     if (MemoryLibraryUiPolicy.Same(threadDetail.blocks[index]?.recordHandle,
-                        session.selectedRecordHandle)) return threadDetail.blocks[index];
+                        session.selectedRecordHandle))
+                    {
+                        selectedBlockRow = threadDetail.blocks[index];
+                        return selectedBlockRow;
+                    }
             }
             if (list?.rows != null)
             {
@@ -547,21 +633,30 @@ namespace PawnDiary
                 {
                     MemoryBlockRow row = list.rows[index]?.standalone;
                     if (MemoryLibraryUiPolicy.Same(row?.recordHandle,
-                        session.selectedRecordHandle)) return row;
+                        session.selectedRecordHandle))
+                    {
+                        selectedBlockRow = row;
+                        return selectedBlockRow;
+                    }
                 }
             }
-            return blockDetail?.row;
+            return MemoryLibraryUiPolicy.Same(selectedBlockRow?.recordHandle,
+                session.selectedRecordHandle) ? selectedBlockRow : null;
         }
 
         private MemoryImportedRow FindSelectedImportedRow()
         {
-            if (list?.rows == null) return null;
-            for (int index = 0; index < list.rows.Count; index++)
+            for (int index = 0; list?.rows != null && index < list.rows.Count; index++)
             {
                 MemoryImportedRow row = list.rows[index]?.imported;
-                if (Same(row?.archiveHandle, session.selectedArchiveHandle)) return row;
+                if (Same(row?.archiveHandle, session.selectedArchiveHandle))
+                {
+                    selectedImportedRow = row;
+                    return selectedImportedRow;
+                }
             }
-            return null;
+            return Same(selectedImportedRow?.archiveHandle, session.selectedArchiveHandle)
+                ? selectedImportedRow : null;
         }
 
         private static MemoryLibraryFilters CopyFilters(MemoryLibraryFilters source)

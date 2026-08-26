@@ -54,6 +54,36 @@ namespace MemoryThreadTests
                 session.selectedOwnerHandle.exactOwnerPawnIdOrEmpty);
             Equal("m9.owner.refresh-retains-draft", "keep me", session.editDraft.text);
 
+            MemoryLibraryOwnerResult offWindow = new MemoryLibraryOwnerResult
+            {
+                status = MemoryLibraryStatuses.Ready,
+                directoryRowCount = 2,
+                totalMatchedRows = 2,
+                directoryRevision = 1,
+                rows = new List<MemoryLibraryOwnerRow> { second }
+            };
+            session.ReconcileOwnerDirectory(offWindow, string.Empty, true);
+            Equal("m9.owner.off-window-retains-selection", "pawn-a",
+                session.selectedOwnerHandle.exactOwnerPawnIdOrEmpty);
+            Equal("m9.owner.off-window-retains-draft", "keep me", session.editDraft.text);
+
+            MemoryLibraryUiOwnerWalkStep firstWalk = MemoryLibraryUiPolicy.PlanOwnerWalk(
+                new List<MemoryLibraryOwnerRow> { first }, true, null,
+                second.primaryHandle, string.Empty);
+            Equal("m9.owner.walk-page-zero-continues", true, firstWalk.continuePaging);
+            Equal("m9.owner.walk-retains-canonical-fallback", "pawn-a",
+                firstWalk.fallback.primaryHandle.exactOwnerPawnIdOrEmpty);
+            MemoryLibraryUiOwnerWalkStep secondWalk = MemoryLibraryUiPolicy.PlanOwnerWalk(
+                new List<MemoryLibraryOwnerRow> { second }, false, firstWalk.fallback,
+                second.primaryHandle, string.Empty);
+            Equal("m9.owner.walk-finds-later-page", "pawn-b",
+                secondWalk.selected.primaryHandle.exactOwnerPawnIdOrEmpty);
+            MemoryLibraryUiOwnerWalkStep exhaustedWalk = MemoryLibraryUiPolicy.PlanOwnerWalk(
+                new List<MemoryLibraryOwnerRow> { first }, false, firstWalk.fallback,
+                Owner("missing", "epoch", "Missing", 0).primaryHandle, string.Empty);
+            Equal("m9.owner.walk-exhausted-uses-fallback", "pawn-a",
+                exhaustedWalk.selected.primaryHandle.exactOwnerPawnIdOrEmpty);
+
             session.SelectOwner(second);
             Equal("m9.owner.explicit-change-uses-exact-handle", "pawn-b",
                 session.selectedOwnerHandle.exactOwnerPawnIdOrEmpty);
@@ -150,6 +180,8 @@ namespace MemoryThreadTests
             session.SelectOwner(rawOnly);
             Equal("m9.imported.raw-only.default-view", MemoryLibraryViews.Imported,
                 session.selectedView);
+            Equal("m9.imported.raw-only-has-no-active-tabs", false,
+                MemoryLibraryUiPolicy.HasActiveViews(rawOnly));
             Equal("m9.imported.raw-only.exact-handle", MemoryLibraryScopes.LegacyRawUnknown,
                 session.selectedOwnerHandle.scopeToken);
             MemoryLibraryOwnerResult rawDirectory = new MemoryLibraryOwnerResult
@@ -286,6 +318,25 @@ namespace MemoryThreadTests
             Equal("m9.ttl.summary-mixed", MemoryLibraryUiLifetimeTokens.Mixed,
                 mixed.stateToken);
             Equal("m9.ttl.summary-next-original-expiry", 1000L, mixed.expiryTick);
+
+            MemoryBlockRow sameFamily = Block("same-family", 300,
+                MemoryLibraryPolicy.ImportanceMinor);
+            sameFamily.kind = "Summary";
+            sameFamily.summaryContributions.Add(new MemorySummaryContributionDescriptor
+            {
+                originalTick = 300,
+                importanceMask = MemoryLibraryPolicy.ImportanceMinor
+            });
+            sameFamily.summaryContributions.Add(new MemorySummaryContributionDescriptor
+            {
+                originalTick = 100,
+                importanceMask = MemoryLibraryPolicy.ImportanceMinor
+            });
+            Equal("m9.ttl.summary-same-family-earliest-expiry", 1000L,
+                MemoryLibraryUiPolicy.Lifetime(sameFamily, 500, minor, regular).expiryTick);
+            sameFamily.summaryContributions.Reverse();
+            Equal("m9.ttl.summary-same-family-order-independent", 1000L,
+                MemoryLibraryUiPolicy.Lifetime(sameFamily, 500, minor, regular).expiryTick);
         }
 
         private static void VirtualizationIsBoundedAtMinimumViewport()
@@ -303,6 +354,12 @@ namespace MemoryThreadTests
                 1, -100f, 0f, 0f, -2, 0);
             Equal("m9.virtual.minimum-progress", 1, minimum.materializedCount);
             Equal("m9.virtual.minimum-end", 1, minimum.endExclusive);
+            MemoryLibraryUiVirtualWindow excessive = MemoryLibraryUiPolicy.Virtualize(
+                3, 100000f, 40f, 40f, 0, 24);
+            Equal("m9.virtual.excessive-scroll-clamps-first", 2, excessive.firstIndex);
+            Equal("m9.virtual.excessive-scroll-clamps-end", 3, excessive.endExclusive);
+            Equal("m9.virtual.excessive-scroll-materializes-one", 1,
+                excessive.materializedCount);
         }
 
         private static void ActivationAndNoGameGateFailClosed()

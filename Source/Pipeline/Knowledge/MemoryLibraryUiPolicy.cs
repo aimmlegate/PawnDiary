@@ -40,6 +40,18 @@ namespace PawnDiary
     }
 
     /// <summary>
+    /// One bounded step while resolving an exact owner across a paged immutable directory. The UI
+    /// retains the canonical first-row fallback but does not change selection until the walk either
+    /// finds its exact target or exhausts the pinned publication.
+    /// </summary>
+    internal sealed class MemoryLibraryUiOwnerWalkStep
+    {
+        public MemoryLibraryOwnerRow fallback;
+        public MemoryLibraryOwnerRow selected;
+        public bool continuePaging;
+    }
+
+    /// <summary>
     /// One detached wording draft. Structural conflicts retain text; status-only refreshes replace
     /// only the status fence and never invalidate the player's work.
     /// </summary>
@@ -100,7 +112,8 @@ namespace PawnDiary
             selectedOwnerEpochKey = MemoryLibraryUiPolicy.Copy(row.activeOwnerEpochKey);
             selectedCompatibilityHandle = MemoryLibraryUiPolicy.Copy(row.compatibilityHandle);
             selectedOwnerDisplayName = row.displayName ?? string.Empty;
-            selectedView = row.primaryHandle == null && row.compatibilityHandle != null
+            selectedView = !MemoryLibraryUiPolicy.HasActiveViews(row)
+                && MemoryLibraryUiPolicy.HasImportedViewContent(row)
                 ? MemoryLibraryViews.Imported : MemoryLibraryViews.Threads;
             ClearOwnerContent();
             if (selectedView == MemoryLibraryViews.Imported)
@@ -139,6 +152,9 @@ namespace PawnDiary
                     }
                 }
             }
+            // Owner-directory paging changes only the selector window. It must not silently replace a
+            // still-valid exact selection merely because that row is outside this materialized page.
+            if (selected == null && selectedOwnerHandle != null) return;
             selected = selected ?? result.rows[0];
             if (MemoryLibraryUiPolicy.Same(selected?.primaryHandle, selectedOwnerHandle)
                 || MemoryLibraryUiPolicy.Same(selected?.compatibilityHandle, selectedOwnerHandle))
@@ -153,6 +169,10 @@ namespace PawnDiary
                 if (selectedView == MemoryLibraryViews.Imported
                     && !MemoryLibraryUiPolicy.HasImportedViewContent(selected))
                     SelectView(MemoryLibraryViews.Threads);
+                else if (!MemoryLibraryUiPolicy.HasActiveViews(selected)
+                    && selectedView != MemoryLibraryViews.Imported
+                    && MemoryLibraryUiPolicy.HasImportedViewContent(selected))
+                    SelectView(MemoryLibraryViews.Imported);
                 return;
             }
             SelectOwner(selected);
@@ -246,6 +266,53 @@ namespace PawnDiary
             return owner != null && (owner.importedCount > 0 || owner.compatibilityHandle != null);
         }
 
+        /// <summary>Threads and Standalone require one exact active owner/epoch key.</summary>
+        public static bool HasActiveViews(MemoryLibraryOwnerRow owner)
+        {
+            return owner?.primaryHandle != null
+                && owner.primaryHandle.scopeToken == MemoryLibraryScopes.Active
+                && owner.activeOwnerEpochKey != null;
+        }
+
+        /// <summary>
+        /// Plans one page of an exact-handle or preferred-ID owner walk. The canonical fallback is
+        /// retained across pages and selected only after the pinned directory is exhausted.
+        /// </summary>
+        public static MemoryLibraryUiOwnerWalkStep PlanOwnerWalk(
+            List<MemoryLibraryOwnerRow> rows,
+            bool hasMore,
+            MemoryLibraryOwnerRow fallback,
+            MemoryLibraryOwnerHandle exactHandle,
+            string preferredExactOwnerId)
+        {
+            MemoryLibraryUiOwnerWalkStep result = new MemoryLibraryUiOwnerWalkStep
+            {
+                fallback = fallback
+            };
+            if (result.fallback == null && rows != null && rows.Count > 0)
+                result.fallback = rows[0];
+            for (int index = 0; rows != null && index < rows.Count; index++)
+            {
+                MemoryLibraryOwnerRow candidate = rows[index];
+                bool handleMatch = exactHandle != null
+                    && (Same(candidate?.primaryHandle, exactHandle)
+                        || Same(candidate?.compatibilityHandle, exactHandle));
+                string ownerId = candidate?.primaryHandle?.exactOwnerPawnIdOrEmpty
+                    ?? candidate?.compatibilityHandle?.exactOwnerPawnIdOrEmpty;
+                bool idMatch = exactHandle == null
+                    && !string.IsNullOrWhiteSpace(preferredExactOwnerId)
+                    && string.Equals(ownerId, preferredExactOwnerId, StringComparison.Ordinal);
+                if (handleMatch || idMatch)
+                {
+                    result.selected = candidate;
+                    return result;
+                }
+            }
+            if (hasMore) result.continuePaging = true;
+            else result.selected = result.fallback;
+            return result;
+        }
+
         public static void ClearImportedIncompatibleFilters(MemoryLibraryFilters filters)
         {
             if (filters == null) return;
@@ -273,7 +340,8 @@ namespace PawnDiary
 
             double safeScroll = Math.Max(0d, scrollY);
             double safeViewport = Math.Max(1d, viewportHeight);
-            int first = Math.Max(0, (int)Math.Floor(safeScroll / height) - overscan);
+            int first = Math.Min(total - 1,
+                Math.Max(0, (int)Math.Floor(safeScroll / height) - overscan));
             int visibleEnd = Math.Min(total,
                 (int)Math.Ceiling((safeScroll + safeViewport) / height) + overscan);
             if (visibleEnd <= first) visibleEnd = Math.Min(total, first + 1);
@@ -501,6 +569,13 @@ namespace PawnDiary
                     first.originalTick, first.ageUnknown, first.importanceMask,
                     nowTick, minorLifetimeTicks, regularLifetimeTicks);
                 single.importanceMask = highest;
+                // Contributions with one lifetime family still have distinct original ticks. Report
+                // the earliest constituent deadline, never whichever fact bucket happened to sort first.
+                if (nextExpiry != long.MaxValue)
+                {
+                    single.expiryTick = nextExpiry;
+                    single.remainingTicks = Math.Max(0, nextExpiry - nowTick);
+                }
                 return single;
             }
             return new MemoryLibraryUiLifetime

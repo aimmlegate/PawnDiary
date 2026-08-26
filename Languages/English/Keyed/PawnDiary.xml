@@ -2121,6 +2121,23 @@
   <PawnDiary.Memory.Library.UnknownOwner>Unknown owner</PawnDiary.Memory.Library.UnknownOwner>
   <PawnDiary.Memory.Library.CurrentStatus>Current status</PawnDiary.Memory.Library.CurrentStatus>
   <PawnDiary.Memory.Library.Chapter>Chapter {0}</PawnDiary.Memory.Library.Chapter>
+  <PawnDiary.Memory.Library.ChapterContinued>continued</PawnDiary.Memory.Library.ChapterContinued>
+  <PawnDiary.Memory.Library.PhaseRelationship>relationship phase</PawnDiary.Memory.Library.PhaseRelationship>
+  <PawnDiary.Memory.Library.PhaseFamily>family lifecycle</PawnDiary.Memory.Library.PhaseFamily>
+  <PawnDiary.Memory.Library.PhaseBody>body state</PawnDiary.Memory.Library.PhaseBody>
+  <PawnDiary.Memory.Library.PhaseMembership>membership state</PawnDiary.Memory.Library.PhaseMembership>
+  <PawnDiary.Memory.Library.PhaseGrowth>growth stage</PawnDiary.Memory.Library.PhaseGrowth>
+  <PawnDiary.Memory.Library.PhaseBelief>belief state</PawnDiary.Memory.Library.PhaseBelief>
+  <PawnDiary.Memory.Library.PhaseRole>ideology role</PawnDiary.Memory.Library.PhaseRole>
+  <PawnDiary.Memory.Library.PhaseTitle>royal title</PawnDiary.Memory.Library.PhaseTitle>
+  <PawnDiary.Memory.Library.PhasePsylink>psylink state</PawnDiary.Memory.Library.PhasePsylink>
+  <PawnDiary.Memory.Library.PhaseGenetic>genetic identity</PawnDiary.Memory.Library.PhaseGenetic>
+  <PawnDiary.Memory.Library.PhaseMechlink>mechlink state</PawnDiary.Memory.Library.PhaseMechlink>
+  <PawnDiary.Memory.Library.PhasePersonaBond>persona bond</PawnDiary.Memory.Library.PhasePersonaBond>
+  <PawnDiary.Memory.Library.PhaseOpinion>opinion episode</PawnDiary.Memory.Library.PhaseOpinion>
+  <PawnDiary.Memory.Library.PhaseFormalRelationship>formal relationship</PawnDiary.Memory.Library.PhaseFormalRelationship>
+  <PawnDiary.Memory.Library.PhaseFactionDiplomacy>faction diplomacy</PawnDiary.Memory.Library.PhaseFactionDiplomacy>
+  <PawnDiary.Memory.Library.PhaseFactionLifecycle>faction lifecycle</PawnDiary.Memory.Library.PhaseFactionLifecycle>
   <PawnDiary.Memory.Library.Position>{0} of {1}</PawnDiary.Memory.Library.Position>
   <PawnDiary.Memory.Library.Back>Back</PawnDiary.Memory.Library.Back>
   <PawnDiary.Memory.Library.Previous>Previous</PawnDiary.Memory.Library.Previous>
@@ -2184,6 +2201,7 @@ Preserved rows: {1}; logical bytes: {2}</PawnDiary.Memory.Library.CompatibilityP
   <PawnDiary.Memory.Library.CultureNone>none</PawnDiary.Memory.Library.CultureNone>
   <PawnDiary.Memory.Library.CurrentKnown>known from saved evidence</PawnDiary.Memory.Library.CurrentKnown>
   <PawnDiary.Memory.Library.CurrentUnknown>unknown</PawnDiary.Memory.Library.CurrentUnknown>
+  <PawnDiary.Memory.Library.CurrentStatusSaved>{0} · saved on {1} · {2}</PawnDiary.Memory.Library.CurrentStatusSaved>
   <PawnDiary.Memory.Library.DateUnknown>Date unknown</PawnDiary.Memory.Library.DateUnknown>
   <PawnDiary.Memory.Library.Day>Day {0}</PawnDiary.Memory.Library.Day>
   <PawnDiary.Memory.Library.DiagnosticsBody>Facts: {0}

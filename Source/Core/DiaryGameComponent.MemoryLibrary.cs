@@ -2995,6 +2995,15 @@ namespace PawnDiary
             };
         }
 
+        /// <summary>
+        /// Returns a detached copy of the XML/capacity-owned Library input limits. The UI snapshots
+        /// this once when it opens so search text is normalized before entering session state.
+        /// </summary>
+        internal MemoryLibraryLimits MemoryLibraryInputLimitsForUi()
+        {
+            return BuildMemoryLibraryLimits();
+        }
+
         private long NextMemoryLibraryDayBoundary()
         {
             long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);

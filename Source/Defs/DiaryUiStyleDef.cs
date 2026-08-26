@@ -224,6 +224,7 @@ namespace PawnDiary
         public float memoryLibraryCulturePanelHeight = 132f;
         public float memoryLibraryCardHeight = 82f;
         public float memoryLibraryBlockCardHeight = 96f;
+        public float memoryLibraryBlockDetailMinimumContentHeight = 430f;
         public float memoryLibraryCardGap = 6f;
         public int memoryLibraryOverscanRows = 2;
         public int memoryLibraryMaximumMaterializedRows = 28;

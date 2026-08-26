@@ -122,6 +122,7 @@
     <memoryLibraryCulturePanelHeight>132</memoryLibraryCulturePanelHeight>
     <memoryLibraryCardHeight>82</memoryLibraryCardHeight>
     <memoryLibraryBlockCardHeight>96</memoryLibraryBlockCardHeight>
+    <memoryLibraryBlockDetailMinimumContentHeight>430</memoryLibraryBlockDetailMinimumContentHeight>
     <memoryLibraryCardGap>6</memoryLibraryCardGap>
     <memoryLibraryOverscanRows>2</memoryLibraryOverscanRows>
     <memoryLibraryMaximumMaterializedRows>28</memoryLibraryMaximumMaterializedRows>
