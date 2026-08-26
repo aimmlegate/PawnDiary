@@ -137,7 +137,8 @@ namespace PawnDiary
             }
             if (result.rows == null || result.rows.Count == 0 || !canonicalFirstWindow) return;
 
-            MemoryLibraryOwnerRow selected = FindOwner(result.rows, selectedOwnerHandle);
+            MemoryLibraryOwnerRow selected = MemoryLibraryUiPolicy.ResolveOwnerRow(
+                null, result.rows, selectedOwnerHandle);
             if (selected == null && !string.IsNullOrEmpty(preferredExactOwnerId))
             {
                 for (int index = 0; index < result.rows.Count; index++)
@@ -227,20 +228,6 @@ namespace PawnDiary
             feedbackStatus = string.Empty;
         }
 
-        private static MemoryLibraryOwnerRow FindOwner(
-            List<MemoryLibraryOwnerRow> rows,
-            MemoryLibraryOwnerHandle selectedHandle)
-        {
-            if (selectedHandle == null) return null;
-            for (int index = 0; index < rows.Count; index++)
-            {
-                MemoryLibraryOwnerRow row = rows[index];
-                if (MemoryLibraryUiPolicy.Same(row?.primaryHandle, selectedHandle)
-                    || MemoryLibraryUiPolicy.Same(row?.compatibilityHandle, selectedHandle))
-                    return row;
-            }
-            return null;
-        }
     }
 
     /// <summary>Pure Phase-M9 presentation/session rules shared by the dialog and fixtures.</summary>
@@ -318,14 +305,17 @@ namespace PawnDiary
             return selected.targetStructuralRevision;
         }
 
-        /// <summary>Uses a refreshed owner fence for Imported detail without rewriting its row.</summary>
+        /// <summary>Uses the freshest proven Imported owner fence without rewriting any DTO.</summary>
         public static long ImportedDetailStructuralRevision(
             MemoryImportedRow selected,
-            MemoryLibraryOwnerRow currentOwner)
+            MemoryLibraryOwnerRow currentOwner,
+            long currentListOwnerStructuralRevision)
         {
             if (selected == null) return 0;
-            return (currentOwner?.structuralRevision ?? 0) > 0
-                ? currentOwner.structuralRevision : selected.targetStructuralRevision;
+            long rowRevision = Math.Max(0, selected.targetStructuralRevision);
+            long ownerRevision = Math.Max(0, currentOwner?.structuralRevision ?? 0);
+            long listRevision = Math.Max(0, currentListOwnerStructuralRevision);
+            return Math.Max(rowRevision, Math.Max(ownerRevision, listRevision));
         }
 
         /// <summary>Rejects a menu option captured from any superseded owner directory.</summary>
@@ -375,6 +365,27 @@ namespace PawnDiary
             if (hasMore) result.continuePaging = true;
             else result.selected = result.fallback;
             return result;
+        }
+
+        /// <summary>
+        /// Retains a row already resolved by a complete owner walk, otherwise finds the exact handle
+        /// on the current materialized page. Labels and owner IDs alone never participate.
+        /// </summary>
+        public static MemoryLibraryOwnerRow ResolveOwnerRow(
+            MemoryLibraryOwnerRow resolved,
+            List<MemoryLibraryOwnerRow> currentRows,
+            MemoryLibraryOwnerHandle selectedHandle)
+        {
+            if (selectedHandle == null) return null;
+            if (Same(resolved?.primaryHandle, selectedHandle)
+                || Same(resolved?.compatibilityHandle, selectedHandle)) return resolved;
+            for (int index = 0; currentRows != null && index < currentRows.Count; index++)
+            {
+                MemoryLibraryOwnerRow row = currentRows[index];
+                if (Same(row?.primaryHandle, selectedHandle)
+                    || Same(row?.compatibilityHandle, selectedHandle)) return row;
+            }
+            return null;
         }
 
         public static void ClearImportedIncompatibleFilters(MemoryLibraryFilters filters)

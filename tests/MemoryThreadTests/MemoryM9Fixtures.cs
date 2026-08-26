@@ -85,6 +85,21 @@ namespace MemoryThreadTests
                 Owner("missing", "epoch", "Missing", 0).primaryHandle, string.Empty);
             Equal("m9.owner.walk-exhausted-uses-fallback", "pawn-a",
                 exhaustedWalk.selected.primaryHandle.exactOwnerPawnIdOrEmpty);
+            Equal("m9.owner.reset-retains-earlier-page-fallback", first,
+                MemoryLibraryUiPolicy.ResolveOwnerRow(
+                    exhaustedWalk.selected,
+                    new List<MemoryLibraryOwnerRow> { second },
+                    first.primaryHandle));
+            Equal("m9.owner.reset-finds-current-page-row", second,
+                MemoryLibraryUiPolicy.ResolveOwnerRow(
+                    null,
+                    new List<MemoryLibraryOwnerRow> { second },
+                    second.primaryHandle));
+            Equal("m9.owner.reset-rejects-unrelated-row", null,
+                MemoryLibraryUiPolicy.ResolveOwnerRow(
+                    second,
+                    new List<MemoryLibraryOwnerRow>(),
+                    first.primaryHandle));
 
             session.SelectOwner(second);
             Equal("m9.owner.explicit-change-uses-exact-handle", "pawn-b",
@@ -322,10 +337,17 @@ namespace MemoryThreadTests
             MemoryImportedRow imported = new MemoryImportedRow { targetStructuralRevision = 6 };
             MemoryLibraryOwnerRow owner = new MemoryLibraryOwnerRow { structuralRevision = 12 };
             Equal("m9.detail-fence.imported-uses-current-owner", 12L,
-                MemoryLibraryUiPolicy.ImportedDetailStructuralRevision(imported, owner));
+                MemoryLibraryUiPolicy.ImportedDetailStructuralRevision(imported, owner, 0));
             owner.structuralRevision = 0;
             Equal("m9.detail-fence.imported-falls-back-to-row", 6L,
-                MemoryLibraryUiPolicy.ImportedDetailStructuralRevision(imported, owner));
+                MemoryLibraryUiPolicy.ImportedDetailStructuralRevision(imported, owner, 0));
+            owner.structuralRevision = 4;
+            Equal("m9.detail-fence.imported-never-moves-backward", 6L,
+                MemoryLibraryUiPolicy.ImportedDetailStructuralRevision(imported, owner, 5));
+            Equal("m9.detail-fence.imported-uses-current-list", 15L,
+                MemoryLibraryUiPolicy.ImportedDetailStructuralRevision(imported, owner, 15));
+            Equal("m9.detail-fence.imported-null-owner-uses-row", 6L,
+                MemoryLibraryUiPolicy.ImportedDetailStructuralRevision(imported, null, 0));
 
             MemoryLibraryOwnerResult currentDirectory = new MemoryLibraryOwnerResult
             {

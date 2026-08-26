@@ -291,6 +291,7 @@ namespace PawnDiary
             ownerExpectedDirectoryRevision = result.directoryRevision;
 
             string before = OwnerKey(session.selectedOwnerHandle);
+            MemoryLibraryOwnerRow resolvedOwner = null;
             if (result.directoryRowCount == 0)
             {
                 session.ReconcileOwnerDirectory(result, string.Empty, true);
@@ -309,7 +310,12 @@ namespace PawnDiary
             bool searchEmpty = string.IsNullOrWhiteSpace(session.ownerSearch);
             if (!searchEmpty && session.selectedOwnerHandle != null
                 && selectedOwnerValidatedDirectoryRevision != result.directoryRevision)
+            {
                 ValidateSelectedOwner(result.directoryRevision);
+                // Validation owns any searched selection transition and already retained the exact
+                // unfiltered row. Do not process that same transition again against the searched page.
+                before = OwnerKey(session.selectedOwnerHandle);
+            }
             bool canonical = ownerStart == 0 && searchEmpty;
             bool needsValidation = canonical && session.selectedOwnerHandle != null
                 && selectedOwnerValidatedDirectoryRevision != result.directoryRevision;
@@ -341,6 +347,7 @@ namespace PawnDiary
                     else
                         session.SelectOwner(step.selected);
                     selectedOwner = step.selected;
+                    resolvedOwner = step.selected;
                     selectedOwnerValidatedDirectoryRevision = result.directoryRevision;
                 }
                 preferredOwnerId = string.Empty;
@@ -355,7 +362,8 @@ namespace PawnDiary
                     selectedOwnerValidatedDirectoryRevision = result.directoryRevision;
             }
             if (!string.Equals(before, OwnerKey(session.selectedOwnerHandle), StringComparison.Ordinal))
-                ResetOwnerQueries(FindOwnerRow(result.rows, session.selectedOwnerHandle));
+                ResetOwnerQueries(MemoryLibraryUiPolicy.ResolveOwnerRow(
+                    resolvedOwner, result.rows, session.selectedOwnerHandle));
         }
 
         private void RefreshSelectedOwnerReference()
@@ -486,7 +494,8 @@ namespace PawnDiary
                 if (row != null)
                 {
                     long targetStructuralRevision =
-                        MemoryLibraryUiPolicy.ImportedDetailStructuralRevision(row, selectedOwner);
+                        MemoryLibraryUiPolicy.ImportedDetailStructuralRevision(
+                            row, selectedOwner, list?.ownerStructuralRevision ?? 0);
                     importedDetail = component.QueryMemoryImportedDetail(
                         new MemoryImportedDetailQuery
                         {
@@ -724,19 +733,6 @@ namespace PawnDiary
             importedTextStart = 0;
             importedTextExpectedSnapshotRevision = 0;
             detailScroll = Vector2.zero;
-        }
-
-        private static MemoryLibraryOwnerRow FindOwnerRow(
-            List<MemoryLibraryOwnerRow> rows, MemoryLibraryOwnerHandle handle)
-        {
-            if (rows == null || handle == null) return null;
-            for (int index = 0; index < rows.Count; index++)
-            {
-                MemoryLibraryOwnerRow row = rows[index];
-                if (MemoryLibraryUiPolicy.Same(row?.primaryHandle, handle)
-                    || MemoryLibraryUiPolicy.Same(row?.compatibilityHandle, handle)) return row;
-            }
-            return null;
         }
 
         private MemoryBlockRow FindSelectedBlockRow()

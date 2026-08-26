@@ -8,7 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-08-26
 
-- **Memory M9 Thread and TTL Library UI.** Add review-hardened exact-owner thread/standalone/imported browsing, saved culture/status context, bounded virtualized cards and details, constituent-original-tick lifetime states, and revision-safe explicit edits/actions in English and Russian while activation remains LegacyShadow.
+- **Memory M9 Thread and TTL Library UI.** Add review-hardened exact-owner thread/standalone/imported browsing, saved culture/status context, bounded virtualized cards and details, constituent-original-tick lifetime states, revision-safe explicit edits/actions, and paged owner/detail race convergence in English and Russian while activation remains LegacyShadow.
 
 ## 2026-08-25
 
