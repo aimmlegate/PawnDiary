@@ -46,6 +46,16 @@
     <memoryRevisitEntryCountMinimum>1</memoryRevisitEntryCountMinimum>
     <memoryRevisitEntryCountDefault>3</memoryRevisitEntryCountDefault>
     <memoryRevisitEntryCountMaximum>1000</memoryRevisitEntryCountMaximum>
+    <!-- Recall-v2 repetition safety floors and current-truth formatter bounds. The player controls
+         may make repetition stricter; these rows keep every structural guard independently live. -->
+    <memoryRecordMinimumReuseDays>1</memoryRecordMinimumReuseDays>
+    <memoryRecordMinimumEntryDistance>1</memoryRecordMinimumEntryDistance>
+    <memoryRootMinimumEntryDistance>1</memoryRootMinimumEntryDistance>
+    <memorySubjectMinimumEntryDistance>1</memorySubjectMinimumEntryDistance>
+    <memoryPairMinimumEntryDistance>1</memoryPairMinimumEntryDistance>
+    <memoryNoveltyMinimumEntryDistance>1</memoryNoveltyMinimumEntryDistance>
+    <memoryCurrentStateMaximumFacts>8</memoryCurrentStateMaximumFacts>
+    <memoryCurrentStateMaximumCharacters>240</memoryCurrentStateMaximumCharacters>
     <quietReflectionChanceBasisPoints>200</quietReflectionChanceBasisPoints>
     <!-- M10 uses the existing natural-rest coordinator and common LLM transport. Delayed work is
          still the meaningful class; these values never create a separate ticker or retry queue. -->

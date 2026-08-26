@@ -99,7 +99,7 @@ namespace PawnDiary
             try
             {
                 CollectAndPublishAllocatorCarriers();
-                RunMemoryMigrationDryRunReport();
+                RunMemoryMigration();
                 RebuildMemorySizeIndexes();
             }
             catch (Exception e)
@@ -1164,6 +1164,26 @@ namespace PawnDiary
                     requestedTemplateKey: requestedTemplateKey,
                     povRole: povRole))
                 {
+                    return;
+                }
+
+                if (MemorySystemActivationGate.IsCurrentRelease)
+                {
+                    // M11 freezes the richest two-line shortlist at event time. QueuePrompt repeats
+                    // this adapter immediately before each lane variant freezes, revalidating only
+                    // current exact owner/epoch state and never borrowing another owner's candidates.
+                    PrepareMemoryRecallV2Projection(
+                        diaryEvent,
+                        DiaryEvent.InitiatorRole,
+                        PromptContextDetailLevel.Full);
+                    if (!diaryEvent.solo
+                        && !string.IsNullOrWhiteSpace(diaryEvent.recipientPawnId))
+                    {
+                        PrepareMemoryRecallV2Projection(
+                            diaryEvent,
+                            DiaryEvent.RecipientRole,
+                            PromptContextDetailLevel.Full);
+                    }
                     return;
                 }
 

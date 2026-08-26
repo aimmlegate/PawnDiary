@@ -2481,8 +2481,14 @@ namespace NarrativeContinuityTests
                 ReflectionCoordinator.SettleAfterActivation(quietFallback, true, true);
             AssertTrue("activated quiet work settles one slot and registers its page",
                 quietSettlement.coordinatorSlotSettled && quietSettlement.pageRegistered);
+            ReflectionSettlementOutcome quietWithoutPage =
+                ReflectionCoordinator.SettleAfterActivation(quietFallback, true, false);
             AssertTrue("activated quiet work advances cooldown and consumes one quadrum",
-                quietSettlement.advanceNarrativeCooldown && quietSettlement.consumeQuietQuadrum);
+                quietSettlement.advanceNarrativeCooldown && quietSettlement.consumeQuietQuadrum
+                    && quietWithoutPage.coordinatorSlotSettled
+                    && !quietWithoutPage.pageRegistered
+                    && !quietWithoutPage.advanceNarrativeCooldown
+                    && quietWithoutPage.consumeQuietQuadrum);
 
             ReflectionPlan summaryFallback = ReflectionCoordinator.Plan(OptionalPlanningRequest(
                 policy, summary));

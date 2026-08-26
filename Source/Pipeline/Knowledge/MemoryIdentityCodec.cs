@@ -646,6 +646,19 @@ namespace PawnDiary
             };
         }
 
+        /// <summary>
+        /// Reconstructs the canonical normal epoch token saved indirectly by a legacy-owner
+        /// reservation. Migration uses this instead of duplicating the private epoch-domain text.
+        /// </summary>
+        public static bool TryCreateNormalEpochToken(long sequence, out string epochToken)
+        {
+            epochToken = string.Empty;
+            return sequence > 0
+                && TryJoin(
+                    new[] { EpochDomain, sequence.ToString(CultureInfo.InvariantCulture) },
+                    out epochToken);
+        }
+
         /// <summary>Recognizes one canonical normal or fallback epoch token.</summary>
         public static bool TryValidateEpochToken(string epochToken, out bool isFallback)
         {

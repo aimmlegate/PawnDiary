@@ -187,7 +187,9 @@ namespace PawnDiary
                     importance = block.importance,
                     due = nowTick >= dueTick && nowTick < expiryTick,
                     cooldownSatisfied = true,
-                    groupEnabled = true,
+                    // MemoryReflection is a player-visible Reflection group. Optional memory work
+                    // must obey the same group switch as every other member of that group.
+                    groupEnabled = IsReflectionGroupEnabled(OptionalMemoryReflectionDefName),
                     usesBoundedTiming = true,
                     requestedTick = requestedTick,
                     dueTick = dueTick,
@@ -447,6 +449,11 @@ namespace PawnDiary
                 return false;
             }
 
+            // Burn the logical sequence before transport observes TryStage. A refusal may leave a
+            // harmless gap, but an ID that could have reached queue dedup is never reused.
+            lastIssuedMemoryLogicalRequestSequence = Math.Max(
+                lastIssuedMemoryLogicalRequestSequence,
+                nextSequence);
             LlmStagedGenerationRequest staged;
             if (LlmClient.TryStage(request, out staged) != LlmRequestStageOutcome.Staged)
             {
@@ -470,7 +477,6 @@ namespace PawnDiary
                 RemoveSummaryOpportunityByKey(opportunity.opportunityKey);
             }
             activeMemoryCoordinatorRequests.Add(savedRequest);
-            lastIssuedMemoryLogicalRequestSequence = nextSequence;
             if (!MemoryDispatchSavedAdapter.TryActivate(savedRequest))
             {
                 activeMemoryCoordinatorRequests.Remove(savedRequest);
@@ -612,8 +618,16 @@ namespace PawnDiary
             {
                 // Direct application does not parse prose as facts and this Def owns no capture rule,
                 // so generated reflections cannot recursively create memory opportunities.
-                ApplyExternalDirectEntryText(
+                bool pageRegistered = ApplyExternalDirectEntryText(
                     page, DiaryEvent.InitiatorRole, result.generatedText, string.Empty, false);
+                if (pageRegistered)
+                {
+                    // Optional memory work intentionally leaves the shared narrative cooldown open
+                    // at queue activation. Earn it now, only after the generated page is canonical.
+                    FindDiaryByPawnId(saved.ownerPawnId)?.EnsureReflectionState().MarkWritten(
+                        CoordinatorOpportunityKindTokens.MemoryReflection,
+                        Math.Max(0, Find.TickManager?.TicksGame ?? 0));
+                }
             }
         }
 

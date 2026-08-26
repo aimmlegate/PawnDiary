@@ -737,6 +737,7 @@ namespace PawnDiary
             }
             ResetMemoryMaintenanceTransient(true);
             ResetMemoryLibraryTransient();
+            ResetMemoryRecallV2Transient();
             PawnDiaryMod.RefreshMemoryPolicyFromDefs();
             ReconcilePublishedMemoryPolicy();
             PawnDiaryMod.ResumeCommittedSettingsSideEffects();

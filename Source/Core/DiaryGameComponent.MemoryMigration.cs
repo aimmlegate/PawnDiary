@@ -1,11 +1,9 @@
-// DiaryGameComponent.MemoryMigration.cs — impure adapter for the M1 dry-run migration report
-// (design/MEMORY_SYSTEM_IMPLEMENTATION_PLAN.md phase M1 item 4, §T13.1 shape preservation).
+// DiaryGameComponent.MemoryMigration.cs — impure adapter for legacy-memory dry-run reporting and
+// the final M11 per-owner commit transaction (§§T13.1–T13.5).
 //
-// REPORT MODE ONLY while MemorySystemActivationGate is LegacyShadow: this partial extracts plain
-// legacy snapshots from loaded v1/v2 knowledge envelopes plus the shipped capture-Def catalog,
-// feeds them to the pure MemoryThreadMigrationPolicy.PlanDryRun planner, and records bounded
-// diagnostics from the report. It NEVER stamps an owner current, never mutates saved rows, and
-// never creates events/pages/requests. The M11 commit slice will reuse these exact plans.
+// LegacyShadow remains report-only. CurrentRelease reuses the same pure plan, reserves an epoch,
+// constructs the complete replacement off to the side, verifies whole-owner/global bounds, then
+// publishes every duplicate container in one block. Neither path creates events/pages/requests.
 using System;
 using System.Collections.Generic;
 using Verse;
@@ -14,6 +12,23 @@ namespace PawnDiary
 {
     public partial class DiaryGameComponent
     {
+        private sealed class LegacyOwnerCommitPlan
+        {
+            public string ownerPawnId = string.Empty;
+            public string epochToken = string.Empty;
+            public PawnKnowledgeState replacement;
+            public MemoryLegacyMigrationReport report;
+        }
+
+        /// <summary>Selects report-only or commit migration from the single activation gate.</summary>
+        private void RunMemoryMigration()
+        {
+            if (MemorySystemActivationGate.IsCurrentRelease)
+                RunMemoryMigrationCommit();
+            else
+                RunMemoryMigrationDryRunReport();
+        }
+
         /// <summary>
         /// Runs the bounded per-owner dry-run migration report over every envelope that still
         /// carries legacy records. Duplicate containers group by exact ordinal pawn ID FIRST
@@ -107,6 +122,805 @@ namespace PawnDiary
             {
                 RecordMemoryDiagnostic("legacy_report_truncated", "component");
             }
+        }
+
+        /// <summary>
+        /// Commits legacy owners independently and atomically. A refused owner retains every raw
+        /// row plus its saved epoch reservation, so a later compatible build can retry without
+        /// allocating a second identity. This seam is internal for loaded-component fixtures; the
+        /// normal lifecycle reaches it only through <see cref="RunMemoryMigration"/>.
+        /// </summary>
+        internal void RunMemoryMigrationCommit()
+        {
+            if (diaries == null) return;
+
+            List<MemoryLegacyRuleMapEntry> ruleMap = SnapshotLegacyRuleMap();
+            long maxKnownTick = Find.TickManager != null ? Find.TickManager.TicksGame : 0;
+            var groups = new SortedDictionary<string, List<PawnDiaryRecord>>(
+                StringComparer.Ordinal);
+            for (int index = 0; index < diaries.Count; index++)
+            {
+                PawnDiaryRecord diary = diaries[index];
+                if (diary == null || string.IsNullOrWhiteSpace(diary.pawnId)) continue;
+                if (!groups.TryGetValue(diary.pawnId, out List<PawnDiaryRecord> holders))
+                {
+                    holders = new List<PawnDiaryRecord>();
+                    groups.Add(diary.pawnId, holders);
+                }
+                holders.Add(diary);
+            }
+
+            int ownerCap = (int)ReadCapacityLong("importedOwnerCount", 1000, 4000);
+            int visited = 0;
+            RebuildMemorySizeIndexes();
+            foreach (KeyValuePair<string, List<PawnDiaryRecord>> group in groups)
+            {
+                if (!GroupCarriesLegacyRows(group.Value)) continue;
+                if (visited++ >= ownerCap)
+                {
+                    RecordMemoryDiagnostic("capacity_refused", "owner");
+                    continue;
+                }
+
+                try
+                {
+                    LegacyOwnerCommitPlan commit;
+                    if (!TryPrepareLegacyOwnerCommit(
+                            group.Key, group.Value, ruleMap, maxKnownTick, out commit))
+                    {
+                        RecordMemoryDiagnostic("legacy_owner_raw", "owner");
+                        continue;
+                    }
+
+                    PublishLegacyOwnerCommit(group.Value, commit);
+                    RemoveLegacyEpochReservation(group.Key);
+                    MarkMemoryM4IndexesDirty();
+                    RebuildMemorySizeIndexes();
+                    if (commit.report.droppedAutomaticAlternateCount > 0)
+                        RecordMemoryDiagnostic("legacy_automatic_duplicate", "owner");
+                    if (commit.report.archivedAuthoredConflictCount > 0)
+                        RecordMemoryDiagnostic("legacy_authored_conflict", "owner");
+                }
+                catch (Exception)
+                {
+                    // Per-owner isolation is intentional: a malformed modded payload must not
+                    // prevent unrelated pawns from loading or destroy this owner's raw retry input.
+                    RecordMemoryDiagnostic("legacy_owner_raw", "owner");
+                }
+            }
+
+            TryCommitUnresolvedLegacyArchive(maxKnownTick);
+            if ((rawUnresolvedOwnerArchiveInput?.Count ?? 0) == 0)
+                unresolvedArchiveMigrationState = MemoryArchiveStates.Current;
+        }
+
+        private static bool GroupCarriesLegacyRows(List<PawnDiaryRecord> holders)
+        {
+            for (int index = 0; holders != null && index < holders.Count; index++)
+                if ((holders[index]?.knowledgeState?.records?.Count ?? 0) > 0) return true;
+            return false;
+        }
+
+        private bool TryPrepareLegacyOwnerCommit(
+            string ownerPawnId,
+            List<PawnDiaryRecord> holders,
+            List<MemoryLegacyRuleMapEntry> ruleMap,
+            long maxKnownTick,
+            out LegacyOwnerCommitPlan commit)
+        {
+            commit = null;
+            string epochToken;
+            if (!TryResolveLegacyOwnerEpoch(ownerPawnId, holders, out epochToken)) return false;
+
+            var input = new MemoryLegacyOwnerMigrationInput
+            {
+                ownerPawnId = ownerPawnId,
+                ownerEpochToken = epochToken,
+                maxKnownTick = maxKnownTick,
+                ruleMap = ruleMap
+            };
+            for (int holderIndex = 0; holderIndex < holders.Count; holderIndex++)
+            {
+                List<ImportantMemoryRecord> rows = holders[holderIndex]?.knowledgeState?.records;
+                for (int rowIndex = 0; rows != null && rowIndex < rows.Count; rowIndex++)
+                    input.records.Add(SnapshotLegacyRecord(rows[rowIndex]));
+            }
+
+            MemoryLegacyMigrationReport report = MemoryThreadMigrationPolicy.PlanDryRun(input);
+            if (report.ownerRemainsRaw || string.IsNullOrWhiteSpace(report.reportFingerprint))
+                return false;
+
+            PawnKnowledgeState replacement;
+            if (!TryBuildLegacyOwnerReplacement(
+                    ownerPawnId, epochToken, holders, report, maxKnownTick, out replacement)
+                || !LegacyReplacementWithinBounds(ownerPawnId, replacement)) return false;
+
+            commit = new LegacyOwnerCommitPlan
+            {
+                ownerPawnId = ownerPawnId,
+                epochToken = epochToken,
+                replacement = replacement,
+                report = report
+            };
+            return true;
+        }
+
+        /// <summary>
+        /// Reuses the group's sole valid epoch or publishes one normal-sequence reservation before
+        /// any semantic conversion. Conflicting/malformed epochs and fallback-only allocation stay
+        /// raw because the v1 reservation row can represent only a positive numeric sequence.
+        /// </summary>
+        private bool TryResolveLegacyOwnerEpoch(
+            string ownerPawnId,
+            List<PawnDiaryRecord> holders,
+            out string epochToken)
+        {
+            epochToken = string.Empty;
+            var epochs = new SortedSet<string>(StringComparer.Ordinal);
+            for (int index = 0; holders != null && index < holders.Count; index++)
+            {
+                string candidate = holders[index]?.knowledgeState?.autobiographicalEpochToken
+                    ?? string.Empty;
+                if (candidate.Length == 0) continue;
+                bool ignoredFallback;
+                if (!MemoryIdentityCodec.TryValidateEpochToken(candidate, out ignoredFallback))
+                    return false;
+                epochs.Add(candidate);
+            }
+            if (epochs.Count > 1) return false;
+            foreach (string existing in epochs)
+            {
+                epochToken = existing;
+                return true;
+            }
+
+            long reservedSequence = 0;
+            for (int index = 0; legacyOwnerEpochReservations != null
+                && index < legacyOwnerEpochReservations.Count; index++)
+            {
+                SavedLegacyOwnerEpochReservation reservation =
+                    legacyOwnerEpochReservations[index];
+                if (reservation == null
+                    || !string.Equals(reservation.ownerPawnId, ownerPawnId,
+                        StringComparison.Ordinal)) continue;
+                if (reservation.reservedEpochSequence <= 0
+                    || (reservedSequence > 0
+                        && reservedSequence != reservation.reservedEpochSequence)) return false;
+                reservedSequence = reservation.reservedEpochSequence;
+            }
+            if (reservedSequence > 0)
+            {
+                if (!MemoryIdentityCodec.TryCreateNormalEpochToken(
+                        reservedSequence, out epochToken)) return false;
+                List<string> live = SnapshotAutobiographicalEpochCarriers();
+                return live == null || !live.Contains(epochToken);
+            }
+
+            int reservationCap = (int)ReadCapacityLong("legacyEpochReservations", 64, 256);
+            if ((legacyOwnerEpochReservations?.Count ?? 0) >= reservationCap) return false;
+            MemoryEpochAllocationPlan allocation = MemoryIdentityCodec.PlanEpochAllocation(
+                new MemoryEpochAllocationRequest
+                {
+                    ownerPawnId = ownerPawnId,
+                    lastIssuedSequence = lastIssuedAutobiographicalEpochSequence,
+                    fallbackChain = lastIssuedAutobiographicalEpochFallbackChain ?? string.Empty,
+                    liveEpochCarriers = SnapshotAutobiographicalEpochCarriers(),
+                    isTargetBrainwipe = false
+                });
+            bool ignored;
+            long sequence;
+            if (!allocation.canMutate
+                || allocation.outcomeToken != MemoryEpochAllocationPlan.Normal
+                || !MemoryIdentityCodec.TryParseEpochToken(
+                    allocation.epochToken, out ignored, out sequence)
+                || ignored || sequence <= 0) return false;
+
+            // Reservation publication precedes semantic mapping. If later planning/cap checks
+            // refuse, this row intentionally remains and the next load reuses the same token.
+            lastIssuedAutobiographicalEpochSequence = allocation.nextSequence;
+            lastIssuedAutobiographicalEpochFallbackChain =
+                allocation.nextFallbackChain ?? string.Empty;
+            legacyOwnerEpochReservations.Add(new SavedLegacyOwnerEpochReservation
+            {
+                schemaVersion = 1,
+                ownerPawnId = ownerPawnId,
+                reservedEpochSequence = sequence
+            });
+            epochToken = allocation.epochToken;
+            return true;
+        }
+
+        private bool TryBuildLegacyOwnerReplacement(
+            string ownerPawnId,
+            string epochToken,
+            List<PawnDiaryRecord> holders,
+            MemoryLegacyMigrationReport report,
+            long maxKnownTick,
+            out PawnKnowledgeState replacement)
+        {
+            replacement = PawnKnowledgeState.CreateCurrent(ownerPawnId);
+            replacement.autobiographicalEpochToken = epochToken;
+            replacement.records.Clear();
+            var blockIds = new HashSet<string>(StringComparer.Ordinal);
+            var rootIds = new HashSet<string>(StringComparer.Ordinal);
+            var awarenessIds = new HashSet<string>(StringComparer.Ordinal);
+            var episodeIds = new HashSet<string>(StringComparer.Ordinal);
+            var guardIds = new HashSet<string>(StringComparer.Ordinal);
+            var archiveIds = new HashSet<string>(StringComparer.Ordinal);
+
+            for (int index = 0; holders != null && index < holders.Count; index++)
+            {
+                PawnKnowledgeState source = holders[index]?.knowledgeState;
+                if (source == null) continue;
+                CopyFirstCulture(replacement, source);
+                if (!source.IsCurrentSchema()) continue;
+                if (source.requestCancellationGeneration < 0 || source.structuralRevision < 0
+                    || source.statusRevision < 0 || source.completedDiaryEntryOrdinal < 0
+                    || source.requestCancellationGeneration == long.MaxValue
+                    || source.structuralRevision == long.MaxValue
+                    || source.statusRevision == long.MaxValue)
+                    return false;
+                if (!string.IsNullOrEmpty(source.autobiographicalEpochToken)
+                    && !string.Equals(source.autobiographicalEpochToken, epochToken,
+                        StringComparison.Ordinal)) return false;
+
+                bool enrolled = string.Equals(
+                    source.autobiographicalEpochToken, epochToken, StringComparison.Ordinal);
+                bool hasActiveRows = (source.standaloneBlocks?.Count ?? 0) > 0
+                    || (source.threadRoots?.Count ?? 0) > 0
+                    || (source.ownerAwarenessSnapshots?.Count ?? 0) > 0
+                    || (source.openCaptureEpisodes?.Count ?? 0) > 0
+                    || (source.repetitionGuardRows?.Count ?? 0) > 0;
+                if (!enrolled && hasActiveRows) return false;
+
+                replacement.requestCancellationGeneration = Math.Max(
+                    replacement.requestCancellationGeneration,
+                    source.requestCancellationGeneration);
+                replacement.structuralRevision = Math.Max(
+                    replacement.structuralRevision, source.structuralRevision);
+                replacement.statusRevision = Math.Max(
+                    replacement.statusRevision, source.statusRevision);
+                replacement.completedDiaryEntryOrdinal = Math.Max(
+                    replacement.completedDiaryEntryOrdinal,
+                    source.completedDiaryEntryOrdinal);
+                replacement.migrationDiagnosticFlags |= Math.Max(0, source.migrationDiagnosticFlags);
+                if (string.IsNullOrWhiteSpace(replacement.playerBackground)
+                    && !string.IsNullOrWhiteSpace(source.playerBackground))
+                    replacement.playerBackground = source.playerBackground;
+                if (!AddUniqueRows(replacement.importedArchiveRows,
+                        source.importedArchiveRows, row => row?.archiveRecordId, archiveIds))
+                    return false;
+                if (!enrolled) continue;
+                if (!AddUniqueRows(replacement.standaloneBlocks,
+                        source.standaloneBlocks, row => row?.recordId, blockIds)
+                    || !AddUniqueRows(replacement.threadRoots,
+                        source.threadRoots, row => row?.rootId, rootIds)
+                    || !AddUniqueRows(replacement.ownerAwarenessSnapshots,
+                        source.ownerAwarenessSnapshots, row => row?.snapshotId, awarenessIds)
+                    || !AddUniqueRows(replacement.openCaptureEpisodes,
+                        source.openCaptureEpisodes, row => row?.episodeId, episodeIds)
+                    || !AddUniqueRows(replacement.repetitionGuardRows,
+                        source.repetitionGuardRows,
+                        row => (row?.ownerEpochToken ?? string.Empty) + "\u001f"
+                            + (row?.guardKind ?? string.Empty) + "\u001f"
+                            + (row?.guardKey ?? string.Empty), guardIds)) return false;
+            }
+
+            MemoryReducerPolicy reducer = BuildMemoryReducerPolicy(maxKnownTick);
+            string chosenBackground = replacement.playerBackground ?? string.Empty;
+            for (int index = 0; report.rows != null && index < report.rows.Count; index++)
+            {
+                MemoryLegacyMappedRecord row = report.rows[index];
+                if (row == null) continue;
+                if (row.disposition == MemoryLegacyMappedRecord.DispositionDropAutomatic) continue;
+                if (row.disposition == MemoryLegacyMappedRecord.DispositionPlayerBackground)
+                {
+                    if (string.IsNullOrWhiteSpace(row.backgroundText)) continue;
+                    if (string.IsNullOrWhiteSpace(chosenBackground))
+                        chosenBackground = row.backgroundText;
+                    else if (!string.Equals(chosenBackground, row.backgroundText,
+                        StringComparison.Ordinal))
+                    {
+                        SavedImportedMemoryRow archived = BuildLegacyArchiveRow(
+                            ownerPawnId, epochToken, row, "background_conflict");
+                        if (archived == null || !archiveIds.Add(archived.archiveRecordId))
+                            return false;
+                        replacement.importedArchiveRows.Add(archived);
+                    }
+                    continue;
+                }
+                if (row.disposition == MemoryLegacyMappedRecord.DispositionArchiveAuthored)
+                {
+                    SavedImportedMemoryRow archived = BuildLegacyArchiveRow(
+                        ownerPawnId, epochToken, row, "authored_conflict");
+                    if (archived == null) return false;
+                    if (archiveIds.Add(archived.archiveRecordId))
+                        replacement.importedArchiveRows.Add(archived);
+                    continue;
+                }
+
+                SavedMemoryBlock block = BuildLegacyActiveBlock(ownerPawnId, epochToken, row);
+                if (block == null) return false;
+                if (!block.playerEdited && MemoryThreadReducer.IsExpired(
+                        maxKnownTick, block.originalEventTick, block.ageUnknown,
+                        block.importance, reducer.minorLifetimeTicks,
+                        reducer.regularLifetimeTicks)) continue;
+                if (blockIds.Add(block.recordId)) replacement.standaloneBlocks.Add(block);
+            }
+            replacement.playerBackground = chosenBackground;
+            replacement.archiveOnly = false;
+            replacement.epochFenceOnly = false;
+            replacement.structuralRevision = CheckedMigrationRevision(
+                replacement.structuralRevision);
+            replacement.statusRevision = CheckedMigrationRevision(replacement.statusRevision);
+            replacement.Normalize();
+            return true;
+        }
+
+        private static void CopyFirstCulture(
+            PawnKnowledgeState target, PawnKnowledgeState source)
+        {
+            if (string.IsNullOrWhiteSpace(target.originCultureDefName)
+                && !string.IsNullOrWhiteSpace(source.originCultureDefName))
+                target.originCultureDefName = source.originCultureDefName;
+            if (string.IsNullOrWhiteSpace(target.originCultureSource)
+                && !string.IsNullOrWhiteSpace(source.originCultureSource))
+                target.originCultureSource = source.originCultureSource;
+            if (string.IsNullOrWhiteSpace(target.adoptedCultureDefName)
+                && !string.IsNullOrWhiteSpace(source.adoptedCultureDefName))
+                target.adoptedCultureDefName = source.adoptedCultureDefName;
+        }
+
+        private static bool AddUniqueRows<T>(
+            List<T> target,
+            List<T> source,
+            Func<T, string> identity,
+            HashSet<string> seen) where T : class
+        {
+            for (int index = 0; source != null && index < source.Count; index++)
+            {
+                T row = source[index];
+                if (row == null) continue;
+                string key = identity(row) ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(key)) return false;
+                if (seen.Add(key)) target.Add(row);
+            }
+            return true;
+        }
+
+        private static SavedMemoryBlock BuildLegacyActiveBlock(
+            string ownerPawnId,
+            string epochToken,
+            MemoryLegacyMappedRecord row)
+        {
+            string recordId;
+            if (row == null || !MemoryIdentityCodec.TryCreateRecordId(
+                    new MemoryRecordIdentity
+                    {
+                        ownerPawnId = ownerPawnId,
+                        ownerEpochToken = epochToken,
+                        sourceOccurrenceId = row.sourceOccurrenceId,
+                        captureRuleId = row.captureRuleId,
+                        factDiscriminator = row.factDiscriminator
+                    }, out recordId)) return null;
+            var block = new SavedMemoryBlock
+            {
+                schemaVersion = 1,
+                recordId = recordId,
+                sourceOccurrenceId = row.sourceOccurrenceId ?? string.Empty,
+                sourceEventId = row.originSourceEventId ?? string.Empty,
+                captureRuleId = row.captureRuleId ?? string.Empty,
+                factDiscriminator = row.factDiscriminator ?? string.Empty,
+                ownerPawnId = ownerPawnId,
+                ownerEpochToken = epochToken,
+                kind = row.kindToken,
+                summaryRole = MemoryContractTokens.SummaryRoleNone,
+                category = row.categoryToken,
+                importance = row.importanceToken,
+                originalEventTick = row.originalEventTick,
+                ageUnknown = row.ageUnknown,
+                playerEdited = row.playerEdited,
+                suppressed = row.suppressed,
+                requiredLifecycleLandmark = false,
+                formatRevision = 1,
+                providerExposureState = "not_sent"
+            };
+            if (row.playerEdited) block.playerWording = row.importedWording ?? string.Empty;
+            else block.automaticWording = row.importedWording ?? string.Empty;
+            for (int index = 0; row.facts != null && index < row.facts.Count; index++)
+            {
+                MemoryLegacyMappedFact fact = row.facts[index];
+                if (fact == null) continue;
+                block.facts.Add(new SavedMemoryCanonicalFact
+                {
+                    schemaVersion = 1,
+                    factId = fact.factId ?? string.Empty,
+                    factKind = fact.factKind ?? string.Empty,
+                    canonicalSubjectKind = fact.canonicalSubjectKind ?? string.Empty,
+                    canonicalSubjectId = fact.canonicalSubjectId ?? string.Empty,
+                    aggregationToken = fact.aggregationToken ?? string.Empty,
+                    canonicalValueKind = fact.canonicalValueKind ?? string.Empty,
+                    canonicalValue = fact.canonicalValue ?? string.Empty
+                });
+            }
+            block.provenance.Add(new SavedMemoryProvenance
+            {
+                schemaVersion = 1,
+                provenanceRefId = row.provenanceRefId ?? string.Empty,
+                sourceKindToken = "legacy_migration",
+                sourceOccurrenceId = row.sourceOccurrenceId ?? string.Empty,
+                sourceEventId = row.originSourceEventId ?? string.Empty,
+                captureRuleId = row.captureRuleId ?? string.Empty,
+                factDiscriminator = row.factDiscriminator ?? string.Empty,
+                integrationToken = string.Empty
+            });
+            block.Normalize();
+            return block;
+        }
+
+        private static SavedImportedMemoryRow BuildLegacyArchiveRow(
+            string ownerPawnId,
+            string epochToken,
+            MemoryLegacyMappedRecord row,
+            string reasonToken)
+        {
+            if (row == null) return null;
+            var single = new MemoryLegacyMigrationReport
+            {
+                ownerPawnId = ownerPawnId,
+                ownerEpochToken = epochToken,
+                maxKnownTick = 0
+            };
+            single.rows.Add(row);
+            string archiveId = MemoryThreadMigrationPolicy.Fingerprint(single);
+            if (string.IsNullOrWhiteSpace(archiveId)) return null;
+            var archived = new SavedImportedMemoryRow
+            {
+                schemaVersion = 1,
+                archiveRecordId = archiveId,
+                savedOwnerIdentityKindToken = "exact_id",
+                savedOwnerIdentityValue = ownerPawnId,
+                reattributionGeneration = 0,
+                originalRecordId = row.originRecordId ?? string.Empty,
+                sourceOccurrenceId = row.sourceOccurrenceId ?? string.Empty,
+                sourceEventId = row.originSourceEventId ?? string.Empty,
+                originalEventTick = row.originalEventTick,
+                ageUnknown = row.ageUnknown,
+                importedWording = row.importedWording ?? string.Empty,
+                originalKindToken = row.kindToken ?? string.Empty,
+                originalSummaryRoleToken = MemoryContractTokens.SummaryRoleNone,
+                originalCategoryToken = row.categoryToken ?? string.Empty,
+                originalImportanceToken = row.importanceToken ?? string.Empty,
+                routePolicyToken = row.recallScope ?? string.Empty,
+                sourceTypeToken = row.sourceKind ?? string.Empty,
+                conflictFingerprint = archiveId,
+                migrationReasonToken = reasonToken ?? string.Empty
+            };
+            // The registered archive schema predates the raw legacy wrapper. Preserve its complete
+            // length-framed field/list encoding as one inert evidence token in addition to the
+            // queryable structured fields; no authored fact/name/date can disappear.
+            archived.diagnosticTokens.Add(
+                "legacy_payload_v1:" + MemoryThreadMigrationPolicy.CanonicalMappedRecordEncoding(row));
+            for (int index = 0; row.facts != null && index < row.facts.Count; index++)
+            {
+                MemoryLegacyMappedFact fact = row.facts[index];
+                if (fact == null) continue;
+                archived.canonicalFacts.Add(new SavedMemoryCanonicalFact
+                {
+                    schemaVersion = 1,
+                    factId = fact.factId ?? string.Empty,
+                    factKind = fact.factKind ?? string.Empty,
+                    canonicalSubjectKind = fact.canonicalSubjectKind ?? string.Empty,
+                    canonicalSubjectId = fact.canonicalSubjectId ?? string.Empty,
+                    aggregationToken = fact.aggregationToken ?? string.Empty,
+                    canonicalValueKind = fact.canonicalValueKind ?? string.Empty,
+                    canonicalValue = fact.canonicalValue ?? string.Empty
+                });
+            }
+            archived.Normalize();
+            return archived;
+        }
+
+        private bool LegacyReplacementWithinBounds(
+            string ownerPawnId, PawnKnowledgeState replacement)
+        {
+            int importedRows = (int)ReadCapacityLong("importedOwnerRows", 256, 1024);
+            int importedText = (int)ReadCapacityLong("importedTextUnits", 2000, 8000);
+            int replacementBlocks = CountBlocks(
+                replacement.standaloneBlocks, replacement.threadRoots);
+            int replacementEdited = CountEdited(
+                replacement.standaloneBlocks, replacement.threadRoots);
+            PawnKnowledgeState priorState = FindCurrentMemoryEnvelope(ownerPawnId);
+            int priorBlocks = priorState == null ? 0 : CountBlocks(
+                priorState.standaloneBlocks, priorState.threadRoots);
+            int priorEdited = priorState == null ? 0 : CountEdited(
+                priorState.standaloneBlocks, priorState.threadRoots);
+            int globalSoft;
+            int globalHard;
+            ReadCapacityPair("globalBlockCaps", 5000, 6000, 40000, 44000,
+                out globalSoft, out globalHard);
+            if ((replacement.importedArchiveRows?.Count ?? 0) > importedRows
+                || replacementBlocks > ReadCapacityLong(
+                    "manageableBlocksPerOwner", 128, 1024)
+                || replacementEdited > ReadCapacityLong("editedBlocksOwner", 32, 128)
+                || memoryM4GlobalActiveBlockCount - priorBlocks + replacementBlocks > globalSoft
+                || memoryM4GlobalEditedBlockCount - priorEdited + replacementEdited
+                    > ReadCapacityLong("editedBlocksGlobal", 1000, 4000)) return false;
+            for (int index = 0; replacement.importedArchiveRows != null
+                && index < replacement.importedArchiveRows.Count; index++)
+                if ((replacement.importedArchiveRows[index]?.importedWording?.Length ?? 0)
+                    > importedText) return false;
+
+            MemoryOwnerByteTotals projected = MeasureOwner(replacement, 0);
+            if (!projected.valid
+                || projected.importedBytes > ReadCapacityTuplePart(
+                    "importedOwnerUnknownBytes", 0, 262144, 2097152)
+                || projected.activeBytes > ReadCapacityLong(
+                    "activeOwnerBytes", 196608, 2097152)
+                || checked(projected.activeBytes + projected.importedBytes)
+                    > ReadCapacityLong("combinedOwnerBytes", 262144, 4194304)) return false;
+
+            MemoryOwnerByteTotals prior = GetOwnerByteTotals(ownerPawnId);
+            long oldActive = prior.valid ? prior.activeBytes : 0;
+            long oldImported = prior.valid ? prior.importedBytes : 0;
+            long activeDelta = Math.Max(0, projected.activeBytes - oldActive);
+            long importedDelta = Math.Max(0, projected.importedBytes - oldImported);
+            int globalImportedRows;
+            int globalImportedOwners;
+            CountCurrentImportedArchiveUsage(
+                ownerPawnId, replacement, out globalImportedRows, out globalImportedOwners);
+            if (globalImportedRows > ReadCapacityLong("importedGlobalRows", 10000, 40000)
+                || globalImportedOwners > ReadCapacityLong(
+                    "importedOwnerCount", 1000, 4000)) return false;
+
+            MemoryBudgetDecision budget = ActiveMemoryPayloadBudget.TryAdmit(
+                new MemoryBudgetLimits
+                {
+                    activeOwnerBytes = ReadCapacityLong("activeOwnerBytes", 196608, 2097152),
+                    combinedOwnerBytes = ReadCapacityLong("combinedOwnerBytes", 262144, 4194304),
+                    activeGlobalBytes = ReadCapacityLong("activeGlobalBytes", 6291456, 25165824),
+                    combinedGlobalBytes = ReadCapacityLong("combinedGlobalBytes", 8388608, 33554432)
+                },
+                oldActive,
+                oldImported,
+                activeDelta,
+                importedDelta,
+                GetGlobalBudgetTotals());
+            return budget.outcome == MemoryBudgetOutcome.Admitted;
+        }
+
+        private void CountCurrentImportedArchiveUsage(
+            string replacingOwnerPawnId,
+            PawnKnowledgeState replacement,
+            out int rows,
+            out int owners)
+        {
+            rows = unresolvedOwnerArchiveRows?.Count ?? 0;
+            owners = 0;
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; diaries != null && index < diaries.Count; index++)
+            {
+                PawnDiaryRecord diary = diaries[index];
+                if (diary == null || string.IsNullOrWhiteSpace(diary.pawnId)
+                    || !seen.Add(diary.pawnId)) continue;
+                PawnKnowledgeState state = string.Equals(
+                    diary.pawnId, replacingOwnerPawnId, StringComparison.Ordinal)
+                    ? replacement
+                    : diary.knowledgeState;
+                if (state == null || !state.IsCurrentSchema()) continue;
+                int count = state.importedArchiveRows?.Count ?? 0;
+                rows = checked(rows + count);
+                if (count > 0) owners++;
+            }
+        }
+
+        /// <summary>
+        /// Converts the component's raw unresolved-owner wrapper into the inert Imported archive as
+        /// one all-or-nothing list replacement. Input-local container/row ordinals remain diagnostic
+        /// only and deliberately do not participate in archive identity.
+        /// </summary>
+        private void TryCommitUnresolvedLegacyArchive(long maxKnownTick)
+        {
+            if (rawUnresolvedOwnerArchiveInput == null
+                || rawUnresolvedOwnerArchiveInput.Count == 0) return;
+            var projected = new List<SavedImportedMemoryRow>(
+                unresolvedOwnerArchiveRows ?? new List<SavedImportedMemoryRow>());
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; index < projected.Count; index++)
+            {
+                string id = projected[index]?.archiveRecordId ?? string.Empty;
+                if (id.Length == 0 || !ids.Add(id)) return;
+            }
+            for (int index = 0; index < rawUnresolvedOwnerArchiveInput.Count; index++)
+            {
+                SavedLegacyUnresolvedOwnerArchiveInputV1 raw =
+                    rawUnresolvedOwnerArchiveInput[index];
+                if (raw == null || raw.legacyRecord == null) return;
+                MemoryLegacyRecordSnapshot snapshot = SnapshotLegacyRecord(raw.legacyRecord);
+                MemoryLegacyMappedRecord mapped = MapUnresolvedLegacyArchiveEvidence(snapshot);
+                SavedImportedMemoryRow archived = BuildLegacyArchiveRow(
+                    (raw.savedOwnerIdentityKindToken ?? string.Empty) + "\u001f"
+                        + (raw.savedOwnerIdentityValue ?? string.Empty),
+                    string.Empty,
+                    mapped,
+                    "unresolved_owner");
+                if (archived == null) return;
+                archived.savedOwnerIdentityKindToken =
+                    raw.savedOwnerIdentityKindToken ?? string.Empty;
+                archived.savedOwnerIdentityValue = raw.savedOwnerIdentityValue ?? string.Empty;
+                archived.reattributionGeneration = 1;
+                archived.ageUnknown = snapshot.tick <= 0 || snapshot.tick > maxKnownTick;
+                archived.originalEventTick = archived.ageUnknown ? 0 : snapshot.tick;
+                if (ids.Add(archived.archiveRecordId)) projected.Add(archived);
+            }
+
+            if (projected.Count > ReadCapacityLong("importedUnknownRows", 1000, 4000)
+                || CountAllImportedRowsWithUnknown(projected.Count)
+                    > ReadCapacityLong("importedGlobalRows", 10000, 40000)) return;
+            MemoryLogicalSizeResult size = SizeListValidated(projected);
+            MemoryLogicalSizeResult priorUnknownSize =
+                SizeListValidated(unresolvedOwnerArchiveRows);
+            MemoryPayloadBudgetTotals global = GetGlobalBudgetTotals();
+            if (!size.valid || !priorUnknownSize.valid
+                || global.globalActiveBytes < 0 || global.globalImportedBytes < 0
+                || size.totalBytes > ReadCapacityTuplePart(
+                    "importedOwnerUnknownBytes", 1, 2097152, 16777216)
+                || !UnresolvedArchiveFitsGlobalBudgets(
+                    size.totalBytes, priorUnknownSize.totalBytes, global)) return;
+
+            unresolvedOwnerArchiveRows = projected;
+            rawUnresolvedOwnerArchiveInput =
+                new List<SavedLegacyUnresolvedOwnerArchiveInputV1>();
+            unresolvedArchiveMigrationState = MemoryArchiveStates.Current;
+            rawUnresolvedArchiveReattributionGeneration = Math.Max(
+                1, unresolvedArchiveReattributionGeneration);
+            if (unresolvedArchiveStructuralRevision < long.MaxValue)
+                unresolvedArchiveStructuralRevision++;
+        }
+
+        /// <summary>
+        /// Charges only the Unknown archive replacement's growth against the existing global
+        /// Imported and combined totals. Checked arithmetic makes malformed/saturated saves refuse
+        /// the whole swap while retaining their raw migration input for a future compatible build.
+        /// </summary>
+        private bool UnresolvedArchiveFitsGlobalBudgets(
+            long projectedUnknownBytes,
+            long priorUnknownBytes,
+            MemoryPayloadBudgetTotals global)
+        {
+            try
+            {
+                long delta = checked(projectedUnknownBytes - priorUnknownBytes);
+                if (delta < 0) return false;
+                long projectedImported = checked(global.globalImportedBytes + delta);
+                long projectedCombined = checked(global.globalActiveBytes + projectedImported);
+                return global.globalActiveBytes <= ReadCapacityLong(
+                        "activeGlobalBytes", 6291456, 25165824)
+                    && projectedImported <= ReadCapacityLong(
+                        "importedGlobalBytes", 8388608, 33554432)
+                    && projectedCombined <= ReadCapacityLong(
+                        "combinedGlobalBytes", 8388608, 33554432);
+            }
+            catch (OverflowException)
+            {
+                return false;
+            }
+        }
+
+        private int CountAllImportedRowsWithUnknown(int projectedUnknownRows)
+        {
+            int total = projectedUnknownRows;
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; diaries != null && index < diaries.Count; index++)
+            {
+                PawnDiaryRecord diary = diaries[index];
+                if (diary == null || string.IsNullOrWhiteSpace(diary.pawnId)
+                    || !seen.Add(diary.pawnId)
+                    || diary.knowledgeState == null
+                    || !diary.knowledgeState.IsCurrentSchema()) continue;
+                total = checked(total
+                    + (diary.knowledgeState.importedArchiveRows?.Count ?? 0));
+            }
+            return total;
+        }
+
+        private static MemoryLegacyMappedRecord MapUnresolvedLegacyArchiveEvidence(
+            MemoryLegacyRecordSnapshot snapshot)
+        {
+            var row = new MemoryLegacyMappedRecord
+            {
+                disposition = MemoryLegacyMappedRecord.DispositionArchiveAuthored,
+                sourceOccurrenceId = snapshot.sourceEventId ?? string.Empty,
+                originalEventTick = Math.Max(0, snapshot.tick),
+                ageUnknown = snapshot.tick <= 0,
+                importedWording = !string.IsNullOrWhiteSpace(snapshot.manualTextOverride)
+                    ? snapshot.manualTextOverride
+                    : snapshot.fallbackSummary ?? string.Empty,
+                originRecordId = snapshot.recordId ?? string.Empty,
+                dedupKey = snapshot.dedupKey ?? string.Empty,
+                originSourceEventId = snapshot.sourceEventId ?? string.Empty,
+                sourceKind = snapshot.sourceKind ?? string.Empty,
+                recallScope = snapshot.recallScope ?? string.Empty,
+                eventKind = snapshot.eventKind ?? string.Empty,
+                topicKey = snapshot.topicKey ?? string.Empty,
+                dateLabel = snapshot.dateLabel ?? string.Empty,
+                fallbackSummary = snapshot.fallbackSummary ?? string.Empty,
+                playerEdited = !string.IsNullOrWhiteSpace(snapshot.manualTextOverride)
+            };
+            CopySafe(snapshot.participantIds, row.participantIds);
+            CopySafe(snapshot.participantNames, row.participantNames);
+            CopySafe(snapshot.subjectKeys, row.subjectKeys);
+            CopySafe(snapshot.factKeys, row.factKeys);
+            CopySafe(snapshot.factValues, row.factValues);
+            return row;
+        }
+
+        private static long CheckedMigrationRevision(long current)
+        {
+            return current < 1 ? 1 : current == long.MaxValue ? long.MaxValue : current + 1;
+        }
+
+        private static void PublishLegacyOwnerCommit(
+            List<PawnDiaryRecord> holders, LegacyOwnerCommitPlan commit)
+        {
+            PawnDiaryRecord primary = holders[0];
+            MergeLegacyReflectionState(holders, primary, commit.epochToken);
+            primary.knowledgeState = commit.replacement;
+            for (int index = 1; index < holders.Count; index++)
+            {
+                PawnDiaryRecord duplicate = holders[index];
+                PawnKnowledgeState prior = duplicate.knowledgeState;
+                PawnKnowledgeState inert = PawnKnowledgeState.CreateCurrent(commit.ownerPawnId);
+                if (prior != null) CopyFirstCulture(inert, prior);
+                inert.epochFenceOnly = true;
+                duplicate.knowledgeState = inert;
+                if (duplicate.reflectionState != null)
+                {
+                    duplicate.reflectionState.memoryReflectionSchemaVersion = 1;
+                    duplicate.reflectionState.memoryOwnerEpochToken = string.Empty;
+                    duplicate.reflectionState.lastQuietMemoryEvaluatedAbsoluteDay = -1;
+                    duplicate.reflectionState.lastQuietMemoryActivatedAbsoluteQuadrum = -1;
+                    duplicate.reflectionState.lastQuietMemoryDecisionKey = string.Empty;
+                }
+            }
+        }
+
+        private static void MergeLegacyReflectionState(
+            List<PawnDiaryRecord> holders, PawnDiaryRecord primary, string epochToken)
+        {
+            int evaluatedDay = -1;
+            int activatedQuadrum = -1;
+            string decisionKey = string.Empty;
+            for (int index = 0; holders != null && index < holders.Count; index++)
+            {
+                PawnReflectionState state = holders[index]?.reflectionState;
+                if (state == null) continue;
+                if (state.lastQuietMemoryEvaluatedAbsoluteDay > evaluatedDay)
+                {
+                    evaluatedDay = state.lastQuietMemoryEvaluatedAbsoluteDay;
+                    decisionKey = state.lastQuietMemoryDecisionKey ?? string.Empty;
+                }
+                else if (state.lastQuietMemoryEvaluatedAbsoluteDay == evaluatedDay
+                    && string.CompareOrdinal(
+                        state.lastQuietMemoryDecisionKey ?? string.Empty, decisionKey) < 0)
+                    decisionKey = state.lastQuietMemoryDecisionKey ?? string.Empty;
+                activatedQuadrum = Math.Max(
+                    activatedQuadrum, state.lastQuietMemoryActivatedAbsoluteQuadrum);
+            }
+            PawnReflectionState merged = primary.EnsureReflectionState();
+            merged.memoryReflectionSchemaVersion = 1;
+            merged.memoryOwnerEpochToken = epochToken;
+            merged.lastQuietMemoryEvaluatedAbsoluteDay = evaluatedDay;
+            merged.lastQuietMemoryActivatedAbsoluteQuadrum = activatedQuadrum;
+            merged.lastQuietMemoryDecisionKey = decisionKey;
+        }
+
+        private void RemoveLegacyEpochReservation(string ownerPawnId)
+        {
+            for (int index = legacyOwnerEpochReservations.Count - 1; index >= 0; index--)
+                if (string.Equals(legacyOwnerEpochReservations[index]?.ownerPawnId,
+                    ownerPawnId, StringComparison.Ordinal))
+                    legacyOwnerEpochReservations.RemoveAt(index);
         }
 
         internal static MemoryLegacyRecordSnapshot SnapshotLegacyRecord(ImportantMemoryRecord record)

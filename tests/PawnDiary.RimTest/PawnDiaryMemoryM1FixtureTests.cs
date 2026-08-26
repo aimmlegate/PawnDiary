@@ -608,6 +608,207 @@ namespace PawnDiary.RimTests
         }
 
         [Test]
+        public static void M11LegacyMigrationCommitIsIdempotentAndCreatesNoCatchUpPage()
+        {
+            const string ownerId = "Pawn_M11_Migration";
+            var diary = new PawnDiaryRecord
+            {
+                pawnId = ownerId,
+                eventIds = new List<string> { "existing-page" },
+                knowledgeState = new PawnKnowledgeState
+                {
+                    pawnId = ownerId,
+                    schemaVersion = 1,
+                    records = new List<ImportantMemoryRecord> { NewLegacyRecord() }
+                }
+            };
+            List<PawnDiaryRecord> holders = new List<PawnDiaryRecord> { diary };
+            DiaryGameComponent component = NewMemoryComponent(holders, null, null);
+            component.RunMemoryMigrationCommit();
+
+            PawnKnowledgeState migrated = diary.knowledgeState;
+            Require(migrated != null && migrated.IsCurrentSchema()
+                    && !string.IsNullOrWhiteSpace(migrated.autobiographicalEpochToken)
+                    && migrated.records.Count == 0,
+                "M11 did not atomically stamp the resolved legacy owner current.");
+            Require(diary.eventIds.Count == 1 && diary.eventIds[0] == "existing-page",
+                "Migration created a retrospective/catch-up diary page.");
+            string epoch = migrated.autobiographicalEpochToken;
+            int blocks = migrated.standaloneBlocks.Count;
+            int imported = migrated.importedArchiveRows.Count;
+            component.RunMemoryMigrationCommit();
+            Require(ReferenceEquals(migrated, diary.knowledgeState)
+                    && diary.knowledgeState.autobiographicalEpochToken == epoch
+                    && diary.knowledgeState.standaloneBlocks.Count == blocks
+                    && diary.knowledgeState.importedArchiveRows.Count == imported,
+                "A second M11 migration pass changed an already-current owner.");
+        }
+
+        [Test]
+        public static void M11SavedSummaryOpportunityRepairKeepsOneCanonicalSlot()
+        {
+            SummaryWordingOpportunitySnapshot first = M10Opportunity(
+                "Pawn_M11_Repair", EpochToken(81), "root-a", "summary-a", 10, 100);
+            SummaryWordingOpportunitySnapshot second = M10Opportunity(
+                first.ownerPawnId, first.ownerEpochToken, "root-b", "summary-b", 9, 101);
+            string key;
+            Require(MemoryOptionalAiPolicy.TryCreateSummaryOpportunityKey(first, out key),
+                "First repair fixture opportunity was invalid.");
+            first.opportunityKey = key;
+            Require(MemoryOptionalAiPolicy.TryCreateSummaryOpportunityKey(second, out key),
+                "Second repair fixture opportunity was invalid.");
+            second.opportunityKey = key;
+            var rows = new List<SavedSummaryWordingOpportunityV1>
+            {
+                SaveOpportunity(first),
+                SaveOpportunity(second),
+                new SavedSummaryWordingOpportunityV1 { ownerPawnId = first.ownerPawnId }
+            };
+
+            RunWithTempFile(path =>
+            {
+                List<SavedSummaryWordingOpportunityV1> saved = rows;
+                SaveWithScribe(path, () =>
+                    Scribe_Collections.Look(ref saved, "opportunities", LookMode.Deep));
+                List<SavedSummaryWordingOpportunityV1> loaded = null;
+                LoadVarsWithScribe(path, () =>
+                    Scribe_Collections.Look(ref loaded, "opportunities", LookMode.Deep));
+                SummaryWordingOpportunitySnapshot winner = null;
+                int terminal = 0;
+                for (int index = 0; loaded != null && index < loaded.Count; index++)
+                {
+                    SummaryWordingOpportunitySnapshot incoming = SnapshotOpportunity(loaded[index]);
+                    if (!MemoryOptionalAiPolicy.IsValidSummaryOpportunity(incoming)) continue;
+                    SummaryWordingSlotPlan plan = MemoryOptionalAiPolicy.PlanOwnerSlot(
+                        winner, incoming, 120);
+                    Require(plan.valid, "Loaded Summary repair plan was invalid.");
+                    winner = plan.winner;
+                    terminal += plan.terminal.Count;
+                }
+                Require(winner != null && winner.opportunityKey == first.opportunityKey
+                        && terminal == 1,
+                    "Loaded Summary repair did not retain one deterministic owner slot.");
+            });
+        }
+
+        [Test]
+        public static void M11FailedSavedActivationRollsBackInvisibleTransportStage()
+        {
+            var queue = new BoundedTransportQueue<string>(1);
+            StagedTransportQueueItem<string> staged;
+            Require(queue.TryStage("not-yet-visible", out staged),
+                "Fixture could not reserve the invisible transport stage.");
+            var invalidSaved = new SavedActiveLogicalRequestV1
+            {
+                requestStateToken = MemoryRequestStateMachineContracts.Staged
+            };
+            Require(!MemoryDispatchSavedAdapter.TryActivate(invalidSaved),
+                "An invalid saved request unexpectedly activated.");
+            Require(queue.Cancel(staged) && queue.ReservedCount == 0 && queue.Count == 0,
+                "Saved activation refusal leaked its invisible queue reservation.");
+        }
+
+        [Test]
+        public static void M11InvocationWinsButNeverCrossesEpochFence()
+        {
+            var cutoffs = new MemoryInvokedGenerationCutoffTable();
+            string requestId;
+            Require(MemoryIdentityCodec.TryCreateLogicalRequestId(811, out requestId)
+                    && cutoffs.TryRegister(9, "Pawn_M11_Winner", EpochToken(82),
+                        3, 4, requestId, 17, 2),
+                "Fixture could not register the committed physical invocation.");
+            cutoffs.SealGeneration(9, 4, 17);
+            Require(cutoffs.AllowsInvocationWinner(9, "Pawn_M11_Winner", EpochToken(82),
+                        3, 4, requestId, 17)
+                    && !cutoffs.AllowsInvocationWinner(9, "Pawn_M11_Winner", EpochToken(83),
+                        3, 4, requestId, 17),
+                "Invocation-wins was lost or escaped the exact Brainwipe epoch fence.");
+        }
+
+        [Test]
+        public static void M11ReloadPreservesMeaningfulDelayWithoutCatchUp()
+        {
+            long savedBaseline = 100;
+            RunWithTempFile(path =>
+            {
+                SaveWithScribe(path, () =>
+                    Scribe_Values.Look(ref savedBaseline, "meaningfulBaseline", -1));
+                long loadedBaseline = -1;
+                LoadVarsWithScribe(path, () =>
+                    Scribe_Values.Look(ref loadedBaseline, "meaningfulBaseline", -1));
+                long planned = MemoryOptionalAiPolicy.PlanMeaningfulEligibilityBaseline(
+                    true, false, loadedBaseline, 50000);
+                Require(planned == 100
+                        && !MemoryOptionalAiPolicy.IsMeaningfulEventAfterEligibilityBaseline(
+                            99, planned)
+                        && MemoryOptionalAiPolicy.IsMeaningfulEventAfterEligibilityBaseline(
+                            101, planned),
+                    "Reload changed the saved meaningful-event boundary or admitted catch-up.");
+            });
+        }
+
+        [Test]
+        public static void M11OptionalWordingRefreshesLibraryProjection()
+        {
+            var wording = new MemoryRecallSummaryWordingSnapshot
+            {
+                currentProjectionFingerprint = new string('d', 64),
+                currentFormatRevision = 2,
+                currentCategoryMask = 15,
+                optionalWording = "First natural wording.",
+                optionalFingerprint = new string('d', 64),
+                optionalFormatRevision = 2,
+                optionalCategoryMask = 15,
+                optionalSucceeded = true
+            };
+            Require(MemoryNaturalWordingProjection.Select(
+                    false, "Deterministic wording.", wording, 240)
+                    == "First natural wording.",
+                "Library projection ignored a current optional wording cache.");
+            wording.optionalWording = "Refreshed natural wording.";
+            Require(MemoryNaturalWordingProjection.Select(
+                    false, "Deterministic wording.", wording, 240)
+                    == "Refreshed natural wording.",
+                "Library projection did not refresh after optional wording changed.");
+            wording.currentProjectionFingerprint = new string('e', 64);
+            Require(MemoryNaturalWordingProjection.Select(
+                    false, "Deterministic wording.", wording, 240)
+                    == "Deterministic wording.",
+                "A stale optional cache replaced current deterministic Library truth.");
+        }
+
+        [Test]
+        public static void M11PhysicalCancellationAndSetupFailureRemainCleanable()
+        {
+            var queue = new BoundedTransportQueue<string>(1);
+            StagedTransportQueueItem<string> staged;
+            Require(queue.TryStage("cancel-before-worker", out staged)
+                    && queue.Activate(staged)
+                    && queue.Cancel(staged)
+                    && queue.PhysicalCount == 0
+                    && queue.Count == 0
+                    && queue.ReservedCount == 0,
+                "Activated cancellation left a physical FIFO tombstone or reservation.");
+
+            var request = new LlmGenerationRequest
+            {
+                eventId = "event-m11-cleanup",
+                povRole = DiaryEvent.InitiatorRole,
+                sessionId = 12,
+                memoryDispatch = new MemoryDispatchTransportContext
+                {
+                    logicalRequestId = "logical-m11-cleanup"
+                }
+            };
+            LlmGenerationResult failure = LlmClient.CreateDispatchSetupFailureResult(
+                request, new InvalidOperationException("fixture setup failure"));
+            Require(failure.memoryDispatchTerminalFailure
+                    && failure.memoryLogicalRequestId == "logical-m11-cleanup"
+                    && !failure.success,
+                "Pre-permit worker failure lost the coordinator identity needed for cleanup.");
+        }
+
+        [Test]
         public static void RawUnresolvedWrapperPreservesLegacyRecord()
         {
             var wrapper = new SavedLegacyUnresolvedOwnerArchiveInputV1
@@ -991,10 +1192,79 @@ namespace PawnDiary.RimTests
                 activeRequests ?? new List<SavedActiveLogicalRequestV1>());
             SetPrivateField(component, "unresolvedOwnerArchiveRows",
                 unknownRows ?? new List<SavedImportedMemoryRow>());
+            SetPrivateField(component, "legacyOwnerEpochReservations",
+                new List<SavedLegacyOwnerEpochReservation>());
+            SetPrivateField(component, "globalFactionSnapshots",
+                new List<SavedGlobalFactionSnapshot>());
+            SetPrivateField(component, "rawUnresolvedOwnerArchiveInput",
+                new List<SavedLegacyUnresolvedOwnerArchiveInputV1>());
+            SetPrivateField(component, "summaryWordingOpportunities",
+                new List<SavedSummaryWordingOpportunityV1>());
+            SetPrivateField(component, "memoryDiagnosticCounters",
+                new List<SavedMemoryDiagnosticCounter>());
+            SetPrivateField(component, "memoryAttemptAuditRows",
+                new List<SavedMemoryAttemptAuditRow>());
             SetPrivateField(component, "memoryByteTotalsByOwner",
                 new Dictionary<string, DiaryGameComponent.MemoryOwnerByteTotals>(
                     StringComparer.Ordinal));
             return component;
+        }
+
+        private static SavedSummaryWordingOpportunityV1 SaveOpportunity(
+            SummaryWordingOpportunitySnapshot source)
+        {
+            return new SavedSummaryWordingOpportunityV1
+            {
+                schemaVersion = 1,
+                ownerPawnId = source.ownerPawnId,
+                ownerEpochToken = source.ownerEpochToken,
+                ownerCancellationGeneration = source.ownerCancellationGeneration,
+                globalCancellationGeneration = source.globalCancellationGeneration,
+                optionalRequestInvalidationGeneration =
+                    source.optionalRequestInvalidationGeneration,
+                rootId = source.rootId,
+                summaryRecordId = source.summaryRecordId,
+                expectedRootStructuralRevision = source.expectedRootStructuralRevision,
+                expectedSummaryFactsRevision = source.expectedSummaryFactsRevision,
+                expectedReducerRevision = source.expectedReducerRevision,
+                expectedFormatRevision = source.expectedFormatRevision,
+                expectedCategoryMask = source.expectedCategoryMask,
+                projectionFingerprint = source.projectionFingerprint,
+                requestedTick = source.requestedTick,
+                dueTick = source.dueTick,
+                expiryTick = source.expiryTick,
+                configuredPriority = source.configuredPriority,
+                salience = source.salience,
+                opportunityKey = source.opportunityKey
+            };
+        }
+
+        private static SummaryWordingOpportunitySnapshot SnapshotOpportunity(
+            SavedSummaryWordingOpportunityV1 source)
+        {
+            return source == null ? null : new SummaryWordingOpportunitySnapshot
+            {
+                ownerPawnId = source.ownerPawnId ?? string.Empty,
+                ownerEpochToken = source.ownerEpochToken ?? string.Empty,
+                ownerCancellationGeneration = source.ownerCancellationGeneration,
+                globalCancellationGeneration = source.globalCancellationGeneration,
+                optionalRequestInvalidationGeneration =
+                    source.optionalRequestInvalidationGeneration,
+                rootId = source.rootId ?? string.Empty,
+                summaryRecordId = source.summaryRecordId ?? string.Empty,
+                expectedRootStructuralRevision = source.expectedRootStructuralRevision,
+                expectedSummaryFactsRevision = source.expectedSummaryFactsRevision,
+                expectedReducerRevision = source.expectedReducerRevision,
+                expectedFormatRevision = source.expectedFormatRevision,
+                expectedCategoryMask = source.expectedCategoryMask,
+                projectionFingerprint = source.projectionFingerprint ?? string.Empty,
+                requestedTick = source.requestedTick,
+                dueTick = source.dueTick,
+                expiryTick = source.expiryTick,
+                configuredPriority = source.configuredPriority,
+                salience = source.salience,
+                opportunityKey = source.opportunityKey ?? string.Empty
+            };
         }
 
         private static void RequireNewerSchemaRefused(

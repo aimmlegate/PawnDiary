@@ -149,7 +149,13 @@ namespace PawnDiary
 
             outcome.coordinatorSlotSettled = true;
             outcome.pageRegistered = consumption.producesPage && pageRegistered;
-            outcome.advanceNarrativeCooldown = consumption.advancesNarrativeCooldown;
+            // Optional meaningful/quiet work commits a coordinator slot at activation, but the
+            // provider has not produced a diary page yet. Advancing the shared narrative cooldown
+            // here would let a failed or malformed optional request suppress unrelated reflections.
+            // Page-producing work earns that cooldown only after terminal publication proves the
+            // page exists; non-page work (Summary wording) retains its explicit policy result.
+            outcome.advanceNarrativeCooldown = consumption.advancesNarrativeCooldown
+                && (!consumption.producesPage || pageRegistered);
             outcome.consumeQuietQuadrum = consumption.consumesQuietQuadrumOnActivation;
             return outcome;
         }

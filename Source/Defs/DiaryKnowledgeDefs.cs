@@ -446,6 +446,16 @@ namespace PawnDiary
         public int memoryRevisitEntryCountMinimum = 1;
         public int memoryRevisitEntryCountDefault = 3;
         public int memoryRevisitEntryCountMaximum = 1000;
+        /// <summary>XML-owned safety minima combined with the two player repetition controls.</summary>
+        public int memoryRecordMinimumReuseDays = 1;
+        public int memoryRecordMinimumEntryDistance = 1;
+        public int memoryRootMinimumEntryDistance = 1;
+        public int memorySubjectMinimumEntryDistance = 1;
+        public int memoryPairMinimumEntryDistance = 1;
+        public int memoryNoveltyMinimumEntryDistance = 1;
+        /// <summary>Bounded structured current-truth projection used by Recall v2.</summary>
+        public int memoryCurrentStateMaximumFacts = 8;
+        public int memoryCurrentStateMaximumCharacters = 240;
         /// <summary>Chance policy for the isolated deterministic quiet-memory stream.</summary>
         public int quietReflectionChanceBasisPoints = 200;
         /// <summary>Delay applied only inside the shared meaningful-memory coordinator class.</summary>

@@ -43,6 +43,23 @@ namespace PawnDiary
                 return;
             }
 
+            bool suppressRecallV2ForQueue = false;
+            PromptPlanFactory effectivePromptPlanFactory = level =>
+            {
+                if (MemorySystemActivationGate.IsCurrentRelease)
+                {
+                    if (suppressRecallV2ForQueue)
+                    {
+                        PrepareMemoryRecallV2BackgroundOnly(diaryEvent, povRole, level);
+                    }
+                    else
+                    {
+                        PrepareMemoryRecallV2Projection(diaryEvent, povRole, level);
+                    }
+                }
+                return promptPlanFactory(level);
+            };
+
             if (!DiaryGenerationEnabledFor(diaryEvent, povRole, boundsCache, livePawnsById))
             {
                 return;
@@ -67,7 +84,7 @@ namespace PawnDiary
             // First-person factories must not stamp voice state here: no effective API lane is known yet.
             // After lane selection we pre-render one prompt variant per effective context preset so
             // failover lanes can honor their own overrides without touching game state off-thread.
-            DiaryPromptPlan routingPlan = promptPlanFactory(PromptContextDetailLevel.Full);
+            DiaryPromptPlan routingPlan = effectivePromptPlanFactory(PromptContextDetailLevel.Full);
             if (routingPlan == null)
             {
                 return;
@@ -83,7 +100,7 @@ namespace PawnDiary
                 {
                     // The preparation hook may persist a new instruction/tone reroll. Rebuild the
                     // routing copy so prompt-test capture sees the same final event state.
-                    routingPlan = promptPlanFactory(PromptContextDetailLevel.Full);
+                    routingPlan = effectivePromptPlanFactory(PromptContextDetailLevel.Full);
                     if (routingPlan == null)
                     {
                         return;
@@ -92,7 +109,7 @@ namespace PawnDiary
 
                 DiaryPromptPlan testPlan = testLevel == PromptContextDetailLevel.Full
                     ? routingPlan
-                    : promptPlanFactory(testLevel);
+                    : effectivePromptPlanFactory(testLevel);
                 if (testPlan == null)
                 {
                     return;
@@ -132,24 +149,64 @@ namespace PawnDiary
             {
                 // Anti-repeat preparation can reroll persisted instruction/tone state. Rebuild Full
                 // once so the selected and failover variants all share that final event state.
-                routingPlan = promptPlanFactory(PromptContextDetailLevel.Full);
+                routingPlan = effectivePromptPlanFactory(PromptContextDetailLevel.Full);
                 if (routingPlan == null)
                 {
                     return;
                 }
             }
 
-            DiaryPromptPlan promptPlan = PromptPlanForContextLevel(contextDetailLevel, routingPlan, promptPlanFactory);
+            DiaryPromptPlan promptPlan = PromptPlanForContextLevel(
+                contextDetailLevel,
+                routingPlan,
+                effectivePromptPlanFactory);
             if (promptPlan == null)
             {
                 return;
             }
 
             Dictionary<ApiLaneIdentity, LlmPromptVariant> promptVariants = BuildPromptVariants(
-                settings, target, failoverTargets, routingPlan, contextDetailLevel, promptPlan, promptPlanFactory);
+                settings, target, failoverTargets, routingPlan, contextDetailLevel, promptPlan,
+                effectivePromptPlanFactory);
             if (promptVariants == null)
             {
                 return;
+            }
+
+            if (MemorySystemActivationGate.IsCurrentRelease && stagedMemoryRequest == null)
+            {
+                bool hadRecallEvidence;
+                SavedActiveLogicalRequestV1 recallRequest;
+                if (!TryBuildNormalMemoryRequestForPromptVariants(
+                        diaryEvent,
+                        povRole,
+                        promptVariants,
+                        out recallRequest,
+                        out hadRecallEvidence)
+                    && hadRecallEvidence)
+                {
+                    // Recall is optional to the primary page. Any identity, receipt, cap, or frozen-
+                    // variant refusal rebuilds the exact lane set memory-free before staging.
+                    suppressRecallV2ForQueue = true;
+                    routingPlan = effectivePromptPlanFactory(PromptContextDetailLevel.Full);
+                    promptPlan = PromptPlanForContextLevel(
+                        contextDetailLevel,
+                        routingPlan,
+                        effectivePromptPlanFactory);
+                    promptVariants = BuildPromptVariants(
+                        settings,
+                        target,
+                        failoverTargets,
+                        routingPlan,
+                        contextDetailLevel,
+                        promptPlan,
+                        effectivePromptPlanFactory);
+                    if (routingPlan == null || promptPlan == null || promptVariants == null) return;
+                }
+                else
+                {
+                    stagedMemoryRequest = recallRequest;
+                }
             }
 
             string rawText = promptPlan.userPrompt ?? string.Empty;
@@ -211,6 +268,14 @@ namespace PawnDiary
             // invisible. Only after the event's matching prompt/lane/pending state is committed do
             // we activate the queue item, so a worker can never outrun its main-thread owner row.
             LlmStagedGenerationRequest staged;
+            if (stagedMemoryRequest != null)
+            {
+                // The allocator burns before TryStage. Queue refusal may leave a harmless gap, but
+                // no later request can reuse an identity that transport may already have observed.
+                lastIssuedMemoryLogicalRequestSequence = Math.Max(
+                    lastIssuedMemoryLogicalRequestSequence,
+                    stagedMemoryRequest.logicalRequestSequence);
+            }
             LlmRequestStageOutcome stageOutcome = LlmClient.TryStage(request, out staged);
             if (stageOutcome != LlmRequestStageOutcome.Staged)
             {
@@ -254,6 +319,10 @@ namespace PawnDiary
                 {
                     diaryEvent.SetActiveMemoryLogicalRequestForRole(povRole, null);
                     RebuildMemorySizeIndexes();
+                    LlmClient.CancelStaged(staged);
+                    MemoryDispatchRuntimeBridge.ReleaseLogicalRequestSendEnvelopes(
+                        stagedMemoryRequest.logicalRequestId);
+                    invokedGenerationCutoffs.Settle(stagedMemoryRequest.logicalRequestId);
                 }
                 NotifyEntryStatusChanged(diaryEvent, povRole);
                 return;

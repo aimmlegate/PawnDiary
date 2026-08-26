@@ -38,10 +38,27 @@ namespace PawnDiary
             // known. Apply the selected lane's feature policy here, at the save-model -> pure DTO
             // boundary, so smaller lanes never receive Full-only memory/culture facts and a Full lane
             // can still use them when the global default is Compact.
-            if (!PromptContextFeaturePolicy.AllowsMemoryContext(normalizedLevel))
+            bool currentMemoryRelease = MemorySystemActivationGate.IsCurrentRelease;
+            MemoryPolicySnapshot memoryPolicy = currentMemoryRelease
+                ? MemoryEffectivePolicyProvider.Current
+                : null;
+            bool formatAllowsMemoryLayer = currentMemoryRelease
+                ? normalizedLevel == PromptContextDetailLevel.Full
+                    || normalizedLevel == PromptContextDetailLevel.Balanced
+                : PromptContextFeaturePolicy.AllowsMemoryContext(normalizedLevel);
+            if (!formatAllowsMemoryLayer)
             {
                 ClearMemoryLayer(payload?.initiator);
                 ClearMemoryLayer(payload?.recipient);
+            }
+            else if (currentMemoryRelease
+                && (memoryPolicy == null || !memoryPolicy.useMemoriesInWriting))
+            {
+                // Pawn background is independently eligible in Full/Balanced. The Use switch owns
+                // episodic recall and culture continuity only, so preserve the adapter-composed
+                // background line while removing both saved-culture identifiers.
+                ClearCultureLayer(payload?.initiator);
+                ClearCultureLayer(payload?.recipient);
             }
 
             return new DiaryPromptRequest
@@ -278,6 +295,14 @@ namespace PawnDiary
             }
 
             pov.memoryContext = string.Empty;
+            pov.originCultureDefName = string.Empty;
+            pov.adoptedCultureDefName = string.Empty;
+        }
+
+        /// <summary>Removes culture continuity while preserving an independently enabled background.</summary>
+        private static void ClearCultureLayer(DiaryPovPayload pov)
+        {
+            if (pov == null) return;
             pov.originCultureDefName = string.Empty;
             pov.adoptedCultureDefName = string.Empty;
         }

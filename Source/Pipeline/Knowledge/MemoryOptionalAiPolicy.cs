@@ -109,7 +109,11 @@ namespace PawnDiary
         public List<MemoryDiagnosticIdentity> diagnostics = new List<MemoryDiagnosticIdentity>();
     }
 
-    /// <summary>Detached inputs for one component-owned optional logical request.</summary>
+    /// <summary>
+    /// Detached inputs for one logical request. The M10 optional adapter introduced this DTO; M11
+    /// also uses the same immutable graph builder for normal diary variants carrying Recall-v2
+    /// receipts, avoiding a second hashing/validation implementation.
+    /// </summary>
     internal sealed class MemoryOptionalRequestBuildInput
     {
         public long logicalRequestSequence;
@@ -481,7 +485,7 @@ namespace PawnDiary
             if (input == null
                 || input.logicalRequestSequence <= 0
                 || input.sessionId <= 0
-                || !MemoryDispatchTokens.IsOptionalPurpose(input.requestPurposeToken)
+                || !MemoryDispatchTokens.IsPurpose(input.requestPurposeToken)
                 || string.IsNullOrWhiteSpace(input.opportunityKey)
                 || string.IsNullOrWhiteSpace(input.povRoleToken)
                 || string.IsNullOrWhiteSpace(input.ownerPawnId)
@@ -490,8 +494,10 @@ namespace PawnDiary
                 || input.ownerCancellationGeneration == long.MaxValue
                 || input.globalCancellationGeneration <= 0
                 || input.globalCancellationGeneration == long.MaxValue
-                || input.optionalRequestInvalidationGeneration <= 0
-                || input.optionalRequestInvalidationGeneration == long.MaxValue
+                || (MemoryDispatchTokens.IsOptionalPurpose(input.requestPurposeToken)
+                    ? input.optionalRequestInvalidationGeneration <= 0
+                        || input.optionalRequestInvalidationGeneration == long.MaxValue
+                    : input.optionalRequestInvalidationGeneration != 0)
                 || input.variants == null || input.variants.Count == 0
                 || input.variants.Count > MemoryDispatchPolicy.MaximumVariants) return false;
 

@@ -1551,15 +1551,7 @@ namespace PawnDiary
                         if (!session.Cancellation.IsCancellationRequested
                             && request.sessionId == currentSession.Id)
                         {
-                            Completed.Enqueue(new LlmGenerationResult
-                            {
-                                eventId = request.eventId,
-                                povRole = request.povRole,
-                                sessionId = request.sessionId,
-                                success = false,
-                                error = RedactRequestSecrets(request, ex.Message),
-                                isTitleRequest = request.isTitleRequest
-                            });
+                            Completed.Enqueue(CreateDispatchSetupFailureResult(request, ex));
                         }
 
                         LogDebug("Unexpected queued-request setup error event=" + request.eventId
@@ -1581,6 +1573,32 @@ namespace PawnDiary
                     EnsureDispatchWorkers(session);
                 }
             }
+        }
+
+        /// <summary>
+        /// Creates the terminal handoff for a worker setup exception. Kept as a fixture seam so the
+        /// release suite can prove that failures before an invocation permit still carry the exact
+        /// logical-request identity needed to release saved coordinator reservations.
+        /// </summary>
+        internal static LlmGenerationResult CreateDispatchSetupFailureResult(
+            LlmGenerationRequest request,
+            Exception exception)
+        {
+            request = request ?? new LlmGenerationRequest();
+            return new LlmGenerationResult
+            {
+                eventId = request.eventId,
+                povRole = request.povRole,
+                sessionId = request.sessionId,
+                success = false,
+                error = RedactRequestSecrets(request, exception?.Message ?? string.Empty),
+                isTitleRequest = request.isTitleRequest,
+                // A setup failure happens after the worker owns the queue item but may happen
+                // before an invocation permit exists. Preserve the exact logical-request identity.
+                memoryLogicalRequestId = request.memoryDispatch?.logicalRequestId,
+                memoryDispatchTerminalFailure = request.memoryDispatch != null,
+                memoryDispatchTerminalOutcomeToken = string.Empty
+            };
         }
 
         /// <summary>
