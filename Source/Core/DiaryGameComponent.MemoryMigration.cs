@@ -259,13 +259,20 @@ namespace PawnDiary
             var epochs = new SortedSet<string>(StringComparer.Ordinal);
             for (int index = 0; holders != null && index < holders.Count; index++)
             {
-                string candidate = holders[index]?.knowledgeState?.autobiographicalEpochToken
+                var carriers = new List<string>();
+                AddKnowledgeEpochTokenCarriers(carriers, holders[index]?.knowledgeState);
+                string reflectionEpoch = holders[index]?.reflectionState?.memoryOwnerEpochToken
                     ?? string.Empty;
-                if (candidate.Length == 0) continue;
-                bool ignoredFallback;
-                if (!MemoryIdentityCodec.TryValidateEpochToken(candidate, out ignoredFallback))
-                    return false;
-                epochs.Add(candidate);
+                if (!string.IsNullOrEmpty(reflectionEpoch)) carriers.Add(reflectionEpoch);
+                for (int carrierIndex = 0; carrierIndex < carriers.Count; carrierIndex++)
+                {
+                    string candidate = carriers[carrierIndex] ?? string.Empty;
+                    if (candidate.Length == 0) continue;
+                    bool ignoredFallback;
+                    if (!MemoryIdentityCodec.TryValidateEpochToken(candidate, out ignoredFallback))
+                        return false;
+                    epochs.Add(candidate);
+                }
             }
             if (epochs.Count > 1) return false;
             foreach (string existing in epochs)
@@ -388,22 +395,28 @@ namespace PawnDiary
                     && !string.IsNullOrWhiteSpace(source.playerBackground))
                     replacement.playerBackground = source.playerBackground;
                 if (!AddUniqueRows(replacement.importedArchiveRows,
-                        source.importedArchiveRows, row => row?.archiveRecordId, archiveIds))
+                        source.importedArchiveRows, row => row?.archiveRecordId, archiveIds,
+                        CloneImportedArchiveRow))
                     return false;
                 if (!enrolled) continue;
                 if (!AddUniqueRows(replacement.standaloneBlocks,
-                        source.standaloneBlocks, row => row?.recordId, blockIds)
+                        source.standaloneBlocks, row => row?.recordId, blockIds,
+                        CloneSavedBlock)
                     || !AddUniqueRows(replacement.threadRoots,
-                        source.threadRoots, row => row?.rootId, rootIds)
+                        source.threadRoots, row => row?.rootId, rootIds,
+                        CloneSavedRoot)
                     || !AddUniqueRows(replacement.ownerAwarenessSnapshots,
-                        source.ownerAwarenessSnapshots, row => row?.snapshotId, awarenessIds)
+                        source.ownerAwarenessSnapshots, row => row?.snapshotId, awarenessIds,
+                        CloneSavedAwareness)
                     || !AddUniqueRows(replacement.openCaptureEpisodes,
-                        source.openCaptureEpisodes, row => row?.episodeId, episodeIds)
+                        source.openCaptureEpisodes, row => row?.episodeId, episodeIds,
+                        CloneSavedEpisode)
                     || !AddUniqueRows(replacement.repetitionGuardRows,
                         source.repetitionGuardRows,
                         row => (row?.ownerEpochToken ?? string.Empty) + "\u001f"
                             + (row?.guardKind ?? string.Empty) + "\u001f"
-                            + (row?.guardKey ?? string.Empty), guardIds)) return false;
+                            + (row?.guardKey ?? string.Empty), guardIds,
+                        CloneRepetitionGuardRow)) return false;
             }
 
             MemoryReducerPolicy reducer = BuildMemoryReducerPolicy(maxKnownTick);
@@ -445,7 +458,9 @@ namespace PawnDiary
                         maxKnownTick, block.originalEventTick, block.ageUnknown,
                         block.importance, reducer.minorLifetimeTicks,
                         reducer.regularLifetimeTicks)) continue;
-                if (blockIds.Add(block.recordId)) replacement.standaloneBlocks.Add(block);
+                if (blockIds.Add(block.recordId)
+                    && !TryPlaceLegacyActiveBlock(
+                        replacement, block, row, reducer, rootIds)) return false;
             }
             replacement.playerBackground = chosenBackground;
             replacement.archiveOnly = false;
@@ -475,7 +490,8 @@ namespace PawnDiary
             List<T> target,
             List<T> source,
             Func<T, string> identity,
-            HashSet<string> seen) where T : class
+            HashSet<string> seen,
+            Func<T, T> clone) where T : class
         {
             for (int index = 0; source != null && index < source.Count; index++)
             {
@@ -483,9 +499,104 @@ namespace PawnDiary
                 if (row == null) continue;
                 string key = identity(row) ?? string.Empty;
                 if (string.IsNullOrWhiteSpace(key)) return false;
-                if (seen.Add(key)) target.Add(row);
+                if (seen.Add(key))
+                {
+                    T detached = clone(row);
+                    if (detached == null) return false;
+                    target.Add(detached);
+                }
             }
             return true;
+        }
+
+        private static SavedMemoryRepetitionGuardRow CloneRepetitionGuardRow(
+            SavedMemoryRepetitionGuardRow value)
+        {
+            return value == null ? null : new SavedMemoryRepetitionGuardRow
+            {
+                schemaVersion = value.schemaVersion,
+                ownerEpochToken = value.ownerEpochToken,
+                guardKind = value.guardKind,
+                guardKey = value.guardKey,
+                lastAutomaticIncludedTick = value.lastAutomaticIncludedTick,
+                lastAutomaticIncludedEntryOrdinal = value.lastAutomaticIncludedEntryOrdinal,
+                automaticInclusionCount = value.automaticInclusionCount,
+                lastSourceOccurrenceId = value.lastSourceOccurrenceId,
+                lastCommittedLogicalRequestId = value.lastCommittedLogicalRequestId,
+                lastCommittedEvidenceSetFingerprint = value.lastCommittedEvidenceSetFingerprint
+            };
+        }
+
+        private static SavedImportedMemoryRow CloneImportedArchiveRow(SavedImportedMemoryRow value)
+        {
+            if (value == null) return null;
+            var copy = new SavedImportedMemoryRow
+            {
+                schemaVersion = value.schemaVersion,
+                archiveRecordId = value.archiveRecordId,
+                savedOwnerIdentityKindToken = value.savedOwnerIdentityKindToken,
+                savedOwnerIdentityValue = value.savedOwnerIdentityValue,
+                reattributionGeneration = value.reattributionGeneration,
+                originalRecordId = value.originalRecordId,
+                sourceOccurrenceId = value.sourceOccurrenceId,
+                sourceEventId = value.sourceEventId,
+                originalEventTick = value.originalEventTick,
+                ageUnknown = value.ageUnknown,
+                importedWording = value.importedWording,
+                originalKindToken = value.originalKindToken,
+                originalSummaryRoleToken = value.originalSummaryRoleToken,
+                originalCategoryToken = value.originalCategoryToken,
+                originalImportanceToken = value.originalImportanceToken,
+                routePolicyToken = value.routePolicyToken,
+                primarySubject = CloneSubject(value.primarySubject),
+                sourceTypeToken = value.sourceTypeToken,
+                conflictFingerprint = value.conflictFingerprint,
+                overflowRowCount = value.overflowRowCount,
+                overflowLogicalBytes = value.overflowLogicalBytes,
+                diagnosticTokens = value.diagnosticTokens == null
+                    ? new List<string>() : new List<string>(value.diagnosticTokens),
+                migrationReasonToken = value.migrationReasonToken
+            };
+            for (int index = 0; value.secondarySubjects != null
+                && index < value.secondarySubjects.Count; index++)
+                if (value.secondarySubjects[index] != null)
+                    copy.secondarySubjects.Add(CloneSubject(value.secondarySubjects[index]));
+            for (int index = 0; value.canonicalFacts != null
+                && index < value.canonicalFacts.Count; index++)
+                if (value.canonicalFacts[index] != null)
+                    copy.canonicalFacts.Add(CloneFact(value.canonicalFacts[index]));
+            for (int index = 0; value.provenance != null
+                && index < value.provenance.Count; index++)
+                if (value.provenance[index] != null)
+                    copy.provenance.Add(CloneProvenance(value.provenance[index]));
+            SavedImportedSummaryContributionEvidenceV1 evidence =
+                value.summaryContributionEvidence;
+            if (evidence != null)
+            {
+                copy.summaryContributionEvidence =
+                    new SavedImportedSummaryContributionEvidenceV1
+                    {
+                        schemaVersion = evidence.schemaVersion,
+                        contributionId = evidence.contributionId,
+                        originChapterId = evidence.originChapterId,
+                        originRecordId = evidence.originRecordId,
+                        originFactOrdinal = evidence.originFactOrdinal,
+                        originFactId = evidence.originFactId,
+                        originalEventTick = evidence.originalEventTick,
+                        ageUnknown = evidence.ageUnknown,
+                        category = evidence.category,
+                        importance = evidence.importance,
+                        canonicalValue = evidence.canonicalValue,
+                        majorTurningPoint = evidence.majorTurningPoint,
+                        reversal = evidence.reversal,
+                        sourceOccurrenceId = evidence.sourceOccurrenceId,
+                        subjectRefIds = evidence.subjectRefIds == null
+                            ? new List<string>() : new List<string>(evidence.subjectRefIds),
+                        provenanceRefIds = evidence.provenanceRefIds == null
+                            ? new List<string>() : new List<string>(evidence.provenanceRefIds)
+                    };
+            }
+            return copy;
         }
 
         private static SavedMemoryBlock BuildLegacyActiveBlock(
@@ -556,6 +667,140 @@ namespace PawnDiary
             });
             block.Normalize();
             return block;
+        }
+
+        /// <summary>
+        /// Routes only the conservative legacy case proved by T13.3: a known social/family mapping
+        /// with exactly one distinct non-owner participant. Everything ambiguous stays Standalone.
+        /// </summary>
+        private static bool TryPlaceLegacyActiveBlock(
+            PawnKnowledgeState replacement,
+            SavedMemoryBlock block,
+            MemoryLegacyMappedRecord row,
+            MemoryReducerPolicy reducer,
+            HashSet<string> rootIds)
+        {
+            string subjectId;
+            if (block.ageUnknown
+                || !TryResolveLegacyPawnSubject(row, replacement.pawnId, out subjectId))
+            {
+                replacement.standaloneBlocks.Add(block);
+                return true;
+            }
+
+            string rootId;
+            if (!MemoryIdentityCodec.TryCreateRootId(new MemoryRootIdentity
+                {
+                    ownerPawnId = replacement.pawnId,
+                    ownerEpochToken = replacement.autobiographicalEpochToken,
+                    primarySubjectKind = MemoryContractTokens.SubjectPawn,
+                    primarySubjectId = subjectId
+                }, out rootId)) return false;
+            int rootIndex = FindSavedRootIndex(replacement.threadRoots, rootId);
+            if (rootIndex >= 0 && IsLateAfterClosedBoundary(
+                    replacement.threadRoots[rootIndex], block.originalEventTick, block.ageUnknown))
+            {
+                replacement.standaloneBlocks.Add(block);
+                return true;
+            }
+
+            SavedMemoryThreadRoot root;
+            if (rootIndex < 0)
+            {
+                root = new SavedMemoryThreadRoot
+                {
+                    schemaVersion = 1,
+                    rootId = rootId,
+                    ownerPawnId = replacement.pawnId,
+                    ownerEpochToken = replacement.autobiographicalEpochToken,
+                    subjectKind = MemoryContractTokens.SubjectPawn,
+                    subjectId = subjectId,
+                    frozenSubjectLabel = LegacyParticipantLabel(row, subjectId),
+                    structuralRevision = 1,
+                    statusRevision = 1,
+                    nextChapterOrdinal = 1
+                };
+                if (!rootIds.Add(rootId)) return false;
+                replacement.threadRoots.Add(root);
+                rootIndex = replacement.threadRoots.Count - 1;
+            }
+            else
+            {
+                root = replacement.threadRoots[rootIndex];
+            }
+
+            string subjectRefId;
+            if (!MemoryIdentityCodec.TryCreateSubjectRefId(
+                    MemoryContractTokens.SubjectPawn,
+                    subjectId,
+                    "participant",
+                    KnowledgeObservationTokens.EvidenceCaptured,
+                    out subjectRefId)) return false;
+            block.primarySubject = new SavedMemorySubjectRef
+            {
+                schemaVersion = 1,
+                subjectRefId = subjectRefId,
+                subjectKind = MemoryContractTokens.SubjectPawn,
+                subjectId = subjectId,
+                frozenLabel = LegacyParticipantLabel(row, subjectId),
+                roleToken = "participant",
+                knownnessToken = KnowledgeObservationTokens.EvidenceCaptured
+            };
+            bool saturated;
+            SavedMemoryChapter chapter = FindOrCreateOpenChapter(
+                root, block.originalEventTick, string.Empty, out saturated);
+            if (chapter == null) return false;
+            block.rootId = root.rootId;
+            block.chapterId = chapter.chapterId;
+            root.visibleBlocks.Add(block);
+            chapter.lastActivityTick = Math.Max(chapter.lastActivityTick, block.originalEventTick);
+            MemoryThreadReductionResult reduction = MemoryThreadReducer.Reduce(
+                ToReducerRoot(root, reducer), reducer);
+            if (reduction.refused) return false;
+            replacement.threadRoots[rootIndex] = FromReducerRoot(reduction.replacement, root);
+            return true;
+        }
+
+        private static bool TryResolveLegacyPawnSubject(
+            MemoryLegacyMappedRecord row,
+            string ownerPawnId,
+            out string subjectId)
+        {
+            subjectId = string.Empty;
+            if (row == null
+                || (row.categoryToken != MemoryContractTokens.CategoryRelationships
+                    && row.categoryToken != MemoryContractTokens.CategoryFamily)) return false;
+            var subjects = new SortedSet<string>(StringComparer.Ordinal);
+            for (int index = 0; row.participantIds != null
+                && index < row.participantIds.Count; index++)
+            {
+                string candidate = row.participantIds[index] ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(candidate)
+                    || string.Equals(candidate, ownerPawnId, StringComparison.Ordinal)) continue;
+                subjects.Add(candidate);
+            }
+            if (subjects.Count != 1) return false;
+            foreach (string subject in subjects) subjectId = subject;
+            return MemoryContractTokens.IsValidRootSubject(
+                MemoryContractTokens.SubjectPawn, subjectId);
+        }
+
+        private static string LegacyParticipantLabel(MemoryLegacyMappedRecord row, string subjectId)
+        {
+            string result = string.Empty;
+            for (int index = 0; row?.participantIds != null
+                && index < row.participantIds.Count; index++)
+            {
+                if (!string.Equals(row.participantIds[index], subjectId, StringComparison.Ordinal))
+                    continue;
+                string label = index < (row.participantNames?.Count ?? 0)
+                    ? row.participantNames[index] ?? string.Empty
+                    : string.Empty;
+                if (!string.IsNullOrWhiteSpace(label)
+                    && (result.Length == 0 || string.CompareOrdinal(label, result) < 0))
+                    result = label;
+            }
+            return result;
         }
 
         private static SavedImportedMemoryRow BuildLegacyArchiveRow(
@@ -663,8 +908,8 @@ namespace PawnDiary
             MemoryOwnerByteTotals prior = GetOwnerByteTotals(ownerPawnId);
             long oldActive = prior.valid ? prior.activeBytes : 0;
             long oldImported = prior.valid ? prior.importedBytes : 0;
-            long activeDelta = Math.Max(0, projected.activeBytes - oldActive);
-            long importedDelta = Math.Max(0, projected.importedBytes - oldImported);
+            long activeDelta = checked(projected.activeBytes - oldActive);
+            long importedDelta = checked(projected.importedBytes - oldImported);
             int globalImportedRows;
             int globalImportedOwners;
             CountCurrentImportedArchiveUsage(
@@ -697,20 +942,26 @@ namespace PawnDiary
         {
             rows = unresolvedOwnerArchiveRows?.Count ?? 0;
             owners = 0;
-            var seen = new HashSet<string>(StringComparer.Ordinal);
+            var rowsByOwner = new Dictionary<string, int>(StringComparer.Ordinal);
             for (int index = 0; diaries != null && index < diaries.Count; index++)
             {
                 PawnDiaryRecord diary = diaries[index];
                 if (diary == null || string.IsNullOrWhiteSpace(diary.pawnId)
-                    || !seen.Add(diary.pawnId)) continue;
-                PawnKnowledgeState state = string.Equals(
-                    diary.pawnId, replacingOwnerPawnId, StringComparison.Ordinal)
-                    ? replacement
-                    : diary.knowledgeState;
+                    || string.Equals(
+                        diary.pawnId, replacingOwnerPawnId, StringComparison.Ordinal)) continue;
+                PawnKnowledgeState state = diary.knowledgeState;
                 if (state == null || !state.IsCurrentSchema()) continue;
                 int count = state.importedArchiveRows?.Count ?? 0;
-                rows = checked(rows + count);
-                if (count > 0) owners++;
+                int prior;
+                rowsByOwner.TryGetValue(diary.pawnId, out prior);
+                rowsByOwner[diary.pawnId] = checked(prior + count);
+            }
+            rowsByOwner[replacingOwnerPawnId ?? string.Empty] =
+                replacement?.importedArchiveRows?.Count ?? 0;
+            foreach (KeyValuePair<string, int> pair in rowsByOwner)
+            {
+                rows = checked(rows + pair.Value);
+                if (pair.Value > 0) owners++;
             }
         }
 
@@ -722,7 +973,11 @@ namespace PawnDiary
         private void TryCommitUnresolvedLegacyArchive(long maxKnownTick)
         {
             if (rawUnresolvedOwnerArchiveInput == null
-                || rawUnresolvedOwnerArchiveInput.Count == 0) return;
+                || rawUnresolvedOwnerArchiveInput.Count == 0
+                || unresolvedArchiveStructuralRevision == long.MaxValue) return;
+            long migrationGeneration = rawUnresolvedArchiveReattributionGeneration > 0
+                ? rawUnresolvedArchiveReattributionGeneration
+                : Math.Max(1, unresolvedArchiveReattributionGeneration);
             var projected = new List<SavedImportedMemoryRow>(
                 unresolvedOwnerArchiveRows ?? new List<SavedImportedMemoryRow>());
             var ids = new HashSet<string>(StringComparer.Ordinal);
@@ -748,7 +1003,7 @@ namespace PawnDiary
                 archived.savedOwnerIdentityKindToken =
                     raw.savedOwnerIdentityKindToken ?? string.Empty;
                 archived.savedOwnerIdentityValue = raw.savedOwnerIdentityValue ?? string.Empty;
-                archived.reattributionGeneration = 1;
+                archived.reattributionGeneration = migrationGeneration;
                 archived.ageUnknown = snapshot.tick <= 0 || snapshot.tick > maxKnownTick;
                 archived.originalEventTick = archived.ageUnknown ? 0 : snapshot.tick;
                 if (ids.Add(archived.archiveRecordId)) projected.Add(archived);
@@ -772,10 +1027,8 @@ namespace PawnDiary
             rawUnresolvedOwnerArchiveInput =
                 new List<SavedLegacyUnresolvedOwnerArchiveInputV1>();
             unresolvedArchiveMigrationState = MemoryArchiveStates.Current;
-            rawUnresolvedArchiveReattributionGeneration = Math.Max(
-                1, unresolvedArchiveReattributionGeneration);
-            if (unresolvedArchiveStructuralRevision < long.MaxValue)
-                unresolvedArchiveStructuralRevision++;
+            rawUnresolvedArchiveReattributionGeneration = migrationGeneration;
+            unresolvedArchiveStructuralRevision++;
         }
 
         /// <summary>
@@ -791,10 +1044,11 @@ namespace PawnDiary
             try
             {
                 long delta = checked(projectedUnknownBytes - priorUnknownBytes);
-                if (delta < 0) return false;
                 long projectedImported = checked(global.globalImportedBytes + delta);
                 long projectedCombined = checked(global.globalActiveBytes + projectedImported);
-                return global.globalActiveBytes <= ReadCapacityLong(
+                return projectedImported >= 0
+                    && projectedCombined >= 0
+                    && global.globalActiveBytes <= ReadCapacityLong(
                         "activeGlobalBytes", 6291456, 25165824)
                     && projectedImported <= ReadCapacityLong(
                         "importedGlobalBytes", 8388608, 33554432)
@@ -810,12 +1064,10 @@ namespace PawnDiary
         private int CountAllImportedRowsWithUnknown(int projectedUnknownRows)
         {
             int total = projectedUnknownRows;
-            var seen = new HashSet<string>(StringComparer.Ordinal);
             for (int index = 0; diaries != null && index < diaries.Count; index++)
             {
                 PawnDiaryRecord diary = diaries[index];
                 if (diary == null || string.IsNullOrWhiteSpace(diary.pawnId)
-                    || !seen.Add(diary.pawnId)
                     || diary.knowledgeState == null
                     || !diary.knowledgeState.IsCurrentSchema()) continue;
                 total = checked(total
@@ -872,11 +1124,19 @@ namespace PawnDiary
                 PawnKnowledgeState prior = duplicate.knowledgeState;
                 PawnKnowledgeState inert = PawnKnowledgeState.CreateCurrent(commit.ownerPawnId);
                 if (prior != null) CopyFirstCulture(inert, prior);
-                inert.epochFenceOnly = true;
+                // A duplicate physical holder is not an enrolled autobiography and must not look
+                // like a fresh current owner. Zero is the explicit unenrolled/inert schema default.
+                inert.autobiographicalEpochToken = string.Empty;
+                inert.archiveOnly = false;
+                inert.epochFenceOnly = false;
+                inert.requestCancellationGeneration = 0;
+                inert.structuralRevision = 0;
+                inert.statusRevision = 0;
+                inert.completedDiaryEntryOrdinal = 0;
                 duplicate.knowledgeState = inert;
                 if (duplicate.reflectionState != null)
                 {
-                    duplicate.reflectionState.memoryReflectionSchemaVersion = 1;
+                    duplicate.reflectionState.memoryReflectionSchemaVersion = 0;
                     duplicate.reflectionState.memoryOwnerEpochToken = string.Empty;
                     duplicate.reflectionState.lastQuietMemoryEvaluatedAbsoluteDay = -1;
                     duplicate.reflectionState.lastQuietMemoryActivatedAbsoluteQuadrum = -1;
@@ -890,23 +1150,43 @@ namespace PawnDiary
         {
             int evaluatedDay = -1;
             int activatedQuadrum = -1;
-            string decisionKey = string.Empty;
             for (int index = 0; holders != null && index < holders.Count; index++)
             {
                 PawnReflectionState state = holders[index]?.reflectionState;
                 if (state == null) continue;
-                if (state.lastQuietMemoryEvaluatedAbsoluteDay > evaluatedDay)
-                {
-                    evaluatedDay = state.lastQuietMemoryEvaluatedAbsoluteDay;
-                    decisionKey = state.lastQuietMemoryDecisionKey ?? string.Empty;
-                }
-                else if (state.lastQuietMemoryEvaluatedAbsoluteDay == evaluatedDay
-                    && string.CompareOrdinal(
-                        state.lastQuietMemoryDecisionKey ?? string.Empty, decisionKey) < 0)
-                    decisionKey = state.lastQuietMemoryDecisionKey ?? string.Empty;
-                activatedQuadrum = Math.Max(
-                    activatedQuadrum, state.lastQuietMemoryActivatedAbsoluteQuadrum);
+                if (state.lastQuietMemoryEvaluatedAbsoluteDay >= -1)
+                    evaluatedDay = Math.Max(
+                        evaluatedDay, state.lastQuietMemoryEvaluatedAbsoluteDay);
+                if (state.lastQuietMemoryActivatedAbsoluteQuadrum >= -1)
+                    activatedQuadrum = Math.Max(
+                        activatedQuadrum, state.lastQuietMemoryActivatedAbsoluteQuadrum);
             }
+            bool sawPass = false;
+            bool sawFail = false;
+            bool sawInvalid = false;
+            for (int index = 0; holders != null && index < holders.Count; index++)
+            {
+                PawnReflectionState state = holders[index]?.reflectionState;
+                if (state == null
+                    || state.lastQuietMemoryEvaluatedAbsoluteDay != evaluatedDay) continue;
+                bool passed;
+                if (!MemoryDeterministicRngV1.TryReadDecision(
+                        primary.pawnId, epochToken, evaluatedDay,
+                        state.lastQuietMemoryDecisionKey, out passed))
+                {
+                    sawInvalid = true;
+                    continue;
+                }
+                if (passed) sawPass = true;
+                else sawFail = true;
+            }
+            string decisionKey = evaluatedDay < 0
+                ? string.Empty
+                : MemoryDeterministicRngV1.CreateDecisionKey(
+                    primary.pawnId,
+                    epochToken,
+                    evaluatedDay,
+                    sawPass && !sawFail && !sawInvalid);
             PawnReflectionState merged = primary.EnsureReflectionState();
             merged.memoryReflectionSchemaVersion = 1;
             merged.memoryOwnerEpochToken = epochToken;

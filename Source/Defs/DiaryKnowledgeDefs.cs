@@ -419,6 +419,8 @@ namespace PawnDiary
         public string backgroundMemoryLineFormat;
         /// <summary>Prompt guidance: past context, used only when natural — never a demand.</summary>
         public string relevantPastInstruction;
+        /// <summary>Prompt guidance making current-state evidence authoritative over history.</summary>
+        public string currentStateInstruction;
         public int maxCultureTopicsPerPrompt = 2;
         public string annotationSingleFormat = "(culture: {0})";
         public string annotationDualFormat = "(origin: {0}; adopted: {1})";
@@ -587,6 +589,7 @@ namespace PawnDiary
             }
 
             policy.relevantPastInstruction = tuning.relevantPastInstruction ?? string.Empty;
+            policy.currentStateInstruction = tuning.currentStateInstruction ?? string.Empty;
             policy.maxCultureTopicsPerPrompt = tuning.maxCultureTopicsPerPrompt;
             if (!string.IsNullOrWhiteSpace(tuning.annotationSingleFormat))
             {

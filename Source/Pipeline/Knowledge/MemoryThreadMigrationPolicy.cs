@@ -271,7 +271,7 @@ namespace PawnDiary
                     bool alternateAuthored =
                         !string.IsNullOrWhiteSpace(alternate.manualTextOverride)
                         || IsPlayerSource(alternate.sourceKind);
-                    if (alternateAuthored || winnerAuthored)
+                    if (alternateAuthored)
                     {
                         // Every irreconcilable AUTHORED alternative archives as one COMPLETE
                         // Imported candidate carrying its own bounded payload (§T6.8/§T13.4) —

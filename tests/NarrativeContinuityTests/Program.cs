@@ -2440,6 +2440,12 @@ namespace NarrativeContinuityTests
                 NarrativeReflectionKindTokens.Day, all.selectedOpportunity.kind);
             AssertEqual("normal winner reports its fixed coordinator class",
                 ReflectionWorkClassTokens.Normal, all.consumption.workClass);
+            ReflectionSettlementOutcome normalWithoutPage =
+                ReflectionCoordinator.SettleAfterActivation(all, true, false);
+            AssertTrue("normal frequency skip still consumes its narrative cooldown",
+                normalWithoutPage.coordinatorSlotSettled
+                    && !normalWithoutPage.pageRegistered
+                    && normalWithoutPage.advanceNarrativeCooldown);
             ReflectionOpportunity normalAmbient = new ReflectionOpportunity
             {
                 kind = CoordinatorOpportunityKindTokens.NormalAmbient,

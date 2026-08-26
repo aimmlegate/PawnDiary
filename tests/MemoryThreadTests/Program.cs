@@ -3460,6 +3460,30 @@ namespace MemoryThreadTests
             }
             AssertTrue("migration.authored-conflict-present", hasArchiveRow);
 
+            // An authored winner does not make its unedited automatic alternate authored. The
+            // automatic conflict drops with a diagnostic and never becomes a permanent archive row.
+            var authoredWinner = LegacyRecord(
+                "rec-authored", "dedup-authored", "evt-authored-winner",
+                "relation.spouse.gained");
+            authoredWinner.manualTextOverride = "The canonical player account.";
+            var automaticAlternate = LegacyRecord(
+                "rec-automatic", "dedup-automatic", "evt-authored-winner",
+                "relation.spouse.gained");
+            automaticAlternate.factValues = new List<string> { "fiance" };
+            MemoryLegacyMigrationReport authoredWinnerReport =
+                MemoryThreadMigrationPolicy.PlanDryRun(new MemoryLegacyOwnerMigrationInput
+                {
+                    ownerPawnId = "Pawn_A",
+                    ownerEpochToken = Epoch(1),
+                    ruleMap = input.ruleMap,
+                    records = new List<MemoryLegacyRecordSnapshot>
+                        { automaticAlternate, authoredWinner }
+                });
+            AssertEqual("migration.authored-winner.automatic-alternate-dropped", 1,
+                authoredWinnerReport.droppedAutomaticAlternateCount);
+            AssertEqual("migration.authored-winner.no-automatic-archive", 0,
+                authoredWinnerReport.archivedAuthoredConflictCount);
+
             // Idempotence: an equal rerun is fingerprint-identical (§T13.5 fixtures).
             MemoryLegacyMigrationReport repeat =
                 MemoryThreadMigrationPolicy.PlanDryRun(input);

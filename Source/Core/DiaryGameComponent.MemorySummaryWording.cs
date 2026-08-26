@@ -1079,6 +1079,12 @@ namespace PawnDiary
                     mask,
                     contributions,
                     out fingerprint)) return null;
+            string deterministicWording;
+            if (!MemoryThreadReducer.TryBuildDeterministicCategoryProjection(
+                    ToReducerSummary(block.summaryPayload),
+                    mask,
+                    1200,
+                    out deterministicWording)) return null;
             return new SummaryWordingCurrentSnapshot
             {
                 ownerPawnId = block.ownerPawnId,
@@ -1092,7 +1098,7 @@ namespace PawnDiary
                 categoryMask = mask,
                 projectionFingerprint = fingerprint,
                 suppressed = block.suppressed,
-                deterministicWording = block.summaryPayload.deterministicWording ?? string.Empty
+                deterministicWording = deterministicWording
             };
         }
 

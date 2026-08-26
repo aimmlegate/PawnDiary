@@ -1169,17 +1169,17 @@ namespace PawnDiary
 
                 if (MemorySystemActivationGate.IsCurrentRelease)
                 {
-                    // M11 freezes the richest two-line shortlist at event time. QueuePrompt repeats
-                    // this adapter immediately before each lane variant freezes, revalidating only
-                    // current exact owner/epoch state and never borrowing another owner's candidates.
-                    PrepareMemoryRecallV2Projection(
+                    // M11 freezes the richest two-line shortlist at event time. QueuePrompt later
+                    // revalidates only that shortlist against the current exact owner/epoch state;
+                    // a newly eligible lower-ranked row can never replace frozen evidence.
+                    FreezeMemoryRecallV2Projection(
                         diaryEvent,
                         DiaryEvent.InitiatorRole,
                         PromptContextDetailLevel.Full);
                     if (!diaryEvent.solo
                         && !string.IsNullOrWhiteSpace(diaryEvent.recipientPawnId))
                     {
-                        PrepareMemoryRecallV2Projection(
+                        FreezeMemoryRecallV2Projection(
                             diaryEvent,
                             DiaryEvent.RecipientRole,
                             PromptContextDetailLevel.Full);
@@ -1388,6 +1388,7 @@ namespace PawnDiary
                 relevantPastLineFormat = safe.relevantPastLineFormat,
                 backgroundMemoryLineFormat = safe.backgroundMemoryLineFormat,
                 relevantPastInstruction = safe.relevantPastInstruction,
+                currentStateInstruction = safe.currentStateInstruction,
                 maxCultureTopicsPerPrompt = safe.maxCultureTopicsPerPrompt,
                 annotationSingleFormat = safe.annotationSingleFormat,
                 annotationDualFormat = safe.annotationDualFormat,

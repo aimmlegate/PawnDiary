@@ -565,6 +565,8 @@ namespace PawnDiary
         /// </summary>
         public string backgroundMemoryLineFormat = "{0}";
         public string relevantPastInstruction = string.Empty;
+        /// <summary>XML/DefInjected guidance that current-state evidence overrides history.</summary>
+        public string currentStateInstruction = string.Empty;
 
         // Inline culture annotation (§4.3).
         public int maxCultureTopicsPerPrompt = 2;

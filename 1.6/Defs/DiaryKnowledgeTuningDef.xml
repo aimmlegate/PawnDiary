@@ -3,14 +3,14 @@
   Tuning surface for the deterministic pawn-knowledge system
   (design/MEMORY_SYSTEM_REDESIGN_PLAN.md §2.3, §3.2, §4.3). Behavioral values mirror
   KnowledgePolicySnapshot.CreateDefault exactly (the pure suite's parity test enforces it);
-  relevantPastInstruction is the intentional exception - its code fallback is blank so deleting
-  this file omits optional guidance without hardcoding English.
+  model-facing instructions are the intentional exceptions - their code fallbacks are blank so
+  deleting this file omits optional guidance without hardcoding English.
 
   The player's single memory switch (settings) is ANDed with <enabled>; both control PROMPT
   INJECTION ONLY - important-event capture and culture tracking always continue (§3.2).
 
-  DLC-safety: plain strings and numbers only. Localization: relevantPastInstruction and the two
-  annotation formats are prompt prose, translated via DefInjected; scannable sources, context
+  DLC-safety: plain strings and numbers only. Localization: the two memory instructions and the
+  two annotation formats are prompt prose, translated via DefInjected; scannable sources, context
   keys, and prefixes are stable schema tokens and stay English everywhere.
 -->
 <Defs>
@@ -165,6 +165,7 @@
     <relevantPastLineFormat>- ({0}) {1}</relevantPastLineFormat>
     <backgroundMemoryLineFormat>- (background) {0}</backgroundMemoryLineFormat>
     <relevantPastInstruction>Facts from this pawn's past. Use one only if it fits naturally; never force a mention - these are context, not today's events.</relevantPastInstruction>
+    <currentStateInstruction>When current_state is present, treat it as current truth and let it override conflicting historical memory.</currentStateInstruction>
 
     <!-- Inline culture annotation (§4.3): at most two topics per prompt. -->
     <maxCultureTopicsPerPrompt>2</maxCultureTopicsPerPrompt>

@@ -22,14 +22,41 @@ namespace PawnDiary
             memoryRecallV2ProjectionCache =
                 new Dictionary<string, MemoryRecallPromptProjection>(StringComparer.Ordinal);
 
+        /// <summary>
+        /// Event-time selected shortlists. Queue-time prompt variants may only revalidate these exact
+        /// rows; they may not rerun ranking and substitute a different memory.
+        /// </summary>
+        private readonly Dictionary<string, MemoryRecallSelectionResultV2>
+            memoryRecallV2FrozenSelectionCache =
+                new Dictionary<string, MemoryRecallSelectionResultV2>(StringComparer.Ordinal);
+
+        // One event normally contributes at most two entries. The cap is defensive against events
+        // that are captured but never reach dispatch, and clearing is safe because a cache miss means
+        // fail-closed, memory-free generation rather than reselection.
+        private const int MaximumFrozenRecallSelections = 128;
+        private const int MaximumFrozenRecallProjections = MaximumFrozenRecallSelections * 3;
+
         /// <summary>Clears event-bound detached projections at a loaded-game boundary.</summary>
         private void ResetMemoryRecallV2Transient()
         {
             memoryRecallV2ProjectionCache.Clear();
+            memoryRecallV2FrozenSelectionCache.Clear();
         }
 
         /// <summary>
-        /// Rebuilds one exact POV projection immediately before a prompt variant freezes. Missing,
+        /// Selects and freezes one exact POV shortlist at the event boundary.
+        /// </summary>
+        private MemoryRecallPromptProjection FreezeMemoryRecallV2Projection(
+            DiaryEvent diaryEvent,
+            string povRole,
+            PromptContextDetailLevel contextDetailLevel)
+        {
+            return BuildMemoryRecallV2Projection(
+                diaryEvent, povRole, contextDetailLevel, freezeSelection: true);
+        }
+
+        /// <summary>
+        /// Revalidates the event-time shortlist immediately before one prompt variant freezes. Missing,
         /// corrupt, cooling, private, or over-cap memory simply produces an empty/background-only
         /// field; ordinary diary generation remains available.
         /// </summary>
@@ -37,6 +64,16 @@ namespace PawnDiary
             DiaryEvent diaryEvent,
             string povRole,
             PromptContextDetailLevel contextDetailLevel)
+        {
+            return BuildMemoryRecallV2Projection(
+                diaryEvent, povRole, contextDetailLevel, freezeSelection: false);
+        }
+
+        private MemoryRecallPromptProjection BuildMemoryRecallV2Projection(
+            DiaryEvent diaryEvent,
+            string povRole,
+            PromptContextDetailLevel contextDetailLevel,
+            bool freezeSelection)
         {
             var empty = new MemoryRecallPromptProjection();
             if (diaryEvent == null
@@ -85,9 +122,7 @@ namespace PawnDiary
                 writingFormat,
                 otherPawnId,
                 legacyQuery);
-            MemoryRecallReservationView reservations = SnapshotRecallReservations(
-                owner.pawnId,
-                owner.autobiographicalEpochToken);
+            MemoryRecallReservationView reservations = SnapshotRecallReservations(owner);
             List<MemoryRecallCandidateSnapshot> candidates = SnapshotRecallCandidates(
                 owner,
                 policy,
@@ -95,34 +130,32 @@ namespace PawnDiary
                 query,
                 reservations);
 
-            // Paired POVs remain private. The recipient receives only the initiator's selected source
-            // identities, never its candidate list or wording. After a reload, recomputing the bounded
-            // initiator shortlist supplies the same privacy fence without reading the other owner.
+            // Paired POVs remain private. The recipient receives only source identities from the
+            // initiator's already-frozen shortlist, never its candidate graph or wording. A Summary
+            // contributes every source occurrence represented by its selected projection.
             if (DiaryEvent.RoleEquals(povRole, DiaryEvent.RecipientRole)
                 && !diaryEvent.solo
                 && !string.IsNullOrWhiteSpace(diaryEvent.initiatorPawnId))
             {
-                MemoryRecallPromptProjection initiatorProjection = CachedRecallProjection(
+                MemoryRecallSelectionResultV2 initiatorSelection = CachedFrozenRecallSelection(
                     diaryEvent.eventId,
-                    DiaryEvent.InitiatorRole,
-                    writingFormat);
-                if (initiatorProjection == null)
-                {
-                    initiatorProjection = SelectRecallV2ProjectionForPrivacy(
-                        diaryEvent,
-                        DiaryEvent.InitiatorRole,
-                        contextDetailLevel,
-                        writingFormat,
-                        policy,
-                        tuning,
-                        legacyPolicy);
-                }
-                AddExcludedEvidence(query, initiatorProjection?.evidence);
+                    DiaryEvent.InitiatorRole);
+                AddExcludedSelectedSources(query, initiatorSelection);
             }
 
-            MemoryRecallSelectionResultV2 selected = ImportantMemorySelector.SelectV2(
-                query,
-                candidates);
+            MemoryRecallSelectionResultV2 selected;
+            if (freezeSelection)
+            {
+                selected = ImportantMemorySelector.SelectV2(query, candidates);
+                CacheFrozenRecallSelection(diaryEvent.eventId, povRole, selected);
+            }
+            else
+            {
+                selected = ImportantMemorySelector.RevalidateFrozenV2(
+                    CachedFrozenRecallSelection(diaryEvent.eventId, povRole),
+                    query,
+                    candidates);
+            }
             MemoryRecallPromptProjection projection = RenderRecallV2Projection(
                 owner,
                 selected,
@@ -178,61 +211,6 @@ namespace PawnDiary
                 povRole,
                 writingFormat,
                 projection);
-        }
-
-        /// <summary>
-        /// Computes only the initiator's bounded selected evidence for a recipient privacy fence.
-        /// It neither writes the initiator event slot nor exposes the other owner's candidate graph.
-        /// </summary>
-        private MemoryRecallPromptProjection SelectRecallV2ProjectionForPrivacy(
-            DiaryEvent diaryEvent,
-            string povRole,
-            PromptContextDetailLevel contextDetailLevel,
-            string writingFormat,
-            MemoryPolicySnapshot policy,
-            DiaryKnowledgeTuningDef tuning,
-            KnowledgePolicySnapshot legacyPolicy)
-        {
-            string ownerPawnId = diaryEvent.PawnIdForRole(povRole) ?? string.Empty;
-            PawnKnowledgeState owner = FindCurrentMemoryEnvelope(ownerPawnId);
-            if (owner == null || string.IsNullOrWhiteSpace(owner.autobiographicalEpochToken))
-                return new MemoryRecallPromptProjection();
-            string otherPawnId = DiaryEvent.RoleEquals(povRole, DiaryEvent.RecipientRole)
-                ? diaryEvent.initiatorPawnId ?? string.Empty
-                : diaryEvent.recipientPawnId ?? string.Empty;
-            KnowledgeQuery legacyQuery = ImportantMemorySelector.BuildQuery(
-                diaryEvent.eventId,
-                ownerPawnId,
-                otherPawnId,
-                diaryEvent.tick,
-                diaryEvent.gameContext,
-                diaryEvent.interactionDefName,
-                DiaryKnowledgePolicy.ImportantEventRules(),
-                legacyPolicy);
-            MemoryRecallQueryV2 query = BuildRecallV2Query(
-                diaryEvent,
-                povRole,
-                owner,
-                policy,
-                tuning,
-                writingFormat,
-                otherPawnId,
-                legacyQuery);
-            List<MemoryRecallCandidateSnapshot> candidates = SnapshotRecallCandidates(
-                owner,
-                policy,
-                tuning,
-                query,
-                SnapshotRecallReservations(owner.pawnId, owner.autobiographicalEpochToken));
-            MemoryRecallPromptProjection projection = RenderRecallV2Projection(
-                owner,
-                ImportantMemorySelector.SelectV2(query, candidates),
-                writingFormat,
-                policy,
-                tuning,
-                legacyPolicy);
-            CacheRecallProjection(diaryEvent.eventId, povRole, writingFormat, projection);
-            return projection;
         }
 
         private static string RecallWritingFormat(
@@ -366,10 +344,25 @@ namespace PawnDiary
             MemoryRecallReservationView reservations)
         {
             if (block == null) return null;
-            string deterministic = block.playerEdited && !string.IsNullOrWhiteSpace(block.playerWording)
+            bool summary = block.kind == MemoryContractTokens.KindSummary;
+            int enabledSummaryMask = summary
+                ? (block.summaryPayload?.derivedCategoryMask ?? 0) & policy.memoryCategoryMask
+                : 0;
+            SummaryWordingCurrentSnapshot currentSummary = summary
+                ? CurrentSummarySnapshot(root, block, policy)
+                : null;
+            bool playerSummaryProjection = summary
+                && block.playerEdited
+                && enabledSummaryMask != 0
+                && enabledSummaryMask == (block.summaryPayload?.derivedCategoryMask ?? 0)
+                && !string.IsNullOrWhiteSpace(block.playerWording);
+            string deterministic = block.playerEdited && !summary
+                    && !string.IsNullOrWhiteSpace(block.playerWording)
                 ? block.playerWording
-                : block.kind == MemoryContractTokens.KindSummary
-                    ? block.summaryPayload?.deterministicWording ?? block.automaticWording
+                : summary
+                    ? playerSummaryProjection
+                        ? block.playerWording
+                        : currentSummary?.deterministicWording ?? string.Empty
                     : block.automaticWording;
             var candidate = new MemoryRecallCandidateSnapshot
             {
@@ -381,14 +374,25 @@ namespace PawnDiary
                 rootId = root?.rootId ?? string.Empty,
                 chapterOrNoveltyId = threadProjection ? block.chapterId ?? string.Empty : string.Empty,
                 kind = block.kind ?? string.Empty,
-                importance = block.importance ?? string.Empty,
-                originalEventTick = block.originalEventTick,
+                importance = summary
+                    ? HighestEnabledSummaryImportance(block.summaryPayload, enabledSummaryMask)
+                    : block.importance ?? string.Empty,
+                originalEventTick = summary
+                    ? LatestEnabledSummaryTick(block.summaryPayload, enabledSummaryMask)
+                    : block.originalEventTick,
                 suppressed = block.suppressed,
                 isThreadMember = threadProjection,
                 isCurrentThreadProjection = true,
                 narrativeFitScore = block.requiredLifecycleLandmark ? 2 : 0,
                 historicalText = deterministic ?? string.Empty,
-                ttlEligible = !MemoryThreadReducer.IsExpired(
+                // Player-edited Summary prose cannot be split by category. It remains recallable only
+                // when every category represented by the Summary is enabled.
+                categoryProjectionValid = !summary
+                    || currentSummary != null
+                    || playerSummaryProjection,
+                // Summary retention is applied per contribution by the reducer. The Summary block's
+                // own original tick is a stable identity field, not an expiry timestamp.
+                ttlEligible = summary || !MemoryThreadReducer.IsExpired(
                     query.repetitionPolicy.currentTick,
                     block.originalEventTick,
                     block.ageUnknown,
@@ -396,9 +400,9 @@ namespace PawnDiary
                     policy.minorMemoryLifetimeTicks,
                     policy.regularMemoryLifetimeTicks)
             };
-            AddCandidateCategories(candidate, block);
-            AddCandidateRoutes(candidate, root, block);
-            AddRepresentedSources(candidate, block);
+            AddCandidateCategories(candidate, block, enabledSummaryMask);
+            AddCandidateRoutes(candidate, root, block, enabledSummaryMask);
+            AddRepresentedSources(candidate, block, enabledSummaryMask);
             candidate.recordGuard = new MemoryRepetitionGuardState
             {
                 ownerEpochToken = block.ownerEpochToken ?? string.Empty,
@@ -411,17 +415,17 @@ namespace PawnDiary
             };
             AddStructuralRecallGuards(candidate, owner, query, reservations);
             ApplyCurrentTruth(candidate, owner, tuning);
-            if (block.kind == MemoryContractTokens.KindSummary)
+            if (summary)
             {
-                SummaryWordingCurrentSnapshot current = CurrentSummarySnapshot(root, block, policy);
                 SavedMemorySummaryPayload payload = block.summaryPayload;
-                if (current != null && payload != null)
+                if (currentSummary != null && payload != null)
                 {
                     candidate.summaryWording = new MemoryRecallSummaryWordingSnapshot
                     {
-                        currentProjectionFingerprint = current.projectionFingerprint ?? string.Empty,
-                        currentFormatRevision = current.formatRevision,
-                        currentCategoryMask = current.categoryMask,
+                        currentProjectionFingerprint =
+                            currentSummary.projectionFingerprint ?? string.Empty,
+                        currentFormatRevision = currentSummary.formatRevision,
+                        currentCategoryMask = currentSummary.categoryMask,
                         optionalWording = payload.optionalLlmWording ?? string.Empty,
                         optionalFingerprint = payload.optionalLlmFingerprint ?? string.Empty,
                         optionalFormatRevision = payload.optionalLlmFormatRevision,
@@ -472,7 +476,7 @@ namespace PawnDiary
             MemoryRecallPromptProjection episodic = MemoryContextPrompt.ProjectV2(
                 writingFormat,
                 string.Empty,
-                string.Empty,
+                legacyPolicy?.currentStateInstruction ?? string.Empty,
                 lines,
                 remaining,
                 MemoryDispatchPolicy.MaximumEvidencePerVariant,
@@ -519,17 +523,17 @@ namespace PawnDiary
                     diaryEvent.eventId,
                     povRole,
                     writingFormat) ?? new MemoryRecallPromptProjection();
-                bool promptContainsProjection = !string.IsNullOrWhiteSpace(projection.text)
-                    && (prompt.rawText ?? string.Empty).IndexOf(
-                        projection.text,
-                        StringComparison.Ordinal) >= 0;
-                List<MemoryEvidenceIdentity> evidence = promptContainsProjection
+                // The effective prompt factory consumed this exact role/format projection in the
+                // immediately preceding call. Bind its detached receipt directly; substring search
+                // is ambiguous when ordinary prompt text happens to contain the same wording.
+                bool hasProjection = !string.IsNullOrWhiteSpace(projection.text);
+                List<MemoryEvidenceIdentity> evidence = hasProjection
                     ? projection.evidence
                     : new List<MemoryEvidenceIdentity>();
-                List<MemoryGuardIdentity> guards = promptContainsProjection
+                List<MemoryGuardIdentity> guards = hasProjection
                     ? projection.guards
                     : new List<MemoryGuardIdentity>();
-                List<MemoryDiagnosticIdentity> diagnostics = promptContainsProjection
+                List<MemoryDiagnosticIdentity> diagnostics = hasProjection
                     ? projection.diagnostics
                     : new List<MemoryDiagnosticIdentity>();
                 hadRecallEvidence |= evidence != null && evidence.Count > 0;
@@ -786,19 +790,8 @@ namespace PawnDiary
                 guardKind = kind,
                 guardKey = key
             });
-            SavedMemoryRepetitionGuardRow saved = null;
-            for (int index = 0; owner.repetitionGuardRows != null
-                && index < owner.repetitionGuardRows.Count; index++)
-            {
-                SavedMemoryRepetitionGuardRow row = owner.repetitionGuardRows[index];
-                if (row != null
-                    && row.guardKind == kind
-                    && row.guardKey == key)
-                {
-                    saved = row;
-                    break;
-                }
-            }
+            SavedMemoryRepetitionGuardRow saved;
+            reservations.savedGuardRows.TryGetValue(kind + "\n" + key, out saved);
             candidate.structuralGuardStates.Add(new MemoryRepetitionGuardState
             {
                 ownerEpochToken = owner.autobiographicalEpochToken ?? string.Empty,
@@ -812,11 +805,21 @@ namespace PawnDiary
             });
         }
 
-        private MemoryRecallReservationView SnapshotRecallReservations(
-            string ownerPawnId,
-            string ownerEpochToken)
+        private MemoryRecallReservationView SnapshotRecallReservations(PawnKnowledgeState owner)
         {
             var result = new MemoryRecallReservationView();
+            string ownerPawnId = owner?.pawnId ?? string.Empty;
+            string ownerEpochToken = owner?.autobiographicalEpochToken ?? string.Empty;
+            for (int index = 0; owner?.repetitionGuardRows != null
+                && index < owner.repetitionGuardRows.Count; index++)
+            {
+                SavedMemoryRepetitionGuardRow row = owner.repetitionGuardRows[index];
+                if (row == null) continue;
+                string tuple = (row.guardKind ?? string.Empty) + "\n"
+                    + (row.guardKey ?? string.Empty);
+                if (!result.savedGuardRows.ContainsKey(tuple))
+                    result.savedGuardRows.Add(tuple, row);
+            }
             AddRecallReservations(
                 result,
                 activeMemoryCoordinatorRequests,
@@ -874,10 +877,29 @@ namespace PawnDiary
         private static void AddCandidateRoutes(
             MemoryRecallCandidateSnapshot candidate,
             SavedMemoryThreadRoot root,
-            SavedMemoryBlock block)
+            SavedMemoryBlock block,
+            int enabledSummaryMask)
         {
             if (root != null)
                 AddRecallRoute(candidate.exactRoutes, root.subjectKind, root.subjectId);
+            if (block.kind == MemoryContractTokens.KindSummary)
+            {
+                HashSet<string> enabledSubjectRefs = EnabledSummarySubjectRefs(
+                    block.summaryPayload, enabledSummaryMask);
+                for (int index = 0; block.summaryPayload?.subjectRefs != null
+                    && index < block.summaryPayload.subjectRefs.Count; index++)
+                {
+                    SavedMemorySubjectRef subject = block.summaryPayload.subjectRefs[index];
+                    if (subject != null && enabledSubjectRefs.Contains(subject.subjectRefId ?? string.Empty))
+                    {
+                        AddRecallRoute(
+                            candidate.exactRoutes,
+                            subject.subjectKind,
+                            subject.subjectId);
+                    }
+                }
+                return;
+            }
             if (block.primarySubject != null)
                 AddRecallRoute(
                     candidate.exactRoutes,
@@ -887,15 +909,6 @@ namespace PawnDiary
                 && index < block.secondarySubjects.Count; index++)
             {
                 SavedMemorySubjectRef subject = block.secondarySubjects[index];
-                AddRecallRoute(
-                    candidate.exactRoutes,
-                    subject?.subjectKind,
-                    subject?.subjectId);
-            }
-            for (int index = 0; block.summaryPayload?.subjectRefs != null
-                && index < block.summaryPayload.subjectRefs.Count; index++)
-            {
-                SavedMemorySubjectRef subject = block.summaryPayload.subjectRefs[index];
                 AddRecallRoute(
                     candidate.exactRoutes,
                     subject?.subjectKind,
@@ -942,7 +955,8 @@ namespace PawnDiary
 
         private static void AddRepresentedSources(
             MemoryRecallCandidateSnapshot candidate,
-            SavedMemoryBlock block)
+            SavedMemoryBlock block,
+            int enabledSummaryMask)
         {
             var seen = new HashSet<string>(StringComparer.Ordinal)
             {
@@ -957,6 +971,9 @@ namespace PawnDiary
                 {
                     string source = bucket.contributions[contributionIndex]
                         ?.sourceOccurrenceId ?? string.Empty;
+                    SavedMemoryFactContribution contribution =
+                        bucket.contributions[contributionIndex];
+                    if (!SummaryContributionEnabled(contribution, enabledSummaryMask)) continue;
                     if (!string.IsNullOrWhiteSpace(source) && seen.Add(source))
                         candidate.representedSourceOccurrenceIds.Add(source);
                 }
@@ -966,12 +983,100 @@ namespace PawnDiary
 
         private static void AddCandidateCategories(
             MemoryRecallCandidateSnapshot candidate,
-            SavedMemoryBlock block)
+            SavedMemoryBlock block,
+            int enabledSummaryMask)
         {
+            if (block.kind == MemoryContractTokens.KindSummary)
+            {
+                AddEnabledCategories(candidate.categories, enabledSummaryMask);
+                return;
+            }
             if (MemoryContractTokens.IsKnownCategory(block.category))
                 candidate.categories.Add(block.category);
-            int mask = block.summaryPayload?.derivedCategoryMask ?? 0;
-            AddEnabledCategories(candidate.categories, mask);
+        }
+
+        private static HashSet<string> EnabledSummarySubjectRefs(
+            SavedMemorySummaryPayload payload,
+            int enabledSummaryMask)
+        {
+            var result = new HashSet<string>(StringComparer.Ordinal);
+            for (int bucketIndex = 0; payload?.factBuckets != null
+                && bucketIndex < payload.factBuckets.Count; bucketIndex++)
+            {
+                SavedMemoryFactBucket bucket = payload.factBuckets[bucketIndex];
+                for (int index = 0; bucket?.contributions != null
+                    && index < bucket.contributions.Count; index++)
+                {
+                    SavedMemoryFactContribution contribution = bucket.contributions[index];
+                    if (!SummaryContributionEnabled(contribution, enabledSummaryMask)) continue;
+                    for (int subjectIndex = 0; contribution.subjectRefIds != null
+                        && subjectIndex < contribution.subjectRefIds.Count; subjectIndex++)
+                    {
+                        string subjectRefId = contribution.subjectRefIds[subjectIndex] ?? string.Empty;
+                        if (!string.IsNullOrWhiteSpace(subjectRefId)) result.Add(subjectRefId);
+                    }
+                }
+            }
+            return result;
+        }
+
+        private static string HighestEnabledSummaryImportance(
+            SavedMemorySummaryPayload payload,
+            int enabledSummaryMask)
+        {
+            string result = string.Empty;
+            for (int bucketIndex = 0; payload?.factBuckets != null
+                && bucketIndex < payload.factBuckets.Count; bucketIndex++)
+            {
+                SavedMemoryFactBucket bucket = payload.factBuckets[bucketIndex];
+                for (int index = 0; bucket?.contributions != null
+                    && index < bucket.contributions.Count; index++)
+                {
+                    SavedMemoryFactContribution contribution = bucket.contributions[index];
+                    if (SummaryContributionEnabled(contribution, enabledSummaryMask)
+                        && RecallImportanceRank(contribution.importance)
+                            > RecallImportanceRank(result))
+                        result = contribution.importance;
+                }
+            }
+            return result;
+        }
+
+        private static long LatestEnabledSummaryTick(
+            SavedMemorySummaryPayload payload,
+            int enabledSummaryMask)
+        {
+            long result = 0;
+            for (int bucketIndex = 0; payload?.factBuckets != null
+                && bucketIndex < payload.factBuckets.Count; bucketIndex++)
+            {
+                SavedMemoryFactBucket bucket = payload.factBuckets[bucketIndex];
+                for (int index = 0; bucket?.contributions != null
+                    && index < bucket.contributions.Count; index++)
+                {
+                    SavedMemoryFactContribution contribution = bucket.contributions[index];
+                    if (SummaryContributionEnabled(contribution, enabledSummaryMask)
+                        && !contribution.ageUnknown)
+                        result = Math.Max(result, contribution.originalEventTick);
+                }
+            }
+            return result;
+        }
+
+        private static bool SummaryContributionEnabled(
+            SavedMemoryFactContribution contribution,
+            int enabledSummaryMask)
+        {
+            int bit = MemoryCategoryBits.ForToken(contribution?.category);
+            return contribution != null && bit != 0 && (enabledSummaryMask & bit) != 0;
+        }
+
+        private static int RecallImportanceRank(string importance)
+        {
+            if (importance == MemoryContractTokens.ImportanceImportant) return 3;
+            if (importance == MemoryContractTokens.ImportanceRegular) return 2;
+            if (importance == MemoryContractTokens.ImportanceMinor) return 1;
+            return 0;
         }
 
         private static void AddEnabledCategories(List<string> target, int mask)
@@ -1027,17 +1132,69 @@ namespace PawnDiary
             return best;
         }
 
-        private static void AddExcludedEvidence(
+        private static void AddExcludedSelectedSources(
             MemoryRecallQueryV2 query,
-            List<MemoryEvidenceIdentity> evidence)
+            MemoryRecallSelectionResultV2 selection)
         {
-            for (int index = 0; evidence != null && index < evidence.Count; index++)
+            for (int index = 0; selection?.selected != null
+                && index < selection.selected.Count; index++)
             {
-                string source = evidence[index]?.sourceOccurrenceId;
-                if (!string.IsNullOrWhiteSpace(source)
-                    && !query.excludedSourceOccurrenceIds.Contains(source))
-                    query.excludedSourceOccurrenceIds.Add(source);
+                MemoryRecallCandidateSnapshot candidate = selection.selected[index]?.candidate;
+                AddExcludedSource(query, candidate?.sourceOccurrenceId);
+                for (int sourceIndex = 0; candidate?.representedSourceOccurrenceIds != null
+                    && sourceIndex < candidate.representedSourceOccurrenceIds.Count; sourceIndex++)
+                {
+                    AddExcludedSource(
+                        query,
+                        candidate.representedSourceOccurrenceIds[sourceIndex]);
+                }
             }
+        }
+
+        private static void AddExcludedSource(MemoryRecallQueryV2 query, string source)
+        {
+            if (!string.IsNullOrWhiteSpace(source)
+                && !query.excludedSourceOccurrenceIds.Contains(source))
+                query.excludedSourceOccurrenceIds.Add(source);
+        }
+
+        private void CacheFrozenRecallSelection(
+            string eventId,
+            string povRole,
+            MemoryRecallSelectionResultV2 selection)
+        {
+            string key = RecallSelectionKey(eventId, povRole);
+            if (!memoryRecallV2FrozenSelectionCache.ContainsKey(key)
+                && memoryRecallV2FrozenSelectionCache.Count >= MaximumFrozenRecallSelections)
+            {
+                memoryRecallV2FrozenSelectionCache.Clear();
+                memoryRecallV2ProjectionCache.Clear();
+            }
+            memoryRecallV2FrozenSelectionCache[key] =
+                selection ?? new MemoryRecallSelectionResultV2();
+        }
+
+        private MemoryRecallSelectionResultV2 CachedFrozenRecallSelection(
+            string eventId,
+            string povRole)
+        {
+            MemoryRecallSelectionResultV2 selection;
+            return memoryRecallV2FrozenSelectionCache.TryGetValue(
+                RecallSelectionKey(eventId, povRole), out selection)
+                    ? selection
+                    : null;
+        }
+
+        /// <summary>Releases event-bound shortlist/projection data once dispatch has frozen receipts.</summary>
+        private void ClearMemoryRecallV2EventRole(string eventId, string povRole)
+        {
+            memoryRecallV2FrozenSelectionCache.Remove(RecallSelectionKey(eventId, povRole));
+            string prefix = (eventId ?? string.Empty) + "\n" + (povRole ?? string.Empty) + "\n";
+            var keys = new List<string>();
+            foreach (string key in memoryRecallV2ProjectionCache.Keys)
+                if (key.StartsWith(prefix, StringComparison.Ordinal)) keys.Add(key);
+            for (int index = 0; index < keys.Count; index++)
+                memoryRecallV2ProjectionCache.Remove(keys[index]);
         }
 
         private void CacheRecallProjection(
@@ -1046,10 +1203,17 @@ namespace PawnDiary
             string writingFormat,
             MemoryRecallPromptProjection projection)
         {
-            memoryRecallV2ProjectionCache[RecallProjectionKey(
-                eventId,
-                povRole,
-                writingFormat)] = projection ?? new MemoryRecallPromptProjection();
+            string key = RecallProjectionKey(eventId, povRole, writingFormat);
+            if (!memoryRecallV2ProjectionCache.ContainsKey(key)
+                && memoryRecallV2ProjectionCache.Count >= MaximumFrozenRecallProjections)
+            {
+                // Detached player-entry drafts may project without freezing a selection. Bound that
+                // path directly too; a cleared event cache can only make later generation memory-free.
+                memoryRecallV2ProjectionCache.Clear();
+                memoryRecallV2FrozenSelectionCache.Clear();
+            }
+            memoryRecallV2ProjectionCache[key] =
+                projection ?? new MemoryRecallPromptProjection();
         }
 
         private MemoryRecallPromptProjection CachedRecallProjection(
@@ -1075,6 +1239,11 @@ namespace PawnDiary
                 + (writingFormat ?? string.Empty);
         }
 
+        private static string RecallSelectionKey(string eventId, string povRole)
+        {
+            return (eventId ?? string.Empty) + "\n" + (povRole ?? string.Empty);
+        }
+
         private static string OneLine(string value)
         {
             return (value ?? string.Empty).Replace('\r', ' ').Replace('\n', ' ').Trim();
@@ -1091,6 +1260,8 @@ namespace PawnDiary
                 new HashSet<string>(StringComparer.Ordinal);
             public readonly HashSet<string> guardTuples =
                 new HashSet<string>(StringComparer.Ordinal);
+            public readonly Dictionary<string, SavedMemoryRepetitionGuardRow> savedGuardRows =
+                new Dictionary<string, SavedMemoryRepetitionGuardRow>(StringComparer.Ordinal);
         }
     }
 }

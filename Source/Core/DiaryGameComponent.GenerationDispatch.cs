@@ -36,7 +36,8 @@ namespace PawnDiary
             ApiEndpointConfig primaryOverride = null, Dictionary<string, DiaryBoundsCacheEntry> boundsCache = null,
             Dictionary<string, Pawn> livePawnsById = null,
             Action<PromptContextDetailLevel, bool> prepareSelectedPlan = null,
-            SavedActiveLogicalRequestV1 stagedMemoryRequest = null)
+            SavedActiveLogicalRequestV1 stagedMemoryRequest = null,
+            bool allowMemoryRecall = true)
         {
             if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole) || promptPlanFactory == null)
             {
@@ -46,7 +47,7 @@ namespace PawnDiary
             bool suppressRecallV2ForQueue = false;
             PromptPlanFactory effectivePromptPlanFactory = level =>
             {
-                if (MemorySystemActivationGate.IsCurrentRelease)
+                if (MemorySystemActivationGate.IsCurrentRelease && allowMemoryRecall)
                 {
                     if (suppressRecallV2ForQueue)
                     {
@@ -173,22 +174,32 @@ namespace PawnDiary
                 return;
             }
 
-            if (MemorySystemActivationGate.IsCurrentRelease && stagedMemoryRequest == null)
+            if (MemorySystemActivationGate.IsCurrentRelease
+                && allowMemoryRecall
+                && stagedMemoryRequest == null)
             {
                 bool hadRecallEvidence;
                 SavedActiveLogicalRequestV1 recallRequest;
-                if (!TryBuildNormalMemoryRequestForPromptVariants(
-                        diaryEvent,
-                        povRole,
-                        promptVariants,
-                        out recallRequest,
-                        out hadRecallEvidence)
-                    && hadRecallEvidence)
+                bool recallRequestBuilt;
+                try
+                {
+                    recallRequestBuilt = TryBuildNormalMemoryRequestForPromptVariants(
+                        diaryEvent, povRole, promptVariants, out recallRequest,
+                        out hadRecallEvidence);
+                }
+                finally
+                {
+                    // The selected evidence/receipts are now detached in recallRequest. Keeping the
+                    // event-bound cache beyond this point would make long sessions grow without bound.
+                    ClearMemoryRecallV2EventRole(diaryEvent.eventId, povRole);
+                }
+                if (!recallRequestBuilt && hadRecallEvidence)
                 {
                     // Recall is optional to the primary page. Any identity, receipt, cap, or frozen-
                     // variant refusal rebuilds the exact lane set memory-free before staging.
                     suppressRecallV2ForQueue = true;
                     routingPlan = effectivePromptPlanFactory(PromptContextDetailLevel.Full);
+                    if (routingPlan == null) return;
                     promptPlan = PromptPlanForContextLevel(
                         contextDetailLevel,
                         routingPlan,
@@ -201,7 +212,7 @@ namespace PawnDiary
                         contextDetailLevel,
                         promptPlan,
                         effectivePromptPlanFactory);
-                    if (routingPlan == null || promptPlan == null || promptVariants == null) return;
+                    if (promptPlan == null || promptVariants == null) return;
                 }
                 else
                 {
@@ -209,60 +220,47 @@ namespace PawnDiary
                 }
             }
 
-            string rawText = promptPlan.userPrompt ?? string.Empty;
-            DiaryResponseRules responseRules = promptPlan.responseRules
-                ?? DiaryResponseRules.ForRequest(diaryEvent.eventId, povRole, false, settings.maxTokens);
-            if (string.IsNullOrWhiteSpace(responseRules.eventId))
-            {
-                responseRules.eventId = diaryEvent.eventId;
-            }
-            responseRules.targetRole = povRole;
-            responseRules.isTitle = false;
-            if (responseRules.maxTokens <= 0)
-            {
-                responseRules.maxTokens = settings.maxTokens;
-            }
-
-            int requestMaxTokens = responseRules.maxTokens > 0 ? responseRules.maxTokens : settings.maxTokens;
-            LlmGenerationRequest request = new LlmGenerationRequest
-            {
-                eventId = diaryEvent.eventId,
-                povRole = povRole,
-                // The pure planner already folded persona and XML template policy into this system
-                // prompt. Queueing should only attach transport metadata and response rules.
-                systemPrompt = promptPlan.systemPrompt,
-                rawText = rawText,
-                endpointUrl = target.url,
-                modelName = target.model,
-                apiKey = target.apiKey,
-                authMode = target.authMode,
-                customAuthHeaderName = target.customAuthHeaderName,
-                apiMode = target.apiMode,
-                reasoningEffort = target.reasoningEffort,
-                reasoningTag = target.reasoningTag,
-                providerModelFamily = target.ProviderModelFamilyForCurrentLane(),
-                forcePrimaryLane = forcePrimaryLane,
-                // The other configured lanes, tried in order if this one errors ("use next model").
-                failoverTargets = failoverTargets,
-                timeoutSeconds = settings.timeoutSeconds,
-                maxTokens = requestMaxTokens,
-                lowThinkingHeadroomTokens = DiaryTuning.LowThinkingHeadroomTokens,
-                temperature = settings.temperature,
-                responseRules = responseRules,
-                promptVariants = promptVariants
-            };
-            if (stagedMemoryRequest != null
-                && !TryBindMemoryTransportContext(
-                    request, stagedMemoryRequest, promptVariants))
-            {
-                return;
-            }
             if (stagedMemoryRequest != null
                 && !CanAdmitActiveMemoryRequest(stagedMemoryRequest))
             {
                 RecordMemoryDiagnostic("other", "owner");
-                return;
+                if (!TryRebuildPromptSetWithoutRecall(
+                        ref suppressRecallV2ForQueue,
+                        effectivePromptPlanFactory,
+                        settings,
+                        target,
+                        failoverTargets,
+                        contextDetailLevel,
+                        out routingPlan,
+                        out promptPlan,
+                        out promptVariants)) return;
+                stagedMemoryRequest = null;
             }
+
+            LlmGenerationRequest request = CreateGenerationRequest(
+                diaryEvent, povRole, promptPlan, promptVariants, target, failoverTargets,
+                forcePrimaryLane, settings);
+            if (stagedMemoryRequest != null
+                && !TryBindMemoryTransportContext(
+                    request, stagedMemoryRequest, promptVariants))
+            {
+                RecordMemoryDiagnostic("other", "owner");
+                if (!TryRebuildPromptSetWithoutRecall(
+                        ref suppressRecallV2ForQueue,
+                        effectivePromptPlanFactory,
+                        settings,
+                        target,
+                        failoverTargets,
+                        contextDetailLevel,
+                        out routingPlan,
+                        out promptPlan,
+                        out promptVariants)) return;
+                stagedMemoryRequest = null;
+                request = CreateGenerationRequest(
+                    diaryEvent, povRole, promptPlan, promptVariants, target, failoverTargets,
+                    forcePrimaryLane, settings);
+            }
+            string rawText = promptPlan.userPrompt ?? string.Empty;
 
             // Reserve bounded transport capacity and dedup ownership first, but keep the request
             // invisible. Only after the event's matching prompt/lane/pending state is committed do
@@ -279,6 +277,7 @@ namespace PawnDiary
             LlmRequestStageOutcome stageOutcome = LlmClient.TryStage(request, out staged);
             if (stageOutcome != LlmRequestStageOutcome.Staged)
             {
+                if (stagedMemoryRequest != null) RecordMemoryDiagnostic("other", "owner");
                 LogApiDebug(
                     "Could not stage request event=" + diaryEvent.eventId
                     + " role=" + povRole
@@ -286,47 +285,49 @@ namespace PawnDiary
                 return;
             }
 
-            diaryEvent.SetPrompt(povRole, rawText);
-            diaryEvent.SetLlmMeta(
-                povRole,
-                EndpointUtility.BuildGenerationUrl(target.url, target.model, target.apiMode),
-                target.model);
-            diaryEvent.MarkQueued(povRole);
-
-            if (stagedMemoryRequest != null)
+            bool transportActivated = false;
+            try
             {
-                // The complete detached row is published only after transport capacity is staged.
-                // Its Activated state is committed before the transport handle becomes visible.
-                diaryEvent.SetActiveMemoryLogicalRequestForRole(povRole, stagedMemoryRequest);
-                if (!MemoryDispatchSavedAdapter.TryActivate(stagedMemoryRequest))
-                {
-                    diaryEvent.SetActiveMemoryLogicalRequestForRole(povRole, null);
-                    RebuildMemorySizeIndexes();
-                    LlmClient.CancelStaged(staged);
-                    diaryEvent.RollBackQueuedBeforeActivation(povRole);
-                    NotifyEntryStatusChanged(diaryEvent, povRole);
-                    return;
-                }
-                RebuildMemorySizeIndexes();
-            }
+                diaryEvent.SetPrompt(povRole, rawText);
+                diaryEvent.SetLlmMeta(
+                    povRole,
+                    EndpointUtility.BuildGenerationUrl(target.url, target.model, target.apiMode),
+                    target.model);
+                diaryEvent.MarkQueued(povRole);
 
-            if (!LlmClient.Activate(staged))
-            {
-                // Session replacement can race the tiny stage->commit window. Restore only transient
-                // queue fields; an older visible page remains intact and no send is claimed.
-                diaryEvent.RollBackQueuedBeforeActivation(povRole);
                 if (stagedMemoryRequest != null)
                 {
-                    diaryEvent.SetActiveMemoryLogicalRequestForRole(povRole, null);
+                    // The complete detached row is published only after transport capacity is staged.
+                    // Its Activated state is committed before the transport handle becomes visible.
+                    diaryEvent.SetActiveMemoryLogicalRequestForRole(povRole, stagedMemoryRequest);
+                    if (!MemoryDispatchSavedAdapter.TryActivate(stagedMemoryRequest))
+                    {
+                        RecordMemoryDiagnostic("other", "owner");
+                        return;
+                    }
                     RebuildMemorySizeIndexes();
-                    LlmClient.CancelStaged(staged);
-                    MemoryDispatchRuntimeBridge.ReleaseLogicalRequestSendEnvelopes(
-                        stagedMemoryRequest.logicalRequestId);
-                    invokedGenerationCutoffs.Settle(stagedMemoryRequest.logicalRequestId);
                 }
-                NotifyEntryStatusChanged(diaryEvent, povRole);
-                return;
+
+                if (!LlmClient.Activate(staged))
+                {
+                    // Session replacement can race the tiny stage->commit window. No send is claimed.
+                    if (stagedMemoryRequest != null) RecordMemoryDiagnostic("other", "owner");
+                    return;
+                }
+                transportActivated = true;
             }
+            catch (Exception exception)
+            {
+                if (stagedMemoryRequest != null) RecordMemoryDiagnostic("other", "owner");
+                Log.Error("[Pawn Diary] Failed while activating a staged generation request: "
+                    + exception);
+            }
+            finally
+            {
+                if (!transportActivated)
+                    RollBackStagedGeneration(diaryEvent, povRole, stagedMemoryRequest, staged);
+            }
+            if (!transportActivated) return;
 
             LogApiDebug(
                 "Queue event=" + diaryEvent.eventId
@@ -336,6 +337,59 @@ namespace PawnDiary
                 + " reason=" + selectionReason
                 + " failovers=[" + LaneList(failoverTargets) + "]");
             NotifyEntryStatusChanged(diaryEvent, povRole);
+        }
+
+        /// <summary>
+        /// Best-effort rollback for every failure or exception after transport staging. Cleanup is
+        /// deliberately idempotent so one failing adapter cannot strand the remaining reservations.
+        /// </summary>
+        private void RollBackStagedGeneration(
+            DiaryEvent diaryEvent,
+            string povRole,
+            SavedActiveLogicalRequestV1 stagedMemoryRequest,
+            LlmStagedGenerationRequest staged)
+        {
+            try { LlmClient.CancelStaged(staged); }
+            catch (Exception exception)
+            {
+                Log.Error("[Pawn Diary] Could not cancel a staged generation request: " + exception);
+            }
+            try { diaryEvent.RollBackQueuedBeforeActivation(povRole); }
+            catch (Exception exception)
+            {
+                Log.Error("[Pawn Diary] Could not roll back queued diary state: " + exception);
+            }
+            if (stagedMemoryRequest != null)
+            {
+                try
+                {
+                    diaryEvent.SetActiveMemoryLogicalRequestForRole(povRole, null);
+                    RebuildMemorySizeIndexes();
+                }
+                catch (Exception exception)
+                {
+                    Log.Error("[Pawn Diary] Could not clear a staged memory request: " + exception);
+                }
+                try
+                {
+                    MemoryDispatchRuntimeBridge.ReleaseLogicalRequestSendEnvelopes(
+                        stagedMemoryRequest.logicalRequestId);
+                }
+                catch (Exception exception)
+                {
+                    Log.Error("[Pawn Diary] Could not release staged send envelopes: " + exception);
+                }
+                try { invokedGenerationCutoffs.Settle(stagedMemoryRequest.logicalRequestId); }
+                catch (Exception exception)
+                {
+                    Log.Error("[Pawn Diary] Could not settle a staged generation cutoff: " + exception);
+                }
+            }
+            try { NotifyEntryStatusChanged(diaryEvent, povRole); }
+            catch (Exception exception)
+            {
+                Log.Error("[Pawn Diary] Could not publish staged-request rollback status: " + exception);
+            }
         }
 
         /// <summary>
@@ -368,8 +422,93 @@ namespace PawnDiary
                         povRole,
                         false,
                         PawnDiaryMod.Settings?.maxTokens ?? 0)
-                });
+                },
+                allowMemoryRecall: false);
             return diaryEvent.IsPending(povRole);
+        }
+
+        /// <summary>
+        /// Rebuilds all lane variants after optional Recall-v2 receipt/admission refuses. This is the
+        /// normal-diary fail-open path: player background may remain, but episodic evidence is absent.
+        /// </summary>
+        private bool TryRebuildPromptSetWithoutRecall(
+            ref bool suppressRecallV2ForQueue,
+            PromptPlanFactory effectivePromptPlanFactory,
+            PawnDiarySettings settings,
+            ApiEndpointConfig target,
+            List<ApiEndpointConfig> failoverTargets,
+            PromptContextDetailLevel contextDetailLevel,
+            out DiaryPromptPlan routingPlan,
+            out DiaryPromptPlan promptPlan,
+            out Dictionary<ApiLaneIdentity, LlmPromptVariant> promptVariants)
+        {
+            suppressRecallV2ForQueue = true;
+            routingPlan = effectivePromptPlanFactory(PromptContextDetailLevel.Full);
+            if (routingPlan == null)
+            {
+                promptPlan = null;
+                promptVariants = null;
+                return false;
+            }
+            promptPlan = PromptPlanForContextLevel(
+                contextDetailLevel, routingPlan, effectivePromptPlanFactory);
+            if (promptPlan == null)
+            {
+                promptVariants = null;
+                return false;
+            }
+            promptVariants = BuildPromptVariants(
+                settings, target, failoverTargets, routingPlan, contextDetailLevel, promptPlan,
+                effectivePromptPlanFactory);
+            return promptVariants != null;
+        }
+
+        private static LlmGenerationRequest CreateGenerationRequest(
+            DiaryEvent diaryEvent,
+            string povRole,
+            DiaryPromptPlan promptPlan,
+            Dictionary<ApiLaneIdentity, LlmPromptVariant> promptVariants,
+            ApiEndpointConfig target,
+            List<ApiEndpointConfig> failoverTargets,
+            bool forcePrimaryLane,
+            PawnDiarySettings settings)
+        {
+            DiaryResponseRules responseRules = promptPlan.responseRules
+                ?? DiaryResponseRules.ForRequest(diaryEvent.eventId, povRole, false, settings.maxTokens);
+            if (string.IsNullOrWhiteSpace(responseRules.eventId))
+                responseRules.eventId = diaryEvent.eventId;
+            responseRules.targetRole = povRole;
+            responseRules.isTitle = false;
+            if (responseRules.maxTokens <= 0) responseRules.maxTokens = settings.maxTokens;
+            int requestMaxTokens = responseRules.maxTokens > 0
+                ? responseRules.maxTokens
+                : settings.maxTokens;
+            return new LlmGenerationRequest
+            {
+                eventId = diaryEvent.eventId,
+                povRole = povRole,
+                // The pure planner already folded persona and XML template policy into this system
+                // prompt. Queueing should only attach transport metadata and response rules.
+                systemPrompt = promptPlan.systemPrompt,
+                rawText = promptPlan.userPrompt ?? string.Empty,
+                endpointUrl = target.url,
+                modelName = target.model,
+                apiKey = target.apiKey,
+                authMode = target.authMode,
+                customAuthHeaderName = target.customAuthHeaderName,
+                apiMode = target.apiMode,
+                reasoningEffort = target.reasoningEffort,
+                reasoningTag = target.reasoningTag,
+                providerModelFamily = target.ProviderModelFamilyForCurrentLane(),
+                forcePrimaryLane = forcePrimaryLane,
+                failoverTargets = failoverTargets,
+                timeoutSeconds = settings.timeoutSeconds,
+                maxTokens = requestMaxTokens,
+                lowThinkingHeadroomTokens = DiaryTuning.LowThinkingHeadroomTokens,
+                temperature = settings.temperature,
+                responseRules = responseRules,
+                promptVariants = promptVariants
+            };
         }
 
         private static DiaryPromptPlan PromptPlanForContextLevel(

@@ -258,6 +258,8 @@ namespace PawnMemoryTests
             AssertEqual("default.lines", 2, policy.relevantPastMaxLines);
             AssertEqual("default.backgroundFormat.safeFallback", "{0}",
                 policy.backgroundMemoryLineFormat);
+            AssertEqual("default.currentStateInstruction.safeFallback", string.Empty,
+                policy.currentStateInstruction);
             AssertEqual("default.topics", 2, policy.maxCultureTopicsPerPrompt);
 
             // Behavioral parity with the shipped XML (the tuning Def must mirror CreateDefault).
@@ -284,8 +286,11 @@ namespace PawnMemoryTests
             AssertEqual("xml.dualFormat", policy.annotationDualFormat,
                 (string)def.Element("annotationDualFormat"));
             string backgroundFormat = (string)def.Element("backgroundMemoryLineFormat");
+            string currentStateInstruction = (string)def.Element("currentStateInstruction");
             AssertTrue("xml.backgroundFormat.nonblank", !string.IsNullOrWhiteSpace(backgroundFormat));
             AssertTrue("xml.backgroundFormat.placeholder", backgroundFormat.Contains("{0}"));
+            AssertTrue("xml.currentStateInstruction.nonblank",
+                !string.IsNullOrWhiteSpace(currentStateInstruction));
 
             List<string> xmlSources = ListItems(def, "scannableSources").ToList();
             AssertEqual("xml.sources.count", policy.scannableSources.Count, xmlSources.Count);

@@ -152,10 +152,12 @@ namespace PawnDiary
             // Optional meaningful/quiet work commits a coordinator slot at activation, but the
             // provider has not produced a diary page yet. Advancing the shared narrative cooldown
             // here would let a failed or malformed optional request suppress unrelated reflections.
-            // Page-producing work earns that cooldown only after terminal publication proves the
-            // page exists; non-page work (Summary wording) retains its explicit policy result.
+            // Normal reflections are different: an intentional frequency skip consumes the selected
+            // opportunity and its cooldown even though no page was registered.
+            bool optionalMemoryPage = consumption.workClass == ReflectionWorkClassTokens.MeaningfulMemory
+                || consumption.workClass == ReflectionWorkClassTokens.QuietMemory;
             outcome.advanceNarrativeCooldown = consumption.advancesNarrativeCooldown
-                && (!consumption.producesPage || pageRegistered);
+                && (!optionalMemoryPage || pageRegistered);
             outcome.consumeQuietQuadrum = consumption.consumesQuietQuadrumOnActivation;
             return outcome;
         }

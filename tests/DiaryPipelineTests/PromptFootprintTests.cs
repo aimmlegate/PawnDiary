@@ -217,6 +217,7 @@ namespace DiaryPipelineTests
             AssertEntry(catalog, "observedConditionBundle", "AnomalyGrayFleshEvidence");
             AssertEntry(catalog, "policyInstruction", "Diary_NarrativeContinuity.promptFieldInstruction");
             AssertEntry(catalog, "policyInstruction", "Diary_Knowledge.relevantPastInstruction");
+            AssertEntry(catalog, "policyInstruction", "Diary_Knowledge.currentStateInstruction");
             AssertEntry(catalog, "policyInstruction", "Diary_BeliefPolicy.promptFieldInstruction");
             AssertEntry(catalog, "policyInstruction", "Diary_AuthoritySpeechPolicy.speakerPromptInstruction");
             AssertEntry(catalog, "policyInstruction", "Diary_AuthoritySpeechPolicy.witnessPromptInstruction");
@@ -1448,6 +1449,9 @@ namespace DiaryPipelineTests
                 AddOptionalEntry("1.6/Defs/DiaryKnowledgeTuningDef.xml",
                     "Diary_Knowledge.relevantPastInstruction", "policyInstruction",
                     DefText("Diary_Knowledge", "relevantPastInstruction"));
+                AddOptionalEntry("1.6/Defs/DiaryKnowledgeTuningDef.xml",
+                    "Diary_Knowledge.currentStateInstruction", "policyInstruction",
+                    DefText("Diary_Knowledge", "currentStateInstruction"));
                 AddOptionalEntry("1.6/Defs/DiaryBeliefPolicyDef.xml",
                     "Diary_BeliefPolicy.promptFieldInstruction", "policyInstruction",
                     DefText("Diary_BeliefPolicy", "promptFieldInstruction"));
