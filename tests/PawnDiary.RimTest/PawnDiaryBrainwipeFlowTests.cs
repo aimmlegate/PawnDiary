@@ -93,8 +93,11 @@ namespace PawnDiary.RimTests
             typeof(DiaryGameComponent).GetField("baselineThoughtProgressionsOnNextScan", PrivateInstance);
         private static readonly FieldInfo BaselineHediffProgressionsField =
             typeof(DiaryGameComponent).GetField("baselineHediffProgressionsOnNextScan", PrivateInstance);
+        private static readonly FieldInfo GlobalFactionSnapshotsField =
+            typeof(DiaryGameComponent).GetField("globalFactionSnapshots", PrivateInstance);
 
         private static PawnDiaryRimTestScope scope;
+        private static PawnDiaryMemoryM11RuntimeFixture.AllocatorSnapshot allocatorSnapshot;
         private static Pawn target;
         private static Pawn partner;
 
@@ -105,6 +108,8 @@ namespace PawnDiary.RimTests
             RequireReflectionSurface();
             PsychicRitualBrainwipeOutcomePatch.SetHistoryClearedNoticeOverrideForTests(null);
             scope = PawnDiaryRimTestScope.Begin(ArrivalGroupKey);
+            allocatorSnapshot =
+                new PawnDiaryMemoryM11RuntimeFixture.AllocatorSnapshot(scope.Component);
             target = scope.CreateAdultColonist();
             partner = scope.CreateAdultColonist();
         }
@@ -114,10 +119,21 @@ namespace PawnDiary.RimTests
         public static void TearDown()
         {
             PsychicRitualBrainwipeOutcomePatch.SetHistoryClearedNoticeOverrideForTests(null);
-            scope?.TearDown();
-            scope = null;
-            target = null;
-            partner = null;
+            DiaryGameComponent component = scope?.Component;
+            try
+            {
+                // Remove every fixture carrier before lowering saved monotonic metadata. Otherwise
+                // a later real allocation could reuse an identity that the fixture still owns.
+                scope?.TearDown();
+            }
+            finally
+            {
+                allocatorSnapshot?.Restore(component);
+                allocatorSnapshot = null;
+                scope = null;
+                target = null;
+                partner = null;
+            }
         }
 
         /// <summary>
@@ -230,7 +246,13 @@ namespace PawnDiary.RimTests
             targetRecord.unreadGeneratedEntryCount = 4;
             targetRecord.acknowledgedGeneratedEntryCount = 3;
 
-            PawnKnowledgeState knowledge = targetRecord.EnsureKnowledgeState();
+            PawnKnowledgeState knowledge =
+                PawnDiaryMemoryM11RuntimeFixture.BuildCompleteOwner(
+                    targetId,
+                    partnerId,
+                    partner.LabelShortCap,
+                    41);
+            targetRecord.knowledgeState = knowledge;
             knowledge.originCultureDefName = "PawnDiary_RimTest_OriginCulture";
             knowledge.originCultureSource = "rimtest";
             knowledge.adoptedCultureDefName = "PawnDiary_RimTest_AdoptedCulture";
@@ -249,6 +271,67 @@ namespace PawnDiary.RimTests
                 "I remember a childhood before this colony.",
                 450);
             knowledge.records.Add(ImportantMemoryRecord.FromSnapshot(backgroundPlan.record));
+
+            // Seed every current-envelope collection not already represented by the complete-owner
+            // builder. Brainwipe must reclaim them together before the new epoch becomes observable.
+            knowledge.playerBackground = "A current M11 background that must be forgotten.";
+            knowledge.ownerAwarenessSnapshots.Add(new SavedMemoryAwarenessSnapshot
+            {
+                snapshotId = "rimtest-brainwipe-awareness",
+                scopeKindToken = "relationship",
+                subjectKind = MemoryContractTokens.SubjectPawn,
+                subjectId = partnerId,
+                factStreamToken = "relationship",
+                captureInvalidationGeneration = 1,
+                knownnessEvidenceToken = "direct",
+                trackingStateToken = "tracked",
+                snapshotRevision = 1
+            });
+            knowledge.openCaptureEpisodes.Add(new SavedMemoryCaptureEpisode
+            {
+                episodeId = "rimtest-brainwipe-episode",
+                captureRuleId = "rimtest.brainwipe",
+                scopeKindToken = "relationship",
+                factStreamToken = "relationship",
+                category = MemoryContractTokens.CategoryRelationships
+            });
+            knowledge.repetitionGuardRows.Add(new SavedMemoryRepetitionGuardRow
+            {
+                ownerEpochToken = knowledge.autobiographicalEpochToken,
+                guardKind = "root",
+                guardKey = "rimtest-brainwipe-guard"
+            });
+            string oldEpoch = knowledge.autobiographicalEpochToken;
+            long oldCancellation = knowledge.requestCancellationGeneration;
+
+            PawnKnowledgeState partnerKnowledge =
+                PawnDiaryMemoryM11RuntimeFixture.BuildCompleteOwner(
+                    partnerId,
+                    targetId,
+                    target.LabelShortCap,
+                    42);
+            partnerRecord.knowledgeState = partnerKnowledge;
+            SavedMemoryBlock partnerBlock = partnerKnowledge.standaloneBlocks[0];
+
+            List<SavedGlobalFactionSnapshot> factionTruth =
+                GlobalFactionSnapshotsField.GetValue(scope.Component)
+                    as List<SavedGlobalFactionSnapshot>;
+            PawnDiaryRimTestScope.Require(factionTruth != null,
+                "The Brainwipe fixture could not inspect global faction current truth.");
+            SavedGlobalFactionSnapshot globalTruth = new SavedGlobalFactionSnapshot
+            {
+                factionInstanceId = "Faction_RimTest_Brainwipe_" + Guid.NewGuid().ToString("N"),
+                allocatorGeneration = 1,
+                factionDefName = "RimTestFaction",
+                frozenDisplayLabel = "Shared global truth",
+                goodwill = 25,
+                relationKindToken = "neutral",
+                observedTick = Find.TickManager.TicksGame,
+                trackingStateToken = "tracked",
+                snapshotRevision = 1
+            };
+            factionTruth.Add(globalTruth);
+            scope.RegisterCleanup(() => factionTruth.Remove(globalTruth));
 
             PawnArcScheduleState oldArcSchedule = new PawnArcScheduleState();
             PawnBeliefState oldBeliefState = new PawnBeliefState();
@@ -273,6 +356,31 @@ namespace PawnDiary.RimTests
                     && knowledge.originCultureSource == "rimtest"
                     && knowledge.adoptedCultureDefName == "PawnDiary_RimTest_AdoptedCulture",
                 "Brainwipe erased culture provenance or retained important episodic memories.");
+            PawnDiaryRimTestScope.Require(
+                knowledge.IsCurrentSchema()
+                    && knowledge.autobiographicalEpochToken != oldEpoch
+                    && !string.IsNullOrWhiteSpace(knowledge.autobiographicalEpochToken)
+                    && knowledge.epochFenceOnly
+                    && knowledge.requestCancellationGeneration > oldCancellation
+                    && knowledge.structuralRevision == 1
+                    && knowledge.statusRevision == 1
+                    && knowledge.completedDiaryEntryOrdinal == 1
+                    && knowledge.threadRoots.Count == 0
+                    && knowledge.standaloneBlocks.Count == 0
+                    && knowledge.importedArchiveRows.Count == 0
+                    && knowledge.ownerAwarenessSnapshots.Count == 0
+                    && knowledge.openCaptureEpisodes.Count == 0
+                    && knowledge.repetitionGuardRows.Count == 0
+                    && string.IsNullOrEmpty(knowledge.playerBackground),
+                "Brainwipe did not publish one empty current M11 epoch fence atomically.");
+            PawnDiaryRimTestScope.Require(
+                ReferenceEquals(partnerRecord.knowledgeState, partnerKnowledge)
+                    && ReferenceEquals(partnerKnowledge.standaloneBlocks[0], partnerBlock)
+                    && partnerKnowledge.threadRoots.Count == 1
+                    && partnerKnowledge.standaloneBlocks.Count == 1
+                    && partnerKnowledge.importedArchiveRows.Count == 1
+                    && factionTruth.Contains(globalTruth),
+                "Brainwipe changed another POV or component-global faction truth.");
             PawnDiaryRimTestScope.Require(
                 !ReferenceEquals(targetRecord.arcSchedule, oldArcSchedule)
                     && !ReferenceEquals(targetRecord.beliefState, oldBeliefState)
@@ -1261,6 +1369,39 @@ namespace PawnDiary.RimTests
                     && boundary.gameContext.IndexOf("emotional_state=anxiety", StringComparison.Ordinal) >= 0
                     && boundary.IsArrivalDescriptionFor(target.GetUniqueLoadID()),
                 "The post-Brainwipe boundary omitted its stable def, context, or arrival marker.");
+
+            PawnKnowledgeState knowledge = record.EnsureKnowledgeState();
+            bool memoryCaptureEnabled = MemoryEffectivePolicyProvider.Current.AllowsCapture(
+                MemoryCategoryBits.Personal);
+            if (memoryCaptureEnabled)
+            {
+                PawnDiaryRimTestScope.Require(
+                    knowledge.threadRoots.Count == 0
+                        && knowledge.standaloneBlocks.Count == 1
+                        && knowledge.standaloneBlocks[0].kind
+                            == MemoryContractTokens.KindLandmark
+                        && knowledge.standaloneBlocks[0].importance
+                            == MemoryContractTokens.ImportanceImportant
+                        && knowledge.standaloneBlocks[0].requiredLifecycleLandmark
+                        && string.IsNullOrEmpty(
+                            knowledge.standaloneBlocks[0].rootId),
+                    "The first enabled post-Brainwipe memory was not one Important Standalone Landmark.");
+            }
+            else
+            {
+                PawnDiaryRimTestScope.Require(
+                    knowledge.epochFenceOnly
+                        && knowledge.threadRoots.Count == 0
+                        && knowledge.standaloneBlocks.Count == 0,
+                    "Save-new Off admitted a post-Brainwipe memory instead of retaining only the fence.");
+            }
+
+            DiaryEvents.Submit(new BrainwipeArrivalSignal(target));
+            PawnDiaryRimTestScope.Require(
+                record.eventIds.Count == 1
+                    && knowledge.threadRoots.Count == 0
+                    && knowledge.standaloneBlocks.Count == (memoryCaptureEnabled ? 1 : 0),
+                "Replaying the Brainwipe arrival created a second page, root, or Landmark.");
         }
 
         /// <summary>
@@ -1744,7 +1885,8 @@ namespace PawnDiary.RimTests
                     && SocialReflectionWriterCooldownsField != null
                     && SocialReflectionHandledSourcesField != null
                     && BaselineThoughtProgressionsField != null
-                    && BaselineHediffProgressionsField != null,
+                    && BaselineHediffProgressionsField != null
+                    && GlobalFactionSnapshotsField != null,
                 "Pawn Diary's Brainwipe-owned stores changed; update the fixture.");
         }
 

@@ -199,6 +199,33 @@ release reporting until its own log/count/save evidence exists.
 
 ---
 
+## Memory M11 legacy-migration three-phase fixture
+
+RimTest cannot reload a game and continue the same synchronous test, so the migration suite owns two
+reserved disposable save names and leaves the two reloads to the operator. Use a disposable colony;
+keep the game paused, and run only the named phase after each reload.
+
+1. Run `PawnDiaryMemoryM11MigrationRuntimeTests.SaveReloadPhaseAWriteLegacyOwnerSave`.
+   - It writes `PawnDiary_Memory_M11_RimTest_PhaseA_Legacy` with one schema-v1 owner and no page.
+   - The currently loaded colony is restored after the save; only the reserved save file remains.
+2. Return to the main menu, load `PawnDiary_Memory_M11_RimTest_PhaseA_Legacy`, and run
+   `SaveReloadPhaseBVerifyMigrationAndSaveAgain` only.
+   - Expected: load-time M11 migration creates one current exact memory, retains culture, creates no
+     catch-up page or Imported conflict, and a repeated commit changes no identity/revision.
+   - It writes `PawnDiary_Memory_M11_RimTest_PhaseB_Migrated` and removes the fixture from the live
+     Phase A instance. Load the new save rather than continuing that consumed instance.
+3. Return to the main menu, load `PawnDiary_Memory_M11_RimTest_PhaseB_Migrated`, and run
+   `SaveReloadPhaseCVerifySecondReloadAndCleanup` only.
+   - Expected: the same one memory/epoch/root-or-standalone identity and zero page count survive the
+     second reload; another migration pass remains inert.
+   - Phase C removes the component fixture and deletes both reserved save files. If RimWorld closes
+     before Phase C, delete those two exact save names manually.
+
+Record the RimWorld build, Pawn Diary commit/DLL hash, language, active DLC/mod list, and all three
+`PASS` log lines. Compilation does not count as process-boundary evidence.
+
+---
+
 ## Odyssey real-lifecycle and three-phase save/reload fixture
 
 RimTest Redux runs a test synchronously inside the current `Game`. Calling
