@@ -21,6 +21,7 @@ namespace MemoryThreadTests
             OwnerSelectionUsesExactHandles();
             ImportedVisibilityAndFiltersAreExact();
             CapacityAndEmptyStateRulesAreExact();
+            AdapterRevisionDecisionsAreExact();
             DetachedDraftsHandleStatusAndStructuralConflicts();
             CommandsCarryExactIdentityAndRevision();
             DrawingStagesButDoesNotExecuteCommands();
@@ -286,6 +287,58 @@ namespace MemoryThreadTests
                 MemoryLibraryPolicy.TryAppendBoundedText(fields, "x", 2, 6));
             Equal("m9.search.repairs-unpaired-surrogate", "�",
                 MemoryLibraryPolicy.RepairMalformedUtf16("\ud800"));
+        }
+
+        private static void AdapterRevisionDecisionsAreExact()
+        {
+            MemoryRootHandle root = new MemoryRootHandle
+            {
+                ownerPawnId = "pawn",
+                epochToken = "epoch",
+                rootId = "root"
+            };
+            MemoryBlockRow threaded = new MemoryBlockRow
+            {
+                rootHandle = root,
+                targetStructuralRevision = 3
+            };
+            MemoryThreadHeaderRow refreshedRoot = new MemoryThreadHeaderRow
+            {
+                rootHandle = MemoryLibraryUiPolicy.Copy(root),
+                structuralRevision = 7
+            };
+            Equal("m9.detail-fence.thread-uses-current-root", 7L,
+                MemoryLibraryUiPolicy.BlockDetailStructuralRevision(
+                    threaded, refreshedRoot, 11));
+            refreshedRoot.rootHandle.rootId = "other";
+            Equal("m9.detail-fence.thread-rejects-other-root", 3L,
+                MemoryLibraryUiPolicy.BlockDetailStructuralRevision(
+                    threaded, refreshedRoot, 11));
+
+            MemoryBlockRow standalone = new MemoryBlockRow { targetStructuralRevision = 5 };
+            Equal("m9.detail-fence.standalone-uses-current-owner", 11L,
+                MemoryLibraryUiPolicy.BlockDetailStructuralRevision(
+                    standalone, null, 11));
+            MemoryImportedRow imported = new MemoryImportedRow { targetStructuralRevision = 6 };
+            MemoryLibraryOwnerRow owner = new MemoryLibraryOwnerRow { structuralRevision = 12 };
+            Equal("m9.detail-fence.imported-uses-current-owner", 12L,
+                MemoryLibraryUiPolicy.ImportedDetailStructuralRevision(imported, owner));
+            owner.structuralRevision = 0;
+            Equal("m9.detail-fence.imported-falls-back-to-row", 6L,
+                MemoryLibraryUiPolicy.ImportedDetailStructuralRevision(imported, owner));
+
+            MemoryLibraryOwnerResult currentDirectory = new MemoryLibraryOwnerResult
+            {
+                status = MemoryLibraryStatuses.Ready,
+                directoryRevision = 20
+            };
+            Equal("m9.owner-menu.same-revision-accepted", true,
+                MemoryLibraryUiPolicy.CanApplyOwnerMenuOption(20, currentDirectory));
+            Equal("m9.owner-menu-newer-revision-rejected", false,
+                MemoryLibraryUiPolicy.CanApplyOwnerMenuOption(19, currentDirectory));
+            currentDirectory.status = MemoryLibraryStatuses.Preparing;
+            Equal("m9.owner-menu-nonready-rejected", false,
+                MemoryLibraryUiPolicy.CanApplyOwnerMenuOption(20, currentDirectory));
         }
 
         private static void CommandsCarryExactIdentityAndRevision()

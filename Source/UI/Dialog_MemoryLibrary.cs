@@ -355,7 +355,7 @@ namespace PawnDiary
                     selectedOwnerValidatedDirectoryRevision = result.directoryRevision;
             }
             if (!string.Equals(before, OwnerKey(session.selectedOwnerHandle), StringComparison.Ordinal))
-                ResetOwnerQueries();
+                ResetOwnerQueries(FindOwnerRow(result.rows, session.selectedOwnerHandle));
         }
 
         private void RefreshSelectedOwnerReference()
@@ -452,13 +452,17 @@ namespace PawnDiary
                 MemoryBlockRow selected = FindSelectedBlockRow();
                 if (selected != null)
                 {
+                    long targetStructuralRevision =
+                        MemoryLibraryUiPolicy.BlockDetailStructuralRevision(
+                            selected, threadDetail?.header,
+                            list?.ownerStructuralRevision ?? 0);
                     MemoryBlockDetailResult refreshed = component.QueryMemoryBlockDetail(
                         new MemoryBlockDetailQuery
                         {
                             recordHandle = MemoryLibraryUiPolicy.Copy(selected.recordHandle),
                             rootHandle = MemoryLibraryUiPolicy.Copy(selected.rootHandle),
                             placementToken = selected.rootHandle == null ? "standalone" : string.Empty,
-                            targetStructuralRevision = selected.targetStructuralRevision,
+                            targetStructuralRevision = targetStructuralRevision,
                             projectionToken = "full"
                         });
                     blockDetail = refreshed;
@@ -481,6 +485,8 @@ namespace PawnDiary
                 MemoryImportedRow row = FindSelectedImportedRow();
                 if (row != null)
                 {
+                    long targetStructuralRevision =
+                        MemoryLibraryUiPolicy.ImportedDetailStructuralRevision(row, selectedOwner);
                     importedDetail = component.QueryMemoryImportedDetail(
                         new MemoryImportedDetailQuery
                         {
@@ -488,7 +494,7 @@ namespace PawnDiary
                             textStart = importedTextStart,
                             textCount = ImportedTextPageSize,
                             expectedArchiveTextSnapshotRevision = importedTextExpectedSnapshotRevision,
-                            targetStructuralRevision = row.targetStructuralRevision
+                            targetStructuralRevision = targetStructuralRevision
                         });
                     if (importedDetail.status == MemoryLibraryStatuses.Stale)
                     {
@@ -579,9 +585,9 @@ namespace PawnDiary
                 detachedCompatibilityFailClosed);
         }
 
-        private void ResetOwnerQueries()
+        private void ResetOwnerQueries(MemoryLibraryOwnerRow retainedOwner = null)
         {
-            selectedOwner = null;
+            selectedOwner = retainedOwner;
             ownerWalkHandle = null;
             compatibility = null;
             lore = null;
@@ -662,7 +668,10 @@ namespace PawnDiary
             selectedOwnerValidatedDirectoryRevision = validation.directoryRevision;
             ResetSelectedOwnerValidation();
             if (!string.Equals(before, OwnerKey(session.selectedOwnerHandle),
-                    StringComparison.Ordinal)) ResetOwnerQueries();
+                    StringComparison.Ordinal))
+                // The searched owner page may not contain the canonical replacement. Keep the
+                // validated detached row so list queries can continue while the search stays open.
+                ResetOwnerQueries(selectedOwner);
         }
 
         private void ResetSelectedOwnerValidation()
@@ -717,16 +726,15 @@ namespace PawnDiary
             detailScroll = Vector2.zero;
         }
 
-        private static MemoryLibraryOwnerRow FindExactOwner(
-            List<MemoryLibraryOwnerRow> rows, string ownerId)
+        private static MemoryLibraryOwnerRow FindOwnerRow(
+            List<MemoryLibraryOwnerRow> rows, MemoryLibraryOwnerHandle handle)
         {
-            if (rows == null) return null;
+            if (rows == null || handle == null) return null;
             for (int index = 0; index < rows.Count; index++)
             {
                 MemoryLibraryOwnerRow row = rows[index];
-                string candidate = row?.primaryHandle?.exactOwnerPawnIdOrEmpty
-                    ?? row?.compatibilityHandle?.exactOwnerPawnIdOrEmpty;
-                if (string.Equals(candidate, ownerId, StringComparison.Ordinal)) return row;
+                if (MemoryLibraryUiPolicy.Same(row?.primaryHandle, handle)
+                    || MemoryLibraryUiPolicy.Same(row?.compatibilityHandle, handle)) return row;
             }
             return null;
         }

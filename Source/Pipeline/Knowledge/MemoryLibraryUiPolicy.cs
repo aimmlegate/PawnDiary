@@ -300,6 +300,45 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Uses the freshest proven enclosing revision for a selected block without mutating the
+        /// immutable row that supplied its exact identity. The detail query still proves membership.
+        /// </summary>
+        public static long BlockDetailStructuralRevision(
+            MemoryBlockRow selected,
+            MemoryThreadHeaderRow currentThreadHeader,
+            long currentOwnerStructuralRevision)
+        {
+            if (selected == null) return 0;
+            if (selected.rootHandle == null)
+                return currentOwnerStructuralRevision > 0
+                    ? currentOwnerStructuralRevision : selected.targetStructuralRevision;
+            if (currentThreadHeader?.structuralRevision > 0
+                && SameRoot(selected.rootHandle, currentThreadHeader.rootHandle))
+                return currentThreadHeader.structuralRevision;
+            return selected.targetStructuralRevision;
+        }
+
+        /// <summary>Uses a refreshed owner fence for Imported detail without rewriting its row.</summary>
+        public static long ImportedDetailStructuralRevision(
+            MemoryImportedRow selected,
+            MemoryLibraryOwnerRow currentOwner)
+        {
+            if (selected == null) return 0;
+            return (currentOwner?.structuralRevision ?? 0) > 0
+                ? currentOwner.structuralRevision : selected.targetStructuralRevision;
+        }
+
+        /// <summary>Rejects a menu option captured from any superseded owner directory.</summary>
+        public static bool CanApplyOwnerMenuOption(
+            long capturedDirectoryRevision,
+            MemoryLibraryOwnerResult currentDirectory)
+        {
+            return capturedDirectoryRevision > 0
+                && currentDirectory?.status == MemoryLibraryStatuses.Ready
+                && currentDirectory.directoryRevision == capturedDirectoryRevision;
+        }
+
+        /// <summary>
         /// Plans one page of an exact-handle or preferred-ID owner walk. The canonical fallback is
         /// retained across pages and selected only after the pinned directory is exhausted.
         /// </summary>
@@ -711,6 +750,14 @@ namespace PawnDiary
                 && string.Equals(left.ownerPawnId, right.ownerPawnId, StringComparison.Ordinal)
                 && string.Equals(left.epochToken, right.epochToken, StringComparison.Ordinal)
                 && string.Equals(left.recordId, right.recordId, StringComparison.Ordinal);
+        }
+
+        private static bool SameRoot(MemoryRootHandle left, MemoryRootHandle right)
+        {
+            return left != null && right != null
+                && string.Equals(left.ownerPawnId, right.ownerPawnId, StringComparison.Ordinal)
+                && string.Equals(left.epochToken, right.epochToken, StringComparison.Ordinal)
+                && string.Equals(left.rootId, right.rootId, StringComparison.Ordinal);
         }
 
         public static MemoryLibraryOwnerHandle Copy(MemoryLibraryOwnerHandle source)

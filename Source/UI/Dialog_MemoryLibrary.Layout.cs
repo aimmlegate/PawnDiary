@@ -134,6 +134,7 @@ namespace PawnDiary
         private void OpenOwnerMenu()
         {
             if (owners?.rows == null || owners.rows.Count == 0) return;
+            long capturedDirectoryRevision = owners.directoryRevision;
             List<FloatMenuOption> options = new List<FloatMenuOption>();
             for (int index = 0; index < owners.rows.Count; index++)
             {
@@ -147,6 +148,17 @@ namespace PawnDiary
                         captured.standaloneCount, captured.importedCount),
                     delegate
                     {
+                        if (!MemoryLibraryUiPolicy.CanApplyOwnerMenuOption(
+                                capturedDirectoryRevision, owners))
+                        {
+                            // WindowUpdate may republish the directory while this menu is open.
+                            // Never bless its captured row with the newer revision.
+                            ownerStart = 0;
+                            ownerExpectedDirectoryRevision = 0;
+                            selectedOwnerValidatedDirectoryRevision = 0;
+                            ResetSelectedOwnerValidation();
+                            return;
+                        }
                         string before = OwnerKey(session.selectedOwnerHandle);
                         session.SelectOwner(captured);
                         selectedOwner = captured;
@@ -154,11 +166,11 @@ namespace PawnDiary
                         ownerWalkHandle = null;
                         preferredFallback = null;
                         ownerStart = 0;
-                        ownerExpectedDirectoryRevision = owners?.directoryRevision ?? 0;
+                        ownerExpectedDirectoryRevision = capturedDirectoryRevision;
                         ResetSelectedOwnerValidation();
                         if (!string.Equals(before, OwnerKey(session.selectedOwnerHandle),
-                                StringComparison.Ordinal)) ResetOwnerQueries();
-                        selectedOwnerValidatedDirectoryRevision = owners?.directoryRevision ?? 0;
+                                StringComparison.Ordinal)) ResetOwnerQueries(captured);
+                        selectedOwnerValidatedDirectoryRevision = capturedDirectoryRevision;
                     }));
             }
             if (options.Count > 0) Find.WindowStack.Add(new FloatMenu(options));
@@ -1393,6 +1405,7 @@ namespace PawnDiary
                 session.selectedView ?? string.Empty,
                 MemoryEffectivePolicyProvider.PublicationRevision,
                 detachedNowTick / 60000L,
+                Prefs.DevMode ? 1 : 0,
                 LanguageDatabase.activeLanguage?.GetHashCode() ?? 0);
             if (string.Equals(displayCacheSignature, signature, StringComparison.Ordinal)) return;
             displayCacheSignature = signature;
@@ -1420,7 +1433,8 @@ namespace PawnDiary
             CacheDate(threadDetail?.currentStatus?.capturedTick ?? -1);
             cachedThreadHeaderText = BuildThreadHeaderText();
             cachedBlockFactsText = BuildNormalFactsText();
-            cachedDiagnosticText = DiagnosticText(blockDetail?.detail);
+            cachedDiagnosticText = Prefs.DevMode
+                ? DiagnosticText(blockDetail?.detail) : string.Empty;
             MemoryOwnerCultureDto culture = selectedOwner?.culture;
             cachedCultureTitle = T("PawnDiary.Memory.Library.CulturalContext");
             cachedCultureOrigin = CultureLine(culture?.originStateToken,
