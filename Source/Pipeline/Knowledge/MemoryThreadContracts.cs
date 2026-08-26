@@ -135,18 +135,17 @@ namespace PawnDiary
         }
     }
 
-    /// <summary>The internal activation state remains legacy-only until the M11 integration commit.</summary>
+    /// <summary>The code-owned activation state for the unified memory-system release.</summary>
     internal static class MemorySystemActivationGate
     {
         public const string LegacyShadow = "LegacyShadow";
         public const string CurrentRelease = "CurrentRelease";
 
-        // M0–M10 compile contracts and shadow fixtures, but public behavior stays on the shipped path.
-        public const string BuildState = LegacyShadow;
+        // M11 activates migration, capture, recall, settings, Library, and optional work together.
+        public const string BuildState = CurrentRelease;
 
         /// <summary>
-        /// Runtime-shaped read avoids unreachable-code warnings at dormant integration seams while
-        /// keeping the single M11 activation edit obvious and reviewable.
+        /// Runtime-shaped read keeps the release gate explicit at every integration seam.
         /// </summary>
         public static bool IsCurrentRelease => BuildState == CurrentRelease;
     }

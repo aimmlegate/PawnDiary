@@ -10,7 +10,7 @@
 // - a legacy v1 envelope stays v1 through real Scribe + Normalize (no eager stamp);
 // - thread root/chapter/block/payload rows round-trip their stable tokens;
 // - dispatch request/variant/attempt and optional coordinator/cadence rows round-trip;
-// - the M10 summary-only wake decision is executable while the public activation gate stays shadowed;
+// - the M10 summary-only wake decision is executable through the M11 CurrentRelease gate;
 // - the raw unresolved-owner wrapper preserves its nested shipped legacy record untouched;
 // - malformed legacy Scribe evidence reaches dry-run planning unchanged and remains retryable;
 // - nested allocator/schema carriers cannot hide from recursive component scans;
@@ -642,21 +642,21 @@ namespace PawnDiary.RimTests
         }
 
         [Test]
-        public static void OptionalCoordinatorWakeRemainsActivationInert()
+        public static void OptionalCoordinatorWakeFollowsCurrentReleaseGate()
         {
             Require(string.Equals(
                     MemorySystemActivationGate.BuildState,
-                    MemorySystemActivationGate.LegacyShadow,
+                    MemorySystemActivationGate.CurrentRelease,
                     StringComparison.Ordinal),
-                "M10 must compile coordinator behavior without activating the memory system.");
+                "The M11 coordinator fixture requires CurrentRelease.");
 
             var summaryOnly = new ReflectionCoordinatorWakeRequest
             {
                 optionalMemoryRequestsEffective = MemorySystemActivationGate.IsCurrentRelease,
                 pendingSummaryWordingCount = 1
             };
-            Require(!ReflectionCoordinator.HasPendingCoordinatorWork(summaryOnly),
-                "LegacyShadow allowed a saved Summary row to change the shipped rest-pass wake path.");
+            Require(ReflectionCoordinator.HasPendingCoordinatorWork(summaryOnly),
+                "CurrentRelease did not wake the coordinator for enabled Summary work.");
 
             summaryOnly.optionalMemoryRequestsEffective = true;
             Require(ReflectionCoordinator.HasPendingCoordinatorWork(summaryOnly),

@@ -244,8 +244,8 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
-        /// N4 review regression. Turning day summaries off must preserve ambient notes so the production
-        /// sleep path can fall through to its documented per-source ambient-note writers.
+        /// N4 review regression. Turning day summaries off must let the unified sleep arbitration fall
+        /// through to the per-source ambient-note writer instead of consuming or stranding its evidence.
         /// </summary>
         [Test]
         public static void DisabledDaySummaryPreservesAmbientFallbackEvidence()
@@ -257,14 +257,19 @@ namespace PawnDiary.RimTests
             tuning.quadrumReflectionEnabled = false;
             tuning.arcReflectionEnabled = false;
 
-            scope.RequireNoNewEvent(() => InvokeFlush(pawn));
+            DiaryEvent fallback = scope.FireAndRequireEvent(
+                () => InvokeFlush(pawn),
+                "unknownAmbientDay",
+                pawn,
+                null);
+            scope.RequireSoloRef(fallback, pawn);
 
             PawnDiaryRimTestScope.Require(
-                PendingAmbientInteractionNotes().Contains(ambientKey),
-                "Disabled day-summary debt bounding must leave the ambient note for the fallback writer.");
+                !PendingAmbientInteractionNotes().Contains(ambientKey),
+                "The emitted ambient fallback did not consume its pending note.");
             PawnDiaryRimTestScope.Require(
-                !WrittenAmbientInteractionContains(ambientKey),
-                "Debt bounding must not falsely mark an ambient note written before the fallback emits it.");
+                WrittenAmbientInteractionContains(ambientKey),
+                "The emitted ambient fallback did not close its durable once-only guard.");
         }
 
         /// <summary>

@@ -208,6 +208,11 @@ namespace PawnDiary
                 return string.Empty;
             }
 
+            if (MemorySystemActivationGate.IsCurrentRelease && state.IsCurrentSchema())
+            {
+                return PlayerMemoryPolicy.NormalizePlayerText(state.playerBackground);
+            }
+
             ImportantMemoryRecordSnapshot record = CanonicalBackgroundSnapshot(
                 state,
                 pawn.GetUniqueLoadID());
@@ -248,6 +253,17 @@ namespace PawnDiary
                 && !string.Equals(state.pawnId, ownerPawnId, StringComparison.Ordinal))
             {
                 return false;
+            }
+
+            if (MemorySystemActivationGate.IsCurrentRelease
+                && (state == null || state.IsCurrentSchema()))
+            {
+                return TrySetCurrentBackgroundMemory(
+                    pawn,
+                    diary,
+                    state,
+                    ownerPawnId,
+                    text);
             }
 
             ImportantMemoryRecordSnapshot existing = state == null
@@ -321,6 +337,106 @@ namespace PawnDiary
                 return false;
             }
 
+            InvalidateKnowledgeAfterProfileMutation(ownerPawnId);
+            return true;
+        }
+
+        /// <summary>
+        /// Commits the CurrentRelease background singleton directly to the unified envelope. It is
+        /// independently recallable before an autobiographical epoch exists and never creates a
+        /// legacy ImportantMemoryRecord shadow row.
+        /// </summary>
+        private bool TrySetCurrentBackgroundMemory(
+            Pawn pawn,
+            PawnDiaryRecord diary,
+            PawnKnowledgeState state,
+            string ownerPawnId,
+            string text)
+        {
+            string normalized = PlayerMemoryPolicy.NormalizePlayerText(text);
+            if (normalized.Length > BackgroundMemoryTextLimitForProfile()) return false;
+            string existing = state?.playerBackground ?? string.Empty;
+            if (string.Equals(existing, normalized, StringComparison.Ordinal)) return true;
+            if (state != null && state.structuralRevision == long.MaxValue) return false;
+            if (state == null && normalized.Length == 0) return true;
+
+            RebuildMemorySizeIndexes();
+            MemoryPayloadBudgetTotals global = GetGlobalBudgetTotals();
+            if (global.globalActiveBytes < 0 || global.globalImportedBytes < 0) return false;
+
+            bool newOwner = state == null;
+            long delta;
+            MemoryOwnerByteTotals ownerTotals;
+            if (newOwner)
+            {
+                int ownerCap = (int)ReadCapacityTuplePart("ownerSlotTriple", 0, 1000, 4000);
+                int activeOwners = CountMemoryObservationActiveOwners(ownerCap + 1);
+                if (!KnowledgeRelationPolicy.CanAdmitObservationOwner(activeOwners, ownerCap))
+                    return false;
+
+                state = PawnKnowledgeState.CreateCurrent(ownerPawnId);
+                state.playerBackground = normalized;
+                MemoryLogicalSizeResult measured = MemoryLogicalPayloadSizer.Size(state);
+                if (!measured.valid) return false;
+                delta = measured.totalBytes;
+                ownerTotals = new MemoryOwnerByteTotals
+                {
+                    valid = true,
+                    activeBytes = 0,
+                    importedBytes = 0
+                };
+            }
+            else
+            {
+                ownerTotals = GetOwnerByteTotals(ownerPawnId);
+                if (!ownerTotals.valid) return false;
+                try
+                {
+                    var utf8 = new System.Text.UTF8Encoding(false, true);
+                    delta = checked(
+                        utf8.GetByteCount(normalized) - utf8.GetByteCount(existing));
+                }
+                catch (ArgumentException)
+                {
+                    return false;
+                }
+            }
+
+            if (delta > 0)
+            {
+                MemoryBudgetDecision decision = ActiveMemoryPayloadBudget.TryAdmit(
+                    new MemoryBudgetLimits
+                    {
+                        activeOwnerBytes = ReadCapacityLong(
+                            "activeOwnerBytes", 196608, 2097152),
+                        combinedOwnerBytes = ReadCapacityLong(
+                            "combinedOwnerBytes", 262144, 4194304),
+                        activeGlobalBytes = ReadCapacityLong(
+                            "activeGlobalBytes", 6291456, 25165824),
+                        combinedGlobalBytes = ReadCapacityLong(
+                            "combinedGlobalBytes", 8388608, 33554432)
+                    },
+                    ownerTotals.activeBytes,
+                    ownerTotals.importedBytes,
+                    delta,
+                    0,
+                    global);
+                if (decision.outcome != MemoryBudgetOutcome.Admitted) return false;
+            }
+
+            if (newOwner)
+            {
+                diary = diary ?? FindDiary(pawn, true);
+                if (diary == null || diary.knowledgeState != null) return false;
+                diary.knowledgeState = state;
+                MarkMemoryM4IndexesDirty();
+            }
+            else
+            {
+                state.playerBackground = normalized;
+            }
+            state.structuralRevision++;
+            RebuildMemorySizeIndexes();
             InvalidateKnowledgeAfterProfileMutation(ownerPawnId);
             return true;
         }

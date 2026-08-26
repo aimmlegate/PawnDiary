@@ -2,7 +2,7 @@
   "schema": "memory-m0-fixture-catalog-v1",
   "benchmarkSchema": "memory-system-benchmark-v1",
   "logicalPayloadSchema": "memory-logical-payload-v1",
-  "activationBuildState": "LegacyShadow",
+  "activationBuildState": "CurrentRelease",
   "threadTargets": [
     4,
     12,

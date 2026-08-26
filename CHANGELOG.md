@@ -6,6 +6,10 @@ Companion: [repowiki/README.md](repowiki/README.md) describes the current state.
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-08-27
+
+- **Memory M11 CurrentRelease.** Activate unified migration, capture, Recall v2, settings, Library, and optional coordinator work as one release lifecycle.
+
 ## 2026-08-26
 
 - **Memory M11 migration and release hardening.** Add atomic duplicate-safe legacy migration, exhaustive allocator-carrier repair, save-stable/privacy-projected Recall v2, transactional dispatch rollback, stable failure diagnostics, and loaded behavioral fixtures while activation remains LegacyShadow pending user-run release evidence.

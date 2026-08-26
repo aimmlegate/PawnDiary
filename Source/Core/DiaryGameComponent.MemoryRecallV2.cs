@@ -2,8 +2,8 @@
 // pure Recall-v2 selector/renderer/receipt contracts.
 //
 // The adapter detaches one exact owner and autobiographical epoch, never passes a Pawn/Def/store
-// object into pure selection, and never reads DLC trackers. It is release-gated by its callers: the
-// shipped LegacyShadow path continues to use legacy recall until the complete release gate is met.
+// object into pure selection, and never reads DLC trackers. It is release-gated by its callers:
+// CurrentRelease uses this adapter while LegacyShadow remains the explicit compatibility branch.
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -97,9 +97,7 @@ namespace PawnDiary
             PawnKnowledgeState owner = FindCurrentMemoryEnvelope(ownerPawnId);
             MemoryPolicySnapshot policy = MemoryEffectivePolicyProvider.Current;
             string writingFormat = RecallWritingFormat(contextDetailLevel);
-            if (owner == null
-                || string.IsNullOrWhiteSpace(owner.autobiographicalEpochToken)
-                || policy == null
+            if (owner == null || policy == null
                 || policy.compatibilityFailClosed)
             {
                 diaryEvent.SetMemoryContext(povRole, string.Empty);
@@ -110,6 +108,25 @@ namespace PawnDiary
             DiaryKnowledgeTuningDef tuning = MemoryOptionalTuning();
             KnowledgePolicySnapshot legacyPolicy = DiaryKnowledgePolicy.Snapshot(
                 applyGlobalMemorySetting: false);
+            if (string.IsNullOrWhiteSpace(owner.autobiographicalEpochToken))
+            {
+                // The player background is an independently enabled singleton, not episodic evidence.
+                // A new profile may legitimately own it before the first event allocates an epoch.
+                MemoryRecallPromptProjection backgroundOnly = RenderRecallV2Projection(
+                    owner,
+                    new MemoryRecallSelectionResultV2(),
+                    writingFormat,
+                    policy,
+                    tuning,
+                    legacyPolicy);
+                diaryEvent.SetMemoryContext(povRole, backgroundOnly.text);
+                CacheRecallProjection(
+                    diaryEvent.eventId,
+                    povRole,
+                    writingFormat,
+                    backgroundOnly);
+                return backgroundOnly;
+            }
             string otherPawnId = DiaryEvent.RoleEquals(povRole, DiaryEvent.RecipientRole)
                 ? diaryEvent.initiatorPawnId ?? string.Empty
                 : diaryEvent.recipientPawnId ?? string.Empty;

@@ -9,8 +9,8 @@
 // payloads live in each PawnKnowledgeState envelope. Transient size indexes are derivatives of
 // saved lists and are rebuilt after load/new game — they are never Scribed.
 //
-// While MemorySystemActivationGate stays LegacyShadow this file persists additive shape only:
-// nothing here captures, recalls, schedules, or mutates gameplay behavior.
+// CurrentRelease uses these component fields and owner envelopes as the canonical memory backend.
+// LegacyShadow preserves the additive saved shape without routing public behavior through it.
 using System;
 using System.Collections.Generic;
 using System.Globalization;

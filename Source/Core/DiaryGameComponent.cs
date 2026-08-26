@@ -726,9 +726,8 @@ namespace PawnDiary
                     "[Pawn Diary] Belief transient-state reset failed: " + exception,
                     "PawnDiary.Belief.Reset".GetHashCode());
             }
-            // Game-bound Library windows and command clients must never leak across loads. The M8
-            // callback seam is installed only for the released memory mode; LegacyShadow therefore
-            // remains completely unreachable without changing the activation gate.
+            // Game-bound Library windows and command clients must never leak across loads. Install the
+            // callback only for CurrentRelease so an explicit LegacyShadow build remains unreachable.
             Dialog_MemoryLibrary.ResetForGameTransition();
             PawnDiaryMod.ResetMemoryLibraryAction();
             if (MemorySystemActivationGate.IsCurrentRelease)
@@ -1166,7 +1165,7 @@ namespace PawnDiary
 
         /// <summary>
         /// Cheap shared wake guard for the natural-rest coordinator. Summary-only rows are deliberately
-        /// considered only by the unreleased M11 behavior gate; LegacyShadow keeps the shipped wake path.
+        /// considered only by CurrentRelease; LegacyShadow keeps the compatibility wake path.
         /// This method reads saved state only and never repairs, expires, or otherwise mutates it.
         /// </summary>
         private bool HasPendingCoordinatorWork(
@@ -1183,8 +1182,7 @@ namespace PawnDiary
                     pendingAmbientInteractionCount = pendingAmbientInteractionNotes.Count,
                     pendingAmbientThoughtCount = pendingAmbientThoughtNotes.Count,
                     pendingDayHediffCount = pendingDayHediffs.Count,
-                    // Compile the M10 wake seam without activating it. M11 is the only phase allowed to
-                    // make a saved Summary row change the shipped LegacyShadow rest-pass behavior.
+                    // M11 activates the M10 wake seam only when the released policy is reconciled.
                     optionalMemoryRequestsEffective = MemorySystemActivationGate.IsCurrentRelease
                         && MemoryPolicyIsReconciled()
                         && memoryPolicy?.AllowsOptionalRequests == true,

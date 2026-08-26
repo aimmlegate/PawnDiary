@@ -725,46 +725,54 @@ namespace PawnDiary.RimTests
         public static void SubjectMemoryIsExactCappedAndReflectionNeverDeposits()
         {
             Pawn unrelated = scope.CreateAdultColonist();
-            PawnKnowledgeState knowledge =
-                scope.RequireDiaryRecord(writer).EnsureKnowledgeState();
+            PawnDiaryRecord writerDiary = scope.RequireDiaryRecord(writer);
+            PawnKnowledgeState knowledge = PawnKnowledgeState.CreateCurrent(
+                writer.GetUniqueLoadID());
+            long epochSequence = 1900000000L + Math.Max(1, writer.thingIDNumber);
+            knowledge.autobiographicalEpochToken =
+                OrdinalSegmentCodec.Segment("memory-epoch-v1")
+                + OrdinalSegmentCodec.Segment(epochSequence.ToString(
+                    System.Globalization.CultureInfo.InvariantCulture));
+            writerDiary.knowledgeState = knowledge;
+            scope.Component.MarkMemoryM4IndexesDirty();
             int now = Find.TickManager.TicksGame;
             string sourceEventId = "PDTEST_H7_EXCLUDED_SOURCE_EVENT";
-            AddMemoryRecord(
+            AddCurrentMemoryBlock(
                 knowledge,
                 "subject-one",
                 "PDTEST_H7_SUBJECT_MEMORY_ONE",
                 subject,
                 "source-one",
                 now - 500);
-            AddMemoryRecord(
+            AddCurrentMemoryBlock(
                 knowledge,
                 "subject-two",
                 "PDTEST_H7_SUBJECT_MEMORY_TWO",
                 subject,
                 "source-two",
                 now - 400);
-            AddMemoryRecord(
+            AddCurrentMemoryBlock(
                 knowledge,
                 "subject-three",
                 "PDTEST_H7_SUBJECT_MEMORY_THREE",
                 subject,
                 "source-three",
                 now - 300);
-            AddMemoryRecord(
+            AddCurrentMemoryBlock(
                 knowledge,
                 "excluded-source",
                 "PDTEST_H7_EXCLUDED_SOURCE_MEMORY",
                 subject,
                 sourceEventId,
                 now - 200);
-            AddMemoryRecord(
+            AddCurrentMemoryBlock(
                 knowledge,
                 "unrelated",
                 "PDTEST_H7_UNRELATED_MEMORY",
                 unrelated,
                 "source-unrelated",
                 now - 100);
-            int recordsBefore = knowledge.records.Count;
+            int recordsBefore = knowledge.standaloneBlocks.Count;
 
             SocialReflectionPolicySnapshot policy = DiarySocialReflectionPolicy.Snapshot();
             SocialReflectionFormattedContext formatted =
@@ -811,7 +819,7 @@ namespace PawnDiary.RimTests
                         "PDTEST_H7_UNRELATED_MEMORY",
                         StringComparison.Ordinal) < 0,
                 "H7 memory included its source event or a record about another pawn.");
-            Require(knowledge.records.Count == recordsBefore,
+            Require(knowledge.standaloneBlocks.Count == recordsBefore,
                 "Registering H7 deposited reflection knowledge and enabled recursive evidence.");
         }
 
@@ -1363,7 +1371,7 @@ namespace PawnDiary.RimTests
                 "The loaded social memory did not produce a qualitative H7 reason.");
         }
 
-        private static void AddMemoryRecord(
+        private static void AddCurrentMemoryBlock(
             PawnKnowledgeState state,
             string id,
             string renderedText,
@@ -1371,26 +1379,101 @@ namespace PawnDiary.RimTests
             string sourceEventId,
             int tick)
         {
-            state.records.Add(new ImportantMemoryRecord
+            string captureRuleId = "PDTEST_H7_MEMORY_RULE_" + id;
+            const string discriminator = "primary";
+            string recordId;
+            string subjectRefId;
+            string factId;
+            string provenanceRefId;
+            string participantId = participant.GetUniqueLoadID();
+            if (!MemoryIdentityCodec.TryCreateRecordId(
+                    new MemoryRecordIdentity
+                    {
+                        ownerPawnId = state.pawnId,
+                        ownerEpochToken = state.autobiographicalEpochToken,
+                        sourceOccurrenceId = sourceEventId,
+                        captureRuleId = captureRuleId,
+                        factDiscriminator = discriminator
+                    },
+                    out recordId)
+                || !MemoryIdentityCodec.TryCreateSubjectRefId(
+                    MemoryContractTokens.SubjectPawn,
+                    participantId,
+                    "primary",
+                    "direct",
+                    out subjectRefId)
+                || !MemoryIdentityCodec.TryCreateFactId(
+                    captureRuleId,
+                    discriminator,
+                    "relation.spouse.gained",
+                    MemoryContractTokens.SubjectPawn,
+                    participantId,
+                    MemoryFactContractTokens.CountOccurrences,
+                    out factId)
+                || !MemoryIdentityCodec.TryCreateProvenanceRefId(
+                    "diary_event",
+                    sourceEventId,
+                    sourceEventId,
+                    captureRuleId,
+                    discriminator,
+                    string.Empty,
+                    out provenanceRefId))
             {
-                recordId = "PDTEST_H7_MEMORY_" + id,
-                dedupKey = "PDTEST_H7_MEMORY_DEDUP_" + id,
+                throw new AssertionException(
+                    "Could not build a canonical CurrentRelease H7 memory fixture.");
+            }
+
+            SavedMemoryBlock block = new SavedMemoryBlock
+            {
+                schemaVersion = 1,
+                recordId = recordId,
+                sourceOccurrenceId = sourceEventId,
                 sourceEventId = sourceEventId,
-                eventKind = "relation.spouse.gained",
-                topicKey = "relation",
-                tick = Math.Max(0, tick),
-                dateLabel = "PDTEST_H7_MEMORY_DATE_" + id,
-                participantIds = new List<string>
+                captureRuleId = captureRuleId,
+                factDiscriminator = discriminator,
+                ownerPawnId = state.pawnId,
+                ownerEpochToken = state.autobiographicalEpochToken,
+                kind = MemoryContractTokens.KindEvent,
+                summaryRole = MemoryContractTokens.SummaryRoleNone,
+                category = MemoryContractTokens.CategoryRelationships,
+                importance = MemoryContractTokens.ImportanceRegular,
+                originalEventTick = Math.Max(0, tick),
+                automaticWording = renderedText,
+                providerExposureState = "not_sent",
+                primarySubject = new SavedMemorySubjectRef
                 {
-                    participant.GetUniqueLoadID()
-                },
-                participantNames = new List<string>
-                {
-                    participant.LabelShort
-                },
-                fallbackSummary = renderedText,
-                manualTextOverride = renderedText
+                    schemaVersion = 1,
+                    subjectRefId = subjectRefId,
+                    subjectKind = MemoryContractTokens.SubjectPawn,
+                    subjectId = participantId,
+                    frozenLabel = participant.LabelShort,
+                    roleToken = "primary",
+                    knownnessToken = "direct"
+                }
+            };
+            block.facts.Add(new SavedMemoryCanonicalFact
+            {
+                schemaVersion = 1,
+                factId = factId,
+                factKind = "relation.spouse.gained",
+                canonicalSubjectKind = MemoryContractTokens.SubjectPawn,
+                canonicalSubjectId = participantId,
+                aggregationToken = MemoryFactContractTokens.CountOccurrences,
+                canonicalValueKind = MemoryFactContractTokens.ValueEmpty,
+                canonicalValue = string.Empty
             });
+            block.provenance.Add(new SavedMemoryProvenance
+            {
+                schemaVersion = 1,
+                provenanceRefId = provenanceRefId,
+                sourceKindToken = "diary_event",
+                sourceOccurrenceId = sourceEventId,
+                sourceEventId = sourceEventId,
+                captureRuleId = captureRuleId,
+                factDiscriminator = discriminator,
+                integrationToken = string.Empty
+            });
+            state.standaloneBlocks.Add(block);
         }
 
         private sealed class ActualSocialReflectionStateAdapter : IExposable

@@ -55,7 +55,7 @@ namespace PawnMemoryTests
             TestRecallV2RepetitionBoundariesAndGuardCompleteness();
             TestRecallV2FrozenRevalidationAndPairedPrivacy();
             TestRecallV2FrozenSelectionSaveCodec();
-            TestRecallV2CurrentTruthAndLegacyShadowComparison();
+            TestRecallV2CurrentTruthAndCurrentReleaseComparison();
             TestRecallV2AdversarialIdentityAndCapMatrix();
             TestQueryBuildFromRulesAndPolicy();
             TestSocialReflectionNeverClassifiesAsKnowledge();
@@ -3589,7 +3589,7 @@ namespace PawnMemoryTests
                 MemoryFrozenRecallSelectionCodec.Decode(encoded + "x") == null);
         }
 
-        private static void TestRecallV2CurrentTruthAndLegacyShadowComparison()
+        private static void TestRecallV2CurrentTruthAndCurrentReleaseComparison()
         {
             MemoryRecallQueryV2 query = RecallQuery("Owner_A", MemoryRecallWritingFormats.Full);
             MemoryRecallCandidateSnapshot stale = RecallCandidate(
@@ -3678,11 +3678,11 @@ namespace PawnMemoryTests
             legacy.selected.Add(Record("legacy-record", 1, subjectKey: "part:Leg"));
             MemoryRecallShadowComparison comparison = ImportantMemorySelector.CompareLegacyAndV2(
                 legacy, result);
-            AssertEqual("recallV2.shadow.build-state", MemorySystemActivationGate.LegacyShadow,
+            AssertEqual("recallV2.release.build-state", MemorySystemActivationGate.CurrentRelease,
                 comparison.buildState);
-            AssertTrue("recallV2.shadow.differs", comparison.differs);
-            AssertTrue("recallV2.shadow.publishes-legacy", comparison.publishesLegacy);
-            AssertEqual("recallV2.shadow.legacy-id", "legacy-record",
+            AssertTrue("recallV2.release.differs", comparison.differs);
+            AssertTrue("recallV2.release.publishes-current", !comparison.publishesLegacy);
+            AssertEqual("recallV2.release.current-id", "truthful",
                 comparison.publishedRecordIds[0]);
         }
 

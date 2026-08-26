@@ -1,10 +1,10 @@
-// ImportantMemorySelector.cs — deterministic legacy retrieval plus dormant Recall v2 selection.
+// ImportantMemorySelector.cs — deterministic legacy retrieval plus Recall v2 selection.
 //
 // The shipped selector stays byte-for-byte behavior-compatible while the unified memory system is
-// behind LegacyShadow. Recall v2 accepts only detached owner/epoch/candidate/guard snapshots, applies
-// the common consumer registry before ranking, freezes a bounded shortlist, and can later revalidate
-// only those frozen IDs. It never queries a store, reads another owner, or uses topic overlap as an
-// eligibility door.
+// selected by the explicit release gate. Recall v2 accepts only detached
+// owner/epoch/candidate/guard snapshots, applies the common consumer registry before ranking,
+// freezes a bounded shortlist, and can later revalidate only those frozen IDs. It never queries a
+// store, reads another owner, or uses topic overlap as an eligibility door.
 //
 // New to C#/RimWorld? See AGENTS.md ("architecture barriers"). No Verse/Unity/Def/settings here.
 using System;
@@ -451,8 +451,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Compares legacy and V2 IDs while publishing only the activation-gate-selected side. M0–M10
-        /// therefore exercise diagnostics without exposing partial V2 behavior.
+        /// Compares legacy and V2 IDs while publishing only the activation-gate-selected side. This
+        /// keeps pre-release diagnostics and CurrentRelease publication on one deterministic path.
         /// </summary>
         public static MemoryRecallShadowComparison CompareLegacyAndV2(
             KnowledgeSelectionResult legacy,

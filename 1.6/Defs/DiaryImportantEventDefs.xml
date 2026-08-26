@@ -13,7 +13,7 @@
   "{<factKey>}" = that captured fact row). DefInjected translates label + lineTemplate.
 
   eventKind tokens are SAVED DATA - never rename them. The memoryKind/category/importance/fact/route/
-  consumer fields below are M7 factual-capture contracts; M11 still owns public recall activation.
+  consumer fields below are the unified factual-capture and recall contracts activated by M11.
 -->
 <Defs>
 

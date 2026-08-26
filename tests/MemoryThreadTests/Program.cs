@@ -1806,7 +1806,7 @@ namespace MemoryThreadTests
 
         private static void TestSettingsAndCapacityContracts()
         {
-            AssertEqual("activation.m0", MemorySystemActivationGate.LegacyShadow,
+            AssertEqual("activation.m11", MemorySystemActivationGate.CurrentRelease,
                 MemorySystemActivationGate.BuildState);
             MemorySettingsPolicyFieldsV1 release = new MemorySettingsPolicyFieldsV1();
             AssertTrue("settings.release.extra-off", !release.allowExtraMemoryAiRequests);

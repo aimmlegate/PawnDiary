@@ -170,7 +170,56 @@ namespace PawnDiary
 
             PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
             PawnKnowledgeState state = diary?.KnowledgeStateOrNull();
-            return state != null && state.HasEventKind(KnowledgeTokens.EventKindFactionJoined);
+            if (state == null) return false;
+            if (!state.IsCurrentSchema())
+                return state.HasEventKind(KnowledgeTokens.EventKindFactionJoined);
+            return HasCurrentMemoryFactKind(
+                state,
+                KnowledgeTokens.EventKindFactionJoined);
+        }
+
+        private static bool HasCurrentMemoryFactKind(
+            PawnKnowledgeState state,
+            string factKind)
+        {
+            if (state == null || string.IsNullOrWhiteSpace(factKind)) return false;
+            for (int index = 0; state.standaloneBlocks != null
+                && index < state.standaloneBlocks.Count; index++)
+            {
+                if (BlockHasFactKind(state.standaloneBlocks[index], factKind)) return true;
+            }
+            for (int rootIndex = 0; state.threadRoots != null
+                && rootIndex < state.threadRoots.Count; rootIndex++)
+            {
+                SavedMemoryThreadRoot root = state.threadRoots[rootIndex];
+                for (int blockIndex = 0; root?.visibleBlocks != null
+                    && blockIndex < root.visibleBlocks.Count; blockIndex++)
+                {
+                    if (BlockHasFactKind(root.visibleBlocks[blockIndex], factKind)) return true;
+                }
+                if (BlockHasFactKind(root?.rollingSummaryBlock, factKind)) return true;
+            }
+            return false;
+        }
+
+        private static bool BlockHasFactKind(SavedMemoryBlock block, string factKind)
+        {
+            for (int index = 0; block?.facts != null && index < block.facts.Count; index++)
+            {
+                if (string.Equals(
+                        block.facts[index]?.factKind,
+                        factKind,
+                        StringComparison.Ordinal)) return true;
+            }
+            for (int bucketIndex = 0; block?.summaryPayload?.factBuckets != null
+                && bucketIndex < block.summaryPayload.factBuckets.Count; bucketIndex++)
+            {
+                if (string.Equals(
+                        block.summaryPayload.factBuckets[bucketIndex]?.factKind,
+                        factKind,
+                        StringComparison.Ordinal)) return true;
+            }
+            return false;
         }
 
         internal bool HasArrivalBoundaryFor(string pawnId)

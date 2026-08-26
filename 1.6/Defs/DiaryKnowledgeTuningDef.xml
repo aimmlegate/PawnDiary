@@ -28,8 +28,8 @@
     <playerAuthoredMemoryMaxChars>450</playerAuthoredMemoryMaxChars>
     <evictionScanIntervalTicks>150000</evictionScanIntervalTicks>
 
-    <!-- Unified-memory product defaults. M4 maintenance reads these for any current-schema backend
-         rows, while LegacyShadow still prevents normal capture/recall activation. -->
+    <!-- Unified-memory product defaults. CurrentRelease applies these to the canonical backend;
+         LegacyShadow retains them only for compatibility maintenance and fixtures. -->
     <minorMemoryLifetimeMinimumDays>1</minorMemoryLifetimeMinimumDays>
     <minorMemoryLifetimeDefaultDays>15</minorMemoryLifetimeDefaultDays>
     <minorMemoryLifetimeMaximumDays>3600</minorMemoryLifetimeMaximumDays>

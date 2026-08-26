@@ -1,8 +1,8 @@
 // Nonvisual loaded-assembly checks for the M9 Library lifecycle seams.
 //
 // These tests never open or draw a Window. They prove the static M8 callback and the Library's
-// process-local session generation can be cleared between games, while the shipped build remains
-// LegacyShadow. Live RimTest execution is intentionally left to the player-owned manual test run.
+// process-local session generation can be cleared between games under CurrentRelease. Live RimTest
+// execution is intentionally left to the player-owned manual test run.
 using System;
 using System.Reflection;
 using RimTestRedux;
@@ -25,8 +25,8 @@ namespace PawnDiary.RimTests
                 Require(PawnDiaryMod.OpenMemoryLibraryAction == null,
                     "The M8 Library callback reset retained a stale delegate.");
                 Require(MemorySystemActivationGate.BuildState
-                        == MemorySystemActivationGate.LegacyShadow,
-                    "M9 tests must not expose the Library by changing the activation gate.");
+                        == MemorySystemActivationGate.CurrentRelease,
+                    "The released Library fixture requires the M11 activation gate.");
             }
             finally
             {

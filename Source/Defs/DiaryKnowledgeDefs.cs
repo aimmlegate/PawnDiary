@@ -429,8 +429,8 @@ namespace PawnDiary
         /// <summary>Global-cap eviction scan cadence.</summary>
         public int evictionScanIntervalTicks = 150000;
 
-        // Unified-memory policy. M4 maintenance reads these for current-schema backend rows, while
-        // LegacyShadow still prevents normal capture/recall activation.
+        // Unified-memory policy. CurrentRelease applies these values to the canonical backend;
+        // LegacyShadow retains them only for compatibility maintenance and fixtures.
         public int minorMemoryLifetimeMinimumDays = 1;
         public int minorMemoryLifetimeDefaultDays = 15;
         public int minorMemoryLifetimeMaximumDays = 3600;

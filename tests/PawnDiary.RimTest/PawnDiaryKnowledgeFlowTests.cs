@@ -188,9 +188,9 @@ namespace PawnDiary.RimTests
             int pagesA = diaryA.eventIds.Count;
             int pagesB = diaryB.eventIds.Count;
             int memoriesA = CountKind(
-                diaryA.EnsureKnowledgeState(), "relation.spouse.gained");
+                LegacyKnowledgeForDiary(diaryA), "relation.spouse.gained");
             int memoriesB = CountKind(
-                diaryB.EnsureKnowledgeState(), "relation.spouse.gained");
+                LegacyKnowledgeForDiary(diaryB), "relation.spouse.gained");
             try
             {
                 PawnDiaryMod.Settings.groupEnabled[group.defName] = false;
@@ -198,9 +198,9 @@ namespace PawnDiary.RimTests
                     pawnA, pawnB, PawnRelationDefOf.Spouse));
 
                 Require(
-                    CountKind(diaryA.EnsureKnowledgeState(), "relation.spouse.gained")
+                    CountKind(LegacyKnowledgeForDiary(diaryA), "relation.spouse.gained")
                         == memoriesA + 1
-                    && CountKind(diaryB.EnsureKnowledgeState(), "relation.spouse.gained")
+                    && CountKind(LegacyKnowledgeForDiary(diaryB), "relation.spouse.gained")
                         == memoriesB + 1,
                     "A disabled romance page must still deposit one marriage memory per pawn.");
                 Require(diaryA.eventIds.Count == pagesA && diaryB.eventIds.Count == pagesB,
@@ -230,11 +230,11 @@ namespace PawnDiary.RimTests
         public static void CompactStillCapturesAndLaneProjectionControlsRelevantPast()
         {
             PawnDiaryMod.Settings.contextDetailLevel = PromptContextDetailLevel.Compact;
-            PawnKnowledgeState stateA = KnowledgeFor(pawnA);
-            int before = stateA.records.Count;
+            PawnKnowledgeState stateA = CurrentKnowledgeFor(pawnA);
+            int before = CountCurrentKind(stateA, "relation.spouse.gained");
 
             AddRomancePairEvent(pawnA, pawnB, "Spouse", "married");
-            Require(stateA.records.Count == before + 1,
+            Require(CountCurrentKind(stateA, "relation.spouse.gained") == before + 1,
                 "Important-memory capture must continue while the selected lane is Compact (§3.2).");
 
             // A related event freezes the marriage before any lane is chosen.
@@ -262,9 +262,10 @@ namespace PawnDiary.RimTests
                     StringComparison.Ordinal),
                 "Full request projection did not preserve the frozen relevant-past block.");
             Require(
-                string.IsNullOrEmpty(balanced.payload.initiator.memoryContext)
+                !string.IsNullOrWhiteSpace(balanced.payload.initiator.memoryContext)
+                    && balanced.payload.initiator.memoryContext.Split('\n').Length <= 1
                     && string.IsNullOrEmpty(compact.payload.initiator.memoryContext),
-                "Balanced/Compact request projection leaked the Full-only memory layer.");
+                "Balanced did not keep one memory line, or Compact leaked the memory layer.");
         }
 
         private static DiaryPromptRequest BuildMemoryLayerRequest(
@@ -371,19 +372,19 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
-        /// M7's current-schema shadow write obeys the category gate, never replays a disabled
+        /// CurrentRelease factual capture obeys the category gate, never replays a disabled
         /// occurrence after re-enable, admits one exact row per owner, and cannot create request work.
         /// Re-invoking the same event proves the component store's exact-occurrence dedup boundary.
         /// </summary>
         [Test]
-        public static void FactualShadowCaptureHonorsCategoryDedupAndNeverQueuesRequests()
+        public static void FactualCurrentReleaseCaptureHonorsCategoryDedupAndNeverQueuesRequests()
         {
             Require(CaptureKnowledgeForEventMethod != null
                     && ActiveMemoryCoordinatorRequestsField != null
                     && LastAppliedMemoryPolicyFingerprintField != null,
                 "An M7 component test seam was renamed or removed.");
-            Require(MemorySystemActivationGate.BuildState == MemorySystemActivationGate.LegacyShadow,
-                "The M7 fixture must remain a shadow-write test under LegacyShadow.");
+            Require(MemorySystemActivationGate.BuildState == MemorySystemActivationGate.CurrentRelease,
+                "The M11 factual-capture fixture requires CurrentRelease.");
 
             PawnKnowledgeState stateA = SeedCurrentMemoryEnvelope(pawnA, 7101);
             PawnKnowledgeState stateB = SeedCurrentMemoryEnvelope(pawnB, 7102);
@@ -420,9 +421,9 @@ namespace PawnDiary.RimTests
                 Require(CountFactualOccurrence(stateA, disabledEvent.eventId) == 0
                         && CountFactualOccurrence(stateB, disabledEvent.eventId) == 0,
                     "A disabled relationship interval wrote current-schema factual rows.");
-                Require(CountKind(stateA, "relation.spouse.gained") == 1
-                        && CountKind(stateB, "relation.spouse.gained") == 1,
-                    "The M7 category gate incorrectly disabled the independent legacy shadow row.");
+                Require(CountKind(stateA, "relation.spouse.gained") == 0
+                        && CountKind(stateB, "relation.spouse.gained") == 0,
+                    "CurrentRelease wrote a duplicate legacy shadow row for disabled capture.");
 
                 Require(MemoryEffectivePolicyProvider.Publish(enabled),
                     "Could not publish the re-enabled category fixture policy.");
@@ -467,6 +468,12 @@ namespace PawnDiary.RimTests
         [Test]
         public static void ProfileMemoryCrudIsOwnedDetachedAndFutureOnly()
         {
+            if (MemorySystemActivationGate.IsCurrentRelease)
+            {
+                CurrentProfileBackgroundIsOwnedAndFutureOnly();
+                return;
+            }
+
             PawnKnowledgeState stateA = KnowledgeFor(pawnA);
             PawnKnowledgeState stateB = KnowledgeFor(pawnB);
             int beforeB = stateB.records.Count;
@@ -669,6 +676,86 @@ namespace PawnDiary.RimTests
             Require(scope.Component.TrySetBackgroundMemoryForProfile(pawnA, "  <b> </b>\n")
                     && string.IsNullOrEmpty(scope.Component.BackgroundMemoryForProfile(pawnA)),
                 "Blank + Save did not remove the canonical background singleton.");
+        }
+
+        private static void CurrentProfileBackgroundIsOwnedAndFutureOnly()
+        {
+            PawnDiaryRecord diaryA = DiaryFor(pawnA);
+            PawnDiaryRecord diaryB = DiaryFor(pawnB);
+            PawnKnowledgeState stateA = PawnKnowledgeState.CreateCurrent(
+                pawnA.GetUniqueLoadID());
+            PawnKnowledgeState stateB = PawnKnowledgeState.CreateCurrent(
+                pawnB.GetUniqueLoadID());
+            diaryA.knowledgeState = stateA;
+            diaryB.knowledgeState = stateB;
+            scope.Component.MarkMemoryM4IndexesDirty();
+
+            const string originalBackground = "lowercase Жизнь café";
+            int versionBefore = DiaryStateVersion.Current;
+            Require(scope.Component.TrySetBackgroundMemoryForProfile(
+                    pawnA,
+                    "  <b>lowercase</b>\r\n\t Жизнь   café  ")
+                    && scope.Component.BackgroundMemoryForProfile(pawnA) == originalBackground
+                    && stateA.playerBackground == originalBackground
+                    && stateA.records.Count == 0
+                    && stateB.records.Count == 0
+                    && string.IsNullOrEmpty(
+                        scope.Component.BackgroundMemoryForProfile(pawnB)),
+                "CurrentRelease did not commit one owner-private background singleton.");
+            Require(DiaryStateVersion.Current > versionBefore,
+                "Creating a CurrentRelease background did not invalidate profile caches.");
+
+            DiaryEvent first = AddRomancePairEvent(pawnA, pawnB, "Spouse", "married");
+            string firstFrozen = first.MemoryContextForRole(DiaryEvent.InitiatorRole);
+            Require(firstFrozen.IndexOf(originalBackground, StringComparison.Ordinal) >= 0,
+                "The first CurrentRelease event omitted the player background: " + firstFrozen);
+            Require(CountFactualOccurrence(stateA, first.eventId) == 1
+                    && stateA.records.Count == 0,
+                "CurrentRelease did not keep factual capture solely in unified memory.");
+
+            const string updatedBackground =
+                "I worked on orbital farms before landing.";
+            Require(scope.Component.TrySetBackgroundMemoryForProfile(
+                    pawnA,
+                    updatedBackground),
+                "CurrentRelease rejected a valid background update.");
+            Require(first.MemoryContextForRole(DiaryEvent.InitiatorRole) == firstFrozen
+                    && firstFrozen.IndexOf(updatedBackground, StringComparison.Ordinal) < 0,
+                "Editing the profile rewrote an older event's frozen context.");
+
+            DiaryEvent later = AddRomancePairEvent(pawnA, pawnB, "Lover", "lover");
+            Require(later.MemoryContextForRole(DiaryEvent.InitiatorRole).IndexOf(
+                    updatedBackground,
+                    StringComparison.Ordinal) >= 0,
+                "A later CurrentRelease event omitted the updated background.");
+
+            string owner = stateA.pawnId;
+            try
+            {
+                stateA.pawnId = pawnB.GetUniqueLoadID();
+                Require(!scope.Component.TrySetBackgroundMemoryForProfile(
+                        pawnA,
+                        "must not cross owners"),
+                    "A CurrentRelease background edit accepted a conflicting owner.");
+            }
+            finally
+            {
+                stateA.pawnId = owner;
+            }
+
+            int limit = scope.Component.BackgroundMemoryTextLimitForProfile();
+            Require(!scope.Component.TrySetBackgroundMemoryForProfile(
+                    pawnA,
+                    new string('x', limit + 1))
+                    && scope.Component.BackgroundMemoryForProfile(pawnA) == updatedBackground,
+                "An over-limit CurrentRelease background edit mutated the singleton.");
+            Require(scope.Component.TrySetBackgroundMemoryForProfile(
+                    pawnA,
+                    "  <b> </b>\n")
+                    && string.IsNullOrEmpty(
+                        scope.Component.BackgroundMemoryForProfile(pawnA))
+                    && string.IsNullOrEmpty(stateA.playerBackground),
+                "Blank + Save did not remove the CurrentRelease background singleton.");
         }
 
         /// <summary>
@@ -916,20 +1003,19 @@ namespace PawnDiary.RimTests
             scope.EnablePromptCapture();
             Pawn patient = scope.CreateGeneratingAdultColonist();
             BodyPartRecord leg = FindPart(patient, "Leg");
-            PawnKnowledgeState state = KnowledgeFor(patient);
-            int before = CountKind(state, "body.part.lost");
+            PawnKnowledgeState state = CurrentKnowledgeFor(patient);
+            int before = CountCurrentKind(state, "body.part.lost");
 
             DiaryEvent lossEvent = scope.FireAndRequireEvent(
                 () => patient.health.AddHediff(missingPart, leg),
                 missingPart.defName,
                 patient,
                 null);
-            Require(CountKind(state, "body.part.lost") == before + 1,
+            Require(CountCurrentKind(state, "body.part.lost") == before + 1,
                 "A real amputation must deposit one body.part.lost record.");
-            ImportantMemoryRecord loss = LastOfKind(state, "body.part.lost");
-            Require(loss.subjectKeys.Contains("part:" + leg.def.defName),
-                "The loss record must carry the stable part_def subject key; got ["
-                + string.Join(",", loss.subjectKeys.ToArray()) + "].");
+            SavedMemoryBlock loss = LastCurrentBlockOfKind(state, "body.part.lost");
+            Require(CurrentFactHasValue(loss, "body.part.lost", leg.def.defName),
+                "The unified loss fact must carry the stable part_def canonical value.");
 
             DiaryEvent installEvent = scope.FireAndRequireEvent(
                 () =>
@@ -948,12 +1034,14 @@ namespace PawnDiary.RimTests
                 null);
             string slot = installEvent.MemoryContextForRole(DiaryEvent.InitiatorRole);
             Require(!string.IsNullOrWhiteSpace(slot)
-                    && slot.IndexOf(loss.dateLabel, StringComparison.Ordinal) >= 0,
-                "Installing onto the same part must recall the loss (dated line); slot was: '"
+                    && !string.IsNullOrWhiteSpace(loss.automaticWording)
+                    && slot.IndexOf(loss.automaticWording, StringComparison.Ordinal) >= 0,
+                "Installing onto the same part must recall the loss; slot was: '"
                 + slot + "'.");
             string prompt = scope.CapturedPrompt(installEvent, DiaryEvent.InitiatorRole);
-            Require(prompt.IndexOf(loss.dateLabel, StringComparison.Ordinal) >= 0,
-                "The captured prompt must carry the recalled dated loss line.");
+            Require(!string.IsNullOrWhiteSpace(loss.automaticWording)
+                    && prompt.IndexOf(loss.automaticWording, StringComparison.Ordinal) >= 0,
+                "The captured prompt must carry the recalled loss line.");
         }
 
         // ── 7: title/status family key across title events ───────────────────────────────────────────
@@ -966,16 +1054,18 @@ namespace PawnDiary.RimTests
         [Test]
         public static void TitleFamilyKeyRecallsInvestitureOnDemotion()
         {
-            PawnKnowledgeState state = KnowledgeFor(pawnA);
-            int before = CountKind(state, "status.title.advanced");
+            PawnKnowledgeState state = CurrentKnowledgeFor(pawnA);
+            int before = CountCurrentKind(state, "status.title.advanced");
 
             AddProgressionSoloEvent(pawnA, "RoyalTitleGained",
                 "progression=RoyalTitleGained; progression_kind=royal_title; label=title; new_value=Knight");
-            Require(CountKind(state, "status.title.advanced") == before + 1,
+            Require(CountCurrentKind(state, "status.title.advanced") == before + 1,
                 "A RoyalTitleGained event must deposit one status.title.advanced record.");
-            ImportantMemoryRecord gained = LastOfKind(state, "status.title.advanced");
-            Require(gained.subjectKeys.Contains("title"),
-                "Title records must carry the constant 'title' family key.");
+            SavedMemoryBlock gained = LastCurrentBlockOfKind(
+                state,
+                "status.title.advanced");
+            Require(CurrentFactHasValue(gained, "status.title.advanced", "Knight"),
+                "The unified title fact must carry the canonical gained title.");
 
             DiaryEvent demotion = AddProgressionSoloEvent(pawnA, "RoyalTitleDemoted",
                 "progression=RoyalTitleDemoted; progression_kind=royal_title; label=title; previous_value=Knight; new_value=none");
@@ -983,7 +1073,8 @@ namespace PawnDiary.RimTests
                 "The title-demotion fixture unexpectedly skipped its initiator POV.");
             string slot = demotion.MemoryContextForRole(DiaryEvent.InitiatorRole);
             Require(!string.IsNullOrWhiteSpace(slot)
-                    && slot.IndexOf(gained.dateLabel, StringComparison.Ordinal) >= 0,
+                    && !string.IsNullOrWhiteSpace(gained.automaticWording)
+                    && slot.IndexOf(gained.automaticWording, StringComparison.Ordinal) >= 0,
                 "The demotion must recall the investiture via the shared 'title' key; slot: '"
                 + slot + "'.");
         }
@@ -1122,7 +1213,7 @@ namespace PawnDiary.RimTests
         public static void RoleChangeCapturesWithoutDiaryPage()
         {
             PawnDiaryRecord diary = DiaryFor(pawnA);
-            PawnKnowledgeState state = diary.EnsureKnowledgeState();
+            PawnKnowledgeState state = LegacyKnowledgeForDiary(diary);
             int gainedBefore = CountKind(state, "status.role.gained");
             int lostBefore = CountKind(state, "status.role.lost");
             int pagesBefore = diary.eventIds.Count;
@@ -1396,7 +1487,128 @@ namespace PawnDiary.RimTests
 
         private static PawnKnowledgeState KnowledgeFor(Pawn pawn)
         {
-            return DiaryFor(pawn).EnsureKnowledgeState();
+            return LegacyKnowledgeForDiary(DiaryFor(pawn));
+        }
+
+        private static PawnKnowledgeState LegacyKnowledgeForDiary(PawnDiaryRecord diary)
+        {
+            if (diary.knowledgeState == null)
+            {
+                // Most fixtures in this suite intentionally preserve coverage of the raw v2 adapter
+                // while the dedicated CurrentRelease test below exercises the unified store.
+                diary.knowledgeState = new PawnKnowledgeState
+                {
+                    pawnId = diary.pawnId ?? string.Empty,
+                    schemaVersion = 2
+                };
+            }
+            diary.knowledgeState.Normalize();
+            return diary.knowledgeState;
+        }
+
+        private static PawnKnowledgeState CurrentKnowledgeFor(Pawn pawn)
+        {
+            return SeedCurrentMemoryEnvelope(
+                pawn,
+                720000L + Math.Max(1, pawn.thingIDNumber));
+        }
+
+        private static int CountCurrentKind(PawnKnowledgeState state, string factKind)
+        {
+            int count = 0;
+            for (int index = 0; state?.standaloneBlocks != null
+                && index < state.standaloneBlocks.Count; index++)
+            {
+                count += CountCurrentKind(state.standaloneBlocks[index], factKind);
+            }
+            for (int rootIndex = 0; state?.threadRoots != null
+                && rootIndex < state.threadRoots.Count; rootIndex++)
+            {
+                SavedMemoryThreadRoot root = state.threadRoots[rootIndex];
+                for (int blockIndex = 0; root?.visibleBlocks != null
+                    && blockIndex < root.visibleBlocks.Count; blockIndex++)
+                {
+                    count += CountCurrentKind(root.visibleBlocks[blockIndex], factKind);
+                }
+                count += CountCurrentKind(root?.rollingSummaryBlock, factKind);
+            }
+            return count;
+        }
+
+        private static int CountCurrentKind(SavedMemoryBlock block, string factKind)
+        {
+            int count = 0;
+            for (int index = 0; block?.facts != null && index < block.facts.Count; index++)
+            {
+                if (string.Equals(
+                        block.facts[index]?.factKind,
+                        factKind,
+                        StringComparison.Ordinal)) count++;
+            }
+            for (int index = 0; block?.summaryPayload?.factBuckets != null
+                && index < block.summaryPayload.factBuckets.Count; index++)
+            {
+                if (string.Equals(
+                        block.summaryPayload.factBuckets[index]?.factKind,
+                        factKind,
+                        StringComparison.Ordinal)) count++;
+            }
+            return count;
+        }
+
+        private static SavedMemoryBlock LastCurrentBlockOfKind(
+            PawnKnowledgeState state,
+            string factKind)
+        {
+            SavedMemoryBlock found = null;
+            for (int index = 0; state?.standaloneBlocks != null
+                && index < state.standaloneBlocks.Count; index++)
+            {
+                SavedMemoryBlock candidate = state.standaloneBlocks[index];
+                if (CountCurrentKind(candidate, factKind) > 0
+                    && (found == null
+                        || candidate.originalEventTick >= found.originalEventTick))
+                {
+                    found = candidate;
+                }
+            }
+            for (int rootIndex = 0; state?.threadRoots != null
+                && rootIndex < state.threadRoots.Count; rootIndex++)
+            {
+                SavedMemoryThreadRoot root = state.threadRoots[rootIndex];
+                for (int blockIndex = 0; root?.visibleBlocks != null
+                    && blockIndex < root.visibleBlocks.Count; blockIndex++)
+                {
+                    SavedMemoryBlock candidate = root.visibleBlocks[blockIndex];
+                    if (CountCurrentKind(candidate, factKind) > 0
+                        && (found == null
+                            || candidate.originalEventTick >= found.originalEventTick))
+                    {
+                        found = candidate;
+                    }
+                }
+            }
+            if (found == null)
+                throw new AssertionException(
+                    "No unified memory block of kind '" + factKind + "' was found.");
+            return found;
+        }
+
+        private static bool CurrentFactHasValue(
+            SavedMemoryBlock block,
+            string factKind,
+            string canonicalValue)
+        {
+            for (int index = 0; block?.facts != null && index < block.facts.Count; index++)
+            {
+                SavedMemoryCanonicalFact fact = block.facts[index];
+                if (string.Equals(fact?.factKind, factKind, StringComparison.Ordinal)
+                    && string.Equals(
+                        fact.canonicalValue,
+                        canonicalValue,
+                        StringComparison.Ordinal)) return true;
+            }
+            return false;
         }
 
         private static PawnKnowledgeState SeedCurrentMemoryEnvelope(Pawn pawn, long epochSequence)

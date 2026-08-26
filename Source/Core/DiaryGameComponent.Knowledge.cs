@@ -924,7 +924,21 @@ namespace PawnDiary
         /// <summary>The knowledge state of one diary record, created and normalized on demand.</summary>
         private PawnKnowledgeState EnsureKnowledgeState(PawnDiaryRecord diary)
         {
-            PawnKnowledgeState state = diary.EnsureKnowledgeState();
+            // CurrentRelease must create new owners in the writable schema. Raw v1/v2 states that
+            // actually came from a save remain untouched until the migration transaction commits;
+            // this branch runs only when the diary has no knowledge state at all.
+            PawnKnowledgeState state;
+            if (diary.knowledgeState == null && MemorySystemActivationGate.IsCurrentRelease)
+            {
+                diary.knowledgeState = PawnKnowledgeState.CreateCurrent(
+                    diary.pawnId ?? string.Empty);
+                MarkMemoryM4IndexesDirty();
+                state = diary.knowledgeState;
+            }
+            else
+            {
+                state = diary.EnsureKnowledgeState();
+            }
             if (string.IsNullOrWhiteSpace(state.pawnId))
             {
                 state.pawnId = diary.pawnId ?? string.Empty;
@@ -955,17 +969,20 @@ namespace PawnDiary
                     continue;
                 }
 
-                // Current-schema factual capture is a shadow write until M11. It is independently
-                // gated by Save/category policy and never changes page or request scheduling.
-                PersistFactualDraft(draft.factual);
-
-                if (!persistLegacy) continue;
-
                 PawnDiaryRecord diary = FindDiaryByPawnId(draft.ownerPawnId);
                 if (diary == null)
                 {
                     continue;
                 }
+
+                // Current-schema factual capture is canonical in CurrentRelease and a shadow write in
+                // LegacyShadow. Save/category policy remains independent of page/request scheduling.
+                PersistFactualDraft(draft.factual);
+
+                // A current owner never receives a second legacy copy. A still-raw migration-pending
+                // owner may keep accepting raw evidence, but it cannot mix in a new-format row; the
+                // next migration pass will consume the complete legacy input atomically.
+                if (!persistLegacy || diary.knowledgeState?.IsCurrentSchema() == true) continue;
 
                 PawnKnowledgeState state = EnsureKnowledgeState(diary);
                 if (state.HasDedupKey(draft.record.dedupKey))
@@ -988,8 +1005,18 @@ namespace PawnDiary
             string captureStatus;
             if (!MemoryCategoryAllowsCapture(draft.category, out captureStatus)) return;
 
-            PawnKnowledgeState state = FindCurrentMemoryEnvelope(draft.ownerPawnId);
-            if (state == null || string.IsNullOrEmpty(state.autobiographicalEpochToken)) return;
+            PawnDiaryRecord diary = FindDiaryByPawnId(draft.ownerPawnId);
+            if (diary == null) return;
+
+            // Create a writable envelope only after the capture policy admits this occurrence. Raw
+            // migration-pending owners stay raw, and a disabled category does not consume an owner slot.
+            PawnKnowledgeState state = diary.knowledgeState;
+            if (state == null && MemorySystemActivationGate.IsCurrentRelease)
+                state = EnsureKnowledgeState(diary);
+            if (state == null || !state.IsCurrentSchema()) return;
+
+            FactualOwnerEpochEnrollment enrollment = BeginFactualOwnerEpochEnrollment(state);
+            if (enrollment == null) return;
             string recordId;
             if (!MemoryIdentityCodec.TryCreateRecordId(
                     new MemoryRecordIdentity
@@ -1000,7 +1027,11 @@ namespace PawnDiary
                         captureRuleId = draft.captureRuleId,
                         factDiscriminator = draft.factDiscriminator
                     },
-                    out recordId)) return;
+                    out recordId))
+            {
+                RollBackFactualOwnerEpochEnrollment(enrollment);
+                return;
+            }
 
             SavedMemoryBlock block = new SavedMemoryBlock
             {
@@ -1018,7 +1049,9 @@ namespace PawnDiary
                 importance = draft.importance,
                 originalEventTick = Math.Max(0, draft.originalEventTick),
                 automaticWording = draft.automaticWording ?? string.Empty,
-                primarySubject = ToSavedSubject(draft.primarySubject)
+                primarySubject = ToSavedSubject(draft.primarySubject),
+                requiredLifecycleLandmark = FactualDraftIsRequiredLifecycleLandmark(draft),
+                providerExposureState = "not_sent"
             };
             for (int i = 0; i < draft.secondarySubjects.Count; i++)
             {
@@ -1028,7 +1061,11 @@ namespace PawnDiary
             for (int i = 0; i < draft.facts.Count; i++)
             {
                 FactualMemoryFactDraft fact = draft.facts[i];
-                if (fact == null) return;
+                if (fact == null)
+                {
+                    RollBackFactualOwnerEpochEnrollment(enrollment);
+                    return;
+                }
                 block.facts.Add(new SavedMemoryCanonicalFact
                 {
                     schemaVersion = 1,
@@ -1055,7 +1092,7 @@ namespace PawnDiary
                 integrationToken = string.Empty
             });
 
-            TryAdmitMemoryBlock(new MemoryStoreAdmissionRequest
+            MemoryStoreAdmissionResult admission = TryAdmitMemoryBlock(new MemoryStoreAdmissionRequest
             {
                 ownerPawnId = draft.ownerPawnId,
                 ownerEpochToken = state.autobiographicalEpochToken,
@@ -1072,6 +1109,118 @@ namespace PawnDiary
                 nowTick = block.originalEventTick,
                 block = block
             });
+            if (admission.outcome == MemoryStoreMutationOutcome.Admitted)
+            {
+                CommitFactualOwnerEpochEnrollment(enrollment);
+            }
+            else
+            {
+                RollBackFactualOwnerEpochEnrollment(enrollment);
+            }
+        }
+
+        /// <summary>
+        /// Main-thread-only provisional epoch publication for an owner's first factual block. The
+        /// allocator high-water is monotonic even when block admission later refuses, while the owner
+        /// epoch itself rolls back so a failed optional capture cannot leave an empty active owner.
+        /// </summary>
+        private sealed class FactualOwnerEpochEnrollment
+        {
+            public PawnDiaryRecord diary;
+            public PawnKnowledgeState state;
+            public bool pending;
+            public bool priorEpochFenceOnly;
+            public long priorStructuralRevision;
+        }
+
+        private FactualOwnerEpochEnrollment BeginFactualOwnerEpochEnrollment(
+            PawnKnowledgeState state)
+        {
+            if (state == null || !state.IsCurrentSchema()
+                || string.IsNullOrWhiteSpace(state.pawnId)) return null;
+
+            bool ignoredFallback;
+            if (!string.IsNullOrEmpty(state.autobiographicalEpochToken))
+            {
+                return MemoryIdentityCodec.TryValidateEpochToken(
+                    state.autobiographicalEpochToken, out ignoredFallback)
+                    ? new FactualOwnerEpochEnrollment { state = state }
+                    : null;
+            }
+            if (state.archiveOnly || state.structuralRevision == long.MaxValue) return null;
+
+            PawnDiaryRecord diary = FindDiaryByPawnId(state.pawnId);
+            if (diary == null || !ReferenceEquals(diary.knowledgeState, state)) return null;
+
+            int ownerCap = (int)ReadCapacityTuplePart("ownerSlotTriple", 0, 1000, 4000);
+            int activeOwners = CountMemoryObservationActiveOwners(ownerCap + 1);
+            if (activeOwners > ownerCap) return null;
+
+            int epochCarrierScanCap = checked(ownerCap * 256);
+            if (!CanBoundMemoryObservationEpochCarrierScan(epochCarrierScanCap)) return null;
+            MemoryEpochAllocationPlan allocation = MemoryIdentityCodec.PlanEpochAllocation(
+                new MemoryEpochAllocationRequest
+                {
+                    ownerPawnId = state.pawnId,
+                    lastIssuedSequence = lastIssuedAutobiographicalEpochSequence,
+                    fallbackChain = lastIssuedAutobiographicalEpochFallbackChain ?? string.Empty,
+                    liveEpochCarriers = SnapshotAutobiographicalEpochCarriers(),
+                    isTargetBrainwipe = false
+                });
+            if (!allocation.canMutate) return null;
+
+            var enrollment = new FactualOwnerEpochEnrollment
+            {
+                diary = diary,
+                state = state,
+                pending = true,
+                priorEpochFenceOnly = state.epochFenceOnly,
+                priorStructuralRevision = state.structuralRevision
+            };
+
+            // Allocator publication is intentionally not rolled back. Reusing an issued token after a
+            // later capacity/validation refusal would be worse than leaving a harmless high-water gap.
+            lastIssuedAutobiographicalEpochSequence = allocation.nextSequence;
+            lastIssuedAutobiographicalEpochFallbackChain =
+                allocation.nextFallbackChain ?? string.Empty;
+            state.autobiographicalEpochToken = allocation.epochToken;
+            state.epochFenceOnly = false;
+            state.structuralRevision++;
+            MarkMemoryM4IndexesDirty();
+            return enrollment;
+        }
+
+        private void CommitFactualOwnerEpochEnrollment(FactualOwnerEpochEnrollment enrollment)
+        {
+            if (enrollment?.pending != true) return;
+            PawnReflectionState reflection = enrollment.diary.EnsureReflectionState();
+            reflection.memoryReflectionSchemaVersion = 1;
+            reflection.memoryOwnerEpochToken = enrollment.state.autobiographicalEpochToken;
+            enrollment.pending = false;
+        }
+
+        private void RollBackFactualOwnerEpochEnrollment(FactualOwnerEpochEnrollment enrollment)
+        {
+            if (enrollment?.pending != true) return;
+            enrollment.state.autobiographicalEpochToken = string.Empty;
+            enrollment.state.epochFenceOnly = enrollment.priorEpochFenceOnly;
+            enrollment.state.structuralRevision = enrollment.priorStructuralRevision;
+            enrollment.pending = false;
+            MarkMemoryM4IndexesDirty();
+            RebuildMemorySizeIndexes();
+        }
+
+        private static bool FactualDraftIsRequiredLifecycleLandmark(FactualMemoryDraft draft)
+        {
+            if (draft?.facts == null) return false;
+            for (int index = 0; index < draft.facts.Count; index++)
+            {
+                if (string.Equals(
+                        draft.facts[index]?.factKind,
+                        KnowledgeTokens.EventKindFactionJoined,
+                        StringComparison.Ordinal)) return true;
+            }
+            return false;
         }
 
         private static SavedMemorySubjectRef ToSavedSubject(FactualMemorySubjectDraft draft)

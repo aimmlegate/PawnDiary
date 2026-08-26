@@ -280,9 +280,12 @@ namespace PawnDiary.RimTests
                     && string.Equals(full.promptEnchantment, enchantment, StringComparison.Ordinal),
                 "Full must retain both frozen memory and the live prompt-enchantment layer.");
             PawnDiaryRimTestScope.Require(
-                string.IsNullOrEmpty(balanced.payload.initiator.memoryContext)
+                string.Equals(
+                    balanced.payload.initiator.memoryContext,
+                    memory,
+                    StringComparison.Ordinal)
                     && string.Equals(balanced.promptEnchantment, enchantment, StringComparison.Ordinal),
-                "Balanced must omit memory while retaining prompt enchantments.");
+                "Balanced must retain its one-line memory allowance and prompt enchantments.");
             PawnDiaryRimTestScope.Require(
                 string.IsNullOrEmpty(compact.payload.initiator.memoryContext)
                     && string.IsNullOrEmpty(compact.promptEnchantment),

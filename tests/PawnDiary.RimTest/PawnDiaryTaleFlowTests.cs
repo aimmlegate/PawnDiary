@@ -284,9 +284,20 @@ namespace PawnDiary.RimTests
                 signal = KnowledgeTokens.SignalEvent,
                 order = int.MinValue,
                 owners = KnowledgeTokens.OwnersInitiator,
-                lineTemplate = "remembered a rejected batched Tale"
+                lineTemplate = "remembered a rejected batched Tale",
+                captureSourceToken = "event",
+                memoryKind = MemoryContractTokens.KindEvent,
+                memoryCategory = MemoryContractTokens.CategoryPersonal,
+                baseImportance = MemoryContractTokens.ImportanceRegular
             };
             rule.matchDefNames.Add(wasOnFire.defName);
+            rule.memoryFacts.Add(new MemoryFactDescriptor
+            {
+                factKind = eventKind,
+                aggregationToken = MemoryFactContractTokens.CountOccurrences,
+                canonicalValueKind = MemoryFactContractTokens.ValueEmpty
+            });
+            rule.promptConsumerIds.Add(MemoryRecallConsumerRegistry.OrdinaryDiary);
             List<ImportantEventRule> rules = DiaryKnowledgePolicy.ImportantEventRules();
             rules.Add(rule);
             scope.RegisterCleanup(() => rules.Remove(rule));
@@ -408,12 +419,7 @@ namespace PawnDiary.RimTests
         private static int CountKnowledgeKind(PawnKnowledgeState state, string eventKind)
         {
             int count = 0;
-            if (state?.records == null)
-            {
-                return count;
-            }
-
-            for (int i = 0; i < state.records.Count; i++)
+            for (int i = 0; state?.records != null && i < state.records.Count; i++)
             {
                 ImportantMemoryRecord record = state.records[i];
                 if (record != null
@@ -422,7 +428,34 @@ namespace PawnDiary.RimTests
                     count++;
                 }
             }
+            for (int index = 0; state?.standaloneBlocks != null
+                && index < state.standaloneBlocks.Count; index++)
+            {
+                count += CountKnowledgeKind(state.standaloneBlocks[index], eventKind);
+            }
+            for (int rootIndex = 0; state?.threadRoots != null
+                && rootIndex < state.threadRoots.Count; rootIndex++)
+            {
+                SavedMemoryThreadRoot root = state.threadRoots[rootIndex];
+                for (int blockIndex = 0; root?.visibleBlocks != null
+                    && blockIndex < root.visibleBlocks.Count; blockIndex++)
+                {
+                    count += CountKnowledgeKind(root.visibleBlocks[blockIndex], eventKind);
+                }
+            }
+            return count;
+        }
 
+        private static int CountKnowledgeKind(SavedMemoryBlock block, string factKind)
+        {
+            int count = 0;
+            for (int index = 0; block?.facts != null && index < block.facts.Count; index++)
+            {
+                if (string.Equals(
+                        block.facts[index]?.factKind,
+                        factKind,
+                        StringComparison.Ordinal)) count++;
+            }
             return count;
         }
 

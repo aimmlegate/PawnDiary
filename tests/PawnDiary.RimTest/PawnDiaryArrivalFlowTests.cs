@@ -323,18 +323,27 @@ namespace PawnDiary.RimTests
                 PawnKnowledgeState state = scope.Component.KnowledgeStateForPawnId(pawnId);
                 PawnDiaryRimTestScope.Require(
                     state != null
-                        && state.HasEventKind(KnowledgeTokens.EventKindFactionJoined),
-                    "The arrival bootstrap marker was not stored as faction-joined knowledge.");
+                        && state.IsCurrentSchema()
+                        && !string.IsNullOrWhiteSpace(state.autobiographicalEpochToken)
+                        && CountCurrentFactKind(
+                            state,
+                            KnowledgeTokens.EventKindFactionJoined) == 1
+                        && state.records.Count == 0,
+                    "The arrival bootstrap marker was not stored exactly once in unified memory.");
                 PawnDiaryRimTestScope.Require(
                     scope.Component.HasArrivalBoundaryFor(pawnId),
                     "The knowledge-only arrival did not close the shared one-time arrival boundary.");
 
-                int recordCount = state.records.Count;
+                int recordCount = CountCurrentFactKind(
+                    state,
+                    KnowledgeTokens.EventKindFactionJoined);
                 scope.RequireNoNewEvent(
                     () => DiaryEvents.Submit(
                         new ArrivalSignal(arrivalPawn, "arrival_source=duplicate_probe")));
                 PawnDiaryRimTestScope.Require(
-                    state.records.Count == recordCount,
+                    CountCurrentFactKind(
+                        state,
+                        KnowledgeTokens.EventKindFactionJoined) == recordCount,
                     "A repeated arrival submission duplicated knowledge after the disabled-page boundary.");
             }
             finally
@@ -348,6 +357,40 @@ namespace PawnDiary.RimTests
                     PawnDiaryMod.Settings.groupEnabled.Remove(arrivalGroup.defName);
                 }
             }
+        }
+
+        private static int CountCurrentFactKind(PawnKnowledgeState state, string factKind)
+        {
+            int count = 0;
+            for (int index = 0; state?.standaloneBlocks != null
+                && index < state.standaloneBlocks.Count; index++)
+            {
+                count += CountCurrentFactKind(state.standaloneBlocks[index], factKind);
+            }
+            for (int rootIndex = 0; state?.threadRoots != null
+                && rootIndex < state.threadRoots.Count; rootIndex++)
+            {
+                SavedMemoryThreadRoot root = state.threadRoots[rootIndex];
+                for (int blockIndex = 0; root?.visibleBlocks != null
+                    && blockIndex < root.visibleBlocks.Count; blockIndex++)
+                {
+                    count += CountCurrentFactKind(root.visibleBlocks[blockIndex], factKind);
+                }
+            }
+            return count;
+        }
+
+        private static int CountCurrentFactKind(SavedMemoryBlock block, string factKind)
+        {
+            int count = 0;
+            for (int index = 0; block?.facts != null && index < block.facts.Count; index++)
+            {
+                if (string.Equals(
+                        block.facts[index]?.factKind,
+                        factKind,
+                        StringComparison.Ordinal)) count++;
+            }
+            return count;
         }
 
         // ----- helpers -------------------------------------------------------------------------------

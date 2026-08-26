@@ -65,7 +65,7 @@ $payload = Get-Content -Raw -LiteralPath $payloadPath | ConvertFrom-Json
 Require ($capacity.schema -ceq "memory-capacity-catalog-v1") "Wrong memory capacity catalog schema."
 Require ($fixture.schema -ceq "memory-m0-fixture-catalog-v1") "Wrong M0 fixture catalog schema."
 Require ($payload.schema -ceq "memory-benchmark-payload-atom-catalog-v1") "Wrong payload atom catalog schema."
-Require ($fixture.activationBuildState -ceq "LegacyShadow") "M0 must remain behind LegacyShadow."
+Require ($fixture.activationBuildState -ceq "CurrentRelease") "M11 must activate CurrentRelease."
 
 $knownKinds = @("event", "landmark", "summary")
 $knownCategories = @("personal", "relationships", "family", "factions")

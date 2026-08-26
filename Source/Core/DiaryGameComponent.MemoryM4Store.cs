@@ -1,9 +1,9 @@
-// DiaryGameComponent.MemoryM4Store.cs — dormant M4 saved-store/index/atomic mutation adapter.
+// DiaryGameComponent.MemoryM4Store.cs — unified saved-store/index/atomic mutation adapter.
 //
 // Pure M4 code never sees Verse. This main-thread adapter projects saved rows to detached reducer
 // snapshots, validates revision/count/logical-byte bounds, prebuilds complete replacement lists, and
-// publishes them with a short reference-assignment commit tail. The activation gate remains
-// LegacyShadow: later phases may call these operations, but M4 does not capture or recall memories.
+// publishes them with a short reference-assignment commit tail. CurrentRelease uses these operations
+// as the canonical store; LegacyShadow keeps them available only to compatibility fixtures.
 using System;
 using System.Collections.Generic;
 
