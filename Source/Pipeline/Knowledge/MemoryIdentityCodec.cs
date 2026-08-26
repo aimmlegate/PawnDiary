@@ -504,6 +504,26 @@ namespace PawnDiary
             return TryCreateSummaryId(ClosedSummaryDomain, identity, chapterOrdinal, out summaryId);
         }
 
+        /// <summary>Parses one complete canonical rolling-Summary record identity.</summary>
+        public static bool TryParseRollingSummaryId(
+            string summaryId,
+            out MemoryRootIdentity identity)
+        {
+            long ignoredOrdinal;
+            return TryParseSummaryId(
+                RollingSummaryDomain, summaryId, false, out identity, out ignoredOrdinal);
+        }
+
+        /// <summary>Parses one complete canonical closed-chapter Summary record identity.</summary>
+        public static bool TryParseClosedSummaryId(
+            string summaryId,
+            out MemoryRootIdentity identity,
+            out long chapterOrdinal)
+        {
+            return TryParseSummaryId(
+                ClosedSummaryDomain, summaryId, true, out identity, out chapterOrdinal);
+        }
+
         /// <summary>
         /// Plans one monotonic epoch allocation without mutating saved state. Malformed carrier rows
         /// are inert; only canonical normal/fallback tokens participate in the live collision set.
@@ -1350,6 +1370,66 @@ namespace PawnDiary
             }
 
             return TryJoin(segments, out summaryId);
+        }
+
+        private static bool TryParseSummaryId(
+            string domain,
+            string summaryId,
+            bool hasChapterOrdinal,
+            out MemoryRootIdentity identity,
+            out long chapterOrdinal)
+        {
+            identity = null;
+            chapterOrdinal = 0;
+            int[] limits = hasChapterOrdinal
+                ? new[]
+                {
+                    MaximumRawIdentityCharacters,
+                    MaximumRawIdentityCharacters,
+                    MaximumEmbeddedCompositeCharacters,
+                    MaximumRawIdentityCharacters,
+                    MaximumEmbeddedCompositeCharacters,
+                    MaximumRawIdentityCharacters
+                }
+                : new[]
+                {
+                    MaximumRawIdentityCharacters,
+                    MaximumRawIdentityCharacters,
+                    MaximumEmbeddedCompositeCharacters,
+                    MaximumRawIdentityCharacters,
+                    MaximumEmbeddedCompositeCharacters
+                };
+            string[] values;
+            if (!TryReadExact(summaryId, limits, out values)
+                || values[0] != domain
+                || (hasChapterOrdinal
+                    && (!TryParseCanonicalNonnegativeInt64(values[5], out chapterOrdinal)
+                        || chapterOrdinal <= 0)))
+            {
+                chapterOrdinal = 0;
+                return false;
+            }
+
+            var parsed = new MemoryRootIdentity
+            {
+                ownerPawnId = values[1],
+                ownerEpochToken = values[2],
+                primarySubjectKind = values[3],
+                primarySubjectId = values[4]
+            };
+            string canonical;
+            bool rebuilt = hasChapterOrdinal
+                ? TryCreateClosedSummaryId(parsed, chapterOrdinal, out canonical)
+                : TryCreateRollingSummaryId(parsed, out canonical);
+            if (!rebuilt || !string.Equals(summaryId, canonical, StringComparison.Ordinal))
+            {
+                identity = null;
+                chapterOrdinal = 0;
+                return false;
+            }
+
+            identity = parsed;
+            return true;
         }
 
         private static bool TryJoin(IEnumerable<string> segments, out string encoded)

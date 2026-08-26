@@ -54,6 +54,7 @@ namespace PawnMemoryTests
             TestRecallV2ConsumerAndExactEligibilityContract();
             TestRecallV2RepetitionBoundariesAndGuardCompleteness();
             TestRecallV2FrozenRevalidationAndPairedPrivacy();
+            TestRecallV2FrozenSelectionSaveCodec();
             TestRecallV2CurrentTruthAndLegacyShadowComparison();
             TestRecallV2AdversarialIdentityAndCapMatrix();
             TestQueryBuildFromRulesAndPolicy();
@@ -1795,6 +1796,23 @@ namespace PawnMemoryTests
                 KnowledgeObservationTokens.SubjectPawn, "Pawn_bc",
                 KnowledgeObservationTokens.StreamDirectedSocial, out second));
             AssertTrue("m6.identity.segmentCollision", !string.Equals(first, second, StringComparison.Ordinal));
+            string parsedOwner;
+            string parsedEpoch;
+            string parsedSubjectKind;
+            string parsedSubjectId;
+            AssertTrue("m6.identity.awareness.parse",
+                KnowledgeRelationPolicy.TryParseAwarenessId(
+                    first, out parsedOwner, out parsedEpoch,
+                    out parsedSubjectKind, out parsedSubjectId));
+            AssertEqual("m6.identity.awareness.parseOwner", "Pawn_ab", parsedOwner);
+            AssertEqual("m6.identity.awareness.parseEpoch", epoch, parsedEpoch);
+            AssertEqual("m6.identity.awareness.parseSubjectKind",
+                KnowledgeObservationTokens.SubjectPawn, parsedSubjectKind);
+            AssertEqual("m6.identity.awareness.parseSubjectId", "Pawn_c", parsedSubjectId);
+            AssertTrue("m6.identity.awareness.trailingRejected",
+                !KnowledgeRelationPolicy.TryParseAwarenessId(
+                    first + "1:x", out parsedOwner, out parsedEpoch,
+                    out parsedSubjectKind, out parsedSubjectId));
 
             string forward;
             string reverse;
@@ -2065,6 +2083,23 @@ namespace PawnMemoryTests
                 KnowledgeObservationTokens.SubjectPawn,
                 "Pawn_B", pairKey, KnowledgeObservationTokens.DirectionRising,
                 out episodeId);
+            string parsedOwner;
+            string parsedEpoch;
+            string parsedSubjectKind;
+            string parsedSubjectId;
+            AssertTrue("m6.identity.episode.parse",
+                KnowledgeRelationPolicy.TryParseEpisodeId(
+                    episodeId, out parsedOwner, out parsedEpoch,
+                    out parsedSubjectKind, out parsedSubjectId));
+            AssertEqual("m6.identity.episode.parseOwner", "Pawn_A", parsedOwner);
+            AssertEqual("m6.identity.episode.parseEpoch", epoch, parsedEpoch);
+            AssertEqual("m6.identity.episode.parseSubjectKind",
+                KnowledgeObservationTokens.SubjectPawn, parsedSubjectKind);
+            AssertEqual("m6.identity.episode.parseSubjectId", "Pawn_B", parsedSubjectId);
+            AssertTrue("m6.identity.episode.trailingRejected",
+                !KnowledgeRelationPolicy.TryParseEpisodeId(
+                    episodeId + "1:x", out parsedOwner, out parsedEpoch,
+                    out parsedSubjectKind, out parsedSubjectId));
             KnowledgeOpinionEpisodeState episode = new KnowledgeOpinionEpisodeState
             {
                 episodeId = episodeId,
@@ -3220,6 +3255,40 @@ namespace PawnMemoryTests
             AssertEqual("recallV2.guard.pair-order-invariant",
                 MemoryRepetitionGuardPolicy.PairKey("Owner_A", "Pawn_B"),
                 MemoryRepetitionGuardPolicy.PairKey("Pawn_B", "Owner_A"));
+            string parsedSubjectKind;
+            string parsedSubjectId;
+            AssertTrue("recallV2.guard.subject-key-parse",
+                MemoryRepetitionGuardPolicy.TryParseSubjectKey(
+                    guards[1].guardKey, out parsedSubjectKind, out parsedSubjectId));
+            AssertEqual("recallV2.guard.subject-key-kind", "pawn", parsedSubjectKind);
+            AssertEqual("recallV2.guard.subject-key-id", "Pawn_B", parsedSubjectId);
+            AssertTrue("recallV2.guard.subject-key-trailing-rejected",
+                !MemoryRepetitionGuardPolicy.TryParseSubjectKey(
+                    guards[1].guardKey + "1:x", out parsedSubjectKind, out parsedSubjectId));
+            string parsedFirstEndpoint;
+            string parsedSecondEndpoint;
+            AssertTrue("recallV2.guard.pair-key-parse",
+                MemoryRepetitionGuardPolicy.TryParsePairKey(
+                    guards[2].guardKey, out parsedFirstEndpoint, out parsedSecondEndpoint));
+            AssertEqual("recallV2.guard.pair-key-first", "Owner_A", parsedFirstEndpoint);
+            AssertEqual("recallV2.guard.pair-key-second", "Pawn_B", parsedSecondEndpoint);
+            string firstFaction;
+            string secondFaction;
+            AssertTrue("recallV2.guard.pair-faction-first",
+                MemoryIdentityCodec.TryCreateFactionSubjectId(
+                    "Faction_A", 71, out firstFaction));
+            AssertTrue("recallV2.guard.pair-faction-second",
+                MemoryIdentityCodec.TryCreateFactionSubjectId(
+                    "Faction_B", 72, out secondFaction));
+            string factionPair = MemoryRepetitionGuardPolicy.PairKey(
+                firstFaction, secondFaction);
+            AssertTrue("recallV2.guard.pair-faction-parse",
+                MemoryRepetitionGuardPolicy.TryParsePairKey(
+                    factionPair, out parsedFirstEndpoint, out parsedSecondEndpoint));
+            AssertTrue("recallV2.guard.pair-faction-both-preserved",
+                (parsedFirstEndpoint == firstFaction && parsedSecondEndpoint == secondFaction)
+                    || (parsedFirstEndpoint == secondFaction
+                        && parsedSecondEndpoint == firstFaction));
 
             record.lastAutomaticIncludedTick = 300001;
             evaluation = MemoryRepetitionGuardPolicy.Evaluate("epoch-1", record, guards, policy);
@@ -3459,6 +3528,65 @@ namespace PawnMemoryTests
             AssertEqual("recallV2.freeze.cross-owner-envelope-rejected",
                 MemoryRecallRejectReasons.InvalidQuery,
                 revalidated.report[0].rejectReason);
+        }
+
+        private static void TestRecallV2FrozenSelectionSaveCodec()
+        {
+            MemoryRecallQueryV2 query = RecallQuery(
+                "Owner_A", MemoryRecallWritingFormats.Balanced);
+            string epoch = M6Epoch("Owner_A");
+            query.ownerEpochToken = epoch;
+            MemoryRecallCandidateSnapshot candidate = RecallCandidate(
+                "saved-frozen", "Owner_A", "source-saved", 321);
+            candidate.ownerEpochToken = epoch;
+            candidate.recordGuard.ownerEpochToken = epoch;
+            foreach (MemoryRepetitionGuardState guard in candidate.structuralGuardStates)
+                guard.ownerEpochToken = epoch;
+            candidate.sourceEventId = "event-source";
+            MakeThreadCandidate(candidate, "root-at-event-time", "chapter-at-event-time");
+            candidate.narrativeFitScore = 17;
+            candidate.categories.Add(MemoryContractTokens.CategoryRelationships);
+            candidate.topicKeys.Add("topic.saved");
+            candidate.representedSourceOccurrenceIds.Add("represented-source");
+            MemoryRecallSelectionResultV2 frozen = ImportantMemorySelector.SelectV2(
+                query, new List<MemoryRecallCandidateSnapshot> { candidate });
+            AssertEqual("recallV2.save-codec.selected", 1, frozen.selected.Count);
+
+            string encoded = MemoryFrozenRecallSelectionCodec.Encode(frozen);
+            AssertTrue("recallV2.save-codec.encoded", !string.IsNullOrEmpty(encoded));
+            MemoryRecallSelectionResultV2 loaded =
+                MemoryFrozenRecallSelectionCodec.Decode(encoded);
+            AssertTrue("recallV2.save-codec.decoded", loaded != null);
+            AssertEqual("recallV2.save-codec.owner", "Owner_A", loaded.ownerPawnId);
+            AssertEqual("recallV2.save-codec.record", "saved-frozen",
+                loaded.selected[0].candidate.recordId);
+            AssertEqual("recallV2.save-codec.represented", "represented-source",
+                loaded.selected[0].candidate.representedSourceOccurrenceIds[0]);
+            AssertEqual("recallV2.save-codec.route", "Pawn_B",
+                loaded.selected[0].candidate.exactRoutes[0].subjectId);
+
+            MemoryRecallCandidateSnapshot current = RecallCandidate(
+                "saved-frozen", "Owner_A", "source-saved", 999);
+            MakeThreadCandidate(current, "root-at-event-time", "chapter-at-event-time");
+            current.ownerEpochToken = epoch;
+            current.recordGuard.ownerEpochToken = epoch;
+            foreach (MemoryRepetitionGuardState guard in current.structuralGuardStates)
+                guard.ownerEpochToken = epoch;
+            current.historicalText = "current wording after reload";
+            MemoryRecallSelectionResultV2 revalidated =
+                ImportantMemorySelector.RevalidateFrozenV2(
+                    loaded,
+                    query,
+                    new List<MemoryRecallCandidateSnapshot> { current });
+            AssertEqual("recallV2.save-codec.same-shortlist", 1,
+                revalidated.selected.Count);
+            AssertEqual("recallV2.save-codec.current-wording",
+                "current wording after reload",
+                revalidated.selected[0].candidate.historicalText);
+            AssertEqual("recallV2.save-codec.frozen-tick", 321L,
+                revalidated.selected[0].candidate.originalEventTick);
+            AssertTrue("recallV2.save-codec.trailing-rejected",
+                MemoryFrozenRecallSelectionCodec.Decode(encoded + "x") == null);
         }
 
         private static void TestRecallV2CurrentTruthAndLegacyShadowComparison()

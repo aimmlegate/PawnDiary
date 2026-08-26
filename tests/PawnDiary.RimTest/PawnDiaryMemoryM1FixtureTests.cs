@@ -264,6 +264,147 @@ namespace PawnDiary.RimTests
         }
 
         [Test]
+        public static void TypedKnowledgeIdentitiesAreExhaustiveAllocatorCarriers()
+        {
+            const string owner = "Pawn_Carrier_Exact";
+            PawnKnowledgeState state = PawnKnowledgeState.CreateCurrent(owner);
+            state.autobiographicalEpochToken = string.Empty;
+
+            var root = new SavedMemoryThreadRoot
+            {
+                ownerPawnId = owner,
+                ownerEpochToken = string.Empty,
+                rootId = CarrierRootId(owner, 41, 101),
+                subjectKind = MemoryContractTokens.SubjectFaction,
+                subjectId = CarrierFactionSubject(101)
+            };
+            root.chapters.Add(new SavedMemoryChapter
+            {
+                chapterId = CarrierChapterId(owner, 42, 102, 1)
+            });
+            var visible = new SavedMemoryBlock
+            {
+                ownerPawnId = owner,
+                ownerEpochToken = EpochToken(43),
+                recordId = CarrierRecordId(owner, 44, "visible"),
+                rootId = CarrierRootId(owner, 45, 105),
+                chapterId = CarrierChapterId(owner, 46, 106, 1),
+                primarySubject = CarrierSubjectRef(107)
+            };
+            visible.secondarySubjects.Add(CarrierSubjectRef(108));
+            visible.facts.Add(new SavedMemoryCanonicalFact
+            {
+                canonicalSubjectKind = MemoryContractTokens.SubjectFaction,
+                canonicalSubjectId = CarrierFactionSubject(104)
+            });
+            visible.facts.Add(new SavedMemoryCanonicalFact
+            {
+                canonicalSubjectKind = MemoryContractTokens.SubjectFaction,
+                canonicalSubjectId = CarrierFactionSubject(109)
+            });
+            visible.summaryPayload = new SavedMemorySummaryPayload();
+            visible.summaryPayload.subjectRefs.Add(CarrierSubjectRef(103));
+            visible.summaryPayload.subjectRefs.Add(CarrierSubjectRef(110));
+            var bucket = new SavedMemoryFactBucket
+            {
+                canonicalSubjectKind = MemoryContractTokens.SubjectFaction,
+                canonicalSubjectId = CarrierFactionSubject(111)
+            };
+            bucket.contributions.Add(new SavedMemoryFactContribution
+            {
+                originChapterId = CarrierChapterId(owner, 47, 112, 1),
+                originRecordId = CarrierRecordId(owner, 48, "contribution")
+            });
+            visible.summaryPayload.factBuckets.Add(bucket);
+            root.visibleBlocks.Add(visible);
+            root.rollingSummaryBlock = new SavedMemoryBlock
+            {
+                ownerPawnId = owner,
+                recordId = CarrierRollingSummaryId(owner, 49, 113)
+            };
+            state.threadRoots.Add(root);
+            state.standaloneBlocks.Add(new SavedMemoryBlock
+            {
+                ownerPawnId = owner,
+                recordId = CarrierClosedSummaryId(owner, 50, 114, 1)
+            });
+
+            string awarenessId;
+            Require(KnowledgeRelationPolicy.TryCreateAwarenessId(
+                    owner,
+                    EpochToken(51),
+                    KnowledgeObservationTokens.ScopeFaction,
+                    MemoryContractTokens.SubjectFaction,
+                    CarrierFactionSubject(115),
+                    KnowledgeObservationTokens.StreamFactionConnection,
+                    out awarenessId),
+                "Could not create the awareness carrier fixture identity.");
+            state.ownerAwarenessSnapshots.Add(new SavedMemoryAwarenessSnapshot
+            {
+                snapshotId = awarenessId,
+                subjectKind = MemoryContractTokens.SubjectFaction,
+                subjectId = CarrierFactionSubject(115)
+            });
+
+            string episodeId;
+            Require(KnowledgeRelationPolicy.TryCreateEpisodeId(
+                    owner,
+                    EpochToken(52),
+                    KnowledgeObservationTokens.ScopeFaction,
+                    KnowledgeObservationTokens.StreamFactionConnection,
+                    "fixture-rule",
+                    "fixture-episode",
+                    MemoryContractTokens.SubjectFaction,
+                    CarrierFactionSubject(116),
+                    "fixture-stream",
+                    "changed",
+                    out episodeId),
+                "Could not create the episode carrier fixture identity.");
+            state.openCaptureEpisodes.Add(new SavedMemoryCaptureEpisode
+            {
+                episodeId = episodeId,
+                subjectKind = MemoryContractTokens.SubjectFaction,
+                subjectId = CarrierFactionSubject(116)
+            });
+            state.repetitionGuardRows.Add(new SavedMemoryRepetitionGuardRow
+            {
+                ownerEpochToken = EpochToken(53),
+                guardKind = MemoryRepetitionGuardKinds.Subject,
+                guardKey = MemoryRepetitionGuardPolicy.SubjectKey(
+                    MemoryContractTokens.SubjectFaction,
+                    CarrierFactionSubject(117))
+            });
+            state.repetitionGuardRows.Add(new SavedMemoryRepetitionGuardRow
+            {
+                guardKind = MemoryRepetitionGuardKinds.Pair,
+                guardKey = MemoryRepetitionGuardPolicy.PairKey(
+                    CarrierFactionSubject(118),
+                    CarrierFactionSubject(119))
+            });
+
+            var epochs = new List<string>();
+            var factions = new List<long>();
+            DiaryGameComponent.AddKnowledgeAllocatorCarriers(epochs, factions, state);
+            for (long sequence = 41; sequence <= 53; sequence++)
+                Require(epochs.Contains(EpochToken(sequence)),
+                    "Typed knowledge identity omitted epoch carrier " + sequence + ".");
+            for (long generation = 101; generation <= 119; generation++)
+                Require(factions.Contains(generation),
+                    "Typed knowledge identity omitted faction carrier " + generation + ".");
+
+            MemorySavedCarrierRegistryPlan plan = MemorySavedIdentityCarrierRegistry.Plan(
+                new MemorySavedCarrierScanInput
+                {
+                    epochTokenCarriers = epochs,
+                    factionAllocatorGenerationCarriers = factions
+                });
+            Require(plan.canPublish
+                    && plan.repairedAutobiographicalHighWater == 53
+                    && plan.globalFactionAllocatorGeneration == 119,
+                "Typed knowledge identity carriers did not repair both allocator high-waters.");
+        }
+
+        [Test]
         public static void NestedNewerSchemasAbortBeforePublication()
         {
             RunWithTempFile(path =>
@@ -642,6 +783,118 @@ namespace PawnDiary.RimTests
                     && diary.knowledgeState.standaloneBlocks.Count == blocks
                     && diary.knowledgeState.importedArchiveRows.Count == imported,
                 "A second M11 migration pass changed an already-current owner.");
+        }
+
+        [Test]
+        public static void M11DuplicateOwnerCommitPreservesPhysicalCultureAndUnrelatedReflection()
+        {
+            const string ownerId = "Pawn_M11_Duplicate";
+            string epoch = EpochToken(61);
+            PawnKnowledgeState firstState = PawnKnowledgeState.CreateCurrent(ownerId);
+            firstState.autobiographicalEpochToken = epoch;
+            firstState.originCultureDefName = "Culture_First";
+            firstState.originCultureSource = "first-source";
+            firstState.adoptedCultureDefName = "Culture_First_Adopted";
+            firstState.records.Add(NewLegacyRecord());
+            PawnKnowledgeState duplicateState = PawnKnowledgeState.CreateCurrent(ownerId);
+            duplicateState.autobiographicalEpochToken = epoch;
+            duplicateState.originCultureDefName = "Culture_Duplicate";
+            duplicateState.originCultureSource = "duplicate-source";
+            duplicateState.adoptedCultureDefName = "Culture_Duplicate_Adopted";
+
+            var firstReflection = new PawnReflectionState
+            {
+                baselineOnNextOpportunity = false,
+                linkedBaselineOnNextOpportunity = true,
+                lastReflectionTick = 101,
+                lastMajorArcTick = 102,
+                pendingMajorArc = true,
+                pendingMajorArcRequestedTick = 103,
+                pendingMajorArcAvoidEventId = "evt-first",
+                memoryReflectionSchemaVersion = 1,
+                memoryOwnerEpochToken = epoch,
+                lastQuietMemoryEvaluatedAbsoluteDay = 10,
+                lastQuietMemoryActivatedAbsoluteQuadrum = 2
+            };
+            var duplicateReflection = new PawnReflectionState
+            {
+                baselineOnNextOpportunity = true,
+                linkedBaselineOnNextOpportunity = false,
+                lastReflectionTick = 201,
+                lastCrossArcTick = 202,
+                pendingMajorArc = true,
+                pendingMajorArcRequestedTick = 203,
+                pendingMajorArcAvoidEventId = "evt-duplicate",
+                memoryReflectionSchemaVersion = 1,
+                memoryOwnerEpochToken = epoch,
+                lastQuietMemoryEvaluatedAbsoluteDay = 11,
+                lastQuietMemoryActivatedAbsoluteQuadrum = 3
+            };
+            var first = new PawnDiaryRecord
+            {
+                pawnId = ownerId,
+                knowledgeState = firstState,
+                reflectionState = firstReflection
+            };
+            var duplicate = new PawnDiaryRecord
+            {
+                pawnId = ownerId,
+                knowledgeState = duplicateState,
+                reflectionState = duplicateReflection
+            };
+            DiaryGameComponent component = NewMemoryComponent(
+                new List<PawnDiaryRecord> { first, duplicate }, null, null);
+            component.RunMemoryMigrationCommit();
+
+            Require(first.knowledgeState.IsCurrentSchema()
+                    && first.knowledgeState.autobiographicalEpochToken == epoch
+                    && first.knowledgeState.originCultureDefName == "Culture_First"
+                    && first.knowledgeState.originCultureSource == "first-source"
+                    && first.knowledgeState.adoptedCultureDefName == "Culture_First_Adopted",
+                "The physical first holder did not retain only its own culture fields.");
+            Require(duplicate.knowledgeState.IsCurrentSchema()
+                    && string.IsNullOrEmpty(duplicate.knowledgeState.autobiographicalEpochToken)
+                    && duplicate.knowledgeState.completedDiaryEntryOrdinal == 1
+                    && duplicate.knowledgeState.originCultureDefName == "Culture_Duplicate"
+                    && duplicate.knowledgeState.originCultureSource == "duplicate-source"
+                    && duplicate.knowledgeState.adoptedCultureDefName
+                        == "Culture_Duplicate_Adopted",
+                "The duplicate holder did not become a valid inert state with its own culture.");
+            Require(!first.reflectionState.baselineOnNextOpportunity
+                    && first.reflectionState.linkedBaselineOnNextOpportunity
+                    && first.reflectionState.lastReflectionTick == 101
+                    && first.reflectionState.lastMajorArcTick == 102
+                    && first.reflectionState.pendingMajorArc
+                    && first.reflectionState.pendingMajorArcRequestedTick == 103
+                    && first.reflectionState.pendingMajorArcAvoidEventId == "evt-first"
+                    && first.reflectionState.memoryOwnerEpochToken == epoch
+                    && first.reflectionState.lastQuietMemoryEvaluatedAbsoluteDay == 11
+                    && first.reflectionState.lastQuietMemoryActivatedAbsoluteQuadrum == 3,
+                "The primary reflection merge altered unrelated fields or lost cadence maxima.");
+            Require(duplicate.reflectionState.baselineOnNextOpportunity
+                    && !duplicate.reflectionState.linkedBaselineOnNextOpportunity
+                    && duplicate.reflectionState.lastReflectionTick == 201
+                    && duplicate.reflectionState.lastCrossArcTick == 202
+                    && duplicate.reflectionState.pendingMajorArc
+                    && duplicate.reflectionState.pendingMajorArcRequestedTick == 203
+                    && duplicate.reflectionState.pendingMajorArcAvoidEventId == "evt-duplicate"
+                    && duplicate.reflectionState.memoryReflectionSchemaVersion == 0
+                    && string.IsNullOrEmpty(duplicate.reflectionState.memoryOwnerEpochToken)
+                    && duplicate.reflectionState.lastQuietMemoryEvaluatedAbsoluteDay == -1
+                    && duplicate.reflectionState.lastQuietMemoryActivatedAbsoluteQuadrum == -1
+                    && string.IsNullOrEmpty(duplicate.reflectionState.lastQuietMemoryDecisionKey),
+                "The duplicate reflection projection cleared fields outside the five owned fields.");
+
+            PawnKnowledgeState committedFirst = first.knowledgeState;
+            PawnKnowledgeState committedDuplicate = duplicate.knowledgeState;
+            PawnReflectionState committedFirstReflection = first.reflectionState;
+            PawnReflectionState committedDuplicateReflection = duplicate.reflectionState;
+            component.RunMemoryMigrationCommit();
+            Require(ReferenceEquals(committedFirst, first.knowledgeState)
+                    && ReferenceEquals(committedDuplicate, duplicate.knowledgeState)
+                    && ReferenceEquals(committedFirstReflection, first.reflectionState)
+                    && ReferenceEquals(committedDuplicateReflection, duplicate.reflectionState),
+                "A second duplicate-owner commit changed the published projection.");
         }
 
         [Test]
@@ -1319,6 +1572,93 @@ namespace PawnDiary.RimTests
                 expiryTick = requestedTick + 1000,
                 configuredPriority = priority,
                 salience = 1
+            };
+        }
+
+        private static string CarrierFactionSubject(long generation)
+        {
+            string subjectId;
+            Require(MemoryIdentityCodec.TryCreateFactionSubjectId(
+                    "Faction_Carrier_" + generation, generation, out subjectId),
+                "Could not create a faction carrier fixture identity.");
+            return subjectId;
+        }
+
+        private static MemoryRootIdentity CarrierRootIdentity(
+            string owner, long epochSequence, long factionGeneration)
+        {
+            return new MemoryRootIdentity
+            {
+                ownerPawnId = owner,
+                ownerEpochToken = EpochToken(epochSequence),
+                primarySubjectKind = MemoryContractTokens.SubjectFaction,
+                primarySubjectId = CarrierFactionSubject(factionGeneration)
+            };
+        }
+
+        private static string CarrierRootId(
+            string owner, long epochSequence, long factionGeneration)
+        {
+            string rootId;
+            Require(MemoryIdentityCodec.TryCreateRootId(
+                    CarrierRootIdentity(owner, epochSequence, factionGeneration), out rootId),
+                "Could not create a root carrier fixture identity.");
+            return rootId;
+        }
+
+        private static string CarrierChapterId(
+            string owner, long epochSequence, long factionGeneration, long ordinal)
+        {
+            string chapterId;
+            Require(MemoryIdentityCodec.TryCreateChapterId(
+                    CarrierRootId(owner, epochSequence, factionGeneration), ordinal, out chapterId),
+                "Could not create a chapter carrier fixture identity.");
+            return chapterId;
+        }
+
+        private static string CarrierRecordId(string owner, long epochSequence, string suffix)
+        {
+            string recordId;
+            Require(MemoryIdentityCodec.TryCreateRecordId(new MemoryRecordIdentity
+                {
+                    ownerPawnId = owner,
+                    ownerEpochToken = EpochToken(epochSequence),
+                    sourceOccurrenceId = "carrier-occurrence-" + suffix,
+                    captureRuleId = "carrier-rule",
+                    factDiscriminator = suffix
+                }, out recordId),
+                "Could not create an Event record carrier fixture identity.");
+            return recordId;
+        }
+
+        private static string CarrierRollingSummaryId(
+            string owner, long epochSequence, long factionGeneration)
+        {
+            string recordId;
+            Require(MemoryIdentityCodec.TryCreateRollingSummaryId(
+                    CarrierRootIdentity(owner, epochSequence, factionGeneration), out recordId),
+                "Could not create a rolling Summary carrier fixture identity.");
+            return recordId;
+        }
+
+        private static string CarrierClosedSummaryId(
+            string owner, long epochSequence, long factionGeneration, long ordinal)
+        {
+            string recordId;
+            Require(MemoryIdentityCodec.TryCreateClosedSummaryId(
+                    CarrierRootIdentity(owner, epochSequence, factionGeneration),
+                    ordinal,
+                    out recordId),
+                "Could not create a Closed Summary carrier fixture identity.");
+            return recordId;
+        }
+
+        private static SavedMemorySubjectRef CarrierSubjectRef(long factionGeneration)
+        {
+            return new SavedMemorySubjectRef
+            {
+                subjectKind = MemoryContractTokens.SubjectFaction,
+                subjectId = CarrierFactionSubject(factionGeneration)
             };
         }
 

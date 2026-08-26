@@ -8,7 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-08-26
 
-- **Memory M11 migration and release hardening.** Add atomic typed legacy migration, event-frozen/privacy-projected Recall v2, authored-safe reconciliation, transactional dispatch rollback, cooldown/cancellation/repair hardening, and loaded behavioral fixtures while activation remains LegacyShadow pending user-run release evidence.
+- **Memory M11 migration and release hardening.** Add atomic duplicate-safe legacy migration, exhaustive allocator-carrier repair, save-stable/privacy-projected Recall v2, transactional dispatch rollback, stable failure diagnostics, and loaded behavioral fixtures while activation remains LegacyShadow pending user-run release evidence.
 - **Memory M10 optional AI.** Route meaningful, quiet, and deterministic-first Summary wording through the shared four-class coordinator with staged common transport, fail-closed policy/cancellation fences, bounded wake/fingerprint accounting, localized prompts, and behavioral fixtures; activation remains LegacyShadow.
 - **Memory M9 Thread and TTL Library UI.** Add review-hardened exact-owner thread/standalone/imported browsing, saved culture/status context, bounded virtualized cards and details, constituent-original-tick lifetime states, revision-safe explicit edits/actions, and paged owner/detail race convergence in English and Russian while activation remains LegacyShadow.
 

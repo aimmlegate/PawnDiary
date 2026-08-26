@@ -18,6 +18,12 @@ namespace PawnDiary
             public string epochToken = string.Empty;
             public PawnKnowledgeState replacement;
             public MemoryLegacyMigrationReport report;
+            public List<PawnKnowledgeState> holderKnowledgeStates =
+                new List<PawnKnowledgeState>();
+            public List<PawnReflectionState> holderReflectionStates =
+                new List<PawnReflectionState>();
+            public List<SavedLegacyOwnerEpochReservation> remainingEpochReservations =
+                new List<SavedLegacyOwnerEpochReservation>();
         }
 
         /// <summary>Selects report-only or commit migration from the single activation gate.</summary>
@@ -173,7 +179,6 @@ namespace PawnDiary
                     }
 
                     PublishLegacyOwnerCommit(group.Value, commit);
-                    RemoveLegacyEpochReservation(group.Key);
                     MarkMemoryM4IndexesDirty();
                     RebuildMemorySizeIndexes();
                     if (commit.report.droppedAutomaticAlternateCount > 0)
@@ -242,6 +247,7 @@ namespace PawnDiary
                 replacement = replacement,
                 report = report
             };
+            BuildLegacyPublicationProjections(holders, commit);
             return true;
         }
 
@@ -350,16 +356,19 @@ namespace PawnDiary
             replacement.records.Clear();
             var blockIds = new HashSet<string>(StringComparer.Ordinal);
             var rootIds = new HashSet<string>(StringComparer.Ordinal);
-            var awarenessIds = new HashSet<string>(StringComparer.Ordinal);
-            var episodeIds = new HashSet<string>(StringComparer.Ordinal);
             var guardIds = new HashSet<string>(StringComparer.Ordinal);
             var archiveIds = new HashSet<string>(StringComparer.Ordinal);
+            var currentRoots = new List<SavedMemoryThreadRoot>();
+
+            // Culture belongs to the physical container, not the logical duplicate-owner group.
+            // Only the preserved first holder's culture moves into its replacement; each duplicate
+            // inert projection keeps its own culture byte-for-byte.
+            CopyFirstCulture(replacement, holders?[0]?.knowledgeState);
 
             for (int index = 0; holders != null && index < holders.Count; index++)
             {
                 PawnKnowledgeState source = holders[index]?.knowledgeState;
                 if (source == null) continue;
-                CopyFirstCulture(replacement, source);
                 if (!source.IsCurrentSchema()) continue;
                 if (source.requestCancellationGeneration < 0 || source.structuralRevision < 0
                     || source.statusRevision < 0 || source.completedDiaryEntryOrdinal < 0
@@ -402,14 +411,15 @@ namespace PawnDiary
                 if (!AddUniqueRows(replacement.standaloneBlocks,
                         source.standaloneBlocks, row => row?.recordId, blockIds,
                         CloneSavedBlock)
-                    || !AddUniqueRows(replacement.threadRoots,
-                        source.threadRoots, row => row?.rootId, rootIds,
-                        CloneSavedRoot)
-                    || !AddUniqueRows(replacement.ownerAwarenessSnapshots,
-                        source.ownerAwarenessSnapshots, row => row?.snapshotId, awarenessIds,
+                    || !AddDetachedRows(
+                        currentRoots, source.threadRoots, CloneSavedRoot)
+                    || !AddDetachedRows(
+                        replacement.ownerAwarenessSnapshots,
+                        source.ownerAwarenessSnapshots,
                         CloneSavedAwareness)
-                    || !AddUniqueRows(replacement.openCaptureEpisodes,
-                        source.openCaptureEpisodes, row => row?.episodeId, episodeIds,
+                    || !AddDetachedRows(
+                        replacement.openCaptureEpisodes,
+                        source.openCaptureEpisodes,
                         CloneSavedEpisode)
                     || !AddUniqueRows(replacement.repetitionGuardRows,
                         source.repetitionGuardRows,
@@ -420,6 +430,9 @@ namespace PawnDiary
             }
 
             MemoryReducerPolicy reducer = BuildMemoryReducerPolicy(maxKnownTick);
+            if (!TryRepairLegacyCurrentRoots(
+                    replacement, currentRoots, reducer, rootIds, blockIds)
+                || !TryRepairLegacyCurrentObservationRows(replacement)) return false;
             string chosenBackground = replacement.playerBackground ?? string.Empty;
             for (int index = 0; report.rows != null && index < report.rows.Count; index++)
             {
@@ -458,9 +471,13 @@ namespace PawnDiary
                         maxKnownTick, block.originalEventTick, block.ageUnknown,
                         block.importance, reducer.minorLifetimeTicks,
                         reducer.regularLifetimeTicks)) continue;
-                if (blockIds.Add(block.recordId)
-                    && !TryPlaceLegacyActiveBlock(
-                        replacement, block, row, reducer, rootIds)) return false;
+                // A current nested block is an identity carrier too. Never let a mapped legacy row
+                // collide with it and disappear merely because only standalone IDs were seeded.
+                if (!blockIds.Add(block.recordId)
+                    || !TryPlaceLegacyActiveBlock(
+                        replacement, block, row, reducer, rootIds)
+                    || !TryCollectReplacementIdentitySets(
+                        replacement, rootIds, blockIds)) return false;
             }
             replacement.playerBackground = chosenBackground;
             replacement.archiveOnly = false;
@@ -472,9 +489,109 @@ namespace PawnDiary
             return true;
         }
 
+        private static bool TryRepairLegacyCurrentRoots(
+            PawnKnowledgeState replacement,
+            List<SavedMemoryThreadRoot> currentRoots,
+            MemoryReducerPolicy reducer,
+            HashSet<string> rootIds,
+            HashSet<string> blockIds)
+        {
+            currentRoots = currentRoots ?? new List<SavedMemoryThreadRoot>();
+            currentRoots.Sort(delegate(SavedMemoryThreadRoot left, SavedMemoryThreadRoot right)
+            {
+                string leftState = MemoryThreadReducer.CanonicalState(
+                    ToReducerRoot(left, reducer));
+                string rightState = MemoryThreadReducer.CanonicalState(
+                    ToReducerRoot(right, reducer));
+                int state = string.CompareOrdinal(leftState, rightState);
+                if (state != 0) return state;
+                return string.CompareOrdinal(
+                    left?.frozenSubjectLabel ?? string.Empty,
+                    right?.frozenSubjectLabel ?? string.Empty);
+            });
+            var projected = new List<MemoryReducerRoot>();
+            for (int index = 0; index < currentRoots.Count; index++)
+                projected.Add(ToReducerRoot(currentRoots[index], reducer));
+            MemoryThreadRepairResult repair = MemoryThreadRepairPolicy.Repair(projected, reducer);
+            // Authored quarantines need a lossless SavedImportedMemoryRow projection. Until one can
+            // be proven, retaining the complete raw owner is safer than dropping that archive row.
+            if (repair.refused || repair.archivedRoots.Count > 0) return false;
+
+            replacement.threadRoots = new List<SavedMemoryThreadRoot>();
+            for (int index = 0; index < repair.activeRoots.Count; index++)
+            {
+                MemoryReducerRoot root = repair.activeRoots[index];
+                replacement.threadRoots.Add(FromReducerRoot(
+                    root,
+                    BuildOriginalRegistryRoot(currentRoots, root, reducer)));
+            }
+            return TryCollectReplacementIdentitySets(replacement, rootIds, blockIds);
+        }
+
+        private bool TryRepairLegacyCurrentObservationRows(PawnKnowledgeState replacement)
+        {
+            int awarenessCap = (int)ReadCapacityLong("awarenessRows", 128, 512);
+            int episodeCap = (int)ReadCapacityLong("openEpisodes", 16, 64);
+            KnowledgeObservationPolicySnapshot observationPolicy =
+                DiaryKnowledgePolicy.MemoryObservationSnapshot();
+            observationPolicy.maximumStateFacts = (int)ReadCapacityLong(
+                "awarenessFacts", 4, 16);
+            ReadCapacityPair(
+                "factKeyValueUnits",
+                48,
+                128,
+                192,
+                512,
+                out observationPolicy.maximumFactKeyCharacters,
+                out observationPolicy.maximumFactValueCharacters);
+            observationPolicy = observationPolicy.Normalized();
+            MemoryPolicySnapshot capturePolicy = MemoryEffectivePolicyProvider.Current;
+            NormalizeOwnerAwarenessRows(
+                replacement, awarenessCap, observationPolicy, capturePolicy);
+            NormalizeOwnerEpisodeRows(
+                replacement,
+                awarenessCap,
+                episodeCap,
+                observationPolicy,
+                capturePolicy);
+            return true;
+        }
+
+        private static bool TryCollectReplacementIdentitySets(
+            PawnKnowledgeState replacement,
+            HashSet<string> rootIds,
+            HashSet<string> blockIds)
+        {
+            rootIds.Clear();
+            blockIds.Clear();
+            for (int index = 0; replacement?.standaloneBlocks != null
+                && index < replacement.standaloneBlocks.Count; index++)
+            {
+                string recordId = replacement.standaloneBlocks[index]?.recordId ?? string.Empty;
+                if (recordId.Length == 0 || !blockIds.Add(recordId)) return false;
+            }
+            for (int rootIndex = 0; replacement?.threadRoots != null
+                && rootIndex < replacement.threadRoots.Count; rootIndex++)
+            {
+                SavedMemoryThreadRoot root = replacement.threadRoots[rootIndex];
+                if (root == null || string.IsNullOrWhiteSpace(root.rootId)
+                    || !rootIds.Add(root.rootId)) return false;
+                for (int blockIndex = 0; root.visibleBlocks != null
+                    && blockIndex < root.visibleBlocks.Count; blockIndex++)
+                {
+                    string recordId = root.visibleBlocks[blockIndex]?.recordId ?? string.Empty;
+                    if (recordId.Length == 0 || !blockIds.Add(recordId)) return false;
+                }
+                string rollingId = root.rollingSummaryBlock?.recordId ?? string.Empty;
+                if (rollingId.Length > 0 && !blockIds.Add(rollingId)) return false;
+            }
+            return true;
+        }
+
         private static void CopyFirstCulture(
             PawnKnowledgeState target, PawnKnowledgeState source)
         {
+            if (target == null || source == null) return;
             if (string.IsNullOrWhiteSpace(target.originCultureDefName)
                 && !string.IsNullOrWhiteSpace(source.originCultureDefName))
                 target.originCultureDefName = source.originCultureDefName;
@@ -499,12 +616,28 @@ namespace PawnDiary
                 if (row == null) continue;
                 string key = identity(row) ?? string.Empty;
                 if (string.IsNullOrWhiteSpace(key)) return false;
-                if (seen.Add(key))
-                {
-                    T detached = clone(row);
-                    if (detached == null) return false;
-                    target.Add(detached);
-                }
+                // A duplicate key must be resolved by its row-family repair policy. Silently keeping
+                // whichever physical holder happened to appear first is data loss and permutation-
+                // dependent. Families without a semantic merger leave the whole owner raw instead.
+                if (!seen.Add(key)) return false;
+                T detached = clone(row);
+                if (detached == null) return false;
+                target.Add(detached);
+            }
+            return true;
+        }
+
+        private static bool AddDetachedRows<T>(
+            List<T> target,
+            List<T> source,
+            Func<T, T> clone) where T : class
+        {
+            for (int index = 0; source != null && index < source.Count; index++)
+            {
+                if (source[index] == null) continue;
+                T detached = clone(source[index]);
+                if (detached == null) return false;
+                target.Add(detached);
             }
             return true;
         }
@@ -695,16 +828,21 @@ namespace PawnDiary
                     ownerEpochToken = replacement.autobiographicalEpochToken,
                     primarySubjectKind = MemoryContractTokens.SubjectPawn,
                     primarySubjectId = subjectId
-                }, out rootId)) return false;
+                }, out rootId))
+            {
+                PlaceLegacyStandalone(replacement, block);
+                return true;
+            }
             int rootIndex = FindSavedRootIndex(replacement.threadRoots, rootId);
             if (rootIndex >= 0 && IsLateAfterClosedBoundary(
                     replacement.threadRoots[rootIndex], block.originalEventTick, block.ageUnknown))
             {
-                replacement.standaloneBlocks.Add(block);
+                PlaceLegacyStandalone(replacement, block);
                 return true;
             }
 
             SavedMemoryThreadRoot root;
+            bool createsRoot = rootIndex < 0;
             if (rootIndex < 0)
             {
                 root = new SavedMemoryThreadRoot
@@ -720,13 +858,17 @@ namespace PawnDiary
                     statusRevision = 1,
                     nextChapterOrdinal = 1
                 };
-                if (!rootIds.Add(rootId)) return false;
-                replacement.threadRoots.Add(root);
-                rootIndex = replacement.threadRoots.Count - 1;
+                if (rootIds.Contains(rootId))
+                {
+                    PlaceLegacyStandalone(replacement, block);
+                    return true;
+                }
             }
             else
             {
-                root = replacement.threadRoots[rootIndex];
+                // Build the whole placement/reduction off to the side. Chapter saturation or a
+                // reducer refusal must not leave a partly-mutated root when this row falls back.
+                root = CloneSavedRoot(replacement.threadRoots[rootIndex]);
             }
 
             string subjectRefId;
@@ -735,7 +877,11 @@ namespace PawnDiary
                     subjectId,
                     "participant",
                     KnowledgeObservationTokens.EvidenceCaptured,
-                    out subjectRefId)) return false;
+                    out subjectRefId))
+            {
+                PlaceLegacyStandalone(replacement, block);
+                return true;
+            }
             block.primarySubject = new SavedMemorySubjectRef
             {
                 schemaVersion = 1,
@@ -749,16 +895,46 @@ namespace PawnDiary
             bool saturated;
             SavedMemoryChapter chapter = FindOrCreateOpenChapter(
                 root, block.originalEventTick, string.Empty, out saturated);
-            if (chapter == null) return false;
+            if (chapter == null)
+            {
+                PlaceLegacyStandalone(replacement, block);
+                return true;
+            }
             block.rootId = root.rootId;
             block.chapterId = chapter.chapterId;
             root.visibleBlocks.Add(block);
             chapter.lastActivityTick = Math.Max(chapter.lastActivityTick, block.originalEventTick);
             MemoryThreadReductionResult reduction = MemoryThreadReducer.Reduce(
                 ToReducerRoot(root, reducer), reducer);
-            if (reduction.refused) return false;
-            replacement.threadRoots[rootIndex] = FromReducerRoot(reduction.replacement, root);
+            if (reduction.refused)
+            {
+                PlaceLegacyStandalone(replacement, block);
+                return true;
+            }
+            SavedMemoryThreadRoot reduced = FromReducerRoot(reduction.replacement, root);
+            if (createsRoot)
+            {
+                if (!rootIds.Add(rootId))
+                {
+                    PlaceLegacyStandalone(replacement, block);
+                    return true;
+                }
+                replacement.threadRoots.Add(reduced);
+            }
+            else
+            {
+                replacement.threadRoots[rootIndex] = reduced;
+            }
             return true;
+        }
+
+        private static void PlaceLegacyStandalone(
+            PawnKnowledgeState replacement,
+            SavedMemoryBlock block)
+        {
+            block.rootId = string.Empty;
+            block.chapterId = string.Empty;
+            replacement.standaloneBlocks.Add(block);
         }
 
         private static bool TryResolveLegacyPawnSubject(
@@ -1112,40 +1288,79 @@ namespace PawnDiary
             return current < 1 ? 1 : current == long.MaxValue ? long.MaxValue : current + 1;
         }
 
-        private static void PublishLegacyOwnerCommit(
-            List<PawnDiaryRecord> holders, LegacyOwnerCommitPlan commit)
+        /// <summary>
+        /// Builds every object reference used by the commit tail before publication begins. The
+        /// publish block below then performs assignments only: no constructors, hashing, callbacks,
+        /// normalization, or list growth can strand a partly-cleared duplicate group (§T13.5).
+        /// </summary>
+        private void BuildLegacyPublicationProjections(
+            List<PawnDiaryRecord> holders,
+            LegacyOwnerCommitPlan commit)
         {
-            PawnDiaryRecord primary = holders[0];
-            MergeLegacyReflectionState(holders, primary, commit.epochToken);
-            primary.knowledgeState = commit.replacement;
+            commit.holderKnowledgeStates.Add(commit.replacement);
+            commit.holderReflectionStates.Add(BuildMergedLegacyReflectionState(
+                holders, holders[0], commit.epochToken));
             for (int index = 1; index < holders.Count; index++)
             {
-                PawnDiaryRecord duplicate = holders[index];
-                PawnKnowledgeState prior = duplicate.knowledgeState;
+                PawnKnowledgeState prior = holders[index]?.knowledgeState;
                 PawnKnowledgeState inert = PawnKnowledgeState.CreateCurrent(commit.ownerPawnId);
                 if (prior != null) CopyFirstCulture(inert, prior);
-                // A duplicate physical holder is not an enrolled autobiography and must not look
-                // like a fresh current owner. Zero is the explicit unenrolled/inert schema default.
                 inert.autobiographicalEpochToken = string.Empty;
                 inert.archiveOnly = false;
                 inert.epochFenceOnly = false;
                 inert.requestCancellationGeneration = 0;
                 inert.structuralRevision = 0;
                 inert.statusRevision = 0;
-                inert.completedDiaryEntryOrdinal = 0;
-                duplicate.knowledgeState = inert;
-                if (duplicate.reflectionState != null)
+                // The owner-local completion ordinal is always one-based, even on an unenrolled
+                // duplicate holder. Zero is invalid and would make later policy fail closed.
+                inert.completedDiaryEntryOrdinal = 1;
+                commit.holderKnowledgeStates.Add(inert);
+
+                PawnReflectionState duplicate = CloneReflectionState(
+                    holders[index]?.reflectionState);
+                if (duplicate != null)
                 {
-                    duplicate.reflectionState.memoryReflectionSchemaVersion = 0;
-                    duplicate.reflectionState.memoryOwnerEpochToken = string.Empty;
-                    duplicate.reflectionState.lastQuietMemoryEvaluatedAbsoluteDay = -1;
-                    duplicate.reflectionState.lastQuietMemoryActivatedAbsoluteQuadrum = -1;
-                    duplicate.reflectionState.lastQuietMemoryDecisionKey = string.Empty;
+                    duplicate.memoryReflectionSchemaVersion = 0;
+                    duplicate.memoryOwnerEpochToken = string.Empty;
+                    duplicate.lastQuietMemoryEvaluatedAbsoluteDay = -1;
+                    duplicate.lastQuietMemoryActivatedAbsoluteQuadrum = -1;
+                    duplicate.lastQuietMemoryDecisionKey = string.Empty;
                 }
+                commit.holderReflectionStates.Add(duplicate);
+            }
+
+            for (int index = 0; legacyOwnerEpochReservations != null
+                && index < legacyOwnerEpochReservations.Count; index++)
+            {
+                SavedLegacyOwnerEpochReservation reservation =
+                    legacyOwnerEpochReservations[index];
+                if (reservation == null || string.Equals(
+                        reservation.ownerPawnId,
+                        commit.ownerPawnId,
+                        StringComparison.Ordinal)) continue;
+                commit.remainingEpochReservations.Add(new SavedLegacyOwnerEpochReservation
+                {
+                    schemaVersion = reservation.schemaVersion,
+                    ownerPawnId = reservation.ownerPawnId,
+                    reservedEpochSequence = reservation.reservedEpochSequence
+                });
             }
         }
 
-        private static void MergeLegacyReflectionState(
+        private void PublishLegacyOwnerCommit(
+            List<PawnDiaryRecord> holders, LegacyOwnerCommitPlan commit)
+        {
+            // Counts were built from this exact holder list during preparation. No statement in
+            // this loop allocates or invokes policy code, so publication cannot throw midway.
+            for (int index = 0; index < holders.Count; index++)
+            {
+                holders[index].knowledgeState = commit.holderKnowledgeStates[index];
+                holders[index].reflectionState = commit.holderReflectionStates[index];
+            }
+            legacyOwnerEpochReservations = commit.remainingEpochReservations;
+        }
+
+        private static PawnReflectionState BuildMergedLegacyReflectionState(
             List<PawnDiaryRecord> holders, PawnDiaryRecord primary, string epochToken)
         {
             int evaluatedDay = -1;
@@ -1187,20 +1402,40 @@ namespace PawnDiary
                     epochToken,
                     evaluatedDay,
                     sawPass && !sawFail && !sawInvalid);
-            PawnReflectionState merged = primary.EnsureReflectionState();
+            PawnReflectionState merged = CloneReflectionState(primary?.reflectionState)
+                ?? new PawnReflectionState();
             merged.memoryReflectionSchemaVersion = 1;
             merged.memoryOwnerEpochToken = epochToken;
             merged.lastQuietMemoryEvaluatedAbsoluteDay = evaluatedDay;
             merged.lastQuietMemoryActivatedAbsoluteQuadrum = activatedQuadrum;
             merged.lastQuietMemoryDecisionKey = decisionKey;
+            return merged;
         }
 
-        private void RemoveLegacyEpochReservation(string ownerPawnId)
+        private static PawnReflectionState CloneReflectionState(PawnReflectionState source)
         {
-            for (int index = legacyOwnerEpochReservations.Count - 1; index >= 0; index--)
-                if (string.Equals(legacyOwnerEpochReservations[index]?.ownerPawnId,
-                    ownerPawnId, StringComparison.Ordinal))
-                    legacyOwnerEpochReservations.RemoveAt(index);
+            if (source == null) return null;
+            return new PawnReflectionState
+            {
+                baselineOnNextOpportunity = source.baselineOnNextOpportunity,
+                linkedBaselineOnNextOpportunity = source.linkedBaselineOnNextOpportunity,
+                lastReflectionTick = source.lastReflectionTick,
+                lastMajorArcTick = source.lastMajorArcTick,
+                lastCrossArcTick = source.lastCrossArcTick,
+                lastBeliefTick = source.lastBeliefTick,
+                lastQuadrumTick = source.lastQuadrumTick,
+                lastDayTick = source.lastDayTick,
+                pendingMajorArc = source.pendingMajorArc,
+                pendingMajorArcRequestedTick = source.pendingMajorArcRequestedTick,
+                pendingMajorArcAvoidEventId = source.pendingMajorArcAvoidEventId,
+                memoryReflectionSchemaVersion = source.memoryReflectionSchemaVersion,
+                memoryOwnerEpochToken = source.memoryOwnerEpochToken,
+                lastQuietMemoryEvaluatedAbsoluteDay =
+                    source.lastQuietMemoryEvaluatedAbsoluteDay,
+                lastQuietMemoryActivatedAbsoluteQuadrum =
+                    source.lastQuietMemoryActivatedAbsoluteQuadrum,
+                lastQuietMemoryDecisionKey = source.lastQuietMemoryDecisionKey
+            };
         }
 
         internal static MemoryLegacyRecordSnapshot SnapshotLegacyRecord(ImportantMemoryRecord record)

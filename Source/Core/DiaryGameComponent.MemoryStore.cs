@@ -1109,6 +1109,13 @@ namespace PawnDiary
             "capacity_refused",
             "newer_reducer_revision",
             "repair_refused",
+            "memory_preparation_failed",
+            "memory_request_identity_mismatch",
+            "memory_queue_admission_refused",
+            "memory_stage_refused",
+            "memory_saved_activation_failed",
+            "memory_transport_activation_failed",
+            "memory_activation_failed",
             MemoryThreadRepairPolicy.AutomaticConflictDiagnosticToken,
             "other"
         };
@@ -1162,7 +1169,10 @@ namespace PawnDiary
                         continue;
                     }
 
-                    AddKnowledgeEpochTokenCarriers(input.epochTokenCarriers, state);
+                    AddKnowledgeAllocatorCarriers(
+                        input.epochTokenCarriers,
+                        input.factionAllocatorGenerationCarriers,
+                        state);
                     if (diary.reflectionState != null)
                     {
                         AddEpochToken(input.epochTokenCarriers,
@@ -1223,14 +1233,29 @@ namespace PawnDiary
         internal static void AddKnowledgeEpochTokenCarriers(
             List<string> carriers, PawnKnowledgeState state)
         {
-            if (carriers == null || state == null)
+            AddKnowledgeAllocatorCarriers(carriers, null, state);
+        }
+
+        /// <summary>
+        /// Walks the exact typed identity fields in one current owner envelope. Only successful
+        /// canonical codec parses contribute; prose, labels, Imported rows, and diagnostics remain
+        /// deliberately opaque (§T13.2).
+        /// </summary>
+        internal static void AddKnowledgeAllocatorCarriers(
+            List<string> epochCarriers,
+            List<long> factionGenerationCarriers,
+            PawnKnowledgeState state)
+        {
+            if (state == null)
             {
                 return;
             }
 
-            AddEpochToken(carriers, state.autobiographicalEpochToken);
-            AddEpochTokens(carriers, state.standaloneBlocks, b => b?.ownerEpochToken);
-            AddEpochTokens(carriers, state.repetitionGuardRows, r => r?.ownerEpochToken);
+            AddEpochToken(epochCarriers, state.autobiographicalEpochToken);
+            for (int index = 0; state.standaloneBlocks != null
+                && index < state.standaloneBlocks.Count; index++)
+                AddSavedBlockAllocatorCarriers(
+                    epochCarriers, factionGenerationCarriers, state.standaloneBlocks[index]);
             for (int i = 0; state.threadRoots != null && i < state.threadRoots.Count; i++)
             {
                 SavedMemoryThreadRoot root = state.threadRoots[i];
@@ -1239,10 +1264,231 @@ namespace PawnDiary
                     continue;
                 }
 
-                AddEpochToken(carriers, root.ownerEpochToken);
-                AddEpochTokens(carriers, root.visibleBlocks, b => b?.ownerEpochToken);
-                AddEpochToken(carriers, root.rollingSummaryBlock?.ownerEpochToken);
+                AddEpochToken(epochCarriers, root.ownerEpochToken);
+                AddRootIdAllocatorCarriers(
+                    epochCarriers, factionGenerationCarriers, root.rootId);
+                AddFactionSubjectCarrier(
+                    factionGenerationCarriers, root.subjectKind, root.subjectId);
+                for (int chapterIndex = 0; root.chapters != null
+                    && chapterIndex < root.chapters.Count; chapterIndex++)
+                {
+                    string embeddedRoot;
+                    long ignoredOrdinal;
+                    if (MemoryIdentityCodec.TryParseChapterId(
+                            root.chapters[chapterIndex]?.chapterId,
+                            out embeddedRoot,
+                            out ignoredOrdinal))
+                        AddRootIdAllocatorCarriers(
+                            epochCarriers, factionGenerationCarriers, embeddedRoot);
+                }
+                for (int blockIndex = 0; root.visibleBlocks != null
+                    && blockIndex < root.visibleBlocks.Count; blockIndex++)
+                    AddSavedBlockAllocatorCarriers(
+                        epochCarriers,
+                        factionGenerationCarriers,
+                        root.visibleBlocks[blockIndex]);
+                AddSavedBlockAllocatorCarriers(
+                    epochCarriers, factionGenerationCarriers, root.rollingSummaryBlock);
             }
+
+            for (int index = 0; state.ownerAwarenessSnapshots != null
+                && index < state.ownerAwarenessSnapshots.Count; index++)
+            {
+                SavedMemoryAwarenessSnapshot row = state.ownerAwarenessSnapshots[index];
+                string parsedOwner;
+                string parsedEpoch;
+                string parsedKind;
+                string parsedSubject;
+                if (row != null && KnowledgeRelationPolicy.TryParseAwarenessId(
+                        row.snapshotId,
+                        out parsedOwner,
+                        out parsedEpoch,
+                        out parsedKind,
+                        out parsedSubject)
+                    && string.Equals(parsedOwner, state.pawnId, StringComparison.Ordinal))
+                    AddEpochToken(epochCarriers, parsedEpoch);
+                AddFactionSubjectCarrier(
+                    factionGenerationCarriers, row?.subjectKind, row?.subjectId);
+            }
+
+            for (int index = 0; state.openCaptureEpisodes != null
+                && index < state.openCaptureEpisodes.Count; index++)
+            {
+                SavedMemoryCaptureEpisode row = state.openCaptureEpisodes[index];
+                string parsedOwner;
+                string parsedEpoch;
+                string parsedKind;
+                string parsedSubject;
+                if (row != null && KnowledgeRelationPolicy.TryParseEpisodeId(
+                        row.episodeId,
+                        out parsedOwner,
+                        out parsedEpoch,
+                        out parsedKind,
+                        out parsedSubject)
+                    && string.Equals(parsedOwner, state.pawnId, StringComparison.Ordinal))
+                    AddEpochToken(epochCarriers, parsedEpoch);
+                AddFactionSubjectCarrier(
+                    factionGenerationCarriers, row?.subjectKind, row?.subjectId);
+            }
+
+            for (int index = 0; state.repetitionGuardRows != null
+                && index < state.repetitionGuardRows.Count; index++)
+            {
+                SavedMemoryRepetitionGuardRow guard = state.repetitionGuardRows[index];
+                AddEpochToken(epochCarriers, guard?.ownerEpochToken);
+                string subjectKind;
+                string subjectId;
+                if (guard != null && MemoryRepetitionGuardPolicy.TryParseSubjectKey(
+                        guard.guardKey, out subjectKind, out subjectId))
+                    AddFactionSubjectCarrier(
+                        factionGenerationCarriers, subjectKind, subjectId);
+                string firstEndpoint;
+                string secondEndpoint;
+                if (guard != null && MemoryRepetitionGuardPolicy.TryParsePairKey(
+                        guard.guardKey, out firstEndpoint, out secondEndpoint))
+                {
+                    AddFactionSubjectCarrier(
+                        factionGenerationCarriers,
+                        MemoryContractTokens.SubjectFaction,
+                        firstEndpoint);
+                    AddFactionSubjectCarrier(
+                        factionGenerationCarriers,
+                        MemoryContractTokens.SubjectFaction,
+                        secondEndpoint);
+                }
+            }
+        }
+
+        private static void AddSavedBlockAllocatorCarriers(
+            List<string> epochCarriers,
+            List<long> factionGenerationCarriers,
+            SavedMemoryBlock block)
+        {
+            if (block == null) return;
+            AddEpochToken(epochCarriers, block.ownerEpochToken);
+            AddRecordIdAllocatorCarriers(
+                epochCarriers, factionGenerationCarriers, block.recordId);
+            AddRootIdAllocatorCarriers(
+                epochCarriers, factionGenerationCarriers, block.rootId);
+            string embeddedRoot;
+            long ignoredOrdinal;
+            if (MemoryIdentityCodec.TryParseChapterId(
+                    block.chapterId, out embeddedRoot, out ignoredOrdinal))
+                AddRootIdAllocatorCarriers(
+                    epochCarriers, factionGenerationCarriers, embeddedRoot);
+            AddSavedSubjectAllocatorCarrier(
+                factionGenerationCarriers, block.primarySubject);
+            for (int index = 0; block.secondarySubjects != null
+                && index < block.secondarySubjects.Count; index++)
+                AddSavedSubjectAllocatorCarrier(
+                    factionGenerationCarriers, block.secondarySubjects[index]);
+            for (int index = 0; block.facts != null && index < block.facts.Count; index++)
+            {
+                SavedMemoryCanonicalFact fact = block.facts[index];
+                AddFactionSubjectCarrier(
+                    factionGenerationCarriers,
+                    fact?.canonicalSubjectKind,
+                    fact?.canonicalSubjectId);
+            }
+            AddSavedSummaryAllocatorCarriers(
+                epochCarriers, factionGenerationCarriers, block.summaryPayload);
+        }
+
+        private static void AddSavedSummaryAllocatorCarriers(
+            List<string> epochCarriers,
+            List<long> factionGenerationCarriers,
+            SavedMemorySummaryPayload summary)
+        {
+            if (summary == null) return;
+            for (int index = 0; summary.subjectRefs != null
+                && index < summary.subjectRefs.Count; index++)
+                AddSavedSubjectAllocatorCarrier(
+                    factionGenerationCarriers, summary.subjectRefs[index]);
+            for (int bucketIndex = 0; summary.factBuckets != null
+                && bucketIndex < summary.factBuckets.Count; bucketIndex++)
+            {
+                SavedMemoryFactBucket bucket = summary.factBuckets[bucketIndex];
+                AddFactionSubjectCarrier(
+                    factionGenerationCarriers,
+                    bucket?.canonicalSubjectKind,
+                    bucket?.canonicalSubjectId);
+                for (int contributionIndex = 0; bucket?.contributions != null
+                    && contributionIndex < bucket.contributions.Count; contributionIndex++)
+                {
+                    SavedMemoryFactContribution contribution =
+                        bucket.contributions[contributionIndex];
+                    if (contribution == null) continue;
+                    string embeddedRoot;
+                    long ignoredOrdinal;
+                    if (MemoryIdentityCodec.TryParseChapterId(
+                            contribution.originChapterId,
+                            out embeddedRoot,
+                            out ignoredOrdinal))
+                        AddRootIdAllocatorCarriers(
+                            epochCarriers, factionGenerationCarriers, embeddedRoot);
+                    AddRecordIdAllocatorCarriers(
+                        epochCarriers,
+                        factionGenerationCarriers,
+                        contribution.originRecordId);
+                }
+            }
+        }
+
+        private static void AddRecordIdAllocatorCarriers(
+            List<string> epochCarriers,
+            List<long> factionGenerationCarriers,
+            string recordId)
+        {
+            MemoryRecordIdentity record;
+            if (MemoryIdentityCodec.TryParseRecordId(recordId, out record))
+            {
+                AddEpochToken(epochCarriers, record.ownerEpochToken);
+                return;
+            }
+            MemoryRootIdentity summary;
+            long ignoredOrdinal;
+            if (MemoryIdentityCodec.TryParseRollingSummaryId(recordId, out summary)
+                || MemoryIdentityCodec.TryParseClosedSummaryId(
+                    recordId, out summary, out ignoredOrdinal))
+            {
+                AddEpochToken(epochCarriers, summary.ownerEpochToken);
+                AddFactionSubjectCarrier(
+                    factionGenerationCarriers,
+                    summary.primarySubjectKind,
+                    summary.primarySubjectId);
+            }
+        }
+
+        private static void AddRootIdAllocatorCarriers(
+            List<string> epochCarriers,
+            List<long> factionGenerationCarriers,
+            string rootId)
+        {
+            MemoryRootIdentity root;
+            if (!MemoryIdentityCodec.TryParseRootId(rootId, out root)) return;
+            AddEpochToken(epochCarriers, root.ownerEpochToken);
+            AddFactionSubjectCarrier(
+                factionGenerationCarriers,
+                root.primarySubjectKind,
+                root.primarySubjectId);
+        }
+
+        private static void AddSavedSubjectAllocatorCarrier(
+            List<long> carriers, SavedMemorySubjectRef subject)
+        {
+            AddFactionSubjectCarrier(
+                carriers, subject?.subjectKind, subject?.subjectId);
+        }
+
+        private static void AddFactionSubjectCarrier(
+            List<long> carriers, string subjectKind, string subjectId)
+        {
+            if (carriers == null
+                || subjectKind != MemoryContractTokens.SubjectFaction) return;
+            string ignoredFaction;
+            long generation;
+            if (MemoryIdentityCodec.TryParseFactionSubjectId(
+                    subjectId, out ignoredFaction, out generation)) carriers.Add(generation);
         }
 
         /// <summary>
@@ -1289,7 +1535,7 @@ namespace PawnDiary
 
         private static void AddEpochToken(List<string> carriers, string token)
         {
-            if (!string.IsNullOrEmpty(token))
+            if (carriers != null && !string.IsNullOrEmpty(token))
             {
                 carriers.Add(token);
             }

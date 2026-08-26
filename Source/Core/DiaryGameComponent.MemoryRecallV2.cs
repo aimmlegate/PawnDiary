@@ -49,10 +49,15 @@ namespace PawnDiary
         private MemoryRecallPromptProjection FreezeMemoryRecallV2Projection(
             DiaryEvent diaryEvent,
             string povRole,
-            PromptContextDetailLevel contextDetailLevel)
+            PromptContextDetailLevel contextDetailLevel,
+            bool persistSelection = true)
         {
             return BuildMemoryRecallV2Projection(
-                diaryEvent, povRole, contextDetailLevel, freezeSelection: true);
+                diaryEvent,
+                povRole,
+                contextDetailLevel,
+                freezeSelection: true,
+                persistFrozenSelection: persistSelection);
         }
 
         /// <summary>
@@ -66,14 +71,19 @@ namespace PawnDiary
             PromptContextDetailLevel contextDetailLevel)
         {
             return BuildMemoryRecallV2Projection(
-                diaryEvent, povRole, contextDetailLevel, freezeSelection: false);
+                diaryEvent,
+                povRole,
+                contextDetailLevel,
+                freezeSelection: false,
+                persistFrozenSelection: false);
         }
 
         private MemoryRecallPromptProjection BuildMemoryRecallV2Projection(
             DiaryEvent diaryEvent,
             string povRole,
             PromptContextDetailLevel contextDetailLevel,
-            bool freezeSelection)
+            bool freezeSelection,
+            bool persistFrozenSelection)
         {
             var empty = new MemoryRecallPromptProjection();
             if (diaryEvent == null
@@ -138,7 +148,7 @@ namespace PawnDiary
                 && !string.IsNullOrWhiteSpace(diaryEvent.initiatorPawnId))
             {
                 MemoryRecallSelectionResultV2 initiatorSelection = CachedFrozenRecallSelection(
-                    diaryEvent.eventId,
+                    diaryEvent,
                     DiaryEvent.InitiatorRole);
                 AddExcludedSelectedSources(query, initiatorSelection);
             }
@@ -147,12 +157,13 @@ namespace PawnDiary
             if (freezeSelection)
             {
                 selected = ImportantMemorySelector.SelectV2(query, candidates);
-                CacheFrozenRecallSelection(diaryEvent.eventId, povRole, selected);
+                if (persistFrozenSelection)
+                    CacheFrozenRecallSelection(diaryEvent, povRole, selected);
             }
             else
             {
                 selected = ImportantMemorySelector.RevalidateFrozenV2(
-                    CachedFrozenRecallSelection(diaryEvent.eventId, povRole),
+                    CachedFrozenRecallSelection(diaryEvent, povRole),
                     query,
                     candidates);
             }
@@ -504,12 +515,7 @@ namespace PawnDiary
         {
             saved = null;
             hadRecallEvidence = false;
-            string ownerPawnId = diaryEvent?.PawnIdForRole(povRole) ?? string.Empty;
-            PawnKnowledgeState owner = FindCurrentMemoryEnvelope(ownerPawnId);
-            if (owner == null
-                || string.IsNullOrWhiteSpace(owner.autobiographicalEpochToken)
-                || owner.requestCancellationGeneration <= 0
-                || owner.requestCancellationGeneration == long.MaxValue
+            if (diaryEvent == null
                 || promptVariants == null
                 || promptVariants.Count == 0) return false;
 
@@ -563,6 +569,15 @@ namespace PawnDiary
             }
 
             if (!hadRecallEvidence) return true;
+            // Inspect the already-rendered projections before validating mutable owner state. If
+            // that state is malformed, QueuePrompt must know it is discarding visible recall and
+            // rebuild every lane memory-free instead of sending unreceipted evidence.
+            string ownerPawnId = diaryEvent.PawnIdForRole(povRole) ?? string.Empty;
+            PawnKnowledgeState owner = FindCurrentMemoryEnvelope(ownerPawnId);
+            if (owner == null
+                || string.IsNullOrWhiteSpace(owner.autobiographicalEpochToken)
+                || owner.requestCancellationGeneration <= 0
+                || owner.requestCancellationGeneration == long.MaxValue) return false;
             long nextSequence;
             if (!TryPlanNextMemoryLogicalRequestSequence(out nextSequence)) return false;
             var build = new MemoryOptionalRequestBuildInput
@@ -1159,36 +1174,52 @@ namespace PawnDiary
         }
 
         private void CacheFrozenRecallSelection(
-            string eventId,
+            DiaryEvent diaryEvent,
             string povRole,
             MemoryRecallSelectionResultV2 selection)
         {
-            string key = RecallSelectionKey(eventId, povRole);
+            string encoded = MemoryFrozenRecallSelectionCodec.Encode(selection);
+            diaryEvent?.SetFrozenMemoryRecallSelectionForRole(povRole, encoded);
+            string key = RecallSelectionKey(diaryEvent?.eventId, povRole);
             if (!memoryRecallV2FrozenSelectionCache.ContainsKey(key)
                 && memoryRecallV2FrozenSelectionCache.Count >= MaximumFrozenRecallSelections)
             {
-                memoryRecallV2FrozenSelectionCache.Clear();
-                memoryRecallV2ProjectionCache.Clear();
+                // Preserve older pending events. The new event still owns its persisted encoding and
+                // can decode it on demand; no unrelated shortlist is evicted wholesale.
+                return;
             }
             memoryRecallV2FrozenSelectionCache[key] =
                 selection ?? new MemoryRecallSelectionResultV2();
         }
 
         private MemoryRecallSelectionResultV2 CachedFrozenRecallSelection(
-            string eventId,
+            DiaryEvent diaryEvent,
             string povRole)
         {
             MemoryRecallSelectionResultV2 selection;
-            return memoryRecallV2FrozenSelectionCache.TryGetValue(
-                RecallSelectionKey(eventId, povRole), out selection)
-                    ? selection
-                    : null;
+            string key = RecallSelectionKey(diaryEvent?.eventId, povRole);
+            if (memoryRecallV2FrozenSelectionCache.TryGetValue(key, out selection))
+                return selection;
+            selection = MemoryFrozenRecallSelectionCodec.Decode(
+                diaryEvent?.FrozenMemoryRecallSelectionForRole(povRole));
+            if (selection != null
+                && memoryRecallV2FrozenSelectionCache.Count < MaximumFrozenRecallSelections)
+                memoryRecallV2FrozenSelectionCache[key] = selection;
+            return selection;
         }
 
         /// <summary>Releases event-bound shortlist/projection data once dispatch has frozen receipts.</summary>
-        private void ClearMemoryRecallV2EventRole(string eventId, string povRole)
+        private void ClearMemoryRecallV2EventRole(
+            DiaryEvent diaryEvent, string povRole)
         {
+            string eventId = diaryEvent?.eventId ?? string.Empty;
             memoryRecallV2FrozenSelectionCache.Remove(RecallSelectionKey(eventId, povRole));
+            diaryEvent?.SetFrozenMemoryRecallSelectionForRole(povRole, string.Empty);
+            ClearMemoryRecallV2Projections(eventId, povRole);
+        }
+
+        private void ClearMemoryRecallV2Projections(string eventId, string povRole)
+        {
             string prefix = (eventId ?? string.Empty) + "\n" + (povRole ?? string.Empty) + "\n";
             var keys = new List<string>();
             foreach (string key in memoryRecallV2ProjectionCache.Keys)
@@ -1208,9 +1239,8 @@ namespace PawnDiary
                 && memoryRecallV2ProjectionCache.Count >= MaximumFrozenRecallProjections)
             {
                 // Detached player-entry drafts may project without freezing a selection. Bound that
-                // path directly too; a cleared event cache can only make later generation memory-free.
+                // path directly without deleting unrelated pending event-time shortlists.
                 memoryRecallV2ProjectionCache.Clear();
-                memoryRecallV2FrozenSelectionCache.Clear();
             }
             memoryRecallV2ProjectionCache[key] =
                 projection ?? new MemoryRecallPromptProjection();

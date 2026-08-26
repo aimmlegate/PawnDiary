@@ -236,6 +236,24 @@ namespace PawnDiary
                 + OrdinalSegmentCodec.Segment(subjectId));
         }
 
+        /// <summary>Decodes one exact typed-subject guard key after canonical validation.</summary>
+        public static bool TryParseSubjectKey(
+            string guardKey,
+            out string subjectKind,
+            out string subjectId)
+        {
+            subjectKind = string.Empty;
+            subjectId = string.Empty;
+            if (!IsCanonicalIdentity(MemoryRepetitionGuardKinds.Subject, guardKey)) return false;
+            int offset = 0;
+            string domain;
+            return ReadRaw(guardKey, ref offset, out domain)
+                && domain == SubjectKeyDomain
+                && ReadRaw(guardKey, ref offset, out subjectKind)
+                && ReadComposite(guardKey, ref offset, out subjectId)
+                && offset == guardKey.Length;
+        }
+
         /// <summary>
         /// Builds one unordered exact pawn-pair key. Endpoint order cannot create two cooldown rows.
         /// </summary>
@@ -259,6 +277,24 @@ namespace PawnDiary
             return BoundedCompositeKey(OrdinalSegmentCodec.Segment(PairKeyDomain)
                 + OrdinalSegmentCodec.Segment(first)
                 + OrdinalSegmentCodec.Segment(second));
+        }
+
+        /// <summary>Decodes one exact unordered pair guard key after canonical validation.</summary>
+        public static bool TryParsePairKey(
+            string guardKey,
+            out string firstSubjectId,
+            out string secondSubjectId)
+        {
+            firstSubjectId = string.Empty;
+            secondSubjectId = string.Empty;
+            if (!IsCanonicalIdentity(MemoryRepetitionGuardKinds.Pair, guardKey)) return false;
+            int offset = 0;
+            string domain;
+            return ReadRaw(guardKey, ref offset, out domain)
+                && domain == PairKeyDomain
+                && ReadRaw(guardKey, ref offset, out firstSubjectId)
+                && ReadRaw(guardKey, ref offset, out secondSubjectId)
+                && offset == guardKey.Length;
         }
 
         /// <summary>Builds one root-local novelty key for a chapter/projection identity.</summary>

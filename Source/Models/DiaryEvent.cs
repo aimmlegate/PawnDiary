@@ -148,6 +148,10 @@ namespace PawnDiary
             // no memory surfaced (the prompt field disappears entirely). Capped at 600 chars on
             // save-normalization so a corrupt save cannot bloat the prompt.
             internal string memoryContext;
+            // CurrentRelease Recall-v2 persists the exact event-time shortlist separately from its
+            // rendered text. A load can therefore revalidate the same IDs without reranking or
+            // silently losing memory while the event is still waiting to queue.
+            internal string memoryRecallV2FrozenSelection;
             // Quality Wave Phase 2 additive context. These are frozen event-time strings for the
             // first-person pawn slots only. Keeping them beside memoryContext gives both features the
             // same save/load and prompt-projection path without exposing live Pawn state downstream.
@@ -464,6 +468,9 @@ namespace PawnDiary
             Scribe_Values.Look(ref slot.narrativeContext, NarrativeSlotKey(prefix, NarrativeSaveKeys.Context));
             // Additive memory-context key. Old saves leave this null; NormalizeLoadedSlot coalesces it.
             Scribe_Values.Look(ref slot.memoryContext, prefix + "MemoryContext");
+            Scribe_Values.Look(
+                ref slot.memoryRecallV2FrozenSelection,
+                prefix + "MemoryRecallV2FrozenSelection");
             // Quality Wave Phase 2 additive keys. Old saves leave both null; normalization below
             // coalesces and caps them before any prompt can see them.
             Scribe_Values.Look(ref slot.identitySummary, prefix + "IdentitySummary");
@@ -574,6 +581,16 @@ namespace PawnDiary
             if (slot.memoryContext != null && slot.memoryContext.Length > 600)
             {
                 slot.memoryContext = slot.memoryContext.Substring(0, 600);
+            }
+            slot.memoryRecallV2FrozenSelection =
+                DiarySaveNormalization.NormalizeString(slot.memoryRecallV2FrozenSelection);
+            if (slot.memoryRecallV2FrozenSelection.Length
+                > MemoryIdentityCodec.MaximumFrozenPromptCharacters
+                || (slot.memoryRecallV2FrozenSelection.Length > 0
+                    && MemoryFrozenRecallSelectionCodec.Decode(
+                        slot.memoryRecallV2FrozenSelection) == null))
+            {
+                slot.memoryRecallV2FrozenSelection = string.Empty;
             }
             slot.identitySummary = NormalizeQualityWaveContext(slot.identitySummary);
             slot.moodSnapshot = NormalizeQualityWaveContext(slot.moodSnapshot);
@@ -1756,6 +1773,21 @@ namespace PawnDiary
             SlotFor(povRole).memoryContext = string.IsNullOrWhiteSpace(memoryContext)
                 ? string.Empty
                 : memoryContext.Trim();
+        }
+
+        /// <summary>Returns the bounded persisted event-time Recall-v2 shortlist encoding.</summary>
+        internal string FrozenMemoryRecallSelectionForRole(string povRole)
+        {
+            return RoleIsInitiatorOrRecipient(povRole)
+                ? SlotFor(povRole).memoryRecallV2FrozenSelection ?? string.Empty
+                : string.Empty;
+        }
+
+        /// <summary>Commits or clears one bounded event-time Recall-v2 shortlist encoding.</summary>
+        internal void SetFrozenMemoryRecallSelectionForRole(string povRole, string encoded)
+        {
+            if (!RoleIsInitiatorOrRecipient(povRole)) return;
+            SlotFor(povRole).memoryRecallV2FrozenSelection = encoded ?? string.Empty;
         }
 
         /// <summary>Freezes one already-localized, bounded key-relationships summary.</summary>

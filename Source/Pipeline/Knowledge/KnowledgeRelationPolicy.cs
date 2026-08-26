@@ -545,6 +545,49 @@ namespace PawnDiary
             }, out snapshotId);
         }
 
+        /// <summary>
+        /// Parses one exact awareness identity for allocator-carrier discovery. Callers receive only
+        /// the owner/epoch/subject fields; canonical reconstruction validates every other segment.
+        /// </summary>
+        public static bool TryParseAwarenessId(
+            string snapshotId,
+            out string ownerPawnId,
+            out string ownerEpochToken,
+            out string subjectKind,
+            out string subjectId)
+        {
+            ownerPawnId = string.Empty;
+            ownerEpochToken = string.Empty;
+            subjectKind = string.Empty;
+            subjectId = string.Empty;
+            string[] fields;
+            if (!TryReadExactIdentity(snapshotId, new[]
+                {
+                    MemoryIdentityCodec.MaximumRawIdentityCharacters,
+                    MemoryIdentityCodec.MaximumRawIdentityCharacters,
+                    MemoryIdentityCodec.MaximumEmbeddedCompositeCharacters,
+                    MemoryIdentityCodec.MaximumRawIdentityCharacters,
+                    MemoryIdentityCodec.MaximumRawIdentityCharacters,
+                    MemoryIdentityCodec.MaximumEmbeddedCompositeCharacters,
+                    MemoryIdentityCodec.MaximumRawIdentityCharacters
+                }, out fields)
+                || fields[0] != AwarenessDomain)
+            {
+                return false;
+            }
+
+            string canonical;
+            if (!TryCreateAwarenessId(
+                    fields[1], fields[2], fields[3], fields[4], fields[5], fields[6],
+                    out canonical)
+                || !string.Equals(snapshotId, canonical, StringComparison.Ordinal)) return false;
+            ownerPawnId = fields[1];
+            ownerEpochToken = fields[2];
+            subjectKind = fields[4];
+            subjectId = fields[5];
+            return true;
+        }
+
         /// <summary>Creates an exact directed pair key; reversing the pawns changes the key.</summary>
         public static bool TryCreateDirectedPairKey(
             string ownerPawnId,
@@ -584,6 +627,53 @@ namespace PawnDiary
                 factStreamToken, captureRuleId, episodeKindToken, subjectKind,
                 subjectId, pairOrStreamKey, directionToken
             }, out episodeId);
+        }
+
+        /// <summary>
+        /// Parses one exact capture-episode identity for allocator-carrier discovery. Canonical
+        /// reconstruction validates the complete eleven-segment identity before returning fields.
+        /// </summary>
+        public static bool TryParseEpisodeId(
+            string episodeId,
+            out string ownerPawnId,
+            out string ownerEpochToken,
+            out string subjectKind,
+            out string subjectId)
+        {
+            ownerPawnId = string.Empty;
+            ownerEpochToken = string.Empty;
+            subjectKind = string.Empty;
+            subjectId = string.Empty;
+            string[] fields;
+            if (!TryReadExactIdentity(episodeId, new[]
+                {
+                    MemoryIdentityCodec.MaximumRawIdentityCharacters,
+                    MemoryIdentityCodec.MaximumRawIdentityCharacters,
+                    MemoryIdentityCodec.MaximumEmbeddedCompositeCharacters,
+                    MemoryIdentityCodec.MaximumRawIdentityCharacters,
+                    MemoryIdentityCodec.MaximumRawIdentityCharacters,
+                    MemoryIdentityCodec.MaximumRawIdentityCharacters,
+                    MemoryIdentityCodec.MaximumRawIdentityCharacters,
+                    MemoryIdentityCodec.MaximumRawIdentityCharacters,
+                    MemoryIdentityCodec.MaximumEmbeddedCompositeCharacters,
+                    MemoryIdentityCodec.MaximumEmbeddedCompositeCharacters,
+                    MemoryIdentityCodec.MaximumRawIdentityCharacters
+                }, out fields)
+                || fields[0] != EpisodeDomain)
+            {
+                return false;
+            }
+
+            string canonical;
+            if (!TryCreateEpisodeId(
+                    fields[1], fields[2], fields[3], fields[4], fields[5], fields[6],
+                    fields[7], fields[8], fields[9], fields[10], out canonical)
+                || !string.Equals(episodeId, canonical, StringComparison.Ordinal)) return false;
+            ownerPawnId = fields[1];
+            ownerEpochToken = fields[2];
+            subjectKind = fields[7];
+            subjectId = fields[8];
+            return true;
         }
 
         /// <summary>
@@ -2162,6 +2252,31 @@ namespace PawnDiary
             if (builder.Length == 0
                 || builder.Length > MemoryIdentityCodec.MaximumCompleteKeyCharacters) return false;
             encoded = builder.ToString();
+            return true;
+        }
+
+        private static bool TryReadExactIdentity(
+            string encoded,
+            int[] maximumSegmentCharacters,
+            out string[] fields)
+        {
+            fields = null;
+            if (string.IsNullOrEmpty(encoded)
+                || encoded.Length > MemoryIdentityCodec.MaximumCompleteKeyCharacters
+                || maximumSegmentCharacters == null) return false;
+            var parsed = new string[maximumSegmentCharacters.Length];
+            int offset = 0;
+            for (int index = 0; index < parsed.Length; index++)
+            {
+                if (!OrdinalSegmentCodec.TryReadCanonicalSegment(
+                        encoded,
+                        ref offset,
+                        maximumSegmentCharacters[index],
+                        false,
+                        out parsed[index])) return false;
+            }
+            if (offset != encoded.Length) return false;
+            fields = parsed;
             return true;
         }
     }

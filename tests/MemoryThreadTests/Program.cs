@@ -368,6 +368,18 @@ namespace MemoryThreadTests
                 MemoryIdentityCodec.TryCreateRollingSummaryId(root, out rolling));
             AssertTrue("summary.closed.create",
                 MemoryIdentityCodec.TryCreateClosedSummaryId(root, 7, out closed));
+            MemoryRootIdentity parsedSummary;
+            long parsedChapter;
+            AssertTrue("summary.rolling.parse",
+                MemoryIdentityCodec.TryParseRollingSummaryId(rolling, out parsedSummary));
+            AssertEqual("summary.rolling.parse.epoch", Epoch(1),
+                parsedSummary.ownerEpochToken);
+            AssertTrue("summary.closed.parse",
+                MemoryIdentityCodec.TryParseClosedSummaryId(
+                    closed, out parsedSummary, out parsedChapter));
+            AssertEqual("summary.closed.parse.chapter", 7L, parsedChapter);
+            AssertEqual("summary.closed.parse.subject", faction,
+                parsedSummary.primarySubjectId);
             AssertTrue("summary.roles.distinct", rolling != closed);
             AssertContains("summary.rolling.domain", rolling, "memory-summary-rolling-v1");
             AssertContains("summary.closed.domain", closed, "memory-summary-closed-v1");

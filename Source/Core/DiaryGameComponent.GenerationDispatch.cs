@@ -49,13 +49,47 @@ namespace PawnDiary
             {
                 if (MemorySystemActivationGate.IsCurrentRelease && allowMemoryRecall)
                 {
-                    if (suppressRecallV2ForQueue)
+                    try
                     {
-                        PrepareMemoryRecallV2BackgroundOnly(diaryEvent, povRole, level);
+                        if (suppressRecallV2ForQueue)
+                        {
+                            PrepareMemoryRecallV2BackgroundOnly(diaryEvent, povRole, level);
+                        }
+                        else
+                        {
+                            PrepareMemoryRecallV2Projection(diaryEvent, povRole, level);
+                        }
                     }
-                    else
+                    catch (Exception exception)
                     {
-                        PrepareMemoryRecallV2Projection(diaryEvent, povRole, level);
+                        // Recall is optional. A malformed adapter row must not abort the primary
+                        // diary page before transport has even been staged.
+                        bool backgroundAlreadyFailed = suppressRecallV2ForQueue;
+                        suppressRecallV2ForQueue = true;
+                        RecordMemoryDiagnostic("memory_preparation_failed", "owner");
+                        ClearMemoryRecallV2Projections(diaryEvent.eventId, povRole);
+                        if (!backgroundAlreadyFailed)
+                        {
+                            try
+                            {
+                                // Player-authored background is independently eligible even when
+                                // episodic Recall fails, so preserve that layer when possible.
+                                PrepareMemoryRecallV2BackgroundOnly(diaryEvent, povRole, level);
+                            }
+                            catch (Exception)
+                            {
+                                diaryEvent.SetMemoryContext(povRole, string.Empty);
+                                ClearMemoryRecallV2Projections(diaryEvent.eventId, povRole);
+                            }
+                        }
+                        else
+                        {
+                            diaryEvent.SetMemoryContext(povRole, string.Empty);
+                        }
+                        Log.ErrorOnce(
+                            "[Pawn Diary] Recall preparation failed; continuing memory-free: "
+                                + exception,
+                            "PawnDiary.MemoryRecall.Preparation".GetHashCode());
                     }
                 }
                 return promptPlanFactory(level);
@@ -120,6 +154,8 @@ namespace PawnDiary
                 diaryEvent.SetPrompt(povRole, DiaryPromptCapture.Format(testPlan.systemPrompt, testRawText));
                 diaryEvent.SetLlmMeta(povRole, PromptTestEndpointLabel, string.Empty);
                 diaryEvent.MarkPromptOnly(povRole, "PawnDiary.Error.PromptTestModeCaptured".Translate());
+                if (MemorySystemActivationGate.IsCurrentRelease && allowMemoryRecall)
+                    ClearMemoryRecallV2EventRole(diaryEvent, povRole);
                 NotifyEntryStatusChanged(diaryEvent, povRole);
                 LogApiDebug("Captured prompt without generation event=" + diaryEvent.eventId + " role=" + povRole);
                 return;
@@ -178,41 +214,47 @@ namespace PawnDiary
                 && allowMemoryRecall
                 && stagedMemoryRequest == null)
             {
-                bool hadRecallEvidence;
-                SavedActiveLogicalRequestV1 recallRequest;
-                bool recallRequestBuilt;
+                bool hadRecallEvidence = false;
+                SavedActiveLogicalRequestV1 recallRequest = null;
+                bool recallRequestBuilt = false;
                 try
                 {
                     recallRequestBuilt = TryBuildNormalMemoryRequestForPromptVariants(
                         diaryEvent, povRole, promptVariants, out recallRequest,
                         out hadRecallEvidence);
                 }
+                catch (Exception exception)
+                {
+                    // Conservatively rebuild memory-free: an exception can occur after a projection
+                    // was rendered but before its receipt row was fully detached.
+                    hadRecallEvidence = true;
+                    Log.ErrorOnce(
+                        "[Pawn Diary] Recall request preparation failed; continuing memory-free: "
+                            + exception,
+                        "PawnDiary.MemoryRecall.RequestBuild".GetHashCode());
+                }
                 finally
                 {
-                    // The selected evidence/receipts are now detached in recallRequest. Keeping the
-                    // event-bound cache beyond this point would make long sessions grow without bound.
-                    ClearMemoryRecallV2EventRole(diaryEvent.eventId, povRole);
+                    // Prompt projections are disposable. Keep the event-time shortlist until the
+                    // transport request is actually activated so a stage/activation retry can bind
+                    // the same selection again.
+                    ClearMemoryRecallV2Projections(diaryEvent.eventId, povRole);
                 }
                 if (!recallRequestBuilt && hadRecallEvidence)
                 {
+                    RecordMemoryDiagnostic("memory_request_identity_mismatch", "owner");
                     // Recall is optional to the primary page. Any identity, receipt, cap, or frozen-
                     // variant refusal rebuilds the exact lane set memory-free before staging.
-                    suppressRecallV2ForQueue = true;
-                    routingPlan = effectivePromptPlanFactory(PromptContextDetailLevel.Full);
-                    if (routingPlan == null) return;
-                    promptPlan = PromptPlanForContextLevel(
-                        contextDetailLevel,
-                        routingPlan,
-                        effectivePromptPlanFactory);
-                    promptVariants = BuildPromptVariants(
-                        settings,
-                        target,
-                        failoverTargets,
-                        routingPlan,
-                        contextDetailLevel,
-                        promptPlan,
-                        effectivePromptPlanFactory);
-                    if (promptPlan == null || promptVariants == null) return;
+                    if (!TryRebuildPromptSetWithoutRecall(
+                            ref suppressRecallV2ForQueue,
+                            effectivePromptPlanFactory,
+                            settings,
+                            target,
+                            failoverTargets,
+                            contextDetailLevel,
+                            out routingPlan,
+                            out promptPlan,
+                            out promptVariants)) return;
                 }
                 else
                 {
@@ -223,7 +265,7 @@ namespace PawnDiary
             if (stagedMemoryRequest != null
                 && !CanAdmitActiveMemoryRequest(stagedMemoryRequest))
             {
-                RecordMemoryDiagnostic("other", "owner");
+                RecordMemoryDiagnostic("memory_queue_admission_refused", "owner");
                 if (!TryRebuildPromptSetWithoutRecall(
                         ref suppressRecallV2ForQueue,
                         effectivePromptPlanFactory,
@@ -244,7 +286,7 @@ namespace PawnDiary
                 && !TryBindMemoryTransportContext(
                     request, stagedMemoryRequest, promptVariants))
             {
-                RecordMemoryDiagnostic("other", "owner");
+                RecordMemoryDiagnostic("memory_request_identity_mismatch", "owner");
                 if (!TryRebuildPromptSetWithoutRecall(
                         ref suppressRecallV2ForQueue,
                         effectivePromptPlanFactory,
@@ -277,7 +319,8 @@ namespace PawnDiary
             LlmRequestStageOutcome stageOutcome = LlmClient.TryStage(request, out staged);
             if (stageOutcome != LlmRequestStageOutcome.Staged)
             {
-                if (stagedMemoryRequest != null) RecordMemoryDiagnostic("other", "owner");
+                if (stagedMemoryRequest != null)
+                    RecordMemoryDiagnostic("memory_stage_refused", "owner");
                 LogApiDebug(
                     "Could not stage request event=" + diaryEvent.eventId
                     + " role=" + povRole
@@ -302,7 +345,11 @@ namespace PawnDiary
                     diaryEvent.SetActiveMemoryLogicalRequestForRole(povRole, stagedMemoryRequest);
                     if (!MemoryDispatchSavedAdapter.TryActivate(stagedMemoryRequest))
                     {
-                        RecordMemoryDiagnostic("other", "owner");
+                        RecordMemoryDiagnostic("memory_saved_activation_failed", "owner");
+                        AppendTerminalMemoryAttemptAudits(
+                            stagedMemoryRequest,
+                            MemoryDispatchTokens.ActivationFailed,
+                            Math.Max(1, Find.TickManager?.TicksGame ?? 1));
                         return;
                     }
                     RebuildMemorySizeIndexes();
@@ -311,16 +358,32 @@ namespace PawnDiary
                 if (!LlmClient.Activate(staged))
                 {
                     // Session replacement can race the tiny stage->commit window. No send is claimed.
-                    if (stagedMemoryRequest != null) RecordMemoryDiagnostic("other", "owner");
+                    if (stagedMemoryRequest != null)
+                    {
+                        RecordMemoryDiagnostic("memory_transport_activation_failed", "owner");
+                        AppendTerminalMemoryAttemptAudits(
+                            stagedMemoryRequest,
+                            MemoryDispatchTokens.ActivationFailed,
+                            Math.Max(1, Find.TickManager?.TicksGame ?? 1));
+                    }
                     return;
                 }
                 transportActivated = true;
             }
             catch (Exception exception)
             {
-                if (stagedMemoryRequest != null) RecordMemoryDiagnostic("other", "owner");
-                Log.Error("[Pawn Diary] Failed while activating a staged generation request: "
-                    + exception);
+                if (stagedMemoryRequest != null)
+                {
+                    RecordMemoryDiagnostic("memory_activation_failed", "owner");
+                    AppendTerminalMemoryAttemptAudits(
+                        stagedMemoryRequest,
+                        MemoryDispatchTokens.ActivationFailed,
+                        Math.Max(1, Find.TickManager?.TicksGame ?? 1));
+                }
+                Log.ErrorOnce(
+                    "[Pawn Diary] Failed while activating a staged generation request: "
+                        + exception,
+                    "PawnDiary.Generation.Activation".GetHashCode());
             }
             finally
             {
@@ -328,6 +391,9 @@ namespace PawnDiary
                     RollBackStagedGeneration(diaryEvent, povRole, stagedMemoryRequest, staged);
             }
             if (!transportActivated) return;
+
+            if (MemorySystemActivationGate.IsCurrentRelease && allowMemoryRecall)
+                ClearMemoryRecallV2EventRole(diaryEvent, povRole);
 
             LogApiDebug(
                 "Queue event=" + diaryEvent.eventId
@@ -352,12 +418,16 @@ namespace PawnDiary
             try { LlmClient.CancelStaged(staged); }
             catch (Exception exception)
             {
-                Log.Error("[Pawn Diary] Could not cancel a staged generation request: " + exception);
+                Log.ErrorOnce(
+                    "[Pawn Diary] Could not cancel a staged generation request: " + exception,
+                    "PawnDiary.Generation.Rollback.CancelStage".GetHashCode());
             }
             try { diaryEvent.RollBackQueuedBeforeActivation(povRole); }
             catch (Exception exception)
             {
-                Log.Error("[Pawn Diary] Could not roll back queued diary state: " + exception);
+                Log.ErrorOnce(
+                    "[Pawn Diary] Could not roll back queued diary state: " + exception,
+                    "PawnDiary.Generation.Rollback.DiaryState".GetHashCode());
             }
             if (stagedMemoryRequest != null)
             {
@@ -368,7 +438,9 @@ namespace PawnDiary
                 }
                 catch (Exception exception)
                 {
-                    Log.Error("[Pawn Diary] Could not clear a staged memory request: " + exception);
+                    Log.ErrorOnce(
+                        "[Pawn Diary] Could not clear a staged memory request: " + exception,
+                        "PawnDiary.Generation.Rollback.MemoryRequest".GetHashCode());
                 }
                 try
                 {
@@ -377,18 +449,24 @@ namespace PawnDiary
                 }
                 catch (Exception exception)
                 {
-                    Log.Error("[Pawn Diary] Could not release staged send envelopes: " + exception);
+                    Log.ErrorOnce(
+                        "[Pawn Diary] Could not release staged send envelopes: " + exception,
+                        "PawnDiary.Generation.Rollback.SendEnvelopes".GetHashCode());
                 }
                 try { invokedGenerationCutoffs.Settle(stagedMemoryRequest.logicalRequestId); }
                 catch (Exception exception)
                 {
-                    Log.Error("[Pawn Diary] Could not settle a staged generation cutoff: " + exception);
+                    Log.ErrorOnce(
+                        "[Pawn Diary] Could not settle a staged generation cutoff: " + exception,
+                        "PawnDiary.Generation.Rollback.Cutoff".GetHashCode());
                 }
             }
             try { NotifyEntryStatusChanged(diaryEvent, povRole); }
             catch (Exception exception)
             {
-                Log.Error("[Pawn Diary] Could not publish staged-request rollback status: " + exception);
+                Log.ErrorOnce(
+                    "[Pawn Diary] Could not publish staged-request rollback status: " + exception,
+                    "PawnDiary.Generation.Rollback.Status".GetHashCode());
             }
         }
 

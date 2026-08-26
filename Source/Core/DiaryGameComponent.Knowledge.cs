@@ -1175,14 +1175,16 @@ namespace PawnDiary
                     FreezeMemoryRecallV2Projection(
                         diaryEvent,
                         DiaryEvent.InitiatorRole,
-                        PromptContextDetailLevel.Full);
+                        PromptContextDetailLevel.Full,
+                        persistSelection: createMissingKnowledgeState);
                     if (!diaryEvent.solo
                         && !string.IsNullOrWhiteSpace(diaryEvent.recipientPawnId))
                     {
                         FreezeMemoryRecallV2Projection(
                             diaryEvent,
                             DiaryEvent.RecipientRole,
-                            PromptContextDetailLevel.Full);
+                            PromptContextDetailLevel.Full,
+                            persistSelection: createMissingKnowledgeState);
                     }
                     return;
                 }
