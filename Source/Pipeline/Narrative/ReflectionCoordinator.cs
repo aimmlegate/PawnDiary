@@ -8,13 +8,20 @@ using System.Collections.Generic;
 
 namespace PawnDiary
 {
-    /// <summary>Chooses at most one eligible reflection opportunity using XML-copied priorities.</summary>
+    /// <summary>
+    /// Chooses at most one eligible normal/meaningful/quiet/summary opportunity. Fixed class order is
+    /// enforced here; XML-copied priorities operate only inside a class.
+    /// </summary>
     internal static class ReflectionCoordinator
     {
         private sealed class RankedOpportunity
         {
             public ReflectionOpportunity opportunity;
+            public int workClassRank;
             public int priority;
+            public int salience;
+            public long changeTick;
+            public string opportunityKey = string.Empty;
         }
 
         /// <summary>
@@ -30,22 +37,6 @@ namespace PawnDiary
             }
 
             NarrativePolicySnapshot policy = request.policy ?? NarrativePolicySnapshot.CreateDefault();
-            if (!policy.enabled)
-            {
-                AddPolicyDisabledDiagnostics(result, request.opportunities);
-                AddPolicyDisabledStateInstructions(result, request.opportunities);
-                return result;
-            }
-
-            if (IsGlobalCooldownActive(request.currentTick, request.lastReflectionTick, policy))
-            {
-                AddGlobalCooldownDiagnostics(result, request.opportunities);
-                // Cooldown blocks dispatch, not source debt maintenance. A group switched off during
-                // another kind's cooldown must still advance/bound its current cadence window.
-                AddDisabledGroupInstructions(result, request.opportunities);
-                return result;
-            }
-
             List<RankedOpportunity> eligible = new List<RankedOpportunity>();
             List<ReflectionOpportunity> opportunities = request.opportunities ?? new List<ReflectionOpportunity>();
             for (int i = 0; i < opportunities.Count; i++)
@@ -55,18 +46,14 @@ namespace PawnDiary
                 if (!IsEligible(opportunity, request, policy, out rejection))
                 {
                     AddDiagnostic(result, opportunity, rejection);
-                    if (opportunity != null && !opportunity.groupEnabled)
+                    if (ShouldAdvanceDisabledDebt(opportunity, policy))
                     {
                         result.stateInstructions.Add(DisabledGroupInstruction(opportunity));
                     }
                     continue;
                 }
 
-                eligible.Add(new RankedOpportunity
-                {
-                    opportunity = opportunity,
-                    priority = PriorityFor(opportunity.kind, policy)
-                });
+                eligible.Add(Rank(opportunity, policy));
             }
 
             eligible.Sort(CompareRanked);
@@ -80,11 +67,18 @@ namespace PawnDiary
             result.consumption = new ReflectionStateConsumption
             {
                 kind = selected.kind ?? string.Empty,
+                workClass = selected.workClass ?? string.Empty,
+                opportunityKey = StableOpportunityKey(selected),
                 sourceEventIds = Copy(selected.sourceEventIds),
                 arcKeys = Copy(selected.arcKeys),
                 consumeAfterSuccessfulDispatch = true,
                 // Disabled groups are rejected above and get a separate non-dispatch instruction.
-                advanceDebtWhenGroupDisabled = false
+                advanceDebtWhenGroupDisabled = false,
+                producesPage = selected.workClass != ReflectionWorkClassTokens.SummaryWording,
+                advancesNarrativeCooldown =
+                    selected.workClass != ReflectionWorkClassTokens.SummaryWording,
+                consumesQuietQuadrumOnActivation =
+                    selected.workClass == ReflectionWorkClassTokens.QuietMemory
             };
             result.stateInstructions.Add(result.consumption);
             result.diagnostics.Add(new NarrativeCandidateDiagnostic
@@ -92,7 +86,7 @@ namespace PawnDiary
                 candidateKey = selected.kind ?? string.Empty,
                 selected = true,
                 reason = NarrativeDiagnosticTokens.Selected,
-                score = PriorityFor(selected.kind, policy)
+                score = ReflectionWorkClassTokens.Rank(selected.workClass)
             });
             return result;
         }
@@ -103,11 +97,33 @@ namespace PawnDiary
         /// </summary>
         public static bool CanConsumeAfterDispatch(ReflectionPlan plan, bool dispatchSucceeded)
         {
-            return dispatchSucceeded
-                && plan != null
-                && plan.selectedOpportunity != null
-                && plan.consumption != null
-                && plan.consumption.consumeAfterSuccessfulDispatch;
+            return SettleAfterActivation(plan, dispatchSucceeded, false).coordinatorSlotSettled;
+        }
+
+        /// <summary>
+        /// Separates committed coordinator activation from visible page registration. A summary can
+        /// settle successfully while both page/cooldown outputs remain false.
+        /// </summary>
+        public static ReflectionSettlementOutcome SettleAfterActivation(
+            ReflectionPlan plan,
+            bool committedActivation,
+            bool pageRegistered)
+        {
+            ReflectionSettlementOutcome outcome = new ReflectionSettlementOutcome();
+            ReflectionStateConsumption consumption = plan?.consumption;
+            if (!committedActivation
+                || plan?.selectedOpportunity == null
+                || consumption == null
+                || !consumption.consumeAfterSuccessfulDispatch)
+            {
+                return outcome;
+            }
+
+            outcome.coordinatorSlotSettled = true;
+            outcome.pageRegistered = consumption.producesPage && pageRegistered;
+            outcome.advanceNarrativeCooldown = consumption.advancesNarrativeCooldown;
+            outcome.consumeQuietQuadrum = consumption.consumesQuietQuadrumOnActivation;
+            return outcome;
         }
 
         /// <summary>Reports the global reflection cooldown using only detached tick/policy data.</summary>
@@ -157,9 +173,34 @@ namespace PawnDiary
             out string rejection)
         {
             rejection = string.Empty;
-            if (opportunity == null || !NarrativeReflectionKindTokens.IsKnown(opportunity.kind))
+            if (!IsKnownOpportunity(opportunity))
             {
-                rejection = NarrativeDiagnosticTokens.ReflectionNotDue;
+                rejection = NarrativeDiagnosticTokens.CoordinatorOpportunityInvalid;
+                return false;
+            }
+
+            bool normalReflection = opportunity.workClass == ReflectionWorkClassTokens.Normal
+                && NarrativeReflectionKindTokens.IsKnown(opportunity.kind);
+            bool optional = opportunity.workClass != ReflectionWorkClassTokens.Normal;
+            if ((normalReflection
+                    || opportunity.workClass == ReflectionWorkClassTokens.MeaningfulMemory
+                    || opportunity.workClass == ReflectionWorkClassTokens.QuietMemory)
+                && !policy.enabled)
+            {
+                rejection = NarrativeDiagnosticTokens.PolicyDisabled;
+                return false;
+            }
+
+            if (optional && !AllowsOptionalMemoryWork(request))
+            {
+                rejection = NarrativeDiagnosticTokens.OptionalMemoryDisabled;
+                return false;
+            }
+
+            if (opportunity.workClass == ReflectionWorkClassTokens.QuietMemory
+                && !request.occasionalMemoryReflections)
+            {
+                rejection = NarrativeDiagnosticTokens.QuietMemoryDisabled;
                 return false;
             }
 
@@ -169,26 +210,60 @@ namespace PawnDiary
                 return false;
             }
 
+            if (optional)
+            {
+                if (!HasValidOptionalWindow(opportunity))
+                {
+                    rejection = NarrativeDiagnosticTokens.CoordinatorOpportunityInvalid;
+                    return false;
+                }
+                if ((long)request.currentTick < opportunity.dueTick)
+                {
+                    rejection = NarrativeDiagnosticTokens.ReflectionNotDue;
+                    return false;
+                }
+                if ((long)request.currentTick >= opportunity.expiryTick)
+                {
+                    rejection = NarrativeDiagnosticTokens.CoordinatorOpportunityExpired;
+                    return false;
+                }
+            }
+
             if (opportunity.alreadyWritten)
             {
                 rejection = NarrativeDiagnosticTokens.ReflectionAlreadyWritten;
                 return false;
             }
 
-            if (!opportunity.cooldownSatisfied
-                || IsKindCooldownActive(opportunity.kind, request.currentTick, request.history, policy))
+            bool globalCooldown = opportunity.kind != CoordinatorOpportunityKindTokens.NormalAmbient
+                && IsGlobalCooldownActive(
+                    request.currentTick, request.lastReflectionTick, policy);
+            bool kindCooldown = opportunity.workClass != ReflectionWorkClassTokens.SummaryWording
+                && opportunity.kind != CoordinatorOpportunityKindTokens.NormalAmbient
+                && IsKindCooldownActive(
+                    opportunity.kind, request.currentTick, request.history, policy);
+            if (!opportunity.cooldownSatisfied || globalCooldown || kindCooldown)
             {
                 rejection = NarrativeDiagnosticTokens.ReflectionCooldown;
                 return false;
             }
 
-            if (opportunity.candidateMemoryCount <= 0)
+            // Ambient normal work already has an ordinary diary candidate, while summary wording
+            // points at one exact committed Summary row. Neither adapter invents a reflection-memory
+            // count merely to enter arbitration. Only page-producing reflection classes own these
+            // memory selection/span gates.
+            bool requiresReflectionMemories = normalReflection
+                || opportunity.workClass == ReflectionWorkClassTokens.MeaningfulMemory
+                || opportunity.workClass == ReflectionWorkClassTokens.QuietMemory;
+            if (requiresReflectionMemories && opportunity.candidateMemoryCount <= 0)
             {
                 rejection = NarrativeDiagnosticTokens.ReflectionNeedsMemories;
                 return false;
             }
 
-            if (opportunity.memorySpanTicks > 0 && policy.reflectionMaximumSpanTicks > 0
+            if (requiresReflectionMemories
+                && opportunity.memorySpanTicks > 0
+                && policy.reflectionMaximumSpanTicks > 0
                 && opportunity.memorySpanTicks > policy.reflectionMaximumSpanTicks)
             {
                 rejection = NarrativeDiagnosticTokens.ReflectionSpanExceeded;
@@ -207,6 +282,90 @@ namespace PawnDiary
             }
 
             return true;
+        }
+
+        private static bool IsKnownOpportunity(ReflectionOpportunity opportunity)
+        {
+            if (opportunity == null || !ReflectionWorkClassTokens.IsKnown(opportunity.workClass))
+            {
+                return false;
+            }
+
+            if (opportunity.workClass == ReflectionWorkClassTokens.Normal)
+            {
+                return string.IsNullOrEmpty(opportunity.timing)
+                    && (NarrativeReflectionKindTokens.IsKnown(opportunity.kind)
+                        || opportunity.kind == CoordinatorOpportunityKindTokens.NormalAmbient);
+            }
+            if (opportunity.workClass == ReflectionWorkClassTokens.MeaningfulMemory)
+            {
+                return opportunity.kind == CoordinatorOpportunityKindTokens.MemoryReflection
+                    && MemoryReflectionTimingTokens.IsMeaningful(opportunity.timing);
+            }
+            if (opportunity.workClass == ReflectionWorkClassTokens.QuietMemory)
+            {
+                return opportunity.kind == CoordinatorOpportunityKindTokens.MemoryReflection
+                    && opportunity.timing == MemoryReflectionTimingTokens.Quiet;
+            }
+            return opportunity.kind == CoordinatorOpportunityKindTokens.SummaryWording
+                && string.IsNullOrEmpty(opportunity.timing);
+        }
+
+        private static bool AllowsOptionalMemoryWork(ReflectionPlanningRequest request)
+        {
+            return request != null
+                && request.useMemoriesInWriting
+                && request.allowExtraMemoryAiRequests
+                && request.optionalRequestInvalidationGeneration > 0
+                && request.optionalRequestInvalidationGeneration < long.MaxValue;
+        }
+
+        private static bool HasValidOptionalWindow(ReflectionOpportunity opportunity)
+        {
+            if (opportunity == null || !opportunity.usesBoundedTiming
+                || string.IsNullOrWhiteSpace(opportunity.opportunityKey)
+                || opportunity.requestedTick < 0
+                || opportunity.dueTick < opportunity.requestedTick
+                || opportunity.expiryTick <= opportunity.dueTick)
+            {
+                return false;
+            }
+
+            if (opportunity.workClass == ReflectionWorkClassTokens.MeaningfulMemory)
+            {
+                return opportunity.timing == MemoryReflectionTimingTokens.Immediate
+                    ? opportunity.dueTick == opportunity.requestedTick
+                    : opportunity.dueTick > opportunity.requestedTick;
+            }
+            return true;
+        }
+
+        private static bool ShouldAdvanceDisabledDebt(
+            ReflectionOpportunity opportunity,
+            NarrativePolicySnapshot policy)
+        {
+            return opportunity != null
+                && opportunity.workClass == ReflectionWorkClassTokens.Normal
+                && NarrativeReflectionKindTokens.IsKnown(opportunity.kind)
+                && (!opportunity.groupEnabled || policy?.enabled != true);
+        }
+
+        private static RankedOpportunity Rank(
+            ReflectionOpportunity opportunity,
+            NarrativePolicySnapshot policy)
+        {
+            bool normal = opportunity.workClass == ReflectionWorkClassTokens.Normal;
+            int legacyPriority = normal ? PriorityFor(opportunity.kind, policy) : 0;
+            return new RankedOpportunity
+            {
+                opportunity = opportunity,
+                workClassRank = ReflectionWorkClassTokens.Rank(opportunity.workClass),
+                priority = normal && legacyPriority != 0
+                    ? legacyPriority : opportunity.configuredPriority,
+                salience = normal ? SalienceRank(opportunity.importance) : opportunity.salience,
+                changeTick = normal ? opportunity.nowTick : opportunity.requestedTick,
+                opportunityKey = StableOpportunityKey(opportunity)
+            };
         }
 
         private static int PriorityFor(string kind, NarrativePolicySnapshot policy)
@@ -245,21 +404,35 @@ namespace PawnDiary
 
         private static int CompareRanked(RankedOpportunity left, RankedOpportunity right)
         {
+            int workClass = right.workClassRank.CompareTo(left.workClassRank);
+            if (workClass != 0)
+            {
+                return workClass;
+            }
+
             int priority = right.priority.CompareTo(left.priority);
             if (priority != 0)
             {
                 return priority;
             }
 
-            int importance = SalienceRank(right.opportunity.importance).CompareTo(SalienceRank(left.opportunity.importance));
-            if (importance != 0)
+            int salience = right.salience.CompareTo(left.salience);
+            if (salience != 0)
             {
-                return importance;
+                return salience;
             }
 
-            int tick = right.opportunity.nowTick.CompareTo(left.opportunity.nowTick);
-            return tick != 0 ? tick : string.Compare(left.opportunity.kind, right.opportunity.kind,
-                StringComparison.Ordinal);
+            int tick = right.changeTick.CompareTo(left.changeTick);
+            if (tick != 0) return tick;
+            int key = string.Compare(
+                left.opportunityKey, right.opportunityKey, StringComparison.Ordinal);
+            if (key != 0) return key;
+            int kind = string.Compare(
+                left.opportunity.kind, right.opportunity.kind, StringComparison.Ordinal);
+            return kind != 0
+                ? kind
+                : string.Compare(
+                    left.opportunity.timing, right.opportunity.timing, StringComparison.Ordinal);
         }
 
         private static int SalienceRank(string salience)
@@ -270,83 +443,20 @@ namespace PawnDiary
             return 1;
         }
 
-        private static void AddGlobalCooldownDiagnostics(
-            ReflectionPlan result,
-            List<ReflectionOpportunity> opportunities)
-        {
-            if (opportunities == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < opportunities.Count; i++)
-            {
-                AddDiagnostic(result, opportunities[i], NarrativeDiagnosticTokens.ReflectionCooldown);
-            }
-        }
-
-        private static void AddPolicyDisabledDiagnostics(
-            ReflectionPlan result,
-            List<ReflectionOpportunity> opportunities)
-        {
-            if (opportunities == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < opportunities.Count; i++)
-            {
-                AddDiagnostic(result, opportunities[i], NarrativeDiagnosticTokens.PolicyDisabled);
-            }
-        }
-
         private static ReflectionStateConsumption DisabledGroupInstruction(ReflectionOpportunity opportunity)
         {
             return new ReflectionStateConsumption
             {
                 kind = opportunity.kind ?? string.Empty,
+                workClass = opportunity.workClass ?? string.Empty,
+                opportunityKey = StableOpportunityKey(opportunity),
                 sourceEventIds = Copy(opportunity.sourceEventIds),
                 arcKeys = Copy(opportunity.arcKeys),
                 consumeAfterSuccessfulDispatch = false,
-                advanceDebtWhenGroupDisabled = true
+                advanceDebtWhenGroupDisabled = true,
+                producesPage = false,
+                advancesNarrativeCooldown = false
             };
-        }
-
-        private static void AddDisabledGroupInstructions(
-            ReflectionPlan result,
-            List<ReflectionOpportunity> opportunities)
-        {
-            if (opportunities == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < opportunities.Count; i++)
-            {
-                ReflectionOpportunity opportunity = opportunities[i];
-                if (opportunity != null && !opportunity.groupEnabled)
-                {
-                    result.stateInstructions.Add(DisabledGroupInstruction(opportunity));
-                }
-            }
-        }
-
-        private static void AddPolicyDisabledStateInstructions(
-            ReflectionPlan result,
-            List<ReflectionOpportunity> opportunities)
-        {
-            if (opportunities == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < opportunities.Count; i++)
-            {
-                if (opportunities[i] != null)
-                {
-                    result.stateInstructions.Add(DisabledGroupInstruction(opportunities[i]));
-                }
-            }
         }
 
         private static void AddDiagnostic(ReflectionPlan result, ReflectionOpportunity opportunity, string reason)
@@ -362,6 +472,15 @@ namespace PawnDiary
         private static List<string> Copy(List<string> source)
         {
             return source == null ? new List<string>() : new List<string>(source);
+        }
+
+        private static string StableOpportunityKey(ReflectionOpportunity opportunity)
+        {
+            if (!string.IsNullOrWhiteSpace(opportunity?.opportunityKey))
+            {
+                return opportunity.opportunityKey;
+            }
+            return opportunity?.kind ?? string.Empty;
         }
 
         private static bool EqualsOrdinal(string left, string right)

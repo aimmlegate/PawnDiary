@@ -9,7 +9,7 @@
 // - a current-shape (v3) owner envelope round-trips every unified-memory collection;
 // - a legacy v1 envelope stays v1 through real Scribe + Normalize (no eager stamp);
 // - thread root/chapter/block/payload rows round-trip their stable tokens;
-// - dispatch request/variant/attempt rows round-trip;
+// - dispatch request/variant/attempt and optional coordinator/cadence rows round-trip;
 // - the raw unresolved-owner wrapper preserves its nested shipped legacy record untouched;
 // - malformed legacy Scribe evidence reaches dry-run planning unchanged and remains retryable;
 // - nested allocator/schema carriers cannot hide from recursive component scans;
@@ -405,6 +405,97 @@ namespace PawnDiary.RimTests
                 loaded.Normalize();
                 Require(loaded.requestStateToken == "activated",
                     "Tokens normalize null-safe without semantic reinterpretation.");
+            });
+        }
+
+        [Test]
+        public static void OptionalCoordinatorAndQuietCadenceRowsRoundTrip()
+        {
+            var opportunity = new SavedSummaryWordingOpportunityV1
+            {
+                schemaVersion = 1,
+                ownerPawnId = "Pawn_M10",
+                ownerEpochToken = EpochToken(17),
+                ownerCancellationGeneration = 3,
+                globalCancellationGeneration = 4,
+                optionalRequestInvalidationGeneration = 5,
+                rootId = "root-m10",
+                summaryRecordId = "summary-m10",
+                expectedRootStructuralRevision = 6,
+                expectedSummaryFactsRevision = 7,
+                expectedReducerRevision = 8,
+                expectedFormatRevision = 9,
+                expectedCategoryMask = 15,
+                projectionFingerprint = new string('a', 64),
+                requestedTick = 100,
+                dueTick = 200,
+                expiryTick = 300,
+                configuredPriority = 11,
+                salience = 12,
+                opportunityKey = "opportunity-m10"
+            };
+            var reflection = new PawnReflectionState
+            {
+                baselineOnNextOpportunity = false,
+                linkedBaselineOnNextOpportunity = false,
+                lastReflectionTick = 91,
+                memoryReflectionSchemaVersion = 1,
+                memoryOwnerEpochToken = EpochToken(17),
+                lastQuietMemoryEvaluatedAbsoluteDay = 42,
+                lastQuietMemoryActivatedAbsoluteQuadrum = 2,
+                lastQuietMemoryDecisionKey = new string('b', 64)
+            };
+
+            RunWithTempFile(path =>
+            {
+                SavedSummaryWordingOpportunityV1 savedOpportunity = opportunity;
+                PawnReflectionState savedReflection = reflection;
+                SaveWithScribe(path, () =>
+                {
+                    Scribe_Deep.Look(ref savedOpportunity, "summaryOpportunity");
+                    Scribe_Deep.Look(ref savedReflection, "reflectionCadence");
+                });
+
+                SavedSummaryWordingOpportunityV1 loadedOpportunity = null;
+                PawnReflectionState loadedReflection = null;
+                LoadVarsWithScribe(path, () =>
+                {
+                    Scribe_Deep.Look(ref loadedOpportunity, "summaryOpportunity");
+                    Scribe_Deep.Look(ref loadedReflection, "reflectionCadence");
+                });
+
+                Require(loadedOpportunity != null
+                        && loadedOpportunity.schemaVersion == 1
+                        && loadedOpportunity.ownerPawnId == "Pawn_M10"
+                        && loadedOpportunity.ownerEpochToken == EpochToken(17)
+                        && loadedOpportunity.ownerCancellationGeneration == 3
+                        && loadedOpportunity.globalCancellationGeneration == 4
+                        && loadedOpportunity.optionalRequestInvalidationGeneration == 5
+                        && loadedOpportunity.rootId == "root-m10"
+                        && loadedOpportunity.summaryRecordId == "summary-m10"
+                        && loadedOpportunity.expectedRootStructuralRevision == 6
+                        && loadedOpportunity.expectedSummaryFactsRevision == 7
+                        && loadedOpportunity.expectedReducerRevision == 8
+                        && loadedOpportunity.expectedFormatRevision == 9
+                        && loadedOpportunity.expectedCategoryMask == 15
+                        && loadedOpportunity.projectionFingerprint == new string('a', 64)
+                        && loadedOpportunity.requestedTick == 100
+                        && loadedOpportunity.dueTick == 200
+                        && loadedOpportunity.expiryTick == 300
+                        && loadedOpportunity.configuredPriority == 11
+                        && loadedOpportunity.salience == 12
+                        && loadedOpportunity.opportunityKey == "opportunity-m10",
+                    "The complete one-slot Summary opportunity row did not round-trip exactly.");
+                Require(loadedReflection != null
+                        && !loadedReflection.baselineOnNextOpportunity
+                        && !loadedReflection.linkedBaselineOnNextOpportunity
+                        && loadedReflection.lastReflectionTick == 91
+                        && loadedReflection.memoryReflectionSchemaVersion == 1
+                        && loadedReflection.memoryOwnerEpochToken == EpochToken(17)
+                        && loadedReflection.lastQuietMemoryEvaluatedAbsoluteDay == 42
+                        && loadedReflection.lastQuietMemoryActivatedAbsoluteQuadrum == 2
+                        && loadedReflection.lastQuietMemoryDecisionKey == new string('b', 64),
+                    "The five owner-scoped M10 cadence fields did not round-trip exactly.");
             });
         }
 

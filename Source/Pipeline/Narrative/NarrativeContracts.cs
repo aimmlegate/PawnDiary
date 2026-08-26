@@ -145,6 +145,59 @@ namespace PawnDiary
         }
     }
 
+    /// <summary>
+    /// The four fixed classes in the one shared reflection coordinator (memory plan §T12.1). These
+    /// are internal schema tokens, not localized text. Their rank is deliberately code-owned because
+    /// M10 locks the class order; XML priorities still order the existing kinds inside Normal work.
+    /// </summary>
+    internal static class ReflectionWorkClassTokens
+    {
+        public const string Normal = "normal";
+        public const string MeaningfulMemory = "meaningful_memory";
+        public const string QuietMemory = "quiet_memory";
+        public const string SummaryWording = "summary_wording";
+
+        public static bool IsKnown(string value)
+        {
+            return value == Normal || value == MeaningfulMemory
+                || value == QuietMemory || value == SummaryWording;
+        }
+
+        /// <summary>Higher wins. Immediate/delayed meaningful work intentionally shares one rank.</summary>
+        public static int Rank(string value)
+        {
+            if (value == Normal) return 4;
+            if (value == MeaningfulMemory) return 3;
+            if (value == QuietMemory) return 2;
+            if (value == SummaryWording) return 1;
+            return 0;
+        }
+    }
+
+    /// <summary>Stable kinds used by M10 adapters that enter the existing coordinator.</summary>
+    internal static class CoordinatorOpportunityKindTokens
+    {
+        public const string NormalAmbient = "normal_ambient";
+        public const string MemoryReflection = "memory_reflection";
+        public const string SummaryWording = "summary_wording";
+    }
+
+    /// <summary>
+    /// Scheduling detail within one coordinator class. Immediate and delayed are both Meaningful
+    /// Memory; delay is never a fifth class, saved queue, or cancellation family.
+    /// </summary>
+    internal static class MemoryReflectionTimingTokens
+    {
+        public const string Immediate = "immediate";
+        public const string Delayed = "delayed";
+        public const string Quiet = "quiet";
+
+        public static bool IsMeaningful(string value)
+        {
+            return value == Immediate || value == Delayed;
+        }
+    }
+
     /// <summary>Frozen additive Scribe-key suffixes used by N1's hot POV and archive save fields.</summary>
     internal static class NarrativeSaveKeys
     {
@@ -188,6 +241,10 @@ namespace PawnDiary
         public const string ReflectionNeedsLink = "reflection_needs_link";
         public const string ReflectionNeedsMemories = "reflection_needs_memories";
         public const string ReflectionSpanExceeded = "reflection_span_exceeded";
+        public const string OptionalMemoryDisabled = "optional_memory_disabled";
+        public const string QuietMemoryDisabled = "quiet_memory_disabled";
+        public const string CoordinatorOpportunityInvalid = "coordinator_opportunity_invalid";
+        public const string CoordinatorOpportunityExpired = "coordinator_opportunity_expired";
     }
 
     /// <summary>
@@ -457,12 +514,29 @@ namespace PawnDiary
         public bool selectedInterpretation;
     }
 
-    /// <summary>One reflection possibility. It authorizes nothing until a runtime scheduler dispatches it.</summary>
+    /// <summary>
+    /// One detached possibility in the shared coordinator. It authorizes nothing until a main-thread
+    /// adapter commits owner state and activates the common transport queue.
+    /// </summary>
     internal class ReflectionOpportunity
     {
         public string kind = string.Empty;
+        /// <summary>Exactly one token from <see cref="ReflectionWorkClassTokens"/>.</summary>
+        public string workClass = ReflectionWorkClassTokens.Normal;
+        /// <summary>Immediate/delayed/quiet only for memory-reflection candidates.</summary>
+        public string timing = string.Empty;
+        /// <summary>Stable exact final tie-break; mandatory for every optional-memory candidate.</summary>
+        public string opportunityKey = string.Empty;
         public string pawnId = string.Empty;
         public int nowTick;
+        /// <summary>Optional work uses this exact bounded window; normal legacy work leaves it false.</summary>
+        public bool usesBoundedTiming;
+        public long requestedTick;
+        public long dueTick;
+        public long expiryTick;
+        /// <summary>Same-class XML-copied priority and salience inputs.</summary>
+        public int configuredPriority;
+        public int salience;
         public List<string> sourceEventIds = new List<string>();
         public List<string> arcKeys = new List<string>();
         public int candidateMemoryCount;
@@ -493,16 +567,40 @@ namespace PawnDiary
         public int currentTick;
         public int lastReflectionTick = -1;
         public List<ReflectionHistoryEntry> history = new List<ReflectionHistoryEntry>();
+
+        // These are copied from the already-reconciled immutable memory policy. Keeping all three
+        // explicit makes Master Off and the dependent quiet gate executable pure behavior.
+        public bool useMemoriesInWriting;
+        public bool allowExtraMemoryAiRequests;
+        public bool occasionalMemoryReflections;
+        public long optionalRequestInvalidationGeneration;
     }
 
-    /// <summary>Exact deferred-state instruction: consume only after the runtime creates the chosen page.</summary>
+    /// <summary>
+    /// Exact deferred-state instruction. "Settled" and "page registered" are separate because
+    /// Summary wording settles a coordinator slot without producing a page or advancing cooldown.
+    /// </summary>
     internal class ReflectionStateConsumption
     {
         public string kind = string.Empty;
+        public string workClass = ReflectionWorkClassTokens.Normal;
+        public string opportunityKey = string.Empty;
         public List<string> sourceEventIds = new List<string>();
         public List<string> arcKeys = new List<string>();
         public bool consumeAfterSuccessfulDispatch = true;
         public bool advanceDebtWhenGroupDisabled;
+        public bool producesPage = true;
+        public bool advancesNarrativeCooldown = true;
+        public bool consumesQuietQuadrumOnActivation;
+    }
+
+    /// <summary>Pure interpretation of one adapter's committed activation/page outcome.</summary>
+    internal class ReflectionSettlementOutcome
+    {
+        public bool coordinatorSlotSettled;
+        public bool pageRegistered;
+        public bool advanceNarrativeCooldown;
+        public bool consumeQuietQuadrum;
     }
 
     /// <summary>At-most-one reflection choice and stable diagnostics for every rejected opportunity.</summary>

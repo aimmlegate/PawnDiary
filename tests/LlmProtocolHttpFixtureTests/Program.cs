@@ -257,6 +257,14 @@ namespace LlmProtocolHttpFixtureTests
                 LlmStagedGenerationRequest staged;
                 AssertEqual("memory gate stages", LlmRequestStageOutcome.Staged,
                     LlmClient.TryStage(request, out staged));
+                MemoryInvocationPermitRequest invisiblePermit;
+                LlmGenerationResult invisibleResult;
+                AssertFalse("staged memory work is invisible before explicit activation",
+                    MemoryDispatchRuntimeBridge.TryDequeuePermit(out invisiblePermit));
+                AssertEqual("staged memory work cannot reach the provider", 0,
+                    exchange.Requests.Count);
+                AssertFalse("staged memory work cannot publish a completion",
+                    LlmClient.TryDequeueCompleted(out invisibleResult));
                 AssertTrue("memory gate activates", LlmClient.Activate(staged));
 
                 MemoryInvocationPermitRequest permitRequest = null;

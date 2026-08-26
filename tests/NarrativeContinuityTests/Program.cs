@@ -4,6 +4,9 @@
 // Verse/Unity/DLC dependency a compile-time failure.
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using PawnDiary;
 using PawnDiary.Capture;
 
@@ -35,6 +38,8 @@ namespace NarrativeContinuityTests
             TestCrossArcMemorySelection();
             TestTerminalReflectionQualification();
             TestReflectionPriorityAndDeferredConsumption();
+            TestUnifiedOptionalMemoryCoordinator();
+            TestQuietMemoryDeterministicCadence();
             Console.WriteLine("NarrativeContinuityTests passed " + assertions + " assertions.");
             return 0;
         }
@@ -2343,6 +2348,370 @@ namespace NarrativeContinuityTests
                 ReflectionCoordinator.CanConsumeAfterDispatch(shorterCadences, true));
         }
 
+        private static void TestUnifiedOptionalMemoryCoordinator()
+        {
+            NarrativePolicySnapshot policy = NarrativePolicySnapshot.CreateDefault();
+            ReflectionOpportunity normal = Opportunity(NarrativeReflectionKindTokens.Day);
+            normal.opportunityKey = "normal-day";
+            ReflectionOpportunity immediate = OptionalOpportunity(
+                ReflectionWorkClassTokens.MeaningfulMemory,
+                MemoryReflectionTimingTokens.Immediate,
+                "meaningful-immediate",
+                190000,
+                190000,
+                260000,
+                1,
+                20);
+            ReflectionOpportunity delayed = OptionalOpportunity(
+                ReflectionWorkClassTokens.MeaningfulMemory,
+                MemoryReflectionTimingTokens.Delayed,
+                "meaningful-delayed",
+                180000,
+                190000,
+                260000,
+                2,
+                20);
+            ReflectionOpportunity quiet = OptionalOpportunity(
+                ReflectionWorkClassTokens.QuietMemory,
+                MemoryReflectionTimingTokens.Quiet,
+                "quiet",
+                180000,
+                190000,
+                260000,
+                999,
+                99);
+            ReflectionOpportunity summary = OptionalOpportunity(
+                ReflectionWorkClassTokens.SummaryWording,
+                string.Empty,
+                "summary",
+                180000,
+                190000,
+                260000,
+                9999,
+                999);
+
+            ReflectionPlan all = ReflectionCoordinator.Plan(OptionalPlanningRequest(
+                policy, normal, summary, quiet, delayed, immediate));
+            AssertEqual("normal work always wins the complete M10 matrix",
+                NarrativeReflectionKindTokens.Day, all.selectedOpportunity.kind);
+            AssertEqual("normal winner reports its fixed coordinator class",
+                ReflectionWorkClassTokens.Normal, all.consumption.workClass);
+
+            ReflectionPlan meaningful = ReflectionCoordinator.Plan(OptionalPlanningRequest(
+                policy, immediate, delayed, quiet, summary));
+            AssertEqual("meaningful memory beats quiet and summary",
+                ReflectionWorkClassTokens.MeaningfulMemory,
+                meaningful.selectedOpportunity.workClass);
+            AssertEqual("delayed meaningful work uses same rank and higher same-class policy wins",
+                MemoryReflectionTimingTokens.Delayed,
+                meaningful.selectedOpportunity.timing);
+            AssertEqual("immediate and delayed meaningful work share the one class rank",
+                ReflectionWorkClassTokens.Rank(immediate.workClass),
+                ReflectionWorkClassTokens.Rank(delayed.workClass));
+            AssertEqual("immediate and delayed meaningful work share one request-purpose kind",
+                immediate.kind, delayed.kind);
+
+            ReflectionPlan quietFallback = ReflectionCoordinator.Plan(OptionalPlanningRequest(
+                policy, quiet, summary));
+            AssertEqual("quiet memory beats summary wording",
+                ReflectionWorkClassTokens.QuietMemory,
+                quietFallback.selectedOpportunity.workClass);
+            ReflectionSettlementOutcome quietSettlement =
+                ReflectionCoordinator.SettleAfterActivation(quietFallback, true, true);
+            AssertTrue("activated quiet work settles one slot and registers its page",
+                quietSettlement.coordinatorSlotSettled && quietSettlement.pageRegistered);
+            AssertTrue("activated quiet work advances cooldown and consumes one quadrum",
+                quietSettlement.advanceNarrativeCooldown && quietSettlement.consumeQuietQuadrum);
+
+            ReflectionPlan summaryFallback = ReflectionCoordinator.Plan(OptionalPlanningRequest(
+                policy, summary));
+            ReflectionSettlementOutcome summarySettlement =
+                ReflectionCoordinator.SettleAfterActivation(summaryFallback, true, true);
+            AssertTrue("summary activation settles the coordinator slot",
+                summarySettlement.coordinatorSlotSettled);
+            AssertTrue("summary activation cannot register a page or advance narrative cooldown",
+                !summarySettlement.pageRegistered
+                    && !summarySettlement.advanceNarrativeCooldown
+                    && !summarySettlement.consumeQuietQuadrum);
+            ReflectionSettlementOutcome rejectedActivation =
+                ReflectionCoordinator.SettleAfterActivation(summaryFallback, false, false);
+            AssertTrue("failed activation settles and consumes nothing",
+                !rejectedActivation.coordinatorSlotSettled
+                    && !rejectedActivation.pageRegistered
+                    && !rejectedActivation.advanceNarrativeCooldown);
+
+            ReflectionPlanningRequest masterOff = OptionalPlanningRequest(
+                policy, immediate, quiet, summary);
+            masterOff.allowExtraMemoryAiRequests = false;
+            ReflectionPlan noMaster = ReflectionCoordinator.Plan(masterOff);
+            AssertTrue("Master Off admits no memory-created coordinator work",
+                noMaster.selectedOpportunity == null);
+            AssertDiagnostic(noMaster, CoordinatorOpportunityKindTokens.SummaryWording,
+                NarrativeDiagnosticTokens.OptionalMemoryDisabled);
+
+            ReflectionPlanningRequest quietParentOff = OptionalPlanningRequest(
+                policy, quiet, summary);
+            quietParentOff.occasionalMemoryReflections = false;
+            ReflectionPlan noQuietParent = ReflectionCoordinator.Plan(quietParentOff);
+            AssertEqual("dependent quiet Off still allows lower summary wording",
+                ReflectionWorkClassTokens.SummaryWording,
+                noQuietParent.selectedOpportunity.workClass);
+            AssertDiagnostic(noQuietParent, CoordinatorOpportunityKindTokens.MemoryReflection,
+                NarrativeDiagnosticTokens.QuietMemoryDisabled);
+
+            NarrativePolicySnapshot standardOff = NarrativePolicySnapshot.CreateDefault();
+            standardOff.enabled = false;
+            ReflectionPlan summaryWithStandardOff = ReflectionCoordinator.Plan(
+                OptionalPlanningRequest(standardOff, immediate, summary));
+            AssertEqual("standard reflection Off does not disable summary wording",
+                ReflectionWorkClassTokens.SummaryWording,
+                summaryWithStandardOff.selectedOpportunity.workClass);
+            AssertDiagnostic(summaryWithStandardOff,
+                CoordinatorOpportunityKindTokens.MemoryReflection,
+                NarrativeDiagnosticTokens.PolicyDisabled);
+
+            ReflectionOpportunity ambient = new ReflectionOpportunity
+            {
+                kind = CoordinatorOpportunityKindTokens.NormalAmbient,
+                workClass = ReflectionWorkClassTokens.Normal,
+                opportunityKey = "ambient-ready",
+                pawnId = "pawn-1",
+                nowTick = 200000,
+                candidateMemoryCount = 0,
+                due = true,
+                configuredPriority = 1
+            };
+            ReflectionPlan ambientCommonPlan = ReflectionCoordinator.Plan(
+                OptionalPlanningRequest(standardOff, summary, ambient));
+            AssertEqual("ambient readiness enters and wins the one common candidate plan",
+                CoordinatorOpportunityKindTokens.NormalAmbient,
+                ambientCommonPlan.selectedOpportunity.kind);
+
+            ReflectionPlanningRequest globalCooldown = OptionalPlanningRequest(policy, summary);
+            globalCooldown.lastReflectionTick = globalCooldown.currentTick - 1;
+            ReflectionPlan summaryCooling = ReflectionCoordinator.Plan(globalCooldown);
+            AssertTrue("global reflection cooldown blocks optional summary work",
+                summaryCooling.selectedOpportunity == null);
+            AssertDiagnostic(summaryCooling,
+                CoordinatorOpportunityKindTokens.SummaryWording,
+                NarrativeDiagnosticTokens.ReflectionCooldown);
+            globalCooldown.opportunities.Insert(0, ambient);
+            ReflectionPlan ambientDuringCooldown = ReflectionCoordinator.Plan(globalCooldown);
+            AssertEqual("ambient normal work remains available during reflection cooldown",
+                CoordinatorOpportunityKindTokens.NormalAmbient,
+                ambientDuringCooldown.selectedOpportunity.kind);
+
+            ReflectionOpportunity dueBoundary = OptionalOpportunity(
+                ReflectionWorkClassTokens.SummaryWording,
+                string.Empty,
+                "summary-due",
+                190000,
+                200000,
+                200001,
+                1,
+                1);
+            AssertEqual("optional work becomes due at the exact due tick",
+                "summary-due",
+                ReflectionCoordinator.Plan(
+                    OptionalPlanningRequest(policy, dueBoundary))
+                    .selectedOpportunity.opportunityKey);
+            ReflectionPlanningRequest expiredRequest = OptionalPlanningRequest(
+                policy, dueBoundary);
+            expiredRequest.currentTick = 200001;
+            ReflectionPlan expired = ReflectionCoordinator.Plan(expiredRequest);
+            AssertTrue("optional work expires at the exact expiry tick",
+                expired.selectedOpportunity == null);
+            AssertDiagnostic(expired,
+                CoordinatorOpportunityKindTokens.SummaryWording,
+                NarrativeDiagnosticTokens.CoordinatorOpportunityExpired);
+
+            ReflectionOpportunity malformedDelayed = OptionalOpportunity(
+                ReflectionWorkClassTokens.MeaningfulMemory,
+                MemoryReflectionTimingTokens.Delayed,
+                "malformed-delay",
+                190000,
+                190000,
+                260000,
+                1,
+                1);
+            ReflectionPlan malformed = ReflectionCoordinator.Plan(
+                OptionalPlanningRequest(policy, malformedDelayed));
+            AssertTrue("delayed meaningful work cannot disguise an immediate due tick",
+                malformed.selectedOpportunity == null);
+            AssertDiagnostic(malformed,
+                CoordinatorOpportunityKindTokens.MemoryReflection,
+                NarrativeDiagnosticTokens.CoordinatorOpportunityInvalid);
+
+            ReflectionOpportunity summaryB = OptionalOpportunity(
+                ReflectionWorkClassTokens.SummaryWording,
+                string.Empty,
+                "summary-b",
+                180000,
+                190000,
+                260000,
+                7,
+                9);
+            ReflectionOpportunity summaryA = OptionalOpportunity(
+                ReflectionWorkClassTokens.SummaryWording,
+                string.Empty,
+                "summary-a",
+                180000,
+                190000,
+                260000,
+                7,
+                9);
+            ReflectionPlan stableTie = ReflectionCoordinator.Plan(
+                OptionalPlanningRequest(policy, summaryB, summaryA));
+            AssertEqual("equal summary candidates use opportunity key as final ordinal tie",
+                "summary-a", stableTie.selectedOpportunity.opportunityKey);
+            summaryA.alreadyWritten = true;
+            ReflectionPlan terminalFingerprint = ReflectionCoordinator.Plan(
+                OptionalPlanningRequest(policy, summaryA));
+            AssertTrue("a terminal unchanged summary fingerprint cannot activate twice",
+                terminalFingerprint.selectedOpportunity == null);
+        }
+
+        private static void TestQuietMemoryDeterministicCadence()
+        {
+            const string owner = "Pawn_Quiet_1";
+            const string epoch = "15:memory-epoch-v11:1";
+            const int day = 123;
+            ulong sample;
+            bool passed;
+            string rngHash;
+            string decisionKey;
+            AssertTrue("quiet RNG accepts one exact owner/epoch/day tuple",
+                MemoryDeterministicRngV1.TryEvaluate(
+                    owner, epoch, day, 200,
+                    out sample, out passed, out rngHash, out decisionKey));
+            AssertEqual("quiet RNG golden SHA-256 vector",
+                "03595e35119afd4ed80fc58ce394a67aaff4d8eebc912e6767db92a10362916d",
+                rngHash);
+            AssertEqual("quiet RNG golden little-endian sample",
+                5691874902766672131UL, sample);
+            AssertEqual("quiet decision golden SHA-256 vector",
+                "02e748b2b9d4aec8db537a54c3ae034796c3451a9885f651ef7bd96495502f15",
+                decisionKey);
+
+            byte[] independentDigest = IndependentQuietHash(
+                "quiet-memory-rng-v1", owner, epoch,
+                day.ToString(CultureInfo.InvariantCulture));
+            AssertEqual("quiet RNG matches an independent SHA-256 implementation",
+                IndependentHex(independentDigest), rngHash);
+            AssertEqual("quiet RNG uses exact little-endian UInt64 extraction",
+                IndependentLittleEndianUInt64(independentDigest), sample);
+            byte[] independentDecision = IndependentQuietHash(
+                "quiet-memory-decision-v1", owner, epoch,
+                day.ToString(CultureInfo.InvariantCulture), passed ? "pass" : "fail");
+            AssertEqual("quiet decision key matches independent framed SHA-256",
+                IndependentHex(independentDecision), decisionKey);
+
+            AssertEqual("basis points clamp below zero", 0,
+                MemoryDeterministicRngV1.NormalizeBasisPoints(int.MinValue));
+            AssertEqual("basis points clamp above ten thousand", 10000,
+                MemoryDeterministicRngV1.NormalizeBasisPoints(int.MaxValue));
+            int[] finiteBasisPoints = { 0, 1, 200, 9999 };
+            for (int index = 0; index < finiteBasisPoints.Length; index++)
+            {
+                int basisPoints = finiteBasisPoints[index];
+                ulong threshold;
+                AssertTrue("finite basis-point threshold exists: " + basisPoints,
+                    MemoryDeterministicRngV1.TryGetExclusiveThreshold(
+                        basisPoints, out threshold));
+                if (threshold > 0)
+                {
+                    AssertTrue("threshold minus one passes: " + basisPoints,
+                        MemoryDeterministicRngV1.PassesSample(
+                            threshold - 1, basisPoints));
+                }
+                AssertTrue("exact threshold fails: " + basisPoints,
+                    !MemoryDeterministicRngV1.PassesSample(threshold, basisPoints));
+                AssertTrue("UInt64 maximum fails finite threshold: " + basisPoints,
+                    !MemoryDeterministicRngV1.PassesSample(ulong.MaxValue, basisPoints));
+            }
+            ulong nonFinite;
+            AssertTrue("ten-thousand basis points uses the 2^64 special case",
+                !MemoryDeterministicRngV1.TryGetExclusiveThreshold(10000, out nonFinite));
+            AssertTrue("ten-thousand basis points passes zero and UInt64 maximum",
+                MemoryDeterministicRngV1.PassesSample(0, 10000)
+                    && MemoryDeterministicRngV1.PassesSample(ulong.MaxValue, 10000));
+
+            MemoryQuietCadenceRequest current = QuietCadenceRequest(owner, epoch, 42, 2);
+            current.chanceBasisPoints = 10000;
+            MemoryQuietCadencePlan first = MemoryQuietCadencePolicy.Plan(current);
+            AssertTrue("quiet cadence evaluates the current day exactly once",
+                first.valid && first.evaluatedNow && !first.alreadyEvaluatedToday);
+            AssertTrue("guaranteed pass offers one ephemeral quiet candidate",
+                first.chancePassed && first.candidateEligible);
+            AssertEqual("quiet cadence evaluates no historical catch-up day",
+                current.absoluteDay, first.evaluatedAbsoluteDay);
+
+            MemoryQuietCadenceRequest repeated = QuietCadenceRequest(owner, epoch, 42, 2);
+            repeated.chanceBasisPoints = 0;
+            repeated.lastEvaluatedAbsoluteDay = 42;
+            repeated.lastDecisionKey = first.decisionKey;
+            MemoryQuietCadencePlan replay = MemoryQuietCadencePolicy.Plan(repeated);
+            AssertTrue("reload/repeated ticks reuse the saved decision without reroll",
+                replay.valid && replay.alreadyEvaluatedToday && !replay.evaluatedNow
+                    && replay.chancePassed && replay.candidateEligible);
+
+            int activatedQuadrum;
+            AssertTrue("queue rejection consumes no quiet quadrum",
+                !MemoryQuietCadencePolicy.TryCommitActivatedQuadrum(
+                    replay, true, false, out activatedQuadrum));
+            AssertTrue("activation before owner/event commit consumes no quiet quadrum",
+                !MemoryQuietCadencePolicy.TryCommitActivatedQuadrum(
+                    replay, false, true, out activatedQuadrum));
+            AssertTrue("only committed owner state plus queue activation consumes the quadrum",
+                MemoryQuietCadencePolicy.TryCommitActivatedQuadrum(
+                    replay, true, true, out activatedQuadrum));
+            AssertEqual("quiet activation commits the exact absolute quadrum", 2,
+                activatedQuadrum);
+
+            MemoryQuietCadenceRequest afterActivation = QuietCadenceRequest(
+                owner, epoch, 43, 2);
+            afterActivation.lastActivatedAbsoluteQuadrum = 2;
+            MemoryQuietCadencePlan quadrumSpent =
+                MemoryQuietCadencePolicy.Plan(afterActivation);
+            AssertTrue("provider outcome or next-day evaluation cannot reopen a spent quadrum",
+                !quadrumSpent.evaluatedNow && !quadrumSpent.candidateEligible);
+
+            MemoryQuietCadenceRequest masterOff = QuietCadenceRequest(owner, epoch, 44, 2);
+            masterOff.allowExtraMemoryAiRequests = false;
+            MemoryQuietCadencePlan disabled = MemoryQuietCadencePolicy.Plan(masterOff);
+            AssertTrue("Master Off creates no quiet evaluation or backlog",
+                disabled.valid && !disabled.evaluatedNow && !disabled.candidateEligible);
+            masterOff.allowExtraMemoryAiRequests = true;
+            MemoryQuietCadencePlan enabledNow = MemoryQuietCadencePolicy.Plan(masterOff);
+            AssertEqual("enabling optional work evaluates only the present day",
+                44, enabledNow.evaluatedAbsoluteDay);
+
+            MemoryQuietCadenceRequest higherWork = QuietCadenceRequest(owner, epoch, 45, 3);
+            higherWork.higherPriorityWorkAvailable = true;
+            AssertTrue("normal/meaningful readiness prevents even a quiet chance evaluation",
+                !MemoryQuietCadencePolicy.Plan(higherWork).evaluatedNow);
+            MemoryQuietCadenceRequest noMemory = QuietCadenceRequest(owner, epoch, 45, 3);
+            noMemory.hasEligibleMemory = false;
+            AssertTrue("no eligible memory produces no quiet candidate or backlog",
+                !MemoryQuietCadencePolicy.Plan(noMemory).evaluatedNow);
+
+            MemoryQuietCadenceRequest guaranteedFail = QuietCadenceRequest(owner, epoch, 46, 3);
+            guaranteedFail.chanceBasisPoints = 0;
+            MemoryQuietCadencePlan failed = MemoryQuietCadencePolicy.Plan(guaranteedFail);
+            AssertTrue("zero basis points commits one fail decision and no candidate",
+                failed.evaluatedNow && !failed.chancePassed && !failed.candidateEligible);
+            MemoryQuietCadenceRequest corruptReplay = QuietCadenceRequest(owner, epoch, 46, 3);
+            corruptReplay.lastEvaluatedAbsoluteDay = 46;
+            corruptReplay.lastDecisionKey = new string('x', 64);
+            MemoryQuietCadencePlan repaired = MemoryQuietCadencePolicy.Plan(corruptReplay);
+            bool repairedPass;
+            AssertTrue("corrupt same-day decision repairs to fail without reroll",
+                repaired.evaluatedNow && !repaired.candidateEligible
+                    && MemoryDeterministicRngV1.TryReadDecision(
+                        owner, epoch, 46, repaired.decisionKey, out repairedPass)
+                    && !repairedPass);
+        }
+
         /// <summary>
         /// Exercises the authoritative N5 activation matrix through the one fixed provider
         /// orchestrator. Inactive snapshots remain present but explicitly unavailable, which models a
@@ -2868,11 +3237,126 @@ namespace NarrativeContinuityTests
             };
         }
 
+        private static ReflectionOpportunity OptionalOpportunity(
+            string workClass,
+            string timing,
+            string opportunityKey,
+            long requestedTick,
+            long dueTick,
+            long expiryTick,
+            int configuredPriority,
+            int salience)
+        {
+            return new ReflectionOpportunity
+            {
+                kind = workClass == ReflectionWorkClassTokens.SummaryWording
+                    ? CoordinatorOpportunityKindTokens.SummaryWording
+                    : CoordinatorOpportunityKindTokens.MemoryReflection,
+                workClass = workClass,
+                timing = timing,
+                opportunityKey = opportunityKey,
+                pawnId = "pawn-1",
+                nowTick = 200000,
+                usesBoundedTiming = true,
+                requestedTick = requestedTick,
+                dueTick = dueTick,
+                expiryTick = expiryTick,
+                configuredPriority = configuredPriority,
+                salience = salience,
+                candidateMemoryCount = workClass == ReflectionWorkClassTokens.SummaryWording
+                    ? 0 : 1,
+                linkedMemoryCount = 1,
+                importance = NarrativeSalienceTokens.Meaningful,
+                due = true,
+                groupEnabled = true
+            };
+        }
+
+        private static ReflectionPlanningRequest OptionalPlanningRequest(
+            NarrativePolicySnapshot policy,
+            params ReflectionOpportunity[] opportunities)
+        {
+            return new ReflectionPlanningRequest
+            {
+                policy = policy,
+                currentTick = 200000,
+                opportunities = new List<ReflectionOpportunity>(
+                    opportunities ?? new ReflectionOpportunity[0]),
+                useMemoriesInWriting = true,
+                allowExtraMemoryAiRequests = true,
+                occasionalMemoryReflections = true,
+                optionalRequestInvalidationGeneration = 1
+            };
+        }
+
+        private static MemoryQuietCadenceRequest QuietCadenceRequest(
+            string owner,
+            string epoch,
+            int absoluteDay,
+            int absoluteQuadrum)
+        {
+            return new MemoryQuietCadenceRequest
+            {
+                ownerPawnId = owner,
+                ownerEpochToken = epoch,
+                absoluteDay = absoluteDay,
+                absoluteQuadrum = absoluteQuadrum,
+                lastEvaluatedAbsoluteDay = -1,
+                lastActivatedAbsoluteQuadrum = -1,
+                chanceBasisPoints = 10000,
+                standardReflectionEnabled = true,
+                useMemoriesInWriting = true,
+                allowExtraMemoryAiRequests = true,
+                occasionalMemoryReflections = true,
+                optionalRequestInvalidationGeneration = 1,
+                hasEligibleMemory = true
+            };
+        }
+
+        private static byte[] IndependentQuietHash(params string[] fields)
+        {
+            StringBuilder framed = new StringBuilder();
+            for (int index = 0; fields != null && index < fields.Length; index++)
+            {
+                string value = fields[index] ?? string.Empty;
+                framed.Append(value.Length.ToString(CultureInfo.InvariantCulture));
+                framed.Append(':');
+                framed.Append(value);
+            }
+            using (SHA256 hash = SHA256.Create())
+            {
+                return hash.ComputeHash(Encoding.UTF8.GetBytes(framed.ToString()));
+            }
+        }
+
+        private static ulong IndependentLittleEndianUInt64(byte[] bytes)
+        {
+            return (ulong)bytes[0]
+                | ((ulong)bytes[1] << 8)
+                | ((ulong)bytes[2] << 16)
+                | ((ulong)bytes[3] << 24)
+                | ((ulong)bytes[4] << 32)
+                | ((ulong)bytes[5] << 40)
+                | ((ulong)bytes[6] << 48)
+                | ((ulong)bytes[7] << 56);
+        }
+
+        private static string IndependentHex(byte[] bytes)
+        {
+            StringBuilder value = new StringBuilder(bytes.Length * 2);
+            for (int index = 0; index < bytes.Length; index++)
+            {
+                value.Append(bytes[index].ToString("x2", CultureInfo.InvariantCulture));
+            }
+            return value.ToString();
+        }
+
         private static ReflectionOpportunity Opportunity(string kind)
         {
             return new ReflectionOpportunity
             {
                 kind = kind,
+                opportunityKey = kind,
                 pawnId = "pawn-1",
                 nowTick = 200000,
                 sourceEventIds = new List<string> { "event-1", "event-2" },
