@@ -33,6 +33,11 @@ namespace PawnDiary
         private List<SavedLegacyOwnerEpochReservation> legacyOwnerEpochReservations =
             new List<SavedLegacyOwnerEpochReservation>();
         private long globalOptionalRequestCancellationGeneration;
+        /// <summary>
+        /// Saved tick boundary only; it is not a work row, queue, or retry backlog. Missing old-save
+        /// value -1 baselines current truth on the first reconciled pass.
+        /// </summary>
+        private long optionalMeaningfulEligibilityBaselineTick = -1;
         private long lastAppliedMemoryPolicyRevision;
         private string lastAppliedMemoryPolicyFingerprint = string.Empty;
         private SavedMemoryAppliedPolicyStateV1 lastAppliedMemoryPolicyState;
@@ -63,9 +68,6 @@ namespace PawnDiary
         private readonly Dictionary<string, MemoryOwnerByteTotals> memoryByteTotalsByOwner =
             new Dictionary<string, MemoryOwnerByteTotals>(StringComparer.Ordinal);
         private long memoryComponentActiveBytesTotal;
-        // Optional meaningful work is deliberately not a saved backlog. Each new/load or Off->On
-        // boundary observes the current tick, and only later events may become meaningful candidates.
-        private long optionalMeaningfulEligibilityBaselineTick = -1;
 
         internal static class MemoryArchiveStates
         {
@@ -102,6 +104,9 @@ namespace PawnDiary
             Scribe_Values.Look(
                 ref globalOptionalRequestCancellationGeneration,
                 "globalOptionalRequestCancellationGeneration", 0);
+            Scribe_Values.Look(
+                ref optionalMeaningfulEligibilityBaselineTick,
+                "optionalMeaningfulEligibilityBaselineTick", -1);
             Scribe_Values.Look(
                 ref lastAppliedMemoryPolicyRevision, "lastAppliedMemoryPolicyRevision", 0);
             Scribe_Values.Look(
@@ -163,7 +168,6 @@ namespace PawnDiary
         private void NormalizeLoadedMemoryComponent()
         {
             ResetMemoryMaintenanceTransient(true);
-            optionalMeaningfulEligibilityBaselineTick = -1;
             globalFactionSnapshots = globalFactionSnapshots ?? new List<SavedGlobalFactionSnapshot>();
             legacyOwnerEpochReservations =
                 legacyOwnerEpochReservations ?? new List<SavedLegacyOwnerEpochReservation>();
@@ -657,6 +661,8 @@ namespace PawnDiary
             SizeRows(c, "legacyOwnerEpochReservations", legacyOwnerEpochReservations);
             c.Int64("globalOptionalRequestCancellationGeneration",
                 globalOptionalRequestCancellationGeneration);
+            c.Int64("optionalMeaningfulEligibilityBaselineTick",
+                optionalMeaningfulEligibilityBaselineTick);
             c.Int64("lastAppliedMemoryPolicyRevision", lastAppliedMemoryPolicyRevision);
             c.String("lastAppliedMemoryPolicyFingerprint",
                 lastAppliedMemoryPolicyFingerprint ?? string.Empty);

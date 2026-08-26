@@ -348,6 +348,7 @@
         "globalFactionSnapshots",
         "legacyOwnerEpochReservations",
         "globalOptionalRequestCancellationGeneration",
+        "optionalMeaningfulEligibilityBaselineTick",
         "lastAppliedMemoryPolicyRevision",
         "lastAppliedMemoryPolicyFingerprint",
         "lastAppliedMemoryPolicyState",
@@ -3806,7 +3807,7 @@
     },
     {
       "pathOrdinal": 237,
-      "canonicalFieldPath": "DiaryGameComponentMemory.lastAppliedMemoryPolicyRevision",
+      "canonicalFieldPath": "DiaryGameComponentMemory.optionalMeaningfulEligibilityBaselineTick",
       "scopeMask": [
         "active_global",
         "combined_global"
@@ -3818,6 +3819,18 @@
     },
     {
       "pathOrdinal": 238,
+      "canonicalFieldPath": "DiaryGameComponentMemory.lastAppliedMemoryPolicyRevision",
+      "scopeMask": [
+        "active_global",
+        "combined_global"
+      ],
+      "atomKindToken": "int64",
+      "minimumRowFactoryId": "",
+      "candidateValueEncoding": "1",
+      "freeTextModeEligible": false
+    },
+    {
+      "pathOrdinal": 239,
       "canonicalFieldPath": "DiaryGameComponentMemory.lastAppliedMemoryPolicyFingerprint",
       "scopeMask": [
         "active_global",
@@ -3829,7 +3842,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 239,
+      "pathOrdinal": 240,
       "canonicalFieldPath": "DiaryGameComponentMemory.lastAppliedMemoryPolicyState",
       "scopeMask": [
         "active_global",
@@ -3841,7 +3854,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 240,
+      "pathOrdinal": 241,
       "canonicalFieldPath": "DiaryGameComponentMemory.unresolvedOwnerArchiveRows",
       "scopeMask": [
         "active_global",
@@ -3853,7 +3866,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 241,
+      "pathOrdinal": 242,
       "canonicalFieldPath": "DiaryGameComponentMemory.unresolvedArchiveMigrationState",
       "scopeMask": [
         "active_global",
@@ -3865,7 +3878,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 242,
+      "pathOrdinal": 243,
       "canonicalFieldPath": "DiaryGameComponentMemory.rawUnresolvedOwnerArchiveInput",
       "scopeMask": [
         "active_global",
@@ -3877,7 +3890,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 243,
+      "pathOrdinal": 244,
       "canonicalFieldPath": "DiaryGameComponentMemory.rawUnresolvedArchiveReattributionGeneration",
       "scopeMask": [
         "active_global",
@@ -3889,7 +3902,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 244,
+      "pathOrdinal": 245,
       "canonicalFieldPath": "DiaryGameComponentMemory.unresolvedArchiveReattributionGeneration",
       "scopeMask": [
         "active_global",
@@ -3901,7 +3914,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 245,
+      "pathOrdinal": 246,
       "canonicalFieldPath": "DiaryGameComponentMemory.unresolvedArchiveStructuralRevision",
       "scopeMask": [
         "active_global",
@@ -3913,7 +3926,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 246,
+      "pathOrdinal": 247,
       "canonicalFieldPath": "DiaryGameComponentMemory.unresolvedArchiveReattributionDisabled",
       "scopeMask": [
         "active_global",
@@ -3925,7 +3938,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 247,
+      "pathOrdinal": 248,
       "canonicalFieldPath": "DiaryGameComponentMemory.memoryCoordinatorSchemaVersion",
       "scopeMask": [
         "active_global",
@@ -3937,7 +3950,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 248,
+      "pathOrdinal": 249,
       "canonicalFieldPath": "DiaryGameComponentMemory.summaryWordingOpportunities",
       "scopeMask": [
         "active_global",
@@ -3949,7 +3962,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 249,
+      "pathOrdinal": 250,
       "canonicalFieldPath": "DiaryGameComponentMemory.memoryDiagnosticCounters",
       "scopeMask": [
         "active_global",
@@ -3961,7 +3974,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 250,
+      "pathOrdinal": 251,
       "canonicalFieldPath": "DiaryGameComponentMemory.memoryAttemptAuditRows",
       "scopeMask": [
         "active_global",
@@ -3973,7 +3986,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 251,
+      "pathOrdinal": 252,
       "canonicalFieldPath": "DiaryGameComponentMemory.memoryDispatchSchemaVersion",
       "scopeMask": [
         "active_global",
@@ -3985,7 +3998,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 252,
+      "pathOrdinal": 253,
       "canonicalFieldPath": "DiaryGameComponentMemory.lastIssuedMemoryLogicalRequestSequence",
       "scopeMask": [
         "active_global",
@@ -3997,7 +4010,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 253,
+      "pathOrdinal": 254,
       "canonicalFieldPath": "DiaryGameComponentMemory.activeMemoryCoordinatorRequests",
       "scopeMask": [
         "active_global",
@@ -4009,7 +4022,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 254,
+      "pathOrdinal": 255,
       "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.schemaVersion",
       "scopeMask": [
         "active_global",
@@ -4021,7 +4034,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 255,
+      "pathOrdinal": 256,
       "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.saveNewMemories",
       "scopeMask": [
         "active_global",
@@ -4033,7 +4046,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 256,
+      "pathOrdinal": 257,
       "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.useMemoriesInWriting",
       "scopeMask": [
         "active_global",
@@ -4045,7 +4058,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 257,
+      "pathOrdinal": 258,
       "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.usePawnBackground",
       "scopeMask": [
         "active_global",
@@ -4057,7 +4070,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 258,
+      "pathOrdinal": 259,
       "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.allowExtraMemoryAiRequests",
       "scopeMask": [
         "active_global",
@@ -4069,7 +4082,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 259,
+      "pathOrdinal": 260,
       "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.occasionalMemoryReflections",
       "scopeMask": [
         "active_global",
@@ -4081,7 +4094,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 260,
+      "pathOrdinal": 261,
       "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.memoryCategoryMask",
       "scopeMask": [
         "active_global",
@@ -4093,7 +4106,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 261,
+      "pathOrdinal": 262,
       "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.captureInvalidationGenerationPersonal",
       "scopeMask": [
         "active_global",
@@ -4105,7 +4118,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 262,
+      "pathOrdinal": 263,
       "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.captureInvalidationGenerationRelationships",
       "scopeMask": [
         "active_global",
@@ -4117,7 +4130,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 263,
+      "pathOrdinal": 264,
       "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.captureInvalidationGenerationFamily",
       "scopeMask": [
         "active_global",
@@ -4129,7 +4142,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 264,
+      "pathOrdinal": 265,
       "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.captureInvalidationGenerationFactions",
       "scopeMask": [
         "active_global",
@@ -4141,7 +4154,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 265,
+      "pathOrdinal": 266,
       "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.optionalRequestInvalidationGeneration",
       "scopeMask": [
         "active_global",
@@ -4153,7 +4166,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 266,
+      "pathOrdinal": 267,
       "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.minorMemoryLifetimeDays",
       "scopeMask": [
         "active_global",
@@ -4165,7 +4178,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 267,
+      "pathOrdinal": 268,
       "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.regularMemoryLifetimeDays",
       "scopeMask": [
         "active_global",
@@ -4177,7 +4190,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 268,
+      "pathOrdinal": 269,
       "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.memoryThreadTarget",
       "scopeMask": [
         "active_global",
@@ -4189,7 +4202,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 269,
+      "pathOrdinal": 270,
       "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.memoryReuseDays",
       "scopeMask": [
         "active_global",
@@ -4201,7 +4214,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 270,
+      "pathOrdinal": 271,
       "canonicalFieldPath": "SavedMemoryAppliedPolicyStateV1.memoryRevisitEntryCount",
       "scopeMask": [
         "active_global",
@@ -4213,7 +4226,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 271,
+      "pathOrdinal": 272,
       "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.schemaVersion",
       "scopeMask": [
         "active_global",
@@ -4225,7 +4238,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 272,
+      "pathOrdinal": 273,
       "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.ownerPawnId",
       "scopeMask": [
         "active_global",
@@ -4237,7 +4250,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 273,
+      "pathOrdinal": 274,
       "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.ownerEpochToken",
       "scopeMask": [
         "active_global",
@@ -4249,7 +4262,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 274,
+      "pathOrdinal": 275,
       "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.ownerCancellationGeneration",
       "scopeMask": [
         "active_global",
@@ -4261,7 +4274,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 275,
+      "pathOrdinal": 276,
       "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.globalCancellationGeneration",
       "scopeMask": [
         "active_global",
@@ -4273,7 +4286,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 276,
+      "pathOrdinal": 277,
       "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.optionalRequestInvalidationGeneration",
       "scopeMask": [
         "active_global",
@@ -4285,7 +4298,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 277,
+      "pathOrdinal": 278,
       "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.rootId",
       "scopeMask": [
         "active_global",
@@ -4297,7 +4310,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 278,
+      "pathOrdinal": 279,
       "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.summaryRecordId",
       "scopeMask": [
         "active_global",
@@ -4309,7 +4322,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 279,
+      "pathOrdinal": 280,
       "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.expectedRootStructuralRevision",
       "scopeMask": [
         "active_global",
@@ -4321,7 +4334,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 280,
+      "pathOrdinal": 281,
       "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.expectedSummaryFactsRevision",
       "scopeMask": [
         "active_global",
@@ -4333,7 +4346,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 281,
+      "pathOrdinal": 282,
       "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.expectedReducerRevision",
       "scopeMask": [
         "active_global",
@@ -4345,7 +4358,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 282,
+      "pathOrdinal": 283,
       "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.expectedFormatRevision",
       "scopeMask": [
         "active_global",
@@ -4357,7 +4370,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 283,
+      "pathOrdinal": 284,
       "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.expectedCategoryMask",
       "scopeMask": [
         "active_global",
@@ -4369,7 +4382,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 284,
+      "pathOrdinal": 285,
       "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.projectionFingerprint",
       "scopeMask": [
         "active_global",
@@ -4381,7 +4394,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 285,
+      "pathOrdinal": 286,
       "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.requestedTick",
       "scopeMask": [
         "active_global",
@@ -4393,7 +4406,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 286,
+      "pathOrdinal": 287,
       "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.dueTick",
       "scopeMask": [
         "active_global",
@@ -4405,7 +4418,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 287,
+      "pathOrdinal": 288,
       "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.expiryTick",
       "scopeMask": [
         "active_global",
@@ -4417,7 +4430,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 288,
+      "pathOrdinal": 289,
       "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.configuredPriority",
       "scopeMask": [
         "active_global",
@@ -4429,7 +4442,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 289,
+      "pathOrdinal": 290,
       "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.salience",
       "scopeMask": [
         "active_global",
@@ -4441,7 +4454,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 290,
+      "pathOrdinal": 291,
       "canonicalFieldPath": "SavedSummaryWordingOpportunityV1.opportunityKey",
       "scopeMask": [
         "active_global",
@@ -4453,7 +4466,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 291,
+      "pathOrdinal": 292,
       "canonicalFieldPath": "SavedMemoryDiagnosticCounter.schemaVersion",
       "scopeMask": [
         "active_global",
@@ -4465,7 +4478,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 292,
+      "pathOrdinal": 293,
       "canonicalFieldPath": "SavedMemoryDiagnosticCounter.reasonToken",
       "scopeMask": [
         "active_global",
@@ -4477,7 +4490,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 293,
+      "pathOrdinal": 294,
       "canonicalFieldPath": "SavedMemoryDiagnosticCounter.scopeToken",
       "scopeMask": [
         "active_global",
@@ -4489,7 +4502,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 294,
+      "pathOrdinal": 295,
       "canonicalFieldPath": "SavedMemoryDiagnosticCounter.saturatedCount",
       "scopeMask": [
         "active_global",
@@ -4501,7 +4514,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 295,
+      "pathOrdinal": 296,
       "canonicalFieldPath": "SavedMemoryAttemptAuditRow.schemaVersion",
       "scopeMask": [
         "active_global",
@@ -4513,7 +4526,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 296,
+      "pathOrdinal": 297,
       "canonicalFieldPath": "SavedMemoryAttemptAuditRow.logicalRequestId",
       "scopeMask": [
         "active_global",
@@ -4525,7 +4538,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 297,
+      "pathOrdinal": 298,
       "canonicalFieldPath": "SavedMemoryAttemptAuditRow.requestPurposeToken",
       "scopeMask": [
         "active_global",
@@ -4537,7 +4550,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 298,
+      "pathOrdinal": 299,
       "canonicalFieldPath": "SavedMemoryAttemptAuditRow.ownerPawnId",
       "scopeMask": [
         "active_global",
@@ -4549,7 +4562,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 299,
+      "pathOrdinal": 300,
       "canonicalFieldPath": "SavedMemoryAttemptAuditRow.ownerEpochToken",
       "scopeMask": [
         "active_global",
@@ -4561,7 +4574,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 300,
+      "pathOrdinal": 301,
       "canonicalFieldPath": "SavedMemoryAttemptAuditRow.attemptOrdinal",
       "scopeMask": [
         "active_global",
@@ -4573,7 +4586,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 301,
+      "pathOrdinal": 302,
       "canonicalFieldPath": "SavedMemoryAttemptAuditRow.variantKey",
       "scopeMask": [
         "active_global",
@@ -4585,7 +4598,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 302,
+      "pathOrdinal": 303,
       "canonicalFieldPath": "SavedMemoryAttemptAuditRow.invocationTick",
       "scopeMask": [
         "active_global",
@@ -4597,7 +4610,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 303,
+      "pathOrdinal": 304,
       "canonicalFieldPath": "SavedMemoryAttemptAuditRow.terminalTick",
       "scopeMask": [
         "active_global",
@@ -4609,7 +4622,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 304,
+      "pathOrdinal": 305,
       "canonicalFieldPath": "SavedMemoryAttemptAuditRow.outcomeToken",
       "scopeMask": [
         "active_global",
@@ -4621,7 +4634,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 305,
+      "pathOrdinal": 306,
       "canonicalFieldPath": "SavedMemoryAttemptAuditRow.potentialExposure",
       "scopeMask": [
         "active_global",
@@ -4633,7 +4646,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 306,
+      "pathOrdinal": 307,
       "canonicalFieldPath": "SavedGlobalFactionSnapshot.schemaVersion",
       "scopeMask": [
         "active_global",
@@ -4645,7 +4658,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 307,
+      "pathOrdinal": 308,
       "canonicalFieldPath": "SavedGlobalFactionSnapshot.factionInstanceId",
       "scopeMask": [
         "active_global",
@@ -4657,7 +4670,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 308,
+      "pathOrdinal": 309,
       "canonicalFieldPath": "SavedGlobalFactionSnapshot.allocatorGeneration",
       "scopeMask": [
         "active_global",
@@ -4669,7 +4682,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 309,
+      "pathOrdinal": 310,
       "canonicalFieldPath": "SavedGlobalFactionSnapshot.factionDefName",
       "scopeMask": [
         "active_global",
@@ -4681,7 +4694,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 310,
+      "pathOrdinal": 311,
       "canonicalFieldPath": "SavedGlobalFactionSnapshot.frozenDisplayLabel",
       "scopeMask": [
         "active_global",
@@ -4693,7 +4706,7 @@
       "freeTextModeEligible": true
     },
     {
-      "pathOrdinal": 311,
+      "pathOrdinal": 312,
       "canonicalFieldPath": "SavedGlobalFactionSnapshot.goodwill",
       "scopeMask": [
         "active_global",
@@ -4705,7 +4718,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 312,
+      "pathOrdinal": 313,
       "canonicalFieldPath": "SavedGlobalFactionSnapshot.relationKindToken",
       "scopeMask": [
         "active_global",
@@ -4717,7 +4730,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 313,
+      "pathOrdinal": 314,
       "canonicalFieldPath": "SavedGlobalFactionSnapshot.leaderPawnId",
       "scopeMask": [
         "active_global",
@@ -4729,7 +4742,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 314,
+      "pathOrdinal": 315,
       "canonicalFieldPath": "SavedGlobalFactionSnapshot.defeated",
       "scopeMask": [
         "active_global",
@@ -4741,7 +4754,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 315,
+      "pathOrdinal": 316,
       "canonicalFieldPath": "SavedGlobalFactionSnapshot.removed",
       "scopeMask": [
         "active_global",
@@ -4753,7 +4766,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 316,
+      "pathOrdinal": 317,
       "canonicalFieldPath": "SavedGlobalFactionSnapshot.observedTick",
       "scopeMask": [
         "active_global",
@@ -4765,7 +4778,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 317,
+      "pathOrdinal": 318,
       "canonicalFieldPath": "SavedGlobalFactionSnapshot.trackingStateToken",
       "scopeMask": [
         "active_global",
@@ -4777,7 +4790,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 318,
+      "pathOrdinal": 319,
       "canonicalFieldPath": "SavedGlobalFactionSnapshot.snapshotRevision",
       "scopeMask": [
         "active_global",
@@ -4789,7 +4802,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 319,
+      "pathOrdinal": 320,
       "canonicalFieldPath": "SavedLegacyOwnerEpochReservation.schemaVersion",
       "scopeMask": [
         "active_global",
@@ -4801,7 +4814,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 320,
+      "pathOrdinal": 321,
       "canonicalFieldPath": "SavedLegacyOwnerEpochReservation.ownerPawnId",
       "scopeMask": [
         "active_global",
@@ -4813,7 +4826,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 321,
+      "pathOrdinal": 322,
       "canonicalFieldPath": "SavedLegacyOwnerEpochReservation.reservedEpochSequence",
       "scopeMask": [
         "active_global",
@@ -4825,7 +4838,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 322,
+      "pathOrdinal": 323,
       "canonicalFieldPath": "SavedMemoryRepetitionGuardRow.schemaVersion",
       "scopeMask": [
         "active_owner",
@@ -4839,7 +4852,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 323,
+      "pathOrdinal": 324,
       "canonicalFieldPath": "SavedMemoryRepetitionGuardRow.ownerEpochToken",
       "scopeMask": [
         "active_owner",
@@ -4853,7 +4866,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 324,
+      "pathOrdinal": 325,
       "canonicalFieldPath": "SavedMemoryRepetitionGuardRow.guardKind",
       "scopeMask": [
         "active_owner",
@@ -4867,7 +4880,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 325,
+      "pathOrdinal": 326,
       "canonicalFieldPath": "SavedMemoryRepetitionGuardRow.guardKey",
       "scopeMask": [
         "active_owner",
@@ -4881,7 +4894,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 326,
+      "pathOrdinal": 327,
       "canonicalFieldPath": "SavedMemoryRepetitionGuardRow.lastAutomaticIncludedTick",
       "scopeMask": [
         "active_owner",
@@ -4895,7 +4908,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 327,
+      "pathOrdinal": 328,
       "canonicalFieldPath": "SavedMemoryRepetitionGuardRow.lastAutomaticIncludedEntryOrdinal",
       "scopeMask": [
         "active_owner",
@@ -4909,7 +4922,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 328,
+      "pathOrdinal": 329,
       "canonicalFieldPath": "SavedMemoryRepetitionGuardRow.automaticInclusionCount",
       "scopeMask": [
         "active_owner",
@@ -4923,7 +4936,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 329,
+      "pathOrdinal": 330,
       "canonicalFieldPath": "SavedMemoryRepetitionGuardRow.lastSourceOccurrenceId",
       "scopeMask": [
         "active_owner",
@@ -4937,7 +4950,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 330,
+      "pathOrdinal": 331,
       "canonicalFieldPath": "SavedMemoryRepetitionGuardRow.lastCommittedLogicalRequestId",
       "scopeMask": [
         "active_owner",
@@ -4951,7 +4964,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 331,
+      "pathOrdinal": 332,
       "canonicalFieldPath": "SavedMemoryRepetitionGuardRow.lastCommittedEvidenceSetFingerprint",
       "scopeMask": [
         "active_owner",
@@ -4965,7 +4978,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 332,
+      "pathOrdinal": 333,
       "canonicalFieldPath": "PawnReflectionStateMemoryFields.memoryReflectionSchemaVersion",
       "scopeMask": [
         "active_owner",
@@ -4979,7 +4992,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 333,
+      "pathOrdinal": 334,
       "canonicalFieldPath": "PawnReflectionStateMemoryFields.memoryOwnerEpochToken",
       "scopeMask": [
         "active_owner",
@@ -4993,7 +5006,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 334,
+      "pathOrdinal": 335,
       "canonicalFieldPath": "PawnReflectionStateMemoryFields.lastQuietMemoryEvaluatedAbsoluteDay",
       "scopeMask": [
         "active_owner",
@@ -5007,7 +5020,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 335,
+      "pathOrdinal": 336,
       "canonicalFieldPath": "PawnReflectionStateMemoryFields.lastQuietMemoryActivatedAbsoluteQuadrum",
       "scopeMask": [
         "active_owner",
@@ -5021,7 +5034,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 336,
+      "pathOrdinal": 337,
       "canonicalFieldPath": "PawnReflectionStateMemoryFields.lastQuietMemoryDecisionKey",
       "scopeMask": [
         "active_owner",
@@ -5035,7 +5048,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 337,
+      "pathOrdinal": 338,
       "canonicalFieldPath": "SavedActiveLogicalRequestV1.schemaVersion",
       "scopeMask": [
         "active_owner",
@@ -5049,7 +5062,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 338,
+      "pathOrdinal": 339,
       "canonicalFieldPath": "SavedActiveLogicalRequestV1.logicalRequestSequence",
       "scopeMask": [
         "active_owner",
@@ -5063,7 +5076,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 339,
+      "pathOrdinal": 340,
       "canonicalFieldPath": "SavedActiveLogicalRequestV1.logicalRequestId",
       "scopeMask": [
         "active_owner",
@@ -5077,7 +5090,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 340,
+      "pathOrdinal": 341,
       "canonicalFieldPath": "SavedActiveLogicalRequestV1.logicalRequestKey",
       "scopeMask": [
         "active_owner",
@@ -5091,7 +5104,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 341,
+      "pathOrdinal": 342,
       "canonicalFieldPath": "SavedActiveLogicalRequestV1.requestPurposeToken",
       "scopeMask": [
         "active_owner",
@@ -5105,7 +5118,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 342,
+      "pathOrdinal": 343,
       "canonicalFieldPath": "SavedActiveLogicalRequestV1.sessionId",
       "scopeMask": [
         "active_owner",
@@ -5119,7 +5132,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 343,
+      "pathOrdinal": 344,
       "canonicalFieldPath": "SavedActiveLogicalRequestV1.eventIdOrOpportunityKey",
       "scopeMask": [
         "active_owner",
@@ -5133,7 +5146,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 344,
+      "pathOrdinal": 345,
       "canonicalFieldPath": "SavedActiveLogicalRequestV1.povRoleToken",
       "scopeMask": [
         "active_owner",
@@ -5147,7 +5160,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 345,
+      "pathOrdinal": 346,
       "canonicalFieldPath": "SavedActiveLogicalRequestV1.ownerPawnId",
       "scopeMask": [
         "active_owner",
@@ -5161,7 +5174,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 346,
+      "pathOrdinal": 347,
       "canonicalFieldPath": "SavedActiveLogicalRequestV1.ownerEpochToken",
       "scopeMask": [
         "active_owner",
@@ -5175,7 +5188,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 347,
+      "pathOrdinal": 348,
       "canonicalFieldPath": "SavedActiveLogicalRequestV1.evidenceEpochToken",
       "scopeMask": [
         "active_owner",
@@ -5189,7 +5202,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 348,
+      "pathOrdinal": 349,
       "canonicalFieldPath": "SavedActiveLogicalRequestV1.ownerCancellationGeneration",
       "scopeMask": [
         "active_owner",
@@ -5203,7 +5216,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 349,
+      "pathOrdinal": 350,
       "canonicalFieldPath": "SavedActiveLogicalRequestV1.globalCancellationGeneration",
       "scopeMask": [
         "active_owner",
@@ -5217,7 +5230,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 350,
+      "pathOrdinal": 351,
       "canonicalFieldPath": "SavedActiveLogicalRequestV1.optionalRequestInvalidationGeneration",
       "scopeMask": [
         "active_owner",
@@ -5231,7 +5244,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 351,
+      "pathOrdinal": 352,
       "canonicalFieldPath": "SavedActiveLogicalRequestV1.requestStateToken",
       "scopeMask": [
         "active_owner",
@@ -5245,7 +5258,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 352,
+      "pathOrdinal": 353,
       "canonicalFieldPath": "SavedActiveLogicalRequestV1.lastIssuedAttemptOrdinal",
       "scopeMask": [
         "active_owner",
@@ -5259,7 +5272,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 353,
+      "pathOrdinal": 354,
       "canonicalFieldPath": "SavedActiveLogicalRequestV1.narrativeUseWinnerAttemptOrdinal",
       "scopeMask": [
         "active_owner",
@@ -5273,7 +5286,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 354,
+      "pathOrdinal": 355,
       "canonicalFieldPath": "SavedActiveLogicalRequestV1.narrativeUseWinnerVariantKey",
       "scopeMask": [
         "active_owner",
@@ -5287,7 +5300,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 355,
+      "pathOrdinal": 356,
       "canonicalFieldPath": "SavedActiveLogicalRequestV1.frozenVariants",
       "scopeMask": [
         "active_owner",
@@ -5301,7 +5314,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 356,
+      "pathOrdinal": 357,
       "canonicalFieldPath": "SavedActiveLogicalRequestV1.activeAttempts",
       "scopeMask": [
         "active_owner",
@@ -5315,7 +5328,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 357,
+      "pathOrdinal": 358,
       "canonicalFieldPath": "SavedActiveLogicalRequestV1.reservedEvidenceEntries",
       "scopeMask": [
         "active_owner",
@@ -5329,7 +5342,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 358,
+      "pathOrdinal": 359,
       "canonicalFieldPath": "SavedActiveLogicalRequestV1.reservedGuardEntries",
       "scopeMask": [
         "active_owner",
@@ -5343,7 +5356,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 359,
+      "pathOrdinal": 360,
       "canonicalFieldPath": "SavedFrozenPromptVariantV1.schemaVersion",
       "scopeMask": [
         "active_owner",
@@ -5357,7 +5370,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 360,
+      "pathOrdinal": 361,
       "canonicalFieldPath": "SavedFrozenPromptVariantV1.variantOrdinal",
       "scopeMask": [
         "active_owner",
@@ -5371,7 +5384,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 361,
+      "pathOrdinal": 362,
       "canonicalFieldPath": "SavedFrozenPromptVariantV1.variantKey",
       "scopeMask": [
         "active_owner",
@@ -5385,7 +5398,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 362,
+      "pathOrdinal": 363,
       "canonicalFieldPath": "SavedFrozenPromptVariantV1.templateIdentity",
       "scopeMask": [
         "active_owner",
@@ -5399,7 +5412,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 363,
+      "pathOrdinal": 364,
       "canonicalFieldPath": "SavedFrozenPromptVariantV1.contextDetailIdentity",
       "scopeMask": [
         "active_owner",
@@ -5413,7 +5426,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 364,
+      "pathOrdinal": 365,
       "canonicalFieldPath": "SavedFrozenPromptVariantV1.systemPrompt",
       "scopeMask": [
         "active_owner",
@@ -5427,7 +5440,7 @@
       "freeTextModeEligible": true
     },
     {
-      "pathOrdinal": 365,
+      "pathOrdinal": 366,
       "canonicalFieldPath": "SavedFrozenPromptVariantV1.userPrompt",
       "scopeMask": [
         "active_owner",
@@ -5441,7 +5454,7 @@
       "freeTextModeEligible": true
     },
     {
-      "pathOrdinal": 366,
+      "pathOrdinal": 367,
       "canonicalFieldPath": "SavedFrozenPromptVariantV1.receiptPlan",
       "scopeMask": [
         "active_owner",
@@ -5455,7 +5468,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 367,
+      "pathOrdinal": 368,
       "canonicalFieldPath": "SavedFrozenPromptVariantV1.diagnosticProvenance",
       "scopeMask": [
         "active_owner",
@@ -5469,7 +5482,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 368,
+      "pathOrdinal": 369,
       "canonicalFieldPath": "SavedFrozenEvidenceReceiptPlanV1.schemaVersion",
       "scopeMask": [
         "active_owner",
@@ -5483,7 +5496,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 369,
+      "pathOrdinal": 370,
       "canonicalFieldPath": "SavedFrozenEvidenceReceiptPlanV1.evidenceSetFingerprint",
       "scopeMask": [
         "active_owner",
@@ -5497,7 +5510,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 370,
+      "pathOrdinal": 371,
       "canonicalFieldPath": "SavedFrozenEvidenceReceiptPlanV1.evidenceEntries",
       "scopeMask": [
         "active_owner",
@@ -5511,7 +5524,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 371,
+      "pathOrdinal": 372,
       "canonicalFieldPath": "SavedFrozenEvidenceReceiptPlanV1.guardEntries",
       "scopeMask": [
         "active_owner",
@@ -5525,7 +5538,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 372,
+      "pathOrdinal": 373,
       "canonicalFieldPath": "SavedFrozenEvidenceEntryV1.schemaVersion",
       "scopeMask": [
         "active_owner",
@@ -5539,7 +5552,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 373,
+      "pathOrdinal": 374,
       "canonicalFieldPath": "SavedFrozenEvidenceEntryV1.recordId",
       "scopeMask": [
         "active_owner",
@@ -5553,7 +5566,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 374,
+      "pathOrdinal": 375,
       "canonicalFieldPath": "SavedFrozenEvidenceEntryV1.sourceOccurrenceId",
       "scopeMask": [
         "active_owner",
@@ -5567,7 +5580,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 375,
+      "pathOrdinal": 376,
       "canonicalFieldPath": "SavedFrozenEvidenceEntryV1.rootIdOrEmpty",
       "scopeMask": [
         "active_owner",
@@ -5581,7 +5594,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 376,
+      "pathOrdinal": 377,
       "canonicalFieldPath": "SavedFrozenGuardEntryV1.schemaVersion",
       "scopeMask": [
         "active_owner",
@@ -5595,7 +5608,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 377,
+      "pathOrdinal": 378,
       "canonicalFieldPath": "SavedFrozenGuardEntryV1.guardKind",
       "scopeMask": [
         "active_owner",
@@ -5609,7 +5622,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 378,
+      "pathOrdinal": 379,
       "canonicalFieldPath": "SavedFrozenGuardEntryV1.guardKey",
       "scopeMask": [
         "active_owner",
@@ -5623,7 +5636,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 379,
+      "pathOrdinal": 380,
       "canonicalFieldPath": "SavedFrozenDiagnosticProvenanceV1.schemaVersion",
       "scopeMask": [
         "active_owner",
@@ -5637,7 +5650,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 380,
+      "pathOrdinal": 381,
       "canonicalFieldPath": "SavedFrozenDiagnosticProvenanceV1.provenanceKindToken",
       "scopeMask": [
         "active_owner",
@@ -5651,7 +5664,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 381,
+      "pathOrdinal": 382,
       "canonicalFieldPath": "SavedFrozenDiagnosticProvenanceV1.sourceId",
       "scopeMask": [
         "active_owner",
@@ -5665,7 +5678,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 382,
+      "pathOrdinal": 383,
       "canonicalFieldPath": "SavedFrozenDiagnosticProvenanceV1.recordIdOrEmpty",
       "scopeMask": [
         "active_owner",
@@ -5679,7 +5692,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 383,
+      "pathOrdinal": 384,
       "canonicalFieldPath": "SavedFrozenDiagnosticProvenanceV1.sourceOccurrenceIdOrEmpty",
       "scopeMask": [
         "active_owner",
@@ -5693,7 +5706,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 384,
+      "pathOrdinal": 385,
       "canonicalFieldPath": "SavedFrozenDiagnosticProvenanceV1.rootIdOrEmpty",
       "scopeMask": [
         "active_owner",
@@ -5707,7 +5720,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 385,
+      "pathOrdinal": 386,
       "canonicalFieldPath": "SavedFrozenDiagnosticProvenanceV1.lineOrdinal",
       "scopeMask": [
         "active_owner",
@@ -5721,7 +5734,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 386,
+      "pathOrdinal": 387,
       "canonicalFieldPath": "SavedActiveLogicalAttemptV1.schemaVersion",
       "scopeMask": [
         "active_owner",
@@ -5735,7 +5748,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 387,
+      "pathOrdinal": 388,
       "canonicalFieldPath": "SavedActiveLogicalAttemptV1.attemptOrdinal",
       "scopeMask": [
         "active_owner",
@@ -5749,7 +5762,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 388,
+      "pathOrdinal": 389,
       "canonicalFieldPath": "SavedActiveLogicalAttemptV1.variantKey",
       "scopeMask": [
         "active_owner",
@@ -5763,7 +5776,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 389,
+      "pathOrdinal": 390,
       "canonicalFieldPath": "SavedActiveLogicalAttemptV1.attemptOriginToken",
       "scopeMask": [
         "active_owner",
@@ -5777,7 +5790,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 390,
+      "pathOrdinal": 391,
       "canonicalFieldPath": "SavedActiveLogicalAttemptV1.predecessorAttemptOrdinal",
       "scopeMask": [
         "active_owner",
@@ -5791,7 +5804,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 391,
+      "pathOrdinal": 392,
       "canonicalFieldPath": "SavedActiveLogicalAttemptV1.attemptStateToken",
       "scopeMask": [
         "active_owner",
@@ -5805,7 +5818,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 392,
+      "pathOrdinal": 393,
       "canonicalFieldPath": "SavedActiveLogicalAttemptV1.invocationSequence",
       "scopeMask": [
         "active_owner",
@@ -5819,7 +5832,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 393,
+      "pathOrdinal": 394,
       "canonicalFieldPath": "SavedActiveLogicalAttemptV1.invocationTick",
       "scopeMask": [
         "active_owner",
@@ -5833,7 +5846,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 394,
+      "pathOrdinal": 395,
       "canonicalFieldPath": "SavedActiveLogicalAttemptV1.terminalTick",
       "scopeMask": [
         "active_owner",
@@ -5847,7 +5860,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 395,
+      "pathOrdinal": 396,
       "canonicalFieldPath": "SavedActiveLogicalAttemptV1.terminalOutcomeToken",
       "scopeMask": [
         "active_owner",
@@ -5861,7 +5874,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 396,
+      "pathOrdinal": 397,
       "canonicalFieldPath": "SavedActiveLogicalAttemptV1.potentialExposureApplied",
       "scopeMask": [
         "active_owner",
@@ -5875,7 +5888,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 397,
+      "pathOrdinal": 398,
       "canonicalFieldPath": "SavedActiveLogicalAttemptV1.narrativeUseApplied",
       "scopeMask": [
         "active_owner",
@@ -5889,7 +5902,7 @@
       "freeTextModeEligible": false
     },
     {
-      "pathOrdinal": 398,
+      "pathOrdinal": 399,
       "canonicalFieldPath": "SavedActiveLogicalAttemptV1.resultApplied",
       "scopeMask": [
         "active_owner",

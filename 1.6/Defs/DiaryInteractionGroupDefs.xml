@@ -1076,6 +1076,10 @@
     </tones>
     <matchDefNames>
       <li>PawnArcReflection</li>
+      <!-- M10 meaningful/quiet memory pages share the generic reflection policy. Their dedicated
+           saved context marker keeps them in this domain and their Def-owned instruction is frozen
+           directly on the event before generation. -->
+      <li>MemoryReflection</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 

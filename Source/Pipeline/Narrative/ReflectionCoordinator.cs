@@ -103,7 +103,8 @@ namespace PawnDiary
                 advanceDebtWhenGroupDisabled = false,
                 producesPage = selected.workClass != ReflectionWorkClassTokens.SummaryWording,
                 advancesNarrativeCooldown =
-                    selected.workClass != ReflectionWorkClassTokens.SummaryWording,
+                    selected.workClass != ReflectionWorkClassTokens.SummaryWording
+                    && selected.kind != CoordinatorOpportunityKindTokens.NormalAmbient,
                 consumesQuietQuadrumOnActivation =
                     selected.workClass == ReflectionWorkClassTokens.QuietMemory
             };

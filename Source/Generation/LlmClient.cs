@@ -369,6 +369,11 @@ namespace PawnDiary
                 new BoundedTransportQueue<LlmGenerationRequest>(MaxQueuedRequests);
             public readonly ConcurrentDictionary<string, byte> PendingKeys =
                 new ConcurrentDictionary<string, byte>();
+            // The common queue remains the sole work queue. This index only retains its opaque
+            // ownership handle so main-thread policy reconciliation can cancel activated work until
+            // a worker atomically claims it.
+            public readonly ConcurrentDictionary<string, LlmStagedGenerationRequest> StagedRequests =
+                new ConcurrentDictionary<string, LlmStagedGenerationRequest>();
             public int ActiveWorkers;
 
             public LlmTransportSession(long id, bool acceptsGeneration)
@@ -1348,6 +1353,7 @@ namespace PawnDiary
             }
 
             staged = new LlmStagedGenerationRequest(request, session, pendingKey, queueItem);
+            session.StagedRequests[pendingKey] = staged;
             LogDebug("Staged request event=" + request.eventId + " role=" + request.povRole
                 + " session=" + request.sessionId);
             return LlmRequestStageOutcome.Staged;
@@ -1398,10 +1404,26 @@ namespace PawnDiary
             bool cancelled = session.WorkQueue.Cancel(staged.queueItem);
             if (cancelled)
             {
+                session.StagedRequests.TryRemove(staged.pendingKey, out _);
                 session.PendingKeys.TryRemove(staged.pendingKey, out _);
             }
 
             return cancelled;
+        }
+
+        /// <summary>
+        /// Cancels one current-session request only while it is still staged or activated in the
+        /// common queue. A worker claim wins atomically; callers then rely on the invocation permit's
+        /// ordinary generation fence before any provider send.
+        /// </summary>
+        internal static bool CancelQueued(string eventId, string povRole, bool isTitleRequest = false)
+        {
+            if (string.IsNullOrWhiteSpace(eventId) || string.IsNullOrWhiteSpace(povRole)) return false;
+            LlmTransportSession session = currentSession;
+            string pendingKey = PendingKey(eventId, povRole, session.Id, isTitleRequest);
+            LlmStagedGenerationRequest staged;
+            return session.StagedRequests.TryGetValue(pendingKey, out staged)
+                && CancelStaged(staged);
         }
 
         /// <summary>
@@ -1485,6 +1507,12 @@ namespace PawnDiary
                 LlmGenerationRequest request;
                 while (session.WorkQueue.TryDequeue(out request))
                 {
+                    string claimedKey = PendingKey(
+                        request.eventId,
+                        request.povRole,
+                        request.sessionId,
+                        request.isTitleRequest);
+                    session.StagedRequests.TryRemove(claimedKey, out _);
                     if (session.Cancellation.IsCancellationRequested)
                     {
                         break;

@@ -2174,8 +2174,9 @@ namespace PawnDiary
             int importance = MemoryLibraryPolicy.ImportanceMask(summary
                 ? block.summaryPayload?.highestSurvivingImportance
                 : block.importance);
+            MemoryPolicySnapshot policy = MemoryEffectivePolicyProvider.Current;
             string automatic = summary
-                ? block.summaryPayload?.deterministicWording ?? block.automaticWording
+                ? SelectCurrentSummaryNaturalWording(block, root, policy)
                 : block.automaticWording;
             string wording = block.playerEdited && !string.IsNullOrEmpty(block.playerWording)
                 ? block.playerWording : automatic;
@@ -2192,7 +2193,6 @@ namespace PawnDiary
             bool eventKind = block.kind == MemoryContractTokens.KindEvent;
             bool landmark = block.kind == MemoryContractTokens.KindLandmark;
             bool canEdit = !rolling && (landmark || closed || (!threaded && eventKind));
-            MemoryPolicySnapshot policy = MemoryEffectivePolicyProvider.Current;
             long expiry = SummaryFutureExpiry(block, policy);
             List<MemorySummaryContributionDescriptor> contributions = summary
                 ? BuildSummaryContributionDescriptors(block, policy, limits)
@@ -2265,6 +2265,44 @@ namespace PawnDiary
                 closedSummary = closed,
                 ageUnknown = block.ageUnknown
             };
+        }
+
+        /// <summary>
+        /// Selects one Summary's disposable provider wording for Library display only while its
+        /// exact current category projection remains valid. Suppressed or player-edited memories
+        /// deliberately expose no provider prose; their deterministic/player wording remains usable.
+        /// </summary>
+        private string SelectCurrentSummaryNaturalWording(
+            SavedMemoryBlock block,
+            SavedMemoryThreadRoot root,
+            MemoryPolicySnapshot policy)
+        {
+            string deterministic = block?.summaryPayload?.deterministicWording
+                ?? block?.automaticWording
+                ?? string.Empty;
+            if (block == null || block.suppressed || block.playerEdited) return deterministic;
+            SummaryWordingCurrentSnapshot current = CurrentSummarySnapshot(root, block, policy);
+            SavedMemorySummaryPayload payload = block.summaryPayload;
+            if (current == null || payload == null) return deterministic;
+            MemoryRecallSummaryWordingSnapshot wording = new MemoryRecallSummaryWordingSnapshot
+            {
+                currentProjectionFingerprint = current.projectionFingerprint ?? string.Empty,
+                currentFormatRevision = current.formatRevision,
+                currentCategoryMask = current.categoryMask,
+                optionalWording = payload.optionalLlmWording ?? string.Empty,
+                optionalFingerprint = payload.optionalLlmFingerprint ?? string.Empty,
+                optionalFormatRevision = payload.optionalLlmFormatRevision,
+                optionalCategoryMask = payload.optionalLlmCategoryMask,
+                optionalSucceeded = string.Equals(
+                    payload.lastWordingDispositionToken,
+                    MemoryOptionalWordingDispositionTokens.Success,
+                    StringComparison.Ordinal)
+            };
+            return MemoryNaturalWordingProjection.Select(
+                false,
+                deterministic,
+                wording,
+                Math.Max(1, MemoryOptionalTuning()?.fallbackSummaryMaxChars ?? 240));
         }
 
         private List<MemorySummaryContributionDescriptor> BuildSummaryContributionDescriptors(

@@ -578,6 +578,10 @@ namespace PawnDiary
                     StringComparison.Ordinal)) return null;
             bool optional = MemoryDispatchTokens.IsOptionalPurpose(saved.requestPurposeToken);
             MemoryPolicySnapshot policy = MemoryEffectivePolicyProvider.Current;
+            // A newly published policy is effective immediately. Until its component transaction
+            // reconciles, no unsent optional request may obtain an invocation permit under stale
+            // saved generations. Already-invoked receipt/result settlement remains eligible below.
+            if (optional && !allowInvocationWinner && !MemoryPolicyIsReconciled()) return null;
             long currentGlobal = optional
                 ? globalOptionalRequestCancellationGeneration
                 : saved.globalCancellationGeneration;

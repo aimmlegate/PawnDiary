@@ -1099,10 +1099,10 @@ namespace PawnDiary
                 || beliefReflection;
             bool pendingMajorReflection = !anyReflectionSource && HasPendingMajorReflection();
             MemoryPolicySnapshot memoryPolicy = MemoryEffectivePolicyProvider.Current;
+            int nowTick = Math.Max(0, Verse.Find.TickManager?.TicksGame ?? 0);
             if (MemorySystemActivationGate.IsCurrentRelease)
             {
-                ExpireSummaryWordingOpportunities(
-                    Math.Max(0, Verse.Find.TickManager?.TicksGame ?? 0));
+                ExpireSummaryWordingOpportunities(nowTick);
             }
 
             // A reflection can be due with no pending filler. A queued major request also needs one final
@@ -1110,7 +1110,8 @@ namespace PawnDiary
             if (!HasPendingCoordinatorWork(
                     anyReflectionSource,
                     pendingMajorReflection,
-                    memoryPolicy))
+                    memoryPolicy,
+                    nowTick))
             {
                 return;
             }
@@ -1125,7 +1126,8 @@ namespace PawnDiary
                 if (!HasPendingCoordinatorWork(
                         anyReflectionSource,
                         pendingMajorReflection,
-                        memoryPolicy))
+                        memoryPolicy,
+                        nowTick))
                 {
                     return;
                 }
@@ -1169,7 +1171,8 @@ namespace PawnDiary
         private bool HasPendingCoordinatorWork(
             bool anyReflectionSource,
             bool pendingMajorReflection,
-            MemoryPolicySnapshot memoryPolicy)
+            MemoryPolicySnapshot memoryPolicy,
+            int nowTick)
         {
             return ReflectionCoordinator.HasPendingCoordinatorWork(
                 new ReflectionCoordinatorWakeRequest
@@ -1182,13 +1185,17 @@ namespace PawnDiary
                     // Compile the M10 wake seam without activating it. M11 is the only phase allowed to
                     // make a saved Summary row change the shipped LegacyShadow rest-pass behavior.
                     optionalMemoryRequestsEffective = MemorySystemActivationGate.IsCurrentRelease
+                        && MemoryPolicyIsReconciled()
                         && memoryPolicy?.AllowsOptionalRequests == true,
                     pendingSummaryWordingCount = summaryWordingOpportunities == null
                         ? 0
                         : summaryWordingOpportunities.Count,
                     hasOptionalMemoryCandidateSource =
                         MemorySystemActivationGate.IsCurrentRelease
-                        && HasOptionalMemoryCandidateSource(memoryPolicy)
+                        && HasOptionalMemoryCandidateSource(
+                            memoryPolicy,
+                            nowTick,
+                            MemoryOptionalTuning())
                 });
         }
 

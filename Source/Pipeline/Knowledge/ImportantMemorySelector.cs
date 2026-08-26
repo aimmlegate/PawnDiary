@@ -68,6 +68,11 @@ namespace PawnDiary
         public bool isCurrentThreadProjection = true;
         public bool directExactEventReference;
         public int narrativeFitScore;
+        /// <summary>
+        /// Summary-only disposable prose guards. <see cref="historicalText"/> stays the deterministic
+        /// fallback and non-Summary candidates leave this null.
+        /// </summary>
+        public MemoryRecallSummaryWordingSnapshot summaryWording;
         public string historicalText = string.Empty;
         public bool currentStateApplicable;
         public bool currentStateContradictsHistorical;
@@ -1146,6 +1151,7 @@ namespace PawnDiary
             merged.ttlEligible = current.ttlEligible;
             merged.categoryProjectionValid = current.categoryProjectionValid;
             merged.suppressed = current.suppressed;
+            merged.summaryWording = MemoryNaturalWordingProjection.Copy(current.summaryWording);
             merged.historicalText = current.historicalText;
             merged.currentStateApplicable = current.currentStateApplicable;
             merged.currentStateContradictsHistorical = current.currentStateContradictsHistorical;
@@ -1182,6 +1188,7 @@ namespace PawnDiary
                 isCurrentThreadProjection = source.isCurrentThreadProjection,
                 directExactEventReference = source.directExactEventReference,
                 narrativeFitScore = source.narrativeFitScore,
+                summaryWording = MemoryNaturalWordingProjection.Copy(source.summaryWording),
                 historicalText = source.historicalText,
                 currentStateApplicable = source.currentStateApplicable,
                 currentStateContradictsHistorical = source.currentStateContradictsHistorical,

@@ -56,6 +56,8 @@ namespace PawnDiary
             if (DiaryContextFields.HasMarker(context, "psychic_ritual=")) return Ritual;
             if (DiaryContextFields.HasMarker(context, "ability=")) return Ability;
             if (DiaryContextFields.HasMarker(context, "progression=")) return Progression;
+            if (DiaryContextFields.HasMarker(context, "generated_memory_reflection="))
+                return Reflection;
             if (DiaryContextFields.HasMarker(context, "social_reflection=")) return Reflection;
             if (DiaryContextFields.HasMarker(context, "arc_reflection=")) return Reflection;
             if (DiaryContextFields.HasMarker(context, "quadrum_reflection=")) return Reflection;

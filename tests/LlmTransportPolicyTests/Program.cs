@@ -18,6 +18,7 @@ namespace LlmTransportPolicyTests
             TestBoundedQueue();
             TestTransactionalQueueStaging();
             await TestConcurrentActivationCountNeverNegative();
+            await TestConcurrentActivationCancellationAccounting();
             TestTransportPolicy();
             TestExactSecretRedaction();
 
@@ -120,6 +121,33 @@ namespace LlmTransportPolicyTests
             AssertTrue("legacy enqueue remains visible", queue.TryDequeue(out item));
             AssertEqual("legacy enqueue payload preserved", "third", item);
 
+            StagedTransportQueueItem<string> activatedThenCancelled;
+            AssertTrue("policy-cancel stage reserves common slot",
+                queue.TryStage("cancel-before-worker", out activatedThenCancelled));
+            AssertTrue("policy-cancel activation publishes common item",
+                queue.Activate(activatedThenCancelled));
+            AssertTrue("policy-cancel removes activated unclaimed item",
+                queue.Cancel(activatedThenCancelled));
+            AssertEqual("policy-cancel releases visible count", 0, queue.Count);
+            AssertEqual("policy-cancel releases reserved count", 0, queue.ReservedCount);
+            AssertEqual("policy-cancel physically removes FIFO node", 0, queue.PhysicalCount);
+            AssertFalse("worker sees no cancelled FIFO node", queue.TryDequeue(out item));
+            AssertTrue("policy-cancel capacity is immediately reusable", queue.TryEnqueue("reused"));
+            AssertTrue("reused item dequeues after physical cancellation", queue.TryDequeue(out item));
+            AssertEqual("reused payload preserved", "reused", item);
+
+            for (int iteration = 0; iteration < 5000; iteration++)
+            {
+                StagedTransportQueueItem<string> cancelled;
+                AssertTrue("cancel-storm stages " + iteration,
+                    queue.TryStage("cancel-storm", out cancelled));
+                AssertTrue("cancel-storm activates " + iteration, queue.Activate(cancelled));
+                AssertTrue("cancel-storm cancels " + iteration, queue.Cancel(cancelled));
+            }
+            AssertEqual("cancel-storm leaves no physical tombstones", 0, queue.PhysicalCount);
+            AssertEqual("cancel-storm leaves no visible work", 0, queue.Count);
+            AssertEqual("cancel-storm releases every reservation", 0, queue.ReservedCount);
+
             BoundedTransportQueue<string> foreignQueue = new BoundedTransportQueue<string>(1);
             StagedTransportQueueItem<string> foreign;
             AssertTrue("foreign stage created", foreignQueue.TryStage("foreign", out foreign));
@@ -157,6 +185,31 @@ namespace LlmTransportPolicyTests
                 0, observedNegative);
             AssertEqual("concurrent queue ends empty", 0, queue.Count);
             AssertEqual("concurrent reservations end empty", 0, queue.ReservedCount);
+        }
+
+        private static async Task TestConcurrentActivationCancellationAccounting()
+        {
+            BoundedTransportQueue<int> queue = new BoundedTransportQueue<int>(1);
+            for (int iteration = 0; iteration < 1000; iteration++)
+            {
+                StagedTransportQueueItem<int> staged;
+                AssertTrue("activation/cancel stage " + iteration,
+                    queue.TryStage(iteration, out staged));
+                Task<bool> activation = Task.Run(() => queue.Activate(staged));
+                Task<bool> cancellation = Task.Run(() => queue.Cancel(staged));
+                bool activated = await activation;
+                bool cancelled = await cancellation;
+                AssertTrue("activation/cancel has one successful cancellation " + iteration,
+                    cancelled);
+                AssertTrue("activation/cancel transition is coherent " + iteration,
+                    activated || cancelled);
+                int item;
+                AssertFalse("activation/cancel leaves no worker-visible item " + iteration,
+                    queue.TryDequeue(out item));
+                AssertEqual("activation/cancel visible count " + iteration, 0, queue.Count);
+                AssertEqual("activation/cancel reserved count " + iteration, 0,
+                    queue.ReservedCount);
+            }
         }
 
         private static void TestTransportPolicy()

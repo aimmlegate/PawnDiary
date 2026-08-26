@@ -2440,6 +2440,23 @@ namespace NarrativeContinuityTests
                 NarrativeReflectionKindTokens.Day, all.selectedOpportunity.kind);
             AssertEqual("normal winner reports its fixed coordinator class",
                 ReflectionWorkClassTokens.Normal, all.consumption.workClass);
+            ReflectionOpportunity normalAmbient = new ReflectionOpportunity
+            {
+                kind = CoordinatorOpportunityKindTokens.NormalAmbient,
+                workClass = ReflectionWorkClassTokens.Normal,
+                opportunityKey = "normal-ambient:pawn",
+                due = true,
+                cooldownSatisfied = true,
+                groupEnabled = true
+            };
+            ReflectionPlan ambientPlan = ReflectionCoordinator.Plan(
+                OptionalPlanningRequest(policy, normalAmbient, summary));
+            ReflectionSettlementOutcome ambientSettlement =
+                ReflectionCoordinator.SettleAfterActivation(ambientPlan, true, true);
+            AssertTrue("normal ambient page settles without consuming reflection cooldown",
+                ambientSettlement.coordinatorSlotSettled
+                    && ambientSettlement.pageRegistered
+                    && !ambientSettlement.advanceNarrativeCooldown);
 
             ReflectionPlan meaningful = ReflectionCoordinator.Plan(OptionalPlanningRequest(
                 policy, immediate, delayed, quiet, summary));

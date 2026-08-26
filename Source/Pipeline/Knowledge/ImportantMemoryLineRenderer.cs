@@ -29,8 +29,15 @@ namespace PawnDiary
             MemoryRecallCandidateSnapshot candidate = selected?.candidate;
             if (candidate == null || selected.evidence == null) return null;
 
+            string naturalHistorical = candidate.kind == MemoryContractTokens.KindSummary
+                ? MemoryNaturalWordingProjection.Select(
+                    candidate.suppressed,
+                    candidate.historicalText,
+                    candidate.summaryWording,
+                    historicalMaximumCharacters)
+                : candidate.historicalText;
             string historical = BoundedOneLine(
-                candidate.historicalText,
+                naturalHistorical,
                 historicalMaximumCharacters);
             string current = candidate.currentStateApplicable && candidate.currentStateCanRender
                 ? BoundedOneLine(

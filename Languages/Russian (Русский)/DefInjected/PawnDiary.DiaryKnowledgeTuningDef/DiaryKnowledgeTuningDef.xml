@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Русская локализация настроечного Def-а системы знаний: инструкция к блоку «из прошлого» и два
-  формата культурной пометки. Схемные токены (источники полей, ключи контекста) остаются
+  Русская локализация настроечного Def-а системы знаний: инструкции памяти, необязательной работы
+  ИИ и два формата культурной пометки. Схемные токены (источники полей, ключи контекста) остаются
   английскими и здесь не переводятся.
 -->
 <LanguageData>
@@ -11,5 +11,10 @@
   <Diary_Knowledge.relevantPastInstruction>Факты из прошлого этого поселенца. Используй не больше одного и только если он ложится естественно; не вставляй его через силу — это фон, а не события дня.</Diary_Knowledge.relevantPastInstruction>
   <Diary_Knowledge.annotationSingleFormat>(культура: {0})</Diary_Knowledge.annotationSingleFormat>
   <Diary_Knowledge.annotationDualFormat>(корни: {0}; принято: {1})</Diary_Knowledge.annotationDualFormat>
+  <Diary_Knowledge.memoryReflectionSystemPrompt>Вы пишете краткое дневниковое размышление от первого лица. Считайте предоставленное воспоминание историческим свидетельством, а не новым событием, и не выдумывайте факты.</Diary_Knowledge.memoryReflectionSystemPrompt>
+  <Diary_Knowledge.memoryReflectionLabel>размышление о воспоминании</Diary_Knowledge.memoryReflectionLabel>
+  <Diary_Knowledge.memoryReflectionInstruction>Поразмышляйте, почему этот памятный момент всё ещё важен сейчас. Используйте только предоставленное структурированное воспоминание и напишите один самостоятельный абзац дневника.</Diary_Knowledge.memoryReflectionInstruction>
+  <Diary_Knowledge.summaryWordingSystemPrompt>Сокращайте детерминированную формулировку сводки воспоминаний, не изменяя, не добавляя и не выводя факты.</Diary_Knowledge.summaryWordingSystemPrompt>
+  <Diary_Knowledge.summaryWordingInstruction>Перепишите предоставленную детерминированную сводку одним кратким предложением. Сохраните все фактические оговорки и верните только формулировку.</Diary_Knowledge.summaryWordingInstruction>
 
 </LanguageData>

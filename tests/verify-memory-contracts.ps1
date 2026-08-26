@@ -44,6 +44,8 @@ $importantPath = Join-Path $repoRoot "1.6\Defs\DiaryImportantEventDefs.xml"
 $tuningPath = Join-Path $repoRoot "1.6\Defs\DiaryKnowledgeTuningDef.xml"
 $englishPath = Join-Path $repoRoot "Languages\English\Keyed\PawnDiary.xml"
 $russianInjectedPath = Join-Path $repoRoot "Languages\Russian (Русский)\DefInjected\PawnDiary.DiaryImportantEventDef\DiaryImportantEventDefs.xml"
+$russianTuningInjectedPath = Join-Path $repoRoot "Languages\Russian (Русский)\DefInjected\PawnDiary.DiaryKnowledgeTuningDef\DiaryKnowledgeTuningDef.xml"
+$optionalMemoryAdapterPath = Join-Path $repoRoot "Source\Core\DiaryGameComponent.MemorySummaryWording.cs"
 $catalogRoot = Join-Path $repoRoot "benchmarks\MemoryThreadBenchmarks\Catalog"
 $capacityPath = Join-Path $catalogRoot "memory-capacity-catalog-v1.json"
 $fixturePath = Join-Path $catalogRoot "memory-m0-fixture-catalog-v1.json"
@@ -53,6 +55,8 @@ $payloadPath = Join-Path $catalogRoot "memory-payload-atom-catalog-v1.json"
 $important = [System.Xml.Linq.XDocument]::Load($importantPath)
 $tuning = [System.Xml.Linq.XDocument]::Load($tuningPath)
 $english = [System.Xml.Linq.XDocument]::Load($englishPath)
+$russianTuningInjected = [System.Xml.Linq.XDocument]::Load($russianTuningInjectedPath)
+$optionalMemoryAdapter = Get-Content -Raw -LiteralPath $optionalMemoryAdapterPath
 $russianInjected = [System.Xml.Linq.XDocument]::Load($russianInjectedPath)
 $capacity = Get-Content -Raw -LiteralPath $capacityPath | ConvertFrom-Json
 $fixture = Get-Content -Raw -LiteralPath $fixturePath | ConvertFrom-Json
@@ -247,6 +251,19 @@ Require (-not [string]::IsNullOrWhiteSpace((Child-Text $tuningDef "memoryReflect
 Require (-not [string]::IsNullOrWhiteSpace((Child-Text $tuningDef "memoryReflectionInstruction"))) "Memory-reflection DefInjected instruction is missing."
 Require (-not [string]::IsNullOrWhiteSpace((Child-Text $tuningDef "summaryWordingSystemPrompt"))) "Summary-wording DefInjected system prompt is missing."
 Require (-not [string]::IsNullOrWhiteSpace((Child-Text $tuningDef "summaryWordingInstruction"))) "Summary-wording DefInjected instruction is missing."
+$optionalAiDefInjectedFields = @(
+    'memoryReflectionSystemPrompt',
+    'memoryReflectionLabel',
+    'memoryReflectionInstruction',
+    'summaryWordingSystemPrompt',
+    'summaryWordingInstruction'
+)
+foreach ($field in $optionalAiDefInjectedFields) {
+    $key = "Diary_Knowledge.$field"
+    $translated = $russianTuningInjected.Root.Element([System.Xml.Linq.XName]$key)
+    Require ($null -ne $translated -and -not [string]::IsNullOrWhiteSpace($translated.Value)) "Missing Russian optional-AI DefInjected value for $field."
+}
+Require ($optionalMemoryAdapter -cnotmatch 'transport_variant=') "Optional-memory transport metadata leaked into provider prompt text."
 
 $fixedRows = @($fixture.fixedRows)
 $expectedFixedNames = @(
@@ -289,8 +306,8 @@ foreach ($type in $payloadTypes) {
     }
 }
 $atomRows = @($payload.atomRows)
-Require ($expectedAtomPaths.Count -eq 399) "Payload schema must declare the exact 399 M0 field paths."
-Require ($atomRows.Count -eq 399) "Payload atom catalog must contain the exact 399 M0 atoms."
+Require ($expectedAtomPaths.Count -eq 400) "Payload schema must declare the exact 400 M10 field paths."
+Require ($atomRows.Count -eq 400) "Payload atom catalog must contain the exact 400 M10 atoms."
 for ($index = 0; $index -lt $atomRows.Count; $index++) {
     $atom = $atomRows[$index]
     Require ([int]$atom.pathOrdinal -eq $index) "Payload atom ordinal drifted at $index."

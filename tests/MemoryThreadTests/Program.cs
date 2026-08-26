@@ -1056,7 +1056,43 @@ namespace MemoryThreadTests
                 MemoryOptionalAiPolicy.IsMeaningfulEventAfterEligibilityBaseline(101, 100));
             AssertTrue("optional.meaningful.missing-baseline-fails-closed",
                 !MemoryOptionalAiPolicy.IsMeaningfulEventAfterEligibilityBaseline(101, -1));
-
+            AssertEqual("optional.meaningful.enable-baselines-now", 100L,
+                MemoryOptionalAiPolicy.PlanMeaningfulEligibilityBaseline(
+                    true, true, -1, 100));
+            AssertEqual("optional.meaningful.reload-preserves-saved-baseline", 100L,
+                MemoryOptionalAiPolicy.PlanMeaningfulEligibilityBaseline(
+                    true, false, 100, 50000));
+            AssertTrue("optional.meaningful.reload-keeps-delayed-event-eligible",
+                MemoryOptionalAiPolicy.IsMeaningfulEventAfterEligibilityBaseline(
+                    101,
+                    MemoryOptionalAiPolicy.PlanMeaningfulEligibilityBaseline(
+                        true, false, 100, 50000)));
+            AssertEqual("optional.meaningful.old-save-baselines-current-truth", 50000L,
+                MemoryOptionalAiPolicy.PlanMeaningfulEligibilityBaseline(
+                    true, false, -1, 50000));
+            AssertEqual("optional.meaningful.master-off-clears-boundary", -1L,
+                MemoryOptionalAiPolicy.PlanMeaningfulEligibilityBaseline(
+                    false, false, 100, 50000));
+            AssertTrue("optional.policy.reconciled-generations-admit",
+                MemoryOptionalAiPolicy.CanStageOptionalRequest(true, true, 3, 4));
+            AssertTrue("optional.policy.unreconciled-fails-closed",
+                !MemoryOptionalAiPolicy.CanStageOptionalRequest(false, true, 3, 4));
+            AssertTrue("optional.policy.master-off-fails-closed",
+                !MemoryOptionalAiPolicy.CanStageOptionalRequest(true, false, 3, 4));
+            AssertTrue("optional.policy.saturated-generation-fails-closed",
+                !MemoryOptionalAiPolicy.CanStageOptionalRequest(
+                    true, true, long.MaxValue, 4));
+            AssertTrue("optional.wake.pre-due-remains-wakeable",
+                MemoryOptionalAiPolicy.IsBoundedOpportunityWakeable(100, 50, 25, 120));
+            AssertTrue("optional.wake.last-pre-expiry-tick-remains-wakeable",
+                MemoryOptionalAiPolicy.IsBoundedOpportunityWakeable(100, 50, 25, 174));
+            AssertTrue("optional.wake.exact-expiry-stays-asleep",
+                !MemoryOptionalAiPolicy.IsBoundedOpportunityWakeable(100, 50, 25, 175));
+            AssertTrue("optional.wake.after-expiry-stays-asleep",
+                !MemoryOptionalAiPolicy.IsBoundedOpportunityWakeable(100, 50, 25, 999));
+            AssertTrue("optional.wake.saturated-due-stays-asleep",
+                !MemoryOptionalAiPolicy.IsBoundedOpportunityWakeable(
+                    long.MaxValue - 5, 10, 25, 999));
             string[] exactDispositions =
             {
                 MemoryOptionalWordingDispositionTokens.None,
@@ -1300,9 +1336,9 @@ namespace MemoryThreadTests
             requestInput.variants.Add(new MemoryOptionalPromptVariantInput
             {
                 templateIdentity = "summary_wording:v1",
-                contextDetailIdentity = "optional:v1:0",
+                contextDetailIdentity = "optional:v1",
                 systemPrompt = "Frozen system prompt.",
-                userPrompt = "Frozen user prompt.\ntransport_variant=0",
+                userPrompt = "Frozen user prompt.",
                 evidence = new List<MemoryEvidenceIdentity>
                 {
                     new MemoryEvidenceIdentity
@@ -1318,6 +1354,10 @@ namespace MemoryThreadTests
                 MemoryOptionalAiPolicy.TryBuildLogicalRequest(requestInput, out built));
             AssertTrue("optional.request.common-policy-validates",
                 MemoryDispatchPolicy.ValidateRequest(built));
+            AssertEqual("optional.request.one-logical-prompt-variant", 1,
+                built.variants.Count);
+            AssertEqual("optional.request.provider-prompt-has-no-transport-metadata",
+                "Frozen user prompt.", built.variants[0].userPrompt);
             AssertEqual("optional.request.summary-one-evidence", 1,
                 built.reservedEvidence.Count);
             AssertEqual("optional.request.summary-zero-guards", 0,
@@ -1379,6 +1419,11 @@ namespace MemoryThreadTests
             AssertTrue("optional.cutoff.live-entry-registers-at-cap",
                 saturatedCutoffs.TryRegister(7, "Pawn_Optional", Epoch(91), 3, 4,
                     requestOne, 11, 1));
+            AssertTrue("optional.cutoff.same-generation-second-request-refuses-at-cap",
+                !saturatedCutoffs.TryRegister(7, "Pawn_Optional", Epoch(91), 3, 4,
+                    requestTwo, 12, 1)
+                    && saturatedCutoffs.EntryCount == 1
+                    && saturatedCutoffs.UnsettledRequestCount == 1);
             AssertTrue("optional.cutoff.cap-refuses-without-evicting-live-entry",
                 !saturatedCutoffs.TryRegister(7, "Pawn_Optional", Epoch(91), 3, 5,
                     requestTwo, 12, 1)
@@ -1915,6 +1960,28 @@ namespace MemoryThreadTests
                 Text(tuningDef, "memoryThreadTargetMinimum") + "/"
                 + Text(tuningDef, "memoryThreadTargetDefault") + "/"
                 + Text(tuningDef, "memoryThreadTargetMaximum"));
+            XDocument russianTuning = XDocument.Load(Path.Combine(
+                root,
+                "Languages",
+                "Russian (Русский)",
+                "DefInjected",
+                "PawnDiary.DiaryKnowledgeTuningDef",
+                "DiaryKnowledgeTuningDef.xml"));
+            string[] optionalPromptFields =
+            {
+                "memoryReflectionSystemPrompt",
+                "memoryReflectionLabel",
+                "memoryReflectionInstruction",
+                "summaryWordingSystemPrompt",
+                "summaryWordingInstruction"
+            };
+            for (int index = 0; index < optionalPromptFields.Length; index++)
+            {
+                string key = "Diary_Knowledge." + optionalPromptFields[index];
+                XElement translated = russianTuning.Root.Element(key);
+                AssertTrue("xml.optional-ai.russian-def-injected." + optionalPromptFields[index],
+                    translated != null && !string.IsNullOrWhiteSpace(translated.Value));
+            }
         }
 
         private static void TestM0CatalogShape()
@@ -1991,8 +2058,8 @@ namespace MemoryThreadTests
                         type.GetProperty("name").GetString() + "." + field.GetString())).ToList();
                 List<JsonElement> atoms = payload.RootElement.GetProperty("atomRows")
                     .EnumerateArray().ToList();
-                AssertEqual("catalog.payload.declared-field-count", 399, expectedPaths.Count);
-                AssertEqual("catalog.payload.atom-count", 399, atoms.Count);
+                AssertEqual("catalog.payload.declared-field-count", 400, expectedPaths.Count);
+                AssertEqual("catalog.payload.atom-count", 400, atoms.Count);
                 for (int index = 0; index < atoms.Count; index++)
                 {
                     JsonElement atom = atoms[index];
@@ -2126,8 +2193,8 @@ namespace MemoryThreadTests
             {
                 registryAtoms += row.atoms.Length;
             }
-            AssertEqual("schema.atom-count", 399, registryAtoms);
-            AssertEqual("schema.catalog-atom-count", 399, catalogKinds.Count);
+            AssertEqual("schema.atom-count", 400, registryAtoms);
+            AssertEqual("schema.catalog-atom-count", 400, catalogKinds.Count);
 
             // §T6.0's exhaustive Boolean set must equal the registry's bool atoms exactly.
             string[] expectedBooleans =

@@ -196,9 +196,9 @@ namespace LlmProtocolHttpFixtureTests
             var firstVariant = new MemoryOptionalPromptVariantInput
             {
                 templateIdentity = "summary_wording:v1",
-                contextDetailIdentity = "lane:0",
+                contextDetailIdentity = "detail:full",
                 systemPrompt = "Frozen optional system",
-                userPrompt = "Frozen optional user\ntransport_variant=0",
+                userPrompt = "Frozen optional user full",
                 evidence = new List<MemoryEvidenceIdentity> { evidence }
             };
             var input = new MemoryOptionalRequestBuildInput
@@ -220,9 +220,9 @@ namespace LlmProtocolHttpFixtureTests
                     new MemoryOptionalPromptVariantInput
                     {
                         templateIdentity = "summary_wording:v1",
-                        contextDetailIdentity = "lane:1",
+                        contextDetailIdentity = "detail:compact",
                         systemPrompt = "Frozen optional system",
-                        userPrompt = "Frozen optional user\ntransport_variant=1",
+                        userPrompt = "Frozen optional user compact",
                         evidence = new List<MemoryEvidenceIdentity> { evidence }
                     }
                 }
@@ -237,7 +237,7 @@ namespace LlmProtocolHttpFixtureTests
             firstVariant.userPrompt = "mutated after freeze";
             evidence.recordId = OrdinalSegmentCodec.Segment("mutated");
             AssertEqual("optional protocol frozen bytes stay detached",
-                "Frozen optional user\ntransport_variant=0",
+                "Frozen optional user full",
                 frozen.variants[0].userPrompt);
             AssertEqual("optional protocol frozen evidence stays detached",
                 OrdinalSegmentCodec.Segment("record"),

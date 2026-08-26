@@ -128,25 +128,20 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Establishes the unsaved meaningful-work boundary. A game/load transition resets the
-        /// derivative to -1, so the first reconciled pass baselines current truth and cannot rederive a
-        /// provider backlog. Enabling optional work or changing its category projection forces the same
-        /// baseline; later policy passes leave it untouched.
+        /// Establishes the saved meaningful-work boundary. Enabling optional work or changing its
+        /// category projection baselines current truth; ordinary reconciliation and reload preserve
+        /// that exact tick so already-admitted delayed work remains bounded and eligible.
         /// </summary>
         private void EnsureOptionalMeaningfulEligibilityBaseline(
             MemoryPolicySnapshot policy,
             bool force)
         {
-            if (policy?.AllowsOptionalRequests != true)
-            {
-                optionalMeaningfulEligibilityBaselineTick = -1;
-                return;
-            }
-            if (force || optionalMeaningfulEligibilityBaselineTick < 0)
-            {
-                optionalMeaningfulEligibilityBaselineTick =
-                    Math.Max(0L, Find.TickManager?.TicksGame ?? 0);
-            }
+            optionalMeaningfulEligibilityBaselineTick =
+                MemoryOptionalAiPolicy.PlanMeaningfulEligibilityBaseline(
+                    policy?.AllowsOptionalRequests == true,
+                    force,
+                    optionalMeaningfulEligibilityBaselineTick,
+                    Find.TickManager?.TicksGame ?? 0);
         }
 
         /// <summary>True only after this save has applied the currently published fingerprint.</summary>
@@ -282,6 +277,9 @@ namespace PawnDiary
             {
                 SavedActiveLogicalRequestV1 request = activeMemoryCoordinatorRequests[index];
                 if (request == null || retained.Contains(request)) continue;
+                LlmClient.CancelQueued(
+                    request.eventIdOrOpportunityKey,
+                    request.povRoleToken);
                 MemoryDispatchRuntimeBridge.ReleaseLogicalRequestSendEnvelopes(
                     request.logicalRequestId);
                 invokedGenerationCutoffs.Settle(request.logicalRequestId);
@@ -308,6 +306,9 @@ namespace PawnDiary
             if (request == null
                 || !MemoryDispatchTokens.IsOptionalPurpose(request.requestPurposeToken)
                 || MemoryDispatchSavedAdapter.LoadedRequestMayHaveBeenInvoked(request)) return;
+            LlmClient.CancelQueued(
+                request.eventIdOrOpportunityKey,
+                request.povRoleToken);
             MemoryDispatchRuntimeBridge.ReleaseLogicalRequestSendEnvelopes(request.logicalRequestId);
             diaryEvent.SetActiveMemoryLogicalRequestForRole(role, null);
             diaryEvent.SetAcceptedPromptPair(role, string.Empty, string.Empty);

@@ -149,6 +149,60 @@ namespace PawnDiary
                 && originalEventTick > eligibilityBaselineTick;
         }
 
+        /// <summary>
+        /// Plans the saved no-catch-up boundary. Enabling or an old save with no boundary observes
+        /// current truth; ordinary reconciliation, including after reload, preserves the prior tick.
+        /// </summary>
+        public static long PlanMeaningfulEligibilityBaseline(
+            bool allowsOptionalRequests,
+            bool forceCurrentTruthBaseline,
+            long savedBaselineTick,
+            long currentTick)
+        {
+            if (!allowsOptionalRequests) return -1;
+            if (forceCurrentTruthBaseline || savedBaselineTick < 0)
+                return Math.Max(0L, currentTick);
+            return savedBaselineTick;
+        }
+
+        /// <summary>
+        /// Fail-closed preflight shared by candidate dispatch and the main-thread queue adapter. A
+        /// published/saved-policy mismatch must never stage work under the old cancellation fence.
+        /// </summary>
+        public static bool CanStageOptionalRequest(
+            bool policyReconciled,
+            bool allowsOptionalRequests,
+            long globalCancellationGeneration,
+            long optionalRequestInvalidationGeneration)
+        {
+            return policyReconciled
+                && allowsOptionalRequests
+                && globalCancellationGeneration > 0
+                && globalCancellationGeneration < long.MaxValue
+                && optionalRequestInvalidationGeneration > 0
+                && optionalRequestInvalidationGeneration < long.MaxValue;
+        }
+
+        /// <summary>
+        /// Returns whether one bounded opportunity can still become due. Pre-due work wakes the
+        /// common coordinator, while the exact expiry boundary and every later tick stay asleep.
+        /// </summary>
+        public static bool IsBoundedOpportunityWakeable(
+            long requestedTick,
+            long delayTicks,
+            long expiryTicks,
+            long nowTick)
+        {
+            if (requestedTick < 0 || delayTicks < 0 || expiryTicks <= 0 || nowTick < 0)
+                return false;
+            if (requestedTick > long.MaxValue - delayTicks) return false;
+            long due = requestedTick + delayTicks;
+            long expiry = due > long.MaxValue - expiryTicks
+                ? long.MaxValue
+                : due + expiryTicks;
+            return nowTick < expiry;
+        }
+
         /// <summary>Creates the canonical length-prefixed key carrying every saved identity field.</summary>
         public static bool TryCreateSummaryOpportunityKey(
             SummaryWordingOpportunitySnapshot value,
@@ -374,7 +428,8 @@ namespace PawnDiary
             }
 
             string normalized;
-            if (!TryNormalizeWording(generatedWording, maximumCharacters, out normalized))
+            if (!MemoryNaturalWordingProjection.TryNormalizeOptionalWording(
+                    generatedWording, maximumCharacters, out normalized))
             {
                 plan.dispositionToken = MemoryOptionalWordingDispositionTokens.Malformed;
                 return plan;
@@ -399,17 +454,22 @@ namespace PawnDiary
             string dispositionToken,
             int maximumOptionalCharacters)
         {
-            if (current == null || current.suppressed) return string.Empty;
-            string fallback = current.deterministicWording ?? string.Empty;
-            string normalized;
-            return dispositionToken == MemoryOptionalWordingDispositionTokens.Success
-                    && Equal(optionalFingerprint, current.projectionFingerprint)
-                    && optionalFormatRevision == current.formatRevision
-                    && optionalCategoryMask == current.categoryMask
-                    && TryNormalizeWording(
-                        optionalWording, maximumOptionalCharacters, out normalized)
-                ? normalized
-                : fallback;
+            return MemoryNaturalWordingProjection.Select(
+                current?.suppressed ?? true,
+                current?.deterministicWording,
+                current == null ? null : new MemoryRecallSummaryWordingSnapshot
+                {
+                    currentProjectionFingerprint = current.projectionFingerprint,
+                    currentFormatRevision = current.formatRevision,
+                    currentCategoryMask = current.categoryMask,
+                    optionalWording = optionalWording,
+                    optionalFingerprint = optionalFingerprint,
+                    optionalFormatRevision = optionalFormatRevision,
+                    optionalCategoryMask = optionalCategoryMask,
+                    optionalSucceeded = dispositionToken
+                        == MemoryOptionalWordingDispositionTokens.Success
+                },
+                maximumOptionalCharacters);
         }
 
         /// <summary>Builds a complete staged immutable request graph or refuses before allocation.</summary>
@@ -567,26 +627,6 @@ namespace PawnDiary
                 opportunity = opportunity,
                 dispositionToken = disposition
             };
-        }
-
-        private static bool TryNormalizeWording(
-            string value,
-            int maximumCharacters,
-            out string normalized)
-        {
-            normalized = string.Empty;
-            if (maximumCharacters <= 0 || string.IsNullOrWhiteSpace(value)) return false;
-            string candidate = value.Trim();
-            if (candidate.Length == 0 || candidate.Length > maximumCharacters
-                || !MemoryIdentityCodec.IsWellFormedUtf16(candidate)) return false;
-            for (int index = 0; index < candidate.Length; index++)
-            {
-                char current = candidate[index];
-                if (current == '\r' || current == '\n' || current == '\0'
-                    || (char.IsControl(current) && current != '\t')) return false;
-            }
-            normalized = candidate;
-            return true;
         }
 
         private static List<MemoryEvidenceIdentity> CanonicalEvidenceUnion(
@@ -793,11 +833,12 @@ namespace PawnDiary
                 || maximumEntries <= 0) return false;
             MemoryInvokedGenerationCutoffEntry entry = Find(
                 sessionId, ownerPawnId, ownerEpochToken, ownerGeneration, globalGeneration);
-            if (entry == null) return entries.Count < maximumEntries;
             long registered;
-            return !entry.unsettledRequestSequences.TryGetValue(
-                    logicalRequestId, out registered)
-                || registered == invocationSequence;
+            if (entry != null && entry.unsettledRequestSequences.TryGetValue(
+                    logicalRequestId, out registered)) return registered == invocationSequence;
+            // The contract bounds exact unsettled requests, not merely generation-key rows. Many
+            // requests can share one owner/generation entry, so EntryCount alone is insufficient.
+            return UnsettledRequestCount < maximumEntries;
         }
 
         public bool TryRegister(

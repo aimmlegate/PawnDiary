@@ -2,7 +2,6 @@
 // identity, bounded queueing, admission, retry policy, and secret-safe labels stay in one audited
 // place without depending on RimWorld, Verse, Unity, HTTP, or saved settings objects.
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
@@ -449,8 +448,9 @@ namespace PawnDiary
     {
         internal readonly BoundedTransportQueue<T> owner;
         internal readonly T item;
-        // 0 = staged, 1 = active/visible, 2 = cancelled or consumed.
+        // 0 = staged, 1 = active/visible, 2 = cancelled, 3 = consumed.
         internal int state;
+        internal LinkedListNode<StagedTransportQueueItem<T>> activeNode;
 
         internal StagedTransportQueueItem(BoundedTransportQueue<T> owner, T item)
         {
@@ -467,7 +467,12 @@ namespace PawnDiary
     /// </summary>
     internal sealed class BoundedTransportQueue<T>
     {
-        private readonly ConcurrentQueue<T> queue = new ConcurrentQueue<T>();
+        // One short lock owns the sole FIFO, item state, and both counters. The linked node lets
+        // settings reconciliation physically remove activated-but-unclaimed work in O(1), so a
+        // cancel storm cannot leave an unbounded chain of invisible tombstones.
+        private readonly object sync = new object();
+        private readonly LinkedList<StagedTransportQueueItem<T>> queue =
+            new LinkedList<StagedTransportQueueItem<T>>();
         private readonly int capacity;
         private int reservedCount;
         private int visibleCount;
@@ -489,13 +494,37 @@ namespace PawnDiary
 
         public int Count
         {
-            get { return Volatile.Read(ref visibleCount); }
+            get
+            {
+                lock (sync)
+                {
+                    return visibleCount;
+                }
+            }
         }
 
         /// <summary>Active plus staged slots; this value never exceeds <see cref="Capacity"/>.</summary>
         public int ReservedCount
         {
-            get { return Volatile.Read(ref reservedCount); }
+            get
+            {
+                lock (sync)
+                {
+                    return reservedCount;
+                }
+            }
+        }
+
+        /// <summary>Physical FIFO nodes; cancellation removes its node before returning.</summary>
+        internal int PhysicalCount
+        {
+            get
+            {
+                lock (sync)
+                {
+                    return queue.Count;
+                }
+            }
         }
 
         /// <summary>
@@ -505,22 +534,10 @@ namespace PawnDiary
         public bool TryStage(T item, out StagedTransportQueueItem<T> staged)
         {
             staged = null;
-            while (true)
+            lock (sync)
             {
-                int observed = Volatile.Read(ref reservedCount);
-                if (observed >= capacity)
-                {
-                    return false;
-                }
-
-                if (Interlocked.CompareExchange(
-                        ref reservedCount,
-                        observed + 1,
-                        observed) != observed)
-                {
-                    continue;
-                }
-
+                if (reservedCount >= capacity) return false;
+                reservedCount++;
                 staged = new StagedTransportQueueItem<T>(this, item);
                 return true;
             }
@@ -532,42 +549,64 @@ namespace PawnDiary
         /// </summary>
         public bool Activate(StagedTransportQueueItem<T> staged)
         {
-            if (staged == null
-                || !ReferenceEquals(staged.owner, this)
-                || Interlocked.CompareExchange(ref staged.state, 1, 0) != 0)
+            if (staged == null || !ReferenceEquals(staged.owner, this))
             {
                 return false;
             }
 
-            try
+            lock (sync)
             {
-                // Publish the visible count before the queue node. A concurrent worker can otherwise
-                // dequeue between Enqueue and Increment and transiently drive Count negative.
-                Interlocked.Increment(ref visibleCount);
-                queue.Enqueue(staged.item);
-                return true;
-            }
-            catch
-            {
-                Volatile.Write(ref staged.state, 2);
-                Interlocked.Decrement(ref visibleCount);
-                Interlocked.Decrement(ref reservedCount);
-                throw;
+                if (staged.state != 0) return false;
+                staged.state = 1;
+                try
+                {
+                    staged.activeNode = queue.AddLast(staged);
+                    visibleCount++;
+                    return true;
+                }
+                catch
+                {
+                    staged.state = 2;
+                    staged.activeNode = null;
+                    reservedCount--;
+                    throw;
+                }
             }
         }
 
-        /// <summary>Releases one invisible staged slot. Active work cannot be cancelled here.</summary>
+        /// <summary>
+        /// Releases one staged or activated-but-unclaimed slot. A worker claim wins atomically once
+        /// dequeue changes the item to consumed.
+        /// </summary>
         public bool Cancel(StagedTransportQueueItem<T> staged)
         {
-            if (staged == null
-                || !ReferenceEquals(staged.owner, this)
-                || Interlocked.CompareExchange(ref staged.state, 2, 0) != 0)
+            if (staged == null || !ReferenceEquals(staged.owner, this))
             {
                 return false;
             }
 
-            Interlocked.Decrement(ref reservedCount);
-            return true;
+            lock (sync)
+            {
+                if (staged.state == 0)
+                {
+                    staged.state = 2;
+                    reservedCount--;
+                    return true;
+                }
+                if (staged.state == 1)
+                {
+                    staged.state = 2;
+                    if (staged.activeNode != null)
+                    {
+                        queue.Remove(staged.activeNode);
+                        staged.activeNode = null;
+                    }
+                    visibleCount--;
+                    reservedCount--;
+                    return true;
+                }
+                return false;
+            }
         }
 
         /// <summary>Returns false immediately when all bounded queue slots are reserved.</summary>
@@ -585,14 +624,29 @@ namespace PawnDiary
         /// <summary>Removes one item and releases its bounded queue slot.</summary>
         public bool TryDequeue(out T item)
         {
-            if (!queue.TryDequeue(out item))
+            lock (sync)
             {
+                LinkedListNode<StagedTransportQueueItem<T>> first = queue.First;
+                while (first != null)
+                {
+                    StagedTransportQueueItem<T> staged = first.Value;
+                    queue.Remove(first);
+                    staged.activeNode = null;
+                    if (staged.state != 1)
+                    {
+                        first = queue.First;
+                        continue;
+                    }
+                    staged.state = 3;
+                    item = staged.item;
+                    visibleCount--;
+                    reservedCount--;
+                    return true;
+                }
+
+                item = default(T);
                 return false;
             }
-
-            Interlocked.Decrement(ref visibleCount);
-            Interlocked.Decrement(ref reservedCount);
-            return true;
         }
     }
 

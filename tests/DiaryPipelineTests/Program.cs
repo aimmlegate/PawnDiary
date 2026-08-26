@@ -8024,6 +8024,9 @@ namespace DiaryPipelineTests
                     "persona_weapon=bond_recovered; persona_weapon_name=Quiet Edge"));
             AssertEqual("arc reflection marker domain", "Reflection",
                 DiaryEventDomainClassifier.DomainForContext("arc_reflection=true; arc_year=5504"));
+            AssertEqual("generated memory reflection marker domain", "Reflection",
+                DiaryEventDomainClassifier.DomainForContext(
+                    "generated_memory_reflection=true"));
             AssertEqual("day reflection marker domain", "Reflection",
                 DiaryEventDomainClassifier.DomainForContext("day_reflection=true; day=42; highlights=3"));
             AssertEqual("quadrum reflection marker domain", "Reflection",
@@ -8548,7 +8551,8 @@ namespace DiaryPipelineTests
                 new[] { "DayReflection", "dayreflection" },
                 new[] { "QuadrumReflection", "quadrumreflection" },
                 new[] { "PawnBeliefReflection", "reflectionBelief" },
-                new[] { "PawnArcReflection", "reflection" }
+                new[] { "PawnArcReflection", "reflection" },
+                new[] { "MemoryReflection", "reflection" }
             };
             for (int i = 0; i < routes.Length; i++)
             {
@@ -8584,7 +8588,8 @@ namespace DiaryPipelineTests
             // never win — this is exactly the state day/quadrum were stuck in.
             string[] reflectionNames =
             {
-                "DayReflection", "QuadrumReflection", "PawnArcReflection", "PawnBeliefReflection"
+                "DayReflection", "QuadrumReflection", "PawnArcReflection", "PawnBeliefReflection",
+                "MemoryReflection"
             };
             foreach (XElement row in groups.Descendants("PawnDiary.DiaryInteractionGroupDef"))
             {

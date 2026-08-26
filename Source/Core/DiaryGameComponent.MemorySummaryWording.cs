@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 using PawnDiary.Ingestion;
 using Verse;
@@ -18,6 +19,29 @@ namespace PawnDiary
         private const string OptionalMemoryReflectionDefName = "MemoryReflection";
         private readonly MemoryInvokedGenerationCutoffTable invokedGenerationCutoffs =
             new MemoryInvokedGenerationCutoffTable();
+        private readonly ConditionalWeakTable<SavedMemoryBlock, SummaryWakeProjectionCache>
+            summaryWakeProjectionCache =
+                new ConditionalWeakTable<SavedMemoryBlock, SummaryWakeProjectionCache>();
+
+        /// <summary>
+        /// Transient memo for the cheap wake hint. Facts/revision/policy changes invalidate it; stable
+        /// summaries avoid rebuilding contribution lists and SHA-256 fingerprints every 250 ticks.
+        /// </summary>
+        private sealed class SummaryWakeProjectionCache
+        {
+            public SavedMemoryThreadRoot root;
+            public long rootStructuralRevision;
+            public long factsRevision;
+            public int reducerRevision;
+            public long formatRevision;
+            public int derivedCategoryMask;
+            public int policyCategoryMask;
+            public bool playerEdited;
+            public string lastSettledFingerprint = string.Empty;
+            public int lastSettledReducerRevision;
+            public long lastSettledFormatRevision;
+            public bool changed;
+        }
 
         /// <summary>
         /// Adds all M10 classes to the one existing candidate list. LegacyShadow returns immediately,
@@ -34,7 +58,8 @@ namespace PawnDiary
         {
             if (!MemorySystemActivationGate.IsCurrentRelease
                 || candidates == null || pawn == null || diary == null
-                || reflectionState == null || memoryPolicy == null) return;
+                || reflectionState == null || memoryPolicy == null
+                || !MemoryPolicyIsReconciled()) return;
 
             PawnKnowledgeState owner = diary.KnowledgeStateOrNull();
             if (owner == null || !owner.IsCurrentSchema()
@@ -272,11 +297,11 @@ namespace PawnDiary
             int nowTick)
         {
             if (pawn == null || owner == null || block == null || opportunity == null
-                || policy?.AllowsOptionalRequests != true
-                || globalOptionalRequestCancellationGeneration <= 0
-                || globalOptionalRequestCancellationGeneration == long.MaxValue
-                || policy.optionalRequestInvalidationGeneration <= 0
-                || policy.optionalRequestInvalidationGeneration == long.MaxValue)
+                || !MemoryOptionalAiPolicy.CanStageOptionalRequest(
+                    MemoryPolicyIsReconciled(),
+                    policy?.AllowsOptionalRequests == true,
+                    globalOptionalRequestCancellationGeneration,
+                    policy?.optionalRequestInvalidationGeneration ?? 0))
             {
                 SettleRejectedOptionalOpportunity(opportunity);
                 return false;
@@ -301,7 +326,9 @@ namespace PawnDiary
             ApiEndpointConfig primary = SelectApiTarget(
                 null, DiaryEvent.InitiatorRole, targets, null, string.Empty,
                 settings.apiRoutingMode, out reason, out forcePrimary);
-            List<ApiEndpointConfig> failovers = BuildFailoverTargets(targets, primary);
+            List<ApiEndpointConfig> failovers = DeduplicateOptionalFailovers(
+                primary,
+                BuildFailoverTargets(targets, primary));
             List<ApiEndpointConfig> lanes = new List<ApiEndpointConfig> { primary };
             lanes.AddRange(failovers);
             string purpose = opportunity.workClass == ReflectionWorkClassTokens.SummaryWording
@@ -349,6 +376,14 @@ namespace PawnDiary
             }
             Dictionary<ApiLaneIdentity, LlmPromptVariant> promptVariants =
                 new Dictionary<ApiLaneIdentity, LlmPromptVariant>();
+            build.variants.Add(new MemoryOptionalPromptVariantInput
+            {
+                templateIdentity = purpose + ":v1",
+                contextDetailIdentity = "optional-memory:v1",
+                systemPrompt = system,
+                userPrompt = baseUser,
+                evidence = new List<MemoryEvidenceIdentity> { evidence }
+            });
             for (int index = 0; index < lanes.Count; index++)
             {
                 ApiEndpointConfig lane = lanes[index];
@@ -357,23 +392,14 @@ namespace PawnDiary
                     SettleRejectedOptionalOpportunity(opportunity);
                     return false;
                 }
-                string laneUser = baseUser + "\ntransport_variant="
-                    + index.ToString(CultureInfo.InvariantCulture);
-                build.variants.Add(new MemoryOptionalPromptVariantInput
-                {
-                    templateIdentity = purpose + ":v1",
-                    contextDetailIdentity = "optional-memory:v1:"
-                        + index.ToString(CultureInfo.InvariantCulture),
-                    systemPrompt = system,
-                    userPrompt = laneUser,
-                    evidence = new List<MemoryEvidenceIdentity> { evidence }
-                });
-                promptVariants[ApiLaneIdentity.ForGate(
+                ApiLaneIdentity laneKey = ApiLaneIdentity.ForGate(
                     lane.url, lane.model, lane.apiMode, lane.authMode,
-                    lane.customAuthHeaderName, lane.apiKey)] = new LlmPromptVariant
+                    lane.customAuthHeaderName, lane.apiKey);
+                if (laneKey.Empty || promptVariants.ContainsKey(laneKey)) continue;
+                promptVariants[laneKey] = new LlmPromptVariant
                 {
                     systemPrompt = system,
-                    rawText = laneUser,
+                    rawText = baseUser,
                     contextDetailLevel = settings.EffectiveContextDetailLevel(lane)
                 };
             }
@@ -394,7 +420,7 @@ namespace PawnDiary
                 eventId = opportunity.opportunityKey,
                 povRole = DiaryEvent.InitiatorRole,
                 systemPrompt = system,
-                rawText = build.variants[0].userPrompt,
+                rawText = baseUser,
                 endpointUrl = primary.url,
                 modelName = primary.model,
                 apiKey = primary.apiKey,
@@ -470,6 +496,35 @@ namespace PawnDiary
                 return false;
             }
             return true;
+        }
+
+        /// <summary>
+        /// Collapses identical provider lanes for optional work. A duplicate settings row is not a
+        /// distinct frozen prompt variant or a reason to make the same physical attempt twice.
+        /// </summary>
+        private static List<ApiEndpointConfig> DeduplicateOptionalFailovers(
+            ApiEndpointConfig primary,
+            List<ApiEndpointConfig> failovers)
+        {
+            List<ApiEndpointConfig> result = new List<ApiEndpointConfig>();
+            HashSet<ApiLaneIdentity> seen = new HashSet<ApiLaneIdentity>();
+            if (primary != null)
+            {
+                ApiLaneIdentity primaryKey = ApiLaneIdentity.ForGate(
+                    primary.url, primary.model, primary.apiMode, primary.authMode,
+                    primary.customAuthHeaderName, primary.apiKey);
+                if (!primaryKey.Empty) seen.Add(primaryKey);
+            }
+            for (int index = 0; failovers != null && index < failovers.Count; index++)
+            {
+                ApiEndpointConfig lane = failovers[index];
+                if (lane == null) continue;
+                ApiLaneIdentity key = ApiLaneIdentity.ForGate(
+                    lane.url, lane.model, lane.apiMode, lane.authMode,
+                    lane.customAuthHeaderName, lane.apiKey);
+                if (!key.Empty && seen.Add(key)) result.Add(lane);
+            }
+            return result;
         }
 
         /// <summary>Routes component-owned completion before the ordinary DiaryEvent lookup.</summary>
@@ -890,11 +945,21 @@ namespace PawnDiary
             PawnKnowledgeState owner,
             SavedMemoryThreadRoot root)
         {
+            bool changed = false;
             long next;
             if (owner != null && TryIncrement(owner.statusRevision, out next))
+            {
                 owner.statusRevision = next;
+                changed = true;
+            }
             if (root != null && TryIncrement(root.statusRevision, out next))
+            {
                 root.statusRevision = next;
+                changed = true;
+            }
+            // The Library's detached owner cache fingerprints include these revisions. Advance the
+            // common loaded-state fence so its next ordinary update rebuilds the changed wording row.
+            if (changed) DiaryStateVersion.Bump();
         }
 
         private static SummaryWordingOpportunitySnapshot NewSummaryOpportunity(
@@ -1155,9 +1220,14 @@ namespace PawnDiary
         /// Read-only wake hint for the common rest pass. It does not evaluate quiet RNG, repair rows,
         /// expire work, or suppress another class; the coordinator remains the sole priority decision.
         /// </summary>
-        private bool HasOptionalMemoryCandidateSource(MemoryPolicySnapshot policy)
+        private bool HasOptionalMemoryCandidateSource(
+            MemoryPolicySnapshot policy,
+            long nowTick,
+            DiaryKnowledgeTuningDef tuning)
         {
-            if (policy?.AllowsOptionalRequests != true) return false;
+            if (!MemoryPolicyIsReconciled()
+                || policy?.AllowsOptionalRequests != true
+                || nowTick < 0) return false;
             for (int diaryIndex = 0; diaries != null && diaryIndex < diaries.Count; diaryIndex++)
             {
                 PawnKnowledgeState owner = diaries[diaryIndex]?.KnowledgeStateOrNull();
@@ -1166,7 +1236,9 @@ namespace PawnDiary
                     && index < owner.standaloneBlocks.Count; index++)
                     if (CouldWakeOptionalMemory(
                             owner.standaloneBlocks[index], owner, policy,
-                            optionalMeaningfulEligibilityBaselineTick))
+                            optionalMeaningfulEligibilityBaselineTick,
+                            nowTick,
+                            tuning))
                         return true;
                 for (int rootIndex = 0; owner.threadRoots != null
                     && rootIndex < owner.threadRoots.Count; rootIndex++)
@@ -1181,7 +1253,9 @@ namespace PawnDiary
                             return true;
                         if (CouldWakeOptionalMemory(
                                 root.visibleBlocks[index], owner, policy,
-                                optionalMeaningfulEligibilityBaselineTick))
+                                optionalMeaningfulEligibilityBaselineTick,
+                                nowTick,
+                                tuning))
                             return true;
                     }
                 }
@@ -1189,25 +1263,64 @@ namespace PawnDiary
             return false;
         }
 
-        private static bool ChangedSummaryProjection(
+        private bool ChangedSummaryProjection(
             SavedMemoryThreadRoot root,
             SavedMemoryBlock block,
             MemoryPolicySnapshot policy)
         {
-            SummaryWordingCurrentSnapshot current = CurrentSummarySnapshot(root, block, policy);
             SavedMemorySummaryPayload payload = block?.summaryPayload;
-            return current != null && payload != null
+            if (root == null || payload == null || policy == null) return false;
+            SummaryWakeProjectionCache cached;
+            if (summaryWakeProjectionCache.TryGetValue(block, out cached)
+                && ReferenceEquals(cached.root, root)
+                && cached.rootStructuralRevision == root.structuralRevision
+                && cached.factsRevision == payload.factsRevision
+                && cached.reducerRevision == payload.reducerRevision
+                && cached.formatRevision == block.formatRevision
+                && cached.derivedCategoryMask == payload.derivedCategoryMask
+                && cached.policyCategoryMask == policy.memoryCategoryMask
+                && cached.playerEdited == block.playerEdited
+                && cached.lastSettledReducerRevision
+                    == payload.lastSettledWordingReducerRevision
+                && cached.lastSettledFormatRevision
+                    == payload.lastSettledWordingFormatRevision
+                && string.Equals(cached.lastSettledFingerprint,
+                    payload.lastSettledWordingFingerprint, StringComparison.Ordinal))
+                return cached.changed;
+
+            SummaryWordingCurrentSnapshot current = CurrentSummarySnapshot(root, block, policy);
+            bool changed = current != null
                 && (!string.Equals(payload.lastSettledWordingFingerprint,
                         current.projectionFingerprint, StringComparison.Ordinal)
                     || payload.lastSettledWordingReducerRevision != current.reducerRevision
                     || payload.lastSettledWordingFormatRevision != current.formatRevision);
+            if (cached == null)
+            {
+                cached = new SummaryWakeProjectionCache();
+                summaryWakeProjectionCache.Add(block, cached);
+            }
+            cached.root = root;
+            cached.rootStructuralRevision = root.structuralRevision;
+            cached.factsRevision = payload.factsRevision;
+            cached.reducerRevision = payload.reducerRevision;
+            cached.formatRevision = block.formatRevision;
+            cached.derivedCategoryMask = payload.derivedCategoryMask;
+            cached.policyCategoryMask = policy.memoryCategoryMask;
+            cached.playerEdited = block.playerEdited;
+            cached.lastSettledFingerprint = payload.lastSettledWordingFingerprint ?? string.Empty;
+            cached.lastSettledReducerRevision = payload.lastSettledWordingReducerRevision;
+            cached.lastSettledFormatRevision = payload.lastSettledWordingFormatRevision;
+            cached.changed = changed;
+            return changed;
         }
 
         private static bool CouldWakeOptionalMemory(
             SavedMemoryBlock block,
             PawnKnowledgeState owner,
             MemoryPolicySnapshot policy,
-            long meaningfulEligibilityBaselineTick)
+            long meaningfulEligibilityBaselineTick,
+            long nowTick,
+            DiaryKnowledgeTuningDef tuning)
         {
             if (block == null || owner == null || policy == null
                 || block.kind == MemoryContractTokens.KindSummary
@@ -1220,10 +1333,17 @@ namespace PawnDiary
                 || !policy.AllowsRecall(MemoryCategoryBits.ForToken(block.category))) return false;
             bool meaningful = block.importance == MemoryContractTokens.ImportanceImportant
                 || HasTurningPoint(block) || HasReversal(block);
-            return meaningful
-                ? MemoryOptionalAiPolicy.IsMeaningfulEventAfterEligibilityBaseline(
+            if (!meaningful) return policy.AllowsOccasionalReflections;
+            long delay = CaptureRuleOwnsAuthoritativePage(block.captureRuleId)
+                ? Math.Max(1, tuning?.meaningfulMemoryDelayTicks ?? 60000)
+                : 0;
+            return MemoryOptionalAiPolicy.IsMeaningfulEventAfterEligibilityBaseline(
                     block.originalEventTick, meaningfulEligibilityBaselineTick)
-                : policy.AllowsOccasionalReflections;
+                && MemoryOptionalAiPolicy.IsBoundedOpportunityWakeable(
+                    block.originalEventTick,
+                    delay,
+                    Math.Max(1, tuning?.optionalMemoryOpportunityExpiryTicks ?? 120000),
+                    nowTick);
         }
 
         private static bool EligibleReflectionBlock(

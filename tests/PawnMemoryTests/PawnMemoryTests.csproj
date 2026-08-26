@@ -14,6 +14,7 @@
     <Compile Include="..\..\Source\Pipeline\Knowledge\ImportantEventClassifier.cs" Link="ImportantEventClassifier.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\ImportantMemorySelector.cs" Link="ImportantMemorySelector.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\ImportantMemoryLineRenderer.cs" Link="ImportantMemoryLineRenderer.cs" />
+    <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryNaturalWordingProjection.cs" Link="MemoryNaturalWordingProjection.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryThreadContracts.cs" Link="MemoryThreadContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryIdentityCodec.cs" Link="MemoryIdentityCodec.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryChapterPolicy.cs" Link="MemoryChapterPolicy.cs" />

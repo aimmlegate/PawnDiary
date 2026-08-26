@@ -3498,6 +3498,49 @@ namespace PawnMemoryTests
             AssertEqual("recallV2.current.truth-separate", "Now: they are hostile.",
                 rendered.currentStateText);
 
+            MemoryRecallCandidateSnapshot summary = RecallCandidate(
+                "summary-wording", "Owner_A", "source-summary-wording", 302);
+            summary.kind = MemoryContractTokens.KindSummary;
+            summary.historicalText = "Deterministic filtered summary.";
+            summary.summaryWording = new MemoryRecallSummaryWordingSnapshot
+            {
+                currentProjectionFingerprint = "projection-current",
+                currentFormatRevision = 7,
+                currentCategoryMask = 1,
+                optionalWording = "Natural optional summary.",
+                optionalFingerprint = "projection-current",
+                optionalFormatRevision = 7,
+                optionalCategoryMask = 1,
+                optionalSucceeded = true
+            };
+            MemoryRecallSelectedCandidate selectedSummary = ImportantMemorySelector.SelectV2(
+                query, new List<MemoryRecallCandidateSnapshot> { summary }).selected[0];
+            summary.summaryWording.optionalWording = "Mutated after selection.";
+            rendered = ImportantMemoryLineRenderer.RenderV2(selectedSummary, 200, 200);
+            AssertEqual("recallV2.summary.exact-cache-reaches-natural-writing",
+                "Natural optional summary.", rendered.historicalText);
+
+            MemoryRecallCandidateSnapshot staleSummary = RecallCandidate(
+                "summary-stale", "Owner_A", "source-summary-stale", 303);
+            staleSummary.kind = MemoryContractTokens.KindSummary;
+            staleSummary.historicalText = "Deterministic stale fallback.";
+            staleSummary.summaryWording = new MemoryRecallSummaryWordingSnapshot
+            {
+                currentProjectionFingerprint = "projection-current",
+                currentFormatRevision = 7,
+                currentCategoryMask = 1,
+                optionalWording = "Stale optional summary.",
+                optionalFingerprint = "projection-old",
+                optionalFormatRevision = 7,
+                optionalCategoryMask = 1,
+                optionalSucceeded = true
+            };
+            selectedSummary = ImportantMemorySelector.SelectV2(
+                query, new List<MemoryRecallCandidateSnapshot> { staleSummary }).selected[0];
+            rendered = ImportantMemoryLineRenderer.RenderV2(selectedSummary, 200, 200);
+            AssertEqual("recallV2.summary.stale-cache-keeps-deterministic",
+                "Deterministic stale fallback.", rendered.historicalText);
+
             KnowledgeSelectionResult legacy = new KnowledgeSelectionResult();
             legacy.selected.Add(Record("legacy-record", 1, subjectKey: "part:Leg"));
             MemoryRecallShadowComparison comparison = ImportantMemorySelector.CompareLegacyAndV2(
