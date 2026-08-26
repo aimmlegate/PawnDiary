@@ -20,6 +20,7 @@ namespace MemoryThreadTests
             assertions = 0;
             OwnerSelectionUsesExactHandles();
             ImportedVisibilityAndFiltersAreExact();
+            CapacityAndEmptyStateRulesAreExact();
             DetachedDraftsHandleStatusAndStructuralConflicts();
             CommandsCarryExactIdentityAndRevision();
             DrawingStagesButDoesNotExecuteCommands();
@@ -239,6 +240,52 @@ namespace MemoryThreadTests
             Equal("m9.draft.success-consumed", true,
                 MemoryLibraryUiPolicy.ApplyEditCommandResult(draft,
                     new MemoryLibraryCommandResult { status = MemoryLibraryCommandStatuses.Success }));
+        }
+
+        private static void CapacityAndEmptyStateRulesAreExact()
+        {
+            MemoryLibraryOwnerRow zeroMemory = new MemoryLibraryOwnerRow
+            {
+                primaryHandle = new MemoryLibraryOwnerHandle(
+                    MemoryLibraryScopes.Active, "zero", string.Empty)
+            };
+            Equal("m9.views.zero-memory-active", true,
+                MemoryLibraryUiPolicy.HasActiveViews(zeroMemory));
+            zeroMemory.primaryHandle = new MemoryLibraryOwnerHandle(
+                MemoryLibraryScopes.ArchiveOnly, "zero", string.Empty);
+            Equal("m9.views.archive-only-no-active", false,
+                MemoryLibraryUiPolicy.HasActiveViews(zeroMemory));
+
+            MemoryLibraryFilters filters = new MemoryLibraryFilters
+            {
+                importanceMask = MemoryLibraryPolicy.ImportanceImportant,
+                stateToken = "all"
+            };
+            Equal("m9.empty.filter-overrides-backend-no-memories", "no_filter_matches",
+                MemoryLibraryUiPolicy.ListEmptyState("no_memories", string.Empty, filters));
+            Equal("m9.empty.search-overrides-filter", "no_matches",
+                MemoryLibraryUiPolicy.ListEmptyState("no_memories", "needle", filters));
+            filters.importanceMask = 0;
+            Equal("m9.empty.genuine-no-memories", "no_memories",
+                MemoryLibraryUiPolicy.ListEmptyState("no_memories", string.Empty, filters));
+
+            Equal("m9.current-status.default-is-missing", false,
+                MemoryLibraryUiPolicy.HasCapturedCurrentStatus(new MemoryCurrentStatusDto()));
+            Equal("m9.current-status.tick-zero-is-captured", true,
+                MemoryLibraryUiPolicy.HasCapturedCurrentStatus(
+                    new MemoryCurrentStatusDto { capturedTick = 0 }));
+
+            List<string> fields = new List<string>();
+            Equal("m9.capacity.first-field", true, MemoryLibraryPolicy.TryAppendBoundedText(
+                fields, "1234", 2, 6));
+            Equal("m9.capacity.total-clamps-second", true,
+                MemoryLibraryPolicy.TryAppendBoundedText(fields, "😀z", 2, 6));
+            Equal("m9.capacity.total-exact", 6, fields[0].Length + fields[1].Length);
+            Equal("m9.capacity.scalar-complete", "😀", fields[1]);
+            Equal("m9.capacity.count-refuses-third", false,
+                MemoryLibraryPolicy.TryAppendBoundedText(fields, "x", 2, 6));
+            Equal("m9.search.repairs-unpaired-surrogate", "�",
+                MemoryLibraryPolicy.RepairMalformedUtf16("\ud800"));
         }
 
         private static void CommandsCarryExactIdentityAndRevision()

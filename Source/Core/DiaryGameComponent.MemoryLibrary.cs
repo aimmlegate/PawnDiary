@@ -1669,6 +1669,8 @@ namespace PawnDiary
                 state?.autobiographicalEpochToken ?? string.Empty,
                 (state?.structuralRevision ?? 0).ToString(CultureInfo.InvariantCulture),
                 (state?.statusRevision ?? 0).ToString(CultureInfo.InvariantCulture),
+                (source?.headerSnapshot?.ownerRow?.structuralRevision ?? 0)
+                    .ToString(CultureInfo.InvariantCulture),
                 (job?.settingsRevision ?? 0).ToString(CultureInfo.InvariantCulture),
                 (job?.ttlDayRevision ?? 0).ToString(CultureInfo.InvariantCulture),
                 job?.language?.ToString() ?? string.Empty
@@ -2140,14 +2142,16 @@ namespace PawnDiary
                 capturedTick = selected.lastObservedTick,
                 statusSnapshotRevision = selected.snapshotRevision
             };
-            int fieldCap = Math.Min(4, selected.stateFacts?.Count ?? 0);
-            for (int index = 0; index < fieldCap; index++)
+            for (int index = 0; selected.stateFacts != null
+                && index < selected.stateFacts.Count
+                && result.frozenDisplayFields.Count < limits.currentStatusFieldCount; index++)
             {
                 SavedMemoryStateFact fact = selected.stateFacts[index];
-                if (fact != null) result.frozenDisplayFields.Add(
-                    MemoryLibraryPolicy.ClampUtf16CompleteScalar(
-                        (fact.factKey ?? string.Empty) + ": " + (fact.factValue ?? string.Empty),
-                        limits.blockTextUtf16Units));
+                if (fact != null) MemoryLibraryPolicy.TryAppendBoundedText(
+                    result.frozenDisplayFields,
+                    (fact.factKey ?? string.Empty) + ": " + (fact.factValue ?? string.Empty),
+                    limits.currentStatusFieldCount,
+                    limits.currentStatusFieldTextUtf16Units);
             }
             return result;
         }
@@ -2482,12 +2486,27 @@ namespace PawnDiary
             }
             if (Prefs.DevMode)
             {
-                result.devIdentifiersAndReasons.Add("record=" + (block.recordId ?? string.Empty));
-                result.devIdentifiersAndReasons.Add("source=" + (block.sourceOccurrenceId ?? string.Empty));
-                result.devIdentifiersAndReasons.Add("root=" + (block.rootId ?? string.Empty));
-                result.devIdentifiersAndReasons.Add("chapter=" + (block.chapterId ?? string.Empty));
+                AddDevReason(result.devIdentifiersAndReasons,
+                    "record=" + (block.recordId ?? string.Empty), limits);
+                AddDevReason(result.devIdentifiersAndReasons,
+                    "source=" + (block.sourceOccurrenceId ?? string.Empty), limits);
+                AddDevReason(result.devIdentifiersAndReasons,
+                    "root=" + (block.rootId ?? string.Empty), limits);
+                AddDevReason(result.devIdentifiersAndReasons,
+                    "chapter=" + (block.chapterId ?? string.Empty), limits);
             }
             return result;
+        }
+
+        private static void AddDevReason(
+            List<string> target,
+            string value,
+            MemoryLibraryLimits limits)
+        {
+            if (target == null || limits == null || target.Count >= limits.devReasonCount) return;
+            string bounded = MemoryLibraryPolicy.ClampUtf16CompleteScalar(
+                value, limits.devReasonTextUtf16Units);
+            if (bounded.Length > 0) target.Add(bounded);
         }
 
         private static void AddDistinctBounded(
@@ -2600,6 +2619,7 @@ namespace PawnDiary
                     MemoryLibraryScopes.Active, ownerId, string.Empty),
                 displayName = name,
                 lifecycleToken = "active",
+                culture = new MemoryOwnerCultureDto(),
                 structuralRevision = 0,
                 statusRevision = 0,
                 nextLocalizedDayBoundary = NextMemoryLibraryDayBoundary()
@@ -2981,6 +3001,21 @@ namespace PawnDiary
                     MemoryLibraryLimitCeilings.FrozenDisplayLabelUtf16Units),
                 blockTextUtf16Units = (int)ReadCapacityLong(
                     "blockWordingUnits", 240, MemoryLibraryLimitCeilings.BlockTextUtf16Units),
+                currentStatusFieldCount = (int)ReadCapacityTuplePart(
+                    "currentStatusFieldTextCaps", 0, 4,
+                    MemoryLibraryLimitCeilings.CurrentStatusFieldCount),
+                currentStatusFieldTextUtf16Units = (int)ReadCapacityTuplePart(
+                    "currentStatusFieldTextCaps", 1, 240,
+                    MemoryLibraryLimitCeilings.CurrentStatusFieldTextUtf16Units),
+                devReasonCount = (int)ReadCapacityTuplePart(
+                    "devReasonCountTextCaps", 0, 8,
+                    MemoryLibraryLimitCeilings.DevReasonCount),
+                devReasonTextUtf16Units = (int)ReadCapacityTuplePart(
+                    "devReasonCountTextCaps", 1, 80,
+                    MemoryLibraryLimitCeilings.DevReasonTextUtf16Units),
+                copyDiagnosticUtf16Units = (int)ReadCapacityLong(
+                    "copyDiagnosticUnits", 2000,
+                    MemoryLibraryLimitCeilings.CopyDiagnosticUtf16Units),
                 importedPreviewUtf16Units = (int)ReadCapacityTuplePart(
                     "importedPreviewChunkUnits", 0, 240,
                     MemoryLibraryLimitCeilings.ImportedPreviewUtf16Units),

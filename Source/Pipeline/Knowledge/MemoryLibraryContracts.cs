@@ -358,7 +358,7 @@ namespace PawnDiary
         public List<string> frozenDisplayFields = new List<string>();
         public string knownnessEvidenceToken = string.Empty;
         public long sourceCaptureGeneration;
-        public long capturedTick;
+        public long capturedTick = -1;
         public long statusSnapshotRevision;
     }
 

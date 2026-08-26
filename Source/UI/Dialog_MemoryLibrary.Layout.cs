@@ -110,7 +110,8 @@ namespace PawnDiary
             Rect search = new Rect(next.xMax + gap, rect.y, searchWidth, rect.height);
             string before = session.ownerSearch ?? string.Empty;
             string after = MemoryLibraryPolicy.ClampScalars(
-                Widgets.TextField(search, before) ?? string.Empty,
+                MemoryLibraryPolicy.RepairMalformedUtf16(
+                    Widgets.TextField(search, before) ?? string.Empty),
                 detachedSearchScalarCap, detachedSearchUtf16Cap);
             if (!string.Equals(before, after, StringComparison.Ordinal))
             {
@@ -150,6 +151,11 @@ namespace PawnDiary
                         session.SelectOwner(captured);
                         selectedOwner = captured;
                         preferredOwnerId = string.Empty;
+                        ownerWalkHandle = null;
+                        preferredFallback = null;
+                        ownerStart = 0;
+                        ownerExpectedDirectoryRevision = owners?.directoryRevision ?? 0;
+                        ResetSelectedOwnerValidation();
                         if (!string.Equals(before, OwnerKey(session.selectedOwnerHandle),
                                 StringComparison.Ordinal)) ResetOwnerQueries();
                         selectedOwnerValidatedDirectoryRevision = owners?.directoryRevision ?? 0;
@@ -164,28 +170,18 @@ namespace PawnDiary
             Rect inner = rect.ContractedBy(8f);
             float devWidth = Prefs.DevMode ? Mathf.Min(180f, inner.width * 0.34f) : 0f;
             float textWidth = Mathf.Max(40f, inner.width - (devWidth > 0f ? devWidth + 6f : 0f));
-            MemoryOwnerCultureDto culture = selectedOwner?.culture;
-            string origin = CultureLine(culture?.originStateToken,
-                culture?.originDisplayLabel, culture?.originProvenanceToken);
-            bool hasAdopted = culture != null
-                && (culture.adoptedStateToken != "none"
-                    || !string.IsNullOrWhiteSpace(culture.adoptedDisplayLabel));
-            string adopted = hasAdopted
-                ? T("PawnDiary.Memory.Library.CultureAdopted",
-                    CultureStateLabel(culture.adoptedStateToken,
-                        culture.adoptedDisplayLabel, false))
-                : string.Empty;
             Widgets.Label(new Rect(inner.x, inner.y, textWidth, 22f),
-                T("PawnDiary.Memory.Library.CulturalContext"));
-            Widgets.Label(new Rect(inner.x, inner.y + 22f, textWidth, 22f), origin);
-            if (hasAdopted)
-                Widgets.Label(new Rect(inner.x, inner.y + 43f, textWidth, 22f), adopted);
-            float explanationY = hasAdopted ? inner.y + 66f : inner.y + 44f;
+                cachedCultureTitle);
+            Widgets.Label(new Rect(inner.x, inner.y + 22f, textWidth, 22f), cachedCultureOrigin);
+            if (cachedCultureHasAdopted)
+                Widgets.Label(new Rect(inner.x, inner.y + 43f, textWidth, 22f),
+                    cachedCultureAdopted);
+            float explanationY = cachedCultureHasAdopted ? inner.y + 66f : inner.y + 44f;
             Text.Font = GameFont.Tiny;
             GUI.color = Color.gray;
             Widgets.Label(new Rect(inner.x, explanationY, textWidth,
                 Mathf.Max(22f, inner.yMax - explanationY)),
-                T("PawnDiary.Memory.Library.CultureExplanation"));
+                cachedCultureExplanation);
             GUI.color = Color.white;
             Text.Font = GameFont.Small;
             if (Prefs.DevMode && Widgets.ButtonText(
@@ -201,7 +197,7 @@ namespace PawnDiary
                     loreScroll = Vector2.zero;
                 }
             }
-            TooltipHandler.TipRegion(rect, T("PawnDiary.Memory.Library.CultureExplanation"));
+            TooltipHandler.TipRegion(rect, cachedCultureExplanation);
         }
 
         private float DrawViewAndSearch(Rect rect, float gap)
@@ -235,7 +231,8 @@ namespace PawnDiary
                 Mathf.Max(80f, rect.xMax - nextX), rect.height);
             string before = session.memorySearch ?? string.Empty;
             string after = MemoryLibraryPolicy.ClampScalars(
-                Widgets.TextField(search, before) ?? string.Empty,
+                MemoryLibraryPolicy.RepairMalformedUtf16(
+                    Widgets.TextField(search, before) ?? string.Empty),
                 detachedSearchScalarCap, detachedSearchUtf16Cap);
             if (!string.Equals(before, after, StringComparison.Ordinal))
             {
@@ -443,7 +440,7 @@ namespace PawnDiary
         {
             Widgets.DrawMenuSection(rect);
             Rect inner = rect.ContractedBy(8f);
-            if (showBack && session.selectedRecordHandle == null)
+            if (showBack)
             {
                 if (Widgets.ButtonText(new Rect(inner.x, inner.y, 120f, 28f),
                     T("PawnDiary.Memory.Library.Back")))
@@ -461,7 +458,7 @@ namespace PawnDiary
             if (session.selectedView == MemoryLibraryViews.Imported)
                 DrawImportedDetail(inner);
             else if (session.selectedRecordHandle != null)
-                DrawBlockDetail(inner);
+                DrawBlockDetail(inner, !showBack);
             else if (session.selectedRootHandle != null)
                 DrawThreadDetail(inner);
             else
@@ -566,7 +563,7 @@ namespace PawnDiary
             finally { Widgets.EndScrollView(); }
         }
 
-        private void DrawBlockDetail(Rect rect)
+        private void DrawBlockDetail(Rect rect, bool showInternalBack)
         {
             if (blockDetail == null || blockDetail.status != MemoryLibraryStatuses.Ready
                 || blockDetail.row == null)
@@ -575,79 +572,116 @@ namespace PawnDiary
                 return;
             }
             DiaryUiStyleDef style = DiaryJournalView.UiStyle;
-            Rect view = new Rect(0f, 0f, Mathf.Max(0f, rect.width - 16f),
-                Mathf.Max(rect.height, style.memoryLibraryBlockDetailMinimumContentHeight));
+            MemoryBlockRow row = blockDetail.row;
+            float contentWidth = Mathf.Max(40f, rect.width - 16f);
+            string wording = EmptyFallback(
+                row.displayWording, T("PawnDiary.Memory.Library.EmptyWording"));
+            string role = SummaryRoleLabel(row);
+            string meta = T("PawnDiary.Memory.Library.BlockDetailMeta",
+                DateLabel(row.originalTick), ContentCategoryLabel(row.projectedCategoryMask),
+                ImportanceLabel(row.projectedHighestImportanceMask), LifetimeLabel(row), role);
+            Text.Font = GameFont.Small;
+            float wordingHeight = Mathf.Max(50f, Text.CalcHeight(wording, contentWidth) + 4f);
+            float factsHeight = Mathf.Max(52f,
+                Text.CalcHeight(cachedBlockFactsText, contentWidth) + 4f);
+            string recordKey = RecordKey(row.recordHandle);
+            string usage = recordKey.Length > 0
+                && cachedUsageLabels.TryGetValue(recordKey, out string cachedUsage)
+                    ? cachedUsage : BuildUsageFacts(row);
+            float usageHeight = Mathf.Max(58f, Text.CalcHeight(usage, contentWidth) + 4f);
+            Text.Font = GameFont.Tiny;
+            float metaHeight = Mathf.Max(42f, Text.CalcHeight(meta, contentWidth) + 4f);
+            Text.Font = GameFont.Small;
+            float tailHeight;
+            if (session.editDraft != null)
+            {
+                tailHeight = 180f;
+                if (!string.IsNullOrEmpty(session.feedbackStatus)) tailHeight += 26f;
+                if (session.editDraft.structuralConflict) tailHeight += 44f;
+            }
+            else
+            {
+                float diagnosticsHeight = 0f;
+                if (Prefs.DevMode)
+                    diagnosticsHeight = diagnosticsExpanded
+                        ? Mathf.Max(100f,
+                            Text.CalcHeight(cachedDiagnosticText, contentWidth) + 68f)
+                        : 32f;
+                tailHeight = 34f + 26f + usageHeight + 4f + diagnosticsHeight;
+            }
+            float contentHeight = (showInternalBack ? 34f : 0f)
+                + wordingHeight + 2f + metaHeight + 4f + factsHeight + 4f + tailHeight + 8f;
+            Rect view = new Rect(0f, 0f, contentWidth,
+                Mathf.Max(rect.height,
+                    Mathf.Max(style.memoryLibraryBlockDetailMinimumContentHeight, contentHeight)));
             Widgets.BeginScrollView(rect, ref blockDetailScroll, view);
             try
             {
-            MemoryBlockRow row = blockDetail.row;
-            float y = view.y;
-            if (Widgets.ButtonText(new Rect(view.x, y, 120f, 28f),
-                T("PawnDiary.Memory.Library.Back")))
-            {
-                session.selectedRecordHandle = null;
-                session.editDraft = null;
-                session.feedbackStatus = string.Empty;
-                blockDetail = null;
-                selectedBlockRow = null;
-                diagnosticsExpanded = false;
-                return;
-            }
-            y += 34f;
-            string role = SummaryRoleLabel(row);
-            Widgets.Label(new Rect(view.x, y, view.width, 50f),
-                EmptyFallback(row.displayWording, T("PawnDiary.Memory.Library.EmptyWording")));
-            y += 52f;
-            Text.Font = GameFont.Tiny;
-            Widgets.Label(new Rect(view.x, y, view.width, 42f),
-                T("PawnDiary.Memory.Library.BlockDetailMeta",
-                    DateLabel(row.originalTick), ContentCategoryLabel(row.projectedCategoryMask),
-                    ImportanceLabel(row.projectedHighestImportanceMask), LifetimeLabel(row), role));
-            Text.Font = GameFont.Small;
-            y += 46f;
+                float y = view.y;
+                if (showInternalBack)
+                {
+                    if (Widgets.ButtonText(new Rect(view.x, y, 120f, 28f),
+                        T("PawnDiary.Memory.Library.Back")))
+                    {
+                        session.selectedRecordHandle = null;
+                        session.editDraft = null;
+                        session.feedbackStatus = string.Empty;
+                        blockDetail = null;
+                        selectedBlockRow = null;
+                        diagnosticsExpanded = false;
+                        return;
+                    }
+                    y += 34f;
+                }
+                Widgets.Label(new Rect(view.x, y, view.width, wordingHeight), wording);
+                y += wordingHeight + 2f;
+                Text.Font = GameFont.Tiny;
+                Widgets.Label(new Rect(view.x, y, view.width, metaHeight), meta);
+                Text.Font = GameFont.Small;
+                y += metaHeight + 4f;
 
-            DrawNormalFacts(new Rect(view.x, y, view.width, 52f), row);
-            y += 56f;
+                DrawNormalFacts(new Rect(view.x, y, view.width, factsHeight), row);
+                y += factsHeight + 4f;
 
-            if (session.editDraft != null)
-            {
-                DrawEditDraft(new Rect(view.x, y, view.width,
-                    Mathf.Max(100f, view.yMax - y)), row);
-                return;
-            }
+                if (session.editDraft != null)
+                {
+                    DrawEditDraft(new Rect(view.x, y, view.width,
+                        Mathf.Max(180f, view.yMax - y)), row);
+                    return;
+                }
 
-            float buttonGap = 5f;
-            float buttonWidth = Mathf.Max(82f, (view.width - buttonGap * 2f) / 3f);
-            bool available = MutationsAvailable()
-                && pendingCommandId == 0 && session.pendingCommand == null;
-            Rect suppress = new Rect(view.x, y, buttonWidth, 28f);
-            if (Widgets.ButtonText(suppress, row.suppressed
-                    ? T("PawnDiary.Memory.Library.UseAgain")
-                    : T("PawnDiary.Memory.Library.Suppress"), true, true,
-                    available && row.canSuppress))
-                StageBlockAction(MemoryLibraryActions.SetSuppressed, !row.suppressed, false);
-            Rect edit = new Rect(suppress.xMax + buttonGap, y, buttonWidth, 28f);
-            if (Widgets.ButtonText(edit, T("PawnDiary.Memory.Library.Edit"), true, true,
-                    available && row.canSaveWording))
-                session.editDraft = MemoryLibraryUiPolicy.BeginEdit(blockDetail,
-                    detachedTextCap);
-            if (row.rollingSummary)
-                TooltipHandler.TipRegion(edit,
-                    T("PawnDiary.Memory.Library.SummaryChanging"));
-            Rect original = new Rect(edit.xMax + buttonGap, y,
-                Mathf.Max(70f, view.xMax - edit.xMax - buttonGap), 28f);
-            if (Widgets.ButtonText(original, T("PawnDiary.Memory.Library.UseOriginal"),
-                    true, true, available && row.canUseOriginal))
-                StageUseOriginal(row);
-            y += 34f;
+                float buttonGap = 5f;
+                float buttonWidth = Mathf.Max(82f, (view.width - buttonGap * 2f) / 3f);
+                bool available = MutationsAvailable()
+                    && pendingCommandId == 0 && session.pendingCommand == null;
+                Rect suppress = new Rect(view.x, y, buttonWidth, 28f);
+                if (Widgets.ButtonText(suppress, row.suppressed
+                        ? T("PawnDiary.Memory.Library.UseAgain")
+                        : T("PawnDiary.Memory.Library.Suppress"), true, true,
+                        available && row.canSuppress))
+                    StageBlockAction(MemoryLibraryActions.SetSuppressed, !row.suppressed, false);
+                Rect edit = new Rect(suppress.xMax + buttonGap, y, buttonWidth, 28f);
+                if (Widgets.ButtonText(edit, T("PawnDiary.Memory.Library.Edit"), true, true,
+                        available && row.canSaveWording))
+                    session.editDraft = MemoryLibraryUiPolicy.BeginEdit(blockDetail,
+                        detachedTextCap);
+                if (row.rollingSummary)
+                    TooltipHandler.TipRegion(edit,
+                        T("PawnDiary.Memory.Library.SummaryChanging"));
+                Rect original = new Rect(edit.xMax + buttonGap, y,
+                    Mathf.Max(70f, view.xMax - edit.xMax - buttonGap), 28f);
+                if (Widgets.ButtonText(original, T("PawnDiary.Memory.Library.UseOriginal"),
+                        true, true, available && row.canUseOriginal))
+                    StageUseOriginal(row);
+                y += 34f;
 
-            DrawFeedback(new Rect(view.x, y, view.width, 24f));
-            y += 26f;
-            DrawUsageFacts(new Rect(view.x, y, view.width, 58f), row);
-            y += 62f;
-            if (Prefs.DevMode)
-                DrawDevDiagnostics(new Rect(view.x, y, view.width,
-                    Mathf.Max(60f, view.yMax - y)), row);
+                DrawFeedback(new Rect(view.x, y, view.width, 24f));
+                y += 26f;
+                DrawUsageFacts(new Rect(view.x, y, view.width, usageHeight), row);
+                y += usageHeight + 4f;
+                if (Prefs.DevMode)
+                    DrawDevDiagnostics(new Rect(view.x, y, view.width,
+                        Mathf.Max(32f, view.yMax - y)), row);
             }
             finally { Widgets.EndScrollView(); }
         }
@@ -702,11 +736,16 @@ namespace PawnDiary
 
         private void DrawNormalFacts(Rect rect, MemoryBlockRow row)
         {
+            Widgets.Label(rect, cachedBlockFactsText);
+        }
+
+        private string BuildNormalFactsText()
+        {
             string source = string.IsNullOrWhiteSpace(blockDetail?.detail?.sourcePageLinkToken)
                 ? T("PawnDiary.Memory.Library.SourceUnavailable")
                 : T("PawnDiary.Memory.Library.SourceDiaryPage");
-            Widgets.Label(rect, T("PawnDiary.Memory.Library.ReadOnlyFacts",
-                Join(blockDetail?.detail?.factDescriptors), source));
+            return T("PawnDiary.Memory.Library.ReadOnlyFacts",
+                Join(blockDetail?.detail?.factDescriptors), source);
         }
 
         private void DrawDevDiagnostics(Rect rect, MemoryBlockRow row)
@@ -717,7 +756,7 @@ namespace PawnDiary
                     : T("PawnDiary.Memory.Library.ShowDiagnostics")))
                 diagnosticsExpanded = !diagnosticsExpanded;
             if (!diagnosticsExpanded) return;
-            string facts = DiagnosticText(blockDetail?.detail);
+            string facts = cachedDiagnosticText;
             Rect textRect = new Rect(rect.x, toggle.yMax + 4f, rect.width,
                 Mathf.Max(34f, rect.height - 68f));
             Widgets.Label(textRect, facts);
@@ -969,7 +1008,13 @@ namespace PawnDiary
 
         private string ListEmptyText()
         {
-            if (list?.emptyStateToken == "no_memories")
+            string state = MemoryLibraryUiPolicy.ListEmptyState(
+                list?.emptyStateToken, session.memorySearch, session.filters);
+            if (state == "no_matches")
+                return T("PawnDiary.Memory.Library.NoMatches");
+            if (state == "no_filter_matches")
+                return T("PawnDiary.Memory.Library.NoFilterMatches");
+            if (state == "no_memories")
             {
                 if (session.selectedView == MemoryLibraryViews.Threads)
                     return T("PawnDiary.Memory.Library.NoThreads");
@@ -977,11 +1022,6 @@ namespace PawnDiary
                     return T("PawnDiary.Memory.Library.NoStandalone");
                 return T("PawnDiary.Memory.Library.NoImported");
             }
-            if (!string.IsNullOrWhiteSpace(session.memorySearch))
-                return T("PawnDiary.Memory.Library.NoMatches");
-            if (session.filters.importanceMask != 0 || session.filters.categoryMask != 0
-                || session.filters.stateToken != "all")
-                return T("PawnDiary.Memory.Library.NoFilterMatches");
             if (session.selectedView == MemoryLibraryViews.Threads)
                 return T("PawnDiary.Memory.Library.NoThreads");
             if (session.selectedView == MemoryLibraryViews.Standalone)
@@ -1038,7 +1078,8 @@ namespace PawnDiary
                 return T("PawnDiary.Memory.Library.CultureRecorded");
             if (state == "inferred") return T("PawnDiary.Memory.Library.CultureInferred");
             if (state == "unavailable") return T("PawnDiary.Memory.Library.CultureUnavailable");
-            return T("PawnDiary.Memory.Library.CultureNone");
+            return origin ? T("PawnDiary.Memory.Library.CultureUnknown")
+                : T("PawnDiary.Memory.Library.CultureNone");
         }
 
         private static string CultureProvenanceLabel(string token)
@@ -1297,7 +1338,8 @@ namespace PawnDiary
                 EmptyFallback(detail.automaticWording,
                     T("PawnDiary.Memory.Library.None")),
                 Join(detail.devIdentifiersAndReasons)));
-            return builder.ToString();
+            return MemoryLibraryPolicy.ClampUtf16CompleteScalar(
+                builder.ToString(), detachedDiagnosticTextCap);
         }
 
         private static string Join(List<string> values)
@@ -1335,13 +1377,17 @@ namespace PawnDiary
         private void RefreshDisplayCaches()
         {
             string signature = string.Join("|",
+                owners?.directoryRevision ?? 0,
+                OwnerKey(session.selectedOwnerHandle),
                 list?.listSnapshotRevision ?? 0,
                 list?.returnedStart ?? 0,
                 threadDetail?.detailSnapshotRevision ?? 0,
                 threadDetail?.returnedStart ?? 0,
                 blockDetail?.targetStructuralRevision ?? 0,
                 blockDetail?.targetStatusRevision ?? 0,
+                blockDetail?.status ?? string.Empty,
                 importedDetail?.archiveTextSnapshotRevision ?? 0,
+                importedDetail?.status ?? string.Empty,
                 importedDetail?.returnedTextStart ?? 0,
                 RecordKey(session.selectedRecordHandle),
                 session.selectedView ?? string.Empty,
@@ -1355,6 +1401,8 @@ namespace PawnDiary
             cachedDateLabels.Clear();
             cachedUsageLabels.Clear();
             cachedThreadHeaderText = string.Empty;
+            cachedBlockFactsText = string.Empty;
+            cachedDiagnosticText = string.Empty;
             if (list?.rows != null)
             {
                 for (int index = 0; index < list.rows.Count; index++)
@@ -1371,6 +1419,21 @@ namespace PawnDiary
             CacheBlockDisplay(blockDetail?.row);
             CacheDate(threadDetail?.currentStatus?.capturedTick ?? -1);
             cachedThreadHeaderText = BuildThreadHeaderText();
+            cachedBlockFactsText = BuildNormalFactsText();
+            cachedDiagnosticText = DiagnosticText(blockDetail?.detail);
+            MemoryOwnerCultureDto culture = selectedOwner?.culture;
+            cachedCultureTitle = T("PawnDiary.Memory.Library.CulturalContext");
+            cachedCultureOrigin = CultureLine(culture?.originStateToken,
+                culture?.originDisplayLabel, culture?.originProvenanceToken);
+            cachedCultureHasAdopted = culture != null
+                && (culture.adoptedStateToken != "none"
+                    || !string.IsNullOrWhiteSpace(culture.adoptedDisplayLabel));
+            cachedCultureAdopted = cachedCultureHasAdopted
+                ? T("PawnDiary.Memory.Library.CultureAdopted",
+                    CultureStateLabel(culture.adoptedStateToken,
+                        culture.adoptedDisplayLabel, false))
+                : string.Empty;
+            cachedCultureExplanation = T("PawnDiary.Memory.Library.CultureExplanation");
         }
 
         private void CacheBlockDisplay(MemoryBlockRow row)
@@ -1405,8 +1468,10 @@ namespace PawnDiary
                     StringComparison.Ordinal)
                 ? T("PawnDiary.Memory.Library.CurrentKnown")
                 : T("PawnDiary.Memory.Library.CurrentUnknown");
-            string saved = T("PawnDiary.Memory.Library.CurrentStatusSaved", status,
-                DateLabel(current?.capturedTick ?? -1), Join(current?.frozenDisplayFields));
+            string saved = MemoryLibraryUiPolicy.HasCapturedCurrentStatus(current)
+                ? T("PawnDiary.Memory.Library.CurrentStatusSaved", status,
+                    DateLabel(current.capturedTick), Join(current.frozenDisplayFields))
+                : status;
             return T("PawnDiary.Memory.Library.ThreadDetailHeader", saved,
                 threadDetail.shownManageableCount, threadDetail.totalManageableCount);
         }

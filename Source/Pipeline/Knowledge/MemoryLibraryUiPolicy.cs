@@ -266,12 +266,37 @@ namespace PawnDiary
             return owner != null && (owner.importedCount > 0 || owner.compatibilityHandle != null);
         }
 
-        /// <summary>Threads and Standalone require one exact active owner/epoch key.</summary>
+        /// <summary>
+        /// Threads and Standalone require an active primary handle. A zero-memory active owner has
+        /// no epoch yet by design, but still exposes both typed empty views without creating one.
+        /// </summary>
         public static bool HasActiveViews(MemoryLibraryOwnerRow owner)
         {
             return owner?.primaryHandle != null
-                && owner.primaryHandle.scopeToken == MemoryLibraryScopes.Active
-                && owner.activeOwnerEpochKey != null;
+                && owner.primaryHandle.scopeToken == MemoryLibraryScopes.Active;
+        }
+
+        /// <summary>Resolves the honest empty-state token before the UI localizes it.</summary>
+        public static string ListEmptyState(
+            string backendToken,
+            string search,
+            MemoryLibraryFilters filters)
+        {
+            if (!string.IsNullOrWhiteSpace(search)) return "no_matches";
+            if ((filters?.importanceMask ?? 0) != 0
+                || (filters?.categoryMask ?? 0) != 0
+                || (filters?.stateToken ?? "all") != "all")
+                return "no_filter_matches";
+            return backendToken ?? string.Empty;
+        }
+
+        /// <summary>
+        /// Missing current evidence is represented by the DTO sentinel tick -1. Tick zero remains
+        /// a valid captured game instant and must not be mistaken for missing evidence.
+        /// </summary>
+        public static bool HasCapturedCurrentStatus(MemoryCurrentStatusDto current)
+        {
+            return current != null && current.capturedTick >= 0;
         }
 
         /// <summary>

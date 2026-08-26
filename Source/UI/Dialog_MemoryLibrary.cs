@@ -31,6 +31,10 @@ namespace PawnDiary
         private int ownerStart;
         private long ownerExpectedDirectoryRevision;
         private long selectedOwnerValidatedDirectoryRevision;
+        private MemoryLibraryOwnerHandle selectedOwnerValidationHandle;
+        private MemoryLibraryOwnerRow selectedOwnerValidationFallback;
+        private int selectedOwnerValidationStart;
+        private long selectedOwnerValidationExpectedDirectoryRevision;
         private MemoryLibraryOwnerResult owners;
         private MemoryLibraryOwnerRow selectedOwner;
 
@@ -59,6 +63,7 @@ namespace PawnDiary
         private int detachedTextCap = 480;
         private int detachedSearchScalarCap = 80;
         private int detachedSearchUtf16Cap = 160;
+        private int detachedDiagnosticTextCap = 2000;
         private bool detachedCompatibilityFailClosed;
         private bool loreExpanded;
         private bool diagnosticsExpanded;
@@ -80,6 +85,13 @@ namespace PawnDiary
         private readonly Dictionary<string, string> cachedUsageLabels =
             new Dictionary<string, string>(StringComparer.Ordinal);
         private string cachedThreadHeaderText = string.Empty;
+        private string cachedBlockFactsText = string.Empty;
+        private string cachedDiagnosticText = string.Empty;
+        private string cachedCultureTitle = string.Empty;
+        private string cachedCultureOrigin = string.Empty;
+        private string cachedCultureAdopted = string.Empty;
+        private string cachedCultureExplanation = string.Empty;
+        private bool cachedCultureHasAdopted;
         private string displayCacheSignature = string.Empty;
         private int selectedLoreTopicIndex;
 
@@ -92,6 +104,7 @@ namespace PawnDiary
                 ?? new MemoryLibraryLimits();
             detachedSearchScalarCap = Math.Max(1, inputLimits.searchScalars);
             detachedSearchUtf16Cap = Math.Max(1, inputLimits.searchUtf16Units);
+            detachedDiagnosticTextCap = Math.Max(1, inputLimits.copyDiagnosticUtf16Units);
             forcePause = false;
             draggable = true;
             resizeable = false;
@@ -171,6 +184,7 @@ namespace PawnDiary
             ownerStart = 0;
             ownerExpectedDirectoryRevision = 0;
             selectedOwnerValidatedDirectoryRevision = 0;
+            ResetSelectedOwnerValidation();
             session.ownerSearch = string.Empty;
             ownerSearchDirty = true;
         }
@@ -226,6 +240,13 @@ namespace PawnDiary
             cachedDateLabels.Clear();
             cachedUsageLabels.Clear();
             cachedThreadHeaderText = string.Empty;
+            cachedBlockFactsText = string.Empty;
+            cachedDiagnosticText = string.Empty;
+            cachedCultureTitle = string.Empty;
+            cachedCultureOrigin = string.Empty;
+            cachedCultureAdopted = string.Empty;
+            cachedCultureExplanation = string.Empty;
+            cachedCultureHasAdopted = false;
             selectedBlockRow = null;
             selectedImportedRow = null;
             displayCacheSignature = string.Empty;
@@ -259,6 +280,7 @@ namespace PawnDiary
                 ownerStart = 0;
                 preferredFallback = null;
                 selectedOwnerValidatedDirectoryRevision = 0;
+                ResetSelectedOwnerValidation();
                 if (string.IsNullOrWhiteSpace(session.ownerSearch)
                     && string.IsNullOrWhiteSpace(preferredOwnerId)
                     && session.selectedOwnerHandle != null)
@@ -269,7 +291,25 @@ namespace PawnDiary
             ownerExpectedDirectoryRevision = result.directoryRevision;
 
             string before = OwnerKey(session.selectedOwnerHandle);
+            if (result.directoryRowCount == 0)
+            {
+                session.ReconcileOwnerDirectory(result, string.Empty, true);
+                selectedOwner = null;
+                preferredOwnerId = string.Empty;
+                ownerWalkHandle = null;
+                preferredFallback = null;
+                ownerStart = 0;
+                selectedOwnerValidatedDirectoryRevision = result.directoryRevision;
+                ResetSelectedOwnerValidation();
+                if (!string.Equals(before, OwnerKey(session.selectedOwnerHandle),
+                        StringComparison.Ordinal)) ResetOwnerQueries();
+                return;
+            }
+
             bool searchEmpty = string.IsNullOrWhiteSpace(session.ownerSearch);
+            if (!searchEmpty && session.selectedOwnerHandle != null
+                && selectedOwnerValidatedDirectoryRevision != result.directoryRevision)
+                ValidateSelectedOwner(result.directoryRevision);
             bool canonical = ownerStart == 0 && searchEmpty;
             bool needsValidation = canonical && session.selectedOwnerHandle != null
                 && selectedOwnerValidatedDirectoryRevision != result.directoryRevision;
@@ -412,12 +452,6 @@ namespace PawnDiary
                 MemoryBlockRow selected = FindSelectedBlockRow();
                 if (selected != null)
                 {
-                    if (selected.rootHandle != null
-                        && Same(selected.rootHandle, threadDetail?.header?.rootHandle)
-                        && threadDetail.header.structuralRevision > 0)
-                        selected.targetStructuralRevision = threadDetail.header.structuralRevision;
-                    else if (selected.rootHandle == null && list?.ownerStructuralRevision > 0)
-                        selected.targetStructuralRevision = list.ownerStructuralRevision;
                     MemoryBlockDetailResult refreshed = component.QueryMemoryBlockDetail(
                         new MemoryBlockDetailQuery
                         {
@@ -447,8 +481,6 @@ namespace PawnDiary
                 MemoryImportedRow row = FindSelectedImportedRow();
                 if (row != null)
                 {
-                    if (selectedOwner?.structuralRevision > 0)
-                        row.targetStructuralRevision = selectedOwner.structuralRevision;
                     importedDetail = component.QueryMemoryImportedDetail(
                         new MemoryImportedDetailQuery
                         {
@@ -459,7 +491,10 @@ namespace PawnDiary
                             targetStructuralRevision = row.targetStructuralRevision
                         });
                     if (importedDetail.status == MemoryLibraryStatuses.Stale)
+                    {
+                        RestartListStream();
                         RestartImportedTextStream();
+                    }
                     else if (importedDetail.status == MemoryLibraryStatuses.Ready)
                         importedTextExpectedSnapshotRevision = importedDetail.archiveTextSnapshotRevision;
                 }
@@ -555,6 +590,87 @@ namespace PawnDiary
             selectedBlockRow = null;
             selectedImportedRow = null;
             ResetListQuery();
+        }
+
+        /// <summary>
+        /// Revalidates a selection against the complete unfiltered directory while the visible
+        /// selector remains searched. This keeps off-window selections but clears removed owners.
+        /// </summary>
+        private void ValidateSelectedOwner(long directoryRevision)
+        {
+            MemoryLibraryOwnerHandle selected = session.selectedOwnerHandle;
+            if (selected == null)
+            {
+                ResetSelectedOwnerValidation();
+                return;
+            }
+            if (!MemoryLibraryUiPolicy.Same(selectedOwnerValidationHandle, selected)
+                || selectedOwnerValidationExpectedDirectoryRevision != directoryRevision)
+            {
+                selectedOwnerValidationHandle = MemoryLibraryUiPolicy.Copy(selected);
+                selectedOwnerValidationStart = 0;
+                selectedOwnerValidationExpectedDirectoryRevision = directoryRevision;
+            }
+            MemoryLibraryOwnerResult validation = component.QueryMemoryLibraryOwners(
+                new MemoryLibraryOwnerQuery
+                {
+                    search = string.Empty,
+                    sortToken = "name",
+                    start = selectedOwnerValidationStart,
+                    count = PageSize,
+                    expectedDirectoryRevision = selectedOwnerValidationExpectedDirectoryRevision
+                });
+            if (validation == null || validation.status == MemoryLibraryStatuses.Preparing) return;
+            if (validation.status != MemoryLibraryStatuses.Ready
+                || validation.directoryRevision != directoryRevision)
+            {
+                selectedOwnerValidatedDirectoryRevision = 0;
+                ResetSelectedOwnerValidation();
+                return;
+            }
+            MemoryLibraryUiOwnerWalkStep step = MemoryLibraryUiPolicy.PlanOwnerWalk(
+                validation.rows, validation.hasMore, selectedOwnerValidationFallback,
+                selectedOwnerValidationHandle, string.Empty);
+            selectedOwnerValidationFallback = step.fallback;
+            if (step.continuePaging)
+            {
+                selectedOwnerValidationStart = validation.nextStart;
+                return;
+            }
+
+            string before = OwnerKey(session.selectedOwnerHandle);
+            bool found = step.selected != null
+                && (MemoryLibraryUiPolicy.Same(
+                        step.selected.primaryHandle, selectedOwnerValidationHandle)
+                    || MemoryLibraryUiPolicy.Same(
+                        step.selected.compatibilityHandle, selectedOwnerValidationHandle));
+            if (found)
+            {
+                session.ReconcileOwnerDirectory(validation, string.Empty, true);
+                selectedOwner = step.selected;
+            }
+            else if (step.selected != null)
+            {
+                session.SelectOwner(step.selected);
+                selectedOwner = step.selected;
+            }
+            else
+            {
+                session.ClearOwner();
+                selectedOwner = null;
+            }
+            selectedOwnerValidatedDirectoryRevision = validation.directoryRevision;
+            ResetSelectedOwnerValidation();
+            if (!string.Equals(before, OwnerKey(session.selectedOwnerHandle),
+                    StringComparison.Ordinal)) ResetOwnerQueries();
+        }
+
+        private void ResetSelectedOwnerValidation()
+        {
+            selectedOwnerValidationHandle = null;
+            selectedOwnerValidationFallback = null;
+            selectedOwnerValidationStart = 0;
+            selectedOwnerValidationExpectedDirectoryRevision = 0;
         }
 
         private void ResetListQuery()

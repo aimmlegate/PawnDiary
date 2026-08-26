@@ -22,6 +22,11 @@ namespace PawnDiary
         public int rowProjectionUtf16Units = 480;
         public int frozenDisplayLabelUtf16Units = 80;
         public int blockTextUtf16Units = 480;
+        public int currentStatusFieldCount = 4;
+        public int currentStatusFieldTextUtf16Units = 240;
+        public int devReasonCount = 8;
+        public int devReasonTextUtf16Units = 80;
+        public int copyDiagnosticUtf16Units = 2000;
         public int importedPreviewUtf16Units = 240;
         public int importedSearchScratchUtf16Units = 49152;
         public int importedTextChunkUtf16Units = 1000;
@@ -42,6 +47,11 @@ namespace PawnDiary
         public const int RowProjectionUtf16Units = 1920;
         public const int FrozenDisplayLabelUtf16Units = 320;
         public const int BlockTextUtf16Units = 1200;
+        public const int CurrentStatusFieldCount = 16;
+        public const int CurrentStatusFieldTextUtf16Units = 1200;
+        public const int DevReasonCount = 32;
+        public const int DevReasonTextUtf16Units = 320;
+        public const int CopyDiagnosticUtf16Units = 8000;
         public const int ImportedPreviewUtf16Units = 1200;
         public const int ImportedSearchScratchUtf16Units = 262144;
         public const int ImportedTextChunkUtf16Units = 4000;
@@ -303,6 +313,29 @@ namespace PawnDiary
         {
             string repaired = RepairMalformedUtf16(source ?? string.Empty);
             return ClampScalars(repaired, int.MaxValue, Math.Max(0, utf16Limit));
+        }
+
+        /// <summary>
+        /// Appends one detached display field while enforcing both the row-count and combined-text
+        /// capacity. The combined cap counts only stored field text; UI separators are not DTO data.
+        /// </summary>
+        public static bool TryAppendBoundedText(
+            List<string> target,
+            string value,
+            int countLimit,
+            int totalUtf16Limit)
+        {
+            if (target == null || target.Count >= Math.Max(0, countLimit)
+                || totalUtf16Limit <= 0) return false;
+            int used = 0;
+            for (int index = 0; index < target.Count; index++)
+                used += target[index]?.Length ?? 0;
+            int remaining = totalUtf16Limit - used;
+            if (remaining <= 0) return false;
+            string bounded = ClampUtf16CompleteScalar(value, remaining);
+            if (bounded.Length == 0) return false;
+            target.Add(bounded);
+            return true;
         }
 
         /// <summary>Allocates bounded normalized row fields in the canonical priority order.</summary>
