@@ -47,6 +47,20 @@
     <memoryRevisitEntryCountDefault>3</memoryRevisitEntryCountDefault>
     <memoryRevisitEntryCountMaximum>1000</memoryRevisitEntryCountMaximum>
     <quietReflectionChanceBasisPoints>200</quietReflectionChanceBasisPoints>
+    <!-- M10 uses the existing natural-rest coordinator and common LLM transport. Delayed work is
+         still the meaningful class; these values never create a separate ticker or retry queue. -->
+    <meaningfulMemoryDelayTicks>60000</meaningfulMemoryDelayTicks>
+    <optionalMemoryOpportunityExpiryTicks>120000</optionalMemoryOpportunityExpiryTicks>
+    <meaningfulMemoryPriority>100</meaningfulMemoryPriority>
+    <quietMemoryPriority>50</quietMemoryPriority>
+    <summaryWordingPriority>0</summaryWordingPriority>
+    <memoryReflectionMaxTokens>220</memoryReflectionMaxTokens>
+    <summaryWordingMaxTokens>80</summaryWordingMaxTokens>
+    <memoryReflectionSystemPrompt>You write a concise first-person diary reflection. Treat the supplied memory as historical evidence, never as a new event, and do not invent facts.</memoryReflectionSystemPrompt>
+    <memoryReflectionLabel>memory reflection</memoryReflectionLabel>
+    <memoryReflectionInstruction>Reflect on why this remembered moment still matters now. Use only the supplied structured memory and write one self-contained diary paragraph.</memoryReflectionInstruction>
+    <summaryWordingSystemPrompt>You shorten deterministic memory-summary wording without changing, adding, or inferring facts.</summaryWordingSystemPrompt>
+    <summaryWordingInstruction>Rewrite the supplied deterministic summary as one concise sentence. Preserve every factual qualifier and return wording only.</summaryWordingInstruction>
 
     <!-- M6 shadow current-truth reconciliation. Opinion bands themselves remain the single shared
          vocabulary in DiaryTuningDef.xml; these values own only episode timing/significance. -->

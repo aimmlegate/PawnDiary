@@ -303,7 +303,8 @@ namespace PawnDiary
         private const int MaxConcurrencyCap = 16;
 
         /// <summary>Maximum accepted generation backlog for one game session.</summary>
-        private const int MaxQueuedRequests = 256;
+        // M10's session-local invocation-cutoff table shares this exact staged/in-flight ceiling.
+        internal const int MaxQueuedRequests = 256;
 
         /// <summary>
         /// Fixed upper bound for asynchronous dispatch loops. More than one lane can still progress

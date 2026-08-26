@@ -10,6 +10,7 @@
 // - a legacy v1 envelope stays v1 through real Scribe + Normalize (no eager stamp);
 // - thread root/chapter/block/payload rows round-trip their stable tokens;
 // - dispatch request/variant/attempt and optional coordinator/cadence rows round-trip;
+// - the M10 summary-only wake decision is executable while the public activation gate stays shadowed;
 // - the raw unresolved-owner wrapper preserves its nested shipped legacy record untouched;
 // - malformed legacy Scribe evidence reaches dry-run planning unchanged and remains retryable;
 // - nested allocator/schema carriers cannot hide from recursive component scans;
@@ -500,6 +501,113 @@ namespace PawnDiary.RimTests
         }
 
         [Test]
+        public static void OptionalCoordinatorWakeRemainsActivationInert()
+        {
+            Require(string.Equals(
+                    MemorySystemActivationGate.BuildState,
+                    MemorySystemActivationGate.LegacyShadow,
+                    StringComparison.Ordinal),
+                "M10 must compile coordinator behavior without activating the memory system.");
+
+            var summaryOnly = new ReflectionCoordinatorWakeRequest
+            {
+                optionalMemoryRequestsEffective = MemorySystemActivationGate.IsCurrentRelease,
+                pendingSummaryWordingCount = 1
+            };
+            Require(!ReflectionCoordinator.HasPendingCoordinatorWork(summaryOnly),
+                "LegacyShadow allowed a saved Summary row to change the shipped rest-pass wake path.");
+
+            summaryOnly.optionalMemoryRequestsEffective = true;
+            Require(ReflectionCoordinator.HasPendingCoordinatorWork(summaryOnly),
+                "An effectively enabled summary-only row did not wake the shared coordinator.");
+
+            summaryOnly.optionalMemoryRequestsEffective = false;
+            Require(!ReflectionCoordinator.HasPendingCoordinatorWork(summaryOnly),
+                "Master Off admitted summary-only coordinator work.");
+
+            summaryOnly.pendingAmbientInteractionCount = 1;
+            Require(ReflectionCoordinator.HasPendingCoordinatorWork(summaryOnly),
+                "Normal ambient readiness incorrectly depended on the optional-memory gate.");
+        }
+
+        [Test]
+        public static void OptionalSummaryPolicyIsDeterministicFirstAndBounded()
+        {
+            Require(MemoryOptionalWordingDispositionTokens.IsKnown(
+                        MemoryOptionalWordingDispositionTokens.None)
+                    && MemoryOptionalWordingDispositionTokens.IsKnown(
+                        MemoryOptionalWordingDispositionTokens.Pending)
+                    && !MemoryOptionalWordingDispositionTokens.IsKnown("stale"),
+                "Summary wording did not expose the exact canonical saved disposition vocabulary.");
+
+            SummaryWordingOpportunitySnapshot first = M10Opportunity(
+                "Pawn_M10_Policy", EpochToken(71), "root-a", "summary-a", 10, 100);
+            SummaryWordingOpportunitySnapshot second = M10Opportunity(
+                first.ownerPawnId, first.ownerEpochToken, "root-b", "summary-b", 9, 110);
+            string key;
+            Require(MemoryOptionalAiPolicy.TryCreateSummaryOpportunityKey(first, out key),
+                "The canonical first Summary opportunity key was refused.");
+            first.opportunityKey = key;
+            Require(MemoryOptionalAiPolicy.TryCreateSummaryOpportunityKey(second, out key),
+                "The canonical second Summary opportunity key was refused.");
+            second.opportunityKey = key;
+
+            SummaryWordingSlotPlan slot = MemoryOptionalAiPolicy.PlanOwnerSlot(
+                first, second, 120);
+            Require(slot.valid && ReferenceEquals(slot.winner, first)
+                    && slot.terminal.Count == 1
+                    && slot.terminal[0].dispositionToken
+                        == MemoryOptionalWordingDispositionTokens.Displaced,
+                "One owner retained more than one Summary opportunity or used unstable ranking.");
+
+            var current = new SummaryWordingCurrentSnapshot
+            {
+                ownerPawnId = first.ownerPawnId,
+                ownerEpochToken = first.ownerEpochToken,
+                rootId = first.rootId,
+                summaryRecordId = first.summaryRecordId,
+                rootStructuralRevision = first.expectedRootStructuralRevision,
+                summaryFactsRevision = first.expectedSummaryFactsRevision,
+                reducerRevision = first.expectedReducerRevision,
+                formatRevision = first.expectedFormatRevision,
+                categoryMask = first.expectedCategoryMask,
+                projectionFingerprint = first.projectionFingerprint,
+                deterministicWording = "Canonical deterministic fallback."
+            };
+            SummaryWordingResultPlan malformed = MemoryOptionalAiPolicy.PlanSummaryResult(
+                first, current, true, "not one line\nsecond line", 240);
+            Require(malformed.identityMatched && !malformed.applyOptionalWording
+                    && malformed.dispositionToken
+                        == MemoryOptionalWordingDispositionTokens.Malformed
+                    && current.deterministicWording == "Canonical deterministic fallback.",
+                "Malformed optional prose replaced or altered deterministic Summary truth.");
+
+            current.summaryFactsRevision++;
+            SummaryWordingResultPlan stale = MemoryOptionalAiPolicy.PlanSummaryResult(
+                first, current, true, "stale wording", 240);
+            Require(!stale.identityMatched && !stale.applyOptionalWording
+                    && stale.dispositionToken == MemoryOptionalWordingDispositionTokens.None
+                    && current.deterministicWording == "Canonical deterministic fallback.",
+                "A stale Summary result replaced deterministic wording.");
+
+            var cutoffs = new MemoryInvokedGenerationCutoffTable();
+            string requestId;
+            Require(MemoryIdentityCodec.TryCreateLogicalRequestId(71, out requestId)
+                    && cutoffs.TryRegister(1, first.ownerPawnId, first.ownerEpochToken,
+                        2, 3, requestId, 1, 1),
+                "Invocation-wins cutoff registration failed.");
+            Require(!cutoffs.AllowsInvocationWinner(1, first.ownerPawnId,
+                    first.ownerEpochToken, 2, 3, requestId, 1),
+                "An unsealed generation bypassed cancellation.");
+            cutoffs.SealGeneration(1, 3, 1);
+            Require(cutoffs.AllowsInvocationWinner(1, first.ownerPawnId,
+                    first.ownerEpochToken, 2, 3, requestId, 1)
+                    && !cutoffs.AllowsInvocationWinner(1, first.ownerPawnId,
+                        EpochToken(72), 2, 3, requestId, 1),
+                "Invocation-wins either failed or bypassed the Brainwipe epoch fence.");
+        }
+
+        [Test]
         public static void RawUnresolvedWrapperPreservesLegacyRecord()
         {
             var wrapper = new SavedLegacyUnresolvedOwnerArchiveInputV1
@@ -911,6 +1019,37 @@ namespace PawnDiary.RimTests
                 fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
             Require(field != null, "Fixture could not find private field: " + fieldName);
             field.SetValue(target, value);
+        }
+
+        private static SummaryWordingOpportunitySnapshot M10Opportunity(
+            string owner,
+            string epoch,
+            string root,
+            string summary,
+            int priority,
+            long requestedTick)
+        {
+            return new SummaryWordingOpportunitySnapshot
+            {
+                ownerPawnId = owner,
+                ownerEpochToken = epoch,
+                ownerCancellationGeneration = 2,
+                globalCancellationGeneration = 3,
+                optionalRequestInvalidationGeneration = 4,
+                rootId = OrdinalSegmentCodec.Segment(root),
+                summaryRecordId = OrdinalSegmentCodec.Segment(summary),
+                expectedRootStructuralRevision = 5,
+                expectedSummaryFactsRevision = 6,
+                expectedReducerRevision = 1,
+                expectedFormatRevision = 1,
+                expectedCategoryMask = 15,
+                projectionFingerprint = new string('c', 64),
+                requestedTick = requestedTick,
+                dueTick = requestedTick,
+                expiryTick = requestedTick + 1000,
+                configuredPriority = priority,
+                salience = 1
+            };
         }
 
         private static string EpochToken(long sequence)

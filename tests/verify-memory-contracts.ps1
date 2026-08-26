@@ -235,6 +235,18 @@ Require ((Child-Text $tuningDef "memoryThreadTargetMinimum") -ceq "4") "Thread t
 Require ((Child-Text $tuningDef "memoryThreadTargetDefault") -ceq "12") "Thread target default drifted."
 Require ((Child-Text $tuningDef "memoryThreadTargetMaximum") -ceq "64") "Thread target maximum drifted."
 Require ((Child-Text $tuningDef "quietReflectionChanceBasisPoints") -ceq "200") "Quiet chance drifted."
+Require ((Child-Text $tuningDef "meaningfulMemoryDelayTicks") -ceq "60000") "Meaningful-memory delay drifted."
+Require ((Child-Text $tuningDef "optionalMemoryOpportunityExpiryTicks") -ceq "120000") "Optional-memory expiry drifted."
+Require ((Child-Text $tuningDef "meaningfulMemoryPriority") -ceq "100") "Meaningful-memory priority drifted."
+Require ((Child-Text $tuningDef "quietMemoryPriority") -ceq "50") "Quiet-memory priority drifted."
+Require ((Child-Text $tuningDef "summaryWordingPriority") -ceq "0") "Summary-wording priority drifted."
+Require ((Child-Text $tuningDef "memoryReflectionMaxTokens") -ceq "220") "Memory-reflection token cap drifted."
+Require ((Child-Text $tuningDef "summaryWordingMaxTokens") -ceq "80") "Summary-wording token cap drifted."
+Require (-not [string]::IsNullOrWhiteSpace((Child-Text $tuningDef "memoryReflectionSystemPrompt"))) "Memory-reflection DefInjected system prompt is missing."
+Require (-not [string]::IsNullOrWhiteSpace((Child-Text $tuningDef "memoryReflectionLabel"))) "Memory-reflection DefInjected label is missing."
+Require (-not [string]::IsNullOrWhiteSpace((Child-Text $tuningDef "memoryReflectionInstruction"))) "Memory-reflection DefInjected instruction is missing."
+Require (-not [string]::IsNullOrWhiteSpace((Child-Text $tuningDef "summaryWordingSystemPrompt"))) "Summary-wording DefInjected system prompt is missing."
+Require (-not [string]::IsNullOrWhiteSpace((Child-Text $tuningDef "summaryWordingInstruction"))) "Summary-wording DefInjected instruction is missing."
 
 $fixedRows = @($fixture.fixedRows)
 $expectedFixedNames = @(

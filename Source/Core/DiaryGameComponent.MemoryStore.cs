@@ -63,6 +63,9 @@ namespace PawnDiary
         private readonly Dictionary<string, MemoryOwnerByteTotals> memoryByteTotalsByOwner =
             new Dictionary<string, MemoryOwnerByteTotals>(StringComparer.Ordinal);
         private long memoryComponentActiveBytesTotal;
+        // Optional meaningful work is deliberately not a saved backlog. Each new/load or Off->On
+        // boundary observes the current tick, and only later events may become meaningful candidates.
+        private long optionalMeaningfulEligibilityBaselineTick = -1;
 
         internal static class MemoryArchiveStates
         {
@@ -160,6 +163,7 @@ namespace PawnDiary
         private void NormalizeLoadedMemoryComponent()
         {
             ResetMemoryMaintenanceTransient(true);
+            optionalMeaningfulEligibilityBaselineTick = -1;
             globalFactionSnapshots = globalFactionSnapshots ?? new List<SavedGlobalFactionSnapshot>();
             legacyOwnerEpochReservations =
                 legacyOwnerEpochReservations ?? new List<SavedLegacyOwnerEpochReservation>();
@@ -286,6 +290,11 @@ namespace PawnDiary
                 unresolvedArchiveStructuralRevision = 1;
             }
 
+            if (globalOptionalRequestCancellationGeneration == 0)
+            {
+                globalOptionalRequestCancellationGeneration = 1;
+            }
+
             // Taxonomy derivation (§T6.9): mixed payload is inert MigrationPending until one
             // atomic plan chooses a complete representation; an already-CURRENT state with both
             // lists empty stays Current (empty-but-valid), never regressing to LegacyRaw.
@@ -337,6 +346,8 @@ namespace PawnDiary
             memoryAttemptAuditRows.Clear();
             lastIssuedMemoryLogicalRequestSequence = 0;
             activeMemoryCoordinatorRequests.Clear();
+            invokedGenerationCutoffs.Reset();
+            optionalMeaningfulEligibilityBaselineTick = -1;
             ResetMemoryMaintenanceTransient(true);
             ResetMemoryLibraryTransient();
             RebuildMemorySizeIndexes();

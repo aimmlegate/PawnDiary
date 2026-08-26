@@ -8,7 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-08-26
 
-- **Memory M10 optional-work coordinator foundation.** Add one four-class arbitration kernel plus exact isolated quiet-cadence RNG and activation-only quadrum semantics, with activation still LegacyShadow.
+- **Memory M10 optional AI.** Route meaningful, quiet, and deterministic-first Summary wording through the shared four-class coordinator with staged common transport, bounded cancellation/fingerprint rules, and behavioral fixtures; activation remains LegacyShadow.
 - **Memory M9 Thread and TTL Library UI.** Add review-hardened exact-owner thread/standalone/imported browsing, saved culture/status context, bounded virtualized cards and details, constituent-original-tick lifetime states, revision-safe explicit edits/actions, and paged owner/detail race convergence in English and Russian while activation remains LegacyShadow.
 
 ## 2026-08-25

@@ -38,6 +38,7 @@ namespace NarrativeContinuityTests
             TestCrossArcMemorySelection();
             TestTerminalReflectionQualification();
             TestReflectionPriorityAndDeferredConsumption();
+            TestSharedCoordinatorWakePolicy();
             TestUnifiedOptionalMemoryCoordinator();
             TestQuietMemoryDeterministicCadence();
             Console.WriteLine("NarrativeContinuityTests passed " + assertions + " assertions.");
@@ -2348,6 +2349,49 @@ namespace NarrativeContinuityTests
                 ReflectionCoordinator.CanConsumeAfterDispatch(shorterCadences, true));
         }
 
+        private static void TestSharedCoordinatorWakePolicy()
+        {
+            AssertTrue("null coordinator wake input fails closed",
+                !ReflectionCoordinator.HasPendingCoordinatorWork(null));
+
+            var request = new ReflectionCoordinatorWakeRequest();
+            AssertTrue("an entirely empty rest pass stays asleep",
+                !ReflectionCoordinator.HasPendingCoordinatorWork(request));
+
+            request.hasNormalReflectionSource = true;
+            AssertTrue("an ordinary reflection source wakes the common pass",
+                ReflectionCoordinator.HasPendingCoordinatorWork(request));
+            request.hasNormalReflectionSource = false;
+
+            request.pendingAmbientThoughtCount = 1;
+            AssertTrue("normal ambient work wakes the same pass with memory-extra Off",
+                ReflectionCoordinator.HasPendingCoordinatorWork(request));
+            request.pendingAmbientThoughtCount = 0;
+
+            request.optionalMemoryRequestsEffective = true;
+            request.pendingSummaryWordingCount = 1;
+            AssertTrue("summary-only work wakes with every standard reflection source Off",
+                ReflectionCoordinator.HasPendingCoordinatorWork(request));
+
+            request.optionalMemoryRequestsEffective = false;
+            AssertTrue("Master Off leaves summary-only work asleep",
+                !ReflectionCoordinator.HasPendingCoordinatorWork(request));
+
+            request.pendingSummaryWordingCount = 0;
+            request.hasOptionalMemoryCandidateSource = true;
+            request.optionalMemoryRequestsEffective = true;
+            AssertTrue("meaningful or quiet source wakes the same coordinator",
+                ReflectionCoordinator.HasPendingCoordinatorWork(request));
+            request.optionalMemoryRequestsEffective = false;
+            AssertTrue("Master Off cannot wake from a memory candidate source",
+                !ReflectionCoordinator.HasPendingCoordinatorWork(request));
+
+            request.pendingSummaryWordingCount = -1;
+            request.pendingAmbientInteractionCount = -1;
+            AssertTrue("corrupt negative counts cannot fabricate coordinator work",
+                !ReflectionCoordinator.HasPendingCoordinatorWork(request));
+        }
+
         private static void TestUnifiedOptionalMemoryCoordinator()
         {
             NarrativePolicySnapshot policy = NarrativePolicySnapshot.CreateDefault();
@@ -2686,10 +2730,6 @@ namespace NarrativeContinuityTests
             AssertEqual("enabling optional work evaluates only the present day",
                 44, enabledNow.evaluatedAbsoluteDay);
 
-            MemoryQuietCadenceRequest higherWork = QuietCadenceRequest(owner, epoch, 45, 3);
-            higherWork.higherPriorityWorkAvailable = true;
-            AssertTrue("normal/meaningful readiness prevents even a quiet chance evaluation",
-                !MemoryQuietCadencePolicy.Plan(higherWork).evaluatedNow);
             MemoryQuietCadenceRequest noMemory = QuietCadenceRequest(owner, epoch, 45, 3);
             noMemory.hasEligibleMemory = false;
             AssertTrue("no eligible memory produces no quiet candidate or backlog",

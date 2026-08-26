@@ -577,6 +577,22 @@ namespace PawnDiary
     }
 
     /// <summary>
+    /// Detached read-only inputs for deciding whether the natural-rest pass has any coordinator work.
+    /// Counts are intentionally not normalized here: corrupt negative values simply behave as empty.
+    /// </summary>
+    internal class ReflectionCoordinatorWakeRequest
+    {
+        public bool hasNormalReflectionSource;
+        public bool hasPendingMajorReflection;
+        public int pendingAmbientInteractionCount;
+        public int pendingAmbientThoughtCount;
+        public int pendingDayHediffCount;
+        public bool optionalMemoryRequestsEffective;
+        public int pendingSummaryWordingCount;
+        public bool hasOptionalMemoryCandidateSource;
+    }
+
+    /// <summary>
     /// Exact deferred-state instruction. "Settled" and "page registered" are separate because
     /// Summary wording settles a coordinator slot without producing a page or advancing cooldown.
     /// </summary>

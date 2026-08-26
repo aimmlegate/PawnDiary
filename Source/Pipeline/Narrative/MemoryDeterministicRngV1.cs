@@ -26,7 +26,6 @@ namespace PawnDiary
         public bool allowExtraMemoryAiRequests;
         public bool occasionalMemoryReflections;
         public long optionalRequestInvalidationGeneration;
-        public bool higherPriorityWorkAvailable;
         public bool hasEligibleMemory;
     }
 
@@ -252,7 +251,6 @@ namespace PawnDiary
                 && request.optionalRequestInvalidationGeneration > 0
                 && request.optionalRequestInvalidationGeneration < long.MaxValue;
             if (!gatesEffective
-                || request.higherPriorityWorkAvailable
                 || !request.hasEligibleMemory
                 || request.lastActivatedAbsoluteQuadrum >= request.absoluteQuadrum
                 || request.lastEvaluatedAbsoluteDay > request.absoluteDay)

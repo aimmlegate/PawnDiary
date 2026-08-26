@@ -51,6 +51,7 @@ namespace LlmProtocolHttpFixtureTests
             await TestSingleCompletionRetryCapAndCancellation();
             await TestConfiguredDeadlineExpiresPhysicalSend();
             await TestTransactionalGenerationStaging();
+            TestOptionalRequestFreezeAndCancellationCutoffs();
             await TestMemoryPermitAndReceiptGate();
             await TestQueuedMultiLaneFailover();
             await TestOpenAiModelDiscoveryCompatibility();
@@ -156,6 +157,116 @@ namespace LlmProtocolHttpFixtureTests
                 LlmClient.SendAsyncOverrideForTests = null;
                 LlmClient.EndSession();
             }
+        }
+
+        private static void TestOptionalRequestFreezeAndCancellationCutoffs()
+        {
+            string epoch = OrdinalSegmentCodec.Segment("memory-epoch-v1")
+                + OrdinalSegmentCodec.Segment("44");
+            var opportunity = new SummaryWordingOpportunitySnapshot
+            {
+                ownerPawnId = "Pawn_Protocol_Optional",
+                ownerEpochToken = epoch,
+                ownerCancellationGeneration = 2,
+                globalCancellationGeneration = 3,
+                optionalRequestInvalidationGeneration = 4,
+                rootId = OrdinalSegmentCodec.Segment("root"),
+                summaryRecordId = OrdinalSegmentCodec.Segment("summary"),
+                expectedRootStructuralRevision = 5,
+                expectedSummaryFactsRevision = 6,
+                expectedReducerRevision = 1,
+                expectedFormatRevision = 1,
+                expectedCategoryMask = 15,
+                projectionFingerprint = new string('d', 64),
+                requestedTick = 100,
+                dueTick = 100,
+                expiryTick = 200,
+                configuredPriority = 1,
+                salience = 1
+            };
+            AssertTrue("optional protocol opportunity key",
+                MemoryOptionalAiPolicy.TryCreateSummaryOpportunityKey(
+                    opportunity, out opportunity.opportunityKey));
+            var evidence = new MemoryEvidenceIdentity
+            {
+                recordId = OrdinalSegmentCodec.Segment("record"),
+                sourceOccurrenceId = OrdinalSegmentCodec.Segment("source"),
+                rootIdOrEmpty = OrdinalSegmentCodec.Segment("root")
+            };
+            var firstVariant = new MemoryOptionalPromptVariantInput
+            {
+                templateIdentity = "summary_wording:v1",
+                contextDetailIdentity = "lane:0",
+                systemPrompt = "Frozen optional system",
+                userPrompt = "Frozen optional user\ntransport_variant=0",
+                evidence = new List<MemoryEvidenceIdentity> { evidence }
+            };
+            var input = new MemoryOptionalRequestBuildInput
+            {
+                logicalRequestSequence = 700,
+                requestPurposeToken = MemoryDispatchTokens.SummaryWording,
+                sessionId = 1,
+                opportunityKey = opportunity.opportunityKey,
+                povRoleToken = DiaryEvent.InitiatorRole,
+                ownerPawnId = opportunity.ownerPawnId,
+                ownerEpochToken = opportunity.ownerEpochToken,
+                ownerCancellationGeneration = opportunity.ownerCancellationGeneration,
+                globalCancellationGeneration = opportunity.globalCancellationGeneration,
+                optionalRequestInvalidationGeneration =
+                    opportunity.optionalRequestInvalidationGeneration,
+                variants = new List<MemoryOptionalPromptVariantInput>
+                {
+                    firstVariant,
+                    new MemoryOptionalPromptVariantInput
+                    {
+                        templateIdentity = "summary_wording:v1",
+                        contextDetailIdentity = "lane:1",
+                        systemPrompt = "Frozen optional system",
+                        userPrompt = "Frozen optional user\ntransport_variant=1",
+                        evidence = new List<MemoryEvidenceIdentity> { evidence }
+                    }
+                }
+            };
+            MemoryLogicalRequestSnapshot frozen;
+            AssertTrue("optional protocol request freezes",
+                MemoryOptionalAiPolicy.TryBuildLogicalRequest(input, out frozen));
+            AssertTrue("optional protocol variants have exact distinct hashes",
+                frozen.variants.Count == 2
+                    && !string.Equals(frozen.variants[0].variantKey,
+                        frozen.variants[1].variantKey, StringComparison.Ordinal));
+            firstVariant.userPrompt = "mutated after freeze";
+            evidence.recordId = OrdinalSegmentCodec.Segment("mutated");
+            AssertEqual("optional protocol frozen bytes stay detached",
+                "Frozen optional user\ntransport_variant=0",
+                frozen.variants[0].userPrompt);
+            AssertEqual("optional protocol frozen evidence stays detached",
+                OrdinalSegmentCodec.Segment("record"),
+                frozen.variants[0].receipt.evidence[0].recordId);
+
+            var cutoffs = new MemoryInvokedGenerationCutoffTable();
+            AssertTrue("optional protocol first invocation registers",
+                cutoffs.TryRegister(1, opportunity.ownerPawnId, epoch, 2, 3,
+                    frozen.logicalRequestId, 1, 2));
+            AssertTrue("optional protocol conflicting duplicate refuses before mutation",
+                !cutoffs.CanRegister(1, opportunity.ownerPawnId, epoch, 2, 3,
+                    frozen.logicalRequestId, 2, 2)
+                    && cutoffs.UnsettledRequestCount == 1);
+            cutoffs.SealGeneration(1, 3, 1);
+            string secondId;
+            MemoryIdentityCodec.TryCreateLogicalRequestId(701, out secondId);
+            AssertTrue("optional protocol later generation registers independently",
+                cutoffs.TryRegister(1, opportunity.ownerPawnId, epoch, 2, 4,
+                    secondId, 2, 2));
+            cutoffs.SealGeneration(1, 4, 2);
+            AssertTrue("optional protocol repeated cancellation preserves both invocation winners",
+                cutoffs.AllowsInvocationWinner(1, opportunity.ownerPawnId, epoch, 2, 3,
+                    frozen.logicalRequestId, 1)
+                    && cutoffs.AllowsInvocationWinner(1, opportunity.ownerPawnId, epoch, 2, 4,
+                        secondId, 2));
+            cutoffs.Settle(frozen.logicalRequestId);
+            AssertTrue("optional protocol settlement cannot revive older work",
+                !cutoffs.AllowsInvocationWinner(1, opportunity.ownerPawnId, epoch, 2, 3,
+                    frozen.logicalRequestId, 1));
         }
 
         private static async Task TestMemoryPermitAndReceiptGate()

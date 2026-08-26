@@ -265,6 +265,7 @@ namespace PawnDiary
                     request.ownerPawnId, pawnId, StringComparison.Ordinal)) continue;
                 MemoryDispatchRuntimeBridge.ReleaseLogicalRequestSendEnvelopes(
                     request.logicalRequestId);
+                invokedGenerationCutoffs.Settle(request.logicalRequestId);
                 AppendTerminalMemoryAttemptAudits(
                     request,
                     MemoryDispatchSavedAdapter.LoadedRequestMayHaveBeenInvoked(request)
@@ -310,6 +311,7 @@ namespace PawnDiary
             {
                 MemoryDispatchRuntimeBridge.ReleaseLogicalRequestSendEnvelopes(
                     request.logicalRequestId);
+                invokedGenerationCutoffs.Settle(request.logicalRequestId);
                 AppendTerminalMemoryAttemptAudits(
                     request,
                     MemoryDispatchSavedAdapter.LoadedRequestMayHaveBeenInvoked(request)

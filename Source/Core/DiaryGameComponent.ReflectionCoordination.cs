@@ -50,34 +50,51 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Separates a visible page from an attempted normal-ambient candidate. The natural-rest caller
+        /// must not run the historical ambient fallback a second time after that candidate already owned
+        /// the one common coordinator selection.
+        /// </summary>
+        private sealed class ReflectionRuntimeOutcome
+        {
+            public bool pageRegistered;
+            public bool normalAmbientAttempted;
+        }
+
+        /// <summary>
         /// Arbitrates one natural rest opportunity for one pawn and returns true only when one existing
         /// reflection page was created.
         /// </summary>
         private bool ArbitrateReflectionsForPawn(Pawn pawn)
         {
             NarrativePolicySnapshot policy = DiaryNarrativeContinuityPolicy.Snapshot();
-            return ArbitrateReflectionsForPawn(pawn, policy, DaySummaryOwnsFiller(policy));
+            return ArbitrateReflectionsForPawn(
+                pawn,
+                policy,
+                DaySummaryOwnsFiller(policy),
+                MemoryEffectivePolicyProvider.Current).pageRegistered;
         }
 
         /// <summary>
         /// Uses the scan's shared policy snapshot so a multi-pawn rest pass does not rebuild identical
         /// XML-backed lists for every colonist.
         /// </summary>
-        private bool ArbitrateReflectionsForPawn(
+        private ReflectionRuntimeOutcome ArbitrateReflectionsForPawn(
             Pawn pawn,
             NarrativePolicySnapshot policy,
-            bool daySummaryOwnsFiller)
+            bool daySummaryOwnsFiller,
+            MemoryPolicySnapshot memoryPolicy)
         {
+            ReflectionRuntimeOutcome runtimeOutcome = new ReflectionRuntimeOutcome();
             if (pawn == null || !IsDiaryEligible(pawn))
             {
-                return false;
+                return runtimeOutcome;
             }
 
             string pawnId = pawn.GetUniqueLoadID();
             PawnDiaryRecord diary = FindDiary(pawn, true);
             if (diary == null || string.IsNullOrWhiteSpace(pawnId))
             {
-                return false;
+                return runtimeOutcome;
             }
 
             int day = CurrentDayIndex;
@@ -88,12 +105,12 @@ namespace PawnDiary
             {
                 BaselineReflectionState(
                     diary, pawnId, day, nowTick, state, daySummaryOwnsFiller);
-                return false;
+                return runtimeOutcome;
             }
             if (state.linkedBaselineOnNextOpportunity)
             {
                 BaselineLinkedReflectionState(diary, nowTick, state);
-                return false;
+                return runtimeOutcome;
             }
 
             List<ReflectionHistoryEntry> history = state.HistorySnapshot();
@@ -134,6 +151,22 @@ namespace PawnDiary
                 PrepareDayReflectionCandidate(pawn, pawnId, day, collectDayEvidence)
             };
 
+            // M10 compiles the common normal-work adapter before M11 changes public behavior. Once the
+            // release gate flips, ambient readiness is a real Normal candidate and therefore suppresses
+            // meaningful/quiet/Summary work through the same selector instead of a side precheck.
+            if (MemorySystemActivationGate.IsCurrentRelease)
+            {
+                runtimeCandidates.Add(PrepareNormalAmbientCandidate(pawn, pawnId, nowTick));
+                AddOptionalMemoryCoordinatorCandidates(
+                    runtimeCandidates,
+                    pawn,
+                    diary,
+                    state,
+                    policy,
+                    memoryPolicy,
+                    nowTick);
+            }
+
             List<ReflectionOpportunity> opportunities = new List<ReflectionOpportunity>();
             for (int i = 0; i < runtimeCandidates.Count; i++)
             {
@@ -152,31 +185,132 @@ namespace PawnDiary
                 policy = policy,
                 currentTick = nowTick,
                 lastReflectionTick = state.lastReflectionTick,
-                history = history
+                history = history,
+                useMemoriesInWriting = memoryPolicy?.useMemoriesInWriting == true,
+                allowExtraMemoryAiRequests = memoryPolicy?.allowExtraMemoryAiRequests == true,
+                occasionalMemoryReflections = memoryPolicy?.occasionalMemoryReflections == true,
+                optionalRequestInvalidationGeneration =
+                    memoryPolicy?.optionalRequestInvalidationGeneration ?? 0
             });
 
             ApplyDisabledReflectionInstructions(runtimeCandidates, plan);
             SettleIneligibleReflectionCandidates(runtimeCandidates);
             if (plan.selectedOpportunity == null)
             {
-                return false;
+                return runtimeOutcome;
             }
 
             ReflectionRuntimeCandidate selected = FindRuntimeCandidate(runtimeCandidates, plan.selectedOpportunity);
+            runtimeOutcome.normalAmbientAttempted = plan.selectedOpportunity.kind
+                == CoordinatorOpportunityKindTokens.NormalAmbient;
             DiaryDispatchOutcome outcome = selected == null
                 ? DiaryDispatchOutcome.Rejected
                 : selected.Dispatch();
             bool settled = DiaryDispatchOutcomePolicy.SettlesSource(outcome);
-            if (!ReflectionCoordinator.CanConsumeAfterDispatch(plan, settled))
+            ReflectionSettlementOutcome settlement = ReflectionCoordinator.SettleAfterActivation(
+                plan,
+                settled,
+                DiaryDispatchOutcomePolicy.PageRegistered(outcome));
+            if (!settlement.coordinatorSlotSettled)
+            {
+                return runtimeOutcome;
+            }
+
+            selected.ConsumeAfterDispatch();
+            if (settlement.advanceNarrativeCooldown)
+            {
+                state.MarkWritten(plan.selectedOpportunity.kind, nowTick);
+            }
+            // A frequency skip consumes this selected opportunity and its cooldown exactly once. Report
+            // true only for a real page so callers do not mistake state settlement for visible output.
+            runtimeOutcome.pageRegistered = settlement.pageRegistered;
+            return runtimeOutcome;
+        }
+
+        /// <summary>
+        /// Adapts the existing interaction/thought writers into one detached Normal candidate. Merely
+        /// preparing this row performs no mutation; both legacy writers run only if the coordinator wins.
+        /// </summary>
+        private ReflectionRuntimeCandidate PrepareNormalAmbientCandidate(
+            Pawn pawn,
+            string pawnId,
+            int nowTick)
+        {
+            bool ready = HasReadyNormalAmbientWork(pawnId);
+            return new ReflectionRuntimeCandidate
+            {
+                opportunity = new ReflectionOpportunity
+                {
+                    kind = CoordinatorOpportunityKindTokens.NormalAmbient,
+                    workClass = ReflectionWorkClassTokens.Normal,
+                    opportunityKey = CoordinatorOpportunityKindTokens.NormalAmbient + ":" + pawnId,
+                    pawnId = pawnId,
+                    nowTick = nowTick,
+                    candidateMemoryCount = 0,
+                    importance = NarrativeSalienceTokens.Minor,
+                    due = ready,
+                    cooldownSatisfied = true,
+                    groupEnabled = true,
+                    // Every existing reflection kind keeps its XML priority. Ambient was historically a
+                    // fallback after those candidates, so it remains last inside the Normal class.
+                    configuredPriority = int.MinValue
+                },
+                dispatch = () => DispatchPreparedNormalAmbient(pawn, ready)
+            };
+        }
+
+        /// <summary>Read-only readiness scan; candidate collection cannot consume either pending batch.</summary>
+        private bool HasReadyNormalAmbientWork(string pawnId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId))
             {
                 return false;
             }
 
-            selected.ConsumeAfterDispatch();
-            state.MarkWritten(plan.selectedOpportunity.kind, nowTick);
-            // A frequency skip consumes this selected opportunity and its cooldown exactly once. Report
-            // true only for a real page so callers do not mistake state settlement for visible output.
-            return DiaryDispatchOutcomePolicy.PageRegistered(outcome);
+            foreach (KeyValuePair<string, PendingAmbientInteractionNote> pair
+                in pendingAmbientInteractionNotes)
+            {
+                PendingAmbientInteractionNote note = pair.Value;
+                if (note != null
+                    && string.Equals(note.pawnId, pawnId, StringComparison.Ordinal)
+                    && note.eventCount >= AmbientMinEventsToWrite(note.policy))
+                {
+                    return true;
+                }
+            }
+
+            foreach (KeyValuePair<string, PendingAmbientThoughtNote> pair
+                in pendingAmbientThoughtNotes)
+            {
+                PendingAmbientThoughtNote note = pair.Value;
+                if (note != null
+                    && string.Equals(note.pawnId, pawnId, StringComparison.Ordinal)
+                    && note.eventCount >= AmbientThoughtMinEventsToWrite)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Runs the two historical ambient writers once and converts their observable commit boundary to
+        /// the typed coordinator outcome. A ready batch that deliberately emits no page still settles.
+        /// </summary>
+        private DiaryDispatchOutcome DispatchPreparedNormalAmbient(Pawn pawn, bool wasReady)
+        {
+            if (!wasReady || pawn == null)
+            {
+                return DiaryDispatchOutcome.Rejected;
+            }
+
+            long registrationBefore = events.RegistrationVersion;
+            FlushAmbientInteractionNotesForPawn(pawn);
+            FlushAmbientThoughtNotesForPawn(pawn);
+            return events.RegistrationVersion > registrationBefore
+                ? DiaryDispatchOutcome.PageRegistered
+                : DiaryDispatchOutcome.ConsumedWithoutPage;
         }
 
         /// <summary>

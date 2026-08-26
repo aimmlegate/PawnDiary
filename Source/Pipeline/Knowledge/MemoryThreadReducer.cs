@@ -546,6 +546,43 @@ namespace PawnDiary
                 >= lifetime;
         }
 
+        /// <summary>
+        /// Renders deterministic Summary wording from only the enabled categories. Optional M10 wording
+        /// sends this bounded projection instead of the all-category Library wording, so the frozen mask
+        /// and the provider-visible facts always agree. The source graph is cloned and never mutated.
+        /// </summary>
+        internal static bool TryBuildDeterministicCategoryProjection(
+            MemoryReducerSummary source,
+            int categoryMask,
+            int maximumUtf16Units,
+            out string projection)
+        {
+            projection = string.Empty;
+            int allowed = categoryMask & 15;
+            if (source == null || source.factBuckets == null || allowed == 0
+                || maximumUtf16Units <= 0) return false;
+
+            StringBuilder wording = new StringBuilder();
+            for (int bucketIndex = 0; bucketIndex < source.factBuckets.Count; bucketIndex++)
+            {
+                MemoryReducerBucket sourceBucket = source.factBuckets[bucketIndex];
+                if (sourceBucket == null) continue;
+                MemoryReducerBucket filtered = sourceBucket.Clone();
+                filtered.contributions.RemoveAll(contribution => contribution == null
+                    || (CategoryBit(contribution.category) & allowed) == 0);
+                if (filtered.contributions.Count == 0) continue;
+                DeriveBucket(filtered);
+                if (wording.Length > 0) wording.Append("; ");
+                wording.Append(filtered.factKind).Append('=').Append(
+                    RenderBucketProjection(filtered));
+            }
+
+            if (wording.Length == 0) return false;
+            projection = TruncateUtf16(
+                wording.ToString(), Math.Min(1200, maximumUtf16Units));
+            return !string.IsNullOrWhiteSpace(projection);
+        }
+
         /// <summary>Canonical diagnostic representation used by fixed-point and permutation tests.</summary>
         public static string CanonicalState(MemoryReducerRoot root)
         {

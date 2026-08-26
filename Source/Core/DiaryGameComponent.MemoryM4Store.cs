@@ -994,7 +994,10 @@ namespace PawnDiary
             block.provenance.Clear();
             block.primarySubject = null;
             block.secondarySubjects.Clear();
-            block.summaryPayload = FromReducerSummary(pure.summaryPayload, subjects, provenance);
+            SavedMemorySummaryPayload priorPayload = existing?.summaryPayload;
+            block.summaryPayload = FromReducerSummary(
+                pure.summaryPayload, subjects, provenance, priorPayload);
+            if (block.formatRevision <= 0) block.formatRevision = 1;
             block.automaticWording = string.Empty;
             if (string.IsNullOrEmpty(block.providerExposureState)) block.providerExposureState = "not_sent";
             return block;
@@ -1003,8 +1006,13 @@ namespace PawnDiary
         private static SavedMemorySummaryPayload FromReducerSummary(
             MemoryReducerSummary pure,
             Dictionary<string, SavedMemorySubjectRef> subjects,
-            Dictionary<string, SavedMemoryProvenance> provenance)
+            Dictionary<string, SavedMemoryProvenance> provenance,
+            SavedMemorySummaryPayload prior)
         {
+            bool factsUnchanged = prior != null
+                && prior.factsRevision == pure.factsRevision
+                && string.Equals(prior.canonicalFactsFingerprint,
+                    pure.canonicalFactsFingerprint, StringComparison.Ordinal);
             SavedMemorySummaryPayload saved = new SavedMemorySummaryPayload
             {
                 schemaVersion = 1,
@@ -1016,9 +1024,24 @@ namespace PawnDiary
                 earliestSurvivingTick = pure.earliestSurvivingTick,
                 latestSurvivingTick = pure.latestSurvivingTick,
                 deterministicWording = pure.deterministicWording,
-                optionalLlmWording = string.Empty,
-                optionalLlmFingerprint = string.Empty,
-                lastWordingDispositionToken = "disabled"
+                optionalLlmWording = factsUnchanged
+                    ? prior.optionalLlmWording ?? string.Empty : string.Empty,
+                optionalLlmFingerprint = factsUnchanged
+                    ? prior.optionalLlmFingerprint ?? string.Empty : string.Empty,
+                optionalLlmFormatRevision = factsUnchanged
+                    ? prior.optionalLlmFormatRevision : 0,
+                optionalLlmCategoryMask = factsUnchanged
+                    ? prior.optionalLlmCategoryMask : 0,
+                // Preserve the last terminal fingerprint across a natural fact change. Its mismatch
+                // is what allows M10 to create exactly one new opportunity for the new projection.
+                lastSettledWordingFingerprint = prior?.lastSettledWordingFingerprint
+                    ?? string.Empty,
+                lastSettledWordingReducerRevision =
+                    prior?.lastSettledWordingReducerRevision ?? 0,
+                lastSettledWordingFormatRevision =
+                    prior?.lastSettledWordingFormatRevision ?? 0,
+                lastWordingDispositionToken = prior?.lastWordingDispositionToken
+                    ?? MemoryOptionalWordingDispositionTokens.None
             };
             HashSet<string> subjectIds = new HashSet<string>(StringComparer.Ordinal);
             HashSet<string> provenanceIds = new HashSet<string>(StringComparer.Ordinal);

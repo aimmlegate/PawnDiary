@@ -446,7 +446,22 @@ namespace PawnDiary
         public int memoryRevisitEntryCountMinimum = 1;
         public int memoryRevisitEntryCountDefault = 3;
         public int memoryRevisitEntryCountMaximum = 1000;
+        /// <summary>Chance policy for the isolated deterministic quiet-memory stream.</summary>
         public int quietReflectionChanceBasisPoints = 200;
+        /// <summary>Delay applied only inside the shared meaningful-memory coordinator class.</summary>
+        public int meaningfulMemoryDelayTicks = 60000;
+        public int optionalMemoryOpportunityExpiryTicks = 120000;
+        public int meaningfulMemoryPriority = 100;
+        public int quietMemoryPriority = 50;
+        public int summaryWordingPriority = 0;
+        public int memoryReflectionMaxTokens = 220;
+        public int summaryWordingMaxTokens = 80;
+        /// <summary>DefInjected editorial prompts, frozen on the main thread before transport.</summary>
+        public string memoryReflectionSystemPrompt;
+        public string memoryReflectionLabel;
+        public string memoryReflectionInstruction;
+        public string summaryWordingSystemPrompt;
+        public string summaryWordingInstruction;
         // M6 replaceable-current-truth reconciliation. Values are copied into a plain snapshot
         // before policy runs; no Def or settings object crosses into the pure layer.
         public int memoryObservationReconciliationIntervalTicks = 2500;

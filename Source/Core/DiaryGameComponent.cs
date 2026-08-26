@@ -1098,14 +1098,19 @@ namespace PawnDiary
             bool anyReflectionSource = daySummary || arcReflection || quadrumReflection
                 || beliefReflection;
             bool pendingMajorReflection = !anyReflectionSource && HasPendingMajorReflection();
+            MemoryPolicySnapshot memoryPolicy = MemoryEffectivePolicyProvider.Current;
+            if (MemorySystemActivationGate.IsCurrentRelease)
+            {
+                ExpireSummaryWordingOpportunities(
+                    Math.Max(0, Verse.Find.TickManager?.TicksGame ?? 0));
+            }
 
             // A reflection can be due with no pending filler. A queued major request also needs one final
             // rest arbitration if the player disabled every reflection source after the canonical event.
-            if (!anyReflectionSource
-                && !pendingMajorReflection
-                && pendingAmbientInteractionNotes.Count == 0
-                && pendingAmbientThoughtNotes.Count == 0
-                && pendingDayHediffs.Count == 0)
+            if (!HasPendingCoordinatorWork(
+                    anyReflectionSource,
+                    pendingMajorReflection,
+                    memoryPolicy))
             {
                 return;
             }
@@ -1116,10 +1121,11 @@ namespace PawnDiary
             if (pendingMajorReflection)
             {
                 PrunePendingMajorReflectionsWithoutRestOwner(colonists);
-                if (!HasPendingMajorReflection()
-                    && pendingAmbientInteractionNotes.Count == 0
-                    && pendingAmbientThoughtNotes.Count == 0
-                    && pendingDayHediffs.Count == 0)
+                pendingMajorReflection = HasPendingMajorReflection();
+                if (!HasPendingCoordinatorWork(
+                        anyReflectionSource,
+                        pendingMajorReflection,
+                        memoryPolicy))
                 {
                     return;
                 }
@@ -1132,8 +1138,11 @@ namespace PawnDiary
                     continue;
                 }
 
-                bool reflectionWritten = ArbitrateReflectionsForPawn(
-                    pawn, reflectionPolicy, daySummaryOwnsFiller);
+                ReflectionRuntimeOutcome reflection = ArbitrateReflectionsForPawn(
+                    pawn,
+                    reflectionPolicy,
+                    daySummaryOwnsFiller,
+                    memoryPolicy);
                 if (daySummaryOwnsFiller)
                 {
                     // Day-summary mode owns the filler even when the pure planner finds no eligible page.
@@ -1142,7 +1151,7 @@ namespace PawnDiary
                     continue;
                 }
 
-                if (reflectionWritten)
+                if (reflection.pageRegistered || reflection.normalAmbientAttempted)
                 {
                     continue;
                 }
@@ -1150,6 +1159,37 @@ namespace PawnDiary
                 FlushAmbientInteractionNotesForPawn(pawn);
                 FlushAmbientThoughtNotesForPawn(pawn);
             }
+        }
+
+        /// <summary>
+        /// Cheap shared wake guard for the natural-rest coordinator. Summary-only rows are deliberately
+        /// considered only by the unreleased M11 behavior gate; LegacyShadow keeps the shipped wake path.
+        /// This method reads saved state only and never repairs, expires, or otherwise mutates it.
+        /// </summary>
+        private bool HasPendingCoordinatorWork(
+            bool anyReflectionSource,
+            bool pendingMajorReflection,
+            MemoryPolicySnapshot memoryPolicy)
+        {
+            return ReflectionCoordinator.HasPendingCoordinatorWork(
+                new ReflectionCoordinatorWakeRequest
+                {
+                    hasNormalReflectionSource = anyReflectionSource,
+                    hasPendingMajorReflection = pendingMajorReflection,
+                    pendingAmbientInteractionCount = pendingAmbientInteractionNotes.Count,
+                    pendingAmbientThoughtCount = pendingAmbientThoughtNotes.Count,
+                    pendingDayHediffCount = pendingDayHediffs.Count,
+                    // Compile the M10 wake seam without activating it. M11 is the only phase allowed to
+                    // make a saved Summary row change the shipped LegacyShadow rest-pass behavior.
+                    optionalMemoryRequestsEffective = MemorySystemActivationGate.IsCurrentRelease
+                        && memoryPolicy?.AllowsOptionalRequests == true,
+                    pendingSummaryWordingCount = summaryWordingOpportunities == null
+                        ? 0
+                        : summaryWordingOpportunities.Count,
+                    hasOptionalMemoryCandidateSource =
+                        MemorySystemActivationGate.IsCurrentRelease
+                        && HasOptionalMemoryCandidateSource(memoryPolicy)
+                });
         }
 
         /// <summary>

@@ -30,6 +30,7 @@ namespace MemoryThreadTests
                 TestSyntheticAndRepairIdentity();
                 TestRequestIdentity();
                 TestMemoryDispatchPolicy();
+                TestOptionalMemoryAiPolicy();
                 TestAcceptedPromptRetention();
                 TestExactRoutePolicy();
                 TestFactGrammar();
@@ -1043,6 +1044,381 @@ namespace MemoryThreadTests
                 afterSettlement.repairedNarrativeUseWinnerAttemptOrdinal);
             AssertTrue("dispatch.load.after.never-retry",
                 !afterSettlement.restoreNormalPovRetryable);
+        }
+
+        private static void TestOptionalMemoryAiPolicy()
+        {
+            AssertTrue("optional.meaningful.pre-enable-never-catches-up",
+                !MemoryOptionalAiPolicy.IsMeaningfulEventAfterEligibilityBaseline(99, 100));
+            AssertTrue("optional.meaningful.exact-enable-tick-is-ambiguous-and-skipped",
+                !MemoryOptionalAiPolicy.IsMeaningfulEventAfterEligibilityBaseline(100, 100));
+            AssertTrue("optional.meaningful.first-later-tick-is-eligible",
+                MemoryOptionalAiPolicy.IsMeaningfulEventAfterEligibilityBaseline(101, 100));
+            AssertTrue("optional.meaningful.missing-baseline-fails-closed",
+                !MemoryOptionalAiPolicy.IsMeaningfulEventAfterEligibilityBaseline(101, -1));
+
+            string[] exactDispositions =
+            {
+                MemoryOptionalWordingDispositionTokens.None,
+                MemoryOptionalWordingDispositionTokens.Pending,
+                MemoryOptionalWordingDispositionTokens.Activated,
+                MemoryOptionalWordingDispositionTokens.Success,
+                MemoryOptionalWordingDispositionTokens.Failed,
+                MemoryOptionalWordingDispositionTokens.Malformed,
+                MemoryOptionalWordingDispositionTokens.Expired,
+                MemoryOptionalWordingDispositionTokens.Displaced,
+                MemoryOptionalWordingDispositionTokens.Disabled
+            };
+            for (int dispositionIndex = 0;
+                dispositionIndex < exactDispositions.Length; dispositionIndex++)
+                AssertTrue("optional.disposition.known." + dispositionIndex,
+                    MemoryOptionalWordingDispositionTokens.IsKnown(
+                        exactDispositions[dispositionIndex]));
+            AssertTrue("optional.disposition.stale-is-not-saved-vocabulary",
+                !MemoryOptionalWordingDispositionTokens.IsKnown("stale"));
+
+            SummaryWordingOpportunitySnapshot first = SummaryOpportunity(
+                "Pawn_Optional", Epoch(91), "root-a", "summary-a", 10, 10, 100);
+            string key;
+            AssertTrue("optional.summary-key.create",
+                MemoryOptionalAiPolicy.TryCreateSummaryOpportunityKey(first, out key));
+            first.opportunityKey = key;
+            SummaryWordingOpportunitySnapshot parsed;
+            AssertTrue("optional.summary-key.roundtrip",
+                MemoryOptionalAiPolicy.TryParseSummaryOpportunityKey(key, out parsed));
+            AssertEqual("optional.summary-key.owner", first.ownerPawnId, parsed.ownerPawnId);
+            AssertEqual("optional.summary-key.fingerprint",
+                first.projectionFingerprint, parsed.projectionFingerprint);
+            AssertTrue("optional.summary-key.trailing-refused",
+                !MemoryOptionalAiPolicy.TryParseSummaryOpportunityKey(
+                    key + OrdinalSegmentCodec.Segment("extra"), out parsed));
+
+            SummaryWordingOpportunitySnapshot lower = SummaryOpportunity(
+                first.ownerPawnId, first.ownerEpochToken, "root-b", "summary-b", 10, 9, 110);
+            MemoryOptionalAiPolicy.TryCreateSummaryOpportunityKey(lower, out lower.opportunityKey);
+            SummaryWordingSlotPlan keepPriority = MemoryOptionalAiPolicy.PlanOwnerSlot(
+                first, lower, 20);
+            AssertTrue("optional.one-slot.valid", keepPriority.valid);
+            AssertTrue("optional.one-slot.higher-priority-kept",
+                ReferenceEquals(first, keepPriority.winner));
+            AssertEqual("optional.one-slot.displaced-once", 1, keepPriority.terminal.Count);
+            AssertEqual("optional.one-slot.disposition",
+                MemoryOptionalWordingDispositionTokens.Displaced,
+                keepPriority.terminal[0].dispositionToken);
+
+            SummaryWordingOpportunitySnapshot newer = SummaryOpportunity(
+                first.ownerPawnId, first.ownerEpochToken, "root-c", "summary-c", 10, 10, 120);
+            MemoryOptionalAiPolicy.TryCreateSummaryOpportunityKey(newer, out newer.opportunityKey);
+            SummaryWordingSlotPlan keepNewer = MemoryOptionalAiPolicy.PlanOwnerSlot(
+                first, newer, 20);
+            AssertTrue("optional.one-slot.newer-change-kept",
+                ReferenceEquals(newer, keepNewer.winner));
+
+            SummaryWordingOpportunitySnapshot expires = SummaryOpportunity(
+                first.ownerPawnId, first.ownerEpochToken, "root-d", "summary-d", 1, 1, 10);
+            MemoryOptionalAiPolicy.TryCreateSummaryOpportunityKey(expires, out expires.opportunityKey);
+            SummaryWordingSlotPlan expired = MemoryOptionalAiPolicy.PlanOwnerSlot(
+                expires, null, expires.expiryTick);
+            AssertTrue("optional.expiry.exact-boundary",
+                expired.valid && expired.winner == null && expired.terminal.Count == 1);
+            AssertEqual("optional.expiry.terminal-token",
+                MemoryOptionalWordingDispositionTokens.Expired,
+                expired.terminal[0].dispositionToken);
+
+            SummaryWordingCurrentSnapshot current = new SummaryWordingCurrentSnapshot
+            {
+                ownerPawnId = first.ownerPawnId,
+                ownerEpochToken = first.ownerEpochToken,
+                rootId = first.rootId,
+                summaryRecordId = first.summaryRecordId,
+                rootStructuralRevision = first.expectedRootStructuralRevision,
+                summaryFactsRevision = first.expectedSummaryFactsRevision,
+                reducerRevision = first.expectedReducerRevision,
+                formatRevision = first.expectedFormatRevision,
+                categoryMask = first.expectedCategoryMask,
+                projectionFingerprint = first.projectionFingerprint,
+                deterministicWording = "The deterministic wording remains truth."
+            };
+            SummaryWordingResultPlan success = MemoryOptionalAiPolicy.PlanSummaryResult(
+                first, current, true, "  Concise optional wording.  ", 80);
+            AssertTrue("optional.result.success-disposable-only",
+                success.identityMatched && success.applyOptionalWording);
+            AssertEqual("optional.result.trimmed", "Concise optional wording.",
+                success.optionalWording);
+            AssertEqual("optional.result.success-token",
+                MemoryOptionalWordingDispositionTokens.Success, success.dispositionToken);
+            AssertEqual("optional.cache.exact-projection-uses-disposable-wording",
+                "Concise optional wording.",
+                MemoryOptionalAiPolicy.SelectNaturalWritingWording(
+                    current,
+                    success.optionalWording,
+                    current.projectionFingerprint,
+                    current.formatRevision,
+                    current.categoryMask,
+                    MemoryOptionalWordingDispositionTokens.Success,
+                    80));
+            AssertEqual("optional.cache.fingerprint-mismatch-uses-deterministic",
+                current.deterministicWording,
+                MemoryOptionalAiPolicy.SelectNaturalWritingWording(
+                    current,
+                    success.optionalWording,
+                    new string('b', 64),
+                    current.formatRevision,
+                    current.categoryMask,
+                    MemoryOptionalWordingDispositionTokens.Success,
+                    80));
+            AssertEqual("optional.cache.mask-mismatch-uses-deterministic",
+                current.deterministicWording,
+                MemoryOptionalAiPolicy.SelectNaturalWritingWording(
+                    current,
+                    success.optionalWording,
+                    current.projectionFingerprint,
+                    current.formatRevision,
+                    current.categoryMask ^ 1,
+                    MemoryOptionalWordingDispositionTokens.Success,
+                    80));
+            AssertEqual("optional.cache.non-success-uses-deterministic",
+                current.deterministicWording,
+                MemoryOptionalAiPolicy.SelectNaturalWritingWording(
+                    current,
+                    success.optionalWording,
+                    current.projectionFingerprint,
+                    current.formatRevision,
+                    current.categoryMask,
+                    MemoryOptionalWordingDispositionTokens.Failed,
+                    80));
+            SummaryWordingResultPlan failed = MemoryOptionalAiPolicy.PlanSummaryResult(
+                first, current, false, "ignored", 80);
+            AssertTrue("optional.result.failure-keeps-deterministic",
+                failed.identityMatched && !failed.applyOptionalWording
+                    && failed.optionalWording.Length == 0);
+            SummaryWordingResultPlan malformed = MemoryOptionalAiPolicy.PlanSummaryResult(
+                first, current, true, "line one\nline two", 80);
+            AssertEqual("optional.result.multiline-malformed",
+                MemoryOptionalWordingDispositionTokens.Malformed,
+                malformed.dispositionToken);
+            current.summaryFactsRevision++;
+            SummaryWordingResultPlan stale = MemoryOptionalAiPolicy.PlanSummaryResult(
+                first, current, true, "stale prose", 80);
+            AssertTrue("optional.result.revision-stale-keeps-fallback",
+                !stale.identityMatched && !stale.applyOptionalWording);
+            AssertEqual("optional.result.stale-does-not-invent-saved-disposition",
+                MemoryOptionalWordingDispositionTokens.None, stale.dispositionToken);
+            current.summaryFactsRevision--;
+            current.suppressed = true;
+            AssertTrue("optional.result.suppressed-still-targets-same-projection",
+                MemoryOptionalAiPolicy.TargetsCurrentSummaryProjection(first, current));
+            AssertTrue("optional.result.suppressed-stale",
+                !MemoryOptionalAiPolicy.PlanSummaryResult(
+                    first, current, true, "hidden prose", 80).identityMatched);
+            AssertEqual("optional.cache.suppressed-exposes-no-prompt-wording", string.Empty,
+                MemoryOptionalAiPolicy.SelectNaturalWritingWording(
+                    current,
+                    success.optionalWording,
+                    current.projectionFingerprint,
+                    current.formatRevision,
+                    current.categoryMask,
+                    MemoryOptionalWordingDispositionTokens.Success,
+                    80));
+            current.suppressed = false;
+
+            var projectedSummary = new MemoryReducerSummary();
+            var projectedBucket = new MemoryReducerBucket
+            {
+                bucketKey = "topic",
+                factKind = "topic",
+                aggregationToken = MemoryFactContractTokens.OrdinalSet
+            };
+            projectedBucket.contributions.Add(new MemoryReducerContribution
+            {
+                contributionId = "personal",
+                category = MemoryContractTokens.CategoryPersonal,
+                canonicalValue = "kept"
+            });
+            projectedBucket.contributions.Add(new MemoryReducerContribution
+            {
+                contributionId = "family",
+                category = MemoryContractTokens.CategoryFamily,
+                canonicalValue = "hidden"
+            });
+            projectedSummary.factBuckets.Add(projectedBucket);
+            string projectedWording;
+            AssertTrue("optional.projection.personal-builds",
+                MemoryThreadReducer.TryBuildDeterministicCategoryProjection(
+                    projectedSummary, MemoryCategoryBits.Personal, 240,
+                    out projectedWording));
+            AssertEqual("optional.projection.excludes-disabled-category",
+                "topic=kept", projectedWording);
+            AssertTrue("optional.projection.family-builds",
+                MemoryThreadReducer.TryBuildDeterministicCategoryProjection(
+                    projectedSummary, MemoryCategoryBits.Family, 240,
+                    out projectedWording));
+            AssertEqual("optional.projection.selects-frozen-family-mask",
+                "topic=hidden", projectedWording);
+            AssertTrue("optional.projection.no-matching-category-refuses",
+                !MemoryThreadReducer.TryBuildDeterministicCategoryProjection(
+                    projectedSummary, MemoryCategoryBits.Factions, 240,
+                    out projectedWording));
+            AssertEqual("optional.projection.source-remains-detached", 2,
+                projectedSummary.factBuckets[0].contributions.Count);
+
+            var unicodeSummary = new MemoryReducerSummary();
+            var unicodeBucket = new MemoryReducerBucket
+            {
+                bucketKey = "u",
+                factKind = "u",
+                aggregationToken = MemoryFactContractTokens.OrdinalSet
+            };
+            unicodeBucket.contributions.Add(new MemoryReducerContribution
+            {
+                contributionId = "unicode",
+                category = MemoryContractTokens.CategoryPersonal,
+                canonicalValue = "\ud83d\ude00"
+            });
+            unicodeSummary.factBuckets.Add(unicodeBucket);
+            AssertTrue("optional.projection.unicode-cap-builds",
+                MemoryThreadReducer.TryBuildDeterministicCategoryProjection(
+                    unicodeSummary, MemoryCategoryBits.Personal, 3,
+                    out projectedWording));
+            AssertTrue("optional.projection.cap-is-surrogate-safe",
+                projectedWording.Length <= 3
+                    && MemoryIdentityCodec.IsWellFormedUtf16(projectedWording));
+
+            MemoryOptionalRequestBuildInput requestInput = new MemoryOptionalRequestBuildInput
+            {
+                logicalRequestSequence = 501,
+                requestPurposeToken = MemoryDispatchTokens.SummaryWording,
+                sessionId = 7,
+                opportunityKey = first.opportunityKey,
+                povRoleToken = "initiator",
+                ownerPawnId = first.ownerPawnId,
+                ownerEpochToken = first.ownerEpochToken,
+                ownerCancellationGeneration = 3,
+                globalCancellationGeneration = 4,
+                optionalRequestInvalidationGeneration = 5
+            };
+            requestInput.variants.Add(new MemoryOptionalPromptVariantInput
+            {
+                templateIdentity = "summary_wording:v1",
+                contextDetailIdentity = "optional:v1:0",
+                systemPrompt = "Frozen system prompt.",
+                userPrompt = "Frozen user prompt.\ntransport_variant=0",
+                evidence = new List<MemoryEvidenceIdentity>
+                {
+                    new MemoryEvidenceIdentity
+                    {
+                        recordId = OrdinalSegmentCodec.Segment("record"),
+                        sourceOccurrenceId = OrdinalSegmentCodec.Segment("source"),
+                        rootIdOrEmpty = OrdinalSegmentCodec.Segment("root")
+                    }
+                }
+            });
+            MemoryLogicalRequestSnapshot built;
+            AssertTrue("optional.request.complete-frozen-graph",
+                MemoryOptionalAiPolicy.TryBuildLogicalRequest(requestInput, out built));
+            AssertTrue("optional.request.common-policy-validates",
+                MemoryDispatchPolicy.ValidateRequest(built));
+            AssertEqual("optional.request.summary-one-evidence", 1,
+                built.reservedEvidence.Count);
+            AssertEqual("optional.request.summary-zero-guards", 0,
+                built.reservedGuards.Count);
+            requestInput.optionalRequestInvalidationGeneration = long.MaxValue;
+            AssertTrue("optional.request.saturated-generation-refuses-before-staging",
+                !MemoryOptionalAiPolicy.TryBuildLogicalRequest(requestInput, out built));
+            requestInput.optionalRequestInvalidationGeneration = 5;
+            requestInput.variants[0].diagnostics = new List<MemoryDiagnosticIdentity> { null };
+            AssertTrue("optional.request.null-nested-diagnostic-refuses",
+                !MemoryOptionalAiPolicy.TryBuildLogicalRequest(requestInput, out built));
+            requestInput.variants[0].diagnostics.Clear();
+            requestInput.variants[0].evidence.Add(null);
+            AssertTrue("optional.request.null-nested-evidence-refuses",
+                !MemoryOptionalAiPolicy.TryBuildLogicalRequest(requestInput, out built));
+            requestInput.variants[0].evidence.RemoveAt(
+                requestInput.variants[0].evidence.Count - 1);
+
+            MemoryInvokedGenerationCutoffTable cutoffs =
+                new MemoryInvokedGenerationCutoffTable();
+            string requestOne;
+            string requestTwo;
+            MemoryIdentityCodec.TryCreateLogicalRequestId(601, out requestOne);
+            MemoryIdentityCodec.TryCreateLogicalRequestId(602, out requestTwo);
+            AssertTrue("optional.cutoff.register-first-generation",
+                cutoffs.TryRegister(7, "Pawn_Optional", Epoch(91), 3, 4,
+                    requestOne, 11, 2));
+            AssertTrue("optional.cutoff.same-request-different-sequence-refuses-preflight",
+                !cutoffs.CanRegister(7, "Pawn_Optional", Epoch(91), 3, 4,
+                    requestOne, 12, 2)
+                    && cutoffs.UnsettledRequestCount == 1);
+            AssertEqual("optional.cutoff.unsealed-does-not-bypass", false,
+                cutoffs.AllowsInvocationWinner(7, "Pawn_Optional", Epoch(91), 3, 4,
+                    requestOne, 11));
+            AssertEqual("optional.cutoff.seal-first-generation", 1,
+                cutoffs.SealGeneration(7, 4, 11));
+            AssertTrue("optional.cutoff.first-cycle-invocation-wins",
+                cutoffs.AllowsInvocationWinner(7, "Pawn_Optional", Epoch(91), 3, 4,
+                    requestOne, 11));
+            AssertTrue("optional.cutoff.register-second-generation",
+                cutoffs.TryRegister(7, "Pawn_Optional", Epoch(91), 3, 5,
+                    requestTwo, 12, 2));
+            cutoffs.SealGeneration(7, 5, 12);
+            AssertTrue("optional.cutoff.repeated-off-on-keeps-old-live-entry",
+                cutoffs.AllowsInvocationWinner(7, "Pawn_Optional", Epoch(91), 3, 4,
+                    requestOne, 11)
+                    && cutoffs.AllowsInvocationWinner(7, "Pawn_Optional", Epoch(91), 3, 5,
+                        requestTwo, 12));
+            AssertTrue("optional.cutoff.brainwipe-epoch-never-aliases",
+                !cutoffs.AllowsInvocationWinner(7, "Pawn_Optional", Epoch(92), 3, 4,
+                    requestOne, 11));
+            AssertTrue("optional.cutoff.settlement-prunes-one-exact-request",
+                cutoffs.Settle(requestOne));
+            AssertEqual("optional.cutoff.one-entry-remains", 1, cutoffs.EntryCount);
+            cutoffs.Settle(requestTwo);
+            AssertEqual("optional.cutoff.empty-prunes-all", 0, cutoffs.EntryCount);
+
+            var saturatedCutoffs = new MemoryInvokedGenerationCutoffTable();
+            AssertTrue("optional.cutoff.live-entry-registers-at-cap",
+                saturatedCutoffs.TryRegister(7, "Pawn_Optional", Epoch(91), 3, 4,
+                    requestOne, 11, 1));
+            AssertTrue("optional.cutoff.cap-refuses-without-evicting-live-entry",
+                !saturatedCutoffs.TryRegister(7, "Pawn_Optional", Epoch(91), 3, 5,
+                    requestTwo, 12, 1)
+                    && saturatedCutoffs.EntryCount == 1
+                    && saturatedCutoffs.UnsettledRequestCount == 1);
+            AssertTrue("optional.cutoff.saturated-generation-refuses",
+                !saturatedCutoffs.TryRegister(7, "Pawn_Optional", Epoch(91), 3,
+                    long.MaxValue, requestTwo, 12, 2));
+        }
+
+        private static SummaryWordingOpportunitySnapshot SummaryOpportunity(
+            string owner,
+            string epoch,
+            string root,
+            string summary,
+            int priority,
+            int salience,
+            long requested)
+        {
+            return new SummaryWordingOpportunitySnapshot
+            {
+                ownerPawnId = owner,
+                ownerEpochToken = epoch,
+                ownerCancellationGeneration = 2,
+                globalCancellationGeneration = 3,
+                optionalRequestInvalidationGeneration = 4,
+                rootId = OrdinalSegmentCodec.Segment(root),
+                summaryRecordId = OrdinalSegmentCodec.Segment(summary),
+                expectedRootStructuralRevision = 8,
+                expectedSummaryFactsRevision = 9,
+                expectedReducerRevision = 1,
+                expectedFormatRevision = 1,
+                expectedCategoryMask = 3,
+                projectionFingerprint = new string('a', 64),
+                requestedTick = requested,
+                dueTick = requested,
+                expiryTick = requested + 100,
+                configuredPriority = priority,
+                salience = salience
+            };
         }
 
         private static void TestAcceptedPromptRetention()

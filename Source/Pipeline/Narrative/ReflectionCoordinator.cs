@@ -25,6 +25,33 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Reports whether the shared natural-rest pass has anything to arbitrate. This is a pure wake
+        /// check only: it does not repair, expire, consume, or otherwise inspect an opportunity row.
+        /// </summary>
+        public static bool HasPendingCoordinatorWork(ReflectionCoordinatorWakeRequest request)
+        {
+            if (request == null)
+            {
+                return false;
+            }
+
+            if (request.hasNormalReflectionSource
+                || request.hasPendingMajorReflection
+                || request.pendingAmbientInteractionCount > 0
+                || request.pendingAmbientThoughtCount > 0
+                || request.pendingDayHediffCount > 0)
+            {
+                return true;
+            }
+
+            // Summary wording is allowed to wake this pass even when the ordinary reflection policy is
+            // Off, but only after the impure adapter has applied every effective memory/request gate.
+            return request.optionalMemoryRequestsEffective
+                && (request.pendingSummaryWordingCount > 0
+                    || request.hasOptionalMemoryCandidateSource);
+        }
+
+        /// <summary>
         /// Produces one deferred dispatch/consumption plan. Failed dispatch must leave the plan's state
         /// unconsumed; the impure N4 scheduler owns that final acknowledgement.
         /// </summary>

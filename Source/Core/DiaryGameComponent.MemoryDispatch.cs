@@ -94,6 +94,8 @@ namespace PawnDiary
         private void SettleLoadedMemoryDispatchRows()
         {
             memoryInvocationSequenceForSession = 0;
+            invokedGenerationCutoffs.Reset();
+            RepairLoadedSummaryWordingOpportunities();
             bool changed = false;
             IReadOnlyList<DiaryEvent> hotEvents = events?.AllEvents;
             for (int index = 0; hotEvents != null && index < hotEvents.Count; index++)
@@ -117,6 +119,14 @@ namespace PawnDiary
                 MemoryLoadSettlementPlan plan = MemoryDispatchPolicy.PlanLoadedRequestSettlement(
                     MemoryDispatchSavedAdapter.ToSnapshot(saved));
                 if (plan.valid) ApplyLoadedMemorySettlementAccounting(saved, plan);
+                if (saved?.requestPurposeToken == MemoryDispatchTokens.SummaryWording)
+                {
+                    SummaryWordingOpportunitySnapshot opportunity;
+                    if (MemoryOptionalAiPolicy.TryParseSummaryOpportunityKey(
+                            saved.eventIdOrOpportunityKey, out opportunity))
+                        ApplySummaryTerminal(
+                            opportunity, MemoryOptionalWordingDispositionTokens.Failed);
+                }
                 AppendTerminalMemoryAttemptAudits(
                     saved,
                     plan.valid
@@ -288,9 +298,9 @@ namespace PawnDiary
                 return null;
             }
 
-            DiaryEvent diaryEvent = events?.FindEvent(pending.context.eventIdOrOpportunityKey);
-            SavedActiveLogicalRequestV1 saved = diaryEvent?
-                .ActiveMemoryLogicalRequestForRole(pending.context.povRoleToken);
+            SavedActiveLogicalRequestV1 saved = FindActiveMemoryDispatchRequest(
+                pending.context.eventIdOrOpportunityKey,
+                pending.context.povRoleToken);
             if (!TransportIdentityMatches(saved, pending.context)) return null;
 
             SavedFrozenPromptVariantV1 variant = FindVariant(saved, pending.variantKey);
@@ -303,7 +313,7 @@ namespace PawnDiary
                 return null;
             }
 
-            MemoryDispatchFenceSnapshot fence = CurrentFence(saved);
+            MemoryDispatchFenceSnapshot fence = CurrentFence(saved, false);
             if (fence == null) return null;
             long invocationTick = Math.Max(1, Verse.Find.TickManager?.TicksGame ?? 0);
 
@@ -333,6 +343,18 @@ namespace PawnDiary
             {
                 return null;
             }
+            bool optionalMemoryRequest = MemoryDispatchTokens.IsOptionalPurpose(
+                saved.requestPurposeToken);
+            if (optionalMemoryRequest
+                && !invokedGenerationCutoffs.CanRegister(
+                    saved.sessionId,
+                    saved.ownerPawnId,
+                    saved.ownerEpochToken,
+                    saved.ownerCancellationGeneration,
+                    saved.globalCancellationGeneration,
+                    saved.logicalRequestId,
+                    planned.permit.invocationSequence,
+                    LlmClient.MaxQueuedRequests)) return null;
 
             SavedActiveLogicalAttemptV1 persistedAttempt;
             MemoryInvocationCommitPlan committed;
@@ -355,6 +377,20 @@ namespace PawnDiary
             }
 
             ApplyInvocationAccounting(state, variant, committed, saved, invocationTick);
+            if (optionalMemoryRequest
+                && !invokedGenerationCutoffs.TryRegister(
+                    saved.sessionId,
+                    saved.ownerPawnId,
+                    saved.ownerEpochToken,
+                    saved.ownerCancellationGeneration,
+                    saved.globalCancellationGeneration,
+                    saved.logicalRequestId,
+                    committed.permit.invocationSequence,
+                    LlmClient.MaxQueuedRequests))
+            {
+                RecordMemoryDiagnosticOnce("other", "dispatch");
+                return null;
+            }
             memoryInvocationSequenceForSession = committed.nextInvocationSequence;
             RebuildMemorySizeIndexes();
             return committed.permit;
@@ -369,10 +405,10 @@ namespace PawnDiary
                 return false;
             }
 
-            DiaryEvent diaryEvent = events?.FindEvent(permit.eventIdOrOpportunityKey);
-            SavedActiveLogicalRequestV1 saved = diaryEvent?
-                .ActiveMemoryLogicalRequestForRole(permit.povRoleToken);
-            MemoryDispatchFenceSnapshot fence = CurrentFence(saved);
+            SavedActiveLogicalRequestV1 saved = FindActiveMemoryDispatchRequest(
+                permit.eventIdOrOpportunityKey,
+                permit.povRoleToken);
+            MemoryDispatchFenceSnapshot fence = CurrentFence(saved, true);
             MemoryTerminalCallbackPlan plan = fence == null
                 ? new MemoryTerminalCallbackPlan()
                 : MemoryDispatchSavedAdapter.PlanTerminalCallback(
@@ -412,8 +448,27 @@ namespace PawnDiary
             out SavedActiveLogicalRequestV1 saved)
         {
             saved = null;
-            MemoryInvocationCommitPermitV1 permit = result?.memoryInvocationPermit;
             saved = diaryEvent?.ActiveMemoryLogicalRequestForRole(result.povRole);
+            if (saved == null)
+            {
+                return string.IsNullOrWhiteSpace(result?.memoryLogicalRequestId)
+                    && result?.memoryInvocationPermit == null;
+            }
+            return TryBeginMemoryResultApply(saved, result);
+        }
+
+        /// <summary>Shared result gate for DiaryEvent-owned and component-owned logical requests.</summary>
+        private bool TryBeginMemoryResultApply(
+            SavedActiveLogicalRequestV1 saved,
+            LlmGenerationResult result)
+        {
+            if (saved == null || result == null
+                || result.sessionId != LlmClient.CurrentSessionId
+                || saved.sessionId != result.sessionId
+                || !string.Equals(saved.eventIdOrOpportunityKey,
+                    result.eventId, StringComparison.Ordinal)
+                || !DiaryEvent.RoleEquals(saved.povRoleToken, result.povRole)) return false;
+            MemoryInvocationCommitPermitV1 permit = result?.memoryInvocationPermit;
             bool hasMemoryIdentity = !string.IsNullOrWhiteSpace(
                 result?.memoryLogicalRequestId);
             if (permit == null)
@@ -442,7 +497,7 @@ namespace PawnDiary
                     terminalOutcome,
                     MemoryDispatchTokens.Success,
                     StringComparison.Ordinal)) return false;
-            MemoryDispatchFenceSnapshot fence = CurrentFence(saved);
+            MemoryDispatchFenceSnapshot fence = CurrentFence(saved, true);
             MemoryTerminalCallbackPlan plan = fence == null
                 ? new MemoryTerminalCallbackPlan()
                 : MemoryDispatchSavedAdapter.PlanTerminalCallback(
@@ -479,6 +534,7 @@ namespace PawnDiary
             diaryEvent.SetActiveMemoryLogicalRequestForRole(povRole, null);
             MemoryDispatchRuntimeBridge.ReleaseLogicalRequestSendEnvelopes(
                 saved.logicalRequestId);
+            invokedGenerationCutoffs.Settle(saved.logicalRequestId);
             RebuildMemorySizeIndexes();
         }
 
@@ -510,23 +566,85 @@ namespace PawnDiary
                     == context.optionalRequestInvalidationGeneration;
         }
 
-        private MemoryDispatchFenceSnapshot CurrentFence(SavedActiveLogicalRequestV1 saved)
+        private MemoryDispatchFenceSnapshot CurrentFence(
+            SavedActiveLogicalRequestV1 saved,
+            bool allowInvocationWinner)
         {
             if (saved == null || saved.sessionId != LlmClient.CurrentSessionId) return null;
             PawnKnowledgeState state = FindCurrentMemoryEnvelope(saved.ownerPawnId);
-            if (state == null) return null;
+            if (state == null || !string.Equals(
+                    state.autobiographicalEpochToken,
+                    saved.ownerEpochToken,
+                    StringComparison.Ordinal)) return null;
+            bool optional = MemoryDispatchTokens.IsOptionalPurpose(saved.requestPurposeToken);
+            MemoryPolicySnapshot policy = MemoryEffectivePolicyProvider.Current;
+            long currentGlobal = optional
+                ? globalOptionalRequestCancellationGeneration
+                : saved.globalCancellationGeneration;
+            long currentOptional = optional
+                ? policy?.optionalRequestInvalidationGeneration ?? 0
+                : saved.optionalRequestInvalidationGeneration;
+            bool generationsCurrent = state.requestCancellationGeneration
+                    == saved.ownerCancellationGeneration
+                && currentGlobal == saved.globalCancellationGeneration
+                && currentOptional == saved.optionalRequestInvalidationGeneration;
+            long invokedSequence = GreatestCommittedInvocationSequence(saved);
+            bool invocationWinner = optional && allowInvocationWinner && !generationsCurrent
+                && invokedGenerationCutoffs.AllowsInvocationWinner(
+                    saved.sessionId,
+                    saved.ownerPawnId,
+                    saved.ownerEpochToken,
+                    saved.ownerCancellationGeneration,
+                    saved.globalCancellationGeneration,
+                    saved.logicalRequestId,
+                    invokedSequence);
+            if (!generationsCurrent && !invocationWinner) return null;
             return new MemoryDispatchFenceSnapshot
             {
                 sessionId = LlmClient.CurrentSessionId,
                 ownerPawnId = saved.ownerPawnId,
                 ownerEpochToken = state.autobiographicalEpochToken,
-                ownerCancellationGeneration = state.requestCancellationGeneration,
-                // M2 ships dormant under LegacyShadow. The settings-generation owners arrive with
-                // the M10 coordinator; until then the frozen values are the current values.
-                globalCancellationGeneration = saved.globalCancellationGeneration,
-                optionalRequestInvalidationGeneration =
-                    saved.optionalRequestInvalidationGeneration
+                ownerCancellationGeneration = invocationWinner
+                    ? saved.ownerCancellationGeneration
+                    : state.requestCancellationGeneration,
+                globalCancellationGeneration = invocationWinner
+                    ? saved.globalCancellationGeneration
+                    : currentGlobal,
+                optionalRequestInvalidationGeneration = invocationWinner
+                    ? saved.optionalRequestInvalidationGeneration
+                    : currentOptional
             };
+        }
+
+        private SavedActiveLogicalRequestV1 FindActiveMemoryDispatchRequest(
+            string eventOrOpportunityKey,
+            string povRole)
+        {
+            DiaryEvent diaryEvent = events?.FindEvent(eventOrOpportunityKey);
+            SavedActiveLogicalRequestV1 eventOwned = diaryEvent?
+                .ActiveMemoryLogicalRequestForRole(povRole);
+            if (eventOwned != null) return eventOwned;
+            for (int index = 0; activeMemoryCoordinatorRequests != null
+                && index < activeMemoryCoordinatorRequests.Count; index++)
+            {
+                SavedActiveLogicalRequestV1 candidate = activeMemoryCoordinatorRequests[index];
+                if (candidate != null
+                    && string.Equals(candidate.eventIdOrOpportunityKey,
+                        eventOrOpportunityKey, StringComparison.Ordinal)
+                    && DiaryEvent.RoleEquals(candidate.povRoleToken, povRole)) return candidate;
+            }
+            return null;
+        }
+
+        private static long GreatestCommittedInvocationSequence(
+            SavedActiveLogicalRequestV1 saved)
+        {
+            long greatest = 0;
+            for (int index = 0; saved?.activeAttempts != null
+                && index < saved.activeAttempts.Count; index++)
+                greatest = Math.Max(greatest,
+                    saved.activeAttempts[index]?.invocationSequence ?? 0);
+            return greatest;
         }
 
         private static SavedFrozenPromptVariantV1 FindVariant(

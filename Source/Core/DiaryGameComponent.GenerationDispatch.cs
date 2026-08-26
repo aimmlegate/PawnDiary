@@ -445,6 +445,12 @@ namespace PawnDiary
                 return DiaryTelemetryOutcome.LlmResultInvalid;
             }
 
+            DiaryTelemetryOutcome coordinatorOutcome;
+            if (TryApplyMemoryCoordinatorResult(result, out coordinatorOutcome))
+            {
+                return coordinatorOutcome;
+            }
+
             DiaryEvent diaryEvent = events.FindEvent(result.eventId);
             if (diaryEvent == null)
             {
@@ -524,6 +530,7 @@ namespace PawnDiary
                     diaryEvent.SetActiveMemoryLogicalRequestForRole(result.povRole, null);
                     MemoryDispatchRuntimeBridge.ReleaseLogicalRequestSendEnvelopes(
                         invalidExactRequest.logicalRequestId);
+                    invokedGenerationCutoffs.Settle(invalidExactRequest.logicalRequestId);
                     RebuildMemorySizeIndexes();
                     diaryEvent.MarkSkipped(
                         result.povRole,
@@ -555,6 +562,7 @@ namespace PawnDiary
                     diaryEvent.SetActiveMemoryLogicalRequestForRole(result.povRole, null);
                     MemoryDispatchRuntimeBridge.ReleaseSendEnvelope(
                         result.memoryInvocationPermit);
+                    invokedGenerationCutoffs.Settle(memoryRequest.logicalRequestId);
                     RebuildMemorySizeIndexes();
                 }
                 HandleFailedMainGeneration(diaryEvent, result);
@@ -604,6 +612,7 @@ namespace PawnDiary
                 diaryEvent.SetActiveMemoryLogicalRequestForRole(result.povRole, null);
                 MemoryDispatchRuntimeBridge.ReleaseSendEnvelope(
                     result.memoryInvocationPermit);
+                invokedGenerationCutoffs.Settle(memoryRequest.logicalRequestId);
                 RebuildMemorySizeIndexes();
             }
 

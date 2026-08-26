@@ -18,7 +18,13 @@ namespace PawnDiary
         /// </summary>
         internal bool ReconcilePublishedMemoryPolicy(MemoryPolicySnapshot published = null)
         {
-            if (published == null && MemoryPolicyIsReconciled()) return true;
+            if (published == null && MemoryPolicyIsReconciled())
+            {
+                EnsureOptionalMeaningfulEligibilityBaseline(
+                    MemoryEffectivePolicyProvider.Current,
+                    false);
+                return true;
+            }
             MemoryPolicySnapshot policy = published ?? MemoryEffectivePolicyProvider.Current;
             MemorySettingsPolicyFieldsV1 applied = AppliedMemoryPolicyFields();
             MemoryPolicyReconciliationPlan plan = MemoryPolicyNormalizer.PlanReconciliation(
@@ -31,7 +37,22 @@ namespace PawnDiary
                 RecordMemoryDiagnosticOnce("other", "policy_reconciling");
                 return false;
             }
-            if (plan.alreadyApplied) return true;
+            if (plan.alreadyApplied)
+            {
+                EnsureOptionalMeaningfulEligibilityBaseline(policy, false);
+                return true;
+            }
+            bool priorOptional = applied != null
+                && applied.useMemoriesInWriting
+                && applied.allowExtraMemoryAiRequests
+                && applied.optionalRequestInvalidationGeneration > 0
+                && applied.optionalRequestInvalidationGeneration < long.MaxValue;
+            bool nextOptional = policy.AllowsOptionalRequests;
+            bool priorQuiet = priorOptional && applied.occasionalMemoryReflections;
+            bool nextQuiet = policy.AllowsOccasionalReflections;
+            bool baselineOptionalSummaries = applied == null
+                || priorOptional != nextOptional
+                || applied.memoryCategoryMask != policy.memoryCategoryMask;
             List<SavedActiveLogicalRequestV1> retainedRequests =
                 PrepareRetainedOptionalRequests(plan.purgeUnsentOptionalWork);
             List<SavedSummaryWordingOpportunityV1> retainedOpportunities =
@@ -45,6 +66,12 @@ namespace PawnDiary
 
             if (plan.advanceGlobalOptionalCancellation)
             {
+                // Seal the exact old generation before publishing its successor. Only requests whose
+                // invocation permit already committed may use this bounded invocation-wins exception.
+                invokedGenerationCutoffs.SealGeneration(
+                    LlmClient.CurrentSessionId,
+                    globalOptionalRequestCancellationGeneration,
+                    memoryInvocationSequenceForSession);
                 // Max is the permanent nonallocating sentinel. Reconciliation still settles every
                 // unsent row and publishes the applied marker so normal capture/recall remain usable.
                 globalOptionalRequestCancellationGeneration =
@@ -53,6 +80,7 @@ namespace PawnDiary
             }
             if (plan.purgeUnsentOptionalWork)
             {
+                ReleasePurgedOptionalCoordinatorRequests(retainedRequests);
                 activeMemoryCoordinatorRequests = retainedRequests;
                 summaryWordingOpportunities = retainedOpportunities;
                 PurgeUnsentOptionalEventRequests();
@@ -61,6 +89,19 @@ namespace PawnDiary
             {
                 PendingEpisodeReplacement replacement = episodeReplacements[index];
                 replacement.owner.openCaptureEpisodes = replacement.episodes;
+            }
+
+            if (baselineOptionalSummaries)
+            {
+                // Turning work on or changing its category projection observes current deterministic
+                // summaries as already settled. A later natural fact change is the only creator.
+                BaselineOptionalSummariesWithoutCatchUp(policy);
+                EnsureOptionalMeaningfulEligibilityBaseline(policy, true);
+            }
+            else EnsureOptionalMeaningfulEligibilityBaseline(policy, false);
+            if (!priorQuiet && nextQuiet)
+            {
+                BaselineQuietCadenceWithoutCatchUp();
             }
 
             MemorySettingsPolicyFieldsV1 current = policy.ToFields();
@@ -84,6 +125,28 @@ namespace PawnDiary
             memoryM4IndexesDirty = true;
             RebuildMemorySizeIndexes();
             return true;
+        }
+
+        /// <summary>
+        /// Establishes the unsaved meaningful-work boundary. A game/load transition resets the
+        /// derivative to -1, so the first reconciled pass baselines current truth and cannot rederive a
+        /// provider backlog. Enabling optional work or changing its category projection forces the same
+        /// baseline; later policy passes leave it untouched.
+        /// </summary>
+        private void EnsureOptionalMeaningfulEligibilityBaseline(
+            MemoryPolicySnapshot policy,
+            bool force)
+        {
+            if (policy?.AllowsOptionalRequests != true)
+            {
+                optionalMeaningfulEligibilityBaselineTick = -1;
+                return;
+            }
+            if (force || optionalMeaningfulEligibilityBaselineTick < 0)
+            {
+                optionalMeaningfulEligibilityBaselineTick =
+                    Math.Max(0L, Find.TickManager?.TicksGame ?? 0);
+            }
         }
 
         /// <summary>True only after this save has applied the currently published fingerprint.</summary>
@@ -204,6 +267,25 @@ namespace PawnDiary
                 if (!remove) retained.Add(request);
             }
             return retained;
+        }
+
+        /// <summary>
+        /// Releases runtime-only callback/send claims for component rows removed by a settings fence.
+        /// Invoked rows are present in <paramref name="retained"/> and deliberately survive here so
+        /// their sealed generation can finish under invocation-wins.
+        /// </summary>
+        private void ReleasePurgedOptionalCoordinatorRequests(
+            List<SavedActiveLogicalRequestV1> retained)
+        {
+            for (int index = 0; activeMemoryCoordinatorRequests != null
+                && index < activeMemoryCoordinatorRequests.Count; index++)
+            {
+                SavedActiveLogicalRequestV1 request = activeMemoryCoordinatorRequests[index];
+                if (request == null || retained.Contains(request)) continue;
+                MemoryDispatchRuntimeBridge.ReleaseLogicalRequestSendEnvelopes(
+                    request.logicalRequestId);
+                invokedGenerationCutoffs.Settle(request.logicalRequestId);
+            }
         }
 
         private void PurgeUnsentOptionalEventRequests()
