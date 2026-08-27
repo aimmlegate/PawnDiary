@@ -1373,7 +1373,7 @@ namespace PawnDiary
         {
             if (tick < 0) return T("PawnDiary.Memory.Library.DateUnknown");
             if (cachedDateLabels.TryGetValue(tick, out string cached)) return cached;
-            return T("PawnDiary.Memory.Library.Day", tick / 60000L + 1L);
+            return FormatDateLabel(tick);
         }
 
         /// <summary>
@@ -1547,8 +1547,17 @@ namespace PawnDiary
         private void CacheDate(long tick)
         {
             if (tick < 0 || cachedDateLabels.ContainsKey(tick)) return;
+            cachedDateLabels[tick] = FormatDateLabel(tick);
+        }
+
+        /// <summary>
+        /// Uses the same full in-game calendar format on both cache hits and defensive cache misses.
+        /// Long values are clamped before entering RimWorld's int-based date helpers.
+        /// </summary>
+        private static string FormatDateLabel(long tick)
+        {
             int gameTick = (int)Math.Min(int.MaxValue, tick);
-            cachedDateLabels[tick] = GenDate.DateFullStringAt(
+            return GenDate.DateFullStringAt(
                 GenDate.TickGameToAbs(gameTick), Vector2.zero);
         }
 

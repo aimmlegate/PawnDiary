@@ -1404,6 +1404,18 @@ namespace MemoryThreadTests
             AssertEqual("optional.cutoff.unsealed-does-not-bypass", false,
                 cutoffs.AllowsInvocationWinner(7, "Pawn_Optional", Epoch(91), 3, 4,
                     requestOne, 11));
+            MemoryInvokedGenerationCutoffTable detachedCutoffs = cutoffs.Clone();
+            AssertEqual("optional.cutoff.detached-copy-seals-independently", 1,
+                detachedCutoffs.SealGeneration(7, 4, 11));
+            AssertTrue("optional.cutoff.detached-copy-allows-without-mutating-source",
+                detachedCutoffs.AllowsInvocationWinner(
+                    7, "Pawn_Optional", Epoch(91), 3, 4, requestOne, 11)
+                    && !cutoffs.AllowsInvocationWinner(
+                        7, "Pawn_Optional", Epoch(91), 3, 4, requestOne, 11));
+            AssertTrue("optional.cutoff.detached-settlement-does-not-prune-source",
+                detachedCutoffs.Settle(requestOne)
+                    && detachedCutoffs.UnsettledRequestCount == 0
+                    && cutoffs.UnsettledRequestCount == 1);
             AssertEqual("optional.cutoff.seal-first-generation", 1,
                 cutoffs.SealGeneration(7, 4, 11));
             AssertTrue("optional.cutoff.first-cycle-invocation-wins",

@@ -674,6 +674,21 @@ namespace PawnDiary
             slot.prompt = userPrompt;
         }
 
+        /// <summary>
+        /// Restores the exact pre-transaction pair after a component reconciliation fault. Unlike the
+        /// normal commit setter, this preserves a malformed historical half-pair byte-for-byte so the
+        /// failed transaction cannot silently repair unrelated saved state.
+        /// </summary>
+        internal void RestoreAcceptedPromptPairExact(
+            string povRole,
+            string systemPrompt,
+            string userPrompt)
+        {
+            ref PovSlot slot = ref SlotFor(povRole);
+            slot.acceptedSystemPrompt = systemPrompt;
+            slot.prompt = userPrompt;
+        }
+
         /// <summary>Returns the M2 request row owned by one POV, or null when no request is active.</summary>
         internal SavedActiveLogicalRequestV1 ActiveMemoryLogicalRequestForRole(string povRole)
         {

@@ -824,6 +824,39 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Creates a fully detached copy for a settings reconciliation plan. The live invocation-wins
+        /// table is not changed until the component publishes the complete prepared transaction.
+        /// </summary>
+        public MemoryInvokedGenerationCutoffTable Clone()
+        {
+            MemoryInvokedGenerationCutoffTable copy =
+                new MemoryInvokedGenerationCutoffTable();
+            for (int index = 0; index < entries.Count; index++)
+            {
+                MemoryInvokedGenerationCutoffEntry source = entries[index];
+                if (source == null) continue;
+                MemoryInvokedGenerationCutoffEntry entry =
+                    new MemoryInvokedGenerationCutoffEntry
+                    {
+                        sessionId = source.sessionId,
+                        ownerPawnId = source.ownerPawnId,
+                        ownerEpochToken = source.ownerEpochToken,
+                        ownerCancellationGeneration = source.ownerCancellationGeneration,
+                        globalCancellationGeneration = source.globalCancellationGeneration,
+                        cutoffInvocationSequence = source.cutoffInvocationSequence,
+                        sealedByCancellation = source.sealedByCancellation
+                    };
+                foreach (KeyValuePair<string, long> request in
+                    source.unsettledRequestSequences)
+                {
+                    entry.unsettledRequestSequences.Add(request.Key, request.Value);
+                }
+                copy.entries.Add(entry);
+            }
+            return copy;
+        }
+
         public bool CanRegister(
             long sessionId,
             string ownerPawnId,

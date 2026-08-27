@@ -18,7 +18,9 @@ namespace PawnDiary
     public partial class DiaryGameComponent
     {
         private const string OptionalMemoryReflectionDefName = "MemoryReflection";
-        private readonly MemoryInvokedGenerationCutoffTable invokedGenerationCutoffs =
+        // Reconciliation replaces this transient table with one fully prepared detached copy. No
+        // other code retains its identity, and all reads/writes occur on the main thread.
+        private MemoryInvokedGenerationCutoffTable invokedGenerationCutoffs =
             new MemoryInvokedGenerationCutoffTable();
         private readonly ConditionalWeakTable<SavedMemoryBlock, SummaryWakeProjectionCache>
             summaryWakeProjectionCache =
@@ -744,39 +746,6 @@ namespace PawnDiary
             ReplaceSummaryOpportunity(owner.pawnId, owner.autobiographicalEpochToken, winner);
         }
 
-        /// <summary>Baselines current summaries on enable, preventing any catch-up opportunity.</summary>
-        private void BaselineOptionalSummariesWithoutCatchUp(MemoryPolicySnapshot policy)
-        {
-            HashSet<PawnKnowledgeState> seen = new HashSet<PawnKnowledgeState>();
-            for (int index = 0; diaries != null && index < diaries.Count; index++)
-            {
-                PawnKnowledgeState owner = diaries[index]?.KnowledgeStateOrNull();
-                if (owner == null || !owner.IsCurrentSchema() || !seen.Add(owner)) continue;
-                foreach (SummaryWordingCurrentSnapshot summary in CurrentOwnerSummaries(owner, policy))
-                    ApplySummaryTerminal(summary, MemoryOptionalWordingDispositionTokens.Disabled);
-            }
-            summaryWordingOpportunities.Clear();
-        }
-
-        /// <summary>Enabling quiet work observes today without rolling or creating a catch-up page.</summary>
-        private void BaselineQuietCadenceWithoutCatchUp()
-        {
-            int day = CurrentDayIndex;
-            for (int index = 0; diaries != null && index < diaries.Count; index++)
-            {
-                PawnDiaryRecord diary = diaries[index];
-                PawnKnowledgeState owner = diary?.KnowledgeStateOrNull();
-                if (owner == null || !owner.IsCurrentSchema()) continue;
-                PawnReflectionState reflection = diary.EnsureReflectionState();
-                reflection.memoryReflectionSchemaVersion = 1;
-                reflection.memoryOwnerEpochToken = owner.autobiographicalEpochToken;
-                reflection.lastQuietMemoryEvaluatedAbsoluteDay = day;
-                reflection.lastQuietMemoryDecisionKey =
-                    MemoryDeterministicRngV1.CreateDecisionKey(
-                        owner.pawnId, owner.autobiographicalEpochToken, day, false);
-            }
-        }
-
         /// <summary>Deterministically repairs duplicate/malformed saved owner slots after load.</summary>
         private void RepairLoadedSummaryWordingOpportunities()
         {
@@ -927,10 +896,28 @@ namespace PawnDiary
             SummaryWordingCurrentSnapshot current,
             string disposition)
         {
+            return ApplySummaryTerminal(
+                FindCurrentMemoryEnvelope(current?.ownerPawnId),
+                current,
+                disposition,
+                true);
+        }
+
+        /// <summary>
+        /// Applies a deterministic Summary baseline to an explicitly supplied owner. Settings
+        /// reconciliation passes a detached owner copy and suppresses the global UI fence until the
+        /// complete component transaction publishes.
+        /// </summary>
+        private static bool ApplySummaryTerminal(
+            PawnKnowledgeState owner,
+            SummaryWordingCurrentSnapshot current,
+            string disposition,
+            bool publishStateVersion)
+        {
             SavedMemoryThreadRoot root;
             SavedMemoryBlock block;
             if (current == null
-                || !TryFindSummary(FindCurrentMemoryEnvelope(current.ownerPawnId),
+                || !TryFindSummary(owner,
                     current.rootId, current.summaryRecordId, out root, out block)) return false;
             SavedMemorySummaryPayload payload = block.summaryPayload;
             payload.lastSettledWordingFingerprint = current.projectionFingerprint;
@@ -941,8 +928,7 @@ namespace PawnDiary
             payload.optionalLlmFingerprint = string.Empty;
             payload.optionalLlmFormatRevision = 0;
             payload.optionalLlmCategoryMask = 0;
-            AdvanceSummaryStatusRevision(
-                FindCurrentMemoryEnvelope(current.ownerPawnId), root);
+            AdvanceSummaryStatusRevision(owner, root, publishStateVersion);
             return true;
         }
 
@@ -958,7 +944,8 @@ namespace PawnDiary
 
         private static void AdvanceSummaryStatusRevision(
             PawnKnowledgeState owner,
-            SavedMemoryThreadRoot root)
+            SavedMemoryThreadRoot root,
+            bool publishStateVersion = true)
         {
             bool changed = false;
             long next;
@@ -974,7 +961,7 @@ namespace PawnDiary
             }
             // The Library's detached owner cache fingerprints include these revisions. Advance the
             // common loaded-state fence so its next ordinary update rebuilds the changed wording row.
-            if (changed) DiaryStateVersion.Bump();
+            if (changed && publishStateVersion) DiaryStateVersion.Bump();
         }
 
         private static SummaryWordingOpportunitySnapshot NewSummaryOpportunity(

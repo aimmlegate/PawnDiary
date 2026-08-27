@@ -4,6 +4,7 @@
 // It compares the mutable settings adapter to the immutable publication currently consumed by the
 // loaded component, then exercises the bounded stage/activate/cancel FIFO and redacted setup failure.
 using System;
+using System.Reflection;
 using RimTestRedux;
 
 namespace PawnDiary.RimTests
@@ -85,6 +86,115 @@ namespace PawnDiary.RimTests
             Require(MemoryEffectivePolicyProvider.Current.fingerprint == published.fingerprint
                     && component.MemoryPolicyIsReconciled(),
                 "Detached settings planning unexpectedly published or reconciled a draft.");
+        }
+
+        /// <summary>
+        /// A component fault after prepared state is swapped restores the old applied marker and
+        /// eligibility boundary; one retry then advances the applied revision exactly once.
+        /// </summary>
+        [Test]
+        public static void ReconciliationFaultRestoresCompleteRetryMarker()
+        {
+            DiaryGameComponent component = DiaryGameComponent.Instance;
+            MemoryPolicySnapshot published = MemoryEffectivePolicyProvider.Current;
+            Require(component != null && published != null && component.MemoryPolicyIsReconciled(),
+                "The reconciliation fault fixture requires a loaded reconciled game.");
+
+            MemorySettingsBounds bounds = MemoryPolicyNormalizer.NormalizeBounds(
+                MemoryPolicyDefAdapter.Bounds());
+            MemorySettingsPolicyFieldsV1 draftFields = published.ToFields();
+            draftFields.usePawnBackground = !draftFields.usePawnBackground;
+            MemoryPolicySnapshot candidate = MemoryPolicyNormalizer.Normalize(
+                MemoryPolicyNormalizer.CurrentSettingsSchemaVersion,
+                draftFields,
+                bounds);
+            Require(candidate.fingerprint != published.fingerprint,
+                "The reconciliation fault fixture could not create a harmless detached policy.");
+
+            SavedMemoryAppliedPolicyStateV1 priorState =
+                GetPrivate<SavedMemoryAppliedPolicyStateV1>(
+                    component, "lastAppliedMemoryPolicyState");
+            string priorFingerprint = GetPrivate<string>(
+                component, "lastAppliedMemoryPolicyFingerprint");
+            long priorRevision = GetPrivate<long>(
+                component, "lastAppliedMemoryPolicyRevision");
+            long priorBaseline = GetPrivate<long>(
+                component, "optionalMeaningfulEligibilityBaselineTick");
+            long priorGlobalGeneration = GetPrivate<long>(
+                component, "globalOptionalRequestCancellationGeneration");
+            object priorCutoffs = GetPrivate<object>(component, "invokedGenerationCutoffs");
+            bool priorM4Dirty = GetPrivate<bool>(component, "memoryM4IndexesDirty");
+            long priorM4Generation = GetPrivate<long>(component, "memoryM4IndexGeneration");
+            long priorSizeGeneration = GetPrivate<long>(component, "memorySizeIndexGeneration");
+            long priorFullRebuildCount = GetPrivate<long>(
+                component, "memorySizeIndexFullRebuildCount");
+
+            bool injected = false;
+            bool faultObserved = false;
+            try
+            {
+                component.SetMemoryPolicyReconciliationFaultForTests(stage =>
+                {
+                    if (stage != "after_saved_swap") return;
+                    injected = true;
+                    throw new ExpectedMemoryPolicyReconciliationFault();
+                });
+                try
+                {
+                    component.ReconcilePublishedMemoryPolicy(candidate);
+                }
+                catch (ExpectedMemoryPolicyReconciliationFault)
+                {
+                    faultObserved = true;
+                }
+                finally
+                {
+                    component.SetMemoryPolicyReconciliationFaultForTests(null);
+                }
+
+                Require(injected && faultObserved,
+                    "The component reconciliation fault boundary was not reached.");
+                Require(ReferenceEquals(priorState,
+                            GetPrivate<SavedMemoryAppliedPolicyStateV1>(
+                                component, "lastAppliedMemoryPolicyState"))
+                        && priorFingerprint == GetPrivate<string>(
+                            component, "lastAppliedMemoryPolicyFingerprint")
+                        && priorRevision == GetPrivate<long>(
+                            component, "lastAppliedMemoryPolicyRevision")
+                        && priorBaseline == GetPrivate<long>(
+                            component, "optionalMeaningfulEligibilityBaselineTick")
+                        && priorGlobalGeneration == GetPrivate<long>(
+                            component, "globalOptionalRequestCancellationGeneration")
+                        && ReferenceEquals(priorCutoffs,
+                            GetPrivate<object>(component, "invokedGenerationCutoffs")),
+                    "A failed reconciliation left a partial component tuple or retry marker.");
+
+                Require(component.ReconcilePublishedMemoryPolicy(candidate)
+                        && candidate.fingerprint == GetPrivate<string>(
+                            component, "lastAppliedMemoryPolicyFingerprint")
+                        && GetPrivate<long>(component, "lastAppliedMemoryPolicyRevision")
+                            == priorRevision + 1
+                        && GetPrivate<long>(
+                            component, "globalOptionalRequestCancellationGeneration")
+                            == priorGlobalGeneration,
+                    "The reconciliation retry did not commit exactly one applied revision.");
+            }
+            finally
+            {
+                component.SetMemoryPolicyReconciliationFaultForTests(null);
+                SetPrivate(component, "lastAppliedMemoryPolicyState", priorState);
+                SetPrivate(component, "lastAppliedMemoryPolicyFingerprint", priorFingerprint);
+                SetPrivate(component, "lastAppliedMemoryPolicyRevision", priorRevision);
+                SetPrivate(component, "optionalMeaningfulEligibilityBaselineTick", priorBaseline);
+                SetPrivate(component,
+                    "globalOptionalRequestCancellationGeneration", priorGlobalGeneration);
+                SetPrivate(component, "invokedGenerationCutoffs", priorCutoffs);
+                SetPrivate(component, "memoryM4IndexesDirty", priorM4Dirty);
+                SetPrivate(component, "memoryM4IndexGeneration", priorM4Generation);
+                SetPrivate(component, "memorySizeIndexGeneration", priorSizeGeneration);
+                SetPrivate(component,
+                    "memorySizeIndexFullRebuildCount", priorFullRebuildCount);
+            }
         }
 
         /// <summary>
@@ -174,6 +284,31 @@ namespace PawnDiary.RimTests
         private static void Require(bool condition, string message)
         {
             PawnDiaryMemoryM11RuntimeFixture.Require(condition, message);
+        }
+
+        private static T GetPrivate<T>(DiaryGameComponent component, string fieldName)
+        {
+            FieldInfo field = typeof(DiaryGameComponent).GetField(
+                fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+            Require(field != null,
+                "The reconciliation fixture field '" + fieldName + "' was renamed.");
+            return (T)field.GetValue(component);
+        }
+
+        private static void SetPrivate<T>(
+            DiaryGameComponent component,
+            string fieldName,
+            T value)
+        {
+            FieldInfo field = typeof(DiaryGameComponent).GetField(
+                fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+            Require(field != null,
+                "The reconciliation fixture field '" + fieldName + "' was renamed.");
+            field.SetValue(component, value);
+        }
+
+        private sealed class ExpectedMemoryPolicyReconciliationFault : Exception
+        {
         }
     }
 }

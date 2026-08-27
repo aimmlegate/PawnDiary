@@ -353,6 +353,7 @@ namespace PawnDiary
             lastIssuedMemoryLogicalRequestSequence = 0;
             activeMemoryCoordinatorRequests.Clear();
             invokedGenerationCutoffs.Reset();
+            memoryPolicyReconciliationFaultForTests = null;
             optionalMeaningfulEligibilityBaselineTick = -1;
             ResetMemoryMaintenanceTransient(true);
             ResetMemoryLibraryTransient();

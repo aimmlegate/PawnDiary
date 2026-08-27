@@ -31,6 +31,7 @@ namespace MemoryThreadTests
             ExactOwnerSnapshotExpiryInvalidatesWarmCache();
             MaintenanceInvalidationIsWiredToTheRepository();
             ListCardCacheIdentitySurvivesEquivalentReprojection();
+            DateFormattingIsCachePathIndependent();
             ActivationAndNoGameGateFailClosed();
             MemoryLocalizationHasEnglishRussianPlaceholderParity();
             return assertions;
@@ -178,6 +179,21 @@ namespace MemoryThreadTests
                 root, "Source", "Core", "DiaryGameComponent.MemoryM4Store.cs"));
             Equal("m9.maintenance.repair-commits-budget-projection", true,
                 storeSource.Contains("ApplyMemoryMigrationBudgetProjection(budget, budgetProjection);"));
+        }
+
+        private static void DateFormattingIsCachePathIndependent()
+        {
+            string root = FindRepositoryRoot();
+            string layoutSource = File.ReadAllText(Path.Combine(
+                root, "Source", "UI", "Dialog_MemoryLibrary.Layout.cs"));
+            Equal("m9.date.cache-miss-uses-shared-formatter", true,
+                layoutSource.Contains("return FormatDateLabel(tick);"));
+            Equal("m9.date.cache-fill-uses-shared-formatter", true,
+                layoutSource.Contains(
+                    "cachedDateLabels[tick] = FormatDateLabel(tick);"));
+            Equal("m9.date.no-cache-dependent-day-fallback", false,
+                layoutSource.Contains(
+                    "return T(\"PawnDiary.Memory.Library.Day\""));
         }
 
         private static void ListCardCacheIdentitySurvivesEquivalentReprojection()
