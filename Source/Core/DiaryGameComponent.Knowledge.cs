@@ -953,14 +953,15 @@ namespace PawnDiary
         /// Stores classifier drafts on their owners: deterministic dedup (§2.2), per-pawn cap
         /// enforcement at insert (oldest of that owner drops first).
         /// </summary>
-        private void PersistDrafts(List<ImportantMemoryDraft> drafts, bool persistLegacy = true)
+        private bool PersistDrafts(List<ImportantMemoryDraft> drafts, bool persistLegacy = true)
         {
             if (drafts == null || drafts.Count == 0)
             {
-                return;
+                return false;
             }
 
             KnowledgePolicySnapshot policy = DiaryKnowledgePolicy.Snapshot();
+            bool factualAdmitted = false;
             for (int i = 0; i < drafts.Count; i++)
             {
                 ImportantMemoryDraft draft = drafts[i];
@@ -977,12 +978,13 @@ namespace PawnDiary
 
                 // Current-schema factual capture is canonical in CurrentRelease and a shadow write in
                 // LegacyShadow. Save/category policy remains independent of page/request scheduling.
-                PersistFactualDraft(draft.factual);
+                factualAdmitted |= PersistFactualDraft(draft.factual);
 
                 // A current owner never receives a second legacy copy. A still-raw migration-pending
                 // owner may keep accepting raw evidence, but it cannot mix in a new-format row; the
                 // next migration pass will consume the complete legacy input atomically.
-                if (!persistLegacy || diary.knowledgeState?.IsCurrentSchema() == true) continue;
+                if (!persistLegacy || MemorySystemActivationGate.IsCurrentRelease
+                    || diary.knowledgeState?.IsCurrentSchema() == true) continue;
 
                 PawnKnowledgeState state = EnsureKnowledgeState(diary);
                 if (state.HasDedupKey(draft.record.dedupKey))
@@ -993,30 +995,37 @@ namespace PawnDiary
                 state.records.Add(ImportantMemoryRecord.FromSnapshot(draft.record));
                 EnforcePerPawnKnowledgeCap(state, policy.maxRecordsPerPawn);
             }
+            return factualAdmitted;
         }
 
         /// <summary>
         /// Maps one pure M7 draft into saved rows and asks the atomic owner store to admit it. Every
         /// refusal is optional: authoritative pages and mandatory observation baselines stay committed.
         /// </summary>
-        private void PersistFactualDraft(FactualMemoryDraft draft)
+        private bool PersistFactualDraft(FactualMemoryDraft draft)
         {
-            if (draft == null || string.IsNullOrWhiteSpace(draft.ownerPawnId)) return;
+            if (draft == null || string.IsNullOrWhiteSpace(draft.ownerPawnId)) return false;
+            bool requiredLifecycleLandmark = FactualDraftIsRequiredLifecycleLandmark(draft);
             string captureStatus;
-            if (!MemoryCategoryAllowsCapture(draft.category, out captureStatus)) return;
+            if (!requiredLifecycleLandmark
+                && !MemoryCategoryAllowsCapture(draft.category, out captureStatus)) return false;
 
             PawnDiaryRecord diary = FindDiaryByPawnId(draft.ownerPawnId);
-            if (diary == null) return;
+            if (diary == null) return false;
 
             // Create a writable envelope only after the capture policy admits this occurrence. Raw
             // migration-pending owners stay raw, and a disabled category does not consume an owner slot.
             PawnKnowledgeState state = diary.knowledgeState;
             if (state == null && MemorySystemActivationGate.IsCurrentRelease)
+            {
+                int ownerCap = (int)ReadCapacityTuplePart("ownerSlotTriple", 0, 1000, 4000);
+                if (CountMemoryObservationActiveOwners(ownerCap + 1) >= ownerCap) return false;
                 state = EnsureKnowledgeState(diary);
-            if (state == null || !state.IsCurrentSchema()) return;
+            }
+            if (state == null || !state.IsCurrentSchema()) return false;
 
             FactualOwnerEpochEnrollment enrollment = BeginFactualOwnerEpochEnrollment(state);
-            if (enrollment == null) return;
+            if (enrollment == null) return false;
             string recordId;
             if (!MemoryIdentityCodec.TryCreateRecordId(
                     new MemoryRecordIdentity
@@ -1030,7 +1039,7 @@ namespace PawnDiary
                     out recordId))
             {
                 RollBackFactualOwnerEpochEnrollment(enrollment);
-                return;
+                return false;
             }
 
             SavedMemoryBlock block = new SavedMemoryBlock
@@ -1050,7 +1059,7 @@ namespace PawnDiary
                 originalEventTick = Math.Max(0, draft.originalEventTick),
                 automaticWording = draft.automaticWording ?? string.Empty,
                 primarySubject = ToSavedSubject(draft.primarySubject),
-                requiredLifecycleLandmark = FactualDraftIsRequiredLifecycleLandmark(draft),
+                requiredLifecycleLandmark = requiredLifecycleLandmark,
                 providerExposureState = "not_sent"
             };
             for (int i = 0; i < draft.secondarySubjects.Count; i++)
@@ -1064,7 +1073,7 @@ namespace PawnDiary
                 if (fact == null)
                 {
                     RollBackFactualOwnerEpochEnrollment(enrollment);
-                    return;
+                    return false;
                 }
                 block.facts.Add(new SavedMemoryCanonicalFact
                 {
@@ -1117,6 +1126,7 @@ namespace PawnDiary
             {
                 RollBackFactualOwnerEpochEnrollment(enrollment);
             }
+            return admission.outcome == MemoryStoreMutationOutcome.Admitted;
         }
 
         /// <summary>
@@ -1154,7 +1164,7 @@ namespace PawnDiary
 
             int ownerCap = (int)ReadCapacityTuplePart("ownerSlotTriple", 0, 1000, 4000);
             int activeOwners = CountMemoryObservationActiveOwners(ownerCap + 1);
-            if (activeOwners > ownerCap) return null;
+            if (activeOwners >= ownerCap) return null;
 
             int epochCarrierScanCap = checked(ownerCap * 256);
             if (!CanBoundMemoryObservationEpochCarrierScan(epochCarrierScanCap)) return null;
@@ -1218,6 +1228,10 @@ namespace PawnDiary
                 if (string.Equals(
                         draft.facts[index]?.factKind,
                         KnowledgeTokens.EventKindFactionJoined,
+                        StringComparison.Ordinal)
+                    || string.Equals(
+                        draft.facts[index]?.factKind,
+                        KnowledgeTokens.EventKindBrainwipeCompleted,
                         StringComparison.Ordinal)) return true;
             }
             return false;

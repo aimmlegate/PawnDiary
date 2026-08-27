@@ -37,6 +37,8 @@ namespace PawnDiary
         public long combinedOwnerBytes;
         public long activeGlobalBytes;
         public long combinedGlobalBytes;
+        public long brainwipeMetadataReserveBytes;
+        public long brainwipeReclaimableFenceBytes;
     }
 
     internal enum MemoryBudgetOutcome
@@ -143,6 +145,28 @@ namespace PawnDiary
                 || globalCombinedNew > limits.combinedGlobalBytes)
             {
                 return Full(refused, MemoryBudgetOutcome.GlobalCombinedFull);
+            }
+
+            if (limits.brainwipeMetadataReserveBytes > 0)
+            {
+                if (!MemoryBrainwipeHeadroomPolicy.RetainsMetadataReserve(
+                        globalActiveNew,
+                        globalImportedNew,
+                        limits.activeGlobalBytes,
+                        limits.combinedGlobalBytes,
+                        limits.brainwipeMetadataReserveBytes,
+                        Math.Max(0, limits.brainwipeReclaimableFenceBytes)))
+                {
+                    long activeHeadroom = limits.activeGlobalBytes - globalActiveNew;
+                    long reclaimed = Math.Max(0, limits.brainwipeReclaimableFenceBytes);
+                    return Full(refused,
+                        activeHeadroom >= 0
+                            && (activeHeadroom >= limits.brainwipeMetadataReserveBytes
+                                || reclaimed >= limits.brainwipeMetadataReserveBytes
+                                    - activeHeadroom)
+                            ? MemoryBudgetOutcome.GlobalCombinedFull
+                            : MemoryBudgetOutcome.GlobalActiveFull);
+                }
             }
 
             return new MemoryBudgetDecision

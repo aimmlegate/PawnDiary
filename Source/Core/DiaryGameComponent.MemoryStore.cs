@@ -506,6 +506,59 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Builds the shared byte ceilings for every steady-state admission. The Brainwipe reserve
+        /// is derived from the same normalized capacity vector as the benchmark manifest; at most
+        /// one exact empty fence may contribute reclaimable bytes.
+        /// </summary>
+        private MemoryBudgetLimits CurrentMemoryBudgetLimits()
+        {
+            long reserve;
+            if (!MemoryBrainwipeHeadroomPolicy.TryComputeMetadataReserveBytes(
+                    ReadCapacityLong("rawIdentitySegmentUnits", 128, 512),
+                    ReadCapacityTuplePart("compositeKeyUnits", 1, 2048, 8192),
+                    ReadCapacityTuplePart("devReasonCountTextCaps", 1, 80, 320),
+                    out reserve)) reserve = long.MaxValue;
+            return new MemoryBudgetLimits
+            {
+                activeOwnerBytes = ReadCapacityLong(
+                    "activeOwnerBytes", 196608, 2097152),
+                combinedOwnerBytes = ReadCapacityLong(
+                    "combinedOwnerBytes", 262144, 4194304),
+                activeGlobalBytes = ReadCapacityLong(
+                    "activeGlobalBytes", 6291456, 25165824),
+                combinedGlobalBytes = ReadCapacityLong(
+                    "combinedGlobalBytes", 8388608, 33554432),
+                brainwipeMetadataReserveBytes = reserve,
+                // Conservatively retain the reserve as unused bytes. The pure contract supports
+                // reclaiming one eligible empty fence, but steady admissions need not spend that
+                // allowance and therefore never scan the owner directory on their hot path.
+                brainwipeReclaimableFenceBytes = 0
+            };
+        }
+
+        /// <summary>
+        /// Refreshes the component/request subtotal and one mutated owner. Routine admissions do not
+        /// change any sibling owner, so a full colony byte walk would be redundant.
+        /// </summary>
+        private bool RefreshMemorySizeIndexForOwner(PawnKnowledgeState state)
+        {
+            if (state == null || string.IsNullOrWhiteSpace(state.pawnId)) return false;
+            HashSet<string> currentOwnerIds = new HashSet<string>(
+                memoryByteTotalsByOwner.Keys, StringComparer.Ordinal);
+            currentOwnerIds.Add(state.pawnId);
+            Dictionary<string, long> requestBytesByOwner;
+            long componentBytes = SizeComponentMemoryBytes(
+                currentOwnerIds, out requestBytesByOwner);
+            long requestBytes = requestBytesByOwner.TryGetValue(
+                state.pawnId, out long measured) ? measured : 0;
+            MemoryOwnerByteTotals totals = MeasureOwner(state, requestBytes);
+            if (componentBytes < 0 || !totals.valid) return false;
+            memoryComponentActiveBytesTotal = componentBytes;
+            memoryByteTotalsByOwner[state.pawnId] = totals;
+            return true;
+        }
+
+        /// <summary>
         /// Sizes the component-global memory metadata through the REGISTERED
         /// DiaryGameComponentMemory row shape (§T17.5): every §T6.9 scalar, the applied-policy
         /// singleton, and each owned list with its framing — then subtracts owner-attributed
@@ -821,17 +874,7 @@ namespace PawnDiary
             if (ownerRequests >= ownerRequestCap || globalRequests >= globalRequestCap)
                 return false;
 
-            MemoryBudgetLimits limits = new MemoryBudgetLimits
-            {
-                activeOwnerBytes = ReadCapacityLong(
-                    "activeOwnerBytes", 196608, 2097152),
-                combinedOwnerBytes = ReadCapacityLong(
-                    "combinedOwnerBytes", 262144, 4194304),
-                activeGlobalBytes = ReadCapacityLong(
-                    "activeGlobalBytes", 6291456, 25165824),
-                combinedGlobalBytes = ReadCapacityLong(
-                    "combinedGlobalBytes", 8388608, 33554432)
-            };
+            MemoryBudgetLimits limits = CurrentMemoryBudgetLimits();
             MemoryBudgetDecision decision = ActiveMemoryPayloadBudget.TryAdmit(
                 limits,
                 owner.activeBytes,
@@ -1107,6 +1150,7 @@ namespace PawnDiary
             "legacy_report_truncated",
             "size_invalid",
             "capacity_refused",
+            "brainwipe_capacity",
             "newer_reducer_revision",
             "repair_refused",
             "memory_preparation_failed",

@@ -55,6 +55,9 @@
   <Diary_ImpEvent_FactionJoined.label>вступление в поселение</Diary_ImpEvent_FactionJoined.label>
   <Diary_ImpEvent_FactionJoined.lineTemplate>вступление в поселение</Diary_ImpEvent_FactionJoined.lineTemplate>
 
+  <Diary_ImpEvent_BrainwipeCompleted.label>завершение стирания памяти</Diary_ImpEvent_BrainwipeCompleted.label>
+  <Diary_ImpEvent_BrainwipeCompleted.lineTemplate>пробуждение после стирания памяти без воспоминаний</Diary_ImpEvent_BrainwipeCompleted.lineTemplate>
+
   <Diary_ImpEvent_GrowthMoment.label>этап взросления</Diary_ImpEvent_GrowthMoment.label>
   <Diary_ImpEvent_GrowthMoment.lineTemplate>этап взросления</Diary_ImpEvent_GrowthMoment.lineTemplate>
 

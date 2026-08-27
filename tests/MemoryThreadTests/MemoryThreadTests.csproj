@@ -27,6 +27,7 @@
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryThreadRepairPolicy.cs" Link="MemoryThreadRepairPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryThreadLookupPolicy.cs" Link="MemoryThreadLookupPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryMaintenancePolicy.cs" Link="MemoryMaintenancePolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryBrainwipeHeadroomPolicy.cs" Link="MemoryBrainwipeHeadroomPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\KnowledgeEvictionPlanner.cs" Link="KnowledgeEvictionPlanner.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\KnowledgeContracts.cs" Link="KnowledgeContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Knowledge\MemoryThreadRoutingPolicy.cs" Link="MemoryThreadRoutingPolicy.cs" />

@@ -30,6 +30,7 @@ namespace MemoryThreadTests
             TestPressurePlannerOrderingAndRefusal();
             TestExactPlacementAndLookup();
             TestElapsedMaintenanceSlices();
+            TestBrainwipeFenceDirectoryHeadroom();
             TestTargetBoundaryMatrix();
             TestTtlNeverRefreshes();
             TestPerFactExpiryKeepsRemainingReferences();
@@ -40,6 +41,7 @@ namespace MemoryThreadTests
             TestCanonicalAggregationCatalog();
             TestAnchorAwareSummaryPressure();
             TestRollingContributionsMoveOnClosure();
+            TestClosedSummaryFoldReachesFixedPoint();
             TestRevisionSaturationRefusesMutation();
             TestRepairPreservesNonCollidingEvidence();
             TestSummaryReferenceBounds();
@@ -52,6 +54,87 @@ namespace MemoryThreadTests
             TestRepairPublicationWinnerAndDiagnostic();
             TestChapterCursorNeverRewinds();
             return assertions;
+        }
+
+        private static void TestBrainwipeFenceDirectoryHeadroom()
+        {
+            long reserve;
+            True("m4.brainwipe.reserve.derived",
+                MemoryBrainwipeHeadroomPolicy.TryComputeMetadataReserveBytes(
+                    128, 2048, 80, out reserve));
+            Equal("m4.brainwipe.reserve.golden", 7062L, reserve);
+            False("m4.brainwipe.reserve.overflow-refuses",
+                MemoryBrainwipeHeadroomPolicy.TryComputeMetadataReserveBytes(
+                    long.MaxValue, long.MaxValue, long.MaxValue, out reserve));
+            True("m4.brainwipe.reserve.exact-headroom",
+                MemoryBrainwipeHeadroomPolicy.RetainsMetadataReserve(
+                    900, 400, 1000, 1500, 100, 0));
+            False("m4.brainwipe.reserve.active-short",
+                MemoryBrainwipeHeadroomPolicy.RetainsMetadataReserve(
+                    901, 400, 1000, 1500, 100, 0));
+            False("m4.brainwipe.reserve.combined-short",
+                MemoryBrainwipeHeadroomPolicy.RetainsMetadataReserve(
+                    900, 501, 1000, 1500, 100, 0));
+            True("m4.brainwipe.reserve.one-fence-reclaim",
+                MemoryBrainwipeHeadroomPolicy.RetainsMetadataReserve(
+                    950, 400, 1000, 1500, 100, 50));
+
+            MemoryBrainwipeFenceCandidate eligibleB = new MemoryBrainwipeFenceCandidate
+            {
+                ownerPawnId = "B",
+                currentSchema = true,
+                epochFenceOnly = true,
+                hasEpoch = true
+            };
+            MemoryBrainwipeFenceCandidate eligibleA = new MemoryBrainwipeFenceCandidate
+            {
+                ownerPawnId = "A",
+                currentSchema = true,
+                epochFenceOnly = true,
+                hasEpoch = true
+            };
+            MemoryBrainwipeDirectoryPlan existing =
+                MemoryBrainwipeHeadroomPolicy.PlanDirectoryAdmission(
+                    "target", true, 1001, 1001,
+                    new[] { eligibleA, eligibleB });
+            True("m4.brainwipe.existing-slot-valid",
+                existing.valid && !existing.requiresDisplacement);
+            MemoryBrainwipeDirectoryPlan spare =
+                MemoryBrainwipeHeadroomPolicy.PlanDirectoryAdmission(
+                    "target", false, 1000, 1001,
+                    new[] { eligibleA, eligibleB });
+            False("m4.brainwipe.spare-no-displacement", spare.requiresDisplacement);
+
+            MemoryBrainwipeDirectoryPlan full =
+                MemoryBrainwipeHeadroomPolicy.PlanDirectoryAdmission(
+                    "target", false, 1001, 1001,
+                    new[] { eligibleB, eligibleA });
+            True("m4.brainwipe.full-requires-displacement", full.requiresDisplacement);
+            Equal("m4.brainwipe.lowest-eligible", "A", full.displacedOwnerPawnId);
+
+            eligibleA.hasAutobiographicalPayload = true;
+            eligibleB.hasActiveRequestOrOpportunity = true;
+            MemoryBrainwipeDirectoryPlan protectedFull =
+                MemoryBrainwipeHeadroomPolicy.PlanDirectoryAdmission(
+                    "target", false, 1001, 1001,
+                    new[] { eligibleA, eligibleB });
+            True("m4.brainwipe.protected-full-still-mandatory",
+                protectedFull.valid && protectedFull.requiresDisplacement);
+            Equal("m4.brainwipe.protected-never-selected", string.Empty,
+                protectedFull.displacedOwnerPawnId);
+
+            MemoryBrainwipeFenceCandidate targetFence = new MemoryBrainwipeFenceCandidate
+            {
+                ownerPawnId = "target",
+                currentSchema = true,
+                epochFenceOnly = true,
+                hasEpoch = true
+            };
+            MemoryBrainwipeDirectoryPlan excludesTarget =
+                MemoryBrainwipeHeadroomPolicy.PlanDirectoryAdmission(
+                    "target", false, 1, 1, new[] { targetFence });
+            Equal("m4.brainwipe.target-never-displaced", string.Empty,
+                excludesTarget.displacedOwnerPawnId);
         }
 
         private static void TestElapsedChapterBoundaries()
@@ -229,6 +312,47 @@ namespace MemoryThreadTests
             True("m4.fixed-point.accepted", !second.refused);
             False("m4.fixed-point.unchanged", second.changed);
             Equal("m4.fixed-point.bytes", once,
+                MemoryThreadReducer.CanonicalState(second.replacement));
+        }
+
+        private static void TestClosedSummaryFoldReachesFixedPoint()
+        {
+            MemoryReducerRoot root = Root(1000);
+            root.visibleBlocks.Clear();
+            root.chapters.Clear();
+            for (int index = 0; index < 5; index++)
+            {
+                long ordinal = index + 1;
+                string chapterId;
+                MemoryIdentityCodec.TryCreateChapterId(root.rootId, ordinal, out chapterId);
+                root.chapters.Add(new MemoryReducerChapter
+                {
+                    chapterId = chapterId,
+                    ordinal = ordinal,
+                    phaseToken = "phase-" + ordinal,
+                    openedTick = ordinal,
+                    lastActivityTick = ordinal
+                });
+                MemoryReducerBlock block = Block(
+                    root, index + 1, ordinal, MemoryContractTokens.ImportanceRegular, false);
+                block.chapterId = chapterId;
+                root.visibleBlocks.Add(block);
+            }
+            root.nextChapterOrdinal = 6;
+
+            MemoryReducerPolicy policy = Policy(1000, 10000, 10000);
+            policy.chapterInactivityTicks = 1;
+            policy.targetVisibleBlocks = 4;
+            MemoryThreadReductionResult first = MemoryThreadReducer.Reduce(root, policy);
+            True("m4.closed-fold.accepted", !first.refused);
+            True("m4.closed-fold.has-rolling", first.replacement.rollingSummaryBlock != null);
+            Equal("m4.closed-fold.visible-target", 4, first.replacement.visibleBlocks.Count);
+            string once = MemoryThreadReducer.CanonicalState(first.replacement);
+
+            MemoryThreadReductionResult second = MemoryThreadReducer.Reduce(first.replacement, policy);
+            True("m4.closed-fold.second-accepted", !second.refused);
+            False("m4.closed-fold.fixed-point", second.changed);
+            Equal("m4.closed-fold.fixed-bytes", once,
                 MemoryThreadReducer.CanonicalState(second.replacement));
         }
 
@@ -587,6 +711,58 @@ namespace MemoryThreadTests
             Equal("m4.repair.permutation.archive",
                 MemoryThreadReducer.CanonicalState(archived.archivedRoots[0]),
                 MemoryThreadReducer.CanonicalState(reverse.archivedRoots[0]));
+
+            const string archivedRecordId = "record-authored-conflict";
+            const string archivedContributionId = "contribution-authored-conflict";
+            const string archivedReason = "authored_conflict";
+            string fingerprint = MemoryThreadRepairPolicy.ArchiveFingerprint(
+                archived.archivedRoots[0], archivedRecordId, archivedContributionId,
+                archivedReason);
+            string reverseFingerprint = MemoryThreadRepairPolicy.ArchiveFingerprint(
+                reverse.archivedRoots[0], archivedRecordId, archivedContributionId,
+                archivedReason);
+            True("m4.repair.archive-fingerprint.sha256-shape",
+                fingerprint.Length == 64 && IsLowercaseHex(fingerprint));
+            Equal("m4.repair.archive-fingerprint.permutation",
+                fingerprint, reverseFingerprint);
+            NotEqual("m4.repair.archive-fingerprint.record-sensitive", fingerprint,
+                MemoryThreadRepairPolicy.ArchiveFingerprint(
+                    archived.archivedRoots[0], "other-record", archivedContributionId,
+                    archivedReason));
+            NotEqual("m4.repair.archive-fingerprint.contribution-sensitive", fingerprint,
+                MemoryThreadRepairPolicy.ArchiveFingerprint(
+                    archived.archivedRoots[0], archivedRecordId, "other-contribution",
+                    archivedReason));
+            NotEqual("m4.repair.archive-fingerprint.reason-sensitive", fingerprint,
+                MemoryThreadRepairPolicy.ArchiveFingerprint(
+                    archived.archivedRoots[0], archivedRecordId, archivedContributionId,
+                    "other-reason"));
+
+            MemoryReducerRoot rollingSource = Root(100);
+            for (int index = 1; index <= 5; index++)
+                rollingSource.visibleBlocks.Add(Block(
+                    rollingSource, index, index,
+                    MemoryContractTokens.ImportanceRegular, false));
+            MemoryReducerPolicy fold = Policy(100, 1000, 1000);
+            fold.targetVisibleBlocks = 4;
+            MemoryReducerRoot authoredRolling =
+                MemoryThreadReducer.Reduce(rollingSource, fold).replacement;
+            True("m4.repair.authored-rolling.precondition",
+                authoredRolling.rollingSummaryBlock != null);
+            authoredRolling.rollingSummaryBlock.playerEdited = true;
+            authoredRolling.rollingSummaryBlock.playerWording =
+                "authored rolling summary";
+            MemoryThreadRepairResult rollingRepair = MemoryThreadRepairPolicy.Repair(
+                new List<MemoryReducerRoot> { authoredRolling }, fold);
+            True("m4.repair.authored-rolling.accepted", !rollingRepair.refused);
+            True("m4.repair.authored-rolling.changed", rollingRepair.changed);
+            Equal("m4.repair.authored-rolling.archived", 1,
+                rollingRepair.archivedRoots.Count);
+            Equal("m4.repair.authored-rolling.archive-exact",
+                "authored rolling summary",
+                rollingRepair.archivedRoots[0].rollingSummaryBlock.playerWording);
+            Equal("m4.repair.authored-rolling.active-cleared", string.Empty,
+                rollingRepair.activeRoots[0].rollingSummaryBlock.playerWording);
         }
 
         private static void TestPressurePlannerOrderingAndRefusal()
@@ -1233,6 +1409,24 @@ namespace MemoryThreadTests
             True("m4.maintenance.second-cycle-due", secondElapsedCycle.due);
             True("m4.maintenance.second-cycle-rebuilds-snapshot",
                 MemoryMaintenancePolicy.ShouldRebuildSnapshot(secondElapsedCycle, 0));
+            False("m4.maintenance.prep-no-progress-does-not-starve",
+                MemoryMaintenancePolicy.ShouldYieldAfterPreparation(1000, 375, false));
+            False("m4.maintenance.prep-under-budget-continues",
+                MemoryMaintenancePolicy.ShouldYieldAfterPreparation(374, 375, true));
+            True("m4.maintenance.prep-at-budget-yields",
+                MemoryMaintenancePolicy.ShouldYieldAfterPreparation(375, 375, true));
+            True("m4.maintenance.prep-over-budget-yields",
+                MemoryMaintenancePolicy.ShouldYieldAfterPreparation(2000, 375, true));
+            False("m4.maintenance.prep-invalid-target-continues",
+                MemoryMaintenancePolicy.ShouldYieldAfterPreparation(2000, 0, true));
+            False("m4.maintenance.pressure-under-budget-runs",
+                MemoryMaintenancePolicy.ShouldDeferFinalPressure(374, 375));
+            True("m4.maintenance.pressure-at-budget-defers",
+                MemoryMaintenancePolicy.ShouldDeferFinalPressure(375, 375));
+            True("m4.maintenance.pressure-over-budget-defers",
+                MemoryMaintenancePolicy.ShouldDeferFinalPressure(2000, 375));
+            False("m4.maintenance.pressure-invalid-target-runs",
+                MemoryMaintenancePolicy.ShouldDeferFinalPressure(2000, 0));
         }
 
         private static void TestExactPlacementAndLookup()
@@ -1277,6 +1471,19 @@ namespace MemoryThreadTests
                 });
             True("m4.lookup.standalone", standalone.valid && standalone.standalone
                 && !standalone.threaded && standalone.rootId.Length == 0);
+
+            False("m4.lookup.new-visible-beats-older-rolling",
+                MemoryThreadLookupPolicy.UseRollingCurrentProjection(
+                    true, 100, true, 101));
+            True("m4.lookup.rolling-wins-equal-tick",
+                MemoryThreadLookupPolicy.UseRollingCurrentProjection(
+                    true, 101, true, 101));
+            True("m4.lookup.rolling-fallback-when-visible-unusable",
+                MemoryThreadLookupPolicy.UseRollingCurrentProjection(
+                    true, 50, false, 500));
+            False("m4.lookup.visible-fallback-when-rolling-unusable",
+                MemoryThreadLookupPolicy.UseRollingCurrentProjection(
+                    false, 500, true, 50));
 
             MemoryReducerBlock block = Block(root, 1, 1,
                 MemoryContractTokens.ImportanceMinor, false);
@@ -1546,6 +1753,25 @@ namespace MemoryThreadTests
         private static void False(string name, bool value)
         {
             True(name, !value);
+        }
+
+        private static bool IsLowercaseHex(string value)
+        {
+            for (int index = 0; index < value.Length; index++)
+            {
+                char character = value[index];
+                if ((character < '0' || character > '9')
+                    && (character < 'a' || character > 'f')) return false;
+            }
+            return true;
+        }
+
+        private static void NotEqual<T>(string name, T unexpected, T actual)
+        {
+            assertions++;
+            if (EqualityComparer<T>.Default.Equals(unexpected, actual))
+                throw new InvalidOperationException("FAILED: " + name
+                    + " unexpectedly matched [" + unexpected + "]");
         }
 
         private static void Equal<T>(string name, T expected, T actual)

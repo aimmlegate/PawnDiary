@@ -1853,6 +1853,56 @@ namespace PawnDiary.RimTests
                 "Archive-only edit changed identity/chronology or kept stale provider lifecycle state.");
         }
 
+        /// <summary>
+        /// Pages saved before M11 can contain the old user prompt without the exact accepted system
+        /// prompt paired at receipt time. Current-release Regenerate must fail closed before changing
+        /// canonical prose, lifecycle state, request ownership, repository shape, or render revisions.
+        /// </summary>
+        [Test]
+        public static void PreM11GeneratedEntryRegenerateFailsClosedWithoutMutation()
+        {
+            DiaryEvent page = RecordSolo(firstPawn, "Legacy regeneration source facts.");
+            page.MarkInjectedTextComplete(
+                DiaryEvent.InitiatorRole, "Legacy generated prose must survive unchanged.");
+            page.MarkTitleComplete(DiaryEvent.InitiatorRole, "Legacy generated title");
+            page.SetPrompt(DiaryEvent.InitiatorRole, "Legacy user prompt without an accepted pair.");
+
+            string pawnId = firstPawn.GetUniqueLoadID();
+            DiaryEntryView before = page.ToViewFor(pawnId);
+            PawnDiaryRecord record = scope.RequireDiaryRecord(firstPawn);
+            int eventCount = Events().Count;
+            int ownerReferenceCount = record.eventIds.Count;
+            int version = DiaryStateVersion.Current;
+
+            PawnDiaryRimTestScope.Require(
+                MemorySystemActivationGate.IsCurrentRelease
+                    && before != null
+                    && string.IsNullOrEmpty(
+                        page.AcceptedSystemPromptForRole(DiaryEvent.InitiatorRole))
+                    && !string.IsNullOrWhiteSpace(page.PromptForRole(DiaryEvent.InitiatorRole))
+                    && page.ActiveMemoryLogicalRequestForRole(DiaryEvent.InitiatorRole) == null,
+                "The pre-M11 Regenerate fixture did not represent a current-release page with only the legacy prompt half.");
+
+            bool regenerated = scope.Component.RegenerateEntry(firstPawn, before);
+            DiaryEntryView after = page.ToViewFor(pawnId);
+            PawnDiaryRimTestScope.Require(
+                !regenerated
+                    && after != null
+                    && string.Equals(after.GeneratedText, before.GeneratedText, StringComparison.Ordinal)
+                    && string.Equals(after.Title, before.Title, StringComparison.Ordinal)
+                    && string.Equals(after.LlmStatus, before.LlmStatus, StringComparison.Ordinal)
+                    && string.Equals(after.LlmPrompt, before.LlmPrompt, StringComparison.Ordinal)
+                    && string.Equals(page.PromptForRole(DiaryEvent.InitiatorRole),
+                        "Legacy user prompt without an accepted pair.", StringComparison.Ordinal)
+                    && string.IsNullOrEmpty(
+                        page.AcceptedSystemPromptForRole(DiaryEvent.InitiatorRole))
+                    && page.ActiveMemoryLogicalRequestForRole(DiaryEvent.InitiatorRole) == null
+                    && Events().Count == eventCount
+                    && record.eventIds.Count == ownerReferenceCount
+                    && DiaryStateVersion.Current == version,
+                "Pre-M11 Regenerate mutated or queued a page despite its missing accepted prompt pair.");
+        }
+
         private static DiaryEvent RecordSolo(Pawn pawn, string rawText)
         {
             DiaryEvent diaryEvent = scope.Component.AddSoloEvent(

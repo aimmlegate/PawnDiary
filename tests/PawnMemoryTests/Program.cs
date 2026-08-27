@@ -75,6 +75,12 @@ namespace PawnMemoryTests
             TestM6SilentBaselinesAndCapacityMarkers();
             TestM6DeterministicOpinionEpisodes();
             TestM6FactionOwnerAwarenessSeparation();
+            TestObservationSourceCopySlices();
+            TestObservationIndexRefreshArchitecture();
+            TestMigrationUsesRunningBudgetProjection();
+            TestRoutineAdmissionUsesOwnerLocalCopiesAndIndexes();
+            TestDispatchUsesOwnerLocalByteRefresh();
+            TestRuntimeMemoryWiringArchitecture();
             TestAnnotationTopicDetectionPerField();
             TestAnnotationLocalizedTextTerms();
             TestAnnotationCapsAndPriority();
@@ -1741,6 +1747,40 @@ namespace PawnMemoryTests
             AssertTrue("m6.knownness.savedEdgeReconciles",
                 KnowledgeRelationPolicy.IsKnownSocialEntry(visible));
 
+            AssertTrue("m6.knownness.relativeSameMapExact",
+                KnowledgeRelationPolicy.CanDiscloseExactRelativeLocation(true, false, false));
+            AssertTrue("m6.knownness.relativeSameCaravanExact",
+                KnowledgeRelationPolicy.CanDiscloseExactRelativeLocation(false, true, false));
+            AssertTrue("m6.knownness.relativeCorpseOnOwnerMapExact",
+                KnowledgeRelationPolicy.CanDiscloseExactRelativeLocation(false, false, true));
+            AssertTrue("m6.knownness.offContextRelativeLocationUnknown",
+                !KnowledgeRelationPolicy.CanDiscloseExactRelativeLocation(false, false, false));
+
+            KnowledgeFactionState priorFaction = new KnowledgeFactionState
+            {
+                goodwill = 10,
+                relationKindToken = KnowledgeObservationTokens.FactionRelationNeutral,
+                leaderPawnId = "Pawn_LeaderA"
+            };
+            KnowledgeFactionState goodwillDrift = new KnowledgeFactionState
+            {
+                goodwill = 11,
+                relationKindToken = KnowledgeObservationTokens.FactionRelationNeutral,
+                leaderPawnId = "Pawn_LeaderA"
+            };
+            AssertTrue("m6.knownness.goodwillPointDriftNotEpisode",
+                !KnowledgeRelationPolicy.IsFactionDiplomacyEpisode(
+                    priorFaction, goodwillDrift));
+            goodwillDrift.relationKindToken = KnowledgeObservationTokens.FactionRelationAlly;
+            AssertTrue("m6.knownness.relationTierChangeIsEpisode",
+                KnowledgeRelationPolicy.IsFactionDiplomacyEpisode(
+                    priorFaction, goodwillDrift));
+            goodwillDrift.relationKindToken = KnowledgeObservationTokens.FactionRelationNeutral;
+            goodwillDrift.leaderPawnId = "Pawn_LeaderB";
+            AssertTrue("m6.knownness.leaderChangeIsEpisode",
+                KnowledgeRelationPolicy.IsFactionDiplomacyEpisode(
+                    priorFaction, goodwillDrift));
+
             AssertTrue("m6.ownerAttach.firstEligibleIsSilent",
                 KnowledgeRelationPolicy.OwnerAttachmentNeedsSilentBaseline(false, true));
             AssertTrue("m6.ownerAttach.alreadyAttachedIsOrdinary",
@@ -1751,6 +1791,20 @@ namespace PawnMemoryTests
                 KnowledgeRelationPolicy.CanAdmitObservationOwner(999, 1000));
             AssertTrue("m6.ownerAdmission.atCap",
                 !KnowledgeRelationPolicy.CanAdmitObservationOwner(1000, 1000));
+            AssertTrue("m6.ownerAdmission.cultureOnlyDoesNotCount",
+                !KnowledgeRelationPolicy.CountsAsActiveObservationOwner(
+                    true, false, false, string.Empty));
+            AssertTrue("m6.ownerAdmission.enrolledCurrentCounts",
+                KnowledgeRelationPolicy.CountsAsActiveObservationOwner(
+                    true, false, false, M6Epoch("Pawn_count")));
+            AssertTrue("m6.ownerAdmission.legacyNeverCounts",
+                !KnowledgeRelationPolicy.CountsAsActiveObservationOwner(
+                    false, false, false, M6Epoch("Pawn_legacy_count")));
+            AssertTrue("m6.ownerAdmission.archiveAndFenceDoNotCount",
+                !KnowledgeRelationPolicy.CountsAsActiveObservationOwner(
+                    true, true, false, M6Epoch("Pawn_archive"))
+                && !KnowledgeRelationPolicy.CountsAsActiveObservationOwner(
+                    true, false, true, M6Epoch("Pawn_fence")));
 
             KnowledgeOwnerRepairRevisionPlan ordinaryRepair =
                 KnowledgeRelationPolicy.PlanOwnerRepairRevision(7, true);
@@ -1871,6 +1925,223 @@ namespace PawnMemoryTests
                 }.Normalized();
             AssertEqual("m6.family.oversizedFallback", 4,
                 oversizedFamilyPolicy.familyRelationDefNames.Count);
+        }
+
+        private static void TestObservationIndexRefreshArchitecture()
+        {
+            string source = File.ReadAllText(Path.Combine(
+                RepoRoot(), "Source", "Core", "DiaryGameComponent.MemoryObservation.cs"));
+            AssertEqual("m6.performance.factualRefreshUsesPublishedIndexes", 3,
+                TextOccurrences(
+                    source,
+                    "if (factualAdmitted) PublishMemoryObservationBudgetTotals(budget);"));
+            AssertEqual("m6.performance.fullRebuildReservedForMissingBudgetOwner", 1,
+                TextOccurrences(source, "RefreshMemoryObservationBudgetSession(budget);"));
+            AssertEqual("m6.performance.boundedRebuildSites", 4,
+                TextOccurrences(source, "RebuildMemorySizeIndexes();"));
+            AssertEqual("m6.performance.no-monolithic-source-copy", 0,
+                TextOccurrences(source, "TryCopyBoundedMemoryObservationSource"));
+            AssertTrue("m6.performance.source-copy-uses-cursor",
+                source.Contains("AdvanceBoundedMemoryObservationSourceCopy("));
+        }
+
+        private static void TestObservationSourceCopySlices()
+        {
+            MemoryObservationSourceCopyPlan first = MemoryObservationSourceCopyPolicy.Plan(
+                100, 0, 0, 100, 30);
+            AssertTrue("m6.sourceCopy.first.valid",
+                first.valid && !first.complete && !first.overflow);
+            AssertEqual("m6.sourceCopy.first.count", 30, first.workItems);
+            AssertEqual("m6.sourceCopy.first.next", 30, first.nextIndex);
+
+            MemoryObservationSourceCopyPlan last = MemoryObservationSourceCopyPolicy.Plan(
+                100, 90, 90, 100, 30);
+            AssertTrue("m6.sourceCopy.last.complete", last.valid && last.complete);
+            AssertEqual("m6.sourceCopy.last.count", 10, last.workItems);
+            AssertEqual("m6.sourceCopy.last.next", 100, last.nextIndex);
+
+            MemoryObservationSourceCopyPlan overflow = MemoryObservationSourceCopyPolicy.Plan(
+                101, 0, 0, 100, 30);
+            AssertTrue("m6.sourceCopy.overflow",
+                overflow.valid && overflow.overflow && overflow.complete
+                    && overflow.workItems == 0);
+            AssertTrue("m6.sourceCopy.cursorMismatchRefuses",
+                !MemoryObservationSourceCopyPolicy.Plan(100, 29, 30, 100, 30).valid);
+            AssertTrue("m6.sourceCopy.zeroSourceComplete",
+                MemoryObservationSourceCopyPolicy.Plan(0, 0, 0, 100, 30).complete);
+        }
+
+        private static void TestMigrationUsesRunningBudgetProjection()
+        {
+            string source = File.ReadAllText(Path.Combine(
+                RepoRoot(), "Source", "Core", "DiaryGameComponent.MemoryMigration.cs"));
+            int start = source.IndexOf(
+                "internal void RunMemoryMigrationCommit()", StringComparison.Ordinal);
+            int end = source.IndexOf(
+                "private static bool GroupRequiresLegacyMigration", start, StringComparison.Ordinal);
+            AssertTrue("migration.performance.method-found", start >= 0 && end > start);
+            string method = source.Substring(start, end - start);
+            AssertEqual("migration.performance.bounded-full-rebuilds", 3,
+                TextOccurrences(method, "RebuildMemorySizeIndexes();"));
+            AssertTrue("migration.performance.running-budget-created",
+                method.Contains("CreateMemoryMigrationBudgetSession()"));
+            AssertTrue("migration.performance.running-budget-advanced",
+                method.Contains("ApplyMemoryMigrationBudgetProjection("));
+            AssertTrue("migration.performance.no-per-owner-rebuild",
+                !method.Contains("PublishLegacyOwnerCommit(group.Value, commit);\n"
+                    + "                    MarkMemoryM4IndexesDirty();"));
+        }
+
+        private static void TestRoutineAdmissionUsesOwnerLocalCopiesAndIndexes()
+        {
+            string source = File.ReadAllText(Path.Combine(
+                RepoRoot(), "Source", "Core", "DiaryGameComponent.MemoryM4Store.cs"));
+            int start = source.IndexOf(
+                "internal MemoryStoreAdmissionResult TryAdmitMemoryBlock(",
+                StringComparison.Ordinal);
+            int end = source.IndexOf(
+                "internal bool TryReduceSavedMemoryRoot(",
+                start,
+                StringComparison.Ordinal);
+            AssertTrue("m4.performance.admission-method-found", start >= 0 && end > start);
+            string method = source.Substring(start, end - start);
+            AssertEqual("m4.performance.no-whole-root-clone", 0,
+                TextOccurrences(method, "CloneSavedRoots(state.threadRoots)"));
+            AssertEqual("m4.performance.no-unconditional-global-m4-rebuild", 0,
+                TextOccurrences(method, "RebuildMemoryM4Indexes();"));
+            AssertTrue("m4.performance.owner-local-m4-reindex",
+                method.Contains("ReindexMemoryM4OwnerAfterCommit("));
+            AssertTrue("m4.performance.owner-local-byte-refresh",
+                method.Contains("RefreshMemorySizeIndexForOwner("));
+        }
+
+        private static void TestDispatchUsesOwnerLocalByteRefresh()
+        {
+            string source = File.ReadAllText(Path.Combine(
+                RepoRoot(), "Source", "Core", "DiaryGameComponent.MemoryDispatch.cs"));
+            int start = source.IndexOf(
+                "private MemoryInvocationCommitPermitV1 TryCommitMemoryInvocation(",
+                StringComparison.Ordinal);
+            int helper = source.IndexOf(
+                "private void RefreshMemoryDispatchSizeIndex(",
+                start,
+                StringComparison.Ordinal);
+            int end = source.IndexOf(
+                "private static bool TransportIdentityMatches(",
+                helper,
+                StringComparison.Ordinal);
+            AssertTrue("m2.performance.dispatch-methods-found",
+                start >= 0 && helper > start && end > helper);
+            string routine = source.Substring(start, helper - start);
+            string fallback = source.Substring(helper, end - helper);
+            AssertEqual("m2.performance.no-routine-global-byte-rebuild", 0,
+                TextOccurrences(routine, "RebuildMemorySizeIndexes();"));
+            AssertEqual("m2.performance.owner-local-refresh-sites", 4,
+                TextOccurrences(routine, "RefreshMemoryDispatchSizeIndex("));
+            AssertTrue("m2.performance.owner-local-byte-refresh",
+                fallback.Contains("RefreshMemorySizeIndexForOwner(owner)"));
+            AssertEqual("m2.performance.corrupt-index-fallback-only", 1,
+                TextOccurrences(fallback, "RebuildMemorySizeIndexes();"));
+        }
+
+        private static void TestRuntimeMemoryWiringArchitecture()
+        {
+            string root = RepoRoot();
+            string library = File.ReadAllText(Path.Combine(
+                root, "Source", "UI", "Dialog_MemoryLibrary.cs"));
+            int windowStart = library.IndexOf(
+                "public override void WindowUpdate()", StringComparison.Ordinal);
+            int windowEnd = library.IndexOf(
+                "public override void PostClose()", windowStart, StringComparison.Ordinal);
+            AssertTrue("runtime.library.window-update-found",
+                windowStart >= 0 && windowEnd > windowStart);
+            string window = library.Substring(windowStart, windowEnd - windowStart);
+            int poll = window.IndexOf(
+                "MemoryLibraryUiPollPolicy.ShouldPoll(", StringComparison.Ordinal);
+            int owners = window.IndexOf("RefreshOwners();", StringComparison.Ordinal);
+            AssertTrue("runtime.library.poll-before-repository",
+                poll >= 0 && owners > poll);
+            AssertEqual("runtime.library.one-poll-gate", 1,
+                TextOccurrences(window, "MemoryLibraryUiPollPolicy.ShouldPoll("));
+
+            string maintenance = File.ReadAllText(Path.Combine(
+                root, "Source", "Core", "DiaryGameComponent.MemoryMaintenance.cs"));
+            int sliceStart = maintenance.IndexOf(
+                "private void RunMemoryMaintenanceSlice(int nowTick)",
+                StringComparison.Ordinal);
+            int sliceEnd = maintenance.IndexOf(
+                "private void RebuildMemoryMaintenanceHandles()",
+                sliceStart,
+                StringComparison.Ordinal);
+            AssertTrue("runtime.maintenance.slice-found",
+                sliceStart >= 0 && sliceEnd > sliceStart);
+            string slice = maintenance.Substring(sliceStart, sliceEnd - sliceStart);
+            int timer = slice.IndexOf("Stopwatch.StartNew()", StringComparison.Ordinal);
+            AssertTrue("runtime.maintenance.timer-before-index-preparation",
+                timer >= 0
+                    && slice.IndexOf("EnsureMemoryM4Indexes();", StringComparison.Ordinal) > timer);
+            AssertTrue("runtime.maintenance.timer-before-handle-preparation",
+                slice.IndexOf("RebuildMemoryMaintenanceHandles();", StringComparison.Ordinal) > timer);
+            AssertTrue("runtime.maintenance.timer-before-legacy-preparation",
+                slice.IndexOf("ApplyKnowledgeEviction();", StringComparison.Ordinal) > timer);
+            int pressureStart = maintenance.IndexOf(
+                "private bool TryCompleteMemoryMaintenanceCycle(", StringComparison.Ordinal);
+            int completionStart = maintenance.IndexOf(
+                "private void CompleteMemoryMaintenanceCycle(", pressureStart,
+                StringComparison.Ordinal);
+            int elapsedStart = maintenance.IndexOf(
+                "private static long ElapsedMicroseconds(", completionStart,
+                StringComparison.Ordinal);
+            AssertTrue("runtime.maintenance.pressure-methods-found",
+                pressureStart >= 0 && completionStart > pressureStart && elapsedStart > completionStart);
+            string pressure = maintenance.Substring(pressureStart, completionStart - pressureStart);
+            string completion = maintenance.Substring(completionStart, elapsedStart - completionStart);
+            AssertTrue("runtime.maintenance.pressure-budget-checked",
+                pressure.Contains("MemoryMaintenancePolicy.ShouldDeferFinalPressure("));
+            AssertTrue("runtime.maintenance.pressure-inside-budgeted-method",
+                pressure.Contains("TryApplyMemoryPressureCaps(nowTick)"));
+            AssertEqual("runtime.maintenance.no-hidden-final-pressure", 0,
+                TextOccurrences(completion, "TryApplyMemoryPressureCaps("));
+
+            string recall = File.ReadAllText(Path.Combine(
+                root, "Source", "Core", "DiaryGameComponent.MemoryRecallV2.cs"));
+            AssertTrue("runtime.recall.current-projection-policy-wired",
+                recall.Contains("MemoryThreadLookupPolicy.UseRollingCurrentProjection("));
+
+            string knowledge = File.ReadAllText(Path.Combine(
+                root, "Source", "Core", "DiaryGameComponent.Knowledge.cs"));
+            int ensureStart = knowledge.IndexOf(
+                "private PawnKnowledgeState EnsureKnowledgeState(PawnDiaryRecord diary)",
+                StringComparison.Ordinal);
+            int ensureEnd = knowledge.IndexOf(
+                "// ── Persist drafts", ensureStart, StringComparison.Ordinal);
+            AssertTrue("runtime.old-save.ensure-knowledge-found",
+                ensureStart >= 0 && ensureEnd > ensureStart);
+            string ensure = knowledge.Substring(ensureStart, ensureEnd - ensureStart);
+            AssertTrue("runtime.old-save.current-invariants-created",
+                ensure.Contains("PawnKnowledgeState.CreateCurrent("));
+
+            string coreSource = string.Join("\n", Directory.GetFiles(
+                    Path.Combine(root, "Source", "Core"), "*.cs", SearchOption.TopDirectoryOnly)
+                .Select(File.ReadAllText));
+            AssertEqual("runtime.budget.single-limit-construction", 1,
+                TextOccurrences(coreSource, "new MemoryBudgetLimits"));
+            AssertTrue("runtime.budget.all-steady-state-sites-use-reserve-helper",
+                TextOccurrences(coreSource, "CurrentMemoryBudgetLimits()") >= 6);
+
+            string dispatch = File.ReadAllText(Path.Combine(
+                root, "Source", "Core", "DiaryGameComponent.MemoryDispatch.cs"));
+            AssertTrue("runtime.library.status-mutations-invalidate-cache",
+                TextOccurrences(dispatch, "MarkMemoryLibraryStatusProjectionDirty();") >= 4);
+
+            string observation = File.ReadAllText(Path.Combine(
+                root, "Source", "Core", "DiaryGameComponent.MemoryObservation.cs"));
+            AssertTrue("runtime.knownness.relative-location-policy-wired",
+                observation.Contains(
+                    "KnowledgeRelationPolicy.CanDiscloseExactRelativeLocation("));
+            AssertTrue("runtime.knownness.faction-diplomacy-policy-wired",
+                observation.Contains(
+                    "KnowledgeRelationPolicy.IsFactionDiplomacyEpisode("));
         }
 
         private static void TestM6FactCanonicalization()
@@ -3067,6 +3338,94 @@ namespace PawnMemoryTests
             }
 
             MemoryRecallQueryV2 query = RecallQuery("Owner_A", MemoryRecallWritingFormats.Full);
+            List<ImportantMemoryDraft> typedDrafts = new List<ImportantMemoryDraft>
+            {
+                new ImportantMemoryDraft
+                {
+                    factual = new FactualMemoryDraft
+                    {
+                        ownerPawnId = "Owner_A",
+                        routeReliable = true,
+                        subjectKind = MemoryContractTokens.SubjectStream,
+                        subjectId = MemoryContractTokens.StreamBodyHistory,
+                        primarySubject = new FactualMemorySubjectDraft
+                        {
+                            subjectKind = MemoryContractTokens.SubjectPawn,
+                            subjectId = "Pawn_ExactSubject"
+                        },
+                        secondarySubjects = new List<FactualMemorySubjectDraft>
+                        {
+                            new FactualMemorySubjectDraft
+                            {
+                                subjectKind = MemoryContractTokens.SubjectPawn,
+                                subjectId = "Pawn_ExactSecondary"
+                            }
+                        }
+                    }
+                },
+                new ImportantMemoryDraft
+                {
+                    factual = new FactualMemoryDraft
+                    {
+                        ownerPawnId = "Owner_Other",
+                        routeReliable = true,
+                        subjectKind = MemoryContractTokens.SubjectPawn,
+                        subjectId = "Pawn_MustNotLeak"
+                    }
+                }
+            };
+            List<MemoryRecallRouteIdentity> typedRoutes =
+                new List<MemoryRecallRouteIdentity>();
+            AssertEqual("recallV2.query.typedDraftRouteCount", 3,
+                ImportantMemorySelector.AddFactualDraftRoutes(
+                    typedRoutes, typedDrafts, "Owner_A"));
+            AssertTrue("recallV2.query.typedDraftRoutesExact",
+                typedRoutes.Any(row => row.subjectKind == MemoryContractTokens.SubjectStream
+                        && row.subjectId == MemoryContractTokens.StreamBodyHistory)
+                    && typedRoutes.Any(row => row.subjectKind == MemoryContractTokens.SubjectPawn
+                        && row.subjectId == "Pawn_ExactSubject")
+                    && typedRoutes.Any(row => row.subjectId == "Pawn_ExactSecondary")
+                    && typedRoutes.All(row => row.subjectId != "Pawn_MustNotLeak"));
+            AssertTrue("recallV2.query.blankOrInvalidTypedRoutesRefused",
+                !ImportantMemorySelector.TryAddExactRoute(
+                    typedRoutes, MemoryContractTokens.SubjectPawn, string.Empty)
+                && !ImportantMemorySelector.TryAddExactRoute(
+                    typedRoutes, "legacy-guessed-kind", "part:Arm"));
+            string recallAdapter = File.ReadAllText(Path.Combine(
+                RepoRoot(), "Source", "Core", "DiaryGameComponent.MemoryRecallV2.cs"));
+            AssertTrue("recallV2.query.legacySubjectKeysNeverGuessedIntoTypes",
+                recallAdapter.IndexOf(
+                    "legacyQuery.subjectKeys.Count", StringComparison.Ordinal) < 0);
+            MemoryRecallQueryV2 reflectionQuery = RecallQuery(
+                "Owner_A", MemoryRecallWritingFormats.Full);
+            reflectionQuery.consumerId = MemoryRecallConsumerRegistry.ExistingReflection;
+            MemoryRecallCandidateSnapshot reflectionCandidate = RecallCandidate(
+                "reflection-common", "Owner_A", "source-reflection-common", 9);
+            reflectionCandidate.currentStateApplicable = true;
+            reflectionCandidate.currentStateCanRender = true;
+            reflectionCandidate.currentStateText = "current truth";
+            reflectionCandidate.currentStateSourceId =
+                OrdinalSegmentCodec.Segment("awareness")
+                + OrdinalSegmentCodec.Segment("reflection-common");
+            AssertTrue("recallV2.reflection.commonStateEligible",
+                ImportantMemorySelector.IsCandidateStateEligibleForConsumer(
+                    reflectionQuery, reflectionQuery.consumerId, reflectionCandidate));
+            reflectionCandidate.ttlEligible = false;
+            AssertTrue("recallV2.reflection.expiredRejectedByCommonContract",
+                !ImportantMemorySelector.IsCandidateStateEligibleForConsumer(
+                    reflectionQuery, reflectionQuery.consumerId, reflectionCandidate));
+            reflectionCandidate.ttlEligible = true;
+            reflectionCandidate.currentStateContradictsHistorical = true;
+            reflectionCandidate.currentStateCanRender = false;
+            AssertTrue("recallV2.reflection.staleTruthRejectedByCommonContract",
+                !ImportantMemorySelector.IsCandidateStateEligibleForConsumer(
+                    reflectionQuery, reflectionQuery.consumerId, reflectionCandidate));
+            string reflectionAdapter = File.ReadAllText(Path.Combine(
+                RepoRoot(), "Source", "Core", "DiaryGameComponent.MemorySummaryWording.cs"));
+            AssertTrue("recallV2.reflection.runtimeUsesCommonCandidateContract",
+                reflectionAdapter.IndexOf(
+                    "ImportantMemorySelector.IsCandidateStateEligibleForConsumer(",
+                    StringComparison.Ordinal) >= 0);
             MemoryRecallCandidateSnapshot exact = RecallCandidate("exact", "Owner_A", "source-exact", 10);
             MemoryRecallCandidateSnapshot topicOnly = RecallCandidate("topic", "Owner_A", "source-topic", 20);
             topicOnly.exactRoutes[0].subjectId = "Pawn_Other";
@@ -4248,6 +4607,19 @@ namespace PawnMemoryTests
                 throw new InvalidOperationException(label + ": missing " + expected
                     + " in [" + string.Join(",", values) + "]");
             }
+        }
+
+        private static int TextOccurrences(string source, string value)
+        {
+            if (string.IsNullOrEmpty(source) || string.IsNullOrEmpty(value)) return 0;
+            int count = 0;
+            int offset = 0;
+            while ((offset = source.IndexOf(value, offset, StringComparison.Ordinal)) >= 0)
+            {
+                count++;
+                offset += value.Length;
+            }
+            return count;
         }
 
         private static void AssertEqual<T>(string label, T expected, T actual)

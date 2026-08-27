@@ -1855,7 +1855,7 @@ namespace MemoryThreadTests
             string root = RepoRoot();
             XDocument document = XDocument.Load(Path.Combine(root, "1.6", "Defs", "DiaryImportantEventDefs.xml"));
             List<XElement> defs = document.Root.Elements("PawnDiary.DiaryImportantEventDef").ToList();
-            AssertEqual("xml.capture.count", 34, defs.Count);
+            AssertEqual("xml.capture.count", 35, defs.Count);
             int standalone = 0;
             foreach (XElement def in defs)
             {
@@ -1902,7 +1902,13 @@ namespace MemoryThreadTests
                 AssertEqual("xml.capture.valid." + rule.defName, string.Empty,
                     MemoryThreadRoutingPolicy.ValidateRuleContract(rule));
             }
-            AssertEqual("xml.capture.standalone", 1, standalone);
+            AssertEqual("xml.capture.standalone", 2, standalone);
+            XElement brainwipe = defs.Single(def =>
+                Text(def, "defName") == "Diary_ImpEvent_BrainwipeCompleted");
+            AssertEqual("xml.brainwipe.kind", "brainwipe.completed", Text(brainwipe, "eventKind"));
+            AssertEqual("xml.brainwipe.match", "PawnDiary_BrainwipeArrival",
+                brainwipe.Element("matchDefNames").Elements("li").Single().Value);
+            AssertTrue("xml.brainwipe.standalone", brainwipe.Element("threadRoute") == null);
             AssertEqual("xml.capture.four-categories", 4,
                 defs.Select(def => Text(def, "memoryCategory"))
                     .Distinct(StringComparer.Ordinal).Count());
@@ -3009,6 +3015,38 @@ namespace MemoryThreadTests
                 limits, 0, 0, 200, 900, nearFullGlobals);
             AssertEqual("budget.global-combined-full",
                 "global_combined_full", globalCombinedFull.OutcomeToken());
+
+            MemoryBudgetLimits reservedLimits = limits;
+            reservedLimits.brainwipeMetadataReserveBytes = 100;
+            reservedLimits.brainwipeReclaimableFenceBytes = 0;
+            MemoryBudgetDecision reserveActiveFull = ActiveMemoryPayloadBudget.TryAdmit(
+                reservedLimits, 0, 0, 101, 0,
+                new MemoryPayloadBudgetTotals
+                {
+                    globalActiveBytes = 4800,
+                    globalImportedBytes = 100
+                });
+            AssertEqual("budget.brainwipe-reserve.active-retained",
+                "global_active_full", reserveActiveFull.OutcomeToken());
+            MemoryBudgetDecision reserveCombinedFull = ActiveMemoryPayloadBudget.TryAdmit(
+                reservedLimits, 0, 0, 0, 101,
+                new MemoryPayloadBudgetTotals
+                {
+                    globalActiveBytes = 3000,
+                    globalImportedBytes = 2800
+                });
+            AssertEqual("budget.brainwipe-reserve.combined-retained",
+                "global_combined_full", reserveCombinedFull.OutcomeToken());
+            reservedLimits.brainwipeReclaimableFenceBytes = 50;
+            MemoryBudgetDecision reserveWithFence = ActiveMemoryPayloadBudget.TryAdmit(
+                reservedLimits, 0, 0, 150, 0,
+                new MemoryPayloadBudgetTotals
+                {
+                    globalActiveBytes = 4800,
+                    globalImportedBytes = 100
+                });
+            AssertEqual("budget.brainwipe-reserve.reclaimable-fence",
+                "admitted", reserveWithFence.OutcomeToken());
 
             // Negative deltas (expiry/removal) are legal and can move totals downward.
             MemoryBudgetDecision shrink = ActiveMemoryPayloadBudget.TryAdmit(

@@ -454,8 +454,8 @@ namespace PawnDiary
             // Expired summaries must disappear before target accounting. Otherwise an empty row can
             // force a live detail block into rolling history immediately before that row is removed.
             RemoveEmptySummaries(root);
-            CloseOverdueChapters(root, policy);
-            SummarizeClosedChapters(root, result);
+            HashSet<string> newlyClosedChapters = CloseOverdueChapters(root, policy);
+            SummarizeClosedChapters(root, newlyClosedChapters, result);
             EnforceTarget(root, policy, result);
             if (!NormalizeSummaries(root, policy, result))
                 return RevisionSaturated(result);
@@ -831,8 +831,11 @@ namespace PawnDiary
             }
         }
 
-        private static void CloseOverdueChapters(MemoryReducerRoot root, MemoryReducerPolicy policy)
+        private static HashSet<string> CloseOverdueChapters(
+            MemoryReducerRoot root,
+            MemoryReducerPolicy policy)
         {
+            HashSet<string> newlyClosed = new HashSet<string>(StringComparer.Ordinal);
             for (int i = 0; i < root.chapters.Count; i++)
             {
                 MemoryReducerChapter chapter = root.chapters[i];
@@ -848,11 +851,14 @@ namespace PawnDiary
                 chapter.closed = true;
                 chapter.closedTick = plan.closedTick;
                 chapter.closureReasonToken = plan.reasonToken;
+                newlyClosed.Add(chapter.chapterId);
             }
+            return newlyClosed;
         }
 
         private static void SummarizeClosedChapters(
             MemoryReducerRoot root,
+            HashSet<string> newlyClosedChapters,
             MemoryThreadReductionResult result)
         {
             root.chapters.Sort(CompareChapter);
@@ -867,6 +873,14 @@ namespace PawnDiary
                     if (block.chapterId == chapter.chapterId && !block.playerEdited)
                         sources.Add(block);
                 }
+                // An empty pointer does not by itself mean "never summarized": ordinary target
+                // folding deliberately clears a Closed summary's pointer after moving its facts into
+                // rolling history. Only a chapter closed during this reduction may consolidate a
+                // rolling-only chapter. Otherwise reconstructing it here would make every later
+                // reduction alternate Closed -> rolling -> Closed forever.
+                if (sources.Count == 0
+                    && (newlyClosedChapters == null
+                        || !newlyClosedChapters.Contains(chapter.chapterId))) continue;
                 MemoryReducerBlock rollingFragment = ExtractChapterContributions(
                     root, chapter.chapterId);
                 if (sources.Count == 0 && rollingFragment == null) continue;

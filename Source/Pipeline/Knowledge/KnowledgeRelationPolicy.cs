@@ -12,6 +12,52 @@ using System.Text;
 
 namespace PawnDiary
 {
+    /// <summary>One bounded source-copy window for the main-thread observation reconciler.</summary>
+    internal struct MemoryObservationSourceCopyPlan
+    {
+        public bool valid;
+        public bool overflow;
+        public bool complete;
+        public int startIndex;
+        public int workItems;
+        public int nextIndex;
+    }
+
+    /// <summary>Pure cursor math; live List reads remain in the impure observation adapter.</summary>
+    internal static class MemoryObservationSourceCopyPolicy
+    {
+        public static MemoryObservationSourceCopyPlan Plan(
+            int sourceCount,
+            int destinationCount,
+            int nextIndex,
+            int maximumRows,
+            int maximumWorkItems)
+        {
+            MemoryObservationSourceCopyPlan plan = new MemoryObservationSourceCopyPlan();
+            if (sourceCount < 0 || destinationCount < 0 || nextIndex < 0
+                || maximumRows < 0 || maximumWorkItems <= 0
+                || destinationCount != nextIndex) return plan;
+            plan.valid = true;
+            if (sourceCount > maximumRows)
+            {
+                plan.overflow = true;
+                plan.complete = true;
+                return plan;
+            }
+            if (nextIndex >= sourceCount)
+            {
+                plan.complete = true;
+                plan.nextIndex = sourceCount;
+                return plan;
+            }
+            plan.startIndex = nextIndex;
+            plan.workItems = Math.Min(maximumWorkItems, sourceCount - nextIndex);
+            plan.nextIndex = nextIndex + plan.workItems;
+            plan.complete = plan.nextIndex >= sourceCount;
+            return plan;
+        }
+    }
+
     /// <summary>Stable current-truth schema tokens. These are save grammar, not player prose.</summary>
     internal static class KnowledgeObservationTokens
     {
@@ -493,6 +539,46 @@ namespace PawnDiary
                         && input.sharesSocialContext
                         && (input.ownerOpinionOfCandidate != 0
                             || input.candidateOpinionOfOwner != 0)));
+        }
+
+        /// <summary>
+        /// True only when the owner can directly share the subject's exact location context. A live
+        /// global pawn lookup is game truth, not owner knowledge, so off-map relatives remain unknown.
+        /// </summary>
+        public static bool CanDiscloseExactRelativeLocation(
+            bool sharesMap,
+            bool sharesCaravan,
+            bool corpseOnOwnersMap)
+        {
+            return sharesMap || sharesCaravan || corpseOnOwnersMap;
+        }
+
+        /// <summary>
+        /// Only an enrolled, ordinary current envelope consumes an active-owner slot. Culture
+        /// provenance can exist before the first memory epoch and must not crowd a real owner out.
+        /// </summary>
+        public static bool CountsAsActiveObservationOwner(
+            bool currentSchema,
+            bool archiveOnly,
+            bool epochFenceOnly,
+            string autobiographicalEpochToken)
+        {
+            return currentSchema && !archiveOnly && !epochFenceOnly
+                && !string.IsNullOrWhiteSpace(autobiographicalEpochToken);
+        }
+
+        /// <summary>
+        /// Episodic diplomacy changes are discrete relationship/leadership transitions. Exact goodwill
+        /// still belongs in the replaceable current-truth snapshot, but point drift alone must not emit
+        /// a permanent memory on every reconciliation pass.
+        /// </summary>
+        public static bool IsFactionDiplomacyEpisode(
+            KnowledgeFactionState previous,
+            KnowledgeFactionState current)
+        {
+            return previous != null && current != null
+                && (previous.relationKindToken != current.relationKindToken
+                    || previous.leaderPawnId != current.leaderPawnId);
         }
 
         /// <summary>

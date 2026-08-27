@@ -68,8 +68,8 @@ namespace PawnDiary
     /// override, so this pure table is the single place that defines the mapping for settings, dispatch,
     /// prompt projection, and tests.
     ///
-    /// Full keeps every layer. Balanced drops only pawn memory (the largest injected block). Compact
-    /// drops all three, so a small local model sees required facts and very little else.
+    /// Full keeps every layer. Balanced keeps one explicitly budgeted memory line. Compact drops all
+    /// three, so a small local model sees required facts and very little else.
     ///
     /// Capture adapters may collect the full snapshot before a lane is known; projection applies this
     /// policy only after dispatch selects the lane. That separation lets a Full lane regain layers when
@@ -92,7 +92,11 @@ namespace PawnDiary
         /// <summary>True when the preset allows recalled past facts and culture asides in prompts.</summary>
         public static bool AllowsMemoryContext(PromptContextDetailLevel level)
         {
-            return PromptContextSelector.Normalize(level) == PromptContextDetailLevel.Full;
+            // Full and Balanced both have explicit memory-line budgets (2 and 1 respectively).
+            // Compact alone removes the layer. Keeping this gate aligned with the recall projector
+            // prevents a selected line from consuming its use/cooldown accounting without ever
+            // reaching the provider prompt.
+            return PromptContextSelector.Normalize(level) != PromptContextDetailLevel.Compact;
         }
     }
 
@@ -294,7 +298,7 @@ namespace PawnDiary
                 }
 
                 string label = string.IsNullOrWhiteSpace(field.label) ? field.source : field.label;
-                bool required = IsRequired(templateKey, field);
+                bool required = IsRequired(templateKey, field, level);
                 string reason = string.Empty;
                 int score = required ? 1000 : Score(field, value, domain, gameContext, templateKey, level, out reason);
                 result.Add(new Candidate
@@ -312,10 +316,24 @@ namespace PawnDiary
             return result;
         }
 
-        private static bool IsRequired(string templateKey, DiaryPromptFieldPolicy field)
+        private static bool IsRequired(
+            string templateKey,
+            DiaryPromptFieldPolicy field,
+            PromptContextDetailLevel level)
         {
             string source = field?.source ?? string.Empty;
             string contextKey = field?.contextKey ?? string.Empty;
+            // Recall v2 has already applied Balanced's independent one-line/character/provenance
+            // limits before this generic field selector runs. Treat that complete projected field as
+            // required at Balanced so unrelated optional context cannot spend the outer budget first,
+            // causing cooldown/accounting for memory text the provider never receives. Compact's
+            // zero-line contract remains unchanged even for direct pure callers that did not pass
+            // through the impure adapter's layer-clearing seam.
+            if (level == PromptContextDetailLevel.Balanced
+                && Eq(source, MemoryContextPrompt.Source))
+            {
+                return true;
+            }
             if (Eq(source, "EventNoun")
                 || Eq(source, "PovName")
                 || Eq(source, "PovRole")

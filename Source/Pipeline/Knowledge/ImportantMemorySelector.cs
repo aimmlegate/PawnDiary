@@ -187,6 +187,133 @@ namespace PawnDiary
     /// <summary>Selects contextual records first, then at most one canonical background fallback.</summary>
     internal static class ImportantMemorySelector
     {
+        /// <summary>
+        /// Adds one canonical exact route. Callers provide typed identity from a captured factual draft
+        /// or saved subject; legacy prose keys are intentionally not accepted or guessed into types.
+        /// </summary>
+        public static bool TryAddExactRoute(
+            List<MemoryRecallRouteIdentity> target,
+            string subjectKind,
+            string subjectId)
+        {
+            if (target == null || string.IsNullOrWhiteSpace(subjectKind)
+                || string.IsNullOrWhiteSpace(subjectId)
+                || !MemoryContractTokens.IsValidRootSubject(
+                    subjectKind, subjectId)) return false;
+            string routeKind = subjectKind == MemoryContractTokens.SubjectPawn
+                ? MemoryRecallRouteKinds.Participant
+                : subjectKind == MemoryContractTokens.SubjectFaction
+                    ? MemoryRecallRouteKinds.Faction
+                    : MemoryRecallRouteKinds.TypedSubject;
+            string routeKey = OrdinalSegmentCodec.Segment("memory-recall-route-v1")
+                + OrdinalSegmentCodec.Segment(routeKind)
+                + OrdinalSegmentCodec.Segment(subjectKind)
+                + OrdinalSegmentCodec.Segment(subjectId);
+            if (routeKey.Length > MemoryIdentityCodec.MaximumEmbeddedCompositeCharacters)
+                return false;
+            for (int index = 0; index < target.Count; index++)
+            {
+                MemoryRecallRouteIdentity existing = target[index];
+                if (existing != null && existing.routeKind == routeKind
+                    && existing.subjectKind == subjectKind
+                    && existing.subjectId == subjectId
+                    && existing.routeKey == routeKey) return false;
+            }
+            target.Add(new MemoryRecallRouteIdentity
+            {
+                routeKind = routeKind,
+                subjectKind = subjectKind,
+                subjectId = subjectId,
+                routeKey = routeKey
+            });
+            return true;
+        }
+
+        /// <summary>
+        /// Copies exact typed subjects from the current event's already-classified factual drafts into
+        /// a Recall-v2 query. Only this owner's drafts participate; display labels and legacy subject
+        /// strings never become identity.
+        /// </summary>
+        public static int AddFactualDraftRoutes(
+            List<MemoryRecallRouteIdentity> target,
+            IList<ImportantMemoryDraft> drafts,
+            string ownerPawnId)
+        {
+            int added = 0;
+            for (int index = 0; drafts != null && index < drafts.Count; index++)
+            {
+                FactualMemoryDraft factual = drafts[index]?.factual;
+                if (factual == null || !string.Equals(
+                        factual.ownerPawnId, ownerPawnId, StringComparison.Ordinal)) continue;
+                if (factual.routeReliable && TryAddExactRoute(
+                        target, factual.subjectKind, factual.subjectId)) added++;
+                if (TryAddFactualSubjectRoute(target, factual.primarySubject)) added++;
+                for (int subjectIndex = 0; factual.secondarySubjects != null
+                    && subjectIndex < factual.secondarySubjects.Count; subjectIndex++)
+                {
+                    if (TryAddFactualSubjectRoute(
+                            target, factual.secondarySubjects[subjectIndex])) added++;
+                }
+            }
+            return added;
+        }
+
+        private static bool TryAddFactualSubjectRoute(
+            List<MemoryRecallRouteIdentity> target,
+            FactualMemorySubjectDraft subject)
+        {
+            return subject != null && TryAddExactRoute(
+                target, subject.subjectKind, subject.subjectId);
+        }
+
+        /// <summary>
+        /// Applies the common saved-candidate privacy, TTL, category, suppression, and current-truth
+        /// contract without imposing an event-specific route or repetition guard. Optional reflection
+        /// uses this before its own due-window/salience policy; ordinary Recall-v2 applies the same
+        /// checks plus exact-event exclusions and guards in <see cref="CandidateFailure"/>.
+        /// </summary>
+        public static bool IsCandidateStateEligibleForConsumer(
+            MemoryRecallQueryV2 query,
+            string consumerId,
+            MemoryRecallCandidateSnapshot candidate)
+        {
+            MemoryRecallConsumerContract consumer = MemoryRecallConsumerRegistry.Find(consumerId);
+            if (query == null || consumer == null || candidate == null
+                || !consumer.appliesCommonExclusionContract
+                || !string.Equals(candidate.ownerPawnId, query.ownerPawnId, StringComparison.Ordinal)
+                || !string.Equals(candidate.ownerEpochToken, query.ownerEpochToken,
+                    StringComparison.Ordinal)
+                || !candidate.available || !candidate.identityValid || !candidate.promptRouteValid
+                || !candidate.ttlEligible || !candidate.categoryProjectionValid
+                || !ValidCompositeIdentity(candidate.recordId)
+                || !ValidCompositeIdentity(candidate.sourceOccurrenceId)
+                || !ValidOptionalCompositeIdentity(candidate.sourceEventId)
+                || !ValidOptionalCompositeIdentity(candidate.rootId)
+                || !ValidOptionalCompositeIdentity(candidate.chapterOrNoveltyId)
+                || !MemoryContractTokens.IsKnownKind(candidate.kind)
+                || !MemoryContractTokens.IsKnownImportance(candidate.importance)
+                || string.IsNullOrWhiteSpace(candidate.historicalText)
+                || !CandidateSourcesValid(candidate)
+                || !ValidRouteList(candidate.exactRoutes, consumer)
+                || candidate.suppressed
+                || !HasEnabledCategory(candidate.categories, query.enabledCategories)) return false;
+
+            bool hasCurrentStateText = !string.IsNullOrWhiteSpace(candidate.currentStateText);
+            bool hasCurrentStateSource = !string.IsNullOrWhiteSpace(candidate.currentStateSourceId);
+            bool currentStateMissing = !candidate.currentStateApplicable
+                || !candidate.currentStateCanRender
+                || !hasCurrentStateText
+                || !hasCurrentStateSource;
+            return !((!candidate.currentStateApplicable
+                        && (hasCurrentStateText || hasCurrentStateSource))
+                    || (hasCurrentStateSource
+                        && !ValidCompositeIdentity(candidate.currentStateSourceId))
+                    || (candidate.currentStateContradictsHistorical && currentStateMissing)
+                    || (candidate.currentStateApplicable
+                        && consumer.requiresCurrentStateRendering
+                        && currentStateMissing));
+        }
+
         private sealed class RankedCandidate
         {
             public ImportantMemoryRecordSnapshot record;

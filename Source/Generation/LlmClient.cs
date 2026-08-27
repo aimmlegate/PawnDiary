@@ -157,6 +157,13 @@ namespace PawnDiary
         internal int memoryLastAttemptOrdinal;
         internal string memoryLastVariantKey;
         internal MemoryInvocationCommitPermitV1 memoryLastPermit;
+
+        // A memory permit commits one physical invocation, but it does not invalidate the retry and
+        // failover variants frozen into this same logical request. Keep that fact across attempts so
+        // an ultimately failed sequence is terminal to the main-thread auto-retry path only after all
+        // already-planned variants have been exhausted.
+        internal bool memoryInvocationCommitted;
+        internal string memoryLastTerminalOutcomeToken;
     }
 
     /// <summary>
@@ -1770,9 +1777,15 @@ namespace PawnDiary
                     // TryLane installs any terminal transient cooldown before releasing the physical
                     // attempt's permit, so another waiter cannot slip through after Retry-After.
                     lastError = outcome.Error; // this lane failed — fall through to the next one
-                    memoryDispatchTerminalFailure = outcome.MemoryDispatchTerminalFailure;
-                    memoryDispatchTerminalOutcomeToken =
-                        outcome.MemoryDispatchTerminalOutcomeToken ?? string.Empty;
+                    if (outcome.MemoryDispatchTerminalFailure)
+                    {
+                        memoryDispatchTerminalFailure = true;
+                    }
+                    if (!string.IsNullOrWhiteSpace(outcome.MemoryDispatchTerminalOutcomeToken))
+                    {
+                        memoryDispatchTerminalOutcomeToken =
+                            outcome.MemoryDispatchTerminalOutcomeToken;
+                    }
                     LogDebug("Lane failed event=" + request.eventId + " role=" + request.povRole + " lane=" + laneLabel + " error=" + TrimForLog(request, outcome.Error));
                     if (outcome.StopFailover)
                     {
@@ -1808,9 +1821,12 @@ namespace PawnDiary
                     isTitleRequest = request.isTitleRequest,
                     memoryInvocationPermit = request.memoryLastPermit,
                     memoryLogicalRequestId = request.memoryDispatch?.logicalRequestId,
-                    memoryDispatchTerminalFailure = memoryDispatchTerminalFailure,
+                    memoryDispatchTerminalFailure = memoryDispatchTerminalFailure
+                        || request.memoryInvocationCommitted,
                     memoryDispatchTerminalOutcomeToken =
-                        memoryDispatchTerminalOutcomeToken
+                        !string.IsNullOrWhiteSpace(memoryDispatchTerminalOutcomeToken)
+                            ? memoryDispatchTerminalOutcomeToken
+                            : (request.memoryLastTerminalOutcomeToken ?? string.Empty)
                 });
                 LogDebug("All lanes failed event=" + request.eventId + " role=" + request.povRole + " lastError=" + TrimForLog(request, lastError));
             }
@@ -1833,10 +1849,9 @@ namespace PawnDiary
                         isTitleRequest = request.isTitleRequest,
                         memoryInvocationPermit = request.memoryLastPermit,
                         memoryLogicalRequestId = request.memoryDispatch?.logicalRequestId,
-                        memoryDispatchTerminalFailure = request.memoryDispatch != null,
-                        memoryDispatchTerminalOutcomeToken = request.memoryLastPermit == null
-                            ? string.Empty
-                            : MemoryDispatchTokens.ProviderError
+                        memoryDispatchTerminalFailure = request.memoryInvocationCommitted,
+                        memoryDispatchTerminalOutcomeToken =
+                            request.memoryLastTerminalOutcomeToken ?? string.Empty
                     });
                 }
 
@@ -1988,6 +2003,11 @@ namespace PawnDiary
                         request.memoryLastPermit = null;
                         SendResponse response = await SendOnce(request, request.cancellationToken);
                         MemoryInvocationCommitPermitV1 memoryPermit = response.MemoryPermit;
+                        if (memoryPermit != null)
+                        {
+                            request.memoryLastTerminalOutcomeToken =
+                                MemoryDispatchTokens.Success;
+                        }
                         if (memoryPermit != null
                             && !await MemoryDispatchRuntimeBridge.PublishReceiptAsync(
                                 request.sessionId,
@@ -2043,6 +2063,11 @@ namespace PawnDiary
                     }
                     catch (LlmPermanentException ex)
                     {
+                        if (request.memoryLastPermit != null)
+                        {
+                            request.memoryLastTerminalOutcomeToken =
+                                MemoryDispatchTokens.ProviderError;
+                        }
                         if (request.memoryLastPermit != null
                             && !await MemoryDispatchRuntimeBridge.PublishReceiptAsync(
                                 request.sessionId,
@@ -2056,11 +2081,6 @@ namespace PawnDiary
                         return new LaneResult
                         {
                             Success = false,
-                            StopFailover = request.memoryLastPermit != null,
-                            MemoryDispatchTerminalFailure = request.memoryLastPermit != null,
-                            MemoryDispatchTerminalOutcomeToken = request.memoryLastPermit == null
-                                ? string.Empty
-                                : MemoryDispatchTokens.ProviderError,
                             Error = RedactRequestSecrets(request, ex.Message)
                         };
                     }
@@ -2069,6 +2089,10 @@ namespace PawnDiary
                         string terminalOutcome = ex is OperationCanceledException
                             ? MemoryDispatchTokens.Timeout
                             : MemoryDispatchTokens.ProviderError;
+                        if (request.memoryLastPermit != null)
+                        {
+                            request.memoryLastTerminalOutcomeToken = terminalOutcome;
+                        }
                         if (request.memoryLastPermit != null
                             && !await MemoryDispatchRuntimeBridge.PublishReceiptAsync(
                                 request.sessionId,
@@ -2084,20 +2108,6 @@ namespace PawnDiary
                             || callerCancellation.IsCancellationRequested)
                         {
                             return new LaneResult { Cancelled = true };
-                        }
-
-                        if (request.memoryLastPermit != null)
-                        {
-                            LaneResult terminal = FinishTransientLaneFailure(
-                                request,
-                                ex is OperationCanceledException
-                                    ? "Timed out waiting for the model."
-                                    : RedactRequestSecrets(request, ex.Message),
-                                (ex as LlmTransientException)?.RetryAfterSeconds ?? 0);
-                            terminal.StopFailover = true;
-                            terminal.MemoryDispatchTerminalFailure = true;
-                            terminal.MemoryDispatchTerminalOutcomeToken = terminalOutcome;
-                            return terminal;
                         }
 
                         if (ex is OperationCanceledException
@@ -2180,6 +2190,11 @@ namespace PawnDiary
                     }
                     catch (Exception ex) // unexpected / non-transient
                     {
+                        if (request.memoryLastPermit != null)
+                        {
+                            request.memoryLastTerminalOutcomeToken =
+                                MemoryDispatchTokens.ProviderError;
+                        }
                         if (request.memoryLastPermit != null
                             && !await MemoryDispatchRuntimeBridge.PublishReceiptAsync(
                                 request.sessionId,
@@ -2193,11 +2208,6 @@ namespace PawnDiary
                         return new LaneResult
                         {
                             Success = false,
-                            StopFailover = request.memoryLastPermit != null,
-                            MemoryDispatchTerminalFailure = request.memoryLastPermit != null,
-                            MemoryDispatchTerminalOutcomeToken = request.memoryLastPermit == null
-                                ? string.Empty
-                                : MemoryDispatchTokens.ProviderError,
                             Error = RedactRequestSecrets(request, ex.Message)
                         };
                     }
@@ -2378,6 +2388,7 @@ namespace PawnDiary
                     if (sendEnvelope == null || !sendEnvelope.TryClaimPhysicalSend())
                         throw new LlmMemoryInvocationDeniedException();
 
+                    request.memoryInvocationCommitted = true;
                     request.memoryLastAttemptOrdinal = memoryPermit.attemptOrdinal;
                     request.memoryLastVariantKey = memoryPermit.variantKey;
                     request.memoryLastPermit = memoryPermit;

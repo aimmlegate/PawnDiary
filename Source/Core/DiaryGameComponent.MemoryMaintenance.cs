@@ -25,6 +25,7 @@ namespace PawnDiary
         private int memoryMaintenanceNextItemIndex;
         private bool memoryMaintenanceDirty = true;
         private bool memoryMaintenanceLegacyDoneForCycle;
+        private bool memoryMaintenanceAwaitingPressure;
 
         /// <summary>Resets all transient cursor state at a game/component identity boundary.</summary>
         private void ResetMemoryMaintenanceTransient(bool dirty)
@@ -34,6 +35,7 @@ namespace PawnDiary
             memoryMaintenanceNextItemIndex = 0;
             memoryMaintenanceDirty = dirty;
             memoryMaintenanceLegacyDoneForCycle = false;
+            memoryMaintenanceAwaitingPressure = false;
             memoryM4IndexesDirty = true;
         }
 
@@ -53,6 +55,7 @@ namespace PawnDiary
             memoryMaintenanceNextItemIndex = 0;
             memoryMaintenanceHandles.Clear();
             memoryMaintenanceLegacyDoneForCycle = false;
+            memoryMaintenanceAwaitingPressure = false;
         }
 
         /// <summary>Runs at most one XML-bounded maintenance slice on the main game tick.</summary>
@@ -61,7 +64,6 @@ namespace PawnDiary
             if (nowTick < 0) return;
             try
             {
-                EnsureMemoryM4Indexes();
                 int intervalTicks = DiaryKnowledgePolicy.EvictionScanIntervalTicks();
                 // Check elapsed/dirty state before reading the remaining XML capacities. A completed
                 // cycle deliberately clears its snapshot; when the next interval becomes due, rebuild
@@ -78,12 +80,37 @@ namespace PawnDiary
                         intervalTicks = intervalTicks
                     });
                 if (!dueCheck.due) return;
-                if (MemoryMaintenancePolicy.ShouldRebuildSnapshot(
-                    dueCheck, memoryMaintenanceHandles.Count))
-                    RebuildMemoryMaintenanceHandles();
                 int maximumItems = (int)ReadCapacityLong("sliceWorkItems", 30, 240);
                 int targetMicroseconds = (int)ReadCapacityLong(
                     "sliceTargetMicroseconds", 375, 1000);
+                Stopwatch timer = Stopwatch.StartNew();
+
+                if (memoryMaintenanceAwaitingPressure)
+                {
+                    if (!TryCompleteMemoryMaintenanceCycle(
+                            nowTick, timer, targetMicroseconds))
+                        memoryMaintenanceDirty = true;
+                    return;
+                }
+
+                bool rebuiltIndexes = memoryM4IndexesDirty;
+                EnsureMemoryM4Indexes();
+                if (MemoryMaintenancePolicy.ShouldYieldAfterPreparation(
+                        ElapsedMicroseconds(timer), targetMicroseconds, rebuiltIndexes))
+                {
+                    memoryMaintenanceDirty = true;
+                    return;
+                }
+
+                bool rebuiltHandles = MemoryMaintenancePolicy.ShouldRebuildSnapshot(
+                    dueCheck, memoryMaintenanceHandles.Count);
+                if (rebuiltHandles) RebuildMemoryMaintenanceHandles();
+                if (MemoryMaintenancePolicy.ShouldYieldAfterPreparation(
+                        ElapsedMicroseconds(timer), targetMicroseconds, rebuiltHandles))
+                {
+                    memoryMaintenanceDirty = true;
+                    return;
+                }
                 MemoryMaintenanceSlicePlan plan = MemoryMaintenancePolicy.Plan(
                     new MemoryMaintenanceSliceRequest
                     {
@@ -100,14 +127,22 @@ namespace PawnDiary
                 {
                     ApplyKnowledgeEviction();
                     memoryMaintenanceLegacyDoneForCycle = true;
+                    if (MemoryMaintenancePolicy.ShouldYieldAfterPreparation(
+                            ElapsedMicroseconds(timer), targetMicroseconds, true))
+                    {
+                        memoryMaintenanceDirty = true;
+                        return;
+                    }
                 }
                 if (plan.workItems == 0)
                 {
-                    CompleteMemoryMaintenanceCycle(nowTick);
+                    memoryMaintenanceAwaitingPressure = true;
+                    if (!TryCompleteMemoryMaintenanceCycle(
+                            nowTick, timer, targetMicroseconds))
+                        memoryMaintenanceDirty = true;
                     return;
                 }
 
-                Stopwatch timer = Stopwatch.StartNew();
                 int processed = 0;
                 bool changed = false;
                 MemoryReducerPolicy policy = BuildMemoryReducerPolicy(nowTick);
@@ -142,7 +177,10 @@ namespace PawnDiary
                 int next = plan.startIndex + processed;
                 if (next >= memoryMaintenanceHandles.Count)
                 {
-                    CompleteMemoryMaintenanceCycle(nowTick);
+                    memoryMaintenanceAwaitingPressure = true;
+                    if (!TryCompleteMemoryMaintenanceCycle(
+                            nowTick, timer, targetMicroseconds))
+                        memoryMaintenanceDirty = true;
                 }
                 else
                 {
@@ -163,6 +201,7 @@ namespace PawnDiary
                 memoryMaintenanceNextItemIndex = 0;
                 memoryMaintenanceDirty = false;
                 memoryMaintenanceLegacyDoneForCycle = false;
+                memoryMaintenanceAwaitingPressure = false;
                 memoryMaintenanceHandles.Clear();
                 memoryM4IndexesDirty = true;
                 RecordMemoryDiagnostic("other", "maintenance");
@@ -241,15 +280,27 @@ namespace PawnDiary
                 memoryMaintenanceNextItemIndex = 0;
         }
 
-        private void CompleteMemoryMaintenanceCycle(long nowTick)
+        private bool TryCompleteMemoryMaintenanceCycle(
+            long nowTick,
+            Stopwatch timer,
+            long targetMicroseconds)
         {
+            if (MemoryMaintenancePolicy.ShouldDeferFinalPressure(
+                    ElapsedMicroseconds(timer), targetMicroseconds)) return false;
             MemoryPressureCommitResult pressure = TryApplyMemoryPressureCaps(nowTick);
             if (pressure.protectedSaturation)
                 RecordMemoryDiagnostic("capacity_refused", "maintenance");
+            CompleteMemoryMaintenanceCycle(nowTick);
+            return true;
+        }
+
+        private void CompleteMemoryMaintenanceCycle(long nowTick)
+        {
             memoryMaintenanceLastRunTick = nowTick;
             memoryMaintenanceNextItemIndex = 0;
             memoryMaintenanceDirty = false;
             memoryMaintenanceLegacyDoneForCycle = false;
+            memoryMaintenanceAwaitingPressure = false;
             memoryMaintenanceHandles.Clear();
         }
 

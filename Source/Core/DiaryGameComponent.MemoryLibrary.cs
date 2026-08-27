@@ -1042,6 +1042,24 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Invalidates detached Library snapshots after inclusion/cooldown/exposure changes. These
+        /// mutations deliberately leave structural command fences intact, but every status overlay
+        /// and its source fingerprint must be rebuilt before the next published read.
+        /// </summary>
+        private void MarkMemoryLibraryStatusProjectionDirty()
+        {
+            memoryLibraryDirectoryFingerprint = string.Empty;
+            memoryLibraryDirectoryBuildRequested = true;
+            memoryLibraryOwners.Clear();
+            memoryLibraryOwnerCacheFingerprints.Clear();
+            memoryLibraryOwnerLru.Clear();
+            memoryLibraryListPublications.Clear();
+            memoryLibraryDetailPublications.Clear();
+            memoryLibraryTextPublications.Clear();
+            DiaryStateVersion.Bump();
+        }
+
+        /// <summary>
         /// Invalidates only the saved culture/directory display projection. Owner memory snapshots and
         /// their list/detail publications remain valid because culture is not memory/search identity.
         /// </summary>

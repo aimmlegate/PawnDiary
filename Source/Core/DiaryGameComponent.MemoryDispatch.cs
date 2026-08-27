@@ -212,8 +212,9 @@ namespace PawnDiary
                     RecordMemoryDiagnostic("other", "owner");
                     continue;
                 }
-                ApplyInvocationAccounting(
-                    state, variant, mutation, saved, Math.Max(1, attempt.invocationTick));
+                if (ApplyInvocationAccounting(
+                        state, variant, mutation, saved, Math.Max(1, attempt.invocationTick)))
+                    MarkMemoryLibraryStatusProjectionDirty();
                 attempt.potentialExposureApplied = true;
                 if (mutation.applyNarrativeUse) attempt.narrativeUseApplied = true;
             }
@@ -227,8 +228,9 @@ namespace PawnDiary
                 };
                 if (CanApplyInvocationAccounting(state, variant, mutation))
                 {
-                    ApplyInvocationAccounting(
-                        state, variant, mutation, saved, Math.Max(1, winner.invocationTick));
+                    if (ApplyInvocationAccounting(
+                            state, variant, mutation, saved, Math.Max(1, winner.invocationTick)))
+                        MarkMemoryLibraryStatusProjectionDirty();
                     winner.narrativeUseApplied = true;
                 }
                 else
@@ -376,7 +378,8 @@ namespace PawnDiary
                 return null;
             }
 
-            ApplyInvocationAccounting(state, variant, committed, saved, invocationTick);
+            if (ApplyInvocationAccounting(state, variant, committed, saved, invocationTick))
+                MarkMemoryLibraryStatusProjectionDirty();
             if (optionalMemoryRequest
                 && !invokedGenerationCutoffs.TryRegister(
                     saved.sessionId,
@@ -392,7 +395,7 @@ namespace PawnDiary
                 return null;
             }
             memoryInvocationSequenceForSession = committed.nextInvocationSequence;
-            RebuildMemorySizeIndexes();
+            RefreshMemoryDispatchSizeIndex(state);
             return committed.permit;
         }
 
@@ -419,22 +422,26 @@ namespace PawnDiary
                     pending.providerReturnedUsableResult);
             if (!plan.accepted) return plan.duplicate;
 
+            PawnKnowledgeState owner = FindCurrentMemoryEnvelope(saved.ownerPawnId);
             bool accountingChanged = false;
             if (plan.applyConfirmedExposure)
             {
                 SavedFrozenPromptVariantV1 variant = FindVariant(saved, permit.variantKey);
-                ApplyConfirmedExposure(
-                    FindCurrentMemoryEnvelope(saved.ownerPawnId),
+                if (ApplyConfirmedExposure(
+                    owner,
                     variant,
-                    permit.invocationTick);
-                accountingChanged = true;
+                    permit.invocationTick))
+                {
+                    MarkMemoryLibraryStatusProjectionDirty();
+                    accountingChanged = true;
+                }
             }
             bool applied = MemoryDispatchSavedAdapter.MarkReceiptApplied(
                 saved,
                 permit.attemptOrdinal,
                 pending.outcomeToken,
                 Math.Max(1, Verse.Find.TickManager?.TicksGame ?? 0));
-            if (applied || accountingChanged) RebuildMemorySizeIndexes();
+            if (applied || accountingChanged) RefreshMemoryDispatchSizeIndex(owner);
             return applied;
         }
 
@@ -508,7 +515,8 @@ namespace PawnDiary
                     result.success);
             bool applied = plan.accepted && MemoryDispatchSavedAdapter.MarkResultApplied(
                 saved, permit.attemptOrdinal);
-            if (applied) RebuildMemorySizeIndexes();
+            if (applied) RefreshMemoryDispatchSizeIndex(
+                FindCurrentMemoryEnvelope(saved.ownerPawnId));
             return applied;
         }
 
@@ -535,7 +543,18 @@ namespace PawnDiary
             MemoryDispatchRuntimeBridge.ReleaseLogicalRequestSendEnvelopes(
                 saved.logicalRequestId);
             invokedGenerationCutoffs.Settle(saved.logicalRequestId);
-            RebuildMemorySizeIndexes();
+            RefreshMemoryDispatchSizeIndex(
+                FindCurrentMemoryEnvelope(saved.ownerPawnId));
+        }
+
+        /// <summary>
+        /// Refreshes only the request owner plus the bounded component/request subtotal. A corrupt
+        /// or stale transient index falls back to the full rebuild, but ordinary permit, receipt,
+        /// result, and settlement mutations never rescan unrelated owner payloads.
+        /// </summary>
+        private void RefreshMemoryDispatchSizeIndex(PawnKnowledgeState owner)
+        {
+            if (!RefreshMemorySizeIndexForOwner(owner)) RebuildMemorySizeIndexes();
         }
 
         private static bool TransportIdentityMatches(
@@ -686,6 +705,9 @@ namespace PawnDiary
             if (variant?.receiptPlan == null || plan == null) return false;
             if (!plan.applyPotentialExposure && !plan.applyNarrativeUse) return true;
             if (state == null || state.statusRevision == long.MaxValue) return false;
+            List<SavedMemoryThreadRoot> roots = FindEvidenceRoots(state, variant.receiptPlan);
+            for (int index = 0; index < roots.Count; index++)
+                if (roots[index].statusRevision == long.MaxValue) return false;
             if (!plan.applyNarrativeUse) return true;
 
             List<SavedMemoryBlock> blocks = FindEvidenceBlocks(state, variant.receiptPlan);
@@ -701,7 +723,7 @@ namespace PawnDiary
             return true;
         }
 
-        private static void ApplyInvocationAccounting(
+        private static bool ApplyInvocationAccounting(
             PawnKnowledgeState state,
             SavedFrozenPromptVariantV1 variant,
             MemoryInvocationCommitPlan plan,
@@ -709,20 +731,32 @@ namespace PawnDiary
             long invocationTick)
         {
             if (state == null || variant?.receiptPlan == null
-                || (!plan.applyPotentialExposure && !plan.applyNarrativeUse)) return;
+                || (!plan.applyPotentialExposure && !plan.applyNarrativeUse)) return false;
             List<SavedMemoryBlock> blocks = FindEvidenceBlocks(state, variant.receiptPlan);
+            List<SavedMemoryThreadRoot> roots = FindEvidenceRoots(state, variant.receiptPlan);
+            bool changed = false;
             for (int index = 0; index < blocks.Count; index++)
             {
                 SavedMemoryBlock block = blocks[index];
-                block.providerExposureState = "potentially_sent";
-                block.lastProviderExposureTick = Math.Max(
-                    block.lastProviderExposureTick, invocationTick);
+                long nextExposureTick = Math.Max(block.lastProviderExposureTick, invocationTick);
+                if (block.providerExposureState != "confirmed_sent"
+                    && block.providerExposureState != "potentially_sent")
+                {
+                    block.providerExposureState = "potentially_sent";
+                    changed = true;
+                }
+                if (block.lastProviderExposureTick != nextExposureTick)
+                {
+                    block.lastProviderExposureTick = nextExposureTick;
+                    changed = true;
+                }
                 if (plan.applyNarrativeUse)
                 {
                     block.automaticInclusionCount++;
                     block.lastAutomaticIncludedTick = invocationTick;
                     block.lastAutomaticIncludedEntryOrdinal =
                         state.completedDiaryEntryOrdinal;
+                    changed = true;
                 }
             }
 
@@ -742,24 +776,41 @@ namespace PawnDiary
                     guard.lastCommittedLogicalRequestId = request.logicalRequestId;
                     guard.lastCommittedEvidenceSetFingerprint =
                         variant.receiptPlan.evidenceSetFingerprint;
+                    changed = true;
                 }
             }
+            if (!changed) return false;
+            for (int index = 0; index < roots.Count; index++) roots[index].statusRevision++;
             state.statusRevision++;
+            return true;
         }
 
-        private static void ApplyConfirmedExposure(
+        internal static bool ApplyConfirmedExposure(
             PawnKnowledgeState state,
             SavedFrozenPromptVariantV1 variant,
             long invocationTick)
         {
-            if (state == null || variant?.receiptPlan == null) return;
+            if (state == null || variant?.receiptPlan == null
+                || state.statusRevision == long.MaxValue) return false;
             List<SavedMemoryBlock> blocks = FindEvidenceBlocks(state, variant.receiptPlan);
+            List<SavedMemoryThreadRoot> roots = FindEvidenceRoots(state, variant.receiptPlan);
+            for (int index = 0; index < roots.Count; index++)
+                if (roots[index].statusRevision == long.MaxValue) return false;
+            bool changed = false;
             for (int index = 0; index < blocks.Count; index++)
             {
-                blocks[index].providerExposureState = "confirmed_sent";
-                blocks[index].lastProviderExposureTick = Math.Max(
-                    blocks[index].lastProviderExposureTick, invocationTick);
+                SavedMemoryBlock block = blocks[index];
+                long nextTick = Math.Max(block.lastProviderExposureTick, invocationTick);
+                if (block.providerExposureState == "confirmed_sent"
+                    && block.lastProviderExposureTick == nextTick) continue;
+                block.providerExposureState = "confirmed_sent";
+                block.lastProviderExposureTick = nextTick;
+                changed = true;
             }
+            if (!changed) return false;
+            for (int index = 0; index < roots.Count; index++) roots[index].statusRevision++;
+            state.statusRevision++;
+            return true;
         }
 
         private static List<SavedMemoryBlock> FindEvidenceBlocks(
@@ -776,6 +827,32 @@ namespace PawnDiary
                 if (MatchesEvidence(root.rollingSummaryBlock, receipt)
                     && !result.Contains(root.rollingSummaryBlock))
                     result.Add(root.rollingSummaryBlock);
+            }
+            return result;
+        }
+
+        /// <summary>Finds each affected root once so status-only overlays receive their own revision.</summary>
+        private static List<SavedMemoryThreadRoot> FindEvidenceRoots(
+            PawnKnowledgeState state,
+            SavedFrozenEvidenceReceiptPlanV1 receipt)
+        {
+            List<SavedMemoryThreadRoot> result = new List<SavedMemoryThreadRoot>();
+            for (int index = 0; state?.threadRoots != null && index < state.threadRoots.Count; index++)
+            {
+                SavedMemoryThreadRoot root = state.threadRoots[index];
+                if (root == null) continue;
+                bool matched = false;
+                for (int blockIndex = 0; root.visibleBlocks != null
+                    && blockIndex < root.visibleBlocks.Count; blockIndex++)
+                {
+                    if (MatchesEvidence(root.visibleBlocks[blockIndex], receipt))
+                    {
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched) matched = MatchesEvidence(root.rollingSummaryBlock, receipt);
+                if (matched) result.Add(root);
             }
             return result;
         }

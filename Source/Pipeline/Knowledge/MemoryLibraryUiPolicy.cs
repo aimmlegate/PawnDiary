@@ -9,6 +9,22 @@ using System.Collections.Generic;
 
 namespace PawnDiary
 {
+    /// <summary>Pure cadence rule for bounded Library repository polling outside GUI draw.</summary>
+    internal static class MemoryLibraryUiPollPolicy
+    {
+        public static bool ShouldPoll(
+            int currentFrame,
+            int lastPollFrame,
+            int configuredIntervalFrames,
+            bool immediateWork)
+        {
+            if (immediateWork || lastPollFrame < 0 || currentFrame < lastPollFrame) return true;
+            int interval = configuredIntervalFrames >= 1 && configuredIntervalFrames <= 60
+                ? configuredIntervalFrames : 6;
+            return (long)currentFrame - lastPollFrame >= interval;
+        }
+    }
+
     internal static class MemoryLibraryUiLifetimeTokens
     {
         public const string Minor = "minor";

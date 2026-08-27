@@ -127,6 +127,7 @@
     <memoryLibraryOverscanRows>2</memoryLibraryOverscanRows>
     <memoryLibraryMaximumMaterializedRows>28</memoryLibraryMaximumMaterializedRows>
     <memoryLibraryDiaryActionWidth>92</memoryLibraryDiaryActionWidth>
+    <memoryLibraryRepositoryPollFrames>6</memoryLibraryRepositoryPollFrames>
 
     <!-- Header/card dimensions -->
     <controlLineHeight>28</controlLineHeight>

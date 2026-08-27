@@ -10,6 +10,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using PawnDiary.Ingestion;
+using RimWorld;
 using Verse;
 
 namespace PawnDiary
@@ -1183,6 +1184,12 @@ namespace PawnDiary
             return text.ToString();
         }
 
+        private sealed class OptionalReflectionCandidate
+        {
+            public SavedMemoryBlock block;
+            public MemoryRecallCandidateSnapshot snapshot;
+        }
+
         private SavedMemoryBlock SelectOptionalReflectionBlock(
             PawnKnowledgeState owner,
             MemoryPolicySnapshot policy,
@@ -1191,25 +1198,98 @@ namespace PawnDiary
             DiaryKnowledgeTuningDef tuning,
             long meaningfulEligibilityBaselineTick)
         {
-            List<SavedMemoryBlock> candidates = new List<SavedMemoryBlock>();
-            AddReflectionBlocks(candidates, owner?.standaloneBlocks);
+            string consumerId = meaningful
+                ? MemoryRecallConsumerRegistry.ExistingReflection
+                : MemoryRecallConsumerRegistry.QuietMemory;
+            MemoryRecallQueryV2 query = BuildOptionalReflectionRecallQuery(
+                owner, policy, consumerId, nowTick, tuning);
+            MemoryRecallReservationView reservations = SnapshotRecallReservations(owner);
+            List<OptionalReflectionCandidate> candidates =
+                new List<OptionalReflectionCandidate>();
+            for (int index = 0; owner?.standaloneBlocks != null
+                && index < owner.standaloneBlocks.Count; index++)
+            {
+                SavedMemoryBlock block = owner.standaloneBlocks[index];
+                MemoryRecallCandidateSnapshot snapshot = SnapshotRecallCandidate(
+                    owner, null, block, false, policy, tuning, query, reservations);
+                if (block != null && snapshot != null)
+                    candidates.Add(new OptionalReflectionCandidate
+                    {
+                        block = block,
+                        snapshot = snapshot
+                    });
+            }
             for (int rootIndex = 0; owner?.threadRoots != null
                 && rootIndex < owner.threadRoots.Count; rootIndex++)
-                AddReflectionBlocks(candidates, owner.threadRoots[rootIndex]?.visibleBlocks);
-            candidates.RemoveAll(block => !EligibleReflectionBlock(
-                block, owner, policy, meaningful, nowTick, tuning,
+            {
+                SavedMemoryThreadRoot root = owner.threadRoots[rootIndex];
+                for (int blockIndex = 0; root?.visibleBlocks != null
+                    && blockIndex < root.visibleBlocks.Count; blockIndex++)
+                {
+                    SavedMemoryBlock block = root.visibleBlocks[blockIndex];
+                    MemoryRecallCandidateSnapshot snapshot = SnapshotRecallCandidate(
+                        owner, root, block, true, policy, tuning, query, reservations);
+                    if (block != null && snapshot != null)
+                        candidates.Add(new OptionalReflectionCandidate
+                        {
+                            block = block,
+                            snapshot = snapshot
+                        });
+                }
+            }
+            candidates.RemoveAll(row => !EligibleReflectionBlock(
+                row?.block, row?.snapshot, query, consumerId, policy, meaningful, nowTick, tuning,
                 meaningfulEligibilityBaselineTick)
-                || IsCoordinatorEvidenceReserved(block));
+                || IsCoordinatorEvidenceReserved(row.block));
             candidates.Sort((left, right) =>
             {
-                int compared = ReflectionBlockSalience(right)
-                    .CompareTo(ReflectionBlockSalience(left));
+                int compared = ReflectionBlockSalience(right.block)
+                    .CompareTo(ReflectionBlockSalience(left.block));
                 if (compared != 0) return compared;
-                compared = right.originalEventTick.CompareTo(left.originalEventTick);
+                compared = right.block.originalEventTick.CompareTo(left.block.originalEventTick);
                 return compared != 0
-                    ? compared : string.CompareOrdinal(left.recordId, right.recordId);
+                    ? compared : string.CompareOrdinal(left.block.recordId, right.block.recordId);
             });
-            return candidates.Count == 0 ? null : candidates[0];
+            return candidates.Count == 0 ? null : candidates[0].block;
+        }
+
+        private static MemoryRecallQueryV2 BuildOptionalReflectionRecallQuery(
+            PawnKnowledgeState owner,
+            MemoryPolicySnapshot policy,
+            string consumerId,
+            long nowTick,
+            DiaryKnowledgeTuningDef tuning)
+        {
+            var query = new MemoryRecallQueryV2
+            {
+                consumerId = consumerId,
+                writingFormat = MemoryRecallWritingFormats.Full,
+                ownerPawnId = owner?.pawnId ?? string.Empty,
+                ownerEpochToken = owner?.autobiographicalEpochToken ?? string.Empty,
+                useMemoriesInWriting = policy?.useMemoriesInWriting == true,
+                repetitionPolicy = new MemoryRepetitionPolicySnapshot
+                {
+                    currentTick = Math.Max(0, nowTick),
+                    completedDiaryEntryOrdinal = owner?.completedDiaryEntryOrdinal ?? 0,
+                    ticksPerDay = GenDate.TicksPerDay,
+                    memoryReuseDays = policy?.memoryReuseDays ?? 0,
+                    memoryRevisitEntryCount = policy?.memoryRevisitEntryCount ?? 0,
+                    recordMinimumReuseDays = NonNegative(
+                        tuning?.memoryRecordMinimumReuseDays ?? 1),
+                    recordMinimumEntryDistance = NonNegative(
+                        tuning?.memoryRecordMinimumEntryDistance ?? 1),
+                    rootMinimumEntryDistance = NonNegative(
+                        tuning?.memoryRootMinimumEntryDistance ?? 1),
+                    subjectMinimumEntryDistance = NonNegative(
+                        tuning?.memorySubjectMinimumEntryDistance ?? 1),
+                    pairMinimumEntryDistance = NonNegative(
+                        tuning?.memoryPairMinimumEntryDistance ?? 1),
+                    noveltyMinimumEntryDistance = NonNegative(
+                        tuning?.memoryNoveltyMinimumEntryDistance ?? 1)
+                }
+            };
+            AddEnabledCategories(query.enabledCategories, policy?.memoryCategoryMask ?? 0);
+            return query;
         }
 
         private bool IsCoordinatorEvidenceReserved(SavedMemoryBlock block)
@@ -1226,14 +1306,6 @@ namespace PawnDiary
                         StringComparison.Ordinal)) return true;
             }
             return false;
-        }
-
-        private static void AddReflectionBlocks(
-            List<SavedMemoryBlock> result,
-            List<SavedMemoryBlock> source)
-        {
-            for (int index = 0; source != null && index < source.Count; index++)
-                if (source[index] != null) result.Add(source[index]);
         }
 
         /// <summary>
@@ -1368,22 +1440,23 @@ namespace PawnDiary
 
         private static bool EligibleReflectionBlock(
             SavedMemoryBlock block,
-            PawnKnowledgeState owner,
+            MemoryRecallCandidateSnapshot candidate,
+            MemoryRecallQueryV2 query,
+            string consumerId,
             MemoryPolicySnapshot policy,
             bool meaningful,
             long nowTick,
             DiaryKnowledgeTuningDef tuning,
             long meaningfulEligibilityBaselineTick)
         {
-            if (block == null || owner == null || policy == null
+            if (block == null || candidate == null || query == null || policy == null
                 || block.kind == MemoryContractTokens.KindSummary
-                || block.suppressed || block.playerEdited
-                || !string.Equals(block.ownerPawnId, owner.pawnId, StringComparison.Ordinal)
-                || !string.Equals(block.ownerEpochToken,
-                    owner.autobiographicalEpochToken, StringComparison.Ordinal)
+                || block.playerEdited
                 || !string.Equals(block.providerExposureState, "not_sent",
                     StringComparison.Ordinal)
-                || !policy.AllowsRecall(MemoryCategoryBits.ForToken(block.category))) return false;
+                || !policy.AllowsRecall(MemoryCategoryBits.ForToken(block.category))
+                || !ImportantMemorySelector.IsCandidateStateEligibleForConsumer(
+                    query, consumerId, candidate)) return false;
             bool salient = block.importance == MemoryContractTokens.ImportanceImportant
                 || HasTurningPoint(block) || HasReversal(block);
             if (meaningful != salient) return false;

@@ -15,6 +15,7 @@
 // - malformed legacy Scribe evidence reaches dry-run planning unchanged and remains retryable;
 // - nested allocator/schema carriers cannot hide from recursive component scans;
 // - owner/global byte accounting and null-hole sizing follow the frozen one-charge policy;
+// - legacy commit ignores ordinary capture gates and carries its budget across owner transactions;
 // - the logical-size walker validates a fully populated envelope against the frozen registry.
 using System;
 using System.Collections.Generic;
@@ -30,6 +31,7 @@ namespace PawnDiary.RimTests
     public static class PawnDiaryMemoryM1FixtureTests
     {
         private const string Label = "mem";
+        private static PawnDiaryRecord legacyMissingKnowledgeTarget;
 
         [Test]
         public static void MemoryEnvelopeCurrentShapeRoundTrips()
@@ -156,6 +158,120 @@ namespace PawnDiary.RimTests
                 Require(loaded.schemaVersion == 1,
                     "T6.1: Normalize must NOT stamp legacy envelopes current.");
             });
+        }
+
+        /// <summary>
+        /// Saves an old PawnDiaryRecord shape with no knowledgeState key, lets the record's real
+        /// PostLoadInit create its pinned raw envelope, commits M11 migration, then exercises the
+        /// first factual admission. This is the exact pre-feature path that previously left all four
+        /// positive current invariants at zero and made otherwise valid memories unusable.
+        /// </summary>
+        [Test]
+        public static void MissingPreM11KnowledgeRowMigratesThenAdmitsFirstMemory()
+        {
+            const string ownerId = "Pawn_M11_MissingKnowledge";
+            PawnDiaryRecord loadedRecord = null;
+            RunWithTempFile(path =>
+            {
+                legacyMissingKnowledgeTarget = new PawnDiaryRecord
+                {
+                    pawnId = ownerId,
+                    pawnName = "Missing knowledge fixture",
+                    eventIds = new List<string> { "existing-page" }
+                };
+                LegacyMissingKnowledgeRowAdapter saved =
+                    new LegacyMissingKnowledgeRowAdapter();
+                SaveWithScribe(path, () => Scribe_Deep.Look(ref saved, "legacyDiary"));
+
+                legacyMissingKnowledgeTarget = new PawnDiaryRecord();
+                LegacyMissingKnowledgeRowAdapter loaded = null;
+                LoadVarsWithScribe(path, () => Scribe_Deep.Look(ref loaded, "legacyDiary"));
+                loadedRecord = legacyMissingKnowledgeTarget;
+            });
+            legacyMissingKnowledgeTarget = null;
+
+            Require(loadedRecord != null && loadedRecord.pawnId == ownerId
+                    && loadedRecord.eventIds.Count == 1
+                    && loadedRecord.knowledgeState != null
+                    && loadedRecord.knowledgeState.schemaVersion == 1
+                    && loadedRecord.knowledgeState.requestCancellationGeneration == 0
+                    && loadedRecord.knowledgeState.structuralRevision == 0
+                    && loadedRecord.knowledgeState.statusRevision == 0
+                    && loadedRecord.knowledgeState.completedDiaryEntryOrdinal == 0,
+                "The real missing-key Scribe path did not preserve the pinned raw old-save shape.");
+
+            DiaryGameComponent component = NewMemoryComponent(
+                new List<PawnDiaryRecord> { loadedRecord }, null, null);
+            component.RunMemoryMigrationCommit();
+            PawnKnowledgeState migrated = loadedRecord.knowledgeState;
+            Require(migrated.IsCurrentSchema()
+                    && migrated.requestCancellationGeneration > 0
+                    && migrated.structuralRevision > 0
+                    && migrated.statusRevision > 0
+                    && migrated.completedDiaryEntryOrdinal > 0
+                    && string.IsNullOrEmpty(migrated.autobiographicalEpochToken),
+                "Missing-row migration did not restore every positive current invariant.");
+
+            MemoryPolicySnapshot prior = MemoryEffectivePolicyProvider.Current;
+            MemorySettingsPolicyFieldsV1 fields = prior.ToFields();
+            fields.saveNewMemories = true;
+            fields.memoryCategoryMask |= MemoryCategoryBits.Personal;
+            MemoryPolicySnapshot captureEnabled = MemoryPolicyNormalizer.Normalize(
+                MemoryPolicyNormalizer.CurrentSettingsSchemaVersion,
+                fields,
+                MemoryPolicyDefAdapter.Bounds());
+            Require(MemoryEffectivePolicyProvider.Publish(captureEnabled),
+                "The old-save fixture could not publish its isolated capture policy.");
+            try
+            {
+                const string sourceKind = "capture_signal";
+                const string occurrence = "missing-row-first-occurrence";
+                const string captureRule = "missing-row-first-rule";
+                const string discriminator = "missing-row-first-fact";
+                string provenance;
+                Require(MemoryIdentityCodec.TryCreateProvenanceRefId(
+                        sourceKind,
+                        occurrence,
+                        string.Empty,
+                        captureRule,
+                        discriminator,
+                        string.Empty,
+                        out provenance),
+                    "The old-save fixture could not create factual provenance.");
+                var draft = new FactualMemoryDraft
+                {
+                    ownerPawnId = ownerId,
+                    sourceOccurrenceId = occurrence,
+                    sourceKindToken = sourceKind,
+                    captureRuleId = captureRule,
+                    factDiscriminator = discriminator,
+                    kind = MemoryContractTokens.KindLandmark,
+                    category = MemoryContractTokens.CategoryPersonal,
+                    importance = MemoryContractTokens.ImportanceImportant,
+                    originalEventTick = Math.Max(0, Find.TickManager?.TicksGame ?? 0),
+                    routeReliable = false,
+                    chapterPhaseToken = "fixture",
+                    chapterDirective = MemoryChapterDirectiveTokens.RemainStandalone,
+                    automaticWording = "First memory after old-save migration.",
+                    provenanceRefId = provenance
+                };
+                MethodInfo persist = typeof(DiaryGameComponent).GetMethod(
+                    "PersistFactualDraft",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Require(persist != null && (bool)persist.Invoke(component, new object[] { draft }),
+                    "The first factual memory after missing-row migration was refused.");
+                Require(migrated.standaloneBlocks.Count == 1
+                        && migrated.threadRoots.Count == 0
+                        && !string.IsNullOrWhiteSpace(migrated.autobiographicalEpochToken)
+                        && loadedRecord.reflectionState != null
+                        && loadedRecord.reflectionState.memoryOwnerEpochToken
+                            == migrated.autobiographicalEpochToken,
+                    "First factual admission did not enroll and link the migrated old-save owner.");
+            }
+            finally
+            {
+                MemoryEffectivePolicyProvider.Publish(prior);
+            }
         }
 
         [Test]
@@ -785,6 +901,365 @@ namespace PawnDiary.RimTests
                 "A second M11 migration pass changed an already-current owner.");
         }
 
+        /// <summary>
+        /// Migration preserves already-saved autobiography independently of the player's current
+        /// capture preferences. Save-new Off and an empty category mask apply to future capture,
+        /// never to the one-time conversion of legacy rows already present in the save.
+        /// </summary>
+        [Test]
+        public static void LegacyMigrationIgnoresSaveAndCategoryCaptureGates()
+        {
+            MemoryPolicySnapshot prior = MemoryEffectivePolicyProvider.Current;
+            MemorySettingsPolicyFieldsV1 fields = prior.ToFields();
+            fields.saveNewMemories = false;
+            fields.memoryCategoryMask = 0;
+            MemoryPolicySnapshot disabled = MemoryPolicyNormalizer.Normalize(
+                MemoryPolicyNormalizer.CurrentSettingsSchemaVersion,
+                fields,
+                MemoryPolicyDefAdapter.Bounds());
+            Require(MemoryEffectivePolicyProvider.Publish(disabled),
+                "The migration fixture could not publish its isolated disabled policy.");
+            try
+            {
+                const string ownerId = "Pawn_M11_Migration_GatesOff";
+                PawnDiaryRecord diary = new PawnDiaryRecord
+                {
+                    pawnId = ownerId,
+                    knowledgeState = new PawnKnowledgeState
+                    {
+                        pawnId = ownerId,
+                        schemaVersion = 1,
+                        records = new List<ImportantMemoryRecord> { NewLegacyRecord() }
+                    }
+                };
+                DiaryGameComponent component = NewMemoryComponent(
+                    new List<PawnDiaryRecord> { diary }, null, null);
+
+                component.RunMemoryMigrationCommit();
+
+                PawnKnowledgeState migrated = diary.knowledgeState;
+                Require(migrated != null && migrated.IsCurrentSchema()
+                        && migrated.records.Count == 0
+                        && !string.IsNullOrWhiteSpace(migrated.autobiographicalEpochToken)
+                        && CountBlocks(migrated) == 1,
+                    "Ordinary Save/category capture gates suppressed saved legacy migration.");
+            }
+            finally
+            {
+                MemoryEffectivePolicyProvider.Publish(prior);
+            }
+        }
+
+        /// <summary>
+        /// Every successful owner migration must update the detached running budget before the next
+        /// owner is considered. One hundred 50-block owners fit at the shipped 5,000-block global
+        /// soft cap; the next owner must remain wholly raw instead of being admitted against the
+        /// stale pre-loop totals. Exact ordinal IDs pin which owner is the later refusal.
+        /// </summary>
+        [Test]
+        public static void CumulativeMigrationBudgetRejectsOnlyLaterOverflowingOwner()
+        {
+            const int ownerCount = 101;
+            const int recordsPerOwner = 50;
+            var diaries = new List<PawnDiaryRecord>();
+            for (int ownerIndex = 0; ownerIndex < ownerCount; ownerIndex++)
+            {
+                string ownerId = "Pawn_M11_Budget_" + ownerIndex.ToString("D3");
+                var legacy = new PawnKnowledgeState
+                {
+                    pawnId = ownerId,
+                    schemaVersion = 1,
+                    records = new List<ImportantMemoryRecord>()
+                };
+                for (int rowIndex = 0; rowIndex < recordsPerOwner; rowIndex++)
+                {
+                    legacy.records.Add(NewCapacityLegacyRecord(ownerIndex, rowIndex));
+                }
+
+                diaries.Add(new PawnDiaryRecord
+                {
+                    pawnId = ownerId,
+                    knowledgeState = legacy
+                });
+            }
+
+            DiaryGameComponent component = NewMemoryComponent(diaries, null, null);
+            component.RunMemoryMigrationCommit();
+
+            for (int ownerIndex = 0; ownerIndex < ownerCount - 1; ownerIndex++)
+            {
+                PawnKnowledgeState migrated = diaries[ownerIndex].knowledgeState;
+                Require(migrated.IsCurrentSchema()
+                        && migrated.records.Count == 0
+                        && CountBlocks(migrated) == recordsPerOwner,
+                    "A pre-cap owner was refused or partly migrated at ordinal " + ownerIndex + ".");
+            }
+
+            PawnKnowledgeState refused = diaries[ownerCount - 1].knowledgeState;
+            Require(!refused.IsCurrentSchema()
+                    && refused.schemaVersion == 1
+                    && refused.records.Count == recordsPerOwner
+                    && CountBlocks(refused) == 0,
+                "The later owner bypassed the cumulative global block budget or mutated partly.");
+        }
+
+        /// <summary>
+        /// A pre-M11 owner can legitimately contain culture provenance but no legacy memory rows. It
+        /// still needs a one-time schema commit; because it has no autobiography, migration must not
+        /// allocate an epoch or consume an active-owner slot merely to stamp the envelope current.
+        /// </summary>
+        [Test]
+        public static void EmptyLegacyOwnerMigratesCurrentWithoutEnrollment()
+        {
+            const string ownerId = "Pawn_M11_EmptyLegacy";
+            PawnDiaryRecord diary = new PawnDiaryRecord
+            {
+                pawnId = ownerId,
+                knowledgeState = new PawnKnowledgeState
+                {
+                    pawnId = ownerId,
+                    schemaVersion = 1,
+                    originCultureDefName = "Culture_EmptyLegacy",
+                    originCultureSource = "legacy_fixture",
+                    adoptedCultureDefName = "Culture_AdoptedLegacy",
+                    records = new List<ImportantMemoryRecord>()
+                }
+            };
+            DiaryGameComponent component = NewMemoryComponent(
+                new List<PawnDiaryRecord> { diary }, null, null);
+
+            component.RunMemoryMigrationCommit();
+
+            PawnKnowledgeState migrated = diary.knowledgeState;
+            FieldInfo allocatorField = typeof(DiaryGameComponent).GetField(
+                "lastIssuedAutobiographicalEpochSequence",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Require(migrated != null && migrated.IsCurrentSchema()
+                    && migrated.pawnId == ownerId
+                    && string.IsNullOrEmpty(migrated.autobiographicalEpochToken)
+                    && !migrated.archiveOnly && !migrated.epochFenceOnly
+                    && migrated.records.Count == 0
+                    && migrated.threadRoots.Count == 0
+                    && migrated.standaloneBlocks.Count == 0,
+                "An empty legacy envelope stayed migration-pending or became an active owner.");
+            Require(migrated.originCultureDefName == "Culture_EmptyLegacy"
+                    && migrated.originCultureSource == "legacy_fixture"
+                    && migrated.adoptedCultureDefName == "Culture_AdoptedLegacy",
+                "Empty-owner migration lost legacy culture provenance.");
+            Require(allocatorField != null
+                    && (long)allocatorField.GetValue(component) == 0,
+                "Empty-owner migration consumed an autobiographical epoch allocation.");
+
+            PawnKnowledgeState committed = migrated;
+            component.RunMemoryMigrationCommit();
+            Require(ReferenceEquals(committed, diary.knowledgeState)
+                    && string.IsNullOrEmpty(diary.knowledgeState.autobiographicalEpochToken),
+                "A second empty-owner migration pass enrolled or replaced current state.");
+        }
+
+        /// <summary>
+        /// Current-schema duplicate repair must publish its active winner and preserve the other
+        /// player-authored wording in Imported as one atomic, idempotent owner transaction.
+        /// </summary>
+        [Test]
+        public static void AuthoredCurrentRootConflictArchivesAlternateAndReachesFixedPoint()
+        {
+            const string ownerId = "Pawn_M11_AuthoredRepair";
+            const string subjectId = "Pawn_M11_AuthoredSubject";
+            PawnKnowledgeState state = PawnDiaryMemoryM11RuntimeFixture.BuildCompleteOwner(
+                ownerId, subjectId, "Same subject", 81);
+            SavedMemoryThreadRoot first = state.threadRoots[0];
+            SavedMemoryThreadRoot alternate = PawnDiaryMemoryM11RuntimeFixture.AddThreadRoot(
+                state, subjectId, "Same subject", 82,
+                MemoryContractTokens.SubjectPawn,
+                MemoryContractTokens.CategoryRelationships);
+            SavedMemoryBlock firstBlock = first.visibleBlocks[0];
+            SavedMemoryBlock alternateBlock = alternate.visibleBlocks[0];
+            alternate.rootId = first.rootId;
+            alternate.chapters[0].chapterId = first.chapters[0].chapterId;
+            alternateBlock.rootId = first.rootId;
+            alternateBlock.chapterId = first.chapters[0].chapterId;
+            alternateBlock.recordId = firstBlock.recordId;
+            firstBlock.playerEdited = true;
+            firstBlock.playerWording = "Authored repair wording A.";
+            alternateBlock.playerEdited = true;
+            alternateBlock.playerWording = "Authored repair wording B.";
+
+            PawnDiaryRecord diary = new PawnDiaryRecord
+            {
+                pawnId = ownerId,
+                knowledgeState = state
+            };
+            DiaryGameComponent component = NewMemoryComponent(
+                new List<PawnDiaryRecord> { diary }, null, null);
+            component.RebuildMemorySizeIndexes();
+            int importedBefore = state.importedArchiveRows.Count;
+            long revisionBefore = state.structuralRevision;
+
+            Require(component.TryRepairSavedMemoryRoots(
+                    state,
+                    new MemoryReducerPolicy
+                    {
+                        nowTick = 0,
+                        targetVisibleBlocks = 64,
+                        maximumVisibleBlocks = 128
+                    }),
+                "Current-schema authored conflict repair did not publish.");
+            Require(state.threadRoots.Count == 1
+                    && state.threadRoots[0].visibleBlocks.Count == 1
+                    && state.structuralRevision == revisionBefore + 1,
+                "Authored conflict repair did not publish exactly one active winner.");
+            Require(state.importedArchiveRows.Count == importedBefore + 1,
+                "Authored conflict repair did not archive exactly one alternate.");
+            SavedImportedMemoryRow archived =
+                state.importedArchiveRows[state.importedArchiveRows.Count - 1];
+            string activeWording = state.threadRoots[0].visibleBlocks[0].playerWording;
+            Require(archived.migrationReasonToken == "authored_conflict"
+                    && archived.savedOwnerIdentityKindToken == "exact_id"
+                    && archived.savedOwnerIdentityValue == ownerId
+                    && archived.originalRecordId == firstBlock.recordId
+                    && archived.archiveRecordId.Length == 64
+                    && ((activeWording == "Authored repair wording A."
+                            && archived.importedWording == "Authored repair wording B.")
+                        || (activeWording == "Authored repair wording B."
+                            && archived.importedWording == "Authored repair wording A.")),
+                "Authored conflict repair did not preserve the exact losing wording and owner.");
+
+            long fixedRevision = state.structuralRevision;
+            string fixedArchiveId = archived.archiveRecordId;
+            Require(!component.TryRepairSavedMemoryRoots(
+                        state,
+                        new MemoryReducerPolicy
+                        {
+                            nowTick = 0,
+                            targetVisibleBlocks = 64,
+                            maximumVisibleBlocks = 128
+                        })
+                    && state.structuralRevision == fixedRevision
+                    && state.importedArchiveRows.Count == importedBefore + 1
+                    && state.importedArchiveRows[state.importedArchiveRows.Count - 1]
+                        .archiveRecordId == fixedArchiveId,
+                "Authored conflict repair did not reach an idempotent fixed point.");
+        }
+
+        [Test]
+        public static void AuthoredRollingSummaryArchivesOneImportedRowPerContribution()
+        {
+            PawnKnowledgeState state = PawnKnowledgeState.CreateCurrent("Pawn_M1");
+            state.autobiographicalEpochToken = EpochToken(3);
+            SavedMemoryThreadRoot root = NewRoot();
+            root.rollingSummaryBlock.playerEdited = true;
+            root.rollingSummaryBlock.playerWording = "Exact authored rolling wording.";
+            state.threadRoots.Add(root);
+            DiaryGameComponent component = NewMemoryComponent(
+                new List<PawnDiaryRecord>
+                {
+                    new PawnDiaryRecord { pawnId = state.pawnId, knowledgeState = state }
+                },
+                null,
+                null);
+            component.RebuildMemorySizeIndexes();
+
+            Require(component.TryRepairSavedMemoryRoots(
+                    state,
+                    new MemoryReducerPolicy
+                    {
+                        nowTick = 0,
+                        targetVisibleBlocks = 64,
+                        maximumVisibleBlocks = 128
+                    }),
+                "Authored rolling-summary repair did not publish.");
+            Require(state.importedArchiveRows.Count == 1
+                    && state.importedArchiveRows[0].importedWording
+                        == "Exact authored rolling wording."
+                    && state.importedArchiveRows[0].summaryContributionEvidence != null
+                    && state.importedArchiveRows[0].summaryContributionEvidence.contributionId
+                        == "contrib-1"
+                    && state.importedArchiveRows[0].summaryContributionEvidence.canonicalValue
+                        == "Knight"
+                    && state.threadRoots.Count == 1
+                    && state.threadRoots[0].rollingSummaryBlock != null
+                    && !state.threadRoots[0].rollingSummaryBlock.playerEdited
+                    && string.IsNullOrEmpty(
+                        state.threadRoots[0].rollingSummaryBlock.playerWording),
+                "Rolling repair did not preserve its structured authored contribution in Imported.");
+            long revision = state.structuralRevision;
+            string archiveId = state.importedArchiveRows[0].archiveRecordId;
+            Require(!component.TryRepairSavedMemoryRoots(
+                        state,
+                        new MemoryReducerPolicy
+                        {
+                            nowTick = 0,
+                            targetVisibleBlocks = 64,
+                            maximumVisibleBlocks = 128
+                        })
+                    && state.structuralRevision == revision
+                    && state.importedArchiveRows.Count == 1
+                    && state.importedArchiveRows[0].archiveRecordId == archiveId,
+                "Authored rolling-summary repair did not reach a fixed point.");
+        }
+
+        [Test]
+        public static void AuthoredRepairArchiveCapacityRefusalIsAtomic()
+        {
+            const string ownerId = "Pawn_M11_AuthoredCapacity";
+            const string subjectId = "Pawn_M11_AuthoredCapacitySubject";
+            PawnKnowledgeState state = PawnDiaryMemoryM11RuntimeFixture.BuildCompleteOwner(
+                ownerId, subjectId, "Capacity subject", 91);
+            SavedMemoryThreadRoot first = state.threadRoots[0];
+            SavedMemoryThreadRoot alternate = PawnDiaryMemoryM11RuntimeFixture.AddThreadRoot(
+                state, subjectId, "Capacity subject", 92,
+                MemoryContractTokens.SubjectPawn,
+                MemoryContractTokens.CategoryRelationships);
+            SavedMemoryBlock firstBlock = first.visibleBlocks[0];
+            SavedMemoryBlock alternateBlock = alternate.visibleBlocks[0];
+            alternate.rootId = first.rootId;
+            alternate.chapters[0].chapterId = first.chapters[0].chapterId;
+            alternateBlock.rootId = first.rootId;
+            alternateBlock.chapterId = first.chapters[0].chapterId;
+            alternateBlock.recordId = firstBlock.recordId;
+            firstBlock.playerEdited = true;
+            firstBlock.playerWording = "Capacity authored A.";
+            alternateBlock.playerEdited = true;
+            alternateBlock.playerWording = "Capacity authored B.";
+            for (int index = state.importedArchiveRows.Count; index <= 256; index++)
+            {
+                state.importedArchiveRows.Add(new SavedImportedMemoryRow
+                {
+                    archiveRecordId = "capacity-imported-" + index,
+                    savedOwnerIdentityKindToken = "exact_id",
+                    savedOwnerIdentityValue = ownerId,
+                    importedWording = "x"
+                });
+            }
+            List<SavedMemoryThreadRoot> rootsBefore = state.threadRoots;
+            List<SavedImportedMemoryRow> importedBefore = state.importedArchiveRows;
+            long revisionBefore = state.structuralRevision;
+            DiaryGameComponent component = NewMemoryComponent(
+                new List<PawnDiaryRecord>
+                {
+                    new PawnDiaryRecord { pawnId = ownerId, knowledgeState = state }
+                },
+                null,
+                null);
+            component.RebuildMemorySizeIndexes();
+
+            Require(!component.TryRepairSavedMemoryRoots(
+                        state,
+                        new MemoryReducerPolicy
+                        {
+                            nowTick = 0,
+                            targetVisibleBlocks = 64,
+                            maximumVisibleBlocks = 128
+                        })
+                    && ReferenceEquals(state.threadRoots, rootsBefore)
+                    && ReferenceEquals(state.importedArchiveRows, importedBefore)
+                    && state.threadRoots.Count == 2
+                    && state.importedArchiveRows.Count == 257
+                    && state.structuralRevision == revisionBefore,
+                "An over-cap authored repair partly mutated roots, Imported, or revision.");
+        }
+
         [Test]
         public static void M11DuplicateOwnerCommitPreservesPhysicalCultureAndUnrelatedReflection()
         {
@@ -1206,6 +1681,98 @@ namespace PawnDiary.RimTests
                 "Unknown archive rows were lost or counted twice in global combined bytes.");
         }
 
+        /// <summary>
+        /// Routine M4 admission updates only the changed owner's transient indexes. Its incremental
+        /// totals and exact lookup must be indistinguishable from a forced full rebuild afterward.
+        /// </summary>
+        [Test]
+        public static void IncrementalAdmissionIndexesMatchFullRebuild()
+        {
+            const string ownerId = "Pawn_Incremental_Admission";
+            string epoch = EpochToken(301);
+            PawnKnowledgeState state = PawnKnowledgeState.CreateCurrent(ownerId);
+            state.autobiographicalEpochToken = epoch;
+            string occurrence = "occurrence-incremental-admission";
+            string captureRule = "capture-incremental-admission";
+            string discriminator = "fact-incremental-admission";
+            string recordId;
+            Require(MemoryIdentityCodec.TryCreateRecordId(
+                    new MemoryRecordIdentity
+                    {
+                        ownerPawnId = ownerId,
+                        ownerEpochToken = epoch,
+                        sourceOccurrenceId = occurrence,
+                        captureRuleId = captureRule,
+                        factDiscriminator = discriminator
+                    },
+                    out recordId),
+                "The incremental admission fixture could not create a record identity.");
+            SavedMemoryBlock block = new SavedMemoryBlock
+            {
+                schemaVersion = 1,
+                recordId = recordId,
+                sourceOccurrenceId = occurrence,
+                captureRuleId = captureRule,
+                factDiscriminator = discriminator,
+                ownerPawnId = ownerId,
+                ownerEpochToken = epoch,
+                kind = MemoryContractTokens.KindLandmark,
+                summaryRole = MemoryContractTokens.SummaryRoleNone,
+                category = MemoryContractTokens.CategoryPersonal,
+                importance = MemoryContractTokens.ImportanceImportant,
+                ageUnknown = true,
+                automaticWording = "Incremental admission fixture.",
+                providerExposureState = "not_sent",
+                formatRevision = 1
+            };
+            block.Normalize();
+            DiaryGameComponent component = NewMemoryComponent(
+                new List<PawnDiaryRecord>
+                {
+                    new PawnDiaryRecord { pawnId = ownerId, knowledgeState = state }
+                },
+                null,
+                null);
+            component.RebuildMemorySizeIndexes();
+
+            MemoryStoreAdmissionResult admitted = component.TryAdmitMemoryBlock(
+                new MemoryStoreAdmissionRequest
+                {
+                    ownerPawnId = ownerId,
+                    ownerEpochToken = epoch,
+                    expectedOwnerStructuralRevision = state.structuralRevision,
+                    routeReliable = false,
+                    chapterPhaseToken = "fixture",
+                    chapterDirective = MemoryChapterDirectiveTokens.ContinueCurrent,
+                    nowTick = Math.Max(0, Find.TickManager?.TicksGame ?? 0),
+                    block = block
+                });
+            Require(admitted.outcome == MemoryStoreMutationOutcome.Admitted,
+                "The incremental index fixture did not admit its valid Standalone block.");
+
+            DiaryGameComponent.MemoryOwnerByteTotals incrementalOwner =
+                component.GetOwnerByteTotals(ownerId);
+            MemoryPayloadBudgetTotals incrementalGlobal = component.GetGlobalBudgetTotals();
+            SavedMemoryBlock incrementalLookup = component.FindStandaloneMemoryExact(
+                ownerId, epoch, recordId);
+            component.MarkMemoryM4IndexesDirty();
+            component.RebuildMemorySizeIndexes();
+            DiaryGameComponent.MemoryOwnerByteTotals rebuiltOwner =
+                component.GetOwnerByteTotals(ownerId);
+            MemoryPayloadBudgetTotals rebuiltGlobal = component.GetGlobalBudgetTotals();
+            SavedMemoryBlock rebuiltLookup = component.FindStandaloneMemoryExact(
+                ownerId, epoch, recordId);
+
+            Require(incrementalOwner.valid && rebuiltOwner.valid
+                    && incrementalOwner.activeBytes == rebuiltOwner.activeBytes
+                    && incrementalOwner.importedBytes == rebuiltOwner.importedBytes
+                    && incrementalGlobal.globalActiveBytes == rebuiltGlobal.globalActiveBytes
+                    && incrementalGlobal.globalImportedBytes == rebuiltGlobal.globalImportedBytes
+                    && incrementalLookup != null
+                    && ReferenceEquals(incrementalLookup, rebuiltLookup),
+                "Incremental admission indexes diverged from a forced full rebuild.");
+        }
+
         [Test]
         public static void LogicalSizeWalkerValidatesPopulatedEnvelope()
         {
@@ -1368,6 +1935,55 @@ namespace PawnDiary.RimTests
             return record;
         }
 
+        private sealed class LegacyMissingKnowledgeRowAdapter : IExposable
+        {
+            public void ExposeData()
+            {
+                Require(legacyMissingKnowledgeTarget != null,
+                    "The missing-knowledge Scribe adapter has no target record.");
+                if (Scribe.mode == LoadSaveMode.Saving)
+                {
+                    string pawnId = legacyMissingKnowledgeTarget.pawnId;
+                    string pawnName = legacyMissingKnowledgeTarget.pawnName;
+                    List<string> eventIds = legacyMissingKnowledgeTarget.eventIds;
+                    Scribe_Values.Look(ref pawnId, "pawnId");
+                    Scribe_Values.Look(ref pawnName, "pawnName");
+                    Scribe_Collections.Look(ref eventIds, "eventIds", LookMode.Value);
+                    return;
+                }
+
+                legacyMissingKnowledgeTarget.ExposeData();
+            }
+        }
+
+        private static ImportantMemoryRecord NewCapacityLegacyRecord(
+            int ownerIndex,
+            int rowIndex)
+        {
+            string suffix = ownerIndex.ToString("D3") + "-" + rowIndex.ToString("D3");
+            return new ImportantMemoryRecord
+            {
+                recordId = "legacy-cap-rec-" + suffix,
+                sourceEventId = "legacy-cap-event-" + suffix,
+                eventKind = "legacy.capacity.fixture",
+                tick = 0
+            };
+        }
+
+        private static int CountBlocks(PawnKnowledgeState state)
+        {
+            int count = state?.standaloneBlocks?.Count ?? 0;
+            for (int index = 0; state?.threadRoots != null
+                && index < state.threadRoots.Count; index++)
+            {
+                SavedMemoryThreadRoot root = state.threadRoots[index];
+                count += root?.visibleBlocks?.Count ?? 0;
+                if (root?.rollingSummaryBlock != null) count++;
+            }
+
+            return count;
+        }
+
         private static SavedMemoryFactBucket NewBucket(
             params SavedMemoryFactContribution[] contributions)
         {
@@ -1430,7 +2046,7 @@ namespace PawnDiary.RimTests
             return totals;
         }
 
-        private static DiaryGameComponent NewMemoryComponent(
+        internal static DiaryGameComponent NewMemoryComponent(
             List<PawnDiaryRecord> ownerDiaries,
             List<SavedActiveLogicalRequestV1> activeRequests,
             List<SavedImportedMemoryRow> unknownRows)
@@ -1460,6 +2076,20 @@ namespace PawnDiary.RimTests
             SetPrivateField(component, "memoryByteTotalsByOwner",
                 new Dictionary<string, DiaryGameComponent.MemoryOwnerByteTotals>(
                     StringComparer.Ordinal));
+            SetPrivateField(component, "memoryM4OwnerById",
+                new Dictionary<string, PawnKnowledgeState>(StringComparer.Ordinal));
+            SetPrivateField(component, "memoryM4RootByCanonicalId",
+                new Dictionary<string, SavedMemoryThreadRoot>(StringComparer.Ordinal));
+            SetPrivateField(component, "memoryM4BlockByQualifiedRecord",
+                new Dictionary<string, SavedMemoryBlock>(StringComparer.Ordinal));
+            SetPrivateField(component, "memoryM4StandaloneByQualifiedRecord",
+                new Dictionary<string, SavedMemoryBlock>(StringComparer.Ordinal));
+            SetPrivateField(component, "memoryM4ChapterByQualifiedId",
+                new Dictionary<string, SavedMemoryChapter>(StringComparer.Ordinal));
+            SetPrivateField(component, "memoryM4SourceFactDedupByKey",
+                new Dictionary<string, SavedMemoryBlock>(StringComparer.Ordinal));
+            SetPrivateField(component, "memoryM4IndexGeneration", 1L);
+            SetPrivateField(component, "memoryM4IndexesDirty", true);
             return component;
         }
 

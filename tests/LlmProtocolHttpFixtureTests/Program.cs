@@ -361,6 +361,16 @@ namespace LlmProtocolHttpFixtureTests
                 memoryDispatch = context
             };
 
+            // TryStage deliberately snapshots the global transport policy. Pin it here so this fixture
+            // proves one same-lane retry followed by failover without depending on a player's settings.
+            PawnDiarySettings originalSettings = PawnDiaryMod.Settings;
+            PawnDiarySettings fixtureSettings = originalSettings ?? new PawnDiarySettings();
+            int originalRetryAttempts = fixtureSettings.retryAttempts;
+            float originalRetryDelay = fixtureSettings.retryBaseDelaySeconds;
+            PawnDiaryMod.Settings = fixtureSettings;
+            fixtureSettings.retryAttempts = 2;
+            fixtureSettings.retryBaseDelaySeconds = 0.01f;
+
             LlmClient.BeginSession();
             try
             {
@@ -471,9 +481,16 @@ namespace LlmProtocolHttpFixtureTests
                 AssertFalse("permit denial releases pending ownership",
                     LlmClient.IsInFlight(deniedRequest.eventId, deniedRequest.povRole));
 
-                ScriptedExchange failedExchange = new ScriptedExchange(Response(
-                    HttpStatusCode.ServiceUnavailable,
-                    "{\"error\":\"retryable fixture\"}"));
+                ScriptedExchange failedExchange = new ScriptedExchange(
+                    Response(
+                        (HttpStatusCode)429,
+                        "{\"error\":\"rate-limited primary fixture one\"}"),
+                    Response(
+                        HttpStatusCode.ServiceUnavailable,
+                        "{\"error\":\"retryable primary fixture two\"}"),
+                    Response(
+                        HttpStatusCode.OK,
+                        "{\"choices\":[{\"message\":{\"content\":\"Memory failover OK\"}}]}"));
                 LlmClient.SendAsyncOverrideForTests = failedExchange.SendAsync;
                 LlmGenerationRequest failedRequest = MemoryGateRequest(
                     context, "https://memory-failure.invalid/v1");
@@ -503,21 +520,65 @@ namespace LlmProtocolHttpFixtureTests
                     receiptRequest != null
                     && receiptRequest.outcomeToken == MemoryDispatchTokens.ProviderError);
                 MemoryDispatchRuntimeBridge.ResolveReceipt(receiptRequest, true);
+
+                permitRequest = null;
+                while (DateTime.UtcNow < deadline
+                    && !MemoryDispatchRuntimeBridge.TryDequeuePermit(out permitRequest))
+                    await Task.Delay(10);
+                AssertTrue("committed memory request reaches frozen same-lane retry permit",
+                    permitRequest != null);
+                MemoryInvocationCommitPermitV1 retryPermit = CopyPermit(
+                    permit, 3, 3, 44);
+                MemoryDispatchRuntimeBridge.ResolvePermit(permitRequest, retryPermit);
+                receiptRequest = null;
+                while (DateTime.UtcNow < deadline
+                    && !MemoryDispatchRuntimeBridge.TryDequeueReceipt(out receiptRequest))
+                    await Task.Delay(10);
+                AssertTrue("same-lane memory retry publishes its own failure receipt",
+                    receiptRequest != null
+                    && receiptRequest.outcomeToken == MemoryDispatchTokens.ProviderError);
+                MemoryDispatchRuntimeBridge.ResolveReceipt(receiptRequest, true);
+
+                permitRequest = null;
+                while (DateTime.UtcNow < deadline
+                    && !MemoryDispatchRuntimeBridge.TryDequeuePermit(out permitRequest))
+                    await Task.Delay(10);
+                AssertTrue("exhausted primary lane reaches frozen failover permit",
+                    permitRequest != null);
+                MemoryInvocationCommitPermitV1 failoverPermit = CopyPermit(
+                    permit, 4, 4, 45);
+                MemoryDispatchRuntimeBridge.ResolvePermit(permitRequest, failoverPermit);
+                receiptRequest = null;
+                while (DateTime.UtcNow < deadline
+                    && !MemoryDispatchRuntimeBridge.TryDequeueReceipt(out receiptRequest))
+                    await Task.Delay(10);
+                AssertTrue("memory failover publishes success receipt",
+                    receiptRequest != null
+                    && receiptRequest.outcomeToken == MemoryDispatchTokens.Success);
+                MemoryDispatchRuntimeBridge.ResolveReceipt(receiptRequest, true);
+
                 completed = null;
                 while (DateTime.UtcNow < deadline
                     && !LlmClient.TryDequeueCompleted(out completed))
                     await Task.Delay(10);
-                AssertTrue("post-permit provider failure is terminal",
-                    completed != null && !completed.success
-                    && completed.memoryDispatchTerminalFailure);
-                AssertEqual("provider failure echoes its acknowledged terminal outcome",
-                    MemoryDispatchTokens.ProviderError,
+                AssertTrue("frozen memory retry and failover can recover",
+                    completed != null && completed.success
+                    && !completed.memoryDispatchTerminalFailure);
+                AssertEqual("recovered failover echoes its acknowledged terminal outcome",
+                    MemoryDispatchTokens.Success,
                     completed.memoryDispatchTerminalOutcomeToken);
-                AssertEqual("possible exposure forbids retry and failover", 1,
+                AssertEqual("frozen plan performs two primary attempts and one failover", 3,
                     failedExchange.Requests.Count);
-                await Task.Delay(50);
-                AssertFalse("terminal failure requests no second permit",
-                    MemoryDispatchRuntimeBridge.TryDequeuePermit(out permitRequest));
+                AssertTrue("third physical request uses failover endpoint",
+                    failedExchange.Requests[2].Url.StartsWith(
+                        "https://memory-failover.invalid/v1",
+                        StringComparison.Ordinal));
+                AssertEqual("recovered result echoes failover permit",
+                    failoverPermit.permitFingerprint,
+                    completed.memoryInvocationPermit.permitFingerprint);
+                MemoryDispatchRuntimeBridge.ReleaseSendEnvelope(failedPermit);
+                MemoryDispatchRuntimeBridge.ReleaseSendEnvelope(retryPermit);
+                MemoryDispatchRuntimeBridge.ReleaseSendEnvelope(failoverPermit);
 
                 ScriptedExchange deadlineExchange = new ScriptedExchange(Response(
                     HttpStatusCode.OK,
@@ -539,7 +600,7 @@ namespace LlmProtocolHttpFixtureTests
                 await Task.Delay(TimeSpan.FromSeconds(
                     LlmTransportPolicy.MinimumTimeoutSeconds + 0.2d));
                 MemoryInvocationCommitPermitV1 deadlinePermit = CopyPermit(
-                    permit, 3, 3, 44);
+                    permit, 5, 5, 46);
                 MemoryDispatchRuntimeBridge.ResolvePermit(permitRequest, deadlinePermit);
                 receiptRequest = null;
                 deadline = DateTime.UtcNow.AddSeconds(3);
@@ -564,7 +625,7 @@ namespace LlmProtocolHttpFixtureTests
                     completed.memoryDispatchTerminalOutcomeToken);
 
                 MemoryInvocationCommitPermitV1 probePermit = CopyPermit(
-                    permit, 4, 4, 45);
+                    permit, 6, 6, 47);
                 MemoryRuntimeSendEnvelope firstEnvelope =
                     MemoryDispatchRuntimeBridge.GetOrCreateSendEnvelope(probePermit);
                 MemoryRuntimeSendEnvelope duplicateEnvelope =
@@ -603,6 +664,9 @@ namespace LlmProtocolHttpFixtureTests
             }
             finally
             {
+                fixtureSettings.retryAttempts = originalRetryAttempts;
+                fixtureSettings.retryBaseDelaySeconds = originalRetryDelay;
+                PawnDiaryMod.Settings = originalSettings;
                 LlmClient.SendAsyncOverrideForTests = null;
                 LlmClient.EndSession();
             }

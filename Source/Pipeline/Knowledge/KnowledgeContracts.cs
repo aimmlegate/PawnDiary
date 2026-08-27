@@ -43,6 +43,7 @@ namespace PawnDiary
         // record as satisfying the boundary when the player deliberately disabled arrival pages, and
         // normal profile removal/automatic eviction must preserve that lifecycle-owned marker.
         public const string EventKindFactionJoined = "status.faction.joined";
+        public const string EventKindBrainwipeCompleted = "brainwipe.completed";
 
         // Additive record provenance and recall-scope tokens. Old saves omit both fields, so the
         // normalizers deliberately resolve missing or unknown values to captured/contextual.

@@ -335,6 +335,19 @@ namespace DiaryPipelineTests
             AssertEqual("canonical continuity text appears exactly once in the user prompt",
                 1, CountToken(full.userPrompt, CanonicalFacts.LastOpener));
 
+            PromptContextFieldReport balancedMemory = balanced.contextSelectionReport.kept
+                .SingleOrDefault(row => row.source == MemoryContextPrompt.Source);
+            AssertTrue("Balanced retains and charges the rendered memory field",
+                balancedMemory != null
+                    && balancedMemory.chars >= CanonicalFacts.MemoryRecall.Length
+                    && balanced.userPrompt.IndexOf(
+                        CanonicalFacts.MemoryRecall, StringComparison.Ordinal) >= 0);
+            AssertTrue("Compact neither retains nor renders the memory field",
+                compact.contextSelectionReport.kept.All(
+                    row => row.source != MemoryContextPrompt.Source)
+                    && compact.userPrompt.IndexOf(
+                        CanonicalFacts.MemoryRecall, StringComparison.Ordinal) < 0);
+
             // Size ordering must hold at every stage of the plan (plan §5.1).
             int fullChars = Combined(full);
             int balancedChars = Combined(balanced);

@@ -27,9 +27,28 @@ namespace MemoryThreadTests
             DrawingStagesButDoesNotExecuteCommands();
             LifetimeStatesUseOriginalTicks();
             VirtualizationIsBoundedAtMinimumViewport();
+            RepositoryPollingIsBoundedAndResponsive();
             ActivationAndNoGameGateFailClosed();
             LibraryLocalizationHasEnglishRussianPlaceholderParity();
             return assertions;
+        }
+
+        private static void RepositoryPollingIsBoundedAndResponsive()
+        {
+            Equal("m9.poll.first", true,
+                MemoryLibraryUiPollPolicy.ShouldPoll(100, -1, 6, false));
+            Equal("m9.poll.same-frame", false,
+                MemoryLibraryUiPollPolicy.ShouldPoll(100, 100, 6, false));
+            Equal("m9.poll.before-interval", false,
+                MemoryLibraryUiPollPolicy.ShouldPoll(105, 100, 6, false));
+            Equal("m9.poll.at-interval", true,
+                MemoryLibraryUiPollPolicy.ShouldPoll(106, 100, 6, false));
+            Equal("m9.poll.immediate", true,
+                MemoryLibraryUiPollPolicy.ShouldPoll(101, 100, 6, true));
+            Equal("m9.poll.frame-reset", true,
+                MemoryLibraryUiPollPolicy.ShouldPoll(1, int.MaxValue, 6, false));
+            Equal("m9.poll.invalid-fallback", false,
+                MemoryLibraryUiPollPolicy.ShouldPoll(105, 100, 0, false));
         }
 
         private static void OwnerSelectionUsesExactHandles()

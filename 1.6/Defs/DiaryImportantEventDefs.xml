@@ -360,6 +360,25 @@
     <lineTemplate>now lives with {label}</lineTemplate>
   </PawnDiary.DiaryImportantEventDef>
 
+  <!-- Brainwipe is a hard autobiography boundary. This factual first memory is attempted even when
+       the ordinary arrival page or Save-new-memories policy is off; capacity may refuse only it. -->
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_BrainwipeCompleted</defName>
+    <label>brainwipe completed</label>
+    <eventKind>brainwipe.completed</eventKind>
+    <topicKey>status</topicKey>
+    <signal>event</signal>
+    <order>51</order>
+    <matchDefNames><li>PawnDiary_BrainwipeArrival</li></matchDefNames>
+    <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>brainwipe.completed</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <factKeys><li>memory_state</li></factKeys>
+    <lineTemplate>awoke after a brainwipe with no memories</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
   <!-- ===================== Persistent identity and status ===================== -->
 
   <PawnDiary.DiaryImportantEventDef>

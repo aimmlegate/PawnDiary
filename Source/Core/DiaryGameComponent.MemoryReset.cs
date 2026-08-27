@@ -129,10 +129,15 @@ namespace PawnDiary
                 });
             if (!epochPlan.canMutate)
             {
-                // A target wipe must not reuse an epoch. Leave the existing hard page cleanup in
-                // place, cancel exact active rows below, and record one bounded internal diagnostic.
+                // A target wipe must not reuse an epoch, but allocator corruption is never permission
+                // to retain the autobiography being wiped. Publish an empty unenrolled current
+                // envelope; old work cannot match its blank epoch, and later facts may retry normal
+                // enrollment after the allocator state is repaired.
                 RecordMemoryDiagnostic("other", "owner");
+                ClearBrainwipeMemoryWithoutFreshEpoch(pawnId, ensured);
                 CancelOldEpochDispatchRows(pawnId);
+                ResetMemoryMaintenanceTransient(true);
+                RebuildMemorySizeIndexes();
                 return;
             }
 
@@ -184,6 +189,22 @@ namespace PawnDiary
                 ? 1
                 : Math.Max(1, greatestCancellation + 1);
 
+            MemoryBrainwipeDirectoryPlan directoryPlan = PlanBrainwipeDirectoryAdmission(pawnId);
+            if (directoryPlan.requiresDisplacement)
+            {
+                if (string.IsNullOrEmpty(directoryPlan.displacedOwnerPawnId))
+                {
+                    // A malformed save may already violate the reserved invariant. The wipe still
+                    // clears/fences its target, but it never converts that corruption into permission
+                    // to delete another autobiography.
+                    RecordMemoryDiagnosticOnce("brainwipe_capacity", "component");
+                }
+                else
+                {
+                    DisplaceEmptyBrainwipeFence(directoryPlan.displacedOwnerPawnId);
+                }
+            }
+
             // Publish allocator/fence fields before old autobiographical payload is cleared.
             lastIssuedAutobiographicalEpochSequence = epochPlan.nextSequence;
             lastIssuedAutobiographicalEpochFallbackChain =
@@ -232,6 +253,184 @@ namespace PawnDiary
             CancelOldEpochDispatchRows(pawnId);
             ResetMemoryMaintenanceTransient(true);
             RebuildMemorySizeIndexes();
+        }
+
+        private MemoryBrainwipeDirectoryPlan PlanBrainwipeDirectoryAdmission(string targetPawnId)
+        {
+            int fenceCap = (int)ReadCapacityTuplePart("ownerSlotTriple", 1, 1001, 4001);
+            var holdersByOwner = new SortedDictionary<string, List<PawnDiaryRecord>>(
+                StringComparer.Ordinal);
+            for (int index = 0; diaries != null && index < diaries.Count; index++)
+            {
+                PawnDiaryRecord diary = diaries[index];
+                PawnKnowledgeState state = diary?.knowledgeState;
+                string ownerId = diary?.pawnId ?? string.Empty;
+                if (state == null || !state.IsCurrentSchema() || state.archiveOnly
+                    || string.IsNullOrWhiteSpace(state.autobiographicalEpochToken)
+                    || string.IsNullOrWhiteSpace(ownerId)) continue;
+                List<PawnDiaryRecord> group;
+                if (!holdersByOwner.TryGetValue(ownerId, out group))
+                {
+                    group = new List<PawnDiaryRecord>();
+                    holdersByOwner.Add(ownerId, group);
+                }
+                group.Add(diary);
+            }
+
+            var candidates = new List<MemoryBrainwipeFenceCandidate>();
+            foreach (KeyValuePair<string, List<PawnDiaryRecord>> pair in holdersByOwner)
+                candidates.Add(SnapshotBrainwipeFenceCandidate(pair.Key, pair.Value));
+            return MemoryBrainwipeHeadroomPolicy.PlanDirectoryAdmission(
+                targetPawnId,
+                holdersByOwner.ContainsKey(targetPawnId ?? string.Empty),
+                holdersByOwner.Count,
+                fenceCap,
+                candidates);
+        }
+
+        private MemoryBrainwipeFenceCandidate SnapshotBrainwipeFenceCandidate(
+            string ownerPawnId,
+            List<PawnDiaryRecord> holders)
+        {
+            MemoryBrainwipeFenceCandidate candidate = new MemoryBrainwipeFenceCandidate
+            {
+                ownerPawnId = ownerPawnId ?? string.Empty,
+                currentSchema = true,
+                epochFenceOnly = true,
+                hasEpoch = true,
+                hasActiveRequestOrOpportunity = HasBrainwipeFenceActiveWork(ownerPawnId)
+            };
+            for (int index = 0; holders != null && index < holders.Count; index++)
+            {
+                PawnDiaryRecord diary = holders[index];
+                PawnKnowledgeState state = diary?.knowledgeState;
+                candidate.currentSchema &= state != null && state.IsCurrentSchema();
+                candidate.archiveOnly |= state?.archiveOnly == true;
+                candidate.epochFenceOnly &= state?.epochFenceOnly == true;
+                candidate.hasEpoch &= !string.IsNullOrWhiteSpace(
+                    state?.autobiographicalEpochToken);
+                candidate.hasAutobiographicalPayload |= HasBrainwipeFencePayload(state);
+                candidate.hasPageOrNonMemoryState |= (diary?.eventIds?.Count ?? 0) > 0
+                    || (diary?.favoriteEntryKeys?.Count ?? 0) > 0
+                    || diary?.hasUnreadGeneratedEntry == true
+                    || (diary?.unreadGeneratedEntryCount ?? 0) > 0
+                    || HasNonMemoryReflectionState(diary?.reflectionState);
+            }
+            return candidate;
+        }
+
+        private bool HasBrainwipeFenceActiveWork(string ownerPawnId)
+        {
+            for (int index = 0; activeMemoryCoordinatorRequests != null
+                && index < activeMemoryCoordinatorRequests.Count; index++)
+                if (activeMemoryCoordinatorRequests[index]?.ownerPawnId == ownerPawnId) return true;
+            for (int index = 0; summaryWordingOpportunities != null
+                && index < summaryWordingOpportunities.Count; index++)
+                if (summaryWordingOpportunities[index]?.ownerPawnId == ownerPawnId) return true;
+            IReadOnlyList<DiaryEvent> hot = events?.AllEvents;
+            for (int index = 0; hot != null && index < hot.Count; index++)
+            {
+                DiaryEvent diaryEvent = hot[index];
+                if (RequestBelongsToOwner(
+                        diaryEvent?.ActiveMemoryLogicalRequestForRole(DiaryEvent.InitiatorRole),
+                        ownerPawnId)
+                    || RequestBelongsToOwner(
+                        diaryEvent?.ActiveMemoryLogicalRequestForRole(DiaryEvent.RecipientRole),
+                        ownerPawnId)
+                    || RequestBelongsToOwner(
+                        diaryEvent?.ActiveMemoryLogicalRequestForRole(DiaryEvent.NeutralRole),
+                        ownerPawnId)) return true;
+            }
+            return false;
+        }
+
+        private static bool RequestBelongsToOwner(
+            SavedActiveLogicalRequestV1 request, string ownerPawnId)
+        {
+            return request != null && string.Equals(
+                request.ownerPawnId, ownerPawnId, StringComparison.Ordinal);
+        }
+
+        private static bool HasBrainwipeFencePayload(PawnKnowledgeState state)
+        {
+            return state == null
+                || (state.records?.Count ?? 0) > 0
+                || (state.standaloneBlocks?.Count ?? 0) > 0
+                || (state.threadRoots?.Count ?? 0) > 0
+                || !string.IsNullOrWhiteSpace(state.playerBackground)
+                || (state.ownerAwarenessSnapshots?.Count ?? 0) > 0
+                || (state.openCaptureEpisodes?.Count ?? 0) > 0
+                || (state.repetitionGuardRows?.Count ?? 0) > 0
+                || (state.importedArchiveRows?.Count ?? 0) > 0;
+        }
+
+        private static bool HasNonMemoryReflectionState(PawnReflectionState state)
+        {
+            if (state == null) return false;
+            return !state.baselineOnNextOpportunity
+                || !state.linkedBaselineOnNextOpportunity
+                || state.lastReflectionTick != -1
+                || state.lastMajorArcTick != -1
+                || state.lastCrossArcTick != -1
+                || state.lastBeliefTick != -1
+                || state.lastQuadrumTick != -1
+                || state.lastDayTick != -1
+                || state.pendingMajorArc
+                || state.pendingMajorArcRequestedTick != -1
+                || !string.IsNullOrEmpty(state.pendingMajorArcAvoidEventId);
+        }
+
+        private void DisplaceEmptyBrainwipeFence(string ownerPawnId)
+        {
+            for (int index = 0; diaries != null && index < diaries.Count; index++)
+            {
+                PawnDiaryRecord diary = diaries[index];
+                if (diary == null || !string.Equals(
+                        diary.pawnId, ownerPawnId, StringComparison.Ordinal)) continue;
+                PawnKnowledgeState state = diary.knowledgeState;
+                ClearUnifiedMemoryEnvelope(state);
+                state.schemaVersion = PawnKnowledgeState.CurrentSchemaVersion;
+                state.pawnId = ownerPawnId;
+                state.completedDiaryEntryOrdinal = 1;
+                PawnReflectionState reflection = diary.reflectionState;
+                if (reflection == null) continue;
+                reflection.memoryReflectionSchemaVersion = 0;
+                reflection.memoryOwnerEpochToken = string.Empty;
+                reflection.lastQuietMemoryEvaluatedAbsoluteDay = -1;
+                reflection.lastQuietMemoryActivatedAbsoluteQuadrum = -1;
+                reflection.lastQuietMemoryDecisionKey = string.Empty;
+            }
+        }
+
+        private void ClearBrainwipeMemoryWithoutFreshEpoch(
+            string pawnId,
+            PawnDiaryRecord ensured)
+        {
+            bool clearedEnsured = false;
+            for (int index = 0; diaries != null && index < diaries.Count; index++)
+            {
+                PawnDiaryRecord holder = diaries[index];
+                if (holder == null
+                    || (!string.Equals(holder.pawnId, pawnId, StringComparison.Ordinal)
+                        && !string.Equals(
+                            holder.knowledgeState?.pawnId, pawnId, StringComparison.Ordinal))) continue;
+                PawnKnowledgeState state = holder.knowledgeState
+                    ?? PawnKnowledgeState.CreateCurrent(pawnId);
+                holder.knowledgeState = state;
+                ClearUnifiedMemoryEnvelope(state);
+                state.schemaVersion = PawnKnowledgeState.CurrentSchemaVersion;
+                state.pawnId = pawnId;
+                clearedEnsured |= ReferenceEquals(holder, ensured);
+            }
+            if (!clearedEnsured)
+            {
+                PawnKnowledgeState state = ensured.knowledgeState
+                    ?? PawnKnowledgeState.CreateCurrent(pawnId);
+                ensured.knowledgeState = state;
+                ClearUnifiedMemoryEnvelope(state);
+                state.schemaVersion = PawnKnowledgeState.CurrentSchemaVersion;
+                state.pawnId = pawnId;
+            }
         }
 
         private static void ClearUnifiedMemoryEnvelope(PawnKnowledgeState state)

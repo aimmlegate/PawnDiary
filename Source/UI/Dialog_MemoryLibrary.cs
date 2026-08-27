@@ -94,6 +94,7 @@ namespace PawnDiary
         private bool cachedCultureHasAdopted;
         private string displayCacheSignature = string.Empty;
         private int selectedLoreTopicIndex;
+        private int lastRepositoryPollFrame = -1;
 
         private Dialog_MemoryLibrary(DiaryGameComponent source, string preferredExactOwnerId)
         {
@@ -213,6 +214,15 @@ namespace PawnDiary
             }
             detachedTextCap = Math.Max(1,
                 DiaryKnowledgePolicy.Snapshot(false).fallbackSummaryMaxChars);
+            bool immediateRepositoryWork = ownerSearchDirty || listQueryDirty || detailQueryDirty
+                || pendingCommandId > 0 || session.pendingCommand != null;
+            int currentFrame = Time.frameCount;
+            if (!MemoryLibraryUiPollPolicy.ShouldPoll(
+                    currentFrame,
+                    lastRepositoryPollFrame,
+                    DiaryUiStyles.Current.memoryLibraryRepositoryPollFrames,
+                    immediateRepositoryWork)) return;
+            lastRepositoryPollFrame = currentFrame;
             DrainStagedCommand();
             PollCommandResult();
             RefreshOwners();

@@ -5,6 +5,8 @@
 // detached root; player-authored payload is never guessed away to make a corrupt save fit.
 using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace PawnDiary
 {
@@ -25,6 +27,40 @@ namespace PawnDiary
     {
         /// <summary>Stable bounded-diagnostic token for discarded automatic repair alternates.</summary>
         internal const string AutomaticConflictDiagnosticToken = "repair_automatic_conflict";
+
+        /// <summary>Stable current-schema Imported identity for one quarantined authored payload.</summary>
+        internal static string ArchiveFingerprint(
+            MemoryReducerRoot archivedRoot,
+            string recordId,
+            string contributionId,
+            string reasonToken)
+        {
+            if (archivedRoot == null || string.IsNullOrWhiteSpace(recordId)
+                || string.IsNullOrWhiteSpace(reasonToken)) return string.Empty;
+            string canonical = OrdinalSegmentCodec.Segment("memory-repair-imported-v1")
+                + OrdinalSegmentCodec.Segment(archivedRoot.ownerPawnId ?? string.Empty)
+                + OrdinalSegmentCodec.Segment(archivedRoot.ownerEpochToken ?? string.Empty)
+                + OrdinalSegmentCodec.Segment(recordId)
+                + OrdinalSegmentCodec.Segment(contributionId ?? string.Empty)
+                + OrdinalSegmentCodec.Segment(reasonToken)
+                + OrdinalSegmentCodec.Segment(MemoryThreadReducer.CanonicalState(archivedRoot));
+            try
+            {
+                using (SHA256 sha = SHA256.Create())
+                {
+                    byte[] digest = sha.ComputeHash(new UTF8Encoding(false, true).GetBytes(canonical));
+                    StringBuilder result = new StringBuilder(64);
+                    for (int index = 0; index < digest.Length; index++)
+                        result.Append(digest[index].ToString("x2",
+                            System.Globalization.CultureInfo.InvariantCulture));
+                    return result.ToString();
+                }
+            }
+            catch (ArgumentException)
+            {
+                return string.Empty;
+            }
+        }
 
         /// <summary>Maps a pure repair result to its bounded component diagnostic, if any.</summary>
         internal static string DiagnosticReason(MemoryThreadRepairResult result)
@@ -120,10 +156,26 @@ namespace PawnDiary
                     result.reasonToken = "invalid_root_identity";
                     return result;
                 }
+                MemoryReducerRoot repairSource = source;
+                if (IsAuthored(source.rollingSummaryBlock))
+                {
+                    // Rolling summaries have derived identities and deterministic structured
+                    // content, so a saved player override cannot remain in the rolling slot. Keep
+                    // that override losslessly in Imported and repair the active slot back to its
+                    // deterministic wording instead of refusing this owner forever.
+                    MemoryReducerRoot archived = source.Clone();
+                    archived.visibleBlocks.Clear();
+                    result.archivedRoots.Add(archived);
+                    result.authoredConflictArchived = true;
+                    repairSource = source.Clone();
+                    repairSource.rollingSummaryBlock.playerEdited = false;
+                    repairSource.rollingSummaryBlock.playerWording = string.Empty;
+                    result.changed = true;
+                }
                 MemoryReducerRoot canonicalized;
                 string canonicalizeReason;
                 if (!TryCanonicalizeRootPlacement(
-                    source, canonicalRootId, out canonicalized, out canonicalizeReason))
+                    repairSource, canonicalRootId, out canonicalized, out canonicalizeReason))
                 {
                     result.refused = true;
                     result.reasonToken = canonicalizeReason;

@@ -24,6 +24,38 @@ namespace PawnDiary
                 new List<PawnReflectionState>();
             public List<SavedLegacyOwnerEpochReservation> remainingEpochReservations =
                 new List<SavedLegacyOwnerEpochReservation>();
+            public MemoryMigrationBudgetProjection budgetProjection;
+        }
+
+        /// <summary>Running detached totals avoid a full colony/index rebuild after every owner.</summary>
+        private sealed class MemoryMigrationBudgetSession
+        {
+            public MemoryPayloadBudgetTotals global;
+            public long componentActiveBytes;
+            public int globalActiveBlocks;
+            public int globalEditedBlocks;
+            public int globalImportedRows;
+            public int globalImportedOwners;
+            public readonly HashSet<string> currentOwnerIds =
+                new HashSet<string>(StringComparer.Ordinal);
+            public readonly Dictionary<string, MemoryOwnerByteTotals> owners =
+                new Dictionary<string, MemoryOwnerByteTotals>(StringComparer.Ordinal);
+            public readonly Dictionary<string, int> importedRowsByOwner =
+                new Dictionary<string, int>(StringComparer.Ordinal);
+        }
+
+        /// <summary>Whole-owner budget result published only after the saved owner swap succeeds.</summary>
+        private sealed class MemoryMigrationBudgetProjection
+        {
+            public string ownerPawnId = string.Empty;
+            public MemoryPayloadBudgetTotals global;
+            public long componentActiveBytes;
+            public MemoryOwnerByteTotals ownerTotals;
+            public int globalActiveBlocks;
+            public int globalEditedBlocks;
+            public int globalImportedRows;
+            public int globalImportedOwners;
+            public int ownerImportedRows;
         }
 
         /// <summary>Selects report-only or commit migration from the single activation gate.</summary>
@@ -159,9 +191,11 @@ namespace PawnDiary
             int ownerCap = (int)ReadCapacityLong("importedOwnerCount", 1000, 4000);
             int visited = 0;
             RebuildMemorySizeIndexes();
+            MemoryMigrationBudgetSession budget = CreateMemoryMigrationBudgetSession();
+            bool ownerCommitted = false;
             foreach (KeyValuePair<string, List<PawnDiaryRecord>> group in groups)
             {
-                if (!GroupCarriesLegacyRows(group.Value)) continue;
+                if (!GroupRequiresLegacyMigration(group.Value)) continue;
                 if (visited++ >= ownerCap)
                 {
                     RecordMemoryDiagnostic("capacity_refused", "owner");
@@ -172,15 +206,15 @@ namespace PawnDiary
                 {
                     LegacyOwnerCommitPlan commit;
                     if (!TryPrepareLegacyOwnerCommit(
-                            group.Key, group.Value, ruleMap, maxKnownTick, out commit))
+                            group.Key, group.Value, ruleMap, maxKnownTick, budget, out commit))
                     {
                         RecordMemoryDiagnostic("legacy_owner_raw", "owner");
                         continue;
                     }
 
                     PublishLegacyOwnerCommit(group.Value, commit);
-                    MarkMemoryM4IndexesDirty();
-                    RebuildMemorySizeIndexes();
+                    ApplyMemoryMigrationBudgetProjection(budget, commit.budgetProjection);
+                    ownerCommitted = true;
                     if (commit.report.droppedAutomaticAlternateCount > 0)
                         RecordMemoryDiagnostic("legacy_automatic_duplicate", "owner");
                     if (commit.report.archivedAuthoredConflictCount > 0)
@@ -194,15 +228,27 @@ namespace PawnDiary
                 }
             }
 
+            if (ownerCommitted)
+            {
+                MarkMemoryM4IndexesDirty();
+                RebuildMemorySizeIndexes();
+            }
+            int rawUnresolvedBefore = rawUnresolvedOwnerArchiveInput?.Count ?? 0;
             TryCommitUnresolvedLegacyArchive(maxKnownTick);
+            if ((rawUnresolvedOwnerArchiveInput?.Count ?? 0) != rawUnresolvedBefore)
+                RebuildMemorySizeIndexes();
             if ((rawUnresolvedOwnerArchiveInput?.Count ?? 0) == 0)
                 unresolvedArchiveMigrationState = MemoryArchiveStates.Current;
         }
 
-        private static bool GroupCarriesLegacyRows(List<PawnDiaryRecord> holders)
+        private static bool GroupRequiresLegacyMigration(List<PawnDiaryRecord> holders)
         {
             for (int index = 0; holders != null && index < holders.Count; index++)
-                if ((holders[index]?.knowledgeState?.records?.Count ?? 0) > 0) return true;
+            {
+                PawnKnowledgeState state = holders[index]?.knowledgeState;
+                if (state != null && (!state.IsCurrentSchema()
+                    || (state.records?.Count ?? 0) > 0)) return true;
+            }
             return false;
         }
 
@@ -211,9 +257,37 @@ namespace PawnDiary
             List<PawnDiaryRecord> holders,
             List<MemoryLegacyRuleMapEntry> ruleMap,
             long maxKnownTick,
+            MemoryMigrationBudgetSession budget,
             out LegacyOwnerCommitPlan commit)
         {
             commit = null;
+            if (GroupIsEmptyUnenrolledLegacyOnly(holders))
+            {
+                MemoryLegacyMigrationReport emptyReport = MemoryThreadMigrationPolicy.PlanDryRun(
+                    new MemoryLegacyOwnerMigrationInput
+                    {
+                        ownerPawnId = ownerPawnId,
+                        ownerEpochToken = string.Empty,
+                        maxKnownTick = maxKnownTick,
+                        ruleMap = ruleMap
+                    });
+                PawnKnowledgeState emptyReplacement = PawnKnowledgeState.CreateCurrent(ownerPawnId);
+                CopyFirstCulture(emptyReplacement, holders[0]?.knowledgeState);
+                commit = new LegacyOwnerCommitPlan
+                {
+                    ownerPawnId = ownerPawnId,
+                    epochToken = string.Empty,
+                    replacement = emptyReplacement,
+                    report = emptyReport
+                };
+                BuildLegacyPublicationProjections(holders, commit);
+                MemoryMigrationBudgetProjection emptyProjection;
+                if (!LegacyReplacementWithinBounds(
+                        ownerPawnId, emptyReplacement, budget, out emptyProjection)) return false;
+                commit.budgetProjection = emptyProjection;
+                return true;
+            }
+
             string epochToken;
             if (!TryResolveLegacyOwnerEpoch(ownerPawnId, holders, out epochToken)) return false;
 
@@ -236,19 +310,48 @@ namespace PawnDiary
                 return false;
 
             PawnKnowledgeState replacement;
+            MemoryMigrationBudgetProjection budgetProjection;
             if (!TryBuildLegacyOwnerReplacement(
                     ownerPawnId, epochToken, holders, report, maxKnownTick, out replacement)
-                || !LegacyReplacementWithinBounds(ownerPawnId, replacement)) return false;
+                || !LegacyReplacementWithinBounds(
+                    ownerPawnId, replacement, budget, out budgetProjection)) return false;
 
             commit = new LegacyOwnerCommitPlan
             {
                 ownerPawnId = ownerPawnId,
                 epochToken = epochToken,
                 replacement = replacement,
-                report = report
+                report = report,
+                budgetProjection = budgetProjection
             };
             BuildLegacyPublicationProjections(holders, commit);
             return true;
+        }
+
+        /// <summary>
+        /// Empty legacy envelopes need a schema stamp, not an autobiography slot. Migrating them to
+        /// an unenrolled current envelope lets the first future fact allocate normally and avoids
+        /// consuming the bounded active-owner directory merely because an old save contained a pawn.
+        /// </summary>
+        private static bool GroupIsEmptyUnenrolledLegacyOnly(List<PawnDiaryRecord> holders)
+        {
+            bool sawLegacy = false;
+            for (int index = 0; holders != null && index < holders.Count; index++)
+            {
+                PawnKnowledgeState state = holders[index]?.knowledgeState;
+                if (state == null) continue;
+                sawLegacy |= !state.IsCurrentSchema();
+                if (!string.IsNullOrEmpty(state.autobiographicalEpochToken)
+                    || (state.records?.Count ?? 0) > 0
+                    || (state.standaloneBlocks?.Count ?? 0) > 0
+                    || (state.threadRoots?.Count ?? 0) > 0
+                    || (state.ownerAwarenessSnapshots?.Count ?? 0) > 0
+                    || (state.openCaptureEpisodes?.Count ?? 0) > 0
+                    || (state.repetitionGuardRows?.Count ?? 0) > 0
+                    || (state.importedArchiveRows?.Count ?? 0) > 0
+                    || !string.IsNullOrWhiteSpace(state.playerBackground)) return false;
+            }
+            return sawLegacy;
         }
 
         /// <summary>
@@ -1043,15 +1146,21 @@ namespace PawnDiary
         }
 
         private bool LegacyReplacementWithinBounds(
-            string ownerPawnId, PawnKnowledgeState replacement)
+            string ownerPawnId,
+            PawnKnowledgeState replacement,
+            MemoryMigrationBudgetSession session,
+            out MemoryMigrationBudgetProjection projection)
         {
+            projection = null;
+            if (session == null || replacement == null) return false;
             int importedRows = (int)ReadCapacityLong("importedOwnerRows", 256, 1024);
             int importedText = (int)ReadCapacityLong("importedTextUnits", 2000, 8000);
             int replacementBlocks = CountBlocks(
                 replacement.standaloneBlocks, replacement.threadRoots);
             int replacementEdited = CountEdited(
                 replacement.standaloneBlocks, replacement.threadRoots);
-            PawnKnowledgeState priorState = FindCurrentMemoryEnvelope(ownerPawnId);
+            PawnKnowledgeState priorState;
+            memoryM4OwnerById.TryGetValue(ownerPawnId ?? string.Empty, out priorState);
             int priorBlocks = priorState == null ? 0 : CountBlocks(
                 priorState.standaloneBlocks, priorState.threadRoots);
             int priorEdited = priorState == null ? 0 : CountEdited(
@@ -1064,16 +1173,26 @@ namespace PawnDiary
                 || replacementBlocks > ReadCapacityLong(
                     "manageableBlocksPerOwner", 128, 1024)
                 || replacementEdited > ReadCapacityLong("editedBlocksOwner", 32, 128)
-                || memoryM4GlobalActiveBlockCount - priorBlocks + replacementBlocks > globalSoft
-                || memoryM4GlobalEditedBlockCount - priorEdited + replacementEdited
+                || session.globalActiveBlocks - priorBlocks + replacementBlocks > globalSoft
+                || session.globalEditedBlocks - priorEdited + replacementEdited
                     > ReadCapacityLong("editedBlocksGlobal", 1000, 4000)) return false;
             for (int index = 0; replacement.importedArchiveRows != null
                 && index < replacement.importedArchiveRows.Count; index++)
                 if ((replacement.importedArchiveRows[index]?.importedWording?.Length ?? 0)
                     > importedText) return false;
 
-            MemoryOwnerByteTotals projected = MeasureOwner(replacement, 0);
+            HashSet<string> projectedOwnerIds = new HashSet<string>(
+                session.currentOwnerIds, StringComparer.Ordinal);
+            projectedOwnerIds.Add(ownerPawnId ?? string.Empty);
+            Dictionary<string, long> requestBytesByOwner;
+            long projectedComponentBytes = SizeComponentMemoryBytes(
+                projectedOwnerIds, out requestBytesByOwner);
+            long ownerRequestBytes = requestBytesByOwner.TryGetValue(
+                ownerPawnId ?? string.Empty, out long measuredRequestBytes)
+                ? measuredRequestBytes : 0;
+            MemoryOwnerByteTotals projected = MeasureOwner(replacement, ownerRequestBytes);
             if (!projected.valid
+                || projectedComponentBytes < 0 || session.componentActiveBytes < 0
                 || projected.importedBytes > ReadCapacityTuplePart(
                     "importedOwnerUnknownBytes", 0, 262144, 2097152)
                 || projected.activeBytes > ReadCapacityLong(
@@ -1081,33 +1200,104 @@ namespace PawnDiary
                 || checked(projected.activeBytes + projected.importedBytes)
                     > ReadCapacityLong("combinedOwnerBytes", 262144, 4194304)) return false;
 
-            MemoryOwnerByteTotals prior = GetOwnerByteTotals(ownerPawnId);
+            MemoryOwnerByteTotals prior;
+            session.owners.TryGetValue(ownerPawnId ?? string.Empty, out prior);
             long oldActive = prior.valid ? prior.activeBytes : 0;
             long oldImported = prior.valid ? prior.importedBytes : 0;
             long activeDelta = checked(projected.activeBytes - oldActive);
             long importedDelta = checked(projected.importedBytes - oldImported);
-            int globalImportedRows;
-            int globalImportedOwners;
-            CountCurrentImportedArchiveUsage(
-                ownerPawnId, replacement, out globalImportedRows, out globalImportedOwners);
+            int priorImportedRows;
+            session.importedRowsByOwner.TryGetValue(
+                ownerPawnId ?? string.Empty, out priorImportedRows);
+            int replacementImportedRows = replacement.importedArchiveRows?.Count ?? 0;
+            int globalImportedRows = checked(
+                session.globalImportedRows - priorImportedRows + replacementImportedRows);
+            int globalImportedOwners = session.globalImportedOwners
+                - (priorImportedRows > 0 ? 1 : 0)
+                + (replacementImportedRows > 0 ? 1 : 0);
             if (globalImportedRows > ReadCapacityLong("importedGlobalRows", 10000, 40000)
                 || globalImportedOwners > ReadCapacityLong(
                     "importedOwnerCount", 1000, 4000)) return false;
 
+            MemoryPayloadBudgetTotals projectedGlobalBase = session.global;
+            projectedGlobalBase.globalActiveBytes = checked(
+                projectedGlobalBase.globalActiveBytes
+                - session.componentActiveBytes
+                + projectedComponentBytes);
             MemoryBudgetDecision budget = ActiveMemoryPayloadBudget.TryAdmit(
-                new MemoryBudgetLimits
-                {
-                    activeOwnerBytes = ReadCapacityLong("activeOwnerBytes", 196608, 2097152),
-                    combinedOwnerBytes = ReadCapacityLong("combinedOwnerBytes", 262144, 4194304),
-                    activeGlobalBytes = ReadCapacityLong("activeGlobalBytes", 6291456, 25165824),
-                    combinedGlobalBytes = ReadCapacityLong("combinedGlobalBytes", 8388608, 33554432)
-                },
+                CurrentMemoryBudgetLimits(),
                 oldActive,
                 oldImported,
                 activeDelta,
                 importedDelta,
-                GetGlobalBudgetTotals());
-            return budget.outcome == MemoryBudgetOutcome.Admitted;
+                projectedGlobalBase);
+            if (budget.outcome != MemoryBudgetOutcome.Admitted) return false;
+            projection = new MemoryMigrationBudgetProjection
+            {
+                ownerPawnId = ownerPawnId ?? string.Empty,
+                global = budget.newTotals,
+                componentActiveBytes = projectedComponentBytes,
+                ownerTotals = projected,
+                globalActiveBlocks = session.globalActiveBlocks - priorBlocks + replacementBlocks,
+                globalEditedBlocks = session.globalEditedBlocks - priorEdited + replacementEdited,
+                globalImportedRows = globalImportedRows,
+                globalImportedOwners = globalImportedOwners,
+                ownerImportedRows = replacementImportedRows
+            };
+            return true;
+        }
+
+        private MemoryMigrationBudgetSession CreateMemoryMigrationBudgetSession()
+        {
+            MemoryMigrationBudgetSession session = new MemoryMigrationBudgetSession
+            {
+                global = GetGlobalBudgetTotals(),
+                componentActiveBytes = memoryComponentActiveBytesTotal,
+                globalActiveBlocks = memoryM4GlobalActiveBlockCount,
+                globalEditedBlocks = memoryM4GlobalEditedBlockCount,
+                globalImportedRows = unresolvedOwnerArchiveRows?.Count ?? 0
+            };
+            foreach (KeyValuePair<string, MemoryOwnerByteTotals> pair in memoryByteTotalsByOwner)
+            {
+                session.currentOwnerIds.Add(pair.Key);
+                session.owners[pair.Key] = pair.Value;
+            }
+            for (int index = 0; diaries != null && index < diaries.Count; index++)
+            {
+                PawnDiaryRecord diary = diaries[index];
+                PawnKnowledgeState state = diary?.knowledgeState;
+                if (diary == null || string.IsNullOrWhiteSpace(diary.pawnId)
+                    || state == null || !state.IsCurrentSchema()) continue;
+                int count = state.importedArchiveRows?.Count ?? 0;
+                int prior;
+                session.importedRowsByOwner.TryGetValue(diary.pawnId, out prior);
+                session.importedRowsByOwner[diary.pawnId] = prior > int.MaxValue - count
+                    ? int.MaxValue : prior + count;
+            }
+            foreach (KeyValuePair<string, int> pair in session.importedRowsByOwner)
+            {
+                session.globalImportedRows = session.globalImportedRows > int.MaxValue - pair.Value
+                    ? int.MaxValue : session.globalImportedRows + pair.Value;
+                if (pair.Value > 0 && session.globalImportedOwners < int.MaxValue)
+                    session.globalImportedOwners++;
+            }
+            return session;
+        }
+
+        private static void ApplyMemoryMigrationBudgetProjection(
+            MemoryMigrationBudgetSession session,
+            MemoryMigrationBudgetProjection projection)
+        {
+            if (session == null || projection == null) return;
+            session.global = projection.global;
+            session.componentActiveBytes = projection.componentActiveBytes;
+            session.globalActiveBlocks = projection.globalActiveBlocks;
+            session.globalEditedBlocks = projection.globalEditedBlocks;
+            session.globalImportedRows = projection.globalImportedRows;
+            session.globalImportedOwners = projection.globalImportedOwners;
+            session.currentOwnerIds.Add(projection.ownerPawnId);
+            session.owners[projection.ownerPawnId] = projection.ownerTotals;
+            session.importedRowsByOwner[projection.ownerPawnId] = projection.ownerImportedRows;
         }
 
         private void CountCurrentImportedArchiveUsage(
@@ -1404,11 +1594,12 @@ namespace PawnDiary
                     sawPass && !sawFail && !sawInvalid);
             PawnReflectionState merged = CloneReflectionState(primary?.reflectionState)
                 ?? new PawnReflectionState();
-            merged.memoryReflectionSchemaVersion = 1;
-            merged.memoryOwnerEpochToken = epochToken;
+            bool enrolled = !string.IsNullOrEmpty(epochToken);
+            merged.memoryReflectionSchemaVersion = enrolled ? 1 : 0;
+            merged.memoryOwnerEpochToken = enrolled ? epochToken : string.Empty;
             merged.lastQuietMemoryEvaluatedAbsoluteDay = evaluatedDay;
             merged.lastQuietMemoryActivatedAbsoluteQuadrum = activatedQuadrum;
-            merged.lastQuietMemoryDecisionKey = decisionKey;
+            merged.lastQuietMemoryDecisionKey = enrolled ? decisionKey : string.Empty;
             return merged;
         }
 

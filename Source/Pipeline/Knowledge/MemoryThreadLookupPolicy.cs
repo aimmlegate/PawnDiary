@@ -97,5 +97,20 @@ namespace PawnDiary
             }
             return -1;
         }
+
+        /// <summary>
+        /// Chooses the deterministic current thread projection. A rolling summary wins ties because it
+        /// represents more history, but it cannot hide a usable visible block from a later event tick.
+        /// </summary>
+        public static bool UseRollingCurrentProjection(
+            bool rollingUsable,
+            long rollingLatestEventTick,
+            bool visibleUsable,
+            long visibleEventTick)
+        {
+            if (!rollingUsable) return false;
+            if (!visibleUsable) return true;
+            return rollingLatestEventTick >= visibleEventTick;
+        }
     }
 }

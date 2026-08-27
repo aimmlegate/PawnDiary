@@ -388,6 +388,7 @@ namespace PawnDiary.RimTests
 
             PawnKnowledgeState stateA = SeedCurrentMemoryEnvelope(pawnA, 7101);
             PawnKnowledgeState stateB = SeedCurrentMemoryEnvelope(pawnB, 7102);
+            PawnDiaryRecord diaryA = DiaryFor(pawnA);
             MemoryPolicySnapshot priorPolicy = MemoryEffectivePolicyProvider.Current;
             Require(priorPolicy != null && !priorPolicy.compatibilityFailClosed,
                 "The loaded Memory policy was unavailable or fail-closed.");
@@ -452,9 +453,36 @@ namespace PawnDiary.RimTests
                         && enabledEvent.ActiveMemoryLogicalRequestForRole(
                             DiaryEvent.RecipientRole) == null,
                     "Factual capture created memory request work without a scheduler decision.");
+
+                PawnKnowledgeState migrationPending = new PawnKnowledgeState
+                {
+                    pawnId = pawnA.GetUniqueLoadID(),
+                    schemaVersion = 1,
+                    records = new List<ImportantMemoryRecord>
+                    {
+                        new ImportantMemoryRecord
+                        {
+                            recordId = "legacy-pending-record",
+                            dedupKey = "legacy-pending-dedup",
+                            eventKind = "legacy.pending"
+                        }
+                    }
+                };
+                diaryA.knowledgeState = migrationPending;
+                DiaryEvent pendingOwnerEvent = AddRomancePairEvent(
+                    pawnA, pawnB, "Spouse", "migration pending owner");
+                Require(ReferenceEquals(diaryA.knowledgeState, migrationPending)
+                        && migrationPending.schemaVersion == 1
+                        && migrationPending.records.Count == 1
+                        && migrationPending.standaloneBlocks.Count == 0
+                        && migrationPending.threadRoots.Count == 0,
+                    "CurrentRelease mixed a new legacy/current row into a migration-pending owner.");
+                Require(CountFactualOccurrence(stateB, pendingOwnerEvent.eventId) == 1,
+                    "A migration-pending owner suppressed the other current owner's factual row.");
             }
             finally
             {
+                diaryA.knowledgeState = stateA;
                 MemoryEffectivePolicyProvider.Publish(priorPolicy);
                 LastAppliedMemoryPolicyFingerprintField.SetValue(
                     scope.Component, priorAppliedFingerprint ?? string.Empty);

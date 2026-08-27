@@ -405,17 +405,7 @@ namespace PawnDiary
             if (delta > 0)
             {
                 MemoryBudgetDecision decision = ActiveMemoryPayloadBudget.TryAdmit(
-                    new MemoryBudgetLimits
-                    {
-                        activeOwnerBytes = ReadCapacityLong(
-                            "activeOwnerBytes", 196608, 2097152),
-                        combinedOwnerBytes = ReadCapacityLong(
-                            "combinedOwnerBytes", 262144, 4194304),
-                        activeGlobalBytes = ReadCapacityLong(
-                            "activeGlobalBytes", 6291456, 25165824),
-                        combinedGlobalBytes = ReadCapacityLong(
-                            "combinedGlobalBytes", 8388608, 33554432)
-                    },
+                    CurrentMemoryBudgetLimits(),
                     ownerTotals.activeBytes,
                     ownerTotals.importedBytes,
                     delta,

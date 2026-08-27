@@ -42,6 +42,31 @@ namespace PawnDiary
             return dueCheck != null && dueCheck.due && handleCount == 0;
         }
 
+        /// <summary>
+        /// Preparation may itself consume the slice. Yield only after some durable transient progress
+        /// (index/handle/legacy phase) so an expensive phase cannot starve forever at the same boundary.
+        /// </summary>
+        public static bool ShouldYieldAfterPreparation(
+            long elapsedMicroseconds,
+            long targetMicroseconds,
+            bool preparationProgressed)
+        {
+            return preparationProgressed && targetMicroseconds > 0
+                && elapsedMicroseconds >= targetMicroseconds;
+        }
+
+        /// <summary>
+        /// Final global pressure is one indivisible maintenance phase. Defer its start when earlier
+        /// work consumed this slice; the next tick resumes directly at pressure instead of placing
+        /// an unmeasured global pass after the elapsed-time boundary.
+        /// </summary>
+        public static bool ShouldDeferFinalPressure(
+            long elapsedMicroseconds,
+            long targetMicroseconds)
+        {
+            return targetMicroseconds > 0 && elapsedMicroseconds >= targetMicroseconds;
+        }
+
         public static MemoryMaintenanceSlicePlan Plan(MemoryMaintenanceSliceRequest request)
         {
             MemoryMaintenanceSlicePlan plan = new MemoryMaintenanceSlicePlan();

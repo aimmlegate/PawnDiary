@@ -229,6 +229,9 @@ namespace PawnDiary
         public int memoryLibraryOverscanRows = 2;
         public int memoryLibraryMaximumMaterializedRows = 28;
         public float memoryLibraryDiaryActionWidth = 92f;
+        // Repository snapshots are immutable between revisions. Polling a few times per second keeps
+        // the non-pausing window responsive without rebuilding query envelopes every rendered frame.
+        public int memoryLibraryRepositoryPollFrames = 6;
 
         // ---- Control/header/card dimensions ----
         public float controlLineHeight = 28f;

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using PawnDiary;
 using RimTestRedux;
 using Verse;
@@ -101,6 +102,133 @@ namespace PawnDiary.RimTests
                 "Result did not publish after receipt.");
             Require(!MemoryDispatchSavedAdapter.MarkResultApplied(saved, 1),
                 "Duplicate result publication was not rejected.");
+        }
+
+        /// <summary>
+        /// The owner-local dispatch refresh must account for both the component-owned request row and
+        /// its referenced owner after permit, receipt, and result mutations. Each incremental snapshot
+        /// is compared to an immediate full byte-index rebuild of the same saved truth.
+        /// </summary>
+        [Test]
+        public static void IncrementalDispatchIndexesMatchFullRebuildAtEveryStage()
+        {
+            SavedActiveLogicalRequestV1 saved = NewSavedRequest();
+            SavedMemoryThreadRoot root;
+            SavedMemoryBlock block;
+            PawnKnowledgeState state = NewAccountingState(out root, out block);
+            DiaryGameComponent component = PawnDiaryMemoryM1FixtureTests.NewMemoryComponent(
+                new List<PawnDiaryRecord>
+                {
+                    new PawnDiaryRecord { pawnId = state.pawnId, knowledgeState = state }
+                },
+                new List<SavedActiveLogicalRequestV1> { saved },
+                null);
+            component.RebuildMemorySizeIndexes();
+            MethodInfo refresh = typeof(DiaryGameComponent).GetMethod(
+                "RefreshMemoryDispatchSizeIndex",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            MethodInfo applyAccounting = typeof(DiaryGameComponent).GetMethod(
+                "ApplyInvocationAccounting",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Require(refresh != null && applyAccounting != null,
+                "A dispatch index/accounting fixture seam was renamed.");
+
+            Require(MemoryDispatchSavedAdapter.TryActivate(saved),
+                "The dispatch index fixture could not activate its request.");
+            SavedActiveLogicalAttemptV1 attempt;
+            Require(MemoryDispatchSavedAdapter.TryPrepareAttempt(
+                    saved,
+                    saved.frozenVariants[0].variantKey,
+                    MemoryDispatchTokens.Initial,
+                    0,
+                    out attempt),
+                "The dispatch index fixture could not prepare its attempt.");
+            MemoryInvocationCommitPlan invocation;
+            Require(MemoryDispatchSavedAdapter.TryCommitInvocation(
+                    saved, 1, Fence(saved), 0, 456, out invocation),
+                "The dispatch index fixture could not commit its permit.");
+            Require((bool)applyAccounting.Invoke(null, new object[]
+                    {
+                        state,
+                        saved.frozenVariants[0],
+                        invocation,
+                        saved,
+                        456L
+                    }),
+                "The dispatch index fixture could not apply permit accounting.");
+            refresh.Invoke(component, new object[] { state });
+            RequireIncrementalIndexParity(component, state, "permit");
+
+            Require(DiaryGameComponent.ApplyConfirmedExposure(
+                    state, saved.frozenVariants[0], 456),
+                "The dispatch index fixture could not apply confirmed exposure.");
+            Require(MemoryDispatchSavedAdapter.MarkReceiptApplied(
+                    saved, 1, MemoryDispatchTokens.Success, 500),
+                "The dispatch index fixture could not apply its receipt.");
+            refresh.Invoke(component, new object[] { state });
+            RequireIncrementalIndexParity(component, state, "receipt");
+
+            Require(MemoryDispatchSavedAdapter.MarkResultApplied(saved, 1),
+                "The dispatch index fixture could not apply its result.");
+            refresh.Invoke(component, new object[] { state });
+            RequireIncrementalIndexParity(component, state, "result");
+        }
+
+        /// <summary>
+        /// Potential exposure and narrative use are distinct status mutations. Both advance the exact
+        /// owner/root revision once; only narrative use spends the inclusion counter.
+        /// </summary>
+        [Test]
+        public static void PotentialExposureAndNarrativeUseAdvanceStatusDomains()
+        {
+            SavedActiveLogicalRequestV1 saved = NewSavedRequest();
+            SavedMemoryThreadRoot root;
+            SavedMemoryBlock block;
+            PawnKnowledgeState state = NewAccountingState(out root, out block);
+            MethodInfo applyAccounting = typeof(DiaryGameComponent).GetMethod(
+                "ApplyInvocationAccounting",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Require(applyAccounting != null,
+                "The invocation-accounting fixture seam was renamed.");
+
+            MemoryInvocationCommitPlan potential = new MemoryInvocationCommitPlan
+            {
+                applyPotentialExposure = true
+            };
+            Require((bool)applyAccounting.Invoke(null, new object[]
+                    {
+                        state,
+                        saved.frozenVariants[0],
+                        potential,
+                        saved,
+                        600L
+                    })
+                    && block.providerExposureState == "potentially_sent"
+                    && block.lastProviderExposureTick == 600
+                    && block.automaticInclusionCount == 0
+                    && state.statusRevision == 6
+                    && root.statusRevision == 8,
+                "Potential exposure did not advance only the exact status domain.");
+
+            MemoryInvocationCommitPlan narrative = new MemoryInvocationCommitPlan
+            {
+                applyNarrativeUse = true
+            };
+            Require((bool)applyAccounting.Invoke(null, new object[]
+                    {
+                        state,
+                        saved.frozenVariants[0],
+                        narrative,
+                        saved,
+                        601L
+                    })
+                    && block.providerExposureState == "potentially_sent"
+                    && block.lastProviderExposureTick == 601
+                    && block.automaticInclusionCount == 1
+                    && block.lastAutomaticIncludedTick == 601
+                    && state.statusRevision == 7
+                    && root.statusRevision == 9,
+                "Narrative use did not advance inclusion and status exactly once.");
         }
 
         [Test]
@@ -211,6 +339,112 @@ namespace PawnDiary.RimTests
                     == "accepted-system"
                 && diaryEvent.PromptForRole(DiaryEvent.InitiatorRole) == "accepted-user",
                 "Activation rollback split the exact accepted prompt pair.");
+        }
+
+        /// <summary>
+        /// Provider receipts are status-only mutations: the exact block, its parent root, and its
+        /// owner advance once, while duplicate receipts and saturated revisions commit nothing.
+        /// </summary>
+        [Test]
+        public static void ConfirmedExposureAdvancesOwnerAndRootStatusExactlyOnce()
+        {
+            SavedActiveLogicalRequestV1 request = NewSavedRequest();
+            SavedFrozenPromptVariantV1 variant = request.frozenVariants[0];
+            PawnKnowledgeState state = PawnKnowledgeState.CreateCurrent("Pawn_M2");
+            state.autobiographicalEpochToken = EpochToken(31);
+            state.statusRevision = 5;
+            SavedMemoryBlock block = new SavedMemoryBlock
+            {
+                schemaVersion = 1,
+                recordId = "record-m2",
+                sourceOccurrenceId = "source-m2",
+                ownerPawnId = "Pawn_M2",
+                ownerEpochToken = state.autobiographicalEpochToken,
+                rootId = "root-m2",
+                providerExposureState = "potentially_sent",
+                lastProviderExposureTick = 100
+            };
+            SavedMemoryThreadRoot root = new SavedMemoryThreadRoot
+            {
+                schemaVersion = 1,
+                rootId = "root-m2",
+                ownerPawnId = "Pawn_M2",
+                ownerEpochToken = state.autobiographicalEpochToken,
+                statusRevision = 7
+            };
+            root.visibleBlocks.Add(block);
+            state.threadRoots.Add(root);
+
+            Require(DiaryGameComponent.ApplyConfirmedExposure(state, variant, 200),
+                "A matching successful receipt did not commit confirmed exposure.");
+            Require(block.providerExposureState == "confirmed_sent"
+                    && block.lastProviderExposureTick == 200
+                    && state.statusRevision == 6
+                    && root.statusRevision == 8,
+                "Confirmed exposure did not advance the exact owner/root status domain.");
+            Require(!DiaryGameComponent.ApplyConfirmedExposure(state, variant, 200)
+                    && state.statusRevision == 6
+                    && root.statusRevision == 8,
+                "An idempotent receipt replay advanced status revisions twice.");
+
+            block.providerExposureState = "potentially_sent";
+            root.statusRevision = long.MaxValue;
+            Require(!DiaryGameComponent.ApplyConfirmedExposure(state, variant, 300)
+                    && block.providerExposureState == "potentially_sent"
+                    && block.lastProviderExposureTick == 200
+                    && state.statusRevision == 6,
+                "Root revision saturation allowed a partial exposure mutation.");
+        }
+
+        private static PawnKnowledgeState NewAccountingState(
+            out SavedMemoryThreadRoot root,
+            out SavedMemoryBlock block)
+        {
+            PawnKnowledgeState state = PawnKnowledgeState.CreateCurrent("Pawn_M2");
+            state.autobiographicalEpochToken = EpochToken(31);
+            state.statusRevision = 5;
+            block = new SavedMemoryBlock
+            {
+                schemaVersion = 1,
+                recordId = "record-m2",
+                sourceOccurrenceId = "source-m2",
+                ownerPawnId = "Pawn_M2",
+                ownerEpochToken = state.autobiographicalEpochToken,
+                rootId = "root-m2",
+                providerExposureState = "not_sent",
+                lastProviderExposureTick = 0
+            };
+            root = new SavedMemoryThreadRoot
+            {
+                schemaVersion = 1,
+                rootId = "root-m2",
+                ownerPawnId = "Pawn_M2",
+                ownerEpochToken = state.autobiographicalEpochToken,
+                statusRevision = 7
+            };
+            root.visibleBlocks.Add(block);
+            state.threadRoots.Add(root);
+            return state;
+        }
+
+        private static void RequireIncrementalIndexParity(
+            DiaryGameComponent component,
+            PawnKnowledgeState state,
+            string stage)
+        {
+            DiaryGameComponent.MemoryOwnerByteTotals incrementalOwner =
+                component.GetOwnerByteTotals(state.pawnId);
+            MemoryPayloadBudgetTotals incrementalGlobal = component.GetGlobalBudgetTotals();
+            component.RebuildMemorySizeIndexes();
+            DiaryGameComponent.MemoryOwnerByteTotals rebuiltOwner =
+                component.GetOwnerByteTotals(state.pawnId);
+            MemoryPayloadBudgetTotals rebuiltGlobal = component.GetGlobalBudgetTotals();
+            Require(incrementalOwner.valid && rebuiltOwner.valid
+                    && incrementalOwner.activeBytes == rebuiltOwner.activeBytes
+                    && incrementalOwner.importedBytes == rebuiltOwner.importedBytes
+                    && incrementalGlobal.globalActiveBytes == rebuiltGlobal.globalActiveBytes
+                    && incrementalGlobal.globalImportedBytes == rebuiltGlobal.globalImportedBytes,
+                "Incremental dispatch indexes diverged after " + stage + ".");
         }
 
         private static void RequireThrowsNewer(Action action)

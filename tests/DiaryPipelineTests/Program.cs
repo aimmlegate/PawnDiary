@@ -1735,9 +1735,9 @@ namespace DiaryPipelineTests
         }
 
         /// <summary>
-        /// The shipped memory redesign has no recall counters to bump, so a frozen memory block is
-        /// ordinary optional context. Full keeps it; budgeted presets may cut it, and the impure
-        /// adapter removes it entirely when the effective lane preset disables the memory layer.
+        /// Recall v2 applies its own line/provenance caps before this selector. Full keeps the
+        /// resulting field as ordinary context, Balanced must retain its one already-bounded line,
+        /// and Compact drops the layer even when a direct pure caller supplies it.
         /// </summary>
         private static void TestMemoryContextIsOptionalAndLayerControlled()
         {
@@ -1765,7 +1765,8 @@ namespace DiaryPipelineTests
                     policy = policy,
                     povRole = DiaryPipelineRoles.Initiator,
                     contextDetailLevel = levels[i],
-                    // A deliberately unaffordable budget: every optional field gets cut.
+                    // A deliberately unaffordable budget: Balanced's bounded memory field must
+                    // survive it, while Compact still cuts the layer.
                     contextBudgets = new PromptContextBudgets { balancedDefault = 1, compactDefault = 1 }
                 });
 
@@ -1778,13 +1779,23 @@ namespace DiaryPipelineTests
                     AssertContains("Full prompt receives the frozen memory lines whole",
                         plan.userPrompt, "memory: " + frozenRecall);
                 }
+                else if (levels[i] == PromptContextDetailLevel.Balanced)
+                {
+                    AssertTrue("Balanced keeps the already-bounded memory field despite outer budget pressure",
+                        kept != null && kept.required);
+                    AssertContains("Balanced prompt receives the frozen memory field",
+                        plan.userPrompt, "memory: " + frozenRecall);
+                    AssertTrue("Balanced does not report retained memory as cut",
+                        plan.contextSelectionReport.cut.All(
+                            row => row.source != MemoryContextPrompt.Source));
+                }
                 else
                 {
-                    AssertTrue(levels[i] + " may cut memory under a binding budget", kept == null);
-                    AssertTrue(levels[i] + " reports the optional memory cut",
+                    AssertTrue("Compact cuts memory under a binding budget", kept == null);
+                    AssertTrue("Compact reports the memory cut",
                         plan.contextSelectionReport.cut
                             .Any(row => row.source == MemoryContextPrompt.Source));
-                    AssertTrue(levels[i] + " prompt omits the cut memory block",
+                    AssertTrue("Compact prompt omits the cut memory block",
                         !plan.userPrompt.Contains("memory:"));
                 }
             }
@@ -2171,6 +2182,12 @@ namespace DiaryPipelineTests
             AssertTrue("lane override wins",
                 PromptContextSelector.Resolve(PromptContextDetailLevel.Full, PromptContextDetailOverride.Compact)
                 == PromptContextDetailLevel.Compact);
+            AssertTrue("Full allows memory context",
+                PromptContextFeaturePolicy.AllowsMemoryContext(PromptContextDetailLevel.Full));
+            AssertTrue("Balanced allows its one memory line",
+                PromptContextFeaturePolicy.AllowsMemoryContext(PromptContextDetailLevel.Balanced));
+            AssertTrue("Compact removes memory context",
+                !PromptContextFeaturePolicy.AllowsMemoryContext(PromptContextDetailLevel.Compact));
 
             PromptContextDetailLevel[] globals =
             {
@@ -2229,8 +2246,8 @@ namespace DiaryPipelineTests
                 PromptContextFeaturePolicy.AllowsPromptEnchantments(PromptContextDetailLevel.Balanced));
             AssertTrue("Balanced keeps psychotypes",
                 PromptContextFeaturePolicy.AllowsPsychotypes(PromptContextDetailLevel.Balanced));
-            AssertTrue("Balanced drops pawn memory",
-                !PromptContextFeaturePolicy.AllowsMemoryContext(PromptContextDetailLevel.Balanced));
+            AssertTrue("Balanced keeps its bounded pawn-memory line",
+                PromptContextFeaturePolicy.AllowsMemoryContext(PromptContextDetailLevel.Balanced));
 
             AssertTrue("Compact drops live context hints",
                 !PromptContextFeaturePolicy.AllowsPromptEnchantments(PromptContextDetailLevel.Compact));

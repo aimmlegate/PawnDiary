@@ -148,6 +148,7 @@ namespace PawnDiary
                 tuning,
                 writingFormat,
                 otherPawnId,
+                legacyPolicy,
                 legacyQuery);
             MemoryRecallReservationView reservations = SnapshotRecallReservations(owner);
             List<MemoryRecallCandidateSnapshot> candidates = SnapshotRecallCandidates(
@@ -260,6 +261,7 @@ namespace PawnDiary
             DiaryKnowledgeTuningDef tuning,
             string writingFormat,
             string otherPawnId,
+            KnowledgePolicySnapshot legacyPolicy,
             KnowledgeQuery legacyQuery)
         {
             var query = new MemoryRecallQueryV2
@@ -304,14 +306,28 @@ namespace PawnDiary
                     MemoryContractTokens.SubjectPawn,
                     legacyQuery.participantIds[index]);
             }
-            for (int index = 0; legacyQuery?.subjectKeys != null
-                && index < legacyQuery.subjectKeys.Count; index++)
-            {
-                string subject = legacyQuery.subjectKeys[index];
-                AddRecallRoute(query.exactRoutes, MemoryContractTokens.SubjectPawn, subject);
-                AddRecallRoute(query.exactRoutes, MemoryContractTokens.SubjectFaction, subject);
-                AddRecallRoute(query.exactRoutes, MemoryContractTokens.SubjectStream, subject);
-            }
+            // Legacy subject keys are strings such as "part:Arm" and "faction:Empire". Treating one
+            // string as pawn + faction + stream identity invents routes. Reclassify the current event
+            // through the same pure factual contract used at capture and copy only its typed subjects.
+            List<ImportantMemoryDraft> currentDrafts = ImportantEventClassifier.Classify(
+                new KnowledgeCaptureSignal
+                {
+                    signal = KnowledgeTokens.SignalEvent,
+                    defName = diaryEvent.interactionDefName ?? string.Empty,
+                    sourceEventId = diaryEvent.eventId ?? string.Empty,
+                    sourceOccurrenceId = diaryEvent.eventId ?? string.Empty,
+                    tick = diaryEvent.tick,
+                    dateLabel = diaryEvent.date ?? string.Empty,
+                    gameContext = diaryEvent.gameContext ?? string.Empty,
+                    initiatorPawnId = diaryEvent.initiatorPawnId ?? string.Empty,
+                    initiatorName = diaryEvent.initiatorName ?? string.Empty,
+                    recipientPawnId = diaryEvent.recipientPawnId ?? string.Empty,
+                    recipientName = diaryEvent.recipientName ?? string.Empty
+                },
+                DiaryKnowledgePolicy.ImportantEventRules(),
+                legacyPolicy);
+            ImportantMemorySelector.AddFactualDraftRoutes(
+                query.exactRoutes, currentDrafts, owner.pawnId ?? string.Empty);
             if (legacyQuery?.topicKeys != null) query.topicKeys.AddRange(legacyQuery.topicKeys);
             if (legacyQuery?.excludedSourceEventIds != null)
                 query.excludedSourceEventIds.AddRange(legacyQuery.excludedSourceEventIds);
@@ -345,8 +361,8 @@ namespace PawnDiary
             {
                 SavedMemoryThreadRoot root = owner.threadRoots[rootIndex];
                 if (root == null) continue;
-                SavedMemoryBlock projection = root.rollingSummaryBlock
-                    ?? LatestVisibleBlock(root.visibleBlocks);
+                SavedMemoryBlock projection = CurrentThreadProjection(
+                    root, policy, query);
                 MemoryRecallCandidateSnapshot candidate = SnapshotRecallCandidate(
                     owner,
                     root,
@@ -953,36 +969,7 @@ namespace PawnDiary
             string subjectKind,
             string subjectId)
         {
-            if (target == null
-                || string.IsNullOrWhiteSpace(subjectKind)
-                || string.IsNullOrWhiteSpace(subjectId)
-                || !MemoryContractTokens.IsValidRootSubject(subjectKind, subjectId)) return;
-            string routeKind = subjectKind == MemoryContractTokens.SubjectPawn
-                ? MemoryRecallRouteKinds.Participant
-                : subjectKind == MemoryContractTokens.SubjectFaction
-                    ? MemoryRecallRouteKinds.Faction
-                    : MemoryRecallRouteKinds.TypedSubject;
-            string routeKey = OrdinalSegmentCodec.Segment("memory-recall-route-v1")
-                + OrdinalSegmentCodec.Segment(routeKind)
-                + OrdinalSegmentCodec.Segment(subjectKind)
-                + OrdinalSegmentCodec.Segment(subjectId);
-            if (routeKey.Length > MemoryIdentityCodec.MaximumEmbeddedCompositeCharacters) return;
-            for (int index = 0; index < target.Count; index++)
-            {
-                MemoryRecallRouteIdentity existing = target[index];
-                if (existing != null
-                    && existing.routeKind == routeKind
-                    && existing.subjectKind == subjectKind
-                    && existing.subjectId == subjectId
-                    && existing.routeKey == routeKey) return;
-            }
-            target.Add(new MemoryRecallRouteIdentity
-            {
-                routeKind = routeKind,
-                subjectKind = subjectKind,
-                subjectId = subjectId,
-                routeKey = routeKey
-            });
+            ImportantMemorySelector.TryAddExactRoute(target, subjectKind, subjectId);
         }
 
         private static void AddRepresentedSources(
@@ -1146,6 +1133,38 @@ namespace PawnDiary
                     && route.subjectId == subjectId) return true;
             }
             return false;
+        }
+
+        private static SavedMemoryBlock CurrentThreadProjection(
+            SavedMemoryThreadRoot root,
+            MemoryPolicySnapshot policy,
+            MemoryRecallQueryV2 query)
+        {
+            SavedMemoryBlock rolling = root?.rollingSummaryBlock;
+            SavedMemoryBlock visible = LatestVisibleBlock(root?.visibleBlocks);
+            int enabledMask = Math.Max(0, policy?.memoryCategoryMask ?? 0);
+            int rollingMask = rolling?.summaryPayload == null
+                ? 0
+                : rolling.summaryPayload.derivedCategoryMask & enabledMask;
+            bool rollingUsable = rolling != null && !rolling.suppressed && rollingMask != 0;
+            long rollingTick = rollingUsable
+                ? LatestEnabledSummaryTick(rolling.summaryPayload, rollingMask)
+                : -1;
+            int visibleBit = visible == null ? 0 : MemoryCategoryBits.ForToken(visible.category);
+            bool visibleUsable = visible != null && !visible.suppressed
+                && (visibleBit & enabledMask) != 0
+                && !MemoryThreadReducer.IsExpired(
+                    query?.repetitionPolicy?.currentTick ?? 0,
+                    visible.originalEventTick,
+                    visible.ageUnknown,
+                    visible.importance,
+                    policy?.minorMemoryLifetimeTicks ?? 0,
+                    policy?.regularMemoryLifetimeTicks ?? 0);
+            return MemoryThreadLookupPolicy.UseRollingCurrentProjection(
+                    rollingUsable, rollingTick, visibleUsable,
+                    visible?.originalEventTick ?? -1)
+                ? rolling
+                : visible;
         }
 
         private static SavedMemoryBlock LatestVisibleBlock(List<SavedMemoryBlock> blocks)

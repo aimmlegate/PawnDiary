@@ -194,10 +194,12 @@ namespace PawnDiary
                 });
             if (!placement.valid) return result;
 
-            List<SavedMemoryBlock> replacementStandalone =
-                CloneSavedBlocks(state.standaloneBlocks);
-            List<SavedMemoryThreadRoot> replacementRoots =
-                CloneSavedRoots(state.threadRoots);
+            // Unchanged siblings are immutable during planning, so copy only the owning lists and the
+            // one root that can change. The pressure fallback still deep-clones every affected owner.
+            List<SavedMemoryBlock> replacementStandalone = new List<SavedMemoryBlock>(
+                state.standaloneBlocks ?? new List<SavedMemoryBlock>());
+            List<SavedMemoryThreadRoot> replacementRoots = new List<SavedMemoryThreadRoot>(
+                state.threadRoots ?? new List<SavedMemoryThreadRoot>());
             MemoryReducerPolicy policy = BuildMemoryReducerPolicy(request.nowTick);
             if (placement.standalone || request.block.ageUnknown)
             {
@@ -235,7 +237,8 @@ namespace PawnDiary
                     }
                     else
                     {
-                        savedRoot = replacementRoots[rootIndex];
+                        savedRoot = CloneSavedRoot(replacementRoots[rootIndex]);
+                        replacementRoots[rootIndex] = savedRoot;
                     }
                     if (chapterPlan.closeOpenBeforeAdmission)
                         CloseOpenChapter(
@@ -308,21 +311,23 @@ namespace PawnDiary
             }
 
             // Commit tail: every allocation, callback, policy decision, and size walk is complete.
+            List<SavedMemoryBlock> priorStandalone = state.standaloneBlocks;
+            List<SavedMemoryThreadRoot> priorRoots = state.threadRoots;
             state.standaloneBlocks = replacementStandalone;
             state.threadRoots = replacementRoots;
             state.structuralRevision = nextOwnerRevision;
-            memoryM4IndexesDirty = true;
 
-            // Rebuild after publication. If this unexpectedly fails, the dirty flag remains true and
-            // the next read retries from saved truth; the saved graph is never partially rolled back.
+            // Refresh only the mutated owner. A defensive full rebuild remains the recovery path if
+            // corrupt loaded identity prevents exact unindex/reindex after the saved swap committed.
             try
             {
-                RebuildMemoryM4Indexes();
-                RebuildMemorySizeIndexes();
+                ReindexMemoryM4OwnerAfterCommit(state, priorStandalone, priorRoots);
+                if (!RefreshMemorySizeIndexForOwner(state)) RebuildMemorySizeIndexes();
             }
             catch
             {
                 memoryM4IndexesDirty = true;
+                RebuildMemorySizeIndexes();
             }
             result.outcome = MemoryStoreMutationOutcome.Admitted;
             result.committedOwnerStructuralRevision = nextOwnerRevision;
@@ -421,22 +426,216 @@ namespace PawnDiary
             for (int i = 0; i < repair.activeRoots.Count; i++)
                 replacements.Add(FromReducerRoot(repair.activeRoots[i], BuildOriginalRegistryRoot(
                     owner.threadRoots, repair.activeRoots[i], policy)));
-            // Authored conflict archive persistence belongs to M6 migration/library UI. Until then,
-            // fail closed rather than discard its quarantined payload from a current save.
-            if (repair.archivedRoots.Count > 0)
+            List<SavedImportedMemoryRow> imported = new List<SavedImportedMemoryRow>(
+                owner.importedArchiveRows ?? new List<SavedImportedMemoryRow>());
+            if (!TryAppendRepairArchiveRows(
+                    owner, repair.archivedRoots, policy, imported))
             {
                 RecordMemoryDiagnosticOnce("legacy_authored_conflict", "owner");
                 return false;
             }
             long revision;
             if (!TryIncrement(owner.structuralRevision, out revision)) return false;
+            PawnKnowledgeState projectedOwner = BuildRepairCapacityProjection(
+                owner, replacements, imported, revision);
+            MemoryMigrationBudgetProjection ignoredProjection;
+            if (!LegacyReplacementWithinBounds(
+                    owner.pawnId,
+                    projectedOwner,
+                    CreateMemoryMigrationBudgetSession(),
+                    out ignoredProjection))
+            {
+                RecordMemoryDiagnosticOnce("legacy_authored_conflict", "owner");
+                return false;
+            }
             owner.threadRoots = replacements;
+            owner.importedArchiveRows = imported;
             owner.structuralRevision = revision;
             memoryM4IndexesDirty = true;
             string diagnosticReason = MemoryThreadRepairPolicy.DiagnosticReason(repair);
             if (!string.IsNullOrEmpty(diagnosticReason))
                 RecordMemoryDiagnostic(diagnosticReason, "owner");
             return true;
+        }
+
+        private bool TryAppendRepairArchiveRows(
+            PawnKnowledgeState owner,
+            List<MemoryReducerRoot> archivedRoots,
+            MemoryReducerPolicy policy,
+            List<SavedImportedMemoryRow> destination)
+        {
+            HashSet<string> ids = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; destination != null && index < destination.Count; index++)
+            {
+                string id = destination[index]?.archiveRecordId ?? string.Empty;
+                if (id.Length == 0 || !ids.Add(id)) return false;
+            }
+            for (int rootIndex = 0; archivedRoots != null
+                && rootIndex < archivedRoots.Count; rootIndex++)
+            {
+                MemoryReducerRoot pureRoot = archivedRoots[rootIndex];
+                SavedMemoryThreadRoot original = BuildOriginalRegistryRoot(
+                    owner.threadRoots, pureRoot, policy);
+                SavedMemoryThreadRoot savedRoot = FromReducerRoot(pureRoot, original);
+                if (!TryAppendRepairArchiveBlock(
+                        pureRoot, savedRoot.rollingSummaryBlock, ids, destination)) return false;
+                for (int blockIndex = 0; savedRoot.visibleBlocks != null
+                    && blockIndex < savedRoot.visibleBlocks.Count; blockIndex++)
+                {
+                    SavedMemoryBlock block = savedRoot.visibleBlocks[blockIndex];
+                    if (!TryAppendRepairArchiveBlock(
+                            pureRoot, block, ids, destination)) return false;
+                }
+            }
+            return true;
+        }
+
+        private static bool TryAppendRepairArchiveBlock(
+            MemoryReducerRoot pureRoot,
+            SavedMemoryBlock block,
+            HashSet<string> ids,
+            List<SavedImportedMemoryRow> destination)
+        {
+            if (!IsPlayerAuthored(block)) return true;
+            bool contributionRows = false;
+            for (int bucketIndex = 0; block.summaryPayload?.factBuckets != null
+                && bucketIndex < block.summaryPayload.factBuckets.Count; bucketIndex++)
+            {
+                SavedMemoryFactBucket bucket = block.summaryPayload.factBuckets[bucketIndex];
+                for (int contributionIndex = 0; bucket?.contributions != null
+                    && contributionIndex < bucket.contributions.Count; contributionIndex++)
+                {
+                    SavedMemoryFactContribution contribution = bucket.contributions[contributionIndex];
+                    SavedImportedMemoryRow row = BuildRepairArchiveRow(
+                        pureRoot, block, bucket, contribution);
+                    if (row == null) return false;
+                    if (ids.Add(row.archiveRecordId)) destination.Add(row);
+                    contributionRows = true;
+                }
+            }
+            if (contributionRows) return true;
+            SavedImportedMemoryRow ordinary = BuildRepairArchiveRow(
+                pureRoot, block, null, null);
+            if (ordinary == null) return false;
+            if (ids.Add(ordinary.archiveRecordId)) destination.Add(ordinary);
+            return true;
+        }
+
+        private static SavedImportedMemoryRow BuildRepairArchiveRow(
+            MemoryReducerRoot pureRoot,
+            SavedMemoryBlock block,
+            SavedMemoryFactBucket bucket,
+            SavedMemoryFactContribution contribution)
+        {
+            if (pureRoot == null || block == null || !IsPlayerAuthored(block)) return null;
+            string archiveId = MemoryThreadRepairPolicy.ArchiveFingerprint(
+                pureRoot, block.recordId, contribution?.contributionId, "authored_conflict");
+            if (archiveId.Length == 0) return null;
+            SavedMemoryBlock clone = CloneSavedBlock(block);
+            SavedImportedMemoryRow row = new SavedImportedMemoryRow
+            {
+                schemaVersion = 1,
+                archiveRecordId = archiveId,
+                savedOwnerIdentityKindToken = "exact_id",
+                savedOwnerIdentityValue = pureRoot.ownerPawnId ?? string.Empty,
+                originalRecordId = block.recordId ?? string.Empty,
+                sourceOccurrenceId = contribution?.sourceOccurrenceId
+                    ?? block.sourceOccurrenceId ?? string.Empty,
+                sourceEventId = block.sourceEventId ?? string.Empty,
+                originalEventTick = contribution?.originalEventTick ?? block.originalEventTick,
+                ageUnknown = contribution?.ageUnknown ?? block.ageUnknown,
+                importedWording = block.playerWording ?? string.Empty,
+                originalKindToken = block.kind ?? string.Empty,
+                originalSummaryRoleToken = block.summaryRole ?? string.Empty,
+                originalCategoryToken = contribution?.category ?? block.category ?? string.Empty,
+                originalImportanceToken = contribution?.importance ?? block.importance ?? string.Empty,
+                routePolicyToken = string.Empty,
+                sourceTypeToken = "current_schema_repair",
+                conflictFingerprint = archiveId,
+                migrationReasonToken = "authored_conflict"
+            };
+            if (contribution == null)
+            {
+                row.primarySubject = clone.primarySubject;
+                row.secondarySubjects = clone.secondarySubjects;
+                row.canonicalFacts = clone.facts;
+                row.provenance = clone.provenance;
+            }
+            else
+            {
+                row.secondarySubjects = clone.summaryPayload?.subjectRefs
+                    ?? new List<SavedMemorySubjectRef>();
+                row.provenance = clone.summaryPayload?.provenanceRefs
+                    ?? new List<SavedMemoryProvenance>();
+                row.canonicalFacts.Add(new SavedMemoryCanonicalFact
+                {
+                    schemaVersion = 1,
+                    factId = contribution.originFactId ?? string.Empty,
+                    factKind = bucket?.factKind ?? string.Empty,
+                    canonicalSubjectKind = bucket?.canonicalSubjectKind ?? string.Empty,
+                    canonicalSubjectId = bucket?.canonicalSubjectId ?? string.Empty,
+                    aggregationToken = bucket?.aggregationToken ?? string.Empty,
+                    canonicalValueKind = "text",
+                    canonicalValue = contribution.canonicalValue ?? string.Empty,
+                    majorTurningPoint = contribution.majorTurningPoint,
+                    reversal = contribution.reversal
+                });
+                row.summaryContributionEvidence = new SavedImportedSummaryContributionEvidenceV1
+                {
+                    schemaVersion = 1,
+                    contributionId = contribution.contributionId ?? string.Empty,
+                    originChapterId = contribution.originChapterId ?? string.Empty,
+                    originRecordId = contribution.originRecordId ?? string.Empty,
+                    originFactOrdinal = contribution.originFactOrdinal,
+                    originFactId = contribution.originFactId ?? string.Empty,
+                    originalEventTick = contribution.originalEventTick,
+                    ageUnknown = contribution.ageUnknown,
+                    category = contribution.category ?? string.Empty,
+                    importance = contribution.importance ?? string.Empty,
+                    canonicalValue = contribution.canonicalValue ?? string.Empty,
+                    majorTurningPoint = contribution.majorTurningPoint,
+                    reversal = contribution.reversal,
+                    sourceOccurrenceId = contribution.sourceOccurrenceId ?? string.Empty,
+                    subjectRefIds = new List<string>(
+                        contribution.subjectRefIds ?? new List<string>()),
+                    provenanceRefIds = new List<string>(
+                        contribution.provenanceRefIds ?? new List<string>())
+                };
+            }
+            row.Normalize();
+            return row;
+        }
+
+        private static PawnKnowledgeState BuildRepairCapacityProjection(
+            PawnKnowledgeState owner,
+            List<SavedMemoryThreadRoot> roots,
+            List<SavedImportedMemoryRow> imported,
+            long structuralRevision)
+        {
+            return new PawnKnowledgeState
+            {
+                pawnId = owner.pawnId,
+                schemaVersion = owner.schemaVersion,
+                originCultureDefName = owner.originCultureDefName,
+                originCultureSource = owner.originCultureSource,
+                adoptedCultureDefName = owner.adoptedCultureDefName,
+                records = owner.records,
+                autobiographicalEpochToken = owner.autobiographicalEpochToken,
+                archiveOnly = owner.archiveOnly,
+                epochFenceOnly = owner.epochFenceOnly,
+                requestCancellationGeneration = owner.requestCancellationGeneration,
+                structuralRevision = structuralRevision,
+                statusRevision = owner.statusRevision,
+                completedDiaryEntryOrdinal = owner.completedDiaryEntryOrdinal,
+                standaloneBlocks = owner.standaloneBlocks,
+                threadRoots = roots,
+                playerBackground = owner.playerBackground,
+                ownerAwarenessSnapshots = owner.ownerAwarenessSnapshots,
+                openCaptureEpisodes = owner.openCaptureEpisodes,
+                repetitionGuardRows = owner.repetitionGuardRows,
+                importedArchiveRows = imported,
+                migrationDiagnosticFlags = owner.migrationDiagnosticFlags
+            };
         }
 
         private void EnsureMemoryM4Indexes()
@@ -503,6 +702,86 @@ namespace PawnDiary
             if (IsPlayerAuthored(block)) memoryM4GlobalEditedBlockCount++;
         }
 
+        /// <summary>Replaces one owner's exact transient M4 entries without walking the colony.</summary>
+        private void ReindexMemoryM4OwnerAfterCommit(
+            PawnKnowledgeState state,
+            List<SavedMemoryBlock> priorStandalone,
+            List<SavedMemoryThreadRoot> priorRoots)
+        {
+            UnindexMemoryM4Owner(priorStandalone, priorRoots);
+            memoryM4OwnerById[state.pawnId] = state;
+            IndexOwner(state);
+            memoryM4IndexesDirty = false;
+            if (memoryM4IndexGeneration < long.MaxValue) memoryM4IndexGeneration++;
+        }
+
+        private void UnindexMemoryM4Owner(
+            List<SavedMemoryBlock> standalone,
+            List<SavedMemoryThreadRoot> roots)
+        {
+            for (int index = 0; standalone != null && index < standalone.Count; index++)
+            {
+                SavedMemoryBlock block = standalone[index];
+                if (block == null) continue;
+                string key = QualifiedRecord(block.ownerPawnId, block.ownerEpochToken, block.recordId);
+                RemoveSame(memoryM4StandaloneByQualifiedRecord, key, block);
+                UnindexMemoryM4Block(block, key);
+            }
+            for (int index = 0; roots != null && index < roots.Count; index++)
+            {
+                SavedMemoryThreadRoot root = roots[index];
+                if (root == null) continue;
+                string canonical;
+                if (MemoryIdentityCodec.TryCreateRootId(new MemoryRootIdentity
+                    {
+                        ownerPawnId = root.ownerPawnId,
+                        ownerEpochToken = root.ownerEpochToken,
+                        primarySubjectKind = root.subjectKind,
+                        primarySubjectId = root.subjectId
+                    }, out canonical)) RemoveSame(memoryM4RootByCanonicalId, canonical, root);
+                for (int chapterIndex = 0; root.chapters != null
+                    && chapterIndex < root.chapters.Count; chapterIndex++)
+                {
+                    SavedMemoryChapter chapter = root.chapters[chapterIndex];
+                    if (chapter == null) continue;
+                    RemoveSame(memoryM4ChapterByQualifiedId,
+                        QualifiedRecord(root.ownerPawnId, root.ownerEpochToken, chapter.chapterId),
+                        chapter);
+                }
+                for (int blockIndex = 0; root.visibleBlocks != null
+                    && blockIndex < root.visibleBlocks.Count; blockIndex++)
+                {
+                    SavedMemoryBlock block = root.visibleBlocks[blockIndex];
+                    if (block == null) continue;
+                    UnindexMemoryM4Block(block, QualifiedRecord(
+                        block.ownerPawnId, block.ownerEpochToken, block.recordId));
+                }
+                if (root.rollingSummaryBlock != null)
+                {
+                    SavedMemoryBlock block = root.rollingSummaryBlock;
+                    UnindexMemoryM4Block(block, QualifiedRecord(
+                        block.ownerPawnId, block.ownerEpochToken, block.recordId));
+                }
+            }
+        }
+
+        private void UnindexMemoryM4Block(SavedMemoryBlock block, string key)
+        {
+            RemoveSame(memoryM4BlockByQualifiedRecord, key, block);
+            RemoveSame(memoryM4SourceFactDedupByKey, key, block);
+            memoryM4GlobalActiveBlockCount = Math.Max(0, memoryM4GlobalActiveBlockCount - 1);
+            if (IsPlayerAuthored(block))
+                memoryM4GlobalEditedBlockCount = Math.Max(0, memoryM4GlobalEditedBlockCount - 1);
+        }
+
+        private static void RemoveSame<T>(Dictionary<string, T> index, string key, T expected)
+            where T : class
+        {
+            T current;
+            if (index.TryGetValue(key, out current) && ReferenceEquals(current, expected))
+                index.Remove(key);
+        }
+
         private MemoryStoreMutationOutcome ValidateDetachedCapacity(
             PawnKnowledgeState current,
             List<SavedMemoryBlock> standalone,
@@ -554,13 +833,7 @@ namespace PawnDiary
             if (!owner.valid || global.globalActiveBytes < 0 || global.globalImportedBytes < 0)
                 return MemoryStoreMutationOutcome.CapacityRefused;
             MemoryBudgetDecision budget = ActiveMemoryPayloadBudget.TryAdmit(
-                new MemoryBudgetLimits
-                {
-                    activeOwnerBytes = ReadCapacityLong("activeOwnerBytes", 196608, 2097152),
-                    combinedOwnerBytes = ReadCapacityLong("combinedOwnerBytes", 262144, 4194304),
-                    activeGlobalBytes = ReadCapacityLong("activeGlobalBytes", 6291456, 25165824),
-                    combinedGlobalBytes = ReadCapacityLong("combinedGlobalBytes", 8388608, 33554432)
-                },
+                CurrentMemoryBudgetLimits(),
                 owner.activeBytes, owner.importedBytes, delta, 0, global);
             return budget.outcome == MemoryBudgetOutcome.Admitted
                 ? MemoryStoreMutationOutcome.Admitted

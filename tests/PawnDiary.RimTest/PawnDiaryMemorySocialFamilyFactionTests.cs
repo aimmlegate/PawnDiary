@@ -2,8 +2,11 @@
 //
 // The fixture models a mixed Relationship/Family person root and two equal-label faction roots. It
 // proves Library projection/filtering never merges by display text and never searches another POV.
+// It also executes the loaded knownness adapters that hide off-context location and ignore goodwill
+// point drift while retaining those values in replaceable faction truth.
 using System;
 using System.Linq;
+using System.Reflection;
 using RimTestRedux;
 using Verse;
 
@@ -185,6 +188,97 @@ namespace PawnDiary.RimTests
                         && factionThreads.rows[0].thread.rootHandle.rootId
                             != factionThreads.rows[1].thread.rootHandle.rootId,
                     "Equal faction labels collapsed exact instances or owner handles.");
+            }
+            finally
+            {
+                PawnDiaryMemoryM11RuntimeFixture.ResetLibraryAndTearDown(scope);
+            }
+        }
+
+        /// <summary>
+        /// A globally resolvable living relative does not disclose an exact location unless the owner
+        /// shares that map/caravan context. Spawning both pawns afterward proves this is a knownness
+        /// decision rather than a fixture that can never resolve an exact location.
+        /// </summary>
+        [Test]
+        public static void OffContextRelativeLocationPublishesUnknown()
+        {
+            PawnDiaryRimTestScope scope = PawnDiaryRimTestScope.Begin();
+            try
+            {
+                Pawn owner = scope.CreateAdultColonist();
+                Pawn subject = scope.CreateAdultColonist();
+                MethodInfo adapter = typeof(DiaryGameComponent).GetMethod(
+                    "MemoryRelativeLocation",
+                    BindingFlags.Static | BindingFlags.NonPublic);
+                Require(adapter != null,
+                    "The loaded relative-location adapter seam was not found.");
+
+                scope.SpawnAsLiveColonist(owner);
+                string offContext = adapter.Invoke(null, new object[] { owner, subject }) as string;
+                Require(offContext == KnowledgeObservationTokens.LocationUnknown,
+                    "A live off-context relative leaked an exact global location.");
+
+                scope.SpawnAsLiveColonist(subject);
+                string sharedMap = adapter.Invoke(null, new object[] { owner, subject }) as string;
+                string expected = OrdinalSegmentCodec.Segment("map")
+                    + OrdinalSegmentCodec.Segment(subject.Map.uniqueID.ToString(
+                        System.Globalization.CultureInfo.InvariantCulture));
+                Require(sharedMap == expected,
+                    "The loaded adapter failed to disclose an exact genuinely shared map.");
+            }
+            finally
+            {
+                PawnDiaryMemoryM11RuntimeFixture.ResetLibraryAndTearDown(scope);
+            }
+        }
+
+        /// <summary>
+        /// Exact goodwill remains current faction truth, but one-point drift with unchanged relation,
+        /// leader, and lifecycle state must not create an episodic memory.
+        /// </summary>
+        [Test]
+        public static void GoodwillPointDriftDoesNotEmitFactionMemory()
+        {
+            PawnDiaryRimTestScope scope = PawnDiaryRimTestScope.Begin();
+            try
+            {
+                MethodInfo adapter = typeof(DiaryGameComponent).GetMethod(
+                    "CaptureFactionStateMemories",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Require(adapter != null,
+                    "The loaded faction-memory adapter seam was not found.");
+                KnowledgeFactionState previous = new KnowledgeFactionState
+                {
+                    factionInstanceId = "Faction_Goodwill_Drift",
+                    allocatorGeneration = 1,
+                    frozenDisplayLabel = "Drift faction",
+                    goodwill = 10,
+                    relationKindToken = KnowledgeObservationTokens.FactionRelationNeutral,
+                    leaderPawnId = "Pawn_Leader",
+                    snapshotRevision = 1
+                };
+                KnowledgeFactionState current = new KnowledgeFactionState
+                {
+                    factionInstanceId = previous.factionInstanceId,
+                    allocatorGeneration = previous.allocatorGeneration,
+                    frozenDisplayLabel = previous.frozenDisplayLabel,
+                    goodwill = 11,
+                    relationKindToken = previous.relationKindToken,
+                    leaderPawnId = previous.leaderPawnId,
+                    snapshotRevision = 2
+                };
+
+                bool admitted = (bool)adapter.Invoke(scope.Component, new object[]
+                {
+                    previous,
+                    current,
+                    "faction-subject-goodwill-drift",
+                    "occurrence-goodwill-drift",
+                    Find.TickManager != null ? Find.TickManager.TicksGame : 0
+                });
+                Require(!admitted,
+                    "One-point goodwill drift emitted a permanent faction episode.");
             }
             finally
             {
