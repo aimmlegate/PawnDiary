@@ -109,6 +109,12 @@ $xmlFiles | ForEach-Object {
 Write-Step "RimTest EVT coverage manifest"
 & (Join-Path $repoRoot "tests\PawnDiary.RimTest\verify-evt-coverage.ps1")
 
+Write-Step "Memory static contracts"
+& (Join-Path $repoRoot "tests\verify-memory-contracts.ps1")
+
+Write-Step "Memory release-evidence verifier self-tests"
+& (Join-Path $repoRoot "tests\verify-memory-release-evidence.ps1") -SelfTest
+
 Write-Step "Pure helper tests"
 $pureProjectRoots = @("tests", "HelpfulTextEngine\tests") |
     Where-Object { Test-Path -LiteralPath $_ }

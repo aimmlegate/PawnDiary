@@ -22,6 +22,8 @@ namespace PawnDiary
         {
             get
             {
+                MemoryPolicySnapshot fixture = MemoryPerformanceFixturePolicy.EffectivePolicy;
+                if (fixture != null) return fixture;
                 lock (Sync) return current;
             }
         }

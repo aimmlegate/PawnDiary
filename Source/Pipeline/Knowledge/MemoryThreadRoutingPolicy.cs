@@ -417,7 +417,7 @@ namespace PawnDiary
         }
     }
 
-    /// <summary>The one behavior-inert M0 registry of deliberate future memory consumers.</summary>
+    /// <summary>The one registry of deliberate memory consumers; M0 reachability is reported separately.</summary>
     internal static class MemoryRecallConsumerRegistry
     {
         public const string OrdinaryDiary = "ordinary_diary";

@@ -44,6 +44,7 @@ namespace MemoryThreadBenchmarks
             public ulong ownerWorstBytes;
             public ulong pureMaxIndivisibleItemMicroseconds;
             public long pureAllocationTieBreakBytes;
+            public ulong maximumCultureLabelDtoBytes;
             public bool feasible;
             public string rejection = string.Empty;
             public List<CoordinateEvaluation> coordinates = new List<CoordinateEvaluation>();
@@ -55,6 +56,7 @@ namespace MemoryThreadBenchmarks
             public Dictionary<string, string> start;
             public List<List<string>> bundles;
             public string dimensionGateId;
+            public string m0SelectedVectorId;
         }
 
         private sealed class FixedRow
@@ -197,10 +199,19 @@ namespace MemoryThreadBenchmarks
             if (production == null || !production.feasible)
                 throw new InvalidOperationException(
                     "The committed production fallback is absent or fails its release gates.");
-            Candidate selected = Select(candidates);
+            Candidate recomputedSelection = Select(candidates);
+            Candidate selected = candidates.SingleOrDefault(row => string.Equals(
+                row.vectorId, catalog.m0SelectedVectorId, StringComparison.Ordinal));
+            if (selected == null || !selected.feasible)
+                throw new InvalidOperationException(
+                    "The recorded M0-selected vector is absent or no longer provisionally feasible.");
+            if (!string.Equals(
+                    recomputedSelection.vectorId, selected.vectorId, StringComparison.Ordinal))
+                throw new InvalidOperationException(
+                    "The current tie-break no longer reproduces the recorded M0-selected vector.");
             if (!ComponentwiseNoGreater(production, selected))
                 throw new InvalidOperationException(
-                    "The committed production fallback exceeds the M0-selected vector.");
+                    "The committed production fallback exceeds the recorded M0-selected vector.");
             ManifestAudit manifestAudit = BuildAndValidateManifestAudit(
                 catalog, fixedRows, candidates, selected);
 
@@ -250,7 +261,8 @@ namespace MemoryThreadBenchmarks
                     dimensions = new List<Dimension>(),
                     start = new Dictionary<string, string>(StringComparer.Ordinal),
                     bundles = new List<List<string>>(),
-                    dimensionGateId = rootElement.GetProperty("dimensionGateId").GetString()
+                    dimensionGateId = rootElement.GetProperty("dimensionGateId").GetString(),
+                    m0SelectedVectorId = rootElement.GetProperty("m0SelectedVectorId").GetString()
                 };
                 foreach (JsonProperty property in rootElement.GetProperty("startVector").EnumerateObject())
                     catalog.start.Add(property.Name, property.Value.GetString());
@@ -472,6 +484,11 @@ namespace MemoryThreadBenchmarks
         {
             if (catalog.dimensions.Count != 64)
                 throw new InvalidOperationException("Expected exactly 64 ordered T17.6 dimensions.");
+            if (string.IsNullOrEmpty(catalog.m0SelectedVectorId)
+                || catalog.m0SelectedVectorId.Length != 64
+                || catalog.m0SelectedVectorId.Any(value => !((value >= '0' && value <= '9')
+                    || (value >= 'a' && value <= 'f'))))
+                throw new InvalidOperationException("The recorded M0-selected vector ID is invalid.");
             if (string.IsNullOrWhiteSpace(catalog.dimensionGateId)
                 || pureGateIds == null || !pureGateIds.Contains(catalog.dimensionGateId))
                 throw new InvalidOperationException(
@@ -723,6 +740,7 @@ namespace MemoryThreadBenchmarks
                     .Max(row => row.time.maximum);
                 candidate.pureAllocationTieBreakBytes = checked((long)candidate.coordinates
                     .Max(row => row.allocation.maximum));
+                candidate.maximumCultureLabelDtoBytes = MeasureCultureLabelDtoBytes(candidate.values);
                 if (candidate.rejection.Length != 0) continue;
                 if (candidate.ownerTypicalBytes > 65536UL)
                     candidate.rejection = "SURROGATE-OWNER-TYPICAL";
@@ -730,6 +748,8 @@ namespace MemoryThreadBenchmarks
                     candidate.rejection = "SURROGATE-OWNER-WORST";
                 else if (candidate.surrogateCombinedBytes > 16777216UL)
                     candidate.rejection = "SURROGATE-GLOBAL";
+                else if (candidate.maximumCultureLabelDtoBytes > 131072UL)
+                    candidate.rejection = "SURROGATE-DTO-LIST-CULTURE-STRINGS";
                 else if (ParseOne(candidate.values, "sliceTargetMicroseconds") > 1000UL
                     || candidate.pureMaxIndivisibleItemMicroseconds > 2000UL)
                     candidate.rejection = "PERF-SLICE-SCHEDULER";
@@ -748,6 +768,21 @@ namespace MemoryThreadBenchmarks
                         "Synthetic scenario coverage count drifted: " + audit.scenarioId);
             }
             return audits;
+        }
+
+        /// <summary>
+        /// M11's owner-directory corpus always materializes both bounded culture labels in every
+        /// row. Count their exact logical UTF-16 payload so a benchmark cannot silently omit the
+        /// culture panel while claiming the Library string gate.
+        /// </summary>
+        private static ulong MeasureCultureLabelDtoBytes(Dictionary<string, string> values)
+        {
+            checked
+            {
+                ulong rows = ParseOne(values, "libraryWindowRows");
+                ulong unitsPerLabel = ParseOne(values, "frozenDisplayLabelUnits");
+                return rows * 2UL * unitsPerLabel * 2UL;
+            }
         }
 
         private static IEnumerable<string> ApplicableScenarioCoordinates(
@@ -2053,6 +2088,8 @@ namespace MemoryThreadBenchmarks
                     writer.WriteNumber("surrogateOwnerWorstBytes", candidate.ownerWorstBytes);
                     writer.WriteNumber("pureMaxIndivisibleItemMicroseconds", candidate.pureMaxIndivisibleItemMicroseconds);
                     writer.WriteNumber("pureAllocationTieBreakBytes", candidate.pureAllocationTieBreakBytes);
+                    writer.WriteNumber("maximumCultureLabelDtoBytes",
+                        candidate.maximumCultureLabelDtoBytes);
                     writer.WriteStartArray("authenticatedCoordinates");
                     foreach (CoordinateEvaluation coordinate in candidate.coordinates)
                     {
@@ -2088,6 +2125,9 @@ namespace MemoryThreadBenchmarks
             markdown.AppendLine("- Surrogate combined-global bytes: " + selected.surrogateCombinedBytes.ToString(CultureInfo.InvariantCulture));
             markdown.AppendLine("- Selected maximum indivisible pure item: " + selected.pureMaxIndivisibleItemMicroseconds.ToString(CultureInfo.InvariantCulture) + " µs");
             markdown.AppendLine("- Selected maximum paired allocation delta: " + selected.pureAllocationTieBreakBytes.ToString(CultureInfo.InvariantCulture) + " bytes");
+            markdown.AppendLine("- Selected two-culture-label Library payload: "
+                + selected.maximumCultureLabelDtoBytes.ToString(CultureInfo.InvariantCulture)
+                + " UTF-16 bytes");
             markdown.AppendLine("- Authenticated provisional manifest rows: " + manifestAudit.entries.Count.ToString(CultureInfo.InvariantCulture));
             markdown.AppendLine("- Provisional manifest audit fingerprint: `" + manifestAudit.fingerprint + "`");
             markdown.AppendLine("- Release-policy encoding SHA-256: `" + manifestAudit.releasePolicyEncodingHash + "`");

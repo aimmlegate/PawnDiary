@@ -1,4 +1,6 @@
-param()
+param(
+    [switch]$SelfTest
+)
 
 $ErrorActionPreference = "Stop"
 
@@ -57,7 +59,7 @@ function Read-OneArtifactFile {
     )
 
     $matches = @(Get-ChildItem -LiteralPath $resultRoot -Filter $Pattern -File)
-    Require ($matches.Count -eq 1) "Expected exactly one $Description for current source identity; found $($matches.Count)."
+    Require ($matches.Count -eq 1) "Expected exactly one $Description for candidate source identity; found $($matches.Count)."
     return $matches[0]
 }
 
@@ -83,7 +85,7 @@ function Read-OneArtifact {
     )
 
     $matches = @(Get-ChildItem -LiteralPath $resultRoot -Filter $Pattern -File)
-    Require ($matches.Count -eq 1) "Expected exactly one $Description for current source identity; found $($matches.Count)."
+    Require ($matches.Count -eq 1) "Expected exactly one $Description for candidate source identity; found $($matches.Count)."
     $value = Get-Content -Raw -LiteralPath $matches[0].FullName | ConvertFrom-Json
     return [pscustomobject]@{ File = $matches[0]; Value = $value }
 }
@@ -108,8 +110,34 @@ function Require-SourceIdentity {
     Require-Property $Artifact "gitCommitObjectId" $Context
     Require-Property $Artifact "sourceCommitIdentity" $Context
     Require ([string]$Artifact.gitObjectFormat -ceq $gitObjectFormat) "$Context has the wrong Git object format."
-    Require ([string]$Artifact.gitCommitObjectId -ceq $gitCommitObjectId) "$Context does not bind the current full commit."
+    Require ([string]$Artifact.gitCommitObjectId -ceq $gitCommitObjectId) "$Context does not bind the candidate full commit."
     Require ([string]$Artifact.sourceCommitIdentity -ceq $sourceCommitIdentity) "$Context has the wrong source identity."
+}
+
+function Test-EvidenceOnlyPath {
+    param([string]$Path)
+
+    if ([string]::IsNullOrWhiteSpace($Path)) { return $false }
+    $normalized = $Path.Replace('\', '/')
+    return $normalized.StartsWith(
+        'benchmarks/results/memory-system/',
+        [StringComparison]::Ordinal)
+}
+
+function Test-CandidateLineage {
+    param(
+        [string]$CandidateCommit,
+        [string]$RepositoryHead
+    )
+
+    if ($CandidateCommit -cnotmatch '^([0-9a-f]{40}|[0-9a-f]{64})$') { return $false }
+    & git -C $repoRoot rev-parse --verify --quiet "${CandidateCommit}^{commit}" | Out-Null
+    if ($LASTEXITCODE -ne 0) { return $false }
+    & git -C $repoRoot merge-base --is-ancestor $CandidateCommit $RepositoryHead
+    if ($LASTEXITCODE -ne 0) { return $false }
+    $changed = @(& git -C $repoRoot diff --name-only "${CandidateCommit}..${RepositoryHead}" --)
+    if ($LASTEXITCODE -ne 0) { return $false }
+    return @($changed | Where-Object { -not (Test-EvidenceOnlyPath $_) }).Count -eq 0
 }
 
 function Require-ThreeTargets {
@@ -168,6 +196,20 @@ $capacityPath = Join-Path $catalogRoot "memory-capacity-catalog-v1.json"
 $fixturePath = Join-Path $catalogRoot "memory-m0-fixture-catalog-v1.json"
 $payloadPath = Join-Path $catalogRoot "memory-payload-atom-catalog-v1.json"
 
+if ($SelfTest) {
+    Require (Test-EvidenceOnlyPath 'benchmarks/results/memory-system/evidence.json') "Evidence path policy rejected its exact directory."
+    Require (Test-EvidenceOnlyPath 'benchmarks\results\memory-system\evidence.json') "Evidence path policy rejected Windows separators."
+    Require (-not (Test-EvidenceOnlyPath 'benchmarks/results/memory-systemish/evidence.json')) "Evidence path policy accepted a prefix collision."
+    Require (-not (Test-EvidenceOnlyPath 'Source/Pipeline/Knowledge/MemoryThreadContracts.cs')) "Evidence path policy accepted candidate source."
+    $goldenIdentity = Sha256-Text ((Segment 'memory-source-commit-v1') + (Segment 'sha1') + (Segment 'd4b98ea4fdf3ccb05e2099cd0cf43963568a73a8'))
+    Require ($goldenIdentity -ceq '8767148747a22820751214a6c1d20e90c395aa819a5d5b6f91c9f593aa03e94d') "Source-commit identity golden drifted."
+    $selfTestHead = (& git -C $repoRoot rev-parse HEAD).Trim()
+    Require ($LASTEXITCODE -eq 0 -and (Test-CandidateLineage $selfTestHead $selfTestHead)) "An exact candidate/HEAD lineage was rejected."
+    Require (-not (Test-CandidateLineage ('0' * $selfTestHead.Length) $selfTestHead)) "A nonexistent candidate commit was accepted."
+    Write-Host 'Memory release-evidence verifier self-tests passed: source identity and evidence-only lineage policy.'
+    return
+}
+
 $activation = Get-Content -Raw -LiteralPath $activationPath
 if ($activation -cnotmatch 'public const string BuildState = CurrentRelease;') {
     Write-Host "Memory release-evidence verification skipped: build state is not CurrentRelease."
@@ -175,13 +217,40 @@ if ($activation -cnotmatch 'public const string BuildState = CurrentRelease;') {
 }
 
 $gitObjectFormat = (& git -C $repoRoot rev-parse --show-object-format).Trim()
-$gitCommitObjectId = (& git -C $repoRoot rev-parse HEAD).Trim()
+$repositoryHead = (& git -C $repoRoot rev-parse HEAD).Trim()
 Require ($LASTEXITCODE -eq 0) "Could not resolve the repository commit identity."
 Require ($gitObjectFormat -ceq "sha1" -or $gitObjectFormat -ceq "sha256") "Unsupported Git object format '$gitObjectFormat'."
 $expectedCommitLength = if ($gitObjectFormat -ceq "sha1") { 40 } else { 64 }
-Require ($gitCommitObjectId -cmatch "^[0-9a-f]{$expectedCommitLength}$") "Git commit identity is not full lowercase hexadecimal."
-$sourceCommitIdentity = Sha256-Text ((Segment "memory-source-commit-v1") + (Segment $gitObjectFormat) + (Segment $gitCommitObjectId))
+Require ($repositoryHead -cmatch "^[0-9a-f]{$expectedCommitLength}$") "Repository HEAD is not full lowercase hexadecimal."
 $candidateDllHash = Sha256-File $dllPath
+
+# Evidence is generated from a clean candidate commit and then checked in by an evidence-only
+# descendant commit. Binding artifacts to the verifier's current HEAD makes that workflow
+# self-referential: committing the artifacts changes HEAD and invalidates them. Select the one
+# manifest whose candidate is an ancestor, whose DLL still matches, and whose descendant diff
+# contains evidence files only.
+$releaseCandidates = @()
+foreach ($file in @(Get-ChildItem -LiteralPath $resultRoot -Filter '*-memory-release-manifest-*.json' -File)) {
+    try { $value = Get-Content -Raw -LiteralPath $file.FullName | ConvertFrom-Json }
+    catch { continue }
+    $basicIdentityMatches = [string]$value.schema -ceq 'memory-release-candidate-manifest-v1' `
+        -and [string]$value.gitObjectFormat -ceq $gitObjectFormat `
+        -and [string]$value.gitCommitObjectId -cmatch "^[0-9a-f]{$expectedCommitLength}$"
+    if (-not $basicIdentityMatches) { continue }
+    $identity = Sha256-Text ((Segment 'memory-source-commit-v1') + (Segment $gitObjectFormat) + (Segment ([string]$value.gitCommitObjectId)))
+    $candidateMatches = [string]$value.sourceCommitIdentity -ceq $identity `
+        -and $file.Name.StartsWith(
+            $identity + '-memory-release-manifest-', [StringComparison]::Ordinal) `
+        -and [string]$value.candidateDllSha256 -ceq $candidateDllHash `
+        -and (Test-CandidateLineage ([string]$value.gitCommitObjectId) $repositoryHead)
+    if (-not $candidateMatches) { continue }
+    $releaseCandidates += [pscustomobject]@{ File = $file; Value = $value }
+}
+Require ($releaseCandidates.Count -eq 1) "Expected exactly one release manifest for an unchanged candidate plus evidence-only descendants; found $($releaseCandidates.Count)."
+$releaseArtifact = $releaseCandidates[0]
+$release = $releaseArtifact.Value
+$gitCommitObjectId = [string]$release.gitCommitObjectId
+$sourceCommitIdentity = [string]$release.sourceCommitIdentity
 
 # M11 cannot reuse M0/LegacyShadow surrogate output. Require a freshly generated pure artifact
 # whose source identity, catalogs, activation, and production M4 reducer trace all match this release.
@@ -201,8 +270,6 @@ $selectedIdMatches = @(Select-String -LiteralPath $pureFile.FullName -CaseSensit
 Require ($selectedIdMatches.Count -eq 1) "$($pureFile.Name) has no unique top-level selected vector."
 $pureSelectedVectorId = $selectedIdMatches[0].Matches[0].Groups[1].Value
 
-$releaseArtifact = Read-OneArtifact "$sourceCommitIdentity-memory-release-manifest-*.json" "M11 release manifest"
-$release = $releaseArtifact.Value
 Require ([string]$release.schema -ceq "memory-release-candidate-manifest-v1") "The M11 release manifest has the wrong schema."
 Require-SourceIdentity $release "The M11 release manifest"
 Require-Property $release "manifestId" "The M11 release manifest"

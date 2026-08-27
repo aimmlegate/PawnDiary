@@ -96,31 +96,15 @@ namespace PawnDiary
         {
             int pairCap = DiaryAcceptedPromptRetentionPolicy.ProductionPairCap;
             long byteCap = DiaryAcceptedPromptRetentionPolicy.ProductionEscapedByteCap;
-            DiaryKnowledgeTuningDef tuning = DefDatabase<DiaryKnowledgeTuningDef>
-                .GetNamedSilentFail(DiaryKnowledgePolicy.TuningDefName);
-            for (int index = 0; tuning?.memoryCapacityVector != null
-                && index < tuning.memoryCapacityVector.Count; index++)
-            {
-                DiaryMemoryCapacityValueRow row = tuning.memoryCapacityVector[index];
-                if (row == null || !string.Equals(
-                    row.name,
-                    "acceptedPromptPairsEscapedBytesGlobal",
-                    StringComparison.Ordinal)) continue;
-                string[] parts = (row.valueEncoding ?? string.Empty).Split('/');
-                int parsedPairs;
-                long parsedBytes;
-                if (parts.Length == 2
-                    && int.TryParse(parts[0], NumberStyles.None,
-                        CultureInfo.InvariantCulture, out parsedPairs)
-                    && long.TryParse(parts[1], NumberStyles.None,
-                        CultureInfo.InvariantCulture, out parsedBytes)
-                    && parsedPairs >= 0 && parsedBytes >= 0)
-                {
-                    pairCap = parsedPairs;
-                    byteCap = parsedBytes;
-                }
-                break;
-            }
+            ReadCapacityPair(
+                "acceptedPromptPairsEscapedBytesGlobal",
+                DiaryAcceptedPromptRetentionPolicy.ProductionPairCap,
+                checked((int)DiaryAcceptedPromptRetentionPolicy.ProductionEscapedByteCap),
+                DiaryAcceptedPromptRetentionPolicy.DefensivePairCeiling,
+                checked((int)DiaryAcceptedPromptRetentionPolicy.DefensiveEscapedByteCeiling),
+                out pairCap,
+                out int parsedByteCap);
+            byteCap = parsedByteCap;
 
             List<DiaryAcceptedPromptUnit> units = new List<DiaryAcceptedPromptUnit>();
             IReadOnlyList<DiaryEvent> allEvents = events?.AllEvents;

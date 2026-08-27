@@ -21,6 +21,7 @@ namespace MemoryThreadTests
             ReconciliationIsIdempotentAndBounded();
             DurableSettingsPredecessorRules();
             PublicationIsIndivisible();
+            PerformanceOverrideIsTransientAndDetached();
             LibraryUnicodeCursorAndFingerprintRules();
             LibraryDefensiveCeilingParityAndDirectoryPriority();
             LibraryFilteringPagingAndTtlRules();
@@ -29,6 +30,37 @@ namespace MemoryThreadTests
             LibraryHandleAndRevisionRules();
             LibraryMutationRules();
             return assertions;
+        }
+
+        private static void PerformanceOverrideIsTransientAndDetached()
+        {
+            MemoryPolicySnapshot release = MemoryEffectivePolicyProvider.Current;
+            MemoryPolicySnapshot benchmark = MemoryPolicyNormalizer.Normalize(
+                MemoryPolicyNormalizer.CurrentSettingsSchemaVersion,
+                MemorySettingsPolicyFieldsV1.CreateBenchmarkProfile(4),
+                new MemorySettingsBounds());
+            var sourceVector = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["libraryWindowRows"] = "7"
+            };
+            using (new MemoryPerformanceFixturePolicyScope(
+                "m5-policy-override", sourceVector, benchmark))
+            {
+                sourceVector["libraryWindowRows"] = "999";
+                Equal("m5.fixture-policy.active", true,
+                    MemoryPerformanceFixturePolicy.Active);
+                Equal("m5.fixture-policy.settings", 4,
+                    MemoryEffectivePolicyProvider.Current.memoryThreadTarget);
+                Equal("m5.fixture-policy.detached", true,
+                    MemoryPerformanceFixturePolicy.TryReadCapacityEncoding(
+                        "libraryWindowRows", out string encoding));
+                Equal("m5.fixture-policy.encoding", "7", encoding);
+            }
+            Equal("m5.fixture-policy.restored", true,
+                ReferenceEquals(release, MemoryEffectivePolicyProvider.Current));
+            Equal("m5.fixture-policy.cleared", false,
+                MemoryPerformanceFixturePolicy.TryReadCapacityEncoding(
+                    "libraryWindowRows", out string ignored));
         }
 
         private static void BoundsAndNumericNormalization()

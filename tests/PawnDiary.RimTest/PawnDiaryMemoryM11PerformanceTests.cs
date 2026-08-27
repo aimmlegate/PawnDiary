@@ -108,6 +108,62 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// The friend-only policy scope must move real production settings and capacity readers,
+        /// then restore the ordinary publication and XML vector without leaking across cells.
+        /// </summary>
+        [Test]
+        public static void PerformancePolicyScopeMovesProductionBoundariesAndRestores()
+        {
+            MemoryPolicySnapshot releasePolicy = MemoryEffectivePolicyProvider.Current;
+            int releaseOwnerCap = PawnDiaryMemoryM11RuntimeFixture.ObservationOwnerCap();
+            MemoryPolicySnapshot benchmarkPolicy = MemoryPolicyNormalizer.Normalize(
+                MemoryPolicyNormalizer.CurrentSettingsSchemaVersion,
+                MemorySettingsPolicyFieldsV1.CreateBenchmarkProfile(4),
+                new MemorySettingsBounds());
+            var capacityVector = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["ownerSlotTriple"] = "7/8/9",
+                ["activeOwnerBytes"] = "8192",
+                ["combinedOwnerBytes"] = "16384",
+                ["activeGlobalBytes"] = "32768",
+                ["combinedGlobalBytes"] = "65536"
+            };
+
+            using (new MemoryPerformanceFixturePolicyScope(
+                "m11-production-policy-override", capacityVector, benchmarkPolicy))
+            {
+                Require(ReferenceEquals(MemoryEffectivePolicyProvider.Current, benchmarkPolicy)
+                        && MemoryEffectivePolicyProvider.Current.memoryThreadTarget == 4,
+                    "The benchmark settings publication did not reach production consumers.");
+                Require(PawnDiaryMemoryM11RuntimeFixture.ObservationOwnerCap() == 7,
+                    "The benchmark capacity vector did not reach the tuple reader.");
+
+                PawnDiaryRimTestScope componentScope = PawnDiaryRimTestScope.Begin();
+                try
+                {
+                    object budget = PawnDiaryMemoryM11RuntimeFixture.CreateObservationBudget(
+                        componentScope.Component);
+                    MemoryBudgetLimits limits =
+                        PawnDiaryMemoryM11RuntimeFixture.ObservationBudgetLimits(budget);
+                    Require(limits.activeOwnerBytes == 8192
+                            && limits.combinedOwnerBytes == 16384
+                            && limits.activeGlobalBytes == 32768
+                            && limits.combinedGlobalBytes == 65536,
+                        "The benchmark byte ceilings did not reach the production budget.");
+                }
+                finally
+                {
+                    componentScope.TearDown();
+                }
+            }
+
+            Require(ReferenceEquals(MemoryEffectivePolicyProvider.Current, releasePolicy)
+                    && PawnDiaryMemoryM11RuntimeFixture.ObservationOwnerCap() == releaseOwnerCap
+                    && !MemoryPerformanceFixturePolicy.Active,
+                "The benchmark policy did not restore the complete release policy.");
+        }
+
+        /// <summary>
         /// First observation of a diary with no envelope must attach and fast-publish an exact M4
         /// owner. The immediately following factual admission may not fail MigrationPending, and
         /// incremental byte totals must equal a defensive full rebuild.

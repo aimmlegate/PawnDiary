@@ -2,6 +2,7 @@
   "schema": "memory-capacity-catalog-v1",
   "vectorSchema": "memory-system-vector-v1",
   "dimensionGateId": "M0-VECTOR-GENERATOR",
+  "m0SelectedVectorId": "186afcc98c541976aa7ab84c8aeef6336c5410798008ffaad79411348ff9db3b",
   "startVector": {
     "eventFacts": "16",
     "blockProvenanceRows": "8",

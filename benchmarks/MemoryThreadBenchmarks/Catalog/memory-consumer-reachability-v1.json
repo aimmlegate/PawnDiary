@@ -1,0 +1,54 @@
+{
+  "schema": "memory-consumer-reachability-v1",
+  "entries": [
+    {
+      "consumerId": "ordinary_diary",
+      "status": "routed",
+      "sourcePath": "Source/Core/DiaryGameComponent.MemoryRecallV2.cs",
+      "sourceNeedle": "consumerId = MemoryRecallConsumerRegistry.OrdinaryDiary",
+      "gapReason": ""
+    },
+    {
+      "consumerId": "existing_reflection",
+      "status": "routed",
+      "sourcePath": "Source/Core/DiaryGameComponent.MemorySummaryWording.cs",
+      "sourceNeedle": "MemoryRecallConsumerRegistry.ExistingReflection",
+      "gapReason": ""
+    },
+    {
+      "consumerId": "narrative_arc",
+      "status": "gap",
+      "sourcePath": "",
+      "sourceNeedle": "",
+      "gapReason": "no_current_recall_v2_adapter"
+    },
+    {
+      "consumerId": "comparison",
+      "status": "gap",
+      "sourcePath": "",
+      "sourceNeedle": "",
+      "gapReason": "no_shipped_provider_consumer"
+    },
+    {
+      "consumerId": "anniversary",
+      "status": "gap",
+      "sourcePath": "",
+      "sourceNeedle": "",
+      "gapReason": "ordinary_dispatch_does_not_select_anniversary_consumer"
+    },
+    {
+      "consumerId": "quiet_memory",
+      "status": "routed",
+      "sourcePath": "Source/Core/DiaryGameComponent.MemorySummaryWording.cs",
+      "sourceNeedle": "MemoryRecallConsumerRegistry.QuietMemory",
+      "gapReason": ""
+    },
+    {
+      "consumerId": "summary_wording",
+      "status": "routed",
+      "sourcePath": "Source/Core/DiaryGameComponent.MemorySummaryWording.cs",
+      "sourceNeedle": "MemoryDispatchTokens.SummaryWording",
+      "gapReason": ""
+    }
+  ]
+}

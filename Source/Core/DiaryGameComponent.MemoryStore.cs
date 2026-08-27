@@ -1054,6 +1054,17 @@ namespace PawnDiary
             long fallback,
             long defensiveCeiling)
         {
+            string fixtureEncoding;
+            if (MemoryPerformanceFixturePolicy.TryReadCapacityEncoding(
+                    name, out fixtureEncoding))
+            {
+                long fixtureValue;
+                return long.TryParse(fixtureEncoding, NumberStyles.None,
+                           CultureInfo.InvariantCulture, out fixtureValue)
+                       && fixtureValue >= 0 && fixtureValue <= defensiveCeiling
+                    ? fixtureValue
+                    : fallback;
+            }
             DiaryKnowledgeTuningDef tuning = DefDatabase<DiaryKnowledgeTuningDef>
                 .GetNamedSilentFail(DiaryKnowledgePolicy.TuningDefName);
             for (int index = 0; tuning?.memoryCapacityVector != null
@@ -1080,6 +1091,26 @@ namespace PawnDiary
         {
             first = firstFallback;
             second = secondFallback;
+            string fixtureEncoding;
+            if (MemoryPerformanceFixturePolicy.TryReadCapacityEncoding(
+                    name, out fixtureEncoding))
+            {
+                string[] fixtureParts = fixtureEncoding.Split('/');
+                int fixtureFirst;
+                int fixtureSecond;
+                if (fixtureParts.Length == 2
+                    && int.TryParse(fixtureParts[0], NumberStyles.None,
+                        CultureInfo.InvariantCulture, out fixtureFirst)
+                    && int.TryParse(fixtureParts[1], NumberStyles.None,
+                        CultureInfo.InvariantCulture, out fixtureSecond)
+                    && fixtureFirst >= 0 && fixtureFirst <= firstDefensiveCeiling
+                    && fixtureSecond >= 0 && fixtureSecond <= secondDefensiveCeiling)
+                {
+                    first = fixtureFirst;
+                    second = fixtureSecond;
+                }
+                return;
+            }
             DiaryKnowledgeTuningDef tuning = DefDatabase<DiaryKnowledgeTuningDef>
                 .GetNamedSilentFail(DiaryKnowledgePolicy.TuningDefName);
             for (int index = 0; tuning?.memoryCapacityVector != null
@@ -1114,6 +1145,19 @@ namespace PawnDiary
             long defensiveCeiling)
         {
             if (partIndex < 0) return fallback;
+            string fixtureEncoding;
+            if (MemoryPerformanceFixturePolicy.TryReadCapacityEncoding(
+                    name, out fixtureEncoding))
+            {
+                string[] fixtureParts = fixtureEncoding.Split('/');
+                long fixtureValue;
+                return partIndex < fixtureParts.Length
+                       && long.TryParse(fixtureParts[partIndex], NumberStyles.None,
+                           CultureInfo.InvariantCulture, out fixtureValue)
+                       && fixtureValue >= 0 && fixtureValue <= defensiveCeiling
+                    ? fixtureValue
+                    : fallback;
+            }
             DiaryKnowledgeTuningDef tuning = DefDatabase<DiaryKnowledgeTuningDef>
                 .GetNamedSilentFail(DiaryKnowledgePolicy.TuningDefName);
             for (int index = 0; tuning?.memoryCapacityVector != null

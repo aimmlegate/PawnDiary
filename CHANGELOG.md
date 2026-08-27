@@ -8,6 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-08-27
 
+- **Memory M11 evidence and benchmark follow-up.** Freeze the selected M0 cap anchor, measure culture-label DTO pressure, report consumer reachability, wire authenticated evidence checks into hooks, and make loaded benchmark policy overrides reach production readers.
 - **Memory M11 post-review regression pass.** Align credential-aware dispatch permits, preserve retry receipts, consolidate duplicate owners, restore reset invariants, enforce cumulative repair budgets, refresh Library caches exactly, complete Russian safety strings, and remove current-release legacy-editor space.
 - **Memory M11 audit follow-up.** Enforce the componentwise M0 cap ceiling and fresh pure-evidence provenance, complete Russian Memory UI parity, and cover Library counts plus culture preservation under archive normalization and pressure.
 - **Memory M11 release review hardening.** Fix migration, retry, prompt-budget, folding, Brainwipe, repair, knownness, indexing, recall, and maintenance edge cases with exhaustive standalone and loaded-fixture regression coverage.

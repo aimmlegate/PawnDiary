@@ -50,6 +50,8 @@ $catalogRoot = Join-Path $repoRoot "benchmarks\MemoryThreadBenchmarks\Catalog"
 $capacityPath = Join-Path $catalogRoot "memory-capacity-catalog-v1.json"
 $fixturePath = Join-Path $catalogRoot "memory-m0-fixture-catalog-v1.json"
 $payloadPath = Join-Path $catalogRoot "memory-payload-atom-catalog-v1.json"
+$reachabilityPath = Join-Path $catalogRoot "memory-consumer-reachability-v1.json"
+$resultRoot = Join-Path $repoRoot "benchmarks\results\memory-system"
 
 # Loading through XDocument catches malformed XML while preserving case-sensitive element names.
 $important = [System.Xml.Linq.XDocument]::Load($importantPath)
@@ -61,11 +63,15 @@ $russianInjected = [System.Xml.Linq.XDocument]::Load($russianInjectedPath)
 $capacity = Get-Content -Raw -LiteralPath $capacityPath | ConvertFrom-Json
 $fixture = Get-Content -Raw -LiteralPath $fixturePath | ConvertFrom-Json
 $payload = Get-Content -Raw -LiteralPath $payloadPath | ConvertFrom-Json
+$reachability = Get-Content -Raw -LiteralPath $reachabilityPath | ConvertFrom-Json
 
 Require ($capacity.schema -ceq "memory-capacity-catalog-v1") "Wrong memory capacity catalog schema."
 Require ($fixture.schema -ceq "memory-m0-fixture-catalog-v1") "Wrong M0 fixture catalog schema."
 Require ($payload.schema -ceq "memory-benchmark-payload-atom-catalog-v1") "Wrong payload atom catalog schema."
+Require ($reachability.schema -ceq "memory-consumer-reachability-v1") "Wrong consumer reachability schema."
 Require ($fixture.activationBuildState -ceq "CurrentRelease") "M11 must activate CurrentRelease."
+Require ([string]$capacity.m0SelectedVectorId -cmatch '^[0-9a-f]{64}$') "The recorded M0-selected vector ID is invalid."
+Require (@($fixture.pureGateIds) -ccontains 'SURROGATE-DTO-LIST-CULTURE-STRINGS') "The two-culture-label Library surrogate gate is not registered."
 
 $knownKinds = @("event", "landmark", "summary")
 $knownCategories = @("personal", "relationships", "family", "factions")
@@ -79,6 +85,23 @@ $knownConsumers = @(
     "ordinary_diary", "existing_reflection", "narrative_arc", "comparison",
     "anniversary", "quiet_memory", "summary_wording"
 )
+$reachabilityRows = @($reachability.entries)
+Require ($reachabilityRows.Count -eq $knownConsumers.Count) "Consumer reachability report row count drifted."
+Require ((@($reachabilityRows | ForEach-Object { [string]$_.consumerId }) -join '/') -ceq ($knownConsumers -join '/')) "Consumer reachability report order/identity drifted."
+foreach ($row in $reachabilityRows) {
+    Require (@('routed','gap') -ccontains [string]$row.status) "Consumer '$($row.consumerId)' has an invalid reachability status."
+    if ([string]$row.status -ceq 'routed') {
+        Require ([string]::IsNullOrEmpty([string]$row.gapReason)) "Routed consumer '$($row.consumerId)' carries a gap reason."
+        Require (-not [string]::IsNullOrWhiteSpace([string]$row.sourcePath)) "Routed consumer '$($row.consumerId)' has no source path."
+        Require (-not [string]::IsNullOrWhiteSpace([string]$row.sourceNeedle)) "Routed consumer '$($row.consumerId)' has no source evidence."
+        $source = Get-Content -Raw -LiteralPath (Join-Path $repoRoot ([string]$row.sourcePath))
+        Require ($source.Contains([string]$row.sourceNeedle)) "Routed consumer '$($row.consumerId)' source evidence is stale."
+    }
+    else {
+        Require (-not [string]::IsNullOrWhiteSpace([string]$row.gapReason)) "Unrouted consumer '$($row.consumerId)' has no stable gap reason."
+        Require ([string]::IsNullOrEmpty([string]$row.sourcePath) -and [string]::IsNullOrEmpty([string]$row.sourceNeedle)) "Unrouted consumer '$($row.consumerId)' claims production evidence."
+    }
+}
 $aggregationValues = @{
     count_occurrences = "empty"
     ordinal_set = "ordinal"
@@ -238,6 +261,46 @@ for ($index = 0; $index -lt $xmlVector.Count; $index++) {
     Require (@($dimensions[$index].values) -ccontains $actualValue) "XML capacity value '$actualValue' is not swept for $actualName."
 }
 
+# The current generator is not the historical M0 decision: changing feasibility/timing code must not
+# silently move the ceiling. Recover the tracked decision's exact canonical vector, verify its hash,
+# then enforce componentwise-lower XML coordinates against that frozen evidence.
+$selectedEncodings = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
+foreach ($decision in @(Get-ChildItem -LiteralPath $resultRoot -Filter '*-decision.md' -File)) {
+    $text = (Get-Content -Raw -LiteralPath $decision.FullName).Replace("`r`n", "`n").Replace("`r", "`n")
+    if ($text -cnotmatch ('- Selected vector: `' + [Regex]::Escape([string]$capacity.m0SelectedVectorId) + '`')) { continue }
+    $match = [Regex]::Match($text, '(?ms)## Selected vector encoding\s+```text\n(?<encoding>memory-system-vector-v1\n.*?\n)```')
+    Require ($match.Success) "$($decision.Name) has no canonical selected-vector encoding."
+    [void]$selectedEncodings.Add($match.Groups['encoding'].Value)
+}
+Require ($selectedEncodings.Count -eq 1) "Expected one byte-identical tracked encoding for the recorded M0-selected vector."
+$m0Encoding = @($selectedEncodings)[0]
+$m0Bytes = [Text.UTF8Encoding]::new($false).GetBytes($m0Encoding)
+$m0Sha = [Security.Cryptography.SHA256]::Create()
+try {
+    $m0Id = ([BitConverter]::ToString($m0Sha.ComputeHash($m0Bytes))).Replace('-', '').ToLowerInvariant()
+}
+finally { $m0Sha.Dispose() }
+Require ($m0Id -ceq [string]$capacity.m0SelectedVectorId) "The tracked M0-selected vector encoding does not hash to its catalog ID."
+$m0Values = @{}
+foreach ($line in @($m0Encoding -split "`n" | Select-Object -Skip 1)) {
+    if ([string]::IsNullOrEmpty($line)) { continue }
+    $equals = $line.IndexOf('=')
+    Require ($equals -gt 0) "The tracked M0 vector contains a malformed row."
+    $name = $line.Substring(0, $equals)
+    Require (-not $m0Values.ContainsKey($name)) "The tracked M0 vector repeats '$name'."
+    $m0Values[$name] = $line.Substring($equals + 1)
+}
+Require ($m0Values.Count -eq $xmlVector.Count) "The tracked M0 vector dimension count drifted."
+for ($index = 0; $index -lt $xmlVector.Count; $index++) {
+    $name = Child-Text $xmlVector[$index] 'name'
+    $releaseParts = @((Child-Text $xmlVector[$index] 'valueEncoding') -split '/')
+    $m0Parts = @(([string]$m0Values[$name]) -split '/')
+    Require ($releaseParts.Count -eq $m0Parts.Count) "The release/M0 tuple arity differs for '$name'."
+    for ($part = 0; $part -lt $releaseParts.Count; $part++) {
+        Require ([uint64]$releaseParts[$part] -le [uint64]$m0Parts[$part]) "Release capacity '$name' part $part exceeds the recorded M0-selected vector."
+    }
+}
+
 Require ((Child-Text $tuningDef "minorMemoryLifetimeDefaultDays") -ceq "15") "Minor lifetime default drifted."
 Require ((Child-Text $tuningDef "regularMemoryLifetimeDefaultDays") -ceq "60") "Regular lifetime default drifted."
 Require ((Child-Text $tuningDef "memoryThreadTargetMinimum") -ceq "4") "Thread target minimum drifted."
@@ -368,4 +431,6 @@ Require (($scenarios | ForEach-Object { [string]$_.scenarioId } | Sort-Object -U
 Require ($fixture.settings.migration.missingOrVersionZero -ceq 'release_defaults_v1') "Missing settings must migrate to release defaults."
 Require ($fixture.settings.migration.unknownFutureVersion -ceq 'inert_preserve_raw') "Future settings migration must fail closed."
 
-Write-Host "Memory contract verification passed: $($defs.Count) capture rules, $($dimensions.Count) capacity dimensions, $($payloadTypes.Count) payload types, $($scenarios.Count) synthetic scenarios, $($pending.Count) named loaded fixture families."
+$routedConsumerCount = @($reachabilityRows | Where-Object { [string]$_.status -ceq 'routed' }).Count
+$gapConsumerCount = $reachabilityRows.Count - $routedConsumerCount
+Write-Host "Memory contract verification passed: $($defs.Count) capture rules, $($dimensions.Count) capacity dimensions, $($payloadTypes.Count) payload types, $($scenarios.Count) synthetic scenarios, $($pending.Count) named loaded fixture families, consumer reachability $routedConsumerCount routed/$gapConsumerCount reported gaps."
