@@ -16,6 +16,18 @@ namespace PawnDiary
     /// <summary>Singleton, non-pausing Library for exact memory owners and their detached rows.</summary>
     internal sealed partial class Dialog_MemoryLibrary : Window
     {
+        /// <summary>
+        /// One pre-translated card chip. Built during RefreshDisplayCaches so the draw path never
+        /// translates or re-resolves a colour, matching how every other Library label is cached.
+        /// This lives in the UI layer on purpose: MemoryLibraryUiPolicy is deliberately free of
+        /// Verse/Unity types so the standalone MemoryThreadTests can compile without them.
+        /// </summary>
+        private sealed class MemoryLibraryUiChip
+        {
+            public string label = string.Empty;
+            public Color color = Color.white;
+        }
+
         private const int PageSize = 64;
         private const int ImportedTextPageSize = 480;
         private static long lifecycleGeneration = 1;
@@ -38,6 +50,11 @@ namespace PawnDiary
         private MemoryLibraryOwnerResult owners;
         private MemoryLibraryOwnerRow selectedOwner;
 
+        // The subject rail is a permanent Threads consumer. It owns a cursor/publication lane that
+        // is deliberately separate from the right-pane Standalone/Imported list below.
+        private int threadRailStart;
+        private long threadRailExpectedSnapshotRevision;
+        private MemoryLibraryListResult threadRail;
         private int listStart;
         private long listExpectedSnapshotRevision;
         private MemoryLibraryListResult list;
@@ -68,16 +85,20 @@ namespace PawnDiary
         private bool loreExpanded;
         private bool diagnosticsExpanded;
         private bool ownerSearchDirty = true;
+        private bool threadRailQueryDirty = true;
         private bool listQueryDirty = true;
         private bool detailQueryDirty = true;
 
+        private Vector2 threadRailScroll;
         private Vector2 listScroll;
         private Vector2 detailScroll;
         private Vector2 blockDetailScroll;
         private Vector2 currentStatusScroll;
         private Vector2 loreScroll;
-        private readonly Dictionary<string, string> cachedBlockBadges =
+        private readonly Dictionary<string, string> cachedBlockMeta =
             new Dictionary<string, string>(StringComparer.Ordinal);
+        private readonly Dictionary<string, List<MemoryLibraryUiChip>> cachedBlockChips =
+            new Dictionary<string, List<MemoryLibraryUiChip>>(StringComparer.Ordinal);
         private readonly Dictionary<string, string> cachedLifetimeLabels =
             new Dictionary<string, string>(StringComparer.Ordinal);
         private readonly Dictionary<long, string> cachedDateLabels =
@@ -88,9 +109,11 @@ namespace PawnDiary
             new Dictionary<string, string>(StringComparer.Ordinal);
         private readonly Dictionary<string, string> cachedListCardDetails =
             new Dictionary<string, string>(StringComparer.Ordinal);
-        private readonly Dictionary<string, string> cachedBlockCardWording =
+        private readonly Dictionary<string, List<MemoryLibraryUiChip>> cachedListCardChips =
+            new Dictionary<string, List<MemoryLibraryUiChip>>(StringComparer.Ordinal);
+        private readonly Dictionary<string, string> cachedListCardDates =
             new Dictionary<string, string>(StringComparer.Ordinal);
-        private readonly Dictionary<string, string> cachedBlockChapterLabels =
+        private readonly Dictionary<string, string> cachedBlockCardWording =
             new Dictionary<string, string>(StringComparer.Ordinal);
         private string cachedThreadHeaderText = string.Empty;
         private string cachedBlockFactsText = string.Empty;
@@ -222,8 +245,8 @@ namespace PawnDiary
             }
 
             // Policy snapshots are refreshed only when the repository gate below schedules work.
-            bool immediateRepositoryWork = ownerSearchDirty || listQueryDirty || detailQueryDirty
-                || repositoryNavigationDirty
+            bool immediateRepositoryWork = ownerSearchDirty || threadRailQueryDirty
+                || listQueryDirty || detailQueryDirty || repositoryNavigationDirty
                 || pendingCommandId > 0 || session.pendingCommand != null;
             MemoryLibraryUiRepositoryStamp repositoryStamp =
                 component.MemoryLibraryRepositoryStampForUi();
@@ -234,8 +257,14 @@ namespace PawnDiary
                 liveNowTick,
                 list?.ttlValidUntilTickExclusive ?? long.MaxValue,
                 threadDetail?.ttlValidUntilTickExclusive ?? long.MaxValue,
-                blockDetail?.ttlValidUntilTickExclusive ?? long.MaxValue);
+                blockDetail?.ttlValidUntilTickExclusive ?? long.MaxValue)
+                || MemoryLibraryUiPollPolicy.ReachedPublicationExpiry(
+                    liveNowTick,
+                    threadRail?.ttlValidUntilTickExclusive ?? long.MaxValue,
+                    long.MaxValue,
+                    long.MaxValue);
             bool waitingForPublication = owners?.status == MemoryLibraryStatuses.Preparing
+                || threadRail?.status == MemoryLibraryStatuses.Preparing
                 || list?.status == MemoryLibraryStatuses.Preparing
                 || threadDetail?.status == MemoryLibraryStatuses.Preparing
                 || blockDetail?.status == MemoryLibraryStatuses.Preparing
@@ -267,11 +296,14 @@ namespace PawnDiary
             PollCommandResult();
             RefreshOwners();
             RefreshSelectedOwnerReference();
+            RefreshThreadRail();
+            ReconcileSubjectRailSelection();
             RefreshList();
             RefreshSelectedDetail();
             RefreshCompatibility();
             RefreshLoreDiagnostics();
             RefreshDisplayCaches();
+            RefreshThreadRailDisplayCaches();
             lastRepositoryStamp = component.MemoryLibraryRepositoryStampForUi();
             hasRepositoryStamp = true;
         }
@@ -281,20 +313,23 @@ namespace PawnDiary
             component?.AbandonMemoryLibraryClient(clientToken);
             session.ClearOwner();
             owners = null;
+            threadRail = null;
             list = null;
             threadDetail = null;
             blockDetail = null;
             importedDetail = null;
             compatibility = null;
             lore = null;
-            cachedBlockBadges.Clear();
+            cachedBlockMeta.Clear();
+            cachedBlockChips.Clear();
             cachedLifetimeLabels.Clear();
             cachedDateLabels.Clear();
             cachedUsageLabels.Clear();
             cachedListCardTitles.Clear();
             cachedListCardDetails.Clear();
+            cachedListCardChips.Clear();
+            cachedListCardDates.Clear();
             cachedBlockCardWording.Clear();
-            cachedBlockChapterLabels.Clear();
             cachedThreadHeaderText = string.Empty;
             cachedBlockFactsText = string.Empty;
             cachedDiagnosticText = string.Empty;
@@ -306,6 +341,7 @@ namespace PawnDiary
             selectedBlockRow = null;
             selectedImportedRow = null;
             displayCacheSignature = string.Empty;
+            ClearThreadRailPresentationCaches();
             hasRepositoryStamp = false;
             repositoryNavigationDirty = false;
             base.PostClose();
@@ -442,11 +478,77 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Refreshes the persistent subject-navigation stream. Its cursor and revision stay pinned
+        /// while the right pane changes view or selection.
+        /// </summary>
+        private void RefreshThreadRail()
+        {
+            if (!MemoryLibraryUiPolicy.HasActiveViews(selectedOwner)
+                || selectedOwner?.primaryHandle == null)
+            {
+                threadRail = null;
+                threadRailQueryDirty = false;
+                threadRailStart = 0;
+                threadRailExpectedSnapshotRevision = 0;
+                return;
+            }
+            if (threadRailQueryDirty)
+            {
+                threadRailStart = 0;
+                threadRailExpectedSnapshotRevision = 0;
+                threadRailQueryDirty = false;
+            }
+            if (threadRail != null
+                && threadRail.ttlValidUntilTickExclusive <= detachedNowTick)
+                RestartThreadRailStream();
+            MemoryLibraryListResult result = component.QueryMemoryLibraryList(
+                new MemoryLibraryListQuery
+                {
+                    primaryHandle = MemoryLibraryUiPolicy.Copy(selectedOwner.primaryHandle),
+                    activeOwnerEpochKey = MemoryLibraryUiPolicy.Copy(
+                        selectedOwner.activeOwnerEpochKey),
+                    viewTag = MemoryLibraryViews.Threads,
+                    // The rail is navigation, not the currently selected content stream. Keeping
+                    // it complete and stable prevents an Old records/Other memories search from
+                    // making unrelated subjects disappear or jumping its independent cursor.
+                    filters = new MemoryLibraryFilters(),
+                    search = string.Empty,
+                    sortToken = "newest",
+                    listStart = threadRailStart,
+                    listCount = PageSize,
+                    expectedDirectoryRevision = Math.Max(0, ownerExpectedDirectoryRevision),
+                    expectedListSnapshotRevision = Math.Max(
+                        0, threadRailExpectedSnapshotRevision)
+                });
+            threadRail = result;
+            if (result == null) return;
+            if (result.status == MemoryLibraryStatuses.Stale)
+            {
+                RestartThreadRailStream();
+                repositoryNavigationDirty = true;
+                return;
+            }
+            if (result.status == MemoryLibraryStatuses.Ready)
+                threadRailExpectedSnapshotRevision = result.listSnapshotRevision;
+        }
+
         private void RefreshList()
         {
-            if (session.selectedOwnerHandle == null || selectedOwner?.primaryHandle == null)
+            bool contentView = session.selectedView == MemoryLibraryViews.Standalone
+                || session.selectedView == MemoryLibraryViews.Imported;
+            bool activeStandalone = session.selectedView == MemoryLibraryViews.Standalone
+                && MemoryLibraryUiPolicy.HasActiveViews(selectedOwner);
+            bool imported = session.selectedView == MemoryLibraryViews.Imported;
+            if (!contentView || selectedOwner?.primaryHandle == null
+                || !activeStandalone && !imported)
             {
                 list = null;
+                if (listQueryDirty)
+                {
+                    RestartListStream();
+                    listQueryDirty = false;
+                }
                 return;
             }
             if (listQueryDirty)
@@ -461,7 +563,10 @@ namespace PawnDiary
                 new MemoryLibraryListQuery
                 {
                     primaryHandle = MemoryLibraryUiPolicy.Copy(selectedOwner.primaryHandle),
-                    activeOwnerEpochKey = MemoryLibraryUiPolicy.Copy(selectedOwner.activeOwnerEpochKey),
+                    // Imported is archive-scoped and rejects the active-epoch proof used by
+                    // Standalone. This also keeps archive-only owners queryable.
+                    activeOwnerEpochKey = imported ? null : MemoryLibraryUiPolicy.Copy(
+                        selectedOwner.activeOwnerEpochKey),
                     viewTag = session.selectedView,
                     filters = CopyFilters(session.filters),
                     search = session.memorySearch ?? string.Empty,
@@ -633,6 +738,7 @@ namespace PawnDiary
                 && MemoryLibraryUiPolicy.ApplyEditCommandResult(session.editDraft, result);
             if (saved) session.editDraft = null;
             pendingAction = string.Empty;
+            RestartThreadRailStream();
             RestartListStream();
             RestartDetailStream();
             RestartImportedTextStream();
@@ -765,6 +871,18 @@ namespace PawnDiary
 
         private void ResetListQuery()
         {
+            threadRailQueryDirty = true;
+            RestartThreadRailStream();
+            threadRail = null;
+            ResetContentListQuery();
+        }
+
+        /// <summary>
+        /// Resets only the selected right-pane content query. Rail view changes call this so the
+        /// independently pinned Threads cursor and scroll position remain stable.
+        /// </summary>
+        private void ResetContentListQuery()
+        {
             listQueryDirty = true;
             RestartListStream();
             list = null;
@@ -790,6 +908,13 @@ namespace PawnDiary
             listStart = 0;
             listExpectedSnapshotRevision = 0;
             listScroll = Vector2.zero;
+        }
+
+        private void RestartThreadRailStream()
+        {
+            threadRailStart = 0;
+            threadRailExpectedSnapshotRevision = 0;
+            threadRailScroll = Vector2.zero;
         }
 
         private void RestartDetailStream()

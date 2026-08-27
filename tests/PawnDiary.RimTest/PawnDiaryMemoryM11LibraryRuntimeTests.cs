@@ -56,6 +56,13 @@ namespace PawnDiary.RimTests
                         && owner.culture.originDisplayLabel != null
                         && owner.culture.adoptedDisplayLabel != null,
                     "The Library did not detach a safe culture projection.");
+                // A recorded culture must always project a READABLE label. The previous assertion
+                // only proved the strings were non-null, so it stayed green while the owner-row
+                // lookup used the wrong index and blanked every label. A culture with no CultureDef
+                // (this fixture's synthetic names) falls back to its saved defName, never to empty.
+                Require(owner.culture.originDisplayLabel == state.originCultureDefName
+                        && owner.culture.adoptedDisplayLabel == state.adoptedCultureDefName,
+                    "A recorded culture projected no readable display label.");
 
                 MemoryLibraryListResult threads =
                     PawnDiaryMemoryM11RuntimeFixture.RequireList(
@@ -153,6 +160,88 @@ namespace PawnDiary.RimTests
                         && ReferenceEquals(
                             scope.RequireDiaryRecord(pawn).knowledgeState, state),
                     "A no-create Library query mutated or replaced saved owner truth.");
+            }
+            finally
+            {
+                PawnDiaryMemoryM11RuntimeFixture.ResetLibraryAndTearDown(scope);
+            }
+        }
+
+        /// <summary>
+        /// The persistent Threads rail and the selected Standalone/Imported content pane retain
+        /// independent pinned publications. Replacing one Threads query invalidates only that lane.
+        /// </summary>
+        [Test]
+        public static void LibraryListPublicationLanesCoexistPerOwner()
+        {
+            PawnDiaryMemoryM11RuntimeFixture.RequireReflectionSurface();
+            PawnDiaryRimTestScope scope = PawnDiaryRimTestScope.Begin();
+            try
+            {
+                Pawn pawn = scope.CreateAdultColonist();
+                string ownerId = pawn.GetUniqueLoadID();
+                string display = "PawnDiary M11 Publication Lanes "
+                    + Guid.NewGuid().ToString("N");
+                PawnKnowledgeState state = PawnDiaryMemoryM11RuntimeFixture.BuildCompleteOwner(
+                    ownerId,
+                    "PawnDiary_Exact_Subject_PublicationLanes",
+                    "Publication lane subject",
+                    91);
+                PawnDiaryMemoryM11RuntimeFixture.InstallOwner(scope, pawn, state, display);
+
+                MemoryLibraryOwnerResult owners;
+                MemoryLibraryOwnerRow owner =
+                    PawnDiaryMemoryM11RuntimeFixture.RequireOwnerRow(
+                        scope.Component, display, out owners);
+                MemoryLibraryListResult threads = PawnDiaryMemoryM11RuntimeFixture.RequireList(
+                    scope.Component, owner, owners.directoryRevision,
+                    MemoryLibraryViews.Threads);
+                MemoryLibraryListQuery pinnedThreads =
+                    PawnDiaryMemoryM11RuntimeFixture.PinnedListQuery(
+                        owner, threads, MemoryLibraryViews.Threads);
+
+                MemoryLibraryListResult standalone =
+                    PawnDiaryMemoryM11RuntimeFixture.RequireList(
+                        scope.Component, owner, owners.directoryRevision,
+                        MemoryLibraryViews.Standalone);
+                MemoryLibraryListQuery pinnedStandalone =
+                    PawnDiaryMemoryM11RuntimeFixture.PinnedListQuery(
+                        owner, standalone, MemoryLibraryViews.Standalone);
+
+                MemoryLibraryListResult imported = PawnDiaryMemoryM11RuntimeFixture.RequireList(
+                    scope.Component, owner, owners.directoryRevision,
+                    MemoryLibraryViews.Imported);
+                MemoryLibraryListQuery pinnedImported =
+                    PawnDiaryMemoryM11RuntimeFixture.PinnedListQuery(
+                        owner, imported, MemoryLibraryViews.Imported);
+                // Imported is archive-scoped and deliberately carries no active-epoch proof.
+                pinnedImported.activeOwnerEpochKey = null;
+
+                Require(scope.Component.QueryMemoryLibraryList(pinnedThreads).status
+                            == MemoryLibraryStatuses.Ready
+                        && scope.Component.QueryMemoryLibraryList(pinnedStandalone).status
+                            == MemoryLibraryStatuses.Ready
+                        && scope.Component.QueryMemoryLibraryList(pinnedImported).status
+                            == MemoryLibraryStatuses.Ready,
+                    "Publishing the selected content view evicted another list-view lane.");
+
+                MemoryLibraryListResult replacementThreads =
+                    PawnDiaryMemoryM11RuntimeFixture.RequireList(
+                        scope.Component, owner, owners.directoryRevision,
+                        MemoryLibraryViews.Threads,
+                        "no matching subject for the replacement stream");
+                Require(replacementThreads.status == MemoryLibraryStatuses.Ready
+                        && replacementThreads.listSnapshotRevision
+                            != threads.listSnapshotRevision,
+                    "A distinct Threads query reused the superseded Threads publication.");
+                Require(scope.Component.QueryMemoryLibraryList(pinnedThreads).status
+                            == MemoryLibraryStatuses.Stale,
+                    "The old Threads continuation remained Ready after its lane was replaced.");
+                Require(scope.Component.QueryMemoryLibraryList(pinnedStandalone).status
+                            == MemoryLibraryStatuses.Ready
+                        && scope.Component.QueryMemoryLibraryList(pinnedImported).status
+                            == MemoryLibraryStatuses.Ready,
+                    "Replacing Threads invalidated an independent content-view publication.");
             }
             finally
             {

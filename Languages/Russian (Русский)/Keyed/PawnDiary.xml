@@ -2049,6 +2049,37 @@
   <PawnDiary.Memory.SettingsFutureVersion>Этот файл настроек Pawn Diary создан более новой версией системы памяти. Функции памяти отключены, а файл не будет перезаписан.</PawnDiary.Memory.SettingsFutureVersion>
   <!-- M9: локализованная библиотека единой системы памяти. -->
   <PawnDiary.Memory.Library.Title>Библиотека воспоминаний</PawnDiary.Memory.Library.Title>
+  <PawnDiary.Memory.Library.SubjectTitle>Воспоминания: {0}</PawnDiary.Memory.Library.SubjectTitle>
+  <PawnDiary.Memory.Library.ChangeOwner>Сменить поселенца</PawnDiary.Memory.Library.ChangeOwner>
+  <PawnDiary.Memory.Library.Rail.People>Люди</PawnDiary.Memory.Library.Rail.People>
+  <PawnDiary.Memory.Library.Rail.FactionsStories>Фракции и истории</PawnDiary.Memory.Library.Rail.FactionsStories>
+  <PawnDiary.Memory.Library.Rail.OtherMemories>Другие воспоминания</PawnDiary.Memory.Library.Rail.OtherMemories>
+  <PawnDiary.Memory.Library.Rail.OldRecords>Старые записи</PawnDiary.Memory.Library.Rail.OldRecords>
+  <PawnDiary.Memory.Library.Rail.Empty>В этом списке нет субъектов воспоминаний.</PawnDiary.Memory.Library.Rail.Empty>
+  <PawnDiary.Memory.Library.Rail.ThreadMeta>воспоминаний: {0} · {1}</PawnDiary.Memory.Library.Rail.ThreadMeta>
+  <PawnDiary.Memory.Library.Rail.ThreadMetaNoDate>воспоминаний: {0}</PawnDiary.Memory.Library.Rail.ThreadMetaNoDate>
+  <PawnDiary.Memory.Library.Rail.PinnedCount>воспоминаний: {0}</PawnDiary.Memory.Library.Rail.PinnedCount>
+  <PawnDiary.Memory.Library.Filters.Button>Фильтры</PawnDiary.Memory.Library.Filters.Button>
+  <PawnDiary.Memory.Library.Filters.ButtonActive>Фильтры · {0}</PawnDiary.Memory.Library.Filters.ButtonActive>
+  <PawnDiary.Memory.Library.Filters.WhatHappened>Что произошло</PawnDiary.Memory.Library.Filters.WhatHappened>
+  <PawnDiary.Memory.Library.Filters.Importance>Насколько это важно</PawnDiary.Memory.Library.Filters.Importance>
+  <PawnDiary.Memory.Library.Filters.Show>Показывать</PawnDiary.Memory.Library.Filters.Show>
+  <PawnDiary.Memory.Library.Filters.Clear>Сбросить</PawnDiary.Memory.Library.Filters.Clear>
+  <PawnDiary.Memory.Library.Filters.Everything>Все</PawnDiary.Memory.Library.Filters.Everything>
+  <PawnDiary.Memory.Library.Filters.Edited>Изменённые мной</PawnDiary.Memory.Library.Filters.Edited>
+  <PawnDiary.Memory.Library.Filters.Hidden>Скрытые</PawnDiary.Memory.Library.Filters.Hidden>
+  <PawnDiary.Memory.Library.Filters.Available>Доступные</PawnDiary.Memory.Library.Filters.Available>
+  <PawnDiary.Memory.Library.Filters.Showing>Показано воспоминаний: {0} из {1}.</PawnDiary.Memory.Library.Filters.Showing>
+  <PawnDiary.Memory.Library.ClearFilters>Сбросить фильтры</PawnDiary.Memory.Library.ClearFilters>
+  <PawnDiary.Memory.Library.ClearSearch>Очистить поиск</PawnDiary.Memory.Library.ClearSearch>
+  <PawnDiary.Memory.Library.ClearOwnerSearch>Очистить поиск поселенца</PawnDiary.Memory.Library.ClearOwnerSearch>
+  <PawnDiary.Memory.Library.Culture.Show>Показать культурный контекст</PawnDiary.Memory.Library.Culture.Show>
+  <PawnDiary.Memory.Library.Culture.Hide>Скрыть культурный контекст</PawnDiary.Memory.Library.Culture.Hide>
+  <PawnDiary.Memory.Library.Dev.Culture>Сведения о культуре</PawnDiary.Memory.Library.Dev.Culture>
+  <PawnDiary.Memory.Library.Dev.Memory>Сведения о воспоминании</PawnDiary.Memory.Library.Dev.Memory>
+  <PawnDiary.Memory.Library.Dev.Close>Скрыть данные разработчика</PawnDiary.Memory.Library.Dev.Close>
+  <PawnDiary.Memory.Library.Action.HideConsequence>Воспоминание останется в библиотеке, но не будет использоваться в будущих записях.</PawnDiary.Memory.Library.Action.HideConsequence>
+  <PawnDiary.Memory.Library.Action.AllowConsequence>Это воспоминание снова можно использовать в будущих записях.</PawnDiary.Memory.Library.Action.AllowConsequence>
   <PawnDiary.Memory.Library.MemoriesAction>Воспоминания</PawnDiary.Memory.Library.MemoriesAction>
   <PawnDiary.Memory.Library.Unavailable>Библиотека воспоминаний недоступна, пока не загружена игра с активной выпущенной системой памяти.</PawnDiary.Memory.Library.Unavailable>
   <PawnDiary.Memory.Library.Threads>Цепочки</PawnDiary.Memory.Library.Threads>
@@ -2194,9 +2225,10 @@
   <PawnDiary.Memory.Library.Showing>{0}–{1} из {2}</PawnDiary.Memory.Library.Showing>
   <PawnDiary.Memory.Library.Position>{0} из {1}</PawnDiary.Memory.Library.Position>
   <PawnDiary.Memory.Library.Sort>Сортировка: {0}</PawnDiary.Memory.Library.Sort>
-  <PawnDiary.Memory.Library.Suppress>Исключить</PawnDiary.Memory.Library.Suppress>
+  <PawnDiary.Memory.Library.Suppress>Не использовать в записях</PawnDiary.Memory.Library.Suppress>
   <PawnDiary.Memory.Library.Suppressed>исключено</PawnDiary.Memory.Library.Suppressed>
   <PawnDiary.Memory.Library.ThreadCard>{0} · {1} · глав: {2} · воспоминаний: {3} · {4}</PawnDiary.Memory.Library.ThreadCard>
+  <PawnDiary.Memory.Library.ThreadCardMeta>глав: {0} · воспоминаний: {1}</PawnDiary.Memory.Library.ThreadCardMeta>
   <PawnDiary.Memory.Library.RootPerson>Человек</PawnDiary.Memory.Library.RootPerson>
   <PawnDiary.Memory.Library.RootFaction>Фракция</PawnDiary.Memory.Library.RootFaction>
   <PawnDiary.Memory.Library.RootOngoingStory>Продолжающаяся история</PawnDiary.Memory.Library.RootOngoingStory>
@@ -2209,7 +2241,7 @@
   <PawnDiary.Memory.Library.Unsuppressed>доступно</PawnDiary.Memory.Library.Unsuppressed>
   <PawnDiary.Memory.Library.Usage>Последнее автоматическое включение: {0}
 Автоматических включений: {1}; отправка поставщику: {2}</PawnDiary.Memory.Library.Usage>
-  <PawnDiary.Memory.Library.UseAgain>Снова использовать</PawnDiary.Memory.Library.UseAgain>
+  <PawnDiary.Memory.Library.UseAgain>Разрешить в записях</PawnDiary.Memory.Library.UseAgain>
   <PawnDiary.Memory.Library.UseOriginal>Вернуть исходный текст</PawnDiary.Memory.Library.UseOriginal>
   <PawnDiary.Memory.Library.UseOriginalWarning>Срок изменённого воспоминания уже истёк, поэтому при следующей явной очистке оно может быть забыто. Вернуть исходный текст?</PawnDiary.Memory.Library.UseOriginalWarning>
   <PawnDiary.Memory.Settings.UseOriginal.Warning>Срок хранения этого воспоминания уже истёк, и оно может быть забыто при следующей очистке. Вернуть исходную формулировку?</PawnDiary.Memory.Settings.UseOriginal.Warning>
@@ -2238,7 +2270,7 @@
   <PawnDiary.Memory.Library.Badge.Edited>Изменено</PawnDiary.Memory.Library.Badge.Edited>
   <PawnDiary.Memory.Library.Badge.RollingSummary>Текущая сводка</PawnDiary.Memory.Library.Badge.RollingSummary>
   <PawnDiary.Memory.Library.Badge.ClosedSummary>Сводка закрытой главы</PawnDiary.Memory.Library.Badge.ClosedSummary>
-  <PawnDiary.Memory.Library.Action.Suppress>Исключить из текста</PawnDiary.Memory.Library.Action.Suppress>
+  <PawnDiary.Memory.Library.Action.Suppress>Не использовать в записях</PawnDiary.Memory.Library.Action.Suppress>
   <PawnDiary.Memory.Library.Action.Enable>Разрешить в тексте</PawnDiary.Memory.Library.Action.Enable>
   <PawnDiary.Memory.Library.Action.Edit>Изменить формулировку</PawnDiary.Memory.Library.Action.Edit>
   <PawnDiary.Memory.Library.Action.UseOriginal>Вернуть исходную формулировку</PawnDiary.Memory.Library.Action.UseOriginal>

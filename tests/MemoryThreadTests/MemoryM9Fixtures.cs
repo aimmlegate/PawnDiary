@@ -20,6 +20,8 @@ namespace MemoryThreadTests
             assertions = 0;
             OwnerSelectionUsesExactHandles();
             ImportedVisibilityAndFiltersAreExact();
+            RailCompositionIsStableAndPinnedRowsAreExact();
+            FilterSelectionHelpersAreExact();
             CapacityAndEmptyStateRulesAreExact();
             AdapterRevisionDecisionsAreExact();
             DetachedDraftsHandleStatusAndStructuralConflicts();
@@ -27,6 +29,7 @@ namespace MemoryThreadTests
             DrawingStagesButDoesNotExecuteCommands();
             LifetimeStatesUseOriginalTicks();
             VirtualizationIsBoundedAtMinimumViewport();
+            VariableHeightVirtualizationUsesCumulativeOffsets();
             RepositoryPollingIsBoundedAndResponsive();
             ExactOwnerSnapshotExpiryInvalidatesWarmCache();
             MaintenanceInvalidationIsWiredToTheRepository();
@@ -185,7 +188,7 @@ namespace MemoryThreadTests
         {
             string root = FindRepositoryRoot();
             string layoutSource = File.ReadAllText(Path.Combine(
-                root, "Source", "UI", "Dialog_MemoryLibrary.Layout.cs"));
+                root, "Source", "UI", "Dialog_MemoryLibrary.Labels.cs"));
             Equal("m9.date.cache-miss-uses-shared-formatter", true,
                 layoutSource.Contains("return FormatDateLabel(tick);"));
             Equal("m9.date.cache-fill-uses-shared-formatter", true,
@@ -450,6 +453,139 @@ namespace MemoryThreadTests
                 disappearing.selectedView);
         }
 
+        private static void RailCompositionIsStableAndPinnedRowsAreExact()
+        {
+            MemoryThreadHeaderRow personLater = RailThread("root-b", "PERSON", 40, 0, 0);
+            MemoryThreadHeaderRow personTieFirst = RailThread("root-a", "Person", 40, 1, 0);
+            MemoryThreadHeaderRow faction = RailThread("root-faction", "faction", 70, 0, 2);
+            MemoryThreadHeaderRow story = RailThread("root-story", "stream", 20, 0, 0);
+            List<MemoryLibraryListRow> rows = new List<MemoryLibraryListRow>
+            {
+                new MemoryLibraryListRow { tag = MemoryLibraryRowTags.Thread, thread = story },
+                new MemoryLibraryListRow { tag = MemoryLibraryRowTags.Standalone },
+                new MemoryLibraryListRow { tag = MemoryLibraryRowTags.Thread, thread = personLater },
+                new MemoryLibraryListRow { tag = MemoryLibraryRowTags.Thread, thread = faction },
+                new MemoryLibraryListRow { tag = MemoryLibraryRowTags.Thread, thread = personTieFirst },
+                new MemoryLibraryListRow
+                {
+                    tag = MemoryLibraryRowTags.Thread,
+                    thread = new MemoryThreadHeaderRow()
+                }
+            };
+            MemoryLibraryOwnerRow owner = new MemoryLibraryOwnerRow
+            {
+                primaryHandle = new MemoryLibraryOwnerHandle(
+                    MemoryLibraryScopes.Active, "pawn", "epoch"),
+                standaloneCount = 3,
+                importedCount = 2
+            };
+            MemoryLibraryUiRailProjection rail = MemoryLibraryUiPolicy.ComposeRail(rows, owner);
+            Equal("m9.rail.people-count", 2, rail.people.Count);
+            Equal("m9.rail.people-tie-root-id", "root-a",
+                rail.people[0].thread.rootHandle.rootId);
+            Equal("m9.rail.people-second", "root-b",
+                rail.people[1].thread.rootHandle.rootId);
+            Equal("m9.rail.people-edited-attention", true, rail.people[0].hasAttention);
+            Equal("m9.rail.people-clean", false, rail.people[1].hasAttention);
+            Equal("m9.rail.other-count", 2, rail.factionsAndStories.Count);
+            Equal("m9.rail.other-newest-first", "root-faction",
+                rail.factionsAndStories[0].thread.rootHandle.rootId);
+            Equal("m9.rail.other-suppressed-attention", true,
+                rail.factionsAndStories[0].hasAttention);
+            Equal("m9.rail.other-story-second", "root-story",
+                rail.factionsAndStories[1].thread.rootHandle.rootId);
+            Equal("m9.rail.pinned-count", 3, rail.pinned.Count);
+            Equal("m9.rail.pinned-culture-first", MemoryLibraryUiViews.Culture,
+                rail.pinned[0].viewToken);
+            Equal("m9.rail.pinned-culture-countless", 0, rail.pinned[0].count);
+            Equal("m9.rail.pinned-standalone-second", MemoryLibraryViews.Standalone,
+                rail.pinned[1].viewToken);
+            Equal("m9.rail.pinned-standalone-count", 3, rail.pinned[1].count);
+            Equal("m9.rail.pinned-imported-third", MemoryLibraryViews.Imported,
+                rail.pinned[2].viewToken);
+            Equal("m9.rail.pinned-imported-count", 2, rail.pinned[2].count);
+
+            MemoryLibraryUiRailSelection defaultThread =
+                MemoryLibraryUiPolicy.DefaultRailSelection(rail);
+            Equal("m9.rail.default-thread-view", MemoryLibraryViews.Threads,
+                defaultThread.viewToken);
+            Equal("m9.rail.default-thread-root", "root-a",
+                defaultThread.rootHandle.rootId);
+
+            owner.standaloneCount = 0;
+            owner.importedCount = 0;
+            owner.compatibilityHandle = new MemoryLibraryOwnerHandle(
+                MemoryLibraryScopes.LegacyRawExact, "pawn", string.Empty);
+            MemoryLibraryUiRailProjection compatibility =
+                MemoryLibraryUiPolicy.ComposeRail(null, owner);
+            Equal("m9.rail.zero-standalone-hidden", 2, compatibility.pinned.Count);
+            Equal("m9.rail.compatibility-culture-visible", MemoryLibraryUiViews.Culture,
+                compatibility.pinned[0].viewToken);
+            Equal("m9.rail.compatibility-imported-visible", MemoryLibraryViews.Imported,
+                compatibility.pinned[1].viewToken);
+            Equal("m9.rail.compatibility-imported-zero-count", 0,
+                compatibility.pinned[1].count);
+            Equal("m9.rail.default-imported-before-culture", MemoryLibraryViews.Imported,
+                MemoryLibraryUiPolicy.DefaultRailSelection(compatibility).viewToken);
+
+            owner.compatibilityHandle = null;
+            MemoryLibraryUiRailProjection cultureOnly =
+                MemoryLibraryUiPolicy.ComposeRail(null, owner);
+            Equal("m9.rail.culture-only-count", 1, cultureOnly.pinned.Count);
+            Equal("m9.rail.default-culture", MemoryLibraryUiViews.Culture,
+                MemoryLibraryUiPolicy.DefaultRailSelection(cultureOnly).viewToken);
+            MemoryLibraryUiSession cultureSession = new MemoryLibraryUiSession();
+            cultureSession.SelectView(MemoryLibraryUiViews.Culture);
+            Equal("m9.rail.session-selects-culture", MemoryLibraryUiViews.Culture,
+                cultureSession.selectedView);
+            Equal("m9.rail.null-owner-empty", 0,
+                MemoryLibraryUiPolicy.ComposeRail(null, null).pinned.Count);
+        }
+
+        private static void FilterSelectionHelpersAreExact()
+        {
+            MemoryLibraryFilters filters = new MemoryLibraryFilters
+            {
+                importanceMask = MemoryLibraryPolicy.ImportanceMinor
+                    | MemoryLibraryPolicy.ImportanceImportant,
+                categoryMask = MemoryCategoryBits.Personal | MemoryCategoryBits.Family,
+                stateToken = "suppressed"
+            };
+            Equal("m9.filters.active-dimensions", 3,
+                MemoryLibraryUiPolicy.ActiveFilterCount(filters));
+            filters.stateToken = "all";
+            Equal("m9.filters.mask-dimensions", 2,
+                MemoryLibraryUiPolicy.ActiveFilterCount(filters));
+            Equal("m9.filters.null", 0, MemoryLibraryUiPolicy.ActiveFilterCount(null));
+
+            int knownImportance = MemoryLibraryPolicy.ImportanceMinor
+                | MemoryLibraryPolicy.ImportanceRegular
+                | MemoryLibraryPolicy.ImportanceImportant;
+            int withoutMinor = MemoryLibraryUiPolicy.ToggleFilterBit(
+                0, MemoryLibraryPolicy.ImportanceMinor, knownImportance);
+            Equal("m9.filters.toggle-zero-means-all",
+                MemoryLibraryPolicy.ImportanceRegular
+                    | MemoryLibraryPolicy.ImportanceImportant,
+                withoutMinor);
+            Equal("m9.filters.toggle-add-normalizes-full", 0,
+                MemoryLibraryUiPolicy.ToggleFilterBit(
+                    withoutMinor, MemoryLibraryPolicy.ImportanceMinor, knownImportance));
+            Equal("m9.filters.toggle-last-selection-stays-explicit",
+                MemoryLibraryPolicy.ImportanceRegular,
+                MemoryLibraryUiPolicy.ToggleFilterBit(
+                    MemoryLibraryPolicy.ImportanceRegular,
+                    MemoryLibraryPolicy.ImportanceRegular,
+                    knownImportance));
+            Equal("m9.filters.toggle-invalid-unchanged", withoutMinor,
+                MemoryLibraryUiPolicy.ToggleFilterBit(withoutMinor, 8, knownImportance));
+
+            MemoryLibraryUiPolicy.ClearFilters(filters);
+            Equal("m9.filters.clear-importance", 0, filters.importanceMask);
+            Equal("m9.filters.clear-category", 0, filters.categoryMask);
+            Equal("m9.filters.clear-state", "all", filters.stateToken);
+            MemoryLibraryUiPolicy.ClearFilters(null);
+        }
+
         private static void DetachedDraftsHandleStatusAndStructuralConflicts()
         {
             MemoryBlockDetailResult detail = Detail("record", 7, 11);
@@ -709,6 +845,54 @@ namespace MemoryThreadTests
                 excessive.materializedCount);
         }
 
+        private static void VariableHeightVirtualizationUsesCumulativeOffsets()
+        {
+            MemoryLibraryUiVirtualWindow empty = MemoryLibraryUiPolicy.Virtualize(
+                new[] { 0f }, 0f, 40f, 2, 24);
+            Equal("m9.variable-virtual.empty-count", 0, empty.materializedCount);
+            Equal("m9.variable-virtual.empty-height", 0f, empty.contentHeight);
+
+            MemoryLibraryUiVirtualWindow single = MemoryLibraryUiPolicy.Virtualize(
+                new[] { 0f, 37f }, 0f, 1f, 0, 24);
+            Equal("m9.variable-virtual.single-first", 0, single.firstIndex);
+            Equal("m9.variable-virtual.single-end", 1, single.endExclusive);
+            Equal("m9.variable-virtual.single-count", 1, single.materializedCount);
+            Equal("m9.variable-virtual.single-height", 37f, single.contentHeight);
+
+            float[] offsets = { 0f, 30f, 80f, 140f };
+            MemoryLibraryUiVirtualWindow boundary = MemoryLibraryUiPolicy.Virtualize(
+                offsets, 30f, 1f, 0, 24);
+            Equal("m9.variable-virtual.exact-boundary-first", 1, boundary.firstIndex);
+            Equal("m9.variable-virtual.exact-boundary-end", 2, boundary.endExclusive);
+            MemoryLibraryUiVirtualWindow pastEnd = MemoryLibraryUiPolicy.Virtualize(
+                offsets, 1000f, 40f, 0, 24);
+            Equal("m9.variable-virtual.past-end-first", 2, pastEnd.firstIndex);
+            Equal("m9.variable-virtual.past-end", 3, pastEnd.endExclusive);
+            Equal("m9.variable-virtual.past-end-count", 1, pastEnd.materializedCount);
+            Equal("m9.variable-virtual.content-height", 140f, pastEnd.contentHeight);
+
+            MemoryLibraryUiVirtualWindow overscanned = MemoryLibraryUiPolicy.Virtualize(
+                new[] { 0f, 10f, 30f, 60f, 100f }, 31f, 1f, 1, 2);
+            Equal("m9.variable-virtual.overscan-first", 1, overscanned.firstIndex);
+            Equal("m9.variable-virtual.maximum", 2, overscanned.materializedCount);
+            MemoryLibraryUiVirtualWindow extremeOverscan = MemoryLibraryUiPolicy.Virtualize(
+                new[] { 0f, 10f, 30f, 60f, 100f }, 61f, 1f, 20, 1);
+            Equal("m9.variable-virtual.cap-retains-visible", 3,
+                extremeOverscan.firstIndex);
+
+            MemoryLibraryUiVirtualWindow invalid = MemoryLibraryUiPolicy.Virtualize(
+                new[] { 0f, 40f, 20f }, 0f, 40f, 0, 24);
+            Equal("m9.variable-virtual.invalid-monotonic-empty", 0,
+                invalid.materializedCount);
+            Equal("m9.variable-virtual.invalid-nan-empty", 0,
+                MemoryLibraryUiPolicy.Virtualize(
+                    new[] { 0f, float.NaN }, 0f, 40f, 0, 24).materializedCount);
+            Equal("m9.variable-virtual.invalid-infinite-empty", 0,
+                MemoryLibraryUiPolicy.Virtualize(
+                    new[] { 0f, float.PositiveInfinity },
+                    0f, 40f, 0, 24).materializedCount);
+        }
+
         private static void ActivationAndNoGameGateFailClosed()
         {
             Equal("m9.open.legacy-shadow", false,
@@ -740,6 +924,11 @@ namespace MemoryThreadTests
             {
                 Path.Combine(root, "Source", "UI", "Dialog_MemoryLibrary.cs"),
                 Path.Combine(root, "Source", "UI", "Dialog_MemoryLibrary.Layout.cs"),
+                Path.Combine(root, "Source", "UI", "Dialog_MemoryLibrary.Cards.cs"),
+                Path.Combine(root, "Source", "UI", "Dialog_MemoryLibrary.Rail.cs"),
+                Path.Combine(root, "Source", "UI", "Dialog_MemoryLibrary.Filters.cs"),
+                Path.Combine(root, "Source", "UI", "Dialog_MemoryLibrary.Detail.cs"),
+                Path.Combine(root, "Source", "UI", "Dialog_MemoryLibrary.Labels.cs"),
                 Path.Combine(root, "Source", "UI", "DiaryJournalView.cs")
             };
             HashSet<string> usedLibraryKeys = new HashSet<string>(StringComparer.Ordinal);
@@ -838,6 +1027,28 @@ namespace MemoryThreadTests
                 },
                 displayName = label,
                 threadCount = threadCount
+            };
+        }
+
+        private static MemoryThreadHeaderRow RailThread(
+            string rootId,
+            string subjectType,
+            long latestTick,
+            int editedCount,
+            int suppressedCount)
+        {
+            return new MemoryThreadHeaderRow
+            {
+                rootHandle = new MemoryRootHandle
+                {
+                    ownerPawnId = "pawn",
+                    epochToken = "epoch",
+                    rootId = rootId
+                },
+                subjectTypeToken = subjectType,
+                latestActivityTick = latestTick,
+                editedCount = editedCount,
+                suppressedCount = suppressedCount
             };
         }
 

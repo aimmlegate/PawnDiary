@@ -2102,6 +2102,37 @@
   <PawnDiary.Memory.Settings.UseOriginal.Warning>This memory is already beyond its normal lifetime and may be forgotten during the next cleanup. Use the original wording?</PawnDiary.Memory.Settings.UseOriginal.Warning>
 
   <PawnDiary.Memory.Library.Title>Memory Library</PawnDiary.Memory.Library.Title>
+  <PawnDiary.Memory.Library.SubjectTitle>What {0} remembers</PawnDiary.Memory.Library.SubjectTitle>
+  <PawnDiary.Memory.Library.ChangeOwner>Change colonist</PawnDiary.Memory.Library.ChangeOwner>
+  <PawnDiary.Memory.Library.Rail.People>People</PawnDiary.Memory.Library.Rail.People>
+  <PawnDiary.Memory.Library.Rail.FactionsStories>Factions &amp; stories</PawnDiary.Memory.Library.Rail.FactionsStories>
+  <PawnDiary.Memory.Library.Rail.OtherMemories>Other memories</PawnDiary.Memory.Library.Rail.OtherMemories>
+  <PawnDiary.Memory.Library.Rail.OldRecords>Old records</PawnDiary.Memory.Library.Rail.OldRecords>
+  <PawnDiary.Memory.Library.Rail.Empty>No subjects have memories in this window.</PawnDiary.Memory.Library.Rail.Empty>
+  <PawnDiary.Memory.Library.Rail.ThreadMeta>{0} memories · {1}</PawnDiary.Memory.Library.Rail.ThreadMeta>
+  <PawnDiary.Memory.Library.Rail.ThreadMetaNoDate>{0} memories</PawnDiary.Memory.Library.Rail.ThreadMetaNoDate>
+  <PawnDiary.Memory.Library.Rail.PinnedCount>{0} memories</PawnDiary.Memory.Library.Rail.PinnedCount>
+  <PawnDiary.Memory.Library.Filters.Button>Filters</PawnDiary.Memory.Library.Filters.Button>
+  <PawnDiary.Memory.Library.Filters.ButtonActive>Filters · {0}</PawnDiary.Memory.Library.Filters.ButtonActive>
+  <PawnDiary.Memory.Library.Filters.WhatHappened>What happened</PawnDiary.Memory.Library.Filters.WhatHappened>
+  <PawnDiary.Memory.Library.Filters.Importance>How much it mattered</PawnDiary.Memory.Library.Filters.Importance>
+  <PawnDiary.Memory.Library.Filters.Show>Show</PawnDiary.Memory.Library.Filters.Show>
+  <PawnDiary.Memory.Library.Filters.Clear>Clear</PawnDiary.Memory.Library.Filters.Clear>
+  <PawnDiary.Memory.Library.Filters.Everything>Everything</PawnDiary.Memory.Library.Filters.Everything>
+  <PawnDiary.Memory.Library.Filters.Edited>Edited by me</PawnDiary.Memory.Library.Filters.Edited>
+  <PawnDiary.Memory.Library.Filters.Hidden>Hidden</PawnDiary.Memory.Library.Filters.Hidden>
+  <PawnDiary.Memory.Library.Filters.Available>Available</PawnDiary.Memory.Library.Filters.Available>
+  <PawnDiary.Memory.Library.Filters.Showing>Showing {0} of {1} memories.</PawnDiary.Memory.Library.Filters.Showing>
+  <PawnDiary.Memory.Library.ClearFilters>Clear filters</PawnDiary.Memory.Library.ClearFilters>
+  <PawnDiary.Memory.Library.ClearSearch>Clear search</PawnDiary.Memory.Library.ClearSearch>
+  <PawnDiary.Memory.Library.ClearOwnerSearch>Clear colonist search</PawnDiary.Memory.Library.ClearOwnerSearch>
+  <PawnDiary.Memory.Library.Culture.Show>Show cultural context</PawnDiary.Memory.Library.Culture.Show>
+  <PawnDiary.Memory.Library.Culture.Hide>Hide cultural context</PawnDiary.Memory.Library.Culture.Hide>
+  <PawnDiary.Memory.Library.Dev.Culture>Culture details</PawnDiary.Memory.Library.Dev.Culture>
+  <PawnDiary.Memory.Library.Dev.Memory>Memory details</PawnDiary.Memory.Library.Dev.Memory>
+  <PawnDiary.Memory.Library.Dev.Close>Hide developer details</PawnDiary.Memory.Library.Dev.Close>
+  <PawnDiary.Memory.Library.Action.HideConsequence>This memory stays in the Library but will not be used in future writing.</PawnDiary.Memory.Library.Action.HideConsequence>
+  <PawnDiary.Memory.Library.Action.AllowConsequence>This memory may be used in future writing again.</PawnDiary.Memory.Library.Action.AllowConsequence>
   <PawnDiary.Memory.Library.Threads>Threads</PawnDiary.Memory.Library.Threads>
   <PawnDiary.Memory.Library.Standalone>Standalone</PawnDiary.Memory.Library.Standalone>
   <PawnDiary.Memory.Library.Imported>Imported</PawnDiary.Memory.Library.Imported>
@@ -2153,7 +2184,7 @@
   <PawnDiary.Memory.Library.Badge.Edited>Edited</PawnDiary.Memory.Library.Badge.Edited>
   <PawnDiary.Memory.Library.Badge.RollingSummary>Ongoing summary</PawnDiary.Memory.Library.Badge.RollingSummary>
   <PawnDiary.Memory.Library.Badge.ClosedSummary>Closed chapter summary</PawnDiary.Memory.Library.Badge.ClosedSummary>
-  <PawnDiary.Memory.Library.Action.Suppress>Suppress from writing</PawnDiary.Memory.Library.Action.Suppress>
+  <PawnDiary.Memory.Library.Action.Suppress>Hide from writing</PawnDiary.Memory.Library.Action.Suppress>
   <PawnDiary.Memory.Library.Action.Enable>Allow in writing</PawnDiary.Memory.Library.Action.Enable>
   <PawnDiary.Memory.Library.Action.Edit>Edit wording</PawnDiary.Memory.Library.Action.Edit>
   <PawnDiary.Memory.Library.Action.UseOriginal>Use original wording</PawnDiary.Memory.Library.Action.UseOriginal>
@@ -2286,9 +2317,10 @@ Source: {1}</PawnDiary.Memory.Library.ReadOnlyFacts>
   <PawnDiary.Memory.Library.ShowDiagnostics>Show diagnostics</PawnDiary.Memory.Library.ShowDiagnostics>
   <PawnDiary.Memory.Library.Showing>{0}–{1} of {2}</PawnDiary.Memory.Library.Showing>
   <PawnDiary.Memory.Library.Sort>Sort: {0}</PawnDiary.Memory.Library.Sort>
-  <PawnDiary.Memory.Library.Suppress>Suppress</PawnDiary.Memory.Library.Suppress>
+  <PawnDiary.Memory.Library.Suppress>Hide from writing</PawnDiary.Memory.Library.Suppress>
   <PawnDiary.Memory.Library.Suppressed>suppressed</PawnDiary.Memory.Library.Suppressed>
   <PawnDiary.Memory.Library.ThreadCard>{0} · {1} · {2} chapters · {3} memories · {4}</PawnDiary.Memory.Library.ThreadCard>
+  <PawnDiary.Memory.Library.ThreadCardMeta>{0} chapters · {1} memories</PawnDiary.Memory.Library.ThreadCardMeta>
   <PawnDiary.Memory.Library.RootPerson>Person</PawnDiary.Memory.Library.RootPerson>
   <PawnDiary.Memory.Library.RootFaction>Faction</PawnDiary.Memory.Library.RootFaction>
   <PawnDiary.Memory.Library.RootOngoingStory>Ongoing story</PawnDiary.Memory.Library.RootOngoingStory>
@@ -2300,7 +2332,7 @@ Showing {1} of {2} manageable memories</PawnDiary.Memory.Library.ThreadDetailHea
   <PawnDiary.Memory.Library.Unsuppressed>available</PawnDiary.Memory.Library.Unsuppressed>
   <PawnDiary.Memory.Library.Usage>Last automatically included: {0}
 Automatic inclusions: {1}; provider exposure: {2}</PawnDiary.Memory.Library.Usage>
-  <PawnDiary.Memory.Library.UseAgain>Use again</PawnDiary.Memory.Library.UseAgain>
+  <PawnDiary.Memory.Library.UseAgain>Allow in writing</PawnDiary.Memory.Library.UseAgain>
   <PawnDiary.Memory.Library.UseOriginal>Use original</PawnDiary.Memory.Library.UseOriginal>
   <PawnDiary.Memory.Library.UseOriginalWarning>This edited memory is already beyond its normal lifetime and may be forgotten during the next explicit cleanup. Use its original wording?</PawnDiary.Memory.Library.UseOriginalWarning>
   <PawnDiary.Error.GenerationInterruptedAfterSend>The previous game session ended after this request may have reached the provider. It was not sent again.</PawnDiary.Error.GenerationInterruptedAfterSend>

@@ -118,13 +118,53 @@ namespace PawnDiary
         public bool containsDueContribution;
     }
 
-    /// <summary>Pure fixed-card viewport range; the renderer never visits rows outside this window.</summary>
+    /// <summary>Pure viewport range; the renderer never visits rows outside this window.</summary>
     internal sealed class MemoryLibraryUiVirtualWindow
     {
         public int firstIndex;
         public int endExclusive;
         public int materializedCount;
         public float contentHeight;
+    }
+
+    /// <summary>One returned-window thread prepared for a sectioned Library navigation rail.</summary>
+    internal sealed class MemoryLibraryUiRailThreadRow
+    {
+        public MemoryThreadHeaderRow thread;
+        public bool hasAttention;
+    }
+
+    /// <summary>UI-only destinations that never become repository list-query view tags.</summary>
+    internal static class MemoryLibraryUiViews
+    {
+        public const string Culture = "culture";
+    }
+
+    /// <summary>One fixed navigation row shown beneath the thread sections.</summary>
+    internal sealed class MemoryLibraryUiPinnedRow
+    {
+        public string viewToken = string.Empty;
+        public int count;
+    }
+
+    /// <summary>One deterministic initial destination for a newly selected owner's rail.</summary>
+    internal sealed class MemoryLibraryUiRailSelection
+    {
+        public string viewToken = string.Empty;
+        public MemoryRootHandle rootHandle;
+    }
+
+    /// <summary>
+    /// Detached rail projection over the currently returned Threads window. Repository paging remains
+    /// authoritative; this projection only groups and orders rows already supplied to the UI.
+    /// </summary>
+    internal sealed class MemoryLibraryUiRailProjection
+    {
+        public List<MemoryLibraryUiRailThreadRow> people =
+            new List<MemoryLibraryUiRailThreadRow>();
+        public List<MemoryLibraryUiRailThreadRow> factionsAndStories =
+            new List<MemoryLibraryUiRailThreadRow>();
+        public List<MemoryLibraryUiPinnedRow> pinned = new List<MemoryLibraryUiPinnedRow>();
     }
 
     /// <summary>
@@ -291,7 +331,8 @@ namespace PawnDiary
         {
             if (view != MemoryLibraryViews.Threads
                 && view != MemoryLibraryViews.Standalone
-                && view != MemoryLibraryViews.Imported) return;
+                && view != MemoryLibraryViews.Imported
+                && view != MemoryLibraryUiViews.Culture) return;
             selectedView = view;
             selectedRootHandle = null;
             selectedRecordHandle = null;
@@ -373,6 +414,106 @@ namespace PawnDiary
         {
             return owner?.primaryHandle != null
                 && owner.primaryHandle.scopeToken == MemoryLibraryScopes.Active;
+        }
+
+        /// <summary>
+        /// Groups one returned Threads window into stable rail sections and derives fixed view rows
+        /// from the selected owner's complete-domain counts. Labels never participate in identity.
+        /// </summary>
+        public static MemoryLibraryUiRailProjection ComposeRail(
+            List<MemoryLibraryListRow> rows,
+            MemoryLibraryOwnerRow owner)
+        {
+            MemoryLibraryUiRailProjection result = new MemoryLibraryUiRailProjection();
+            for (int index = 0; rows != null && index < rows.Count; index++)
+            {
+                MemoryLibraryListRow row = rows[index];
+                MemoryThreadHeaderRow thread = row?.thread;
+                if (row?.tag != MemoryLibraryRowTags.Thread || thread?.rootHandle == null
+                    || string.IsNullOrWhiteSpace(thread.rootHandle.rootId)) continue;
+                MemoryLibraryUiRailThreadRow projected = new MemoryLibraryUiRailThreadRow
+                {
+                    thread = thread,
+                    hasAttention = ThreadHasAttention(thread)
+                };
+                if (string.Equals(thread.subjectTypeToken, "Person",
+                        StringComparison.OrdinalIgnoreCase))
+                    result.people.Add(projected);
+                else
+                    result.factionsAndStories.Add(projected);
+            }
+            result.people.Sort(CompareRailThreads);
+            result.factionsAndStories.Sort(CompareRailThreads);
+
+            // Culture is owner-level context rather than a repository query, but it belongs in the
+            // same complete memory index as subject threads and independent memories.
+            if (owner != null
+                && (owner.primaryHandle != null || owner.compatibilityHandle != null))
+                result.pinned.Add(new MemoryLibraryUiPinnedRow
+                {
+                    viewToken = MemoryLibraryUiViews.Culture
+                });
+            if ((owner?.standaloneCount ?? 0) > 0)
+                result.pinned.Add(new MemoryLibraryUiPinnedRow
+                {
+                    viewToken = MemoryLibraryViews.Standalone,
+                    count = owner.standaloneCount
+                });
+            // A compatibility-only owner still needs an Imported route even though its current-schema
+            // archive count is zero. This preserves the same reachability as HasImportedViewContent.
+            if (HasImportedViewContent(owner))
+                result.pinned.Add(new MemoryLibraryUiPinnedRow
+                {
+                    viewToken = MemoryLibraryViews.Imported,
+                    count = Math.Max(0, owner.importedCount)
+                });
+            return result;
+        }
+
+        /// <summary>
+        /// Chooses useful content when a newly selected owner has no explicit rail selection.
+        /// Subject threads win, followed by independent memories, old records, and finally culture.
+        /// </summary>
+        public static MemoryLibraryUiRailSelection DefaultRailSelection(
+            MemoryLibraryUiRailProjection rail)
+        {
+            MemoryLibraryUiRailThreadRow thread = rail?.people != null
+                && rail.people.Count > 0 ? rail.people[0] : null;
+            if (thread == null && rail?.factionsAndStories != null
+                && rail.factionsAndStories.Count > 0)
+                thread = rail.factionsAndStories[0];
+            if (thread?.thread?.rootHandle != null)
+                return new MemoryLibraryUiRailSelection
+                {
+                    viewToken = MemoryLibraryViews.Threads,
+                    rootHandle = Copy(thread.thread.rootHandle)
+                };
+
+            string[] preferredViews =
+            {
+                MemoryLibraryViews.Standalone,
+                MemoryLibraryViews.Imported,
+                MemoryLibraryUiViews.Culture
+            };
+            for (int preferredIndex = 0; preferredIndex < preferredViews.Length;
+                preferredIndex++)
+            {
+                string preferred = preferredViews[preferredIndex];
+                for (int rowIndex = 0; rail?.pinned != null
+                    && rowIndex < rail.pinned.Count; rowIndex++)
+                {
+                    if (string.Equals(rail.pinned[rowIndex]?.viewToken,
+                            preferred, StringComparison.Ordinal))
+                        return new MemoryLibraryUiRailSelection { viewToken = preferred };
+                }
+            }
+            return null;
+        }
+
+        /// <summary>True when a thread contains any edited or suppressed manageable memory.</summary>
+        public static bool ThreadHasAttention(MemoryThreadHeaderRow thread)
+        {
+            return thread != null && (thread.editedCount > 0 || thread.suppressedCount > 0);
         }
 
         /// <summary>Resolves the honest empty-state token before the UI localizes it.</summary>
@@ -500,12 +641,46 @@ namespace PawnDiary
             return null;
         }
 
-        public static void ClearImportedIncompatibleFilters(MemoryLibraryFilters filters)
+        /// <summary>Counts active filter dimensions, not the number of selected mask bits.</summary>
+        public static int ActiveFilterCount(MemoryLibraryFilters filters)
+        {
+            if (filters == null) return 0;
+            int count = 0;
+            if (filters.importanceMask != 0) count++;
+            if (filters.categoryMask != 0) count++;
+            if (!string.Equals(filters.stateToken ?? "all", "all", StringComparison.Ordinal))
+                count++;
+            return count;
+        }
+
+        /// <summary>
+        /// Toggles one known multi-select bit. Zero represents every known bit, while an explicit
+        /// single selection cannot be toggled into the same zero sentinel accidentally.
+        /// </summary>
+        public static int ToggleFilterBit(int currentMask, int toggledBit, int knownMask)
+        {
+            if (knownMask <= 0 || toggledBit <= 0
+                || (toggledBit & (toggledBit - 1)) != 0
+                || (toggledBit & knownMask) == 0) return currentMask;
+            int selected = currentMask == 0 ? knownMask : currentMask & knownMask;
+            if (selected == 0) selected = knownMask;
+            int toggled = selected ^ toggledBit;
+            if (toggled == 0) return selected;
+            return toggled == knownMask ? 0 : toggled;
+        }
+
+        /// <summary>Restores the exact all-filters sentinel without replacing the detached DTO.</summary>
+        public static void ClearFilters(MemoryLibraryFilters filters)
         {
             if (filters == null) return;
             filters.importanceMask = 0;
             filters.categoryMask = 0;
             filters.stateToken = "all";
+        }
+
+        public static void ClearImportedIncompatibleFilters(MemoryLibraryFilters filters)
+        {
+            ClearFilters(filters);
         }
 
         /// <summary>Returns an overscanned but hard-bounded fixed-height row range.</summary>
@@ -537,6 +712,110 @@ namespace PawnDiary
             result.endExclusive = visibleEnd;
             result.materializedCount = visibleEnd - first;
             return result;
+        }
+
+        /// <summary>
+        /// Returns an overscanned variable-height range from a cumulative prefix array. The array has
+        /// one more element than rows: row i occupies [offset[i], offset[i + 1]).
+        /// </summary>
+        public static MemoryLibraryUiVirtualWindow Virtualize(
+            float[] cumulativeOffsets,
+            float scrollY,
+            float viewportHeight,
+            int overscanRows,
+            int maximumMaterializedRows)
+        {
+            MemoryLibraryUiVirtualWindow result = new MemoryLibraryUiVirtualWindow();
+            if (!ValidCumulativeOffsets(cumulativeOffsets)) return result;
+            int total = cumulativeOffsets.Length - 1;
+            result.contentHeight = cumulativeOffsets[total];
+            if (total == 0) return result;
+
+            int overscan = Math.Max(0, overscanRows);
+            int maximum = Math.Max(1, maximumMaterializedRows);
+            double safeScroll = float.IsNaN(scrollY) ? 0d : Math.Max(0d, scrollY);
+            double safeViewport = float.IsNaN(viewportHeight) || viewportHeight < 1f
+                ? 1d : viewportHeight;
+            int visibleFirst = FirstRowEndingAfter(cumulativeOffsets, safeScroll);
+            if (visibleFirst >= total) visibleFirst = total - 1;
+            int first = Math.Max(0, visibleFirst - overscan);
+
+            double viewportEnd = safeScroll + safeViewport;
+            int visibleEnd = FirstRowStartingAtOrAfter(
+                cumulativeOffsets, total, viewportEnd);
+            if (visibleEnd <= visibleFirst) visibleEnd = visibleFirst + 1;
+            visibleEnd = (int)Math.Min(total, (long)visibleEnd + overscan);
+            if (visibleEnd - first > maximum)
+            {
+                // Overscan is expendable when the materialization cap is smaller. Keep the actual
+                // first-visible row inside the returned window even for malformed extreme tuning.
+                if ((long)first + maximum <= visibleFirst)
+                    first = Math.Max(0, visibleFirst - maximum + 1);
+                visibleEnd = Math.Min(total, first + maximum);
+            }
+
+            result.firstIndex = first;
+            result.endExclusive = visibleEnd;
+            result.materializedCount = visibleEnd - first;
+            return result;
+        }
+
+        private static int CompareRailThreads(
+            MemoryLibraryUiRailThreadRow left,
+            MemoryLibraryUiRailThreadRow right)
+        {
+            long leftTick = left?.thread?.latestActivityTick ?? 0;
+            long rightTick = right?.thread?.latestActivityTick ?? 0;
+            int tick = rightTick.CompareTo(leftTick);
+            if (tick != 0) return tick;
+            return string.Compare(
+                left?.thread?.rootHandle?.rootId ?? string.Empty,
+                right?.thread?.rootHandle?.rootId ?? string.Empty,
+                StringComparison.Ordinal);
+        }
+
+        private static bool ValidCumulativeOffsets(float[] offsets)
+        {
+            if (offsets == null || offsets.Length == 0 || offsets[0] != 0f) return false;
+            float previous = offsets[0];
+            if (float.IsNaN(previous) || float.IsInfinity(previous)) return false;
+            for (int index = 1; index < offsets.Length; index++)
+            {
+                float current = offsets[index];
+                if (float.IsNaN(current) || float.IsInfinity(current) || current < previous)
+                    return false;
+                previous = current;
+            }
+            return true;
+        }
+
+        private static int FirstRowEndingAfter(float[] offsets, double position)
+        {
+            int low = 0;
+            int high = offsets.Length - 1;
+            while (low < high)
+            {
+                int middle = low + (high - low) / 2;
+                if (offsets[middle + 1] <= position) low = middle + 1;
+                else high = middle;
+            }
+            return low;
+        }
+
+        private static int FirstRowStartingAtOrAfter(
+            float[] offsets,
+            int totalRows,
+            double position)
+        {
+            int low = 0;
+            int high = totalRows;
+            while (low < high)
+            {
+                int middle = low + (high - low) / 2;
+                if (offsets[middle] < position) low = middle + 1;
+                else high = middle;
+            }
+            return low;
         }
 
         /// <summary>Starts one bounded detached draft from a selected stable block detail.</summary>

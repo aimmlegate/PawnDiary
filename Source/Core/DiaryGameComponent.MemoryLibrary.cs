@@ -20,6 +20,10 @@ namespace PawnDiary
             internal string fingerprint = string.Empty;
             internal long revision;
             internal string ownerKey = string.Empty;
+            // Private cache metadata, not part of the query/publication DTO contract. List views
+            // need independent continuation lanes because the subject rail keeps Threads pinned
+            // while the right pane may simultaneously page Standalone or Imported content.
+            internal string streamLane = string.Empty;
             internal MemoryLibraryOwnerIndexSnapshot ownerSnapshot;
             internal long directoryRevision;
             internal long committedSettingsRevision;
@@ -365,6 +369,7 @@ namespace PawnDiary
                     query.expectedListSnapshotRevision,
                     zeroBoundary,
                     zeroBoundary,
+                    query.viewTag,
                     string.Empty);
                 if (zeroPublication == null)
                     return query.expectedListSnapshotRevision > 0
@@ -524,6 +529,7 @@ namespace PawnDiary
                 0,
                 nextBoundary,
                 candidate.ttlValidUntilTickExclusive,
+                query.viewTag,
                 string.Empty);
             if (publication == null) return InvalidList("library_revision_saturated");
             candidate.listSnapshotRevision = publication.revision;
@@ -595,6 +601,7 @@ namespace PawnDiary
                 0,
                 nextBoundary,
                 candidate.ttlValidUntilTickExclusive,
+                string.Empty,
                 string.Empty);
             if (publication == null)
                 return new MemoryThreadDetailResult
@@ -733,6 +740,7 @@ namespace PawnDiary
                 query.expectedArchiveTextSnapshotRevision,
                 boundary,
                 boundary,
+                string.Empty,
                 row.importedWording ?? string.Empty);
             if (publication == null
                 || (query.expectedArchiveTextSnapshotRevision > 0
@@ -1983,6 +1991,7 @@ namespace PawnDiary
                         0,
                         job.nextDayBoundary,
                         job.ttlValidUntilTickExclusive,
+                        job.query?.viewTag,
                         string.Empty);
                     if (publication != null) publication.listSelection = selection;
                 }
@@ -2915,12 +2924,24 @@ namespace PawnDiary
                 displayLabel = string.Empty;
                 return;
             }
-            DiaryCultureProfileDef def =
-                DefDatabase<DiaryCultureProfileDef>.GetNamedSilentFail(defName.Trim());
-            stateToken = MemoryLibraryPolicy.CultureStateToken(defName, def != null);
-            displayLabel = def == null ? string.Empty
-                : MemoryLibraryPolicy.ClampUtf16CompleteScalar(
-                    def.LabelCap.ToString(), limits.frozenDisplayLabelUtf16Units);
+            string trimmed = defName.Trim();
+
+            // Culture profiles are indexed by their cultureDefName FIELD ("Astropolitan"), not by the
+            // profile Def's own defName ("Diary_CultureProfile_Astropolitan"). Looking one up by
+            // defName therefore never matched, so every pawn with a recorded culture reported
+            // "unavailable" with a blank label. DiaryKnowledgePolicy owns the correct index, and every
+            // other caller (prompt planner, dev snapshot) already goes through it.
+            stateToken = MemoryLibraryPolicy.CultureStateToken(
+                trimmed, DiaryKnowledgePolicy.HasAuthoredProfile(trimmed));
+
+            // Show the culture's own localized name rather than our internal lens label
+            // ("astropolitan lens"). CultureDefs are core content, not DLC — see the header note in
+            // Source/Generation/DlcContext.Knowledge.cs — so this resolves in a no-DLC game. A culture
+            // whose Def is gone (mod removed) still renders its saved defName instead of nothing.
+            CultureDef culture = DefDatabase<CultureDef>.GetNamedSilentFail(trimmed);
+            displayLabel = MemoryLibraryPolicy.ClampUtf16CompleteScalar(
+                culture != null ? culture.LabelCap.ToString() : trimmed,
+                limits.frozenDisplayLabelUtf16Units);
         }
 
         private MemoryLibraryOwnerIndexSnapshot BuildZeroOwner(string ownerId, string name)
@@ -3204,24 +3225,31 @@ namespace PawnDiary
             long expectedRevision,
             long nextDayBoundary,
             long ttlValidUntilTickExclusive,
+            string streamLane,
             string textContent)
         {
             if (cache == null || expectedRevision < 0) return null;
+            string lane = streamLane ?? string.Empty;
             if (cache.TryGetValue(streamFingerprint, out MemoryLibraryPublication existing))
             {
                 if (expectedRevision > 0)
-                    return existing.revision == expectedRevision ? existing : null;
-                if (string.Equals(existing.fingerprint, contentFingerprint,
-                    StringComparison.Ordinal)) return existing;
+                    return existing.revision == expectedRevision
+                        && string.Equals(existing.streamLane, lane, StringComparison.Ordinal)
+                            ? existing : null;
+                if (string.Equals(existing.streamLane, lane, StringComparison.Ordinal)
+                    && string.Equals(existing.fingerprint, contentFingerprint,
+                        StringComparison.Ordinal)) return existing;
                 cache.Remove(streamFingerprint);
             }
             if (expectedRevision > 0) return null;
 
-            // One most-recent stream of each kind per cached owner. Eviction makes every positive
-            // continuation for the superseded stream Stale without retaining history.
+            // One most-recent stream per owner and private lane. Eviction makes continuations for a
+            // replaced query Stale without letting the persistent Threads rail evict (or be evicted
+            // by) the selected Standalone/Imported content stream.
             List<string> superseded = new List<string>();
             foreach (KeyValuePair<string, MemoryLibraryPublication> pair in cache)
-                if (string.Equals(pair.Value?.ownerKey, ownerKey, StringComparison.Ordinal))
+                if (string.Equals(pair.Value?.ownerKey, ownerKey, StringComparison.Ordinal)
+                    && string.Equals(pair.Value?.streamLane, lane, StringComparison.Ordinal))
                     superseded.Add(pair.Key);
             for (int index = 0; index < superseded.Count; index++) cache.Remove(superseded[index]);
             if (!memoryLibraryClock.TryAllocate(out long revision))
@@ -3233,6 +3261,7 @@ namespace PawnDiary
                 fingerprint = contentFingerprint ?? string.Empty,
                 revision = revision,
                 ownerKey = ownerKey ?? string.Empty,
+                streamLane = lane,
                 ownerSnapshot = ownerSnapshot,
                 directoryRevision = memoryLibraryDirectoryRevision,
                 committedSettingsRevision = MemoryEffectivePolicyProvider.PublicationRevision,

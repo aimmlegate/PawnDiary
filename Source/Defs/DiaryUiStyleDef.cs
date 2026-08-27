@@ -222,8 +222,26 @@ namespace PawnDiary
         public float memoryLibraryListFraction = 0.42f;
         public float memoryLibraryControlHeight = 28f;
         public float memoryLibraryCulturePanelHeight = 132f;
+        // Subject-first shell dimensions. The rail stays compact enough to leave a useful detail
+        // pane beside the optional filters, while its rows have room for a glyph and two text lines.
+        public float memoryLibraryRailWidth = 300f;
+        public float memoryLibraryRailRowHeight = 64f;
+        public float memoryLibraryRailSectionHeaderHeight = 24f;
+        public float memoryLibraryRailAvatarSize = 40f;
+        public float memoryLibraryAttentionDotSize = 8f;
+        public DiaryUiColorSpec memoryLibraryAttentionDotColor =
+            Color(0.96f, 0.78f, 0.40f, 0.98f);
+        // Detail-only chapter separators share the Diary timeline's established spacing rhythm.
+        public float memoryLibraryChapterDividerHeight = 30f;
+        public float memoryLibraryChapterDividerTopGap = 6f;
+        public float memoryLibraryChapterDividerLineGap = 10f;
+        // Optional side-panel and compact footer/culture dimensions for the subject-first layout.
+        public float memoryLibraryFilterPanelWidth = 260f;
+        public float memoryLibraryFilterPanelGap = 10f;
+        public float memoryLibraryCultureCollapsedHeight = 32f;
+        public float memoryLibraryDevDiagnosticsStripHeight = 32f;
         public float memoryLibraryCardHeight = 82f;
-        public float memoryLibraryBlockCardHeight = 96f;
+        public float memoryLibraryBlockCardHeight = 108f;
         public float memoryLibraryBlockDetailMinimumContentHeight = 430f;
         public float memoryLibraryCardGap = 6f;
         public int memoryLibraryOverscanRows = 2;
@@ -236,6 +254,28 @@ namespace PawnDiary
             Color(0.12f, 0.14f, 0.17f, 0.90f);
         public DiaryUiColorSpec memoryLibrarySelectedCardBackground =
             Color(0.24f, 0.30f, 0.36f, 0.95f);
+        // Card anatomy: the Diary's accent-spine treatment applied to Memory rows, so a memory's
+        // category reads before its text does. Hues are drawn from entryAccentPalette so the two
+        // windows share one colour language. A row carrying several categories uses the mixed spine.
+        public float memoryLibraryAccentWidth = 6f;
+        public float memoryLibraryCardTitleHeight = 24f;
+        public float memoryLibraryCardTintAlpha = 0.09f;
+        public DiaryUiColorSpec memoryLibraryCategoryPersonal =
+            Color(0.84f, 0.70f, 0.34f, 1f);
+        public DiaryUiColorSpec memoryLibraryCategoryRelationships =
+            Color(0.86f, 0.50f, 0.66f, 1f);
+        public DiaryUiColorSpec memoryLibraryCategoryFamily =
+            Color(0.48f, 0.72f, 0.50f, 1f);
+        public DiaryUiColorSpec memoryLibraryCategoryFactions =
+            Color(0.45f, 0.63f, 0.92f, 1f);
+        public DiaryUiColorSpec memoryLibraryCategoryMixed =
+            Color(0.62f, 0.68f, 0.76f, 1f);
+        // Summaries are not an event category; they get their own spine so a folded block never
+        // impersonates one of the four player-facing categories.
+        public DiaryUiColorSpec memoryLibrarySummaryAccent =
+            Color(0.38f, 0.70f, 0.72f, 1f);
+        // Multiplied into a suppressed row so "hidden from writing" reads at a glance.
+        public float memoryLibrarySuppressedAlpha = 0.55f;
         // Repository snapshots are immutable between revisions. Polling a few times per second keeps
         // sliced Preparing work responsive; settled snapshots are woken only by a changed source stamp.
         public int memoryLibraryRepositoryPollFrames = 6;
@@ -562,6 +602,42 @@ namespace PawnDiary
             new Color(0.12f, 0.14f, 0.17f, 0.90f));
         public Color MemoryLibraryDiaryIconBorderColor => memoryLibraryDiaryIconBorder.ToColor(
             new Color(0.68f, 0.72f, 0.76f, 0.62f));
+        public Color MemoryLibraryAttentionDotColor => memoryLibraryAttentionDotColor.ToColor(
+            new Color(0.96f, 0.78f, 0.40f, 0.98f));
+        public Color MemoryLibraryCategoryPersonalColor =>
+            memoryLibraryCategoryPersonal.ToColor(new Color(0.84f, 0.70f, 0.34f, 1f));
+        public Color MemoryLibraryCategoryRelationshipsColor =>
+            memoryLibraryCategoryRelationships.ToColor(new Color(0.86f, 0.50f, 0.66f, 1f));
+        public Color MemoryLibraryCategoryFamilyColor =>
+            memoryLibraryCategoryFamily.ToColor(new Color(0.48f, 0.72f, 0.50f, 1f));
+        public Color MemoryLibraryCategoryFactionsColor =>
+            memoryLibraryCategoryFactions.ToColor(new Color(0.45f, 0.63f, 0.92f, 1f));
+        public Color MemoryLibraryCategoryMixedColor =>
+            memoryLibraryCategoryMixed.ToColor(new Color(0.62f, 0.68f, 0.76f, 1f));
+        public Color MemoryLibrarySummaryAccentColor =>
+            memoryLibrarySummaryAccent.ToColor(new Color(0.38f, 0.70f, 0.72f, 1f));
+
+        /// <summary>
+        /// The accent spine for one memory row. A mask naming exactly one category uses that
+        /// category's hue; a mixed or empty mask uses the neutral steel spine, so the spine never
+        /// claims a category the row does not actually carry.
+        /// </summary>
+        public Color MemoryLibraryCategoryColor(int categoryMask)
+        {
+            switch (categoryMask)
+            {
+                case MemoryCategoryBits.Personal:
+                    return MemoryLibraryCategoryPersonalColor;
+                case MemoryCategoryBits.Relationships:
+                    return MemoryLibraryCategoryRelationshipsColor;
+                case MemoryCategoryBits.Family:
+                    return MemoryLibraryCategoryFamilyColor;
+                case MemoryCategoryBits.Factions:
+                    return MemoryLibraryCategoryFactionsColor;
+                default:
+                    return MemoryLibraryCategoryMixedColor;
+            }
+        }
         public Color MemoryLibrarySelectedCardBackground =>
             memoryLibrarySelectedCardBackground.ToColor(
                 new Color(0.24f, 0.30f, 0.36f, 0.95f));

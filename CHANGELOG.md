@@ -6,6 +6,10 @@ Companion: [repowiki/README.md](repowiki/README.md) describes the current state.
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-08-28
+
+- **Memory Library subject-first redesign.** Rework the Library around a persistent People/Factions-and-stories rail with owner cultural context, Other memories, and Old records as destinations; auto-open the first thread, add multi-select filters and continuous chapter timelines, and preserve bounded revision-safe paging.
+
 ## 2026-08-27
 
 - **Memory M11 admission recovery.** Restore valid component sizing for policy, terminal-list, and imported-fact rows, and preserve append-safe legacy-v2 capture while migration is pending.

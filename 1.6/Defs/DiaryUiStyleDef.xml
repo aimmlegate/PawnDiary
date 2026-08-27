@@ -120,8 +120,24 @@
     <memoryLibraryListFraction>0.42</memoryLibraryListFraction>
     <memoryLibraryControlHeight>28</memoryLibraryControlHeight>
     <memoryLibraryCulturePanelHeight>132</memoryLibraryCulturePanelHeight>
+    <!-- Subject-first shell dimensions. -->
+    <memoryLibraryRailWidth>300</memoryLibraryRailWidth>
+    <memoryLibraryRailRowHeight>64</memoryLibraryRailRowHeight>
+    <memoryLibraryRailSectionHeaderHeight>24</memoryLibraryRailSectionHeaderHeight>
+    <memoryLibraryRailAvatarSize>40</memoryLibraryRailAvatarSize>
+    <memoryLibraryAttentionDotSize>8</memoryLibraryAttentionDotSize>
+    <memoryLibraryAttentionDotColor><r>0.96</r><g>0.78</g><b>0.40</b><a>0.98</a></memoryLibraryAttentionDotColor>
+    <!-- Detail-only chapter separators mirror the Diary timeline's spacing rhythm. -->
+    <memoryLibraryChapterDividerHeight>30</memoryLibraryChapterDividerHeight>
+    <memoryLibraryChapterDividerTopGap>6</memoryLibraryChapterDividerTopGap>
+    <memoryLibraryChapterDividerLineGap>10</memoryLibraryChapterDividerLineGap>
+    <!-- Optional filter panel plus compact culture and developer-only footer rows. -->
+    <memoryLibraryFilterPanelWidth>260</memoryLibraryFilterPanelWidth>
+    <memoryLibraryFilterPanelGap>10</memoryLibraryFilterPanelGap>
+    <memoryLibraryCultureCollapsedHeight>32</memoryLibraryCultureCollapsedHeight>
+    <memoryLibraryDevDiagnosticsStripHeight>32</memoryLibraryDevDiagnosticsStripHeight>
     <memoryLibraryCardHeight>82</memoryLibraryCardHeight>
-    <memoryLibraryBlockCardHeight>96</memoryLibraryBlockCardHeight>
+    <memoryLibraryBlockCardHeight>108</memoryLibraryBlockCardHeight>
     <memoryLibraryBlockDetailMinimumContentHeight>430</memoryLibraryBlockDetailMinimumContentHeight>
     <memoryLibraryCardGap>6</memoryLibraryCardGap>
     <memoryLibraryOverscanRows>2</memoryLibraryOverscanRows>
@@ -131,6 +147,20 @@
     <memoryLibraryDiaryIconBorder><r>0.68</r><g>0.72</g><b>0.76</b><a>0.62</a></memoryLibraryDiaryIconBorder>
     <memoryLibraryCardBackground><r>0.12</r><g>0.14</g><b>0.17</b><a>0.90</a></memoryLibraryCardBackground>
     <memoryLibrarySelectedCardBackground><r>0.24</r><g>0.30</g><b>0.36</b><a>0.95</a></memoryLibrarySelectedCardBackground>
+    <!-- Card anatomy: the Diary's accent-spine treatment applied to Memory rows, so a memory's
+         category reads before its text does. Hues come from entryAccentPalette so both windows
+         share one colour language. A row carrying several categories uses the mixed spine, and a
+         folded Summary uses its own so it never impersonates a player-facing category. -->
+    <memoryLibraryAccentWidth>6</memoryLibraryAccentWidth>
+    <memoryLibraryCardTitleHeight>24</memoryLibraryCardTitleHeight>
+    <memoryLibraryCardTintAlpha>0.09</memoryLibraryCardTintAlpha>
+    <memoryLibraryCategoryPersonal><r>0.84</r><g>0.70</g><b>0.34</b><a>1</a></memoryLibraryCategoryPersonal>
+    <memoryLibraryCategoryRelationships><r>0.86</r><g>0.50</g><b>0.66</b><a>1</a></memoryLibraryCategoryRelationships>
+    <memoryLibraryCategoryFamily><r>0.48</r><g>0.72</g><b>0.50</b><a>1</a></memoryLibraryCategoryFamily>
+    <memoryLibraryCategoryFactions><r>0.45</r><g>0.63</g><b>0.92</b><a>1</a></memoryLibraryCategoryFactions>
+    <memoryLibraryCategoryMixed><r>0.62</r><g>0.68</g><b>0.76</b><a>1</a></memoryLibraryCategoryMixed>
+    <memoryLibrarySummaryAccent><r>0.38</r><g>0.70</g><b>0.72</b><a>1</a></memoryLibrarySummaryAccent>
+    <memoryLibrarySuppressedAlpha>0.55</memoryLibrarySuppressedAlpha>
     <memoryLibraryRepositoryPollFrames>6</memoryLibraryRepositoryPollFrames>
 
     <!-- Header/card dimensions -->
