@@ -21,9 +21,6 @@ namespace PawnDiary.RimTests
             BindingFlags.Instance | BindingFlags.NonPublic;
         private const int MaximumPublicationSlices = 4096;
 
-        private static readonly MethodInfo RefreshLibraryMethod =
-            typeof(DiaryGameComponent).GetMethod(
-                "RefreshMemoryLibraryPublications", PrivateInstance);
         private static readonly MethodInfo ResetLibraryMethod =
             typeof(DiaryGameComponent).GetMethod(
                 "ResetMemoryLibraryTransient", PrivateInstance);
@@ -132,8 +129,6 @@ namespace PawnDiary.RimTests
         /// <summary>Fails early when a private loaded seam was renamed.</summary>
         internal static void RequireReflectionSurface()
         {
-            Require(RefreshLibraryMethod != null,
-                "The production Memory Library refresh seam was renamed.");
             Require(ResetLibraryMethod != null,
                 "The production Memory Library reset seam was renamed.");
             Require(DrainLibraryCommandsMethod != null,
@@ -334,11 +329,14 @@ namespace PawnDiary.RimTests
             }
         }
 
-        /// <summary>Runs one production update slice.</summary>
+        /// <summary>
+        /// Runs one bounded Library slice without consuming the loaded colony's pending observation
+        /// reconciliation. The friend-only production seam bypasses only that publication fence.
+        /// </summary>
         internal static void RefreshLibrary(DiaryGameComponent component)
         {
             RequireReflectionSurface();
-            RefreshLibraryMethod.Invoke(component, null);
+            component.RefreshMemoryLibraryPublicationsForTests();
         }
 
         /// <summary>Drains commands at the same non-draw component boundary used by the game loop.</summary>
@@ -791,7 +789,10 @@ namespace PawnDiary.RimTests
             MemoryLibraryListQuery query = new MemoryLibraryListQuery
             {
                 primaryHandle = Copy(owner.primaryHandle),
-                activeOwnerEpochKey = Copy(owner.activeOwnerEpochKey),
+                // Imported is archive-scoped and must never carry the active-epoch proof used by
+                // Threads and Standalone queries.
+                activeOwnerEpochKey = view == MemoryLibraryViews.Imported
+                    ? null : Copy(owner.activeOwnerEpochKey),
                 viewTag = view,
                 filters = new MemoryLibraryFilters(),
                 search = search ?? string.Empty,
@@ -948,7 +949,7 @@ namespace PawnDiary.RimTests
                     "relationship_phase",
                     subjectKind,
                     subjectId,
-                    "latest",
+                    MemoryFactContractTokens.LatestState,
                     out factId),
                 "The M11 fixture could not create a canonical fact identity.");
             string subjectRefId;
@@ -1004,8 +1005,8 @@ namespace PawnDiary.RimTests
                 factKind = "relationship_phase",
                 canonicalSubjectKind = subjectKind,
                 canonicalSubjectId = subjectId,
-                aggregationToken = "latest",
-                canonicalValueKind = "token",
+                aggregationToken = MemoryFactContractTokens.LatestState,
+                canonicalValueKind = MemoryFactContractTokens.ValueState,
                 canonicalValue = "friend"
             });
             block.provenance.Add(new SavedMemoryProvenance

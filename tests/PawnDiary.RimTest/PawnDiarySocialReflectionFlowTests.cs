@@ -772,6 +772,10 @@ namespace PawnDiary.RimTests
                 unrelated,
                 "source-unrelated",
                 now - 100);
+            // The fixture appended directly to saved truth. Publish the same M4 and byte derivatives
+            // a production admission would publish before the real H7 retrieval boundary runs.
+            scope.Component.MarkMemoryM4IndexesDirty();
+            scope.Component.RebuildMemorySizeIndexes();
             int recordsBefore = knowledge.standaloneBlocks.Count;
 
             SocialReflectionPolicySnapshot policy = DiarySocialReflectionPolicy.Snapshot();

@@ -158,6 +158,11 @@ namespace PawnDiary
         private int memoryLibraryObservedUnresolvedCount = -1;
         private int memoryLibraryObservedRawUnresolvedCount = -1;
         private long memoryLibraryLanguageDisplayRevision = 1;
+        // Loaded RimTests query the detached Library synchronously while the developer's real
+        // colony may still have a legitimate observation reconciliation queued. The trusted test
+        // seam below bypasses only this publication fence for one call; it never advances or clears
+        // the real observation queue.
+        private bool memoryLibraryObservationFenceBypassedForTests;
 
         /// <summary>Clears every loaded-session publication/cache/command identity.</summary>
         private void ResetMemoryLibraryTransient()
@@ -193,6 +198,7 @@ namespace PawnDiary
             memoryLibraryObservedUnresolvedCount = -1;
             memoryLibraryObservedRawUnresolvedCount = -1;
             memoryLibraryLanguageDisplayRevision = 1;
+            memoryLibraryObservationFenceBypassedForTests = false;
         }
 
         /// <summary>
@@ -208,7 +214,7 @@ namespace PawnDiary
                 && memoryLibraryDirectoryRevision > 0 && MemoryLibrarySourceTupleChanged())
                 memoryLibraryDirectoryBuildRequested = true;
             if (memoryLibraryDirectoryBuildRequested && memoryLibraryDirectoryBuildJob == null
-                && MemoryObservationPublicationIsStable)
+                && MemoryLibraryObservationFenceSatisfied)
                 memoryLibraryDirectoryBuildJob = StartMemoryLibraryDirectoryBuild();
             if (memoryLibraryDirectoryBuildJob != null)
                 AdvanceMemoryLibraryDirectoryBuild();
@@ -217,6 +223,28 @@ namespace PawnDiary
             if (memoryLibraryListBuildOrder.Count > 0)
                 AdvanceMemoryLibraryListBuild();
         }
+
+        /// <summary>
+        /// Advances one deterministic loaded-test slice without consuming the player's pending
+        /// observation reconciliation. Production callers always use the fenced method above.
+        /// </summary>
+        internal void RefreshMemoryLibraryPublicationsForTests()
+        {
+            bool previous = memoryLibraryObservationFenceBypassedForTests;
+            memoryLibraryObservationFenceBypassedForTests = true;
+            try
+            {
+                RefreshMemoryLibraryPublications();
+            }
+            finally
+            {
+                memoryLibraryObservationFenceBypassedForTests = previous;
+            }
+        }
+
+        private bool MemoryLibraryObservationFenceSatisfied =>
+            memoryLibraryObservationFenceBypassedForTests
+            || MemoryObservationPublicationIsStable;
 
         /// <summary>
         /// Returns a small value stamp for the UI's warm-query gate. No saved object or detached row is
@@ -266,7 +294,7 @@ namespace PawnDiary
         /// <summary>Returns one detached paged owner directory; never creates saved state.</summary>
         internal MemoryLibraryOwnerResult QueryMemoryLibraryOwners(MemoryLibraryOwnerQuery query)
         {
-            if (memoryLibraryDirectoryRevision <= 0)
+            if (memoryLibraryDirectoryRevision <= 0 || MemoryLibrarySourceTupleChanged())
             {
                 memoryLibraryDirectoryBuildRequested = true;
                 return new MemoryLibraryOwnerResult { status = MemoryLibraryStatuses.Preparing };
@@ -1184,7 +1212,9 @@ namespace PawnDiary
             memoryLibraryTextPublications.Clear();
             memoryLibraryListBuildJobs.Clear();
             memoryLibraryListBuildOrder.Clear();
-            memoryLibraryCompatibilityPublications.Clear();
+            // Keep bounded compatibility publications privately until the directory rebuild. Their
+            // prior per-owner revisions are needed to fence stale compatibility payloads; the cleared
+            // directory makes them unreachable meanwhile, and the rebuild removes owners no longer seen.
             memoryLibraryDirectoryBuildJob = null;
             memoryLibraryPendingOwnerBuildKey = string.Empty;
             DiaryStateVersion.Bump();
@@ -1352,7 +1382,7 @@ namespace PawnDiary
         {
             long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
             return job != null
-                && MemoryObservationPublicationIsStable
+                && MemoryLibraryObservationFenceSatisfied
                 && job.diaryStateVersion == DiaryStateVersion.Current
                 && job.observationPublicationRevision
                     == memoryObservationPublicationRevision
@@ -1964,7 +1994,7 @@ namespace PawnDiary
         {
             long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
             return job != null
-                && MemoryObservationPublicationIsStable
+                && MemoryLibraryObservationFenceSatisfied
                 && job.observationPublicationRevision
                     == memoryObservationPublicationRevision
                 && !MemoryLibrarySourceTupleChanged()

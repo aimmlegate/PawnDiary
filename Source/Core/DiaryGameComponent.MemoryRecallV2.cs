@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using PawnDiary.Capture;
 using RimWorld;
 using Verse;
 
@@ -264,13 +265,28 @@ namespace PawnDiary
             KnowledgePolicySnapshot legacyPolicy,
             KnowledgeQuery legacyQuery)
         {
+            bool socialReflection = string.Equals(
+                diaryEvent.interactionDefName,
+                SocialReflectionEventData.DefNameToken,
+                StringComparison.OrdinalIgnoreCase);
+            string exactCounterpartPawnId = socialReflection
+                ? DiaryContextFields.Value(
+                    diaryEvent.gameContext,
+                    SocialReflectionEventData.SubjectIdContextKey)
+                : otherPawnId ?? string.Empty;
             var query = new MemoryRecallQueryV2
             {
-                consumerId = MemoryRecallConsumerRegistry.OrdinaryDiary,
+                consumerId = socialReflection
+                    ? MemoryRecallConsumerRegistry.ExistingReflection
+                    : MemoryRecallConsumerRegistry.OrdinaryDiary,
                 writingFormat = writingFormat,
                 ownerPawnId = owner.pawnId ?? string.Empty,
                 ownerEpochToken = owner.autobiographicalEpochToken ?? string.Empty,
-                pairCounterpartPawnId = diaryEvent.solo ? string.Empty : otherPawnId ?? string.Empty,
+                // H7 is structurally solo. Its exact subject still participates in route matching,
+                // but must not be mistaken for a paired-POV repetition guard.
+                pairCounterpartPawnId = diaryEvent.solo
+                    ? string.Empty
+                    : exactCounterpartPawnId,
                 currentEventId = diaryEvent.eventId ?? string.Empty,
                 // Current shipped page capture uses the event ID as its stable source occurrence.
                 currentSourceOccurrenceId = diaryEvent.eventId ?? string.Empty,
@@ -297,7 +313,10 @@ namespace PawnDiary
                 }
             };
             AddEnabledCategories(query.enabledCategories, policy.memoryCategoryMask);
-            AddRecallRoute(query.exactRoutes, MemoryContractTokens.SubjectPawn, otherPawnId);
+            AddRecallRoute(
+                query.exactRoutes,
+                MemoryContractTokens.SubjectPawn,
+                exactCounterpartPawnId);
             for (int index = 0; legacyQuery?.participantIds != null
                 && index < legacyQuery.participantIds.Count; index++)
             {
@@ -331,6 +350,16 @@ namespace PawnDiary
             if (legacyQuery?.topicKeys != null) query.topicKeys.AddRange(legacyQuery.topicKeys);
             if (legacyQuery?.excludedSourceEventIds != null)
                 query.excludedSourceEventIds.AddRange(legacyQuery.excludedSourceEventIds);
+            if (socialReflection)
+            {
+                // The reflection page has a new event identity, so exclude the direct source page
+                // explicitly just like the legacy selector. This prevents recursive self-evidence.
+                string sourceEventId = DiaryContextFields.Value(
+                    diaryEvent.gameContext,
+                    SocialReflectionEventData.SourceEventIdContextKey);
+                if (!string.IsNullOrWhiteSpace(sourceEventId))
+                    query.excludedSourceEventIds.Add(sourceEventId.Trim());
+            }
             return query;
         }
 

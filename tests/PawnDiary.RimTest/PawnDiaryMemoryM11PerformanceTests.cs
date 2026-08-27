@@ -230,7 +230,12 @@ namespace PawnDiary.RimTests
                             state.pawnId,
                             state.autobiographicalEpochToken,
                             block.recordId) != null,
-                    "Post-observation M4 admission was missing, stale, or MigrationPending.");
+                    "Post-observation M4 admission failed with outcome "
+                        + admitted.outcome + "; exact lookup present="
+                        + (component.FindStandaloneMemoryExact(
+                            state.pawnId,
+                            state.autobiographicalEpochToken,
+                            block.recordId) != null) + ".");
 
                 DiaryGameComponent.MemoryOwnerByteTotals incrementalOwner =
                     component.GetOwnerByteTotals(state.pawnId);

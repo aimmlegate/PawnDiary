@@ -92,6 +92,20 @@ namespace PawnDiary
         new[] { typeof(Faction), typeof(Pawn) })]
     internal static class MemoryObservationPawnFactionPatch
     {
+        // The loaded-game RimTest fixture must make a generated pawn a colonist before most tests can
+        // begin. That setup-only SetFaction call is not an observed game event, so the trusted test
+        // assembly suppresses this one patch briefly instead of clearing the player's real pending queue.
+        private static bool suppressedForTests;
+
+        /// <summary>
+        /// Lets the trusted RimTest harness exclude its own setup-only faction transition. Always pair
+        /// <c>true</c> with <c>false</c> in a <c>finally</c> block so ordinary play cannot stay suppressed.
+        /// </summary>
+        internal static void SetSuppressedForTests(bool suppressed)
+        {
+            suppressedForTests = suppressed;
+        }
+
         /// <summary>Freezes the old exact faction reference before vanilla changes it.</summary>
         public static void Prefix(Pawn __instance, out Faction __state)
         {
@@ -101,7 +115,7 @@ namespace PawnDiary
         /// <summary>Queues exact old/new faction and related-owner reconciliation after commit.</summary>
         public static void Postfix(Pawn __instance, Faction __state)
         {
-            if (__instance == null || !DiaryGameComponent.GamePlaying
+            if (suppressedForTests || __instance == null || !DiaryGameComponent.GamePlaying
                 || __state == __instance.Faction) return;
             DiaryPatchSafety.Run("MemoryObservationPawnFactionPatch", () =>
             {

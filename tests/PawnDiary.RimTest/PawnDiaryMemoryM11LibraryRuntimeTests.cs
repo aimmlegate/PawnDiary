@@ -306,6 +306,22 @@ namespace PawnDiary.RimTests
             const string client = "rimtest-memory-library-ttl-command";
             try
             {
+                // A player may intentionally configure immediate Minor expiry. Publish a retained
+                // baseline so this fixture can first enqueue a valid row before crossing its TTL.
+                MemorySettingsPolicyFieldsV1 retainedFields = priorPolicy.ToFields();
+                retainedFields.minorMemoryLifetimeDays = Math.Max(
+                    1, retainedFields.minorMemoryLifetimeDays);
+                retainedFields.regularMemoryLifetimeDays = Math.Max(
+                    retainedFields.minorMemoryLifetimeDays,
+                    retainedFields.regularMemoryLifetimeDays);
+                var retainedPolicy = new MemoryPolicySnapshot(
+                    MemoryPolicyNormalizer.CurrentSettingsSchemaVersion,
+                    false,
+                    retainedFields,
+                    "rimtest-command-retained-ttl-" + Guid.NewGuid().ToString("N"));
+                Require(MemoryEffectivePolicyProvider.Publish(retainedPolicy),
+                    "The TTL command fixture could not publish its retained baseline policy.");
+
                 Pawn pawn = scope.CreateAdultColonist();
                 string ownerId = pawn.GetUniqueLoadID();
                 string display = "PawnDiary M11 TTL Command "
@@ -352,7 +368,7 @@ namespace PawnDiary.RimTests
                         && scope.Component.TryEnqueueMemoryLibraryCommand(command),
                     "The TTL command fixture could not queue its initially valid edit.");
 
-                MemorySettingsPolicyFieldsV1 fields = priorPolicy.ToFields();
+                MemorySettingsPolicyFieldsV1 fields = retainedPolicy.ToFields();
                 fields.minorMemoryLifetimeDays = 0;
                 var immediateMinorTtl = new MemoryPolicySnapshot(
                     MemoryPolicyNormalizer.CurrentSettingsSchemaVersion,

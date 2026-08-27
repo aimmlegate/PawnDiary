@@ -376,6 +376,7 @@ namespace PawnDiary.RimTests
             bool hadArrivalOverride = PawnDiaryMod.Settings.groupEnabled.TryGetValue(
                 arrivalGroup.defName, out priorArrivalSetting);
             PawnDiaryMod.Settings.groupEnabled[arrivalGroup.defName] = false;
+            MemoryObservationPawnFactionPatch.SetSuppressedForTests(true);
 
             try
             {
@@ -383,6 +384,7 @@ namespace PawnDiary.RimTests
             }
             finally
             {
+                MemoryObservationPawnFactionPatch.SetSuppressedForTests(false);
                 if (hadArrivalOverride)
                     PawnDiaryMod.Settings.groupEnabled[arrivalGroup.defName] = priorArrivalSetting;
                 else
@@ -497,9 +499,9 @@ namespace PawnDiary.RimTests
 
         /// <summary>
         /// Removes the neutral arrival page the Pawn.SetFaction hook recorded for a just-created test pawn:
-        /// the hot event, its archived copy, the pawn's diary-index ref, and the transient dedup mark. The
-        /// pawn's diary record itself is kept — only the incidental arrival goes — so the pawn is a blank
-        /// slate a test can drive from scratch.
+        /// the hot event, its archived copy, the pawn's diary-index ref, its page-independent memory
+        /// envelope, and the transient dedup mark. The pawn's diary record itself is kept — only the
+        /// incidental setup state goes — so the pawn is a blank slate a test can drive from scratch.
         /// </summary>
         private void ScrubSetupArrivalForPawn(Pawn pawn)
         {
@@ -540,14 +542,16 @@ namespace PawnDiary.RimTests
             }
 
             // MEMORY_SYSTEM_REDESIGN_PLAN makes capture independent from page creation. Therefore a
-            // disabled setup arrival has no DiaryEvent to find above, but it still deposits the correct
-            // status.faction.joined record. It belongs to scaffolding, not the test scenario.
+            // disabled setup arrival has no DiaryEvent to find above, but it still creates a current-
+            // schema envelope containing a status.faction.joined fact. This pawn was just generated, so
+            // the envelope contains only fixture scaffolding; removing it also lets legacy-schema tests
+            // install their own exact schema instead of inheriting a current owner.
             PawnKnowledgeState knowledge = record?.KnowledgeStateOrNull();
-            if (knowledge?.records != null
-                && knowledge.records.RemoveAll(row => row != null
-                    && string.Equals(row.eventKind, "status.faction.joined",
-                        StringComparison.OrdinalIgnoreCase)) > 0)
+            if (knowledge != null)
             {
+                record.knowledgeState = null;
+                Component.MarkMemoryM4IndexesDirty();
+                Component.RebuildMemorySizeIndexes();
                 changed = true;
             }
 

@@ -5,7 +5,7 @@
       "consumerId": "ordinary_diary",
       "status": "routed",
       "sourcePath": "Source/Core/DiaryGameComponent.MemoryRecallV2.cs",
-      "sourceNeedle": "consumerId = MemoryRecallConsumerRegistry.OrdinaryDiary",
+      "sourceNeedle": ": MemoryRecallConsumerRegistry.OrdinaryDiary",
       "gapReason": ""
     },
     {

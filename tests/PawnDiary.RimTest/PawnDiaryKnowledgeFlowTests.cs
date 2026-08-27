@@ -1349,12 +1349,15 @@ namespace PawnDiary.RimTests
 
                 Pawn insertionOwner = scope.CreateAdultColonist();
                 string insertionOwnerId = insertionOwner.GetUniqueLoadID();
+                // This case verifies the legacy insertion adapter. Select schema v2 before the
+                // profile write; otherwise CurrentRelease correctly creates playerBackground on a
+                // v3 envelope and there is no legacy records row for this assertion to exercise.
+                PawnKnowledgeState insertionState = KnowledgeFor(insertionOwner);
                 Require(
                     scope.Component.TrySetBackgroundMemoryForProfile(
                         insertionOwner,
                         "I grew up maintaining irrigation pumps."),
                     "The insertion-eviction fixture could not seed its canonical background.");
-                PawnKnowledgeState insertionState = KnowledgeFor(insertionOwner);
 
                 AddRomancePairEvent(insertionOwner, pawnB, "Spouse", "married");
                 Require(
@@ -1652,6 +1655,7 @@ namespace PawnDiary.RimTests
             // This fixture replaces that saved reference directly, so invalidate the derived index
             // exactly as production reference assignments do before exercising store admission.
             scope.Component.MarkMemoryM4IndexesDirty();
+            scope.Component.RebuildMemorySizeIndexes();
             return state;
         }
 
