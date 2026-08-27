@@ -126,7 +126,9 @@
     <memoryLibraryCardGap>6</memoryLibraryCardGap>
     <memoryLibraryOverscanRows>2</memoryLibraryOverscanRows>
     <memoryLibraryMaximumMaterializedRows>28</memoryLibraryMaximumMaterializedRows>
-    <memoryLibraryDiaryActionWidth>92</memoryLibraryDiaryActionWidth>
+    <memoryLibraryDiaryIconPadding>2</memoryLibraryDiaryIconPadding>
+    <memoryLibraryDiaryIconBorderThickness>1</memoryLibraryDiaryIconBorderThickness>
+    <memoryLibraryDiaryIconBorder><r>0.68</r><g>0.72</g><b>0.76</b><a>0.62</a></memoryLibraryDiaryIconBorder>
     <memoryLibraryCardBackground><r>0.12</r><g>0.14</g><b>0.17</b><a>0.90</a></memoryLibraryCardBackground>
     <memoryLibrarySelectedCardBackground><r>0.24</r><g>0.30</g><b>0.36</b><a>0.95</a></memoryLibrarySelectedCardBackground>
     <memoryLibraryRepositoryPollFrames>6</memoryLibraryRepositoryPollFrames>

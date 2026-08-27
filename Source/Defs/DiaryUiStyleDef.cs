@@ -228,7 +228,10 @@ namespace PawnDiary
         public float memoryLibraryCardGap = 6f;
         public int memoryLibraryOverscanRows = 2;
         public int memoryLibraryMaximumMaterializedRows = 28;
-        public float memoryLibraryDiaryActionWidth = 92f;
+        public float memoryLibraryDiaryIconPadding = 2f;
+        public int memoryLibraryDiaryIconBorderThickness = 1;
+        public DiaryUiColorSpec memoryLibraryDiaryIconBorder =
+            Color(0.68f, 0.72f, 0.76f, 0.62f);
         public DiaryUiColorSpec memoryLibraryCardBackground =
             Color(0.12f, 0.14f, 0.17f, 0.90f);
         public DiaryUiColorSpec memoryLibrarySelectedCardBackground =
@@ -557,6 +560,8 @@ namespace PawnDiary
             new Color(0.95f, 0.66f, 0.18f, 0.90f));
         public Color MemoryLibraryCardBackground => memoryLibraryCardBackground.ToColor(
             new Color(0.12f, 0.14f, 0.17f, 0.90f));
+        public Color MemoryLibraryDiaryIconBorderColor => memoryLibraryDiaryIconBorder.ToColor(
+            new Color(0.68f, 0.72f, 0.76f, 0.62f));
         public Color MemoryLibrarySelectedCardBackground =>
             memoryLibrarySelectedCardBackground.ToColor(
                 new Color(0.24f, 0.30f, 0.36f, 0.95f));

@@ -399,6 +399,45 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Draws the bordered storage icon that opens the selected owner's unified Memory Library.
+        /// The glyph follows the neighboring quiet header icons; the thin outline preserves the button
+        /// affordance previously supplied by the wider text button without consuming title space.
+        /// </summary>
+        private static void DrawMemoryLibraryHeaderIcon(Rect rect, string pawnId)
+        {
+            bool hover = Mouse.IsOver(rect);
+            float alpha = hover ? WritingStyleIconHoverAlpha : WritingStyleIconAlpha;
+            float padding = Mathf.Clamp(
+                UiStyle.memoryLibraryDiaryIconPadding,
+                0f,
+                Mathf.Max(0f, Mathf.Min(rect.width, rect.height) * 0.4f));
+            Rect iconRect = rect.ContractedBy(padding);
+
+            Color oldColor = GUI.color;
+            GUI.color = new Color(1f, 1f, 1f, Mathf.Clamp01(alpha));
+            GUI.DrawTexture(iconRect, DiaryButtonTextures.Memory, ScaleMode.ScaleToFit);
+
+            int borderThickness = Mathf.Clamp(
+                UiStyle.memoryLibraryDiaryIconBorderThickness,
+                0,
+                3);
+            if (borderThickness > 0)
+            {
+                GUI.color = UiStyle.MemoryLibraryDiaryIconBorderColor;
+                Widgets.DrawBox(rect, borderThickness);
+            }
+
+            GUI.color = oldColor;
+            TooltipHandler.TipRegion(
+                rect,
+                "PawnDiary.Memory.Library.MemoriesAction".Translate());
+            if (Widgets.ButtonInvisible(rect))
+            {
+                Dialog_MemoryLibrary.OpenForOwner(pawnId);
+            }
+        }
+
+        /// <summary>
         /// Draws the quiet header plus icon that opens a detached new-page draft.
         /// </summary>
         private static void DrawManualEntryCreateHeaderIcon(

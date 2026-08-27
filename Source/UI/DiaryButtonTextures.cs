@@ -32,6 +32,7 @@ namespace PawnDiary
         private static Texture2D export;
         private static Texture2D regenerate;
         private static Texture2D writingStyle;
+        private static Texture2D memory;
         private static Texture2D seasonSpring;
         private static Texture2D seasonSummer;
         private static Texture2D seasonFall;
@@ -60,6 +61,9 @@ namespace PawnDiary
 
         /// <summary>Portrait-on-a-card glyph for the writing-style / persona editor (cil-contact).</summary>
         public static Texture2D WritingStyle => writingStyle ?? (writingStyle = Load("WritingStyle", TexButton.Rename));
+
+        /// <summary>Three-tier storage glyph for the unified Memory Library (cil-storage).</summary>
+        public static Texture2D Memory => memory ?? (memory = Load("Memory", TexButton.ToggleLog));
 
         /// <summary>Flower glyph for a spring quadrum divider (cil-flower).</summary>
         public static Texture2D SeasonSpring => seasonSpring ?? (seasonSpring = LoadOptional("SeasonSpring"));

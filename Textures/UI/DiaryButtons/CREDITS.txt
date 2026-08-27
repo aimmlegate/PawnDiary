@@ -20,6 +20,7 @@ Icon mapping (shipped file <- CoreUI source):
   Export.png        <- cil-data-transfer-down
   Regenerate.png    <- cil-reload
   WritingStyle.png  <- cil-contact
+  Memory.png        <- cil-storage
   SeasonSummer.png  <- cil-sun
   SeasonWinter.png  <- cil-snowflake
   SeasonSpring.png  <- cil-flower

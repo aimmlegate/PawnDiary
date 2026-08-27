@@ -431,16 +431,13 @@ namespace PawnDiary
             if (MemorySystemActivationGate.IsCurrentRelease && component != null
                 && !string.IsNullOrWhiteSpace(subject.PawnId))
             {
-                float actionWidth = Mathf.Max(72f, UiStyle.memoryLibraryDiaryActionWidth);
+                float iconSize = Mathf.Max(1f, WritingStyleIconSize);
                 Rect memoryRect = new Rect(
-                    headerRight - actionWidth,
-                    journalRect.y + 3f,
-                    actionWidth,
-                    Mathf.Max(24f, headerRect.height - 6f));
-                if (Widgets.ButtonText(memoryRect, "PawnDiary.Memory.Library.MemoriesAction".Translate()))
-                {
-                    Dialog_MemoryLibrary.OpenForOwner(subject.PawnId);
-                }
+                    headerRight - iconSize,
+                    journalRect.y + Mathf.Max(0f, (headerRect.height - iconSize) * 0.5f),
+                    iconSize,
+                    iconSize);
+                DrawMemoryLibraryHeaderIcon(memoryRect, subject.PawnId);
                 headerRight = memoryRect.x - Mathf.Max(0f, WritingStyleIconRightGap);
             }
 
