@@ -87,8 +87,9 @@ namespace PawnDiary
 
                 if (memoryMaintenanceAwaitingPressure)
                 {
+                    bool pressureChanged;
                     if (!TryCompleteMemoryMaintenanceCycle(
-                            nowTick, timer, targetMicroseconds))
+                            nowTick, timer, targetMicroseconds, out pressureChanged))
                         memoryMaintenanceDirty = true;
                     return;
                 }
@@ -137,8 +138,9 @@ namespace PawnDiary
                 if (plan.workItems == 0)
                 {
                     memoryMaintenanceAwaitingPressure = true;
+                    bool pressureChanged;
                     if (!TryCompleteMemoryMaintenanceCycle(
-                            nowTick, timer, targetMicroseconds))
+                            nowTick, timer, targetMicroseconds, out pressureChanged))
                         memoryMaintenanceDirty = true;
                     return;
                 }
@@ -146,6 +148,10 @@ namespace PawnDiary
                 int processed = 0;
                 bool changed = false;
                 MemoryReducerPolicy policy = BuildMemoryReducerPolicy(nowTick);
+                // Root-repair transactions can append Imported rows. Keep one running projection for
+                // the slice so a later owner sees bytes committed by an earlier owner before the
+                // derivative size indexes are rebuilt at the end of the batch.
+                MemoryMigrationBudgetSession repairBudget = null;
                 for (int offset = 0; offset < plan.workItems; offset++)
                 {
                     // The first indivisible item always runs; before every later item, the elapsed
@@ -158,7 +164,10 @@ namespace PawnDiary
                     {
                         if (handle.repairRoots)
                         {
-                            changed |= TryRepairSavedMemoryRoots(owner, policy);
+                            if (repairBudget == null)
+                                repairBudget = CreateMemoryMigrationBudgetSession();
+                            changed |= TryRepairSavedMemoryRoots(
+                                owner, policy, repairBudget);
                         }
                         else if (string.IsNullOrEmpty(handle.rootId))
                         {
@@ -175,11 +184,13 @@ namespace PawnDiary
                 }
 
                 int next = plan.startIndex + processed;
+                bool pressureChangedThisSlice = false;
                 if (next >= memoryMaintenanceHandles.Count)
                 {
                     memoryMaintenanceAwaitingPressure = true;
                     if (!TryCompleteMemoryMaintenanceCycle(
-                            nowTick, timer, targetMicroseconds))
+                            nowTick, timer, targetMicroseconds,
+                            out pressureChangedThisSlice))
                         memoryMaintenanceDirty = true;
                 }
                 else
@@ -187,10 +198,11 @@ namespace PawnDiary
                     memoryMaintenanceNextItemIndex = next;
                     memoryMaintenanceDirty = true;
                 }
-                if (changed)
+                if (changed && !pressureChangedThisSlice)
                 {
                     RebuildMemoryM4Indexes();
                     RebuildMemorySizeIndexes();
+                    MarkMemoryLibrarySavedProjectionDirty();
                 }
             }
             catch (Exception exception)
@@ -268,12 +280,13 @@ namespace PawnDiary
             memoryMaintenanceHandles.Sort(delegate(
                 MemoryMaintenanceHandle left, MemoryMaintenanceHandle right)
             {
-                int owner = string.Compare(
-                    left.ownerPawnId, right.ownerPawnId, StringComparison.Ordinal);
-                if (owner != 0) return owner;
-                int repair = right.repairRoots.CompareTo(left.repairRoots);
-                return repair != 0 ? repair : string.Compare(
-                    left.rootId, right.rootId, StringComparison.Ordinal);
+                return MemoryMaintenancePolicy.CompareWorkHandle(
+                    left.repairRoots,
+                    left.ownerPawnId,
+                    left.rootId,
+                    right.repairRoots,
+                    right.ownerPawnId,
+                    right.rootId);
             });
             if (memoryMaintenanceNextItemIndex < 0
                 || memoryMaintenanceNextItemIndex >= memoryMaintenanceHandles.Count)
@@ -283,11 +296,18 @@ namespace PawnDiary
         private bool TryCompleteMemoryMaintenanceCycle(
             long nowTick,
             Stopwatch timer,
-            long targetMicroseconds)
+            long targetMicroseconds,
+            out bool pressureChanged)
         {
+            pressureChanged = false;
             if (MemoryMaintenancePolicy.ShouldDeferFinalPressure(
                     ElapsedMicroseconds(timer), targetMicroseconds)) return false;
             MemoryPressureCommitResult pressure = TryApplyMemoryPressureCaps(nowTick);
+            pressureChanged = pressure.changed;
+            // Keep cache invalidation adjacent to the commit itself. Besides avoiding a caller that
+            // forgets to propagate this side effect, it makes the completion seam truthful for
+            // loaded fixtures and any future bounded maintenance entry point.
+            if (pressureChanged) MarkMemoryLibrarySavedProjectionDirty();
             if (pressure.protectedSaturation)
                 RecordMemoryDiagnostic("capacity_refused", "maintenance");
             CompleteMemoryMaintenanceCycle(nowTick);

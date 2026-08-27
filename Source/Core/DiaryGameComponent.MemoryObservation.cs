@@ -47,6 +47,7 @@ namespace PawnDiary
             public MemoryBudgetLimits limits;
             public MemoryPayloadBudgetTotals global;
             public int activeOwnerCount;
+            public int nonArchiveEpochOwnerCount;
             public long epochCarrierSequence = -1;
             public string epochCarrierChain = string.Empty;
             public List<string> epochCarriers;
@@ -54,6 +55,20 @@ namespace PawnDiary
             public readonly Dictionary<string, MemoryOwnerByteTotals> owners =
                 new Dictionary<string, MemoryOwnerByteTotals>(StringComparer.Ordinal);
         }
+
+        /// <summary>Bounded exact counts for the active directory and its active-plus-fence union.</summary>
+        private struct MemoryObservationOwnerDirectoryCounts
+        {
+            public int active;
+            public int nonArchiveEpoch;
+        }
+
+        // Non-null only while the main-thread observation slice is executing. Factual admissions
+        // emitted by that slice reuse the same proven totals instead of rebuilding the colony graph
+        // once per memory. It is cleared in finally before control returns to ordinary game work.
+        private MemoryObservationBudgetSession memoryObservationActiveAdmissionBudget;
+        private MemoryObservationBudgetSession memoryObservationRetainedBudget;
+        private long memoryObservationRetainedBudgetIndexGeneration = -1;
 
         /// <summary>
         /// Detached owner/epoch enrollment. A new envelope and allocator high-water remain private
@@ -299,13 +314,21 @@ namespace PawnDiary
             }
             if (memoryObservationDirty.Count == 0)
             {
+                MemoryObservationBudgetSession emptySession = null;
                 if (memoryObservationFinishFullAfterQueue)
                 {
-                    MemoryObservationBudgetSession emptySession =
-                        CreateMemoryObservationBudgetSession();
-                    FinishMemoryObservationFullScan(now, emptySession);
+                    emptySession = CreateMemoryObservationBudgetSession();
+                    memoryObservationActiveAdmissionBudget = emptySession;
+                    try
+                    {
+                        FinishMemoryObservationFullScan(now, emptySession);
+                    }
+                    finally
+                    {
+                        memoryObservationActiveAdmissionBudget = null;
+                    }
                 }
-                CompleteMemoryObservationTick();
+                CompleteMemoryObservationTick(emptySession);
                 return;
             }
 
@@ -328,47 +351,59 @@ namespace PawnDiary
             KnowledgeOpinionBandThresholds opinionBands = SnapshotMemoryOpinionBands();
             MemoryObservationBudgetSession budget = CreateMemoryObservationBudgetSession();
             int workCap = (int)ReadCapacityLong("sliceWorkItems", 30, 240);
-            for (int processed = 0;
-                processed < workCap && memoryObservationDirty.Count > 0;
-                processed++)
+            memoryObservationActiveAdmissionBudget = budget;
+            try
             {
-                KeyValuePair<string, MemoryObservationWorkItem> first =
-                    FirstMemoryObservationWork();
-                memoryObservationDirty.Remove(first.Key);
-                try
+                for (int processed = 0;
+                    processed < workCap && memoryObservationDirty.Count > 0;
+                    processed++)
                 {
-                    ProcessMemoryObservationWork(
-                        first.Value,
-                        now,
-                        capturePolicy,
-                        opinionBands,
-                        observationPolicy,
-                        budget);
+                    KeyValuePair<string, MemoryObservationWorkItem> first =
+                        FirstMemoryObservationWork();
+                    memoryObservationDirty.Remove(first.Key);
+                    try
+                    {
+                        ProcessMemoryObservationWork(
+                            first.Value,
+                            now,
+                            capturePolicy,
+                            opinionBands,
+                            observationPolicy,
+                            budget);
+                    }
+                    catch (Exception)
+                    {
+                        // Shadow observation must never break vanilla relation/faction gameplay. One
+                        // malformed modded object costs only its exact work item. Keep both the key and
+                        // exception body out of diagnostics: either may contain unbounded modded text.
+                        Log.WarningOnce(
+                            "[Pawn Diary] Shadow memory observation skipped malformed current-state "
+                            + "data; further items share this bounded diagnostic.",
+                            "PawnDiary.MemoryObservation.MalformedCurrentState".GetHashCode());
+                    }
                 }
-                catch (Exception)
-                {
-                    // Shadow observation must never break vanilla relation/faction gameplay. One
-                    // malformed modded object costs only its exact work item. Keep both the key and
-                    // exception body out of diagnostics: either may contain unbounded modded text.
-                    Log.WarningOnce(
-                        "[Pawn Diary] Shadow memory observation skipped malformed current-state "
-                        + "data; further items share this bounded diagnostic.",
-                        "PawnDiary.MemoryObservation.MalformedCurrentState".GetHashCode());
-                }
-            }
 
-            if (memoryObservationDirty.Count == 0 && memoryObservationFinishFullAfterQueue)
-            {
-                FinishMemoryObservationFullScan(now, budget);
+                if (memoryObservationDirty.Count == 0 && memoryObservationFinishFullAfterQueue)
+                {
+                    FinishMemoryObservationFullScan(now, budget);
+                }
             }
-            CompleteMemoryObservationTick();
+            finally
+            {
+                memoryObservationActiveAdmissionBudget = null;
+            }
+            CompleteMemoryObservationTick(budget);
         }
 
-        private void CompleteMemoryObservationTick()
+        private void CompleteMemoryObservationTick(MemoryObservationBudgetSession budget)
         {
             if (memoryObservationMutatedThisTick)
             {
-                RebuildMemorySizeIndexes();
+                // Every observation commit first advances this slice's exact detached budget.
+                // Publish those already-proven totals instead of walking the whole colony a second
+                // time. A malformed/incomplete session retains the full rebuild as recovery only.
+                if (!TryPublishMemoryObservationBudgetIndexes(budget))
+                    RebuildMemorySizeIndexes();
                 memoryObservationPublicationDirty = true;
             }
             if (!KnowledgeRelationPolicy.ShouldPublishCompletedObservationBatch(
@@ -1742,6 +1777,11 @@ namespace PawnDiary
             if (state == null || !string.Equals(state.pawnId, ownerId, StringComparison.Ordinal))
                 return null;
             if (!state.IsCurrentSchema()) return null;
+            // Observation is never allowed to turn an archive or the empty post-Brainwipe fence
+            // into an active owner. The fence is consumed only by the required lifecycle Landmark.
+            if (state.archiveOnly || state.epochFenceOnly
+                || state.structuralRevision == long.MaxValue
+                || state.statusRevision == long.MaxValue) return null;
             bool ignoredFallback;
             if (!string.IsNullOrEmpty(state.autobiographicalEpochToken))
             {
@@ -1755,12 +1795,14 @@ namespace PawnDiary
                     }
                     : null;
             }
-            if (state.structuralRevision == long.MaxValue
-                || state.statusRevision == long.MaxValue) return null;
-
             int ownerCap = (int)ReadCapacityTuplePart("ownerSlotTriple", 0, 1000, 4000);
+            int epochFenceCap = (int)ReadCapacityTuplePart(
+                "ownerSlotTriple", 1, 1001, 4001);
             if (budget == null || !KnowledgeRelationPolicy.CanAdmitObservationOwner(
-                    budget.activeOwnerCount, ownerCap)) return null;
+                    budget.activeOwnerCount,
+                    ownerCap,
+                    budget.nonArchiveEpochOwnerCount,
+                    epochFenceCap)) return null;
 
             // Epoch allocation must see every live carrier to remain collision-safe. Refuse a new
             // owner/epoch when corrupt saved collections would make that exact scan unbounded.
@@ -1954,10 +1996,22 @@ namespace PawnDiary
             state.ownerAwarenessSnapshots = awareness;
             state.openCaptureEpisodes = episodes;
             state.statusRevision = AdvanceMemoryObservationRevision(state.statusRevision);
+            bool becameActiveOwner = enrollment.pendingEpoch;
             if (enrollment.pendingNewEnvelope)
             {
                 enrollment.diary.knowledgeState = state;
+                // The slice's M4 snapshot was built before this envelope existed. Mark it now so
+                // same-tick factual capture and the fast budget-index publication can resolve the
+                // newly enrolled owner instead of returning MigrationPending indefinitely.
+                memoryM4IndexesDirty = true;
+            }
+            // A pre-existing culture/empty envelope with a blank epoch also consumes an active slot
+            // when it enrolls. Counting only newly allocated envelopes allowed many blank-current
+            // owners to reuse one remaining slot during the same bounded slice.
+            if (becameActiveOwner)
+            {
                 budget.activeOwnerCount++;
+                budget.nonArchiveEpochOwnerCount++;
             }
             if (enrollment.pendingEpoch)
             {
@@ -1996,17 +2050,23 @@ namespace PawnDiary
                 || !oldEpisodes.valid || !newEpisodes.valid) return false;
             long delta;
             long importedDelta = 0;
+            long componentActiveDelta = 0;
             try
             {
                 delta = checked(newAwareness.totalBytes + newEpisodes.totalBytes
                     - oldAwareness.totalBytes - oldEpisodes.totalBytes);
-                if (enrollment?.pendingEpoch == true
-                    && !enrollment.pendingNewEnvelope)
+                if (enrollment?.pendingEpoch == true)
                 {
-                    // Epoch tokens are canonical ASCII. The four-byte string prefix already exists,
-                    // so only payload bytes change when a blank legacy-current owner enrolls.
-                    delta = checked(delta + enrollment.epochToken.Length
-                        - (state.autobiographicalEpochToken ?? string.Empty).Length);
+                    if (!enrollment.pendingNewEnvelope)
+                    {
+                        // Epoch tokens are canonical ASCII. The four-byte string prefix already
+                        // exists, so only payload bytes change when a blank current owner enrolls.
+                        delta = checked(delta + enrollment.epochToken.Length
+                            - (state.autobiographicalEpochToken ?? string.Empty).Length);
+                    }
+                    componentActiveDelta = checked(
+                        (enrollment.allocation?.nextFallbackChain ?? string.Empty).Length
+                        - (enrollment.expectedAllocatorChain ?? string.Empty).Length);
                 }
             }
             catch (OverflowException)
@@ -2040,6 +2100,41 @@ namespace PawnDiary
                 if (!budget.owners.TryGetValue(state.pawnId ?? string.Empty, out ownerTotals)
                     || !ownerTotals.valid) return false;
             }
+            if (delta <= 0 && importedDelta == 0)
+            {
+                // Cleanup/shrink remains admissible even when a loaded save or a settings change
+                // leaves the starting totals above today's caps. Growth gates must not make stale
+                // awareness or episode rows permanent.
+                if (ownerTotals.activeBytes < 0 || ownerTotals.importedBytes < 0
+                    || budget.global.globalActiveBytes < 0
+                    || budget.global.globalImportedBytes < 0) return false;
+                try
+                {
+                    long ownerActive = checked(ownerTotals.activeBytes + delta);
+                    if (ownerActive < 0) return false;
+                    // A blank current owner can shrink its saved rows while saturated enrollment
+                    // grows component-owned fallback metadata. Gate the aggregate global change:
+                    // a net shrink remains admissible above today's caps, while net growth still
+                    // observes both hard caps and the Brainwipe metadata reserve.
+                    long aggregateGlobalDelta = checked(delta + componentActiveDelta);
+                    MemoryGlobalBudgetDecision globalDecision =
+                        ActiveMemoryPayloadBudget.TryAdmitComponentActive(
+                            budget.limits, aggregateGlobalDelta, budget.global);
+                    if (globalDecision.outcome != MemoryBudgetOutcome.Admitted) return false;
+                    budget.owners[state.pawnId] = new MemoryOwnerByteTotals
+                    {
+                        valid = true,
+                        activeBytes = ownerActive,
+                        importedBytes = ownerTotals.importedBytes
+                    };
+                    budget.global = globalDecision.newTotals;
+                    return true;
+                }
+                catch (OverflowException)
+                {
+                    return false;
+                }
+            }
             MemoryBudgetDecision decision = ActiveMemoryPayloadBudget.TryAdmit(
                 budget.limits,
                 ownerTotals.activeBytes,
@@ -2048,7 +2143,16 @@ namespace PawnDiary
                 importedDelta,
                 budget.global);
             if (decision.outcome != MemoryBudgetOutcome.Admitted) return false;
-            budget.global = decision.newTotals;
+            MemoryPayloadBudgetTotals admittedGlobal = decision.newTotals;
+            if (componentActiveDelta != 0)
+            {
+                MemoryGlobalBudgetDecision componentDecision =
+                    ActiveMemoryPayloadBudget.TryAdmitComponentActive(
+                        budget.limits, componentActiveDelta, admittedGlobal);
+                if (componentDecision.outcome != MemoryBudgetOutcome.Admitted) return false;
+                admittedGlobal = componentDecision.newTotals;
+            }
+            budget.global = admittedGlobal;
             budget.owners[state.pawnId] = new MemoryOwnerByteTotals
             {
                 valid = true,
@@ -2110,15 +2214,11 @@ namespace PawnDiary
             try
             {
                 long delta = checked(newSize.totalBytes - oldSize.totalBytes);
-                long active = checked(budget.global.globalActiveBytes + delta);
-                long combined = checked(active + budget.global.globalImportedBytes);
-                if (active < 0 || active > budget.limits.activeGlobalBytes
-                    || combined < 0 || combined > budget.limits.combinedGlobalBytes) return false;
-                budget.global = new MemoryPayloadBudgetTotals
-                {
-                    globalActiveBytes = active,
-                    globalImportedBytes = budget.global.globalImportedBytes
-                };
+                MemoryGlobalBudgetDecision decision =
+                    ActiveMemoryPayloadBudget.TryAdmitComponentActive(
+                        budget.limits, delta, budget.global);
+                if (decision.outcome != MemoryBudgetOutcome.Admitted) return false;
+                budget.global = decision.newTotals;
                 return true;
             }
             catch (OverflowException)
@@ -2129,12 +2229,21 @@ namespace PawnDiary
 
         private MemoryObservationBudgetSession CreateMemoryObservationBudgetSession()
         {
-            RebuildMemorySizeIndexes();
+            if (memorySizeIndexGeneration <= 0) RebuildMemorySizeIndexes();
+            if (memoryObservationRetainedBudget != null
+                && memoryObservationRetainedBudgetIndexGeneration
+                    == memorySizeIndexGeneration)
+            {
+                memoryObservationRetainedBudget.limits = CurrentMemoryBudgetLimits();
+                return memoryObservationRetainedBudget;
+            }
             MemoryObservationBudgetSession result = new MemoryObservationBudgetSession
             {
                 limits = CurrentMemoryBudgetLimits()
             };
             PublishMemoryObservationBudgetTotals(result);
+            memoryObservationRetainedBudget = result;
+            memoryObservationRetainedBudgetIndexGeneration = memorySizeIndexGeneration;
             return result;
         }
 
@@ -2152,7 +2261,53 @@ namespace PawnDiary
                 session.owners[pair.Key] = pair.Value;
             session.global = GetGlobalBudgetTotals();
             int ownerCap = (int)ReadCapacityTuplePart("ownerSlotTriple", 0, 1000, 4000);
-            session.activeOwnerCount = CountMemoryObservationActiveOwners(ownerCap + 1);
+            int epochFenceCap = (int)ReadCapacityTuplePart(
+                "ownerSlotTriple", 1, 1001, 4001);
+            MemoryObservationOwnerDirectoryCounts counts =
+                CountMemoryObservationOwnerDirectory(ownerCap + 1, epochFenceCap + 1);
+            session.activeOwnerCount = counts.active;
+            session.nonArchiveEpochOwnerCount = counts.nonArchiveEpoch;
+        }
+
+        private bool TryPublishMemoryObservationBudgetIndexes(
+            MemoryObservationBudgetSession session)
+        {
+            if (session == null || session.global.globalActiveBytes < 0
+                || session.global.globalImportedBytes < 0) return false;
+            MemoryLogicalSizeResult unknown = SizeListValidated(unresolvedOwnerArchiveRows);
+            if (!unknown.valid || unknown.totalBytes < 0) return false;
+            try
+            {
+                long ownerActive = 0;
+                long ownerImported = 0;
+                foreach (KeyValuePair<string, MemoryOwnerByteTotals> pair in session.owners)
+                {
+                    MemoryOwnerByteTotals totals = pair.Value;
+                    if (string.IsNullOrWhiteSpace(pair.Key) || !totals.valid
+                        || totals.activeBytes < 0 || totals.importedBytes < 0) return false;
+                    ownerActive = checked(ownerActive + totals.activeBytes);
+                    ownerImported = checked(ownerImported + totals.importedBytes);
+                }
+                long componentActive = checked(
+                    session.global.globalActiveBytes - ownerActive);
+                long expectedImported = checked(ownerImported + unknown.totalBytes);
+                if (componentActive < 0
+                    || expectedImported != session.global.globalImportedBytes) return false;
+
+                memoryByteTotalsByOwner.Clear();
+                foreach (KeyValuePair<string, MemoryOwnerByteTotals> pair in session.owners)
+                    memoryByteTotalsByOwner.Add(pair.Key, pair.Value);
+                memoryComponentActiveBytesTotal = componentActive;
+                if (memoryM4IndexesDirty) RebuildMemoryM4Indexes();
+                AdvanceMemorySizeIndexGeneration();
+                memoryObservationRetainedBudget = session;
+                memoryObservationRetainedBudgetIndexGeneration = memorySizeIndexGeneration;
+                return true;
+            }
+            catch (OverflowException)
+            {
+                return false;
+            }
         }
 
         /// <summary>
@@ -2162,25 +2317,73 @@ namespace PawnDiary
         /// </summary>
         private int CountMemoryObservationActiveOwners(int stopAfter)
         {
-            int limit = Math.Max(1, stopAfter);
-            int inspectionLimit = checked(limit * 4);
-            HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
+            return CountMemoryObservationOwnerDirectory(stopAfter, stopAfter).active;
+        }
+
+        /// <summary>
+        /// Counts both directory domains in one bounded pass. Duplicate holders are collapsed by
+        /// exact owner id; an uninspectable pathological tail fails both domains closed as full.
+        /// </summary>
+        private MemoryObservationOwnerDirectoryCounts CountMemoryObservationOwnerDirectory(
+            int activeStopAfter,
+            int nonArchiveEpochStopAfter)
+        {
+            int activeLimit = Math.Max(1, activeStopAfter);
+            int epochLimit = Math.Max(1, nonArchiveEpochStopAfter);
+            int inspectionLimit = checked(Math.Max(activeLimit, epochLimit) * 4);
+            HashSet<string> active = new HashSet<string>(StringComparer.Ordinal);
+            HashSet<string> nonArchiveEpoch = new HashSet<string>(StringComparer.Ordinal);
             int inspected = 0;
-            for (int i = 0; diaries != null && i < diaries.Count && seen.Count < limit
+            for (int i = 0; diaries != null && i < diaries.Count
+                && (active.Count < activeLimit || nonArchiveEpoch.Count < epochLimit)
                 && inspected < inspectionLimit; i++, inspected++)
             {
                 PawnDiaryRecord diary = diaries[i];
                 PawnKnowledgeState state = diary?.knowledgeState;
-                if (state == null
-                    || !KnowledgeRelationPolicy.CountsAsActiveObservationOwner(
+                if (state == null || string.IsNullOrWhiteSpace(diary.pawnId)) continue;
+                if (active.Count < activeLimit
+                    && KnowledgeRelationPolicy.CountsAsActiveObservationOwner(
                         state.IsCurrentSchema(), state.archiveOnly, state.epochFenceOnly,
-                        state.autobiographicalEpochToken)
-                    || string.IsNullOrWhiteSpace(diary.pawnId)) continue;
-                seen.Add(diary.pawnId);
+                        state.autobiographicalEpochToken)) active.Add(diary.pawnId);
+                if (nonArchiveEpoch.Count < epochLimit
+                    && KnowledgeRelationPolicy.CountsAsNonArchiveEpochOwner(
+                        state.IsCurrentSchema(), state.archiveOnly,
+                        state.autobiographicalEpochToken))
+                    nonArchiveEpoch.Add(diary.pawnId);
             }
-            if (diaries != null && inspected < diaries.Count && seen.Count < limit)
-                return limit; // malformed/duplicate overrun fails closed as directory-full
-            return seen.Count;
+            if (diaries != null && inspected < diaries.Count
+                && (active.Count < activeLimit || nonArchiveEpoch.Count < epochLimit))
+            {
+                return new MemoryObservationOwnerDirectoryCounts
+                {
+                    active = activeLimit,
+                    nonArchiveEpoch = epochLimit
+                };
+            }
+            return new MemoryObservationOwnerDirectoryCounts
+            {
+                active = active.Count,
+                nonArchiveEpoch = nonArchiveEpoch.Count
+            };
+        }
+
+        /// <summary>
+        /// Checks the saved owner directories outside an observation budget session. Activating an
+        /// existing Brainwipe fence consumes only active headroom; ordinary blank/new enrollment
+        /// consumes one slot in both the active directory and the active-plus-fence union.
+        /// </summary>
+        private bool CanAdmitMemoryOwnerEpoch(bool activatesExistingFence)
+        {
+            int activeCap = (int)ReadCapacityTuplePart("ownerSlotTriple", 0, 1000, 4000);
+            int epochFenceCap = (int)ReadCapacityTuplePart(
+                "ownerSlotTriple", 1, 1001, 4001);
+            MemoryObservationOwnerDirectoryCounts counts =
+                CountMemoryObservationOwnerDirectory(activeCap + 1, epochFenceCap + 1);
+            return activatesExistingFence
+                ? KnowledgeRelationPolicy.CanAdmitObservationOwner(counts.active, activeCap)
+                : KnowledgeRelationPolicy.CanAdmitObservationOwner(
+                    counts.active, activeCap,
+                    counts.nonArchiveEpoch, epochFenceCap);
         }
 
         private void RemoveHiddenMemoryObservation(
@@ -2189,7 +2392,7 @@ namespace PawnDiary
             MemoryObservationBudgetSession budget)
         {
             PawnKnowledgeState state = FindCurrentMemoryEnvelope(ownerId);
-            if (state == null || state.statusRevision == long.MaxValue) return;
+            if (!IsWritableMemoryObservationEnvelope(state)) return;
             int awarenessCap = (int)ReadCapacityLong("awarenessRows", 128, 512);
             int episodeCap = (int)ReadCapacityLong("openEpisodes", 16, 64);
             if (!MemoryObservationOwnerRowsWithinRuntimeBounds(
@@ -2226,7 +2429,7 @@ namespace PawnDiary
             MemoryObservationBudgetSession budget)
         {
             PawnKnowledgeState state = FindCurrentMemoryEnvelope(ownerId);
-            if (state == null || state.statusRevision == long.MaxValue) return;
+            if (!IsWritableMemoryObservationEnvelope(state)) return;
             int awarenessCap = (int)ReadCapacityLong("awarenessRows", 128, 512);
             int episodeCap = (int)ReadCapacityLong("openEpisodes", 16, 64);
             if (!MemoryObservationOwnerRowsWithinRuntimeBounds(
@@ -2255,8 +2458,8 @@ namespace PawnDiary
             PawnKnowledgeState state,
             MemoryObservationBudgetSession budget)
         {
-            if (state?.ownerAwarenessSnapshots == null
-                || state.statusRevision == long.MaxValue) return;
+            if (!IsWritableMemoryObservationEnvelope(state)
+                || state.ownerAwarenessSnapshots == null) return;
             int awarenessCap = (int)ReadCapacityLong("awarenessRows", 128, 512);
             int episodeCap = (int)ReadCapacityLong("openEpisodes", 16, 64);
             if (!MemoryObservationOwnerRowsWithinRuntimeBounds(
@@ -2290,6 +2493,17 @@ namespace PawnDiary
             state.ownerAwarenessSnapshots = awareness;
             state.statusRevision = AdvanceMemoryObservationRevision(state.statusRevision);
             memoryObservationMutatedThisTick = true;
+        }
+
+        private static bool IsWritableMemoryObservationEnvelope(PawnKnowledgeState state)
+        {
+            if (state == null || !state.IsCurrentSchema() || state.archiveOnly
+                || state.epochFenceOnly || state.statusRevision == long.MaxValue
+                || state.structuralRevision == long.MaxValue
+                || string.IsNullOrWhiteSpace(state.autobiographicalEpochToken)) return false;
+            bool ignoredFallback;
+            return MemoryIdentityCodec.TryValidateEpochToken(
+                state.autobiographicalEpochToken, out ignoredFallback);
         }
 
         private void RemoveGlobalFactionSnapshots(

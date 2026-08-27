@@ -74,6 +74,18 @@ namespace PawnDiary
         }
     }
 
+    /// <summary>One component-owned active-byte delta with no owner subtotal.</summary>
+    internal struct MemoryGlobalBudgetDecision
+    {
+        public MemoryBudgetOutcome outcome;
+        public MemoryPayloadBudgetTotals newTotals;
+
+        public string OutcomeToken()
+        {
+            return new MemoryBudgetDecision { outcome = outcome }.OutcomeToken();
+        }
+    }
+
     internal static class ActiveMemoryPayloadBudget
     {
         public const string SchemaToken = "memory-active-payload-budget-v1";
@@ -179,6 +191,83 @@ namespace PawnDiary
                 },
                 newOwnerActiveBytes = ownerActiveNew,
                 newOwnerImportedBytes = ownerImportedNew
+            };
+        }
+
+        /// <summary>
+        /// Plans a component-owned active-byte delta, such as allocator-chain metadata or a global
+        /// observation list. Shrinks are always beneficial after checked nonnegative arithmetic;
+        /// positive growth observes both global caps and the Brainwipe reserve.
+        /// </summary>
+        public static MemoryGlobalBudgetDecision TryAdmitComponentActive(
+            MemoryBudgetLimits limits,
+            long activeDelta,
+            MemoryPayloadBudgetTotals globalCurrent)
+        {
+            var refused = new MemoryGlobalBudgetDecision
+            {
+                outcome = MemoryBudgetOutcome.InvalidInput
+            };
+            if (limits.activeGlobalBytes <= 0 || limits.combinedGlobalBytes <= 0
+                || globalCurrent.globalActiveBytes < 0
+                || globalCurrent.globalImportedBytes < 0) return refused;
+            long active;
+            long combined;
+            try
+            {
+                active = checked(globalCurrent.globalActiveBytes + activeDelta);
+                combined = checked(active + globalCurrent.globalImportedBytes);
+            }
+            catch (OverflowException)
+            {
+                return refused;
+            }
+            if (active < 0 || combined < 0) return refused;
+            MemoryPayloadBudgetTotals totals = new MemoryPayloadBudgetTotals
+            {
+                globalActiveBytes = active,
+                globalImportedBytes = globalCurrent.globalImportedBytes
+            };
+            if (activeDelta <= 0)
+            {
+                return new MemoryGlobalBudgetDecision
+                {
+                    outcome = MemoryBudgetOutcome.Admitted,
+                    newTotals = totals
+                };
+            }
+            if (active > limits.activeGlobalBytes)
+            {
+                refused.outcome = MemoryBudgetOutcome.GlobalActiveFull;
+                return refused;
+            }
+            if (combined > limits.combinedGlobalBytes)
+            {
+                refused.outcome = MemoryBudgetOutcome.GlobalCombinedFull;
+                return refused;
+            }
+            if (limits.brainwipeMetadataReserveBytes > 0
+                && !MemoryBrainwipeHeadroomPolicy.RetainsMetadataReserve(
+                    active,
+                    globalCurrent.globalImportedBytes,
+                    limits.activeGlobalBytes,
+                    limits.combinedGlobalBytes,
+                    limits.brainwipeMetadataReserveBytes,
+                    Math.Max(0, limits.brainwipeReclaimableFenceBytes)))
+            {
+                long activeHeadroom = limits.activeGlobalBytes - active;
+                long reclaimed = Math.Max(0, limits.brainwipeReclaimableFenceBytes);
+                refused.outcome = activeHeadroom >= 0
+                    && (activeHeadroom >= limits.brainwipeMetadataReserveBytes
+                        || reclaimed >= limits.brainwipeMetadataReserveBytes - activeHeadroom)
+                    ? MemoryBudgetOutcome.GlobalCombinedFull
+                    : MemoryBudgetOutcome.GlobalActiveFull;
+                return refused;
+            }
+            return new MemoryGlobalBudgetDecision
+            {
+                outcome = MemoryBudgetOutcome.Admitted,
+                newTotals = totals
             };
         }
 

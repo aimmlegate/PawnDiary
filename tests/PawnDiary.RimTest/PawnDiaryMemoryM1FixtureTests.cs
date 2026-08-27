@@ -1297,6 +1297,173 @@ namespace PawnDiary.RimTests
                 "An over-cap authored repair partly mutated roots, Imported, or revision.");
         }
 
+        /// <summary>
+        /// Two authored repairs in one maintenance slice must spend one running Imported-row
+        /// budget. The first owner may consume the final slot; the second then refuses atomically
+        /// instead of independently reusing the same pre-slice headroom.
+        /// </summary>
+        [Test]
+        public static void AuthoredRepairsShareOneCumulativeMigrationBudget()
+        {
+            const string firstOwnerId = "Pawn_M11_SharedRepairA";
+            const string secondOwnerId = "Pawn_M11_SharedRepairB";
+            PawnKnowledgeState first = BuildAuthoredConflictOwner(
+                firstOwnerId, "Pawn_M11_SharedRepairSubjectA", 101);
+            PawnKnowledgeState second = BuildAuthoredConflictOwner(
+                secondOwnerId, "Pawn_M11_SharedRepairSubjectB", 111);
+            DiaryGameComponent component = NewMemoryComponent(
+                new List<PawnDiaryRecord>
+                {
+                    new PawnDiaryRecord { pawnId = firstOwnerId, knowledgeState = first },
+                    new PawnDiaryRecord { pawnId = secondOwnerId, knowledgeState = second }
+                },
+                null,
+                null);
+            component.RebuildMemorySizeIndexes();
+
+            MethodInfo createSession = typeof(DiaryGameComponent).GetMethod(
+                "CreateMemoryMigrationBudgetSession",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            MethodInfo sharedRepair = null;
+            MethodInfo[] candidates = typeof(DiaryGameComponent).GetMethods(
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            for (int index = 0; index < candidates.Length; index++)
+            {
+                if (candidates[index].Name == "TryRepairSavedMemoryRoots"
+                    && candidates[index].GetParameters().Length == 3)
+                {
+                    sharedRepair = candidates[index];
+                    break;
+                }
+            }
+            MethodInfo readCapacity = typeof(DiaryGameComponent).GetMethod(
+                "ReadCapacityLong",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Require(createSession != null && sharedRepair != null && readCapacity != null,
+                "Fixture could not find the shared authored-repair budget surface.");
+            object session = createSession.Invoke(component, null);
+            FieldInfo importedRows = session.GetType().GetField(
+                "globalImportedRows", BindingFlags.Instance | BindingFlags.Public);
+            Require(importedRows != null,
+                "Fixture could not find the cumulative Imported-row total.");
+            long importedRowCap = (long)readCapacity.Invoke(
+                null, new object[] { "importedGlobalRows", 10000L, 40000L });
+            Require(importedRowCap > 0 && importedRowCap <= int.MaxValue,
+                "Fixture read an invalid Imported-row capacity.");
+            importedRows.SetValue(session, (int)importedRowCap - 1);
+
+            var policy = new MemoryReducerPolicy
+            {
+                nowTick = 0,
+                targetVisibleBlocks = 64,
+                maximumVisibleBlocks = 128
+            };
+            Require((bool)sharedRepair.Invoke(
+                    component, new object[] { first, policy, session })
+                    && first.threadRoots.Count == 1
+                    && first.importedArchiveRows.Count == 1
+                    && (int)importedRows.GetValue(session) == (int)importedRowCap,
+                "The first repair did not consume the final shared Imported-row slot.");
+
+            List<SavedMemoryThreadRoot> secondRoots = second.threadRoots;
+            List<SavedImportedMemoryRow> secondImported = second.importedArchiveRows;
+            long secondRevision = second.structuralRevision;
+            Require(!(bool)sharedRepair.Invoke(
+                        component, new object[] { second, policy, session })
+                    && ReferenceEquals(second.threadRoots, secondRoots)
+                    && ReferenceEquals(second.importedArchiveRows, secondImported)
+                    && second.threadRoots.Count == 2
+                    && second.importedArchiveRows.Count == 0
+                    && second.structuralRevision == secondRevision
+                    && (int)importedRows.GetValue(session) == (int)importedRowCap,
+                "The second repair reused pre-slice headroom or partly mutated on refusal.");
+        }
+
+        /// <summary>
+        /// An observation-scoped factual admission can have a nonpositive net delta when reducer
+        /// folding removes more payload than it adds. The running session must still shrink by that
+        /// exact amount instead of republishing its pre-admission totals at the slice tail.
+        /// </summary>
+        [Test]
+        public static void ObservationScopedShrinkAdvancesRunningBudget()
+        {
+            const string ownerId = "Pawn_M11_ObservationShrink";
+            PawnKnowledgeState state = PawnDiaryMemoryM11RuntimeFixture.BuildCompleteOwner(
+                ownerId,
+                "Pawn_M11_ObservationShrinkSubject",
+                "Observation shrink subject",
+                121,
+                extraStandalone: 1);
+            DiaryGameComponent component = NewMemoryComponent(
+                new List<PawnDiaryRecord>
+                {
+                    new PawnDiaryRecord { pawnId = ownerId, knowledgeState = state }
+                },
+                null,
+                null);
+            component.RebuildMemoryM4Indexes();
+            component.RebuildMemorySizeIndexes();
+
+            MethodInfo createSession = typeof(DiaryGameComponent).GetMethod(
+                "CreateMemoryObservationBudgetSession",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            MethodInfo validate = typeof(DiaryGameComponent).GetMethod(
+                "ValidateDetachedCapacity",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            MethodInfo currentLimits = typeof(DiaryGameComponent).GetMethod(
+                "CurrentMemoryBudgetLimits",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            FieldInfo activeBudget = typeof(DiaryGameComponent).GetField(
+                "memoryObservationActiveAdmissionBudget",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Require(createSession != null && validate != null && currentLimits != null
+                    && activeBudget != null,
+                "Fixture could not find the scoped observation capacity seam.");
+            object session = createSession.Invoke(component, null);
+            FieldInfo globalField = session.GetType().GetField(
+                "global", BindingFlags.Instance | BindingFlags.Public);
+            Require(globalField != null,
+                "Fixture could not find the observation session's global total.");
+            MemoryPayloadBudgetTotals before =
+                (MemoryPayloadBudgetTotals)globalField.GetValue(session);
+            List<SavedMemoryBlock> retained =
+                new List<SavedMemoryBlock>(state.standaloneBlocks);
+            SavedMemoryBlock removed = retained[retained.Count - 1];
+            retained.RemoveAt(retained.Count - 1);
+            long removedBytes = SizeOf(removed);
+            MemoryBudgetLimits limits =
+                (MemoryBudgetLimits)currentLimits.Invoke(component, null);
+            before.globalActiveBytes = checked(
+                limits.activeGlobalBytes + removedBytes + 1);
+            globalField.SetValue(session, before);
+
+            MemoryStoreMutationOutcome outcome;
+            activeBudget.SetValue(component, session);
+            try
+            {
+                outcome = (MemoryStoreMutationOutcome)validate.Invoke(
+                    component,
+                    new object[]
+                    {
+                        state,
+                        retained,
+                        new List<SavedMemoryThreadRoot>(state.threadRoots),
+                        false
+                    });
+            }
+            finally
+            {
+                activeBudget.SetValue(component, null);
+            }
+            MemoryPayloadBudgetTotals after =
+                (MemoryPayloadBudgetTotals)globalField.GetValue(session);
+            Require(outcome == MemoryStoreMutationOutcome.Admitted
+                    && before.globalActiveBytes - after.globalActiveBytes == removedBytes
+                    && after.globalImportedBytes == before.globalImportedBytes
+                    && state.standaloneBlocks.Count == 2,
+                "A non-growing observation admission left stale totals or mutated saved truth.");
+        }
+
         [Test]
         public static void M11DuplicateOwnerCommitPreservesPhysicalCultureAndUnrelatedReflection()
         {
@@ -1407,6 +1574,268 @@ namespace PawnDiary.RimTests
                     && ReferenceEquals(committedFirstReflection, first.reflectionState)
                     && ReferenceEquals(committedDuplicateReflection, duplicate.reflectionState),
                 "A second duplicate-owner commit changed the published projection.");
+        }
+
+        /// <summary>
+        /// Two already-current physical holders still represent one logical owner. Migration must
+        /// consolidate their disjoint payload into the first holder and leave the duplicate inert;
+        /// otherwise lookup and byte indexes silently expose and charge only the first container.
+        /// </summary>
+        [Test]
+        public static void CurrentSchemaDuplicateOwnersConsolidateWithoutLegacyRows()
+        {
+            const string ownerId = "Pawn_M11_CurrentDuplicate";
+            string epoch = EpochToken(68);
+            PawnKnowledgeState firstState = PawnKnowledgeState.CreateCurrent(ownerId);
+            firstState.autobiographicalEpochToken = epoch;
+            firstState.originCultureDefName = "Culture_Current_First";
+            PawnDiaryMemoryM11RuntimeFixture.AddThreadRoot(
+                firstState,
+                "Pawn_M11_CurrentSubjectA",
+                "Current subject A",
+                681,
+                MemoryContractTokens.SubjectPawn,
+                MemoryContractTokens.CategoryRelationships);
+            PawnKnowledgeState duplicateState = PawnKnowledgeState.CreateCurrent(ownerId);
+            duplicateState.autobiographicalEpochToken = epoch;
+            duplicateState.originCultureDefName = "Culture_Current_Duplicate";
+            PawnDiaryMemoryM11RuntimeFixture.AddThreadRoot(
+                duplicateState,
+                "Pawn_M11_CurrentSubjectB",
+                "Current subject B",
+                682,
+                MemoryContractTokens.SubjectPawn,
+                MemoryContractTokens.CategoryRelationships);
+            var first = new PawnDiaryRecord
+            {
+                pawnId = ownerId,
+                knowledgeState = firstState
+            };
+            var duplicate = new PawnDiaryRecord
+            {
+                pawnId = ownerId,
+                knowledgeState = duplicateState
+            };
+            DiaryGameComponent component = NewMemoryComponent(
+                new List<PawnDiaryRecord> { first, duplicate }, null, null);
+
+            component.RunMemoryMigrationCommit();
+
+            Require(first.knowledgeState.IsCurrentSchema()
+                    && first.knowledgeState.autobiographicalEpochToken == epoch
+                    && first.knowledgeState.threadRoots.Count == 2
+                    && first.knowledgeState.originCultureDefName == "Culture_Current_First",
+                "Current duplicate holders did not consolidate into the logical primary owner.");
+            Require(duplicate.knowledgeState.IsCurrentSchema()
+                    && string.IsNullOrEmpty(
+                        duplicate.knowledgeState.autobiographicalEpochToken)
+                    && duplicate.knowledgeState.threadRoots.Count == 0
+                    && duplicate.knowledgeState.standaloneBlocks.Count == 0
+                    && duplicate.knowledgeState.requestCancellationGeneration > 0
+                    && duplicate.knowledgeState.structuralRevision > 0
+                    && duplicate.knowledgeState.statusRevision > 0
+                    && duplicate.knowledgeState.originCultureDefName
+                        == "Culture_Current_Duplicate",
+                "The consolidated current duplicate did not become a valid inert physical holder.");
+            PawnKnowledgeState committedFirst = first.knowledgeState;
+            PawnKnowledgeState committedDuplicate = duplicate.knowledgeState;
+            component.RunMemoryMigrationCommit();
+            Require(ReferenceEquals(committedFirst, first.knowledgeState)
+                    && ReferenceEquals(committedDuplicate, duplicate.knowledgeState)
+                    && first.knowledgeState.threadRoots.Count == 2,
+                "Current duplicate consolidation did not reach a fixed point.");
+            component.RebuildMemorySizeIndexes();
+            MemoryPayloadBudgetTotals totals = component.GetGlobalBudgetTotals();
+            Require(totals.globalActiveBytes > 0 && totals.globalImportedBytes >= 0,
+                "The consolidated current owner was not represented by the byte index.");
+        }
+
+        /// <summary>
+        /// Canonical inert duplicates are physical culture containers, not another logical owner.
+        /// They must neither allocate an epoch nor erase an existing Brainwipe fence on reload.
+        /// </summary>
+        [Test]
+        public static void CanonicalCurrentDuplicateShapesRemainMigrationFixedPoints()
+        {
+            const string emptyOwner = "Pawn_M11_CurrentEmptyDuplicates";
+            PawnKnowledgeState emptyPrimary = PawnKnowledgeState.CreateCurrent(emptyOwner);
+            PawnKnowledgeState emptyDuplicate = PawnKnowledgeState.CreateCurrent(emptyOwner);
+            emptyDuplicate.originCultureDefName = "Culture_Inert_Physical";
+            var emptyFirst = new PawnDiaryRecord
+            {
+                pawnId = emptyOwner,
+                knowledgeState = emptyPrimary
+            };
+            var emptySecond = new PawnDiaryRecord
+            {
+                pawnId = emptyOwner,
+                knowledgeState = emptyDuplicate
+            };
+
+            const string fenceOwner = "Pawn_M11_CurrentFenceDuplicates";
+            PawnKnowledgeState fencePrimary = PawnKnowledgeState.CreateCurrent(fenceOwner);
+            fencePrimary.autobiographicalEpochToken = EpochToken(69);
+            fencePrimary.epochFenceOnly = true;
+            PawnKnowledgeState fenceDuplicate = PawnKnowledgeState.CreateCurrent(fenceOwner);
+            var fenceFirst = new PawnDiaryRecord
+            {
+                pawnId = fenceOwner,
+                knowledgeState = fencePrimary
+            };
+            var fenceSecond = new PawnDiaryRecord
+            {
+                pawnId = fenceOwner,
+                knowledgeState = fenceDuplicate
+            };
+            DiaryGameComponent component = NewMemoryComponent(
+                new List<PawnDiaryRecord>
+                {
+                    emptyFirst, emptySecond, fenceFirst, fenceSecond
+                },
+                null,
+                null);
+
+            component.RunMemoryMigrationCommit();
+
+            Require(ReferenceEquals(emptyPrimary, emptyFirst.knowledgeState)
+                    && ReferenceEquals(emptyDuplicate, emptySecond.knowledgeState)
+                    && string.IsNullOrEmpty(
+                        emptyFirst.knowledgeState.autobiographicalEpochToken)
+                    && emptySecond.knowledgeState.originCultureDefName
+                        == "Culture_Inert_Physical",
+                "Empty current duplicates allocated an epoch or lost physical culture.");
+            Require(ReferenceEquals(fencePrimary, fenceFirst.knowledgeState)
+                    && ReferenceEquals(fenceDuplicate, fenceSecond.knowledgeState)
+                    && fenceFirst.knowledgeState.epochFenceOnly
+                    && fenceFirst.knowledgeState.autobiographicalEpochToken == EpochToken(69)
+                    && !fenceSecond.knowledgeState.epochFenceOnly,
+                "Canonical Brainwipe duplicate holders lost their fence lifecycle on reload.");
+        }
+
+        /// <summary>
+        /// Saves written by the earlier M11 implementation can contain zero current invariants,
+        /// either on one cleared envelope or on an inert duplicate. Migration repairs those shapes
+        /// once without allocating a blank owner's epoch or disturbing an enrolled primary.
+        /// </summary>
+        [Test]
+        public static void ZeroInvariantCurrentShapesRepairOnce()
+        {
+            const string clearedOwner = "Pawn_M11_ZeroInvariantCleared";
+            PawnKnowledgeState cleared = PawnKnowledgeState.CreateCurrent(clearedOwner);
+            cleared.requestCancellationGeneration = 0;
+            cleared.structuralRevision = 0;
+            cleared.statusRevision = 0;
+            cleared.completedDiaryEntryOrdinal = 0;
+            var clearedDiary = new PawnDiaryRecord
+            {
+                pawnId = clearedOwner,
+                knowledgeState = cleared
+            };
+
+            const string duplicateOwner = "Pawn_M11_ZeroInvariantDuplicate";
+            PawnKnowledgeState primary = PawnDiaryMemoryM11RuntimeFixture.BuildCompleteOwner(
+                duplicateOwner,
+                "Pawn_M11_ZeroInvariantSubject",
+                "Zero invariant subject",
+                701);
+            PawnKnowledgeState inert = PawnKnowledgeState.CreateCurrent(duplicateOwner);
+            inert.requestCancellationGeneration = 0;
+            inert.structuralRevision = 0;
+            inert.statusRevision = 0;
+            inert.completedDiaryEntryOrdinal = 0;
+            inert.originCultureDefName = "Culture_Zero_Inert";
+            var primaryDiary = new PawnDiaryRecord
+            {
+                pawnId = duplicateOwner,
+                knowledgeState = primary
+            };
+            var inertDiary = new PawnDiaryRecord
+            {
+                pawnId = duplicateOwner,
+                knowledgeState = inert
+            };
+            DiaryGameComponent component = NewMemoryComponent(
+                new List<PawnDiaryRecord> { clearedDiary, primaryDiary, inertDiary },
+                null,
+                null);
+
+            component.RunMemoryMigrationCommit();
+
+            Require(clearedDiary.knowledgeState.IsCurrentSchema()
+                    && string.IsNullOrEmpty(
+                        clearedDiary.knowledgeState.autobiographicalEpochToken)
+                    && clearedDiary.knowledgeState.requestCancellationGeneration > 0
+                    && clearedDiary.knowledgeState.structuralRevision > 0
+                    && clearedDiary.knowledgeState.statusRevision > 0
+                    && clearedDiary.knowledgeState.completedDiaryEntryOrdinal > 0,
+                "A single zero-invariant current envelope stayed permanently invalid.");
+            Require(primaryDiary.knowledgeState.threadRoots.Count == 1
+                    && !string.IsNullOrEmpty(
+                        primaryDiary.knowledgeState.autobiographicalEpochToken)
+                    && inertDiary.knowledgeState.requestCancellationGeneration > 0
+                    && inertDiary.knowledgeState.structuralRevision > 0
+                    && inertDiary.knowledgeState.statusRevision > 0
+                    && inertDiary.knowledgeState.completedDiaryEntryOrdinal > 0
+                    && inertDiary.knowledgeState.originCultureDefName
+                        == "Culture_Zero_Inert",
+                "A zero-invariant duplicate was skipped or damaged its enrolled primary.");
+
+            PawnKnowledgeState repairedCleared = clearedDiary.knowledgeState;
+            PawnKnowledgeState repairedPrimary = primaryDiary.knowledgeState;
+            PawnKnowledgeState repairedInert = inertDiary.knowledgeState;
+            component.RunMemoryMigrationCommit();
+            Require(ReferenceEquals(repairedCleared, clearedDiary.knowledgeState)
+                    && ReferenceEquals(repairedPrimary, primaryDiary.knowledgeState)
+                    && ReferenceEquals(repairedInert, inertDiary.knowledgeState),
+                "Zero-invariant compatibility repair did not reach a fixed point.");
+        }
+
+        /// <summary>
+        /// A current Brainwipe fence mixed with an older duplicate must stay raw and fenced. Legacy
+        /// rows are not allowed to cross that privacy boundary and become active in the wiped epoch.
+        /// </summary>
+        [Test]
+        public static void MixedLegacyDuplicateCannotEraseCurrentBrainwipeFence()
+        {
+            const string ownerId = "Pawn_M11_MixedFenceLegacy";
+            PawnKnowledgeState fence = PawnKnowledgeState.CreateCurrent(ownerId);
+            fence.autobiographicalEpochToken = EpochToken(70);
+            fence.epochFenceOnly = true;
+            PawnKnowledgeState legacy = new PawnKnowledgeState
+            {
+                pawnId = ownerId,
+                schemaVersion = 1,
+                records = new List<ImportantMemoryRecord> { NewLegacyRecord() }
+            };
+            var currentDiary = new PawnDiaryRecord
+            {
+                pawnId = ownerId,
+                knowledgeState = fence
+            };
+            var legacyDiary = new PawnDiaryRecord
+            {
+                pawnId = ownerId,
+                knowledgeState = legacy
+            };
+            DiaryGameComponent component = NewMemoryComponent(
+                new List<PawnDiaryRecord> { currentDiary, legacyDiary }, null, null);
+
+            component.RunMemoryMigrationCommit();
+
+            Require(ReferenceEquals(fence, currentDiary.knowledgeState)
+                    && currentDiary.knowledgeState.epochFenceOnly
+                    && currentDiary.knowledgeState.autobiographicalEpochToken == EpochToken(70)
+                    && currentDiary.knowledgeState.threadRoots.Count == 0
+                    && currentDiary.knowledgeState.standaloneBlocks.Count == 0
+                    && ReferenceEquals(legacy, legacyDiary.knowledgeState)
+                    && legacyDiary.knowledgeState.schemaVersion == 1
+                    && legacyDiary.knowledgeState.records.Count == 1,
+                "Mixed duplicate migration erased the fence or resurrected legacy memory.");
+            component.RunMemoryMigrationCommit();
+            Require(ReferenceEquals(fence, currentDiary.knowledgeState)
+                    && ReferenceEquals(legacy, legacyDiary.knowledgeState)
+                    && currentDiary.knowledgeState.epochFenceOnly,
+                "A repeated mixed duplicate pass crossed the Brainwipe boundary.");
         }
 
         [Test]
@@ -2119,6 +2548,38 @@ namespace PawnDiary.RimTests
                     knowledgeState = PawnKnowledgeState.CreateCurrent(ownerId)
                 }
             };
+        }
+
+        private static PawnKnowledgeState BuildAuthoredConflictOwner(
+            string ownerId,
+            string subjectId,
+            int firstOrdinal)
+        {
+            PawnKnowledgeState state = PawnDiaryMemoryM11RuntimeFixture.BuildCompleteOwner(
+                ownerId, subjectId, "Shared repair subject", firstOrdinal);
+            // This fixture measures only the row appended by repair. BuildCompleteOwner carries an
+            // unrelated baseline Imported row for Library coverage, so remove it here.
+            state.importedArchiveRows.Clear();
+            SavedMemoryThreadRoot first = state.threadRoots[0];
+            SavedMemoryThreadRoot alternate = PawnDiaryMemoryM11RuntimeFixture.AddThreadRoot(
+                state,
+                subjectId,
+                "Shared repair subject",
+                firstOrdinal + 1,
+                MemoryContractTokens.SubjectPawn,
+                MemoryContractTokens.CategoryRelationships);
+            SavedMemoryBlock firstBlock = first.visibleBlocks[0];
+            SavedMemoryBlock alternateBlock = alternate.visibleBlocks[0];
+            alternate.rootId = first.rootId;
+            alternate.chapters[0].chapterId = first.chapters[0].chapterId;
+            alternateBlock.rootId = first.rootId;
+            alternateBlock.chapterId = first.chapters[0].chapterId;
+            alternateBlock.recordId = firstBlock.recordId;
+            firstBlock.playerEdited = true;
+            firstBlock.playerWording = "Shared repair authored wording A.";
+            alternateBlock.playerEdited = true;
+            alternateBlock.playerWording = "Shared repair authored wording B.";
+            return state;
         }
 
         private static MemoryPayloadBudgetTotals RebuildAndGetGlobal(

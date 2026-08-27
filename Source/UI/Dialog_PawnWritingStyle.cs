@@ -209,7 +209,8 @@ namespace PawnDiary
             // CurrentRelease migrates captured/contextual legacy records into canonical Library
             // blocks and intentionally stops writing the old records list. Keeping this second editor
             // visible would report zero beside real Library memories and could never mutate them.
-            if (!MemorySystemActivationGate.IsCurrentRelease)
+            if (DiaryPawnProfilePolicy.IncludeLegacyMemoryEditor(
+                MemorySystemActivationGate.IsCurrentRelease))
             {
                 DrawMemorySection(
                     contentRect.x,
@@ -958,10 +959,14 @@ namespace PawnDiary
                 SmallPromptHeight) + FieldGap;
             h += MessagePanelHeight(PreviewCautionMessage(previewDecision), width);
 
-            // Player-facing background and captured-memory sections are always present. Their
-            // component getters are detached/no-create, so measuring and drawing remain read-only.
+            // Background memory remains here in every release. The legacy captured-memory editor is
+            // measured only when it is drawn; current releases expose those records in Memory Library.
             h += BackgroundMemorySectionHeight(width);
-            h += MemorySectionHeight(width, importantMemories, showDeveloperKnowledge);
+            if (DiaryPawnProfilePolicy.IncludeLegacyMemoryEditor(
+                MemorySystemActivationGate.IsCurrentRelease))
+            {
+                h += MemorySectionHeight(width, importantMemories, showDeveloperKnowledge);
+            }
 
             if (showDeveloperKnowledge)
             {

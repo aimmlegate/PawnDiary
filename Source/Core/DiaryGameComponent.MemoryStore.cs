@@ -68,6 +68,8 @@ namespace PawnDiary
         private readonly Dictionary<string, MemoryOwnerByteTotals> memoryByteTotalsByOwner =
             new Dictionary<string, MemoryOwnerByteTotals>(StringComparer.Ordinal);
         private long memoryComponentActiveBytesTotal;
+        private long memorySizeIndexGeneration;
+        private long memorySizeIndexFullRebuildCount;
 
         internal static class MemoryArchiveStates
         {
@@ -470,6 +472,9 @@ namespace PawnDiary
             {
                 RebuildMemoryM4Indexes();
             }
+            if (memorySizeIndexFullRebuildCount < long.MaxValue)
+                memorySizeIndexFullRebuildCount++;
+            AdvanceMemorySizeIndexGeneration();
         }
 
         private MemoryOwnerByteTotals MeasureOwner(
@@ -555,7 +560,33 @@ namespace PawnDiary
             if (componentBytes < 0 || !totals.valid) return false;
             memoryComponentActiveBytesTotal = componentBytes;
             memoryByteTotalsByOwner[state.pawnId] = totals;
+            AdvanceMemorySizeIndexGeneration();
             return true;
+        }
+
+        /// <summary>Advances the publication fence for exact transient logical-size indexes.</summary>
+        private void AdvanceMemorySizeIndexGeneration()
+        {
+            if (memorySizeIndexGeneration == long.MaxValue)
+            {
+                memorySizeIndexGeneration = 1;
+                memoryObservationRetainedBudget = null;
+                memoryObservationRetainedBudgetIndexGeneration = -1;
+                return;
+            }
+            memorySizeIndexGeneration++;
+        }
+
+        /// <summary>
+        /// Fails closed when an incremental component-size publication cannot be proven exact. The
+        /// next observation session rebuilds from saved truth before spending any byte headroom.
+        /// </summary>
+        private void InvalidateMemorySizeIndexPublication()
+        {
+            memoryComponentActiveBytesTotal = -1;
+            memorySizeIndexGeneration = 0;
+            memoryObservationRetainedBudget = null;
+            memoryObservationRetainedBudgetIndexGeneration = -1;
         }
 
         /// <summary>
@@ -1655,13 +1686,36 @@ namespace PawnDiary
                 return;
             }
 
-            memoryDiagnosticCounters.Add(new SavedMemoryDiagnosticCounter
+            var added = new SavedMemoryDiagnosticCounter
             {
                 schemaVersion = 1,
                 reasonToken = reasonToken,
                 scopeToken = scopeToken,
                 saturatedCount = 1
-            });
+            };
+            memoryDiagnosticCounters.Add(added);
+
+            // Counter increments are fixed-width, but a new row grows component-owned saved state.
+            // Publish that exact row delta so a retained observation budget cannot omit it. This
+            // deliberately avoids a recursive full rebuild: sizing failures can themselves record a
+            // diagnostic while a rebuild is in progress.
+            MemoryLogicalSizeResult addedSize = MemoryLogicalPayloadSizer.Size(added);
+            if (memorySizeIndexGeneration <= 0 || memoryComponentActiveBytesTotal < 0
+                || !addedSize.valid || addedSize.totalBytes < 0)
+            {
+                InvalidateMemorySizeIndexPublication();
+                return;
+            }
+            try
+            {
+                memoryComponentActiveBytesTotal = checked(
+                    memoryComponentActiveBytesTotal + addedSize.totalBytes);
+                AdvanceMemorySizeIndexGeneration();
+            }
+            catch (OverflowException)
+            {
+                InvalidateMemorySizeIndexPublication();
+            }
         }
 
         /// <summary>

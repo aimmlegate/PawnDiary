@@ -34,6 +34,31 @@ namespace PawnDiary
     internal static class MemoryMaintenancePolicy
     {
         /// <summary>
+        /// Orders every owner-repair item before any reducer item. Repairs share one cumulative byte
+        /// projection; letting a reducer mutate active bytes between them would make that projection
+        /// stale before a later owner asks for Imported headroom.
+        /// </summary>
+        public static int CompareWorkHandle(
+            bool leftRepair,
+            string leftOwnerId,
+            string leftRootId,
+            bool rightRepair,
+            string rightOwnerId,
+            string rightRootId)
+        {
+            int repair = rightRepair.CompareTo(leftRepair);
+            if (repair != 0) return repair;
+            int owner = string.Compare(
+                leftOwnerId ?? string.Empty,
+                rightOwnerId ?? string.Empty,
+                StringComparison.Ordinal);
+            return owner != 0 ? owner : string.Compare(
+                leftRootId ?? string.Empty,
+                rightRootId ?? string.Empty,
+                StringComparison.Ordinal);
+        }
+
+        /// <summary>
         /// A due cycle with no retained snapshot must enumerate saved truth again. Dirtiness is not
         /// required: completed cycles intentionally discard their handles between elapsed intervals.
         /// </summary>

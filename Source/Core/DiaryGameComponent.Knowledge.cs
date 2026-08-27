@@ -664,7 +664,13 @@ namespace PawnDiary
                     state.originCultureDefName,
                     state.originCultureSource,
                     state.adoptedCultureDefName))
+                {
+                    // EnsureCultureResolved may already have published an origin change. The
+                    // conversion then replaces adopted culture, so publish the final exact owner
+                    // size as one more cheap owner-only refresh.
+                    if (!RefreshMemorySizeIndexForOwner(state)) RebuildMemorySizeIndexes();
                     MarkMemoryLibraryCultureProjectionDirty();
+                }
 
                 KnowledgeCaptureSignal signal = new KnowledgeCaptureSignal
                 {
@@ -916,6 +922,10 @@ namespace PawnDiary
                     state.adoptedCultureDefName);
                 state.originCultureDefName = resolved.originCultureDefName;
                 state.originCultureSource = resolved.originSource;
+                // Culture is part of the logically sized owner envelope. Observation keeps a
+                // retained budget between slices, so publish this rare owner-only mutation before
+                // that budget can be reused. This avoids returning to a full colony byte walk.
+                if (!RefreshMemorySizeIndexForOwner(state)) RebuildMemorySizeIndexes();
                 if (changed && notifyLibraryProjection)
                     MarkMemoryLibraryCultureProjectionDirty();
             }
@@ -1006,6 +1016,7 @@ namespace PawnDiary
         {
             if (draft == null || string.IsNullOrWhiteSpace(draft.ownerPawnId)) return false;
             bool requiredLifecycleLandmark = FactualDraftIsRequiredLifecycleLandmark(draft);
+            bool brainwipeCompletionLandmark = FactualDraftIsBrainwipeCompletionLandmark(draft);
             string captureStatus;
             if (!requiredLifecycleLandmark
                 && !MemoryCategoryAllowsCapture(draft.category, out captureStatus)) return false;
@@ -1018,13 +1029,15 @@ namespace PawnDiary
             PawnKnowledgeState state = diary.knowledgeState;
             if (state == null && MemorySystemActivationGate.IsCurrentRelease)
             {
-                int ownerCap = (int)ReadCapacityTuplePart("ownerSlotTriple", 0, 1000, 4000);
-                if (CountMemoryObservationActiveOwners(ownerCap + 1) >= ownerCap) return false;
+                // Avoid creating even a blank envelope when its immediately required epoch cannot
+                // enter both bounded owner directories.
+                if (!CanAdmitMemoryOwnerEpoch(false)) return false;
                 state = EnsureKnowledgeState(diary);
             }
             if (state == null || !state.IsCurrentSchema()) return false;
 
-            FactualOwnerEpochEnrollment enrollment = BeginFactualOwnerEpochEnrollment(state);
+            FactualOwnerEpochEnrollment enrollment = BeginFactualOwnerEpochEnrollment(
+                state, brainwipeCompletionLandmark);
             if (enrollment == null) return false;
             string recordId;
             if (!MemoryIdentityCodec.TryCreateRecordId(
@@ -1125,6 +1138,12 @@ namespace PawnDiary
             else
             {
                 RollBackFactualOwnerEpochEnrollment(enrollment);
+                if (brainwipeCompletionLandmark
+                    && admission.outcome
+                        == MemoryStoreMutationOutcome.RequiredLandmarkCapacityRefused)
+                {
+                    RecordMemoryDiagnosticOnce("brainwipe_capacity", "component");
+                }
             }
             return admission.outcome == MemoryStoreMutationOutcome.Admitted;
         }
@@ -1139,33 +1158,64 @@ namespace PawnDiary
             public PawnDiaryRecord diary;
             public PawnKnowledgeState state;
             public bool pending;
+            public string priorEpochToken;
             public bool priorEpochFenceOnly;
             public long priorStructuralRevision;
         }
 
         private FactualOwnerEpochEnrollment BeginFactualOwnerEpochEnrollment(
-            PawnKnowledgeState state)
+            PawnKnowledgeState state,
+            bool brainwipeCompletionLandmark)
         {
             if (state == null || !state.IsCurrentSchema()
                 || string.IsNullOrWhiteSpace(state.pawnId)) return null;
+            // Archive envelopes are immutable. A Brainwipe fence is also immutable to every
+            // ordinary capture; only the required first-new-epoch Landmark may transactionally
+            // turn that exact fence into an active owner.
+            if (state.archiveOnly) return null;
 
             bool ignoredFallback;
             if (!string.IsNullOrEmpty(state.autobiographicalEpochToken))
             {
-                return MemoryIdentityCodec.TryValidateEpochToken(
-                    state.autobiographicalEpochToken, out ignoredFallback)
-                    ? new FactualOwnerEpochEnrollment { state = state }
-                    : null;
+                if (!MemoryIdentityCodec.TryValidateEpochToken(
+                        state.autobiographicalEpochToken, out ignoredFallback)) return null;
+                if (!state.epochFenceOnly)
+                    return new FactualOwnerEpochEnrollment { state = state };
+                if (!brainwipeCompletionLandmark || state.structuralRevision == long.MaxValue)
+                    return null;
+                // The fence already occupies the non-archive union, but its required completion
+                // Landmark still cannot exceed the stricter active-owner directory.
+                if (!CanAdmitMemoryOwnerEpoch(true))
+                {
+                    RecordMemoryDiagnosticOnce("brainwipe_capacity", "component");
+                    return null;
+                }
+
+                PawnDiaryRecord fencedDiary = FindDiaryByPawnId(state.pawnId);
+                if (fencedDiary == null || !ReferenceEquals(fencedDiary.knowledgeState, state))
+                    return null;
+                var fenceEnrollment = new FactualOwnerEpochEnrollment
+                {
+                    diary = fencedDiary,
+                    state = state,
+                    pending = true,
+                    priorEpochToken = state.autobiographicalEpochToken,
+                    priorEpochFenceOnly = true,
+                    priorStructuralRevision = state.structuralRevision
+                };
+                state.epochFenceOnly = false;
+                state.structuralRevision++;
+                MarkMemoryM4IndexesDirty();
+                return fenceEnrollment;
             }
-            if (state.archiveOnly || state.structuralRevision == long.MaxValue) return null;
+            if (state.epochFenceOnly || state.structuralRevision == long.MaxValue) return null;
 
             PawnDiaryRecord diary = FindDiaryByPawnId(state.pawnId);
             if (diary == null || !ReferenceEquals(diary.knowledgeState, state)) return null;
 
-            int ownerCap = (int)ReadCapacityTuplePart("ownerSlotTriple", 0, 1000, 4000);
-            int activeOwners = CountMemoryObservationActiveOwners(ownerCap + 1);
-            if (activeOwners >= ownerCap) return null;
+            if (!CanAdmitMemoryOwnerEpoch(false)) return null;
 
+            int ownerCap = (int)ReadCapacityTuplePart("ownerSlotTriple", 0, 1000, 4000);
             int epochCarrierScanCap = checked(ownerCap * 256);
             if (!CanBoundMemoryObservationEpochCarrierScan(epochCarrierScanCap)) return null;
             MemoryEpochAllocationPlan allocation = MemoryIdentityCodec.PlanEpochAllocation(
@@ -1184,6 +1234,7 @@ namespace PawnDiary
                 diary = diary,
                 state = state,
                 pending = true,
+                priorEpochToken = state.autobiographicalEpochToken ?? string.Empty,
                 priorEpochFenceOnly = state.epochFenceOnly,
                 priorStructuralRevision = state.structuralRevision
             };
@@ -1212,7 +1263,7 @@ namespace PawnDiary
         private void RollBackFactualOwnerEpochEnrollment(FactualOwnerEpochEnrollment enrollment)
         {
             if (enrollment?.pending != true) return;
-            enrollment.state.autobiographicalEpochToken = string.Empty;
+            enrollment.state.autobiographicalEpochToken = enrollment.priorEpochToken ?? string.Empty;
             enrollment.state.epochFenceOnly = enrollment.priorEpochFenceOnly;
             enrollment.state.structuralRevision = enrollment.priorStructuralRevision;
             enrollment.pending = false;
@@ -1234,6 +1285,17 @@ namespace PawnDiary
                         KnowledgeTokens.EventKindBrainwipeCompleted,
                         StringComparison.Ordinal)) return true;
             }
+            return false;
+        }
+
+        private static bool FactualDraftIsBrainwipeCompletionLandmark(FactualMemoryDraft draft)
+        {
+            if (draft?.facts == null) return false;
+            for (int index = 0; index < draft.facts.Count; index++)
+                if (string.Equals(
+                        draft.facts[index]?.factKind,
+                        KnowledgeTokens.EventKindBrainwipeCompleted,
+                        StringComparison.Ordinal)) return true;
             return false;
         }
 
@@ -1834,6 +1896,7 @@ namespace PawnDiary
                     }
                     ownerDrops.Add(drop.sourceIndex);
                 }
+                bool removedAny = false;
                 foreach (KeyValuePair<string, PawnKnowledgeState> pair in statesByOwner)
                 {
                     HashSet<int> drops;
@@ -1844,8 +1907,19 @@ namespace PawnDiary
                         if (records[i] == null || (drops != null && drops.Contains(i)))
                         {
                             records.RemoveAt(i);
+                            removedAny = true;
                         }
                     }
+                }
+
+                if (removedAny)
+                {
+                    // Legacy records back the compatibility panel and count toward byte limits.
+                    // Eviction can be the only maintenance mutation, so publish it immediately.
+                    // Null guards preserve reflection fixtures that intentionally construct only
+                    // this adapter without running the component field initializers.
+                    if (memoryByteTotalsByOwner != null) RebuildMemorySizeIndexes();
+                    if (memoryLibraryOwners != null) MarkMemoryLibrarySavedProjectionDirty();
                 }
 
                 if (plan.globalCapHit)

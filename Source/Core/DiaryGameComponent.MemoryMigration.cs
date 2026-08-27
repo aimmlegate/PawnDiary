@@ -248,8 +248,58 @@ namespace PawnDiary
                 PawnKnowledgeState state = holders[index]?.knowledgeState;
                 if (state != null && (!state.IsCurrentSchema()
                     || (state.records?.Count ?? 0) > 0)) return true;
+                if (CurrentHolderHasInvalidInvariants(state)) return true;
             }
+            // A primary current holder followed only by valid inert physical duplicates is already
+            // canonical. Reprocessing it would replace object identity on every load and has no
+            // fixed point. Only a later holder that still carries logical memory/reflection state
+            // requires consolidation into the first physical container.
+            for (int index = 1; holders != null && index < holders.Count; index++)
+                if (CurrentHolderCarriesLogicalMemoryState(holders[index])) return true;
             return false;
+        }
+
+        private static bool CurrentHolderCarriesLogicalMemoryState(PawnDiaryRecord holder)
+        {
+            PawnKnowledgeState state = holder?.knowledgeState;
+            return CurrentHolderCarriesLifecycleOrPayload(holder)
+                || (state != null && (state.requestCancellationGeneration != 1
+                    || state.structuralRevision != 1
+                    || state.statusRevision != 1
+                    || state.completedDiaryEntryOrdinal != 1
+                    || state.migrationDiagnosticFlags != 0));
+        }
+
+        private static bool CurrentHolderHasInvalidInvariants(PawnKnowledgeState state)
+        {
+            return state != null && state.IsCurrentSchema()
+                && (state.requestCancellationGeneration <= 0
+                    || state.structuralRevision <= 0
+                    || state.statusRevision <= 0
+                    || state.completedDiaryEntryOrdinal <= 0
+                    || state.migrationDiagnosticFlags < 0);
+        }
+
+        private static bool CurrentHolderCarriesLifecycleOrPayload(PawnDiaryRecord holder)
+        {
+            PawnKnowledgeState state = holder?.knowledgeState;
+            if (state != null && (state.archiveOnly || state.epochFenceOnly
+                || !string.IsNullOrWhiteSpace(state.autobiographicalEpochToken)
+                || (state.records?.Count ?? 0) > 0
+                || (state.standaloneBlocks?.Count ?? 0) > 0
+                || (state.threadRoots?.Count ?? 0) > 0
+                || (state.ownerAwarenessSnapshots?.Count ?? 0) > 0
+                || (state.openCaptureEpisodes?.Count ?? 0) > 0
+                || (state.repetitionGuardRows?.Count ?? 0) > 0
+                || (state.importedArchiveRows?.Count ?? 0) > 0
+                || !string.IsNullOrWhiteSpace(state.playerBackground))) return true;
+            PawnReflectionState reflection = holder?.reflectionState;
+            return reflection != null
+                && (reflection.memoryReflectionSchemaVersion > 0
+                    || !string.IsNullOrWhiteSpace(reflection.memoryOwnerEpochToken)
+                    || reflection.lastQuietMemoryEvaluatedAbsoluteDay >= 0
+                    || reflection.lastQuietMemoryActivatedAbsoluteQuadrum >= 0
+                    || !string.IsNullOrWhiteSpace(reflection.lastQuietMemoryDecisionKey));
         }
 
         private bool TryPrepareLegacyOwnerCommit(
@@ -289,7 +339,12 @@ namespace PawnDiary
             }
 
             string epochToken;
-            if (!TryResolveLegacyOwnerEpoch(ownerPawnId, holders, out epochToken)) return false;
+            bool currentDuplicatesOnly = GroupIsCurrentWithoutLegacyRows(holders);
+            if (currentDuplicatesOnly)
+            {
+                if (!TryResolveExistingCurrentOwnerEpoch(holders, out epochToken)) return false;
+            }
+            else if (!TryResolveLegacyOwnerEpoch(ownerPawnId, holders, out epochToken)) return false;
 
             var input = new MemoryLegacyOwnerMigrationInput
             {
@@ -325,6 +380,49 @@ namespace PawnDiary
                 budgetProjection = budgetProjection
             };
             BuildLegacyPublicationProjections(holders, commit);
+            return true;
+        }
+
+        private static bool GroupIsCurrentWithoutLegacyRows(List<PawnDiaryRecord> holders)
+        {
+            for (int index = 0; holders != null && index < holders.Count; index++)
+            {
+                PawnKnowledgeState state = holders[index]?.knowledgeState;
+                if (state != null && (!state.IsCurrentSchema()
+                    || (state.records?.Count ?? 0) > 0)) return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Current duplicate consolidation may reuse a valid existing epoch but must never allocate
+        /// one. Archive-only or unenrolled current groups can legitimately have no autobiography.
+        /// </summary>
+        private static bool TryResolveExistingCurrentOwnerEpoch(
+            List<PawnDiaryRecord> holders,
+            out string epochToken)
+        {
+            epochToken = string.Empty;
+            var epochs = new SortedSet<string>(StringComparer.Ordinal);
+            for (int index = 0; holders != null && index < holders.Count; index++)
+            {
+                var carriers = new List<string>();
+                AddKnowledgeEpochTokenCarriers(carriers, holders[index]?.knowledgeState);
+                string reflectionEpoch = holders[index]?.reflectionState?.memoryOwnerEpochToken
+                    ?? string.Empty;
+                if (!string.IsNullOrEmpty(reflectionEpoch)) carriers.Add(reflectionEpoch);
+                for (int carrierIndex = 0; carrierIndex < carriers.Count; carrierIndex++)
+                {
+                    string candidate = carriers[carrierIndex] ?? string.Empty;
+                    if (candidate.Length == 0) continue;
+                    bool ignoredFallback;
+                    if (!MemoryIdentityCodec.TryValidateEpochToken(candidate, out ignoredFallback))
+                        return false;
+                    epochs.Add(candidate);
+                }
+            }
+            if (epochs.Count > 1) return false;
+            foreach (string existing in epochs) epochToken = existing;
             return true;
         }
 
@@ -454,6 +552,14 @@ namespace PawnDiary
             long maxKnownTick,
             out PawnKnowledgeState replacement)
         {
+            bool archiveOnly;
+            bool epochFenceOnly;
+            if (!TryDetermineReplacementLifecycle(
+                    holders, out archiveOnly, out epochFenceOnly))
+            {
+                replacement = null;
+                return false;
+            }
             replacement = PawnKnowledgeState.CreateCurrent(ownerPawnId);
             replacement.autobiographicalEpochToken = epochToken;
             replacement.records.Clear();
@@ -583,12 +689,68 @@ namespace PawnDiary
                         replacement, rootIds, blockIds)) return false;
             }
             replacement.playerBackground = chosenBackground;
-            replacement.archiveOnly = false;
-            replacement.epochFenceOnly = false;
+            replacement.archiveOnly = archiveOnly;
+            replacement.epochFenceOnly = epochFenceOnly;
             replacement.structuralRevision = CheckedMigrationRevision(
                 replacement.structuralRevision);
             replacement.statusRevision = CheckedMigrationRevision(replacement.statusRevision);
             replacement.Normalize();
+            return true;
+        }
+
+        /// <summary>
+        /// Legacy input always becomes an ordinary active envelope. Current-only duplicate groups
+        /// preserve their one compatible logical lifecycle; conflicting archive/fence shapes remain
+        /// byte-equivalent and raw rather than being silently reclassified.
+        /// </summary>
+        private static bool TryDetermineReplacementLifecycle(
+            List<PawnDiaryRecord> holders,
+            out bool archiveOnly,
+            out bool epochFenceOnly)
+        {
+            archiveOnly = false;
+            epochFenceOnly = false;
+            if (!GroupIsCurrentWithoutLegacyRows(holders))
+            {
+                // A shipped Brainwipe fence or archive is a harder boundary than legacy import.
+                // Refuse the mixed group byte-for-byte instead of reclassifying the current holder
+                // as active and reviving duplicate pre-boundary rows in its epoch.
+                for (int index = 0; holders != null && index < holders.Count; index++)
+                {
+                    PawnKnowledgeState current = holders[index]?.knowledgeState;
+                    if (current?.IsCurrentSchema() == true
+                        && (current.archiveOnly || current.epochFenceOnly)) return false;
+                }
+                return true;
+            }
+            bool found = false;
+            for (int index = 0; holders != null && index < holders.Count; index++)
+            {
+                PawnDiaryRecord holder = holders[index];
+                if (!CurrentHolderCarriesLifecycleOrPayload(holder)) continue;
+                PawnKnowledgeState state = holder?.knowledgeState;
+                bool nextArchive = state?.archiveOnly == true;
+                bool nextFence = state?.epochFenceOnly == true;
+                if (nextArchive && nextFence) return false;
+                if (!found)
+                {
+                    archiveOnly = nextArchive;
+                    epochFenceOnly = nextFence;
+                    found = true;
+                }
+                else if (archiveOnly != nextArchive || epochFenceOnly != nextFence)
+                {
+                    return false;
+                }
+                if (nextFence && HasBrainwipeFencePayload(state)) return false;
+                if (nextArchive && state != null
+                    && ((state.standaloneBlocks?.Count ?? 0) > 0
+                        || (state.threadRoots?.Count ?? 0) > 0
+                        || (state.ownerAwarenessSnapshots?.Count ?? 0) > 0
+                        || (state.openCaptureEpisodes?.Count ?? 0) > 0
+                        || (state.repetitionGuardRows?.Count ?? 0) > 0
+                        || !string.IsNullOrWhiteSpace(state.playerBackground))) return false;
+            }
             return true;
         }
 
@@ -1498,11 +1660,9 @@ namespace PawnDiary
                 inert.autobiographicalEpochToken = string.Empty;
                 inert.archiveOnly = false;
                 inert.epochFenceOnly = false;
-                inert.requestCancellationGeneration = 0;
-                inert.structuralRevision = 0;
-                inert.statusRevision = 0;
-                // The owner-local completion ordinal is always one-based, even on an unenrolled
-                // duplicate holder. Zero is invalid and would make later policy fail closed.
+                // CreateCurrent supplies the positive cancellation/revision invariants required by
+                // every current-schema envelope, including an unenrolled inert physical duplicate.
+                // The owner-local completion ordinal is likewise always one-based.
                 inert.completedDiaryEntryOrdinal = 1;
                 commit.holderKnowledgeStates.Add(inert);
 

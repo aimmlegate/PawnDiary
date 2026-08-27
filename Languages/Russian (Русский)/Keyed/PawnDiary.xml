@@ -2250,4 +2250,7 @@
   <PawnDiary.Memory.Library.Imported.RawPreview>Это унаследованное воспоминание слишком велико или неполно для текущего формата. Доступен только ограниченный предпросмотр.</PawnDiary.Memory.Library.Imported.RawPreview>
   <PawnDiary.Memory.Library.Dev.Diagnostics>Копировать диагностику</PawnDiary.Memory.Library.Dev.Diagnostics>
   <PawnDiary.Memory.Library.Dev.RejectionReasons>Причины отклонения</PawnDiary.Memory.Library.Dev.RejectionReasons>
+  <PawnDiary.SaveFormatNewer>Это сохранение было создано БОЛЕЕ НОВОЙ версией Pawn Diary. Обновите мод (или удалите его и восстановите резервную копию) перед загрузкой. Загрузка отклонена для защиты сохранения.</PawnDiary.SaveFormatNewer>
+  <PawnDiary.Error.GenerationInterruptedAfterSend>Предыдущая игровая сессия завершилась после того, как этот запрос, возможно, достиг поставщика. Повторная отправка не выполнялась.</PawnDiary.Error.GenerationInterruptedAfterSend>
+  <PawnDiary.Error.MemoryDispatchStopped>Этот запрос с использованием памяти был остановлен на границе безопасности и не отправлялся повторно.</PawnDiary.Error.MemoryDispatchStopped>
 </LanguageData>

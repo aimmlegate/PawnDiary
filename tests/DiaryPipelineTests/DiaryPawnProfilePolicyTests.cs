@@ -8,6 +8,13 @@ namespace DiaryPipelineTests
     {
         private static void TestDiaryPawnProfilePolicy()
         {
+            AssertTrue(
+                "current releases hide the legacy memory editor",
+                !DiaryPawnProfilePolicy.IncludeLegacyMemoryEditor(true));
+            AssertTrue(
+                "pre-release compatibility mode retains the legacy memory editor",
+                DiaryPawnProfilePolicy.IncludeLegacyMemoryEditor(false));
+
             AssertProfileDecision(
                 "enabled unchanged ignores backlog",
                 DiaryPawnProfileGenerationDecision.Unchanged,

@@ -568,6 +568,19 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Every current non-archive epoch consumes the broader directory union, including an
+        /// inactive post-Brainwipe fence. Blank culture/background envelopes consume neither slot.
+        /// </summary>
+        public static bool CountsAsNonArchiveEpochOwner(
+            bool currentSchema,
+            bool archiveOnly,
+            string autobiographicalEpochToken)
+        {
+            return currentSchema && !archiveOnly
+                && !string.IsNullOrWhiteSpace(autobiographicalEpochToken);
+        }
+
+        /// <summary>
         /// Episodic diplomacy changes are discrete relationship/leadership transitions. Exact goodwill
         /// still belongs in the replaceable current-truth snapshot, but point drift alone must not emit
         /// a permanent memory on every reconciliation pass.
@@ -2315,6 +2328,24 @@ namespace PawnDiary
         public static bool CanAdmitObservationOwner(int activeOwnerCount, int ownerCap)
         {
             return activeOwnerCount >= 0 && ownerCap > 0 && activeOwnerCount < ownerCap;
+        }
+
+
+        /// <summary>
+        /// Ordinary enrollment creates both an active owner and a non-archive epoch. Both bounded
+        /// directories must have headroom; a Brainwipe fence activation uses the two-argument active
+        /// check because its epoch already occupies the union.
+        /// </summary>
+        public static bool CanAdmitObservationOwner(
+            int activeOwnerCount,
+            int activeOwnerCap,
+            int nonArchiveEpochOwnerCount,
+            int nonArchiveEpochOwnerCap)
+        {
+            return CanAdmitObservationOwner(activeOwnerCount, activeOwnerCap)
+                && nonArchiveEpochOwnerCount >= 0
+                && nonArchiveEpochOwnerCap > 0
+                && nonArchiveEpochOwnerCount < nonArchiveEpochOwnerCap;
         }
 
         private static bool ValidEpoch(string value)

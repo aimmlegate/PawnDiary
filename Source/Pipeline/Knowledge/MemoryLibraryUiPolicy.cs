@@ -44,6 +44,29 @@ namespace PawnDiary
     /// <summary>Pure cadence rule for bounded Library repository polling outside GUI draw.</summary>
     internal static class MemoryLibraryUiPollPolicy
     {
+        /// <summary>
+        /// Ready detached publications normally sleep until their repository stamp changes. Exact
+        /// TTL can cross mid-day without changing that stamp, so a reached finite publication
+        /// deadline is itself immediate repository work.
+        /// </summary>
+        public static bool ReachedPublicationExpiry(
+            long nowTick,
+            long listExpiryTickExclusive,
+            long threadExpiryTickExclusive,
+            long blockExpiryTickExclusive)
+        {
+            return Reached(nowTick, listExpiryTickExclusive)
+                || Reached(nowTick, threadExpiryTickExclusive)
+                || Reached(nowTick, blockExpiryTickExclusive);
+        }
+
+        private static bool Reached(long nowTick, long expiryTickExclusive)
+        {
+            return nowTick >= 0 && expiryTickExclusive > 0
+                && expiryTickExclusive != long.MaxValue
+                && nowTick >= expiryTickExclusive;
+        }
+
         public static bool ShouldPoll(
             int currentFrame,
             int lastPollFrame,
@@ -298,6 +321,30 @@ namespace PawnDiary
     /// <summary>Pure Phase-M9 presentation/session rules shared by the dialog and fixtures.</summary>
     internal static class MemoryLibraryUiPolicy
     {
+        /// <summary>
+        /// Returns the exact saved identity used by transient card-format caches. Repository queries
+        /// may re-project equivalent row objects under the same publication revision, so reference
+        /// identity is never a valid cache key.
+        /// </summary>
+        public static string ListRowCacheKey(MemoryLibraryListRow row)
+        {
+            MemoryRootHandle root = row?.thread?.rootHandle;
+            if (root != null)
+                return "thread\n" + (root.ownerPawnId ?? string.Empty) + "\n"
+                    + (root.epochToken ?? string.Empty) + "\n" + (root.rootId ?? string.Empty);
+            MemoryRecordHandle record = row?.standalone?.recordHandle;
+            if (record != null)
+                return "standalone\n" + (record.ownerPawnId ?? string.Empty) + "\n"
+                    + (record.epochToken ?? string.Empty) + "\n"
+                    + (record.recordId ?? string.Empty);
+            MemoryArchiveHandle archive = row?.imported?.archiveHandle;
+            if (archive != null)
+                return "imported\n" + (archive.archiveScopeToken ?? string.Empty) + "\n"
+                    + (archive.exactOwnerPawnIdOrEmpty ?? string.Empty) + "\n"
+                    + (archive.archiveRecordId ?? string.Empty);
+            return string.Empty;
+        }
+
         public static bool CanOpen(
             bool currentRelease,
             bool programPlaying,

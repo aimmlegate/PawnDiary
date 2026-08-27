@@ -6,6 +6,7 @@
 // private component seam, and resets process-local Library publications after every test.
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using RimTestRedux;
@@ -29,6 +30,58 @@ namespace PawnDiary.RimTests
         private static readonly MethodInfo DrainLibraryCommandsMethod =
             typeof(DiaryGameComponent).GetMethod(
                 "DrainMemoryLibraryCommands", PrivateInstance);
+        private static readonly MethodInfo CompleteMaintenancePressureMethod =
+            typeof(DiaryGameComponent).GetMethod(
+                "TryCompleteMemoryMaintenanceCycle",
+                PrivateInstance,
+                null,
+                new[]
+                {
+                    typeof(long),
+                    typeof(Stopwatch),
+                    typeof(long),
+                    typeof(bool).MakeByRefType()
+                },
+                null);
+        private static readonly MethodInfo ApplyLegacyKnowledgeEvictionMethod =
+            typeof(DiaryGameComponent).GetMethod(
+                "ApplyKnowledgeEviction", PrivateInstance);
+        private static readonly MethodInfo BeginFactualOwnerEnrollmentMethod =
+            typeof(DiaryGameComponent).GetMethod(
+                "BeginFactualOwnerEpochEnrollment",
+                PrivateInstance,
+                null,
+                new[] { typeof(PawnKnowledgeState), typeof(bool) },
+                null);
+        private static readonly MethodInfo CreateObservationBudgetMethod =
+            typeof(DiaryGameComponent).GetMethod(
+                "CreateMemoryObservationBudgetSession", PrivateInstance);
+        private static readonly MethodInfo PrepareObservationOwnerMethod =
+            typeof(DiaryGameComponent).GetMethod(
+                "PrepareMemoryObservationOwner", PrivateInstance);
+        private static readonly MethodInfo ApplyObservationAwarenessMethod =
+            typeof(DiaryGameComponent).GetMethod(
+                "ApplyMemoryAwarenessPlan", PrivateInstance);
+        private static readonly MethodInfo CompleteObservationTickMethod =
+            typeof(DiaryGameComponent).GetMethod(
+                "CompleteMemoryObservationTick", PrivateInstance);
+        private static readonly MethodInfo RemoveRelativeObservationMethod =
+            typeof(DiaryGameComponent).GetMethod(
+                "RemoveRelativeMemoryObservation", PrivateInstance);
+        private static readonly MethodInfo RemoveGlobalFactionObservationMethod =
+            typeof(DiaryGameComponent).GetMethod(
+                "RemoveGlobalFactionSnapshots", PrivateInstance);
+        private static readonly FieldInfo GlobalFactionSnapshotsField =
+            typeof(DiaryGameComponent).GetField(
+                "globalFactionSnapshots", PrivateInstance);
+        private static readonly FieldInfo MemoryDiagnosticCountersField =
+            typeof(DiaryGameComponent).GetField(
+                "memoryDiagnosticCounters", PrivateInstance);
+        private static readonly FieldInfo DiariesField =
+            typeof(DiaryGameComponent).GetField("diaries", PrivateInstance);
+        private static readonly MethodInfo ReadCapacityTuplePartMethod =
+            typeof(DiaryGameComponent).GetMethod(
+                "ReadCapacityTuplePart", BindingFlags.Static | BindingFlags.NonPublic);
 
         /// <summary>
         /// Captures monotonic allocator metadata before a disposable Brainwipe/enrollment. Restore it
@@ -85,6 +138,22 @@ namespace PawnDiary.RimTests
                 "The production Memory Library reset seam was renamed.");
             Require(DrainLibraryCommandsMethod != null,
                 "The production Memory Library command-drain seam was renamed.");
+            Require(CompleteMaintenancePressureMethod != null,
+                "The production Memory maintenance pressure seam was renamed.");
+            Require(ApplyLegacyKnowledgeEvictionMethod != null,
+                "The production legacy knowledge eviction seam was renamed.");
+            Require(BeginFactualOwnerEnrollmentMethod != null && DiariesField != null,
+                "The production factual owner-enrollment seam was renamed.");
+            Require(CreateObservationBudgetMethod != null
+                    && PrepareObservationOwnerMethod != null
+                    && ApplyObservationAwarenessMethod != null
+                    && CompleteObservationTickMethod != null
+                    && RemoveRelativeObservationMethod != null
+                    && RemoveGlobalFactionObservationMethod != null
+                    && GlobalFactionSnapshotsField != null
+                    && MemoryDiagnosticCountersField != null
+                    && ReadCapacityTuplePartMethod != null,
+                "The production Memory observation budget seam was renamed.");
         }
 
         /// <summary>Creates one valid current owner envelope with Thread, Standalone, and Imported rows.</summary>
@@ -277,6 +346,403 @@ namespace PawnDiary.RimTests
         {
             RequireReflectionSurface();
             DrainLibraryCommandsMethod.Invoke(component, null);
+        }
+
+        /// <summary>Runs only the maintenance cycle's final pressure phase and returns its mutation.</summary>
+        internal static bool CompleteMaintenancePressure(DiaryGameComponent component)
+        {
+            RequireReflectionSurface();
+            object[] args =
+            {
+                (long)Math.Max(0, Find.TickManager?.TicksGame ?? 0),
+                Stopwatch.StartNew(),
+                0L,
+                false
+            };
+            bool completed = (bool)CompleteMaintenancePressureMethod.Invoke(component, args);
+            Require(completed,
+                "The pressure-only maintenance fixture unexpectedly deferred completion.");
+            return (bool)args[3];
+        }
+
+        /// <summary>Runs the legacy-record retention adapter on the loaded disposable component.</summary>
+        internal static void ApplyLegacyKnowledgeEviction(DiaryGameComponent component)
+        {
+            RequireReflectionSurface();
+            ApplyLegacyKnowledgeEvictionMethod.Invoke(component, null);
+        }
+
+        /// <summary>Runs only the factual owner-directory enrollment transaction.</summary>
+        internal static object BeginFactualOwnerEnrollment(
+            DiaryGameComponent component,
+            PawnKnowledgeState state,
+            bool brainwipeCompletionLandmark)
+        {
+            RequireReflectionSurface();
+            return BeginFactualOwnerEnrollmentMethod.Invoke(
+                component, new object[] { state, brainwipeCompletionLandmark });
+        }
+
+        /// <summary>Creates the exact running budget used by one production observation slice.</summary>
+        internal static object CreateObservationBudget(DiaryGameComponent component)
+        {
+            RequireReflectionSurface();
+            return CreateObservationBudgetMethod.Invoke(component, null);
+        }
+
+        /// <summary>Plans one owner enrollment against a caller-owned observation budget.</summary>
+        internal static object PrepareObservationOwner(
+            DiaryGameComponent component,
+            Pawn pawn,
+            object budget)
+        {
+            RequireReflectionSurface();
+            return PrepareObservationOwnerMethod.Invoke(
+                component, new[] { (object)pawn, budget });
+        }
+
+        /// <summary>Commits one small baseline through the real observation admission transaction.</summary>
+        internal static bool ApplyObservationBaseline(
+            DiaryGameComponent component,
+            object enrollment,
+            object budget,
+            string suffix)
+        {
+            RequireReflectionSurface();
+            if (enrollment == null || budget == null) return false;
+            var replacement = new KnowledgeAwarenessState
+            {
+                snapshotId = "rimtest-observation-" + (suffix ?? string.Empty),
+                scopeKindToken = KnowledgeObservationTokens.ScopeRelative,
+                subjectKind = KnowledgeObservationTokens.SubjectPawn,
+                subjectId = "rimtest-subject-" + (suffix ?? string.Empty),
+                factStreamToken = KnowledgeObservationTokens.StreamRelativeState,
+                captureInvalidationGeneration = 1,
+                knownnessEvidenceToken = KnowledgeObservationTokens.EvidenceDirect,
+                firstObservedTick = Math.Max(0, Find.TickManager?.TicksGame ?? 0),
+                lastObservedTick = Math.Max(0, Find.TickManager?.TicksGame ?? 0),
+                lastSourceOccurrenceId = "rimtest-occurrence-" + (suffix ?? string.Empty),
+                trackingStateToken = KnowledgeObservationTokens.TrackingTracked,
+                snapshotRevision = 1
+            };
+            return (bool)ApplyObservationAwarenessMethod.Invoke(
+                component,
+                new[] { enrollment, replacement, null, string.Empty, budget });
+        }
+
+        /// <summary>Publishes the running observation indexes through the production slice tail.</summary>
+        internal static void CompleteObservationTick(
+            DiaryGameComponent component,
+            object budget)
+        {
+            RequireReflectionSurface();
+            CompleteObservationTickMethod.Invoke(component, new[] { budget });
+        }
+
+        /// <summary>Runs the production hidden-relative cleanup against one running budget.</summary>
+        internal static void RemoveRelativeObservation(
+            DiaryGameComponent component,
+            string ownerId,
+            string subjectId,
+            object budget)
+        {
+            RequireReflectionSurface();
+            RemoveRelativeObservationMethod.Invoke(
+                component, new[] { (object)ownerId, subjectId, budget });
+        }
+
+        /// <summary>Runs production removal of one disappeared global faction snapshot.</summary>
+        internal static void RemoveGlobalFactionObservation(
+            DiaryGameComponent component,
+            string factionInstanceId,
+            object budget)
+        {
+            RequireReflectionSurface();
+            RemoveGlobalFactionObservationMethod.Invoke(
+                component, new[] { (object)factionInstanceId, budget });
+        }
+
+        /// <summary>Replaces the disposable component's global faction list with one exact row.</summary>
+        internal static void InstallGlobalFactionObservation(
+            DiaryGameComponent component,
+            SavedGlobalFactionSnapshot row)
+        {
+            RequireReflectionSurface();
+            var rows = GlobalFactionSnapshotsField.GetValue(component)
+                as List<SavedGlobalFactionSnapshot>;
+            Require(rows != null && row != null,
+                "The global faction observation fixture could not install its saved row.");
+            rows.Clear();
+            rows.Add(row);
+            component.RebuildMemorySizeIndexes();
+        }
+
+        /// <summary>Snapshots global faction rows so a loaded fixture can restore unrelated state.</summary>
+        internal static List<SavedGlobalFactionSnapshot> SnapshotGlobalFactionObservations(
+            DiaryGameComponent component)
+        {
+            RequireReflectionSurface();
+            var rows = GlobalFactionSnapshotsField.GetValue(component)
+                as List<SavedGlobalFactionSnapshot>;
+            Require(rows != null, "The global faction observation list seam was renamed.");
+            return new List<SavedGlobalFactionSnapshot>(rows);
+        }
+
+        /// <summary>Restores global faction rows captured before a disposable loaded fixture.</summary>
+        internal static void RestoreGlobalFactionObservations(
+            DiaryGameComponent component,
+            List<SavedGlobalFactionSnapshot> snapshot)
+        {
+            RequireReflectionSurface();
+            var rows = GlobalFactionSnapshotsField.GetValue(component)
+                as List<SavedGlobalFactionSnapshot>;
+            Require(rows != null, "The global faction observation list seam was renamed.");
+            rows.Clear();
+            if (snapshot != null) rows.AddRange(snapshot);
+            component.RebuildMemorySizeIndexes();
+        }
+
+        /// <summary>Returns the disposable component's exact saved global-faction row count.</summary>
+        internal static int GlobalFactionObservationCount(DiaryGameComponent component)
+        {
+            RequireReflectionSurface();
+            var rows = GlobalFactionSnapshotsField.GetValue(component)
+                as List<SavedGlobalFactionSnapshot>;
+            Require(rows != null, "The global faction observation list seam was renamed.");
+            return rows.Count;
+        }
+
+        /// <summary>Snapshots bounded saved diagnostics before an exact component-size fixture.</summary>
+        internal static List<SavedMemoryDiagnosticCounter> SnapshotMemoryDiagnostics(
+            DiaryGameComponent component)
+        {
+            RequireReflectionSurface();
+            var rows = MemoryDiagnosticCountersField.GetValue(component)
+                as List<SavedMemoryDiagnosticCounter>;
+            Require(rows != null, "The saved Memory diagnostic list seam was renamed.");
+            return new List<SavedMemoryDiagnosticCounter>(rows);
+        }
+
+        /// <summary>Replaces saved diagnostics and republishes exact transient size indexes.</summary>
+        internal static void ReplaceMemoryDiagnostics(
+            DiaryGameComponent component,
+            List<SavedMemoryDiagnosticCounter> replacement)
+        {
+            RequireReflectionSurface();
+            var rows = MemoryDiagnosticCountersField.GetValue(component)
+                as List<SavedMemoryDiagnosticCounter>;
+            Require(rows != null, "The saved Memory diagnostic list seam was renamed.");
+            rows.Clear();
+            if (replacement != null) rows.AddRange(replacement);
+            component.RebuildMemorySizeIndexes();
+        }
+
+        /// <summary>Forces the epoch allocator into one loaded boundary fixture state.</summary>
+        internal static void SetEpochAllocator(
+            DiaryGameComponent component,
+            long sequence,
+            string fallbackChain)
+        {
+            SetField(component, "lastIssuedAutobiographicalEpochSequence", sequence);
+            SetField(component, "lastIssuedAutobiographicalEpochFallbackChain",
+                fallbackChain ?? string.Empty);
+        }
+
+        /// <summary>Returns the exact saved epoch allocator high-water sequence.</summary>
+        internal static long EpochAllocatorSequence(DiaryGameComponent component)
+        {
+            return GetField<long>(component, "lastIssuedAutobiographicalEpochSequence");
+        }
+
+        /// <summary>Returns the exact saved epoch allocator fallback chain.</summary>
+        internal static string EpochAllocatorFallbackChain(DiaryGameComponent component)
+        {
+            return GetField<string>(
+                component, "lastIssuedAutobiographicalEpochFallbackChain");
+        }
+
+        /// <summary>Reads the transient logical-size publication generation.</summary>
+        internal static long SizeIndexGeneration(DiaryGameComponent component)
+        {
+            return GetField<long>(component, "memorySizeIndexGeneration");
+        }
+
+        /// <summary>Reads the friend-only full logical-size walk counter.</summary>
+        internal static long SizeIndexFullRebuildCount(DiaryGameComponent component)
+        {
+            return GetField<long>(component, "memorySizeIndexFullRebuildCount");
+        }
+
+        /// <summary>Reads or replaces the running observation session's exact global totals.</summary>
+        internal static MemoryPayloadBudgetTotals ObservationGlobalTotals(
+            object budget,
+            MemoryPayloadBudgetTotals? replacement = null)
+        {
+            Require(budget != null, "The observation totals fixture received no budget.");
+            FieldInfo field = budget.GetType().GetField(
+                "global", BindingFlags.Instance | BindingFlags.Public);
+            Require(field != null, "The observation global-total seam was renamed.");
+            if (replacement.HasValue) field.SetValue(budget, replacement.Value);
+            return (MemoryPayloadBudgetTotals)field.GetValue(budget);
+        }
+
+        /// <summary>Returns one owner's running observation byte totals.</summary>
+        internal static DiaryGameComponent.MemoryOwnerByteTotals ObservationOwnerTotals(
+            object budget,
+            string ownerId)
+        {
+            Require(budget != null, "The observation owner-total fixture received no budget.");
+            FieldInfo field = budget.GetType().GetField(
+                "owners", BindingFlags.Instance | BindingFlags.Public);
+            var owners = field?.GetValue(budget)
+                as System.Collections.Generic.Dictionary<
+                    string, DiaryGameComponent.MemoryOwnerByteTotals>;
+            DiaryGameComponent.MemoryOwnerByteTotals totals =
+                new DiaryGameComponent.MemoryOwnerByteTotals();
+            Require(owners != null && owners.TryGetValue(ownerId, out totals) && totals.valid,
+                "The observation owner-total seam omitted the requested owner.");
+            return totals;
+        }
+
+        /// <summary>Returns the XML-normalized limits frozen into one observation session.</summary>
+        internal static MemoryBudgetLimits ObservationBudgetLimits(object budget)
+        {
+            Require(budget != null, "The observation limit fixture received no budget.");
+            FieldInfo field = budget.GetType().GetField(
+                "limits", BindingFlags.Instance | BindingFlags.Public);
+            Require(field != null, "The observation limit seam was renamed.");
+            return (MemoryBudgetLimits)field.GetValue(budget);
+        }
+
+        /// <summary>
+        /// Mirrors the production try/finally scope around factual admissions for a loaded fixture.
+        /// Pass null to clear it before returning control to unrelated component work.
+        /// </summary>
+        internal static void SetActiveObservationAdmissionBudget(
+            DiaryGameComponent component,
+            object budget)
+        {
+            FieldInfo field = typeof(DiaryGameComponent).GetField(
+                "memoryObservationActiveAdmissionBudget", PrivateInstance);
+            Require(field != null,
+                "The scoped observation admission-budget seam was renamed.");
+            field.SetValue(component, budget);
+        }
+
+        /// <summary>Reads or overrides the session active-owner count for an exact cap fixture.</summary>
+        internal static int ObservationActiveOwnerCount(object budget, int? replacement = null)
+        {
+            Require(budget != null, "The observation owner-count fixture received no budget.");
+            FieldInfo field = budget.GetType().GetField(
+                "activeOwnerCount", BindingFlags.Instance | BindingFlags.Public);
+            Require(field != null, "The observation active-owner count seam was renamed.");
+            if (replacement.HasValue) field.SetValue(budget, replacement.Value);
+            return (int)field.GetValue(budget);
+        }
+
+        /// <summary>Reads or overrides the active-plus-fence union count in one running session.</summary>
+        internal static int ObservationNonArchiveEpochOwnerCount(
+            object budget,
+            int? replacement = null)
+        {
+            Require(budget != null, "The observation union-count fixture received no budget.");
+            FieldInfo field = budget.GetType().GetField(
+                "nonArchiveEpochOwnerCount", BindingFlags.Instance | BindingFlags.Public);
+            Require(field != null, "The observation union-count seam was renamed.");
+            if (replacement.HasValue) field.SetValue(budget, replacement.Value);
+            return (int)field.GetValue(budget);
+        }
+
+        /// <summary>Returns the current XML-normalized observation owner cap.</summary>
+        internal static int ObservationOwnerCap()
+        {
+            RequireReflectionSurface();
+            long value = (long)ReadCapacityTuplePartMethod.Invoke(
+                null, new object[] { "ownerSlotTriple", 0, 1000L, 4000L });
+            Require(value > 0 && value <= int.MaxValue,
+                "The observation owner cap is outside its defensive range.");
+            return (int)value;
+        }
+
+        /// <summary>Returns the XML-normalized active-plus-fence owner-union cap.</summary>
+        internal static int ObservationEpochFenceCap()
+        {
+            RequireReflectionSurface();
+            long value = (long)ReadCapacityTuplePartMethod.Invoke(
+                null, new object[] { "ownerSlotTriple", 1, 1001L, 4001L });
+            Require(value > 0 && value <= int.MaxValue,
+                "The observation epoch-fence cap is outside its defensive range.");
+            return (int)value;
+        }
+
+        /// <summary>
+        /// Appends exact synthetic current epoch holders for bounded directory-cap adapters. The
+        /// returned references must be removed in finally; no live Pawn or page is created.
+        /// </summary>
+        internal static List<PawnDiaryRecord> AppendSyntheticOwnerDirectory(
+            DiaryGameComponent component,
+            int activeCount,
+            int fenceCount,
+            string suffix)
+        {
+            RequireReflectionSurface();
+            var diaries = DiariesField.GetValue(component) as List<PawnDiaryRecord>;
+            Require(diaries != null && activeCount >= 0 && fenceCount >= 0,
+                "The synthetic owner-directory fixture received invalid input.");
+            var added = new List<PawnDiaryRecord>(checked(activeCount + fenceCount));
+            int total = checked(activeCount + fenceCount);
+            for (int index = 0; index < total; index++)
+            {
+                string ownerId = "PawnDiary_RimTest_Directory_" + (suffix ?? string.Empty)
+                    + "_" + index;
+                PawnKnowledgeState state = PawnKnowledgeState.CreateCurrent(ownerId);
+                state.autobiographicalEpochToken = EpochToken(500000L + index);
+                state.epochFenceOnly = index >= activeCount;
+                state.structuralRevision = 1;
+                var diary = new PawnDiaryRecord
+                {
+                    pawnId = ownerId,
+                    pawnName = ownerId,
+                    knowledgeState = state
+                };
+                diaries.Add(diary);
+                added.Add(diary);
+            }
+            return added;
+        }
+
+        /// <summary>Removes only exact synthetic directory records returned by the append helper.</summary>
+        internal static void RemoveSyntheticOwnerDirectory(
+            DiaryGameComponent component,
+            List<PawnDiaryRecord> added)
+        {
+            RequireReflectionSurface();
+            var diaries = DiariesField.GetValue(component) as List<PawnDiaryRecord>;
+            Require(diaries != null, "The saved diary directory seam was renamed.");
+            for (int index = 0; added != null && index < added.Count; index++)
+                diaries.Remove(added[index]);
+            component.MarkMemoryM4IndexesDirty();
+            component.RebuildMemorySizeIndexes();
+        }
+
+        /// <summary>Builds one valid standalone block for exact post-enrollment M4 admission.</summary>
+        internal static SavedMemoryBlock BuildStandaloneAdmissionBlock(
+            string ownerId,
+            string epoch,
+            string suffix)
+        {
+            return NewBlock(
+                ownerId,
+                epoch,
+                suffix,
+                string.Empty,
+                MemoryContractTokens.CategoryPersonal,
+                MemoryContractTokens.ImportanceImportant,
+                "rimtest-admission-subject-" + suffix,
+                "Observation admission subject",
+                "Observation admission wording " + suffix,
+                Math.Max(0, Find.TickManager?.TicksGame ?? 0),
+                MemoryContractTokens.SubjectPawn);
         }
 
         /// <summary>Waits for the bounded owner directory and returns the exact disposable row.</summary>

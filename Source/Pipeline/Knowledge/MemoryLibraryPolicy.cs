@@ -761,12 +761,82 @@ namespace PawnDiary
             return expiry > nowTick ? expiry : long.MaxValue;
         }
 
+        /// <summary>
+        /// Applies the reducer's exact TTL boundary while a detached Library snapshot is built.
+        /// Maintenance is deliberately sliced, so projection must not republish a row that is
+        /// already due merely because the saved reducer has not reached that owner yet.
+        /// </summary>
+        public static bool RetainedAtSnapshot(
+            long nowTick,
+            long originalTick,
+            bool ageUnknown,
+            bool playerEdited,
+            int importanceMask,
+            long minorLifetimeTicks,
+            long regularLifetimeTicks)
+        {
+            if (playerEdited || ageUnknown
+                || (importanceMask & ImportanceImportant) != 0) return true;
+            long lifetime;
+            if ((importanceMask & ImportanceMinor) != 0)
+                lifetime = Math.Max(0, minorLifetimeTicks);
+            else if ((importanceMask & ImportanceRegular) != 0)
+                lifetime = Math.Max(0, regularLifetimeTicks);
+            else
+                return true;
+            return MemoryChapterPolicy.Elapsed(
+                    Math.Max(0, nowTick), Math.Max(0, originalTick)) < lifetime;
+        }
+
+        /// <summary>
+        /// Rebuilds a Summary row from a snapshot-safe contribution subset. This is used when TTL
+        /// removes only some contributions so expired wording/search/count metadata cannot survive.
+        /// </summary>
+        public static MemoryBlockRow ProjectSummaryForSnapshot(
+            MemoryBlockRow source,
+            List<MemorySummaryContributionDescriptor> retained,
+            MemoryLibraryLimits limits)
+        {
+            if (source == null || retained == null || retained.Count == 0) return null;
+            MemoryBlockRow result = ProjectSummary(source, retained, limits);
+            // ProjectSummary normally preserves the container-wide search text so a filtered row
+            // can still match its original whole Summary. A TTL projection is different: removed
+            // contributions are no longer browseable truth, so their wording must leave BOTH
+            // search fields. Rebuild the safe whole-row index from retained wording plus the stable
+            // subject label instead of copying the saved container's pre-expiry index.
+            MemoryLibraryLimits cap = limits ?? new MemoryLibraryLimits();
+            result.normalizedWholeSearch = BuildSearchProjection(
+                new List<string> { result.displayWording, result.primarySubjectLabel },
+                cap.normalizedFieldUtf16Units,
+                cap.rowProjectionUtf16Units);
+            // The saved Summary still contains the expired contributions until maintenance reaches
+            // it. Editing now would set playerEdited on that full payload and protect/reveal those
+            // hidden facts again, so wording edits fail closed for this transient partial shape.
+            result.canSaveWording = false;
+            result.canUseOriginal = false;
+            return result;
+        }
+
         public static long TtlValidUntil(long nextDayBoundary, long earliestFutureExpiry)
         {
             long day = nextDayBoundary > 0 ? nextDayBoundary : long.MaxValue;
             long expiry = earliestFutureExpiry > 0
                 ? earliestFutureExpiry : long.MaxValue;
             return Math.Min(day, expiry);
+        }
+
+        /// <summary>
+        /// A detached owner snapshot must be rebuilt at its first exact finite expiry. Day changes
+        /// alone are insufficient because a memory can cross its retention boundary mid-day.
+        /// </summary>
+        public static bool OwnerSnapshotReachedExpiry(
+            long nowTick,
+            long earliestFiniteExpiryTickExclusive)
+        {
+            return nowTick >= 0
+                && earliestFiniteExpiryTickExclusive > 0
+                && earliestFiniteExpiryTickExclusive != long.MaxValue
+                && nowTick >= earliestFiniteExpiryTickExclusive;
         }
 
         /// <summary>Pure action matrix; repository identity/revision checks happen before this.</summary>

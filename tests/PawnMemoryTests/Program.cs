@@ -1791,6 +1791,12 @@ namespace PawnMemoryTests
                 KnowledgeRelationPolicy.CanAdmitObservationOwner(999, 1000));
             AssertTrue("m6.ownerAdmission.atCap",
                 !KnowledgeRelationPolicy.CanAdmitObservationOwner(1000, 1000));
+            AssertTrue("m6.ownerAdmission.bothDirectoriesHaveHeadroom",
+                KnowledgeRelationPolicy.CanAdmitObservationOwner(
+                    999, 1000, 1000, 1001));
+            AssertTrue("m6.ownerAdmission.unionCapRefusesBelowActiveCap",
+                !KnowledgeRelationPolicy.CanAdmitObservationOwner(
+                    999, 1000, 1001, 1001));
             AssertTrue("m6.ownerAdmission.cultureOnlyDoesNotCount",
                 !KnowledgeRelationPolicy.CountsAsActiveObservationOwner(
                     true, false, false, string.Empty));
@@ -1805,6 +1811,13 @@ namespace PawnMemoryTests
                     true, true, false, M6Epoch("Pawn_archive"))
                 && !KnowledgeRelationPolicy.CountsAsActiveObservationOwner(
                     true, false, true, M6Epoch("Pawn_fence")));
+            AssertTrue("m6.ownerAdmission.fenceCountsOnlyInUnion",
+                KnowledgeRelationPolicy.CountsAsNonArchiveEpochOwner(
+                    true, false, M6Epoch("Pawn_fence_union"))
+                && !KnowledgeRelationPolicy.CountsAsNonArchiveEpochOwner(
+                    true, true, M6Epoch("Pawn_archive_union"))
+                && !KnowledgeRelationPolicy.CountsAsNonArchiveEpochOwner(
+                    true, false, string.Empty));
 
             KnowledgeOwnerRepairRevisionPlan ordinaryRepair =
                 KnowledgeRelationPolicy.PlanOwnerRepairRevision(7, true);

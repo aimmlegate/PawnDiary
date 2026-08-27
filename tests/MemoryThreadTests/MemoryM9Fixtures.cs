@@ -28,8 +28,11 @@ namespace MemoryThreadTests
             LifetimeStatesUseOriginalTicks();
             VirtualizationIsBoundedAtMinimumViewport();
             RepositoryPollingIsBoundedAndResponsive();
+            ExactOwnerSnapshotExpiryInvalidatesWarmCache();
+            MaintenanceInvalidationIsWiredToTheRepository();
+            ListCardCacheIdentitySurvivesEquivalentReprojection();
             ActivationAndNoGameGateFailClosed();
-            LibraryLocalizationHasEnglishRussianPlaceholderParity();
+            MemoryLocalizationHasEnglishRussianPlaceholderParity();
             return assertions;
         }
 
@@ -51,12 +54,187 @@ namespace MemoryThreadTests
                 MemoryLibraryUiPollPolicy.ShouldPoll(105, 100, 0, false, true));
             Equal("m9.poll.settled-does-no-work", false,
                 MemoryLibraryUiPollPolicy.ShouldPoll(1000, 100, 6, false, false));
+            Equal("m9.poll.ttl-before", false,
+                MemoryLibraryUiPollPolicy.ReachedPublicationExpiry(
+                    99, 100, long.MaxValue, long.MaxValue));
+            Equal("m9.poll.ttl-exact", true,
+                MemoryLibraryUiPollPolicy.ReachedPublicationExpiry(
+                    100, 100, long.MaxValue, long.MaxValue));
+            Equal("m9.poll.ttl-detail", true,
+                MemoryLibraryUiPollPolicy.ReachedPublicationExpiry(
+                    100, long.MaxValue, 100, long.MaxValue));
+            Equal("m9.poll.ttl-never", false,
+                MemoryLibraryUiPollPolicy.ReachedPublicationExpiry(
+                    long.MaxValue, long.MaxValue, long.MaxValue, long.MaxValue));
             Equal("m9.poll.paused-open-unstable", true,
                 MemoryLibraryUiPollPolicy.ShouldAdvancePausedObservation(true, true, false));
             Equal("m9.poll.paused-closed-does-not-advance", false,
                 MemoryLibraryUiPollPolicy.ShouldAdvancePausedObservation(true, false, false));
             Equal("m9.poll.paused-stable-does-not-advance", false,
                 MemoryLibraryUiPollPolicy.ShouldAdvancePausedObservation(true, true, true));
+        }
+
+        private static void ExactOwnerSnapshotExpiryInvalidatesWarmCache()
+        {
+            Equal("m9.ttl-cache.before", false,
+                MemoryLibraryPolicy.OwnerSnapshotReachedExpiry(99, 100));
+            Equal("m9.ttl-cache.exact", true,
+                MemoryLibraryPolicy.OwnerSnapshotReachedExpiry(100, 100));
+            Equal("m9.ttl-cache.after", true,
+                MemoryLibraryPolicy.OwnerSnapshotReachedExpiry(101, 100));
+            Equal("m9.ttl-cache.never", false,
+                MemoryLibraryPolicy.OwnerSnapshotReachedExpiry(long.MaxValue, long.MaxValue));
+            Equal("m9.ttl-cache.invalid", false,
+                MemoryLibraryPolicy.OwnerSnapshotReachedExpiry(100, 0));
+            Equal("m9.ttl-projection.before", true,
+                MemoryLibraryPolicy.RetainedAtSnapshot(
+                    99, 50, false, false,
+                    MemoryLibraryPolicy.ImportanceMinor, 50, 200));
+            Equal("m9.ttl-projection.exact", false,
+                MemoryLibraryPolicy.RetainedAtSnapshot(
+                    100, 50, false, false,
+                    MemoryLibraryPolicy.ImportanceMinor, 50, 200));
+            Equal("m9.ttl-projection.edited", true,
+                MemoryLibraryPolicy.RetainedAtSnapshot(
+                    1000, 0, false, true,
+                    MemoryLibraryPolicy.ImportanceMinor, 50, 200));
+            Equal("m9.ttl-projection.important", true,
+                MemoryLibraryPolicy.RetainedAtSnapshot(
+                    1000, 0, false, false,
+                    MemoryLibraryPolicy.ImportanceImportant, 50, 200));
+            Equal("m9.ttl-projection.age-unknown", true,
+                MemoryLibraryPolicy.RetainedAtSnapshot(
+                    1000, 0, true, false,
+                    MemoryLibraryPolicy.ImportanceRegular, 50, 200));
+
+            var source = new MemoryBlockRow
+            {
+                displayWording = "expired phrase; retained phrase",
+                primarySubjectLabel = "stable subject",
+                normalizedSearch = "expired phrase retained phrase",
+                normalizedWholeSearch = "expired phrase retained phrase stable subject",
+                canSaveWording = true
+            };
+            var retained = new List<MemorySummaryContributionDescriptor>
+            {
+                new MemorySummaryContributionDescriptor
+                {
+                    browsePreview = "retained phrase",
+                    categoryMask = MemoryCategoryBits.Relationships,
+                    importanceMask = MemoryLibraryPolicy.ImportanceImportant,
+                    originalTick = 100,
+                    nextExpiryTick = long.MaxValue
+                }
+            };
+            MemoryBlockRow projected = MemoryLibraryPolicy.ProjectSummaryForSnapshot(
+                source,
+                retained,
+                new MemoryLibraryLimits
+                {
+                    blockTextUtf16Units = 200,
+                    normalizedFieldUtf16Units = 200,
+                    rowProjectionUtf16Units = 400
+                });
+            Equal("m9.ttl-summary-projection.exists", true, projected != null);
+            Equal("m9.ttl-summary-projection.removes-expired-search", false,
+                projected.normalizedWholeSearch.Contains("EXPIRED PHRASE"));
+            Equal("m9.ttl-summary-projection.retains-wording-search", true,
+                projected.normalizedWholeSearch.Contains("RETAINED PHRASE"));
+            Equal("m9.ttl-summary-projection.retains-subject-search", true,
+                projected.normalizedWholeSearch.Contains("STABLE SUBJECT"));
+            Equal("m9.ttl-summary-projection.edit-fails-closed", false,
+                projected.canSaveWording);
+        }
+
+        private static void MaintenanceInvalidationIsWiredToTheRepository()
+        {
+            string root = FindRepositoryRoot();
+            string maintenanceSource = File.ReadAllText(Path.Combine(
+                root, "Source", "Core", "DiaryGameComponent.MemoryMaintenance.cs"));
+            Equal("m9.maintenance.library-invalidation", true,
+                maintenanceSource.Contains("MarkMemoryLibrarySavedProjectionDirty();"));
+            Equal("m9.maintenance.shared-repair-budget", true,
+                maintenanceSource.Contains("MemoryMigrationBudgetSession repairBudget = null;"));
+            Equal("m9.maintenance.repair-uses-shared-budget", true,
+                maintenanceSource.Contains("owner, policy, repairBudget);"));
+            Equal("m9.maintenance.repairs-before-reducers", true,
+                MemoryMaintenancePolicy.CompareWorkHandle(
+                    true, "z-owner", string.Empty,
+                    false, "a-owner", "a-root") < 0);
+            Equal("m9.maintenance.repair-owner-order", true,
+                MemoryMaintenancePolicy.CompareWorkHandle(
+                    true, "a-owner", string.Empty,
+                    true, "b-owner", string.Empty) < 0);
+            Equal("m9.maintenance.reducer-root-order", true,
+                MemoryMaintenancePolicy.CompareWorkHandle(
+                    false, "a-owner", "a-root",
+                    false, "a-owner", "b-root") < 0);
+            string observationSource = File.ReadAllText(Path.Combine(
+                root, "Source", "Core", "DiaryGameComponent.MemoryObservation.cs"));
+            Equal("m9.observation.publishes-running-budget-index", true,
+                observationSource.Contains("TryPublishMemoryObservationBudgetIndexes(budget)"));
+
+            string storeSource = File.ReadAllText(Path.Combine(
+                root, "Source", "Core", "DiaryGameComponent.MemoryM4Store.cs"));
+            Equal("m9.maintenance.repair-commits-budget-projection", true,
+                storeSource.Contains("ApplyMemoryMigrationBudgetProjection(budget, budgetProjection);"));
+        }
+
+        private static void ListCardCacheIdentitySurvivesEquivalentReprojection()
+        {
+            var first = new MemoryLibraryListRow
+            {
+                tag = MemoryLibraryRowTags.Thread,
+                thread = new MemoryThreadHeaderRow
+                {
+                    rootHandle = new MemoryRootHandle
+                    {
+                        ownerPawnId = "owner-a",
+                        epochToken = "epoch-a",
+                        rootId = "root-a"
+                    }
+                }
+            };
+            var equivalentProjection = new MemoryLibraryListRow
+            {
+                tag = MemoryLibraryRowTags.Thread,
+                thread = new MemoryThreadHeaderRow
+                {
+                    rootHandle = new MemoryRootHandle
+                    {
+                        ownerPawnId = "owner-a",
+                        epochToken = "epoch-a",
+                        rootId = "root-a"
+                    }
+                }
+            };
+            string firstKey = MemoryLibraryUiPolicy.ListRowCacheKey(first);
+            string equivalentKey = MemoryLibraryUiPolicy.ListRowCacheKey(equivalentProjection);
+            var cache = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                [firstKey] = "formatted card"
+            };
+            Equal("m9.card-cache.reprojection-key", firstKey, equivalentKey);
+            Equal("m9.card-cache.reprojection-hit", true,
+                cache.TryGetValue(equivalentKey, out string value));
+            Equal("m9.card-cache.reprojection-value", "formatted card", value);
+
+            string standaloneKey = MemoryLibraryUiPolicy.ListRowCacheKey(
+                new MemoryLibraryListRow
+                {
+                    tag = MemoryLibraryRowTags.Standalone,
+                    standalone = new MemoryBlockRow
+                    {
+                        recordHandle = new MemoryRecordHandle
+                        {
+                            ownerPawnId = "owner-a",
+                            epochToken = "epoch-a",
+                            recordId = "root-a"
+                        }
+                    }
+                });
+            Equal("m9.card-cache.row-kind-domain", false,
+                string.Equals(firstKey, standaloneKey, StringComparison.Ordinal));
         }
 
         private static void OwnerSelectionUsesExactHandles()
@@ -533,13 +711,39 @@ namespace MemoryThreadTests
                 MemoryLibraryUiPolicy.CanMutate(true, false));
         }
 
-        private static void LibraryLocalizationHasEnglishRussianPlaceholderParity()
+        private static void MemoryLocalizationHasEnglishRussianPlaceholderParity()
         {
             string root = FindRepositoryRoot();
             Dictionary<string, string> english = ReadKeyed(Path.Combine(root,
                 "Languages", "English", "Keyed", "PawnDiary.xml"));
             Dictionary<string, string> russian = ReadKeyed(Path.Combine(root,
                 "Languages", "Russian (Русский)", "Keyed", "PawnDiary.xml"));
+            // Literal Library keys must exist in English too. This catches a source typo or a newly
+            // added button whose key was omitted from both translation files.
+            string[] uiFiles =
+            {
+                Path.Combine(root, "Source", "UI", "Dialog_MemoryLibrary.cs"),
+                Path.Combine(root, "Source", "UI", "Dialog_MemoryLibrary.Layout.cs"),
+                Path.Combine(root, "Source", "UI", "DiaryJournalView.cs")
+            };
+            HashSet<string> usedLibraryKeys = new HashSet<string>(StringComparer.Ordinal);
+            foreach (string file in uiFiles)
+            {
+                foreach (Match match in Regex.Matches(File.ReadAllText(file),
+                    "PawnDiary\\.Memory\\.Library\\.[A-Za-z0-9.]+"))
+                {
+                    usedLibraryKeys.Add(match.Value);
+                }
+            }
+            foreach (string key in usedLibraryKeys.OrderBy(value => value, StringComparer.Ordinal))
+            {
+                Equal("m9.localization.english-used." + key, true, english.ContainsKey(key));
+                Equal("m9.localization.russian-used." + key, true, russian.ContainsKey(key));
+                if (english.ContainsKey(key) && russian.ContainsKey(key))
+                    Equal("m9.localization.used-placeholders." + key,
+                        PlaceholderSignature(english[key]), PlaceholderSignature(russian[key]));
+            }
+
             // Several Library keys are assembled from stable suffix tokens (importance, filters,
             // badges, and actions), so source-literal discovery misses real UI paths. Every English
             // Memory key must therefore have Russian text with the same format placeholders.
@@ -551,6 +755,23 @@ namespace MemoryThreadTests
                 Equal("m9.localization.russian." + key, true, russian.ContainsKey(key));
                 if (russian.ContainsKey(key))
                     Equal("m9.localization.placeholders." + key,
+                        PlaceholderSignature(english[key]), PlaceholderSignature(russian[key]));
+            }
+
+            // These safety messages sit outside the Memory namespace but belong to the same saved
+            // memory/dispatch boundary. Keep their live Russian paths from silently falling back.
+            string[] safetyKeys =
+            {
+                "PawnDiary.SaveFormatNewer",
+                "PawnDiary.Error.GenerationInterruptedAfterSend",
+                "PawnDiary.Error.MemoryDispatchStopped"
+            };
+            foreach (string key in safetyKeys)
+            {
+                Equal("m9.localization.english-safety." + key, true, english.ContainsKey(key));
+                Equal("m9.localization.russian-safety." + key, true, russian.ContainsKey(key));
+                if (english.ContainsKey(key) && russian.ContainsKey(key))
+                    Equal("m9.localization.safety-placeholders." + key,
                         PlaceholderSignature(english[key]), PlaceholderSignature(russian[key]));
             }
         }

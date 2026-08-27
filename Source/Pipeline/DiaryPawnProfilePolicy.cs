@@ -85,6 +85,15 @@ namespace PawnDiary
     internal static class DiaryPawnProfilePolicy
     {
         /// <summary>
+        /// Keeps the legacy captured-memory editor and its measured layout in lockstep. Current
+        /// releases use the canonical Memory Library, so the old editor must consume no screen space.
+        /// </summary>
+        public static bool IncludeLegacyMemoryEditor(bool currentRelease)
+        {
+            return !currentRelease;
+        }
+
+        /// <summary>
         /// Compares the saved and drafted switch. Only a disabled-to-enabled transition with at least
         /// one resumable page requires confirmation; corrupt negative counts behave as zero.
         /// </summary>

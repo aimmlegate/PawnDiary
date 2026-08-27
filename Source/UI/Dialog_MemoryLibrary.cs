@@ -84,10 +84,10 @@ namespace PawnDiary
             new Dictionary<long, string>();
         private readonly Dictionary<string, string> cachedUsageLabels =
             new Dictionary<string, string>(StringComparer.Ordinal);
-        private readonly Dictionary<MemoryLibraryListRow, string> cachedListCardTitles =
-            new Dictionary<MemoryLibraryListRow, string>();
-        private readonly Dictionary<MemoryLibraryListRow, string> cachedListCardDetails =
-            new Dictionary<MemoryLibraryListRow, string>();
+        private readonly Dictionary<string, string> cachedListCardTitles =
+            new Dictionary<string, string>(StringComparer.Ordinal);
+        private readonly Dictionary<string, string> cachedListCardDetails =
+            new Dictionary<string, string>(StringComparer.Ordinal);
         private readonly Dictionary<string, string> cachedBlockCardWording =
             new Dictionary<string, string>(StringComparer.Ordinal);
         private readonly Dictionary<string, string> cachedBlockChapterLabels =
@@ -229,6 +229,12 @@ namespace PawnDiary
                 component.MemoryLibraryRepositoryStampForUi();
             bool repositoryChanged = !hasRepositoryStamp
                 || !lastRepositoryStamp.Equals(repositoryStamp);
+            long liveNowTick = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            bool exactExpiryReached = MemoryLibraryUiPollPolicy.ReachedPublicationExpiry(
+                liveNowTick,
+                list?.ttlValidUntilTickExclusive ?? long.MaxValue,
+                threadDetail?.ttlValidUntilTickExclusive ?? long.MaxValue,
+                blockDetail?.ttlValidUntilTickExclusive ?? long.MaxValue);
             bool waitingForPublication = owners?.status == MemoryLibraryStatuses.Preparing
                 || list?.status == MemoryLibraryStatuses.Preparing
                 || threadDetail?.status == MemoryLibraryStatuses.Preparing
@@ -240,13 +246,13 @@ namespace PawnDiary
                     currentFrame,
                     lastRepositoryPollFrame,
                     DiaryUiStyles.Current.memoryLibraryRepositoryPollFrames,
-                    immediateRepositoryWork || repositoryChanged,
+                    immediateRepositoryWork || repositoryChanged || exactExpiryReached,
                     waitingForPublication)) return;
             lastRepositoryPollFrame = currentFrame;
             // Draw-time paging intent is consumed by this query pass. Any Stale/continuation result
             // below sets it again so the next frame retries without waiting for a source revision.
             repositoryNavigationDirty = false;
-            detachedNowTick = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            detachedNowTick = liveNowTick;
             MemoryPolicySnapshot policy = MemoryEffectivePolicyProvider.Current;
             if (policy != null)
             {

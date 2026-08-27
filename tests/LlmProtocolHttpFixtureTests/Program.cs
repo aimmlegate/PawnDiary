@@ -494,11 +494,32 @@ namespace LlmProtocolHttpFixtureTests
                 LlmClient.SendAsyncOverrideForTests = failedExchange.SendAsync;
                 LlmGenerationRequest failedRequest = MemoryGateRequest(
                     context, "https://memory-failure.invalid/v1");
+                ApiEndpointConfig failoverTarget = new ApiEndpointConfig(
+                    "https://memory-failover.invalid/v1", string.Empty, "failover-model");
                 failedRequest.failoverTargets = new List<ApiEndpointConfig>
                 {
-                    new ApiEndpointConfig(
-                        "https://memory-failover.invalid/v1", string.Empty, "failover-model")
+                    failoverTarget
                 };
+                string failoverVariantKey;
+                AssertTrue("fixture failover variant key encodes",
+                    MemoryIdentityCodec.TryCreatePromptVariantKey(
+                        logicalRequestId,
+                        1,
+                        MemoryDispatchTokens.ManualRegenerate,
+                        "template-fixture",
+                        "detail-failover-fixture",
+                        failedRequest.systemPrompt,
+                        failedRequest.rawText,
+                        receiptPlanFingerprint,
+                        diagnosticFingerprint,
+                        out failoverVariantKey));
+                context.laneVariantKeys[ApiLaneIdentity.ForGate(
+                    failoverTarget.url,
+                    failoverTarget.model,
+                    failoverTarget.apiMode,
+                    failoverTarget.authMode,
+                    failoverTarget.customAuthHeaderName,
+                    failoverTarget.apiKey)] = failoverVariantKey;
                 LlmStagedGenerationRequest failedStage;
                 AssertEqual("post-permit failure stages", LlmRequestStageOutcome.Staged,
                     LlmClient.TryStage(failedRequest, out failedStage));
@@ -545,8 +566,10 @@ namespace LlmProtocolHttpFixtureTests
                     await Task.Delay(10);
                 AssertTrue("exhausted primary lane reaches frozen failover permit",
                     permitRequest != null);
+                AssertEqual("failover permit uses its credential-aware frozen variant",
+                    failoverVariantKey, permitRequest.variantKey);
                 MemoryInvocationCommitPermitV1 failoverPermit = CopyPermit(
-                    permit, 4, 4, 45);
+                    permit, 4, 4, 45, failoverVariantKey);
                 MemoryDispatchRuntimeBridge.ResolvePermit(permitRequest, failoverPermit);
                 receiptRequest = null;
                 while (DateTime.UtcNow < deadline
@@ -579,6 +602,74 @@ namespace LlmProtocolHttpFixtureTests
                 MemoryDispatchRuntimeBridge.ReleaseSendEnvelope(failedPermit);
                 MemoryDispatchRuntimeBridge.ReleaseSendEnvelope(retryPermit);
                 MemoryDispatchRuntimeBridge.ReleaseSendEnvelope(failoverPermit);
+
+                // The primary reached the provider, then failover fails during fixed-header
+                // preflight before it can request a permit. The terminal result must retain the
+                // primary permit without publishing a duplicate receipt for that old attempt.
+                fixtureSettings.retryAttempts = 1;
+                ScriptedExchange prePermitFailoverExchange = new ScriptedExchange(Response(
+                    (HttpStatusCode)429,
+                    "{\"error\":\"primary invoked before failover preflight failure\"}"));
+                LlmClient.SendAsyncOverrideForTests = prePermitFailoverExchange.SendAsync;
+                LlmGenerationRequest prePermitFailoverRequest = MemoryGateRequest(
+                    context, "https://memory-prepermit-primary.invalid/v1");
+                prePermitFailoverRequest.failoverTargets = new List<ApiEndpointConfig>
+                {
+                    new ApiEndpointConfig(
+                        "https://memory-prepermit-failover.invalid/v1",
+                        "collision-secret",
+                        "claude-prepermit")
+                    {
+                        apiMode = ApiCompatibilityMode.AnthropicMessages,
+                        authMode = ApiAuthMode.CustomHeader,
+                        customAuthHeaderName = "anthropic-version"
+                    }
+                };
+                LlmStagedGenerationRequest prePermitFailoverStage;
+                AssertEqual("pre-permit failover request stages", LlmRequestStageOutcome.Staged,
+                    LlmClient.TryStage(prePermitFailoverRequest, out prePermitFailoverStage));
+                AssertTrue("pre-permit failover request activates",
+                    LlmClient.Activate(prePermitFailoverStage));
+                permitRequest = null;
+                deadline = DateTime.UtcNow.AddSeconds(5);
+                while (DateTime.UtcNow < deadline
+                    && !MemoryDispatchRuntimeBridge.TryDequeuePermit(out permitRequest))
+                    await Task.Delay(10);
+                AssertTrue("pre-permit failover primary reaches permit gate",
+                    permitRequest != null);
+                MemoryInvocationCommitPermitV1 prePermitPrimaryPermit = CopyPermit(
+                    permit, 50, 50, 500);
+                MemoryDispatchRuntimeBridge.ResolvePermit(
+                    permitRequest, prePermitPrimaryPermit);
+                receiptRequest = null;
+                while (DateTime.UtcNow < deadline
+                    && !MemoryDispatchRuntimeBridge.TryDequeueReceipt(out receiptRequest))
+                    await Task.Delay(10);
+                AssertTrue("pre-permit failover primary publishes provider receipt",
+                    receiptRequest != null
+                    && receiptRequest.outcomeToken == MemoryDispatchTokens.ProviderError);
+                MemoryDispatchRuntimeBridge.ResolveReceipt(receiptRequest, true);
+                completed = null;
+                while (DateTime.UtcNow < deadline
+                    && !LlmClient.TryDequeueCompleted(out completed))
+                    await Task.Delay(10);
+                AssertTrue("pre-permit failover failure remains terminal and bounded",
+                    completed != null && !completed.success
+                    && completed.memoryDispatchTerminalFailure);
+                AssertEqual("pre-permit failover result retains last invoked permit",
+                    prePermitPrimaryPermit.permitFingerprint,
+                    completed.memoryInvocationPermit?.permitFingerprint);
+                AssertEqual("pre-permit failover retains acknowledged terminal outcome",
+                    MemoryDispatchTokens.ProviderError,
+                    completed.memoryDispatchTerminalOutcomeToken);
+                AssertEqual("pre-permit failover sends only the invoked primary", 1,
+                    prePermitFailoverExchange.Requests.Count);
+                AssertFalse("pre-permit failover creates no second permit",
+                    MemoryDispatchRuntimeBridge.TryDequeuePermit(out permitRequest));
+                AssertFalse("pre-permit failover duplicates no primary receipt",
+                    MemoryDispatchRuntimeBridge.TryDequeueReceipt(out receiptRequest));
+                MemoryDispatchRuntimeBridge.ReleaseSendEnvelope(prePermitPrimaryPermit);
+                fixtureSettings.retryAttempts = 2;
 
                 ScriptedExchange deadlineExchange = new ScriptedExchange(Response(
                     HttpStatusCode.OK,
@@ -698,7 +789,8 @@ namespace LlmProtocolHttpFixtureTests
             MemoryInvocationCommitPermitV1 source,
             int attemptOrdinal,
             long invocationSequence,
-            long invocationTick)
+            long invocationTick,
+            string variantKey = null)
         {
             MemoryInvocationCommitPermitV1 copy = new MemoryInvocationCommitPermitV1
             {
@@ -716,7 +808,7 @@ namespace LlmProtocolHttpFixtureTests
                 optionalRequestInvalidationGeneration =
                     source.optionalRequestInvalidationGeneration,
                 attemptOrdinal = attemptOrdinal,
-                variantKey = source.variantKey,
+                variantKey = variantKey ?? source.variantKey,
                 receiptPlanFingerprint = source.receiptPlanFingerprint,
                 invocationSequence = invocationSequence,
                 invocationTick = invocationTick,

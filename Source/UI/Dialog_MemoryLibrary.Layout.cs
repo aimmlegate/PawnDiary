@@ -403,8 +403,9 @@ namespace PawnDiary
                 : style.MemoryLibraryCardBackground);
             Widgets.DrawHighlightIfMouseover(rect);
             Rect text = rect.ContractedBy(8f);
-            cachedListCardTitles.TryGetValue(row, out string title);
-            cachedListCardDetails.TryGetValue(row, out string details);
+            string cardKey = MemoryLibraryUiPolicy.ListRowCacheKey(row);
+            cachedListCardTitles.TryGetValue(cardKey, out string title);
+            cachedListCardDetails.TryGetValue(cardKey, out string details);
             Text.Font = GameFont.Tiny;
             float detailsHeight = Text.LineHeight;
             Text.Font = GameFont.Small;
@@ -1468,7 +1469,8 @@ namespace PawnDiary
 
         private void CacheListCardDisplay(MemoryLibraryListRow row)
         {
-            if (row == null || cachedListCardTitles.ContainsKey(row)) return;
+            string key = MemoryLibraryUiPolicy.ListRowCacheKey(row);
+            if (key.Length == 0 || cachedListCardTitles.ContainsKey(key)) return;
             string title;
             string details;
             if (row.thread != null)
@@ -1498,8 +1500,8 @@ namespace PawnDiary
                     ArchiveSourceLabel(row.imported?.archiveHandle),
                     MigrationReasonLabel(row.imported?.migrationReasonToken));
             }
-            cachedListCardTitles[row] = title;
-            cachedListCardDetails[row] = details;
+            cachedListCardTitles[key] = title;
+            cachedListCardDetails[key] = details;
         }
 
         private string BlockCardWording(MemoryBlockRow row)

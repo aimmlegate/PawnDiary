@@ -301,6 +301,7 @@ namespace PawnDiary
                     status = MemoryLibraryStatuses.Missing
                 };
             string ownerKey = OwnerIndexKey(query.primaryHandle);
+            long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
 
             // The sole no-envelope active-owner form is proven by the current directory revision.
             bool zeroNoEpoch = query.primaryHandle.scopeToken == MemoryLibraryScopes.Active
@@ -364,10 +365,18 @@ namespace PawnDiary
                 RequestMemoryLibraryOwnerBuild(ownerKey);
                 return new MemoryLibraryListResult { status = MemoryLibraryStatuses.Preparing };
             }
+            if (MemoryLibraryPolicy.OwnerSnapshotReachedExpiry(
+                    now, owner.ownerEarliestFiniteExpiryTickExclusive))
+            {
+                ExpireMemoryLibraryOwnerSnapshot(ownerKey);
+                if (query.expectedListSnapshotRevision > 0)
+                    return new MemoryLibraryListResult { status = MemoryLibraryStatuses.Stale };
+                RequestMemoryLibraryOwnerBuild(ownerKey);
+                return new MemoryLibraryListResult { status = MemoryLibraryStatuses.Preparing };
+            }
             TouchMemoryLibraryOwner(ownerKey);
 
             string fingerprint = ListQueryFingerprint(query, owner.ownerRow);
-            long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
             if (query.expectedListSnapshotRevision > 0)
             {
                 if (!memoryLibraryListPublications.TryGetValue(
@@ -512,6 +521,16 @@ namespace PawnDiary
                 RequestMemoryLibraryOwnerBuild(ownerKey);
                 return new MemoryThreadDetailResult { status = MemoryLibraryStatuses.Preparing };
             }
+            long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            if (MemoryLibraryPolicy.OwnerSnapshotReachedExpiry(
+                    now, owner.ownerEarliestFiniteExpiryTickExclusive))
+            {
+                ExpireMemoryLibraryOwnerSnapshot(ownerKey);
+                if (query.expectedDetailSnapshotRevision > 0)
+                    return new MemoryThreadDetailResult { status = MemoryLibraryStatuses.Stale };
+                RequestMemoryLibraryOwnerBuild(ownerKey);
+                return new MemoryThreadDetailResult { status = MemoryLibraryStatuses.Preparing };
+            }
             TouchMemoryLibraryOwner(ownerKey);
             string fingerprint = DetailQueryFingerprint(query);
             if (query.expectedDetailSnapshotRevision > 0)
@@ -604,6 +623,13 @@ namespace PawnDiary
                 status = root.statusRevision;
             }
             if (block == null)
+            {
+                result.status = MemoryLibraryStatuses.Missing;
+                return result;
+            }
+            MemoryPolicySnapshot policy = MemoryEffectivePolicyProvider.Current;
+            long snapshotNow = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            if (!ShouldProjectSavedBlock(block, policy, snapshotNow))
             {
                 result.status = MemoryLibraryStatuses.Missing;
                 return result;
@@ -911,6 +937,17 @@ namespace PawnDiary
                     command, false, targetRevision, false, null);
                 return result;
             }
+            MemoryPolicySnapshot policy = MemoryEffectivePolicyProvider.Current;
+            long nowTick = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            if (!ShouldProjectSavedBlock(block, policy, nowTick))
+            {
+                // Commands are queued from detached UI state and drain later on the main thread.
+                // Recheck exact TTL at the mutation boundary so a row that expires between those
+                // moments cannot be edited into a permanent player-protected resurrection.
+                result.status = PlanMemoryLibraryCommandStatus(
+                    command, false, targetRevision, false, null);
+                return result;
+            }
             MemoryLibraryLimits limits = BuildMemoryLibraryLimits();
             MemoryBlockRow dto = BuildMemoryBlockRow(
                 block, root, targetRevision, PawnDiaryRecordName(owner.pawnId), limits);
@@ -1081,6 +1118,12 @@ namespace PawnDiary
         {
             memoryLibraryDirectoryFingerprint = string.Empty;
             memoryLibraryDirectoryBuildRequested = memoryLibraryActiveClients.Count > 0;
+            // Direct repository readers are valid without a registered Window client. Revision zero
+            // makes their next query request a rebuild instead of returning Ready over this cleared
+            // directory forever.
+            memoryLibraryDirectoryRevision = 0;
+            memoryLibraryAdditionalLegacyRawOwners = 0;
+            memoryLibraryAdditionalZeroOwners = 0;
             memoryLibraryOwners.Clear();
             memoryLibraryOwnerCacheFingerprints.Clear();
             memoryLibraryOwnerLru.Clear();
@@ -1114,14 +1157,36 @@ namespace PawnDiary
         /// </summary>
         private void MarkMemoryLibraryStatusProjectionDirty()
         {
+            MarkMemoryLibrarySavedProjectionDirty();
+        }
+
+        /// <summary>
+        /// Invalidates every detached saved-memory projection without scheduling another maintenance
+        /// cycle. Reducer/TTL commits use this path after their own bounded work has completed.
+        /// </summary>
+        private void MarkMemoryLibrarySavedProjectionDirty()
+        {
             memoryLibraryDirectoryFingerprint = string.Empty;
             memoryLibraryDirectoryBuildRequested = memoryLibraryActiveClients.Count > 0;
+            // Direct repository readers are valid without a registered Window client. Revision zero
+            // makes their next query request a rebuild instead of returning Ready over this cleared
+            // directory forever.
+            memoryLibraryDirectoryRevision = 0;
+            memoryLibraryAdditionalLegacyRawOwners = 0;
+            memoryLibraryAdditionalZeroOwners = 0;
             memoryLibraryOwners.Clear();
+            memoryLibraryOwnerSources.Clear();
             memoryLibraryOwnerCacheFingerprints.Clear();
             memoryLibraryOwnerLru.Clear();
+            memoryLibraryDirectory.Clear();
             memoryLibraryListPublications.Clear();
             memoryLibraryDetailPublications.Clear();
             memoryLibraryTextPublications.Clear();
+            memoryLibraryListBuildJobs.Clear();
+            memoryLibraryListBuildOrder.Clear();
+            memoryLibraryCompatibilityPublications.Clear();
+            memoryLibraryDirectoryBuildJob = null;
+            memoryLibraryPendingOwnerBuildKey = string.Empty;
             DiaryStateVersion.Bump();
         }
 
@@ -2033,6 +2098,15 @@ namespace PawnDiary
             }
         }
 
+        private void ExpireMemoryLibraryOwnerSnapshot(string ownerKey)
+        {
+            if (string.IsNullOrEmpty(ownerKey)) return;
+            memoryLibraryOwners.Remove(ownerKey);
+            memoryLibraryOwnerCacheFingerprints.Remove(ownerKey);
+            memoryLibraryOwnerLru.Remove(ownerKey);
+            InvalidateMemoryLibraryPublicationsForOwner(ownerKey);
+        }
+
         private void InvalidateMemoryLibraryPublicationsForOwner(string ownerKey)
         {
             CancelMemoryLibraryListBuild(ownerKey);
@@ -2067,6 +2141,8 @@ namespace PawnDiary
             bool active,
             MemoryLibraryLimits limits)
         {
+            long snapshotNow = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            MemoryPolicySnapshot policy = MemoryEffectivePolicyProvider.Current;
             string scope = state.archiveOnly
                 ? MemoryLibraryScopes.ArchiveOnly : MemoryLibraryScopes.Active;
             MemoryLibraryOwnerHandle handle = new MemoryLibraryOwnerHandle(
@@ -2087,7 +2163,7 @@ namespace PawnDiary
                 culture = BuildMemoryOwnerCultureDto(state, limits),
                 structuralRevision = state.structuralRevision,
                 statusRevision = state.statusRevision,
-                snapshotNowTick = Math.Max(0, Find.TickManager?.TicksGame ?? 0),
+                snapshotNowTick = snapshotNow,
                 nextLocalizedDayBoundary = NextMemoryLibraryDayBoundary()
             };
             bool inert = false;
@@ -2097,14 +2173,15 @@ namespace PawnDiary
                 if (root == null) continue;
                 if (HasUnknownNewerReducerRevision(root)) { inert = true; continue; }
                 MemoryLibraryRootIndexInput rootInput = BuildRootInput(
-                    root, state, displayName, limits);
+                    root, state, displayName, limits, policy, snapshotNow);
                 if (rootInput != null) input.roots.Add(rootInput);
             }
             for (int index = 0; state.standaloneBlocks != null
                 && index < state.standaloneBlocks.Count; index++)
             {
                 SavedMemoryBlock block = state.standaloneBlocks[index];
-                if (block != null) input.standalone.Add(BuildMemoryBlockRow(
+                if (ShouldProjectSavedBlock(block, policy, snapshotNow))
+                    input.standalone.Add(BuildMemoryBlockRow(
                     block, null, state.structuralRevision, displayName, limits));
             }
             for (int index = 0; state.importedArchiveRows != null
@@ -2128,7 +2205,9 @@ namespace PawnDiary
             SavedMemoryThreadRoot root,
             PawnKnowledgeState owner,
             string ownerDisplayName,
-            MemoryLibraryLimits limits)
+            MemoryLibraryLimits limits,
+            MemoryPolicySnapshot policy,
+            long snapshotNow)
         {
             if (root == null || string.IsNullOrWhiteSpace(root.rootId)) return null;
             MemoryRootHandle handle = new MemoryRootHandle
@@ -2160,11 +2239,14 @@ namespace PawnDiary
                 && index < root.visibleBlocks.Count; index++)
             {
                 SavedMemoryBlock block = root.visibleBlocks[index];
-                if (block != null) result.children.Add(BuildMemoryBlockRow(
+                if (ShouldProjectSavedBlock(block, policy, snapshotNow))
+                    result.children.Add(BuildMemoryBlockRow(
                     block, root, root.structuralRevision, ownerDisplayName, limits));
             }
-            if (root.rollingSummaryBlock != null) result.children.Add(BuildMemoryBlockRow(
-                root.rollingSummaryBlock, root, root.structuralRevision, ownerDisplayName, limits));
+            if (ShouldProjectSavedBlock(root.rollingSummaryBlock, policy, snapshotNow))
+                result.children.Add(BuildMemoryBlockRow(
+                    root.rollingSummaryBlock, root, root.structuralRevision,
+                    ownerDisplayName, limits));
             for (int index = 0; root.chapters != null && index < root.chapters.Count; index++)
             {
                 SavedMemoryChapter chapter = root.chapters[index];
@@ -2281,6 +2363,8 @@ namespace PawnDiary
             List<MemorySummaryContributionDescriptor> contributions = summary
                 ? BuildSummaryContributionDescriptors(block, policy, limits)
                 : new List<MemorySummaryContributionDescriptor>();
+            int savedSummaryContributionCount = summary
+                ? CountSummaryContributions(block) : 0;
             int projectedCategoryMask = summary ? 0 : categoryMask;
             int projectedImportanceMask = summary ? 0 : importance;
             int projectedHighest = summary ? 0 : importance;
@@ -2301,7 +2385,7 @@ namespace PawnDiary
                 searchFields,
                 limits.normalizedFieldUtf16Units,
                 limits.rowProjectionUtf16Units);
-            return new MemoryBlockRow
+            MemoryBlockRow row = new MemoryBlockRow
             {
                 recordHandle = new MemoryRecordHandle
                 {
@@ -2349,6 +2433,64 @@ namespace PawnDiary
                 closedSummary = closed,
                 ageUnknown = block.ageUnknown
             };
+            if (summary && !block.playerEdited
+                && contributions.Count < savedSummaryContributionCount)
+            {
+                row = MemoryLibraryPolicy.ProjectSummaryForSnapshot(
+                    row, contributions, limits);
+            }
+            return row;
+        }
+
+        private static bool ShouldProjectSavedBlock(
+            SavedMemoryBlock block,
+            MemoryPolicySnapshot policy,
+            long nowTick)
+        {
+            if (block == null || policy == null) return false;
+            if (block.kind != MemoryContractTokens.KindSummary)
+                return MemoryLibraryPolicy.RetainedAtSnapshot(
+                    nowTick,
+                    block.originalEventTick,
+                    block.ageUnknown,
+                    block.playerEdited,
+                    MemoryLibraryPolicy.ImportanceMask(block.importance),
+                    policy.minorMemoryLifetimeTicks,
+                    policy.regularMemoryLifetimeTicks);
+            if (block.playerEdited) return true;
+            for (int bucketIndex = 0; block.summaryPayload?.factBuckets != null
+                && bucketIndex < block.summaryPayload.factBuckets.Count; bucketIndex++)
+            {
+                SavedMemoryFactBucket bucket = block.summaryPayload.factBuckets[bucketIndex];
+                for (int index = 0; bucket?.contributions != null
+                    && index < bucket.contributions.Count; index++)
+                {
+                    SavedMemoryFactContribution contribution = bucket.contributions[index];
+                    if (contribution != null && MemoryLibraryPolicy.RetainedAtSnapshot(
+                            nowTick,
+                            contribution.originalEventTick,
+                            contribution.ageUnknown,
+                            false,
+                            MemoryLibraryPolicy.ImportanceMask(contribution.importance),
+                            policy.minorMemoryLifetimeTicks,
+                            policy.regularMemoryLifetimeTicks)) return true;
+                }
+            }
+            return false;
+        }
+
+        private static int CountSummaryContributions(SavedMemoryBlock block)
+        {
+            int count = 0;
+            for (int bucketIndex = 0; block?.summaryPayload?.factBuckets != null
+                && bucketIndex < block.summaryPayload.factBuckets.Count; bucketIndex++)
+            {
+                SavedMemoryFactBucket bucket = block.summaryPayload.factBuckets[bucketIndex];
+                for (int index = 0; bucket?.contributions != null
+                    && index < bucket.contributions.Count; index++)
+                    if (bucket.contributions[index] != null) count++;
+            }
+            return count;
         }
 
         /// <summary>
@@ -2430,6 +2572,14 @@ namespace PawnDiary
                     SavedMemoryFactContribution contribution = bucket.contributions[index];
                     if (contribution == null) continue;
                     int importance = MemoryLibraryPolicy.ImportanceMask(contribution.importance);
+                    if (!MemoryLibraryPolicy.RetainedAtSnapshot(
+                            now,
+                            contribution.originalEventTick,
+                            contribution.ageUnknown,
+                            block.playerEdited,
+                            importance,
+                            policy?.minorMemoryLifetimeTicks ?? long.MaxValue,
+                            policy?.regularMemoryLifetimeTicks ?? long.MaxValue)) continue;
                     MemorySummaryContributionDescriptor descriptor =
                         new MemorySummaryContributionDescriptor
                         {
@@ -2519,11 +2669,21 @@ namespace PawnDiary
                 {
                     SavedMemoryFactContribution contribution = bucket.contributions[index];
                     if (contribution == null) continue;
+                    int importance = MemoryLibraryPolicy.ImportanceMask(
+                        contribution.importance);
+                    if (!MemoryLibraryPolicy.RetainedAtSnapshot(
+                            now,
+                            contribution.originalEventTick,
+                            contribution.ageUnknown,
+                            false,
+                            importance,
+                            policy.minorMemoryLifetimeTicks,
+                            policy.regularMemoryLifetimeTicks)) continue;
                     earliest = Math.Min(earliest, MemoryLibraryPolicy.FutureExpiryTick(
                         contribution.originalEventTick,
                         contribution.ageUnknown,
                         false,
-                        MemoryLibraryPolicy.ImportanceMask(contribution.importance),
+                        importance,
                         policy.minorMemoryLifetimeTicks,
                         policy.regularMemoryLifetimeTicks,
                         now));

@@ -103,6 +103,12 @@ namespace PawnDiary.RimTests
                 "lastIssuedAutobiographicalEpochFallbackChain", PrivateInstance);
         private static readonly FieldInfo DiariesField =
             typeof(DiaryGameComponent).GetField("diaries", PrivateInstance);
+        private static readonly MethodInfo BeginFactualEnrollmentMethod =
+            typeof(DiaryGameComponent).GetMethod(
+                "BeginFactualOwnerEpochEnrollment", PrivateInstance);
+        private static readonly MethodInfo RollBackFactualEnrollmentMethod =
+            typeof(DiaryGameComponent).GetMethod(
+                "RollBackFactualOwnerEpochEnrollment", PrivateInstance);
 
         private static PawnDiaryRimTestScope scope;
         private static PawnDiaryMemoryM11RuntimeFixture.AllocatorSnapshot allocatorSnapshot;
@@ -470,6 +476,79 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 cleared.originCultureDefName == retainedCulture,
                 "Allocator refusal erased retained culture provenance with autobiography.");
+            PawnDiaryRimTestScope.Require(
+                cleared.requestCancellationGeneration > 0
+                    && cleared.structuralRevision > 0
+                    && cleared.statusRevision > 0
+                    && cleared.completedDiaryEntryOrdinal > 0,
+                "Allocator refusal left a current envelope with unusable zero invariants.");
+
+            // Repair the disposable allocator metadata, then prove this same cleared envelope can
+            // enroll and persist its first post-wipe fact instead of becoming a write-only owner.
+            allocatorSnapshot.Restore(scope.Component);
+            MemoryPolicySnapshot priorPolicy = MemoryEffectivePolicyProvider.Current;
+            MemorySettingsPolicyFieldsV1 fields = priorPolicy.ToFields();
+            fields.saveNewMemories = true;
+            fields.memoryCategoryMask |= MemoryCategoryBits.Personal;
+            MemoryPolicySnapshot captureEnabled = MemoryPolicyNormalizer.Normalize(
+                MemoryPolicyNormalizer.CurrentSettingsSchemaVersion,
+                fields,
+                MemoryPolicyDefAdapter.Bounds());
+            PawnDiaryRimTestScope.Require(
+                MemoryEffectivePolicyProvider.Publish(captureEnabled),
+                "The allocator-recovery fixture could not enable isolated factual capture.");
+            try
+            {
+                const string sourceKind = "capture_signal";
+                const string occurrence = "brainwipe-recovery-occurrence";
+                const string captureRule = "brainwipe-recovery-rule";
+                const string discriminator = "brainwipe-recovery-fact";
+                string provenance;
+                PawnDiaryRimTestScope.Require(
+                    MemoryIdentityCodec.TryCreateProvenanceRefId(
+                        sourceKind,
+                        occurrence,
+                        string.Empty,
+                        captureRule,
+                        discriminator,
+                        string.Empty,
+                        out provenance),
+                    "The allocator-recovery fixture could not create factual provenance.");
+                var draft = new FactualMemoryDraft
+                {
+                    ownerPawnId = targetId,
+                    sourceOccurrenceId = occurrence,
+                    sourceKindToken = sourceKind,
+                    captureRuleId = captureRule,
+                    factDiscriminator = discriminator,
+                    kind = MemoryContractTokens.KindLandmark,
+                    category = MemoryContractTokens.CategoryPersonal,
+                    importance = MemoryContractTokens.ImportanceImportant,
+                    originalEventTick = Math.Max(0, Find.TickManager?.TicksGame ?? 0),
+                    routeReliable = false,
+                    chapterPhaseToken = "recovery",
+                    chapterDirective = MemoryChapterDirectiveTokens.RemainStandalone,
+                    automaticWording = "First factual memory after allocator repair.",
+                    provenanceRefId = provenance
+                };
+                MethodInfo persist = typeof(DiaryGameComponent).GetMethod(
+                    "PersistFactualDraft",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                PawnDiaryRimTestScope.Require(
+                    persist != null
+                        && (bool)persist.Invoke(scope.Component, new object[] { draft })
+                        && cleared.standaloneBlocks.Count == 1
+                        && !string.IsNullOrWhiteSpace(
+                            cleared.autobiographicalEpochToken)
+                        && cleared.requestCancellationGeneration > 0
+                        && cleared.structuralRevision > 0
+                        && cleared.statusRevision > 0,
+                    "The repaired allocator could not re-enroll the wiped owner with usable invariants.");
+            }
+            finally
+            {
+                MemoryEffectivePolicyProvider.Publish(priorPolicy);
+            }
         }
 
         /// <summary>
@@ -1503,10 +1582,11 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 !removedPlayerBackground,
                 "A reset without a canonical player background reported that it removed one.");
+            PawnDiaryRecord record = scope.RequireDiaryRecord(target);
+            string fencedEpoch = record.knowledgeState.autobiographicalEpochToken;
 
             DiaryEvents.Submit(new BrainwipeArrivalSignal(target));
 
-            PawnDiaryRecord record = scope.RequireDiaryRecord(target);
             PawnDiaryRimTestScope.Require(
                 record.eventIds.Count == 1,
                 "The post-Brainwipe arrival signal did not establish exactly one new page.");
@@ -1524,6 +1604,9 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 knowledge.threadRoots.Count == 0
                     && knowledge.standaloneBlocks.Count == 1
+                    && !knowledge.archiveOnly
+                    && !knowledge.epochFenceOnly
+                    && knowledge.autobiographicalEpochToken == fencedEpoch
                     && knowledge.standaloneBlocks[0].kind
                         == MemoryContractTokens.KindLandmark
                     && knowledge.standaloneBlocks[0].importance
@@ -1539,6 +1622,43 @@ namespace PawnDiary.RimTests
                     && knowledge.threadRoots.Count == 0
                     && knowledge.standaloneBlocks.Count == 1,
                 "Replaying the Brainwipe arrival created a second page, root, or Landmark.");
+        }
+
+        /// <summary>
+        /// Only brainwipe.completed may consume the empty post-wipe fence. Its provisional lifecycle
+        /// change restores the exact epoch, flag, and revision if block admission later refuses.
+        /// </summary>
+        [Test]
+        public static void BrainwipeFenceActivationIsExclusiveAndRollbackIsExact()
+        {
+            scope.Component.ForgetDiaryHistory(target);
+            PawnKnowledgeState state = scope.RequireDiaryRecord(target).knowledgeState;
+            string epoch = state.autobiographicalEpochToken;
+            long structural = state.structuralRevision;
+
+            object unrelatedRequired = BeginFactualEnrollmentMethod.Invoke(
+                scope.Component, new object[] { state, false });
+            PawnDiaryRimTestScope.Require(unrelatedRequired == null
+                    && state.epochFenceOnly
+                    && state.autobiographicalEpochToken == epoch
+                    && state.structuralRevision == structural,
+                "Ordinary or faction-joined capture consumed the Brainwipe-only fence.");
+
+            object brainwipeEnrollment = BeginFactualEnrollmentMethod.Invoke(
+                scope.Component, new object[] { state, true });
+            PawnDiaryRimTestScope.Require(brainwipeEnrollment != null
+                    && !state.epochFenceOnly
+                    && state.autobiographicalEpochToken == epoch
+                    && state.structuralRevision == structural + 1,
+                "brainwipe.completed did not provisionally activate its exact saved fence.");
+            RollBackFactualEnrollmentMethod.Invoke(
+                scope.Component, new[] { brainwipeEnrollment });
+            PawnDiaryRimTestScope.Require(state.epochFenceOnly
+                    && state.autobiographicalEpochToken == epoch
+                    && state.structuralRevision == structural
+                    && state.standaloneBlocks.Count == 0
+                    && state.threadRoots.Count == 0,
+                "A refused Brainwipe Landmark did not restore the original empty fence exactly.");
         }
 
         /// <summary>
@@ -1575,6 +1695,65 @@ namespace PawnDiary.RimTests
             finally
             {
                 MemoryEffectivePolicyProvider.Publish(prior);
+            }
+        }
+
+        /// <summary>
+        /// If protected owner bytes leave no room for the mandatory completion Landmark, admission
+        /// rolls the fence back exactly and records one bounded capacity diagnostic.
+        /// </summary>
+        [Test]
+        public static void BrainwipeLandmarkByteRefusalKeepsFenceAndRecordsDiagnostic()
+        {
+            List<SavedMemoryDiagnosticCounter> priorDiagnostics =
+                PawnDiaryMemoryM11RuntimeFixture.SnapshotMemoryDiagnostics(scope.Component);
+            try
+            {
+                PawnDiaryMemoryM11RuntimeFixture.ReplaceMemoryDiagnostics(
+                    scope.Component, new List<SavedMemoryDiagnosticCounter>());
+                scope.Component.ForgetDiaryHistory(target);
+                PawnKnowledgeState state = scope.RequireDiaryRecord(target).knowledgeState;
+                string ownerId = target.GetUniqueLoadID();
+                string epoch = state.autobiographicalEpochToken;
+                for (int index = 0; index < 32; index++)
+                {
+                    SavedMemoryBlock block =
+                        PawnDiaryMemoryM11RuntimeFixture.BuildStandaloneAdmissionBlock(
+                            ownerId, epoch, "brainwipe-byte-cap-" + index);
+                    block.playerEdited = true;
+                    block.automaticWording = new string('a', 4096);
+                    block.playerWording = new string('p', 4096);
+                    state.standaloneBlocks.Add(block);
+                }
+                state.structuralRevision++;
+                scope.Component.MarkMemoryM4IndexesDirty();
+                scope.Component.RebuildMemorySizeIndexes();
+                object budget =
+                    PawnDiaryMemoryM11RuntimeFixture.CreateObservationBudget(scope.Component);
+                MemoryBudgetLimits limits =
+                    PawnDiaryMemoryM11RuntimeFixture.ObservationBudgetLimits(budget);
+                MemoryLogicalSizeResult oversized = MemoryLogicalPayloadSizer.Size(state);
+                PawnDiaryRimTestScope.Require(oversized.valid
+                        && oversized.totalBytes > limits.activeOwnerBytes,
+                    "The protected Brainwipe fixture did not exceed the owner byte cap.");
+
+                DiaryEvents.Submit(new BrainwipeArrivalSignal(target));
+
+                List<SavedMemoryDiagnosticCounter> diagnostics =
+                    PawnDiaryMemoryM11RuntimeFixture.SnapshotMemoryDiagnostics(scope.Component);
+                PawnDiaryRimTestScope.Require(state.epochFenceOnly
+                        && state.autobiographicalEpochToken == epoch
+                        && state.standaloneBlocks.Count == 32
+                        && state.standaloneBlocks.TrueForAll(block => block.playerEdited)
+                        && diagnostics.Count == 1
+                        && diagnostics[0].reasonToken == "brainwipe_capacity"
+                        && diagnostics[0].saturatedCount == 1,
+                    "Byte-refused Brainwipe Landmark consumed its fence or omitted its diagnostic.");
+            }
+            finally
+            {
+                PawnDiaryMemoryM11RuntimeFixture.ReplaceMemoryDiagnostics(
+                    scope.Component, priorDiagnostics);
             }
         }
 
@@ -2063,7 +2242,9 @@ namespace PawnDiary.RimTests
                     && GlobalFactionSnapshotsField != null
                     && EpochSequenceField != null
                     && EpochFallbackChainField != null
-                    && DiariesField != null,
+                    && DiariesField != null
+                    && BeginFactualEnrollmentMethod != null
+                    && RollBackFactualEnrollmentMethod != null,
                 "Pawn Diary's Brainwipe-owned stores changed; update the fixture.");
         }
 

@@ -3048,6 +3048,45 @@ namespace MemoryThreadTests
             AssertEqual("budget.brainwipe-reserve.reclaimable-fence",
                 "admitted", reserveWithFence.OutcomeToken());
 
+            MemoryGlobalBudgetDecision componentGrowth =
+                ActiveMemoryPayloadBudget.TryAdmitComponentActive(
+                    limits,
+                    64,
+                    new MemoryPayloadBudgetTotals
+                    {
+                        globalActiveBytes = 3000,
+                        globalImportedBytes = 1000
+                    });
+            AssertEqual("budget.component-growth.outcome", "admitted",
+                componentGrowth.OutcomeToken());
+            AssertEqual("budget.component-growth.exact", 3064L,
+                componentGrowth.newTotals.globalActiveBytes);
+            reservedLimits.brainwipeReclaimableFenceBytes = 0;
+            MemoryGlobalBudgetDecision componentReserveRefused =
+                ActiveMemoryPayloadBudget.TryAdmitComponentActive(
+                    reservedLimits,
+                    64,
+                    new MemoryPayloadBudgetTotals
+                    {
+                        globalActiveBytes = 4840,
+                        globalImportedBytes = 100
+                    });
+            AssertEqual("budget.component-growth.reserve-refused", "global_active_full",
+                componentReserveRefused.OutcomeToken());
+            MemoryGlobalBudgetDecision componentOverCapShrink =
+                ActiveMemoryPayloadBudget.TryAdmitComponentActive(
+                    limits,
+                    -64,
+                    new MemoryPayloadBudgetTotals
+                    {
+                        globalActiveBytes = 5100,
+                        globalImportedBytes = 1000
+                    });
+            AssertEqual("budget.component-shrink.over-cap", "admitted",
+                componentOverCapShrink.OutcomeToken());
+            AssertEqual("budget.component-shrink.exact", 5036L,
+                componentOverCapShrink.newTotals.globalActiveBytes);
+
             // Negative deltas (expiry/removal) are legal and can move totals downward.
             MemoryBudgetDecision shrink = ActiveMemoryPayloadBudget.TryAdmit(
                 limits, 400, 100, -300, -100, globals);

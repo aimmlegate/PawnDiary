@@ -438,9 +438,12 @@ namespace PawnDiary
             state.autobiographicalEpochToken = string.Empty;
             state.archiveOnly = false;
             state.epochFenceOnly = false;
-            state.requestCancellationGeneration = 0;
-            state.structuralRevision = 0;
-            state.statusRevision = 0;
+            // This remains a writable current-schema envelope even when allocator repair must happen
+            // before it can enroll again. Zero means missing/invalid to Recall v2 and would make the
+            // first later factual memory persist successfully but remain permanently unusable.
+            state.requestCancellationGeneration = 1;
+            state.structuralRevision = 1;
+            state.statusRevision = 1;
             state.completedDiaryEntryOrdinal = 1;
             state.records?.Clear();
             state.standaloneBlocks?.Clear();

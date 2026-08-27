@@ -60,8 +60,13 @@ namespace PawnDiary
                     StringComparison.Ordinal)
                 && DiaryEvent.RoleEquals(request.povRole, povRoleToken)
                 && !string.IsNullOrWhiteSpace(VariantKeyFor(
-                    ApiLaneIdentity.ForGeneration(
-                        request.endpointUrl, request.modelName, request.apiMode)));
+                    ApiLaneIdentity.ForGate(
+                        request.endpointUrl,
+                        request.modelName,
+                        request.apiMode,
+                        request.authMode,
+                        request.customAuthHeaderName,
+                        request.apiKey)));
         }
     }
 
@@ -154,8 +159,13 @@ namespace PawnDiary
             MemoryInvocationPermitRequest pending = new MemoryInvocationPermitRequest(
                 request.sessionId,
                 context,
-                context.VariantKeyFor(ApiLaneIdentity.ForGeneration(
-                    request.endpointUrl, request.modelName, request.apiMode)),
+                context.VariantKeyFor(ApiLaneIdentity.ForGate(
+                    request.endpointUrl,
+                    request.modelName,
+                    request.apiMode,
+                    request.authMode,
+                    request.customAuthHeaderName,
+                    request.apiKey)),
                 request.systemPrompt,
                 request.rawText,
                 attemptOriginToken,

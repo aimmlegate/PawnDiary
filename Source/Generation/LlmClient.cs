@@ -156,7 +156,11 @@ namespace PawnDiary
         // let retries/failovers name their exact predecessor while the saved row owns ordinals.
         internal int memoryLastAttemptOrdinal;
         internal string memoryLastVariantKey;
+        // The most recent committed permit survives later pre-permit failover failures so the final
+        // result can still identify the physical invocation that reached a provider. This separate
+        // slot is attempt-local and is the only permit a catch block may receipt.
         internal MemoryInvocationCommitPermitV1 memoryLastPermit;
+        internal MemoryInvocationCommitPermitV1 memoryAttemptPermit;
 
         // A memory permit commits one physical invocation, but it does not invalidate the retry and
         // failover variants frozen into this same logical request. Keep that fact across attempts so
@@ -2000,7 +2004,7 @@ namespace PawnDiary
 
                     try
                     {
-                        request.memoryLastPermit = null;
+                        request.memoryAttemptPermit = null;
                         SendResponse response = await SendOnce(request, request.cancellationToken);
                         MemoryInvocationCommitPermitV1 memoryPermit = response.MemoryPermit;
                         if (memoryPermit != null)
@@ -2063,15 +2067,15 @@ namespace PawnDiary
                     }
                     catch (LlmPermanentException ex)
                     {
-                        if (request.memoryLastPermit != null)
+                        if (request.memoryAttemptPermit != null)
                         {
                             request.memoryLastTerminalOutcomeToken =
                                 MemoryDispatchTokens.ProviderError;
                         }
-                        if (request.memoryLastPermit != null
+                        if (request.memoryAttemptPermit != null
                             && !await MemoryDispatchRuntimeBridge.PublishReceiptAsync(
                                 request.sessionId,
-                                request.memoryLastPermit,
+                                request.memoryAttemptPermit,
                                 MemoryDispatchTokens.ProviderError,
                                 false,
                                 request.sessionCancellationToken))
@@ -2089,14 +2093,14 @@ namespace PawnDiary
                         string terminalOutcome = ex is OperationCanceledException
                             ? MemoryDispatchTokens.Timeout
                             : MemoryDispatchTokens.ProviderError;
-                        if (request.memoryLastPermit != null)
+                        if (request.memoryAttemptPermit != null)
                         {
                             request.memoryLastTerminalOutcomeToken = terminalOutcome;
                         }
-                        if (request.memoryLastPermit != null
+                        if (request.memoryAttemptPermit != null
                             && !await MemoryDispatchRuntimeBridge.PublishReceiptAsync(
                                 request.sessionId,
-                                request.memoryLastPermit,
+                                request.memoryAttemptPermit,
                                 terminalOutcome,
                                 false,
                                 request.sessionCancellationToken))
@@ -2190,15 +2194,15 @@ namespace PawnDiary
                     }
                     catch (Exception ex) // unexpected / non-transient
                     {
-                        if (request.memoryLastPermit != null)
+                        if (request.memoryAttemptPermit != null)
                         {
                             request.memoryLastTerminalOutcomeToken =
                                 MemoryDispatchTokens.ProviderError;
                         }
-                        if (request.memoryLastPermit != null
+                        if (request.memoryAttemptPermit != null
                             && !await MemoryDispatchRuntimeBridge.PublishReceiptAsync(
                                 request.sessionId,
-                                request.memoryLastPermit,
+                                request.memoryAttemptPermit,
                                 MemoryDispatchTokens.ProviderError,
                                 false,
                                 request.sessionCancellationToken))
@@ -2392,6 +2396,7 @@ namespace PawnDiary
                     request.memoryLastAttemptOrdinal = memoryPermit.attemptOrdinal;
                     request.memoryLastVariantKey = memoryPermit.variantKey;
                     request.memoryLastPermit = memoryPermit;
+                    request.memoryAttemptPermit = memoryPermit;
                     // Permit waiting uses the session token so an already-committed invocation can
                     // always publish its receipt. Recheck the request deadline immediately afterward:
                     // if it expired while the main thread decided, settle Timeout without crossing

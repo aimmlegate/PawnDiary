@@ -305,8 +305,19 @@ namespace PawnDiary
                             : MemoryStoreMutationOutcome.ProtectedSaturation
                         : capacity;
                 if (pressure.changed)
+                {
                     result.committedOwnerStructuralRevision =
                         pressure.committedOwnerStructuralRevision;
+                    if (memoryObservationActiveAdmissionBudget != null)
+                    {
+                        // Pressure may evict siblings as well as the target projection, so its rare
+                        // path refreshes the complete running session before another observation
+                        // item can spend headroom.
+                        RefreshMemoryObservationBudgetSession(
+                            memoryObservationActiveAdmissionBudget);
+                    }
+                    MarkMemoryLibrarySavedProjectionDirty();
+                }
                 return result;
             }
 
@@ -322,7 +333,23 @@ namespace PawnDiary
             try
             {
                 ReindexMemoryM4OwnerAfterCommit(state, priorStandalone, priorRoots);
-                if (!RefreshMemorySizeIndexForOwner(state)) RebuildMemorySizeIndexes();
+                MemoryObservationBudgetSession observationBudget =
+                    memoryObservationActiveAdmissionBudget;
+                MemoryOwnerByteTotals runningOwner;
+                if (observationBudget != null
+                    && observationBudget.owners.TryGetValue(
+                        state.pawnId, out runningOwner)
+                    && runningOwner.valid)
+                {
+                    // ValidateDetachedCapacity already committed the exact list delta to the running
+                    // session. Publish this owner subtotal locally; the slice tail derives the
+                    // component subtotal and copies the complete session once.
+                    memoryByteTotalsByOwner[state.pawnId] = runningOwner;
+                }
+                else if (!RefreshMemorySizeIndexForOwner(state))
+                {
+                    RebuildMemorySizeIndexes();
+                }
             }
             catch
             {
@@ -331,6 +358,10 @@ namespace PawnDiary
             }
             result.outcome = MemoryStoreMutationOutcome.Admitted;
             result.committedOwnerStructuralRevision = nextOwnerRevision;
+            // Some durable captures intentionally create no diary page, so DiaryStateVersion does
+            // not necessarily change. Invalidate the detached Library next to the authoritative
+            // store commit so warm publications cannot omit the new block or pressure evictions.
+            MarkMemoryLibrarySavedProjectionDirty();
             return result;
         }
 
@@ -402,7 +433,21 @@ namespace PawnDiary
         /// <summary>Repairs duplicate roots for one owner and swaps once on success.</summary>
         internal bool TryRepairSavedMemoryRoots(PawnKnowledgeState owner, MemoryReducerPolicy policy)
         {
-            if (owner == null || owner.threadRoots == null || owner.threadRoots.Count == 0) return false;
+            return TryRepairSavedMemoryRoots(
+                owner, policy, CreateMemoryMigrationBudgetSession());
+        }
+
+        /// <summary>
+        /// Repairs one owner against a caller-owned running budget. Maintenance shares this session
+        /// across its whole slice so multiple Imported archives cannot each spend the same headroom.
+        /// </summary>
+        private bool TryRepairSavedMemoryRoots(
+            PawnKnowledgeState owner,
+            MemoryReducerPolicy policy,
+            MemoryMigrationBudgetSession budget)
+        {
+            if (owner == null || budget == null
+                || owner.threadRoots == null || owner.threadRoots.Count == 0) return false;
             List<MemoryReducerRoot> projected = new List<MemoryReducerRoot>();
             for (int i = 0; i < owner.threadRoots.Count; i++)
                 if (owner.threadRoots[i] != null)
@@ -438,12 +483,12 @@ namespace PawnDiary
             if (!TryIncrement(owner.structuralRevision, out revision)) return false;
             PawnKnowledgeState projectedOwner = BuildRepairCapacityProjection(
                 owner, replacements, imported, revision);
-            MemoryMigrationBudgetProjection ignoredProjection;
+            MemoryMigrationBudgetProjection budgetProjection;
             if (!LegacyReplacementWithinBounds(
                     owner.pawnId,
                     projectedOwner,
-                    CreateMemoryMigrationBudgetSession(),
-                    out ignoredProjection))
+                    budget,
+                    out budgetProjection))
             {
                 RecordMemoryDiagnosticOnce("legacy_authored_conflict", "owner");
                 return false;
@@ -451,6 +496,7 @@ namespace PawnDiary
             owner.threadRoots = replacements;
             owner.importedArchiveRows = imported;
             owner.structuralRevision = revision;
+            ApplyMemoryMigrationBudgetProjection(budget, budgetProjection);
             memoryM4IndexesDirty = true;
             string diagnosticReason = MemoryThreadRepairPolicy.DiagnosticReason(repair);
             if (!string.IsNullOrEmpty(diagnosticReason))
@@ -826,15 +872,79 @@ namespace PawnDiary
             {
                 return MemoryStoreMutationOutcome.CapacityRefused;
             }
-            if (delta <= 0) return MemoryStoreMutationOutcome.Admitted;
-            RebuildMemorySizeIndexes();
-            MemoryOwnerByteTotals owner = GetOwnerByteTotals(current.pawnId);
-            MemoryPayloadBudgetTotals global = GetGlobalBudgetTotals();
+            MemoryObservationBudgetSession observationBudget =
+                memoryObservationActiveAdmissionBudget;
+            if (delta <= 0)
+            {
+                if (observationBudget == null)
+                    return MemoryStoreMutationOutcome.Admitted;
+                MemoryOwnerByteTotals shrinkingOwner;
+                if (!observationBudget.owners.TryGetValue(
+                        current.pawnId, out shrinkingOwner)
+                    || !shrinkingOwner.valid
+                    || shrinkingOwner.activeBytes < 0
+                    || shrinkingOwner.importedBytes < 0
+                    || observationBudget.global.globalActiveBytes < 0
+                    || observationBudget.global.globalImportedBytes < 0)
+                    return MemoryStoreMutationOutcome.CapacityRefused;
+                try
+                {
+                    long ownerActive = checked(shrinkingOwner.activeBytes + delta);
+                    long globalActive = checked(
+                        observationBudget.global.globalActiveBytes + delta);
+                    if (ownerActive < 0 || globalActive < 0)
+                        return MemoryStoreMutationOutcome.CapacityRefused;
+                    observationBudget.owners[current.pawnId] = new MemoryOwnerByteTotals
+                    {
+                        valid = true,
+                        activeBytes = ownerActive,
+                        importedBytes = shrinkingOwner.importedBytes
+                    };
+                    observationBudget.global = new MemoryPayloadBudgetTotals
+                    {
+                        globalActiveBytes = globalActive,
+                        globalImportedBytes = observationBudget.global.globalImportedBytes
+                    };
+                    // A shrink is always beneficial even when corrupt/legacy state started above a
+                    // current cap. Do not make it pass growth/reserve gates before accepting it.
+                    return MemoryStoreMutationOutcome.Admitted;
+                }
+                catch (OverflowException)
+                {
+                    return MemoryStoreMutationOutcome.CapacityRefused;
+                }
+            }
+            MemoryOwnerByteTotals owner = new MemoryOwnerByteTotals();
+            MemoryPayloadBudgetTotals global;
+            bool usingObservationBudget = observationBudget != null
+                && observationBudget.owners.TryGetValue(current.pawnId, out owner)
+                && owner.valid;
+            if (usingObservationBudget)
+            {
+                global = observationBudget.global;
+            }
+            else
+            {
+                RebuildMemorySizeIndexes();
+                owner = GetOwnerByteTotals(current.pawnId);
+                global = GetGlobalBudgetTotals();
+            }
             if (!owner.valid || global.globalActiveBytes < 0 || global.globalImportedBytes < 0)
                 return MemoryStoreMutationOutcome.CapacityRefused;
             MemoryBudgetDecision budget = ActiveMemoryPayloadBudget.TryAdmit(
                 CurrentMemoryBudgetLimits(),
                 owner.activeBytes, owner.importedBytes, delta, 0, global);
+            if (usingObservationBudget
+                && budget.outcome == MemoryBudgetOutcome.Admitted)
+            {
+                observationBudget.global = budget.newTotals;
+                observationBudget.owners[current.pawnId] = new MemoryOwnerByteTotals
+                {
+                    valid = true,
+                    activeBytes = budget.newOwnerActiveBytes,
+                    importedBytes = budget.newOwnerImportedBytes
+                };
+            }
             return budget.outcome == MemoryBudgetOutcome.Admitted
                 ? MemoryStoreMutationOutcome.Admitted
                 : requiredLandmark
