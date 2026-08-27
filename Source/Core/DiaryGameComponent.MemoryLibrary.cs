@@ -136,6 +136,12 @@ namespace PawnDiary
             new List<MemoryLibraryCommand>();
         private readonly Dictionary<string, MemoryLibraryCommandResult> memoryLibraryCommandResults =
             new Dictionary<string, MemoryLibraryCommandResult>(StringComparer.Ordinal);
+        /// <summary>
+        /// Exact transient UI clients. The singleton window normally contributes one token; the set
+        /// keeps lifecycle cleanup correct if a stale close races a replacement during game changes.
+        /// </summary>
+        private readonly HashSet<string> memoryLibraryActiveClients =
+            new HashSet<string>(StringComparer.Ordinal);
         private long memoryLibraryDirectoryRevision;
         private string memoryLibraryDirectoryFingerprint = string.Empty;
         private long memoryLibraryAdditionalLegacyRawOwners;
@@ -170,6 +176,7 @@ namespace PawnDiary
             memoryLibraryCompatibilityPublications.Clear();
             memoryLibraryPendingCommands.Clear();
             memoryLibraryCommandResults.Clear();
+            memoryLibraryActiveClients.Clear();
             memoryLibraryDirectoryRevision = 0;
             memoryLibraryDirectoryFingerprint = string.Empty;
             memoryLibraryAdditionalLegacyRawOwners = 0;
@@ -195,7 +202,10 @@ namespace PawnDiary
         private void RefreshMemoryLibraryPublications()
         {
             if (!MemoryPolicyIsReconciled()) return;
-            if (memoryLibraryDirectoryRevision > 0 && MemoryLibrarySourceTupleChanged())
+            // Source observation is useful only to a live Library. Explicit direct queries (including
+            // loaded fixtures) still set a build request and are allowed to drain below.
+            if (memoryLibraryActiveClients.Count > 0
+                && memoryLibraryDirectoryRevision > 0 && MemoryLibrarySourceTupleChanged())
                 memoryLibraryDirectoryBuildRequested = true;
             if (memoryLibraryDirectoryBuildRequested && memoryLibraryDirectoryBuildJob == null
                 && MemoryObservationPublicationIsStable)
@@ -206,6 +216,51 @@ namespace PawnDiary
                 BuildPendingMemoryLibraryOwnerIndex();
             if (memoryLibraryListBuildOrder.Count > 0)
                 AdvanceMemoryLibraryListBuild();
+        }
+
+        /// <summary>
+        /// Returns a small value stamp for the UI's warm-query gate. No saved object or detached row is
+        /// copied, normalized, or created by this read.
+        /// </summary>
+        internal MemoryLibraryUiRepositoryStamp MemoryLibraryRepositoryStampForUi()
+        {
+            long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            return new MemoryLibraryUiRepositoryStamp
+            {
+                diaryStateRevision = DiaryStateVersion.Current,
+                observationPublicationRevision = memoryObservationPublicationRevision,
+                settingsRevision = MemoryEffectivePolicyProvider.PublicationRevision,
+                ttlDayRevision = now / 60000L,
+                directoryRevision = memoryLibraryDirectoryRevision,
+                publicationRevision = memoryLibraryClock.LastIssuedRevision,
+                languageDisplayRevision = memoryLibraryLanguageDisplayRevision,
+                diaryCount = diaries?.Count ?? 0,
+                unresolvedCount = unresolvedOwnerArchiveRows?.Count ?? 0,
+                rawUnresolvedCount = rawUnresolvedOwnerArchiveInput?.Count ?? 0
+            };
+        }
+
+        /// <summary>Registers one open Library window for paused observation and sliced publications.</summary>
+        internal void BeginMemoryLibraryClient(string clientToken)
+        {
+            if (string.IsNullOrWhiteSpace(clientToken)) return;
+            memoryLibraryActiveClients.Add(clientToken);
+            if (memoryLibraryDirectoryRevision <= 0 || MemoryLibrarySourceTupleChanged())
+                memoryLibraryDirectoryBuildRequested = true;
+        }
+
+        /// <summary>
+        /// Advances only the unstable observation batch blocking an open Library while game ticks are
+        /// paused. The ordinary elapsed-game-time observation schedule remains on GameComponentTick.
+        /// </summary>
+        private void AdvancePausedMemoryLibraryObservation()
+        {
+            bool paused = Find.TickManager?.Paused == true;
+            if (!MemoryLibraryUiPollPolicy.ShouldAdvancePausedObservation(
+                    paused,
+                    memoryLibraryActiveClients.Count > 0,
+                    MemoryObservationPublicationIsStable)) return;
+            TickMemoryObservation(Math.Max(0, Find.TickManager?.TicksGame ?? 0));
         }
 
         /// <summary>Returns one detached paged owner directory; never creates saved state.</summary>
@@ -773,6 +828,7 @@ namespace PawnDiary
         internal void AbandonMemoryLibraryClient(string clientToken)
         {
             if (string.IsNullOrWhiteSpace(clientToken)) return;
+            memoryLibraryActiveClients.Remove(clientToken);
             memoryLibraryPendingCommands.RemoveAll(command => command != null
                 && string.Equals(command.libraryClientToken, clientToken, StringComparison.Ordinal));
             List<string> resultKeys = new List<string>();
@@ -782,6 +838,16 @@ namespace PawnDiary
                     clientToken, StringComparison.Ordinal)) resultKeys.Add(pair.Key);
             for (int index = 0; index < resultKeys.Count; index++)
                 memoryLibraryCommandResults.Remove(resultKeys[index]);
+            if (memoryLibraryActiveClients.Count == 0)
+            {
+                // Keep completed detached caches warm, but release every producer that no window can
+                // consume. A later client revalidates the source tuple and requests fresh work.
+                memoryLibraryDirectoryBuildJob = null;
+                memoryLibraryDirectoryBuildRequested = false;
+                memoryLibraryPendingOwnerBuildKey = string.Empty;
+                memoryLibraryListBuildJobs.Clear();
+                memoryLibraryListBuildOrder.Clear();
+            }
         }
 
         private MemoryLibraryCommandResult ApplyMemoryLibraryCommand(MemoryLibraryCommand command)
@@ -1014,7 +1080,7 @@ namespace PawnDiary
         private void MarkMemoryLibraryMutationCommitted()
         {
             memoryLibraryDirectoryFingerprint = string.Empty;
-            memoryLibraryDirectoryBuildRequested = true;
+            memoryLibraryDirectoryBuildRequested = memoryLibraryActiveClients.Count > 0;
             memoryLibraryOwners.Clear();
             memoryLibraryOwnerCacheFingerprints.Clear();
             memoryLibraryOwnerLru.Clear();
@@ -1049,7 +1115,7 @@ namespace PawnDiary
         private void MarkMemoryLibraryStatusProjectionDirty()
         {
             memoryLibraryDirectoryFingerprint = string.Empty;
-            memoryLibraryDirectoryBuildRequested = true;
+            memoryLibraryDirectoryBuildRequested = memoryLibraryActiveClients.Count > 0;
             memoryLibraryOwners.Clear();
             memoryLibraryOwnerCacheFingerprints.Clear();
             memoryLibraryOwnerLru.Clear();
@@ -1065,7 +1131,7 @@ namespace PawnDiary
         /// </summary>
         private void MarkMemoryLibraryCultureProjectionDirty()
         {
-            memoryLibraryDirectoryBuildRequested = true;
+            memoryLibraryDirectoryBuildRequested = memoryLibraryActiveClients.Count > 0;
             // The global detached-state fence aborts an in-flight directory header build. Owner-cache
             // fingerprints deliberately exclude it, so byte-equivalent memory publications survive.
             DiaryStateVersion.Bump();

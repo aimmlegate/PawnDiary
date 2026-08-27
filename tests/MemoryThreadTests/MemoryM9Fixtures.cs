@@ -36,19 +36,27 @@ namespace MemoryThreadTests
         private static void RepositoryPollingIsBoundedAndResponsive()
         {
             Equal("m9.poll.first", true,
-                MemoryLibraryUiPollPolicy.ShouldPoll(100, -1, 6, false));
+                MemoryLibraryUiPollPolicy.ShouldPoll(100, -1, 6, true, false));
             Equal("m9.poll.same-frame", false,
-                MemoryLibraryUiPollPolicy.ShouldPoll(100, 100, 6, false));
+                MemoryLibraryUiPollPolicy.ShouldPoll(100, 100, 6, false, true));
             Equal("m9.poll.before-interval", false,
-                MemoryLibraryUiPollPolicy.ShouldPoll(105, 100, 6, false));
+                MemoryLibraryUiPollPolicy.ShouldPoll(105, 100, 6, false, true));
             Equal("m9.poll.at-interval", true,
-                MemoryLibraryUiPollPolicy.ShouldPoll(106, 100, 6, false));
+                MemoryLibraryUiPollPolicy.ShouldPoll(106, 100, 6, false, true));
             Equal("m9.poll.immediate", true,
-                MemoryLibraryUiPollPolicy.ShouldPoll(101, 100, 6, true));
+                MemoryLibraryUiPollPolicy.ShouldPoll(101, 100, 6, true, false));
             Equal("m9.poll.frame-reset", true,
-                MemoryLibraryUiPollPolicy.ShouldPoll(1, int.MaxValue, 6, false));
+                MemoryLibraryUiPollPolicy.ShouldPoll(1, int.MaxValue, 6, false, true));
             Equal("m9.poll.invalid-fallback", false,
-                MemoryLibraryUiPollPolicy.ShouldPoll(105, 100, 0, false));
+                MemoryLibraryUiPollPolicy.ShouldPoll(105, 100, 0, false, true));
+            Equal("m9.poll.settled-does-no-work", false,
+                MemoryLibraryUiPollPolicy.ShouldPoll(1000, 100, 6, false, false));
+            Equal("m9.poll.paused-open-unstable", true,
+                MemoryLibraryUiPollPolicy.ShouldAdvancePausedObservation(true, true, false));
+            Equal("m9.poll.paused-closed-does-not-advance", false,
+                MemoryLibraryUiPollPolicy.ShouldAdvancePausedObservation(true, false, false));
+            Equal("m9.poll.paused-stable-does-not-advance", false,
+                MemoryLibraryUiPollPolicy.ShouldAdvancePausedObservation(true, true, true));
         }
 
         private static void OwnerSelectionUsesExactHandles()
@@ -264,8 +272,12 @@ namespace MemoryThreadTests
             detail.row.targetStructuralRevision = 8;
             MemoryLibraryUiPolicy.MergeDetailRefresh(draft, detail);
             Equal("m9.draft.structural-keeps-text", "player keeps this", draft.text);
-            Equal("m9.draft.structural-rebases-fence", 8L, draft.targetStructuralRevision);
+            Equal("m9.draft.structural-preserves-fence", 7L, draft.targetStructuralRevision);
             Equal("m9.draft.structural-conflict", true, draft.structuralConflict);
+            MemoryLibraryCommand conflicted = MemoryLibraryUiPolicy.BuildBlockCommand(
+                "client", 99, MemoryLibraryActions.SaveWording, detail.row, false, draft);
+            Equal("m9.draft.structural-command-keeps-original-fence",
+                7L, conflicted.targetStructuralRevision);
             Equal("m9.draft.stale-retained", false,
                 MemoryLibraryUiPolicy.ApplyEditCommandResult(draft,
                     new MemoryLibraryCommandResult { status = MemoryLibraryCommandStatuses.Stale }));
@@ -524,28 +536,20 @@ namespace MemoryThreadTests
         private static void LibraryLocalizationHasEnglishRussianPlaceholderParity()
         {
             string root = FindRepositoryRoot();
-            string[] uiFiles =
-            {
-                Path.Combine(root, "Source", "UI", "Dialog_MemoryLibrary.cs"),
-                Path.Combine(root, "Source", "UI", "Dialog_MemoryLibrary.Layout.cs"),
-                Path.Combine(root, "Source", "UI", "DiaryJournalView.cs")
-            };
-            HashSet<string> used = new HashSet<string>(StringComparer.Ordinal);
-            Regex keyPattern = new Regex("PawnDiary\\.Memory\\.Library\\.[A-Za-z0-9.]+",
-                RegexOptions.CultureInvariant);
-            for (int fileIndex = 0; fileIndex < uiFiles.Length; fileIndex++)
-                foreach (Match match in keyPattern.Matches(File.ReadAllText(uiFiles[fileIndex])))
-                    used.Add(match.Value);
-
             Dictionary<string, string> english = ReadKeyed(Path.Combine(root,
                 "Languages", "English", "Keyed", "PawnDiary.xml"));
             Dictionary<string, string> russian = ReadKeyed(Path.Combine(root,
                 "Languages", "Russian (Русский)", "Keyed", "PawnDiary.xml"));
-            foreach (string key in used.OrderBy(value => value, StringComparer.Ordinal))
+            // Several Library keys are assembled from stable suffix tokens (importance, filters,
+            // badges, and actions), so source-literal discovery misses real UI paths. Every English
+            // Memory key must therefore have Russian text with the same format placeholders.
+            foreach (string key in english.Keys
+                .Where(value => value.StartsWith(
+                    "PawnDiary.Memory.", StringComparison.Ordinal))
+                .OrderBy(value => value, StringComparer.Ordinal))
             {
-                Equal("m9.localization.english." + key, true, english.ContainsKey(key));
                 Equal("m9.localization.russian." + key, true, russian.ContainsKey(key));
-                if (english.ContainsKey(key) && russian.ContainsKey(key))
+                if (russian.ContainsKey(key))
                     Equal("m9.localization.placeholders." + key,
                         PlaceholderSignature(english[key]), PlaceholderSignature(russian[key]));
             }

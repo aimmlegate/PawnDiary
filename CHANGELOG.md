@@ -8,6 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-08-27
 
+- **Memory M11 audit follow-up.** Enforce the componentwise M0 cap ceiling and fresh pure-evidence provenance, complete Russian Memory UI parity, and cover Library counts plus culture preservation under archive normalization and pressure.
 - **Memory M11 release review hardening.** Fix migration, retry, prompt-budget, folding, Brainwipe, repair, knownness, indexing, recall, and maintenance edge cases with exhaustive standalone and loaded-fixture regression coverage.
 - **Memory M11 CurrentRelease.** Activate unified migration, capture, Recall v2, settings, Library, and optional coordinator work as one release lifecycle.
 

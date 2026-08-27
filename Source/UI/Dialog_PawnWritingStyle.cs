@@ -206,12 +206,18 @@ namespace PawnDiary
                 psychotypeResolution,
                 previewDecision);
             DrawBackgroundMemorySection(contentRect.x, innerWidth, ref y);
-            DrawMemorySection(
-                contentRect.x,
-                innerWidth,
-                ref y,
-                importantMemories,
-                showDeveloperKnowledge);
+            // CurrentRelease migrates captured/contextual legacy records into canonical Library
+            // blocks and intentionally stops writing the old records list. Keeping this second editor
+            // visible would report zero beside real Library memories and could never mutate them.
+            if (!MemorySystemActivationGate.IsCurrentRelease)
+            {
+                DrawMemorySection(
+                    contentRect.x,
+                    innerWidth,
+                    ref y,
+                    importantMemories,
+                    showDeveloperKnowledge);
+            }
             if (showDeveloperKnowledge)
             {
                 DrawLoreMemorySection(contentRect.x, innerWidth, ref y, loreMemory);

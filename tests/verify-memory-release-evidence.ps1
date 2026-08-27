@@ -39,6 +39,43 @@ function Sha256-File {
     return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 
+function Sha256-CanonicalUtf8File {
+    param([string]$Path)
+
+    $bytes = [IO.File]::ReadAllBytes($Path)
+    $hasBom = $bytes.Length -ge 3 -and $bytes[0] -eq 0xEF `
+        -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF
+    Require (-not $hasBom) "$Path contains a forbidden UTF-8 BOM."
+    $value = [Text.UTF8Encoding]::new($false, $true).GetString($bytes)
+    return Sha256-Text ($value.Replace("`r`n", "`n").Replace("`r", "`n"))
+}
+
+function Read-OneArtifactFile {
+    param(
+        [string]$Pattern,
+        [string]$Description
+    )
+
+    $matches = @(Get-ChildItem -LiteralPath $resultRoot -Filter $Pattern -File)
+    Require ($matches.Count -eq 1) "Expected exactly one $Description for current source identity; found $($matches.Count)."
+    return $matches[0]
+}
+
+function Require-GeneratedJsonScalar {
+    param(
+        [IO.FileInfo]$File,
+        [string]$Name,
+        [string]$ExpectedJson
+    )
+
+    # The benchmark owns this stable indented format. Anchoring at two spaces distinguishes the
+    # top-level provenance field from similarly named values inside the large vector table.
+    $pattern = '^  "' + [Regex]::Escape($Name) + '": ' +
+        [Regex]::Escape($ExpectedJson) + ',?$'
+    $matches = @(Select-String -LiteralPath $File.FullName -Pattern $pattern -CaseSensitive)
+    Require ($matches.Count -eq 1) "$($File.Name) has stale or ambiguous '$Name'."
+}
+
 function Read-OneArtifact {
     param(
         [string]$Pattern,
@@ -126,6 +163,10 @@ $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 $resultRoot = Join-Path $repoRoot "benchmarks\results\memory-system"
 $activationPath = Join-Path $repoRoot "Source\Pipeline\Knowledge\MemoryThreadContracts.cs"
 $dllPath = Join-Path $repoRoot "1.6\Assemblies\PawnDiary.dll"
+$catalogRoot = Join-Path $repoRoot "benchmarks\MemoryThreadBenchmarks\Catalog"
+$capacityPath = Join-Path $catalogRoot "memory-capacity-catalog-v1.json"
+$fixturePath = Join-Path $catalogRoot "memory-m0-fixture-catalog-v1.json"
+$payloadPath = Join-Path $catalogRoot "memory-payload-atom-catalog-v1.json"
 
 $activation = Get-Content -Raw -LiteralPath $activationPath
 if ($activation -cnotmatch 'public const string BuildState = CurrentRelease;') {
@@ -141,6 +182,24 @@ $expectedCommitLength = if ($gitObjectFormat -ceq "sha1") { 40 } else { 64 }
 Require ($gitCommitObjectId -cmatch "^[0-9a-f]{$expectedCommitLength}$") "Git commit identity is not full lowercase hexadecimal."
 $sourceCommitIdentity = Sha256-Text ((Segment "memory-source-commit-v1") + (Segment $gitObjectFormat) + (Segment $gitCommitObjectId))
 $candidateDllHash = Sha256-File $dllPath
+
+# M11 cannot reuse M0/LegacyShadow surrogate output. Require a freshly generated pure artifact
+# whose source identity, catalogs, activation, and production M4 reducer trace all match this release.
+$pureFile = Read-OneArtifactFile "$sourceCommitIdentity-pure.json" "M11 pure benchmark artifact"
+Require-GeneratedJsonScalar $pureFile "schema" '"memory-system-benchmark-v1"'
+Require-GeneratedJsonScalar $pureFile "gitObjectFormat" ('"' + $gitObjectFormat + '"')
+Require-GeneratedJsonScalar $pureFile "gitCommitObjectId" ('"' + $gitCommitObjectId + '"')
+Require-GeneratedJsonScalar $pureFile "sourceCommitIdentity" ('"' + $sourceCommitIdentity + '"')
+Require-GeneratedJsonScalar $pureFile "activationBuildState" '"CurrentRelease"'
+Require-GeneratedJsonScalar $pureFile "capacityCatalogSha256" ('"' + (Sha256-CanonicalUtf8File $capacityPath) + '"')
+Require-GeneratedJsonScalar $pureFile "fixtureCatalogSha256" ('"' + (Sha256-CanonicalUtf8File $fixturePath) + '"')
+Require-GeneratedJsonScalar $pureFile "payloadAtomCatalogSha256" ('"' + (Sha256-CanonicalUtf8File $payloadPath) + '"')
+Require-GeneratedJsonScalar $pureFile "pureCoverageDisposition" '"m0_capacity_surrogate_plus_m4_reducer_trace"'
+Require-GeneratedJsonScalar $pureFile "retentionReducerTraceExecuted" 'true'
+$selectedIdMatches = @(Select-String -LiteralPath $pureFile.FullName -CaseSensitive `
+    -Pattern '^  "selectedVectorId": "([0-9a-f]{64})",?$')
+Require ($selectedIdMatches.Count -eq 1) "$($pureFile.Name) has no unique top-level selected vector."
+$pureSelectedVectorId = $selectedIdMatches[0].Matches[0].Groups[1].Value
 
 $releaseArtifact = Read-OneArtifact "$sourceCommitIdentity-memory-release-manifest-*.json" "M11 release manifest"
 $release = $releaseArtifact.Value
@@ -163,6 +222,7 @@ Require-SourceIdentity $selected "The M11 selected-rerun manifest"
 Require ([bool]$selected.selectedReleaseRerun) "The selected-rerun manifest is not domain-separated as a selected rerun."
 Require ([int]$selected.shardCount -eq 1) "The selected-rerun manifest must use exactly one shard."
 Require-ThreeTargets @($selected.entries) "selectedReleaseRerun" $true
+Require (@($selected.entries | Where-Object { [string]$_.vectorId -cne $pureSelectedVectorId }).Count -eq 0) "The loaded selected rerun does not bind the pure benchmark's selected vector."
 Require ([string]$selected.candidateDllSha256 -ceq $candidateDllHash) "The selected-rerun manifest does not bind the checked-in candidate DLL."
 
 $selectedAggregateArtifact = Read-OneArtifact "$sourceCommitIdentity-rimtest-selected-aggregate-$($selected.manifestId).json" "M11 selected-rerun aggregate"

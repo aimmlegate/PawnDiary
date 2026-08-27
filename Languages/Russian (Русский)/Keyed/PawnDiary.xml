@@ -2212,4 +2212,42 @@
   <PawnDiary.Memory.Library.UseAgain>Снова использовать</PawnDiary.Memory.Library.UseAgain>
   <PawnDiary.Memory.Library.UseOriginal>Вернуть исходный текст</PawnDiary.Memory.Library.UseOriginal>
   <PawnDiary.Memory.Library.UseOriginalWarning>Срок изменённого воспоминания уже истёк, поэтому при следующей явной очистке оно может быть забыто. Вернуть исходный текст?</PawnDiary.Memory.Library.UseOriginalWarning>
+  <PawnDiary.Memory.Settings.UseOriginal.Warning>Срок хранения этого воспоминания уже истёк, и оно может быть забыто при следующей очистке. Вернуть исходную формулировку?</PawnDiary.Memory.Settings.UseOriginal.Warning>
+  <PawnDiary.Memory.Library.Search>Поиск воспоминаний</PawnDiary.Memory.Library.Search>
+  <PawnDiary.Memory.Library.Filter.All>Все воспоминания</PawnDiary.Memory.Library.Filter.All>
+  <PawnDiary.Memory.Library.Filter.Suppressed>Исключённые</PawnDiary.Memory.Library.Filter.Suppressed>
+  <PawnDiary.Memory.Library.Filter.Edited>Изменённые</PawnDiary.Memory.Library.Filter.Edited>
+  <PawnDiary.Memory.Library.Filter.Expiring>С истекающим сроком</PawnDiary.Memory.Library.Filter.Expiring>
+  <PawnDiary.Memory.Library.Sort.Recent>Сначала недавние</PawnDiary.Memory.Library.Sort.Recent>
+  <PawnDiary.Memory.Library.Sort.Oldest>Сначала старые</PawnDiary.Memory.Library.Sort.Oldest>
+  <PawnDiary.Memory.Library.Sort.Importance>Важность</PawnDiary.Memory.Library.Sort.Importance>
+  <PawnDiary.Memory.Library.Sort.Subject>Человек или субъект</PawnDiary.Memory.Library.Sort.Subject>
+  <PawnDiary.Memory.Library.Empty>У этого поселенца нет воспоминаний в выбранном представлении.</PawnDiary.Memory.Library.Empty>
+  <PawnDiary.Memory.Library.Loading>Подготовка библиотеки воспоминаний…</PawnDiary.Memory.Library.Loading>
+  <PawnDiary.Memory.Library.AdditionalOwners>Дополнительные владельцы из прежних версий не показаны: {0}.</PawnDiary.Memory.Library.AdditionalOwners>
+  <PawnDiary.Memory.Library.AdditionalColonists>Дополнительные поселенцы без воспоминаний не показаны: {0}.</PawnDiary.Memory.Library.AdditionalColonists>
+  <PawnDiary.Memory.Library.CurrentStatus>Текущее состояние</PawnDiary.Memory.Library.CurrentStatus>
+  <PawnDiary.Memory.Library.Importance.Minor>Незначительное</PawnDiary.Memory.Library.Importance.Minor>
+  <PawnDiary.Memory.Library.Importance.Regular>Обычное</PawnDiary.Memory.Library.Importance.Regular>
+  <PawnDiary.Memory.Library.Importance.Important>Важное</PawnDiary.Memory.Library.Importance.Important>
+  <PawnDiary.Memory.Library.Ttl.Never>Без обычного срока</PawnDiary.Memory.Library.Ttl.Never>
+  <PawnDiary.Memory.Library.Ttl.Unknown>Возраст неизвестен</PawnDiary.Memory.Library.Ttl.Unknown>
+  <PawnDiary.Memory.Library.Ttl.Expired>Ожидает забывания</PawnDiary.Memory.Library.Ttl.Expired>
+  <PawnDiary.Memory.Library.Ttl.Remaining>Осталось дней: {0}</PawnDiary.Memory.Library.Ttl.Remaining>
+  <PawnDiary.Memory.Library.Badge.Suppressed>Исключено</PawnDiary.Memory.Library.Badge.Suppressed>
+  <PawnDiary.Memory.Library.Badge.Edited>Изменено</PawnDiary.Memory.Library.Badge.Edited>
+  <PawnDiary.Memory.Library.Badge.RollingSummary>Текущая сводка</PawnDiary.Memory.Library.Badge.RollingSummary>
+  <PawnDiary.Memory.Library.Badge.ClosedSummary>Сводка закрытой главы</PawnDiary.Memory.Library.Badge.ClosedSummary>
+  <PawnDiary.Memory.Library.Action.Suppress>Исключить из текста</PawnDiary.Memory.Library.Action.Suppress>
+  <PawnDiary.Memory.Library.Action.Enable>Разрешить в тексте</PawnDiary.Memory.Library.Action.Enable>
+  <PawnDiary.Memory.Library.Action.Edit>Изменить формулировку</PawnDiary.Memory.Library.Action.Edit>
+  <PawnDiary.Memory.Library.Action.UseOriginal>Вернуть исходную формулировку</PawnDiary.Memory.Library.Action.UseOriginal>
+  <PawnDiary.Memory.Library.Action.Forget>Забыть</PawnDiary.Memory.Library.Action.Forget>
+  <PawnDiary.Memory.Library.Action.ForgetConfirm>Навсегда забыть это воспоминание? Существующие страницы дневника и другие сводки не изменятся. Это действие необратимо.</PawnDiary.Memory.Library.Action.ForgetConfirm>
+  <PawnDiary.Memory.Library.Action.CapFull>Изменение превысит предел хранилища воспоминаний. Черновик сохранён.</PawnDiary.Memory.Library.Action.CapFull>
+  <PawnDiary.Memory.Library.Action.Conflict>Воспоминание изменилось во время редактирования. Проверьте сохранённый черновик перед повторной попыткой.</PawnDiary.Memory.Library.Action.Conflict>
+  <PawnDiary.Memory.Library.Imported.ReadOnly>Импортированные данные из прежних версий доступны только для чтения.</PawnDiary.Memory.Library.Imported.ReadOnly>
+  <PawnDiary.Memory.Library.Imported.RawPreview>Это унаследованное воспоминание слишком велико или неполно для текущего формата. Доступен только ограниченный предпросмотр.</PawnDiary.Memory.Library.Imported.RawPreview>
+  <PawnDiary.Memory.Library.Dev.Diagnostics>Копировать диагностику</PawnDiary.Memory.Library.Dev.Diagnostics>
+  <PawnDiary.Memory.Library.Dev.RejectionReasons>Причины отклонения</PawnDiary.Memory.Library.Dev.RejectionReasons>
 </LanguageData>

@@ -92,7 +92,7 @@ $knownChapterDirectives = @(
 $knownClosureReasons = @("formal_end", "reversal", "lifecycle", "inactivity", "repair")
 
 $defs = @($important.Root.Elements("PawnDiary.DiaryImportantEventDef"))
-Require ($defs.Count -eq 34) "Expected 34 shipped important-event Defs, found $($defs.Count)."
+Require ($defs.Count -eq 35) "Expected 35 shipped important-event Defs, found $($defs.Count)."
 $defNames = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
 $eventFacts = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
 $factCategoryOwner = @{}
@@ -207,12 +207,15 @@ foreach ($def in $defs) {
     Require ($null -ne $russianInjected.Root.Element([System.Xml.Linq.XName]"$defName.label")) "Missing Russian label for $defName."
     Require ($null -ne $russianInjected.Root.Element([System.Xml.Linq.XName]"$defName.lineTemplate")) "Missing Russian lineTemplate for $defName."
 }
-Require ($standaloneCount -eq 1) "Expected exactly one intentionally Standalone shipped capture rule."
+Require ($standaloneCount -eq 2) "Expected exactly two intentionally Standalone shipped capture rules."
 Require ($seenCategories.Count -eq 4) "The shipped capture catalog must own exactly four categories."
 Require ((@($seenStreamSubjects | Sort-Object) -join '/') -ceq (@($knownStreamSubjects | Sort-Object) -join '/')) "The shipped stream-token set does not match the closed M0 allowlist."
 
 $dimensions = @($capacity.dimensions)
 Require ($dimensions.Count -eq 64) "Capacity catalog must contain exactly 64 dimensions."
+$dimensionGateId = [string]$capacity.dimensionGateId
+Require (-not [string]::IsNullOrWhiteSpace($dimensionGateId)) "Capacity dimensions have no executable gate mapping."
+Require (@($fixture.pureGateIds) -ccontains $dimensionGateId) "Capacity dimension gate '$dimensionGateId' is not registered."
 $dimensionNames = @($dimensions | ForEach-Object { [string]$_.name })
 Require (($dimensionNames | Sort-Object -Unique -CaseSensitive).Count -eq 64) "Capacity dimension names are not unique."
 Require (@($capacity.startVector.psobject.Properties).Count -eq 64) "Start vector is not exhaustive."
@@ -230,7 +233,9 @@ Require ($xmlVector.Count -eq 64) "XML production vector must contain exactly 64
 for ($index = 0; $index -lt $xmlVector.Count; $index++) {
     $expectedName = $dimensionNames[$index]
     $actualName = Child-Text $xmlVector[$index] "name"
+    $actualValue = Child-Text $xmlVector[$index] "valueEncoding"
     Require ($actualName -ceq $expectedName) "XML capacity order mismatch at ${index}: $actualName vs $expectedName."
+    Require (@($dimensions[$index].values) -ccontains $actualValue) "XML capacity value '$actualValue' is not swept for $actualName."
 }
 
 Require ((Child-Text $tuningDef "minorMemoryLifetimeDefaultDays") -ceq "15") "Minor lifetime default drifted."

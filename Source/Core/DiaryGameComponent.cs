@@ -776,6 +776,7 @@ namespace PawnDiary
             {
                 ReconcilePublishedMemoryPolicy();
                 PawnDiaryMod.ResumeCommittedSettingsSideEffects();
+                AdvancePausedMemoryLibraryObservation();
                 RefreshMemoryLibraryPublications();
                 DrainMemoryLibraryCommands();
                 DrainCompletedLlmWork();

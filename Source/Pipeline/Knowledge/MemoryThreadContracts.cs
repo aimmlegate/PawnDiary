@@ -242,7 +242,7 @@ namespace PawnDiary
                 "attemptAuditRowsPerRequestGlobal=4/1024", "runtimeQueueEntries=128",
                 "activeRequestsOwnerGlobal=8/128", "frozenVariantAttemptCaps=4/4",
                 "frozenEvidenceGuardDiagnosticCaps=2/8/16", "frozenPromptUnits=4096",
-                "acceptedPromptPairsEscapedBytesGlobal=2000/16777216", "factionSnapshots=256",
+                "acceptedPromptPairsEscapedBytesGlobal=500/4194304", "factionSnapshots=256",
                 "dirtyObservationKeys=1024", "legacyEpochReservations=64",
                 "awarenessFacts=4", "awarenessRows=128", "openEpisodes=16",
                 "ownerSlotTriple=1000/1001/1000", "searchQueryBounds=80/160",

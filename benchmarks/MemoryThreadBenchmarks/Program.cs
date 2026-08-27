@@ -54,6 +54,7 @@ namespace MemoryThreadBenchmarks
             public List<Dimension> dimensions;
             public Dictionary<string, string> start;
             public List<List<string>> bundles;
+            public string dimensionGateId;
         }
 
         private sealed class FixedRow
@@ -172,14 +173,17 @@ namespace MemoryThreadBenchmarks
             bool validateOnly = args.Any(arg => arg == "--validate-only");
             string root = RepoRoot();
             Catalog catalog = LoadCatalog(root);
+            HashSet<string> pureGateIds = LoadPureGateIds(root);
             List<FixedRow> fixedRows = LoadFixedRows(root);
             List<SyntheticScenario> scenarios = LoadSyntheticScenarios(root);
             PayloadAtomAudit payloadAtomAudit = ValidatePayloadAtomCatalog(root);
-            ValidateCatalog(catalog);
+            ValidateCatalog(catalog, pureGateIds);
             ValidateTimingConversionGoldens();
             ValidateCanonicalUtf8HashGoldens();
+            ValidateComponentwiseReleaseGoldens();
             ValidateM4ReducerTrace();
             List<Candidate> candidates = GenerateCandidates(catalog);
+            ValidateVectorGeneratorCoverage(catalog, candidates);
             ValidateCodeFallback(catalog, candidates);
             Dictionary<string, ScenarioAudit> scenarioAudits = Evaluate(
                 candidates,
@@ -188,15 +192,17 @@ namespace MemoryThreadBenchmarks
             string committedFallback = EncodeVector(catalog.dimensions,
                 MemoryCapacityContracts.ProvisionalProduction().ToDictionary(
                     row => row.name, row => row.valueEncoding, StringComparer.Ordinal));
-            Candidate selected = candidates.SingleOrDefault(
+            Candidate production = candidates.SingleOrDefault(
                 row => string.Equals(row.encoding, committedFallback, StringComparison.Ordinal));
-            if (selected == null || !selected.feasible)
+            if (production == null || !production.feasible)
                 throw new InvalidOperationException(
                     "The committed production fallback is absent or fails its release gates.");
+            Candidate selected = Select(candidates);
+            if (!ComponentwiseNoGreater(production, selected))
+                throw new InvalidOperationException(
+                    "The committed production fallback exceeds the M0-selected vector.");
             ManifestAudit manifestAudit = BuildAndValidateManifestAudit(
                 catalog, fixedRows, candidates, selected);
-            if (!string.Equals(selected.encoding, committedFallback, StringComparison.Ordinal))
-                throw new InvalidOperationException("Selected vector does not match the committed M0 fallback.");
 
             Console.WriteLine("MemoryThreadBenchmarks generated " + candidates.Count
                 + " normalized vectors; " + candidates.Count(row => row.feasible)
@@ -243,7 +249,8 @@ namespace MemoryThreadBenchmarks
                 {
                     dimensions = new List<Dimension>(),
                     start = new Dictionary<string, string>(StringComparer.Ordinal),
-                    bundles = new List<List<string>>()
+                    bundles = new List<List<string>>(),
+                    dimensionGateId = rootElement.GetProperty("dimensionGateId").GetString()
                 };
                 foreach (JsonProperty property in rootElement.GetProperty("startVector").EnumerateObject())
                     catalog.start.Add(property.Name, property.Value.GetString());
@@ -259,6 +266,17 @@ namespace MemoryThreadBenchmarks
                 foreach (JsonElement bundle in rootElement.GetProperty("bundles").EnumerateArray())
                     catalog.bundles.Add(bundle.EnumerateArray().Select(value => value.GetString()).ToList());
                 return catalog;
+            }
+        }
+
+        private static HashSet<string> LoadPureGateIds(string root)
+        {
+            string path = Path.Combine(root, "benchmarks", "MemoryThreadBenchmarks", "Catalog",
+                "memory-m0-fixture-catalog-v1.json");
+            using (JsonDocument document = JsonDocument.Parse(File.ReadAllText(path)))
+            {
+                return new HashSet<string>(document.RootElement.GetProperty("pureGateIds")
+                    .EnumerateArray().Select(value => value.GetString()), StringComparer.Ordinal);
             }
         }
 
@@ -450,10 +468,14 @@ namespace MemoryThreadBenchmarks
             }
         }
 
-        private static void ValidateCatalog(Catalog catalog)
+        private static void ValidateCatalog(Catalog catalog, HashSet<string> pureGateIds)
         {
             if (catalog.dimensions.Count != 64)
                 throw new InvalidOperationException("Expected exactly 64 ordered T17.6 dimensions.");
+            if (string.IsNullOrWhiteSpace(catalog.dimensionGateId)
+                || pureGateIds == null || !pureGateIds.Contains(catalog.dimensionGateId))
+                throw new InvalidOperationException(
+                    "Every capacity dimension must map to a registered executable gate.");
             HashSet<string> names = new HashSet<string>(StringComparer.Ordinal);
             foreach (Dimension dimension in catalog.dimensions)
             {
@@ -507,6 +529,38 @@ namespace MemoryThreadBenchmarks
             List<Candidate> result = byEncoding.Values.OrderBy(row => row.encoding, StringComparer.Ordinal).ToList();
             for (int index = 0; index < result.Count; index++) result[index].vectorOrdinal = index;
             return result;
+        }
+
+        /// <summary>
+        /// Proves the catalog's shared M0-VECTOR-GENERATOR gate actually visits every valid
+        /// one-factor value for every retained capacity dimension.
+        /// </summary>
+        private static void ValidateVectorGeneratorCoverage(
+            Catalog catalog,
+            List<Candidate> candidates)
+        {
+            Dictionary<string, Candidate> byEncoding = candidates.ToDictionary(
+                row => row.encoding, StringComparer.Ordinal);
+            foreach (Dimension dimension in catalog.dimensions)
+            {
+                for (int index = 0; index < dimension.values.Count; index++)
+                {
+                    Dictionary<string, string> values = Copy(catalog.start);
+                    values[dimension.name] = dimension.values[index];
+                    if (!CrossCapsValid(values)) continue;
+                    string encoding = EncodeVector(catalog.dimensions, values);
+                    Candidate candidate;
+                    string origin = "oneFactor:" + dimension.name + ":"
+                        + index.ToString(CultureInfo.InvariantCulture);
+                    if (!byEncoding.TryGetValue(encoding, out candidate)
+                        || !candidate.origins.Contains(origin))
+                    {
+                        throw new InvalidOperationException(
+                            catalog.dimensionGateId + " missed " + dimension.name
+                            + " value " + dimension.values[index] + ".");
+                    }
+                }
+            }
         }
 
         private static void AddBundleCandidates(Catalog catalog, Dictionary<string, Candidate> target,
@@ -1178,6 +1232,37 @@ namespace MemoryThreadBenchmarks
                     "No provisionally feasible vector. Rejections: " + failures);
             }
             return selected;
+        }
+
+        /// <summary>
+        /// M11 may retain the M0-selected vector or lower individual scalar/tuple members, but a
+        /// release may never raise even one member without reopening M0 with new evidence.
+        /// </summary>
+        private static bool ComponentwiseNoGreater(Candidate release, Candidate selected)
+        {
+            if (release?.numericCoordinates == null || selected?.numericCoordinates == null
+                || release.numericCoordinates.Length != selected.numericCoordinates.Length)
+                return false;
+            for (int index = 0; index < release.numericCoordinates.Length; index++)
+                if (release.numericCoordinates[index] > selected.numericCoordinates[index])
+                    return false;
+            return true;
+        }
+
+        private static void ValidateComponentwiseReleaseGoldens()
+        {
+            Candidate selected = new Candidate { numericCoordinates = new ulong[] { 4, 8, 16 } };
+            Candidate exact = new Candidate { numericCoordinates = new ulong[] { 4, 8, 16 } };
+            Candidate lower = new Candidate { numericCoordinates = new ulong[] { 2, 8, 12 } };
+            Candidate raisedTupleMember = new Candidate
+                { numericCoordinates = new ulong[] { 4, 9, 12 } };
+            Candidate malformed = new Candidate { numericCoordinates = new ulong[] { 4, 8 } };
+            if (!ComponentwiseNoGreater(exact, selected)
+                || !ComponentwiseNoGreater(lower, selected)
+                || ComponentwiseNoGreater(raisedTupleMember, selected)
+                || ComponentwiseNoGreater(malformed, selected))
+                throw new InvalidOperationException(
+                    "Componentwise M11 release-vector goldens failed.");
         }
 
         private static ManifestAudit BuildAndValidateManifestAudit(

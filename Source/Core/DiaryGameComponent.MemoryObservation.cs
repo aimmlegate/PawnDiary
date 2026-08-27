@@ -264,7 +264,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Runs at the start of the existing social-reflection tick seam. Work is elapsed-time driven,
+        /// Runs at the start of the existing social-reflection tick seam, plus bounded real-time
+        /// updates while an open Library is blocked by paused observation. Work is elapsed-time driven,
         /// sliced by the shared XML capacity vector, and never loops across skipped game time.
         /// </summary>
         private void TickMemoryObservation(int now)

@@ -1,6 +1,7 @@
 {
   "schema": "memory-capacity-catalog-v1",
   "vectorSchema": "memory-system-vector-v1",
+  "dimensionGateId": "M0-VECTOR-GENERATOR",
   "startVector": {
     "eventFacts": "16",
     "blockProvenanceRows": "8",

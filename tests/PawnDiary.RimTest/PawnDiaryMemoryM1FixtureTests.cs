@@ -15,6 +15,7 @@
 // - malformed legacy Scribe evidence reaches dry-run planning unchanged and remains retryable;
 // - nested allocator/schema carriers cannot hide from recursive component scans;
 // - owner/global byte accounting and null-hole sizing follow the frozen one-charge policy;
+// - archive normalization and real pressure commits preserve physical culture fields exactly;
 // - legacy commit ignores ordinary capture gates and carries its budget across owner transactions;
 // - the logical-size walker validates a fully populated envelope against the frozen registry.
 using System;
@@ -124,6 +125,42 @@ namespace PawnDiary.RimTests
                 loaded.Normalize();
                 Require(loaded.schemaVersion == PawnKnowledgeState.CurrentSchemaVersion,
                     "Normalizing a current envelope must keep it current.");
+            });
+        }
+
+        [Test]
+        public static void ArchiveOnlyNormalizationPreservesCultureByteExactly()
+        {
+            const string ownerId = "Pawn_M11_ArchiveCulture";
+            PawnKnowledgeState source = PawnKnowledgeState.CreateCurrent(ownerId);
+            source.archiveOnly = true;
+            source.originCultureDefName = "Culture_Origin_е\u0308_世界_🙂";
+            source.originCultureSource = "captured/source:exact";
+            source.adoptedCultureDefName = "Culture_Adopted_é_界_🙂";
+            source.importedArchiveRows.Add(new SavedImportedMemoryRow
+            {
+                archiveRecordId = "archive-culture-1",
+                savedOwnerIdentityKindToken = "exact_id",
+                savedOwnerIdentityValue = ownerId,
+                importedWording = "Preserved archive wording."
+            });
+
+            RunWithTempFile(path =>
+            {
+                PawnKnowledgeState saved = source;
+                SaveWithScribe(path, () => Scribe_Deep.Look(ref saved, Label));
+                PawnKnowledgeState loaded = null;
+                LoadVarsWithScribe(path, () => Scribe_Deep.Look(ref loaded, Label));
+                Require(loaded != null, "The archive-only culture fixture did not load.");
+                loaded.Normalize();
+                Require(loaded.archiveOnly
+                        && string.Equals(loaded.originCultureDefName,
+                            source.originCultureDefName, StringComparison.Ordinal)
+                        && string.Equals(loaded.originCultureSource,
+                            source.originCultureSource, StringComparison.Ordinal)
+                        && string.Equals(loaded.adoptedCultureDefName,
+                            source.adoptedCultureDefName, StringComparison.Ordinal),
+                    "Archive-only normalization changed exact physical culture fields.");
             });
         }
 
@@ -1373,6 +1410,47 @@ namespace PawnDiary.RimTests
         }
 
         [Test]
+        public static void M11PressureCommitPreservesPhysicalCultureFields()
+        {
+            const string ownerId = "Pawn_M11_PressureCulture";
+            PawnKnowledgeState state = PawnDiaryMemoryM11RuntimeFixture.BuildCompleteOwner(
+                ownerId, "Pawn_M11_PressureSubject", "Pressure subject", 71,
+                extraStandalone: 128);
+            state.originCultureDefName = "Culture_Pressure_Origin_世界_🙂";
+            state.originCultureSource = "pressure-source/exact";
+            state.adoptedCultureDefName = "Culture_Pressure_Adopted_é";
+            string origin = state.originCultureDefName;
+            string provenance = state.originCultureSource;
+            string adopted = state.adoptedCultureDefName;
+            int blocksBefore = CountBlocks(state);
+            DiaryGameComponent component = NewMemoryComponent(
+                new List<PawnDiaryRecord>
+                {
+                    new PawnDiaryRecord { pawnId = ownerId, knowledgeState = state }
+                },
+                null,
+                null);
+            MethodInfo pressure = typeof(DiaryGameComponent).GetMethod(
+                "TryApplyMemoryPressureCaps",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Require(pressure != null, "The production pressure-commit seam was renamed.");
+
+            pressure.Invoke(component, new object[]
+            {
+                Math.Max(0, Find.TickManager?.TicksGame ?? 0), null, null, null, string.Empty
+            });
+
+            Require(CountBlocks(state) < blocksBefore && CountBlocks(state) <= 128,
+                "The fixture did not execute a real owner-cap pressure commit.");
+            Require(string.Equals(state.originCultureDefName, origin, StringComparison.Ordinal)
+                    && string.Equals(state.originCultureSource, provenance,
+                        StringComparison.Ordinal)
+                    && string.Equals(state.adoptedCultureDefName, adopted,
+                        StringComparison.Ordinal),
+                "Memory pressure changed exact physical culture fields.");
+        }
+
+        [Test]
         public static void M11SavedSummaryOpportunityRepairKeepsOneCanonicalSlot()
         {
             SummaryWordingOpportunitySnapshot first = M10Opportunity(
@@ -1620,6 +1698,14 @@ namespace PawnDiary.RimTests
         public static void MemoryBudgetAccountingChargesEachPhysicalByteOnce()
         {
             const string ownerId = "Pawn_Accounting";
+            PawnKnowledgeState cultureFree = PawnKnowledgeState.CreateCurrent(ownerId);
+            PawnKnowledgeState culturePopulated = PawnKnowledgeState.CreateCurrent(ownerId);
+            culturePopulated.originCultureDefName = "Culture_Budget_Origin_世界";
+            culturePopulated.originCultureSource = "captured";
+            culturePopulated.adoptedCultureDefName = "Culture_Budget_Adopted_🙂";
+            Require(SizeOf(cultureFree) == SizeOf(culturePopulated),
+                "Pre-memory culture fields entered unified-memory byte accounting.");
+
             SavedActiveLogicalRequestV1 ownerRequest = NewRequestWithEvidence(
                 new SavedFrozenEvidenceEntryV1 { recordId = "owner-evidence" });
             ownerRequest.ownerPawnId = ownerId;

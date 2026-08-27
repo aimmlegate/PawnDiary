@@ -127,6 +127,8 @@
     <memoryLibraryOverscanRows>2</memoryLibraryOverscanRows>
     <memoryLibraryMaximumMaterializedRows>28</memoryLibraryMaximumMaterializedRows>
     <memoryLibraryDiaryActionWidth>92</memoryLibraryDiaryActionWidth>
+    <memoryLibraryCardBackground><r>0.12</r><g>0.14</g><b>0.17</b><a>0.90</a></memoryLibraryCardBackground>
+    <memoryLibrarySelectedCardBackground><r>0.24</r><g>0.30</g><b>0.36</b><a>0.95</a></memoryLibrarySelectedCardBackground>
     <memoryLibraryRepositoryPollFrames>6</memoryLibraryRepositoryPollFrames>
 
     <!-- Header/card dimensions -->

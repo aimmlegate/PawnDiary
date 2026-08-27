@@ -229,8 +229,12 @@ namespace PawnDiary
         public int memoryLibraryOverscanRows = 2;
         public int memoryLibraryMaximumMaterializedRows = 28;
         public float memoryLibraryDiaryActionWidth = 92f;
+        public DiaryUiColorSpec memoryLibraryCardBackground =
+            Color(0.12f, 0.14f, 0.17f, 0.90f);
+        public DiaryUiColorSpec memoryLibrarySelectedCardBackground =
+            Color(0.24f, 0.30f, 0.36f, 0.95f);
         // Repository snapshots are immutable between revisions. Polling a few times per second keeps
-        // the non-pausing window responsive without rebuilding query envelopes every rendered frame.
+        // sliced Preparing work responsive; settled snapshots are woken only by a changed source stamp.
         public int memoryLibraryRepositoryPollFrames = 6;
 
         // ---- Control/header/card dimensions ----
@@ -551,6 +555,11 @@ namespace PawnDiary
             new Color(0.30f, 0.20f, 0.05f, 0.88f));
         public Color ManualEntryComposerWarningBorder => manualEntryComposerWarningBorder.ToColor(
             new Color(0.95f, 0.66f, 0.18f, 0.90f));
+        public Color MemoryLibraryCardBackground => memoryLibraryCardBackground.ToColor(
+            new Color(0.12f, 0.14f, 0.17f, 0.90f));
+        public Color MemoryLibrarySelectedCardBackground =>
+            memoryLibrarySelectedCardBackground.ToColor(
+                new Color(0.24f, 0.30f, 0.36f, 0.95f));
         public Color ManualEntryComposerMutedText => manualEntryComposerMutedText.ToColor(
             new Color(0.68f, 0.70f, 0.72f, 1f));
         public Color ManualEntryComposerErrorText => manualEntryComposerErrorText.ToColor(

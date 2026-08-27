@@ -9,6 +9,38 @@ using System.Collections.Generic;
 
 namespace PawnDiary
 {
+    /// <summary>
+    /// Allocation-free source/publication stamp used by the UI to avoid repeating identical
+    /// repository queries after every detached result has settled.
+    /// </summary>
+    internal struct MemoryLibraryUiRepositoryStamp : IEquatable<MemoryLibraryUiRepositoryStamp>
+    {
+        public int diaryStateRevision;
+        public long observationPublicationRevision;
+        public long settingsRevision;
+        public long ttlDayRevision;
+        public long directoryRevision;
+        public long publicationRevision;
+        public long languageDisplayRevision;
+        public int diaryCount;
+        public int unresolvedCount;
+        public int rawUnresolvedCount;
+
+        public bool Equals(MemoryLibraryUiRepositoryStamp other)
+        {
+            return diaryStateRevision == other.diaryStateRevision
+                && observationPublicationRevision == other.observationPublicationRevision
+                && settingsRevision == other.settingsRevision
+                && ttlDayRevision == other.ttlDayRevision
+                && directoryRevision == other.directoryRevision
+                && publicationRevision == other.publicationRevision
+                && languageDisplayRevision == other.languageDisplayRevision
+                && diaryCount == other.diaryCount
+                && unresolvedCount == other.unresolvedCount
+                && rawUnresolvedCount == other.rawUnresolvedCount;
+        }
+    }
+
     /// <summary>Pure cadence rule for bounded Library repository polling outside GUI draw.</summary>
     internal static class MemoryLibraryUiPollPolicy
     {
@@ -16,12 +48,29 @@ namespace PawnDiary
             int currentFrame,
             int lastPollFrame,
             int configuredIntervalFrames,
-            bool immediateWork)
+            bool immediateWork,
+            bool waitingForPublication)
         {
+            // A Ready detached result is immutable until this adapter observes a changed repository
+            // stamp. Do no work at all in that warm state; the interval is only a retry cadence for
+            // sliced Preparing publications.
+            if (!immediateWork && !waitingForPublication) return false;
             if (immediateWork || lastPollFrame < 0 || currentFrame < lastPollFrame) return true;
             int interval = configuredIntervalFrames >= 1 && configuredIntervalFrames <= 60
                 ? configuredIntervalFrames : 6;
             return (long)currentFrame - lastPollFrame >= interval;
+        }
+
+        /// <summary>
+        /// Paused real-time updates may advance observation only for an open Library that is waiting
+        /// on an unstable publication. Normal observation cadence remains game-tick driven.
+        /// </summary>
+        public static bool ShouldAdvancePausedObservation(
+            bool gamePaused,
+            bool hasActiveClient,
+            bool observationPublicationStable)
+        {
+            return gamePaused && hasActiveClient && !observationPublicationStable;
         }
     }
 
@@ -479,9 +528,8 @@ namespace PawnDiary
             if (draft.targetStructuralRevision != detail.targetStructuralRevision)
             {
                 draft.structuralConflict = true;
-                draft.targetStructuralRevision = detail.targetStructuralRevision;
-                draft.rootHandle = Copy(detail.row.rootHandle);
-                draft.placementToken = detail.row.rootHandle == null ? "standalone" : string.Empty;
+                // Preserve the exact fence captured when editing began. Saving this retained draft
+                // must resolve Stale instead of silently blessing older prose against a newer root.
             }
             draft.latestStatusRevision = detail.targetStatusRevision;
         }

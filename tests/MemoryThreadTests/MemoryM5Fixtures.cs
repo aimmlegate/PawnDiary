@@ -621,6 +621,13 @@ namespace MemoryThreadTests
                 family.projectedNextExpiryTick = 900 + index;
                 root.children.Add(family);
             }
+            MemoryBlockRow rolling = NewLibraryBlock(
+                "rolling", 200, "Regular", false, false, "FAMILY");
+            rolling.kind = "Summary";
+            rolling.rollingSummary = true;
+            rolling.rootHandle = rootHandle;
+            rolling.projectedCategoryMask = MemoryCategoryBits.Family;
+            root.children.Add(rolling);
             MemoryLibraryOwnerIndexInput input = new MemoryLibraryOwnerIndexInput
             {
                 primaryHandle = new MemoryLibraryOwnerHandle("active", "pawn", "epoch"),
@@ -641,7 +648,13 @@ namespace MemoryThreadTests
             };
             MemoryThreadDetailResult first = MemoryLibraryIndexPolicy.QueryThreadDetail(
                 snapshot, query, 10, 1000, limits);
-            Equal("m5.library.detail.header.hit.count", 3, first.shownManageableCount);
+            Equal("m5.library.detail.target-visible-count", 4,
+                snapshot.roots[0].header.targetCountedVisibleBlockCount);
+            Equal("m5.library.detail.manageable-count", 5,
+                snapshot.roots[0].header.manageableMemoryCount);
+            // Footer totals count the three matching target-visible blocks and the rolling summary
+            // exactly once. Chapter context is never a manageable-memory row, even across windows.
+            Equal("m5.library.detail.header.hit.count", 4, first.shownManageableCount);
             Equal("m5.library.detail.root.ttl", 500L, first.ttlValidUntilTickExclusive);
             Equal("m5.library.detail.chapter.next", true, first.chapters[0].continuesInNext);
 
@@ -651,6 +664,8 @@ namespace MemoryThreadTests
             MemoryLibraryLimits oneHeader = new MemoryLibraryLimits { chapterHeaderRows = 1 };
             MemoryThreadDetailResult capped = MemoryLibraryIndexPolicy.QueryThreadDetail(
                 snapshot, query, 10, 1000, oneHeader);
+            Equal("m5.library.detail.count-stable-across-windows", 4,
+                capped.shownManageableCount);
             Equal("m5.library.detail.chapter.cap.count", 1, capped.returnedCount);
             Equal("m5.library.detail.chapter.previous", true,
                 capped.chapters[0].continuedFromPrevious);
