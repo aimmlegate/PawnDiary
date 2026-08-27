@@ -990,11 +990,16 @@ namespace PawnDiary
                 // LegacyShadow. Save/category policy remains independent of page/request scheduling.
                 factualAdmitted |= PersistFactualDraft(draft.factual);
 
-                // A current owner never receives a second legacy copy. A still-raw migration-pending
-                // owner may keep accepting raw evidence, but it cannot mix in a new-format row; the
-                // next migration pass will consume the complete legacy input atomically.
-                if (!persistLegacy || MemorySystemActivationGate.IsCurrentRelease
-                    || diary.knowledgeState?.IsCurrentSchema() == true) continue;
+                // A current owner never receives a second legacy copy. The shipped v2 envelope can
+                // still accept its matching raw record shape while migration is pending; older v1
+                // envelopes stay byte-shape stable until the migration planner replaces them.
+                PawnKnowledgeState legacyState = diary.knowledgeState;
+                bool writableLegacyShape = legacyState == null
+                    || legacyState.schemaVersion
+                        == PawnKnowledgeState.LastLegacyWritableSchemaVersion;
+                if (!persistLegacy
+                    || legacyState?.IsCurrentSchema() == true
+                    || (MemorySystemActivationGate.IsCurrentRelease && !writableLegacyShape)) continue;
 
                 PawnKnowledgeState state = EnsureKnowledgeState(diary);
                 if (state.HasDedupKey(draft.record.dedupKey))

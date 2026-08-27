@@ -236,6 +236,8 @@ namespace PawnDiary
         /// therefore forbidden from bumping the saved version eagerly.
         /// </summary>
         public const int CurrentSchemaVersion = 3;
+        /// <summary>The final legacy envelope whose record shape can safely accept raw evidence.</summary>
+        public const int LastLegacyWritableSchemaVersion = 2;
 
         public string pawnId = string.Empty;
         public int schemaVersion = CurrentSchemaVersion;

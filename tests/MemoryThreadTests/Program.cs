@@ -2859,6 +2859,14 @@ namespace MemoryThreadTests
             AssertTrue("sizer.raw.valid", rawResult.valid);
             AssertEqual("sizer.raw.golden-bytes", 101L, rawResult.totalBytes);
 
+            // The component stores the last applied policy as a nullable child row. Keep this
+            // whole-root regression because an unregistered child makes every memory admission
+            // fail closed even though both rows are individually present in the scalar registry.
+            MemoryLogicalSizeResult componentWithPolicy =
+                MemoryLogicalPayloadSizer.Size(new SyntheticComponentMemoryRow());
+            AssertTrue("sizer.component-applied-policy.valid: "
+                + componentWithPolicy.errorPath, componentWithPolicy.valid);
+
             // Shape violations fail closed with a path, never throw through the caller.
             MemoryLogicalSizeResult wrongOrder =
                 MemoryLogicalPayloadSizer.Size(new WrongOrderRow());
@@ -2883,6 +2891,67 @@ namespace MemoryThreadTests
             // Null source is invalid input, not a crash.
             MemoryLogicalSizeResult nullResult = MemoryLogicalPayloadSizer.Size(null);
             AssertTrue("sizer.null-source.invalid", !nullResult.valid);
+        }
+
+        private sealed class SyntheticComponentMemoryRow : IMemoryLogicalSizeSource
+        {
+            public void CollectFields(MemoryLogicalSizeCollector collector)
+            {
+                collector.BeginRow("DiaryGameComponentMemory");
+                collector.Int32("memoryComponentSchemaVersion", 1);
+                collector.Int64("lastIssuedAutobiographicalEpochSequence", 0);
+                collector.String("lastIssuedAutobiographicalEpochFallbackChain", string.Empty);
+                collector.Int64("globalFactionSnapshotAllocatorGeneration", 0);
+                collector.ListCount("globalFactionSnapshots", 0);
+                collector.ListCount("legacyOwnerEpochReservations", 0);
+                collector.Int64("globalOptionalRequestCancellationGeneration", 0);
+                collector.Int64("optionalMeaningfulEligibilityBaselineTick", 0);
+                collector.Int64("lastAppliedMemoryPolicyRevision", 0);
+                collector.String("lastAppliedMemoryPolicyFingerprint", string.Empty);
+                collector.NullablePresence("lastAppliedMemoryPolicyState", true);
+                collector.NestedRow(new SyntheticAppliedPolicyStateRow());
+                collector.ListCount("unresolvedOwnerArchiveRows", 0);
+                collector.String("unresolvedArchiveMigrationState", string.Empty);
+                collector.ListCount("rawUnresolvedOwnerArchiveInput", 0);
+                collector.Int64("rawUnresolvedArchiveReattributionGeneration", 0);
+                collector.Int64("unresolvedArchiveReattributionGeneration", 0);
+                collector.Int64("unresolvedArchiveStructuralRevision", 0);
+                collector.Boolean("unresolvedArchiveReattributionDisabled", false);
+                collector.Int32("memoryCoordinatorSchemaVersion", 1);
+                collector.ListCount("summaryWordingOpportunities", 0);
+                collector.ListCount("memoryDiagnosticCounters", 0);
+                collector.ListCount("memoryAttemptAuditRows", 0);
+                collector.Int32("memoryDispatchSchemaVersion", 1);
+                collector.Int64("lastIssuedMemoryLogicalRequestSequence", 0);
+                collector.ListCount("activeMemoryCoordinatorRequests", 0);
+                collector.EndRow();
+            }
+        }
+
+        private sealed class SyntheticAppliedPolicyStateRow : IMemoryLogicalSizeSource
+        {
+            public void CollectFields(MemoryLogicalSizeCollector collector)
+            {
+                collector.BeginRow("SavedMemoryAppliedPolicyStateV1");
+                collector.Int32("schemaVersion", 1);
+                collector.Boolean("saveNewMemories", true);
+                collector.Boolean("useMemoriesInWriting", true);
+                collector.Boolean("usePawnBackground", true);
+                collector.Boolean("allowExtraMemoryAiRequests", false);
+                collector.Boolean("occasionalMemoryReflections", false);
+                collector.Int32("memoryCategoryMask", 15);
+                collector.Int64("captureInvalidationGenerationPersonal", 1);
+                collector.Int64("captureInvalidationGenerationRelationships", 1);
+                collector.Int64("captureInvalidationGenerationFamily", 1);
+                collector.Int64("captureInvalidationGenerationFactions", 1);
+                collector.Int64("optionalRequestInvalidationGeneration", 1);
+                collector.Int32("minorMemoryLifetimeDays", 15);
+                collector.Int32("regularMemoryLifetimeDays", 60);
+                collector.Int32("memoryThreadTarget", 12);
+                collector.Int32("memoryReuseDays", 5);
+                collector.Int32("memoryRevisitEntryCount", 3);
+                collector.EndRow();
+            }
         }
 
         private sealed class RawProbeRow : IMemoryLogicalSizeSource

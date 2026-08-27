@@ -8,6 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-08-27
 
+- **Memory M11 admission recovery.** Restore valid component sizing for policy, terminal-list, and imported-fact rows, and preserve append-safe legacy-v2 capture while migration is pending.
 - **Memory M11 reconciliation retry hardening.** Publish component policy changes as one rollback-safe prepared swap, defer runtime cancellation until commit, and keep Library dates identical across cache paths.
 - **Memory M11 evidence and benchmark follow-up.** Freeze the selected M0 cap anchor, measure culture-label DTO pressure, report consumer reachability, wire authenticated evidence checks into hooks, and make loaded benchmark policy overrides reach production readers.
 - **Memory M11 post-review regression pass.** Align credential-aware dispatch permits, preserve retry receipts, consolidate duplicate owners, restore reset invariants, enforce cumulative repair budgets, refresh Library caches exactly, complete Russian safety strings, and remove current-release legacy-editor space.

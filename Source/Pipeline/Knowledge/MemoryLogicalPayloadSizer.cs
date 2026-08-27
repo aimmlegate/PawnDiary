@@ -59,6 +59,8 @@ namespace PawnDiary
             public int nextAtom;
             /// <summary>Composite field awaiting nested child row(s); children validate by name.</summary>
             public string pendingChildField;
+            /// <summary>Declared list elements or nullable child rows not consumed yet.</summary>
+            public int pendingChildCount;
         }
 
         /// <summary>Registered element-row type per composite field. A child pushed under the
@@ -75,6 +77,7 @@ namespace PawnDiary
                 { "provenanceRefs", "SavedMemoryProvenance" },
                 { "secondarySubjects", "SavedMemorySubjectRef" },
                 { "facts", "SavedMemoryCanonicalFact" },
+                { "canonicalFacts", "SavedMemoryCanonicalFact" },
                 { "provenance", "SavedMemoryProvenance" },
                 { "primarySubject", "SavedMemorySubjectRef" },
                 { "rollingSummaryBlock", "SavedMemoryBlock" },
@@ -89,6 +92,7 @@ namespace PawnDiary
                 { "importedArchiveRows", "SavedImportedMemoryRow" },
                 { "globalFactionSnapshots", "SavedGlobalFactionSnapshot" },
                 { "legacyOwnerEpochReservations", "SavedLegacyOwnerEpochReservation" },
+                { "lastAppliedMemoryPolicyState", "SavedMemoryAppliedPolicyStateV1" },
                 { "unresolvedOwnerArchiveRows", "SavedImportedMemoryRow" },
                 { "rawUnresolvedOwnerArchiveInput", "SavedLegacyUnresolvedOwnerArchiveInputV1" },
                 { "summaryContributionEvidence", "SavedImportedSummaryContributionEvidenceV1" },
@@ -150,9 +154,8 @@ namespace PawnDiary
                         + parent.pendingChildField + "'");
                 }
 
-                // Nullable singletons bind exactly one child; lists keep binding until EndRow.
-                int lastAtom = Math.Max(0, parent.nextAtom - 1);
-                if (parent.fields.atoms[lastAtom].atomKind == MemorySavedAtomKind.NullableRow)
+                parent.pendingChildCount--;
+                if (parent.pendingChildCount == 0)
                 {
                     parent.pendingChildField = null;
                 }
@@ -218,7 +221,13 @@ namespace PawnDiary
         /// <summary>One element of a LookMode.Value string list (same charging rule).</summary>
         public void ValueListStringElement(string value)
         {
+            Frame frame = PendingValueListFrame();
             AddOrThrow(StringCharge(CurrentPath(), value));
+            frame.pendingChildCount--;
+            if (frame.pendingChildCount == 0)
+            {
+                frame.pendingChildField = null;
+            }
         }
 
         /// <summary>Charges the 4-byte list-count prefix of a list field and binds subsequent
@@ -232,9 +241,10 @@ namespace PawnDiary
             }
 
             AddOrThrow(LengthPrefixBytes);
-            if (stack.Count > 0)
+            if (count > 0 && stack.Count > 0)
             {
                 stack.Peek().pendingChildField = fieldName;
+                stack.Peek().pendingChildCount = count;
             }
         }
 
@@ -247,6 +257,7 @@ namespace PawnDiary
             if (present && stack.Count > 0)
             {
                 stack.Peek().pendingChildField = fieldName;
+                stack.Peek().pendingChildCount = 1;
             }
         }
 
@@ -289,6 +300,7 @@ namespace PawnDiary
             if (stack.Count > 0)
             {
                 stack.Peek().pendingChildField = null;
+                stack.Peek().pendingChildCount = 0;
             }
         }
 
@@ -306,8 +318,12 @@ namespace PawnDiary
             }
 
             Frame frame = stack.Peek();
-            // A scalar/list-count push after nested children ends that composite's binding.
-            frame.pendingChildField = null;
+            if (frame.pendingChildCount > 0)
+            {
+                throw MemoryLogicalSizeException(
+                    PathFor(frame.pendingChildField) + ": missing list element/child row");
+            }
+
             if (frame.nextAtom >= frame.fields.atoms.Length)
             {
                 throw MemoryLogicalSizeException(PathFor(fieldName) + ": extra field");
@@ -327,6 +343,23 @@ namespace PawnDiary
             }
 
             frame.nextAtom++;
+        }
+
+        private Frame PendingValueListFrame()
+        {
+            if (stack.Count == 0 || stack.Peek().pendingChildCount <= 0)
+            {
+                throw MemoryLogicalSizeException(CurrentPath() + ": value outside a list field");
+            }
+
+            Frame frame = stack.Peek();
+            if (CompositeFieldRows.ContainsKey(frame.pendingChildField))
+            {
+                throw MemoryLogicalSizeException(
+                    PathFor(frame.pendingChildField) + ": expected a nested row");
+            }
+
+            return frame;
         }
 
         private string PathFor(string fieldName)
