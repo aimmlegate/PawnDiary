@@ -689,7 +689,7 @@
        never create a diary page or provider request. Exact IDs are structured context, not labels. -->
   <PawnDiary.DiaryImportantEventDef>
     <defName>Diary_ImpEvent_MemoryOpinionEpisode</defName>
-    <label>meaningful opinion change</label>
+    <label>opinion milestone</label>
     <eventKind>relationship.opinion.episode</eventKind>
     <topicKey>relationship</topicKey>
     <signal>memoryOpinionEpisode</signal><order>10</order>
@@ -699,8 +699,8 @@
     <memoryFacts><li><factKind>relationship.opinion.episode</factKind><contextKey>episode_value</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
     <threadRoute><subjectKind>pawn</subjectKind><equivalentExtractors><li>context:subject_pawn_id</li></equivalentExtractors><chapterPhasePolicy>opinion_episode</chapterPhasePolicy><fallbackLabelSource>context:subject_name</fallbackLabelSource></threadRoute>
     <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>false</authoritativePageOwned>
-    <factKeys><li>subject_name</li></factKeys>
-    <lineTemplate>experienced a lasting change in opinion of {subject_name}</lineTemplate>
+    <factKeys><li>subject_name</li><li>from_opinion_band</li><li>to_opinion_band</li></factKeys>
+    <lineTemplate>opinion of {subject_name}: {from_opinion_band} → {to_opinion_band}</lineTemplate>
   </PawnDiary.DiaryImportantEventDef>
 
   <PawnDiary.DiaryImportantEventDef>

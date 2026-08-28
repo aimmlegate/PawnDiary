@@ -813,7 +813,8 @@ namespace PawnMemoryTests
                 sourceLocalSequenceInvariant = 7,
                 sourceProvesUniqueness = true,
                 gameContext = "subject_pawn_id=Pawn_B; subject_name=Brik; "
-                    + "episode_value=reason:cumulative|from:0|to:25|from_band:neutral|to_band:friendly"
+                    + "episode_value=reason:band_crossing|from:0|to:30|from_band:neutral|to_band:friendly; "
+                    + "from_opinion_band=neutral; to_opinion_band=friendly"
             };
             ImportantMemoryDraft first = Classify(observation)[0];
             ImportantMemoryDraft repeated = Classify(observation)[0];
@@ -828,6 +829,9 @@ namespace PawnMemoryTests
             AssertEqual("m7.fallback.chapter-phase", "opinion_episode",
                 first.factual.chapterPhaseToken);
             AssertTrue("m7.fallback.factual-wording", first.factual.automaticWording.Contains("Brik"));
+            AssertTrue("m7.fallback.milestone-wording",
+                first.factual.automaticWording.Contains("neutral")
+                    && first.factual.automaticWording.Contains("friendly"));
         }
 
         private static void TestM7FactualRefusalAndAuthoritativeOwnership()
@@ -1562,10 +1566,6 @@ namespace PawnMemoryTests
                 int.Parse((string)def.Element("memoryOpinionBandSustainTicks")));
             AssertEqual("m6.xml.hysteresis", policy.opinionHysteresisPoints,
                 int.Parse((string)def.Element("memoryOpinionHysteresisPoints")));
-            AssertEqual("m6.xml.cumulative", policy.opinionCumulativeChangePoints,
-                int.Parse((string)def.Element("memoryOpinionCumulativeChangePoints")));
-            AssertEqual("m6.xml.reversal", policy.opinionReversalChangePoints,
-                int.Parse((string)def.Element("memoryOpinionReversalChangePoints")));
             AssertEqual("m6.xml.inactivity", policy.opinionEpisodeInactivityTicks,
                 int.Parse((string)def.Element("memoryOpinionEpisodeInactivityTicks")));
             AssertEqual("m6.xml.maximum", policy.opinionEpisodeMaximumTicks,
@@ -1583,8 +1583,6 @@ namespace PawnMemoryTests
                     reconciliationIntervalTicks = 0,
                     opinionBandSustainTicks = -1,
                     opinionHysteresisPoints = 100,
-                    opinionCumulativeChangePoints = 0,
-                    opinionReversalChangePoints = 0,
                     opinionEpisodeInactivityTicks = 0,
                     opinionEpisodeMaximumTicks = int.MaxValue,
                     maximumStateFacts = 100,
@@ -2585,14 +2583,14 @@ namespace PawnMemoryTests
                 baseline.replacement, null,
                 M6Opinion("Pawn_A", epoch, "Pawn_B", 3, 200), bands, policy);
             AssertTrue("m6.opinion.pointDriftNoQualification", !drift.qualifiedForFutureCapture);
-            AssertTrue("m6.opinion.pointDriftAccumulates", drift.openEpisode != null);
+            AssertTrue("m6.opinion.pointDriftOpensNoCandidate", drift.openEpisode == null);
             KnowledgeOpinionPlan cumulative = KnowledgeRelationPolicy.PlanDirectedOpinion(
                 drift.replacement, drift.openEpisode,
                 M6Opinion("Pawn_A", epoch, "Pawn_B", 21, 300), bands, policy);
-            AssertTrue("m6.opinion.cumulativeQualifies", cumulative.qualifiedForFutureCapture);
-            AssertEqual("m6.opinion.cumulativeReason", "cumulative",
-                cumulative.qualificationReasonToken);
-            AssertTrue("m6.opinion.cumulativeCloses", cumulative.openEpisode == null);
+            AssertTrue("m6.opinion.sameBandCumulativeDoesNotQualify",
+                !cumulative.qualifiedForFutureCapture);
+            AssertTrue("m6.opinion.sameBandCumulativeOpensNoCandidate",
+                cumulative.openEpisode == null);
 
             KnowledgeOpinionPlan bandBaseline = KnowledgeRelationPolicy.PlanDirectedOpinion(
                 null, null, M6Opinion("Pawn_A", epoch, "Pawn_C", 20, 1000), bands, policy);
@@ -2616,19 +2614,36 @@ namespace PawnMemoryTests
             KnowledgeOpinionPlan reversal = KnowledgeRelationPolicy.PlanDirectedOpinion(
                 rising.replacement, rising.openEpisode,
                 M6Opinion("Pawn_A", epoch, "Pawn_D", -5, 2200), bands, policy);
-            AssertTrue("m6.opinion.reversalQualifies", reversal.qualifiedForFutureCapture);
-            AssertEqual("m6.opinion.reversalReason", "reversal",
-                reversal.qualificationReasonToken);
+            AssertTrue("m6.opinion.sameBandReversalDoesNotQualify",
+                !reversal.qualifiedForFutureCapture);
+            AssertTrue("m6.opinion.sameBandReversalOpensNoCandidate",
+                reversal.openEpisode == null);
+
+            KnowledgeOpinionPlan largeJumpBaseline = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                null, null, M6Opinion("Pawn_A", epoch, "Pawn_J", 0, 2300), bands, policy);
+            KnowledgeOpinionPlan largeJump = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                largeJumpBaseline.replacement, null,
+                M6Opinion("Pawn_A", epoch, "Pawn_J", 70, 2400), bands, policy);
+            AssertTrue("m6.opinion.largeBandJumpWaits",
+                !largeJump.qualifiedForFutureCapture && largeJump.openEpisode != null);
+            KnowledgeOpinionPlan largeJumpSustained = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                largeJump.replacement, largeJump.openEpisode,
+                M6Opinion("Pawn_A", epoch, "Pawn_J", 70,
+                    2400 + policy.opinionBandSustainTicks), bands, policy);
+            AssertTrue("m6.opinion.largeBandJumpQualifiesAfterSustain",
+                largeJumpSustained.qualifiedForFutureCapture);
+            AssertEqual("m6.opinion.largeBandJumpReason", "band_crossing",
+                largeJumpSustained.qualificationReasonToken);
 
             KnowledgeOpinionPlan inactivityBaseline = KnowledgeRelationPolicy.PlanDirectedOpinion(
-                null, null, M6Opinion("Pawn_A", epoch, "Pawn_E", 0, 3000), bands, policy);
-            KnowledgeOpinionPlan inactivityDrift = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                null, null, M6Opinion("Pawn_A", epoch, "Pawn_E", 20, 3000), bands, policy);
+            KnowledgeOpinionPlan inactivityCandidate = KnowledgeRelationPolicy.PlanDirectedOpinion(
                 inactivityBaseline.replacement, null,
-                M6Opinion("Pawn_A", epoch, "Pawn_E", 3, 3100), bands, policy);
+                M6Opinion("Pawn_A", epoch, "Pawn_E", 30, 3100), bands, policy);
             KnowledgeOpinionPlan inactivityExpired = KnowledgeRelationPolicy.PlanDirectedOpinion(
-                inactivityDrift.replacement, inactivityDrift.openEpisode,
-                M6Opinion("Pawn_A", epoch, "Pawn_E", 4,
-                    inactivityDrift.openEpisode.lastObservedTick
+                inactivityCandidate.replacement, inactivityCandidate.openEpisode,
+                M6Opinion("Pawn_A", epoch, "Pawn_E", 31,
+                    inactivityCandidate.openEpisode.lastObservedTick
                         + policy.opinionEpisodeInactivityTicks),
                 bands,
                 policy);
@@ -2638,18 +2653,18 @@ namespace PawnMemoryTests
                 !inactivityExpired.qualifiedForFutureCapture);
 
             KnowledgeOpinionPlan maximumBaseline = KnowledgeRelationPolicy.PlanDirectedOpinion(
-                null, null, M6Opinion("Pawn_A", epoch, "Pawn_F", 0, 4000), bands, policy);
-            KnowledgeOpinionPlan maximumDrift = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                null, null, M6Opinion("Pawn_A", epoch, "Pawn_F", 20, 4000), bands, policy);
+            KnowledgeOpinionPlan maximumCandidate = KnowledgeRelationPolicy.PlanDirectedOpinion(
                 maximumBaseline.replacement, null,
-                M6Opinion("Pawn_A", epoch, "Pawn_F", 3, 4100), bands, policy);
+                M6Opinion("Pawn_A", epoch, "Pawn_F", 30, 4100), bands, policy);
             KnowledgeOpinionEpisodeState maximumEpisode = M6EpisodeCopy(
-                maximumDrift.openEpisode);
+                maximumCandidate.openEpisode);
             maximumEpisode.firstObservedTick = 4100;
             maximumEpisode.lastObservedTick = 4100
                 + policy.opinionEpisodeMaximumTicks - 1;
             KnowledgeOpinionPlan maximumExpired = KnowledgeRelationPolicy.PlanDirectedOpinion(
-                maximumDrift.replacement, maximumEpisode,
-                M6Opinion("Pawn_A", epoch, "Pawn_F", 4,
+                maximumCandidate.replacement, maximumEpisode,
+                M6Opinion("Pawn_A", epoch, "Pawn_F", 31,
                     4100 + policy.opinionEpisodeMaximumTicks),
                 bands,
                 policy);
@@ -2657,27 +2672,64 @@ namespace PawnMemoryTests
             AssertTrue("m6.opinion.maximumNoQualification",
                 !maximumExpired.qualifiedForFutureCapture);
 
-            KnowledgeOpinionPlan smallReversalBaseline =
+            KnowledgeOpinionPlan targetJitterBaseline =
                 KnowledgeRelationPolicy.PlanDirectedOpinion(
-                    null, null, M6Opinion("Pawn_A", epoch, "Pawn_G", 0, 5000), bands, policy);
-            KnowledgeOpinionPlan smallReversalRising =
+                    null, null, M6Opinion("Pawn_A", epoch, "Pawn_G", 24, 5000), bands, policy);
+            KnowledgeOpinionPlan targetJitterCrossing =
                 KnowledgeRelationPolicy.PlanDirectedOpinion(
-                    smallReversalBaseline.replacement, null,
-                    M6Opinion("Pawn_A", epoch, "Pawn_G", 5, 5100), bands, policy);
-            KnowledgeOpinionPlan smallReversalFalling =
+                    targetJitterBaseline.replacement, null,
+                    M6Opinion("Pawn_A", epoch, "Pawn_G", 31, 5100), bands, policy);
+            KnowledgeOpinionPlan targetJitter =
                 KnowledgeRelationPolicy.PlanDirectedOpinion(
-                    smallReversalRising.replacement, smallReversalRising.openEpisode,
-                    M6Opinion("Pawn_A", epoch, "Pawn_G", 4, 5200), bands, policy);
-            AssertTrue("m6.opinion.smallReversalRestarts",
-                smallReversalFalling.openEpisode != null);
-            AssertTrue("m6.opinion.smallReversalNoQualification",
-                !smallReversalFalling.qualifiedForFutureCapture);
-            AssertEqual("m6.opinion.smallReversalDirection",
-                KnowledgeObservationTokens.DirectionFalling,
-                smallReversalFalling.openEpisode.directionToken);
-            AssertTrue("m6.opinion.smallReversalNewIdentity",
-                smallReversalFalling.openEpisode.episodeId
-                    != smallReversalRising.openEpisode.episodeId);
+                    targetJitterCrossing.replacement, targetJitterCrossing.openEpisode,
+                    M6Opinion("Pawn_A", epoch, "Pawn_G", 30, 5200), bands, policy);
+            AssertTrue("m6.opinion.targetBandJitterStaysOpen",
+                targetJitter.openEpisode != null);
+            AssertTrue("m6.opinion.targetBandJitterNoEarlyQualification",
+                !targetJitter.qualifiedForFutureCapture);
+            AssertEqual("m6.opinion.targetBandJitterKeepsIdentity",
+                targetJitterCrossing.openEpisode.episodeId,
+                targetJitter.openEpisode.episodeId);
+            AssertEqual("m6.opinion.targetBandJitterKeepsSustainStart",
+                targetJitterCrossing.openEpisode.firstObservedTick,
+                targetJitter.openEpisode.firstObservedTick);
+            KnowledgeOpinionPlan targetJitterSustained =
+                KnowledgeRelationPolicy.PlanDirectedOpinion(
+                    targetJitter.replacement, targetJitter.openEpisode,
+                    M6Opinion("Pawn_A", epoch, "Pawn_G", 30,
+                        5100 + policy.opinionBandSustainTicks), bands, policy);
+            AssertTrue("m6.opinion.targetBandJitterStillQualifies",
+                targetJitterSustained.qualifiedForFutureCapture);
+
+            KnowledgeOpinionPlan retargetBaseline = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                null, null, M6Opinion("Pawn_A", epoch, "Pawn_I", 24, 8000), bands, policy);
+            KnowledgeOpinionPlan retargetFriendly = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                retargetBaseline.replacement, null,
+                M6Opinion("Pawn_A", epoch, "Pawn_I", 30, 8100), bands, policy);
+            long retargetAlmostTick = 8100 + policy.opinionBandSustainTicks - 1;
+            KnowledgeOpinionPlan retargetAlmost = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                retargetFriendly.replacement, retargetFriendly.openEpisode,
+                M6Opinion("Pawn_A", epoch, "Pawn_I", 31, retargetAlmostTick), bands, policy);
+            AssertTrue("m6.opinion.firstTargetNotYetSustained",
+                !retargetAlmost.qualifiedForFutureCapture);
+            long devotedTargetTick = retargetAlmostTick + 1;
+            KnowledgeOpinionPlan retargetDevoted = KnowledgeRelationPolicy.PlanDirectedOpinion(
+                retargetAlmost.replacement, retargetAlmost.openEpisode,
+                M6Opinion("Pawn_A", epoch, "Pawn_I",
+                    bands.devoted + policy.opinionHysteresisPoints,
+                    devotedTargetTick), bands, policy);
+            AssertTrue("m6.opinion.changedTargetDoesNotReuseOldTimer",
+                !retargetDevoted.qualifiedForFutureCapture);
+            AssertEqual("m6.opinion.changedTargetRestartsSustain",
+                devotedTargetTick, retargetDevoted.openEpisode.firstObservedTick);
+            KnowledgeOpinionPlan retargetDevotedSustained =
+                KnowledgeRelationPolicy.PlanDirectedOpinion(
+                    retargetDevoted.replacement, retargetDevoted.openEpisode,
+                    M6Opinion("Pawn_A", epoch, "Pawn_I",
+                        bands.devoted + policy.opinionHysteresisPoints,
+                        devotedTargetTick + policy.opinionBandSustainTicks), bands, policy);
+            AssertTrue("m6.opinion.changedTargetQualifiesAfterOwnSustain",
+                retargetDevotedSustained.qualifiedForFutureCapture);
 
             KnowledgeOpinionPlan downwardBaseline = KnowledgeRelationPolicy.PlanDirectedOpinion(
                 null, null, M6Opinion("Pawn_A", epoch, "Pawn_H", 30, 6000), bands, policy);
@@ -2731,12 +2783,15 @@ namespace PawnMemoryTests
             AssertTrue("m6.opinion.reenabledSilent", reenabled.silentBaseline);
             AssertTrue("m6.opinion.reenabledNoBacklog", reenabled.openEpisode == null);
 
-            KnowledgeOpinionEpisodeState saturatedEpisode = M6EpisodeCopy(drift.openEpisode);
+            KnowledgeOpinionEpisodeState saturatedEpisode =
+                M6EpisodeCopy(retargetDevoted.openEpisode);
             saturatedEpisode.episodeRevision = long.MaxValue - 1;
             KnowledgeOpinionPlan saturatedAdvance = KnowledgeRelationPolicy.PlanDirectedOpinion(
-                drift.replacement,
+                retargetDevoted.replacement,
                 saturatedEpisode,
-                M6Opinion("Pawn_A", epoch, "Pawn_B", 4, 700),
+                M6Opinion("Pawn_A", epoch, "Pawn_I",
+                    bands.devoted + policy.opinionHysteresisPoints + 1,
+                    devotedTargetTick + 1),
                 bands,
                 policy);
             AssertTrue("m6.opinion.saturatedEpisodeRemoved",
@@ -2754,7 +2809,9 @@ namespace PawnMemoryTests
             KnowledgeOpinionPlan saturatedNoOp = KnowledgeRelationPolicy.PlanDirectedOpinion(
                 saturatedAdvance.replacement,
                 null,
-                M6Opinion("Pawn_A", epoch, "Pawn_B", 5, 800),
+                M6Opinion("Pawn_A", epoch, "Pawn_I",
+                    bands.devoted + policy.opinionHysteresisPoints + 2,
+                    devotedTargetTick + 2),
                 bands,
                 policy);
             AssertTrue("m6.opinion.saturatedNoSavedMutation",

@@ -479,8 +479,6 @@ namespace PawnDiary
         public int memoryObservationReconciliationIntervalTicks = 2500;
         public int memoryOpinionBandSustainTicks = 15000;
         public int memoryOpinionHysteresisPoints = 5;
-        public int memoryOpinionCumulativeChangePoints = 20;
-        public int memoryOpinionReversalChangePoints = 12;
         public int memoryOpinionEpisodeInactivityTicks = 60000;
         public int memoryOpinionEpisodeMaximumTicks = 300000;
         /// <summary>
@@ -649,10 +647,6 @@ namespace PawnDiary
                     tuning.memoryObservationReconciliationIntervalTicks;
                 snapshot.opinionBandSustainTicks = tuning.memoryOpinionBandSustainTicks;
                 snapshot.opinionHysteresisPoints = tuning.memoryOpinionHysteresisPoints;
-                snapshot.opinionCumulativeChangePoints =
-                    tuning.memoryOpinionCumulativeChangePoints;
-                snapshot.opinionReversalChangePoints =
-                    tuning.memoryOpinionReversalChangePoints;
                 snapshot.opinionEpisodeInactivityTicks =
                     tuning.memoryOpinionEpisodeInactivityTicks;
                 snapshot.opinionEpisodeMaximumTicks =

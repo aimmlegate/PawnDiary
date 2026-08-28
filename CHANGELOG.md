@@ -8,6 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-08-28
 
+- **Opinion-memory milestones.** Keep numeric social drift in current truth and admit durable pawn-thread memories only for sustained opinion-band transitions, with explicit localized before/after wording.
 - **Memory Library subject-first redesign.** Rework the Library around a persistent People/Factions-and-stories rail with owner cultural context, Other memories, and Old records as destinations; auto-open the first thread, add multi-select filters and continuous chapter timelines, and preserve bounded revision-safe paging.
 
 ## 2026-08-27

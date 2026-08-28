@@ -160,7 +160,7 @@ namespace PawnDiary
         }
     }
 
-    /// <summary>XML-owned M6 cadence and deterministic episode thresholds.</summary>
+    /// <summary>XML-owned M6 cadence and deterministic opinion-milestone thresholds.</summary>
     internal sealed class KnowledgeObservationPolicySnapshot
     {
         private static readonly string[] DefaultFamilyRelationDefNames =
@@ -178,8 +178,6 @@ namespace PawnDiary
         public int reconciliationIntervalTicks = DefaultReconciliationIntervalTicks;
         public int opinionBandSustainTicks = 15000;
         public int opinionHysteresisPoints = 5;
-        public int opinionCumulativeChangePoints = 20;
-        public int opinionReversalChangePoints = 12;
         public int opinionEpisodeInactivityTicks = 60000;
         public int opinionEpisodeMaximumTicks = 300000;
         public int maximumStateFacts = 4;
@@ -197,10 +195,6 @@ namespace PawnDiary
                     reconciliationIntervalTicks),
                 opinionBandSustainTicks = Clamp(opinionBandSustainTicks, 0, 600000, 15000),
                 opinionHysteresisPoints = Clamp(opinionHysteresisPoints, 0, 50, 5),
-                opinionCumulativeChangePoints = Clamp(
-                    opinionCumulativeChangePoints, 1, 200, 20),
-                opinionReversalChangePoints = Clamp(
-                    opinionReversalChangePoints, 1, 200, 12),
                 opinionEpisodeInactivityTicks = Clamp(
                     opinionEpisodeInactivityTicks, 1, 6000000, 60000),
                 opinionEpisodeMaximumTicks = Clamp(
@@ -312,7 +306,7 @@ namespace PawnDiary
         public long snapshotRevision;
     }
 
-    /// <summary>Plain mirror of one deterministic open opinion accumulator.</summary>
+    /// <summary>Plain mirror of one candidate for a sustained opinion-band milestone.</summary>
     internal sealed class KnowledgeOpinionEpisodeState
     {
         public string episodeId = string.Empty;
@@ -1599,7 +1593,7 @@ namespace PawnDiary
             return result;
         }
 
-        /// <summary>Plans the directed social snapshot plus its deterministic open opinion episode.</summary>
+        /// <summary>Plans current social truth plus a sustained opinion-band candidate.</summary>
         public static KnowledgeOpinionPlan PlanDirectedOpinion(
             KnowledgeAwarenessState previous,
             KnowledgeOpinionEpisodeState priorEpisode,
@@ -1709,7 +1703,6 @@ namespace PawnDiary
             int currentOpinion = observation.opinion;
             string previousBand = OpinionBandToken(previousOpinion, bands);
             string currentBand = OpinionBandToken(currentOpinion, bands);
-            int stepDirection = Math.Sign(currentOpinion - previousOpinion);
             bool priorValid = EpisodeMatches(prior, observation, pairKey);
             if (priorValid && (ElapsedAtLeast(
                     observation.observedTick,
@@ -1731,36 +1724,35 @@ namespace PawnDiary
                 && TryOpinion(prior.baselineFacts, out baselineOpinion)
                 && TryOpinion(prior.currentFacts, out episodeCurrentOpinion))
             {
-                int prevailingDirection = Math.Sign(episodeCurrentOpinion - baselineOpinion);
-                bool reversal = stepDirection != 0 && prevailingDirection != 0
-                    && stepDirection != prevailingDirection;
-                if (reversal)
-                {
-                    if (Math.Abs(currentOpinion - episodeCurrentOpinion)
-                        >= policy.opinionReversalChangePoints)
-                    {
-                        result.qualifiedForFutureCapture = true;
-                        result.qualificationReasonToken = "reversal";
-                        return null;
-                    }
+                string baselineBand = OpinionBandToken(baselineOpinion, bands);
+                string targetBand = OpinionBandToken(episodeCurrentOpinion, bands);
 
-                    return stepDirection == 0
+                if (string.Equals(baselineBand, targetBand, StringComparison.Ordinal))
+                {
+                    // Old saves may still contain pre-milestone numeric accumulators. They can never
+                    // qualify now: discard same-band drift, or begin a fresh candidate at this scan's
+                    // first real band crossing.
+                    return string.Equals(previousBand, currentBand, StringComparison.Ordinal)
                         ? null
                         : NewEpisode(previousOpinion, currentOpinion, pairKey, observation, bands);
                 }
 
-                bool justCrossedBand = string.Equals(
-                        OpinionBandToken(baselineOpinion, bands),
-                        OpinionBandToken(episodeCurrentOpinion, bands),
-                        StringComparison.Ordinal)
-                    && !string.Equals(previousBand, currentBand, StringComparison.Ordinal);
-                if (justCrossedBand)
+                if (string.Equals(currentBand, baselineBand, StringComparison.Ordinal))
                 {
-                    prior = NewEpisode(previousOpinion, currentOpinion, pairKey, observation, bands);
-                    baselineOpinion = previousOpinion;
-                    episodeCurrentOpinion = currentOpinion;
+                    // The proposed transition was undone before it became a durable milestone.
+                    return null;
                 }
-                else if (stepDirection != 0)
+
+                if (!string.Equals(currentBand, targetBand, StringComparison.Ordinal))
+                {
+                    // Sustain belongs to one exact target band. If the pawn moves on to another
+                    // qualitative level, keep the original source band but restart the timer for the
+                    // newly observed target.
+                    return NewEpisode(
+                        baselineOpinion, currentOpinion, pairKey, observation, bands);
+                }
+
+                if (currentOpinion != episodeCurrentOpinion)
                 {
                     if (prior.episodeRevision >= long.MaxValue - 1)
                     {
@@ -1771,6 +1763,7 @@ namespace PawnDiary
                         return null;
                     }
 
+                    // Numeric jitter inside the same target band does not restart its sustain timer.
                     prior.currentFacts = OpinionFacts(currentOpinion, bands);
                     prior.lastObservedTick = Math.Max(prior.lastObservedTick, observation.observedTick);
                     prior.lastSourceOccurrenceId = observation.sourceOccurrenceId ?? string.Empty;
@@ -1778,26 +1771,13 @@ namespace PawnDiary
                     episodeCurrentOpinion = currentOpinion;
                 }
 
-                int cumulativeDirection = Math.Sign(episodeCurrentOpinion - baselineOpinion);
-                if (cumulativeDirection != 0
-                    && Math.Abs(episodeCurrentOpinion - baselineOpinion)
-                        >= policy.opinionCumulativeChangePoints)
-                {
-                    result.qualifiedForFutureCapture = true;
-                    result.qualificationReasonToken = "cumulative";
-                    return null;
-                }
-
-                string baselineBand = OpinionBandToken(baselineOpinion, bands);
-                string episodeBand = OpinionBandToken(episodeCurrentOpinion, bands);
-                if (!string.Equals(baselineBand, episodeBand, StringComparison.Ordinal)
-                    && ElapsedAtLeast(
+                if (ElapsedAtLeast(
                         observation.observedTick,
                         prior.firstObservedTick,
                         policy.opinionBandSustainTicks)
                     && BeyondBandHysteresis(
                         baselineBand,
-                        episodeBand,
+                        targetBand,
                         episodeCurrentOpinion,
                         bands,
                         policy.opinionHysteresisPoints))
@@ -1810,17 +1790,10 @@ namespace PawnDiary
                 return prior;
             }
 
-            if (stepDirection == 0) return null;
-            KnowledgeOpinionEpisodeState created = NewEpisode(
-                previousOpinion, currentOpinion, pairKey, observation, bands);
-            if (Math.Abs(currentOpinion - previousOpinion)
-                >= policy.opinionCumulativeChangePoints)
-            {
-                result.qualifiedForFutureCapture = true;
-                result.qualificationReasonToken = "cumulative";
-                return null;
-            }
-            return created;
+            if (string.Equals(previousBand, currentBand, StringComparison.Ordinal)) return null;
+            // Even a large one-scan band jump must survive the XML-owned sustain/hysteresis window
+            // before it becomes a memory. Same-band point drift never opens an episode at all.
+            return NewEpisode(previousOpinion, currentOpinion, pairKey, observation, bands);
         }
 
         /// <summary>

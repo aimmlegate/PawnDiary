@@ -97,8 +97,8 @@
   <Diary_ImpEvent_PersonaBondEnded.label>связь с оружием оборвана</Diary_ImpEvent_PersonaBondEnded.label>
   <Diary_ImpEvent_PersonaBondEnded.lineTemplate>связь с {persona_weapon_name} оборвана</Diary_ImpEvent_PersonaBondEnded.lineTemplate>
 
-  <Diary_ImpEvent_MemoryOpinionEpisode.label>значимое изменение мнения</Diary_ImpEvent_MemoryOpinionEpisode.label>
-  <Diary_ImpEvent_MemoryOpinionEpisode.lineTemplate>мнение о {subject_name} надолго изменилось</Diary_ImpEvent_MemoryOpinionEpisode.lineTemplate>
+  <Diary_ImpEvent_MemoryOpinionEpisode.label>веха отношения</Diary_ImpEvent_MemoryOpinionEpisode.label>
+  <Diary_ImpEvent_MemoryOpinionEpisode.lineTemplate>отношение к {subject_name}: {from_opinion_band} → {to_opinion_band}</Diary_ImpEvent_MemoryOpinionEpisode.lineTemplate>
 
   <Diary_ImpEvent_MemoryFormalRelation.label>изменение отношений</Diary_ImpEvent_MemoryFormalRelation.label>
   <Diary_ImpEvent_MemoryFormalRelation.lineTemplate>отношения с {subject_name} изменились</Diary_ImpEvent_MemoryFormalRelation.lineTemplate>

@@ -72,13 +72,12 @@
     <summaryWordingSystemPrompt>You shorten deterministic memory-summary wording without changing, adding, or inferring facts.</summaryWordingSystemPrompt>
     <summaryWordingInstruction>Rewrite the supplied deterministic summary as one concise sentence. Preserve every factual qualifier and return wording only.</summaryWordingInstruction>
 
-    <!-- M6 shadow current-truth reconciliation. Opinion bands themselves remain the single shared
-         vocabulary in DiaryTuningDef.xml; these values own only episode timing/significance. -->
+    <!-- M6 current-truth reconciliation. Opinion bands themselves remain the single shared
+         vocabulary in DiaryTuningDef.xml. Only a sustained, hysteresis-safe transition between
+         those bands becomes a durable memory; point drift and within-band reversals stay silent. -->
     <memoryObservationReconciliationIntervalTicks>2500</memoryObservationReconciliationIntervalTicks>
     <memoryOpinionBandSustainTicks>15000</memoryOpinionBandSustainTicks>
     <memoryOpinionHysteresisPoints>5</memoryOpinionHysteresisPoints>
-    <memoryOpinionCumulativeChangePoints>20</memoryOpinionCumulativeChangePoints>
-    <memoryOpinionReversalChangePoints>12</memoryOpinionReversalChangePoints>
     <memoryOpinionEpisodeInactivityTicks>60000</memoryOpinionEpisodeInactivityTicks>
     <memoryOpinionEpisodeMaximumTicks>300000</memoryOpinionEpisodeMaximumTicks>
     <!-- Base-game family-by-choice relations shown by vanilla's Social tab but not flagged as blood.

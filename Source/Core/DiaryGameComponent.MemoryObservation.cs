@@ -2996,6 +2996,10 @@ namespace PawnDiary
             int currentOpinion,
             int now)
         {
+            // Defense in depth: current policy has exactly one durable opinion-memory door. If a
+            // future caller supplies point drift or a within-band reversal, current truth remains
+            // settled but no generic block reaches the person's thread.
+            if (plan == null || plan.qualificationReasonToken != "band_crossing") return false;
             string baselineOpinion = SavedFactValue(
                 priorEpisode?.baselineFacts, KnowledgeObservationTokens.FactOpinionValue);
             if (baselineOpinion.Length == 0)
@@ -3008,6 +3012,22 @@ namespace PawnDiary
                     previous?.stateFacts, KnowledgeObservationTokens.FactOpinionBand);
             string currentBand = FactValue(
                 plan.replacement?.stateFacts, KnowledgeObservationTokens.FactOpinionBand);
+            if (baselineBand.Length == 0 || currentBand.Length == 0
+                || string.Equals(baselineBand, currentBand, StringComparison.Ordinal)) return false;
+            int baselineOpinionValue;
+            if (!int.TryParse(
+                    baselineOpinion,
+                    NumberStyles.Integer,
+                    CultureInfo.InvariantCulture,
+                    out baselineOpinionValue)) return false;
+            // This adapter runs on RimWorld's main thread, so localized bucket labels are safe to
+            // freeze into the readable memory wording. Canonical identity/facts keep their stable
+            // English schema tokens in episodeValue below.
+            string baselineBandLabel = DiaryLineCleaner.CleanLine(
+                DiaryBuckets.FormatOpinion(baselineOpinionValue));
+            string currentBandLabel = DiaryLineCleaner.CleanLine(
+                DiaryBuckets.FormatOpinion(currentOpinion));
+            if (baselineBandLabel.Length == 0 || currentBandLabel.Length == 0) return false;
             string episodeValue = "reason:" + (plan.qualificationReasonToken ?? string.Empty)
                 + "|from:" + baselineOpinion
                 + "|to:" + currentOpinion.ToString(CultureInfo.InvariantCulture)
@@ -3018,7 +3038,8 @@ namespace PawnDiary
             string context = "subject_pawn_id=" + GameContextValue.Sanitize(subjectId)
                 + "; subject_name=" + GameContextValue.Sanitize(subjectName)
                 + "; episode_value=" + GameContextValue.Sanitize(episodeValue)
-                + (plan.qualificationReasonToken == "reversal" ? "; reversal=true" : string.Empty);
+                + "; from_opinion_band=" + GameContextValue.Sanitize(baselineBandLabel)
+                + "; to_opinion_band=" + GameContextValue.Sanitize(currentBandLabel);
             return EmitObservationMemory(
                 KnowledgeTokens.SignalMemoryOpinionEpisode,
                 "memory.opinion.episode", owner, subject,
