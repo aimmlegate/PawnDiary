@@ -29,13 +29,16 @@ namespace PawnDiary
             MemoryRecallCandidateSnapshot candidate = selected?.candidate;
             if (candidate == null || selected.evidence == null) return null;
 
-            string naturalHistorical = candidate.kind == MemoryContractTokens.KindSummary
-                ? MemoryNaturalWordingProjection.Select(
-                    candidate.suppressed,
-                    candidate.historicalText,
-                    candidate.summaryWording,
-                    historicalMaximumCharacters)
-                : candidate.historicalText;
+            int optionalMaximumCharacters = candidate.kind
+                    == MemoryContractTokens.KindSummary
+                ? historicalMaximumCharacters
+                : MemoryNaturalWordingProjection.EffectiveBlockWordingMaximumCharacters(
+                    historicalMaximumCharacters);
+            string naturalHistorical = MemoryNaturalWordingProjection.Select(
+                candidate.suppressed,
+                candidate.historicalText,
+                candidate.naturalWording,
+                optionalMaximumCharacters);
             string historical = BoundedOneLine(
                 naturalHistorical,
                 historicalMaximumCharacters);

@@ -1,14 +1,14 @@
-// MemoryNaturalWordingProjection.cs — pure selection of one Summary's disposable optional prose.
+// MemoryNaturalWordingProjection.cs — pure selection of disposable optional memory prose.
 //
-// The saved Summary facts and deterministic wording remain canonical. Recall adapters detach the
-// exact current projection plus the optional cache into this plain snapshot; the prompt renderer may
-// use the cache only when every fingerprint/revision/category guard still agrees.
+// Saved facts and deterministic wording remain canonical. Recall adapters detach the exact current
+// projection plus the optional cache into this plain snapshot; the prompt renderer may use the cache
+// only when every fingerprint/revision/category guard still agrees.
 using System;
 
 namespace PawnDiary
 {
     /// <summary>Detached optional-prose guards for one current natural-writing projection.</summary>
-    internal sealed class MemoryRecallSummaryWordingSnapshot
+    internal sealed class MemoryRecallNaturalWordingSnapshot
     {
         public string currentProjectionFingerprint = string.Empty;
         public long currentFormatRevision;
@@ -24,13 +24,28 @@ namespace PawnDiary
     internal static class MemoryNaturalWordingProjection
     {
         /// <summary>
+        /// Defensive ceiling for one Event/Landmark display sentence. XML may tune downward, but a
+        /// malformed override cannot turn optional provider prose into unbounded saved data.
+        /// </summary>
+        public const int MaximumBlockWordingCharacters = 240;
+
+        /// <summary>Clamps the XML display limit to the fixed saved-data safety ceiling.</summary>
+        public static int EffectiveBlockWordingMaximumCharacters(int configuredMaximum)
+        {
+            int positive = configuredMaximum > 0
+                ? configuredMaximum
+                : MaximumBlockWordingCharacters;
+            return Math.Min(positive, MaximumBlockWordingCharacters);
+        }
+
+        /// <summary>
         /// Returns no prompt text for suppression. Otherwise optional prose wins only for an exact
         /// successful current projection; every absent, stale, failed, or malformed cache falls back.
         /// </summary>
         public static string Select(
             bool suppressed,
             string deterministicWording,
-            MemoryRecallSummaryWordingSnapshot wording,
+            MemoryRecallNaturalWordingSnapshot wording,
             int maximumOptionalCharacters)
         {
             if (suppressed) return string.Empty;
@@ -53,10 +68,10 @@ namespace PawnDiary
         }
 
         /// <summary>Copies the detached guards so frozen selection never shares mutable DTO state.</summary>
-        public static MemoryRecallSummaryWordingSnapshot Copy(
-            MemoryRecallSummaryWordingSnapshot source)
+        public static MemoryRecallNaturalWordingSnapshot Copy(
+            MemoryRecallNaturalWordingSnapshot source)
         {
-            return source == null ? null : new MemoryRecallSummaryWordingSnapshot
+            return source == null ? null : new MemoryRecallNaturalWordingSnapshot
             {
                 currentProjectionFingerprint = source.currentProjectionFingerprint ?? string.Empty,
                 currentFormatRevision = source.currentFormatRevision,

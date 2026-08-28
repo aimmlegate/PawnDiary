@@ -1139,6 +1139,15 @@ namespace PawnDiary
             if (admission.outcome == MemoryStoreMutationOutcome.Admitted)
             {
                 CommitFactualOwnerEpochEnrollment(enrollment);
+                // Canonical admission is complete before optional prose enters the already-shipped
+                // wording slot. The LLM can fail, be disabled, or be displaced without affecting
+                // the saved facts or this method's success result.
+                ScheduleAdmittedBlockWording(
+                    state,
+                    admission,
+                    MemoryEffectivePolicyProvider.Current,
+                    MemoryOptionalTuning(),
+                    Math.Max(0, Find.TickManager?.TicksGame ?? block.originalEventTick));
             }
             else
             {

@@ -375,6 +375,7 @@ namespace MemoryThreadBenchmarks
                     "PawnKnowledgeState.playerBackground",
                     "SavedMemoryThreadRoot.frozenSubjectLabel",
                     "SavedMemoryBlock.automaticWording",
+                    "SavedMemoryBlock.optionalLlmWording",
                     "SavedMemoryBlock.playerWording",
                     "SavedMemorySubjectRef.frozenLabel",
                     "SavedMemorySummaryPayload.deterministicWording",

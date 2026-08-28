@@ -311,6 +311,7 @@ Require ((Child-Text $tuningDef "meaningfulMemoryDelayTicks") -ceq "60000") "Mea
 Require ((Child-Text $tuningDef "optionalMemoryOpportunityExpiryTicks") -ceq "120000") "Optional-memory expiry drifted."
 Require ((Child-Text $tuningDef "meaningfulMemoryPriority") -ceq "100") "Meaningful-memory priority drifted."
 Require ((Child-Text $tuningDef "quietMemoryPriority") -ceq "50") "Quiet-memory priority drifted."
+Require ((Child-Text $tuningDef "memoryWordingPriority") -ceq "10") "Memory-wording priority drifted."
 Require ((Child-Text $tuningDef "summaryWordingPriority") -ceq "0") "Summary-wording priority drifted."
 Require ((Child-Text $tuningDef "memoryReflectionMaxTokens") -ceq "220") "Memory-reflection token cap drifted."
 Require ((Child-Text $tuningDef "summaryWordingMaxTokens") -ceq "80") "Summary-wording token cap drifted."
@@ -319,18 +320,28 @@ Require (-not [string]::IsNullOrWhiteSpace((Child-Text $tuningDef "memoryReflect
 Require (-not [string]::IsNullOrWhiteSpace((Child-Text $tuningDef "memoryReflectionInstruction"))) "Memory-reflection DefInjected instruction is missing."
 Require (-not [string]::IsNullOrWhiteSpace((Child-Text $tuningDef "summaryWordingSystemPrompt"))) "Summary-wording DefInjected system prompt is missing."
 Require (-not [string]::IsNullOrWhiteSpace((Child-Text $tuningDef "summaryWordingInstruction"))) "Summary-wording DefInjected instruction is missing."
+Require (-not [string]::IsNullOrWhiteSpace((Child-Text $tuningDef "memoryWordingSystemPrompt"))) "Memory-wording DefInjected system prompt is missing."
+Require (-not [string]::IsNullOrWhiteSpace((Child-Text $tuningDef "memoryWordingInstruction"))) "Memory-wording DefInjected instruction is missing."
+$memoryWordingSystemPrompt = Child-Text $tuningDef "memoryWordingSystemPrompt"
+Require ($memoryWordingSystemPrompt -cmatch 'do not add an emotion, evaluation') "Memory-wording truth guard no longer forbids invented feelings/evaluations."
+Require ($memoryWordingSystemPrompt -cmatch 'unless it is explicit in memory_fact') "Memory-wording truth guard no longer binds additions to the canonical fact."
 $optionalAiDefInjectedFields = @(
     'memoryReflectionSystemPrompt',
     'memoryReflectionLabel',
     'memoryReflectionInstruction',
     'summaryWordingSystemPrompt',
-    'summaryWordingInstruction'
+    'summaryWordingInstruction',
+    'memoryWordingSystemPrompt',
+    'memoryWordingInstruction'
 )
 foreach ($field in $optionalAiDefInjectedFields) {
     $key = "Diary_Knowledge.$field"
     $translated = $russianTuningInjected.Root.Element([System.Xml.Linq.XName]$key)
     Require ($null -ne $translated -and -not [string]::IsNullOrWhiteSpace($translated.Value)) "Missing Russian optional-AI DefInjected value for $field."
 }
+$russianMemoryWordingSystemPrompt = $russianTuningInjected.Root.Element(
+    [System.Xml.Linq.XName]'Diary_Knowledge.memoryWordingSystemPrompt').Value
+Require ($russianMemoryWordingSystemPrompt -cmatch 'не добавляйте эмоцию, оценку') "Russian memory-wording truth guard no longer forbids invented feelings/evaluations."
 Require ($optionalMemoryAdapter -cnotmatch 'transport_variant=') "Optional-memory transport metadata leaked into provider prompt text."
 
 $fixedRows = @($fixture.fixedRows)
@@ -374,8 +385,8 @@ foreach ($type in $payloadTypes) {
     }
 }
 $atomRows = @($payload.atomRows)
-Require ($expectedAtomPaths.Count -eq 400) "Payload schema must declare the exact 400 M10 field paths."
-Require ($atomRows.Count -eq 400) "Payload atom catalog must contain the exact 400 M10 atoms."
+Require ($expectedAtomPaths.Count -eq 404) "Payload schema must declare the exact 404 M10 field paths."
+Require ($atomRows.Count -eq 404) "Payload atom catalog must contain the exact 404 M10 atoms."
 for ($index = 0; $index -lt $atomRows.Count; $index++) {
     $atom = $atomRows[$index]
     Require ([int]$atom.pathOrdinal -eq $index) "Payload atom ordinal drifted at $index."
@@ -411,12 +422,14 @@ foreach ($path in @(
 $atomByPath = @{}
 foreach ($atom in $atomRows) { $atomByPath[[string]$atom.canonicalFieldPath] = $atom }
 foreach ($path in @(
+    'SavedMemoryBlock.optionalLlmFingerprint',
     'SavedMemorySummaryPayload.lastSettledWordingFingerprint',
     'SavedMemorySummaryPayload.lastWordingDispositionToken',
     'SavedFrozenPromptVariantV1.contextDetailIdentity'
 )) {
     Require (-not [bool]$atomByPath[$path].freeTextModeEligible) "$path is a stable token/identity, not free text."
 }
+Require ([bool]$atomByPath['SavedMemoryBlock.optionalLlmWording'].freeTextModeEligible) "SavedMemoryBlock.optionalLlmWording must participate in free-text sizing."
 
 $pending = @($fixture.loadedPendingFixtures)
 Require ($pending.Count -eq 5) "Every later loaded-only evidence family must have one exact pending fixture."

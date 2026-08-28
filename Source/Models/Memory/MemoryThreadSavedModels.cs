@@ -394,6 +394,14 @@ namespace PawnDiary
         public List<SavedMemoryCanonicalFact> facts = new List<SavedMemoryCanonicalFact>();
         public List<SavedMemoryProvenance> provenance = new List<SavedMemoryProvenance>();
         public string automaticWording = string.Empty;
+        /// <summary>
+        /// Disposable display/Recall prose derived from <see cref="automaticWording"/>. Canonical
+        /// facts, routing, reduction, and current truth never read this cache.
+        /// </summary>
+        public string optionalLlmWording = string.Empty;
+        public string optionalLlmFingerprint = string.Empty;
+        public long optionalLlmFormatRevision;
+        public int optionalLlmCategoryMask;
         public string playerWording = string.Empty;
         public bool playerEdited;
         public bool suppressed;
@@ -431,6 +439,11 @@ namespace PawnDiary
             Scribe_Collections.Look(ref facts, "facts", LookMode.Deep);
             Scribe_Collections.Look(ref provenance, "provenance", LookMode.Deep);
             Scribe_Values.Look(ref automaticWording, "automaticWording", string.Empty);
+            Scribe_Values.Look(ref optionalLlmWording, "optionalLlmWording", string.Empty);
+            Scribe_Values.Look(ref optionalLlmFingerprint, "optionalLlmFingerprint", string.Empty);
+            Scribe_Values.Look(
+                ref optionalLlmFormatRevision, "optionalLlmFormatRevision", 0);
+            Scribe_Values.Look(ref optionalLlmCategoryMask, "optionalLlmCategoryMask", 0);
             Scribe_Values.Look(ref playerWording, "playerWording", string.Empty);
             Scribe_Values.Look(ref playerEdited, "playerEdited", false);
             Scribe_Values.Look(ref suppressed, "suppressed", false);
@@ -461,6 +474,8 @@ namespace PawnDiary
             rootId = rootId ?? string.Empty;
             chapterId = chapterId ?? string.Empty;
             automaticWording = automaticWording ?? string.Empty;
+            optionalLlmWording = optionalLlmWording ?? string.Empty;
+            optionalLlmFingerprint = optionalLlmFingerprint ?? string.Empty;
             playerWording = playerWording ?? string.Empty;
             providerExposureState = providerExposureState ?? string.Empty;
             secondarySubjects = secondarySubjects ?? new List<SavedMemorySubjectRef>();

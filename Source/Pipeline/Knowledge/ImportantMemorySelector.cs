@@ -69,10 +69,10 @@ namespace PawnDiary
         public bool directExactEventReference;
         public int narrativeFitScore;
         /// <summary>
-        /// Summary-only disposable prose guards. <see cref="historicalText"/> stays the deterministic
-        /// fallback and non-Summary candidates leave this null.
+        /// Disposable prose guards. <see cref="historicalText"/> stays the deterministic fallback;
+        /// routing, ranking, facts, and current truth never inspect this optional display cache.
         /// </summary>
-        public MemoryRecallSummaryWordingSnapshot summaryWording;
+        public MemoryRecallNaturalWordingSnapshot naturalWording;
         public string historicalText = string.Empty;
         public bool currentStateApplicable;
         public bool currentStateContradictsHistorical;
@@ -1278,7 +1278,7 @@ namespace PawnDiary
             merged.ttlEligible = current.ttlEligible;
             merged.categoryProjectionValid = current.categoryProjectionValid;
             merged.suppressed = current.suppressed;
-            merged.summaryWording = MemoryNaturalWordingProjection.Copy(current.summaryWording);
+            merged.naturalWording = MemoryNaturalWordingProjection.Copy(current.naturalWording);
             merged.historicalText = current.historicalText;
             merged.currentStateApplicable = current.currentStateApplicable;
             merged.currentStateContradictsHistorical = current.currentStateContradictsHistorical;
@@ -1315,7 +1315,7 @@ namespace PawnDiary
                 isCurrentThreadProjection = source.isCurrentThreadProjection,
                 directExactEventReference = source.directExactEventReference,
                 narrativeFitScore = source.narrativeFitScore,
-                summaryWording = MemoryNaturalWordingProjection.Copy(source.summaryWording),
+                naturalWording = MemoryNaturalWordingProjection.Copy(source.naturalWording),
                 historicalText = source.historicalText,
                 currentStateApplicable = source.currentStateApplicable,
                 currentStateContradictsHistorical = source.currentStateContradictsHistorical,

@@ -40,7 +40,12 @@ namespace PawnDiary.RimTests
             PawnKnowledgeState source = PawnKnowledgeState.CreateCurrent("Pawn_M1");
             source.autobiographicalEpochToken = EpochToken(3);
             source.playerBackground = "Raised on tales of the rim.";
-            source.standaloneBlocks.Add(NewBlock("rec-standalone", null));
+            SavedMemoryBlock standalone = NewBlock("rec-standalone", null);
+            standalone.optionalLlmWording = "I still remember the day everything changed.";
+            standalone.optionalLlmFingerprint = new string('e', 64);
+            standalone.optionalLlmFormatRevision = 3;
+            standalone.optionalLlmCategoryMask = 5;
+            source.standaloneBlocks.Add(standalone);
             source.threadRoots.Add(NewRoot());
             source.ownerAwarenessSnapshots.Add(new SavedMemoryAwarenessSnapshot
             {
@@ -99,6 +104,13 @@ namespace PawnDiary.RimTests
                         && loaded.repetitionGuardRows.Count == 1
                         && loaded.importedArchiveRows.Count == 1,
                     "Every memory collection must round-trip its row count.");
+                SavedMemoryBlock loadedStandalone = loaded.standaloneBlocks[0];
+                Require(loadedStandalone.optionalLlmWording
+                            == "I still remember the day everything changed."
+                        && loadedStandalone.optionalLlmFingerprint == new string('e', 64)
+                        && loadedStandalone.optionalLlmFormatRevision == 3
+                        && loadedStandalone.optionalLlmCategoryMask == 5,
+                    "The optional block wording cache must round-trip all four scalar fields.");
                 Require(loaded.playerBackground == "Raised on tales of the rim.",
                     "The authored background must survive.");
 
@@ -304,6 +316,112 @@ namespace PawnDiary.RimTests
                         && loadedRecord.reflectionState.memoryOwnerEpochToken
                             == migrated.autobiographicalEpochToken,
                     "First factual admission did not enroll and link the migrated old-save owner.");
+            }
+            finally
+            {
+                MemoryEffectivePolicyProvider.Publish(prior);
+            }
+        }
+
+        [Test]
+        public static void NewFactualAdmissionSchedulesSavedBlockWordingInSharedSlot()
+        {
+            const string ownerId = "Pawn_Block_Wording_Admission";
+            PawnKnowledgeState state = PawnKnowledgeState.CreateCurrent(ownerId);
+            var record = new PawnDiaryRecord
+            {
+                pawnId = ownerId,
+                knowledgeState = state
+            };
+            DiaryGameComponent component = NewMemoryComponent(
+                new List<PawnDiaryRecord> { record }, null, null);
+            SetPrivateField(component, "globalOptionalRequestCancellationGeneration", 7L);
+
+            MemoryPolicySnapshot prior = MemoryEffectivePolicyProvider.Current;
+            MemorySettingsPolicyFieldsV1 fields = prior.ToFields();
+            fields.saveNewMemories = true;
+            fields.useMemoriesInWriting = true;
+            fields.allowExtraMemoryAiRequests = true;
+            fields.memoryCategoryMask |= MemoryCategoryBits.Personal;
+            fields.optionalRequestInvalidationGeneration = Math.Max(
+                1L, fields.optionalRequestInvalidationGeneration);
+            MemoryPolicySnapshot enabled = MemoryPolicyNormalizer.Normalize(
+                MemoryPolicyNormalizer.CurrentSettingsSchemaVersion,
+                fields,
+                MemoryPolicyDefAdapter.Bounds());
+            Require(enabled.AllowsOptionalRequests
+                    && MemoryEffectivePolicyProvider.Publish(enabled),
+                "The block-wording fixture could not publish optional memory policy.");
+            try
+            {
+                const string occurrence = "block-wording-admission-occurrence";
+                const string captureRule = "block-wording-admission-rule";
+                const string discriminator = "block-wording-admission-fact";
+                string provenance;
+                Require(MemoryIdentityCodec.TryCreateProvenanceRefId(
+                        "capture_signal",
+                        occurrence,
+                        string.Empty,
+                        captureRule,
+                        discriminator,
+                        string.Empty,
+                        out provenance),
+                    "The block-wording fixture could not create provenance.");
+                var draft = new FactualMemoryDraft
+                {
+                    ownerPawnId = ownerId,
+                    sourceOccurrenceId = occurrence,
+                    sourceKindToken = "capture_signal",
+                    captureRuleId = captureRule,
+                    factDiscriminator = discriminator,
+                    kind = MemoryContractTokens.KindEvent,
+                    category = MemoryContractTokens.CategoryPersonal,
+                    importance = MemoryContractTokens.ImportanceRegular,
+                    originalEventTick = Math.Max(0, Find.TickManager?.TicksGame ?? 0),
+                    routeReliable = false,
+                    chapterPhaseToken = "fixture",
+                    chapterDirective = MemoryChapterDirectiveTokens.RemainStandalone,
+                    automaticWording = "I accepted a lasting change.",
+                    provenanceRefId = provenance
+                };
+                MethodInfo persist = typeof(DiaryGameComponent).GetMethod(
+                    "PersistFactualDraft",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Require(persist != null && (bool)persist.Invoke(component, new object[] { draft }),
+                    "The block-wording factual admission was refused.");
+
+                FieldInfo slotField = typeof(DiaryGameComponent).GetField(
+                    "summaryWordingOpportunities",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                var slot = slotField?.GetValue(component)
+                    as List<SavedSummaryWordingOpportunityV1>;
+                SavedMemoryBlock admitted = state.standaloneBlocks.Count == 1
+                    ? state.standaloneBlocks[0]
+                    : null;
+                SavedSummaryWordingOpportunityV1 pending = slot?.Count == 1
+                    ? slot[0]
+                    : null;
+                SummaryWordingOpportunitySnapshot parsed;
+                string expectedFingerprint;
+                Require(admitted != null
+                        && pending != null
+                        && pending.ownerPawnId == ownerId
+                        && pending.ownerEpochToken == state.autobiographicalEpochToken
+                        && pending.rootId == "memory-wording-standalone-v1"
+                        && pending.summaryRecordId == admitted.recordId
+                        && pending.configuredPriority > 0
+                        && string.IsNullOrEmpty(admitted.optionalLlmWording)
+                        && MemoryOptionalAiPolicy.TryParseSummaryOpportunityKey(
+                            pending.opportunityKey, out parsed)
+                        && MemoryOptionalAiPolicy.TryCreateBlockWordingProjectionFingerprint(
+                            admitted.recordId,
+                            admitted.kind,
+                            admitted.category,
+                            admitted.automaticWording,
+                            pending.expectedFormatRevision,
+                            out expectedFingerprint)
+                        && pending.projectionFingerprint == expectedFingerprint,
+                    "Successful factual admission did not publish one exact saved block-wording slot.");
             }
             finally
             {
@@ -1985,7 +2103,7 @@ namespace PawnDiary.RimTests
         [Test]
         public static void M11OptionalWordingRefreshesLibraryProjection()
         {
-            var wording = new MemoryRecallSummaryWordingSnapshot
+            var wording = new MemoryRecallNaturalWordingSnapshot
             {
                 currentProjectionFingerprint = new string('d', 64),
                 currentFormatRevision = 2,
@@ -2237,6 +2355,10 @@ namespace PawnDiary.RimTests
                 importance = MemoryContractTokens.ImportanceImportant,
                 ageUnknown = true,
                 automaticWording = "Incremental admission fixture.",
+                optionalLlmWording = "I remember this admission clearly.",
+                optionalLlmFingerprint = new string('d', 64),
+                optionalLlmFormatRevision = 4,
+                optionalLlmCategoryMask = 3,
                 providerExposureState = "not_sent",
                 formatRevision = 1
             };
@@ -2284,8 +2406,14 @@ namespace PawnDiary.RimTests
                     && incrementalGlobal.globalActiveBytes == rebuiltGlobal.globalActiveBytes
                     && incrementalGlobal.globalImportedBytes == rebuiltGlobal.globalImportedBytes
                     && incrementalLookup != null
-                    && ReferenceEquals(incrementalLookup, rebuiltLookup),
-                "Incremental admission indexes diverged from a forced full rebuild.");
+                    && ReferenceEquals(incrementalLookup, rebuiltLookup)
+                    && !ReferenceEquals(block, incrementalLookup)
+                    && incrementalLookup.optionalLlmWording
+                        == "I remember this admission clearly."
+                    && incrementalLookup.optionalLlmFingerprint == new string('d', 64)
+                    && incrementalLookup.optionalLlmFormatRevision == 4
+                    && incrementalLookup.optionalLlmCategoryMask == 3,
+                "Incremental admission clone or indexes diverged from the submitted block.");
         }
 
         [Test]

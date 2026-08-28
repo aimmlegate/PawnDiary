@@ -2380,9 +2380,7 @@ namespace PawnDiary
                 ? block.summaryPayload?.highestSurvivingImportance
                 : block.importance);
             MemoryPolicySnapshot policy = MemoryEffectivePolicyProvider.Current;
-            string automatic = summary
-                ? SelectCurrentSummaryNaturalWording(block, root, policy)
-                : block.automaticWording;
+            string automatic = SelectCurrentNaturalWording(block, root, policy);
             string wording = block.playerEdited && !string.IsNullOrEmpty(block.playerWording)
                 ? block.playerWording : automatic;
             string primary = block.primarySubject?.frozenLabel ?? string.Empty;
@@ -2533,23 +2531,50 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Selects one Summary's disposable provider wording for Library display only while its
-        /// exact current category projection remains valid. Suppressed or player-edited memories
-        /// deliberately expose no provider prose; their deterministic/player wording remains usable.
+        /// Selects disposable provider wording for Library display only while its exact current
+        /// projection remains valid. Suppressed or player-edited memories deliberately expose no
+        /// provider prose; their deterministic/player wording remains usable.
         /// </summary>
-        private string SelectCurrentSummaryNaturalWording(
+        private string SelectCurrentNaturalWording(
             SavedMemoryBlock block,
             SavedMemoryThreadRoot root,
             MemoryPolicySnapshot policy)
         {
-            string deterministic = block?.summaryPayload?.deterministicWording
-                ?? block?.automaticWording
-                ?? string.Empty;
+            bool summary = block?.kind == MemoryContractTokens.KindSummary;
+            string deterministic = summary
+                ? block?.summaryPayload?.deterministicWording
+                    ?? block?.automaticWording
+                    ?? string.Empty
+                : block?.automaticWording ?? string.Empty;
             if (block == null || block.suppressed || block.playerEdited) return deterministic;
+            if (!summary)
+            {
+                MemoryBlockWordingCurrentSnapshot currentBlock =
+                    CurrentBlockWordingSnapshot(root, block, policy);
+                if (currentBlock == null) return deterministic;
+                return MemoryNaturalWordingProjection.Select(
+                    false,
+                    deterministic,
+                    new MemoryRecallNaturalWordingSnapshot
+                    {
+                        currentProjectionFingerprint =
+                            currentBlock.projectionFingerprint ?? string.Empty,
+                        currentFormatRevision = currentBlock.wordingFormatRevision,
+                        currentCategoryMask = currentBlock.categoryMask,
+                        optionalWording = block.optionalLlmWording ?? string.Empty,
+                        optionalFingerprint = block.optionalLlmFingerprint ?? string.Empty,
+                        optionalFormatRevision = block.optionalLlmFormatRevision,
+                        optionalCategoryMask = block.optionalLlmCategoryMask,
+                        optionalSucceeded = !string.IsNullOrWhiteSpace(
+                            block.optionalLlmWording)
+                    },
+                    MemoryNaturalWordingProjection.EffectiveBlockWordingMaximumCharacters(
+                        MemoryOptionalTuning()?.fallbackSummaryMaxChars ?? 240));
+            }
             SummaryWordingCurrentSnapshot current = CurrentSummarySnapshot(root, block, policy);
             SavedMemorySummaryPayload payload = block.summaryPayload;
             if (current == null || payload == null) return deterministic;
-            MemoryRecallSummaryWordingSnapshot wording = new MemoryRecallSummaryWordingSnapshot
+            MemoryRecallNaturalWordingSnapshot wording = new MemoryRecallNaturalWordingSnapshot
             {
                 currentProjectionFingerprint = current.projectionFingerprint ?? string.Empty,
                 currentFormatRevision = current.formatRevision,

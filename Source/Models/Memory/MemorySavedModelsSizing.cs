@@ -247,6 +247,10 @@ namespace PawnDiary
             SizeRowList(c, "facts", facts);
             SizeRowList(c, "provenance", provenance);
             c.String("automaticWording", automaticWording);
+            c.String("optionalLlmWording", optionalLlmWording);
+            c.String("optionalLlmFingerprint", optionalLlmFingerprint);
+            c.Int64("optionalLlmFormatRevision", optionalLlmFormatRevision);
+            c.Int32("optionalLlmCategoryMask", optionalLlmCategoryMask);
             c.String("playerWording", playerWording);
             c.Boolean("playerEdited", playerEdited);
             c.Boolean("suppressed", suppressed);

@@ -465,8 +465,10 @@ namespace PawnDiary
         public int optionalMemoryOpportunityExpiryTicks = 120000;
         public int meaningfulMemoryPriority = 100;
         public int quietMemoryPriority = 50;
+        public int memoryWordingPriority = 10;
         public int summaryWordingPriority = 0;
         public int memoryReflectionMaxTokens = 220;
+        /// <summary>Shared one-sentence output cap for Summary and Event/Landmark wording.</summary>
         public int summaryWordingMaxTokens = 80;
         /// <summary>DefInjected editorial prompts, frozen on the main thread before transport.</summary>
         public string memoryReflectionSystemPrompt;
@@ -474,6 +476,8 @@ namespace PawnDiary
         public string memoryReflectionInstruction;
         public string summaryWordingSystemPrompt;
         public string summaryWordingInstruction;
+        public string memoryWordingSystemPrompt;
+        public string memoryWordingInstruction;
         // M6 replaceable-current-truth reconciliation. Values are copied into a plain snapshot
         // before policy runs; no Def or settings object crosses into the pure layer.
         public int memoryObservationReconciliationIntervalTicks = 2500;

@@ -1,8 +1,8 @@
 // MemorySavedScalarSchema.cs — the exhaustive scalar/default/Scribe registry for every saved
 // memory-system row (design/MEMORY_SYSTEM_IMPLEMENTATION_PLAN.md §T6.0).
 //
-// The M0 benchmark froze 32 payload types; the additive M10 eligibility boundary brings the exact
-// field-path catalog to 400 while preserving every earlier path and type.
+// The M0 benchmark froze 32 payload types; later additive memory work brings the exact field-path
+// catalog to 404 while preserving every earlier path and type.
 // (benchmarks/MemoryThreadBenchmarks/Catalog/memory-payload-atom-catalog-v1.json). This file is the
 // code-owned mirror of that frozen catalog: each declared field appears exactly once, with its
 // logical width, so Scribe wiring, MemoryLogicalPayloadSizer, migration validation, and tests all
@@ -223,6 +223,10 @@ namespace PawnDiary
                     Atom("facts",                                          MemorySavedAtomKind.List),
                     Atom("provenance",                                     MemorySavedAtomKind.List),
                     Atom("automaticWording",                               MemorySavedAtomKind.String),
+                    Atom("optionalLlmWording",                             MemorySavedAtomKind.String),
+                    Atom("optionalLlmFingerprint",                         MemorySavedAtomKind.String),
+                    Atom("optionalLlmFormatRevision",                      MemorySavedAtomKind.Int64),
+                    Atom("optionalLlmCategoryMask",                        MemorySavedAtomKind.Int32),
                     Atom("playerWording",                                  MemorySavedAtomKind.String),
                     Atom("playerEdited",                                   MemorySavedAtomKind.Bool),
                     Atom("suppressed",                                     MemorySavedAtomKind.Bool),
@@ -674,7 +678,7 @@ namespace PawnDiary
             return null;
         }
 
-        /// <summary>Total number of registered field paths (400 after M10's saved boundary).</summary>
+        /// <summary>Total number of registered field paths (404 after block wording cache).</summary>
         public static int AtomCount()
         {
             int total = 0;

@@ -1,16 +1,18 @@
 // MemoryOptionalAiPolicy.cs — pure M10 opportunity, result, and request-freezing rules.
 //
-// The game adapter copies committed summary/reflection state into these plain DTOs. This file owns
+// The game adapter copies committed memory/reflection state into these plain DTOs. This file owns
 // exact opportunity identity, one-slot ranking, deterministic-first result validation, and immutable
 // logical-request construction. It has no Verse, Pawn, Def, UI, transport, credential, or localization
 // dependency; background workers receive only the strings frozen by the main-thread adapter.
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace PawnDiary
 {
-    /// <summary>Stable saved disposition vocabulary for optional Summary wording.</summary>
+    /// <summary>Stable saved disposition vocabulary for optional memory wording.</summary>
     internal static class MemoryOptionalWordingDispositionTokens
     {
         public const string None = "none";
@@ -31,7 +33,10 @@ namespace PawnDiary
         }
     }
 
-    /// <summary>Detached exact contents of one saved owner Summary-wording opportunity.</summary>
+    /// <summary>
+    /// Detached exact contents of the shipped owner wording slot. Historical field names remain
+    /// stable because Event/Landmark wording deliberately reuses the Summary save/wire contract.
+    /// </summary>
     internal sealed class SummaryWordingOpportunitySnapshot
     {
         public string ownerPawnId = string.Empty;
@@ -97,6 +102,36 @@ namespace PawnDiary
         public string dispositionToken = MemoryOptionalWordingDispositionTokens.None;
     }
 
+    /// <summary>
+    /// Current immutable Event/Landmark projection used by the optional wording cache. The
+    /// deterministic sentence is the complete transformation input; canonical facts stay outside
+    /// this display-only DTO and remain authoritative.
+    /// </summary>
+    internal sealed class MemoryBlockWordingCurrentSnapshot
+    {
+        public string ownerPawnId = string.Empty;
+        public string ownerEpochToken = string.Empty;
+        public string rootId = string.Empty;
+        public string recordId = string.Empty;
+        public string kind = string.Empty;
+        public string category = string.Empty;
+        public string deterministicWording = string.Empty;
+        public long wordingFormatRevision;
+        public int categoryMask;
+        public string projectionFingerprint = string.Empty;
+        public bool suppressed;
+        public bool playerEdited;
+    }
+
+    /// <summary>Pure terminal plan for disposable Event/Landmark prose.</summary>
+    internal sealed class MemoryBlockWordingResultPlan
+    {
+        public bool identityMatched;
+        public bool applyOptionalWording;
+        public string optionalWording = string.Empty;
+        public string dispositionToken = MemoryOptionalWordingDispositionTokens.None;
+    }
+
     /// <summary>One frozen prompt variant input before canonical hashes are derived.</summary>
     internal sealed class MemoryOptionalPromptVariantInput
     {
@@ -134,6 +169,7 @@ namespace PawnDiary
     internal static class MemoryOptionalAiPolicy
     {
         private const string SummaryOpportunityDomain = "summary-wording-opportunity-v1";
+        private const string BlockWordingProjectionDomain = "memory-block-wording-projection-v1";
         private const int MaximumSegmentCharacters = 4096;
         // Matches the defensive composite-key ceiling used by the shared identity codec. Keeping the
         // check here prevents an opportunity key from becoming an unbounded saved carrier.
@@ -461,7 +497,7 @@ namespace PawnDiary
             return MemoryNaturalWordingProjection.Select(
                 current?.suppressed ?? true,
                 current?.deterministicWording,
-                current == null ? null : new MemoryRecallSummaryWordingSnapshot
+                current == null ? null : new MemoryRecallNaturalWordingSnapshot
                 {
                     currentProjectionFingerprint = current.projectionFingerprint,
                     currentFormatRevision = current.formatRevision,
@@ -474,6 +510,117 @@ namespace PawnDiary
                         == MemoryOptionalWordingDispositionTokens.Success
                 },
                 maximumOptionalCharacters);
+        }
+
+        /// <summary>
+        /// Hashes exactly the deterministic Event/Landmark sentence that the small transformation
+        /// sees. Player wording, optional prose, current truth, and mutable routing state are omitted
+        /// so generated text can never become canonical input to its own validity check.
+        /// </summary>
+        public static bool TryCreateBlockWordingProjectionFingerprint(
+            string recordId,
+            string kind,
+            string category,
+            string deterministicWording,
+            long wordingFormatRevision,
+            out string fingerprint)
+        {
+            fingerprint = string.Empty;
+            if (!Required(recordId)
+                || (kind != MemoryContractTokens.KindEvent
+                    && kind != MemoryContractTokens.KindLandmark)
+                || !Required(category)
+                || !Required(deterministicWording)
+                || wordingFormatRevision <= 0) return false;
+            string framed = OrdinalSegmentCodec.Segment(BlockWordingProjectionDomain)
+                + OrdinalSegmentCodec.Segment(recordId)
+                + OrdinalSegmentCodec.Segment(kind)
+                + OrdinalSegmentCodec.Segment(category)
+                + OrdinalSegmentCodec.Segment(Invariant(wordingFormatRevision))
+                + OrdinalSegmentCodec.Segment(deterministicWording);
+            try
+            {
+                byte[] bytes = new UTF8Encoding(false, true).GetBytes(framed);
+                using (SHA256 sha = SHA256.Create())
+                {
+                    byte[] digest = sha.ComputeHash(bytes);
+                    StringBuilder text = new StringBuilder(digest.Length * 2);
+                    for (int index = 0; index < digest.Length; index++)
+                        text.Append(digest[index].ToString("x2", CultureInfo.InvariantCulture));
+                    fingerprint = text.ToString();
+                    return true;
+                }
+            }
+            catch (Exception exception) when (
+                exception is EncoderFallbackException
+                || exception is CryptographicException)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>Requires the frozen identity to still target the exact deterministic source.</summary>
+        public static bool TargetsCurrentBlockWording(
+            SummaryWordingOpportunitySnapshot opportunity,
+            MemoryBlockWordingCurrentSnapshot current)
+        {
+            string rebuiltFingerprint;
+            return IsValidSummaryOpportunity(opportunity)
+                && ValidBlockWordingCurrent(current)
+                && TryCreateBlockWordingProjectionFingerprint(
+                    current.recordId,
+                    current.kind,
+                    current.category,
+                    current.deterministicWording,
+                    current.wordingFormatRevision,
+                    out rebuiltFingerprint)
+                && Equal(rebuiltFingerprint, current.projectionFingerprint)
+                && Equal(opportunity.ownerPawnId, current.ownerPawnId)
+                && Equal(opportunity.ownerEpochToken, current.ownerEpochToken)
+                && Equal(opportunity.rootId, current.rootId)
+                && Equal(opportunity.summaryRecordId, current.recordId)
+                && opportunity.expectedFormatRevision == current.wordingFormatRevision
+                && opportunity.expectedCategoryMask == current.categoryMask
+                && Equal(opportunity.projectionFingerprint,
+                    current.projectionFingerprint);
+        }
+
+        /// <summary>Suppressed/player-authored blocks never accept or expose provider prose.</summary>
+        public static bool MatchesCurrentBlockWording(
+            SummaryWordingOpportunitySnapshot opportunity,
+            MemoryBlockWordingCurrentSnapshot current)
+        {
+            return TargetsCurrentBlockWording(opportunity, current)
+                && !current.suppressed && !current.playerEdited;
+        }
+
+        /// <summary>Validates provider text without ever replacing deterministic source facts.</summary>
+        public static MemoryBlockWordingResultPlan PlanBlockWordingResult(
+            SummaryWordingOpportunitySnapshot opportunity,
+            MemoryBlockWordingCurrentSnapshot current,
+            bool providerSucceeded,
+            string generatedWording,
+            int maximumCharacters)
+        {
+            MemoryBlockWordingResultPlan plan = new MemoryBlockWordingResultPlan();
+            if (!MatchesCurrentBlockWording(opportunity, current)) return plan;
+            plan.identityMatched = true;
+            if (!providerSucceeded)
+            {
+                plan.dispositionToken = MemoryOptionalWordingDispositionTokens.Failed;
+                return plan;
+            }
+            string normalized;
+            if (!MemoryNaturalWordingProjection.TryNormalizeOptionalWording(
+                    generatedWording, maximumCharacters, out normalized))
+            {
+                plan.dispositionToken = MemoryOptionalWordingDispositionTokens.Malformed;
+                return plan;
+            }
+            plan.applyOptionalWording = true;
+            plan.optionalWording = normalized;
+            plan.dispositionToken = MemoryOptionalWordingDispositionTokens.Success;
+            return plan;
         }
 
         /// <summary>Builds a complete staged immutable request graph or refuses before allocation.</summary>
@@ -608,6 +755,23 @@ namespace PawnDiary
                 && value.requestedTick >= 0
                 && value.dueTick >= value.requestedTick
                 && value.expiryTick > value.dueTick;
+        }
+
+        private static bool ValidBlockWordingCurrent(
+            MemoryBlockWordingCurrentSnapshot value)
+        {
+            return value != null
+                && Required(value.ownerPawnId)
+                && Required(value.ownerEpochToken)
+                && Required(value.rootId)
+                && Required(value.recordId)
+                && (value.kind == MemoryContractTokens.KindEvent
+                    || value.kind == MemoryContractTokens.KindLandmark)
+                && Required(value.category)
+                && Required(value.deterministicWording)
+                && value.wordingFormatRevision > 0
+                && value.categoryMask > 0
+                && LowerSha256(value.projectionFingerprint);
         }
 
         private static int CompareKeepOrder(

@@ -4064,7 +4064,7 @@ namespace PawnMemoryTests
                 "summary-wording", "Owner_A", "source-summary-wording", 302);
             summary.kind = MemoryContractTokens.KindSummary;
             summary.historicalText = "Deterministic filtered summary.";
-            summary.summaryWording = new MemoryRecallSummaryWordingSnapshot
+            summary.naturalWording = new MemoryRecallNaturalWordingSnapshot
             {
                 currentProjectionFingerprint = "projection-current",
                 currentFormatRevision = 7,
@@ -4077,7 +4077,7 @@ namespace PawnMemoryTests
             };
             MemoryRecallSelectedCandidate selectedSummary = ImportantMemorySelector.SelectV2(
                 query, new List<MemoryRecallCandidateSnapshot> { summary }).selected[0];
-            summary.summaryWording.optionalWording = "Mutated after selection.";
+            summary.naturalWording.optionalWording = "Mutated after selection.";
             rendered = ImportantMemoryLineRenderer.RenderV2(selectedSummary, 200, 200);
             AssertEqual("recallV2.summary.exact-cache-reaches-natural-writing",
                 "Natural optional summary.", rendered.historicalText);
@@ -4086,7 +4086,7 @@ namespace PawnMemoryTests
                 "summary-stale", "Owner_A", "source-summary-stale", 303);
             staleSummary.kind = MemoryContractTokens.KindSummary;
             staleSummary.historicalText = "Deterministic stale fallback.";
-            staleSummary.summaryWording = new MemoryRecallSummaryWordingSnapshot
+            staleSummary.naturalWording = new MemoryRecallNaturalWordingSnapshot
             {
                 currentProjectionFingerprint = "projection-current",
                 currentFormatRevision = 7,
@@ -4102,6 +4102,88 @@ namespace PawnMemoryTests
             rendered = ImportantMemoryLineRenderer.RenderV2(selectedSummary, 200, 200);
             AssertEqual("recallV2.summary.stale-cache-keeps-deterministic",
                 "Deterministic stale fallback.", rendered.historicalText);
+
+            MemoryRecallCandidateSnapshot memoryEvent = RecallCandidate(
+                "event-wording", "Owner_A", "source-event-wording", 304);
+            memoryEvent.kind = MemoryContractTokens.KindEvent;
+            memoryEvent.historicalText = "Opinion of Brik: neutral to friendly.";
+            memoryEvent.naturalWording = new MemoryRecallNaturalWordingSnapshot
+            {
+                currentProjectionFingerprint = "event-current",
+                currentFormatRevision = 1,
+                currentCategoryMask = 2,
+                optionalWording = "I found myself warming to Brik.",
+                optionalFingerprint = "event-current",
+                optionalFormatRevision = 1,
+                optionalCategoryMask = 2,
+                optionalSucceeded = true
+            };
+            MemoryRecallSelectedCandidate selectedEvent = ImportantMemorySelector.SelectV2(
+                query, new List<MemoryRecallCandidateSnapshot> { memoryEvent }).selected[0];
+            memoryEvent.naturalWording.optionalWording = "Mutated after selection.";
+            rendered = ImportantMemoryLineRenderer.RenderV2(selectedEvent, 200, 200);
+            AssertEqual("recallV2.event.exact-cache-reaches-natural-writing",
+                "I found myself warming to Brik.", rendered.historicalText);
+
+            MemoryRecallCandidateSnapshot staleEvent = RecallCandidate(
+                "event-stale", "Owner_A", "source-event-stale", 305);
+            staleEvent.historicalText = "Deterministic event fallback.";
+            staleEvent.naturalWording = new MemoryRecallNaturalWordingSnapshot
+            {
+                currentProjectionFingerprint = "event-current",
+                currentFormatRevision = 1,
+                currentCategoryMask = 2,
+                optionalWording = "Stale event wording.",
+                optionalFingerprint = "event-old",
+                optionalFormatRevision = 1,
+                optionalCategoryMask = 2,
+                optionalSucceeded = true
+            };
+            selectedEvent = ImportantMemorySelector.SelectV2(
+                query, new List<MemoryRecallCandidateSnapshot> { staleEvent }).selected[0];
+            rendered = ImportantMemoryLineRenderer.RenderV2(selectedEvent, 200, 200);
+            AssertEqual("recallV2.event.stale-cache-keeps-deterministic",
+                "Deterministic event fallback.", rendered.historicalText);
+
+            MemoryRecallCandidateSnapshot oversizedEvent = RecallCandidate(
+                "event-oversized", "Owner_A", "source-event-oversized", 306);
+            oversizedEvent.historicalText = "Deterministic bounded fallback.";
+            oversizedEvent.naturalWording = new MemoryRecallNaturalWordingSnapshot
+            {
+                currentProjectionFingerprint = "event-current",
+                currentFormatRevision = 1,
+                currentCategoryMask = 2,
+                optionalWording = new string('x', 241),
+                optionalFingerprint = "event-current",
+                optionalFormatRevision = 1,
+                optionalCategoryMask = 2,
+                optionalSucceeded = true
+            };
+            selectedEvent = ImportantMemorySelector.SelectV2(
+                query, new List<MemoryRecallCandidateSnapshot> { oversizedEvent }).selected[0];
+            rendered = ImportantMemoryLineRenderer.RenderV2(selectedEvent, 500, 200);
+            AssertEqual("recallV2.event.defensive-cache-cap-keeps-fallback",
+                "Deterministic bounded fallback.", rendered.historicalText);
+
+            truthful.naturalWording = new MemoryRecallNaturalWordingSnapshot
+            {
+                currentProjectionFingerprint = "truth-current",
+                currentFormatRevision = 1,
+                currentCategoryMask = 1,
+                optionalWording = "I once counted them among my allies.",
+                optionalFingerprint = "truth-current",
+                optionalFormatRevision = 1,
+                optionalCategoryMask = 1,
+                optionalSucceeded = true
+            };
+            result = ImportantMemorySelector.SelectV2(
+                query, new List<MemoryRecallCandidateSnapshot> { truthful });
+            rendered = ImportantMemoryLineRenderer.RenderV2(
+                result.selected[0], 200, 200);
+            AssertEqual("recallV2.event.enriched-history-stays-separate",
+                "I once counted them among my allies.", rendered.historicalText);
+            AssertEqual("recallV2.event.current-truth-remains-unchanged",
+                "Now: they are hostile.", rendered.currentStateText);
 
             KnowledgeSelectionResult legacy = new KnowledgeSelectionResult();
             legacy.selected.Add(Record("legacy-record", 1, subjectKey: "part:Leg"));

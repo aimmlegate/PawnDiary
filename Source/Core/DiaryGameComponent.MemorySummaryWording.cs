@@ -1,9 +1,9 @@
-// DiaryGameComponent.MemorySummaryWording.cs — M10 main-thread optional-memory coordinator adapter.
+// DiaryGameComponent.MemorySummaryWording.cs — main-thread optional-memory coordinator adapter.
 //
 // This is not a scheduler. The existing natural-rest ReflectionCoordinator asks this adapter for
-// detached meaningful, quiet, and Summary candidates. Any winner stages work through the ordinary
+// detached meaningful, quiet, and wording candidates. Any winner stages work through the ordinary
 // LlmClient queue, commits its complete saved owner row, and only then activates transport visibility.
-// Deterministic Summary facts/wording always exist first and remain canonical on every failure path.
+// Deterministic facts/wording always exist first and remain canonical on every failure path.
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -18,6 +18,11 @@ namespace PawnDiary
     public partial class DiaryGameComponent
     {
         private const string OptionalMemoryReflectionDefName = "MemoryReflection";
+        // Event/Landmark wording reuses the shipped one-owner summary-wording slot. Standalone
+        // blocks need a nonempty stable root identity because the existing saved key grammar does
+        // not admit empty segments.
+        private const string StandaloneBlockWordingRootId = "memory-wording-standalone-v1";
+        private const long BlockWordingFormatRevision = 1;
         // Reconciliation replaces this transient table with one fully prepared detached copy. No
         // other code retains its identity, and all reads/writes occur on the main thread.
         private MemoryInvokedGenerationCutoffTable invokedGenerationCutoffs =
@@ -264,7 +269,7 @@ namespace PawnDiary
             {
                 SavedMemoryThreadRoot root;
                 SavedMemoryBlock block;
-                if (!TryFindCurrentSummary(snapshot, out root, out block))
+                if (!TryFindCurrentWordingTarget(snapshot, out root, out block))
                 {
                     RemoveSummaryOpportunity(saved);
                     return DiaryDispatchOutcome.Rejected;
@@ -336,7 +341,11 @@ namespace PawnDiary
                 BuildFailoverTargets(targets, primary));
             List<ApiEndpointConfig> lanes = new List<ApiEndpointConfig> { primary };
             lanes.AddRange(failovers);
-            string purpose = opportunity.workClass == ReflectionWorkClassTokens.SummaryWording
+            bool wordingRequest = opportunity.workClass
+                == ReflectionWorkClassTokens.SummaryWording;
+            bool blockWording = wordingRequest
+                && block.kind != MemoryContractTokens.KindSummary;
+            string purpose = wordingRequest
                 ? MemoryDispatchTokens.SummaryWording
                 : MemoryDispatchTokens.MemoryReflection;
             MemoryEvidenceIdentity evidence = new MemoryEvidenceIdentity
@@ -359,17 +368,25 @@ namespace PawnDiary
                 optionalRequestInvalidationGeneration =
                     policy.optionalRequestInvalidationGeneration
             };
-            string system = purpose == MemoryDispatchTokens.SummaryWording
+            string system = blockWording
+                ? tuning?.memoryWordingSystemPrompt ?? string.Empty
+                : purpose == MemoryDispatchTokens.SummaryWording
                 ? tuning?.summaryWordingSystemPrompt ?? string.Empty
                 : tuning?.memoryReflectionSystemPrompt ?? string.Empty;
+            string memoryWordingStyle = blockWording
+                ? ResolveMemoryWordingStyleRule(pawn, owner)
+                : string.Empty;
             string baseUser;
             if (purpose == MemoryDispatchTokens.SummaryWording)
             {
                 SummaryWordingOpportunitySnapshot summaryIdentity;
                 if (!MemoryOptionalAiPolicy.TryParseSummaryOpportunityKey(
                         opportunity.opportunityKey, out summaryIdentity)
-                    || !TryBuildSummaryWordingPrompt(
-                        block, summaryIdentity, tuning, out baseUser))
+                    || (blockWording
+                        ? !TryBuildBlockWordingPrompt(
+                            block, summaryIdentity, tuning, memoryWordingStyle, out baseUser)
+                        : !TryBuildSummaryWordingPrompt(
+                            block, summaryIdentity, tuning, out baseUser)))
                 {
                     SettleRejectedOptionalOpportunity(opportunity);
                     return false;
@@ -383,8 +400,10 @@ namespace PawnDiary
                 new Dictionary<ApiLaneIdentity, LlmPromptVariant>();
             build.variants.Add(new MemoryOptionalPromptVariantInput
             {
-                templateIdentity = purpose + ":v1",
-                contextDetailIdentity = "optional-memory:v1",
+                templateIdentity = blockWording
+                    ? "memory_wording:v1" : purpose + ":v1",
+                contextDetailIdentity = blockWording
+                    ? "optional-memory-wording:v1" : "optional-memory:v1",
                 systemPrompt = system,
                 userPrompt = baseUser,
                 evidence = new List<MemoryEvidenceIdentity> { evidence }
@@ -576,7 +595,33 @@ namespace PawnDiary
                     saved.eventIdOrOpportunityKey, out opportunity)) return;
             SavedMemoryThreadRoot root;
             SavedMemoryBlock block;
-            if (!TryFindCurrentSummary(opportunity, out root, out block)) return;
+            if (!TryFindCurrentWordingTarget(opportunity, out root, out block)) return;
+            if (block.kind != MemoryContractTokens.KindSummary)
+            {
+                MemoryBlockWordingCurrentSnapshot currentBlock =
+                    CurrentBlockWordingSnapshot(
+                        root, block, MemoryEffectivePolicyProvider.Current);
+                MemoryBlockWordingResultPlan blockPlan =
+                    MemoryOptionalAiPolicy.PlanBlockWordingResult(
+                        opportunity,
+                        currentBlock,
+                        result.success,
+                        result.generatedText,
+                        MemoryNaturalWordingProjection.EffectiveBlockWordingMaximumCharacters(
+                            MemoryOptionalTuning()?.fallbackSummaryMaxChars ?? 240));
+                if (!blockPlan.identityMatched) return;
+                block.optionalLlmWording = blockPlan.applyOptionalWording
+                    ? blockPlan.optionalWording : string.Empty;
+                block.optionalLlmFingerprint = blockPlan.applyOptionalWording
+                    ? opportunity.projectionFingerprint : string.Empty;
+                block.optionalLlmFormatRevision = blockPlan.applyOptionalWording
+                    ? opportunity.expectedFormatRevision : 0;
+                block.optionalLlmCategoryMask = blockPlan.applyOptionalWording
+                    ? opportunity.expectedCategoryMask : 0;
+                AdvanceSummaryStatusRevision(
+                    FindCurrentMemoryEnvelope(saved.ownerPawnId), root);
+                return;
+            }
             SummaryWordingCurrentSnapshot current = CurrentSummarySnapshot(root, block,
                 MemoryEffectivePolicyProvider.Current);
             SummaryWordingResultPlan plan = MemoryOptionalAiPolicy.PlanSummaryResult(
@@ -696,7 +741,7 @@ namespace PawnDiary
                             retained.terminal[index].dispositionToken);
                     SavedMemoryThreadRoot retainedRoot;
                     SavedMemoryBlock retainedBlock;
-                    if (winner != null && !TryFindCurrentSummary(
+                    if (winner != null && !TryFindCurrentWordingTarget(
                             winner, out retainedRoot, out retainedBlock)) winner = null;
                 }
             }
@@ -768,15 +813,21 @@ namespace PawnDiary
                 if (row == null) continue;
                 SavedMemoryThreadRoot currentRoot;
                 SavedMemoryBlock currentBlock;
-                if (!TryFindCurrentSummary(row, out currentRoot, out currentBlock)) continue;
+                if (!TryFindCurrentWordingTarget(
+                        row, out currentRoot, out currentBlock)) continue;
                 SavedMemorySummaryPayload currentPayload = currentBlock.summaryPayload;
-                if (currentPayload != null
-                    && string.Equals(currentPayload.lastSettledWordingFingerprint,
-                        row.projectionFingerprint, StringComparison.Ordinal)
-                    && currentPayload.lastSettledWordingReducerRevision
-                        == row.expectedReducerRevision
-                    && currentPayload.lastSettledWordingFormatRevision
-                        == row.expectedFormatRevision) continue;
+                if (currentBlock.kind == MemoryContractTokens.KindSummary
+                    ? currentPayload != null
+                        && string.Equals(currentPayload.lastSettledWordingFingerprint,
+                            row.projectionFingerprint, StringComparison.Ordinal)
+                        && currentPayload.lastSettledWordingReducerRevision
+                            == row.expectedReducerRevision
+                        && currentPayload.lastSettledWordingFormatRevision
+                            == row.expectedFormatRevision
+                    : BlockWordingCacheMatches(currentBlock,
+                        CurrentBlockWordingSnapshot(
+                            currentRoot, currentBlock,
+                            MemoryEffectivePolicyProvider.Current))) continue;
                 string ownerKey = OrdinalSegmentCodec.Segment(row.ownerPawnId)
                     + OrdinalSegmentCodec.Segment(row.ownerEpochToken);
                 SummaryWordingOpportunitySnapshot prior;
@@ -845,8 +896,16 @@ namespace PawnDiary
         {
             SavedMemoryThreadRoot root;
             SavedMemoryBlock block;
-            if (!MemoryOptionalWordingDispositionTokens.IsKnown(disposition)
-                || !TryFindCurrentSummary(opportunity, out root, out block)) return false;
+            if (!MemoryOptionalWordingDispositionTokens.IsKnown(disposition)) return false;
+            if (!TryFindCurrentSummary(opportunity, out root, out block))
+            {
+                if (!TryFindCurrentBlockWording(
+                        opportunity, out root, out block)) return false;
+                bool changed = ClearBlockOptionalWording(block);
+                if (changed) AdvanceSummaryStatusRevision(
+                    FindCurrentMemoryEnvelope(opportunity.ownerPawnId), root);
+                return true;
+            }
             SavedMemorySummaryPayload payload = block.summaryPayload;
             payload.lastSettledWordingFingerprint = opportunity.projectionFingerprint;
             payload.lastSettledWordingReducerRevision = opportunity.expectedReducerRevision;
@@ -872,7 +931,15 @@ namespace PawnDiary
             changed = false;
             SavedMemoryThreadRoot root;
             SavedMemoryBlock block;
-            if (!TryFindCurrentSummary(opportunity, out root, out block)) return false;
+            if (!TryFindCurrentSummary(opportunity, out root, out block))
+            {
+                if (!TryFindCurrentBlockWording(
+                        opportunity, out root, out block)) return false;
+                changed = ClearBlockOptionalWording(block);
+                if (changed) AdvanceSummaryStatusRevision(
+                    FindCurrentMemoryEnvelope(opportunity.ownerPawnId), root);
+                return true;
+            }
             SavedMemorySummaryPayload payload = block.summaryPayload;
             changed = !string.Equals(payload.lastWordingDispositionToken,
                     MemoryOptionalWordingDispositionTokens.Pending, StringComparison.Ordinal)
@@ -962,6 +1029,103 @@ namespace PawnDiary
             // The Library's detached owner cache fingerprints include these revisions. Advance the
             // common loaded-state fence so its next ordinary update rebuilds the changed wording row.
             if (changed && publishStateVersion) DiaryStateVersion.Bump();
+        }
+
+        /// <summary>
+        /// Offers only the just-admitted Event/Landmark to the existing one-owner wording slot.
+        /// There is deliberately no historical scan or second queue: older saves remain untouched,
+        /// and a rapid later memory may displace this best-effort enrichment before transport.
+        /// </summary>
+        private void ScheduleAdmittedBlockWording(
+            PawnKnowledgeState owner,
+            MemoryStoreAdmissionResult admission,
+            MemoryPolicySnapshot policy,
+            DiaryKnowledgeTuningDef tuning,
+            long nowTick)
+        {
+            if (owner == null || admission == null
+                || admission.outcome != MemoryStoreMutationOutcome.Admitted
+                || policy?.AllowsOptionalRequests != true
+                || tuning == null || nowTick < 0) return;
+            SavedMemoryThreadRoot root;
+            SavedMemoryBlock block;
+            if (!TryFindAdmittedBaseBlock(
+                    owner, admission.rootId, admission.recordId, out root, out block)) return;
+            MemoryBlockWordingCurrentSnapshot current =
+                CurrentBlockWordingSnapshot(root, block, policy);
+            if (current == null) return;
+            SummaryWordingOpportunitySnapshot incoming = NewBlockWordingOpportunity(
+                owner,
+                root,
+                block,
+                current,
+                tuning,
+                nowTick,
+                policy,
+                globalOptionalRequestCancellationGeneration);
+            if (incoming == null) return;
+
+            SavedSummaryWordingOpportunityV1 saved = FindSummaryOpportunity(
+                owner.pawnId, owner.autobiographicalEpochToken);
+            SummaryWordingOpportunitySnapshot existing = saved == null
+                ? null : ToSummaryOpportunity(saved);
+            if (!MemoryOptionalAiPolicy.IsValidSummaryOpportunity(existing)) existing = null;
+            SummaryWordingSlotPlan slot = MemoryOptionalAiPolicy.PlanOwnerSlot(
+                existing, incoming, nowTick);
+            if (!slot.valid) return;
+            for (int index = 0; index < slot.terminal.Count; index++)
+                ApplySummaryTerminal(
+                    slot.terminal[index].opportunity,
+                    slot.terminal[index].dispositionToken);
+            ReplaceSummaryOpportunity(
+                owner.pawnId, owner.autobiographicalEpochToken, slot.winner);
+        }
+
+        private static SummaryWordingOpportunitySnapshot NewBlockWordingOpportunity(
+            PawnKnowledgeState owner,
+            SavedMemoryThreadRoot root,
+            SavedMemoryBlock block,
+            MemoryBlockWordingCurrentSnapshot current,
+            DiaryKnowledgeTuningDef tuning,
+            long nowTick,
+            MemoryPolicySnapshot policy,
+            long globalCancellationGeneration)
+        {
+            if (owner == null || block == null || current == null
+                || globalCancellationGeneration <= 0
+                || globalCancellationGeneration == long.MaxValue) return null;
+            long expiry = SaturatingAdd(
+                nowTick, Math.Max(1, tuning.optionalMemoryOpportunityExpiryTicks));
+            if (expiry <= nowTick) return null;
+            SummaryWordingOpportunitySnapshot row = new SummaryWordingOpportunitySnapshot
+            {
+                ownerPawnId = owner.pawnId,
+                ownerEpochToken = owner.autobiographicalEpochToken,
+                ownerCancellationGeneration = owner.requestCancellationGeneration,
+                globalCancellationGeneration = globalCancellationGeneration,
+                optionalRequestInvalidationGeneration =
+                    policy.optionalRequestInvalidationGeneration,
+                rootId = current.rootId,
+                summaryRecordId = current.recordId,
+                // These three positive fields remain part of the shipped key grammar. Base-block
+                // result matching intentionally ignores them: an unrelated sibling admission must
+                // not invalidate this immutable memory sentence.
+                expectedRootStructuralRevision = Math.Max(
+                    1, root?.structuralRevision ?? owner.structuralRevision),
+                expectedSummaryFactsRevision = 1,
+                expectedReducerRevision = 1,
+                expectedFormatRevision = current.wordingFormatRevision,
+                expectedCategoryMask = current.categoryMask,
+                projectionFingerprint = current.projectionFingerprint,
+                requestedTick = nowTick,
+                dueTick = nowTick,
+                expiryTick = expiry,
+                configuredPriority = tuning.memoryWordingPriority,
+                salience = ReflectionBlockSalience(block)
+            };
+            string key;
+            return MemoryOptionalAiPolicy.TryCreateSummaryOpportunityKey(row, out key)
+                ? SetOpportunityKey(row, key) : null;
         }
 
         private static SummaryWordingOpportunitySnapshot NewSummaryOpportunity(
@@ -1152,6 +1316,60 @@ namespace PawnDiary
                 opportunity.expectedCategoryMask.ToString(CultureInfo.InvariantCulture));
             prompt = text.ToString();
             return true;
+        }
+
+        private static bool TryBuildBlockWordingPrompt(
+            SavedMemoryBlock block,
+            SummaryWordingOpportunitySnapshot opportunity,
+            DiaryKnowledgeTuningDef tuning,
+            string writingStyleRule,
+            out string prompt)
+        {
+            prompt = string.Empty;
+            if (block == null || opportunity == null
+                || (block.kind != MemoryContractTokens.KindEvent
+                    && block.kind != MemoryContractTokens.KindLandmark)) return false;
+            string fingerprint;
+            int categoryMask = MemoryCategoryBits.ForToken(block.category);
+            if (!MemoryOptionalAiPolicy.TryCreateBlockWordingProjectionFingerprint(
+                    block.recordId,
+                    block.kind,
+                    block.category,
+                    block.automaticWording,
+                    BlockWordingFormatRevision,
+                    out fingerprint)
+                || !string.Equals(fingerprint, opportunity.projectionFingerprint,
+                    StringComparison.Ordinal)
+                || opportunity.expectedFormatRevision != BlockWordingFormatRevision
+                || opportunity.expectedCategoryMask != categoryMask) return false;
+            StringBuilder text = new StringBuilder();
+            text.AppendLine(tuning?.memoryWordingInstruction ?? string.Empty);
+            string safeStyle = PromptTextSanitizer.OneLine(writingStyleRule);
+            if (safeStyle.Length > 0)
+                text.Append("writing_style=").AppendLine(safeStyle);
+            text.Append("memory_kind=").AppendLine(block.kind ?? string.Empty);
+            text.Append("memory_fact=").AppendLine(block.automaticWording ?? string.Empty);
+            text.Append("projection_fingerprint=").Append(
+                opportunity.projectionFingerprint ?? string.Empty);
+            prompt = text.ToString();
+            return true;
+        }
+
+        /// <summary>
+        /// Reuses the pawn's existing resolved writing-style layer as a small aesthetic hint. The
+        /// style never enters the cache fingerprint or canonical facts: it describes how this one
+        /// recollection sounds, while exact validity remains tied to the deterministic memory.
+        /// </summary>
+        private string ResolveMemoryWordingStyleRule(
+            Pawn pawn,
+            PawnKnowledgeState owner)
+        {
+            PawnDiaryRecord diary = FindDiaryByPawnId(owner?.pawnId);
+            return HediffPersonaOverrides.RuleFor(
+                pawn,
+                diary?.personaDefName,
+                ExternalWritingStyleOverrideRuleFor(diary),
+                diary?.customWritingStyleRule);
         }
 
         private static string BuildMemoryReflectionPrompt(
@@ -1686,6 +1904,61 @@ namespace PawnDiary
             return false;
         }
 
+        private static bool TryFindAdmittedBaseBlock(
+            PawnKnowledgeState owner,
+            string rootIdOrEmpty,
+            string recordId,
+            out SavedMemoryThreadRoot root,
+            out SavedMemoryBlock block)
+        {
+            root = null;
+            block = null;
+            if (owner == null || string.IsNullOrWhiteSpace(recordId)) return false;
+            if (string.IsNullOrEmpty(rootIdOrEmpty)
+                || string.Equals(rootIdOrEmpty, StandaloneBlockWordingRootId,
+                    StringComparison.Ordinal))
+            {
+                for (int index = 0; owner.standaloneBlocks != null
+                    && index < owner.standaloneBlocks.Count; index++)
+                {
+                    SavedMemoryBlock candidate = owner.standaloneBlocks[index];
+                    if (candidate != null
+                        && candidate.kind != MemoryContractTokens.KindSummary
+                        && string.Equals(candidate.recordId, recordId,
+                            StringComparison.Ordinal))
+                    {
+                        block = candidate;
+                        return true;
+                    }
+                }
+                return false;
+            }
+            for (int rootIndex = 0; owner.threadRoots != null
+                && rootIndex < owner.threadRoots.Count; rootIndex++)
+            {
+                SavedMemoryThreadRoot candidateRoot = owner.threadRoots[rootIndex];
+                if (candidateRoot == null || !string.Equals(
+                        candidateRoot.rootId, rootIdOrEmpty,
+                        StringComparison.Ordinal)) continue;
+                for (int blockIndex = 0; candidateRoot.visibleBlocks != null
+                    && blockIndex < candidateRoot.visibleBlocks.Count; blockIndex++)
+                {
+                    SavedMemoryBlock candidate = candidateRoot.visibleBlocks[blockIndex];
+                    if (candidate != null
+                        && candidate.kind != MemoryContractTokens.KindSummary
+                        && string.Equals(candidate.recordId, recordId,
+                            StringComparison.Ordinal))
+                    {
+                        root = candidateRoot;
+                        block = candidate;
+                        return true;
+                    }
+                }
+                return false;
+            }
+            return false;
+        }
+
         private bool TryFindCurrentSummary(
             SummaryWordingOpportunitySnapshot opportunity,
             out SavedMemoryThreadRoot root,
@@ -1702,6 +1975,110 @@ namespace PawnDiary
             SummaryWordingCurrentSnapshot current = CurrentSummarySnapshot(
                 root, block, MemoryEffectivePolicyProvider.Current);
             return MemoryOptionalAiPolicy.MatchesCurrentSummary(opportunity, current);
+        }
+
+        private bool TryFindCurrentBlockWording(
+            SummaryWordingOpportunitySnapshot opportunity,
+            out SavedMemoryThreadRoot root,
+            out SavedMemoryBlock block)
+        {
+            root = null;
+            block = null;
+            PawnKnowledgeState owner = FindCurrentMemoryEnvelope(opportunity?.ownerPawnId);
+            if (owner == null || opportunity == null
+                || !string.Equals(owner.autobiographicalEpochToken,
+                    opportunity.ownerEpochToken, StringComparison.Ordinal)
+                || !TryFindAdmittedBaseBlock(
+                    owner,
+                    opportunity.rootId,
+                    opportunity.summaryRecordId,
+                    out root,
+                    out block)) return false;
+            MemoryBlockWordingCurrentSnapshot current = CurrentBlockWordingSnapshot(
+                root, block, MemoryEffectivePolicyProvider.Current);
+            return MemoryOptionalAiPolicy.MatchesCurrentBlockWording(
+                opportunity, current);
+        }
+
+        private bool TryFindCurrentWordingTarget(
+            SummaryWordingOpportunitySnapshot opportunity,
+            out SavedMemoryThreadRoot root,
+            out SavedMemoryBlock block)
+        {
+            return TryFindCurrentSummary(opportunity, out root, out block)
+                || TryFindCurrentBlockWording(opportunity, out root, out block);
+        }
+
+        private static MemoryBlockWordingCurrentSnapshot CurrentBlockWordingSnapshot(
+            SavedMemoryThreadRoot root,
+            SavedMemoryBlock block,
+            MemoryPolicySnapshot policy)
+        {
+            if (block == null
+                || (block.kind != MemoryContractTokens.KindEvent
+                    && block.kind != MemoryContractTokens.KindLandmark)
+                || policy == null) return null;
+            int categoryMask = MemoryCategoryBits.ForToken(block.category);
+            // Category membership defines the cache projection. The optional-request gate is
+            // checked before scheduling and Recall has its own useMemoriesInWriting gate; keeping
+            // those concerns out of this snapshot lets Library display remain stable when a player
+            // temporarily disables memory use in new diary entries.
+            if (categoryMask <= 0
+                || policy.compatibilityFailClosed
+                || (policy.memoryCategoryMask & categoryMask) == 0) return null;
+            string fingerprint;
+            if (!MemoryOptionalAiPolicy.TryCreateBlockWordingProjectionFingerprint(
+                    block.recordId,
+                    block.kind,
+                    block.category,
+                    block.automaticWording,
+                    BlockWordingFormatRevision,
+                    out fingerprint)) return null;
+            return new MemoryBlockWordingCurrentSnapshot
+            {
+                ownerPawnId = block.ownerPawnId ?? string.Empty,
+                ownerEpochToken = block.ownerEpochToken ?? string.Empty,
+                rootId = root?.rootId ?? StandaloneBlockWordingRootId,
+                recordId = block.recordId ?? string.Empty,
+                kind = block.kind ?? string.Empty,
+                category = block.category ?? string.Empty,
+                deterministicWording = block.automaticWording ?? string.Empty,
+                wordingFormatRevision = BlockWordingFormatRevision,
+                categoryMask = categoryMask,
+                projectionFingerprint = fingerprint,
+                suppressed = block.suppressed,
+                playerEdited = block.playerEdited
+            };
+        }
+
+        private static bool BlockWordingCacheMatches(
+            SavedMemoryBlock block,
+            MemoryBlockWordingCurrentSnapshot current)
+        {
+            string normalized;
+            return block != null && current != null
+                && string.Equals(block.optionalLlmFingerprint,
+                    current.projectionFingerprint, StringComparison.Ordinal)
+                && block.optionalLlmFormatRevision == current.wordingFormatRevision
+                && block.optionalLlmCategoryMask == current.categoryMask
+                && MemoryNaturalWordingProjection.TryNormalizeOptionalWording(
+                    block.optionalLlmWording,
+                    MemoryNaturalWordingProjection.MaximumBlockWordingCharacters,
+                    out normalized);
+        }
+
+        private static bool ClearBlockOptionalWording(SavedMemoryBlock block)
+        {
+            if (block == null) return false;
+            bool changed = !string.IsNullOrEmpty(block.optionalLlmWording)
+                || !string.IsNullOrEmpty(block.optionalLlmFingerprint)
+                || block.optionalLlmFormatRevision != 0
+                || block.optionalLlmCategoryMask != 0;
+            block.optionalLlmWording = string.Empty;
+            block.optionalLlmFingerprint = string.Empty;
+            block.optionalLlmFormatRevision = 0;
+            block.optionalLlmCategoryMask = 0;
+            return changed;
         }
 
         private static SummaryWordingOpportunitySnapshot ToSummaryOpportunity(

@@ -1270,6 +1270,173 @@ namespace MemoryThreadTests
                     80));
             current.suppressed = false;
 
+            AssertEqual("optional.block.limit.default", 240,
+                MemoryNaturalWordingProjection.EffectiveBlockWordingMaximumCharacters(0));
+            AssertEqual("optional.block.limit.honors-lower-xml", 80,
+                MemoryNaturalWordingProjection.EffectiveBlockWordingMaximumCharacters(80));
+            AssertEqual("optional.block.limit.clamps-oversized-xml", 240,
+                MemoryNaturalWordingProjection.EffectiveBlockWordingMaximumCharacters(4096));
+            SummaryWordingOpportunitySnapshot blockOpportunity = SummaryOpportunity(
+                first.ownerPawnId,
+                first.ownerEpochToken,
+                "memory-wording-standalone-v1",
+                "event-a",
+                10,
+                4,
+                200);
+            string blockFingerprint;
+            AssertTrue("optional.block.fingerprint-builds",
+                MemoryOptionalAiPolicy.TryCreateBlockWordingProjectionFingerprint(
+                    blockOpportunity.summaryRecordId,
+                    MemoryContractTokens.KindEvent,
+                    MemoryContractTokens.CategoryRelationships,
+                    "Opinion of Brik: neutral to friendly.",
+                    1,
+                    out blockFingerprint));
+            string repeatedFingerprint;
+            AssertTrue("optional.block.fingerprint-deterministic",
+                MemoryOptionalAiPolicy.TryCreateBlockWordingProjectionFingerprint(
+                    blockOpportunity.summaryRecordId,
+                    MemoryContractTokens.KindEvent,
+                    MemoryContractTokens.CategoryRelationships,
+                    "Opinion of Brik: neutral to friendly.",
+                    1,
+                    out repeatedFingerprint));
+            AssertEqual("optional.block.fingerprint-repeat", blockFingerprint,
+                repeatedFingerprint);
+            string changedFingerprint;
+            MemoryOptionalAiPolicy.TryCreateBlockWordingProjectionFingerprint(
+                blockOpportunity.summaryRecordId,
+                MemoryContractTokens.KindEvent,
+                MemoryContractTokens.CategoryRelationships,
+                "Opinion of Brik: friendly to hostile.",
+                1,
+                out changedFingerprint);
+            AssertTrue("optional.block.fingerprint-content-sensitive",
+                blockFingerprint != changedFingerprint);
+            MemoryOptionalAiPolicy.TryCreateBlockWordingProjectionFingerprint(
+                blockOpportunity.summaryRecordId,
+                MemoryContractTokens.KindEvent,
+                MemoryContractTokens.CategoryFamily,
+                "Opinion of Brik: neutral to friendly.",
+                1,
+                out changedFingerprint);
+            AssertTrue("optional.block.fingerprint-category-sensitive",
+                blockFingerprint != changedFingerprint);
+            MemoryOptionalAiPolicy.TryCreateBlockWordingProjectionFingerprint(
+                blockOpportunity.summaryRecordId,
+                MemoryContractTokens.KindEvent,
+                MemoryContractTokens.CategoryRelationships,
+                "Opinion of Brik: neutral to friendly.",
+                2,
+                out changedFingerprint);
+            AssertTrue("optional.block.fingerprint-format-sensitive",
+                blockFingerprint != changedFingerprint);
+
+            blockOpportunity.projectionFingerprint = blockFingerprint;
+            blockOpportunity.expectedCategoryMask = MemoryCategoryBits.Relationships;
+            blockOpportunity.expectedFormatRevision = 1;
+            AssertTrue("optional.block.shared-key-builds",
+                MemoryOptionalAiPolicy.TryCreateSummaryOpportunityKey(
+                    blockOpportunity, out blockOpportunity.opportunityKey));
+            SummaryWordingOpportunitySnapshot parsedBlockOpportunity;
+            AssertTrue("optional.block.shared-key-roundtrip",
+                MemoryOptionalAiPolicy.TryParseSummaryOpportunityKey(
+                    blockOpportunity.opportunityKey, out parsedBlockOpportunity));
+            SummaryWordingOpportunitySnapshot lowerPrioritySummary = SummaryOpportunity(
+                blockOpportunity.ownerPawnId,
+                blockOpportunity.ownerEpochToken,
+                "summary-root",
+                "summary-record",
+                0,
+                100,
+                199);
+            AssertTrue("optional.block.shared-slot-summary-key-builds",
+                MemoryOptionalAiPolicy.TryCreateSummaryOpportunityKey(
+                    lowerPrioritySummary, out lowerPrioritySummary.opportunityKey));
+            SummaryWordingSlotPlan crossTypeSlot = MemoryOptionalAiPolicy.PlanOwnerSlot(
+                lowerPrioritySummary, parsedBlockOpportunity, 200);
+            AssertTrue("optional.block.shared-slot-intentionally-prefers-new-memory",
+                crossTypeSlot.valid
+                    && ReferenceEquals(crossTypeSlot.winner, parsedBlockOpportunity)
+                    && crossTypeSlot.terminal.Count == 1
+                    && ReferenceEquals(
+                        crossTypeSlot.terminal[0].opportunity, lowerPrioritySummary)
+                    && crossTypeSlot.terminal[0].dispositionToken
+                        == MemoryOptionalWordingDispositionTokens.Displaced);
+            MemoryBlockWordingCurrentSnapshot currentBlock =
+                new MemoryBlockWordingCurrentSnapshot
+                {
+                    ownerPawnId = blockOpportunity.ownerPawnId,
+                    ownerEpochToken = blockOpportunity.ownerEpochToken,
+                    rootId = blockOpportunity.rootId,
+                    recordId = blockOpportunity.summaryRecordId,
+                    kind = MemoryContractTokens.KindEvent,
+                    category = MemoryContractTokens.CategoryRelationships,
+                    deterministicWording = "Opinion of Brik: neutral to friendly.",
+                    wordingFormatRevision = 1,
+                    categoryMask = MemoryCategoryBits.Relationships,
+                    projectionFingerprint = blockFingerprint
+                };
+            AssertTrue("optional.block.exact-target-matches",
+                MemoryOptionalAiPolicy.TargetsCurrentBlockWording(
+                    parsedBlockOpportunity, currentBlock));
+            MemoryBlockWordingResultPlan blockSuccess =
+                MemoryOptionalAiPolicy.PlanBlockWordingResult(
+                    parsedBlockOpportunity,
+                    currentBlock,
+                    true,
+                    "  I found myself warming to Brik.  ",
+                    80);
+            AssertTrue("optional.block.result-applies-disposable-only",
+                blockSuccess.identityMatched && blockSuccess.applyOptionalWording);
+            AssertEqual("optional.block.result-trims",
+                "I found myself warming to Brik.", blockSuccess.optionalWording);
+            AssertEqual("optional.block.result-success-token",
+                MemoryOptionalWordingDispositionTokens.Success,
+                blockSuccess.dispositionToken);
+            AssertEqual("optional.block.multiline-malformed",
+                MemoryOptionalWordingDispositionTokens.Malformed,
+                MemoryOptionalAiPolicy.PlanBlockWordingResult(
+                    parsedBlockOpportunity,
+                    currentBlock,
+                    true,
+                    "line one\nline two",
+                    80).dispositionToken);
+            AssertEqual("optional.block.over-cap-malformed",
+                MemoryOptionalWordingDispositionTokens.Malformed,
+                MemoryOptionalAiPolicy.PlanBlockWordingResult(
+                    parsedBlockOpportunity,
+                    currentBlock,
+                    true,
+                    new string('x', 81),
+                    80).dispositionToken);
+            currentBlock.playerEdited = true;
+            AssertTrue("optional.block.player-edit-hides-cache",
+                !MemoryOptionalAiPolicy.PlanBlockWordingResult(
+                    parsedBlockOpportunity,
+                    currentBlock,
+                    true,
+                    "ignored",
+                    80).identityMatched);
+            currentBlock.playerEdited = false;
+            AssertTrue("optional.block.use-original-restores-content-identity",
+                MemoryOptionalAiPolicy.TargetsCurrentBlockWording(
+                    parsedBlockOpportunity, currentBlock));
+            currentBlock.suppressed = true;
+            AssertTrue("optional.block.suppression-blocks-provider-result",
+                !MemoryOptionalAiPolicy.PlanBlockWordingResult(
+                    parsedBlockOpportunity,
+                    currentBlock,
+                    true,
+                    "ignored",
+                    80).identityMatched);
+            currentBlock.suppressed = false;
+            currentBlock.projectionFingerprint = changedFingerprint;
+            AssertTrue("optional.block.stale-fingerprint-rejected",
+                !MemoryOptionalAiPolicy.TargetsCurrentBlockWording(
+                    parsedBlockOpportunity, currentBlock));
+
             var projectedSummary = new MemoryReducerSummary();
             var projectedBucket = new MemoryReducerBucket
             {
@@ -1990,6 +2157,9 @@ namespace MemoryThreadTests
                 Text(tuningDef, "memoryThreadTargetMinimum") + "/"
                 + Text(tuningDef, "memoryThreadTargetDefault") + "/"
                 + Text(tuningDef, "memoryThreadTargetMaximum"));
+            AssertTrue("xml.optional-ai.new-memory-wording-priority",
+                int.Parse(Text(tuningDef, "memoryWordingPriority"))
+                    > int.Parse(Text(tuningDef, "summaryWordingPriority")));
             XDocument russianTuning = XDocument.Load(Path.Combine(
                 root,
                 "Languages",
@@ -2003,7 +2173,9 @@ namespace MemoryThreadTests
                 "memoryReflectionLabel",
                 "memoryReflectionInstruction",
                 "summaryWordingSystemPrompt",
-                "summaryWordingInstruction"
+                "summaryWordingInstruction",
+                "memoryWordingSystemPrompt",
+                "memoryWordingInstruction"
             };
             for (int index = 0; index < optionalPromptFields.Length; index++)
             {
@@ -2088,8 +2260,8 @@ namespace MemoryThreadTests
                         type.GetProperty("name").GetString() + "." + field.GetString())).ToList();
                 List<JsonElement> atoms = payload.RootElement.GetProperty("atomRows")
                     .EnumerateArray().ToList();
-                AssertEqual("catalog.payload.declared-field-count", 400, expectedPaths.Count);
-                AssertEqual("catalog.payload.atom-count", 400, atoms.Count);
+                AssertEqual("catalog.payload.declared-field-count", 404, expectedPaths.Count);
+                AssertEqual("catalog.payload.atom-count", 404, atoms.Count);
                 for (int index = 0; index < atoms.Count; index++)
                 {
                     JsonElement atom = atoms[index];
@@ -2149,6 +2321,7 @@ namespace MemoryThreadTests
                     StringComparer.Ordinal);
                 foreach (string path in new[]
                 {
+                    "SavedMemoryBlock.optionalLlmFingerprint",
                     "SavedMemorySummaryPayload.lastSettledWordingFingerprint",
                     "SavedMemorySummaryPayload.lastWordingDispositionToken",
                     "SavedFrozenPromptVariantV1.contextDetailIdentity"
@@ -2156,6 +2329,8 @@ namespace MemoryThreadTests
                 {
                     AssertTrue("catalog.payload.not-free-text." + path, !freeText[path]);
                 }
+                AssertTrue("catalog.payload.free-text.SavedMemoryBlock.optionalLlmWording",
+                    freeText["SavedMemoryBlock.optionalLlmWording"]);
             }
         }
 
@@ -2223,8 +2398,8 @@ namespace MemoryThreadTests
             {
                 registryAtoms += row.atoms.Length;
             }
-            AssertEqual("schema.atom-count", 400, registryAtoms);
-            AssertEqual("schema.catalog-atom-count", 400, catalogKinds.Count);
+            AssertEqual("schema.atom-count", 404, registryAtoms);
+            AssertEqual("schema.catalog-atom-count", 404, catalogKinds.Count);
 
             // §T6.0's exhaustive Boolean set must equal the registry's bool atoms exactly.
             string[] expectedBooleans =

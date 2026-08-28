@@ -493,7 +493,7 @@ namespace PawnDiary
                 SavedMemorySummaryPayload payload = block.summaryPayload;
                 if (currentSummary != null && payload != null)
                 {
-                    candidate.summaryWording = new MemoryRecallSummaryWordingSnapshot
+                    candidate.naturalWording = new MemoryRecallNaturalWordingSnapshot
                     {
                         currentProjectionFingerprint =
                             currentSummary.projectionFingerprint ?? string.Empty,
@@ -507,6 +507,27 @@ namespace PawnDiary
                             payload.lastWordingDispositionToken,
                             MemoryOptionalWordingDispositionTokens.Success,
                             StringComparison.Ordinal)
+                    };
+                }
+            }
+            else if (!block.playerEdited)
+            {
+                MemoryBlockWordingCurrentSnapshot currentBlock =
+                    CurrentBlockWordingSnapshot(root, block, policy);
+                if (currentBlock != null)
+                {
+                    candidate.naturalWording = new MemoryRecallNaturalWordingSnapshot
+                    {
+                        currentProjectionFingerprint =
+                            currentBlock.projectionFingerprint ?? string.Empty,
+                        currentFormatRevision = currentBlock.wordingFormatRevision,
+                        currentCategoryMask = currentBlock.categoryMask,
+                        optionalWording = block.optionalLlmWording ?? string.Empty,
+                        optionalFingerprint = block.optionalLlmFingerprint ?? string.Empty,
+                        optionalFormatRevision = block.optionalLlmFormatRevision,
+                        optionalCategoryMask = block.optionalLlmCategoryMask,
+                        optionalSucceeded = !string.IsNullOrWhiteSpace(
+                            block.optionalLlmWording)
                     };
                 }
             }
