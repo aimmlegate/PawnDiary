@@ -76,6 +76,9 @@ namespace PawnDiary.RimTests
                 "memoryDiagnosticCounters", PrivateInstance);
         private static readonly FieldInfo DiariesField =
             typeof(DiaryGameComponent).GetField("diaries", PrivateInstance);
+        private static readonly FieldInfo LastAppliedMemoryPolicyFingerprintField =
+            typeof(DiaryGameComponent).GetField(
+                "lastAppliedMemoryPolicyFingerprint", PrivateInstance);
         private static readonly MethodInfo ReadCapacityTuplePartMethod =
             typeof(DiaryGameComponent).GetMethod(
                 "ReadCapacityTuplePart", BindingFlags.Static | BindingFlags.NonPublic);
@@ -126,6 +129,59 @@ namespace PawnDiary.RimTests
             }
         }
 
+        /// <summary>
+        /// Publishes a temporary effective policy together with the component's applied-policy
+        /// marker. Production intentionally fails closed when those two fingerprints differ, so a
+        /// loaded fixture must move and restore both sides as one exception-safe operation. It does
+        /// not run full reconciliation or replace the saved policy state/revision, because doing so
+        /// could purge or rewrite unrelated data in the user's loaded test colony.
+        /// </summary>
+        internal sealed class AppliedPolicyScope : IDisposable
+        {
+            private readonly DiaryGameComponent component;
+            private readonly MemoryPolicySnapshot priorPolicy;
+            private readonly string priorAppliedFingerprint;
+            private bool disposed;
+
+            internal AppliedPolicyScope(DiaryGameComponent component)
+            {
+                Require(component != null && LastAppliedMemoryPolicyFingerprintField != null,
+                    "The applied Memory-policy fixture seam was renamed or unavailable.");
+                this.component = component;
+                priorPolicy = MemoryEffectivePolicyProvider.Current;
+                Require(priorPolicy != null,
+                    "The applied Memory-policy fixture found no prior publication.");
+                priorAppliedFingerprint =
+                    LastAppliedMemoryPolicyFingerprintField.GetValue(component) as string
+                    ?? string.Empty;
+            }
+
+            /// <summary>The publication present before this fixture scope began.</summary>
+            internal MemoryPolicySnapshot PriorPolicy => priorPolicy;
+
+            /// <summary>Publishes and marks one complete fixture policy as applied.</summary>
+            internal void Publish(MemoryPolicySnapshot policy, string failureMessage)
+            {
+                Require(!disposed && policy != null
+                        && MemoryEffectivePolicyProvider.Publish(policy),
+                    failureMessage);
+                LastAppliedMemoryPolicyFingerprintField.SetValue(
+                    component, policy.fingerprint);
+            }
+
+            /// <summary>Restores the publication and component marker captured at entry.</summary>
+            public void Dispose()
+            {
+                if (disposed) return;
+                bool restored = MemoryEffectivePolicyProvider.Publish(priorPolicy);
+                LastAppliedMemoryPolicyFingerprintField.SetValue(
+                    component, priorAppliedFingerprint);
+                disposed = true;
+                Require(restored,
+                    "The applied Memory-policy fixture could not restore its prior publication.");
+            }
+        }
+
         /// <summary>Fails early when a private loaded seam was renamed.</summary>
         internal static void RequireReflectionSurface()
         {
@@ -147,6 +203,7 @@ namespace PawnDiary.RimTests
                     && RemoveGlobalFactionObservationMethod != null
                     && GlobalFactionSnapshotsField != null
                     && MemoryDiagnosticCountersField != null
+                    && LastAppliedMemoryPolicyFingerprintField != null
                     && ReadCapacityTuplePartMethod != null,
                 "The production Memory observation budget seam was renamed.");
         }

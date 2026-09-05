@@ -391,7 +391,9 @@ namespace PawnDiary.RimTests
         {
             PawnDiaryMemoryM11RuntimeFixture.RequireReflectionSurface();
             PawnDiaryRimTestScope scope = PawnDiaryRimTestScope.Begin();
-            MemoryPolicySnapshot priorPolicy = MemoryEffectivePolicyProvider.Current;
+            var policyScope =
+                new PawnDiaryMemoryM11RuntimeFixture.AppliedPolicyScope(scope.Component);
+            MemoryPolicySnapshot priorPolicy = policyScope.PriorPolicy;
             const string client = "rimtest-memory-library-ttl-command";
             try
             {
@@ -408,7 +410,7 @@ namespace PawnDiary.RimTests
                     false,
                     retainedFields,
                     "rimtest-command-retained-ttl-" + Guid.NewGuid().ToString("N"));
-                Require(MemoryEffectivePolicyProvider.Publish(retainedPolicy),
+                policyScope.Publish(retainedPolicy,
                     "The TTL command fixture could not publish its retained baseline policy.");
 
                 Pawn pawn = scope.CreateAdultColonist();
@@ -464,7 +466,7 @@ namespace PawnDiary.RimTests
                     false,
                     fields,
                     "rimtest-command-immediate-ttl-" + Guid.NewGuid().ToString("N"));
-                Require(MemoryEffectivePolicyProvider.Publish(immediateMinorTtl),
+                policyScope.Publish(immediateMinorTtl,
                     "The TTL command fixture could not publish its boundary policy.");
 
                 long structuralBefore = state.structuralRevision;
@@ -482,7 +484,7 @@ namespace PawnDiary.RimTests
             }
             finally
             {
-                MemoryEffectivePolicyProvider.Publish(priorPolicy);
+                policyScope.Dispose();
                 try
                 {
                     scope.Component.AbandonMemoryLibraryClient(client);
@@ -848,7 +850,9 @@ namespace PawnDiary.RimTests
         {
             PawnDiaryMemoryM11RuntimeFixture.RequireReflectionSurface();
             PawnDiaryRimTestScope scope = PawnDiaryRimTestScope.Begin();
-            MemoryPolicySnapshot priorPolicy = MemoryEffectivePolicyProvider.Current;
+            var policyScope =
+                new PawnDiaryMemoryM11RuntimeFixture.AppliedPolicyScope(scope.Component);
+            MemoryPolicySnapshot priorPolicy = policyScope.PriorPolicy;
             try
             {
                 Pawn pawn = scope.CreateAdultColonist();
@@ -924,7 +928,7 @@ namespace PawnDiary.RimTests
                     false,
                     fields,
                     "rimtest-immediate-ttl-" + Guid.NewGuid().ToString("N"));
-                Require(MemoryEffectivePolicyProvider.Publish(immediateTtl),
+                policyScope.Publish(immediateTtl,
                     "The TTL rebuild fixture could not publish its isolated exact-boundary policy.");
 
                 MemoryLibraryOwnerResult rebuiltOwners;
@@ -973,7 +977,7 @@ namespace PawnDiary.RimTests
             }
             finally
             {
-                MemoryEffectivePolicyProvider.Publish(priorPolicy);
+                policyScope.Dispose();
                 PawnDiaryMemoryM11RuntimeFixture.ResetLibraryAndTearDown(scope);
             }
         }

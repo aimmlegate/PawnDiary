@@ -78,11 +78,6 @@ namespace PawnDiary.RimTests
             typeof(DiaryGameComponent).GetField(
                 "activeMemoryCoordinatorRequests",
                 BindingFlags.Instance | BindingFlags.NonPublic);
-        private static readonly FieldInfo LastAppliedMemoryPolicyFingerprintField =
-            typeof(DiaryGameComponent).GetField(
-                "lastAppliedMemoryPolicyFingerprint",
-                BindingFlags.Instance | BindingFlags.NonPublic);
-
         private static PawnDiaryRimTestScope scope;
         private static Pawn pawnA;
         private static Pawn pawnB;
@@ -380,8 +375,7 @@ namespace PawnDiary.RimTests
         public static void FactualCurrentReleaseCaptureHonorsCategoryDedupAndNeverQueuesRequests()
         {
             Require(CaptureKnowledgeForEventMethod != null
-                    && ActiveMemoryCoordinatorRequestsField != null
-                    && LastAppliedMemoryPolicyFingerprintField != null,
+                    && ActiveMemoryCoordinatorRequestsField != null,
                 "An M7 component test seam was renamed or removed.");
             Require(MemorySystemActivationGate.BuildState == MemorySystemActivationGate.CurrentRelease,
                 "The M11 factual-capture fixture requires CurrentRelease.");
@@ -389,11 +383,11 @@ namespace PawnDiary.RimTests
             PawnKnowledgeState stateA = SeedCurrentMemoryEnvelope(pawnA, 7101);
             PawnKnowledgeState stateB = SeedCurrentMemoryEnvelope(pawnB, 7102);
             PawnDiaryRecord diaryA = DiaryFor(pawnA);
-            MemoryPolicySnapshot priorPolicy = MemoryEffectivePolicyProvider.Current;
+            var policyScope =
+                new PawnDiaryMemoryM11RuntimeFixture.AppliedPolicyScope(scope.Component);
+            MemoryPolicySnapshot priorPolicy = policyScope.PriorPolicy;
             Require(priorPolicy != null && !priorPolicy.compatibilityFailClosed,
                 "The loaded Memory policy was unavailable or fail-closed.");
-            string priorAppliedFingerprint =
-                LastAppliedMemoryPolicyFingerprintField.GetValue(scope.Component) as string;
             int requestsBefore = ActiveMemoryRequestCount();
 
             MemorySettingsBounds bounds = MemoryPolicyDefAdapter.Bounds();
@@ -413,10 +407,8 @@ namespace PawnDiary.RimTests
 
             try
             {
-                Require(MemoryEffectivePolicyProvider.Publish(disabled),
+                policyScope.Publish(disabled,
                     "Could not publish the disabled-category fixture policy.");
-                LastAppliedMemoryPolicyFingerprintField.SetValue(
-                    scope.Component, disabled.fingerprint);
                 DiaryEvent disabledEvent = AddRomancePairEvent(
                     pawnA, pawnB, "Spouse", "married");
                 Require(CountFactualOccurrence(stateA, disabledEvent.eventId) == 0
@@ -426,10 +418,8 @@ namespace PawnDiary.RimTests
                         && CountKind(stateB, "relation.spouse.gained") == 0,
                     "CurrentRelease wrote a duplicate legacy shadow row for disabled capture.");
 
-                Require(MemoryEffectivePolicyProvider.Publish(enabled),
+                policyScope.Publish(enabled,
                     "Could not publish the re-enabled category fixture policy.");
-                LastAppliedMemoryPolicyFingerprintField.SetValue(
-                    scope.Component, enabled.fingerprint);
                 Require(CountFactualOccurrence(stateA, disabledEvent.eventId) == 0
                         && CountFactualOccurrence(stateB, disabledEvent.eventId) == 0,
                     "Re-enabling a category replayed a factual row from the disabled interval.");
@@ -483,9 +473,7 @@ namespace PawnDiary.RimTests
             finally
             {
                 diaryA.knowledgeState = stateA;
-                MemoryEffectivePolicyProvider.Publish(priorPolicy);
-                LastAppliedMemoryPolicyFingerprintField.SetValue(
-                    scope.Component, priorAppliedFingerprint ?? string.Empty);
+                policyScope.Dispose();
             }
         }
 
@@ -498,7 +486,23 @@ namespace PawnDiary.RimTests
         {
             if (MemorySystemActivationGate.IsCurrentRelease)
             {
-                CurrentProfileBackgroundIsOwnedAndFutureOnly();
+                var policyScope =
+                    new PawnDiaryMemoryM11RuntimeFixture.AppliedPolicyScope(scope.Component);
+                try
+                {
+                    policyScope.Publish(
+                        BuildEnabledMemoryFixturePolicy(
+                            policyScope.PriorPolicy,
+                            MemoryCategoryBits.Relationships,
+                            true,
+                            true),
+                        "The profile fixture could not publish its isolated Memory policy.");
+                    CurrentProfileBackgroundIsOwnedAndFutureOnly();
+                }
+                finally
+                {
+                    policyScope.Dispose();
+                }
                 return;
             }
 
@@ -708,15 +712,8 @@ namespace PawnDiary.RimTests
 
         private static void CurrentProfileBackgroundIsOwnedAndFutureOnly()
         {
-            PawnDiaryRecord diaryA = DiaryFor(pawnA);
-            PawnDiaryRecord diaryB = DiaryFor(pawnB);
-            PawnKnowledgeState stateA = PawnKnowledgeState.CreateCurrent(
-                pawnA.GetUniqueLoadID());
-            PawnKnowledgeState stateB = PawnKnowledgeState.CreateCurrent(
-                pawnB.GetUniqueLoadID());
-            diaryA.knowledgeState = stateA;
-            diaryB.knowledgeState = stateB;
-            scope.Component.MarkMemoryM4IndexesDirty();
+            PawnKnowledgeState stateA = SeedCurrentMemoryEnvelope(pawnA, 7111);
+            PawnKnowledgeState stateB = SeedCurrentMemoryEnvelope(pawnB, 7112);
 
             const string originalBackground = "lowercase Жизнь café";
             int versionBefore = DiaryStateVersion.Current;
@@ -1032,44 +1029,60 @@ namespace PawnDiary.RimTests
             Pawn patient = scope.CreateGeneratingAdultColonist();
             BodyPartRecord leg = FindPart(patient, "Leg");
             PawnKnowledgeState state = CurrentKnowledgeFor(patient);
-            int before = CountCurrentKind(state, "body.part.lost");
+            var policyScope =
+                new PawnDiaryMemoryM11RuntimeFixture.AppliedPolicyScope(scope.Component);
+            try
+            {
+                policyScope.Publish(
+                    BuildEnabledMemoryFixturePolicy(
+                        policyScope.PriorPolicy,
+                        MemoryCategoryBits.Personal,
+                        false,
+                        true),
+                    "The amputation fixture could not publish its isolated Memory policy.");
+                int before = CountCurrentKind(state, "body.part.lost");
 
-            DiaryEvent lossEvent = scope.FireAndRequireEvent(
-                () => patient.health.AddHediff(missingPart, leg),
-                missingPart.defName,
-                patient,
-                null);
-            Require(CountCurrentKind(state, "body.part.lost") == before + 1,
-                "A real amputation must deposit one body.part.lost record.");
-            SavedMemoryBlock loss = LastCurrentBlockOfKind(state, "body.part.lost");
-            Require(CurrentFactHasValue(loss, "body.part.lost", leg.def.defName),
-                "The unified loss fact must carry the stable part_def canonical value.");
+                DiaryEvent lossEvent = scope.FireAndRequireEvent(
+                    () => patient.health.AddHediff(missingPart, leg),
+                    missingPart.defName,
+                    patient,
+                    null);
+                Require(CountCurrentKind(state, "body.part.lost") == before + 1,
+                    "A real amputation must deposit one body.part.lost record.");
+                SavedMemoryBlock loss = LastCurrentBlockOfKind(state, "body.part.lost");
+                Require(CurrentFactHasValue(loss, "body.part.lost", leg.def.defName),
+                    "The unified loss fact must carry the stable part_def canonical value.");
 
-            DiaryEvent installEvent = scope.FireAndRequireEvent(
-                () =>
-                {
-                    // Vanilla surgery removes MissingBodyPart before installing the replacement.
-                    // Adding a bionic directly to a missing part logs a real RimWorld error.
-                    Hediff missing = patient.health.hediffSet.GetFirstHediffOfDef(missingPart);
-                    if (missing != null)
+                DiaryEvent installEvent = scope.FireAndRequireEvent(
+                    () =>
                     {
-                        patient.health.RemoveHediff(missing);
-                    }
-                    patient.health.AddHediff(bionicLeg, leg);
-                },
-                bionicLeg.defName,
-                patient,
-                null);
-            string slot = installEvent.MemoryContextForRole(DiaryEvent.InitiatorRole);
-            Require(!string.IsNullOrWhiteSpace(slot)
-                    && !string.IsNullOrWhiteSpace(loss.automaticWording)
-                    && slot.IndexOf(loss.automaticWording, StringComparison.Ordinal) >= 0,
-                "Installing onto the same part must recall the loss; slot was: '"
-                + slot + "'.");
-            string prompt = scope.CapturedPrompt(installEvent, DiaryEvent.InitiatorRole);
-            Require(!string.IsNullOrWhiteSpace(loss.automaticWording)
-                    && prompt.IndexOf(loss.automaticWording, StringComparison.Ordinal) >= 0,
-                "The captured prompt must carry the recalled loss line.");
+                        // Vanilla surgery removes MissingBodyPart before installing the replacement.
+                        // Adding a bionic directly to a missing part logs a real RimWorld error.
+                        Hediff missing = patient.health.hediffSet.GetFirstHediffOfDef(missingPart);
+                        if (missing != null)
+                        {
+                            patient.health.RemoveHediff(missing);
+                        }
+                        patient.health.AddHediff(bionicLeg, leg);
+                    },
+                    bionicLeg.defName,
+                    patient,
+                    null);
+                string slot = installEvent.MemoryContextForRole(DiaryEvent.InitiatorRole);
+                Require(!string.IsNullOrWhiteSpace(slot)
+                        && !string.IsNullOrWhiteSpace(loss.automaticWording)
+                        && slot.IndexOf(loss.automaticWording, StringComparison.Ordinal) >= 0,
+                    "Installing onto the same part must recall the loss; slot was: '"
+                    + slot + "'.");
+                string prompt = scope.CapturedPrompt(installEvent, DiaryEvent.InitiatorRole);
+                Require(!string.IsNullOrWhiteSpace(loss.automaticWording)
+                        && prompt.IndexOf(loss.automaticWording, StringComparison.Ordinal) >= 0,
+                    "The captured prompt must carry the recalled loss line.");
+            }
+            finally
+            {
+                policyScope.Dispose();
+            }
         }
 
         // ── 7: title/status family key across title events ───────────────────────────────────────────
@@ -1657,6 +1670,29 @@ namespace PawnDiary.RimTests
             scope.Component.MarkMemoryM4IndexesDirty();
             scope.Component.RebuildMemorySizeIndexes();
             return state;
+        }
+
+        private static MemoryPolicySnapshot BuildEnabledMemoryFixturePolicy(
+            MemoryPolicySnapshot prior,
+            int requiredCategoryMask,
+            bool useBackground,
+            bool useRecall)
+        {
+            Require(prior != null && !prior.compatibilityFailClosed,
+                "The loaded Memory policy was unavailable or fail-closed.");
+            MemorySettingsPolicyFieldsV1 fields = prior.ToFields();
+            fields.saveNewMemories = true;
+            fields.usePawnBackground = useBackground || fields.usePawnBackground;
+            fields.useMemoriesInWriting = useRecall || fields.useMemoriesInWriting;
+            fields.memoryCategoryMask |= requiredCategoryMask;
+            fields.minorMemoryLifetimeDays = Math.Max(1, fields.minorMemoryLifetimeDays);
+            fields.regularMemoryLifetimeDays = Math.Max(
+                fields.minorMemoryLifetimeDays,
+                fields.regularMemoryLifetimeDays);
+            return MemoryPolicyNormalizer.Normalize(
+                MemoryPolicyNormalizer.CurrentSettingsSchemaVersion,
+                fields,
+                MemoryPolicyDefAdapter.Bounds());
         }
 
         private static int ActiveMemoryRequestCount()

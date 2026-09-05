@@ -184,6 +184,10 @@ namespace PawnDiary.RimTests
                 component.RebuildMemorySizeIndexes();
 
                 object budget = PawnDiaryMemoryM11RuntimeFixture.CreateObservationBudget(component);
+                // This test verifies enrollment publication and byte accounting, not whether an
+                // arbitrary loaded colony has already consumed either owner-directory allowance.
+                PawnDiaryMemoryM11RuntimeFixture.ObservationActiveOwnerCount(budget, 0);
+                PawnDiaryMemoryM11RuntimeFixture.ObservationNonArchiveEpochOwnerCount(budget, 0);
                 object enrollment = PawnDiaryMemoryM11RuntimeFixture.PrepareObservationOwner(
                     component, pawn, budget);
                 Require(enrollment != null
@@ -286,8 +290,12 @@ namespace PawnDiary.RimTests
 
                 object budget = PawnDiaryMemoryM11RuntimeFixture.CreateObservationBudget(component);
                 int ownerCap = PawnDiaryMemoryM11RuntimeFixture.ObservationOwnerCap();
+                int epochFenceCap =
+                    PawnDiaryMemoryM11RuntimeFixture.ObservationEpochFenceCap();
                 PawnDiaryMemoryM11RuntimeFixture.ObservationActiveOwnerCount(
                     budget, ownerCap - 1);
+                PawnDiaryMemoryM11RuntimeFixture.ObservationNonArchiveEpochOwnerCount(
+                    budget, epochFenceCap - 1);
                 object firstEnrollment =
                     PawnDiaryMemoryM11RuntimeFixture.PrepareObservationOwner(
                         component, firstPawn, budget);
@@ -295,7 +303,9 @@ namespace PawnDiary.RimTests
                         && PawnDiaryMemoryM11RuntimeFixture.ApplyObservationBaseline(
                             component, firstEnrollment, budget, "blank-cap-a")
                         && PawnDiaryMemoryM11RuntimeFixture.ObservationActiveOwnerCount(budget)
-                            == ownerCap,
+                            == ownerCap
+                        && PawnDiaryMemoryM11RuntimeFixture
+                            .ObservationNonArchiveEpochOwnerCount(budget) == epochFenceCap,
                     "Blank-current enrollment did not consume the final owner slot.");
                 object refused = PawnDiaryMemoryM11RuntimeFixture.PrepareObservationOwner(
                     component, secondPawn, budget);
