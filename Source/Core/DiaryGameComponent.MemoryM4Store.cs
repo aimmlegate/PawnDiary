@@ -1514,6 +1514,7 @@ namespace PawnDiary
                 primarySubject = CloneSubject(value.primarySubject),
                 automaticWording = value.automaticWording,
                 optionalLlmWording = value.optionalLlmWording,
+                optionalLlmWordingRevision = value.optionalLlmWordingRevision,
                 optionalLlmFingerprint = value.optionalLlmFingerprint,
                 optionalLlmFormatRevision = value.optionalLlmFormatRevision,
                 optionalLlmCategoryMask = value.optionalLlmCategoryMask,

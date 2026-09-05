@@ -100,6 +100,21 @@ namespace PawnDiary
         private const int MaximumEntryDistance = 1000000;
 
         /// <summary>
+        /// Advances the one-based owner page ordinal after one newly committed automatic page.
+        /// Invalid or saturated values stay unchanged so callers can keep the page while memory
+        /// reuse fails closed; the counter never wraps or silently rebases.
+        /// </summary>
+        public static bool TryAdvanceCompletedDiaryEntryOrdinal(
+            long current,
+            out long next)
+        {
+            next = current;
+            if (current <= 0 || current == long.MaxValue) return false;
+            next = current + 1;
+            return true;
+        }
+
+        /// <summary>
         /// Requires the record time/page guards and every supplied structural guard to pass. Invalid,
         /// future, overflowing, duplicate, or reserved state fails closed and returns no guard entries.
         /// </summary>

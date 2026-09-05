@@ -6,6 +6,10 @@ Companion: [repowiki/README.md](repowiki/README.md) describes the current state.
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-08-29
+
+- **Living recalled memories.** Limit Recall to one exact memory, make page-and-structural reuse cooldowns effective, and refresh that memory's display wording through the optional LLM coordinator after a successful page without delaying publication or replacing canonical facts.
+
 ## 2026-08-28
 
 - **Natural memory wording.** Enrich newly admitted Event/Landmark memories through the existing optional coordinator and persist exact-fingerprint pawn-voice prose for Library/Recall while canonical facts, current truth, and deterministic fallback remain authoritative.

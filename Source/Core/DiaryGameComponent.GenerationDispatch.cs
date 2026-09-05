@@ -867,10 +867,19 @@ namespace PawnDiary
                 diaryEvent.SetPrompt(result.povRole, result.sentRawText);
             }
 
+            // Regenerate deliberately keeps the old generated page visible while its replacement is
+            // pending. Capture that fact before applying the result so only a genuinely new automatic
+            // owner page advances the memory cooldown's completed-entry ordinal.
+            bool replacedCompletedPage = diaryEvent.HasGeneratedTextForRole(result.povRole);
             diaryEvent.ApplyLlmResult(result);
             if (!string.IsNullOrWhiteSpace(result.generatedText))
             {
                 MarkGeneratedEntryUnread(diaryEvent, result.povRole);
+                if (!replacedCompletedPage && DiaryEvent.RoleIsInitiatorOrRecipient(result.povRole))
+                {
+                    AdvanceCompletedAutomaticPageOrdinal(
+                        diaryEvent.PawnIdForRole(result.povRole));
+                }
             }
 
             // Record the lane that actually produced the text. After failover this may differ from
@@ -900,6 +909,17 @@ namespace PawnDiary
                     result.memoryInvocationPermit);
                 invokedGenerationCutoffs.Settle(memoryRequest.logicalRequestId);
                 RebuildMemorySizeIndexes();
+
+                // Rewording is optional follow-up work. The canonical page is already published and
+                // its transport receipt settled; the existing coordinator may now refresh exactly the
+                // one memory carried by the winning prompt variant without delaying this result.
+                if (!string.IsNullOrWhiteSpace(result.generatedText))
+                {
+                    ScheduleUsedMemoryWording(
+                        memoryRequest,
+                        result.memoryInvocationPermit,
+                        Math.Max(0, Find.TickManager?.TicksGame ?? 0));
+                }
             }
 
             // Generated speech Social-log injection is currently hidden/disabled. RimWorld accepts
@@ -919,6 +939,23 @@ namespace PawnDiary
                 QueueTitleRequest(diaryEvent, result.povRole, successfulLane);
             }
             return DiaryTelemetryOutcome.LlmResultApplied;
+        }
+
+        /// <summary>
+        /// Advances the owner-local automatic-page clock without ever wrapping. A saturated or
+        /// malformed owner counter leaves ordinary diary publication intact and memory reuse closed.
+        /// </summary>
+        private void AdvanceCompletedAutomaticPageOrdinal(string ownerPawnId)
+        {
+            PawnKnowledgeState owner = FindCurrentMemoryEnvelope(ownerPawnId);
+            long next;
+            if (owner != null
+                && MemoryRepetitionGuardPolicy.TryAdvanceCompletedDiaryEntryOrdinal(
+                    owner.completedDiaryEntryOrdinal,
+                    out next))
+            {
+                owner.completedDiaryEntryOrdinal = next;
+            }
         }
 
         /// <summary>

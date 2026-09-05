@@ -2583,10 +2583,9 @@ namespace PawnDiary
                 optionalFingerprint = payload.optionalLlmFingerprint ?? string.Empty,
                 optionalFormatRevision = payload.optionalLlmFormatRevision,
                 optionalCategoryMask = payload.optionalLlmCategoryMask,
-                optionalSucceeded = string.Equals(
-                    payload.lastWordingDispositionToken,
-                    MemoryOptionalWordingDispositionTokens.Success,
-                    StringComparison.Ordinal)
+                // The disposition belongs to the newest attempt. A valid older cache remains the
+                // visible story while its background replacement is pending or has failed.
+                optionalSucceeded = !string.IsNullOrWhiteSpace(payload.optionalLlmWording)
             };
             return MemoryNaturalWordingProjection.Select(
                 false,

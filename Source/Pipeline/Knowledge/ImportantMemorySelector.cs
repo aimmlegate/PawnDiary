@@ -675,7 +675,7 @@ namespace PawnDiary
             switch (writingFormat)
             {
                 case MemoryRecallWritingFormats.Full:
-                    return Math.Max(0, Math.Min(2, consumer.fullMaximumLines));
+                    return Math.Max(0, Math.Min(1, consumer.fullMaximumLines));
                 case MemoryRecallWritingFormats.Balanced:
                     return Math.Max(0, Math.Min(1, consumer.balancedMaximumLines));
                 case MemoryRecallWritingFormats.Compact:

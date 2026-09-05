@@ -9,8 +9,8 @@
 //    else origin faction's allowed cultures) and replace the adopted culture on conversion
 //    (§4.1). Legacy saves mark their inferred origins and never silently rewrite them.
 //  - RETRIEVAL: for each just-registered event, run the deterministic selector over the writer's
-//    records and freeze at most two localized "relevant past" lines onto the PovSlot's
-//    memoryContext (§3), reusing the existing MemoryContext prompt plumbing.
+//    records and freeze one localized "relevant past" line onto the PovSlot's memoryContext (§3),
+//    reusing the existing MemoryContext prompt plumbing.
 //  - LIMITS: per-pawn/global caps with absent-owner-first global eviction (§2.3).
 //
 // New to C#/RimWorld? This is a `partial class` — one class split across files by concern. All
@@ -1380,9 +1380,10 @@ namespace PawnDiary
 
         /// <summary>
         /// Freezes the "relevant past" block onto each first-person POV of a just-registered
-        /// event: deterministic contextual selection plus an optional owner background fallback,
-        /// at most two localized fact lines. Gated by the single player switch (injection only) and
-        /// by template projectability, exactly like the narrative/belief context builders.
+        /// event: deterministic contextual selection plus an optional owner background fallback.
+        /// CurrentRelease freezes at most one localized fact line; the dormant legacy branch retains
+        /// its XML-owned compatibility cap. Gated by the single player switch (injection only) and by
+        /// template projectability, exactly like the narrative/belief context builders.
         /// </summary>
         private void ApplyRelevantPastForEvent(
             DiaryEvent diaryEvent,
@@ -1408,7 +1409,7 @@ namespace PawnDiary
 
                 if (MemorySystemActivationGate.IsCurrentRelease)
                 {
-                    // M11 freezes the richest two-line shortlist at event time. QueuePrompt later
+                    // CurrentRelease freezes the richest one-line shortlist at event time. QueuePrompt later
                     // revalidates only that shortlist against the current exact owner/epoch state;
                     // a newly eligible lower-ranked row can never replace frozen evidence.
                     FreezeMemoryRecallV2Projection(

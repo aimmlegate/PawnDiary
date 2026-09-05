@@ -50,6 +50,7 @@ namespace PawnDiary
         public long expectedSummaryFactsRevision;
         public int expectedReducerRevision;
         public long expectedFormatRevision;
+        public long expectedOptionalLlmWordingRevision;
         public int expectedCategoryMask;
         public string projectionFingerprint = string.Empty;
         public long requestedTick;
@@ -87,6 +88,7 @@ namespace PawnDiary
         public long summaryFactsRevision;
         public int reducerRevision;
         public long formatRevision;
+        public long optionalLlmWordingRevision;
         public int categoryMask;
         public string projectionFingerprint = string.Empty;
         public bool suppressed;
@@ -117,6 +119,7 @@ namespace PawnDiary
         public string category = string.Empty;
         public string deterministicWording = string.Empty;
         public long wordingFormatRevision;
+        public long optionalLlmWordingRevision;
         public int categoryMask;
         public string projectionFingerprint = string.Empty;
         public bool suppressed;
@@ -168,7 +171,9 @@ namespace PawnDiary
     /// <summary>Pure M10 rules. Every comparison is ordinal and every numeric encoding invariant.</summary>
     internal static class MemoryOptionalAiPolicy
     {
-        private const string SummaryOpportunityDomain = "summary-wording-opportunity-v1";
+        // v2 adds the expected optional-wording revision. Old short-lived v1 rows fail closed on
+        // load instead of being guessed into a repeat rewrite.
+        private const string SummaryOpportunityDomain = "summary-wording-opportunity-v2";
         private const string BlockWordingProjectionDomain = "memory-block-wording-projection-v1";
         private const int MaximumSegmentCharacters = 4096;
         // Matches the defensive composite-key ceiling used by the shared identity codec. Keeping the
@@ -264,6 +269,7 @@ namespace PawnDiary
                 Invariant(value.expectedSummaryFactsRevision),
                 Invariant(value.expectedReducerRevision),
                 Invariant(value.expectedFormatRevision),
+                Invariant(value.expectedOptionalLlmWordingRevision),
                 Invariant(value.expectedCategoryMask),
                 value.projectionFingerprint,
                 Invariant(value.requestedTick),
@@ -279,7 +285,7 @@ namespace PawnDiary
             return key.Length <= MaximumCompositeKeyCharacters;
         }
 
-        /// <summary>Parses only the exact canonical M10 tuple; malformed/trailing input fails closed.</summary>
+        /// <summary>Parses only the exact revision-fenced tuple; malformed/trailing input fails closed.</summary>
         public static bool TryParseSummaryOpportunityKey(
             string key,
             out SummaryWordingOpportunitySnapshot value)
@@ -288,7 +294,7 @@ namespace PawnDiary
             if (string.IsNullOrEmpty(key)
                 || key.Length > MaximumCompositeKeyCharacters) return false;
             int offset = 0;
-            string[] fields = new string[19];
+            string[] fields = new string[20];
             for (int index = 0; index < fields.Length; index++)
             {
                 if (!OrdinalSegmentCodec.TryReadCanonicalSegment(
@@ -309,6 +315,7 @@ namespace PawnDiary
             long factsRevision;
             int reducerRevision;
             long formatRevision;
+            long optionalWordingRevision;
             int categoryMask;
             long requestedTick;
             long dueTick;
@@ -322,12 +329,13 @@ namespace PawnDiary
                 || !TryLong(fields[9], out factsRevision)
                 || !TryInt(fields[10], out reducerRevision)
                 || !TryLong(fields[11], out formatRevision)
-                || !TryInt(fields[12], out categoryMask)
-                || !TryLong(fields[14], out requestedTick)
-                || !TryLong(fields[15], out dueTick)
-                || !TryLong(fields[16], out expiryTick)
-                || !TryInt(fields[17], out priority)
-                || !TryInt(fields[18], out salience)) return false;
+                || !TryLong(fields[12], out optionalWordingRevision)
+                || !TryInt(fields[13], out categoryMask)
+                || !TryLong(fields[15], out requestedTick)
+                || !TryLong(fields[16], out dueTick)
+                || !TryLong(fields[17], out expiryTick)
+                || !TryInt(fields[18], out priority)
+                || !TryInt(fields[19], out salience)) return false;
 
             SummaryWordingOpportunitySnapshot parsed = new SummaryWordingOpportunitySnapshot
             {
@@ -342,8 +350,9 @@ namespace PawnDiary
                 expectedSummaryFactsRevision = factsRevision,
                 expectedReducerRevision = reducerRevision,
                 expectedFormatRevision = formatRevision,
+                expectedOptionalLlmWordingRevision = optionalWordingRevision,
                 expectedCategoryMask = categoryMask,
-                projectionFingerprint = fields[13],
+                projectionFingerprint = fields[14],
                 requestedTick = requestedTick,
                 dueTick = dueTick,
                 expiryTick = expiryTick,
@@ -434,6 +443,8 @@ namespace PawnDiary
                 && opportunity.expectedSummaryFactsRevision == current.summaryFactsRevision
                 && opportunity.expectedReducerRevision == current.reducerRevision
                 && opportunity.expectedFormatRevision == current.formatRevision
+                && opportunity.expectedOptionalLlmWordingRevision
+                    == current.optionalLlmWordingRevision
                 && opportunity.expectedCategoryMask == current.categoryMask
                 && Equal(opportunity.projectionFingerprint, current.projectionFingerprint);
         }
@@ -456,6 +467,7 @@ namespace PawnDiary
             SummaryWordingCurrentSnapshot current,
             bool providerSucceeded,
             string generatedWording,
+            string previousWording,
             int maximumCharacters)
         {
             SummaryWordingResultPlan plan = new SummaryWordingResultPlan();
@@ -469,7 +481,9 @@ namespace PawnDiary
 
             string normalized;
             if (!MemoryNaturalWordingProjection.TryNormalizeOptionalWording(
-                    generatedWording, maximumCharacters, out normalized))
+                    generatedWording, maximumCharacters, out normalized)
+                || !DiffersFromPrevious(
+                    normalized, previousWording, maximumCharacters))
             {
                 plan.dispositionToken = MemoryOptionalWordingDispositionTokens.Malformed;
                 return plan;
@@ -482,7 +496,7 @@ namespace PawnDiary
 
         /// <summary>
         /// Selects disposable prose only for the exact current natural-writing projection. A mismatch,
-        /// malformed cache, or non-success terminal state falls back to deterministic wording; a
+        /// malformed cache falls back to deterministic wording; a
         /// suppressed Summary exposes neither wording to a prompt.
         /// </summary>
         public static string SelectNaturalWritingWording(
@@ -506,8 +520,9 @@ namespace PawnDiary
                     optionalFingerprint = optionalFingerprint,
                     optionalFormatRevision = optionalFormatRevision,
                     optionalCategoryMask = optionalCategoryMask,
-                    optionalSucceeded = dispositionToken
-                        == MemoryOptionalWordingDispositionTokens.Success
+                    // Disposition describes the newest attempt, not the validity of the currently
+                    // committed cache. Pending/failure keeps exact older prose visible until swap.
+                    optionalSucceeded = !string.IsNullOrWhiteSpace(optionalWording)
                 },
                 maximumOptionalCharacters);
         }
@@ -580,6 +595,8 @@ namespace PawnDiary
                 && Equal(opportunity.rootId, current.rootId)
                 && Equal(opportunity.summaryRecordId, current.recordId)
                 && opportunity.expectedFormatRevision == current.wordingFormatRevision
+                && opportunity.expectedOptionalLlmWordingRevision
+                    == current.optionalLlmWordingRevision
                 && opportunity.expectedCategoryMask == current.categoryMask
                 && Equal(opportunity.projectionFingerprint,
                     current.projectionFingerprint);
@@ -600,6 +617,7 @@ namespace PawnDiary
             MemoryBlockWordingCurrentSnapshot current,
             bool providerSucceeded,
             string generatedWording,
+            string previousWording,
             int maximumCharacters)
         {
             MemoryBlockWordingResultPlan plan = new MemoryBlockWordingResultPlan();
@@ -612,7 +630,9 @@ namespace PawnDiary
             }
             string normalized;
             if (!MemoryNaturalWordingProjection.TryNormalizeOptionalWording(
-                    generatedWording, maximumCharacters, out normalized))
+                    generatedWording, maximumCharacters, out normalized)
+                || !DiffersFromPrevious(
+                    normalized, previousWording, maximumCharacters))
             {
                 plan.dispositionToken = MemoryOptionalWordingDispositionTokens.Malformed;
                 return plan;
@@ -733,6 +753,21 @@ namespace PawnDiary
             return true;
         }
 
+        private static bool DiffersFromPrevious(
+            string normalizedWording,
+            string previousWording,
+            int maximumCharacters)
+        {
+            if (string.IsNullOrWhiteSpace(previousWording)) return true;
+            string normalizedPrevious;
+            return !MemoryNaturalWordingProjection.TryNormalizeOptionalWording(
+                    previousWording, maximumCharacters, out normalizedPrevious)
+                || !string.Equals(
+                    normalizedWording,
+                    normalizedPrevious,
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
         private static bool ValidSummaryFields(SummaryWordingOpportunitySnapshot value)
         {
             return value != null
@@ -750,6 +785,8 @@ namespace PawnDiary
                 && value.expectedSummaryFactsRevision > 0
                 && value.expectedReducerRevision > 0
                 && value.expectedFormatRevision > 0
+                && value.expectedOptionalLlmWordingRevision >= 0
+                && value.expectedOptionalLlmWordingRevision < long.MaxValue
                 && value.expectedCategoryMask > 0
                 && LowerSha256(value.projectionFingerprint)
                 && value.requestedTick >= 0
@@ -770,6 +807,8 @@ namespace PawnDiary
                 && Required(value.category)
                 && Required(value.deterministicWording)
                 && value.wordingFormatRevision > 0
+                && value.optionalLlmWordingRevision >= 0
+                && value.optionalLlmWordingRevision < long.MaxValue
                 && value.categoryMask > 0
                 && LowerSha256(value.projectionFingerprint);
         }

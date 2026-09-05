@@ -83,6 +83,7 @@ namespace PawnDiary
         public long expectedSummaryFactsRevision;
         public int expectedReducerRevision;
         public long expectedFormatRevision;
+        public long expectedOptionalLlmWordingRevision;
         public int expectedCategoryMask;
         public string projectionFingerprint = string.Empty;
         public long requestedTick;
@@ -110,6 +111,8 @@ namespace PawnDiary
                 "expectedSummaryFactsRevision", 0);
             Scribe_Values.Look(ref expectedReducerRevision, "expectedReducerRevision", 0);
             Scribe_Values.Look(ref expectedFormatRevision, "expectedFormatRevision", 0);
+            Scribe_Values.Look(ref expectedOptionalLlmWordingRevision,
+                "expectedOptionalLlmWordingRevision", 0);
             Scribe_Values.Look(ref expectedCategoryMask, "expectedCategoryMask", 0);
             Scribe_Values.Look(ref projectionFingerprint, "projectionFingerprint", string.Empty);
             Scribe_Values.Look(ref requestedTick, "requestedTick", 0);
@@ -126,6 +129,10 @@ namespace PawnDiary
             ownerEpochToken = ownerEpochToken ?? string.Empty;
             rootId = rootId ?? string.Empty;
             summaryRecordId = summaryRecordId ?? string.Empty;
+            if (expectedOptionalLlmWordingRevision < 0)
+            {
+                expectedOptionalLlmWordingRevision = 0;
+            }
             projectionFingerprint = projectionFingerprint ?? string.Empty;
             opportunityKey = opportunityKey ?? string.Empty;
         }

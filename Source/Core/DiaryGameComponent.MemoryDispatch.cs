@@ -207,7 +207,12 @@ namespace PawnDiary
                     applyNarrativeUse = ReferenceEquals(attempt, winner)
                         && !attempt.narrativeUseApplied
                 };
-                if (!CanApplyInvocationAccounting(state, variant, mutation))
+                if (!CanApplyInvocationAccounting(
+                        state,
+                        variant,
+                        mutation,
+                        saved,
+                        Math.Max(1, attempt.invocationTick)))
                 {
                     RecordMemoryDiagnostic("other", "owner");
                     continue;
@@ -226,7 +231,12 @@ namespace PawnDiary
                 {
                     applyNarrativeUse = true
                 };
-                if (CanApplyInvocationAccounting(state, variant, mutation))
+                if (CanApplyInvocationAccounting(
+                        state,
+                        variant,
+                        mutation,
+                        saved,
+                        Math.Max(1, winner.invocationTick)))
                 {
                     if (ApplyInvocationAccounting(
                             state, variant, mutation, saved, Math.Max(1, winner.invocationTick)))
@@ -341,7 +351,8 @@ namespace PawnDiary
                 memoryInvocationSequenceForSession,
                 invocationTick);
             PawnKnowledgeState state = FindCurrentMemoryEnvelope(saved.ownerPawnId);
-            if (!planned.canCommit || !CanApplyInvocationAccounting(state, variant, planned))
+            if (!planned.canCommit || !CanApplyInvocationAccounting(
+                    state, variant, planned, saved, invocationTick))
             {
                 return null;
             }
@@ -697,10 +708,12 @@ namespace PawnDiary
             }
         }
 
-        private static bool CanApplyInvocationAccounting(
+        private bool CanApplyInvocationAccounting(
             PawnKnowledgeState state,
             SavedFrozenPromptVariantV1 variant,
-            MemoryInvocationCommitPlan plan)
+            MemoryInvocationCommitPlan plan,
+            SavedActiveLogicalRequestV1 request,
+            long invocationTick)
         {
             if (variant?.receiptPlan == null || plan == null) return false;
             if (!plan.applyPotentialExposure && !plan.applyNarrativeUse) return true;
@@ -713,17 +726,18 @@ namespace PawnDiary
             List<SavedMemoryBlock> blocks = FindEvidenceBlocks(state, variant.receiptPlan);
             for (int index = 0; index < blocks.Count; index++)
                 if (blocks[index].automaticInclusionCount == long.MaxValue) return false;
-            for (int index = 0; state.repetitionGuardRows != null
-                && index < state.repetitionGuardRows.Count; index++)
-            {
-                SavedMemoryRepetitionGuardRow guard = state.repetitionGuardRows[index];
-                if (guard != null && ReceiptContainsGuard(variant.receiptPlan, guard)
-                    && guard.automaticInclusionCount == long.MaxValue) return false;
-            }
-            return true;
+            List<SavedMemoryRepetitionGuardRow> guardRows;
+            return TryCollectRequiredNarrativeGuardRows(
+                    state, variant.receiptPlan, out guardRows)
+                && CanAdmitNarrativeGuardMutation(
+                    state,
+                    variant.receiptPlan,
+                    guardRows,
+                    request,
+                    invocationTick);
         }
 
-        private static bool ApplyInvocationAccounting(
+        private bool ApplyInvocationAccounting(
             PawnKnowledgeState state,
             SavedFrozenPromptVariantV1 variant,
             MemoryInvocationCommitPlan plan,
@@ -732,6 +746,17 @@ namespace PawnDiary
         {
             if (state == null || variant?.receiptPlan == null
                 || (!plan.applyPotentialExposure && !plan.applyNarrativeUse)) return false;
+            List<SavedMemoryRepetitionGuardRow> requiredGuardRows = null;
+            if (plan.applyNarrativeUse
+                && !TryCollectRequiredNarrativeGuardRows(
+                    state, variant.receiptPlan, out requiredGuardRows)) return false;
+            if (plan.applyNarrativeUse
+                && !CanAdmitNarrativeGuardMutation(
+                    state,
+                    variant.receiptPlan,
+                    requiredGuardRows,
+                    request,
+                    invocationTick)) return false;
             List<SavedMemoryBlock> blocks = FindEvidenceBlocks(state, variant.receiptPlan);
             List<SavedMemoryThreadRoot> roots = FindEvidenceRoots(state, variant.receiptPlan);
             bool changed = false;
@@ -760,15 +785,18 @@ namespace PawnDiary
                 }
             }
 
-            if (plan.applyNarrativeUse && state.repetitionGuardRows != null)
+            if (plan.applyNarrativeUse && requiredGuardRows != null)
             {
                 string sourceOccurrence = variant.receiptPlan.evidenceEntries.Count > 0
                     ? variant.receiptPlan.evidenceEntries[0]?.sourceOccurrenceId ?? string.Empty
                     : string.Empty;
-                for (int index = 0; index < state.repetitionGuardRows.Count; index++)
+                if (state.repetitionGuardRows == null)
+                    state.repetitionGuardRows = new List<SavedMemoryRepetitionGuardRow>();
+                for (int index = 0; index < requiredGuardRows.Count; index++)
                 {
-                    SavedMemoryRepetitionGuardRow guard = state.repetitionGuardRows[index];
-                    if (guard == null || !ReceiptContainsGuard(variant.receiptPlan, guard)) continue;
+                    SavedMemoryRepetitionGuardRow guard = requiredGuardRows[index];
+                    if (!state.repetitionGuardRows.Contains(guard))
+                        state.repetitionGuardRows.Add(guard);
                     guard.automaticInclusionCount++;
                     guard.lastAutomaticIncludedTick = invocationTick;
                     guard.lastAutomaticIncludedEntryOrdinal = state.completedDiaryEntryOrdinal;
@@ -778,11 +806,252 @@ namespace PawnDiary
                         variant.receiptPlan.evidenceSetFingerprint;
                     changed = true;
                 }
+                // The saved contract orders these rows by their complete unique identity. Keeping the
+                // order canonical at creation time also makes a second use find and update the same row
+                // instead of materializing a duplicate.
+                state.repetitionGuardRows.Sort(CompareRepetitionGuardRows);
             }
             if (!changed) return false;
             for (int index = 0; index < roots.Count; index++) roots[index].statusRevision++;
             state.statusRevision++;
             return true;
+        }
+
+        /// <summary>
+        /// Refuses a first-use guard mutation before touching saved truth when its complete live rows
+        /// would exceed the XML owner/global table cap or the shared logical-byte budget. Existing
+        /// rows may still update at a full row cap, but their exact string-size delta must fit too.
+        /// </summary>
+        private bool CanAdmitNarrativeGuardMutation(
+            PawnKnowledgeState state,
+            SavedFrozenEvidenceReceiptPlanV1 receipt,
+            List<SavedMemoryRepetitionGuardRow> requiredRows,
+            SavedActiveLogicalRequestV1 request,
+            long invocationTick)
+        {
+            if (state == null || receipt == null || requiredRows == null || request == null
+                || invocationTick <= 0) return false;
+
+            int ownerCurrentRows = NonNullGuardRowCount(state.repetitionGuardRows);
+            int missingRows = 0;
+            for (int index = 0; index < requiredRows.Count; index++)
+            {
+                SavedMemoryRepetitionGuardRow row = requiredRows[index];
+                if (row == null) return false;
+                if (state.repetitionGuardRows == null
+                    || !state.repetitionGuardRows.Contains(row)) missingRows++;
+            }
+
+            int ownerCap;
+            int globalCap;
+            ReadCapacityPair(
+                "guardRowsOwnerGlobal",
+                512,
+                10000,
+                2048,
+                40000,
+                out ownerCap,
+                out globalCap);
+            int globalCurrentRows;
+            if (ownerCap <= 0 || globalCap <= 0
+                || !TryCountCurrentGlobalGuardRows(state, out globalCurrentRows)
+                || (long)ownerCurrentRows + missingRows > ownerCap
+                || (long)globalCurrentRows + missingRows > globalCap) return false;
+
+            string sourceOccurrence = receipt.evidenceEntries != null
+                    && receipt.evidenceEntries.Count > 0
+                ? receipt.evidenceEntries[0]?.sourceOccurrenceId ?? string.Empty
+                : string.Empty;
+            long activeByteDelta = 0;
+            for (int index = 0; index < requiredRows.Count; index++)
+            {
+                SavedMemoryRepetitionGuardRow current = requiredRows[index];
+                bool alreadySaved = state.repetitionGuardRows != null
+                    && state.repetitionGuardRows.Contains(current);
+                long beforeBytes = 0;
+                if (alreadySaved)
+                {
+                    MemoryLogicalSizeResult before = MemoryLogicalPayloadSizer.Size(current);
+                    if (!before.valid || before.totalBytes < 0) return false;
+                    beforeBytes = before.totalBytes;
+                }
+
+                SavedMemoryRepetitionGuardRow projected = ProjectNarrativeGuardRow(
+                    current,
+                    sourceOccurrence,
+                    request.logicalRequestId,
+                    receipt.evidenceSetFingerprint,
+                    invocationTick,
+                    state.completedDiaryEntryOrdinal);
+                MemoryLogicalSizeResult after = MemoryLogicalPayloadSizer.Size(projected);
+                if (!after.valid || after.totalBytes < 0) return false;
+                try
+                {
+                    activeByteDelta = checked(
+                        activeByteDelta + checked(after.totalBytes - beforeBytes));
+                }
+                catch (OverflowException)
+                {
+                    return false;
+                }
+            }
+
+            MemoryOwnerByteTotals owner = GetOwnerByteTotals(state.pawnId);
+            MemoryPayloadBudgetTotals global = GetGlobalBudgetTotals();
+            if (!owner.valid || global.globalActiveBytes < 0
+                || global.globalImportedBytes < 0) return false;
+            MemoryBudgetDecision decision = ActiveMemoryPayloadBudget.TryAdmit(
+                CurrentMemoryBudgetLimits(),
+                owner.activeBytes,
+                owner.importedBytes,
+                activeByteDelta,
+                0,
+                global);
+            return decision.outcome == MemoryBudgetOutcome.Admitted;
+        }
+
+        private bool TryCountCurrentGlobalGuardRows(
+            PawnKnowledgeState target,
+            out int count)
+        {
+            count = 0;
+            bool targetCounted = false;
+            var owners = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; diaries != null && index < diaries.Count; index++)
+            {
+                PawnDiaryRecord diary = diaries[index];
+                PawnKnowledgeState owner = diary?.knowledgeState;
+                if (diary == null || string.IsNullOrWhiteSpace(diary.pawnId)
+                    || owner == null || !owner.IsCurrentSchema()
+                    || !owners.Add(diary.pawnId)) continue;
+                if (ReferenceEquals(owner, target)) targetCounted = true;
+                int ownerRows = NonNullGuardRowCount(owner.repetitionGuardRows);
+                try
+                {
+                    count = checked(count + ownerRows);
+                }
+                catch (OverflowException)
+                {
+                    count = 0;
+                    return false;
+                }
+            }
+            return targetCounted;
+        }
+
+        private static int NonNullGuardRowCount(
+            List<SavedMemoryRepetitionGuardRow> rows)
+        {
+            int count = 0;
+            for (int index = 0; rows != null && index < rows.Count; index++)
+                if (rows[index] != null) count++;
+            return count;
+        }
+
+        private static SavedMemoryRepetitionGuardRow ProjectNarrativeGuardRow(
+            SavedMemoryRepetitionGuardRow current,
+            string sourceOccurrence,
+            string logicalRequestId,
+            string evidenceSetFingerprint,
+            long invocationTick,
+            long completedEntryOrdinal)
+        {
+            return current == null ? null : new SavedMemoryRepetitionGuardRow
+            {
+                schemaVersion = current.schemaVersion,
+                ownerEpochToken = current.ownerEpochToken,
+                guardKind = current.guardKind,
+                guardKey = current.guardKey,
+                lastAutomaticIncludedTick = invocationTick,
+                lastAutomaticIncludedEntryOrdinal = completedEntryOrdinal,
+                automaticInclusionCount = current.automaticInclusionCount + 1,
+                lastSourceOccurrenceId = sourceOccurrence ?? string.Empty,
+                lastCommittedLogicalRequestId = logicalRequestId ?? string.Empty,
+                lastCommittedEvidenceSetFingerprint = evidenceSetFingerprint ?? string.Empty
+            };
+        }
+
+        /// <summary>
+        /// Resolves every non-record guard frozen into one narrative receipt. Missing rows are planned
+        /// as detached current-epoch rows; no saved state changes until the complete receipt has been
+        /// validated, so malformed, duplicate, or saturated guard sets cannot partially spend cooldown.
+        /// </summary>
+        private static bool TryCollectRequiredNarrativeGuardRows(
+            PawnKnowledgeState state,
+            SavedFrozenEvidenceReceiptPlanV1 receipt,
+            out List<SavedMemoryRepetitionGuardRow> requiredRows)
+        {
+            requiredRows = new List<SavedMemoryRepetitionGuardRow>();
+            if (state == null || receipt?.guardEntries == null
+                || string.IsNullOrWhiteSpace(state.autobiographicalEpochToken)) return false;
+
+            var requested = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; index < receipt.guardEntries.Count; index++)
+            {
+                SavedFrozenGuardEntryV1 frozen = receipt.guardEntries[index];
+                if (frozen == null) return false;
+                if (string.Equals(
+                    frozen.guardKind,
+                    MemoryRepetitionGuardKinds.Record,
+                    StringComparison.Ordinal)) continue;
+                if (!MemoryRepetitionGuardKinds.IsSavedRowKind(frozen.guardKind)
+                    || !MemoryRepetitionGuardPolicy.IsCanonicalIdentity(
+                        frozen.guardKind, frozen.guardKey)) return false;
+
+                string tuple = frozen.guardKind + "\n" + frozen.guardKey;
+                if (!requested.Add(tuple)) return false;
+
+                SavedMemoryRepetitionGuardRow match = null;
+                for (int rowIndex = 0; state.repetitionGuardRows != null
+                    && rowIndex < state.repetitionGuardRows.Count; rowIndex++)
+                {
+                    SavedMemoryRepetitionGuardRow current = state.repetitionGuardRows[rowIndex];
+                    if (current == null
+                        || !string.Equals(
+                            current.guardKind, frozen.guardKind, StringComparison.Ordinal)
+                        || !string.Equals(
+                            current.guardKey, frozen.guardKey, StringComparison.Ordinal)) continue;
+
+                    // A tuple from another epoch is not the requested row and cannot safely coexist:
+                    // recall indexes by guard tuple after Brainwipe has removed all old-epoch rows.
+                    if (!string.Equals(
+                            current.ownerEpochToken,
+                            state.autobiographicalEpochToken,
+                            StringComparison.Ordinal)
+                        || match != null) return false;
+                    match = current;
+                }
+
+                if (match != null)
+                {
+                    if (match.automaticInclusionCount < 0
+                        || match.automaticInclusionCount == long.MaxValue) return false;
+                    requiredRows.Add(match);
+                    continue;
+                }
+
+                requiredRows.Add(new SavedMemoryRepetitionGuardRow
+                {
+                    schemaVersion = 1,
+                    ownerEpochToken = state.autobiographicalEpochToken,
+                    guardKind = frozen.guardKind,
+                    guardKey = frozen.guardKey
+                });
+            }
+            return true;
+        }
+
+        private static int CompareRepetitionGuardRows(
+            SavedMemoryRepetitionGuardRow left,
+            SavedMemoryRepetitionGuardRow right)
+        {
+            if (ReferenceEquals(left, right)) return 0;
+            if (left == null) return -1;
+            if (right == null) return 1;
+            int epoch = string.CompareOrdinal(left.ownerEpochToken, right.ownerEpochToken);
+            if (epoch != 0) return epoch;
+            int kind = string.CompareOrdinal(left.guardKind, right.guardKind);
+            return kind != 0 ? kind : string.CompareOrdinal(left.guardKey, right.guardKey);
         }
 
         internal static bool ApplyConfirmedExposure(
@@ -887,20 +1156,5 @@ namespace PawnDiary
             return false;
         }
 
-        private static bool ReceiptContainsGuard(
-            SavedFrozenEvidenceReceiptPlanV1 receipt,
-            SavedMemoryRepetitionGuardRow guard)
-        {
-            for (int index = 0; receipt?.guardEntries != null
-                && index < receipt.guardEntries.Count; index++)
-            {
-                SavedFrozenGuardEntryV1 row = receipt.guardEntries[index];
-                if (row != null
-                    && string.Equals(row.guardKind, guard.guardKind, StringComparison.Ordinal)
-                    && string.Equals(row.guardKey, guard.guardKey, StringComparison.Ordinal))
-                    return true;
-            }
-            return false;
-        }
     }
 }

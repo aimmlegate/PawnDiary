@@ -248,6 +248,7 @@ namespace PawnDiary
             SizeRowList(c, "provenance", provenance);
             c.String("automaticWording", automaticWording);
             c.String("optionalLlmWording", optionalLlmWording);
+            c.Int64("optionalLlmWordingRevision", optionalLlmWordingRevision);
             c.String("optionalLlmFingerprint", optionalLlmFingerprint);
             c.Int64("optionalLlmFormatRevision", optionalLlmFormatRevision);
             c.Int32("optionalLlmCategoryMask", optionalLlmCategoryMask);
@@ -533,6 +534,8 @@ namespace PawnDiary
             c.Int64("expectedSummaryFactsRevision", expectedSummaryFactsRevision);
             c.Int32("expectedReducerRevision", expectedReducerRevision);
             c.Int64("expectedFormatRevision", expectedFormatRevision);
+            c.Int64("expectedOptionalLlmWordingRevision",
+                expectedOptionalLlmWordingRevision);
             c.Int32("expectedCategoryMask", expectedCategoryMask);
             c.String("projectionFingerprint", projectionFingerprint);
             c.Int64("requestedTick", requestedTick);

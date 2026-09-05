@@ -3,7 +3,7 @@
 // XML allowlist (positives, owners, dedup, and explicit negatives), localized line rendering with
 // prompt-safe manual overrides and fallbacks, deterministic retrieval (participant/exact-key
 // eligibility, tier ranking, stable
-// ties, the two-record cap, and proof that broad topic overlap alone can never recall), culture
+// ties, the one-record cap, and proof that broad topic overlap alone can never recall), culture
 // resolution (ideology/faction paths, legacy inference, conversion replacement, unknown
 // cultures), field-aware topic annotation (structured and localized-text detection, caps,
 // origin/adopted, master switch, recursion prevention), defensive-cap eviction planning, and
@@ -3405,6 +3405,14 @@ namespace PawnMemoryTests
                     0, consumer.compactMaximumLines);
                 AssertEqual("recallV2.consumer.off." + consumer.consumerId,
                     0, consumer.offMaximumLines);
+                int expectedNarrativeLines = consumer.consumerId
+                        == MemoryRecallConsumerRegistry.SummaryWording
+                    ? 0
+                    : 1;
+                AssertEqual("recallV2.consumer.full." + consumer.consumerId,
+                    expectedNarrativeLines, consumer.fullMaximumLines);
+                AssertEqual("recallV2.consumer.balanced." + consumer.consumerId,
+                    expectedNarrativeLines, consumer.balancedMaximumLines);
             }
 
             MemoryRecallQueryV2 query = RecallQuery("Owner_A", MemoryRecallWritingFormats.Full);
@@ -3658,6 +3666,20 @@ namespace PawnMemoryTests
 
         private static void TestRecallV2RepetitionBoundariesAndGuardCompleteness()
         {
+            long nextOrdinal;
+            AssertTrue("recallV2.ordinal.one-based-advance",
+                MemoryRepetitionGuardPolicy.TryAdvanceCompletedDiaryEntryOrdinal(
+                    1, out nextOrdinal));
+            AssertEqual("recallV2.ordinal.one-based-next", 2L, nextOrdinal);
+            AssertTrue("recallV2.ordinal.zero-fails-closed",
+                !MemoryRepetitionGuardPolicy.TryAdvanceCompletedDiaryEntryOrdinal(
+                    0, out nextOrdinal));
+            AssertEqual("recallV2.ordinal.zero-unchanged", 0L, nextOrdinal);
+            AssertTrue("recallV2.ordinal.saturation-sticks",
+                !MemoryRepetitionGuardPolicy.TryAdvanceCompletedDiaryEntryOrdinal(
+                    long.MaxValue, out nextOrdinal));
+            AssertEqual("recallV2.ordinal.saturation-unchanged", long.MaxValue, nextOrdinal);
+
             MemoryRepetitionPolicySnapshot policy = RecallRepetitionPolicy();
             MemoryRepetitionGuardState record = GuardState(
                 "epoch-1",
@@ -3878,7 +3900,7 @@ namespace PawnMemoryTests
                 new List<MemoryRecallCandidateSnapshot> { missingPair, sharedA, ownA },
                 recipientQuery,
                 new List<MemoryRecallCandidateSnapshot> { sharedB, crossOwner, ownB });
-            AssertEqual("recallV2.pair.initiator.full-cap", 2, paired.initiator.selected.Count);
+            AssertEqual("recallV2.pair.initiator.full-cap", 1, paired.initiator.selected.Count);
             AssertEqual("recallV2.pair.missing-guard-no-bypass",
                 MemoryRecallRejectReasons.GuardBypass,
                 paired.initiator.report.First(row => row.recordId == "a-missing-pair").rejectReason);
@@ -4302,7 +4324,7 @@ namespace PawnMemoryTests
                 MemoryRecallRejectReasons.OwnerMismatch,
                 result.report.First(row => row.rejectReason.Length > 0).rejectReason);
 
-            // §10.3 selection column: Full/Balanced/Compact/Off are exactly 2/1/0/0.
+            // §10.3 selection column: Full/Balanced/Compact/Off are exactly 1/1/0/0.
             string[] formats =
             {
                 MemoryRecallWritingFormats.Full,
@@ -4310,7 +4332,7 @@ namespace PawnMemoryTests
                 MemoryRecallWritingFormats.Compact,
                 MemoryRecallWritingFormats.Off
             };
-            int[] expectedLines = { 2, 1, 0, 0 };
+            int[] expectedLines = { 1, 1, 0, 0 };
             for (int index = 0; index < formats.Length; index++)
             {
                 MemoryRecallSelectionResultV2 formatted = ImportantMemorySelector.SelectV2(

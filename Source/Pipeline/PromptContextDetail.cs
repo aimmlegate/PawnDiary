@@ -92,7 +92,7 @@ namespace PawnDiary
         /// <summary>True when the preset allows recalled past facts and culture asides in prompts.</summary>
         public static bool AllowsMemoryContext(PromptContextDetailLevel level)
         {
-            // Full and Balanced both have explicit memory-line budgets (2 and 1 respectively).
+            // Full and Balanced both allow one recalled memory line.
             // Compact alone removes the layer. Keeping this gate aligned with the recall projector
             // prevents a selected line from consuming its use/cooldown accounting without ever
             // reaching the provider prompt.

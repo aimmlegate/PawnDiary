@@ -448,17 +448,17 @@ namespace PawnDiary
         {
             return new List<MemoryRecallConsumerContract>
             {
-                Entry(OrdinaryDiary, true, true, 2, 1, 0, 0,
+                Entry(OrdinaryDiary, true, true, 1, 1, 0, 0,
                     "blockWordingUnits", true, "normal_diary", false),
-                Entry(ExistingReflection, true, true, 2, 1, 0, 0,
+                Entry(ExistingReflection, true, true, 1, 1, 0, 0,
                     "blockWordingUnits", true, "reflection", false),
-                Entry(NarrativeArc, true, true, 2, 1, 0, 0,
+                Entry(NarrativeArc, true, true, 1, 1, 0, 0,
                     "blockWordingUnits", true, "arc", false),
-                Entry(Comparison, true, true, 2, 1, 0, 0,
+                Entry(Comparison, true, true, 1, 1, 0, 0,
                     "blockWordingUnits", true, "comparison", false),
-                Entry(Anniversary, true, true, 2, 1, 0, 0,
+                Entry(Anniversary, true, true, 1, 1, 0, 0,
                     "blockWordingUnits", true, "anniversary", false),
-                Entry(QuietMemory, true, true, 2, 1, 0, 0,
+                Entry(QuietMemory, true, true, 1, 1, 0, 0,
                     "blockWordingUnits", true, "quiet_memory", true),
                 Entry(SummaryWording, false, false, 0, 0, 0, 0,
                     "summaryOptionalLlmWordingUnits", false, "summary_wording", true)

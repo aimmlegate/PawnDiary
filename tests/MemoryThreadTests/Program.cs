@@ -844,6 +844,8 @@ namespace MemoryThreadTests
 
         private static void TestMemoryDispatchPolicy()
         {
+            AssertEqual("dispatch.maximum-evidence-per-variant", 1,
+                MemoryDispatchPolicy.MaximumEvidencePerVariant);
             MemoryLogicalRequestSnapshot request = BuildDispatchRequest();
             AssertTrue("dispatch.valid", MemoryDispatchPolicy.ValidateRequest(request));
 
@@ -1137,6 +1139,28 @@ namespace MemoryThreadTests
             AssertEqual("optional.summary-key.owner", first.ownerPawnId, parsed.ownerPawnId);
             AssertEqual("optional.summary-key.fingerprint",
                 first.projectionFingerprint, parsed.projectionFingerprint);
+            AssertEqual("optional.summary-key.wording-revision",
+                first.expectedOptionalLlmWordingRevision,
+                parsed.expectedOptionalLlmWordingRevision);
+            string v2Domain = OrdinalSegmentCodec.Segment(
+                "summary-wording-opportunity-v2");
+            string legacyV1Key = OrdinalSegmentCodec.Segment(
+                    "summary-wording-opportunity-v1")
+                + key.Substring(v2Domain.Length);
+            AssertTrue("optional.summary-key.legacy-v1-refused",
+                !MemoryOptionalAiPolicy.TryParseSummaryOpportunityKey(
+                    legacyV1Key, out parsed));
+            string originalRevisionKey = first.opportunityKey;
+            first.expectedOptionalLlmWordingRevision++;
+            AssertTrue("optional.summary-key.revision-change-invalidates-old-key",
+                !MemoryOptionalAiPolicy.IsValidSummaryOpportunity(first));
+            string changedRevisionKey;
+            AssertTrue("optional.summary-key.revision-change-builds-new-key",
+                MemoryOptionalAiPolicy.TryCreateSummaryOpportunityKey(
+                    first, out changedRevisionKey)
+                    && changedRevisionKey != originalRevisionKey);
+            first.expectedOptionalLlmWordingRevision--;
+            first.opportunityKey = originalRevisionKey;
             AssertTrue("optional.summary-key.trailing-refused",
                 !MemoryOptionalAiPolicy.TryParseSummaryOpportunityKey(
                     key + OrdinalSegmentCodec.Segment("extra"), out parsed));
@@ -1183,12 +1207,19 @@ namespace MemoryThreadTests
                 summaryFactsRevision = first.expectedSummaryFactsRevision,
                 reducerRevision = first.expectedReducerRevision,
                 formatRevision = first.expectedFormatRevision,
+                optionalLlmWordingRevision =
+                    first.expectedOptionalLlmWordingRevision,
                 categoryMask = first.expectedCategoryMask,
                 projectionFingerprint = first.projectionFingerprint,
                 deterministicWording = "The deterministic wording remains truth."
             };
             SummaryWordingResultPlan success = MemoryOptionalAiPolicy.PlanSummaryResult(
-                first, current, true, "  Concise optional wording.  ", 80);
+                first,
+                current,
+                true,
+                "  Concise optional wording.  ",
+                "An older optional wording.",
+                80);
             AssertTrue("optional.result.success-disposable-only",
                 success.identityMatched && success.applyOptionalWording);
             AssertEqual("optional.result.trimmed", "Concise optional wording.",
@@ -1225,8 +1256,18 @@ namespace MemoryThreadTests
                     current.categoryMask ^ 1,
                     MemoryOptionalWordingDispositionTokens.Success,
                     80));
-            AssertEqual("optional.cache.non-success-uses-deterministic",
-                current.deterministicWording,
+            AssertEqual("optional.cache.pending-retains-exact-old-wording",
+                "Concise optional wording.",
+                MemoryOptionalAiPolicy.SelectNaturalWritingWording(
+                    current,
+                    success.optionalWording,
+                    current.projectionFingerprint,
+                    current.formatRevision,
+                    current.categoryMask,
+                    MemoryOptionalWordingDispositionTokens.Pending,
+                    80));
+            AssertEqual("optional.cache.failed-retains-exact-old-wording",
+                "Concise optional wording.",
                 MemoryOptionalAiPolicy.SelectNaturalWritingWording(
                     current,
                     success.optionalWording,
@@ -1235,19 +1276,40 @@ namespace MemoryThreadTests
                     current.categoryMask,
                     MemoryOptionalWordingDispositionTokens.Failed,
                     80));
+            SummaryWordingResultPlan unchanged =
+                MemoryOptionalAiPolicy.PlanSummaryResult(
+                    first,
+                    current,
+                    true,
+                    "  CONCISE OPTIONAL WORDING.  ",
+                    "Concise optional wording.",
+                    80);
+            AssertTrue("optional.result.same-previous-rejected-after-normalization",
+                unchanged.identityMatched
+                    && !unchanged.applyOptionalWording
+                    && unchanged.dispositionToken
+                        == MemoryOptionalWordingDispositionTokens.Malformed);
             SummaryWordingResultPlan failed = MemoryOptionalAiPolicy.PlanSummaryResult(
-                first, current, false, "ignored", 80);
+                first, current, false, "ignored", success.optionalWording, 80);
             AssertTrue("optional.result.failure-keeps-deterministic",
                 failed.identityMatched && !failed.applyOptionalWording
                     && failed.optionalWording.Length == 0);
             SummaryWordingResultPlan malformed = MemoryOptionalAiPolicy.PlanSummaryResult(
-                first, current, true, "line one\nline two", 80);
+                first, current, true, "line one\nline two", null, 80);
             AssertEqual("optional.result.multiline-malformed",
                 MemoryOptionalWordingDispositionTokens.Malformed,
                 malformed.dispositionToken);
+            current.optionalLlmWordingRevision++;
+            SummaryWordingResultPlan staleWordingRevision =
+                MemoryOptionalAiPolicy.PlanSummaryResult(
+                    first, current, true, "fresh prose", null, 80);
+            AssertTrue("optional.result.wording-revision-stale",
+                !staleWordingRevision.identityMatched
+                    && !staleWordingRevision.applyOptionalWording);
+            current.optionalLlmWordingRevision--;
             current.summaryFactsRevision++;
             SummaryWordingResultPlan stale = MemoryOptionalAiPolicy.PlanSummaryResult(
-                first, current, true, "stale prose", 80);
+                first, current, true, "stale prose", null, 80);
             AssertTrue("optional.result.revision-stale-keeps-fallback",
                 !stale.identityMatched && !stale.applyOptionalWording);
             AssertEqual("optional.result.stale-does-not-invent-saved-disposition",
@@ -1258,7 +1320,7 @@ namespace MemoryThreadTests
                 MemoryOptionalAiPolicy.TargetsCurrentSummaryProjection(first, current));
             AssertTrue("optional.result.suppressed-stale",
                 !MemoryOptionalAiPolicy.PlanSummaryResult(
-                    first, current, true, "hidden prose", 80).identityMatched);
+                    first, current, true, "hidden prose", null, 80).identityMatched);
             AssertEqual("optional.cache.suppressed-exposes-no-prompt-wording", string.Empty,
                 MemoryOptionalAiPolicy.SelectNaturalWritingWording(
                     current,
@@ -1343,6 +1405,9 @@ namespace MemoryThreadTests
             AssertTrue("optional.block.shared-key-roundtrip",
                 MemoryOptionalAiPolicy.TryParseSummaryOpportunityKey(
                     blockOpportunity.opportunityKey, out parsedBlockOpportunity));
+            AssertEqual("optional.block.shared-key-wording-revision",
+                blockOpportunity.expectedOptionalLlmWordingRevision,
+                parsedBlockOpportunity.expectedOptionalLlmWordingRevision);
             SummaryWordingOpportunitySnapshot lowerPrioritySummary = SummaryOpportunity(
                 blockOpportunity.ownerPawnId,
                 blockOpportunity.ownerEpochToken,
@@ -1375,6 +1440,8 @@ namespace MemoryThreadTests
                     category = MemoryContractTokens.CategoryRelationships,
                     deterministicWording = "Opinion of Brik: neutral to friendly.",
                     wordingFormatRevision = 1,
+                    optionalLlmWordingRevision =
+                        blockOpportunity.expectedOptionalLlmWordingRevision,
                     categoryMask = MemoryCategoryBits.Relationships,
                     projectionFingerprint = blockFingerprint
                 };
@@ -1387,6 +1454,7 @@ namespace MemoryThreadTests
                     currentBlock,
                     true,
                     "  I found myself warming to Brik.  ",
+                    "Brik once left me uncertain.",
                     80);
             AssertTrue("optional.block.result-applies-disposable-only",
                 blockSuccess.identityMatched && blockSuccess.applyOptionalWording);
@@ -1395,6 +1463,19 @@ namespace MemoryThreadTests
             AssertEqual("optional.block.result-success-token",
                 MemoryOptionalWordingDispositionTokens.Success,
                 blockSuccess.dispositionToken);
+            MemoryBlockWordingResultPlan repeatedBlockWording =
+                MemoryOptionalAiPolicy.PlanBlockWordingResult(
+                    parsedBlockOpportunity,
+                    currentBlock,
+                    true,
+                    "  I FOUND MYSELF WARMING TO BRIK.  ",
+                    "I found myself warming to Brik.",
+                    80);
+            AssertTrue("optional.block.same-previous-rejected-after-normalization",
+                repeatedBlockWording.identityMatched
+                    && !repeatedBlockWording.applyOptionalWording
+                    && repeatedBlockWording.dispositionToken
+                        == MemoryOptionalWordingDispositionTokens.Malformed);
             AssertEqual("optional.block.multiline-malformed",
                 MemoryOptionalWordingDispositionTokens.Malformed,
                 MemoryOptionalAiPolicy.PlanBlockWordingResult(
@@ -1402,6 +1483,7 @@ namespace MemoryThreadTests
                     currentBlock,
                     true,
                     "line one\nline two",
+                    null,
                     80).dispositionToken);
             AssertEqual("optional.block.over-cap-malformed",
                 MemoryOptionalWordingDispositionTokens.Malformed,
@@ -1410,7 +1492,18 @@ namespace MemoryThreadTests
                     currentBlock,
                     true,
                     new string('x', 81),
+                    null,
                     80).dispositionToken);
+            currentBlock.optionalLlmWordingRevision++;
+            AssertTrue("optional.block.wording-revision-stale",
+                !MemoryOptionalAiPolicy.PlanBlockWordingResult(
+                    parsedBlockOpportunity,
+                    currentBlock,
+                    true,
+                    "Different but stale wording.",
+                    null,
+                    80).identityMatched);
+            currentBlock.optionalLlmWordingRevision--;
             currentBlock.playerEdited = true;
             AssertTrue("optional.block.player-edit-hides-cache",
                 !MemoryOptionalAiPolicy.PlanBlockWordingResult(
@@ -1418,6 +1511,7 @@ namespace MemoryThreadTests
                     currentBlock,
                     true,
                     "ignored",
+                    null,
                     80).identityMatched);
             currentBlock.playerEdited = false;
             AssertTrue("optional.block.use-original-restores-content-identity",
@@ -1430,6 +1524,7 @@ namespace MemoryThreadTests
                     currentBlock,
                     true,
                     "ignored",
+                    null,
                     80).identityMatched);
             currentBlock.suppressed = false;
             currentBlock.projectionFingerprint = changedFingerprint;
@@ -1647,6 +1742,7 @@ namespace MemoryThreadTests
                 expectedSummaryFactsRevision = 9,
                 expectedReducerRevision = 1,
                 expectedFormatRevision = 1,
+                expectedOptionalLlmWordingRevision = 7,
                 expectedCategoryMask = 3,
                 projectionFingerprint = new string('a', 64),
                 requestedTick = requested,
@@ -1751,7 +1847,7 @@ namespace MemoryThreadTests
 
             request.variants.Add(BuildDispatchVariant(
                 request, 0, "detail-full", "system-full", "user-full",
-                new List<MemoryEvidenceIdentity> { secondEvidence, firstEvidence }, guard));
+                new List<MemoryEvidenceIdentity> { secondEvidence }, guard));
             request.variants.Add(BuildDispatchVariant(
                 request, 1, "detail-compact", "system-compact", "user-compact",
                 new List<MemoryEvidenceIdentity> { firstEvidence }, guard));
@@ -2134,6 +2230,10 @@ namespace MemoryThreadTests
                 {
                     AssertEqual("consumer.writing.formats." + consumer.consumerId,
                         "Full/Balanced", string.Join("/", consumer.eligibleWritingFormats));
+                    AssertEqual("consumer.full.one." + consumer.consumerId,
+                        1, consumer.fullMaximumLines);
+                    AssertEqual("consumer.balanced.one." + consumer.consumerId,
+                        1, consumer.balancedMaximumLines);
                     AssertTrue("consumer.current-event." + consumer.consumerId,
                         consumer.excludesCurrentEvent);
                 }
@@ -2260,8 +2360,8 @@ namespace MemoryThreadTests
                         type.GetProperty("name").GetString() + "." + field.GetString())).ToList();
                 List<JsonElement> atoms = payload.RootElement.GetProperty("atomRows")
                     .EnumerateArray().ToList();
-                AssertEqual("catalog.payload.declared-field-count", 404, expectedPaths.Count);
-                AssertEqual("catalog.payload.atom-count", 404, atoms.Count);
+                AssertEqual("catalog.payload.declared-field-count", 406, expectedPaths.Count);
+                AssertEqual("catalog.payload.atom-count", 406, atoms.Count);
                 for (int index = 0; index < atoms.Count; index++)
                 {
                     JsonElement atom = atoms[index];
@@ -2294,6 +2394,11 @@ namespace MemoryThreadTests
                     atomKinds["SavedFrozenPromptVariantV1.variantOrdinal"]);
                 AssertEqual("catalog.payload.kind.reflection-quiet-day", "int32",
                     atomKinds["PawnReflectionStateMemoryFields.lastQuietMemoryEvaluatedAbsoluteDay"]);
+                AssertEqual("catalog.payload.kind.block-wording-revision", "int64",
+                    atomKinds["SavedMemoryBlock.optionalLlmWordingRevision"]);
+                AssertEqual("catalog.payload.kind.expected-wording-revision", "int64",
+                    atomKinds[
+                        "SavedSummaryWordingOpportunityV1.expectedOptionalLlmWordingRevision"]);
                 foreach (string path in new[]
                 {
                     "SavedMemoryAttemptAuditRow.attemptOrdinal",
@@ -2398,8 +2503,8 @@ namespace MemoryThreadTests
             {
                 registryAtoms += row.atoms.Length;
             }
-            AssertEqual("schema.atom-count", 404, registryAtoms);
-            AssertEqual("schema.catalog-atom-count", 404, catalogKinds.Count);
+            AssertEqual("schema.atom-count", 406, registryAtoms);
+            AssertEqual("schema.catalog-atom-count", 406, catalogKinds.Count);
 
             // §T6.0's exhaustive Boolean set must equal the registry's bool atoms exactly.
             string[] expectedBooleans =

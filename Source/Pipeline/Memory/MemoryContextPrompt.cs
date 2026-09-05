@@ -87,7 +87,7 @@ namespace PawnDiary
         /// <summary>Returns Recall v2's hard episodic-line cap for one writing format.</summary>
         public static int MaximumLines(string writingFormat)
         {
-            if (writingFormat == MemoryRecallWritingFormats.Full) return 2;
+            if (writingFormat == MemoryRecallWritingFormats.Full) return 1;
             if (writingFormat == MemoryRecallWritingFormats.Balanced) return 1;
             return 0;
         }
@@ -106,7 +106,7 @@ namespace PawnDiary
 
         /// <summary>
         /// Projects already selected lines into a frozen prompt field. Full/Balanced/Compact/Off are
-        /// hard-capped at 2/1/0/0. Character/evidence/guard/diagnostic overflow drops a complete tail
+        /// hard-capped at 1/1/0/0. Character/evidence/guard/diagnostic overflow drops a complete tail
         /// line; no fact is truncated, no guard is omitted from an emitted line, and an instruction
         /// without any surviving memory is never emitted by itself.
         /// </summary>

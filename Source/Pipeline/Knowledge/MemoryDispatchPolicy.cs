@@ -265,7 +265,7 @@ namespace PawnDiary
         // Code-owned defensive ceilings from §T17.1. Production settings may only lower them.
         public const int MaximumVariants = 16;
         public const int MaximumAttempts = 16;
-        public const int MaximumEvidencePerVariant = 2;
+        public const int MaximumEvidencePerVariant = 1;
         public const int MaximumGuardsPerVariant = 32;
         public const int MaximumDiagnosticsPerVariant = 64;
 

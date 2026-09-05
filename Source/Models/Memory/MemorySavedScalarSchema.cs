@@ -2,7 +2,7 @@
 // memory-system row (design/MEMORY_SYSTEM_IMPLEMENTATION_PLAN.md §T6.0).
 //
 // The M0 benchmark froze 32 payload types; later additive memory work brings the exact field-path
-// catalog to 404 while preserving every earlier path and type.
+// catalog to 406 while preserving every earlier path and type.
 // (benchmarks/MemoryThreadBenchmarks/Catalog/memory-payload-atom-catalog-v1.json). This file is the
 // code-owned mirror of that frozen catalog: each declared field appears exactly once, with its
 // logical width, so Scribe wiring, MemoryLogicalPayloadSizer, migration validation, and tests all
@@ -224,6 +224,7 @@ namespace PawnDiary
                     Atom("provenance",                                     MemorySavedAtomKind.List),
                     Atom("automaticWording",                               MemorySavedAtomKind.String),
                     Atom("optionalLlmWording",                             MemorySavedAtomKind.String),
+                    Atom("optionalLlmWordingRevision",                     MemorySavedAtomKind.Int64),
                     Atom("optionalLlmFingerprint",                         MemorySavedAtomKind.String),
                     Atom("optionalLlmFormatRevision",                      MemorySavedAtomKind.Int64),
                     Atom("optionalLlmCategoryMask",                        MemorySavedAtomKind.Int32),
@@ -474,6 +475,7 @@ namespace PawnDiary
                     Atom("expectedSummaryFactsRevision",                   MemorySavedAtomKind.Int64),
                     Atom("expectedReducerRevision",                        MemorySavedAtomKind.Int32),
                     Atom("expectedFormatRevision",                         MemorySavedAtomKind.Int64),
+                    Atom("expectedOptionalLlmWordingRevision",             MemorySavedAtomKind.Int64),
                     Atom("expectedCategoryMask",                           MemorySavedAtomKind.Int32),
                     Atom("projectionFingerprint",                          MemorySavedAtomKind.String),
                     Atom("requestedTick",                                  MemorySavedAtomKind.Int64),
@@ -678,7 +680,7 @@ namespace PawnDiary
             return null;
         }
 
-        /// <summary>Total number of registered field paths (404 after block wording cache).</summary>
+        /// <summary>Total number of registered field paths (406 after wording revision fences).</summary>
         public static int AtomCount()
         {
             int total = 0;

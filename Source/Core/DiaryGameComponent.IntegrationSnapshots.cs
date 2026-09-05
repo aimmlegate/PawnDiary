@@ -269,9 +269,16 @@ namespace PawnDiary
                 return false;
             }
 
+            bool replacedCompletedPage = diaryEvent.HasGeneratedTextForRole(povRole);
             SettleActiveMemoryRequestForPageReplacement(diaryEvent, povRole);
             diaryEvent.MarkInjectedTextComplete(povRole, cleanedText);
             MarkGeneratedEntryUnread(diaryEvent, povRole);
+            if (!replacedCompletedPage && DiaryEvent.RoleIsInitiatorOrRecipient(povRole))
+            {
+                // Direct integration prose and generated memory reflections both commit through this
+                // adapter. Count their first completed owner page, but never count a replacement.
+                AdvanceCompletedAutomaticPageOrdinal(diaryEvent.PawnIdForRole(povRole));
+            }
 
             string cleanedTitle = ExternalDirectEntryText.CleanTitle(title, DiaryTuning.IntegrationDirectTitleMaxChars);
             bool notificationSent = false;

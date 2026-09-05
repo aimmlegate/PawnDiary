@@ -325,6 +325,9 @@ Require (-not [string]::IsNullOrWhiteSpace((Child-Text $tuningDef "memoryWording
 $memoryWordingSystemPrompt = Child-Text $tuningDef "memoryWordingSystemPrompt"
 Require ($memoryWordingSystemPrompt -cmatch 'do not add an emotion, evaluation') "Memory-wording truth guard no longer forbids invented feelings/evaluations."
 Require ($memoryWordingSystemPrompt -cmatch 'unless it is explicit in memory_fact') "Memory-wording truth guard no longer binds additions to the canonical fact."
+Require ($memoryWordingSystemPrompt -cmatch 'previous_wording' -and $memoryWordingSystemPrompt -cmatch 'memory_fact') "Memory-wording anti-repeat schema tokens drifted."
+$summaryWordingSystemPrompt = Child-Text $tuningDef "summaryWordingSystemPrompt"
+Require ($summaryWordingSystemPrompt -cmatch 'previous_wording' -and $summaryWordingSystemPrompt -cmatch 'deterministic_summary') "Summary-wording anti-repeat schema tokens drifted."
 $optionalAiDefInjectedFields = @(
     'memoryReflectionSystemPrompt',
     'memoryReflectionLabel',
@@ -342,6 +345,12 @@ foreach ($field in $optionalAiDefInjectedFields) {
 $russianMemoryWordingSystemPrompt = $russianTuningInjected.Root.Element(
     [System.Xml.Linq.XName]'Diary_Knowledge.memoryWordingSystemPrompt').Value
 Require ($russianMemoryWordingSystemPrompt -cmatch 'не добавляйте эмоцию, оценку') "Russian memory-wording truth guard no longer forbids invented feelings/evaluations."
+Require ($russianMemoryWordingSystemPrompt -cmatch 'previous_wording' -and $russianMemoryWordingSystemPrompt -cmatch 'memory_fact') "Russian memory-wording anti-repeat schema tokens drifted."
+$russianSummaryWordingSystemPrompt = $russianTuningInjected.Root.Element(
+    [System.Xml.Linq.XName]'Diary_Knowledge.summaryWordingSystemPrompt').Value
+Require ($russianSummaryWordingSystemPrompt -cmatch 'previous_wording' -and $russianSummaryWordingSystemPrompt -cmatch 'deterministic_summary') "Russian summary-wording anti-repeat schema tokens drifted."
+Require ($optionalMemoryAdapter -cmatch '"memory_wording:v2"' -and $optionalMemoryAdapter -cmatch '"optional-memory-wording:v2"') "Event/Landmark wording prompt identities did not advance to v2."
+Require ($optionalMemoryAdapter -cmatch 'purpose \+ ":v2"' -and $optionalMemoryAdapter -cmatch '"optional-memory:v2"') "Summary wording prompt identities did not advance to v2."
 Require ($optionalMemoryAdapter -cnotmatch 'transport_variant=') "Optional-memory transport metadata leaked into provider prompt text."
 
 $fixedRows = @($fixture.fixedRows)
@@ -385,8 +394,8 @@ foreach ($type in $payloadTypes) {
     }
 }
 $atomRows = @($payload.atomRows)
-Require ($expectedAtomPaths.Count -eq 404) "Payload schema must declare the exact 404 M10 field paths."
-Require ($atomRows.Count -eq 404) "Payload atom catalog must contain the exact 404 M10 atoms."
+Require ($expectedAtomPaths.Count -eq 406) "Payload schema must declare the exact 406 current field paths."
+Require ($atomRows.Count -eq 406) "Payload atom catalog must contain the exact 406 current atoms."
 for ($index = 0; $index -lt $atomRows.Count; $index++) {
     $atom = $atomRows[$index]
     Require ([int]$atom.pathOrdinal -eq $index) "Payload atom ordinal drifted at $index."
@@ -403,6 +412,8 @@ Require ($atomKindByPath['SavedMemoryAppliedPolicyStateV1.saveNewMemories'] -ceq
 Require ($atomKindByPath['SavedActiveLogicalRequestV1.sessionId'] -ceq 'int64') "sessionId must be int64."
 Require ($atomKindByPath['SavedFrozenPromptVariantV1.variantOrdinal'] -ceq 'int32') "variantOrdinal must be int32."
 Require ($atomKindByPath['PawnReflectionStateMemoryFields.lastQuietMemoryEvaluatedAbsoluteDay'] -ceq 'int32') "Reflection quiet-day field must be int32."
+Require ($atomKindByPath['SavedMemoryBlock.optionalLlmWordingRevision'] -ceq 'int64') "Optional block wording revision must be int64."
+Require ($atomKindByPath['SavedSummaryWordingOpportunityV1.expectedOptionalLlmWordingRevision'] -ceq 'int64') "Expected optional wording revision must be int64."
 foreach ($path in @(
     'SavedMemoryAttemptAuditRow.attemptOrdinal',
     'DiaryGameComponentMemory.memoryComponentSchemaVersion',

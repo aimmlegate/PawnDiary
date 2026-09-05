@@ -1818,7 +1818,7 @@ namespace DiaryPipelineTests
         }
 
         /// <summary>
-        /// M3's dormant prompt projector owns the canonical 2/1/0/0 line matrix and carries only
+        /// M3's dormant prompt projector owns the canonical 1/1/0/0 line matrix and carries only
         /// provenance whose complete line survived every cap. Current truth remains a separate row.
         /// </summary>
         private static void TestRecallV2PromptProjectionCapsAndCurrentTruth()
@@ -1836,7 +1836,7 @@ namespace DiaryPipelineTests
                 MemoryRecallWritingFormats.Compact,
                 MemoryRecallWritingFormats.Off
             };
-            int[] expectedLines = { 2, 1, 0, 0 };
+            int[] expectedLines = { 1, 1, 0, 0 };
             for (int index = 0; index < formats.Length; index++)
             {
                 MemoryRecallPromptProjection projection = MemoryContextPrompt.ProjectV2(
@@ -1972,9 +1972,8 @@ namespace DiaryPipelineTests
             AssertEqual("recallV2.prompt.current-truth-provenance-fails-closed", string.Empty,
                 missingCurrentProjection.text);
 
-            // Raw identities may legally contain the old newline delimiter. Distinct evidence
-            // tuples must remain distinct after canonical framing instead of losing one line as a
-            // false duplicate.
+            // Raw identities may legally contain the old newline delimiter. The one-line ceiling
+            // must still preserve the winning row's exact framed evidence identity.
             MemoryRecallPromptLine framedFirst = RecallPromptLine(
                 "record\npart", "source", "First framed memory.", string.Empty);
             framedFirst.evidence.rootIdOrEmpty = "root";
@@ -1993,8 +1992,10 @@ namespace DiaryPipelineTests
                 2,
                 8,
                 16);
-            AssertEqual("recallV2.prompt.evidence-framing-no-delimiter-collision", 2,
+            AssertEqual("recallV2.prompt.framed-evidence-obeys-one-line-cap", 1,
                 framedProjection.lines.Count);
+            AssertEqual("recallV2.prompt.framed-evidence-keeps-winning-record",
+                framedFirst.evidence.recordId, framedProjection.evidence[0].recordId);
 
             MemoryRecallPromptLine orphanCurrentProvenance = RecallPromptLine(
                 "r-orphan-current", "s-orphan-current", "Then: present.", string.Empty);
@@ -2088,9 +2089,9 @@ namespace DiaryPipelineTests
                 string.Empty,
                 new List<MemoryRecallPromptLine> { guardFramedFirst, guardFramedSecond },
                 1000, 2, 4, 4);
-            AssertEqual("recallV2.prompt.guard-framing-keeps-lines", 2,
+            AssertEqual("recallV2.prompt.guard-framing-obeys-one-line-cap", 1,
                 guardFramedProjection.lines.Count);
-            AssertEqual("recallV2.prompt.guard-framing-keeps-identities", 4,
+            AssertEqual("recallV2.prompt.guard-framing-keeps-winning-identities", 2,
                 guardFramedProjection.guards.Count);
         }
 

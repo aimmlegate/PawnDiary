@@ -503,10 +503,10 @@ namespace PawnDiary
                         optionalFingerprint = payload.optionalLlmFingerprint ?? string.Empty,
                         optionalFormatRevision = payload.optionalLlmFormatRevision,
                         optionalCategoryMask = payload.optionalLlmCategoryMask,
-                        optionalSucceeded = string.Equals(
-                            payload.lastWordingDispositionToken,
-                            MemoryOptionalWordingDispositionTokens.Success,
-                            StringComparison.Ordinal)
+                        // Pending/failed replacement attempts do not invalidate the last exact
+                        // committed wording; fingerprint and projection guards remain authoritative.
+                        optionalSucceeded = !string.IsNullOrWhiteSpace(
+                            payload.optionalLlmWording)
                     };
                 }
             }

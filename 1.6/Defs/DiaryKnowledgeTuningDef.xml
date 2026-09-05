@@ -73,10 +73,10 @@
     <memoryReflectionSystemPrompt>You write a concise first-person diary reflection. Treat the supplied memory as historical evidence, never as a new event, and do not invent facts.</memoryReflectionSystemPrompt>
     <memoryReflectionLabel>memory reflection</memoryReflectionLabel>
     <memoryReflectionInstruction>Reflect on why this remembered moment still matters now. Use only the supplied structured memory and write one self-contained diary paragraph.</memoryReflectionInstruction>
-    <summaryWordingSystemPrompt>You shorten deterministic memory-summary wording without changing, adding, or inferring facts.</summaryWordingSystemPrompt>
-    <summaryWordingInstruction>Rewrite the supplied deterministic summary as one concise sentence. Preserve every factual qualifier and return wording only.</summaryWordingInstruction>
-    <memoryWordingSystemPrompt>Rewrite one saved factual memory as a concise first-person recollection. Keep the supplied fact as the only factual content. Improve rhythm and perspective only; do not add an emotion, evaluation, event, cause, place, dialogue, motive, relationship, another person's thoughts, or current state unless it is explicit in memory_fact.</memoryWordingSystemPrompt>
-    <memoryWordingInstruction>Turn memory_fact into one natural sentence in the remembering pawn's writing_style. Preserve every name, transition, direction, and qualifier. Return the sentence only.</memoryWordingInstruction>
+    <summaryWordingSystemPrompt>You shorten deterministic memory-summary wording without changing, adding, or inferring facts. If previous_wording is supplied, vary the phrasing and opening noticeably, and carry over nothing that is absent from deterministic_summary.</summaryWordingSystemPrompt>
+    <summaryWordingInstruction>Rewrite the supplied deterministic summary as one concise sentence. Preserve every factual qualifier, avoid repeating previous_wording, and return wording only.</summaryWordingInstruction>
+    <memoryWordingSystemPrompt>Rewrite one saved factual memory as a concise first-person recollection. Keep the supplied fact as the only factual content. Improve rhythm and perspective only; do not add an emotion, evaluation, event, cause, place, dialogue, motive, relationship, another person's thoughts, or current state unless it is explicit in memory_fact. If previous_wording is supplied, vary the phrasing and opening noticeably, and carry over nothing that is absent from memory_fact.</memoryWordingSystemPrompt>
+    <memoryWordingInstruction>Turn memory_fact into one natural sentence in the remembering pawn's writing_style. Preserve every name, transition, direction, and qualifier, avoid repeating previous_wording, and return the sentence only.</memoryWordingInstruction>
 
     <!-- M6 current-truth reconciliation. Opinion bands themselves remain the single shared
          vocabulary in DiaryTuningDef.xml. Only a sustained, hysteresis-safe transition between
@@ -164,7 +164,7 @@
       <li><name>libraryOwnerEntries</name><valueEncoding>2048</valueEncoding></li>
     </memoryCapacityVector>
 
-    <!-- Relevant-past prompt block (§3.2): at most two dated fact lines. -->
+    <!-- Legacy compatibility cap. CurrentRelease Recall v2 independently hard-caps one dated fact. -->
     <relevantPastMaxLines>2</relevantPastMaxLines>
     <relevantPastMaxChars>500</relevantPastMaxChars>
     <relevantPastLineFormat>- ({0}) {1}</relevantPastLineFormat>

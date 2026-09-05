@@ -129,7 +129,7 @@ namespace PawnDiary.RimTests
                 BindingFlags.Instance | BindingFlags.NonPublic);
             MethodInfo applyAccounting = typeof(DiaryGameComponent).GetMethod(
                 "ApplyInvocationAccounting",
-                BindingFlags.Static | BindingFlags.NonPublic);
+                BindingFlags.Instance | BindingFlags.NonPublic);
             Require(refresh != null && applyAccounting != null,
                 "A dispatch index/accounting fixture seam was renamed.");
 
@@ -147,7 +147,7 @@ namespace PawnDiary.RimTests
             Require(MemoryDispatchSavedAdapter.TryCommitInvocation(
                     saved, 1, Fence(saved), 0, 456, out invocation),
                 "The dispatch index fixture could not commit its permit.");
-            Require((bool)applyAccounting.Invoke(null, new object[]
+            Require((bool)applyAccounting.Invoke(component, new object[]
                     {
                         state,
                         saved.frozenVariants[0],
@@ -185,9 +185,17 @@ namespace PawnDiary.RimTests
             SavedMemoryThreadRoot root;
             SavedMemoryBlock block;
             PawnKnowledgeState state = NewAccountingState(out root, out block);
+            DiaryGameComponent component = PawnDiaryMemoryM1FixtureTests.NewMemoryComponent(
+                new List<PawnDiaryRecord>
+                {
+                    new PawnDiaryRecord { pawnId = state.pawnId, knowledgeState = state }
+                },
+                new List<SavedActiveLogicalRequestV1> { saved },
+                null);
+            component.RebuildMemorySizeIndexes();
             MethodInfo applyAccounting = typeof(DiaryGameComponent).GetMethod(
                 "ApplyInvocationAccounting",
-                BindingFlags.Static | BindingFlags.NonPublic);
+                BindingFlags.Instance | BindingFlags.NonPublic);
             Require(applyAccounting != null,
                 "The invocation-accounting fixture seam was renamed.");
 
@@ -195,7 +203,7 @@ namespace PawnDiary.RimTests
             {
                 applyPotentialExposure = true
             };
-            Require((bool)applyAccounting.Invoke(null, new object[]
+            Require((bool)applyAccounting.Invoke(component, new object[]
                     {
                         state,
                         saved.frozenVariants[0],
@@ -214,7 +222,7 @@ namespace PawnDiary.RimTests
             {
                 applyNarrativeUse = true
             };
-            Require((bool)applyAccounting.Invoke(null, new object[]
+            Require((bool)applyAccounting.Invoke(component, new object[]
                     {
                         state,
                         saved.frozenVariants[0],
@@ -229,6 +237,107 @@ namespace PawnDiary.RimTests
                     && state.statusRevision == 7
                     && root.statusRevision == 9,
                 "Narrative use did not advance inclusion and status exactly once.");
+        }
+
+        /// <summary>
+        /// Recall evaluates a missing structural row as unused zero-state, so the first winning
+        /// narrative invocation must materialize every frozen root/subject/pair/novelty cooldown.
+        /// Later uses update those exact rows instead of appending a second copy.
+        /// </summary>
+        [Test]
+        public static void NarrativeUseMaterializesEveryFrozenStructuralGuardOnce()
+        {
+            SavedActiveLogicalRequestV1 saved = NewSavedRequest();
+            SavedFrozenPromptVariantV1 variant = saved.frozenVariants[0];
+            AddCanonicalStructuralGuards(variant.receiptPlan);
+            SavedMemoryThreadRoot root;
+            SavedMemoryBlock block;
+            PawnKnowledgeState state = NewAccountingState(out root, out block);
+            state.completedDiaryEntryOrdinal = 9;
+            DiaryGameComponent component = PawnDiaryMemoryM1FixtureTests.NewMemoryComponent(
+                new List<PawnDiaryRecord>
+                {
+                    new PawnDiaryRecord { pawnId = state.pawnId, knowledgeState = state }
+                },
+                new List<SavedActiveLogicalRequestV1> { saved },
+                null);
+            component.RebuildMemorySizeIndexes();
+            MethodInfo applyAccounting = typeof(DiaryGameComponent).GetMethod(
+                "ApplyInvocationAccounting",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            MethodInfo refresh = typeof(DiaryGameComponent).GetMethod(
+                "RefreshMemoryDispatchSizeIndex",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Require(applyAccounting != null && refresh != null,
+                "A structural-guard accounting/index fixture seam was renamed.");
+
+            MemoryInvocationCommitPlan narrative = new MemoryInvocationCommitPlan
+            {
+                applyNarrativeUse = true
+            };
+            Require((bool)applyAccounting.Invoke(component, new object[]
+                    {
+                        state,
+                        variant,
+                        narrative,
+                        saved,
+                        700L
+                    }),
+                "The first narrative use did not commit guard accounting.");
+            RequireStructuralGuardRows(
+                state,
+                saved,
+                variant,
+                expectedCount: 1,
+                expectedTick: 700,
+                expectedEntryOrdinal: 9);
+            refresh.Invoke(component, new object[] { state });
+            RequireIncrementalIndexParity(component, state, "structural guard materialization");
+            SavedMemoryRepetitionGuardRow[] firstRows =
+                state.repetitionGuardRows.ToArray();
+
+            Require((bool)applyAccounting.Invoke(component, new object[]
+                    {
+                        state,
+                        variant,
+                        narrative,
+                        saved,
+                        701L
+                    }),
+                "A later narrative use did not update guard accounting.");
+            RequireStructuralGuardRows(
+                state,
+                saved,
+                variant,
+                expectedCount: 2,
+                expectedTick: 701,
+                expectedEntryOrdinal: 9);
+            Require(state.repetitionGuardRows.Count == firstRows.Length
+                    && block.automaticInclusionCount == 2,
+                "Repeated materialization duplicated a structural row or changed record semantics.");
+            for (int index = 0; index < firstRows.Length; index++)
+            {
+                Require(ReferenceEquals(firstRows[index], state.repetitionGuardRows[index]),
+                    "Repeated materialization replaced an existing structural guard row.");
+            }
+
+            long statusBeforeRejectedUse = state.statusRevision;
+            firstRows[0].automaticInclusionCount = long.MaxValue;
+            Require(!(bool)applyAccounting.Invoke(component, new object[]
+                    {
+                        state,
+                        variant,
+                        narrative,
+                        saved,
+                        702L
+                    })
+                    && state.statusRevision == statusBeforeRejectedUse
+                    && state.repetitionGuardRows.Count == 4
+                    && block.automaticInclusionCount == 2
+                    && block.lastAutomaticIncludedTick == 701
+                    && firstRows[1].automaticInclusionCount == 2
+                    && firstRows[1].lastAutomaticIncludedTick == 701,
+                "A saturated structural guard allowed a partial narrative-use mutation.");
         }
 
         [Test]
@@ -425,6 +534,70 @@ namespace PawnDiary.RimTests
             root.visibleBlocks.Add(block);
             state.threadRoots.Add(root);
             return state;
+        }
+
+        private static void AddCanonicalStructuralGuards(
+            SavedFrozenEvidenceReceiptPlanV1 receipt)
+        {
+            receipt.guardEntries.Clear();
+            AddGuard(receipt, MemoryRepetitionGuardKinds.Novelty,
+                MemoryRepetitionGuardPolicy.NoveltyKey("root-m2", "chapter-m2"));
+            AddGuard(receipt, MemoryRepetitionGuardKinds.Pair,
+                MemoryRepetitionGuardPolicy.PairKey("Pawn_M2", "Pawn_Other"));
+            AddGuard(receipt, MemoryRepetitionGuardKinds.Record,
+                MemoryRepetitionGuardPolicy.RecordKey("record-m2"));
+            AddGuard(receipt, MemoryRepetitionGuardKinds.Root,
+                MemoryRepetitionGuardPolicy.RootKey("root-m2"));
+            AddGuard(receipt, MemoryRepetitionGuardKinds.Subject,
+                MemoryRepetitionGuardPolicy.SubjectKey(
+                    MemoryContractTokens.SubjectPawn, "Pawn_Other"));
+        }
+
+        private static void AddGuard(
+            SavedFrozenEvidenceReceiptPlanV1 receipt,
+            string kind,
+            string key)
+        {
+            Require(!string.IsNullOrWhiteSpace(key),
+                "The structural-guard fixture could not build a canonical key.");
+            receipt.guardEntries.Add(new SavedFrozenGuardEntryV1
+            {
+                schemaVersion = 1,
+                guardKind = kind,
+                guardKey = key
+            });
+        }
+
+        private static void RequireStructuralGuardRows(
+            PawnKnowledgeState state,
+            SavedActiveLogicalRequestV1 saved,
+            SavedFrozenPromptVariantV1 variant,
+            long expectedCount,
+            long expectedTick,
+            long expectedEntryOrdinal)
+        {
+            Require(state.repetitionGuardRows.Count == 4,
+                "The exact four non-record guard rows were not materialized.");
+            var identities = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; index < state.repetitionGuardRows.Count; index++)
+            {
+                SavedMemoryRepetitionGuardRow row = state.repetitionGuardRows[index];
+                Require(row != null
+                        && row.schemaVersion == 1
+                        && row.ownerEpochToken == state.autobiographicalEpochToken
+                        && MemoryRepetitionGuardKinds.IsSavedRowKind(row.guardKind)
+                        && MemoryRepetitionGuardPolicy.IsCanonicalIdentity(
+                            row.guardKind, row.guardKey)
+                        && identities.Add(row.guardKind + "\n" + row.guardKey)
+                        && row.automaticInclusionCount == expectedCount
+                        && row.lastAutomaticIncludedTick == expectedTick
+                        && row.lastAutomaticIncludedEntryOrdinal == expectedEntryOrdinal
+                        && row.lastSourceOccurrenceId == "source-m2"
+                        && row.lastCommittedLogicalRequestId == saved.logicalRequestId
+                        && row.lastCommittedEvidenceSetFingerprint
+                            == variant.receiptPlan.evidenceSetFingerprint,
+                    "A materialized structural guard row has incomplete accounting fields.");
+            }
         }
 
         private static void RequireIncrementalIndexParity(

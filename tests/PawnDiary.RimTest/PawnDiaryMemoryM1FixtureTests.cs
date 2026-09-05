@@ -42,6 +42,7 @@ namespace PawnDiary.RimTests
             source.playerBackground = "Raised on tales of the rim.";
             SavedMemoryBlock standalone = NewBlock("rec-standalone", null);
             standalone.optionalLlmWording = "I still remember the day everything changed.";
+            standalone.optionalLlmWordingRevision = 6;
             standalone.optionalLlmFingerprint = new string('e', 64);
             standalone.optionalLlmFormatRevision = 3;
             standalone.optionalLlmCategoryMask = 5;
@@ -107,10 +108,11 @@ namespace PawnDiary.RimTests
                 SavedMemoryBlock loadedStandalone = loaded.standaloneBlocks[0];
                 Require(loadedStandalone.optionalLlmWording
                             == "I still remember the day everything changed."
+                        && loadedStandalone.optionalLlmWordingRevision == 6
                         && loadedStandalone.optionalLlmFingerprint == new string('e', 64)
                         && loadedStandalone.optionalLlmFormatRevision == 3
                         && loadedStandalone.optionalLlmCategoryMask == 5,
-                    "The optional block wording cache must round-trip all four scalar fields.");
+                    "The optional block wording cache must round-trip all five scalar fields.");
                 Require(loaded.playerBackground == "Raised on tales of the rim.",
                     "The authored background must survive.");
 
@@ -138,6 +140,27 @@ namespace PawnDiary.RimTests
                 Require(loaded.schemaVersion == PawnKnowledgeState.CurrentSchemaVersion,
                     "Normalizing a current envelope must keep it current.");
             });
+        }
+
+        [Test]
+        public static void OptionalBlockWordingRevisionRepairsLegacyAndInvalidValues()
+        {
+            var legacy = new SavedMemoryBlock
+            {
+                optionalLlmWording = "A cached sentence from a pre-revision save.",
+                optionalLlmWordingRevision = 0
+            };
+            legacy.Normalize();
+            Require(legacy.optionalLlmWordingRevision == 1,
+                "Pre-revision cached prose must migrate to the first wording revision.");
+
+            var malformed = new SavedMemoryBlock
+            {
+                optionalLlmWordingRevision = -7
+            };
+            malformed.Normalize();
+            Require(malformed.optionalLlmWordingRevision == 0,
+                "A negative wording revision without cached prose must normalize to zero.");
         }
 
         [Test]
@@ -838,6 +861,7 @@ namespace PawnDiary.RimTests
                 expectedSummaryFactsRevision = 7,
                 expectedReducerRevision = 8,
                 expectedFormatRevision = 9,
+                expectedOptionalLlmWordingRevision = 10,
                 expectedCategoryMask = 15,
                 projectionFingerprint = new string('a', 64),
                 requestedTick = 100,
@@ -890,6 +914,7 @@ namespace PawnDiary.RimTests
                         && loadedOpportunity.expectedSummaryFactsRevision == 7
                         && loadedOpportunity.expectedReducerRevision == 8
                         && loadedOpportunity.expectedFormatRevision == 9
+                        && loadedOpportunity.expectedOptionalLlmWordingRevision == 10
                         && loadedOpportunity.expectedCategoryMask == 15
                         && loadedOpportunity.projectionFingerprint == new string('a', 64)
                         && loadedOpportunity.requestedTick == 100
@@ -982,12 +1007,14 @@ namespace PawnDiary.RimTests
                 summaryFactsRevision = first.expectedSummaryFactsRevision,
                 reducerRevision = first.expectedReducerRevision,
                 formatRevision = first.expectedFormatRevision,
+                optionalLlmWordingRevision =
+                    first.expectedOptionalLlmWordingRevision,
                 categoryMask = first.expectedCategoryMask,
                 projectionFingerprint = first.projectionFingerprint,
                 deterministicWording = "Canonical deterministic fallback."
             };
             SummaryWordingResultPlan malformed = MemoryOptionalAiPolicy.PlanSummaryResult(
-                first, current, true, "not one line\nsecond line", 240);
+                first, current, true, "not one line\nsecond line", null, 240);
             Require(malformed.identityMatched && !malformed.applyOptionalWording
                     && malformed.dispositionToken
                         == MemoryOptionalWordingDispositionTokens.Malformed
@@ -996,7 +1023,7 @@ namespace PawnDiary.RimTests
 
             current.summaryFactsRevision++;
             SummaryWordingResultPlan stale = MemoryOptionalAiPolicy.PlanSummaryResult(
-                first, current, true, "stale wording", 240);
+                first, current, true, "stale wording", null, 240);
             Require(!stale.identityMatched && !stale.applyOptionalWording
                     && stale.dispositionToken == MemoryOptionalWordingDispositionTokens.None
                     && current.deterministicWording == "Canonical deterministic fallback.",
@@ -2356,6 +2383,7 @@ namespace PawnDiary.RimTests
                 ageUnknown = true,
                 automaticWording = "Incremental admission fixture.",
                 optionalLlmWording = "I remember this admission clearly.",
+                optionalLlmWordingRevision = 5,
                 optionalLlmFingerprint = new string('d', 64),
                 optionalLlmFormatRevision = 4,
                 optionalLlmCategoryMask = 3,
@@ -2410,6 +2438,7 @@ namespace PawnDiary.RimTests
                     && !ReferenceEquals(block, incrementalLookup)
                     && incrementalLookup.optionalLlmWording
                         == "I remember this admission clearly."
+                    && incrementalLookup.optionalLlmWordingRevision == 5
                     && incrementalLookup.optionalLlmFingerprint == new string('d', 64)
                     && incrementalLookup.optionalLlmFormatRevision == 4
                     && incrementalLookup.optionalLlmCategoryMask == 3,
@@ -2786,6 +2815,8 @@ namespace PawnDiary.RimTests
                 expectedSummaryFactsRevision = source.expectedSummaryFactsRevision,
                 expectedReducerRevision = source.expectedReducerRevision,
                 expectedFormatRevision = source.expectedFormatRevision,
+                expectedOptionalLlmWordingRevision =
+                    source.expectedOptionalLlmWordingRevision,
                 expectedCategoryMask = source.expectedCategoryMask,
                 projectionFingerprint = source.projectionFingerprint,
                 requestedTick = source.requestedTick,
@@ -2814,6 +2845,8 @@ namespace PawnDiary.RimTests
                 expectedSummaryFactsRevision = source.expectedSummaryFactsRevision,
                 expectedReducerRevision = source.expectedReducerRevision,
                 expectedFormatRevision = source.expectedFormatRevision,
+                expectedOptionalLlmWordingRevision =
+                    source.expectedOptionalLlmWordingRevision,
                 expectedCategoryMask = source.expectedCategoryMask,
                 projectionFingerprint = source.projectionFingerprint ?? string.Empty,
                 requestedTick = source.requestedTick,
@@ -2870,6 +2903,7 @@ namespace PawnDiary.RimTests
                 expectedSummaryFactsRevision = 6,
                 expectedReducerRevision = 1,
                 expectedFormatRevision = 1,
+                expectedOptionalLlmWordingRevision = 2,
                 expectedCategoryMask = 15,
                 projectionFingerprint = new string('c', 64),
                 requestedTick = requestedTick,

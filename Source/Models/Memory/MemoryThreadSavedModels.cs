@@ -399,6 +399,8 @@ namespace PawnDiary
         /// facts, routing, reduction, and current truth never read this cache.
         /// </summary>
         public string optionalLlmWording = string.Empty;
+        /// <summary>Monotonic generation of the currently committed optional wording.</summary>
+        public long optionalLlmWordingRevision;
         public string optionalLlmFingerprint = string.Empty;
         public long optionalLlmFormatRevision;
         public int optionalLlmCategoryMask;
@@ -440,6 +442,7 @@ namespace PawnDiary
             Scribe_Collections.Look(ref provenance, "provenance", LookMode.Deep);
             Scribe_Values.Look(ref automaticWording, "automaticWording", string.Empty);
             Scribe_Values.Look(ref optionalLlmWording, "optionalLlmWording", string.Empty);
+            Scribe_Values.Look(ref optionalLlmWordingRevision, "optionalLlmWordingRevision", 0);
             Scribe_Values.Look(ref optionalLlmFingerprint, "optionalLlmFingerprint", string.Empty);
             Scribe_Values.Look(
                 ref optionalLlmFormatRevision, "optionalLlmFormatRevision", 0);
@@ -475,6 +478,16 @@ namespace PawnDiary
             chapterId = chapterId ?? string.Empty;
             automaticWording = automaticWording ?? string.Empty;
             optionalLlmWording = optionalLlmWording ?? string.Empty;
+            if (optionalLlmWordingRevision < 0)
+            {
+                optionalLlmWordingRevision = 0;
+            }
+            if (optionalLlmWordingRevision == 0 && optionalLlmWording.Length > 0)
+            {
+                // Older saves predate the revision field. Their valid cached prose becomes the
+                // first committed wording generation instead of looking like an empty cache.
+                optionalLlmWordingRevision = 1;
+            }
             optionalLlmFingerprint = optionalLlmFingerprint ?? string.Empty;
             playerWording = playerWording ?? string.Empty;
             providerExposureState = providerExposureState ?? string.Empty;
