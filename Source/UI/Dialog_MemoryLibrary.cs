@@ -36,6 +36,8 @@ namespace PawnDiary
         private readonly string clientToken = Guid.NewGuid().ToString("N");
         private readonly long openedGeneration;
         private readonly MemoryLibraryUiSession session = new MemoryLibraryUiSession();
+        private readonly DiaryReaderPawnDirectory pawnDirectory =
+            new DiaryReaderPawnDirectory();
 
         private string preferredOwnerId = string.Empty;
         private MemoryLibraryOwnerRow preferredFallback;
@@ -129,6 +131,7 @@ namespace PawnDiary
         private MemoryLibraryUiRepositoryStamp lastRepositoryStamp;
         private bool hasRepositoryStamp;
         private bool repositoryNavigationDirty;
+        private bool repositoryPublicationPending;
 
         private Dialog_MemoryLibrary(DiaryGameComponent source, string preferredExactOwnerId)
         {
@@ -244,6 +247,15 @@ namespace PawnDiary
                 return;
             }
 
+            // Reuse the reader's throttled live/dead pawn resolver. Portrait lookup below is then a
+            // dictionary read during IMGUI passes, never a map/world scan from drawing code.
+            pawnDirectory.RefreshIfNeeded(
+                component,
+                T("PawnDiary.Memory.Library.UnknownOwner"),
+                DiaryReaderSortMode.Name,
+                string.Empty,
+                false);
+
             // Policy snapshots are refreshed only when the repository gate below schedules work.
             bool immediateRepositoryWork = ownerSearchDirty || threadRailQueryDirty
                 || listQueryDirty || detailQueryDirty || repositoryNavigationDirty
@@ -263,7 +275,8 @@ namespace PawnDiary
                     threadRail?.ttlValidUntilTickExclusive ?? long.MaxValue,
                     long.MaxValue,
                     long.MaxValue);
-            bool waitingForPublication = owners?.status == MemoryLibraryStatuses.Preparing
+            bool waitingForPublication = repositoryPublicationPending
+                || owners?.status == MemoryLibraryStatuses.Preparing
                 || threadRail?.status == MemoryLibraryStatuses.Preparing
                 || list?.status == MemoryLibraryStatuses.Preparing
                 || threadDetail?.status == MemoryLibraryStatuses.Preparing
@@ -281,6 +294,9 @@ namespace PawnDiary
             // Draw-time paging intent is consumed by this query pass. Any Stale/continuation result
             // below sets it again so the next frame retries without waiting for a source revision.
             repositoryNavigationDirty = false;
+            // A retained Ready snapshot deliberately hides the incoming Preparing DTO from draw
+            // code. Refresh methods set this side-channel again if publication is still in flight.
+            repositoryPublicationPending = false;
             detachedNowTick = liveNowTick;
             MemoryPolicySnapshot policy = MemoryEffectivePolicyProvider.Current;
             if (policy != null)
@@ -344,6 +360,7 @@ namespace PawnDiary
             ClearThreadRailPresentationCaches();
             hasRepositoryStamp = false;
             repositoryNavigationDirty = false;
+            repositoryPublicationPending = false;
             base.PostClose();
         }
 
@@ -366,10 +383,18 @@ namespace PawnDiary
                     count = PageSize,
                     expectedDirectoryRevision = ownerExpectedDirectoryRevision
                 });
-            owners = result;
             if (result == null) return;
+            if (result.status == MemoryLibraryStatuses.Preparing)
+            {
+                repositoryPublicationPending = true;
+                if (!MemoryLibraryUiPollPolicy.ShouldRetainReadySnapshot(
+                        owners?.status, result.status)) owners = result;
+                return;
+            }
             if (result.status == MemoryLibraryStatuses.Stale)
             {
+                if (!MemoryLibraryUiPollPolicy.ShouldRetainReadySnapshot(
+                        owners?.status, result.status)) owners = result;
                 repositoryNavigationDirty = true;
                 ownerExpectedDirectoryRevision = 0;
                 ownerStart = 0;
@@ -382,6 +407,7 @@ namespace PawnDiary
                     ownerWalkHandle = MemoryLibraryUiPolicy.Copy(session.selectedOwnerHandle);
                 return;
             }
+            owners = result;
             if (result.status != MemoryLibraryStatuses.Ready) return;
             ownerExpectedDirectoryRevision = result.directoryRevision;
 
@@ -521,14 +547,23 @@ namespace PawnDiary
                     expectedListSnapshotRevision = Math.Max(
                         0, threadRailExpectedSnapshotRevision)
                 });
-            threadRail = result;
             if (result == null) return;
+            if (result.status == MemoryLibraryStatuses.Preparing)
+            {
+                repositoryPublicationPending = true;
+                if (!MemoryLibraryUiPollPolicy.ShouldRetainReadySnapshot(
+                        threadRail?.status, result.status)) threadRail = result;
+                return;
+            }
             if (result.status == MemoryLibraryStatuses.Stale)
             {
+                if (!MemoryLibraryUiPollPolicy.ShouldRetainReadySnapshot(
+                        threadRail?.status, result.status)) threadRail = result;
                 RestartThreadRailStream();
                 repositoryNavigationDirty = true;
                 return;
             }
+            threadRail = result;
             if (result.status == MemoryLibraryStatuses.Ready)
                 threadRailExpectedSnapshotRevision = result.listSnapshotRevision;
         }
@@ -576,14 +611,23 @@ namespace PawnDiary
                     expectedDirectoryRevision = Math.Max(0, ownerExpectedDirectoryRevision),
                     expectedListSnapshotRevision = Math.Max(0, listExpectedSnapshotRevision)
                 });
-            list = result;
             if (result == null) return;
+            if (result.status == MemoryLibraryStatuses.Preparing)
+            {
+                repositoryPublicationPending = true;
+                if (!MemoryLibraryUiPollPolicy.ShouldRetainReadySnapshot(
+                        list?.status, result.status)) list = result;
+                return;
+            }
             if (result.status == MemoryLibraryStatuses.Stale)
             {
+                if (!MemoryLibraryUiPollPolicy.ShouldRetainReadySnapshot(
+                        list?.status, result.status)) list = result;
                 RestartListStream();
                 repositoryNavigationDirty = true;
                 return;
             }
+            list = result;
             if (result.status == MemoryLibraryStatuses.Ready)
                 listExpectedSnapshotRevision = result.listSnapshotRevision;
         }
@@ -606,7 +650,8 @@ namespace PawnDiary
             {
                 if (threadDetail != null && threadDetail.ttlValidUntilTickExclusive <= detachedNowTick)
                     RestartDetailStream();
-                threadDetail = component.QueryMemoryThreadDetail(new MemoryThreadDetailQuery
+                MemoryThreadDetailResult refreshedThread =
+                    component.QueryMemoryThreadDetail(new MemoryThreadDetailQuery
                 {
                     rootHandle = MemoryLibraryUiPolicy.Copy(session.selectedRootHandle),
                     filters = CopyFilters(session.filters),
@@ -615,12 +660,26 @@ namespace PawnDiary
                     detailCount = PageSize,
                     expectedDetailSnapshotRevision = Math.Max(0, detailExpectedSnapshotRevision)
                 });
-                if (threadDetail.status == MemoryLibraryStatuses.Stale)
+                if (refreshedThread == null) return;
+                if (refreshedThread.status == MemoryLibraryStatuses.Preparing)
                 {
+                    repositoryPublicationPending = true;
+                    if (!MemoryLibraryUiPollPolicy.ShouldRetainReadySnapshot(
+                            threadDetail?.status, refreshedThread.status))
+                        threadDetail = refreshedThread;
+                    return;
+                }
+                if (refreshedThread.status == MemoryLibraryStatuses.Stale)
+                {
+                    if (!MemoryLibraryUiPollPolicy.ShouldRetainReadySnapshot(
+                            threadDetail?.status, refreshedThread.status))
+                        threadDetail = refreshedThread;
                     RestartDetailStream();
                     repositoryNavigationDirty = true;
+                    return;
                 }
-                else if (threadDetail.status == MemoryLibraryStatuses.Ready)
+                threadDetail = refreshedThread;
+                if (threadDetail.status == MemoryLibraryStatuses.Ready)
                     detailExpectedSnapshotRevision = threadDetail.detailSnapshotRevision;
             }
 
@@ -642,14 +701,24 @@ namespace PawnDiary
                             targetStructuralRevision = targetStructuralRevision,
                             projectionToken = "full"
                         });
-                    blockDetail = refreshed;
+                    if (refreshed?.status == MemoryLibraryStatuses.Preparing)
+                    {
+                        repositoryPublicationPending = true;
+                        if (!MemoryLibraryUiPollPolicy.ShouldRetainReadySnapshot(
+                                blockDetail?.status, refreshed.status)) blockDetail = refreshed;
+                        return;
+                    }
                     if (refreshed?.status == MemoryLibraryStatuses.Stale)
                     {
+                        if (!MemoryLibraryUiPollPolicy.ShouldRetainReadySnapshot(
+                                blockDetail?.status, refreshed.status)) blockDetail = refreshed;
                         RestartListStream();
                         RestartDetailStream();
                         repositoryNavigationDirty = true;
+                        return;
                     }
-                    else if (refreshed?.status == MemoryLibraryStatuses.Ready)
+                    blockDetail = refreshed;
+                    if (refreshed?.status == MemoryLibraryStatuses.Ready)
                     {
                         selectedBlockRow = refreshed.row;
                         MemoryLibraryUiPolicy.MergeDetailRefresh(session.editDraft, refreshed);
@@ -666,7 +735,8 @@ namespace PawnDiary
                     long targetStructuralRevision =
                         MemoryLibraryUiPolicy.ImportedDetailStructuralRevision(
                             row, selectedOwner, list?.ownerStructuralRevision ?? 0);
-                    importedDetail = component.QueryMemoryImportedDetail(
+                    MemoryImportedDetailResult refreshedImported =
+                        component.QueryMemoryImportedDetail(
                         new MemoryImportedDetailQuery
                         {
                             archiveHandle = MemoryLibraryUiPolicy.Copy(row.archiveHandle),
@@ -675,13 +745,27 @@ namespace PawnDiary
                             expectedArchiveTextSnapshotRevision = importedTextExpectedSnapshotRevision,
                             targetStructuralRevision = targetStructuralRevision
                         });
-                    if (importedDetail.status == MemoryLibraryStatuses.Stale)
+                    if (refreshedImported == null) return;
+                    if (refreshedImported.status == MemoryLibraryStatuses.Preparing)
                     {
+                        repositoryPublicationPending = true;
+                        if (!MemoryLibraryUiPollPolicy.ShouldRetainReadySnapshot(
+                                importedDetail?.status, refreshedImported.status))
+                            importedDetail = refreshedImported;
+                        return;
+                    }
+                    if (refreshedImported.status == MemoryLibraryStatuses.Stale)
+                    {
+                        if (!MemoryLibraryUiPollPolicy.ShouldRetainReadySnapshot(
+                                importedDetail?.status, refreshedImported.status))
+                            importedDetail = refreshedImported;
                         RestartListStream();
                         RestartImportedTextStream();
                         repositoryNavigationDirty = true;
+                        return;
                     }
-                    else if (importedDetail.status == MemoryLibraryStatuses.Ready)
+                    importedDetail = refreshedImported;
+                    if (importedDetail.status == MemoryLibraryStatuses.Ready)
                         importedTextExpectedSnapshotRevision = importedDetail.archiveTextSnapshotRevision;
                 }
             }
@@ -694,11 +778,27 @@ namespace PawnDiary
                 compatibility = null;
                 return;
             }
-            compatibility = component.QueryMemoryCompatibility(new MemoryCompatibilityQuery
+            MemoryCompatibilityResult refreshed =
+                component.QueryMemoryCompatibility(new MemoryCompatibilityQuery
             {
                 compatibilityHandle = MemoryLibraryUiPolicy.Copy(session.selectedCompatibilityHandle),
                 sourcePayloadRevision = selectedOwner?.compatibilitySourcePayloadRevision ?? 0
             });
+            if (refreshed?.status == MemoryLibraryStatuses.Preparing)
+            {
+                repositoryPublicationPending = true;
+                if (!MemoryLibraryUiPollPolicy.ShouldRetainReadySnapshot(
+                        compatibility?.status, refreshed.status)) compatibility = refreshed;
+                return;
+            }
+            if (refreshed?.status == MemoryLibraryStatuses.Stale)
+            {
+                if (!MemoryLibraryUiPollPolicy.ShouldRetainReadySnapshot(
+                        compatibility?.status, refreshed.status)) compatibility = refreshed;
+                repositoryNavigationDirty = true;
+                return;
+            }
+            compatibility = refreshed;
         }
 
         private void RefreshLoreDiagnostics()

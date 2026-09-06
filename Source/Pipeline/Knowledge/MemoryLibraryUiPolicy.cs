@@ -85,6 +85,24 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Keeps the last immutable Ready DTO visible while its replacement is being built or its
+        /// cursor is being restarted. The adapter still retries through separate pending/dirty
+        /// flags; this decision only prevents transient Preparing/Stale results from blanking an
+        /// otherwise valid frame.
+        /// </summary>
+        public static bool ShouldRetainReadySnapshot(
+            string currentStatus,
+            string incomingStatus)
+        {
+            return string.Equals(currentStatus, MemoryLibraryStatuses.Ready,
+                    StringComparison.Ordinal)
+                && (string.Equals(incomingStatus, MemoryLibraryStatuses.Preparing,
+                        StringComparison.Ordinal)
+                    || string.Equals(incomingStatus, MemoryLibraryStatuses.Stale,
+                        StringComparison.Ordinal));
+        }
+
+        /// <summary>
         /// Paused real-time updates may advance observation only for an open Library that is waiting
         /// on an unstable publication. Normal observation cadence remains game-tick driven.
         /// </summary>
@@ -514,6 +532,37 @@ namespace PawnDiary
         public static bool ThreadHasAttention(MemoryThreadHeaderRow thread)
         {
             return thread != null && (thread.editedCount > 0 || thread.suppressedCount > 0);
+        }
+
+        /// <summary>
+        /// Decodes the exact pawn ID already carried by a canonical person-root handle. Returning
+        /// empty for a mismatched or malformed handle keeps portrait lookup fail-closed and avoids
+        /// extending the frozen thread-header DTO or any saved schema.
+        /// </summary>
+        public static string ThreadPersonPawnId(MemoryThreadHeaderRow thread)
+        {
+            if (!string.Equals(thread?.subjectTypeToken, "Person",
+                    StringComparison.OrdinalIgnoreCase)
+                || thread.rootHandle == null)
+            {
+                return string.Empty;
+            }
+
+            MemoryRootIdentity identity;
+            if (!MemoryIdentityCodec.TryParseRootId(
+                    thread.rootHandle.rootId, out identity)
+                || identity == null
+                || !string.Equals(identity.primarySubjectKind,
+                    MemoryContractTokens.SubjectPawn, StringComparison.Ordinal)
+                || !string.Equals(identity.ownerPawnId,
+                    thread.rootHandle.ownerPawnId, StringComparison.Ordinal)
+                || !string.Equals(identity.ownerEpochToken,
+                    thread.rootHandle.epochToken, StringComparison.Ordinal))
+            {
+                return string.Empty;
+            }
+
+            return identity.primarySubjectId ?? string.Empty;
         }
 
         /// <summary>Resolves the honest empty-state token before the UI localizes it.</summary>

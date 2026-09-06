@@ -21,10 +21,6 @@ namespace PawnDiary
         private const float DirectorySectionHeight = 24f;
         private const float DirectoryPawnRowMinimumHeight = 64f;
         private const float ReaderChromePadding = 24f;
-        private const string PlaceholderTexturePath = "UI/Commands/PawnDiaryOpen";
-
-        private static Texture2D placeholderTexture;
-
         private readonly DiaryJournalView journalView = new DiaryJournalView();
         private readonly DiaryReaderPawnDirectory directory = new DiaryReaderPawnDirectory();
         private readonly List<DiaryReaderPawnRow> visibleRows = new List<DiaryReaderPawnRow>();
@@ -586,7 +582,7 @@ namespace PawnDiary
                 rect.y + (rect.height - portraitSize) * 0.5f,
                 portraitSize,
                 portraitSize);
-            DrawPortrait(portraitRect, row.Subject.Pawn);
+            DiaryPawnPortrait.Draw(portraitRect, row.Subject.Pawn);
 
             float textX = portraitRect.xMax + 6f;
             DiaryGameComponent.DiaryCommandStatus status = component == null
@@ -670,40 +666,5 @@ namespace PawnDiary
             }
         }
 
-        private static void DrawPortrait(Rect rect, Pawn pawn)
-        {
-            Texture texture = null;
-            if (pawn != null)
-            {
-                try
-                {
-                    texture = PortraitsCache.Get(
-                        pawn,
-                        new Vector2(rect.width, rect.height),
-                        Rot4.South);
-                }
-                catch
-                {
-                    texture = null;
-                }
-            }
-
-            Color oldColor = GUI.color;
-            if (texture == null)
-            {
-                if (placeholderTexture == null)
-                {
-                    placeholderTexture = ContentFinder<Texture2D>.Get(
-                        PlaceholderTexturePath,
-                        false) ?? TexButton.IconBook;
-                }
-
-                texture = placeholderTexture;
-                GUI.color = new Color(oldColor.r, oldColor.g, oldColor.b, oldColor.a * 0.55f);
-            }
-
-            GUI.DrawTexture(rect, texture, ScaleMode.ScaleToFit);
-            GUI.color = oldColor;
-        }
     }
 }

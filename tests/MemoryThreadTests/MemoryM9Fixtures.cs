@@ -58,6 +58,18 @@ namespace MemoryThreadTests
                 MemoryLibraryUiPollPolicy.ShouldPoll(105, 100, 0, false, true));
             Equal("m9.poll.settled-does-no-work", false,
                 MemoryLibraryUiPollPolicy.ShouldPoll(1000, 100, 6, false, false));
+            Equal("m9.poll.ready-survives-preparing", true,
+                MemoryLibraryUiPollPolicy.ShouldRetainReadySnapshot(
+                    MemoryLibraryStatuses.Ready, MemoryLibraryStatuses.Preparing));
+            Equal("m9.poll.ready-survives-stale-cursor", true,
+                MemoryLibraryUiPollPolicy.ShouldRetainReadySnapshot(
+                    MemoryLibraryStatuses.Ready, MemoryLibraryStatuses.Stale));
+            Equal("m9.poll.initial-preparing-remains-visible", false,
+                MemoryLibraryUiPollPolicy.ShouldRetainReadySnapshot(
+                    string.Empty, MemoryLibraryStatuses.Preparing));
+            Equal("m9.poll.ready-does-not-hide-terminal-state", false,
+                MemoryLibraryUiPollPolicy.ShouldRetainReadySnapshot(
+                    MemoryLibraryStatuses.Ready, MemoryLibraryStatuses.Missing));
             Equal("m9.poll.ttl-before", false,
                 MemoryLibraryUiPollPolicy.ReachedPublicationExpiry(
                     99, 100, long.MaxValue, long.MaxValue));
@@ -540,6 +552,37 @@ namespace MemoryThreadTests
                 cultureSession.selectedView);
             Equal("m9.rail.null-owner-empty", 0,
                 MemoryLibraryUiPolicy.ComposeRail(null, null).pinned.Count);
+
+            string epoch;
+            string personRootId;
+            Equal("m9.rail.portrait-epoch", true,
+                MemoryIdentityCodec.TryCreateNormalEpochToken(1, out epoch));
+            Equal("m9.rail.portrait-root", true,
+                MemoryIdentityCodec.TryCreateRootId(new MemoryRootIdentity
+                {
+                    ownerPawnId = "owner",
+                    ownerEpochToken = epoch,
+                    primarySubjectKind = MemoryContractTokens.SubjectPawn,
+                    primarySubjectId = "Pawn_Portrait"
+                }, out personRootId));
+            MemoryThreadHeaderRow personPortrait = new MemoryThreadHeaderRow
+            {
+                subjectTypeToken = "Person",
+                rootHandle = new MemoryRootHandle
+                {
+                    ownerPawnId = "owner",
+                    epochToken = epoch,
+                    rootId = personRootId
+                }
+            };
+            Equal("m9.rail.person-portrait-exact-id", "Pawn_Portrait",
+                MemoryLibraryUiPolicy.ThreadPersonPawnId(personPortrait));
+            personPortrait.rootHandle.ownerPawnId = "other-owner";
+            Equal("m9.rail.person-portrait-handle-mismatch", string.Empty,
+                MemoryLibraryUiPolicy.ThreadPersonPawnId(personPortrait));
+            personPortrait.subjectTypeToken = "Faction";
+            Equal("m9.rail.faction-has-no-pawn-portrait-id", string.Empty,
+                MemoryLibraryUiPolicy.ThreadPersonPawnId(personPortrait));
         }
 
         private static void FilterSelectionHelpersAreExact()

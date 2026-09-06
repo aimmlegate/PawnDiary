@@ -40,13 +40,17 @@ namespace PawnDiary
             new Dictionary<string, string>(StringComparer.Ordinal);
         private readonly Dictionary<string, string> cachedThreadRailInitials =
             new Dictionary<string, string>(StringComparer.Ordinal);
+        private readonly Dictionary<string, string> cachedThreadRailPawnIds =
+            new Dictionary<string, string>(StringComparer.Ordinal);
         private string threadRailDisplayCacheSignature = string.Empty;
         private string cachedOwnerSubjectTitle = string.Empty;
 
         private float DrawOwnerBar(Rect rect, float gap)
         {
             DiaryUiStyleDef style = DiaryJournalView.UiStyle;
-            float stripHeight = Mathf.Max(40f, style.memoryLibraryControlHeight + 12f);
+            float ownerPortraitSize = Mathf.Max(26f, style.memoryLibraryRailAvatarSize);
+            float stripHeight = Mathf.Max(style.memoryLibraryControlHeight + 12f,
+                ownerPortraitSize + 12f);
             Rect strip = new Rect(rect.x, rect.y, rect.width, stripHeight);
             Widgets.DrawMenuSection(strip);
             Rect inner = strip.ContractedBy(6f);
@@ -59,8 +63,22 @@ namespace PawnDiary
                 changeWidth, controlHeight);
             Rect controls = new Rect(change.x - gap - controlsWidth,
                 change.y, controlsWidth, controlHeight);
-            Rect title = new Rect(inner.x, inner.y,
-                Mathf.Max(80f, controls.x - inner.x - gap), inner.height);
+            bool hasSelectedOwner = session.selectedOwnerHandle != null
+                || session.selectedCompatibilityHandle != null;
+            float titleX = inner.x;
+            if (hasSelectedOwner)
+            {
+                float portraitSize = Mathf.Min(ownerPortraitSize, inner.height);
+                Rect portrait = new Rect(inner.x,
+                    inner.y + (inner.height - portraitSize) * 0.5f,
+                    portraitSize,
+                    portraitSize);
+                DiaryPawnPortrait.Draw(portrait,
+                    pawnDirectory.ResolvePawn(SelectedOwnerPawnId()));
+                titleX = portrait.xMax + 8f;
+            }
+            Rect title = new Rect(titleX, inner.y,
+                Mathf.Max(80f, controls.x - titleX - gap), inner.height);
             Text.Font = GameFont.Medium;
             Text.Anchor = TextAnchor.MiddleLeft;
             Widgets.Label(title, cachedOwnerSubjectTitle);
@@ -186,7 +204,8 @@ namespace PawnDiary
                 avatarSize, avatarSize);
             string key = ThreadRailKey(thread.rootHandle);
             cachedThreadRailInitials.TryGetValue(key, out string initials);
-            DrawThreadAvatar(avatar, thread.subjectTypeToken, initials);
+            cachedThreadRailPawnIds.TryGetValue(key, out string pawnId);
+            DrawThreadAvatar(avatar, thread.subjectTypeToken, initials, pawnId);
             Rect text = new Rect(avatar.xMax + 8f, inner.y,
                 Mathf.Max(20f, inner.xMax - avatar.xMax - 12f), inner.height);
             cachedThreadRailTitles.TryGetValue(key, out string title);
@@ -482,6 +501,9 @@ namespace PawnDiary
                     T("PawnDiary.Memory.Library.UnknownSubject"));
                 cachedThreadRailTitles[key] = title;
                 cachedThreadRailInitials[key] = Initials(title);
+                string pawnId = MemoryLibraryUiPolicy.ThreadPersonPawnId(thread);
+                if (!string.IsNullOrWhiteSpace(pawnId))
+                    cachedThreadRailPawnIds[key] = pawnId;
                 if (thread.latestActivityTick >= 0)
                 {
                     CacheDate(thread.latestActivityTick);
@@ -513,16 +535,21 @@ namespace PawnDiary
             cachedThreadRailTitles.Clear();
             cachedThreadRailMetadata.Clear();
             cachedThreadRailInitials.Clear();
+            cachedThreadRailPawnIds.Clear();
             threadRailDisplayCacheSignature = string.Empty;
             cachedOwnerSubjectTitle = string.Empty;
         }
 
-        private static void DrawThreadAvatar(Rect rect, string subjectType, string initials)
+        private void DrawThreadAvatar(
+            Rect rect,
+            string subjectType,
+            string initials,
+            string exactPawnId)
         {
             DiaryUiStyleDef style = DiaryJournalView.UiStyle;
             if (string.Equals(subjectType, "Person", StringComparison.OrdinalIgnoreCase))
             {
-                DrawInitialAvatar(rect, initials, style.MemoryLibraryCategoryPersonalColor);
+                DiaryPawnPortrait.Draw(rect, pawnDirectory.ResolvePawn(exactPawnId));
                 return;
             }
             if (string.Equals(subjectType, "Faction", StringComparison.OrdinalIgnoreCase))
@@ -583,6 +610,19 @@ namespace PawnDiary
                 selectedOwner?.primaryHandle?.exactOwnerPawnIdOrEmpty)
                 || !string.IsNullOrWhiteSpace(
                     selectedOwner?.compatibilityHandle?.exactOwnerPawnIdOrEmpty);
+        }
+
+        private string SelectedOwnerPawnId()
+        {
+            string candidate = selectedOwner?.primaryHandle?.exactOwnerPawnIdOrEmpty;
+            if (!string.IsNullOrWhiteSpace(candidate)) return candidate;
+            candidate = selectedOwner?.compatibilityHandle?.exactOwnerPawnIdOrEmpty;
+            if (!string.IsNullOrWhiteSpace(candidate)) return candidate;
+            candidate = session.selectedOwnerHandle?.exactOwnerPawnIdOrEmpty;
+            if (!string.IsNullOrWhiteSpace(candidate)) return candidate;
+            candidate = session.selectedCompatibilityHandle?.exactOwnerPawnIdOrEmpty;
+            if (!string.IsNullOrWhiteSpace(candidate)) return candidate;
+            return string.Empty;
         }
 
         private void OpenOwnerMenu()

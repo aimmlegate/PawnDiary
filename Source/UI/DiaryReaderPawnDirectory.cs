@@ -68,6 +68,22 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Resolves one exact pawn load ID from the directory's throttled live/dead snapshot.
+        /// Memory Library reuses this adapter so both windows cover the same world-pawn and corpse
+        /// cases without performing a new scan from an IMGUI draw pass.
+        /// </summary>
+        public Pawn ResolvePawn(string exactPawnId)
+        {
+            if (string.IsNullOrWhiteSpace(exactPawnId))
+            {
+                return null;
+            }
+
+            Pawn pawn;
+            return resolvedPawns.TryGetValue(exactPawnId, out pawn) ? pawn : null;
+        }
+
+        /// <summary>
         /// Rebuilds when the session, saved data, activity/unread state, or search/sort controls change,
         /// and periodically refreshes live pawn resolution on a bounded cadence.
         /// </summary>

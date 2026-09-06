@@ -6,6 +6,10 @@ Companion: [repowiki/README.md](repowiki/README.md) describes the current state.
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-09-06
+
+- **Memory Library presentation fix.** Keep the last ready view visible across sliced repository refreshes and restore pawn portraits for the selected owner and People rail.
+
 ## 2026-08-29
 
 - **Living recalled memories.** Limit Recall to one exact memory, make page-and-structural reuse cooldowns effective, and refresh that memory's display wording through the optional LLM coordinator after a successful page without delaying publication or replacing canonical facts.
