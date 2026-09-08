@@ -53,8 +53,11 @@ namespace PawnMemoryTests
             TestSelectorBroadTopicNeverRecalls();
             TestRecallV2ConsumerAndExactEligibilityContract();
             TestRecallV2RepetitionBoundariesAndGuardCompleteness();
+            TestExplicitReflectionRecallAndPrompt();
             TestRecallV2FrozenRevalidationAndPairedPrivacy();
             TestRecallV2FrozenSelectionSaveCodec();
+            TestRecallV2FrozenSummaryProjection();
+            assertions += MemoryFactionRecallTests.Run();
             TestRecallV2CurrentTruthAndCurrentReleaseComparison();
             TestRecallV2AdversarialIdentityAndCapMatrix();
             TestQueryBuildFromRulesAndPolicy();
@@ -3871,6 +3874,87 @@ namespace PawnMemoryTests
                 selected.report[0].rejectReason);
         }
 
+        private static void TestExplicitReflectionRecallAndPrompt()
+        {
+            foreach (string consumer in new[]
+                { MemoryRecallConsumerRegistry.ExistingReflection, MemoryRecallConsumerRegistry.QuietMemory })
+            {
+                MemoryRecallQueryV2 query = RecallQuery("Owner_A", MemoryRecallWritingFormats.Full);
+                query.consumerId = consumer;
+                // An extra reflection is about this exact memory, before a new page event exists.
+                query.currentEventId = string.Empty;
+                query.currentSourceOccurrenceId = string.Empty;
+                query.exactRoutes.Clear();
+                MemoryRecallCandidateSnapshot candidate = RecallCandidate(
+                    "reflection-memory", "Owner_A", "reflection-source", 100);
+                MakeThreadCandidate(candidate, "reflection-root", "reflection-chapter");
+                candidate.historicalText = "Then: we married.";
+                candidate.currentStateApplicable = true;
+                candidate.currentStateContradictsHistorical = true;
+                candidate.currentStateCanRender = true;
+                candidate.currentStateText = "Now: we are divorced.";
+                candidate.currentStateSourceId = "awareness-divorce";
+
+                MemoryRecallSelectedCandidate selected = ImportantMemorySelector.SelectExplicitReflectionV2(
+                    query, consumer, candidate);
+                AssertTrue("reflection.complete-selection." + consumer, selected != null);
+                AssertEqual("reflection.all-guards." + consumer, 4, selected.guards.Count);
+                MemoryRecallPromptProjection projection = ImportantMemoryLineRenderer.ProjectReflectionV2(
+                    selected, "Current state is authoritative.", 240, 240, 1200, 1, 8, 8);
+                AssertTrue("reflection.history-and-current-truth." + consumer,
+                    projection.text.Contains(candidate.historicalText)
+                    && projection.text.Contains(candidate.currentStateText));
+                AssertEqual("reflection.exact-evidence." + consumer,
+                    candidate.recordId, projection.evidence.Single().recordId);
+                AssertEqual("reflection.guards-reach-receipt." + consumer, 4, projection.guards.Count);
+                AssertTrue("reflection.truth-provenance." + consumer,
+                    projection.diagnostics.Any(row => row.sourceId == candidate.currentStateSourceId));
+                MemoryRecallPromptProjection overCap = ImportantMemoryLineRenderer.ProjectReflectionV2(
+                    selected, "Current state is authoritative.", 240, 240, 5, 1, 8, 8);
+                AssertTrue("reflection.cap-refuses-text-and-accounting." + consumer,
+                    overCap.text.Length == 0 && overCap.evidence.Count == 0
+                    && overCap.guards.Count == 0 && overCap.diagnostics.Count == 0);
+
+                var guards = new List<MemoryRepetitionGuardState>(candidate.structuralGuardStates);
+                guards.Add(candidate.recordGuard);
+                foreach (MemoryRepetitionGuardState guard in guards)
+                {
+                    guard.reserved = true;
+                    AssertTrue("reflection.reserved." + consumer + "." + guard.guardKind,
+                        ImportantMemorySelector.SelectExplicitReflectionV2(query, consumer, candidate) == null);
+                    guard.reserved = false;
+                    guard.automaticInclusionCount = 1;
+                    guard.lastAutomaticIncludedTick = query.repetitionPolicy.currentTick - 1;
+                    guard.lastAutomaticIncludedEntryOrdinal = query.repetitionPolicy.completedDiaryEntryOrdinal;
+                    AssertTrue("reflection.cooling." + consumer + "." + guard.guardKind,
+                        !ImportantMemorySelector.IsCandidateStateEligibleForConsumer(query, consumer, candidate));
+                    guard.automaticInclusionCount = 0;
+                    guard.lastAutomaticIncludedTick = 0;
+                    guard.lastAutomaticIncludedEntryOrdinal = 0;
+                }
+                query.excludedSourceOccurrenceIds.Add(candidate.sourceOccurrenceId);
+                AssertTrue("reflection.ancestor-exclusion." + consumer,
+                    ImportantMemorySelector.SelectExplicitReflectionV2(query, consumer, candidate) == null);
+                query.excludedSourceOccurrenceIds.Clear();
+                candidate.currentStateCanRender = false;
+                AssertTrue("reflection.unrenderable-truth." + consumer,
+                    ImportantMemorySelector.SelectExplicitReflectionV2(query, consumer, candidate) == null);
+                candidate.currentStateCanRender = true;
+                query.useMemoriesInWriting = false;
+                AssertTrue("reflection.disabled." + consumer,
+                    ImportantMemorySelector.SelectExplicitReflectionV2(query, consumer, candidate) == null);
+                query.useMemoriesInWriting = true;
+                query.writingFormat = MemoryRecallWritingFormats.Compact;
+                AssertTrue("reflection.compact." + consumer,
+                    ImportantMemorySelector.SelectExplicitReflectionV2(query, consumer, candidate) == null);
+                query.writingFormat = MemoryRecallWritingFormats.Full;
+                query.consumerId = MemoryRecallConsumerRegistry.OrdinaryDiary;
+                AssertTrue("reflection.no-ordinary-route-bypass." + consumer,
+                    ImportantMemorySelector.SelectExplicitReflectionV2(
+                        query, query.consumerId, candidate) == null);
+            }
+        }
+
         private static void TestRecallV2FrozenRevalidationAndPairedPrivacy()
         {
             MemoryRecallQueryV2 initiatorQuery = RecallQuery(
@@ -4038,6 +4122,83 @@ namespace PawnMemoryTests
                 revalidated.selected[0].candidate.originalEventTick);
             AssertTrue("recallV2.save-codec.trailing-rejected",
                 MemoryFrozenRecallSelectionCodec.Decode(encoded + "x") == null);
+        }
+
+        // Summary identity survives folding. Test both live and decoded shortlists so reload cannot
+        // restore the former mismatch between current prose and event-time source exclusions.
+        private static void TestRecallV2FrozenSummaryProjection()
+        {
+            MemoryRecallQueryV2 query = RecallQuery("Owner_A", MemoryRecallWritingFormats.Full);
+            query.ownerEpochToken = M6Epoch("Owner_A");
+            MemoryRecallCandidateSnapshot before = RecallCandidate(
+                "summary-record", "Owner_A", "summary-source", 100);
+            MemoryRecallCandidateSnapshot current = RecallCandidate(
+                "summary-record", "Owner_A", "summary-source", 100);
+            foreach (MemoryRecallCandidateSnapshot row in new[] { before, current })
+            {
+                row.kind = MemoryContractTokens.KindSummary;
+                MakeThreadCandidate(row, "summary-root", "summary-chapter");
+                row.ownerEpochToken = query.ownerEpochToken;
+                row.recordGuard.ownerEpochToken = query.ownerEpochToken;
+                foreach (MemoryRepetitionGuardState guard in row.structuralGuardStates)
+                    guard.ownerEpochToken = query.ownerEpochToken;
+                row.representedSourceOccurrenceIds.Add("source-old");
+                row.representedSourceOccurrenceIds.Add("source-surviving");
+            }
+            MemoryRecallSelectionResultV2 frozen = ImportantMemorySelector.SelectV2(
+                query, new List<MemoryRecallCandidateSnapshot> { before });
+            AssertEqual("recallV2.summary.frozen", 1, frozen.selected.Count);
+            MemoryRecallSelectionResultV2 loaded = MemoryFrozenRecallSelectionCodec.Decode(
+                MemoryFrozenRecallSelectionCodec.Encode(frozen));
+            AssertTrue("recallV2.summary.loaded", loaded != null);
+            foreach (MemoryRecallSelectionResultV2 selection in new[] { frozen, loaded })
+            {
+                foreach (string addedSource in new[]
+                    { query.currentSourceOccurrenceId, "excluded-ancestor", "later-unrelated" })
+                {
+                    query.excludedSourceOccurrenceIds.Clear();
+                    query.excludedSourceOccurrenceIds.Add("excluded-ancestor");
+                    current.representedSourceOccurrenceIds.Add(addedSource);
+                    current.historicalText = "Old history plus " + addedSource;
+                    MemoryRecallSelectionResultV2 rejected = ImportantMemorySelector.RevalidateFrozenV2(
+                        selection, query, new List<MemoryRecallCandidateSnapshot> { current });
+                    AssertEqual("recallV2.summary.no-new-source", 0, rejected.selected.Count);
+                    AssertEqual("recallV2.summary.projection-reason",
+                        MemoryRecallRejectReasons.FrozenProjectionChanged, rejected.report[0].rejectReason);
+                    current.representedSourceOccurrenceIds.Remove(addedSource);
+                }
+                current.historicalText = "New wording of the same saved history.";
+                MemoryRecallSelectionResultV2 same = ImportantMemorySelector.RevalidateFrozenV2(
+                    selection, query, new List<MemoryRecallCandidateSnapshot> { current });
+                AssertEqual("recallV2.summary.wording-only", 1, same.selected.Count);
+                AssertEqual("recallV2.summary.current-wording", current.historicalText,
+                    same.selected[0].candidate.historicalText);
+
+                // Expiry may remove facts. The emitted sources must shrink with the text rather
+                // than keep claiming expired facts as provenance or paired-POV exclusions.
+                current.representedSourceOccurrenceIds.Remove("source-old");
+                current.historicalText = "Only surviving history.";
+                MemoryRecallSelectionResultV2 trimmed = ImportantMemorySelector.RevalidateFrozenV2(
+                    selection, query, new List<MemoryRecallCandidateSnapshot> { current });
+                AssertEqual("recallV2.summary.expiry-keeps-record", 1, trimmed.selected.Count);
+                AssertEqual("recallV2.summary.expiry-trims-sources", 1,
+                    trimmed.selected[0].candidate.representedSourceOccurrenceIds.Count);
+                AssertEqual("recallV2.summary.expiry-source", "source-surviving",
+                    trimmed.selected[0].candidate.representedSourceOccurrenceIds[0]);
+                current.representedSourceOccurrenceIds.Add("source-old");
+
+                current.categories.Add(MemoryContractTokens.CategoryFamily);
+                AssertEqual("recallV2.summary.no-new-category", 0,
+                    ImportantMemorySelector.RevalidateFrozenV2(selection, query,
+                        new List<MemoryRecallCandidateSnapshot> { current }).selected.Count);
+                current.categories.Remove(MemoryContractTokens.CategoryFamily);
+                current.representedSourceOccurrenceIds = null;
+                AssertEqual("recallV2.summary.null-sources-fail-closed", 0,
+                    ImportantMemorySelector.RevalidateFrozenV2(selection, query,
+                        new List<MemoryRecallCandidateSnapshot> { current }).selected.Count);
+                current.representedSourceOccurrenceIds = new List<string>
+                    { "source-old", "source-surviving" };
+            }
         }
 
         private static void TestRecallV2CurrentTruthAndCurrentReleaseComparison()

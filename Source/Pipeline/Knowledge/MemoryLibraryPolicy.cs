@@ -86,6 +86,7 @@ namespace PawnDiary
         public int start;
         public int count;
         public int returnedCount;
+        public int previousStart;
         public int nextStart;
         public bool hasPrevious;
         public bool hasMore;
@@ -416,6 +417,7 @@ namespace PawnDiary
             result.start = start;
             result.count = count;
             result.returnedCount = returned;
+            result.previousStart = Math.Max(0, start - count);
             result.nextStart = checked(start + returned);
             result.hasPrevious = start > 0 || (start == completeTotal && completeTotal > 0);
             result.hasMore = result.nextStart < completeTotal;

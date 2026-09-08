@@ -143,6 +143,7 @@ namespace PawnDiary
             detachedSearchScalarCap = Math.Max(1, inputLimits.searchScalars);
             detachedSearchUtf16Cap = Math.Max(1, inputLimits.searchUtf16Units);
             detachedDiagnosticTextCap = Math.Max(1, inputLimits.copyDiagnosticUtf16Units);
+            detachedTextCap = Math.Max(1, inputLimits.blockTextUtf16Units);
             forcePause = false;
             draggable = true;
             resizeable = false;
@@ -223,6 +224,7 @@ namespace PawnDiary
 
         private void PreferOwner(string ownerPawnId)
         {
+            if (!ConfirmDiscardDraft(() => PreferOwner(ownerPawnId))) return;
             preferredOwnerId = ownerPawnId ?? string.Empty;
             preferredFallback = null;
             ownerWalkHandle = null;
@@ -306,8 +308,9 @@ namespace PawnDiary
                 detachedCategoryMask = policy.memoryCategoryMask;
                 detachedCompatibilityFailClosed = policy.compatibilityFailClosed;
             }
+            // The editor and mutation boundary share the Library's XML-owned wording limit.
             detachedTextCap = Math.Max(1,
-                DiaryKnowledgePolicy.Snapshot(false).fallbackSummaryMaxChars);
+                component.MemoryLibraryInputLimitsForUi().blockTextUtf16Units);
             DrainStagedCommand();
             PollCommandResult();
             RefreshOwners();

@@ -208,6 +208,8 @@ namespace PawnDiary
         public string placementToken = string.Empty;
         public long targetStructuralRevision;
         public long latestStatusRevision;
+        /// <summary>Text shown when editing began, used only to detect unsaved player changes.</summary>
+        public string originalText = string.Empty;
         public string text = string.Empty;
         public bool structuralConflict;
         public string terminalStatus = string.Empty;
@@ -877,6 +879,8 @@ namespace PawnDiary
                 return null;
             string text = detail.detail?.playerWording;
             if (string.IsNullOrEmpty(text)) text = detail.row.displayWording;
+            string boundedText = MemoryLibraryPolicy.ClampUtf16CompleteScalar(
+                text ?? string.Empty, Math.Max(1, textCap));
             return new MemoryLibraryUiEditDraft
             {
                 recordHandle = Copy(detail.row.recordHandle),
@@ -884,9 +888,60 @@ namespace PawnDiary
                 placementToken = detail.row.rootHandle == null ? "standalone" : string.Empty,
                 targetStructuralRevision = detail.targetStructuralRevision,
                 latestStatusRevision = detail.targetStatusRevision,
-                text = MemoryLibraryPolicy.ClampUtf16CompleteScalar(
-                    text ?? string.Empty, Math.Max(1, textCap))
+                originalText = boundedText,
+                text = boundedText
             };
+        }
+
+        /// <summary>Navigation may discard an untouched editor without interrupting the player.</summary>
+        public static bool HasUnsavedDraft(MemoryLibraryUiEditDraft draft)
+        {
+            return draft != null && !string.Equals(
+                draft.text ?? string.Empty, draft.originalText ?? string.Empty,
+                StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Bounds new input without cutting an existing draft when settings lower the text limit.
+        /// An oversized retained draft can only shrink until it fits the current storage limit.
+        /// </summary>
+        public static void UpdateEditText(MemoryLibraryUiEditDraft draft, string text, int textCap)
+        {
+            if (draft == null) return;
+            string before = draft.text ?? string.Empty;
+            if (string.Equals(before, text ?? string.Empty, StringComparison.Ordinal)) return;
+            draft.text = MemoryLibraryPolicy.ClampUtf16CompleteScalar(
+                text ?? string.Empty, Math.Max(Math.Max(1, textCap), before.Length));
+        }
+
+        /// <summary>
+        /// Explicitly accepts the latest revision of the same editable memory while keeping the
+        /// player's text. Refresh alone never calls this: the player must first review the new row.
+        /// </summary>
+        public static bool RebaseEditDraft(
+            MemoryLibraryUiEditDraft draft,
+            MemoryBlockDetailResult detail)
+        {
+            if (draft == null || detail?.status != MemoryLibraryStatuses.Ready
+                || detail.row == null || !detail.row.canSaveWording
+                || !draft.structuralConflict
+                || detail.targetStructuralRevision <= draft.targetStructuralRevision
+                || !Same(draft.recordHandle, detail.row.recordHandle)
+                || (draft.rootHandle == null
+                    ? detail.row.rootHandle != null
+                    : !SameRoot(draft.rootHandle, detail.row.rootHandle))) return false;
+            draft.targetStructuralRevision = detail.targetStructuralRevision;
+            draft.latestStatusRevision = detail.targetStatusRevision;
+            draft.structuralConflict = false;
+            draft.terminalStatus = string.Empty;
+            return true;
+        }
+
+        /// <summary>Tick zero is a valid date; the saved count distinguishes it from no use.</summary>
+        public static bool HasAutomaticInclusion(MemoryBlockRow row)
+        {
+            return row != null && row.automaticInclusionCount > 0
+                && row.lastAutomaticIncludedTick >= 0;
         }
 
         /// <summary>

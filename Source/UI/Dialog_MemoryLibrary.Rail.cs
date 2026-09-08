@@ -281,7 +281,7 @@ namespace PawnDiary
             if (Widgets.ButtonText(previous, T("PawnDiary.Memory.Library.Previous"),
                     true, true, ready && threadRail.hasPrevious))
             {
-                threadRailStart = Math.Max(0, threadRail.returnedStart - PageSize);
+                threadRailStart = threadRail.previousStart;
                 threadRailExpectedSnapshotRevision = threadRail.listSnapshotRevision;
                 threadRailScroll = Vector2.zero;
                 repositoryNavigationDirty = true;
@@ -312,6 +312,7 @@ namespace PawnDiary
         private void SelectThreadRailRow(MemoryThreadHeaderRow thread)
         {
             if (thread?.rootHandle == null) return;
+            if (!ConfirmDiscardDraft(() => SelectThreadRailRow(thread))) return;
             bool viewChanged = session.selectedView != MemoryLibraryViews.Threads;
             bool rootChanged = !Same(thread.rootHandle, session.selectedRootHandle);
             if (viewChanged)
@@ -339,6 +340,7 @@ namespace PawnDiary
             if (view != MemoryLibraryViews.Standalone && view != MemoryLibraryViews.Imported
                 && view != MemoryLibraryUiViews.Culture)
                 return;
+            if (!ConfirmDiscardDraft(() => SelectPinnedRailRow(view))) return;
             if (session.selectedView != view)
             {
                 session.SelectView(view);
@@ -629,13 +631,15 @@ namespace PawnDiary
         {
             if (owners?.rows == null || owners.rows.Count == 0) return;
             long capturedDirectoryRevision = owners.directoryRevision;
+            int capturedPreviousStart = owners.previousStart;
+            int capturedNextStart = owners.nextStart;
             List<FloatMenuOption> options = new List<FloatMenuOption>();
             if (owners.hasPrevious)
                 options.Add(new FloatMenuOption(
                     T("PawnDiary.Memory.Library.Previous"),
                     delegate
                     {
-                        ownerStart = Math.Max(0, owners.returnedStart - PageSize);
+                        ownerStart = capturedPreviousStart;
                         ownerExpectedDirectoryRevision = capturedDirectoryRevision;
                         repositoryNavigationDirty = true;
                     }));
@@ -651,30 +655,7 @@ namespace PawnDiary
                         captured.standaloneCount, captured.importedCount),
                     delegate
                     {
-                        if (!MemoryLibraryUiPolicy.CanApplyOwnerMenuOption(
-                                capturedDirectoryRevision, owners))
-                        {
-                            // WindowUpdate may republish the directory while this menu is open.
-                            // Never bless its captured row with the newer revision.
-                            ownerStart = 0;
-                            ownerExpectedDirectoryRevision = 0;
-                            selectedOwnerValidatedDirectoryRevision = 0;
-                            ResetSelectedOwnerValidation();
-                            repositoryNavigationDirty = true;
-                            return;
-                        }
-                        string before = OwnerKey(session.selectedOwnerHandle);
-                        session.SelectOwner(captured);
-                        selectedOwner = captured;
-                        preferredOwnerId = string.Empty;
-                        ownerWalkHandle = null;
-                        preferredFallback = null;
-                        ownerStart = 0;
-                        ownerExpectedDirectoryRevision = capturedDirectoryRevision;
-                        ResetSelectedOwnerValidation();
-                        if (!string.Equals(before, OwnerKey(session.selectedOwnerHandle),
-                                StringComparison.Ordinal)) ResetOwnerQueries(captured);
-                        selectedOwnerValidatedDirectoryRevision = capturedDirectoryRevision;
+                        SelectOwnerFromMenu(captured, capturedDirectoryRevision);
                     }));
             }
             if (owners.hasMore)
@@ -682,11 +663,40 @@ namespace PawnDiary
                     T("PawnDiary.Memory.Library.Next"),
                     delegate
                     {
-                        ownerStart = owners.nextStart;
+                        ownerStart = capturedNextStart;
                         ownerExpectedDirectoryRevision = capturedDirectoryRevision;
                         repositoryNavigationDirty = true;
                     }));
             if (options.Count > 0) Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private void SelectOwnerFromMenu(MemoryLibraryOwnerRow captured, long capturedDirectoryRevision)
+        {
+            if (!MemoryLibraryUiPolicy.CanApplyOwnerMenuOption(capturedDirectoryRevision, owners))
+            {
+                // Recheck after any discard confirmation too: its captured directory may expire
+                // while the player reads it. Never bless the old row with a newer revision.
+                ownerStart = 0;
+                ownerExpectedDirectoryRevision = 0;
+                selectedOwnerValidatedDirectoryRevision = 0;
+                ResetSelectedOwnerValidation();
+                repositoryNavigationDirty = true;
+                return;
+            }
+            if (!ConfirmDiscardDraft(
+                    () => SelectOwnerFromMenu(captured, capturedDirectoryRevision))) return;
+            string before = OwnerKey(session.selectedOwnerHandle);
+            session.SelectOwner(captured);
+            selectedOwner = captured;
+            preferredOwnerId = string.Empty;
+            ownerWalkHandle = null;
+            preferredFallback = null;
+            ownerStart = 0;
+            ownerExpectedDirectoryRevision = capturedDirectoryRevision;
+            ResetSelectedOwnerValidation();
+            if (!string.Equals(before, OwnerKey(session.selectedOwnerHandle),
+                    StringComparison.Ordinal)) ResetOwnerQueries(captured);
+            selectedOwnerValidatedDirectoryRevision = capturedDirectoryRevision;
         }
 
         /// <summary>Draws the selected owner's saved cultural context as a rail destination.</summary>

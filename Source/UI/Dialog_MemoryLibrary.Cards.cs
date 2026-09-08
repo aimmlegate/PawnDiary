@@ -49,7 +49,7 @@ namespace PawnDiary
                     list.hasPrevious, list.hasMore,
                     delegate
                     {
-                        listStart = Math.Max(0, list.returnedStart - PageSize);
+                        listStart = list.previousStart;
                         listExpectedSnapshotRevision = list.listSnapshotRevision;
                         listScroll = Vector2.zero;
                         repositoryNavigationDirty = true;

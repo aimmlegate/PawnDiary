@@ -345,6 +345,7 @@ namespace PawnDiary
                 nextDayBoundary, snapshot.ownerEarliestFiniteExpiryTickExclusive);
             result.returnedStart = cursor.start;
             result.returnedCount = cursor.returnedCount;
+            result.previousStart = cursor.previousStart;
             result.nextStart = cursor.nextStart;
             result.hasPrevious = cursor.hasPrevious;
             result.hasMore = cursor.hasMore;
@@ -417,6 +418,8 @@ namespace PawnDiary
             result.allBlocksSuppressedForWriting = allSuppressed;
             result.returnedStart = cursor.start;
             result.returnedCount = cursor.returnedCount;
+            result.previousStart = PreviousThreadPageStart(
+                filtered, cursor.start, cursor.count, Math.Max(1, cap.chapterHeaderRows));
             result.nextStart = cursor.nextStart;
             result.hasPrevious = cursor.hasPrevious;
             result.hasMore = cursor.hasMore;
@@ -463,6 +466,35 @@ namespace PawnDiary
                         chapter.chapterId, StringComparison.Ordinal);
             }
             return result;
+        }
+
+        /// <summary>
+        /// Replays bounded page boundaries up to the requested start. Chapter packing may shorten a
+        /// page, so subtracting even the normalized row count can skip the actual preceding page.
+        /// </summary>
+        private static int PreviousThreadPageStart(
+            List<MemoryBlockRow> rows, int start, int rowCap, int chapterCap)
+        {
+            int previous = 0;
+            int next = 0;
+            while (next < start)
+            {
+                previous = next;
+                var chapters = new HashSet<string>(StringComparer.Ordinal);
+                int count = 0;
+                while (next < start && count < rowCap)
+                {
+                    string chapter = rows[next].chapterId;
+                    if (!string.IsNullOrEmpty(chapter) && !chapters.Contains(chapter))
+                    {
+                        if (chapters.Count >= chapterCap) break;
+                        chapters.Add(chapter);
+                    }
+                    next++;
+                    count++;
+                }
+            }
+            return previous;
         }
 
         private static void SelectRoots(
@@ -685,6 +717,7 @@ namespace PawnDiary
         {
             result.returnedStart = cursor.start;
             result.returnedCount = cursor.returnedCount;
+            result.previousStart = cursor.previousStart;
             result.nextStart = cursor.nextStart;
             result.hasPrevious = cursor.hasPrevious;
             result.hasMore = cursor.hasMore;

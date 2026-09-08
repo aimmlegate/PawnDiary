@@ -2245,7 +2245,11 @@ Identifiers and reasons: {5}</PawnDiary.Memory.Library.DiagnosticsBody>
   <PawnDiary.Memory.Library.DiagnosticsIdentity>owner={0}; epoch={1}; record={2}; root={3}; chapter={4}</PawnDiary.Memory.Library.DiagnosticsIdentity>
   <PawnDiary.Memory.Library.DiagnosticsState>kind={0}; structural revision={1}; original tick={2}; suppressed={3}; edited={4}; TTL={5}; edit cap={6}</PawnDiary.Memory.Library.DiagnosticsState>
   <PawnDiary.Memory.Library.Edit>Edit</PawnDiary.Memory.Library.Edit>
-  <PawnDiary.Memory.Library.EditConflict>The memory changed structurally while this detached draft was open. Your text was retained against the latest revision; review it before saving.</PawnDiary.Memory.Library.EditConflict>
+  <PawnDiary.Memory.Library.EditConflict>The memory changed while you were editing. Your text is safe. Review the current memory above, then choose Keep draft before saving.</PawnDiary.Memory.Library.EditConflict>
+  <PawnDiary.Memory.Library.KeepDraft>Keep draft</PawnDiary.Memory.Library.KeepDraft>
+  <PawnDiary.Memory.Library.EditLength>{0}/{1} characters</PawnDiary.Memory.Library.EditLength>
+  <PawnDiary.Memory.Library.DiscardDraftTitle>Discard memory changes?</PawnDiary.Memory.Library.DiscardDraftTitle>
+  <PawnDiary.Memory.Library.DiscardDraftPrompt>Your memory text has unsaved changes. Discard them and continue?</PawnDiary.Memory.Library.DiscardDraftPrompt>
   <PawnDiary.Memory.Library.EditCapFull>The edit limit is full. Use original wording on an existing edited memory before editing another one. Your draft has been kept.</PawnDiary.Memory.Library.EditCapFull>
   <PawnDiary.Memory.Library.Edited>edited</PawnDiary.Memory.Library.Edited>
   <PawnDiary.Memory.Library.EmptyWording>No display wording</PawnDiary.Memory.Library.EmptyWording>

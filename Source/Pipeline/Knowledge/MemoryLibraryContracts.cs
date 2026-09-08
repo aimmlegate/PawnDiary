@@ -150,6 +150,8 @@ namespace PawnDiary
         public long additionalZeroMemoryOwnersNotShown;
         public int returnedStart;
         public int returnedCount;
+        /// <summary>Previous page under the same normalized query limits.</summary>
+        public int previousStart;
         public int nextStart;
         public bool hasPrevious;
         public bool hasMore;
@@ -312,6 +314,8 @@ namespace PawnDiary
         public long ttlValidUntilTickExclusive = long.MaxValue;
         public int returnedStart;
         public int returnedCount;
+        /// <summary>Previous page under the same normalized query limits.</summary>
+        public int previousStart;
         public int nextStart;
         public bool hasPrevious;
         public bool hasMore;
@@ -373,6 +377,8 @@ namespace PawnDiary
         public bool allBlocksSuppressedForWriting;
         public int returnedStart;
         public int returnedCount;
+        /// <summary>Previous page accounting for both child-row and chapter-header limits.</summary>
+        public int previousStart;
         public int nextStart;
         public bool hasPrevious;
         public bool hasMore;

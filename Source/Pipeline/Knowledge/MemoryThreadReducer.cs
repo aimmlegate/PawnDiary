@@ -528,16 +528,21 @@ namespace PawnDiary
             return result;
         }
 
-        /// <summary>Exact TTL rule shared by blocks and Summary contributions.</summary>
+        /// <summary>
+        /// Exact TTL rule shared by blocks and Summary contributions. Player-authored blocks keep
+        /// their original dates but remain usable until the player explicitly removes protection.
+        /// </summary>
         public static bool IsExpired(
             long nowTick,
             long originalTick,
             bool ageUnknown,
             string importance,
             long minorLifetimeTicks,
-            long regularLifetimeTicks)
+            long regularLifetimeTicks,
+            bool playerEdited = false)
         {
-            if (ageUnknown || importance == MemoryContractTokens.ImportanceImportant) return false;
+            if (playerEdited || ageUnknown
+                || importance == MemoryContractTokens.ImportanceImportant) return false;
             long lifetime = importance == MemoryContractTokens.ImportanceMinor
                 ? Math.Max(0, minorLifetimeTicks)
                 : importance == MemoryContractTokens.ImportanceRegular

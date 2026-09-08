@@ -4,6 +4,9 @@
 // The adapter detaches one exact owner and autobiographical epoch, never passes a Pawn/Def/store
 // object into pure selection, and never reads DLC trackers. It is release-gated by its callers:
 // CurrentRelease uses this adapter while LegacyShadow remains the explicit compatibility branch.
+// Event-time selection uses current root projections; dispatch rechecks the exact frozen records,
+// which may remain valid after a later sibling becomes the current projection.
+// Known faction context joins the owner's awareness to exact component-global saved diplomacy.
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -152,12 +155,11 @@ namespace PawnDiary
                 legacyPolicy,
                 legacyQuery);
             MemoryRecallReservationView reservations = SnapshotRecallReservations(owner);
-            List<MemoryRecallCandidateSnapshot> candidates = SnapshotRecallCandidates(
-                owner,
-                policy,
-                tuning,
-                query,
-                reservations);
+            MemoryRecallSelectionResultV2 frozen = freezeSelection
+                ? null : CachedFrozenRecallSelection(diaryEvent, povRole);
+            List<MemoryRecallCandidateSnapshot> candidates = freezeSelection
+                ? SnapshotRecallCandidates(owner, policy, tuning, query, reservations)
+                : SnapshotFrozenRecallCandidates(owner, policy, tuning, query, reservations, frozen);
 
             // Paired POVs remain private. The recipient receives only source identities from the
             // initiator's already-frozen shortlist, never its candidate graph or wording. A Summary
@@ -182,7 +184,7 @@ namespace PawnDiary
             else
             {
                 selected = ImportantMemorySelector.RevalidateFrozenV2(
-                    CachedFrozenRecallSelection(diaryEvent, povRole),
+                    frozen,
                     query,
                     candidates);
             }
@@ -406,6 +408,54 @@ namespace PawnDiary
             return result;
         }
 
+        /// <summary>
+        /// Rechecks only the saved records selected at event time. A later sibling can become the
+        /// root's current projection without deleting the old record. Keep duplicate matches here:
+        /// the pure revalidator rejects ambiguous identities instead of picking an arbitrary copy.
+        /// </summary>
+        private List<MemoryRecallCandidateSnapshot> SnapshotFrozenRecallCandidates(
+            PawnKnowledgeState owner,
+            MemoryPolicySnapshot policy,
+            DiaryKnowledgeTuningDef tuning,
+            MemoryRecallQueryV2 query,
+            MemoryRecallReservationView reservations,
+            MemoryRecallSelectionResultV2 frozen)
+        {
+            var result = new List<MemoryRecallCandidateSnapshot>();
+            var recordIds = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; frozen?.selected != null && index < frozen.selected.Count; index++)
+            {
+                MemoryRecallCandidateSnapshot candidate = frozen.selected[index]?.candidate;
+                if (candidate != null
+                    && string.Equals(candidate.ownerPawnId, owner.pawnId, StringComparison.Ordinal)
+                    && string.Equals(candidate.ownerEpochToken,
+                        owner.autobiographicalEpochToken, StringComparison.Ordinal))
+                    recordIds.Add(candidate.recordId ?? string.Empty);
+            }
+            if (recordIds.Count == 0) return result;
+
+            Action<SavedMemoryThreadRoot, SavedMemoryBlock> add = (root, block) =>
+            {
+                if (block == null || !recordIds.Contains(block.recordId ?? string.Empty)) return;
+                MemoryRecallCandidateSnapshot candidate = SnapshotRecallCandidate(
+                    owner, root, block, root != null, policy, tuning, query, reservations);
+                if (candidate != null) result.Add(candidate);
+            };
+            for (int index = 0; owner.standaloneBlocks != null
+                && index < owner.standaloneBlocks.Count; index++)
+                add(null, owner.standaloneBlocks[index]);
+            for (int index = 0; owner.threadRoots != null && index < owner.threadRoots.Count; index++)
+            {
+                SavedMemoryThreadRoot root = owner.threadRoots[index];
+                if (root == null) continue;
+                for (int blockIndex = 0; root.visibleBlocks != null
+                    && blockIndex < root.visibleBlocks.Count; blockIndex++)
+                    add(root, root.visibleBlocks[blockIndex]);
+                add(root, root.rollingSummaryBlock);
+            }
+            return result;
+        }
+
         private MemoryRecallCandidateSnapshot SnapshotRecallCandidate(
             PawnKnowledgeState owner,
             SavedMemoryThreadRoot root,
@@ -471,7 +521,8 @@ namespace PawnDiary
                     block.ageUnknown,
                     block.importance,
                     policy.minorMemoryLifetimeTicks,
-                    policy.regularMemoryLifetimeTicks)
+                    policy.regularMemoryLifetimeTicks,
+                    block.playerEdited)
             };
             AddCandidateCategories(candidate, block, enabledSummaryMask);
             AddCandidateRoutes(candidate, root, block, enabledSummaryMask);
@@ -785,15 +836,34 @@ namespace PawnDiary
                     best = row;
             }
             if (best == null) return;
-            string text = RenderCurrentState(best, tuning);
-            if (string.IsNullOrWhiteSpace(text)) return;
+            string sourceId = best.snapshotId ?? string.Empty;
+            string text;
+            if (best.subjectKind == MemoryContractTokens.SubjectFaction)
+            {
+                // Awareness alone describes membership, not diplomacy. Do not publish a misleading
+                // partial correction if the exact global row is unavailable or cannot fit.
+                MemoryFactionCurrentStateProjection.TryProject(
+                    ToPlainAwareness(best), SnapshotRecallFactionStates(),
+                    Math.Max(1, tuning?.memoryCurrentStateMaximumFacts ?? 8),
+                    Math.Max(1, tuning?.memoryCurrentStateMaximumCharacters ?? 240),
+                    out text, out sourceId);
+            }
+            else text = RenderCurrentState(best, tuning);
             candidate.currentStateApplicable = true;
             // Always present saved current truth as authoritative alongside history. This avoids
             // guessing whether arbitrary wording contradicts a structured current-state stream.
             candidate.currentStateContradictsHistorical = true;
-            candidate.currentStateCanRender = true;
+            candidate.currentStateCanRender = !string.IsNullOrWhiteSpace(text);
             candidate.currentStateText = text;
-            candidate.currentStateSourceId = best.snapshotId ?? string.Empty;
+            candidate.currentStateSourceId = sourceId;
+        }
+
+        /// <summary>Detaches saved faction rows lazily; pure matching never receives save objects.</summary>
+        private IEnumerable<KnowledgeFactionState> SnapshotRecallFactionStates()
+        {
+            for (int index = 0; globalFactionSnapshots != null
+                && index < globalFactionSnapshots.Count; index++)
+                yield return ToPlainFaction(globalFactionSnapshots[index]);
         }
 
         private static string RenderCurrentState(
@@ -1209,7 +1279,8 @@ namespace PawnDiary
                     visible.ageUnknown,
                     visible.importance,
                     policy?.minorMemoryLifetimeTicks ?? 0,
-                    policy?.regularMemoryLifetimeTicks ?? 0);
+                    policy?.regularMemoryLifetimeTicks ?? 0,
+                    visible.playerEdited);
             return MemoryThreadLookupPolicy.UseRollingCurrentProjection(
                     rollingUsable, rollingTick, visibleUsable,
                     visible?.originalEventTick ?? -1)

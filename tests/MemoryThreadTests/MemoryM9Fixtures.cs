@@ -25,6 +25,8 @@ namespace MemoryThreadTests
             CapacityAndEmptyStateRulesAreExact();
             AdapterRevisionDecisionsAreExact();
             DetachedDraftsHandleStatusAndStructuralConflicts();
+            DraftRecoveryLimitsAndUsageAreExact();
+            PreviousCursorsRespectRowAndChapterLimits();
             CommandsCarryExactIdentityAndRevision();
             DrawingStagesButDoesNotExecuteCommands();
             LifetimeStatesUseOriginalTicks();
@@ -662,6 +664,146 @@ namespace MemoryThreadTests
                     new MemoryLibraryCommandResult { status = MemoryLibraryCommandStatuses.Success }));
         }
 
+        private static void DraftRecoveryLimitsAndUsageAreExact()
+        {
+            MemoryBlockDetailResult detail = Detail("draft-recovery", 7, 11);
+            MemoryLibraryUiEditDraft draft = MemoryLibraryUiPolicy.BeginEdit(detail, 480);
+            Equal("m9.draft.unchanged-can-leave", false, MemoryLibraryUiPolicy.HasUnsavedDraft(draft));
+            draft.text = "my retained words";
+            Equal("m9.draft.changed-needs-confirmation", true, MemoryLibraryUiPolicy.HasUnsavedDraft(draft));
+            detail.targetStructuralRevision = 8;
+            detail.row.targetStructuralRevision = 8;
+            MemoryLibraryUiPolicy.MergeDetailRefresh(draft, detail);
+            Equal("m9.draft.old-retained-snapshot-cannot-rebase", false,
+                MemoryLibraryUiPolicy.RebaseEditDraft(draft, Detail("draft-recovery", 7, 11)));
+            Equal("m9.draft.rebase-explicit", true, MemoryLibraryUiPolicy.RebaseEditDraft(draft, detail));
+            Equal("m9.draft.rebase-keeps-text", "my retained words", draft.text);
+            Equal("m9.draft.rebase-clears-conflict", false, draft.structuralConflict);
+            Equal("m9.draft.rebase-still-unsaved", true, MemoryLibraryUiPolicy.HasUnsavedDraft(draft));
+            MemoryLibraryCommand command = MemoryLibraryUiPolicy.BuildBlockCommand(
+                "client", 100, MemoryLibraryActions.SaveWording, detail.row, false, draft);
+            Equal("m9.draft.rebased-save-can-succeed", MemoryLibraryCommandStatuses.Success,
+                MemoryLibraryPolicy.PlanCommandStatus(command, new MemoryLibraryCommandTargetState
+                {
+                    commandShapeValid = true, exists = true,
+                    currentStructuralRevision = 8, activeRow = detail.row
+                }, 480));
+            detail.targetStructuralRevision = 9;
+            MemoryLibraryUiPolicy.MergeDetailRefresh(draft, detail);
+            Equal("m9.draft.later-change-conflicts-again", true, draft.structuralConflict);
+            Equal("m9.draft.other-record-cannot-rebase", false,
+                MemoryLibraryUiPolicy.RebaseEditDraft(draft, Detail("other", 9, 12)));
+            detail.row.rootHandle.rootId = "moved-root";
+            Equal("m9.draft.other-placement-cannot-rebase", false,
+                MemoryLibraryUiPolicy.RebaseEditDraft(draft, detail));
+            detail.row.rootHandle.rootId = "root";
+            detail.row.canSaveWording = false;
+            Equal("m9.draft.ineligible-cannot-rebase", false,
+                MemoryLibraryUiPolicy.RebaseEditDraft(draft, detail));
+            detail.row.canSaveWording = true;
+            detail.status = MemoryLibraryStatuses.Missing;
+            Equal("m9.draft.missing-cannot-rebase", false,
+                MemoryLibraryUiPolicy.RebaseEditDraft(draft, detail));
+            draft.text = draft.originalText;
+            Equal("m9.draft.reverted-can-leave", false, MemoryLibraryUiPolicy.HasUnsavedDraft(draft));
+
+            foreach (int cap in new[] { 120, 240, 480, 1200 })
+            {
+                detail = Detail("bounded-editor", 1, 1);
+                detail.detail.playerWording = new string('x', cap);
+                draft = MemoryLibraryUiPolicy.BeginEdit(detail, cap);
+                Equal("m9.draft.complete-library-cap." + cap, cap, draft.text.Length);
+                Equal("m9.draft.library-cap-accepted." + cap, true,
+                    MemoryLibraryPolicy.CheckEligibility(MemoryLibraryActions.SaveWording,
+                        detail.row, false, false, draft.text, cap).validAction);
+            }
+            draft.text = new string('x', 400);
+            MemoryLibraryUiPolicy.UpdateEditText(draft, draft.text, 240);
+            Equal("m9.draft.lowered-limit-keeps-text", 400, draft.text.Length);
+            MemoryLibraryUiPolicy.UpdateEditText(draft, draft.text + "extra", 240);
+            Equal("m9.draft.lowered-limit-cannot-grow", 400, draft.text.Length);
+            MemoryLibraryUiPolicy.UpdateEditText(draft, new string('x', 399), 240);
+            Equal("m9.draft.lowered-limit-can-shrink-gradually", 399, draft.text.Length);
+            MemoryLibraryUiPolicy.UpdateEditText(draft, new string('x', 239), 240);
+            MemoryLibraryUiPolicy.UpdateEditText(draft, draft.text + "\ud83d\ude00", 240);
+            Equal("m9.draft.edit-cap-preserves-surrogate", 239, draft.text.Length);
+            var unused = new MemoryBlockRow { lastAutomaticIncludedTick = 0, automaticInclusionCount = 0 };
+            Equal("m9.usage.zero-count-never", false, MemoryLibraryUiPolicy.HasAutomaticInclusion(unused));
+            unused.providerExposureState = "confirmed_sent";
+            Equal("m9.usage.wording-only-never", false, MemoryLibraryUiPolicy.HasAutomaticInclusion(unused));
+            unused.automaticInclusionCount = 1;
+            Equal("m9.usage.real-tick-zero-use", true, MemoryLibraryUiPolicy.HasAutomaticInclusion(unused));
+            unused.lastAutomaticIncludedTick = -1;
+            Equal("m9.usage.unknown-date", false, MemoryLibraryUiPolicy.HasAutomaticInclusion(unused));
+        }
+
+        private static void PreviousCursorsRespectRowAndChapterLimits()
+        {
+            foreach (int cap in new[] { 1, 7, 32, 64 })
+            {
+                int start = cap * 2;
+                MemoryLibraryCursorPlan page = MemoryLibraryPolicy.NormalizeRowCursor(
+                    start, 64, cap, 1, start + 1);
+                Equal("m9.previous.partial-tail." + cap, cap, page.previousStart);
+            }
+            var limits = new MemoryLibraryLimits { libraryWindowRows = 32, chapterHeaderRows = 2 };
+            var ownerHandle = new MemoryLibraryOwnerHandle(MemoryLibraryScopes.Active, "pawn", "epoch");
+            var rootHandle = new MemoryRootHandle { ownerPawnId = "pawn", epochToken = "epoch", rootId = "root" };
+            var snapshot = new MemoryLibraryOwnerIndexSnapshot
+            {
+                ownerRow = new MemoryLibraryOwnerRow { primaryHandle = ownerHandle }
+            };
+            var root = new MemoryLibraryRootIndexInput { header = new MemoryThreadHeaderRow { rootHandle = rootHandle } };
+            snapshot.roots.Add(root);
+            var owners = new List<MemoryLibraryOwnerRow>();
+            for (int index = 0; index < 75; index++)
+            {
+                MemoryBlockRow row = Block("page-" + index, index, MemoryLibraryPolicy.ImportanceRegular);
+                snapshot.standalone.Add(row);
+                owners.Add(new MemoryLibraryOwnerRow
+                {
+                    primaryHandle = new MemoryLibraryOwnerHandle(MemoryLibraryScopes.Active, "pawn-" + index, "epoch"),
+                    displayName = "Pawn " + index
+                });
+                MemoryBlockRow threaded = Block("chapter-page-" + index, index, MemoryLibraryPolicy.ImportanceRegular);
+                threaded.rootHandle = rootHandle;
+                // Uneven chapter sizes force pages shorter than the row limit.
+                threaded.chapterId = "chapter-" + (index / 5);
+                root.children.Add(threaded);
+                if (index % 5 == 0) root.chapters.Add(new MemoryChapterRow { chapterId = threaded.chapterId });
+            }
+            MemoryLibraryOwnerResult ownerPage = MemoryLibraryIndexPolicy.QueryOwners(owners,
+                new MemoryLibraryOwnerQuery { start = 64, count = 64, expectedDirectoryRevision = 1 }, 1, limits, 0, 0);
+            Equal("m9.previous.owner-dto", 32, ownerPage.previousStart);
+            MemoryLibraryListResult listPage = MemoryLibraryIndexPolicy.QueryList(snapshot,
+                new MemoryLibraryListQuery
+                {
+                    primaryHandle = ownerHandle,
+                    activeOwnerEpochKey = new MemoryOwnerEpochKey { ownerPawnId = "pawn", epochToken = "epoch" },
+                    viewTag = MemoryLibraryViews.Standalone, listStart = 64, listCount = 64,
+                    expectedDirectoryRevision = 1, expectedListSnapshotRevision = 1
+                }, 1, 1, 1, 1, 1, 60000, limits);
+            Equal("m9.previous.list-dto-ready", MemoryLibraryStatuses.Ready, listPage.status);
+            Equal("m9.previous.list-dto", 32, listPage.previousStart);
+            int cursor = 0;
+            int previous = 0;
+            do
+            {
+                MemoryThreadDetailResult page = MemoryLibraryIndexPolicy.QueryThreadDetail(snapshot,
+                    new MemoryThreadDetailQuery
+                    {
+                        rootHandle = rootHandle, detailStart = cursor, detailCount = 64,
+                        expectedDetailSnapshotRevision = cursor == 0 ? 0 : 1
+                    }, 1, 60000, limits);
+                Equal("m9.previous.chapter-dto-ready." + cursor, MemoryLibraryStatuses.Ready, page.status);
+                Equal("m9.previous.chapter-packed." + cursor, previous, page.previousStart);
+                Equal("m9.previous.chapter-progress." + cursor, true, page.nextStart > cursor);
+                if (!page.hasMore) break;
+                previous = cursor;
+                cursor = page.nextStart;
+            } while (cursor < 75);
+        }
+
         private static void CapacityAndEmptyStateRulesAreExact()
         {
             MemoryLibraryOwnerRow zeroMemory = new MemoryLibraryOwnerRow
@@ -971,6 +1113,7 @@ namespace MemoryThreadTests
                 Path.Combine(root, "Source", "UI", "Dialog_MemoryLibrary.Rail.cs"),
                 Path.Combine(root, "Source", "UI", "Dialog_MemoryLibrary.Filters.cs"),
                 Path.Combine(root, "Source", "UI", "Dialog_MemoryLibrary.Detail.cs"),
+                Path.Combine(root, "Source", "UI", "Dialog_MemoryLibrary.Editing.cs"),
                 Path.Combine(root, "Source", "UI", "Dialog_MemoryLibrary.Labels.cs"),
                 Path.Combine(root, "Source", "UI", "DiaryJournalView.cs")
             };

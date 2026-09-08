@@ -79,6 +79,7 @@ namespace PawnDiary
                 loreExpanded = false;
                 return;
             }
+            if (!ConfirmDiscardDraft(NavigateBackFromDetail)) return;
             if (session.selectedRecordHandle != null)
             {
                 session.selectedRecordHandle = null;
@@ -375,9 +376,10 @@ namespace PawnDiary
             float tailHeight;
             if (session.editDraft != null)
             {
-                tailHeight = 180f;
+                tailHeight = 180f + Mathf.Max(24f, style.memoryLibraryControlHeight);
                 if (!string.IsNullOrEmpty(session.feedbackStatus)) tailHeight += 26f;
-                if (session.editDraft.structuralConflict) tailHeight += 44f;
+                if (session.editDraft.structuralConflict)
+                    tailHeight += EditConflictHeight(contentWidth) + 2f;
             }
             else
             {
@@ -402,12 +404,7 @@ namespace PawnDiary
                     if (Widgets.ButtonText(new Rect(view.x, y, 120f, 28f),
                         T("PawnDiary.Memory.Library.Back")))
                     {
-                        session.selectedRecordHandle = null;
-                        session.editDraft = null;
-                        session.feedbackStatus = string.Empty;
-                        blockDetail = null;
-                        selectedBlockRow = null;
-                        diagnosticsExpanded = false;
+                        NavigateBackFromDetail();
                         return;
                     }
                     y += 34f;
@@ -487,20 +484,31 @@ namespace PawnDiary
             if (draft.structuralConflict)
             {
                 GUI.color = Color.yellow;
-                Widgets.Label(new Rect(rect.x, y, rect.width, 42f),
+                float conflictHeight = EditConflictHeight(rect.width);
+                Widgets.Label(new Rect(rect.x, y, rect.width, conflictHeight),
                     T("PawnDiary.Memory.Library.EditConflict"));
                 GUI.color = Color.white;
-                y += 44f;
+                y += conflictHeight + 2f;
             }
-            float buttons = 34f;
+            float countHeight = Mathf.Max(24f, DiaryJournalView.UiStyle.memoryLibraryControlHeight);
+            float buttons = 34f + countHeight;
             Rect area = new Rect(rect.x, y, rect.width,
                 Mathf.Max(70f, rect.yMax - y - buttons));
-            string edited = Widgets.TextArea(area, draft.text ?? string.Empty) ?? string.Empty;
-            draft.text = MemoryLibraryPolicy.ClampUtf16CompleteScalar(edited, detachedTextCap);
-            y = area.yMax + 5f;
+            bool idle = pendingCommandId == 0 && session.pendingCommand == null;
+            bool priorEnabled = GUI.enabled;
+            GUI.enabled = priorEnabled && idle;
+            string before = draft.text ?? string.Empty;
+            string edited = Widgets.TextArea(area, before) ?? string.Empty;
+            GUI.enabled = priorEnabled;
+            if (idle) MemoryLibraryUiPolicy.UpdateEditText(draft, edited, detachedTextCap);
+            y = area.yMax + 2f;
+            Widgets.Label(new Rect(rect.x, y, rect.width, countHeight),
+                T("PawnDiary.Memory.Library.EditLength", draft.text.Length, detachedTextCap));
+            y += countHeight + 3f;
             float width = Mathf.Max(84f, (rect.width - 10f) / 3f);
             bool canSave = MutationsAvailable()
-                && pendingCommandId == 0 && session.pendingCommand == null
+                && idle && !draft.structuralConflict && row.canSaveWording
+                && draft.text.Length <= detachedTextCap
                 && !string.IsNullOrWhiteSpace(draft.text);
             if (Widgets.ButtonText(new Rect(rect.x, y, width, 28f),
                     T("PawnDiary.Memory.Library.Save"), true, true, canSave))
@@ -511,7 +519,19 @@ namespace PawnDiary
                     row, false, draft));
             }
             if (Widgets.ButtonText(new Rect(rect.x + width + 5f, y, width, 28f),
-                T("PawnDiary.Memory.Library.Cancel"))) session.editDraft = null;
+                T("PawnDiary.Memory.Library.Cancel"), true, true, idle)) session.editDraft = null;
+            if (draft.structuralConflict
+                && Widgets.ButtonText(new Rect(rect.x + (width + 5f) * 2f, y, width, 28f),
+                    T("PawnDiary.Memory.Library.KeepDraft"), true, true,
+                    idle && MutationsAvailable() && row.canSaveWording)
+                && MemoryLibraryUiPolicy.RebaseEditDraft(draft, blockDetail))
+                session.feedbackStatus = string.Empty;
+        }
+
+        private static float EditConflictHeight(float width)
+        {
+            return Mathf.Max(42f,
+                Text.CalcHeight(T("PawnDiary.Memory.Library.EditConflict"), width) + 4f);
         }
 
         private void DrawUsageFacts(Rect rect, MemoryBlockRow row)
@@ -666,7 +686,7 @@ namespace PawnDiary
                 threadDetail.shownManageableCount, threadDetail.hasPrevious, threadDetail.hasMore,
                 delegate
                 {
-                    detailStart = Math.Max(0, threadDetail.returnedStart - PageSize);
+                    detailStart = threadDetail.previousStart;
                     detailExpectedSnapshotRevision = threadDetail.detailSnapshotRevision;
                     detailScroll = Vector2.zero;
                     repositoryNavigationDirty = true;

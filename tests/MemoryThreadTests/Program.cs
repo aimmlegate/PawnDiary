@@ -1062,6 +1062,11 @@ namespace MemoryThreadTests
 
         private static void TestOptionalMemoryAiPolicy()
         {
+            AssertTrue("optional.wording-only-exposure-allows-reflection",
+                MemoryOptionalAiPolicy.HasNoNarrativeUse(0));
+            foreach (long used in new[] { -1L, 1L, 2L, long.MaxValue })
+                AssertTrue("optional.narrative-use-refuses-duplicate." + used,
+                    !MemoryOptionalAiPolicy.HasNoNarrativeUse(used));
             AssertTrue("optional.meaningful.pre-enable-never-catches-up",
                 !MemoryOptionalAiPolicy.IsMeaningfulEventAfterEligibilityBaseline(99, 100));
             AssertTrue("optional.meaningful.exact-enable-tick-is-ambiguous-and-skipped",

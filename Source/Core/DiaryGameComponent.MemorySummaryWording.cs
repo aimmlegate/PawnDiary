@@ -4,6 +4,8 @@
 // detached meaningful, quiet, and wording candidates. Any winner stages work through the ordinary
 // LlmClient queue, commits its complete saved owner row, and only then activates transport visibility.
 // Deterministic facts/wording always exist first and remain canonical on every failure path.
+// Narrative work carries the ordinary Recall guards and current truth. Wording-only provider
+// exposure stays separate from the persisted narrative-use counter that prevents duplicate pages.
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -377,6 +379,7 @@ namespace PawnDiary
                 ? ResolveMemoryWordingStyleRule(pawn, owner)
                 : string.Empty;
             string baseUser;
+            MemoryRecallPromptProjection reflectionProjection = null;
             if (purpose == MemoryDispatchTokens.SummaryWording)
             {
                 SummaryWordingOpportunitySnapshot summaryIdentity;
@@ -394,7 +397,15 @@ namespace PawnDiary
             }
             else
             {
-                baseUser = BuildMemoryReflectionPrompt(block, tuning);
+                reflectionProjection = BuildMemoryReflectionPrompt(
+                    owner, block, opportunity.workClass, policy, tuning, nowTick);
+                if (reflectionProjection.evidence.Count != 1
+                    || string.IsNullOrWhiteSpace(reflectionProjection.text))
+                {
+                    SettleRejectedOptionalOpportunity(opportunity);
+                    return false;
+                }
+                baseUser = reflectionProjection.text;
             }
             Dictionary<ApiLaneIdentity, LlmPromptVariant> promptVariants =
                 new Dictionary<ApiLaneIdentity, LlmPromptVariant>();
@@ -412,7 +423,10 @@ namespace PawnDiary
                         : "optional-memory:v1",
                 systemPrompt = system,
                 userPrompt = baseUser,
-                evidence = new List<MemoryEvidenceIdentity> { evidence }
+                evidence = reflectionProjection?.evidence
+                    ?? new List<MemoryEvidenceIdentity> { evidence },
+                guards = reflectionProjection?.guards ?? new List<MemoryGuardIdentity>(),
+                diagnostics = reflectionProjection?.diagnostics ?? new List<MemoryDiagnosticIdentity>()
             });
             for (int index = 0; index < lanes.Count; index++)
             {
@@ -1535,21 +1549,58 @@ namespace PawnDiary
                 diary?.customWritingStyleRule);
         }
 
-        private static string BuildMemoryReflectionPrompt(
+        /// <summary>
+        /// Revalidates the exact selected block immediately before staging, then freezes the text
+        /// and receipts from one common projection. Current truth and structural reservations must
+        /// travel with the memory, rather than being discarded after the earlier eligibility check.
+        /// </summary>
+        private MemoryRecallPromptProjection BuildMemoryReflectionPrompt(
+            PawnKnowledgeState owner,
             SavedMemoryBlock block,
-            DiaryKnowledgeTuningDef tuning)
+            string workClass,
+            MemoryPolicySnapshot policy,
+            DiaryKnowledgeTuningDef tuning,
+            long nowTick)
         {
+            var empty = new MemoryRecallPromptProjection();
+            SavedMemoryThreadRoot root;
+            SavedMemoryBlock current;
+            if (owner == null || block == null || policy == null
+                || !TryFindAdmittedBaseBlock(owner, block.rootId, block.recordId, out root, out current)
+                || !ReferenceEquals(current, block)
+                || !MemoryOptionalAiPolicy.HasNoNarrativeUse(block.automaticInclusionCount)
+                || block.playerEdited) return empty;
+            string consumerId = workClass == ReflectionWorkClassTokens.QuietMemory
+                ? MemoryRecallConsumerRegistry.QuietMemory
+                : MemoryRecallConsumerRegistry.ExistingReflection;
+            MemoryRecallQueryV2 query = BuildOptionalReflectionRecallQuery(
+                owner, policy, consumerId, nowTick, tuning);
+            MemoryRecallCandidateSnapshot candidate = SnapshotRecallCandidate(
+                owner, root, block, root != null, policy, tuning, query,
+                SnapshotRecallReservations(owner));
+            MemoryRecallSelectedCandidate selected = ImportantMemorySelector.SelectExplicitReflectionV2(
+                query, consumerId, candidate);
+            KnowledgePolicySnapshot textPolicy = DiaryKnowledgePolicy.Snapshot(
+                applyGlobalMemorySetting: false);
+            MemoryRecallPromptProjection projection = ImportantMemoryLineRenderer.ProjectReflectionV2(
+                selected,
+                textPolicy?.currentStateInstruction ?? string.Empty,
+                Math.Max(1, textPolicy?.fallbackSummaryMaxChars ?? 240),
+                Math.Max(1, tuning?.memoryCurrentStateMaximumCharacters ?? 240),
+                Math.Max(1, textPolicy?.relevantPastMaxChars ?? 500),
+                MemoryDispatchPolicy.MaximumEvidencePerVariant,
+                MemoryDispatchPolicy.MaximumGuardsPerVariant,
+                MemoryDispatchPolicy.MaximumDiagnosticsPerVariant);
+            if (projection.evidence.Count != 1) return empty;
             StringBuilder text = new StringBuilder();
             text.AppendLine(tuning?.memoryReflectionInstruction ?? string.Empty);
             text.Append("memory_record=").AppendLine(block?.recordId ?? string.Empty);
             text.Append("event_tick=").AppendLine(
                 (block?.originalEventTick ?? 0).ToString(CultureInfo.InvariantCulture));
             text.Append("importance=").AppendLine(block?.importance ?? string.Empty);
-            text.Append("memory=").Append(
-                !string.IsNullOrWhiteSpace(block?.playerWording)
-                    ? block.playerWording
-                    : block?.automaticWording ?? string.Empty);
-            return text.ToString();
+            text.Append(projection.text);
+            projection.text = text.ToString();
+            return projection;
         }
 
         private sealed class OptionalReflectionCandidate
@@ -1788,8 +1839,7 @@ namespace PawnDiary
                 || !string.Equals(block.ownerPawnId, owner.pawnId, StringComparison.Ordinal)
                 || !string.Equals(block.ownerEpochToken,
                     owner.autobiographicalEpochToken, StringComparison.Ordinal)
-                || !string.Equals(block.providerExposureState, "not_sent",
-                    StringComparison.Ordinal)
+                || !MemoryOptionalAiPolicy.HasNoNarrativeUse(block.automaticInclusionCount)
                 || !policy.AllowsRecall(MemoryCategoryBits.ForToken(block.category))) return false;
             bool meaningful = block.importance == MemoryContractTokens.ImportanceImportant
                 || HasTurningPoint(block) || HasReversal(block);
@@ -1820,8 +1870,7 @@ namespace PawnDiary
             if (block == null || candidate == null || query == null || policy == null
                 || block.kind == MemoryContractTokens.KindSummary
                 || block.playerEdited
-                || !string.Equals(block.providerExposureState, "not_sent",
-                    StringComparison.Ordinal)
+                || !MemoryOptionalAiPolicy.HasNoNarrativeUse(block.automaticInclusionCount)
                 || !policy.AllowsRecall(MemoryCategoryBits.ForToken(block.category))
                 || !ImportantMemorySelector.IsCandidateStateEligibleForConsumer(
                     query, consumerId, candidate)) return false;

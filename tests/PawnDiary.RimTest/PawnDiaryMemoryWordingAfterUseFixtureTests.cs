@@ -3,6 +3,7 @@
 // These tests never queue HTTP work. They exercise the private post-publication scheduling seam
 // against an inert component shell, and inspect compiled call sites to keep both automatic page
 // paths wired to the owner-local cooldown clock and the background wording coordinator.
+// The same shell also exercises frozen-record lookup and reflection text/receipt projection.
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -237,6 +238,264 @@ namespace PawnDiary.RimTests
             Require(block.optionalLlmWordingRevision == 3
                     && block.optionalLlmWording.Contains("survive a failed page"),
                 "A failed generated reflection changed the current memory prose.");
+        }
+
+        /// <summary>
+        /// A later sibling changes the current root projection without deleting the pre-event
+        /// selection. Revalidation still honors suppression, deletion, duplicate IDs, and edited TTL.
+        /// </summary>
+        [Test]
+        public static void FrozenRecallSurvivesSiblingAndHonorsSavedRecordChanges()
+        {
+            WithOptionalMemoryPolicy(() =>
+            {
+                PawnKnowledgeState owner = NewOwner("Pawn_FrozenRecall_Regression");
+                SavedMemoryThreadRoot root;
+                SavedMemoryBlock old = NewThreadedRecallBlock(owner, out root);
+                DiaryGameComponent component = NewComponent(owner);
+                MemoryPolicySnapshot policy = MemoryEffectivePolicyProvider.Current;
+                var tuning = new DiaryKnowledgeTuningDef();
+                MemoryRecallQueryV2 query = RecallFixtureQuery(owner, 1000);
+                object reservations = RequirePrivateMethod("SnapshotRecallReservations").Invoke(
+                    component, new object[] { owner });
+                var before = (List<MemoryRecallCandidateSnapshot>)RequirePrivateMethod(
+                    "SnapshotRecallCandidates").Invoke(component,
+                        new object[] { owner, policy, tuning, query, reservations });
+                MemoryRecallSelectionResultV2 frozen = ImportantMemorySelector.SelectV2(query, before);
+                Require(frozen.selected.Count == 1, "The fixture did not freeze the old memory.");
+
+                SavedMemoryBlock later = NewBlock(owner, "record-later-sibling", "source-later-sibling",
+                    "Later sibling must not enter the old page.", 0);
+                later.rootId = root.rootId;
+                later.chapterId = old.chapterId;
+                later.originalEventTick = 200;
+                root.visibleBlocks.Add(later);
+                Func<MemoryRecallSelectionResultV2> revalidate = () =>
+                {
+                    var current = (List<MemoryRecallCandidateSnapshot>)RequirePrivateMethod(
+                        "SnapshotFrozenRecallCandidates").Invoke(component,
+                            new object[] { owner, policy, tuning, query, reservations, frozen });
+                    return ImportantMemorySelector.RevalidateFrozenV2(frozen, query, current);
+                };
+                MemoryRecallSelectionResultV2 retained = revalidate();
+                Require(retained.selected.Count == 1
+                        && retained.selected[0].evidence.recordId == old.recordId
+                        && retained.selected[0].candidate.historicalText == old.automaticWording,
+                    "The newer sibling replaced or hid the exact pre-event memory.");
+                root.visibleBlocks.Add(old);
+                Require(revalidate().selected.Count == 0, "A duplicate saved identity was silently chosen.");
+                root.visibleBlocks.RemoveAt(root.visibleBlocks.Count - 1);
+                old.suppressed = true;
+                Require(revalidate().selected.Count == 0, "Suppression failed on the frozen lookup path.");
+                old.suppressed = false;
+
+                old.importance = MemoryContractTokens.ImportanceMinor;
+                old.playerEdited = true;
+                old.playerWording = "A protected edited memory.";
+                query.repetitionPolicy.currentTick = old.originalEventTick + policy.minorMemoryLifetimeTicks + 1;
+                retained = revalidate();
+                Require(retained.selected.Count == 1
+                        && retained.selected[0].candidate.historicalText == old.playerWording,
+                    "An edited memory became unusable after its ordinary TTL.");
+                old.playerEdited = false;
+                old.playerWording = string.Empty;
+                Require(revalidate().selected.Count == 0,
+                    "Removing edit protection failed to restore the original TTL.");
+                old.playerEdited = true;
+                root.visibleBlocks.Remove(old);
+                Require(revalidate().selected.Count == 0,
+                    "Deleting frozen evidence selected its later sibling as a replacement.");
+            });
+        }
+
+        /// <summary>
+        /// The real pre-stage adapter preserves current truth and all structural receipts after a
+        /// wording-only send, then refuses cooldowns, active reservations, and prior narrative use.
+        /// No transport queue or game mutation is involved.
+        /// </summary>
+        [Test]
+        public static void ReflectionProjectionKeepsTruthAndGuardsAfterWordingOnlySend()
+        {
+            WithOptionalMemoryPolicy(() =>
+            {
+                PawnKnowledgeState owner = NewOwner("Pawn_ReflectionRecall_Regression");
+                owner.completedDiaryEntryOrdinal = 10;
+                SavedMemoryThreadRoot root;
+                SavedMemoryBlock block = NewThreadedRecallBlock(owner, out root);
+                block.importance = MemoryContractTokens.ImportanceImportant;
+                block.optionalLlmWording = "Then we married.";
+                // NewBlock already has a valid wording fingerprint and confirmed provider exposure,
+                // while its narrative inclusion counter is still zero.
+                owner.ownerAwarenessSnapshots.Add(new SavedMemoryAwarenessSnapshot
+                {
+                    snapshotId = "snapshot-current-divorce",
+                    subjectKind = MemoryContractTokens.SubjectPawn,
+                    subjectId = root.subjectId,
+                    factStreamToken = "relationship",
+                    trackingStateToken = KnowledgeObservationTokens.TrackingTracked,
+                    lastObservedTick = 999,
+                    stateFacts = new List<SavedMemoryStateFact>
+                    {
+                        new SavedMemoryStateFact { factKey = "relationship", factValue = "divorced" }
+                    }
+                });
+                DiaryGameComponent component = NewComponent(owner);
+                MemoryPolicySnapshot policy = MemoryEffectivePolicyProvider.Current;
+                var tuning = new DiaryKnowledgeTuningDef();
+                Func<MemoryRecallPromptProjection> project = () =>
+                    (MemoryRecallPromptProjection)RequirePrivateMethod("BuildMemoryReflectionPrompt").Invoke(
+                        component, new object[]
+                        {
+                            owner, block, ReflectionWorkClassTokens.MeaningfulMemory, policy, tuning, 1000L
+                        });
+                Func<SavedMemoryBlock> select = () =>
+                    (SavedMemoryBlock)RequirePrivateMethod("SelectOptionalReflectionBlock").Invoke(
+                        component, new object[] { owner, policy, true, 1000L, tuning, 0L });
+                Require(ReferenceEquals(select(), block),
+                    "Wording-only provider exposure prevented a meaningful reflection.");
+                MemoryRecallPromptProjection projection = project();
+                Require(projection.text.Contains("Then we married.") && projection.text.Contains("divorced"),
+                    "Reflection prompt dropped historical wording or authoritative current truth.");
+                Require(projection.evidence.Count == 1 && projection.guards.Count == 4
+                        && projection.diagnostics.Exists(row => row.sourceId == "snapshot-current-divorce"),
+                    "Reflection prompt lost exact evidence, structural guards, or current-state provenance.");
+
+                string subjectKey = MemoryRepetitionGuardPolicy.SubjectKey(root.subjectKind, root.subjectId);
+                owner.repetitionGuardRows.Add(new SavedMemoryRepetitionGuardRow
+                {
+                    ownerEpochToken = owner.autobiographicalEpochToken,
+                    guardKind = MemoryRepetitionGuardKinds.Subject,
+                    guardKey = subjectKey,
+                    automaticInclusionCount = 1,
+                    lastAutomaticIncludedTick = 999,
+                    lastAutomaticIncludedEntryOrdinal = owner.completedDiaryEntryOrdinal
+                });
+                Require(select() == null && project().evidence.Count == 0,
+                    "A cooling subject reached optional selection or its pre-stage prompt.");
+                owner.repetitionGuardRows.Clear();
+                SavedActiveLogicalRequestV1 reserved = NewRequest(owner);
+                reserved.reservedGuardEntries.Add(new SavedFrozenGuardEntryV1
+                {
+                    guardKind = MemoryRepetitionGuardKinds.Subject,
+                    guardKey = subjectKey
+                });
+                SetPrivateField(component, "activeMemoryCoordinatorRequests",
+                    new List<SavedActiveLogicalRequestV1> { reserved });
+                Require(select() == null && project().evidence.Count == 0,
+                    "An active subject reservation was ignored by an optional reflection.");
+                SetPrivateField(component, "activeMemoryCoordinatorRequests",
+                    new List<SavedActiveLogicalRequestV1>());
+                block.automaticInclusionCount = 1;
+                Require(select() == null && project().evidence.Count == 0,
+                    "A narrative-use receipt allowed a second memory-created page.");
+            });
+        }
+
+        /// <summary>
+        /// Calls the production adapter with detached saved rows only. Exact diplomacy must augment
+        /// knownness, while an unavailable generation must not leave a misleading membership line.
+        /// </summary>
+        [Test]
+        public static void FactionRecallProjectsExactGlobalDiplomacy()
+        {
+            PawnKnowledgeState owner = NewOwner("Pawn_FactionRecall_Regression");
+            string subject;
+            Require(MemoryIdentityCodec.TryCreateFactionSubjectId("Faction_RecallRegression", 2,
+                out subject), "Could not create the exact faction subject.");
+            owner.ownerAwarenessSnapshots.Add(new SavedMemoryAwarenessSnapshot
+            {
+                snapshotId = "known-faction-recall-regression",
+                scopeKindToken = KnowledgeObservationTokens.ScopeFaction,
+                subjectKind = MemoryContractTokens.SubjectFaction,
+                subjectId = subject,
+                factStreamToken = KnowledgeObservationTokens.StreamFactionConnection,
+                trackingStateToken = KnowledgeObservationTokens.TrackingTracked,
+                stateFacts = new List<SavedMemoryStateFact>
+                {
+                    new SavedMemoryStateFact { factKey = KnowledgeObservationTokens.FactConnectionKind,
+                        factValue = KnowledgeObservationTokens.ConnectionFamily }
+                }
+            });
+            var global = new SavedGlobalFactionSnapshot
+            {
+                factionInstanceId = "Faction_RecallRegression", allocatorGeneration = 2,
+                relationKindToken = "Hostile", goodwill = -90, leaderPawnId = "Pawn_CurrentLeader",
+                trackingStateToken = KnowledgeObservationTokens.TrackingTracked,
+                snapshotRevision = 2, observedTick = 100
+            };
+            DiaryGameComponent component = NewComponent(owner);
+            SetPrivateField(component, "globalFactionSnapshots", new List<SavedGlobalFactionSnapshot> { global });
+            Func<MemoryRecallCandidateSnapshot> project = () =>
+            {
+                var candidate = new MemoryRecallCandidateSnapshot();
+                ImportantMemorySelector.TryAddExactRoute(candidate.exactRoutes,
+                    MemoryContractTokens.SubjectFaction, subject);
+                RequirePrivateMethod("ApplyCurrentTruth").Invoke(component,
+                    new object[] { candidate, owner, new DiaryKnowledgeTuningDef() });
+                return candidate;
+            };
+            MemoryRecallCandidateSnapshot projected = project();
+            Require(projected.currentStateCanRender && projected.currentStateApplicable
+                && projected.currentStateText.Contains("relation_kind=Hostile")
+                && projected.currentStateText.Contains("goodwill=-90")
+                && projected.currentStateSourceId == subject,
+                "Recall failed to join exact global diplomacy and provenance to owner awareness.");
+            global.allocatorGeneration = 3;
+            projected = project();
+            Require(projected.currentStateApplicable && projected.currentStateContradictsHistorical
+                && !projected.currentStateCanRender && projected.currentStateText.Length == 0,
+                "A recycled faction instance leaked state or left a misleading partial correction.");
+            global.allocatorGeneration = 2;
+            owner.ownerAwarenessSnapshots.Clear();
+            projected = project();
+            Require(!projected.currentStateApplicable && projected.currentStateText.Length == 0,
+                "Global faction knowledge bypassed the owner's awareness boundary.");
+        }
+
+        private static SavedMemoryBlock NewThreadedRecallBlock(
+            PawnKnowledgeState owner,
+            out SavedMemoryThreadRoot root)
+        {
+            root = new SavedMemoryThreadRoot
+            {
+                rootId = "root-recall-regression",
+                ownerPawnId = owner.pawnId,
+                ownerEpochToken = owner.autobiographicalEpochToken,
+                subjectKind = MemoryContractTokens.SubjectPawn,
+                subjectId = "Pawn_RecallRegression_Subject"
+            };
+            SavedMemoryBlock block = NewBlock(owner, "record-recall-regression", "source-recall-regression",
+                string.Empty, 0);
+            block.rootId = root.rootId;
+            block.chapterId = "chapter-recall-regression";
+            block.originalEventTick = 100;
+            root.visibleBlocks.Add(block);
+            owner.threadRoots.Add(root);
+            return block;
+        }
+
+        private static MemoryRecallQueryV2 RecallFixtureQuery(PawnKnowledgeState owner, long nowTick)
+        {
+            var query = new MemoryRecallQueryV2
+            {
+                ownerPawnId = owner.pawnId,
+                ownerEpochToken = owner.autobiographicalEpochToken,
+                consumerId = MemoryRecallConsumerRegistry.OrdinaryDiary,
+                writingFormat = MemoryRecallWritingFormats.Full,
+                currentEventId = "event-recall-regression",
+                currentSourceOccurrenceId = "event-recall-regression",
+                useMemoriesInWriting = true,
+                repetitionPolicy = new MemoryRepetitionPolicySnapshot
+                {
+                    currentTick = nowTick,
+                    completedDiaryEntryOrdinal = 10,
+                    ticksPerDay = 60000
+                }
+            };
+            query.enabledCategories.Add(MemoryContractTokens.CategoryPersonal);
+            ImportantMemorySelector.TryAddExactRoute(query.exactRoutes,
+                MemoryContractTokens.SubjectPawn, "Pawn_RecallRegression_Subject");
+            return query;
         }
 
         private static PawnKnowledgeState NewOwner(string ownerPawnId)

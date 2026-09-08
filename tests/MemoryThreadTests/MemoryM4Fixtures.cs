@@ -220,6 +220,14 @@ namespace MemoryThreadTests
                 long.MaxValue, 0, false, MemoryContractTokens.ImportanceImportant, 0, 0));
             False("m4.ttl.unknown.never", MemoryThreadReducer.IsExpired(
                 long.MaxValue, 0, true, MemoryContractTokens.ImportanceMinor, 0, 0));
+            foreach (string importance in new[]
+                { MemoryContractTokens.ImportanceMinor, MemoryContractTokens.ImportanceRegular })
+            {
+                False("m4.ttl.edited-retained." + importance, MemoryThreadReducer.IsExpired(
+                    2000, 10, false, importance, 100, 1000, playerEdited: true));
+                True("m4.ttl.original-restores-age." + importance, MemoryThreadReducer.IsExpired(
+                    2000, 10, false, importance, 100, 1000, playerEdited: false));
+            }
 
             MemoryReducerRoot root = Root(10);
             root.visibleBlocks.Add(Block(root, 1, 0, MemoryContractTokens.ImportanceMinor, false));

@@ -181,6 +181,17 @@ namespace PawnDiary
         private const int MaximumCompositeKeyCharacters = 2048;
 
         /// <summary>
+        /// Wording-only sends do not consume a narrative opportunity. Narrative inclusion already
+        /// commits at the provider boundary, including uncertain/failed page sends, so this saved
+        /// counter prevents duplicate pages while allowing a previously reworded memory to reflect.
+        /// Negative or saturated accounting fails closed along with any already-used memory.
+        /// </summary>
+        public static bool HasNoNarrativeUse(long automaticInclusionCount)
+        {
+            return automaticInclusionCount == 0;
+        }
+
+        /// <summary>
         /// True only for an event observed strictly after the current optional-work baseline. The
         /// strict boundary intentionally treats same-tick ordering as ambiguous and therefore skips
         /// the optional call instead of risking retrospective work.

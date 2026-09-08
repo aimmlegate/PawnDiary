@@ -2152,7 +2152,11 @@
   <PawnDiary.Memory.Library.DiagnosticsIdentity>владелец={0}; эпоха={1}; запись={2}; корень={3}; глава={4}</PawnDiary.Memory.Library.DiagnosticsIdentity>
   <PawnDiary.Memory.Library.DiagnosticsState>вид={0}; структурная ревизия={1}; исходный тик={2}; исключено={3}; изменено={4}; срок={5}; предел текста={6}</PawnDiary.Memory.Library.DiagnosticsState>
   <PawnDiary.Memory.Library.Edit>Изменить</PawnDiary.Memory.Library.Edit>
-  <PawnDiary.Memory.Library.EditConflict>Пока был открыт отделённый черновик, структура воспоминания изменилась. Текст сохранён для новой ревизии; проверьте его перед сохранением.</PawnDiary.Memory.Library.EditConflict>
+  <PawnDiary.Memory.Library.EditConflict>Пока вы редактировали текст, воспоминание изменилось. Черновик сохранён. Проверьте новую версию выше и нажмите «Оставить текст» перед сохранением.</PawnDiary.Memory.Library.EditConflict>
+  <PawnDiary.Memory.Library.KeepDraft>Оставить текст</PawnDiary.Memory.Library.KeepDraft>
+  <PawnDiary.Memory.Library.EditLength>{0}/{1} символов</PawnDiary.Memory.Library.EditLength>
+  <PawnDiary.Memory.Library.DiscardDraftTitle>Отменить изменения воспоминания?</PawnDiary.Memory.Library.DiscardDraftTitle>
+  <PawnDiary.Memory.Library.DiscardDraftPrompt>В тексте воспоминания есть несохранённые изменения. Отменить их и продолжить?</PawnDiary.Memory.Library.DiscardDraftPrompt>
   <PawnDiary.Memory.Library.EditCapFull>Предел изменённых воспоминаний исчерпан. Верните исходный текст одному из уже изменённых воспоминаний, прежде чем изменять другое. Черновик сохранён.</PawnDiary.Memory.Library.EditCapFull>
   <PawnDiary.Memory.Library.Edited>изменено</PawnDiary.Memory.Library.Edited>
   <PawnDiary.Memory.Library.EmptyWording>Текст для показа отсутствует</PawnDiary.Memory.Library.EmptyWording>

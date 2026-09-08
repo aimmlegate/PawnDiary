@@ -4,7 +4,8 @@
 // selected by the explicit release gate. Recall v2 accepts only detached
 // owner/epoch/candidate/guard snapshots, applies the common consumer registry before ranking,
 // freezes a bounded shortlist, and can later revalidate only those frozen IDs. It never queries a
-// store, reads another owner, or uses topic overlap as an eligibility door.
+// store, reads another owner, or uses topic overlap as an eligibility door. A refreshed Summary
+// may lose expired facts, but cannot introduce sources absent from the event-time shortlist.
 //
 // New to C#/RimWorld? See AGENTS.md ("architecture barriers"). No Verse/Unity/Def/settings here.
 using System;
@@ -181,6 +182,7 @@ namespace PawnDiary
         public const string CurrentTruthUnavailable = "recall_current_truth_unavailable";
         public const string GuardBypass = "recall_guard_contract_incomplete";
         public const string FrozenCandidateMissing = "recall_frozen_candidate_missing";
+        public const string FrozenProjectionChanged = "recall_frozen_projection_changed";
         public const string OverCap = "recall_ranked_below_line_cap";
     }
 
@@ -267,51 +269,38 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Applies the common saved-candidate privacy, TTL, category, suppression, and current-truth
-        /// contract without imposing an event-specific route or repetition guard. Optional reflection
-        /// uses this before its own due-window/salience policy; ordinary Recall-v2 applies the same
-        /// checks plus exact-event exclusions and guards in <see cref="CandidateFailure"/>.
+        /// Checks an explicitly chosen reflection memory through the complete common exclusion and
+        /// repetition contract. The coordinator separately owns its due-window and salience rules.
         /// </summary>
         public static bool IsCandidateStateEligibleForConsumer(
             MemoryRecallQueryV2 query,
             string consumerId,
             MemoryRecallCandidateSnapshot candidate)
         {
-            MemoryRecallConsumerContract consumer = MemoryRecallConsumerRegistry.Find(consumerId);
-            if (query == null || consumer == null || candidate == null
-                || !consumer.appliesCommonExclusionContract
-                || !string.Equals(candidate.ownerPawnId, query.ownerPawnId, StringComparison.Ordinal)
-                || !string.Equals(candidate.ownerEpochToken, query.ownerEpochToken,
-                    StringComparison.Ordinal)
-                || !candidate.available || !candidate.identityValid || !candidate.promptRouteValid
-                || !candidate.ttlEligible || !candidate.categoryProjectionValid
-                || !ValidCompositeIdentity(candidate.recordId)
-                || !ValidCompositeIdentity(candidate.sourceOccurrenceId)
-                || !ValidOptionalCompositeIdentity(candidate.sourceEventId)
-                || !ValidOptionalCompositeIdentity(candidate.rootId)
-                || !ValidOptionalCompositeIdentity(candidate.chapterOrNoveltyId)
-                || !MemoryContractTokens.IsKnownKind(candidate.kind)
-                || !MemoryContractTokens.IsKnownImportance(candidate.importance)
-                || string.IsNullOrWhiteSpace(candidate.historicalText)
-                || !CandidateSourcesValid(candidate)
-                || !ValidRouteList(candidate.exactRoutes, consumer)
-                || candidate.suppressed
-                || !HasEnabledCategory(candidate.categories, query.enabledCategories)) return false;
+            return SelectExplicitReflectionV2(query, consumerId, candidate) != null;
+        }
 
-            bool hasCurrentStateText = !string.IsNullOrWhiteSpace(candidate.currentStateText);
-            bool hasCurrentStateSource = !string.IsNullOrWhiteSpace(candidate.currentStateSourceId);
-            bool currentStateMissing = !candidate.currentStateApplicable
-                || !candidate.currentStateCanRender
-                || !hasCurrentStateText
-                || !hasCurrentStateSource;
-            return !((!candidate.currentStateApplicable
-                        && (hasCurrentStateText || hasCurrentStateSource))
-                    || (hasCurrentStateSource
-                        && !ValidCompositeIdentity(candidate.currentStateSourceId))
-                    || (candidate.currentStateContradictsHistorical && currentStateMissing)
-                    || (candidate.currentStateApplicable
-                        && consumer.requiresCurrentStateRendering
-                        && currentStateMissing));
+        /// <summary>
+        /// Selects one exact memory as the subject of an optional reflection, including every guard
+        /// and current-state provenance row. Such work has no new event yet; only these two explicit
+        /// purposes may omit that event route. Supplied self/ancestor exclusions still apply.
+        /// </summary>
+        public static MemoryRecallSelectedCandidate SelectExplicitReflectionV2(
+            MemoryRecallQueryV2 query,
+            string consumerId,
+            MemoryRecallCandidateSnapshot candidate)
+        {
+            if ((consumerId != MemoryRecallConsumerRegistry.ExistingReflection
+                    && consumerId != MemoryRecallConsumerRegistry.QuietMemory)
+                || query == null || query.consumerId != consumerId) return null;
+            MemoryRecallConsumerContract consumer = MemoryRecallConsumerRegistry.Find(consumerId);
+            if (QueryFailure(query, consumer, explicitMemoryPurpose: true).Length != 0
+                || ConsumerLineCap(consumer, query.writingFormat) == 0) return null;
+            MemoryRepetitionGuardEvaluation guards;
+            string failure = CandidateFailure(
+                query, consumer, candidate, new MemoryRecallCandidateReportV2(), out guards,
+                explicitMemoryPurpose: true);
+            return failure.Length == 0 ? BuildSelected(candidate, guards, 0) : null;
         }
 
         private sealed class RankedCandidate
@@ -497,6 +486,7 @@ namespace PawnDiary
                     currentQuery.ownerPawnId,
                     currentQuery.ownerEpochToken);
                 if (current == null
+                    || !string.Equals(current.kind, frozenCandidate.kind, StringComparison.Ordinal)
                     || !string.Equals(
                         current.sourceOccurrenceId,
                         frozenCandidate.sourceOccurrenceId,
@@ -507,6 +497,18 @@ namespace PawnDiary
                         StringComparison.Ordinal))
                 {
                     report.rejectReason = MemoryRecallRejectReasons.FrozenCandidateMissing;
+                    continue;
+                }
+
+                if (current.kind == MemoryContractTokens.KindSummary
+                    && (!CandidateSourcesValid(current)
+                        || !IsOrdinalSubset(current.representedSourceOccurrenceIds,
+                            frozenCandidate.representedSourceOccurrenceIds)
+                        || !IsOrdinalSubset(current.categories, frozenCandidate.categories)))
+                {
+                    // Summary IDs survive folding. New text from a later factual projection must
+                    // never be checked against the old source list, including after save/load.
+                    report.rejectReason = MemoryRecallRejectReasons.FrozenProjectionChanged;
                     continue;
                 }
 
@@ -621,7 +623,8 @@ namespace PawnDiary
 
         private static string QueryFailure(
             MemoryRecallQueryV2 query,
-            MemoryRecallConsumerContract consumer)
+            MemoryRecallConsumerContract consumer,
+            bool explicitMemoryPurpose = false)
         {
             if (query == null
                 || !ValidRawIdentity(query.ownerPawnId)
@@ -642,6 +645,9 @@ namespace PawnDiary
             }
 
             if ((consumer.excludesCurrentEvent
+                    && !(explicitMemoryPurpose
+                        && string.IsNullOrEmpty(query.currentEventId)
+                        && string.IsNullOrEmpty(query.currentSourceOccurrenceId))
                     && !ValidCompositeIdentity(query.currentSourceOccurrenceId))
                 || !ValidOptionalCompositeIdentity(query.currentEventId)
                 || (!string.IsNullOrEmpty(query.pairCounterpartPawnId)
@@ -653,10 +659,11 @@ namespace PawnDiary
                 || !ValidCompositeIdentityList(query.excludedSourceEventIds)
                 || !ValidCompositeIdentityList(query.excludedSourceOccurrenceIds)
                 || !ValidEnabledCategoryList(query.enabledCategories)
-                || !ValidRouteList(query.exactRoutes, consumer))
+                || (!(explicitMemoryPurpose && query.exactRoutes != null && query.exactRoutes.Count == 0)
+                    && !ValidRouteList(query.exactRoutes, consumer)))
             {
-                // A consumer that promises the common self/ancestor exclusion cannot silently
-                // proceed without the current occurrence identity. Optional ancestor lists may be
+                // Event-triggered Recall requires the current occurrence; an explicit reflection
+                // can have no triggering event. Supplied ancestor lists still must be valid and may be
                 // empty, but malformed or duplicate identity/route rows make the detached contract
                 // incomplete.
                 return MemoryRecallRejectReasons.InvalidQuery;
@@ -690,7 +697,8 @@ namespace PawnDiary
             MemoryRecallConsumerContract consumer,
             MemoryRecallCandidateSnapshot candidate,
             MemoryRecallCandidateReportV2 report,
-            out MemoryRepetitionGuardEvaluation guardEvaluation)
+            out MemoryRepetitionGuardEvaluation guardEvaluation,
+            bool explicitMemoryPurpose = false)
         {
             guardEvaluation = new MemoryRepetitionGuardEvaluation();
             if (candidate == null) return MemoryRecallRejectReasons.MissingOrCorrupt;
@@ -768,7 +776,7 @@ namespace PawnDiary
             if (!candidate.isThreadMember && !consumer.allowsStandalone)
                 return MemoryRecallRejectReasons.NoExactRoute;
 
-            report.exactRouteMatched = HasExactRoute(query, candidate, consumer);
+            report.exactRouteMatched = explicitMemoryPurpose || HasExactRoute(query, candidate, consumer);
             report.topicMatched = SharesOrdinal(query.topicKeys, candidate.topicKeys);
             if (!report.exactRouteMatched) return MemoryRecallRejectReasons.NoExactRoute;
 
@@ -1269,6 +1277,10 @@ namespace PawnDiary
             MemoryRecallCandidateSnapshot frozen,
             MemoryRecallCandidateSnapshot current)
         {
+            // A Summary's refreshed text, surviving sources, categories, routes, and guards form
+            // one projection. RevalidateFrozenV2 has already refused any newly introduced source.
+            // Base blocks keep their immutable event-time routing while refreshing editable text.
+            if (current.kind == MemoryContractTokens.KindSummary) return CopyCandidate(current);
             MemoryRecallCandidateSnapshot merged = CopyCandidate(frozen);
             merged.ownerPawnId = current.ownerPawnId;
             merged.ownerEpochToken = current.ownerEpochToken;
@@ -1288,6 +1300,14 @@ namespace PawnDiary
             merged.recordGuard = CopyGuardState(current.recordGuard);
             merged.structuralGuardStates = CopyGuardStates(current.structuralGuardStates);
             return merged;
+        }
+
+        private static bool IsOrdinalSubset(List<string> current, List<string> frozen)
+        {
+            if (current == null || frozen == null) return false;
+            for (int index = 0; index < current.Count; index++)
+                if (!ContainsOrdinal(frozen, current[index])) return false;
+            return true;
         }
 
         private static MemoryRecallCandidateSnapshot CopyCandidate(

@@ -307,7 +307,7 @@ namespace PawnDiary
         private string BuildUsageFacts(MemoryBlockRow row)
         {
             if (row == null) return string.Empty;
-            string last = row.lastAutomaticIncludedTick < 0
+            string last = !MemoryLibraryUiPolicy.HasAutomaticInclusion(row)
                 ? T("PawnDiary.Memory.Library.Never") : DateLabel(row.lastAutomaticIncludedTick);
             return T("PawnDiary.Memory.Library.Usage", last, row.automaticInclusionCount,
                 ProviderExposureLabel(row.providerExposureState));

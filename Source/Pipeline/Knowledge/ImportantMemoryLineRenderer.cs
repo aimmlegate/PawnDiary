@@ -3,6 +3,7 @@
 // from the record's DiaryImportantEventDef (DefInjected-localized), so re-rendering after a
 // language switch produces current-language lines; the capture-time fallbackSummary only covers a
 // removed Def. A player/editor-authored manualTextOverride deliberately wins for future recall.
+// Explicit memory reflections share the Recall v2 renderer and its exact text/receipt budget.
 //
 // New to C#/RimWorld? Placeholders are simple "{token}" substitutions: "{other}" is the first
 // participant's saved name, "{<factKey>}" is that fact row's display value. Unresolved
@@ -99,6 +100,29 @@ namespace PawnDiary
                 });
             }
             return result;
+        }
+
+        /// <summary>
+        /// Formats a single explicit reflection with the same historical/current-state separation
+        /// and receipt caps as ordinary Recall. If the complete line cannot fit, no evidence or
+        /// guards survive and the optional caller must decline to send the request.
+        /// </summary>
+        public static MemoryRecallPromptProjection ProjectReflectionV2(
+            MemoryRecallSelectedCandidate selected,
+            string currentStateInstruction,
+            int historicalMaximumCharacters,
+            int currentStateMaximumCharacters,
+            int maximumCharacters,
+            int maximumEvidenceEntries,
+            int maximumGuardEntries,
+            int maximumDiagnosticEntries)
+        {
+            MemoryRecallPromptLine line = RenderV2(
+                selected, historicalMaximumCharacters, currentStateMaximumCharacters);
+            return MemoryContextPrompt.ProjectV2(
+                MemoryRecallWritingFormats.Full, string.Empty, currentStateInstruction,
+                new List<MemoryRecallPromptLine> { line }, maximumCharacters,
+                maximumEvidenceEntries, maximumGuardEntries, maximumDiagnosticEntries);
         }
 
         /// <summary>

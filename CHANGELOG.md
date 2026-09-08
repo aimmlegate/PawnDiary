@@ -6,6 +6,15 @@ Companion: [repowiki/README.md](repowiki/README.md) describes the current state.
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-09-08
+
+- **Recall review fixes.** Keep refreshed Summary text aligned with its frozen source boundary and include exact known-faction diplomacy in current truth.
+
+## 2026-09-07
+
+- **Memory Library editing and navigation.** Protect unsaved drafts, allow explicit conflict recovery, share the storage text limit, preserve previous-page cursors, and show Never for memories with no narrative use.
+- **Memory recall integration fixes.** Preserve frozen memories across later events, honor edited-memory TTL protection, and carry repetition guards and current truth into optional reflections without treating wording-only exposure as narrative use.
+
 ## 2026-09-06
 
 - **Memory Library presentation fix.** Keep the last ready view visible across sliced repository refreshes and restore pawn portraits for the selected owner and People rail.
