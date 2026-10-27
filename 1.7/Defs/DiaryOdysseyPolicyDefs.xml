@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- O1 policy contains only primitive values and exact strings. It deliberately loads without
+       Odyssey; every live adapter still returns immediately unless ModsConfig.OdysseyActive. -->
+  <PawnDiary.DiaryOdysseyPolicyDef>
+    <defName>Diary_Odyssey</defName>
+    <label>Odyssey gravship journey policy</label>
+    <enabled>true</enabled>
+    <!-- O1.3 observes lifecycle/history only. O1.4 enables the concrete landing event route. -->
+    <landingPageEnabled>true</landingPageEnabled>
+    <!-- O3's specialized page is gated separately; source state still commits when this is false. -->
+    <mechhiveOutcomePageEnabled>true</mechhiveOutcomePageEnabled>
+    <packageId>Ludeon.RimWorld.Odyssey</packageId>
+    <launchGroupKey>ritualGravship</launchGroupKey>
+    <landingGroupKey>odysseyGravshipLanding</landingGroupKey>
+    <mechhiveOutcomeGroupKey>odysseyMechhiveOutcome</mechhiveOutcomeGroupKey>
+    <mobileHomeNarrativeFormat>At this event, the writer was aboard {0}, their exact gravship home at {1}.</mobileHomeNarrativeFormat>
+    <seasonalFloodNarrativeFormat>At this event, seasonal floodwater remained present on the map where the writer was aboard {0} at {1}.</seasonalFloodNarrativeFormat>
+    <takeoffCorrelationTicks>2500</takeoffCorrelationTicks>
+    <landingCorrelationTicks>2500</landingCorrelationTicks>
+    <mechhiveOutcomeMaximumDepth>8</mechhiveOutcomeMaximumDepth>
+    <staleJourneyRetentionTicks>3600000</staleJourneyRetentionTicks>
+    <launchCooldownTicks>60000</launchCooldownTicks>
+    <landingCooldownTicks>60000</landingCooldownTicks>
+    <shortJourneyMaximumTicks>15000</shortJourneyMaximumTicks>
+    <longJourneyMinimumTicks>60000</longJourneyMinimumTicks>
+    <longHeldHomeMinimumTicks>900000</longHeldHomeMinimumTicks>
+    <maximumLaunchWriters>2</maximumLaunchWriters>
+    <maximumLandingWriters>2</maximumLandingWriters>
+    <maximumVisitedLocations>128</maximumVisitedLocations>
+    <maximumVisitedCategories>64</maximumVisitedCategories>
+    <maximumHomeKeys>32</maximumHomeKeys>
+    <maximumEmittedJourneyIds>128</maximumEmittedJourneyIds>
+    <maximumContextCharacters>900</maximumContextCharacters>
+    <maximumContextValueCharacters>120</maximumContextValueCharacters>
+    <poorLaunchQualityMaximum>0.35</poorLaunchQualityMaximum>
+    <excellentLaunchQualityMinimum>0.75</excellentLaunchQualityMinimum>
+
+    <!-- Exact Def names only: labels are never searched or treated as identity. -->
+    <biomeCategories>
+      <li><defName>Space</defName><categoryToken>orbit</categoryToken></li>
+      <li><defName>Orbit</defName><categoryToken>orbit</categoryToken></li>
+      <li><defName>Glowforest</defName><categoryToken>glowforest</categoryToken></li>
+      <li><defName>GlacialPlain</defName><categoryToken>glacial_plain</categoryToken></li>
+      <li><defName>Grasslands</defName><categoryToken>grasslands</categoryToken></li>
+      <li><defName>Scarlands</defName><categoryToken>scarlands</categoryToken></li>
+      <li><defName>LavaField</defName><categoryToken>lava_field</categoryToken></li>
+      <li><defName>TemperateForest</defName><categoryToken>forest</categoryToken></li>
+      <li><defName>TropicalRainforest</defName><categoryToken>forest</categoryToken></li>
+      <li><defName>BorealForest</defName><categoryToken>cold_forest</categoryToken></li>
+      <li><defName>Tundra</defName><categoryToken>cold</categoryToken></li>
+      <li><defName>IceSheet</defName><categoryToken>cold</categoryToken></li>
+      <li><defName>SeaIce</defName><categoryToken>cold</categoryToken></li>
+      <li><defName>AridShrubland</defName><categoryToken>arid</categoryToken></li>
+      <li><defName>Desert</defName><categoryToken>arid</categoryToken></li>
+      <li><defName>ExtremeDesert</defName><categoryToken>arid</categoryToken></li>
+      <li><defName>TemperateSwamp</defName><categoryToken>wetland</categoryToken></li>
+      <li><defName>TropicalSwamp</defName><categoryToken>wetland</categoryToken></li>
+      <li><defName>ColdBog</defName><categoryToken>wetland</categoryToken></li>
+    </biomeCategories>
+
+    <siteCategories>
+      <!-- Non-Site MapParents reach CaptureLocation through parent.def rather than MainSitePartDef. -->
+      <li><defName>AsteroidMiningSite</defName><categoryToken>asteroid</categoryToken></li>
+      <li><defName>AsteroidBasic</defName><categoryToken>asteroid</categoryToken></li>
+      <li><defName>OrbitalItemStash</defName><categoryToken>asteroid</categoryToken></li>
+      <li><defName>SpaceSettlement</defName><categoryToken>orbital_station</categoryToken></li>
+      <li><defName>Mechhive</defName><categoryToken>mechhive</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>GravshipWreckage</defName><categoryToken>wreckage</categoryToken></li>
+      <li><defName>Opportunity_AbandonedPlatform</defName><categoryToken>orbital_platform</categoryToken></li>
+      <li><defName>Opportunity_MechanoidPlatform</defName><categoryToken>orbital_platform</categoryToken></li>
+      <li><defName>OpportunitySite_Satellite</defName><categoryToken>satellite</categoryToken></li>
+      <li><defName>Opportunity_OrbitalWreck</defName><categoryToken>wreckage</categoryToken></li>
+      <li><defName>Opportunity_OrbitalWreck_Salvagers</defName><categoryToken>wreckage</categoryToken></li>
+      <li><defName>Opportunity_SurveySite</defName><categoryToken>survey_site</categoryToken></li>
+      <li><defName>AbandonedSettlement</defName><categoryToken>ancient_site</categoryToken></li>
+      <li><defName>MechanoidRelay</defName><categoryToken>gravcore_site</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>InsectLair</defName><categoryToken>gravcore_site</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>AncientReactor</defName><categoryToken>ancient_site</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>OrbitalMechanoidPlatform</defName><categoryToken>orbital_platform</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>AncientStockpile</defName><categoryToken>ancient_site</categoryToken></li>
+      <li><defName>CrashedMechanoidPlatform</defName><categoryToken>wreckage</categoryToken></li>
+      <li><defName>OrbitalAncientPlatform</defName><categoryToken>orbital_platform</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>FrozenTerraformer</defName><categoryToken>ancient_site</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>OrbitalMechhive</defName><categoryToken>mechhive</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>OpportunitySite_AncientLaunchSite</defName><categoryToken>ancient_site</categoryToken></li>
+      <li><defName>OpportunitySite_AncientGarrison</defName><categoryToken>ancient_site</categoryToken></li>
+      <li><defName>OpportunitySite_AncientChemfuelRefinery</defName><categoryToken>ancient_site</categoryToken></li>
+      <li><defName>OpportunitySite_AncientWarehouse</defName><categoryToken>ancient_site</categoryToken></li>
+      <li><defName>OpportunitySite_AncientInfestedSettlement</defName><categoryToken>ancient_site</categoryToken></li>
+    </siteCategories>
+
+    <!-- Exact QuestScriptDef roots enrich the mature Quest route without claiming hidden contents,
+         gravcore recovery, or the Mechhive destroy/scavenge choice. -->
+    <questCategories>
+      <li><defName>Gravcore_MechanoidRelay</defName><categoryToken>gravcore_site</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>Gravcore_InsectLair</defName><categoryToken>gravcore_site</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>Gravcore_AncientReactor</defName><categoryToken>gravcore_site</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>Gravcore_OrbitalMechanoidPlatform</defName><categoryToken>gravcore_site</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>Gravcore_AncientStockpile</defName><categoryToken>gravcore_site</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>Gravcore_CrashedMechanoidPlatform</defName><categoryToken>gravcore_site</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>Gravcore_OrbitalAncientPlatform</defName><categoryToken>gravcore_site</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>Gravcore_FrozenTerraformer</defName><categoryToken>gravcore_site</categoryToken><majorDestination>true</majorDestination></li>
+      <li><defName>Gravcore_Mechhive</defName><categoryToken>mechhive</categoryToken><majorDestination>true</majorDestination></li>
+    </questCategories>
+
+    <reasonRules>
+      <li><reasonToken>major_destination</reasonToken><priority>0</priority><bypassCooldown>true</bypassCooldown><important>true</important></li>
+      <li><reasonToken>homecoming</reasonToken><priority>10</priority><bypassCooldown>true</bypassCooldown><important>true</important></li>
+      <li><reasonToken>first_orbit</reasonToken><priority>20</priority><important>true</important></li>
+      <li><reasonToken>new_biome_category</reasonToken><priority>30</priority></li>
+      <li><reasonToken>rough_landing</reasonToken><priority>40</priority><bypassCooldown>true</bypassCooldown><important>true</important></li>
+      <li><reasonToken>long_journey</reasonToken><priority>50</priority></li>
+    </reasonRules>
+  </PawnDiary.DiaryOdysseyPolicyDef>
+</Defs>

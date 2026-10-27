@@ -6,6 +6,14 @@ Companion: [repowiki/README.md](repowiki/README.md) describes the current state.
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-10-27
+
+- **1.1.2.** Release for RimWorld 1.7 alongside 1.6, with a separate Russian localization package.
+
+- Fix saved importance tokens in Memory Library retention/filters and culture-written infinity in legacy frequency migration; correct TTL and observation test setup.
+
+- Add a separate RimWorld 1.7/.NET 10 build alongside 1.6 and hide unfinished Memory Library navigation while retaining memory capture, recall, settings, and persistence.
+
 ## 2026-09-08
 
 - **Recall review fixes.** Keep refreshed Summary text aligned with its frozen source boundary and include exact known-faction diplomacy in current truth.

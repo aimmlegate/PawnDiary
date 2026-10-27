@@ -52,6 +52,29 @@ namespace PawnDiary
         private const float EqualityTolerance = 0.0001f;
 
         /// <summary>
+        /// Recognizes non-finite legacy values before Verse's invariant float reader sees them.
+        /// Some .NET cultures write infinity as a Unicode symbol, even though Verse reads using
+        /// invariant culture. Finite values keep using the normal Scribe reader.
+        /// </summary>
+        public static bool TryParseLegacySpecialMultiplier(string text, out float value)
+        {
+            string token = (text ?? string.Empty).Trim();
+            value = 0f;
+            if (token == "∞" || token == "+∞"
+                || string.Equals(token, "Infinity", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(token, "+Infinity", StringComparison.OrdinalIgnoreCase))
+                value = float.PositiveInfinity;
+            else if (token == "-∞" || token == "−∞"
+                || string.Equals(token, "-Infinity", StringComparison.OrdinalIgnoreCase))
+                value = float.NegativeInfinity;
+            else if (string.Equals(token, "NaN", StringComparison.OrdinalIgnoreCase))
+                value = float.NaN;
+            else
+                return false;
+            return true;
+        }
+
+        /// <summary>
         /// Maps the retired settings to only the group families they historically affected. The newer
         /// unified key wins when present. For the older split keys, Ability inherits their compatibility
         /// average while Work and interaction promotion retain their own side of the split.

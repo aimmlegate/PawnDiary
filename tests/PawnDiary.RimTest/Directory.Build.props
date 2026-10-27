@@ -1,0 +1,6 @@
+<Project>
+  <!-- The Mono and .NET 10 runners share source, but must never share restore/compiler state. -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+</Project>

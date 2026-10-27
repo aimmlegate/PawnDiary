@@ -188,6 +188,8 @@ namespace PawnDiary
         /// <summary>Opens or focuses the singleton Library on one exact diary owner ID.</summary>
         internal static void OpenForOwner(string ownerPawnId)
         {
+            // Also guard callbacks retained from an earlier settings window.
+            if (!DiaryUiStyles.Current.memoryLibraryUiEnabled) return;
             DiaryGameComponent source = DiaryGameComponent.Instance;
             if (!MemoryLibraryUiPolicy.CanOpen(
                     MemorySystemActivationGate.IsCurrentRelease,

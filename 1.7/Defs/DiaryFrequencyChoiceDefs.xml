@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Compact absolute frequency overrides shown for each Events-tab group. displayMaxMultiplier owns
+  the inclusive UI band used when an inherited preset value is not one of the exact four choices.
+  Numeric precision controls remain out of the primary UI; XML authors can tune both choice values
+  and display bands without recompiling.
+-->
+<Defs>
+
+  <PawnDiary.DiaryFrequencyChoiceDef>
+    <defName>PawnDiary_FrequencyChoice_Rare</defName>
+    <label>Rare</label>
+    <description>Writes this event type much less often.</description>
+    <token>rare</token>
+    <multiplier>0.25</multiplier>
+    <displayMaxMultiplier>0.375</displayMaxMultiplier>
+    <order>10</order>
+  </PawnDiary.DiaryFrequencyChoiceDef>
+
+  <PawnDiary.DiaryFrequencyChoiceDef>
+    <defName>PawnDiary_FrequencyChoice_Reduced</defName>
+    <label>Reduced</label>
+    <description>Writes this event type less often.</description>
+    <token>reduced</token>
+    <multiplier>0.5</multiplier>
+    <displayMaxMultiplier>0.75</displayMaxMultiplier>
+    <order>20</order>
+  </PawnDiary.DiaryFrequencyChoiceDef>
+
+  <PawnDiary.DiaryFrequencyChoiceDef>
+    <defName>PawnDiary_FrequencyChoice_Normal</defName>
+    <label>Normal</label>
+    <description>Keeps this event type near its normal frequency.</description>
+    <token>normal</token>
+    <multiplier>1</multiplier>
+    <displayMaxMultiplier>1.5</displayMaxMultiplier>
+    <order>30</order>
+  </PawnDiary.DiaryFrequencyChoiceDef>
+
+  <PawnDiary.DiaryFrequencyChoiceDef>
+    <defName>PawnDiary_FrequencyChoice_Increased</defName>
+    <label>Increased</label>
+    <description>Raises existing sampling chances for this event type.</description>
+    <token>increased</token>
+    <multiplier>2</multiplier>
+    <displayMaxMultiplier>5</displayMaxMultiplier>
+    <order>40</order>
+  </PawnDiary.DiaryFrequencyChoiceDef>
+
+</Defs>

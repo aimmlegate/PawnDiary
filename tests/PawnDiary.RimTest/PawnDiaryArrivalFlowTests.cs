@@ -319,7 +319,8 @@ namespace PawnDiary.RimTests
                     "A disabled arrival group unexpectedly created a diary page.");
                 PawnDiaryRimTestScope.Require(
                     scope.Component.HasArrivalKnowledgeFor(pawnId),
-                    "A disabled arrival page did not leave its durable bootstrap marker.");
+                    "A disabled arrival page did not leave its durable bootstrap marker. Capture: "
+                        + scope.Component.lastFactualCaptureStatusForDev);
                 PawnKnowledgeState state = scope.Component.KnowledgeStateForPawnId(pawnId);
                 PawnDiaryRimTestScope.Require(
                     state != null

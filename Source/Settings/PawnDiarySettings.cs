@@ -1765,7 +1765,7 @@ namespace PawnDiary
             // infinity in hand-edited XML remains distinguishable from a missing key.
             const float missingSentinel = -987654f;
             float loadedGenerationChanceWeight = missingSentinel;
-            Scribe_Values.Look(ref loadedGenerationChanceWeight, "generationChanceWeight", missingSentinel);
+            LookLegacyFrequencyMultiplier(ref loadedGenerationChanceWeight, "generationChanceWeight", missingSentinel);
             if (Scribe.mode != LoadSaveMode.LoadingVars)
             {
                 return null;
@@ -1773,8 +1773,8 @@ namespace PawnDiary
 
             float legacyWorkGenerationWeight = missingSentinel;
             float legacySocialGenerationWeight = missingSentinel;
-            Scribe_Values.Look(ref legacyWorkGenerationWeight, "workGenerationWeight", missingSentinel);
-            Scribe_Values.Look(ref legacySocialGenerationWeight, "socialGenerationWeight", missingSentinel);
+            LookLegacyFrequencyMultiplier(ref legacyWorkGenerationWeight, "workGenerationWeight", missingSentinel);
+            LookLegacyFrequencyMultiplier(ref legacySocialGenerationWeight, "socialGenerationWeight", missingSentinel);
 
             DiaryFrequencyLegacySettingsSnapshot legacy =
                 new DiaryFrequencyLegacySettingsSnapshot
@@ -1800,6 +1800,19 @@ namespace PawnDiary
             }
 
             return legacy;
+        }
+
+        /// <summary>Preserves culture-written infinity tokens instead of letting Verse turn them into zero.</summary>
+        private static void LookLegacyFrequencyMultiplier(ref float value, string key, float missing)
+        {
+            if (Scribe.mode == LoadSaveMode.LoadingVars
+                && DiaryFrequencySettingsPolicy.TryParseLegacySpecialMultiplier(
+                    Scribe.loader.curXmlParent?[key]?.InnerText, out float special))
+            {
+                value = special;
+                return;
+            }
+            Scribe_Values.Look(ref value, key, missing);
         }
 
         /// <summary>Writes the exact raw legacy-key presence while post-Def migration is deferred.</summary>

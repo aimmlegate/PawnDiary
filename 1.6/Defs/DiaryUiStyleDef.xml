@@ -110,6 +110,8 @@
     <settingsMemoryWarningText><r>1</r><g>0.76</g><b>0.24</b><a>1</a></settingsMemoryWarningText>
 
     <!-- Unified-memory Library: fixed-height cards permit hard-bounded virtualization. -->
+    <!-- Unfinished manager stays hidden; capture, recall and saving remain active. -->
+    <memoryLibraryUiEnabled>false</memoryLibraryUiEnabled>
     <memoryLibraryWidth>1120</memoryLibraryWidth>
     <memoryLibraryHeight>760</memoryLibraryHeight>
     <memoryLibraryMinWidth>640</memoryLibraryMinWidth>

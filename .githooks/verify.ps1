@@ -97,7 +97,7 @@ if ($HookName -eq "pre-commit") {
 }
 
 Write-Step "XML well-formed check"
-$xmlRoots = @("About", "1.6", "Languages") | Where-Object { Test-Path -LiteralPath $_ }
+$xmlRoots = @("About", "1.6", "1.7", "Languages") | Where-Object { Test-Path -LiteralPath $_ }
 $xmlFiles = @(Get-ChildItem -Path $xmlRoots -Filter "*.xml" -File -Recurse)
 $projectRoots = @("Source", "tests", "HelpfulTextEngine") |
     Where-Object { Test-Path -LiteralPath $_ }
@@ -127,6 +127,13 @@ if ($pureProjects.Count -eq 0) {
     throw "No standalone pure test projects were discovered under tests/."
 }
 foreach ($project in $pureProjects) {
+    $rimWorld17 = [System.IO.Path]::GetFullPath((Join-Path $repoRoot "..\.."))
+    if ($project.Name -eq "LlmProtocolHttpFixtureTests.csproj" -and
+        (Test-Path -LiteralPath (Join-Path $rimWorld17 "UnityStubs.dll"))) {
+        Invoke-Native "dotnet" @("run", "--project", $project.FullName, "-c", "Release",
+            "-p:RimWorld17Managed=$rimWorld17")
+        continue
+    }
     if ($project.Name -eq "HelpfulTextEngineTests.csproj") {
         foreach ($framework in @("net472", "net10.0")) {
             Write-Host ("  run {0} ({1})" -f $project.Name, $framework)
@@ -175,6 +182,17 @@ if ($rimTestBuilt) {
 }
 
 Write-Step "Committed DLL freshness check"
+$rimWorld17 = [System.IO.Path]::GetFullPath((Join-Path $repoRoot "..\.."))
+if (Test-Path -LiteralPath (Join-Path $rimWorld17 "UnityStubs.dll")) {
+    Write-Step "RimWorld 1.7 DLL build"
+    Invoke-Native "dotnet" @("build", "Source\PawnDiary.1.7.csproj", "-c", "Debug",
+        "-p:RimWorldManaged=$rimWorld17")
+    if ($rimTestBuilt) {
+        Invoke-Native "dotnet" @("build", "tests\PawnDiary.RimTest\PawnDiary.RimTest.1.7.csproj",
+            "-c", "Debug", "-p:RimWorldManaged=$rimWorld17",
+            "-p:RimTestReduxAssemblies=$($rimTestPaths.RimTestAssemblies)")
+    }
+}
 # Pawn Diary must not ship Harmony — its runtime comes from the active brrainz.harmony mod. The
 # build-time reference copy (Source/Libs/0Harmony.dll) stays for compilation only and must never
 # appear in the shipped 1.6/Assemblies/ output.

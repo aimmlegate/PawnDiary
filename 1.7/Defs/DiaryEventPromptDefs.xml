@@ -1,0 +1,791 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Event prompt policy. These Defs are the first layer of event-specific prompt control:
+  `prompt` names what kind of source the LLM is writing from, and `enhancement` adds source-level
+  constraints. Optional `forcedModel` is a raw configured API model id to try first for that event
+  source; blank or unknown values are ignored. Narrower flavor still comes from
+  DiaryInteractionGroupDef.instruction/tone.
+
+  Compatibility XML can add a new DiaryEventPromptDef without C# code. Runtime tries keys in this
+  order and uses the first loaded Def: exact source defName, matched DiaryInteractionGroupDef.defName,
+  domain classifier key, then broad event domain (Interaction/Raid/Thought/etc.). Set <eventType> to
+  that key, or use the key itself as <defName> when no separate label is needed. Fields resolve
+  independently, so a specific Def can set only <forcedModel>, only <enhancement>, or only <prompt>
+  and inherit blank fields from the next broader loaded policy.
+-->
+<Defs>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Interaction</defName>
+    <label>social interaction</label>
+    <eventType>Interaction</eventType>
+    <enhancement>Stay inside the supplied social text; add no unstated history, gestures, or dialogue.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_MentalState</defName>
+    <label>mental state</label>
+    <eventType>MentalState</eventType>
+    <prompt>Write a mental-state event as immediate pressure on thought, impulse, and action.</prompt>
+    <enhancement>Write with pressure and unstable momentum: thought, impulse, body, then action. Stay inside the named state and observed behavior; do not diagnose beyond supplied facts.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <!-- Exact Ideology crisis prompt. Exact source DefName wins before beliefCrisis and MentalState
+       fallbacks, so changed/unchanged/missing mutation facts receive one truthful contract. -->
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_IdeoChange</defName>
+    <label>crisis of belief</label>
+    <eventType>IdeoChange</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Ideology</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write the Crisis of Belief mental state from the breaking pawn&apos;s point of view.</prompt>
+    <enhancement>Use only supplied belief facts. Successful conversion or different previous/current ideoligion proves real change; failure or unchanged identity proves only shaken convictions and falling certainty. Without previous facts, mention only current belief and certainty. Never invent a former ideoligion.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <!-- Exact Counsel outcomes win before the counsel group and Interaction fallbacks. Vanilla's
+       downstream PlayLog row proves mood/thought outcome only; neither policy requests belief mutation. -->
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_CounselSuccess</defName>
+    <label>successful counsel</label>
+    <eventType>Counsel_Success</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Ideology</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write the successful Counsel interaction from the supplied counselor or listener point of view.</prompt>
+    <enhancement>Use the supplied roles and the recorded conversation line. Success proves only that the listener&apos;s mood was relieved: a painful memory stopped weighing on them, or their mood briefly lifted. Do not invent the memory, dialogue, certainty, doctrine change, or a religious struggle.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_CounselFailure</defName>
+    <label>failed counsel</label>
+    <eventType>Counsel_Failure</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Ideology</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write the failed Counsel interaction from the supplied counselor or listener point of view.</prompt>
+    <enhancement>Use the supplied roles and the recorded conversation line. Failure proves only that the attempt went badly and left the listener with a brief negative mood. Do not invent advice, dialogue, certainty, doctrine change, or a religious struggle.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Tale</defName>
+    <label>tale</label>
+    <eventType>Tale</eventType>
+    <prompt>Write a notable non-social RimWorld tale as something the pawn lived through or remembers.</prompt>
+    <enhancement>Find the dramatic pressure in the tale facts: danger, pride, shame, relief, damage, or aftermath. Do not turn the entry into ordinary social chatter.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_MoodEvent</defName>
+    <label>mood event</label>
+    <eventType>MoodEvent</eventType>
+    <prompt>Write a colony-wide mood event through how it touches this pawn.</prompt>
+    <enhancement>Show the condition pressing on the pawn's senses or nerves rather than explaining game mechanics; keep the condition's scope clear.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Thought</defName>
+    <label>thought</label>
+    <eventType>Thought</eventType>
+    <prompt>Write a temporary thought or mood memory as inner pressure, relief, or irritation.</prompt>
+    <enhancement>Make the thought bite, comfort, itch, or linger in the pawn's mind. Treat it as internal context, not as a new external event unless the facts say so.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Inspiration</defName>
+    <label>inspiration</label>
+    <eventType>Inspiration</eventType>
+    <prompt>Write inspiration as sudden useful clarity catching in the pawn's mind.</prompt>
+    <enhancement>Make the clarity feel electric and actionable: a sudden plan, urge, or confidence. Focus on what the pawn wants to do next; do not invent success.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Romance</defName>
+    <label>romance</label>
+    <eventType>Romance</eventType>
+    <prompt>Write a relationship milestone as an emotional change between the two people.</prompt>
+    <enhancement>Make the changed bond feel risky and personal: hope, embarrassment, ache, relief, or dread. Do not backfill a conversation or private scene.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Work</defName>
+    <label>work</label>
+    <eventType>Work</eventType>
+    <prompt>Write sampled colony work as a concrete moment in the pawn's labor.</prompt>
+    <enhancement>Use tactile work detail: weight, heat, dirt, rhythm, tools, mistakes, or satisfaction. Let passion, strain, or dread come only from supplied fields.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Hediff</defName>
+    <label>health condition</label>
+    <eventType>Hediff</eventType>
+    <prompt>Write a health-condition event through the pawn's body and mood.</prompt>
+    <enhancement>Make the body unavoidable: pain, weakness, breath, fever, hunger, balance, or fear. Do not invent treatment, diagnosis, or recovery.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Raid</defName>
+    <label>raid</label>
+    <eventType>Raid</eventType>
+    <prompt>Write a raid, drop-pod attack, or infestation from the pawn's immediate experience of danger.</prompt>
+    <enhancement>Use the supplied raid fields, especially arrival mode and strategy. Ordinary raids: warning, preparation, first sight, anticipation. Drop pods or infestations: sudden contact already inside or under the colony. Do not invent battle outcomes.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Quest</defName>
+    <label>quest</label>
+    <eventType>Quest</eventType>
+    <prompt>Write a quest lifecycle event as a colony promise, shared resolution, or shared loss.</prompt>
+    <enhancement>Make the quest personal without assigning the work to this pawn alone. Use the lifecycle signal and supplied quest facts; frame completed or failed quests as the colony's shared effort, relief, or cost unless facts say otherwise. Do not copy the quest name verbatim or invent rewards or blame.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RitualConversion</defName>
+    <label>conversion ritual</label>
+    <eventType>ritualConversion</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Ideology</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write a completed conversion ritual from this pawn's assigned perspective.</prompt>
+    <enhancement>Use only the supplied converter, convertee, participant, spectator, belief, certainty, and verified result fields. A quality label may shape ceremony and emotion but never proves conversion. Do not give the convertee's before-and-after belief facts to another pawn.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Ritual</defName>
+    <label>ritual</label>
+    <eventType>Ritual</eventType>
+    <prompt>Write a finished Ideology ritual from the pawn's assigned place in it.</prompt>
+    <enhancement>Use the supplied ritual role, title, behavior, quality, and status fields. Quality shapes confidence and emotional weight, but never name or explain the quality label. Stay in what completion feels like from that role; do not invent ritual effects beyond the supplied outcome.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Ability</defName>
+    <label>ability</label>
+    <eventType>Ability</eventType>
+    <prompt>Write a successful pawn ability use as a concrete moment of focus, risk, or exertion.</prompt>
+    <enhancement>Use the supplied ability name, category, and target. Write the moment of use — the effort it took, where it was aimed, what it cost right then — as lived sensation, not a technique explained; do not invent extra effects or outcomes.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_DayReflection</defName>
+    <label>day reflection</label>
+    <eventType>DayReflection</eventType>
+    <prompt>Write an end-of-day reflection that weighs the day as a whole.</prompt>
+    <enhancement>Choose the supplied moments that still sting, glow, or weigh on the pawn tonight instead of listing every event.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_QuadrumReflection</defName>
+    <label>quadrum reflection</label>
+    <eventType>QuadrumReflection</eventType>
+    <prompt>Write a rare long reflection over a whole quadrum of the pawn's life.</prompt>
+    <enhancement>Use the dated highlights as anchors across time. Mention dates naturally, connect several events into a broader life reflection, and do not list every highlight mechanically.</enhancement>
+    <!-- Optional: set this to the model id of one configured API endpoint to force these longer entries there. -->
+    <forcedModel></forcedModel>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Progression</defName>
+    <label>progression</label>
+    <eventType>Progression</eventType>
+    <prompt>Write a pawn progression moment as a concrete private diary entry about change, effort, status, or identity.</prompt>
+    <enhancement>Use the supplied before-and-after fields exactly. Do not explain game mechanics, invent training scenes, or add powers, titles, body changes, or achievements that were not supplied.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <!-- Quality Wave H2. Keyed to the exact synthetic source defNames, which the prompt lookup tries
+       before the group and the broad Progression domain, so these rows apply only to anniversary pages
+       and every other progression page keeps DiaryEventPrompt_Progression above. -->
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PawnBirthday</defName>
+    <label>birthday</label>
+    <eventType>PawnBirthday</eventType>
+    <prompt>Write another year of age as a quiet private life-marker.</prompt>
+    <enhancement>Use the supplied age exactly. Do not invent a party, a gift, a well-wisher, or anyone else noticing the date, and do not state the pawn's birth date or year.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_ArrivalAnniversary</defName>
+    <label>colony anniversary</label>
+    <eventType>ArrivalAnniversary</eventType>
+    <prompt>Write a whole number of years spent in this colony as private stock-taking.</prompt>
+    <enhancement>Use the supplied number of years exactly. Do not invent the circumstances of the arrival, a ceremony, or anyone else marking the date, and do not summarize colony history that was not supplied.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_BondedDeathAnniversary</defName>
+    <label>remembered loss</label>
+    <eventType>BondedDeathAnniversary</eventType>
+    <prompt>Write remembrance on the anniversary of losing someone close.</prompt>
+    <enhancement>Keep every supplied name, relation, and number of years exactly. Do not retell how they died, invent last words, a grave, a gathering, or anyone else remembering with this pawn, and do not claim contact with the dead.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RecordMilestone</defName>
+    <label>personal record</label>
+    <eventType>RecordMilestone</eventType>
+    <prompt>Write what doing this much of one thing has made of the pawn.</prompt>
+    <enhancement>Use the supplied tally name and total exactly. Do not present it as a score, achievement, rank, or comparison with anyone else, and do not invent specific past instances that make up the total.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_ArcReflection</defName>
+    <label>arc reflection</label>
+    <eventType>ArcReflection</eventType>
+    <prompt>Write a rare life-arc diary entry about who the pawn is becoming across the selected memories.</prompt>
+    <enhancement>Use the selected memories as anchors, not as a checklist. Connect only a few memories into a private sense of change, regret, pride, fear, or resolve. Do not mention every memory.</enhancement>
+    <!-- Optional: set this to the model id of one configured API endpoint to force these longer entries there. -->
+    <forcedModel></forcedModel>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_BeliefReflection</defName>
+    <label>belief reflection</label>
+    <eventType>BeliefReflection</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Ideology</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write a private reflection on the supplied belief experience, accumulated certainty change, or change of faith.</prompt>
+    <enhancement>Stay inside the frozen belief context and exact trigger. Do not invent doctrine, commandments, rituals, memories, a former ideoligion, or a conversion that the supplied facts do not prove.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_SocialReflection</defName>
+    <label>social reflection</label>
+    <!-- Exact saved H7 defName wins before the group/domain fallback keys. -->
+    <eventType>PawnDiary_SocialReflection</eventType>
+    <prompt>Write a later private reflection about the supplied interaction partner and what the earlier exchange now means to the writer.</prompt>
+    <enhancement>Use the source interaction and subject facts as boundaries. The writer may interpret their own feelings, but must not invent the subject's private thoughts, motives, attraction, hatred, intentions, or words.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_ArtImmortalized</defName>
+    <label>immortalized in art</label>
+    <!-- Keyed to the group defName, which the prompt lookup tries before the broad event domain, so
+         this row is used only by the H6 page and not by every Interaction event. -->
+    <eventType>artImmortalized</eventType>
+    <prompt>Write about meeting a piece of your own past as an object someone else made.</prompt>
+    <enhancement>Stay with the artwork in front of you and how it sits with you now. Do not retell the deed it depicts, and do not claim what the artist meant or what anyone else thinks of it.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Arrival</defName>
+    <label>arrival</label>
+    <eventType>Arrival</eventType>
+    <prompt>Write a factual colony-arrival note about how this pawn joined or began here.</prompt>
+    <enhancement>Make the arrival feel like a threshold: dust, shock, silence, relief, suspicion, or first sight of shelter. Use only scenario and arrival facts.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_BrainwipeArrival</defName>
+    <label>amnesiac awakening</label>
+    <eventType>PawnDiary_BrainwipeArrival</eventType>
+    <enableWhenPackageIdsLoaded><li>Ludeon.RimWorld.Anomaly</li></enableWhenPackageIdsLoaded>
+    <prompt>Write this anxious awakening after total autobiographical amnesia as a new beginning.</prompt>
+    <enhancement>The pawn knows their former memories are absent and feels anxiety about that blankness. Do not restore, summarize, or invent anything from before the brainwipe.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Death</defName>
+    <label>death</label>
+    <eventType>Death</eventType>
+    <prompt>Write a factual death note about how the colonist died.</prompt>
+    <enhancement>Make the death note stark and specific, with one concrete cause or setting detail. Use only supplied cause, body-part, weapon, condition, and setting facts; keep it brief.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <!-- Royalty R2 persona lifecycle. Exact rows provide edge-specific guidance; the broad row is
+       the safe fallback for compatibility events that retain the PersonaWeapon domain. -->
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PersonaWeapon</defName>
+    <label>persona weapon bond</label>
+    <eventType>PersonaWeapon</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write an exact persona-weapon bond lifecycle change from the bonded pawn&apos;s point of view.</prompt>
+    <enhancement>Use only the supplied weapon, lifecycle states, duration, prior bond, ending cause, and selected trait facts. Treat the weapon as present and uncanny without inventing dialogue, conscious motives, combat, or a death.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalAscent</defName>
+    <label>Royal Ascent chapter</label>
+    <eventType>questRoyalAscent</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write the exact Royal Ascent lifecycle edge as one colony chapter witnessed by this pawn.</prompt>
+    <enhancement>Use quest_signal as the ownership boundary: accepted proves commitment and preparation only; completed or failed proves only the hosting quest&apos;s terminal outcome. Never claim the Stellarch arrived, name a failure cause, say who boarded or escaped, or invent ceremony, rewards, or blame.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PersonaWeaponBondFormed</defName>
+    <label>persona weapon bond formed</label>
+    <eventType>PersonaWeaponBondFormed</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write the moment an exact persona-weapon bond formed.</prompt>
+    <enhancement>Center first contact, recognition, obligation, or unease grounded in the supplied weapon and traits. If an exact previous bonded pawn is supplied, acknowledge the transfer without inventing how it happened or what the weapon said.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PersonaWeaponBondSeparated</defName>
+    <label>persona weapon bond separated</label>
+    <eventType>PersonaWeaponBondSeparated</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write a persona-weapon bond&apos;s first meaningful period of separation.</prompt>
+    <enhancement>Use the supplied separation duration and state change as absence, friction, jealousy, relief, or unease. This is not proof of destruction, abandonment, transfer, combat, or death.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PersonaWeaponBondRecovered</defName>
+    <label>persona weapon bond recovered</label>
+    <eventType>PersonaWeaponBondRecovered</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write the exact bonded pawn wielding a persona weapon again after a recorded separation.</prompt>
+    <enhancement>Make return and recognition concrete through the supplied duration, weapon, and trait facts. Do not invent apology, dialogue, a fight, or what happened while they were apart.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PersonaWeaponBondEnded</defName>
+    <label>persona weapon bond ended</label>
+    <eventType>PersonaWeaponBondEnded</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write the standalone ending of an exact persona-weapon bond.</prompt>
+    <enhancement>Use the supplied ending cause and bond duration to make finality specific. Do not invent a death, attacker, battle, transfer, or last words beyond the exact facts.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <!-- Royalty R3 reuses the Tale owner but needs exact first-kill guidance. -->
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PersonaWeaponFirstConsequentialKill</defName>
+    <label>first consequential persona-weapon kill</label>
+    <eventType>PersonaWeaponFirstConsequentialKill</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write the exact bonded wielder&apos;s first consequential kill with this persona weapon.</prompt>
+    <enhancement>Use only the supplied victim, source Tale, weapon, bond state, and selected trait facts. Keep the killer as the sole point of view; do not invent dialogue, motives for the weapon, another attack, or the victim&apos;s inner experience.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <!-- Royalty R4 exact title/psylink mutation owners. These keys are plain source defName strings;
+       they are not cross-references to paid-DLC Defs and remain inert when Royalty is absent. -->
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalTitleGained</defName>
+    <label>first royal title</label>
+    <eventType>RoyalTitleGained</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write the pawn receiving their first exact title in the supplied royal faction.</prompt>
+    <enhancement>Preserve the faction, new title, and cause exactly. Show first rank as recognition, obligation, pride, or unease; do not invent a ceremony, duties, or faction mechanics.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalTitlePromoted</defName>
+    <label>royal promotion</label>
+    <eventType>RoyalTitlePromoted</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write an exact promotion from the supplied previous title to the new title in one faction.</prompt>
+    <enhancement>Keep both titles and the faction correct. Optional supplied duty changes may color the reaction, but do not list mechanics or invent a bestowing ceremony.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalTitleDemoted</defName>
+    <label>royal demotion</label>
+    <eventType>RoyalTitleDemoted</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write an exact demotion from the supplied previous title to the lower title in one faction.</prompt>
+    <enhancement>Keep both titles and the faction correct. Center loss of standing, relief, shame, anger, or changed responsibility without inventing blame or political events.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalTitleLost</defName>
+    <label>royal title lost</label>
+    <eventType>RoyalTitleLost</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write the complete loss of the supplied previous royal title in its exact faction.</prompt>
+    <enhancement>Treat the new title value none as complete loss, not promotion or transfer. Use only the supplied cause; do not invent death, succession, punishment, or a replacement title.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalSuccession</defName>
+    <label>royal succession</label>
+    <eventType>RoyalSuccession</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write the heir inheriting the supplied exact royal title after the named title holder&apos;s death.</prompt>
+    <enhancement>Keep the heir as the sole point of view and preserve the deceased holder, title, and faction exactly. Treat this as succession, not an ordinary promotion or bestowing ceremony; do not invent last words, politics, rival claimants, or ceremony details.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalHeirAppointed</defName>
+    <label>royal heir appointed</label>
+    <eventType>RoyalHeirAppointed</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write the named heir&apos;s explicit appointment to inherit the supplied title.</prompt>
+    <enhancement>Keep the appointed heir as the sole point of view and preserve the title holder, title, and faction exactly. This is an appointment, not a death or completed inheritance; do not invent a ceremony, succession, or political dispute.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PsylinkLevel</defName>
+    <label>psylink gain</label>
+    <eventType>PsylinkLevel</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write the exact supplied psylink level reached and its known or unknown cause.</prompt>
+    <enhancement>Keep the exact level stated in the event line and the supplied cause; never invent a previous level or the size of the jump. Write lived psychic sensation, responsibility, or unease without naming unprovided powers or explaining implant and ritual mechanics.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_BestowingCeremony</defName>
+    <label>royal bestowing ceremony</label>
+    <eventType>BestowingCeremony</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write the completed imperial bestowing ceremony from the supplied ritual role.</prompt>
+    <enhancement>Use the exact mutation pawn, faction, title before/after, and imperial_bestowing cause when present. Any psychic change is felt, never numbered. Keep all changes in this ritual page; do not invent honors, speeches, powers, or another progression scene.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_AnimaTreeLinking</defName>
+    <label>anima linking ceremony</label>
+    <eventType>AnimaTreeLinking</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write the completed anima linking ceremony from the supplied ritual role.</prompt>
+    <enhancement>Use the supplied anima_linking cause when present, and write the deepening link as felt, never as a level. Keep the psychic change in this ritual page and do not invent powers, imperial rank, or extra ritual effects.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <!-- Royalty R2 dramatic permits. The broad row is a safe domain fallback; exact family rows own
+       their framing. All describe invocation only, because Notify_Used does not prove later impact. -->
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalPermit</defName>
+    <label>dramatic royal permit</label>
+    <eventType>RoyalPermit</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write an exact successful dramatic royal-permit use from the permit owner&apos;s point of view.</prompt>
+    <enhancement>Preserve the supplied permit, faction, title, setting, and cooldown-use fact. Describe invoking authority, not an unobserved result; invent no target, arrival, impact, completion, dialogue, or favor amount.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalPermitMilitaryAid</defName>
+    <label>royal military aid called</label>
+    <eventType>RoyalPermitMilitaryAid</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write the permit owner calling in military aid from the supplied royal faction.</prompt>
+    <enhancement>Center the decision to invoke aid and the weight of rank behind it. The successful permit use proves the call, not that troops arrived or won; invent no force size, route, target, battle, or favor amount.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalPermitTransportShuttle</defName>
+    <label>royal transport shuttle called</label>
+    <eventType>RoyalPermitTransportShuttle</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write the permit owner calling for a royal transport shuttle.</prompt>
+    <enhancement>Use only the supplied permit, faction, title, and setting. Do not invent passengers, cargo, destination, flight events, arrival, completion, dialogue, or a favor amount.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalPermitOrbitalStrike</defName>
+    <label>royal orbital strike invoked</label>
+    <eventType>RoyalPermitOrbitalStrike</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write the permit owner exercising an orbital-strike permit.</prompt>
+    <enhancement>Center the decision, authority, and anticipation at the supplied setting. Do not invent a target, impact, casualties, damage, accuracy, completion, dialogue, or a favor amount.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalPermitOrbitalSalvo</defName>
+    <label>royal orbital salvo invoked</label>
+    <eventType>RoyalPermitOrbitalSalvo</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write the permit owner exercising an orbital-salvo permit.</prompt>
+    <enhancement>Center the decision, authority, and anticipation at the supplied setting. Do not invent a target, impacts, casualties, damage, accuracy, completion, dialogue, or a favor amount.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <!-- Group-specific policies. The resolver checks these interaction-group keys before the broad
+       event domain, so whole families gain factual guidance without changing capture code. -->
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_AnomalyStudyBreakthrough</defName>
+    <label>Anomaly study breakthrough</label>
+    <eventType>anomalyStudyBreakthrough</eventType>
+    <enableWhenPackageIdsLoaded><li>Ludeon.RimWorld.Anomaly</li></enableWhenPackageIdsLoaded>
+    <prompt>Write the exact visible Anomaly study breakthrough reached by this researcher.</prompt>
+    <enhancement>Preserve the supplied subject and milestone. Do not invent hidden research, abilities, codex text, or later consequences.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_AnomalyContainmentBreach</defName>
+    <label>Anomaly containment breach</label>
+    <eventType>anomalyContainmentBreach</eventType>
+    <enableWhenPackageIdsLoaded><li>Ludeon.RimWorld.Anomaly</li></enableWhenPackageIdsLoaded>
+    <prompt>Write the exact containment breach from the supplied witness role.</prompt>
+    <enhancement>Name only escaped entities and visible facts supplied. Do not assign blame, cause, hidden powers, or an outcome after the breach.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_AnomalyCreepJoinerOutcome</defName>
+    <label>strange-arrival outcome</label>
+    <eventType>anomalyCreepJoinerOutcome</eventType>
+    <enableWhenPackageIdsLoaded><li>Ludeon.RimWorld.Anomaly</li></enableWhenPackageIdsLoaded>
+    <prompt>Write the strange arrival&apos;s exact visible outcome.</prompt>
+    <enhancement>Keep the supplied role and visible result. Do not reveal hidden motives, drawbacks, infections, timers, or discoveries not stated.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_AnomalyGhoulTransformation</defName>
+    <label>ghoul transformation</label>
+    <eventType>anomalyGhoulTransformation</eventType>
+    <enableWhenPackageIdsLoaded><li>Ludeon.RimWorld.Anomaly</li></enableWhenPackageIdsLoaded>
+    <prompt>Write the completed ghoul transformation from the supplied subject or surgeon point of view.</prompt>
+    <enhancement>Keep participant roles and visible results exact. Do not invent procedure mechanics, a cure, later abilities, or moral judgment.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_AnomalyVoidOutcome</defName>
+    <label>answer to the void</label>
+    <eventType>anomalyVoidOutcome</eventType>
+    <enableWhenPackageIdsLoaded><li>Ludeon.RimWorld.Anomaly</li></enableWhenPackageIdsLoaded>
+    <prompt>Write the exact terminal answer this pawn committed before the void.</prompt>
+    <enhancement>Preserve the supplied branch and visible result. Do not merge alternatives or invent dialogue, mechanics, consequences, or another pawn&apos;s agency.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RitualAnomalyInvitation</defName>
+    <label>Anomaly invitation ritual</label>
+    <eventType>ritualAnomalyInvitation</eventType>
+    <enableWhenPackageIdsLoaded><li>Ludeon.RimWorld.Anomaly</li></enableWhenPackageIdsLoaded>
+    <prompt>Write the supplied invitation ritual or its recorded outcome as one witnessed occult event.</prompt>
+    <enhancement>Use only the ritual, role, quality, participants, and outcome supplied. Do not invent what was invited, what answered, dialogue, or later effects.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RitualAnomalyFleshAndWeather</defName>
+    <label>Anomaly flesh or weather ritual</label>
+    <eventType>ritualAnomalyFleshAndWeather</eventType>
+    <enableWhenPackageIdsLoaded><li>Ludeon.RimWorld.Anomaly</li></enableWhenPackageIdsLoaded>
+    <prompt>Write the supplied flesh-shaping or unnatural-weather ritual and its visible result.</prompt>
+    <enhancement>Keep exact roles, quality, and outcome. Do not invent bodily changes, weather damage, hidden causes, or later consequences.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RitualAnomalyPredation</defName>
+    <label>Anomaly predation ritual</label>
+    <eventType>ritualAnomalyPredation</eventType>
+    <enableWhenPackageIdsLoaded><li>Ludeon.RimWorld.Anomaly</li></enableWhenPackageIdsLoaded>
+    <prompt>Write the supplied predatory ritual from this pawn&apos;s exact participant or witness role.</prompt>
+    <enhancement>Use only named targets, quality, and visible outcome. Do not invent pursuit, wounds, deaths, powers, or what happened afterward.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RitualAnomalyMind</defName>
+    <label>Anomaly mind ritual</label>
+    <eventType>ritualAnomalyMind</eventType>
+    <enableWhenPackageIdsLoaded><li>Ludeon.RimWorld.Anomaly</li></enableWhenPackageIdsLoaded>
+    <prompt>Write the supplied mind-affecting ritual as immediate psychic pressure and its recorded result.</prompt>
+    <enhancement>Keep roles, quality, and outcome exact. Do not invent private thoughts, lasting damage, secret knowledge, or additional victims.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RitualAnomalyAbduction</defName>
+    <label>Anomaly abduction ritual</label>
+    <eventType>ritualAnomalyAbduction</eventType>
+    <enableWhenPackageIdsLoaded><li>Ludeon.RimWorld.Anomaly</li></enableWhenPackageIdsLoaded>
+    <prompt>Write the supplied abduction ritual and only the arrival, disappearance, or outcome it visibly proved.</prompt>
+    <enhancement>Preserve exact actors, targets, quality, and result. Do not invent a destination, captivity, rescue, dialogue, or events beyond the record.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RitualAnomalyDeathRefusal</defName>
+    <label>Anomaly death-refusal ritual</label>
+    <eventType>ritualAnomalyDeathRefusal</eventType>
+    <enableWhenPackageIdsLoaded><li>Ludeon.RimWorld.Anomaly</li></enableWhenPackageIdsLoaded>
+    <prompt>Write the supplied ritual that contests death and its exact recorded outcome.</prompt>
+    <enhancement>Keep the named subject, roles, quality, and visible result. Do not invent resurrection details, hidden costs, dialogue, or later survival.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RitualAnomalyPsychic</defName>
+    <label>Anomaly psychic ritual</label>
+    <eventType>ritualAnomalyPsychic</eventType>
+    <enableWhenPackageIdsLoaded><li>Ludeon.RimWorld.Anomaly</li></enableWhenPackageIdsLoaded>
+    <prompt>Write the supplied psychic ritual as a witnessed act with its exact recorded result.</prompt>
+    <enhancement>Use only participants, quality, target, and outcome supplied. Do not invent thoughts, powers, voices, hidden knowledge, or later effects.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_BiotechFamilyBirth</defName>
+    <label>family birth</label>
+    <eventType>biotechFamilyBirth</eventType>
+    <enableWhenPackageIdsLoaded><li>Ludeon.RimWorld.Biotech</li></enableWhenPackageIdsLoaded>
+    <prompt>Write the supplied birth as a family threshold from this pawn&apos;s exact role.</prompt>
+    <enhancement>Use only parent, baby, setting, and outcome facts supplied. Do not invent labor details, health, genes, names, dialogue, or future bonds.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_BiotechDeathrestInterrupted</defName>
+    <label>interrupted deathrest</label>
+    <eventType>biotechDeathrestInterrupted</eventType>
+    <enableWhenPackageIdsLoaded><li>Ludeon.RimWorld.Biotech</li></enableWhenPackageIdsLoaded>
+    <prompt>Write the confirmed interruption of active deathrest as incomplete waking and bodily consequence.</prompt>
+    <enhancement>Use only the supplied state and setting. Do not invent a cause, culprit, routine completion, dialogue, or additional injury.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_OdysseyGravshipLanding</defName>
+    <label>gravship landing</label>
+    <eventType>odysseyGravshipLanding</eventType>
+    <enableWhenPackageIdsLoaded><li>Ludeon.RimWorld.Odyssey</li></enableWhenPackageIdsLoaded>
+    <prompt>Write the supplied gravship landing as the end of a journey and the first sight of a place.</prompt>
+    <enhancement>Preserve exact ship, place, role, and visible result. Do not invent the route, hazards, passengers, damage, discoveries, or what follows.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RecruitGroup</defName>
+    <label>recruitment or captivity</label>
+    <eventType>recruit</eventType>
+    <prompt>Write the exact recruitment, resistance, prison, or release interaction supplied.</prompt>
+    <enhancement>Keep recruiter, captive, outcome, and social text exact. Do not invent coercion, consent, promises, escape plans, or a later allegiance change.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_TrialGroup</defName>
+    <label>trial or accusation</label>
+    <eventType>trial</eventType>
+    <enableWhenPackageIdsLoaded><li>Ludeon.RimWorld.Ideology</li></enableWhenPackageIdsLoaded>
+    <prompt>Write the supplied accusation, defense, or judgment from this pawn&apos;s exact role.</prompt>
+    <enhancement>Use only the charge, participants, social text, and recorded outcome. Do not invent evidence, testimony, guilt, sentence, or crowd reaction.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_ConversionGroup</defName>
+    <label>conversion or preaching</label>
+    <eventType>conversion</eventType>
+    <enableWhenPackageIdsLoaded><li>Ludeon.RimWorld.Ideology</li></enableWhenPackageIdsLoaded>
+    <prompt>Write the supplied conversion or preaching interaction as pressure between stated beliefs.</prompt>
+    <enhancement>Preserve speaker, listener, social text, certainty, and outcome supplied. Do not invent doctrine, arguments, a former faith, or conversion without proof.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_SlaveryGroup</defName>
+    <label>slavery or suppression</label>
+    <eventType>slavery</eventType>
+    <enableWhenPackageIdsLoaded><li>Ludeon.RimWorld.Ideology</li></enableWhenPackageIdsLoaded>
+    <prompt>Write the supplied enslavement, suppression, or defiance interaction from this pawn&apos;s exact role.</prompt>
+    <enhancement>Use only status, participants, social text, and result supplied. Do not invent abuse, consent, rebellion plans, escape, emancipation, or later punishment.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <!-- Normal-play composer categories. These are deliberately generic: selecting a display/prompt
+       category is not evidence that a source-captured raid, quest, conversation, or day boundary
+       occurred. The adapter resolves these exact keys without inheriting source-group guidance. -->
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PlayerPersonal</defName>
+    <label>player personal note</label>
+    <eventType>PlayerPersonal</eventType>
+    <prompt>Write the player&apos;s supplied personal note as a first-person diary entry.</prompt>
+    <enhancement>Treat only the supplied summary as fact. Do not assume a conversation, incident, time of day, or outcome.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PlayerImportant</defName>
+    <label>player important note</label>
+    <eventType>PlayerImportant</eventType>
+    <prompt>Write the player&apos;s supplied important moment as a first-person diary entry.</prompt>
+    <enhancement>Give it appropriate weight without inventing why it matters, who was present, or what happened before or after.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PlayerInnerThoughts</defName>
+    <label>player inner thoughts</label>
+    <eventType>PlayerInnerThoughts</eventType>
+    <prompt>Write the player&apos;s supplied inner thought or feeling as a first-person diary entry.</prompt>
+    <enhancement>Stay inside the supplied feeling or idea. Do not invent an external cause, diagnosis, decision, or outcome.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PlayerSocial</defName>
+    <label>player social note</label>
+    <eventType>PlayerSocial</eventType>
+    <prompt>Write the player&apos;s supplied social moment as a first-person diary entry.</prompt>
+    <enhancement>Use only the people, relationship, and interaction the player actually supplies. Do not invent dialogue, motives, or history.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PlayerWork</defName>
+    <label>player work note</label>
+    <eventType>PlayerWork</eventType>
+    <prompt>Write the player&apos;s supplied work moment as a first-person diary entry.</prompt>
+    <enhancement>Use only the task and details supplied. Do not invent completion, skill gains, tools, failures, or results.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PlayerHealth</defName>
+    <label>player health note</label>
+    <eventType>PlayerHealth</eventType>
+    <prompt>Write the player&apos;s supplied health moment as a first-person diary entry.</prompt>
+    <enhancement>Use only symptoms, injuries, treatment, and change supplied. Do not invent a diagnosis, cause, procedure, recovery, or prognosis.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PlayerCombat</defName>
+    <label>player combat note</label>
+    <eventType>PlayerCombat</eventType>
+    <prompt>Write the player&apos;s supplied combat-related moment as a first-person diary entry.</prompt>
+    <enhancement>Use only danger, participants, actions, and outcome supplied. Do not assume a raid, enemy arrival, tactics, injury, victory, or defeat.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PlayerColony</defName>
+    <label>player colony note</label>
+    <eventType>PlayerColony</eventType>
+    <prompt>Write the player&apos;s supplied colony matter as a first-person diary entry.</prompt>
+    <enhancement>Use only the shared plan, problem, or achievement supplied. Do not assume a quest, reward, crisis, vote, or outcome.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PlayerReflection</defName>
+    <label>player reflection</label>
+    <eventType>PlayerReflection</eventType>
+    <prompt>Write the player&apos;s supplied reflection as a first-person diary entry.</prompt>
+    <enhancement>Follow the scope the player supplies. Do not assume it covers a day, season, year, milestone, or any event not named.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <!-- Broad-domain fallback for integration-API events (see INTEGRATIONS.md). Adapter mods can
+       ship a narrower DiaryEventPromptDef keyed by their eventKey or group defName; this row only
+       catches External events with no more specific policy loaded. -->
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_External</defName>
+    <label>external mod event</label>
+    <eventType>External</eventType>
+    <prompt>Write a moment reported by another mod as something the pawn just lived through.</prompt>
+    <enhancement>Stay strictly inside the supplied event line and context facts; do not invent mechanics, systems, or unstated participants.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+</Defs>

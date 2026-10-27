@@ -11,6 +11,25 @@ namespace DiaryPipelineTests
     {
         private static void TestDiaryFrequencySettingsPolicy()
         {
+            foreach (string token in new[] { "Infinity", "+Infinity", "∞", " +∞ " })
+            {
+                AssertTrue("legacy positive infinity token " + token,
+                    DiaryFrequencySettingsPolicy.TryParseLegacySpecialMultiplier(token, out float parsed)
+                        && float.IsPositiveInfinity(parsed));
+            }
+            foreach (string token in new[] { "-Infinity", "-∞", "−∞" })
+            {
+                AssertTrue("legacy negative infinity token " + token,
+                    DiaryFrequencySettingsPolicy.TryParseLegacySpecialMultiplier(token, out float parsed)
+                        && float.IsNegativeInfinity(parsed));
+            }
+            AssertTrue("legacy NaN token remains NaN",
+                DiaryFrequencySettingsPolicy.TryParseLegacySpecialMultiplier("NaN", out float nan)
+                    && float.IsNaN(nan));
+            foreach (string token in new[] { null, "", "1.5", "garbage", "Infinityx" })
+                AssertTrue("finite/malformed legacy tokens stay with Scribe: " + token,
+                    !DiaryFrequencySettingsPolicy.TryParseLegacySpecialMultiplier(token, out float ignored));
+
             List<DiaryFrequencyMigrationGroupSnapshot> migrationGroups =
                 new List<DiaryFrequencyMigrationGroupSnapshot>
                 {

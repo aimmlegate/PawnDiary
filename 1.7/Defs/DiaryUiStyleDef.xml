@@ -1,0 +1,540 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Display-only style knobs for the pawn Diary inspector/reader and responsive mod-settings layout.
+  Edit values and restart the game to retune visualization without recompiling. Every value here
+  matches the code fallback, so deleting this file or omitting a field keeps the same behavior.
+
+  Color specs accept either:
+    <preset>name</preset> / hostile / ally / gene / white
+  or explicit 0..1 channel floats:
+    <r>0.58</r><g>0.80</g><b>1</b><a>1</a>
+
+  These are UI formatting values only. Saved player settings still control behavior toggles such as
+  showing debug rows, atmospheric formatting on/off, and title generation.
+-->
+<Defs>
+
+  <PawnDiary.DiaryUiStyleDef>
+    <defName>Diary_UiStyle</defName>
+
+    <!-- Tab window. Width includes the right-hand filter/controls panel (filterPanelWidth +
+         filterPanelGap) plus the ~696px journal column. -->
+    <tabWidth>992</tabWidth>
+    <tabHeight>800</tabHeight>
+    <!-- The tab treats tabHeight as a preferred height. It clamps to the space available above
+         the inspect pane's tab strip (the tab hangs above the pane, not the screen bottom) minus
+         tabScreenHeightMargin of clear screen left above the tab, falling below tabMinHeight only
+         when the screen itself is too short to leave that much room. -->
+    <tabMinHeight>360</tabMinHeight>
+    <tabScreenHeightMargin>72</tabScreenHeightMargin>
+
+    <!-- Fixed, responsive standalone reader window. The left pawn list becomes compact below the
+         threshold; readerBookWidth is the journal's preferred cap, not a hard minimum. -->
+    <readerPawnListWidth>220</readerPawnListWidth>
+    <readerPawnListWidthCompact>170</readerPawnListWidthCompact>
+    <readerCompactThreshold>1360</readerCompactThreshold>
+    <readerPaneGap>12</readerPaneGap>
+    <readerBookWidth>850</readerBookWidth>
+    <readerDirectorySearchLabelHeight>22</readerDirectorySearchLabelHeight>
+    <readerDirectoryControlHeight>28</readerDirectoryControlHeight>
+    <readerDirectoryControlGap>4</readerDirectoryControlGap>
+    <readerPawnRowHeight>68</readerPawnRowHeight>
+    <readerPortraitSize>44</readerPortraitSize>
+    <readerMaxWidth>1460</readerMaxWidth>
+    <readerMaxHeight>940</readerMaxHeight>
+    <readerMinWidth>760</readerMinWidth>
+    <readerMinHeight>520</readerMinHeight>
+    <readerScreenMargin>48</readerScreenMargin>
+    <readerDeadPawnTint><r>0.72</r><g>0.66</g><b>0.62</b><a>1</a></readerDeadPawnTint>
+
+    <!-- Shared responsive composer for writing, generating, reviewing, and revising diary pages. It
+         shrinks to the current screen after preserving the configured surrounding desktop space. -->
+    <manualEntryEditorWidth>820</manualEntryEditorWidth>
+    <manualEntryEditorHeight>700</manualEntryEditorHeight>
+    <manualEntryEditorScreenMargin>64</manualEntryEditorScreenMargin>
+    <manualEntryEditorFieldGap>8</manualEntryEditorFieldGap>
+    <manualEntryEditorButtonWidth>140</manualEntryEditorButtonWidth>
+    <manualEntryEditorButtonGap>10</manualEntryEditorButtonGap>
+    <manualEntryComposerCompactWidth>620</manualEntryComposerCompactWidth>
+    <manualEntryComposerSectionGap>12</manualEntryComposerSectionGap>
+    <manualEntryComposerPanelPadding>10</manualEntryComposerPanelPadding>
+    <manualEntryComposerModeGap>8</manualEntryComposerModeGap>
+    <manualEntryComposerModeMinHeight>72</manualEntryComposerModeMinHeight>
+    <manualEntryComposerSelectorGap>12</manualEntryComposerSelectorGap>
+    <manualEntryComposerSelectorMinHeight>34</manualEntryComposerSelectorMinHeight>
+    <manualEntryComposerDescriptionGap>4</manualEntryComposerDescriptionGap>
+    <manualEntryComposerCharacterGap>8</manualEntryComposerCharacterGap>
+    <manualEntryComposerTextPadding>6</manualEntryComposerTextPadding>
+    <manualEntryComposerShortAreaHeight>104</manualEntryComposerShortAreaHeight>
+    <manualEntryComposerSystemAreaHeight>120</manualEntryComposerSystemAreaHeight>
+    <manualEntryComposerLongAreaHeight>240</manualEntryComposerLongAreaHeight>
+    <manualEntryComposerWarningPadding>10</manualEntryComposerWarningPadding>
+    <manualEntryComposerWarningBackground><r>0.30</r><g>0.20</g><b>0.05</b><a>0.88</a></manualEntryComposerWarningBackground>
+    <manualEntryComposerWarningBorder><r>0.95</r><g>0.66</g><b>0.18</b><a>0.90</a></manualEntryComposerWarningBorder>
+    <manualEntryComposerMutedText><r>0.68</r><g>0.70</g><b>0.72</b><a>1</a></manualEntryComposerMutedText>
+    <manualEntryComposerErrorText><r>1</r><g>0.42</g><b>0.34</b><a>1</a></manualEntryComposerErrorText>
+
+    <!-- Right-hand filter/controls panel (independent, non-virtualized scroll column). -->
+    <filterPanelWidth>260</filterPanelWidth>
+    <filterPanelGap>12</filterPanelGap>
+    <!-- Live title/body search activates only after this many trimmed characters. -->
+    <filterSearchMinimumCharacters>3</filterSearchMinimumCharacters>
+
+    <!-- Mod settings, Events tab. Short windows use label-only preset cards and omit secondary
+         header prose so the event list never overlaps controls that were already drawn. -->
+    <settingsEventsCompactHeightThreshold>500</settingsEventsCompactHeightThreshold>
+    <settingsEventsTitleHeight>30</settingsEventsTitleHeight>
+    <settingsEventsPresetHeaderHeight>30</settingsEventsPresetHeaderHeight>
+    <settingsEventsPresetCardHeight>84</settingsEventsPresetCardHeight>
+    <settingsEventsCompactPresetCardHeight>38</settingsEventsCompactPresetCardHeight>
+    <settingsEventsPresetStatusHeight>26</settingsEventsPresetStatusHeight>
+    <settingsEventsEnableAllButtonWidth>118</settingsEventsEnableAllButtonWidth>
+    <settingsEventsResetButtonWidth>142</settingsEventsResetButtonWidth>
+    <settingsEventsDismissButtonWidth>100</settingsEventsDismissButtonWidth>
+    <settingsEventsFrequencyButtonWidth>132</settingsEventsFrequencyButtonWidth>
+    <settingsEventsDomainHeight>28</settingsEventsDomainHeight>
+    <settingsEventsRowHeight>32</settingsEventsRowHeight>
+    <settingsEventsRowGap>3</settingsEventsRowGap>
+
+    <!-- Memory settings. Descriptions measure their translated text; these fields own only the
+         surrounding control sizes and gaps used by the responsive scroll pages. -->
+    <settingsMemoryControlHeight>28</settingsMemoryControlHeight>
+    <settingsMemoryCheckboxSize>24</settingsMemoryCheckboxSize>
+    <settingsMemorySectionGap>12</settingsMemorySectionGap>
+    <settingsMemoryBlockGap>9</settingsMemoryBlockGap>
+    <settingsMemoryChildIndent>22</settingsMemoryChildIndent>
+    <settingsMemoryNumericFieldWidth>96</settingsMemoryNumericFieldWidth>
+    <settingsMemoryOpenLibraryButtonWidth>170</settingsMemoryOpenLibraryButtonWidth>
+    <settingsMemoryAdvancedSelectorHeight>32</settingsMemoryAdvancedSelectorHeight>
+    <settingsMemoryAdvancedSelectorGap>4</settingsMemoryAdvancedSelectorGap>
+    <settingsMemoryWarningText><r>1</r><g>0.76</g><b>0.24</b><a>1</a></settingsMemoryWarningText>
+
+    <!-- Unified-memory Library: fixed-height cards permit hard-bounded virtualization. -->
+    <!-- Unfinished manager stays hidden; capture, recall and saving remain active. -->
+    <memoryLibraryUiEnabled>false</memoryLibraryUiEnabled>
+    <memoryLibraryWidth>1120</memoryLibraryWidth>
+    <memoryLibraryHeight>760</memoryLibraryHeight>
+    <memoryLibraryMinWidth>640</memoryLibraryMinWidth>
+    <memoryLibraryMinHeight>480</memoryLibraryMinHeight>
+    <memoryLibraryScreenMargin>48</memoryLibraryScreenMargin>
+    <memoryLibraryNarrowThreshold>820</memoryLibraryNarrowThreshold>
+    <memoryLibraryPaneGap>10</memoryLibraryPaneGap>
+    <memoryLibraryListFraction>0.42</memoryLibraryListFraction>
+    <memoryLibraryControlHeight>28</memoryLibraryControlHeight>
+    <memoryLibraryCulturePanelHeight>132</memoryLibraryCulturePanelHeight>
+    <!-- Subject-first shell dimensions. -->
+    <memoryLibraryRailWidth>300</memoryLibraryRailWidth>
+    <memoryLibraryRailRowHeight>64</memoryLibraryRailRowHeight>
+    <memoryLibraryRailSectionHeaderHeight>24</memoryLibraryRailSectionHeaderHeight>
+    <memoryLibraryRailAvatarSize>40</memoryLibraryRailAvatarSize>
+    <memoryLibraryAttentionDotSize>8</memoryLibraryAttentionDotSize>
+    <memoryLibraryAttentionDotColor><r>0.96</r><g>0.78</g><b>0.40</b><a>0.98</a></memoryLibraryAttentionDotColor>
+    <!-- Detail-only chapter separators mirror the Diary timeline's spacing rhythm. -->
+    <memoryLibraryChapterDividerHeight>30</memoryLibraryChapterDividerHeight>
+    <memoryLibraryChapterDividerTopGap>6</memoryLibraryChapterDividerTopGap>
+    <memoryLibraryChapterDividerLineGap>10</memoryLibraryChapterDividerLineGap>
+    <!-- Optional filter panel plus compact culture and developer-only footer rows. -->
+    <memoryLibraryFilterPanelWidth>260</memoryLibraryFilterPanelWidth>
+    <memoryLibraryFilterPanelGap>10</memoryLibraryFilterPanelGap>
+    <memoryLibraryCultureCollapsedHeight>32</memoryLibraryCultureCollapsedHeight>
+    <memoryLibraryDevDiagnosticsStripHeight>32</memoryLibraryDevDiagnosticsStripHeight>
+    <memoryLibraryCardHeight>82</memoryLibraryCardHeight>
+    <memoryLibraryBlockCardHeight>108</memoryLibraryBlockCardHeight>
+    <memoryLibraryBlockDetailMinimumContentHeight>430</memoryLibraryBlockDetailMinimumContentHeight>
+    <memoryLibraryCardGap>6</memoryLibraryCardGap>
+    <memoryLibraryOverscanRows>2</memoryLibraryOverscanRows>
+    <memoryLibraryMaximumMaterializedRows>28</memoryLibraryMaximumMaterializedRows>
+    <memoryLibraryDiaryIconPadding>2</memoryLibraryDiaryIconPadding>
+    <memoryLibraryDiaryIconBorderThickness>1</memoryLibraryDiaryIconBorderThickness>
+    <memoryLibraryDiaryIconBorder><r>0.68</r><g>0.72</g><b>0.76</b><a>0.62</a></memoryLibraryDiaryIconBorder>
+    <memoryLibraryCardBackground><r>0.12</r><g>0.14</g><b>0.17</b><a>0.90</a></memoryLibraryCardBackground>
+    <memoryLibrarySelectedCardBackground><r>0.24</r><g>0.30</g><b>0.36</b><a>0.95</a></memoryLibrarySelectedCardBackground>
+    <!-- Card anatomy: the Diary's accent-spine treatment applied to Memory rows, so a memory's
+         category reads before its text does. Hues come from entryAccentPalette so both windows
+         share one colour language. A row carrying several categories uses the mixed spine, and a
+         folded Summary uses its own so it never impersonates a player-facing category. -->
+    <memoryLibraryAccentWidth>6</memoryLibraryAccentWidth>
+    <memoryLibraryCardTitleHeight>24</memoryLibraryCardTitleHeight>
+    <memoryLibraryCardTintAlpha>0.09</memoryLibraryCardTintAlpha>
+    <memoryLibraryCategoryPersonal><r>0.84</r><g>0.70</g><b>0.34</b><a>1</a></memoryLibraryCategoryPersonal>
+    <memoryLibraryCategoryRelationships><r>0.86</r><g>0.50</g><b>0.66</b><a>1</a></memoryLibraryCategoryRelationships>
+    <memoryLibraryCategoryFamily><r>0.48</r><g>0.72</g><b>0.50</b><a>1</a></memoryLibraryCategoryFamily>
+    <memoryLibraryCategoryFactions><r>0.45</r><g>0.63</g><b>0.92</b><a>1</a></memoryLibraryCategoryFactions>
+    <memoryLibraryCategoryMixed><r>0.62</r><g>0.68</g><b>0.76</b><a>1</a></memoryLibraryCategoryMixed>
+    <memoryLibrarySummaryAccent><r>0.38</r><g>0.70</g><b>0.72</b><a>1</a></memoryLibrarySummaryAccent>
+    <memoryLibrarySuppressedAlpha>0.55</memoryLibrarySuppressedAlpha>
+    <memoryLibraryRepositoryPollFrames>6</memoryLibraryRepositoryPollFrames>
+
+    <!-- Header/card dimensions -->
+    <controlLineHeight>28</controlLineHeight>
+    <controlGap>2</controlGap>
+    <entryTitleHeight>28</entryTitleHeight>
+    <!-- Display-only character cap; the trailing ellipsis counts toward this value. -->
+    <entryTitleMaxCharacters>72</entryTitleMaxCharacters>
+    <entryTextTop>42</entryTextTop>
+    <entryBottomPadding>10</entryBottomPadding>
+    <statusBadgeWidth>34</statusBadgeWidth>
+    <statusBadgeHeight>24</statusBadgeHeight>
+    <statusBadgeRightPadding>24</statusBadgeRightPadding>
+    <statusUnreadUnderlineAlpha>0.72</statusUnreadUnderlineAlpha>
+    <entryGap>8</entryGap>
+    <autoExpandedEntryCount>3</autoExpandedEntryCount>
+    <collapsedEntryChromePadding>2</collapsedEntryChromePadding>
+    <expansionAnimationSpeed>5.5</expansionAnimationSpeed>
+    <!-- Extra pixels rendered above and below the visible scroll area. This smooths fast scrolling
+         without drawing the full diary year. -->
+    <virtualizedEntryOverscanHeight>800</virtualizedEntryOverscanHeight>
+    <entryAccentWidth>6</entryAccentWidth>
+    <entryLabelMaxWidth>148</entryLabelMaxWidth>
+    <entryFadeDurationSeconds>0.55</entryFadeDurationSeconds>
+    <titleFadeDurationSeconds>0.8</titleFadeDurationSeconds>
+
+    <!-- Quadrum/season dividers: a centered "Aprimay · Spring · 5500" header between the year's entry
+         cards, drawn at the normal GameFont.Small size. Height is the label row (sized for that font);
+         the top gap separates it from the card above; the line gap is the clear space between the
+         centered label and each side rule. -->
+    <quadrumDividerHeight>30</quadrumDividerHeight>
+    <quadrumDividerTopGap>6</quadrumDividerTopGap>
+    <quadrumDividerLineGap>10</quadrumDividerLineGap>
+    <!-- Small season glyph beside the divider label (size 0 hides it; gap is icon-to-label spacing). -->
+    <quadrumDividerIconSize>15</quadrumDividerIconSize>
+    <quadrumDividerIconGap>6</quadrumDividerIconGap>
+    <!-- Seasonal background wash crossfade rate (higher = snappier). -->
+    <seasonWashLerpSpeed>3</seasonWashLerpSpeed>
+
+    <!-- Linked-entry preview card -->
+    <linkedEntryPadding>8</linkedEntryPadding>
+    <linkedEntryLabelHeight>20</linkedEntryLabelHeight>
+    <linkedEntryTextHeight>36</linkedEntryTextHeight>
+    <linkedEntryTotalHeight>64</linkedEntryTotalHeight>
+    <linkedInitiatorPaletteIndex>0</linkedInitiatorPaletteIndex>
+    <linkedRecipientPaletteIndex>4</linkedRecipientPaletteIndex>
+
+    <!-- Year pager and diagnostic rows -->
+    <yearFilterHeight>32</yearFilterHeight>
+    <yearFilterGap>6</yearFilterGap>
+    <yearButtonWidth>112</yearButtonWidth>
+    <modelNameTopPadding>4</modelNameTopPadding>
+    <modelNameHeight>20</modelNameHeight>
+    <debugTextTopPadding>8</debugTextTopPadding>
+
+    <!-- Per-pawn writing-style header icon (Diary tab) -->
+    <writingStyleIconSize>22</writingStyleIconSize>
+    <writingStyleIconRightGap>6</writingStyleIconRightGap>
+    <writingStyleIconAlpha>0.72</writingStyleIconAlpha>
+    <writingStyleIconHoverAlpha>1.0</writingStyleIconHoverAlpha>
+
+    <!-- Roleplay text and direct-speech blocks -->
+    <roleplayLineGap>5</roleplayLineGap>
+    <roleplayParagraphGap>8</roleplayParagraphGap>
+    <!-- Render-time paragraph reflow (default atmosphere only). Long single-line prose is split into
+         readable paragraphs at sentence ends, RimWorld year mentions (55xx), semicolons, and em-dashes,
+         with a hard length cap. Saved text is never mutated; this is display-only. Disable with
+         paragraphReflowEnabled=false to render the model's own line breaks verbatim. -->
+    <paragraphReflowEnabled>true</paragraphReflowEnabled>
+    <paragraphReflowTargetChars>420</paragraphReflowTargetChars>
+    <paragraphReflowMaxChars>600</paragraphReflowMaxChars>
+    <paragraphReflowSplitOnSentenceEnd>true</paragraphReflowSplitOnSentenceEnd>
+    <paragraphReflowSplitOnDateYear>true</paragraphReflowSplitOnDateYear>
+    <paragraphReflowSplitOnSemicolon>true</paragraphReflowSplitOnSemicolon>
+    <paragraphReflowSplitOnEmDash>true</paragraphReflowSplitOnEmDash>
+    <paragraphReflowMinBreakSpacing>40</paragraphReflowMinBreakSpacing>
+    <speechBlockLeftInset>24</speechBlockLeftInset>
+    <speechBlockVerticalPadding>3</speechBlockVerticalPadding>
+    <speechBlockOpenMarker>[[speech]]</speechBlockOpenMarker>
+    <speechBlockCloseMarker>[[/speech]]</speechBlockCloseMarker>
+    <atmosphereInset>18</atmosphereInset>
+    <fracturedPrimaryInsetMultiplier>1.75</fracturedPrimaryInsetMultiplier>
+    <fracturedSecondaryInsetMultiplier>0.72</fracturedSecondaryInsetMultiplier>
+    <fracturedRightInsetMultiplier>0.35</fracturedRightInsetMultiplier>
+    <fracturedLongTopGap>3</fracturedLongTopGap>
+    <fracturedShortTopGap>7</fracturedShortTopGap>
+    <fracturedBottomGap>3</fracturedBottomGap>
+    <memorialInset>34</memorialInset>
+    <writingDotSize>4</writingDotSize>
+    <writingDotGap>5</writingDotGap>
+    <writingPulseSpeed>5.5</writingPulseSpeed>
+    <writingDotMinAlpha>0.25</writingDotMinAlpha>
+    <writingDotMaxAlpha>0.95</writingDotMaxAlpha>
+    <writingDotLowYOffset>2</writingDotLowYOffset>
+    <writingDotHighYOffset>-1</writingDotHighYOffset>
+
+    <!-- Base colors -->
+    <quietTextColor><r>0.42</r><g>0.48</g><b>0.52</b><a>1</a></quietTextColor>
+    <narrativeTextColor><r>0.78</r><g>0.78</g><b>0.72</b><a>1</a></narrativeTextColor>
+    <fallbackDialogueColor><r>0.58</r><g>0.80</g><b>1</b><a>1</a></fallbackDialogueColor>
+    <speechBlockBgColor><r>0.10</r><g>0.14</g><b>0.16</b><a>0.55</a></speechBlockBgColor>
+    <speechBlockAccentAlpha>0.72</speechBlockAccentAlpha>
+    <pageTintColor><r>0.91</r><g>0.83</g><b>0.66</b><a>0.07</a></pageTintColor>
+    <headerRuleColor><r>0.62</r><g>0.58</g><b>0.50</b><a>0.35</a></headerRuleColor>
+    <combatPageTintColor><r>0.70</r><g>0.10</g><b>0.07</b><a>0.18</a></combatPageTintColor>
+    <combatHeaderRuleColor><r>0.95</r><g>0.18</g><b>0.12</b><a>0.65</a></combatHeaderRuleColor>
+    <socialFightPageTintColor><r>0.90</r><g>0.34</g><b>0.05</b><a>0.16</a></socialFightPageTintColor>
+    <socialFightHeaderRuleColor><r>1</r><g>0.52</g><b>0.16</b><a>0.68</a></socialFightHeaderRuleColor>
+    <mentalBreakPageTintColor><r>0.18</r><g>0.34</g><b>0.22</b><a>0.09</a></mentalBreakPageTintColor>
+    <mentalBreakHeaderRuleColor><r>0.40</r><g>0.58</g><b>0.40</b><a>0.42</a></mentalBreakHeaderRuleColor>
+    <accentHighlightColor><r>1</r><g>1</g><b>1</b><a>0.10</a></accentHighlightColor>
+    <titleTextColor><r>0.88</r><g>0.86</g><b>0.79</b><a>1</a></titleTextColor>
+    <!-- Date tone (a touch quieter than the title, but readable at the normal Small size) and the
+         brightened quadrum divider label/line tones. -->
+    <entryDateColor><r>0.80</r><g>0.79</g><b>0.74</b><a>1</a></entryDateColor>
+    <quadrumDividerLabelColor><r>0.85</r><g>0.83</g><b>0.75</b><a>1</a></quadrumDividerLabelColor>
+    <quadrumDividerLineColor><r>0.60</r><g>0.57</g><b>0.50</b><a>0.45</a></quadrumDividerLineColor>
+    <!-- Subtle seasonal background wash (very low alpha; set an alpha to 0 to disable that season). -->
+    <springWashColor><r>0.42</r><g>0.58</g><b>0.40</b><a>0.14</a></springWashColor>
+    <summerWashColor><r>0.85</r><g>0.72</g><b>0.36</b><a>0.14</a></summerWashColor>
+    <fallWashColor><r>0.80</r><g>0.47</g><b>0.22</b><a>0.16</a></fallWashColor>
+    <winterWashColor><r>0.48</r><g>0.60</g><b>0.80</b><a>0.14</a></winterWashColor>
+    <pendingTitlePrefixColor><r>0.86</r><g>0.86</g><b>0.86</b><a>0.95</a></pendingTitlePrefixColor>
+    <pendingTitleDotBaseColor><r>0.68</r><g>0.72</g><b>0.76</b><a>1</a></pendingTitleDotBaseColor>
+    <writingPlaceholderLowColor><r>0.58</r><g>0.72</g><b>0.66</b><a>1</a></writingPlaceholderLowColor>
+    <writingPlaceholderHighColor><r>0.80</r><g>0.96</g><b>0.84</b><a>1</a></writingPlaceholderHighColor>
+    <yearDisabledColor><r>1</r><g>1</g><b>1</b><a>0.42</a></yearDisabledColor>
+    <expansionIndicatorBaseColor><r>0.62</r><g>0.65</g><b>0.68</b><a>0.85</a></expansionIndicatorBaseColor>
+    <modelNameColor><r>0.45</r><g>0.48</g><b>0.50</b><a>0.62</a></modelNameColor>
+    <regenerateEntryButtonColor><r>0.82</r><g>0.85</g><b>0.88</b><a>0.85</a></regenerateEntryButtonColor>
+    <!-- Entry favorite star when toggled on (warm gold); off state reuses the quiet footer tint. -->
+    <favoriteStarColor><r>0.98</r><g>0.82</g><b>0.34</b><a>1</a></favoriteStarColor>
+    <!-- Filter-panel toggle when open AND a filter is engaged (amber "active" third state). -->
+    <filterActiveIconColor><r>0.96</r><g>0.78</g><b>0.40</b><a>0.98</a></filterActiveIconColor>
+    <!-- Matching title/body substrings. Color-only markup preserves measured text wrapping. -->
+    <filterSearchHighlightColor><r>1</r><g>0.74</g><b>0.24</b><a>1</a></filterSearchHighlightColor>
+    <debugTextColor><r>0.54</r><g>0.58</g><b>0.60</b><a>0.90</a></debugTextColor>
+    <devDangerButtonColor><r>0.95</r><g>0.22</g><b>0.18</b><a>0.92</a></devDangerButtonColor>
+    <linkedEntryLabelColor><r>0.80</r><g>0.85</g><b>0.92</b><a>1</a></linkedEntryLabelColor>
+    <linkedEntryBgColor><r>0.15</r><g>0.17</g><b>0.20</b><a>0.85</a></linkedEntryBgColor>
+    <linkedEntryBorderColor><r>0.35</r><g>0.45</g><b>0.55</b><a>1</a></linkedEntryBorderColor>
+    <linkedEntryTextColor><r>0.65</r><g>0.70</g><b>0.75</b><a>1</a></linkedEntryTextColor>
+    <linkedEntryHoverColor><r>0.25</r><g>0.30</g><b>0.38</b><a>0.90</a></linkedEntryHoverColor>
+    <defaultCueColor><preset>name</preset></defaultCueColor>
+    <quietCueColor><r>0.74</r><g>0.74</g><b>0.70</b><a>1</a></quietCueColor>
+    <pawnNameSlaveColor><r>0.96</r><g>0.72</g><b>0.26</b><a>1</a></pawnNameSlaveColor>
+    <pawnNamePrisonerColor><r>0.95</r><g>0.48</g><b>0.20</b><a>1</a></pawnNamePrisonerColor>
+    <pawnNameEnemyColor><preset>hostile</preset></pawnNameEnemyColor>
+    <pawnNameNeutralColor><r>0.55</r><g>0.72</g><b>1</b><a>1</a></pawnNameNeutralColor>
+
+    <!-- Legacy linked-role accent palette. Diary card colors normally use cueColors below. -->
+    <entryAccentPalette>
+      <li><r>0.95</r><g>0.58</g><b>0.32</b><a>1</a></li>
+      <li><r>0.84</r><g>0.70</g><b>0.34</b><a>1</a></li>
+      <li><r>0.48</r><g>0.72</g><b>0.50</b><a>1</a></li>
+      <li><r>0.38</r><g>0.70</g><b>0.72</b><a>1</a></li>
+      <li><r>0.45</r><g>0.63</g><b>0.92</b><a>1</a></li>
+      <li><r>0.70</r><g>0.56</g><b>0.88</b><a>1</a></li>
+      <li><r>0.86</r><g>0.50</g><b>0.66</b><a>1</a></li>
+      <li><r>0.62</r><g>0.68</g><b>0.76</b><a>1</a></li>
+    </entryAccentPalette>
+
+    <!-- Saved DiaryEvent.colorCue -> that cue's card colors. Cue names come from
+         DiaryInteractionGroupDefs.xml. Each row owns three things:
+           color      the accent stripe down the left of the card (required)
+           pageTint   the wash behind the whole card   (optional; omit to inherit pageTintColor)
+           headerRule the line under the card's title  (optional; omit to inherit headerRuleColor)
+         Keep new tint alphas in 0.05-0.12 and new rule alphas in 0.35-0.65 so a page still reads as
+         tinted parchment rather than a colored panel; combat deliberately exceeds that, because those
+         two values shipped before per-cue tints existed and are preserved exactly.
+         This list REPLACES the C# fallback in DiaryUiStyleDef.cs wholesale — keep the two in sync.
+         A cue with no row here (including a modded one) simply uses the shared accent/tint/rule. -->
+    <cueColors>
+      <li>
+        <cue>combat</cue>
+        <color><preset>hostile</preset></color>
+        <pageTint><r>0.70</r><g>0.10</g><b>0.07</b><a>0.18</a></pageTint>
+        <headerRule><r>0.95</r><g>0.18</g><b>0.12</b><a>0.65</a></headerRule>
+      </li>
+      <li>
+        <cue>danger</cue>
+        <color><r>0.94</r><g>0.28</g><b>0.12</b><a>1</a></color>
+        <pageTint><r>0.55</r><g>0.08</g><b>0.05</b><a>0.12</a></pageTint>
+        <headerRule><r>0.80</r><g>0.15</g><b>0.10</b><a>0.55</a></headerRule>
+      </li>
+      <li>
+        <cue>socialFight</cue>
+        <color><r>1</r><g>0.52</g><b>0.16</b><a>1</a></color>
+        <pageTint><r>0.90</r><g>0.34</g><b>0.05</b><a>0.16</a></pageTint>
+        <headerRule><r>1</r><g>0.52</g><b>0.16</b><a>0.68</a></headerRule>
+      </li>
+      <li>
+        <cue>mentalBreak</cue>
+        <color><r>0.48</r><g>0.64</g><b>0.48</b><a>1</a></color>
+        <pageTint><r>0.18</r><g>0.34</g><b>0.22</b><a>0.09</a></pageTint>
+        <headerRule><r>0.40</r><g>0.58</g><b>0.40</b><a>0.42</a></headerRule>
+      </li>
+      <!-- Daze and strange chat keep the shared header rule: they are "something is off" moods, not
+           the loud events that earn a colored header line. -->
+      <li>
+        <cue>daze</cue>
+        <color><preset>gene</preset></color>
+        <pageTint><r>0.10</r><g>0.30</g><b>0.28</b><a>0.08</a></pageTint>
+      </li>
+      <li>
+        <cue>strangeChat</cue>
+        <color><r>0.42</r><g>0.96</g><b>0.50</b><a>1</a></color>
+        <pageTint><r>0.05</r><g>0.25</g><b>0.10</b><a>0.10</a></pageTint>
+      </li>
+      <!-- The warm-white cue carries romance, heartfelt moments, birthdays, and skill passions, so its
+           page reads as warm rose paper rather than a colored alert. -->
+      <li>
+        <cue>white</cue>
+        <color><r>0.92</r><g>0.92</g><b>0.86</b><a>1</a></color>
+        <pageTint><r>0.45</r><g>0.25</g><b>0.20</b><a>0.07</a></pageTint>
+        <headerRule><r>0.70</r><g>0.45</g><b>0.38</b><a>0.40</a></headerRule>
+      </li>
+      <!-- Body-part events: anomalous living changes, artificial replacements, and natural loss
+           should remain visually distinct from generic important entries. Each tint reuses that
+           row's own accent at low alpha. -->
+      <li>
+        <cue>bodyPartAnomalous</cue>
+        <color><r>0.80</r><g>0.22</g><b>0.45</b><a>1</a></color>
+        <pageTint><r>0.80</r><g>0.22</g><b>0.45</b><a>0.08</a></pageTint>
+      </li>
+      <li>
+        <cue>bodyPartArtificial</cue>
+        <color><r>0.36</r><g>0.78</g><b>0.84</b><a>1</a></color>
+        <pageTint><r>0.36</r><g>0.78</g><b>0.84</b><a>0.08</a></pageTint>
+      </li>
+      <li>
+        <cue>bodyPartLost</cue>
+        <color><r>0.95</r><g>0.40</g><b>0.30</b><a>1</a></color>
+        <pageTint><r>0.95</r><g>0.40</g><b>0.30</b><a>0.08</a></pageTint>
+      </li>
+      <!-- Psycast abilities: bright violet. Anomaly and Royalty psychic content lives in the DLC
+           families below. -->
+      <li>
+        <cue>psychic</cue>
+        <color><r>0.78</r><g>0.42</g><b>1</b><a>1</a></color>
+        <pageTint><r>0.25</r><g>0.10</g><b>0.40</b><a>0.08</a></pageTint>
+        <headerRule><r>0.55</r><g>0.30</g><b>0.80</b><a>0.45</a></headerRule>
+      </li>
+      <!-- The end-of-quadrum look-back reads as a calm blue page rather than an incident. -->
+      <li>
+        <cue>quadrumReflection</cue>
+        <color><r>0.66</r><g>0.86</g><b>0.95</b><a>1</a></color>
+        <pageTint><r>0.15</r><g>0.20</g><b>0.35</b><a>0.07</a></pageTint>
+      </li>
+      <li>
+        <cue>quiet</cue>
+        <color><r>0.74</r><g>0.74</g><b>0.70</b><a>1</a></color>
+        <pageTint><r>0.30</r><g>0.30</g><b>0.28</b><a>0.05</a></pageTint>
+      </li>
+
+      <!-- ===== DLC families: one hue per expansion, three shades by emotional weight =====
+           Hues are taken from each DLC's own icon, so a page's color says which expansion it came
+           from at a glance. Within a hue the shade says how heavy the page is:
+             <dlc>Deep    dread, loss, crisis        (the only shade that also draws a header rule)
+             <dlc>        the DLC's own brand color  (ordinary events)
+             <dlc>Bright  triumph, wonder, birth
+           This keeps horror pages heavy through VALUE while still reading as their DLC through HUE.
+           To retune one DLC, change its three accents and their matching tints together. -->
+
+      <!-- Royalty — crown gold. The core shade keeps the header rule it shipped with. -->
+      <li>
+        <cue>royaltyDeep</cue>
+        <color><r>0.541</r><g>0.459</g><b>0.220</b><a>1</a></color>
+        <pageTint><r>0.541</r><g>0.459</g><b>0.220</b><a>0.10</a></pageTint>
+        <headerRule><r>0.541</r><g>0.459</g><b>0.220</b><a>0.55</a></headerRule>
+      </li>
+      <li>
+        <cue>royalty</cue>
+        <color><r>0.851</r><g>0.757</g><b>0.475</b><a>1</a></color>
+        <pageTint><r>0.851</r><g>0.757</g><b>0.475</b><a>0.08</a></pageTint>
+        <headerRule><r>0.75</r><g>0.60</g><b>0.20</b><a>0.45</a></headerRule>
+      </li>
+      <li>
+        <cue>royaltyBright</cue>
+        <color><r>0.941</r><g>0.882</g><b>0.675</b><a>1</a></color>
+        <pageTint><r>0.941</r><g>0.882</g><b>0.675</b><a>0.07</a></pageTint>
+      </li>
+
+      <!-- Ideology — the flame's coral red. -->
+      <li>
+        <cue>ideologyDeep</cue>
+        <color><r>0.557</r><g>0.180</g><b>0.157</b><a>1</a></color>
+        <pageTint><r>0.557</r><g>0.180</g><b>0.157</b><a>0.10</a></pageTint>
+        <headerRule><r>0.557</r><g>0.180</g><b>0.157</b><a>0.55</a></headerRule>
+      </li>
+      <li>
+        <cue>ideology</cue>
+        <color><r>0.882</r><g>0.329</g><b>0.294</b><a>1</a></color>
+        <pageTint><r>0.882</r><g>0.329</g><b>0.294</b><a>0.08</a></pageTint>
+      </li>
+      <li>
+        <cue>ideologyBright</cue>
+        <color><r>0.957</r><g>0.569</g><b>0.537</b><a>1</a></color>
+        <pageTint><r>0.957</r><g>0.569</g><b>0.537</b><a>0.07</a></pageTint>
+      </li>
+
+      <!-- Biotech — the hexagon's teal. -->
+      <li>
+        <cue>biotechDeep</cue>
+        <color><r>0.173</r><g>0.376</g><b>0.369</b><a>1</a></color>
+        <pageTint><r>0.173</r><g>0.376</g><b>0.369</b><a>0.10</a></pageTint>
+        <headerRule><r>0.173</r><g>0.376</g><b>0.369</b><a>0.55</a></headerRule>
+      </li>
+      <li>
+        <cue>biotech</cue>
+        <color><r>0.310</r><g>0.647</g><b>0.635</b><a>1</a></color>
+        <pageTint><r>0.310</r><g>0.647</g><b>0.635</b><a>0.08</a></pageTint>
+      </li>
+      <li>
+        <cue>biotechBright</cue>
+        <color><r>0.545</r><g>0.835</g><b>0.824</b><a>1</a></color>
+        <pageTint><r>0.545</r><g>0.835</g><b>0.824</b><a>0.07</a></pageTint>
+      </li>
+
+      <!-- Anomaly — the arrowhead's olive. Dread pages stay heavy through the DEEP shade rather than
+           through a separate blood-red cue, so they read as Anomaly and as dread at once. -->
+      <li>
+        <cue>anomalyDeep</cue>
+        <color><r>0.373</r><g>0.431</g><b>0.200</b><a>1</a></color>
+        <pageTint><r>0.373</r><g>0.431</g><b>0.200</b><a>0.10</a></pageTint>
+        <headerRule><r>0.373</r><g>0.431</g><b>0.200</b><a>0.55</a></headerRule>
+      </li>
+      <li>
+        <cue>anomaly</cue>
+        <color><r>0.647</r><g>0.714</g><b>0.384</b><a>1</a></color>
+        <pageTint><r>0.647</r><g>0.714</g><b>0.384</b><a>0.08</a></pageTint>
+      </li>
+      <li>
+        <cue>anomalyBright</cue>
+        <color><r>0.824</r><g>0.871</g><b>0.588</b><a>1</a></color>
+        <pageTint><r>0.824</r><g>0.871</g><b>0.588</b><a>0.07</a></pageTint>
+      </li>
+
+      <!-- Odyssey — the star's violet. -->
+      <li>
+        <cue>odysseyDeep</cue>
+        <color><r>0.341</r><g>0.235</g><b>0.502</b><a>1</a></color>
+        <pageTint><r>0.341</r><g>0.235</g><b>0.502</b><a>0.10</a></pageTint>
+        <headerRule><r>0.341</r><g>0.235</g><b>0.502</b><a>0.55</a></headerRule>
+      </li>
+      <li>
+        <cue>odyssey</cue>
+        <color><r>0.604</r><g>0.431</g><b>0.824</b><a>1</a></color>
+        <pageTint><r>0.604</r><g>0.431</g><b>0.824</b><a>0.08</a></pageTint>
+      </li>
+      <li>
+        <cue>odysseyBright</cue>
+        <color><r>0.769</r><g>0.651</g><b>0.933</b><a>1</a></color>
+        <pageTint><r>0.769</r><g>0.651</g><b>0.933</b><a>0.07</a></pageTint>
+      </li>
+
+      <!-- ===== Retired cues, kept for old saves =====
+           No shipped group stamps these any more, but colorCue is PERSISTED: pages written before the
+           DLC families existed still carry these strings. Deleting the rows would flatten every one of
+           those pages to plain parchment, so they keep their original colors forever. -->
+      <li>
+        <cue>extremeDark</cue>
+        <color><r>0.58</r><g>0.05</g><b>0.08</b><a>1</a></color>
+        <pageTint><r>0.25</r><g>0.02</g><b>0.05</b><a>0.12</a></pageTint>
+        <headerRule><r>0.45</r><g>0.05</g><b>0.10</b><a>0.60</a></headerRule>
+      </li>
+      <li>
+        <cue>eventful</cue>
+        <color><r>0.90</r><g>0.65</g><b>0.25</b><a>1</a></color>
+        <pageTint><r>0.35</r><g>0.25</g><b>0.08</b><a>0.06</a></pageTint>
+      </li>
+    </cueColors>
+  </PawnDiary.DiaryUiStyleDef>
+
+</Defs>

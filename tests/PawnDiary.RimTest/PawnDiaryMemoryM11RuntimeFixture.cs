@@ -130,11 +130,28 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
-        /// Publishes a temporary effective policy together with the component's applied-policy
-        /// marker. Production intentionally fails closed when those two fingerprints differ, so a
-        /// loaded fixture must move and restore both sides as one exception-safe operation. It does
-        /// not run full reconciliation or replace the saved policy state/revision, because doing so
-        /// could purge or rewrite unrelated data in the user's loaded test colony.
+        /// Advances only the detached Library's clock for a fixture, restoring it on every exit.
+        /// </summary>
+        internal sealed class LibraryClockScope : IDisposable
+        {
+            private readonly DiaryGameComponent component;
+            private readonly long? prior;
+
+            internal LibraryClockScope(DiaryGameComponent component)
+            {
+                this.component = component;
+                prior = component.memoryLibraryTickOverrideForTests;
+                component.memoryLibraryTickOverrideForTests =
+                    Math.Max(0L, Find.TickManager?.TicksGame ?? 0) + 60000L;
+            }
+
+            /// <summary>Restores the prior detached clock without changing colony time.</summary>
+            public void Dispose() { component.memoryLibraryTickOverrideForTests = prior; }
+        }
+
+        /// <summary>
+        /// Publishes a fixture policy together with its applied fingerprint, then restores both.
+        /// Avoid full reconciliation here: it could purge unrelated data in the loaded test colony.
         /// </summary>
         internal sealed class AppliedPolicyScope : IDisposable
         {
@@ -465,9 +482,20 @@ namespace PawnDiary.RimTests
         {
             RequireReflectionSurface();
             if (enrollment == null || budget == null) return false;
+            // Use the same canonical identity as production. An arbitrary display-like id is not a
+            // valid allocator carrier and may be discarded by a later current-truth repair pass.
+            Type enrollmentType = enrollment.GetType();
+            PawnKnowledgeState ownerState = (PawnKnowledgeState)enrollmentType.GetField("state").GetValue(enrollment);
+            string epoch = (string)enrollmentType.GetField("epochToken").GetValue(enrollment);
+            string snapshotId;
+            Require(KnowledgeRelationPolicy.TryCreateAwarenessId(
+                ownerState.pawnId, epoch, KnowledgeObservationTokens.ScopeRelative,
+                KnowledgeObservationTokens.SubjectPawn, "rimtest-subject-" + (suffix ?? string.Empty),
+                KnowledgeObservationTokens.StreamRelativeState, out snapshotId),
+                "The observation fixture could not create its canonical awareness identity.");
             var replacement = new KnowledgeAwarenessState
             {
-                snapshotId = "rimtest-observation-" + (suffix ?? string.Empty),
+                snapshotId = snapshotId,
                 scopeKindToken = KnowledgeObservationTokens.ScopeRelative,
                 subjectKind = KnowledgeObservationTokens.SubjectPawn,
                 subjectId = "rimtest-subject-" + (suffix ?? string.Empty),

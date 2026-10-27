@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Tuning surface for the deterministic pawn-knowledge system
+  (design/MEMORY_SYSTEM_REDESIGN_PLAN.md §2.3, §3.2, §4.3). Behavioral values mirror
+  KnowledgePolicySnapshot.CreateDefault exactly (the pure suite's parity test enforces it);
+  model-facing instructions are the intentional exceptions - their code fallbacks are blank so
+  deleting this file omits optional guidance without hardcoding English.
+
+  The player's single memory switch (settings) is ANDed with <enabled>; both control PROMPT
+  INJECTION ONLY - important-event capture and culture tracking always continue (§3.2).
+
+  DLC-safety: plain strings and numbers only. Localization: the two memory instructions and the
+  two annotation formats are prompt prose, translated via DefInjected; scannable sources, context
+  keys, and prefixes are stable schema tokens and stay English everywhere.
+-->
+<Defs>
+  <PawnDiary.DiaryKnowledgeTuningDef>
+    <defName>Diary_Knowledge</defName>
+    <label>pawn knowledge policy</label>
+
+    <enabled>true</enabled>
+
+    <!-- Defensive limits (§2.3). No age-based eviction: records live until a hard cap. -->
+    <maxRecordsPerPawn>512</maxRecordsPerPawn>
+    <maxRecordsGlobal>20000</maxRecordsGlobal>
+    <fallbackSummaryMaxChars>240</fallbackSummaryMaxChars>
+    <!-- Leaves headroom for the localized background prefix inside relevantPastMaxChars. -->
+    <playerAuthoredMemoryMaxChars>450</playerAuthoredMemoryMaxChars>
+    <evictionScanIntervalTicks>150000</evictionScanIntervalTicks>
+
+    <!-- Unified-memory product defaults. CurrentRelease applies these to the canonical backend;
+         LegacyShadow retains them only for compatibility maintenance and fixtures. -->
+    <minorMemoryLifetimeMinimumDays>1</minorMemoryLifetimeMinimumDays>
+    <minorMemoryLifetimeDefaultDays>15</minorMemoryLifetimeDefaultDays>
+    <minorMemoryLifetimeMaximumDays>3600</minorMemoryLifetimeMaximumDays>
+    <regularMemoryLifetimeMinimumDays>1</regularMemoryLifetimeMinimumDays>
+    <regularMemoryLifetimeDefaultDays>60</regularMemoryLifetimeDefaultDays>
+    <regularMemoryLifetimeMaximumDays>3600</regularMemoryLifetimeMaximumDays>
+    <memoryChapterInactivityDays>15</memoryChapterInactivityDays>
+    <memoryThreadTargetMinimum>4</memoryThreadTargetMinimum>
+    <memoryThreadTargetDefault>12</memoryThreadTargetDefault>
+    <memoryThreadTargetMaximum>64</memoryThreadTargetMaximum>
+    <memoryReuseDaysMinimum>1</memoryReuseDaysMinimum>
+    <memoryReuseDaysDefault>5</memoryReuseDaysDefault>
+    <memoryReuseDaysMaximum>3600</memoryReuseDaysMaximum>
+    <memoryRevisitEntryCountMinimum>1</memoryRevisitEntryCountMinimum>
+    <memoryRevisitEntryCountDefault>3</memoryRevisitEntryCountDefault>
+    <memoryRevisitEntryCountMaximum>1000</memoryRevisitEntryCountMaximum>
+    <!-- Recall-v2 repetition safety floors and current-truth formatter bounds. The player controls
+         may make repetition stricter; these rows keep every structural guard independently live. -->
+    <memoryRecordMinimumReuseDays>1</memoryRecordMinimumReuseDays>
+    <memoryRecordMinimumEntryDistance>1</memoryRecordMinimumEntryDistance>
+    <memoryRootMinimumEntryDistance>1</memoryRootMinimumEntryDistance>
+    <memorySubjectMinimumEntryDistance>1</memorySubjectMinimumEntryDistance>
+    <memoryPairMinimumEntryDistance>1</memoryPairMinimumEntryDistance>
+    <memoryNoveltyMinimumEntryDistance>1</memoryNoveltyMinimumEntryDistance>
+    <memoryCurrentStateMaximumFacts>8</memoryCurrentStateMaximumFacts>
+    <memoryCurrentStateMaximumCharacters>240</memoryCurrentStateMaximumCharacters>
+    <quietReflectionChanceBasisPoints>200</quietReflectionChanceBasisPoints>
+    <!-- M10 uses the existing natural-rest coordinator and common LLM transport. Delayed work is
+         still the meaningful class; these values never create a separate ticker or retry queue. -->
+    <meaningfulMemoryDelayTicks>60000</meaningfulMemoryDelayTicks>
+    <optionalMemoryOpportunityExpiryTicks>120000</optionalMemoryOpportunityExpiryTicks>
+    <meaningfulMemoryPriority>100</meaningfulMemoryPriority>
+    <quietMemoryPriority>50</quietMemoryPriority>
+    <!-- The just-admitted memory sentence intentionally wins the shared owner slot over background
+         Summary wording; both remain below actual meaningful/quiet reflection work. -->
+    <memoryWordingPriority>10</memoryWordingPriority>
+    <summaryWordingPriority>0</summaryWordingPriority>
+    <memoryReflectionMaxTokens>220</memoryReflectionMaxTokens>
+    <!-- Shared by Summary and newly admitted Event/Landmark wording requests. -->
+    <summaryWordingMaxTokens>80</summaryWordingMaxTokens>
+    <memoryReflectionSystemPrompt>You write a concise first-person diary reflection. Treat the supplied memory as historical evidence, never as a new event, and do not invent facts.</memoryReflectionSystemPrompt>
+    <memoryReflectionLabel>memory reflection</memoryReflectionLabel>
+    <memoryReflectionInstruction>Reflect on why this remembered moment still matters now. Use only the supplied structured memory and write one self-contained diary paragraph.</memoryReflectionInstruction>
+    <summaryWordingSystemPrompt>You shorten deterministic memory-summary wording without changing, adding, or inferring facts. If previous_wording is supplied, vary the phrasing and opening noticeably, and carry over nothing that is absent from deterministic_summary.</summaryWordingSystemPrompt>
+    <summaryWordingInstruction>Rewrite the supplied deterministic summary as one concise sentence. Preserve every factual qualifier, avoid repeating previous_wording, and return wording only.</summaryWordingInstruction>
+    <memoryWordingSystemPrompt>Rewrite one saved factual memory as a concise first-person recollection. Keep the supplied fact as the only factual content. Improve rhythm and perspective only; do not add an emotion, evaluation, event, cause, place, dialogue, motive, relationship, another person's thoughts, or current state unless it is explicit in memory_fact. If previous_wording is supplied, vary the phrasing and opening noticeably, and carry over nothing that is absent from memory_fact.</memoryWordingSystemPrompt>
+    <memoryWordingInstruction>Turn memory_fact into one natural sentence in the remembering pawn's writing_style. Preserve every name, transition, direction, and qualifier, avoid repeating previous_wording, and return the sentence only.</memoryWordingInstruction>
+
+    <!-- M6 current-truth reconciliation. Opinion bands themselves remain the single shared
+         vocabulary in DiaryTuningDef.xml. Only a sustained, hysteresis-safe transition between
+         those bands becomes a durable memory; point drift and within-band reversals stay silent. -->
+    <memoryObservationReconciliationIntervalTicks>2500</memoryObservationReconciliationIntervalTicks>
+    <memoryOpinionBandSustainTicks>15000</memoryOpinionBandSustainTicks>
+    <memoryOpinionHysteresisPoints>5</memoryOpinionHysteresisPoints>
+    <memoryOpinionEpisodeInactivityTicks>60000</memoryOpinionEpisodeInactivityTicks>
+    <memoryOpinionEpisodeMaximumTicks>300000</memoryOpinionEpisodeMaximumTicks>
+    <!-- Base-game family-by-choice relations shown by vanilla's Social tab but not flagged as blood.
+         Exact string matching is harmless when another game version or mod omits one of these Defs. -->
+    <memoryFamilyRelationDefNames>
+      <li>Stepparent</li>
+      <li>Stepchild</li>
+      <li>ParentInLaw</li>
+      <li>ChildInLaw</li>
+    </memoryFamilyRelationDefNames>
+
+    <!-- M0's provisional production vector. Each slash-delimited tuple is one atomic coordinate;
+         tests require this exact order and code-owned ceilings remain strictly separate. -->
+    <memoryCapacityVector>
+      <li><name>eventFacts</name><valueEncoding>4</valueEncoding></li>
+      <li><name>blockProvenanceRows</name><valueEncoding>2</valueEncoding></li>
+      <li><name>factKeyValueUnits</name><valueEncoding>48/128</valueEncoding></li>
+      <li><name>secondarySubjects</name><valueEncoding>4</valueEncoding></li>
+      <li><name>factBuckets</name><valueEncoding>16</valueEncoding></li>
+      <li><name>datedContributionDescriptorMatchCaps</name><valueEncoding>32/32/32</valueEncoding></li>
+      <li><name>distinctSubjects</name><valueEncoding>4</valueEncoding></li>
+      <li><name>subjectRefsPerContribution</name><valueEncoding>2</valueEncoding></li>
+      <li><name>provenanceTotal</name><valueEncoding>16</valueEncoding></li>
+      <li><name>provenancePerContribution</name><valueEncoding>2</valueEncoding></li>
+      <li><name>summaryDeterministicWordingUnits</name><valueEncoding>240</valueEncoding></li>
+      <li><name>summaryOptionalLlmWordingUnits</name><valueEncoding>240</valueEncoding></li>
+      <li><name>blockWordingUnits</name><valueEncoding>240</valueEncoding></li>
+      <li><name>playerBackgroundUnits</name><valueEncoding>225</valueEncoding></li>
+      <li><name>frozenDisplayLabelUnits</name><valueEncoding>80</valueEncoding></li>
+      <li><name>rawIdentitySegmentUnits</name><valueEncoding>128</valueEncoding></li>
+      <li><name>compositeKeyUnits</name><valueEncoding>1024/2048</valueEncoding></li>
+      <li><name>libraryWindowRows</name><valueEncoding>64</valueEncoding></li>
+      <li><name>chapterHeaderWindowRows</name><valueEncoding>32</valueEncoding></li>
+      <li><name>cachedOwnerStates</name><valueEncoding>4</valueEncoding></li>
+      <li><name>sliceWorkItems</name><valueEncoding>30</valueEncoding></li>
+      <li><name>sliceTargetMicroseconds</name><valueEncoding>375</valueEncoding></li>
+      <li><name>manageableBlocksPerOwner</name><valueEncoding>128</valueEncoding></li>
+      <li><name>globalBlockCaps</name><valueEncoding>5000/6000</valueEncoding></li>
+      <li><name>editedBlocksOwner</name><valueEncoding>32</valueEncoding></li>
+      <li><name>editedBlocksGlobal</name><valueEncoding>1000</valueEncoding></li>
+      <li><name>activeOwnerBytes</name><valueEncoding>196608</valueEncoding></li>
+      <li><name>combinedOwnerBytes</name><valueEncoding>262144</valueEncoding></li>
+      <li><name>activeGlobalBytes</name><valueEncoding>6291456</valueEncoding></li>
+      <li><name>combinedGlobalBytes</name><valueEncoding>8388608</valueEncoding></li>
+      <li><name>libraryCommandEntries</name><valueEncoding>32</valueEncoding></li>
+      <li><name>guardRowsOwnerGlobal</name><valueEncoding>512/10000</valueEncoding></li>
+      <li><name>coordinatorOpportunitiesOwnerGlobal</name><valueEncoding>2/1000</valueEncoding></li>
+      <li><name>attemptAuditRowsPerRequestGlobal</name><valueEncoding>4/1024</valueEncoding></li>
+      <li><name>runtimeQueueEntries</name><valueEncoding>128</valueEncoding></li>
+      <li><name>activeRequestsOwnerGlobal</name><valueEncoding>8/128</valueEncoding></li>
+      <li><name>frozenVariantAttemptCaps</name><valueEncoding>4/4</valueEncoding></li>
+      <li><name>frozenEvidenceGuardDiagnosticCaps</name><valueEncoding>2/8/16</valueEncoding></li>
+      <li><name>frozenPromptUnits</name><valueEncoding>4096</valueEncoding></li>
+      <li><name>acceptedPromptPairsEscapedBytesGlobal</name><valueEncoding>500/4194304</valueEncoding></li>
+      <li><name>factionSnapshots</name><valueEncoding>256</valueEncoding></li>
+      <li><name>dirtyObservationKeys</name><valueEncoding>1024</valueEncoding></li>
+      <li><name>legacyEpochReservations</name><valueEncoding>64</valueEncoding></li>
+      <li><name>awarenessFacts</name><valueEncoding>4</valueEncoding></li>
+      <li><name>awarenessRows</name><valueEncoding>128</valueEncoding></li>
+      <li><name>openEpisodes</name><valueEncoding>16</valueEncoding></li>
+      <li><name>ownerSlotTriple</name><valueEncoding>1000/1001/1000</valueEncoding></li>
+      <li><name>searchQueryBounds</name><valueEncoding>80/160</valueEncoding></li>
+      <li><name>rowPreviewUnits</name><valueEncoding>120</valueEncoding></li>
+      <li><name>normalizedSearchFieldUnits</name><valueEncoding>120</valueEncoding></li>
+      <li><name>rowSearchProjectionUnits</name><valueEncoding>480</valueEncoding></li>
+      <li><name>currentStatusFieldTextCaps</name><valueEncoding>4/240</valueEncoding></li>
+      <li><name>devReasonCountTextCaps</name><valueEncoding>8/80</valueEncoding></li>
+      <li><name>copyDiagnosticUnits</name><valueEncoding>2000</valueEncoding></li>
+      <li><name>importedTextUnits</name><valueEncoding>2000</valueEncoding></li>
+      <li><name>importedOwnerCount</name><valueEncoding>1000</valueEncoding></li>
+      <li><name>importedOwnerRows</name><valueEncoding>256</valueEncoding></li>
+      <li><name>importedUnknownRows</name><valueEncoding>1000</valueEncoding></li>
+      <li><name>importedGlobalRows</name><valueEncoding>10000</valueEncoding></li>
+      <li><name>importedPreviewChunkUnits</name><valueEncoding>240/1000</valueEncoding></li>
+      <li><name>importedSearchScratchUnits</name><valueEncoding>49152</valueEncoding></li>
+      <li><name>importedOwnerUnknownBytes</name><valueEncoding>262144/2097152</valueEncoding></li>
+      <li><name>importedGlobalBytes</name><valueEncoding>8388608</valueEncoding></li>
+      <li><name>libraryOwnerEntries</name><valueEncoding>2048</valueEncoding></li>
+    </memoryCapacityVector>
+
+    <!-- Legacy compatibility cap. CurrentRelease Recall v2 independently hard-caps one dated fact. -->
+    <relevantPastMaxLines>2</relevantPastMaxLines>
+    <relevantPastMaxChars>500</relevantPastMaxChars>
+    <relevantPastLineFormat>- ({0}) {1}</relevantPastLineFormat>
+    <backgroundMemoryLineFormat>- (background) {0}</backgroundMemoryLineFormat>
+    <relevantPastInstruction>Facts from this pawn's past. Use one only if it fits naturally; never force a mention - these are context, not today's events.</relevantPastInstruction>
+    <currentStateInstruction>When current_state is present, treat it as current truth and let it override conflicting historical memory.</currentStateInstruction>
+
+    <!-- Inline culture annotation (§4.3): at most two topics per prompt. -->
+    <maxCultureTopicsPerPrompt>2</maxCultureTopicsPerPrompt>
+    <annotationSingleFormat>(culture: {0})</annotationSingleFormat>
+    <annotationDualFormat>(origin: {0}; adopted: {1})</annotationDualFormat>
+
+    <!-- Field sources the topic detector may scan. System instructions, the relevant-past block
+         (MemoryContext), prior entries, and persona text are excluded by omission. -->
+    <scannableSources>
+      <li>EventNoun</li>
+      <li>PovText</li>
+      <li>NeutralText</li>
+      <li>PawnSummary</li>
+      <li>Setting</li>
+      <li>GameContext</li>
+      <li>DeathFacts</li>
+      <li>ArrivalFacts</li>
+    </scannableSources>
+
+    <!-- Subject-key extraction for the CURRENT event's retrieval query (§3.1). Values of these
+         gameContext keys become "prefix:value" probes against stored records' subject keys. -->
+    <querySubjectKeys>
+      <li><contextKey>romance</contextKey><prefix>relation</prefix></li>
+      <li><contextKey>part_def</contextKey><prefix>part</prefix></li>
+      <li><contextKey>hediff</contextKey><prefix>hediff</prefix></li>
+      <li><contextKey>royal_title</contextKey><prefix>title</prefix></li>
+      <li><contextKey>ideological_role</contextKey><prefix>role</prefix></li>
+      <li><contextKey>xenotype</contextKey><prefix>xenotype</prefix></li>
+      <li><contextKey>faction</contextKey><prefix>faction</prefix></li>
+      <li><contextKey>weapon</contextKey><prefix>weapon</prefix></li>
+    </querySubjectKeys>
+  </PawnDiary.DiaryKnowledgeTuningDef>
+</Defs>

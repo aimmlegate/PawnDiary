@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Global diary-frequency presets. A candidate's native source chance is multiplied by its tier row,
+  then clamped to one page at most. Deterministic events therefore never duplicate when a multiplier
+  exceeds 1. Exact group overrides are reserved for long-form reflection schedules whose cost and
+  consolidation role do not match the broad tier alone.
+
+  Custom is intentionally absent: it is a computed UI state when a saved per-group override differs
+  from the selected preset. Labels/descriptions are localized through DefInjected.
+-->
+<Defs>
+
+  <PawnDiary.DiaryFrequencyPresetDef>
+    <defName>PawnDiary_Frequency_Lite</defName>
+    <label>Lite</label>
+    <description>Writes major milestones reliably while sharply reducing routine, ambient, and long-form pages.</description>
+    <tierMultipliers>
+      <li><tier>essential</tier><multiplier>1</multiplier></li>
+      <li><tier>significant</tier><multiplier>0.6</multiplier></li>
+      <li><tier>routine</tier><multiplier>0.3</multiplier></li>
+      <li><tier>ambient</tier><multiplier>0.15</multiplier></li>
+    </tierMultipliers>
+    <groupOverrides>
+      <li><groupKey>dayreflection</groupKey><multiplier>0.35</multiplier></li>
+      <li><groupKey>quadrumreflection</groupKey><multiplier>0.75</multiplier></li>
+      <li><groupKey>reflectionBelief</groupKey><multiplier>0.5</multiplier></li>
+      <li><groupKey>socialReflection</groupKey><multiplier>0.35</multiplier></li>
+      <li><groupKey>reflection</groupKey><multiplier>0.75</multiplier></li>
+    </groupOverrides>
+  </PawnDiary.DiaryFrequencyPresetDef>
+
+  <PawnDiary.DiaryFrequencyPresetDef>
+    <defName>PawnDiary_Frequency_Standard</defName>
+    <label>Standard</label>
+    <description>Preserves Pawn Diary's existing default event frequency.</description>
+    <tierMultipliers>
+      <li><tier>essential</tier><multiplier>1</multiplier></li>
+      <li><tier>significant</tier><multiplier>1</multiplier></li>
+      <li><tier>routine</tier><multiplier>1</multiplier></li>
+      <li><tier>ambient</tier><multiplier>1</multiplier></li>
+    </tierMultipliers>
+  </PawnDiary.DiaryFrequencyPresetDef>
+
+  <PawnDiary.DiaryFrequencyPresetDef>
+    <defName>PawnDiary_Frequency_Frequent</defName>
+    <label>Frequent</label>
+    <description>Raises existing sampling chances for more everyday pages without inventing or duplicating events.</description>
+    <tierMultipliers>
+      <li><tier>essential</tier><multiplier>1</multiplier></li>
+      <li><tier>significant</tier><multiplier>1.35</multiplier></li>
+      <li><tier>routine</tier><multiplier>1.75</multiplier></li>
+      <li><tier>ambient</tier><multiplier>2</multiplier></li>
+    </tierMultipliers>
+  </PawnDiary.DiaryFrequencyPresetDef>
+
+</Defs>

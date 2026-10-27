@@ -180,6 +180,9 @@ namespace PawnDiary.RimTests
                 Pawn pawn = scope.CreateAdultColonist();
                 PawnDiaryRecord diary = scope.RequireDiaryRecord(pawn);
                 diary.knowledgeState = null;
+                // Direct fixture replacements bypass load-time allocator reconciliation. Restore
+                // that prerequisite before asking ordinary enrollment for a collision-free epoch.
+                component.CollectAndPublishAllocatorCarriers();
                 component.MarkMemoryM4IndexesDirty();
                 component.RebuildMemorySizeIndexes();
 
@@ -190,10 +193,13 @@ namespace PawnDiary.RimTests
                 PawnDiaryMemoryM11RuntimeFixture.ObservationNonArchiveEpochOwnerCount(budget, 0);
                 object enrollment = PawnDiaryMemoryM11RuntimeFixture.PrepareObservationOwner(
                     component, pawn, budget);
-                Require(enrollment != null
-                        && PawnDiaryMemoryM11RuntimeFixture.ApplyObservationBaseline(
+                Require(enrollment != null,
+                    "Blank-diary enrollment planning failed. Allocator sequence: "
+                        + PawnDiaryMemoryM11RuntimeFixture.EpochAllocatorSequence(component));
+                Require(PawnDiaryMemoryM11RuntimeFixture.ApplyObservationBaseline(
                             component, enrollment, budget, "fast-publish"),
-                    "The production observation path did not enroll its blank diary.");
+                    "Blank-diary baseline byte admission failed. Global active bytes: "
+                        + PawnDiaryMemoryM11RuntimeFixture.ObservationGlobalTotals(budget).globalActiveBytes);
 
                 PawnKnowledgeState state = diary.knowledgeState;
                 Require(state != null
@@ -285,6 +291,7 @@ namespace PawnDiary.RimTests
                     firstPawn.GetUniqueLoadID());
                 secondDiary.knowledgeState = PawnKnowledgeState.CreateCurrent(
                     secondPawn.GetUniqueLoadID());
+                component.CollectAndPublishAllocatorCarriers();
                 component.MarkMemoryM4IndexesDirty();
                 component.RebuildMemorySizeIndexes();
 
@@ -299,10 +306,14 @@ namespace PawnDiary.RimTests
                 object firstEnrollment =
                     PawnDiaryMemoryM11RuntimeFixture.PrepareObservationOwner(
                         component, firstPawn, budget);
-                Require(firstEnrollment != null
-                        && PawnDiaryMemoryM11RuntimeFixture.ApplyObservationBaseline(
-                            component, firstEnrollment, budget, "blank-cap-a")
-                        && PawnDiaryMemoryM11RuntimeFixture.ObservationActiveOwnerCount(budget)
+                Require(firstEnrollment != null,
+                    "Final-slot enrollment planning failed. Allocator sequence: "
+                        + PawnDiaryMemoryM11RuntimeFixture.EpochAllocatorSequence(component));
+                Require(PawnDiaryMemoryM11RuntimeFixture.ApplyObservationBaseline(
+                            component, firstEnrollment, budget, "blank-cap-a"),
+                    "Final-slot baseline byte admission failed. Global active bytes: "
+                        + PawnDiaryMemoryM11RuntimeFixture.ObservationGlobalTotals(budget).globalActiveBytes);
+                Require(PawnDiaryMemoryM11RuntimeFixture.ObservationActiveOwnerCount(budget)
                             == ownerCap
                         && PawnDiaryMemoryM11RuntimeFixture
                             .ObservationNonArchiveEpochOwnerCount(budget) == epochFenceCap,

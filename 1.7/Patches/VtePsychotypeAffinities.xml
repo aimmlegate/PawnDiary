@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Give twenty clearly outlook-shaped Vanilla Traits Expanded traits a data-only pull on Pawn
+  Diary's existing psychotype roll. PatchOperationFindMod matches the target mod's display name;
+  success=Always keeps this file silent and inert when VTE is absent. Every target below is an
+  existing core family or DiaryPsychotypeDef, so removing VTE later cannot leave a dangling saved
+  psychotype. Purely mechanical/biome/body traits were reviewed and deliberately left unmapped.
+-->
+<Patch>
+  <Operation Class="PatchOperationFindMod">
+    <mods>
+      <li>Vanilla Traits Expanded</li>
+    </mods>
+    <success>Always</success>
+    <match Class="PatchOperationAdd">
+      <xpath>/Defs/PawnDiary.DiaryPsychotypeTraitPolicyDef[defName="Diary_PsychotypeTraitPolicy"]/rules</xpath>
+      <value>
+        <li><traitDefName>VTE_Vengeful</traitDefName><key>VTE_Vengeful</key>
+          <familyBonuses><li><target>intense</target><bonus>2</bonus></li><li><target>anxious</target><bonus>2</bonus></li></familyBonuses>
+          <memberBonuses><li><target>DiaryPsychotype_Resentful</target><bonus>6</bonus></li><li><target>DiaryPsychotype_Ruthless</target><bonus>2</bonus></li></memberBonuses>
+        </li>
+        <li><traitDefName>VTE_Kleptomaniac</traitDefName><key>VTE_Kleptomaniac</key>
+          <familyBonuses><li><target>intense</target><bonus>2</bonus></li></familyBonuses>
+          <memberBonuses><li><target>DiaryPsychotype_Ruthless</target><bonus>2</bonus></li><li><target>DiaryPsychotype_Wry</target><bonus>2</bonus></li></memberBonuses>
+        </li>
+        <li><traitDefName>VTE_MadSurgeon</traitDefName><key>VTE_MadSurgeon</key>
+          <familyBonuses><li><target>intense</target><bonus>4</bonus></li><li><target>inward</target><bonus>2</bonus></li></familyBonuses>
+          <memberBonuses><li><target>DiaryPsychotype_Ruthless</target><bonus>4</bonus></li><li><target>DiaryPsychotype_Detached</target><bonus>2</bonus></li></memberBonuses>
+        </li>
+        <li><traitDefName>VTE_Perfectionist</traitDefName><key>VTE_Perfectionist</key>
+          <familyBonuses><li><target>anxious</target><bonus>4</bonus></li></familyBonuses>
+          <memberBonuses><li><target>DiaryPsychotype_Perfectionist</target><bonus>6</bonus></li><li><target>DiaryPsychotype_Dutiful</target><bonus>2</bonus></li></memberBonuses>
+        </li>
+        <li><traitDefName>VTE_Coward</traitDefName><key>VTE_Coward</key>
+          <familyBonuses><li><target>anxious</target><bonus>4</bonus></li></familyBonuses>
+          <memberBonuses><li><target>DiaryPsychotype_Avoidant</target><bonus>6</bonus></li><li><target>DiaryPsychotype_Dependent</target><bonus>2</bonus></li></memberBonuses>
+        </li>
+        <li><traitDefName>VTE_Brave</traitDefName><key>VTE_Brave</key>
+          <familyBonuses><li><target>grounded</target><bonus>4</bonus></li></familyBonuses>
+          <memberBonuses><li><target>DiaryPsychotype_Pragmatic</target><bonus>4</bonus></li><li><target>DiaryPsychotype_Dutiful</target><bonus>2</bonus></li></memberBonuses>
+        </li>
+        <li><traitDefName>VTE_Wanderlust</traitDefName><key>VTE_Wanderlust</key>
+          <familyBonuses><li><target>grounded</target><bonus>2</bonus></li></familyBonuses>
+          <memberBonuses><li><target>DiaryPsychotype_Ambitious</target><bonus>2</bonus></li><li><target>DiaryPsychotype_Nostalgic</target><bonus>2</bonus></li></memberBonuses>
+        </li>
+        <li><traitDefName>VTE_Insomniac</traitDefName><key>VTE_Insomniac</key>
+          <familyBonuses><li><target>inward</target><bonus>2</bonus></li><li><target>anxious</target><bonus>2</bonus></li></familyBonuses>
+          <memberBonuses><li><target>DiaryPsychotype_Detached</target><bonus>4</bonus></li><li><target>DiaryPsychotype_Avoidant</target><bonus>2</bonus></li></memberBonuses>
+        </li>
+        <li><traitDefName>VTE_WorldWeary</traitDefName><key>VTE_WorldWeary</key>
+          <familyBonuses><li><target>inward</target><bonus>4</bonus></li><li><target>anxious</target><bonus>2</bonus></li></familyBonuses>
+          <memberBonuses><li><target>DiaryPsychotype_Nostalgic</target><bonus>4</bonus></li><li><target>DiaryPsychotype_Wry</target><bonus>2</bonus></li><li><target>DiaryPsychotype_Detached</target><bonus>2</bonus></li></memberBonuses>
+        </li>
+        <li><traitDefName>VTE_Rebel</traitDefName><key>VTE_Rebel</key>
+          <familyBonuses><li><target>intense</target><bonus>2</bonus></li></familyBonuses>
+          <memberBonuses><li><target>DiaryPsychotype_Ambitious</target><bonus>4</bonus></li><li><target>DiaryPsychotype_Wry</target><bonus>2</bonus></li><li><target>DiaryPsychotype_Volatile</target><bonus>2</bonus></li></memberBonuses>
+        </li>
+        <li><traitDefName>VTE_Submissive</traitDefName><key>VTE_Submissive</key>
+          <familyBonuses><li><target>grounded</target><bonus>2</bonus></li><li><target>anxious</target><bonus>2</bonus></li></familyBonuses>
+          <memberBonuses><li><target>DiaryPsychotype_Dutiful</target><bonus>4</bonus></li><li><target>DiaryPsychotype_Dependent</target><bonus>4</bonus></li></memberBonuses>
+        </li>
+        <li><traitDefName>VTE_AnimalLover</traitDefName><key>VTE_AnimalLover</key>
+          <familyBonuses><li><target>grounded</target><bonus>4</bonus></li></familyBonuses>
+          <memberBonuses><li><target>DiaryPsychotype_Content</target><bonus>4</bonus></li><li><target>DiaryPsychotype_Dutiful</target><bonus>2</bonus></li></memberBonuses>
+        </li>
+        <li><traitDefName>VTE_AnimalHater</traitDefName><key>VTE_AnimalHater</key>
+          <familyBonuses><li><target>intense</target><bonus>2</bonus></li></familyBonuses>
+          <memberBonuses><li><target>DiaryPsychotype_Ruthless</target><bonus>4</bonus></li><li><target>DiaryPsychotype_Resentful</target><bonus>2</bonus></li></memberBonuses>
+        </li>
+        <li><traitDefName>VTE_Technophobe</traitDefName><key>VTE_Technophobe</key>
+          <familyBonuses><li><target>anxious</target><bonus>4</bonus></li><li><target>inward</target><bonus>2</bonus></li></familyBonuses>
+          <memberBonuses><li><target>DiaryPsychotype_Paranoid</target><bonus>4</bonus></li><li><target>DiaryPsychotype_Superstitious</target><bonus>4</bonus></li></memberBonuses>
+        </li>
+        <li><traitDefName>VTE_Stoner</traitDefName><key>VTE_Stoner</key>
+          <familyBonuses><li><target>grounded</target><bonus>2</bonus></li><li><target>inward</target><bonus>2</bonus></li></familyBonuses>
+          <memberBonuses><li><target>DiaryPsychotype_Content</target><bonus>4</bonus></li><li><target>DiaryPsychotype_Detached</target><bonus>2</bonus></li><li><target>DiaryPsychotype_Wry</target><bonus>2</bonus></li></memberBonuses>
+        </li>
+        <li><traitDefName>VTE_Workaholic</traitDefName><key>VTE_Workaholic</key>
+          <familyBonuses><li><target>grounded</target><bonus>4</bonus></li><li><target>anxious</target><bonus>2</bonus></li></familyBonuses>
+          <memberBonuses><li><target>DiaryPsychotype_Dutiful</target><bonus>6</bonus></li><li><target>DiaryPsychotype_Perfectionist</target><bonus>2</bonus></li></memberBonuses>
+        </li>
+        <li><traitDefName>VTE_Anxious</traitDefName><key>VTE_Anxious</key>
+          <familyBonuses><li><target>anxious</target><bonus>6</bonus></li></familyBonuses>
+          <memberBonuses><li><target>DiaryPsychotype_Avoidant</target><bonus>6</bonus></li><li><target>DiaryPsychotype_Dependent</target><bonus>2</bonus></li><li><target>DiaryPsychotype_Paranoid</target><bonus>2</bonus></li></memberBonuses>
+        </li>
+        <li><traitDefName>VTE_Schizoid</traitDefName><key>VTE_Schizoid</key>
+          <familyBonuses><li><target>inward</target><bonus>4</bonus></li><li><target>anxious</target><bonus>2</bonus></li></familyBonuses>
+          <memberBonuses><li><target>DiaryPsychotype_Detached</target><bonus>6</bonus></li><li><target>DiaryPsychotype_Avoidant</target><bonus>2</bonus></li></memberBonuses>
+        </li>
+        <li><traitDefName>VTE_Snob</traitDefName><key>VTE_Snob</key>
+          <familyBonuses><li><target>intense</target><bonus>2</bonus></li></familyBonuses>
+          <memberBonuses><li><target>DiaryPsychotype_Narcissistic</target><bonus>6</bonus></li><li><target>DiaryPsychotype_Theatrical</target><bonus>2</bonus></li></memberBonuses>
+        </li>
+        <li><traitDefName>VTE_Tycoon</traitDefName><key>VTE_Tycoon</key>
+          <familyBonuses><li><target>grounded</target><bonus>2</bonus></li><li><target>intense</target><bonus>2</bonus></li></familyBonuses>
+          <memberBonuses><li><target>DiaryPsychotype_Ambitious</target><bonus>6</bonus></li><li><target>DiaryPsychotype_Pragmatic</target><bonus>2</bonus></li></memberBonuses>
+        </li>
+      </value>
+    </match>
+  </Operation>
+</Patch>

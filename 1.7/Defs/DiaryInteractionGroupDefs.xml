@@ -1,0 +1,3783 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The interaction-group catalog. Each <PawnDiary.DiaryInteractionGroupDef> is one themed
+  bucket of events with an enable-by-default flag and a diary-prompt instruction. RimWorld
+  loads this at startup; edit it and restart the game to add/retune groups or reword prompts
+  WITHOUT recompiling the C# (see DiaryInteractionGroupDef in InteractionGroups.cs).
+
+  Fields:
+    defName        - stable key (also the key player settings save overrides under; don't rename)
+    label          - name shown in mod settings
+    order          - lower numbers are classified first ("first match wins"); catch-all highest
+    domain         - Interaction (matches InteractionDefs), MentalState (matches MentalStateDefs),
+                     Tale (matches TaleDefs from RimWorld's notable-history system), MoodEvent,
+                     Thought, Inspiration, Work (matches synthetic work diary defNames), or Hediff
+                     (matches HediffDefs from health conditions), Raid (matches raid incident
+                     defNames like RaidEnemy), Quest (matches the lifecycle signal: accepted,
+                     completed, failed), or Ritual (matches Precept_Ritual defNames)
+    defaultEnabled - whether events in this group are recorded by default
+    frequencyTier  - preset policy bucket: essential, significant, routine, or ambient. Every
+                     non-External shipped row must choose one explicitly; missing/unknown is safe 1x.
+    important      - whether entries in this group get the strong importance marker in the Diary tab
+    combat         - whether events in this group are combat-related (adds the equipped weapon to the prompt)
+    captureRenderedGameText
+                   - Interaction-domain only. true by default; set false for compatibility groups
+                     whose social-log grammar rendering can have side effects during capture
+    disableWhenPackageIdsLoaded
+                   - optional list of mod package IDs. When any is loaded, this group is treated as
+                     disabled even if defaultEnabled is true.
+    colorCue       - optional stable Diary tab color cue saved on new entries. Colors for each cue
+                     live in DiaryUiStyleDef.xml. Current cue names:
+                     base game -  combat, danger, socialFight, mentalBreak, daze, strangeChat,
+                                  white, bodyPartAnomalous, bodyPartArtificial, bodyPartLost,
+                                  psychic, quadrumReflection, quiet
+                     DLC        - one hue per expansion, three shades by emotional weight
+                                  (Deep = dread/loss, plain = ordinary, Bright = triumph):
+                                  royaltyDeep / royalty / royaltyBright
+                                  ideologyDeep / ideology / ideologyBright
+                                  biotechDeep / biotech / biotechBright
+                                  anomalyDeep / anomaly / anomalyBright
+                                  odysseyDeep / odyssey / odysseyBright
+                     retired    - extremeDark, eventful. Do NOT use on new rows: they are kept only
+                                  so pages saved before the DLC families still render.
+    batch          - optional Interaction/Tale batching policy:
+                     enabled, mode (PairEvent or AmbientDayNote), windowTicks, maxEvents,
+                     scope (Pair or Def), syntheticDefName, labelKey, briefKey, headerKey,
+                     fallbackKey, instructionKey, includeInteractionLabel, minEventsToWrite,
+                     maxSampleLines, allowSingleEligiblePawn. The last field defaults false and is
+                     supported only by AmbientDayNote; set it when a compatibility group should batch
+                     the one diary-eligible side of an interaction with a guest/prisoner/outsider. Tale batches currently ignore mode
+                     and always write delayed solo entries per pawn.
+    hediff         - optional Hediff-domain policy:
+                     enabled, mode (DayReflection or Immediate), visibleOnly, badOnly,
+                     excludeInjuries, minSeverity, chronicAlways, sickThoughtAlways,
+                     addictionAlways, missingPartAlways, recordOnAdd,
+                     recordOnSeverityIncrease, severityStep, dedupTicks, dayReflectionWeight,
+                     appearedTextKey, progressedTextKey
+    deathVictimInitiatorDefNames / deathVictimRecipientDefNames
+                   - optional Tale-domain death metadata: exact TaleDef names where the death
+                     victim lives in the first or second pawn slot
+    instruction    - the diary-prompt instruction shared by every event in the group
+    instructions   - optional variant pool (list of strings). When present with any non-blank
+                     entry, ONE wording is picked per captured event so repeats feel fresh; the
+                     singular `instruction` becomes the fallback and the settings-preview value.
+                     Localized via indexed DefInjected keys: <group.instructions.0>, .1, ...
+                     IMPORTANT: do not leave blank <li></li> slots — selection skips whitespace
+                     entries, which would misalign the indexed translation keys. Remove unused
+                     entries instead. A wording can be weighted by listing it more than once.
+    tone           - optional emotional register for entries in this group (e.g. "with creeping
+                     dread"). Event-driven: a raid reads tense, a prank light. Sent to the LLM as
+                     a "tone:" field; empty leaves the tone neutral.
+    tones          - optional variant pool for `tone` (list of strings), mirroring `instructions`.
+                     One wording is picked per prompt build, deterministically by event id so the
+                     same entry keeps its tone across save/load and regeneration. Same no-blank-<li>
+                     rule and same weighted-by-duplication behavior as `instructions`.
+    matchDefNames  - exact interaction/mental-state defNames this group claims (case-insensitive)
+    matchTokens    - substrings; a defName containing any token (case-insensitive) is claimed.
+                     BLUNT — a token like "Good" also claims "PawnWithGoodOpinionDied". Prefer the
+                     prefix/suffix/segment matchers below for new groups; keep this only for compat.
+    matchPrefixes  - a defName that STARTS WITH any prefix (case-insensitive) is claimed. Use for
+                     defName families that share a leading word (e.g. "Terrible" -> TerribleParty).
+    matchSuffixes  - a defName that ENDS WITH any suffix (case-insensitive) is claimed. Use for
+                     defName families that share a trailing word (e.g. "Died" grief thoughts).
+    matchSegments  - a defName matches when any of its CamelCase/underscore/digit SEGMENTS equals
+                     any listed segment (case-insensitive). Most precise token-style matcher: "Food"
+                     matches "NeedFood"/"AteRawFood" but NOT "Foodstuff"/"Bloodfood". Prefer over
+                     matchTokens whenever a whole word is the intent.
+    Within a group the matchers are tried in precision order: exact defName, then prefixes, then
+    suffixes, then segments, then substring tokens. Across groups, lower `order` wins (first match
+    wins) — so a more specific group can intercept a name before a broader one's matcher sees it.
+    matchPackageIds
+                   - live Defs from these mod package IDs are claimed (case-insensitive). This is
+                     for compatibility routing without hard-referencing another mod or listing every def.
+    catchAll       - true = matches everything in its domain (leave matchers empty)
+-->
+<Defs>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>romance</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Romance &amp; dating</label>
+    <order>20</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <socialReflectionEligible>true</socialReflectionEligible>
+    <instruction>a spark between two people—an advance, a stolen glance, a whispered promise, or a heart breaking</instruction>
+    <instructions>
+      <li>romance — use body cues already supplied or clearly implied: distance, breath, hesitation, or touch if stated</li>
+      <li>romance — use the unsaid pressure: what the POV notices, holds back, or fears; do not add a new confession or private scene</li>
+      <li>romance — write the moment after: the pause, the read of the other face, and the changed tension, only from supplied consequences</li>
+    </instructions>
+    <tone>with tender, fluttering warmth</tone>
+    <tones>
+      <li>close and physical, with restrained vulnerability</li>
+      <li>quietly reflective, focused on what changed</li>
+    </tones>
+    <matchDefNames>
+      <li>RomanceAttempt</li>
+      <li>MarriageProposal</li>
+      <li>Breakup</li>
+      <li>Sentence_RomanceAttemptAccepted</li>
+      <li>Sentence_RomanceAttemptRejected</li>
+      <li>Sentence_MarriageProposalAccepted</li>
+      <li>Sentence_MarriageProposalRejected</li>
+      <li>Sentence_MarriageProposalRejectedBrokeUp</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Romance</li>
+      <li>Marriage</li>
+      <li>Breakup</li>
+      <li>Date</li>
+      <li>Hookup</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>romance_relation</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Romance milestones</label>
+    <order>20</order>
+    <domain>Romance</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>a relationship becoming official, formalized, or broken; center the change between the two people without treating it like a chat log</instruction>
+    <instructions>
+      <li>a bond changing state — write the before and after: one thing that was allowed yesterday and is different today</li>
+      <li>a bond changing state — write the weight of it being known: what the colony now sees when the two stand together</li>
+      <li>a bond changing state — write the private ledger: hope, fear, relief, or grief, matched to whether the change joins or breaks</li>
+    </instructions>
+    <tone>with intimate emotional weight</tone>
+    <tones>
+      <li>formal and life-changing, with quiet restraint</li>
+      <li>private and raw, focused on the bond shifting</li>
+    </tones>
+    <matchDefNames>
+      <li>Lover</li>
+      <li>Fiance</li>
+      <li>Spouse</li>
+      <li>ExLover</li>
+      <li>ExSpouse</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>recruit</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Recruitment &amp; prison</label>
+    <order>30</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <socialReflectionEligible>true</socialReflectionEligible>
+    <instruction>the dance of captor and captive—building rapport, breaking will, or planting seeds of rebellion</instruction>
+    <tone>with measured, calculating tension</tone>
+    <tones>
+      <li>controlled and strategic, every sentence weighing leverage</li>
+      <li>tight and wary, focused on power in the room</li>
+    </tones>
+    <matchDefNames>
+      <li>BuildRapport</li>
+      <li>RecruitAttempt</li>
+      <li>Sentence_RecruitAttemptAccepted</li>
+      <li>Sentence_RecruitAttemptRejected</li>
+      <li>ReduceWill</li>
+      <li>EnslaveAttempt</li>
+      <li>SparkJailbreak</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Recruit</li>
+      <li>Rapport</li>
+      <li>Jailbreak</li>
+      <li>Enslave</li>
+      <li>ReduceWill</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>slavery</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Slavery</label>
+    <order>40</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <socialReflectionEligible>true</socialReflectionEligible>
+    <instruction>the weight of chains—suppression by an overseer or the first spark of defiance</instruction>
+    <tone>with grim, heavy unease</tone>
+    <tones>
+      <li>oppressive and heavy, focused on control</li>
+      <li>quietly defiant, with anger kept under pressure</li>
+    </tones>
+    <matchDefNames>
+      <li>Suppress</li>
+      <li>SparkSlaveRebellion</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Suppress</li>
+      <li>Slave</li>
+      <li>Rebellion</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Exact vanilla Counsel PlayLog owner. The package gate keeps these ordinary strings inert when
+       Ideology is absent; no broad token matcher may claim a modded counseling interaction. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>counsel</defName>
+    <frequencyTier>routine</frequencyTier>
+    <label>Counsel</label>
+    <order>45</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <socialReflectionEligible>true</socialReflectionEligible>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Ideology</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>an attempt to comfort a listener; follow the supplied success or failure, keep counselor and listener roles straight, and treat the result only as relief or harm to mood and thoughts—never a change of doctrine or conviction</instruction>
+    <tone>with attentive warmth on success or awkward regret on failure</tone>
+    <tones>
+      <li>with relieved warmth, centered on the listener feeling steadier</li>
+      <li>with awkward regret, centered on comfort that failed to land</li>
+    </tones>
+    <matchOrdinalDefNames>
+      <li>Counsel_Success</li>
+      <li>Counsel_Failure</li>
+    </matchOrdinalDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>conversion</defName>
+    <frequencyTier>significant</frequencyTier>
+    <colorCue>ideologyBright</colorCue>
+    <label>Ideology &amp; conversion</label>
+    <order>50</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <socialReflectionEligible>true</socialReflectionEligible>
+    <instruction>a battle of belief—conversion, preaching, or the pressure of faith on faith</instruction>
+    <tone>with fervent, pressing conviction</tone>
+    <tones>
+      <li>fervent and declarative, like belief under pressure</li>
+      <li>inward and doubtful, focused on conviction cracking</li>
+    </tones>
+    <matchDefNames>
+      <li>ConvertIdeoAttempt</li>
+      <li>Convert_Success</li>
+      <li>Convert_Failure</li>
+      <li>PreachHealth</li>
+      <li>WorkDrive</li>
+      <li>Indoctrinate</li>
+      <li>RS_WorshipInteraction</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Convert</li>
+      <li>Preach</li>
+      <li>Indoctrinate</li>
+      <li>Worship</li>
+      <li>WorkDrive</li>
+      <li>Ideo</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>trial</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Trials &amp; accusations</label>
+    <order>60</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <socialReflectionEligible>true</socialReflectionEligible>
+    <instruction>the weight of judgment—an accusation hurled, a defense mounted, before watching eyes</instruction>
+    <tone>with tense, formal pressure</tone>
+    <tones>
+      <li>formal and brittle, each sentence like testimony</li>
+      <li>watched and exposed, focused on shame or defense</li>
+    </tones>
+    <matchDefNames>
+      <li>Trial_Accuse</li>
+      <li>Trial_Defend</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Trial</li>
+      <li>Accuse</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>strangechat</defName>
+    <frequencyTier>ambient</frequencyTier>
+    <label>Strange chat</label>
+    <order>68</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <socialReflectionEligible>true</socialReflectionEligible>
+    <important>true</important>
+    <instruction>something wrong in ordinary conversation--a strange chat that leaves unease lingering. Don't explain it away</instruction>
+    <instructions>
+      <li>a wrong conversation — pin the wrongness to one concrete carrier: a word choice, a pause, a look held too long; never resolve it</li>
+      <li>a wrong conversation — write the after-echo: the phrase that keeps replaying and refuses to mean anything safe</li>
+      <li>a wrong conversation — write the pawn checking themselves: maybe tired, maybe imagining it, not convinced either way</li>
+    </instructions>
+    <tone>with creeping dread; never resolve the wrongness</tone>
+    <tones>
+      <li>ordinary on the surface, wrong underneath</li>
+      <li>quietly uncanny, ending before the wrongness resolves</li>
+    </tones>
+    <colorCue>strangeChat</colorCue>
+    <batch>
+      <mode>AmbientDayNote</mode>
+      <windowTicks>60000</windowTicks>
+      <maxEvents>999</maxEvents>
+      <syntheticDefName>StrangeChatAmbientDay</syntheticDefName>
+      <labelKey>PawnDiary.Event.AmbientStrangeChatLabel</labelKey>
+      <headerKey>PawnDiary.Event.AmbientStrangeChatHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.AmbientStrangeChatFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.AmbientStrangeChatInstruction</instructionKey>
+      <minEventsToWrite>3</minEventsToWrite>
+      <maxSampleLines>5</maxSampleLines>
+    </batch>
+    <!-- Use the same promotion odds as chitchat: most strange chats stay ambient, but the most
+         emotionally loaded moments can still become their own pairwise diary entry. -->
+    <promotion>
+      <baseChance>0.04</baseChance>
+      <maxChance>0.6</maxChance>
+      <opinionStrongBonus>0.25</opinionStrongBonus>
+      <opinionStrongThreshold>40</opinionStrongThreshold>
+      <opinionAsymmetryBonus>0.2</opinionAsymmetryBonus>
+      <opinionAsymmetryThreshold>40</opinionAsymmetryThreshold>
+      <needLowBonus>0.2</needLowBonus>
+      <needLowThreshold>0.25</needLowThreshold>
+      <moodExtremeBonus>0.2</moodExtremeBonus>
+      <moodLowThreshold>0.25</moodLowThreshold>
+    </promotion>
+    <matchDefNames>
+      <li>DisturbingChat</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>anomaly</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Anomaly &amp; dark</label>
+    <order>70</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <socialReflectionEligible>true</socialReflectionEligible>
+    <instruction>something wrong in an ordinary exchange: a voice, phrase, look, or silence leaves unease lingering. Keep it close to the pawn's senses and don't explain it away</instruction>
+    <tone>with crawling, skin-prickling wrongness; ordinary details feel unsafe</tone>
+    <tones>
+      <li>skin-prickling and sensory, one ordinary detail made wrong</li>
+      <li>cold and alien, focused on what the pawn cannot make fit</li>
+    </tones>
+    <colorCue>anomalyDeep</colorCue>
+    <matchDefNames>
+      <li>DarkDialogue</li>
+      <li>CreepyWords</li>
+      <li>InhumanRambling</li>
+      <li>OccultTeaching</li>
+      <li>PrisonerStudyAnomaly</li>
+      <li>InterrogateIdentity</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Dark</li>
+      <li>Creepy</li>
+      <li>Inhuman</li>
+      <li>Disturbing</li>
+      <li>Occult</li>
+      <li>Anomaly</li>
+      <li>Interrogate</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>insults</defName>
+    <frequencyTier>routine</frequencyTier>
+    <label>Insults &amp; fights</label>
+    <order>80</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <socialReflectionEligible>true</socialReflectionEligible>
+    <combat>true</combat>
+    <colorCue>socialFight</colorCue>
+    <batch>
+      <mode>PairEvent</mode>
+      <!-- RimWorld has 2,500 ticks per in-game hour; 7,500 ticks is a three-hour quiet window. -->
+      <windowTicks>7500</windowTicks>
+      <maxEvents>8</maxEvents>
+      <scope>Pair</scope>
+      <syntheticDefName>InsultBatch</syntheticDefName>
+      <labelKey>PawnDiary.Event.InsultBatchLabel</labelKey>
+      <briefKey>PawnDiary.Event.InsultBatchBrief</briefKey>
+      <headerKey>PawnDiary.Event.InsultBatchHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.InsultBatchFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.InsultBatchInstruction</instructionKey>
+      <includeInteractionLabel>false</includeInteractionLabel>
+    </batch>
+    <instruction>the sting of contempt—an insult, a slight, or fists about to fly</instruction>
+    <instructions>
+      <li>an insult or slight — use the supplied social text as the sting; do not invent exact wording</li>
+      <li>an insult or slight — write the body's reaction: heat, jaw, breath, posture</li>
+      <li>an insult or slight — write the aftermath in the room: supplied silence, tension, or what the POV does next; do not invent exact words</li>
+    </instructions>
+    <tone>with sharp, stinging heat</tone>
+    <tones>
+      <li>hot and clipped, like anger held in the teeth</li>
+      <li>cold and cutting, focused on the sting afterward</li>
+    </tones>
+    <matchDefNames>
+      <li>Insult</li>
+      <li>Slight</li>
+      <li>Sentence_SocialFightStarted</li>
+      <li>Sentence_SocialFightConvoInitiatorStarted</li>
+      <li>Sentence_SocialFightConvoRecipientStarted</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Insult</li>
+      <li>Slight</li>
+      <li>Fight</li>
+      <li>Rebuff</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritual</defName>
+    <frequencyTier>significant</frequencyTier>
+    <colorCue>ideology</colorCue>
+    <label>Rituals &amp; speeches</label>
+    <order>90</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>a solemn public moment—ritual, ceremony, or address. The colony watches</instruction>
+    <tone>with solemn, ceremonial weight</tone>
+    <tones>
+      <li>ceremonial and still, aware of watching eyes</li>
+      <li>reverent but uneasy, focused on duty and consequence</li>
+    </tones>
+    <matchDefNames>
+      <li>SpeechUtility</li>
+      <li>Speech_Duel</li>
+      <li>Speech_Funeral</li>
+      <li>Speech_Leader</li>
+      <li>Speech_Sacrifice</li>
+      <li>Speech_Scarification</li>
+      <li>Speech_Blinding</li>
+      <li>Speech_Execution</li>
+      <li>Speech_TreeConnection</li>
+      <li>Speech_Conversion</li>
+      <li>Speech_AcceptRole</li>
+      <li>Speech_RemoveRole</li>
+      <li>WordOfTrust</li>
+      <li>WordOfJoy</li>
+      <li>WordOfLove</li>
+      <li>WordOfSerenity</li>
+      <li>WordOfInspiration</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Speech</li>
+      <li>Ritual</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>animal</defName>
+    <frequencyTier>routine</frequencyTier>
+    <label>Animal handling</label>
+    <order>100</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <batch>
+      <mode>AmbientDayNote</mode>
+      <windowTicks>60000</windowTicks>
+      <maxEvents>999</maxEvents>
+      <syntheticDefName>AnimalAmbientDay</syntheticDefName>
+      <labelKey>PawnDiary.Event.AmbientAnimalLabel</labelKey>
+      <headerKey>PawnDiary.Event.AmbientAnimalHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.AmbientAnimalFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.AmbientAnimalInstruction</instructionKey>
+      <minEventsToWrite>2</minEventsToWrite>
+      <maxSampleLines>5</maxSampleLines>
+    </batch>
+    <instruction>a quiet bond—chatting with an animal, taming, training, or letting one go</instruction>
+    <instructions>
+      <li>an animal moment — write the creature's concrete behavior in the supplied moment: ears, weight, breath, stubbornness, or trust</li>
+      <li>an animal moment — write the ease of company that expects nothing and does not talk back</li>
+      <li>an animal moment — write the practical side by feel: feed, patience, repetition, and whether the animal gave an inch today</li>
+    </instructions>
+    <tone>with quiet, gentle fondness</tone>
+    <tones>
+      <li>soft and patient, focused on trust through action</li>
+      <li>practical and warm, fondness shown without sentimentality</li>
+    </tones>
+    <matchDefNames>
+      <li>AnimalChat</li>
+      <li>TameAttempt</li>
+      <li>TrainAttempt</li>
+      <li>Nuzzle</li>
+      <li>ReleaseToWild</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Animal</li>
+      <li>Tame</li>
+      <li>Train</li>
+      <li>Nuzzle</li>
+      <li>ReleaseToWild</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>heartfelt</defName>
+    <frequencyTier>routine</frequencyTier>
+    <label>Heartfelt talk</label>
+    <order>110</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <socialReflectionEligible>true</socialReflectionEligible>
+    <instruction>warmth exchanged—a deep talk, kind words, or a gentle hand steadying someone</instruction>
+    <instructions>
+      <li>warmth between people — write the specific gesture from the notes and the guard it lowered</li>
+      <li>warmth between people — write what the pawn did not manage to say back, without inventing quoted words</li>
+      <li>warmth between people — write the after-effect: the room easier, the work lighter, the pawn less alone tonight</li>
+      <li>warmth between people — stay with one small sign of trust and why this pawn noticed it now</li>
+    </instructions>
+    <tone>with soft, tender warmth</tone>
+    <tones>
+      <li>gentle and open, letting warmth show plainly</li>
+      <li>quietly held, warmth shown through small restraint</li>
+    </tones>
+    <colorCue>white</colorCue>
+    <matchDefNames>
+      <li>DeepTalk</li>
+      <li>KindWords</li>
+      <li>Reassure</li>
+      <li>SnapOut_CalmDownInteraction</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>DeepTalk</li>
+      <li>KindWords</li>
+      <li>Reassure</li>
+      <li>Comfort</li>
+      <li>CalmDown</li>
+      <li>SnapOut</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>teaching</defName>
+    <frequencyTier>ambient</frequencyTier>
+    <label>Teaching &amp; lessons</label>
+    <order>120</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <disableWhenPackageIdsLoaded>
+      <li>JPT.speakup</li>
+    </disableWhenPackageIdsLoaded>
+    <batch>
+      <mode>AmbientDayNote</mode>
+      <windowTicks>60000</windowTicks>
+      <maxEvents>999</maxEvents>
+      <syntheticDefName>TeachingAmbientDay</syntheticDefName>
+      <labelKey>PawnDiary.Event.AmbientTeachingLabel</labelKey>
+      <headerKey>PawnDiary.Event.AmbientTeachingHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.AmbientTeachingFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.AmbientTeachingInstruction</instructionKey>
+      <minEventsToWrite>2</minEventsToWrite>
+      <maxSampleLines>5</maxSampleLines>
+    </batch>
+    <instruction>a lesson passed down—an adult teaching or playing with a child</instruction>
+    <instructions>
+      <li>a lesson shared — write the moment it landed or refused to land: the look, the retry, the small win</li>
+      <li>a lesson shared — write what it takes to be the one explaining: patience, repetition, and the odd pride when it sticks</li>
+      <li>a lesson shared — write the role reversal underneath: who was really learning from whom, using only the supplied moment</li>
+    </instructions>
+    <tone>with patient, quiet fondness</tone>
+    <tones>
+      <li>patient and instructive, focused on small progress</li>
+      <li>playful but grounded, affection shown through attention</li>
+    </tones>
+    <matchDefNames>
+      <li>BabyPlay</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Lesson</li>
+      <li>Teaching</li>
+      <li>BabyPlay</li>
+      <li>Baby</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>smalltalk</defName>
+    <frequencyTier>ambient</frequencyTier>
+    <label>Small talk</label>
+    <order>130</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <batch>
+      <mode>AmbientDayNote</mode>
+      <windowTicks>60000</windowTicks>
+      <maxEvents>999</maxEvents>
+      <syntheticDefName>SmallTalkAmbientDay</syntheticDefName>
+      <labelKey>PawnDiary.Event.AmbientSocialLabel</labelKey>
+      <headerKey>PawnDiary.Event.AmbientSocialHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.AmbientSocialFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.AmbientSocialInstruction</instructionKey>
+      <minEventsToWrite>3</minEventsToWrite>
+      <maxSampleLines>5</maxSampleLines>
+    </batch>
+    <!-- Let the most loaded moments escape the daily batch and become their own entry. Odds rise
+         when the pair's feelings are intense/lopsided or when a pawn is in an extreme need/mood
+         state. All numbers are tunable; remove this block (or set enabled false) to revert to
+         pure batching. -->
+    <promotion>
+      <baseChance>0.04</baseChance>
+      <maxChance>0.6</maxChance>
+      <opinionStrongBonus>0.25</opinionStrongBonus>
+      <opinionStrongThreshold>40</opinionStrongThreshold>
+      <opinionAsymmetryBonus>0.2</opinionAsymmetryBonus>
+      <opinionAsymmetryThreshold>40</opinionAsymmetryThreshold>
+      <needLowBonus>0.2</needLowBonus>
+      <needLowThreshold>0.25</needLowThreshold>
+      <moodExtremeBonus>0.2</moodExtremeBonus>
+      <moodLowThreshold>0.25</moodLowThreshold>
+    </promotion>
+    <instruction>idle chatter—low-stakes small talk that fills the silence</instruction>
+    <instructions>
+      <li>small talk — use the supplied topic if present; otherwise let the ordinary rhythm carry the entry</li>
+      <li>small talk — write the feeling under it: ease, awkwardness, duty, or distance</li>
+      <li>small talk — write the pauses and back-and-forth without inventing a new topic</li>
+      <li>small talk — anchor the exchange in one ordinary task or place already supplied, and let familiarity do the rest</li>
+    </instructions>
+    <tone>with light, easy familiarity</tone>
+    <tones>
+      <li>loose and conversational, carried by small pauses</li>
+      <li>plain and companionable, ordinary detail doing the work</li>
+    </tones>
+    <matchDefNames>
+      <li>Chitchat</li>
+      <li>Conversation</li>
+      <li>EndConversation</li>
+      <li>HangOut</li>
+      <li>PrudeSeen</li>
+      <li>TourFinished</li>
+      <li>GR_TalkingToHumans</li>
+      <li>GR_UwUTalkingToHumans</li>
+      <li>LetsTalkEatTogether</li>
+      <li>OfferFood</li>
+      <li>SanguophageChat</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Chitchat</li>
+      <li>Chat</li>
+      <li>Conversation</li>
+      <li>HangOut</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- The day and quadrum reflection rows used to live here, in the Interaction domain. They were
+       unreachable: every reflection writes a *_reflection= marker, which DomainForContext maps to
+       the Reflection domain, so a saved day/quadrum page was never classified against an Interaction
+       row. Both now sit in the Reflection section below. -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>arrival</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Arrival</label>
+    <order>136</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <!-- Synthetic defName emitted by the colony-arrival flow (DiaryGameComponent.Arrivals.cs). -->
+    <matchDefNames>
+      <li>PawnDiary_Arrival</li>
+      <li>PawnDiary_BrainwipeArrival</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>eventWindowVoidMonolith</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Void monolith</label>
+    <order>137</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>an ominous colony-wide anomaly event that should feel rare, strange, and consequential without inventing hidden mechanics</instruction>
+    <tone>with restrained dread and long consequence</tone>
+    <tones>
+      <li>quietly unnerved, as if the colony has crossed a threshold</li>
+      <li>watchful and uneasy, treating the moment as bigger than one ordinary day</li>
+    </tones>
+    <colorCue>anomalyDeep</colorCue>
+    <matchDefNames>
+      <li>VoidMonolithDiscovery</li>
+      <li>VoidMonolithActivation</li>
+      <li>VoidMonolithWaking</li>
+      <li>VoidMonolithVoidAwakened</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>eventWindowHeartAttack</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Heart attack</label>
+    <order>138</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a sudden medical emergency; write the fear, body, and immediate urgency without inventing treatment results</instruction>
+    <tone>with sharp bodily fear and urgency</tone>
+    <tones>
+      <li>frightened and physical, focused on breath, pain, and helplessness</li>
+      <li>stark and urgent, with the colony suddenly feeling fragile</li>
+    </tones>
+    <colorCue>danger</colorCue>
+    <matchDefNames>
+      <li>HeartAttack</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>eventWindowBirthday</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Birthday</label>
+    <order>139</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a birthday or age milestone; write it as a small life-marker rather than a celebration unless the facts say so</instruction>
+    <tone>with quiet awareness of time passing</tone>
+    <tones>
+      <li>reflective and personal, noticing what age changes</li>
+      <li>softly wry, aware that time keeps moving even on the rim</li>
+    </tones>
+    <colorCue>white</colorCue>
+    <matchDefNames>
+      <li>Birthday</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>eventWindowAncientDanger</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Ancient danger</label>
+    <order>140</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a discovered ancient danger; write foreboding and risk, not an invented fight or loot outcome</instruction>
+    <tone>with wary pressure and old danger</tone>
+    <tones>
+      <li>tense and careful, aware that a wall may be hiding disaster</li>
+      <li>hushed and ominous, treating the discovery as a warning</li>
+    </tones>
+    <colorCue>danger</colorCue>
+    <matchDefNames>
+      <li>AncientDanger</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>eventWindowPrisonBreak</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Prison break</label>
+    <order>141</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <combat>true</combat>
+    <instruction>a prison break or uprising; write the alarm, split-second danger, and human tension without inventing the final outcome</instruction>
+    <tone>with alarm and close-quarters danger</tone>
+    <tones>
+      <li>fast and tense, with trust suddenly gone</li>
+      <li>chaotic and immediate, focused on the first dangerous moments</li>
+    </tones>
+    <colorCue>danger</colorCue>
+    <matchDefNames>
+      <li>PrisonBreak</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Display groups for the event-coverage pass pages. Like the eventWindow* groups above, these
+       exist so the recorded start pages classify to a proper label/importance in the Diary tab
+       instead of falling to the "A quiet day" catch-all; the live capture instruction comes from
+       the window/condition Def itself. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>eventWindowMechCluster</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Mech cluster</label>
+    <order>142</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>dormant war machines assembled nearby; write the waiting, the watching, and the planning — cold mechanical danger that has not moved yet, never an invented battle</instruction>
+    <tone>with cold, patient dread</tone>
+    <tones>
+      <li>tense and watchful, danger sitting on the horizon</li>
+      <li>measured and grim, counting defenses against what waits</li>
+    </tones>
+    <colorCue>danger</colorCue>
+    <matchDefNames>
+      <li>MechClusterLanded</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>observedPitGate</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Pit gate</label>
+    <order>143</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a pit gate torn open in the colony's ground; write what can be seen and heard at its edge, and never explain what is at the bottom</instruction>
+    <tone>with dread of what climbs out</tone>
+    <tones>
+      <li>hushed and wary, the ground itself no longer trusted</li>
+      <li>tight and alert, every sound from below counted</li>
+    </tones>
+    <colorCue>anomalyDeep</colorCue>
+    <matchDefNames>
+      <li>PitGatePresence</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>observedFleshmassHeart</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Fleshmass heart</label>
+    <order>144</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a heart of living flesh growing toward the colony; write revulsion and urgency without explaining its biology or inventing a resolved fight</instruction>
+    <tone>with revulsion and urgency</tone>
+    <tones>
+      <li>sickened and practical, cutting back what keeps growing</li>
+      <li>unnerved and bodily, the sound of it hard to unhear</li>
+    </tones>
+    <colorCue>anomalyDeep</colorCue>
+    <matchDefNames>
+      <li>FleshmassHeartPresence</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Quality Wave H6. A sculpture whose generated art tale is about a colony deed. Deliberately NOT
+       important: this is a quiet, reflective aside about seeing your own past turned into an object,
+       not a headline. One page exists per deed for the whole colony, however many artworks depict it
+       (Source/Pipeline/ArtImmortalizationPolicy.cs). -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>artImmortalized</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Immortalized in art</label>
+    <order>145</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a past deed of this colony turned into an artwork; write what it is like to meet your own history as an object, without re-describing the original event or inventing what other people think of it</instruction>
+    <tone>quietly, with a little distance from your own past</tone>
+    <tones>
+      <li>wry and self-aware, half-embarrassed to be a decoration</li>
+      <li>quietly moved that anyone thought the moment worth keeping</li>
+      <li>detached, as if the figure in the piece were somebody else</li>
+    </tones>
+    <colorCue>white</colorCue>
+    <matchDefNames>
+      <li>PawnDiary_ArtImmortalized</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>observedBiotechPollution</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Colony pollution</label>
+    <order>146</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Biotech</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>pollution across the colony map becoming impossible to ignore; keep the scale qualitative and write how a changed landscape alters the meaning of home</instruction>
+    <tone>with environmental pressure and uneasy attachment to home</tone>
+    <tones>
+      <li>practical and unsettled, ordinary routines bending around contamination</li>
+      <li>quietly protective, measuring what still makes this place home</li>
+    </tones>
+    <colorCue>biotechDeep</colorCue>
+    <matchDefNames>
+      <li>BiotechPollutionMeaningful</li>
+      <li>BiotechPollutionSevere</li>
+      <li>BiotechPollutionCritical</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>other</defName>
+    <frequencyTier>ambient</frequencyTier>
+    <label>A quiet day</label>
+    <order>150</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a social interaction between the pawns</instruction>
+    <instructions>
+      <li>an ordinary exchange — find the one concrete detail in the notes that made this worth writing down</li>
+      <li>an ordinary exchange — write what it says about where the two of them stand, using only the supplied relationship facts</li>
+      <li>an ordinary exchange — keep it brief and true: what happened, and the small trace it left on the day</li>
+    </instructions>
+    <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Reflection domain =====
+       Every reflection page writes a `*_reflection=` marker, and DomainForContext maps all of them
+       here, so THIS is the only domain whose rows can claim a reflection. A reflection row's cue,
+       tone and importance are live; its `instruction`/`instructions` are not, because each
+       reflection kind carries its own Keyed instruction (PawnDiary.Event.*ReflectionInstruction)
+       frozen on the event at capture time. Order decides which row claims a page; the generic
+       `reflection` row is last and takes anything unlisted. -->
+
+  <!-- Day reflections. Moved here from the Interaction domain, where this row had been unreachable:
+       its tone, importance and settings toggle never applied to a single page.
+       It deliberately declares NO colorCue. The row used to name `white`, but that cue's meaning
+       drifted while the row was dead — it is now documented as the warm romance/heartfelt/birthday
+       shade and maps to the `joy` memory tag, which would pre-colour every end-of-day page (bad days
+       included) as warm and joyful. An ordinary day's-end page stays on default parchment until a
+       neutral cue of its own is designed. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>dayreflection</defName>
+    <frequencyTier>routine</frequencyTier>
+    <label>Day's reflection</label>
+    <order>150</order>
+    <domain>Reflection</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a quiet end-of-day reflection looking back on the whole day</instruction>
+    <instructions>
+      <li>day's end — pick the one supplied moment that still has weight tonight and let the rest of the day settle around it</li>
+      <li>day's end — weigh the day as spent strength: what it took, what it gave back, what is left for tomorrow</li>
+      <li>day's end — write the body settling down: bunk, warmth, ache, hunger, or quiet, and let the supplied moments pass through it</li>
+    </instructions>
+    <tone>with a quiet, settling, end-of-day calm</tone>
+    <tones>
+      <li>tired and reflective, weighing what still matters</li>
+      <li>softly closing, like the day finally going quiet</li>
+    </tones>
+    <!-- Synthetic defName emitted by the day-summary builder (DiaryGameComponent.DaySummary.cs). -->
+    <matchDefNames>
+      <li>DayReflection</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Quadrum reflections. Also moved here from the Interaction domain. The `quadrumReflection` cue
+       exists solely for this row and is named after it, but nothing could stamp it while the row sat
+       in the wrong domain — the cold pale blue shipped 2026-06-30 and has never rendered. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>quadrumreflection</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Quadrum reflection</label>
+    <order>151</order>
+    <domain>Reflection</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a rare long reflection about a whole quadrum of this pawn's life</instruction>
+    <tone>wide, memory-heavy, and reflective across time</tone>
+    <tones>
+      <li>weighing the whole quadrum with distance and consequence</li>
+      <li>life-worn and reflective, connecting what changed over time</li>
+    </tones>
+    <colorCue>quadrumReflection</colorCue>
+    <!-- Synthetic defName emitted by the day-summary builder (DiaryGameComponent.DaySummary.cs). -->
+    <matchDefNames>
+      <li>QuadrumReflection</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Ideology belief reflections split out of the generic row below for ONE reason: to carry the
+       Ideology color family, so a page about faith reads as Ideology instead of as an unstyled
+       reflection. The instruction/tone/tones are copied VERBATIM from `reflection`, so the prompt
+       text a belief reflection receives is unchanged by the split; only colorCue, the settings row,
+       and the label differ. Keep the two in sync when either is retuned.
+       Ordered before `reflection` (160) so the exact name wins; `PawnBeliefReflection` is therefore
+       removed from the generic row's matchDefNames rather than left there unreachable.
+       The package gate mirrors `beliefCrisis`: the source signal is already
+       ModsConfig.IdeologyActive-gated, so this only hides the settings row (and makes
+       IsGroupEnabled false) in a game without Ideology. Classification itself is not
+       availability-filtered, so a save written with Ideology keeps this cue when it is loaded
+       without the DLC.
+       The defName is deliberately NOT "beliefReflection": prompt-policy candidate keys are deduped
+       case-insensitively (DiaryEventPromptKeys.CandidateKeys), so a group defName that differs from
+       the "BeliefReflection" event-prompt key only by case would swallow that key instead of
+       preceding it. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>reflectionBelief</defName>
+    <frequencyTier>routine</frequencyTier>
+    <label>Belief reflection</label>
+    <order>155</order>
+    <domain>Reflection</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Ideology</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a reflective diary page that looks back over recent memories instead of reacting to one ordinary interaction</instruction>
+    <tone>with private reflection and continuity</tone>
+    <tones>
+      <li>reflective and personal, connecting memory to change over time</li>
+      <li>quietly inward, weighing what the remembered moments meant</li>
+    </tones>
+    <colorCue>ideology</colorCue>
+    <!-- Synthetic defName emitted by the belief-reflection adapter
+         (DiaryGameComponent.BeliefReflection.cs). -->
+    <matchDefNames>
+      <li>PawnBeliefReflection</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Quality Wave H7. This is an independent player toggle for delayed, initiator-only
+       reflections about a meaningful interaction partner. The quiet cue/tone are fail-soft
+       fallbacks; accepted rows freeze their XML-selected polarity cue and localized tone. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>socialReflection</defName>
+    <frequencyTier>routine</frequencyTier>
+    <label>Social reflection</label>
+    <order>156</order>
+    <domain>Reflection</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a later private reflection on one real social partner and the interaction that prompted it</instruction>
+    <tone>quietly inward, weighing what this person and the earlier exchange mean now</tone>
+    <colorCue>quiet</colorCue>
+    <matchDefNames>
+      <li>PawnDiary_SocialReflection</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- The generic reflection row: last in the domain, so it owns the life-arc page and anything a
+       future reflection kind adds before it gets a row of its own. The day/quadrum/belief names are
+       deliberately NOT listed here any more — the rows above claim them first, and a second matcher
+       that can never win only reads as though this row were still in play.
+       Arc pages stay on default parchment: unlike quadrum, no cue was ever authored for them, and
+       picking one is a design choice rather than a fix. Give this row (or a dedicated `reflectionArc`
+       row above it) a colorCue when that colour is chosen. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>reflection</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Reflection</label>
+    <order>160</order>
+    <domain>Reflection</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a reflective diary page that looks back over recent memories instead of reacting to one ordinary interaction</instruction>
+    <tone>with private reflection and continuity</tone>
+    <tones>
+      <li>reflective and personal, connecting memory to change over time</li>
+      <li>quietly inward, weighing what the remembered moments meant</li>
+    </tones>
+    <matchDefNames>
+      <li>PawnArcReflection</li>
+      <!-- M10 meaningful/quiet memory pages share the generic reflection policy. Their dedicated
+           saved context marker keeps them in this domain and their Def-owned instruction is frozen
+           directly on the event before generation. -->
+      <li>MemoryReflection</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Mental-state domain ===== -->
+
+  <!-- Exact Ideology crisis owner. This remains the ordinary solo mental-state page; the narrower
+       group only supplies policy/prompt framing and optional detached belief evidence. The matcher is
+       a plain string and the package gate keeps the row invisible in a no-Ideology game. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>beliefCrisis</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Crisis of belief</label>
+    <order>199</order>
+    <domain>MentalState</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Ideology</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a crisis of belief; use supplied belief facts to distinguish an actual change of ideoligion from convictions breaking under doubt, and never invent a former ideoligion</instruction>
+    <tone>with shaken conviction and raw inward doubt</tone>
+    <colorCue>ideologyDeep</colorCue>
+    <matchDefNames>
+      <li>IdeoChange</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>socialfight</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Social fights</label>
+    <order>200</order>
+    <domain>MentalState</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>tempers snapped—two people came to blows. Write it as heat and impact</instruction>
+    <instructions>
+      <li>a fistfight — write the tunnel of it: sound dropping away, hands acting first, the room too small</li>
+      <li>a fistfight — write the first minute after: breath, knuckles, who looked away, what is now broken between them</li>
+      <li>a fistfight — write the cost under the anger: shame, relief, or the grudge settling in for a long stay</li>
+      <li>a fistfight — stay with one supplied impact and the instant both people realize the argument has become violence</li>
+    </instructions>
+    <tone>with raw, adrenal fury</tone>
+    <tones>
+      <li>fast and physical, driven by impact and breath</li>
+      <li>shocked and aftermath-heavy, anger cooling into consequence</li>
+    </tones>
+    <colorCue>socialFight</colorCue>
+    <matchDefNames>
+      <li>SocialFighting</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>insultspree</defName>
+    <frequencyTier>routine</frequencyTier>
+    <label>Insult sprees</label>
+    <order>205</order>
+    <domain>MentalState</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a pawn breaking into repeated verbal cruelty; prefer the actual insult log entries when they are recorded</instruction>
+    <tone>with sour, needling anger</tone>
+    <tones>
+      <li>needling and repetitive, like anger looking for targets</li>
+      <li>sour and exhausted, cruelty sounding almost automatic</li>
+    </tones>
+    <matchDefNames>
+      <li>InsultingSpree</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>mentalbreakViolent</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Violent breaks</label>
+    <order>206</order>
+    <domain>MentalState</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <combat>true</combat>
+    <instruction>the mind breaking outward—rage that needs a target. Write the heat, the loss of the room, and the moment the body stops asking permission</instruction>
+    <instructions>
+      <li>a violent break — write the pressure snapping: the last small thing, then heat taking the hands</li>
+      <li>a violent break — write it through the body: jaw, knuckles, breath, the world reduced to what can be hit</li>
+      <li>a violent break — if the storm has passed, write the shame and the wreckage the pawn can actually see</li>
+    </instructions>
+    <tone>with red, boiling loss of control</tone>
+    <tones>
+      <li>boiling and immediate, fury ahead of thought</li>
+      <li>aftermath-heavy, anger cooling into shame</li>
+    </tones>
+    <colorCue>mentalBreak</colorCue>
+    <matchDefNames>
+      <li>Berserk</li>
+      <li>MurderousRage</li>
+      <li>Slaughterer</li>
+      <li>Tantrum</li>
+      <li>TargetedTantrum</li>
+      <li>BerserkMechanoid</li>
+      <li>BerserkTrance</li>
+    </matchDefNames>
+    <matchSegments>
+      <li>Berserk</li>
+      <li>Rage</li>
+      <li>Tantrum</li>
+      <li>Slaughterer</li>
+    </matchSegments>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>mentalbreakEscape</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Withdrawal breaks</label>
+    <order>207</order>
+    <domain>MentalState</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>the mind breaking inward—flight, hiding, or giving up. Write the world becoming too loud and the pull to be anywhere else</instruction>
+    <instructions>
+      <li>an inward break — write the retreat: feet moving before a decision, the door, the dark, the quiet corner</li>
+      <li>an inward break — write the weight: everything asked of the pawn at once, and the moment of putting it all down</li>
+      <li>an inward break — keep the sadness plain and bodily; no dramatic speech, just the leaving</li>
+    </instructions>
+    <tone>with hollow, worn-out flight</tone>
+    <tones>
+      <li>hollow and slow, the world too loud to stay in</li>
+      <li>numb and drifting, one foot after the other away from people</li>
+    </tones>
+    <colorCue>mentalBreak</colorCue>
+    <matchDefNames>
+      <li>Wander_Sad</li>
+      <li>Wander_OwnRoom</li>
+      <li>Wander_Psychotic</li>
+      <li>GiveUpExit</li>
+      <li>RunWild</li>
+      <li>PanicFlee</li>
+    </matchDefNames>
+    <matchPrefixes>
+      <li>Wander</li>
+    </matchPrefixes>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>mentalbreakIndulgent</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Compulsive breaks</label>
+    <order>208</order>
+    <domain>MentalState</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>the mind breaking into compulsion—a binge, a spree, an obsession that feels like relief while it ruins something. Write the hunger and the guilt circling it</instruction>
+    <instructions>
+      <li>a compulsive break — write the pull: the promise the compulsion makes, and how good the first taste of it feels</li>
+      <li>a compulsive break — write the narrowing: rules, duties, and other people fading behind the one urgent thing</li>
+      <li>a compulsive break — let guilt flicker at the edges without stopping anything</li>
+    </instructions>
+    <tone>with guilty, hungry momentum</tone>
+    <tones>
+      <li>hungry and rationalizing, relief winning over sense</li>
+      <li>sour and compulsive, the urge louder than the shame</li>
+    </tones>
+    <colorCue>mentalBreak</colorCue>
+    <matchDefNames>
+      <li>Binging_Food</li>
+      <li>Binging_DrugExtreme</li>
+      <li>Binging_DrugMajor</li>
+      <li>FireStartingSpree</li>
+      <li>CorpseObsession</li>
+      <li>Jailbreaker</li>
+    </matchDefNames>
+    <matchPrefixes>
+      <li>Binging</li>
+    </matchPrefixes>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>mentalbreak</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Mental breaks</label>
+    <order>210</order>
+    <domain>MentalState</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>the mind breaking—write the pawn's inner storm and what they did</instruction>
+    <instructions>
+      <li>a mental break — write the pressure loop: the repeated thought or urge behind the named state</li>
+      <li>a mental break — write it through body and motion: hands, feet, breath, and the supplied action</li>
+      <li>a mental break — write the world narrowing: one simple sensation, then the state taking over</li>
+    </instructions>
+    <tone>with frayed, overwhelmed intensity</tone>
+    <tones>
+      <li>fragmented and breathless, thought under too much pressure</li>
+      <li>numb and sideways, reality narrowed to one impulse</li>
+    </tones>
+    <colorCue>mentalBreak</colorCue>
+    <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Tale domain: vanilla notable-history events beyond social logs ===== -->
+
+  <!-- Royalty R3 canonical first consequential persona-weapon kill. The runtime projects the
+       qualifying vanilla Tale to this synthetic identity only after exact killer/victim/death
+       correlation. It stays in the Tale domain so saved-page recovery and prompt policy remain
+       those of the existing Tale owner; the package gate keeps it inert without Royalty. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>personaWeaponMilestone</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Persona weapon milestones</label>
+    <order>299</order>
+    <domain>Tale</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <combat>true</combat>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>the first consequential kill made with an exact bonded persona weapon; use the supplied victim, source Tale, weapon, bond state, and selected structural trait facts, keep the killer as the sole diary POV, and never invent dialogue, a weapon motive, another kill, or the victim&apos;s final thoughts</instruction>
+    <tone>with visceral consequence and the unsettling intimacy of a weapon sharing the moment</tone>
+    <tones>
+      <li>immediate and consequential, grounded in the exact death and the weapon&apos;s established traits without invented speech</li>
+      <li>close and uneasy, weighing what changed between wielder and weapon after this exact first kill</li>
+    </tones>
+    <colorCue>royaltyBright</colorCue>
+    <matchDefNames>
+      <li>PersonaWeaponFirstConsequentialKill</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>talecombat</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Combat, injuries &amp; death</label>
+    <order>300</order>
+    <domain>Tale</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <combat>true</combat>
+    <colorCue>combat</colorCue>
+    <instruction>blood and danger—combat, injury, death, or rescue. Write what it felt like to live through it</instruction>
+    <instructions>
+      <li>combat, injury, or rescue — open on a supplied sound cue if present; otherwise open on immediate danger without inventing a battle outcome</li>
+      <li>combat, injury, or rescue — open on body impact only when supported: pain, heat, breath, or the injury already supplied</li>
+      <li>combat, injury, or rescue — use another pawn only if supplied; otherwise stay with the POV surviving the moment</li>
+      <li>combat, injury, or rescue — follow the strongest supplied beat, then stop before inventing what happened next</li>
+    </instructions>
+    <tone>with fear and visceral danger</tone>
+    <tones>
+      <li>visceral and immediate, body first and thought second</li>
+      <li>stunned and aftershock-heavy, danger echoing afterward</li>
+    </tones>
+    <batch>
+      <!-- RimWorld has 2,500 ticks per in-game hour; 7,500 ticks is a three-hour quiet window. -->
+      <windowTicks>7500</windowTicks>
+      <maxEvents>10</maxEvents>
+      <scope>Pair</scope>
+      <syntheticDefName>TaleCombatBatch</syntheticDefName>
+      <labelKey>PawnDiary.Event.CombatBatchLabel</labelKey>
+      <briefKey>PawnDiary.Event.CombatBatchBrief</briefKey>
+      <headerKey>PawnDiary.Event.CombatBatchHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.CombatBatchFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.CombatBatchInstruction</instructionKey>
+      <includeInteractionLabel>true</includeInteractionLabel>
+      <maxSampleLines>8</maxSampleLines>
+    </batch>
+    <matchDefNames>
+      <li>Downed</li>
+      <li>Wounded</li>
+      <li>KilledBy</li>
+      <li>KilledCapacity</li>
+      <li>KilledLongRange</li>
+      <li>KilledMajorThreat</li>
+      <li>KilledMelee</li>
+      <li>KilledMortar</li>
+      <li>KilledChild</li>
+      <li>KilledColonist</li>
+      <li>KilledColonyAnimal</li>
+      <li>PawnDiary_DeathFallback</li>
+      <li>DefeatedHostileFactionLeader</li>
+      <li>CollapseDodged</li>
+      <li>WasOnFire</li>
+    </matchDefNames>
+    <deathVictimInitiatorDefNames>
+      <li>KilledBy</li>
+    </deathVictimInitiatorDefNames>
+    <deathVictimRecipientDefNames>
+      <li>KilledCapacity</li>
+      <li>KilledLongRange</li>
+      <li>KilledMajorThreat</li>
+      <li>KilledMelee</li>
+      <li>KilledMortar</li>
+      <li>KilledChild</li>
+      <li>KilledColonist</li>
+      <li>KilledColonyAnimal</li>
+    </deathVictimRecipientDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>talehealth</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Health &amp; medicine</label>
+    <order>310</order>
+    <domain>Tale</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>the body's fragility—surgery, illness, exposure, or recovery. Write fear, relief, or trust</instruction>
+    <instructions>
+      <li>the body's fragility — write the handing over: lying still, someone else's hands, ceiling and light, trusting or not</li>
+      <li>the body's fragility — write the count afterward: what still works, what hurts, what feels borrowed</li>
+      <li>the body's fragility — write gratitude or resentment toward the care itself, without inventing who did what</li>
+    </instructions>
+    <tone>with fragile fear and relief</tone>
+    <tones>
+      <li>fragile and clinical, focused on body and risk</li>
+      <li>relieved but shaken, trust or fear still present</li>
+    </tones>
+    <matchDefNames>
+      <li>DidSurgery</li>
+      <li>HealedMe</li>
+      <li>IllnessRevealed</li>
+      <li>HeatstrokeRevealed</li>
+      <li>HypothermiaRevealed</li>
+      <li>ToxicityRevealed</li>
+      <li>VacuumExposureRevealed</li>
+      <li>Exhausted</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Biotech B1 canonical birth owner, submitted only after exact ApplyBirthOutcome completion. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>biotechFamilyBirth</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Family birth</label>
+    <order>315</order>
+    <domain>Tale</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Biotech</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a canonical family birth remembered by an exact adult participant; use only the supplied role and outcome facts, allow mixed fear, grief, exhaustion, relief, or uncertainty, and never assume joy or wanted parenthood</instruction>
+    <tone>with intimate consequence and emotionally honest uncertainty</tone>
+    <tones>
+      <li>close to the body and the immediate outcome, without assigning feelings the writer did not supply</li>
+      <li>family-centered but unsentimental, careful about distinct birther, mother, and father roles</li>
+    </tones>
+    <colorCue>biotechBright</colorCue>
+    <matchDefNames>
+      <li>BiotechFamilyBirth</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>talelife</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Life milestones</label>
+    <order>320</order>
+    <domain>Tale</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>a turning point—birth, capture, bonding, or a new beginning. Write it as a life changed</instruction>
+    <tone>with the quiet weight of a turning point</tone>
+    <tones>
+      <li>hushed and consequential, aware life has turned</li>
+      <li>immediate and personal, focused on the first changed breath</li>
+    </tones>
+    <matchDefNames>
+      <li>GaveBirth</li>
+      <li>Captured</li>
+      <li>Recruited</li>
+      <li>KidnappedColonist</li>
+      <li>ExecutedPrisoner</li>
+      <li>SoldPrisoner</li>
+      <li>EnteredCryptosleep</li>
+      <li>PutIntoCryptosleep</li>
+      <li>LandedInPod</li>
+      <li>BecameLover</li>
+      <li>Breakup</li>
+      <li>Marriage</li>
+      <li>BondedWithAnimal</li>
+      <li>TamedAnimal</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>talequality</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Masterworks &amp; legendary crafts</label>
+    <order>325</order>
+    <domain>Tale</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>hands that made something lasting—pride, exhaustion, and the weight of creation</instruction>
+    <instructions>
+      <li>something well made — write the object itself: grain, edge, finish, fit, the detail only its maker will ever notice</li>
+      <li>something well made — write the hours inside it and the strange emptiness right after finishing</li>
+      <li>something well made — write it outliving the day: who might use it, wear it, or stand behind it, sticking to supplied facts</li>
+    </instructions>
+    <tone>with proud, bone-tired satisfaction</tone>
+    <tones>
+      <li>proud and tactile, focused on hands and material</li>
+      <li>bone-tired and satisfied, accomplishment after strain</li>
+    </tones>
+    <matchDefNames>
+      <li>CraftedArt</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>talework</defName>
+    <frequencyTier>routine</frequencyTier>
+    <label>Work &amp; achievements</label>
+    <order>330</order>
+    <domain>Tale</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>the satisfaction of labor—craft, study, mining, or a skill grown. Keep it proud but grounded</instruction>
+    <instructions>
+      <li>work worth noting — write the result as evidence: what exists now that did not exist this morning</li>
+      <li>work worth noting — write the skill showing itself: a step that used to be hard going easy under the hands</li>
+      <li>work worth noting — write the tiredness that feels earned, and the one detail the pawn keeps replaying with pride</li>
+    </instructions>
+    <tone>with steady, grounded pride</tone>
+    <tones>
+      <li>steady and practical, pride kept close to the work</li>
+      <li>quietly pleased, focused on skill settling into the body</li>
+    </tones>
+    <matchDefNames>
+      <li>FinishedResearchProject</li>
+      <li>CompletedLongConstructionProject</li>
+      <li>CompletedLongCraftingProject</li>
+      <li>MinedValuable</li>
+      <li>GainedMasterSkillWithoutPassion</li>
+      <li>GainedMasterSkillWithPassion</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>taleanomaly</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Anomaly horror</label>
+    <order>335</order>
+    <domain>Tale</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <colorCue>anomalyDeep</colorCue>
+    <instruction>anomaly, mutation, void contact, or unnatural aftermath; write dread as something witnessed up close - smell, light, skin, memory - and never explain the source</instruction>
+    <tone>with dread and the uncanny, close enough to contaminate the page</tone>
+    <tones>
+      <li>uncanny and watchful, every ordinary detail suspect</li>
+      <li>intimate and contaminated, as if the wrongness followed the pawn home</li>
+    </tones>
+    <matchDefNames>
+      <li>StudiedEntity</li>
+      <li>MutatedMyArm</li>
+      <li>PerformedPsychicRitual</li>
+      <li>ClosedTheVoid</li>
+      <li>EmbracedTheVoid</li>
+      <li>DeathPall</li>
+      <li>UnnaturalDarkness</li>
+      <li>NoxiousHaze</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>taleincident</defName>
+    <!-- This mixed Tale group uniquely owns ship launch/escape. Keep it Essential until those
+         endgame milestones can move to their own settings-visible group without changing saves. -->
+    <frequencyTier>essential</frequencyTier>
+    <label>Raids, disasters &amp; colony events</label>
+    <order>340</order>
+    <domain>Tale</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <colorCue>combat</colorCue>
+    <instruction>the colony shaken—raid, disaster, or crisis. Write what it felt like to live through it</instruction>
+    <instructions>
+      <li>the colony shaken — write one narrow slice the pawn actually saw or did, not the whole crisis</li>
+      <li>the colony shaken — write the body under alarm: sound, running, hands doing the drill before thought catches up</li>
+      <li>the colony shaken — write what is different now: damage seen, routine broken, or safety no longer assumed; only supplied outcomes</li>
+    </instructions>
+    <tone>with reeling, disaster-shocked tension</tone>
+    <tones>
+      <li>reeling and urgent, focused on the scramble</li>
+      <li>hollow and stunned, focused on the damage after</li>
+    </tones>
+    <matchDefNames>
+      <li>Raid</li>
+      <li>Infestation</li>
+      <li>ManhunterPack</li>
+      <li>MajorThreat</li>
+      <li>MeteoriteImpact</li>
+      <li>ShipPartCrash</li>
+      <li>Flashstorm</li>
+      <li>Tornado</li>
+      <li>TornadoFromItem</li>
+      <li>ToxicFallout</li>
+      <li>VolcanicWinter</li>
+      <li>Eclipse</li>
+      <li>Aurora</li>
+      <li>NoxiousHaze</li>
+      <li>DeathPall</li>
+      <li>UnnaturalDarkness</li>
+      <li>OrbitalDebris</li>
+      <li>StudiedEntity</li>
+      <li>ClosedTheVoid</li>
+      <li>EmbracedTheVoid</li>
+      <li>CaravanAmbushDefeated</li>
+      <li>CaravanAmbushedByHumanlike</li>
+      <li>CaravanAmbushedByManhunter</li>
+      <li>CaravanAssaultSuccessful</li>
+      <li>CaravanDemand</li>
+      <li>CaravanFled</li>
+      <li>CaravanFormed</li>
+      <li>CaravanMeeting</li>
+      <li>EndGame_ShipEscape</li>
+      <li>LaunchedShip</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>talequiet</defName>
+    <frequencyTier>ambient</frequencyTier>
+    <label>Quiet personal moments</label>
+    <order>350</order>
+    <domain>Tale</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a quiet aside—recreation, prayer, or small embarrassment. Brief and personal</instruction>
+    <instructions>
+      <li>a quiet aside — keep it small on purpose: one moment, one feeling, no lesson attached</li>
+      <li>a quiet aside — write it as stolen time: a pocket of the day that belonged to the pawn alone</li>
+      <li>a quiet aside — if it stung or embarrassed, write the honest size of the sting: small, but it will be remembered</li>
+    </instructions>
+    <tone>with small, private quiet</tone>
+    <tones>
+      <li>private and spare, one small feeling held close</li>
+      <li>light and brief, a passing note rather than a confession</li>
+    </tones>
+    <matchDefNames>
+      <li>AteRawHumanlikeMeat</li>
+      <li>AttendedConcert</li>
+      <li>AttendedParty</li>
+      <li>BuiltSnowman</li>
+      <li>Drunk</li>
+      <li>HeldConcert</li>
+      <li>Meditated</li>
+      <li>PerformedPsychicRitual</li>
+      <li>PlayedGame</li>
+      <li>Prayed</li>
+      <li>ReadBook</li>
+      <li>Vomited</li>
+      <li>WalkedNaked</li>
+      <li>VisitedGrave</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>taleother</defName>
+    <frequencyTier>routine</frequencyTier>
+    <label>A notable day</label>
+    <order>390</order>
+    <domain>Tale</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a notable non-social RimWorld tale involving the pawn</instruction>
+    <instructions>
+      <li>a notable moment — name the real fact first, then the pawn's honest measure of it: pride, unease, or a shrug</li>
+      <li>a notable moment — write why this one will be remembered when the week's routine is forgotten</li>
+      <li>a notable moment — ground it in place and body: where the pawn stood and what their hands were doing</li>
+    </instructions>
+    <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Mood-event domain: GameConditions that affect colonist mood ===== -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>moodeventPositive</defName>
+    <frequencyTier>routine</frequencyTier>
+    <label>Positive mood events</label>
+    <order>400</order>
+    <domain>MoodEvent</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>something lifted—a positive colony-wide event that eases the heart</instruction>
+    <instructions>
+      <li>a good turn for everyone — write the shared ease: shoulders down, jokes returning, work moving lighter</li>
+      <li>a good turn for everyone — write this pawn's private slice of the common good, grounded in the supplied condition</li>
+      <li>a good turn for everyone — write the wariness under the relief: enjoying it while it lasts, on this planet</li>
+    </instructions>
+    <tone>with a lifted, eased spirit</tone>
+    <tones>
+      <li>open and eased, letting relief into the sentence</li>
+      <li>quietly grateful, focused on tension leaving the body</li>
+    </tones>
+    <matchDefNames>
+      <!-- GameConditionDef names only: mood-event classification runs off condition registration,
+           so the former "Party" row (a GatheringDef) could never match. -->
+      <li>Aurora</li>
+      <li>PsychicSoothe</li>
+      <li>BioluminescentSpores</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>moodeventWeatherHardship</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Climate hardship</label>
+    <order>402</order>
+    <domain>MoodEvent</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>the climate itself turned hostile—a lasting cold snap, heat wave, or darkened sky. Write the body and the routines coping, not a single dramatic moment</instruction>
+    <instructions>
+      <li>hostile climate — write the body first: numb fingers, sweat, shallow breath, clothes that stopped being enough</li>
+      <li>hostile climate — write the small adjustments: rationing, moved bedrolls, doors kept shut, crops watched with worry</li>
+      <li>hostile climate — let the weather set the day's scale; people and tasks bend around it without a named villain</li>
+    </instructions>
+    <tone>with worn, enduring patience against the weather</tone>
+    <tones>
+      <li>weathered and practical, endurance measured in small chores</li>
+      <li>quietly worried, the sky deciding what tomorrow costs</li>
+    </tones>
+    <matchDefNames>
+      <li>ColdSnap</li>
+      <li>HeatWave</li>
+      <li>VolcanicWinter</li>
+      <!-- Odyssey sky hardship; the SeasonalFlood thing is observed separately as live state. -->
+      <li>VolcanicAsh</li>
+      <li>UnnaturalHeat</li>
+      <li>Drought</li>
+      <li>DarkenedSkies</li>
+      <li>DeepFreeze</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>moodeventStormDanger</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Sky violence</label>
+    <order>403</order>
+    <domain>MoodEvent</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <colorCue>danger</colorCue>
+    <instruction>the sky turned violent—dry lightning, fire, or rain that should not exist. Write sudden danger from above without inventing damage that was not supplied</instruction>
+    <instructions>
+      <li>sky violence — open on light, sound, or smell: the flash, the crack, the burning air, the first wrong drops</li>
+      <li>sky violence — write the scramble to react: watching for fires, pulling people indoors, counting what stands exposed</li>
+      <li>sky violence — if the rain itself is wrong, keep it wrong; unease before explanation, and no invented outcome</li>
+    </instructions>
+    <tone>with sharp alarm under an open sky</tone>
+    <tones>
+      <li>startled and watchful, the sky suddenly an enemy</li>
+      <li>tense and reactive, danger arriving faster than understanding</li>
+    </tones>
+    <matchDefNames>
+      <li>Flashstorm</li>
+      <!-- Anomaly blood rain; inert without the DLC. -->
+      <li>BloodRain</li>
+      <li>VolcanicDebris</li>
+      <li>LavaFlow</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>moodeventNegative</defName>
+    <frequencyTier>routine</frequencyTier>
+    <label>Negative mood events</label>
+    <order>410</order>
+    <domain>MoodEvent</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>something weighing—a negative colony-wide event that strains the spirit</instruction>
+    <instructions>
+      <li>a shared weight — write how the condition reaches this pawn's own routine: light, food, sleep, tempers, or work</li>
+      <li>a shared weight — write the colony's mood as observed evidence: shorter answers, emptier rooms, doors closing earlier</li>
+      <li>a shared weight — write the endurance arithmetic: how long this can be borne and what runs out first, using only supplied facts</li>
+    </instructions>
+    <tone>with a weighed-down strain</tone>
+    <tones>
+      <li>heavy and low, every detail pressing downward</li>
+      <li>irritated and weathered, strain showing in patience</li>
+    </tones>
+    <matchDefNames>
+      <li>Eclipse</li>
+      <li>PsychicDrone</li>
+      <li>GrayPall</li>
+      <li>DeathPall</li>
+      <li>ToxicFallout</li>
+      <li>SolarFlare</li>
+      <li>NoxiousHaze</li>
+      <li>HateChantDrone</li>
+      <li>GillRot</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>moodeventMixed</defName>
+    <frequencyTier>routine</frequencyTier>
+    <label>Situationally mixed mood events</label>
+    <order>405</order>
+    <domain>MoodEvent</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>a condition that touches each person differently—write how it feels to this pawn</instruction>
+    <instructions>
+      <li>a condition felt unevenly — commit to this pawn's side of it: better or worse for them specifically, per the supplied facts</li>
+      <li>a condition felt unevenly — write the gap: what it does to this pawn versus what it seems to do to others nearby</li>
+      <li>a condition felt unevenly — write the strangeness itself pressing on senses and mood, without explaining its mechanics</li>
+    </instructions>
+    <tone>with an uneasy, conditional charge</tone>
+    <tones>
+      <li>uneasy and conditional, the pawn unsure how to feel</li>
+      <li>alert and bodily, tracking how the condition lands</li>
+    </tones>
+    <matchDefNames>
+      <!-- TODO: ProblemCauser conditions are too complex to handle correctly — skipped for now. -->
+      <!-- <li>ProblemCauser</li> -->
+      <!-- PsychicSuppression is the Royalty GameConditionDef the suppressor building raises; it is
+           gender-tuned, so it lands unevenly on the colony, which is exactly this group's premise.
+           The earlier PsychicSuppressorMale/Female rows named the BUILDING variant, not a condition,
+           so this group never matched once. Matchers are plain strings and are never translated. -->
+      <li>PsychicSuppression</li>
+      <li>UnnaturalDarkness</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>moodeventOther</defName>
+    <frequencyTier>ambient</frequencyTier>
+    <label>Passing moods</label>
+    <order>420</order>
+    <domain>MoodEvent</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a colony-wide event affecting the pawn's mood</instruction>
+    <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Thought domain: temporary thoughts with expiration ===== -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>thoughtPregnancyFamily</defName>
+    <frequencyTier>routine</frequencyTier>
+    <label>Pregnancy memories</label>
+    <order>490</order>
+    <domain>Thought</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>pregnancy, birth loss, or the end of a pregnancy as intimate family news; write with restraint and do not assume the pawn feels only one simple emotion</instruction>
+    <tone>with intimate, restrained weight</tone>
+    <tones>
+      <li>restrained and intimate, emotion held carefully</li>
+      <li>body-aware and uncertain, hope and fear both possible</li>
+    </tones>
+    <matchDefNames>
+      <li>PregnancyTerminated</li>
+      <li>PregnancyEnded</li>
+      <li>Stillbirth</li>
+      <li>Miscarried</li>
+      <li>PartnerMiscarried</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>thoughtPositive</defName>
+    <frequencyTier>routine</frequencyTier>
+    <label>Positive thoughts</label>
+    <order>500</order>
+    <domain>Thought</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a fleeting lift in spirits—a positive thought that brightened the day. Match the intensity to the mood effect: minor joys get a quiet note, strong ones get warmth and detail</instruction>
+    <instructions>
+      <li>a positive thought — use the supplied trigger if present; otherwise write the mood lift itself. Scale it to the effect</li>
+      <li>a positive thought — write the body easing: shoulders, breath, a small private smile. Scale it to the mood lift</li>
+      <li>a positive thought — write the pull it creates: wanting the feeling to last or the day to turn. Scale it to the mood lift</li>
+    </instructions>
+    <tone>with a small, brightening lift</tone>
+    <tones>
+      <li>small and bright, like tension briefly loosening</li>
+      <li>quietly buoyant, focused on a thought worth keeping</li>
+    </tones>
+    <!-- Positive thoughts are matched by exact defName + whole-segment matchers only. The old
+         substring tokens (Good, Nice, Love, Social, ...) were blunt enough to misclassify modded
+         ThoughtDefs and even vanilla grief thoughts (e.g. "Good" claimed the negative
+         "PawnWithGoodOpinionDied"). Exact defNames preserve vanilla coverage; the segment list
+         gives common modded positive thoughts (Impressive/Spectacular/Unforgettable/...) a route
+         without matching words that merely contain the same letters. -->
+    <matchDefNames>
+      <!-- Core: gatherings, speeches, colony optimism -->
+      <li>GotMarried</li>
+      <li>AttendedWedding</li>
+      <li>AttendedParty</li>
+      <li>AttendedConcert</li>
+      <li>HeldConcert</li>
+      <li>EncouragingSpeech</li>
+      <li>InspirationalSpeech</li>
+      <li>NewColonyOptimism</li>
+      <li>NewColonyHope</li>
+      <li>Catharsis</li>
+      <li>Nuzzled</li>
+      <li>KnowBuriedInSarcophagus</li>
+      <li>DefeatedHostileFactionLeader</li>
+      <li>DefeatedHostileFactionLeaderOpinion</li>
+      <li>DefeatedMechCluster</li>
+      <li>DefeatedInsectHive</li>
+      <li>RescuedRelative</li>
+      <li>Rescued</li>
+      <li>TravelAnticipation</li>
+      <!-- Core: impressive rooms -->
+      <li>AteInImpressiveDiningRoom</li>
+      <li>JoyActivityInImpressiveRecRoom</li>
+      <li>SleptInBedroom</li>
+      <!-- Core: positive meals (cannibal variants are positive for cannibal pawns) -->
+      <li>AteLavishMeal</li>
+      <li>AteFineMeal</li>
+      <li>AteHumanlikeMeatDirectCannibal</li>
+      <li>AteHumanlikeMeatAsIngredientCannibal</li>
+      <!-- Core: warm social memories -->
+      <li>DeepTalk</li>
+      <li>KindWords</li>
+      <li>KindWordsMood</li>
+      <li>RapportBuilt</li>
+      <li>HadCatharticFight</li>
+      <li>RescuedMe</li>
+      <li>RescuedMeByOfferingHelp</li>
+      <li>RecruitedMe</li>
+      <li>HoneymoonPhase</li>
+      <li>GotSomeLovin</li>
+      <li>KilledMyRival</li>
+      <li>ArtifactMoodBoost</li>
+      <!-- Opinion-flipped grief: a pawn you disliked dying/going missing is a mood LIFT, so it
+           must be claimed here (order 500) before thoughtNegative's "Died" suffix (order 510). -->
+      <li>PawnWithBadOpinionDied</li>
+      <li>PawnWithBadOpinionLost</li>
+      <!-- Royalty -->
+      <li>HonorableBestowingCeremony</li>
+      <li>GrandioseBestowingCeremony</li>
+      <li>ReignedInThroneroom</li>
+      <li>DecreeMet</li>
+      <!-- Ideology: relics, biosculpter, counsel, raids, trial exoneration -->
+      <li>RelicsCollected</li>
+      <li>BiosculpterPleasure</li>
+      <li>Counselled</li>
+      <li>Counselled_MoodBoost</li>
+      <li>TendedByMedicalSpecialist</li>
+      <li>ParticipatedInRaid_Respected</li>
+      <li>RecentConquest_Respected</li>
+      <li>TrialExonerated</li>
+      <!-- Ideology: positive ritual-quality outcomes -->
+      <li>FunParty</li>
+      <li>UnforgettableParty</li>
+      <li>GoodFuneral</li>
+      <li>HeartwarmingFuneral</li>
+      <li>FunFestival</li>
+      <li>UnforgettableFestival</li>
+      <li>SatisfyingSacrifice</li>
+      <li>SpectacularSacrifice</li>
+      <li>BeautifulSkyLanterns</li>
+      <li>UnforgettableSkyLanterns</li>
+      <li>SatisfyingScarification</li>
+      <li>SpectacularScarification</li>
+      <li>SatisfyingBlinding</li>
+      <li>SpectacularBlinding</li>
+      <li>EffectiveConversion</li>
+      <li>MasterfulConversion</li>
+      <li>GoodDuel</li>
+      <li>UnforgettableDuel</li>
+      <li>SatisfyingExecution</li>
+      <li>SpectacularExecution</li>
+      <!-- Biotech -->
+      <li>BabyBorn</li>
+      <li>GigglingBaby</li>
+      <li>MyGigglingBaby</li>
+      <li>WasTaught</li>
+      <li>GaveLesson</li>
+      <!-- Anomaly: relief/resolution (horror thoughts stay in the catch-all for a neutral tone) -->
+      <li>DarknessLifted</li>
+      <li>HealedMe</li>
+      <li>ClosedTheVoidOpinion</li>
+    </matchDefNames>
+    <!-- Whole-segment equality (CamelCase word must match exactly). Gives common modded positive
+         thoughts a route without the false positives of substring tokens. -->
+    <matchSegments>
+      <li>Impressive</li>
+      <li>Spectacular</li>
+      <li>Unforgettable</li>
+      <li>Heartwarming</li>
+      <li>Satisfying</li>
+      <li>Beautiful</li>
+      <li>Masterful</li>
+      <li>Grandiose</li>
+      <li>Honorable</li>
+      <li>Encouraging</li>
+      <li>Inspirational</li>
+      <li>Pleasure</li>
+      <li>Catharsis</li>
+      <li>Cathartic</li>
+      <li>Optimism</li>
+      <li>Hope</li>
+      <li>Rapport</li>
+    </matchSegments>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>thoughtNegative</defName>
+    <frequencyTier>routine</frequencyTier>
+    <label>Negative thoughts</label>
+    <order>510</order>
+    <domain>Thought</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a weight on the mind—a negative thought that lingered. Match the intensity to the mood effect: minor irritations get a passing mention, severe ones get raw emotion and weight</instruction>
+    <instructions>
+      <li>a negative thought — use the supplied trigger if present; otherwise write the sting repeating. Scale it to the mood hit</li>
+      <li>a negative thought — write the body tightening: jaw, gut, restless hands. Scale it to the mood hit</li>
+      <li>a negative thought — write the loop it makes: returning, growing, hard to drop. Scale it to the mood hit</li>
+    </instructions>
+    <tone>with a low, nagging weight</tone>
+    <tones>
+      <li>low and nagging, the thought returning in loops</li>
+      <li>tight and bodily, irritation or hurt sitting in the gut</li>
+    </tones>
+    <!-- Negative thoughts are matched by exact defName + whole-segment matchers only. The old
+         substring tokens (Bad, Sad, Hot, Cold, ...) were blunt enough to misclassify modded
+         ThoughtDefs and vanilla opinion-flipped thoughts (e.g. "Bad" claimed the positive
+         "PawnWithBadOpinionDied", "Good" above claimed the negative "PawnWithGoodOpinionDied").
+         Opinion-flipped death/loss thoughts (PawnWithGood/BadOpinion{Died,Lost}) are intentionally
+         LEFT OUT so they fall to the neutral catch-all instead of getting the wrong-direction tone.
+         Exact defNames preserve vanilla coverage; the segment/prefix lists give common modded
+         negative thoughts a route without matching words that merely contain the same letters. -->
+    <matchDefNames>
+      <!-- Need/drug-desire defNames emitted by the ThoughtProgression scanner (see
+           DiarySignalPolicyDefs.xml). These are escalating deprivations, so they belong here. -->
+      <li>NeedFood</li>
+      <li>NeedRest</li>
+      <li>NeedOutdoors</li>
+      <li>DrugDesireInterest</li>
+      <li>DrugDesireFascination</li>
+      <!-- Core: grief (My*Died / My*Lost families). Opinion-flipped variants stay in the catch-all. -->
+      <li>KnowGuestExecuted</li>
+      <li>KnowColonistExecuted</li>
+      <li>KnowPrisonerDiedInnocent</li>
+      <li>KnowColonistDied</li>
+      <li>BondedAnimalDied</li>
+      <li>MySonDied</li>
+      <li>MyDaughterDied</li>
+      <li>MyHusbandDied</li>
+      <li>MyWifeDied</li>
+      <li>MyFianceDied</li>
+      <li>MyFianceeDied</li>
+      <li>MyLoverDied</li>
+      <li>MyBrotherDied</li>
+      <li>MySisterDied</li>
+      <li>MyGrandchildDied</li>
+      <li>MyFatherDied</li>
+      <li>MyMotherDied</li>
+      <li>MyNieceDied</li>
+      <li>MyNephewDied</li>
+      <li>MyHalfSiblingDied</li>
+      <li>MyAuntDied</li>
+      <li>MyUncleDied</li>
+      <li>MyGrandparentDied</li>
+      <li>MyCousinDied</li>
+      <li>MyKinDied</li>
+      <li>ColonistLost</li>
+      <li>BondedAnimalReleased</li>
+      <li>BondedAnimalLost</li>
+      <li>MySonLost</li>
+      <li>MyDaughterLost</li>
+      <li>MyHusbandLost</li>
+      <li>MyWifeLost</li>
+      <li>MyFianceLost</li>
+      <li>MyFianceeLost</li>
+      <li>MyLoverLost</li>
+      <li>MyBrotherLost</li>
+      <li>MySisterLost</li>
+      <li>MyGrandchildLost</li>
+      <li>MyFatherLost</li>
+      <li>MyMotherLost</li>
+      <li>MyNieceLost</li>
+      <li>MyNephewLost</li>
+      <li>MyHalfSiblingLost</li>
+      <li>MyAuntLost</li>
+      <li>MyUncleLost</li>
+      <li>MyGrandparentLost</li>
+      <li>MyCousinLost</li>
+      <li>MyKinLost</li>
+      <!-- Core: bad conditions, body, labor -->
+      <li>AteWithoutTable</li>
+      <li>SleepDisturbed</li>
+      <li>SleptOutside</li>
+      <li>SleptOnGround</li>
+      <li>SleptInCold</li>
+      <li>SleptInHeat</li>
+      <li>SleptInBarracks</li>
+      <li>SoakingWet</li>
+      <li>OnDuty</li>
+      <!-- Core: imprisonment, organ harvesting, butchery, corpses, witnessing death -->
+      <li>KnowPrisonerSold</li>
+      <li>KnowGuestOrganHarvested</li>
+      <li>KnowColonistOrganHarvested</li>
+      <li>MyOrganHarvested</li>
+      <li>WasImprisoned</li>
+      <li>KnowButcheredHumanlikeCorpse</li>
+      <li>ObservedLayingCorpse</li>
+      <li>ObservedLayingRottingCorpse</li>
+      <li>WitnessedDeathAlly</li>
+      <li>WitnessedDeathNonAlly</li>
+      <li>WitnessedDeathFamily</li>
+      <!-- Core: banishment, denial, failed rescue -->
+      <li>DeniedJoining</li>
+      <li>ColonistBanished</li>
+      <li>ColonistBanishedToDie</li>
+      <li>PrisonerBanishedToDie</li>
+      <li>BondedAnimalBanished</li>
+      <li>FailedToRescueRelative</li>
+      <!-- Core: negative meals -->
+      <li>AteRawFood</li>
+      <li>AteKibble</li>
+      <li>AteCorpse</li>
+      <li>AteHumanlikeMeatDirect</li>
+      <li>AteHumanlikeMeatAsIngredient</li>
+      <li>AteInsectMeatDirect</li>
+      <li>AteInsectMeatAsIngredient</li>
+      <li>AteRottenFood</li>
+      <!-- Core: cruel/angry social memories -->
+      <li>Slighted</li>
+      <li>Insulted</li>
+      <li>InsultedMood</li>
+      <li>HadAngeringFight</li>
+      <li>HarmedMe</li>
+      <li>BotchedMySurgery</li>
+      <li>CrashedTogether</li>
+      <li>SoldMyLovedOne</li>
+      <li>SoldMyBondedAnimal</li>
+      <li>SoldMyBondedAnimalMood</li>
+      <li>ForcedMeToTakeDrugs</li>
+      <li>ForcedMeToTakeDrugsMood</li>
+      <li>ForcedMeToTakeLuciferium</li>
+      <li>ForcedMeToTakeLuciferiumMood</li>
+      <li>RebuffedMyRomanceAttempt</li>
+      <li>RebuffedMyRomanceAttemptMood</li>
+      <li>FailedRomanceAttemptOnMe</li>
+      <li>BrokeUpWithMe</li>
+      <li>BrokeUpWithMeMood</li>
+      <li>CheatedOnMe</li>
+      <li>CheatedOnMeMood</li>
+      <li>DivorcedMe</li>
+      <li>DivorcedMeMood</li>
+      <li>RejectedMyProposal</li>
+      <li>RejectedMyProposalMood</li>
+      <li>IRejectedTheirProposal</li>
+      <li>KilledMyFriend</li>
+      <li>KilledMyLover</li>
+      <li>KilledMyFiance</li>
+      <li>KilledMySpouse</li>
+      <li>KilledMyFather</li>
+      <li>KilledMyMother</li>
+      <li>KilledMySon</li>
+      <li>KilledMyDaughter</li>
+      <li>KilledMyBrother</li>
+      <li>KilledMySister</li>
+      <li>KilledMyKin</li>
+      <li>KilledMyBondedAnimal</li>
+      <!-- Core: bad speeches -->
+      <li>TerribleSpeech</li>
+      <li>UninspiringSpeech</li>
+      <!-- Royalty -->
+      <li>TerribleBestowingCeremony</li>
+      <li>UnimpressiveBestowingCeremony</li>
+      <li>Disinherited</li>
+      <li>DecreeFailed</li>
+      <li>NeuroquakeEcho</li>
+      <li>AteFoodInappropriateForTitle</li>
+      <!-- Ideology: negative ritual-quality outcomes, trials, terror, losses -->
+      <li>TerribleParty</li>
+      <li>BoringParty</li>
+      <li>TerribleFuneral</li>
+      <li>LacklusterFuneral</li>
+      <li>TerribleFestival</li>
+      <li>BoringFestival</li>
+      <li>TerribleSacrifice</li>
+      <li>BoringSacrifice</li>
+      <li>TerribleSkyLanterns</li>
+      <li>UnimpressiveSkyLanterns</li>
+      <li>TerribleScarification</li>
+      <li>BoringScarification</li>
+      <li>TerribleBlinding</li>
+      <li>BoringBlinding</li>
+      <li>TerribleDuel</li>
+      <li>BoringDuel</li>
+      <li>AwkwardExecution</li>
+      <li>TrialFailed</li>
+      <li>TrialConvicted</li>
+      <li>ConnectedTreeDied</li>
+      <li>DryadDied</li>
+      <li>WillDiminished</li>
+      <li>FailedConvertAbilityInitiator</li>
+      <li>FailedConvertAbilityRecipient</li>
+      <li>CounselFailed</li>
+      <li>ObservedTerror</li>
+      <li>ObservedGibbetCage</li>
+      <li>ObservedSkullspike</li>
+      <li>WasEnslaved</li>
+      <li>SleptInRoomWithSlave</li>
+      <li>LookChangeDesired</li>
+      <!-- Biotech -->
+      <li>CryingBaby</li>
+      <li>MyCryingBaby</li>
+      <li>FedOn</li>
+      <li>FedOn_Social</li>
+      <li>PsychicBondTorn</li>
+      <li>XenogermHarvested_Prisoner</li>
+      <!-- Anomaly: victim/guilt/horror thoughts -->
+      <li>AteTwistedMeat</li>
+      <li>PsychicRitualVictim</li>
+      <li>MutatedMyArm</li>
+      <li>PsychicRitualGuilt</li>
+      <li>DrainedMySkills</li>
+      <li>UsedMeForPsychicRitual</li>
+      <li>HeardInhumanRambling</li>
+    </matchDefNames>
+    <!-- Whole-segment equality (CamelCase word must match exactly). Gives common modded negative
+         thoughts a route without the false positives of substring tokens. -->
+    <matchSegments>
+      <li>Terrible</li>
+      <li>Boring</li>
+      <li>Lackluster</li>
+      <li>Unimpressive</li>
+      <li>Awkward</li>
+      <li>Missing</li>
+      <li>Disrespected</li>
+      <li>Sickness</li>
+      <li>Exhaustion</li>
+      <li>Disturbed</li>
+      <li>Rotting</li>
+      <li>Harvested</li>
+      <li>Cheated</li>
+      <li>Divorced</li>
+      <li>Rejected</li>
+      <li>Slighted</li>
+      <li>Insulted</li>
+    </matchSegments>
+    <!-- defName families that START WITH these words. "Banished"/"Imprisoned"/"Failed" lead a
+         reliable negative family across vanilla and mods. -->
+    <matchPrefixes>
+      <li>Banished</li>
+      <li>Imprisoned</li>
+    </matchPrefixes>
+    <!-- "Died" suffix catches grief thoughts (MyKinDied, BondedAnimalDied, ...) for mods that add
+         new relations without us listing every one. Opinion-flipped variants are handled by exact
+         lists above (excluded) so this stays negative-only in practice. -->
+    <matchSuffixes>
+      <li>Died</li>
+    </matchSuffixes>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>thoughtOther</defName>
+    <frequencyTier>ambient</frequencyTier>
+    <label>Passing thoughts</label>
+    <order>520</order>
+    <domain>Thought</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a temporary thought that crossed the pawn's mind. Match the intensity to the mood effect</instruction>
+    <instructions>
+      <li>a passing thought — write it arriving mid-task and either dropped or kept; scale it to the mood effect</li>
+      <li>a passing thought — write what it briefly changed: pace, appetite, patience, or attention; scale it to the mood effect</li>
+      <li>a passing thought — write it as private weather that colors the hour without becoming an event; scale it to the mood effect</li>
+    </instructions>
+    <tone>with a passing, half-felt shift</tone>
+    <tones>
+      <li>brief and half-felt, gone almost as it arrives</li>
+      <li>plain and observational, naming the mood without drama</li>
+    </tones>
+    <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Inspiration domain: pawn inspiration starts ===== -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>inspiration</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Inspirations</label>
+    <order>550</order>
+    <domain>Inspiration</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a sudden useful clarity—write the pawn's mind catching fire with purpose, grounded in the specific kind of inspiration and any reason the game gives</instruction>
+    <instructions>
+      <li>sudden clarity — write the moment it clicked: mid-task, mid-step, staring at nothing, then the plan standing whole</li>
+      <li>sudden clarity — write the itch to start now: tools listed, sleep negotiable, the next hour already spoken for</li>
+      <li>sudden clarity — write the doubt riding along: too good, too fast, but worth trying anyway; do not invent success</li>
+    </instructions>
+    <tone>with bright, focused momentum</tone>
+    <tones>
+      <li>bright and decisive, thought turning into a plan</li>
+      <li>electric and restless, purpose pushing the body forward</li>
+    </tones>
+    <matchDefNames>
+      <li>Frenzy_Work</li>
+      <li>Frenzy_Go</li>
+      <li>Frenzy_Shoot</li>
+      <li>Inspired_Trade</li>
+      <li>Inspired_Recruitment</li>
+      <li>Inspired_Taming</li>
+      <li>Inspired_Surgery</li>
+      <li>Inspired_Creativity</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Work domain: occasional sampled solo entries from pawn WorkTypeDef jobs ===== -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>workDarkStudy</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Dark study work</label>
+    <order>600</order>
+    <domain>Work</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>dark research that should feel unsettling every time—write the work as intimate contact with something wrong; keep it spooky, sensory, and unresolved</instruction>
+    <tone>with creeping, unresolved dread</tone>
+    <tones>
+      <li>close and sensory, dread coming through the work itself</li>
+      <li>quietly contaminated, curiosity feeling like a mistake</li>
+    </tones>
+    <colorCue>anomalyDeep</colorCue>
+    <matchDefNames>
+      <li>PawnDiary_WorkDarkStudy</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>workPassion</defName>
+    <frequencyTier>routine</frequencyTier>
+    <label>Passionate work</label>
+    <order>610</order>
+    <domain>Work</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>work that touches one of the pawn's passions—positive, focused, quietly satisfying, without pretending the colony is easy</instruction>
+    <instructions>
+      <li>loved work — write absorption: time going missing, hands sure of themselves, the task pulling instead of pushing</li>
+      <li>loved work — write one small craft detail done exactly right and the private satisfaction it carries</li>
+      <li>loved work — let the pawn admit they would do this even on a bad day, without pretending the colony is easy</li>
+    </instructions>
+    <tone>with grounded satisfaction</tone>
+    <tones>
+      <li>focused and satisfied, pleasure kept practical</li>
+      <li>absorbed and tactile, passion showing through the task</li>
+    </tones>
+    <matchDefNames>
+      <li>PawnDiary_WorkPassion</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>workStrain</defName>
+    <frequencyTier>routine</frequencyTier>
+    <label>Straining work</label>
+    <order>620</order>
+    <domain>Work</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>work that feels dull, grimy, clumsy, or frustrating—negative when it is cleaning/dumb labor or when the pawn lacks skill</instruction>
+    <instructions>
+      <li>grinding work — write the friction: dirt, repetition, a tool that fights back, or skill that is not enough</li>
+      <li>grinding work — write the body's complaint: back, hands, knees, eyes, and the count of how much is still left</li>
+      <li>grinding work — write the resentment kept quiet and where the pawn puts it: the tool, the schedule, or themselves</li>
+    </instructions>
+    <tone>with weary irritation</tone>
+    <tones>
+      <li>weary and blunt, frustration in the hands</li>
+      <li>grimy and resigned, irritation kept under duty</li>
+    </tones>
+    <matchDefNames>
+      <li>PawnDiary_WorkStrain</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>workRoutine</defName>
+    <frequencyTier>ambient</frequencyTier>
+    <label>Routine work</label>
+    <order>630</order>
+    <domain>Work</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>ordinary colony work with no strong passion or failure signal—neutral, practical, brief, and grounded in the texture of the task</instruction>
+    <instructions>
+      <li>ordinary work — anchor on the task's material: soil, steel, cloth, stone, grease, or grain, and what the hands did with it</li>
+      <li>ordinary work — write the rhythm of it and where the mind wandered while the hands kept going</li>
+      <li>ordinary work — write the small result: a row done, a stack higher, a floor clean, and whether it felt worth the hours</li>
+    </instructions>
+    <tone>with steady, matter-of-fact routine</tone>
+    <tones>
+      <li>matter-of-fact and rhythmic, ordinary work continuing</li>
+      <li>quietly practical, attention on tools and sequence</li>
+    </tones>
+    <matchDefNames>
+      <li>PawnDiary_WorkRoutine</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Hediff domain: generic health-condition signals ===== -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>hediffPartGainedAnomalous</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Anomalous body changes</label>
+    <order>660</order>
+    <domain>Hediff</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <colorCue>bodyPartAnomalous</colorCue>
+    <instruction>the pawn's body has grown or received living anomalous flesh; make it intimate and unsettling - warmth under skin, movement where there should be stillness, a pulse or texture that feels borrowed - filtered through the attitude cue, and never explain its biology</instruction>
+    <tones>
+      <li>visceral and intimate, flesh answering before the pawn does</li>
+      <li>quiet dread anchored in warmth, pulse, and bodily wrongness</li>
+    </tones>
+    <hediff>
+      <mode>Immediate</mode>
+      <visibleOnly>false</visibleOnly>
+      <badOnly>false</badOnly>
+      <excludeInjuries>true</excludeInjuries>
+      <minSeverity>0</minSeverity>
+      <recordOnAdd>true</recordOnAdd>
+      <recordOnSeverityIncrease>false</recordOnSeverityIncrease>
+      <dedupTicks>60000</dedupTicks>
+      <appearedTextKey>PawnDiary.Event.BodyPartGainedAnomalous</appearedTextKey>
+    </hediff>
+    <matchSuffixes>
+      <li>organicpart</li>
+    </matchSuffixes>
+    <matchDefNames>
+      <li>AdrenalHeart_addedpart</li>
+      <li>CorrosiveHeart_addedpart</li>
+      <li>MetalbloodHeart_addedpart</li>
+      <li>RevenantVertebrae_addedpart</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>hediffPartGainedArtificial</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Artificial body parts</label>
+    <order>665</order>
+    <domain>Hediff</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <colorCue>bodyPartArtificial</colorCue>
+    <instruction>a made thing has joined the pawn's body; write the weight, fit, useful precision, foreign rhythm, shame, or relief of the new part through the attitude and tier cues</instruction>
+    <tones>
+      <li>intimate and practical, the body learning the timing of a new tool</li>
+      <li>quietly body-aware, machinery and flesh sharing one routine</li>
+    </tones>
+    <hediff>
+      <mode>Immediate</mode>
+      <visibleOnly>false</visibleOnly>
+      <badOnly>false</badOnly>
+      <excludeInjuries>true</excludeInjuries>
+      <minSeverity>0</minSeverity>
+      <recordOnAdd>true</recordOnAdd>
+      <recordOnSeverityIncrease>false</recordOnSeverityIncrease>
+      <dedupTicks>60000</dedupTicks>
+      <appearedTextKey>PawnDiary.Event.BodyPartGained</appearedTextKey>
+    </hediff>
+    <matchSuffixes>
+      <li>addedpart</li>
+    </matchSuffixes>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>hediffPartLostNatural</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Lost body parts</label>
+    <order>670</order>
+    <domain>Hediff</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <colorCue>bodyPartLost</colorCue>
+    <instruction>the pawn has lost a natural part of themself; write the first strange gap - shock, absence, pain, phantom feeling, bandage weight, or cold practical calculation - through the attitude and cause cues</instruction>
+    <tones>
+      <li>bodily and stunned, absence louder than pain</li>
+      <li>raw and practical, loss becoming the body's new map</li>
+    </tones>
+    <hediff>
+      <mode>Immediate</mode>
+      <visibleOnly>false</visibleOnly>
+      <badOnly>false</badOnly>
+      <excludeInjuries>true</excludeInjuries>
+      <missingPartAlways>true</missingPartAlways>
+      <minSeverity>0</minSeverity>
+      <recordOnAdd>true</recordOnAdd>
+      <recordOnSeverityIncrease>false</recordOnSeverityIncrease>
+      <dedupTicks>60000</dedupTicks>
+      <appearedTextKey>PawnDiary.Event.BodyPartLost</appearedTextKey>
+    </hediff>
+    <matchSuffixes>
+      <li>missingpart</li>
+    </matchSuffixes>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>hediffPregnancy</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Pregnancy</label>
+    <order>680</order>
+    <domain>Hediff</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>pregnancy as a life-changing beginning; write the pawn noticing the body, future, fear, hope, or uncertainty without assuming joy</instruction>
+    <tone>with intimate uncertainty and quiet weight</tone>
+    <tones>
+      <li>body-aware and intimate, uncertainty held close</li>
+      <li>future-facing and quiet, hope and fear in balance</li>
+    </tones>
+    <hediff>
+      <mode>Immediate</mode>
+      <visibleOnly>false</visibleOnly>
+      <badOnly>false</badOnly>
+      <excludeInjuries>true</excludeInjuries>
+      <minSeverity>0</minSeverity>
+      <recordOnAdd>true</recordOnAdd>
+      <recordOnSeverityIncrease>true</recordOnSeverityIncrease>
+      <severityStep>0.34</severityStep>
+      <dedupTicks>60000</dedupTicks>
+      <appearedTextKey>PawnDiary.Event.PregnancyAppeared</appearedTextKey>
+      <progressedTextKey>PawnDiary.Event.PregnancyProgressed</progressedTextKey>
+    </hediff>
+    <matchDefNames>
+      <li>PregnantHuman</li>
+      <li>Pregnant</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>hediffLabor</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Labor</label>
+    <order>685</order>
+    <domain>Hediff</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>labor and birth approaching; write urgency, pain, fear, care, and the threshold before birth without skipping ahead to the baby unless supplied</instruction>
+    <tone>with urgent bodily strain</tone>
+    <tones>
+      <li>urgent and bodily, breath and pain setting the pace</li>
+      <li>threshold-tense, focused on fear, care, and waiting</li>
+    </tones>
+    <hediff>
+      <mode>Immediate</mode>
+      <visibleOnly>false</visibleOnly>
+      <badOnly>false</badOnly>
+      <excludeInjuries>true</excludeInjuries>
+      <minSeverity>0</minSeverity>
+      <recordOnAdd>true</recordOnAdd>
+      <recordOnSeverityIncrease>false</recordOnSeverityIncrease>
+      <dedupTicks>15000</dedupTicks>
+      <appearedTextKey>PawnDiary.Event.LaborAppeared</appearedTextKey>
+    </hediff>
+    <matchDefNames>
+      <li>PregnancyLabor</li>
+      <li>PregnancyLaborPushing</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>hediffAnomalyCompulsion</defName>
+    <frequencyTier>significant</frequencyTier>
+    <colorCue>anomalyDeep</colorCue>
+    <label>Anomaly compulsions</label>
+    <order>690</order>
+    <domain>Hediff</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>an Anomaly-driven affliction pressing into the pawn's thoughts or body; write obsession, trance, withdrawal, rage, corpse torment, or inhuman detachment as the named condition supports, without explaining the entity or inventing treatment</instruction>
+    <tone>with intrusive, unnatural pressure on thought and flesh</tone>
+    <tones>
+      <li>intrusive and wrong, thought or nerve snagging on something outside itself</li>
+      <li>unsettling and compulsive, the mind and body pulled where they should not go</li>
+    </tones>
+    <hediff>
+      <mode>Immediate</mode>
+      <visibleOnly>false</visibleOnly>
+      <badOnly>false</badOnly>
+      <excludeInjuries>true</excludeInjuries>
+      <minSeverity>0</minSeverity>
+      <recordOnAdd>true</recordOnAdd>
+      <recordOnSeverityIncrease>true</recordOnSeverityIncrease>
+      <severityStep>0.25</severityStep>
+      <dedupTicks>30000</dedupTicks>
+      <appearedTextKey>PawnDiary.Event.AnomalyHediffAppeared</appearedTextKey>
+      <progressedTextKey>PawnDiary.Event.AnomalyHediffProgressed</progressedTextKey>
+    </hediff>
+    <matchDefNames>
+      <li>RevenantHypnosis</li>
+      <li>CubeInterest</li>
+      <li>CubeWithdrawal</li>
+      <li>CubeRage</li>
+      <li>CorpseTorment</li>
+      <li>Inhumanized</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>hediffMajorHealth</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Major health changes</label>
+    <order>700</order>
+    <domain>Hediff</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a new or worsening health condition that stayed with the pawn through the day</instruction>
+    <instructions>
+      <li>a lasting condition — write where it sits: chest, gut, skin, joints, and how it changed one ordinary task today</li>
+      <li>a lasting condition — write the bargaining: what the pawn did anyway, skipped, or hid from the others</li>
+      <li>a lasting condition — write the listening: checking the body's signals too often, and the fear of what tomorrow's check will say; do not invent treatment</li>
+    </instructions>
+    <tone>with bodily unease and vulnerability</tone>
+    <tones>
+      <li>vulnerable and bodily, symptoms shaping every thought</li>
+      <li>quietly frightened, weakness changing the day's scale</li>
+    </tones>
+    <!-- Built-in fallback preserving the old major-affliction behavior: bad non-injury hediffs only,
+         with chronic/sick/addiction/missing-part conditions accepted even below the severity gate.
+         Mod support XML should add lower-order Hediff groups for specific modded conditions. -->
+    <hediff>
+      <mode>DayReflection</mode>
+      <visibleOnly>false</visibleOnly>
+      <badOnly>true</badOnly>
+      <excludeInjuries>true</excludeInjuries>
+      <minSeverity>0.3</minSeverity>
+      <chronicAlways>true</chronicAlways>
+      <sickThoughtAlways>true</sickThoughtAlways>
+      <addictionAlways>true</addictionAlways>
+      <missingPartAlways>true</missingPartAlways>
+      <recordOnAdd>true</recordOnAdd>
+      <recordOnSeverityIncrease>true</recordOnSeverityIncrease>
+      <severityStep>0.25</severityStep>
+      <dedupTicks>60000</dedupTicks>
+      <dayReflectionWeight>0.8</dayReflectionWeight>
+    </hediff>
+    <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Raid domain: colony raids (IncidentWorker_Raid hook) ===== -->
+  <!-- Each eligible colonist on the raid's target map gets their own solo entry. The friendly
+       subset is ordered BELOW the catch-all so it is tested first (first-match-wins); any raid
+       defName not claimed by it falls through to the generic "Raids" group. -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>raidFriendly</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Friendly arrivals &amp; raids</label>
+    <order>705</order>
+    <domain>Raid</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a friendly force arriving at the colony—reinforcements, allies, or a peaceful drop. Write the relief or unease they bring</instruction>
+    <tone>with cautious relief or uneasy gratitude</tone>
+    <tones>
+      <li>cautiously relieved, trust arriving slowly</li>
+      <li>uneasy and grateful, help still feeling like risk</li>
+    </tones>
+    <!-- "RaidBeacon" was removed from both lists: 1.6 has no such def, only the incident-target tag
+         Map_RaidBeacon, which never reaches a raid classifier. -->
+    <matchDefNames>
+      <li>RaidFriendly</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>RaidFriendly</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>raidDropPod</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Drop-pod raids</label>
+    <order>706</order>
+    <domain>Raid</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>raiders punching straight into the colony by drop pod—sudden impact, no long warning, danger already inside the perimeter. Write the shock of instant contact</instruction>
+    <instructions>
+      <li>a drop-pod raid landing inside or near the colony — open on impact, alarms, and the scramble before anyone has time to prepare</li>
+      <li>a drop-pod raid with no slow approach — write the first stunned seconds, then the pawn's immediate choice of cover, weapon, or flight</li>
+      <li>raiders dropping from above — keep it sudden and close; do not write as if there was a long siege or approach unless supplied facts say so</li>
+    </instructions>
+    <tone>with shocked, impact-fast danger</tone>
+    <tones>
+      <li>impact-fast and disoriented, danger already inside the walls</li>
+      <li>shocked and close-quarters, every sentence reacting to sudden contact</li>
+    </tones>
+    <matchTokens>
+      <li>Drop</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>raidInfestation</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Infestations</label>
+    <order>707</order>
+    <domain>Raid</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>an infestation erupting from the colony's own ground—chitin, tunnels, enclosed panic, and danger already among the rooms. Write it as sudden internal horror, not a normal raid</instruction>
+    <instructions>
+      <li>an infestation breaking open inside the colony — open on sound, dust, claws, darkness, or the room changing from safe to hostile</li>
+      <li>insects bursting from within the base — write cramped fear and immediate survival, not a distant enemy approach</li>
+      <li>an underground threat erupting into lived-in space — keep it close, sensory, and practical; do not invent a resolved fight</li>
+    </instructions>
+    <tone>with claustrophobic, chitin-close panic</tone>
+    <tones>
+      <li>claustrophobic and horrified, safety turning into a breach</li>
+      <li>close, filthy, and panicked, the threat already underfoot</li>
+    </tones>
+    <matchDefNames>
+      <li>Infestation</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Infestation</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>raidAnomalyEntities</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Entity attacks</label>
+    <order>708</order>
+    <domain>Raid</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <colorCue>anomalyDeep</colorCue>
+    <instruction>inhuman things attacking the colony - write survival under dread, bodies refusing what they see, not a normal battle; never explain what the creatures are</instruction>
+    <instructions>
+      <li>inhuman attackers - open on the first wrong detail: shape, gait, wet sound, impossible silence, or a familiar space made unsafe; do not name what they are beyond the supplied label</li>
+      <li>inhuman attackers - write the body refusing to accept them as living people: nausea, hair rising, aim shaking, the urge to look away</li>
+      <li>inhuman attackers — keep it survival-close and sensory; use injuries or outcomes only if supplied, and never resolve the horror</li>
+    </instructions>
+    <tone>with horror pressing through combat urgency</tone>
+    <tones>
+      <li>horrified and sensory, the attackers not registering as people</li>
+      <li>tight and survival-focused, wrongness kept at the edge of the page</li>
+    </tones>
+    <!-- Anomaly entity assaults route through the same raid hook as human raids, but the
+         "grab weapons, man the sandbags" register is wrong for horror. Tokens are chosen to
+         survive exact incident defName differences across Anomaly versions; without the DLC these
+         strings simply never match (see AGENTS.md DLC-safety). -->
+    <matchTokens>
+      <li>Sightstealer</li>
+      <li>Shambler</li>
+      <li>Fleshbeast</li>
+      <li>Gorehulk</li>
+      <li>Devourer</li>
+      <li>Chimera</li>
+      <li>Noctol</li>
+      <li>Metalhorror</li>
+      <li>Revenant</li>
+      <li>FleshmassHeart</li>
+      <li>PitGate</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>raid</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Raids</label>
+    <order>710</order>
+    <domain>Raid</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>the colony facing a raid that has spawned but may still be approaching—warning, weapons grabbed, positions taken, and the held breath before contact. Write anticipation of the fight unless supplied facts show combat already hit</instruction>
+    <instructions>
+      <li>a raid approaching the colony — open on warning, distance, cover, weather, or the pawn checking a weapon; keep it before or at first contact</li>
+      <li>the colony bracing for attackers — write the waiting, orders, doors, sandbags, breath, and fear before the fight fully starts</li>
+      <li>a raid that may not have reached the defenders yet — use smoke, blood, injuries, or aftermath only if supplied; otherwise keep it to preparation, dread, and first sight of danger</li>
+    </instructions>
+    <tone>with tense, fight-anticipated urgency</tone>
+    <tones>
+      <li>tense and tactical, waiting for the fight to break open</li>
+      <li>urgent but anticipatory, fear gathering before contact</li>
+    </tones>
+    <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Quest domain: quest lifecycle (Quest.Accept / Quest.End hooks) ===== -->
+  <!-- One DiaryEventType.Quest fans out to three groups: the lifecycle signal (accepted /
+       completed / failed) is the matchDefName. The Accept hook records accepted quests, and
+       Quest.End records Success as "completed" and Fail as "failed". Quest signals fan out to
+       eligible colonists, so prompt wording must not imply the POV pawn was the sole actor.
+       Accepted quests are disabled and blocked by pure policy; completed/failed are generated. -->
+
+  <!-- Exact Royalty R3 colony chapter. Root-first classification claims accepted/completed/failed
+       before the generic signal groups. Acceptance is emitted only by the start window; terminal
+       Quest pages use one deterministic witness instead of an all-colonist fanout. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>questRoyalAscent</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Royal Ascent</label>
+    <order>745</order>
+    <domain>Quest</domain>
+    <questFanoutScope>MapWitness</questFanoutScope>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>the Royal Ascent quest lifecycle; branch only on quest_signal: accepted proves preparation only, not that the Stellarch arrived; completed or failed means the hosting quest ended, never proving who boarded, escaped, or why; write shared duty; invent no arrival, boarding, escape, rewards, or blame</instruction>
+    <tone>with ceremonial pressure, collective duty, and consequences larger than one pawn</tone>
+    <tones>
+      <li>formal but personal, the colony's shared obligation felt through one witness</li>
+      <li>tense and status-aware, keeping every unobserved imperial detail uncertain</li>
+    </tones>
+    <colorCue>royaltyBright</colorCue>
+    <matchDefNames>
+      <li>EndGame_RoyalAscent</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>questAccepted</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Quest accepted</label>
+    <order>750</order>
+    <domain>Quest</domain>
+    <defaultEnabled>false</defaultEnabled>
+    <important>true</important>
+    <instruction>a new quest the colony has taken on—anticipation, curiosity, and the weight of a promise made together. Write the hope or doubt it stirs in this pawn without claiming they alone accepted it</instruction>
+    <tone>with anticipation and wary curiosity</tone>
+    <tones>
+      <li>wary and forward-looking, promise weighed against risk</li>
+      <li>curious but guarded, hope kept under practical doubt</li>
+    </tones>
+    <matchDefNames>
+      <li>accepted</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>questCompleted</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Quest completed</label>
+    <order>755</order>
+    <domain>Quest</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a quest fulfilled through the colony's common effort—relief, satisfaction, and the cost paid along the way. Write the earned resolution without claiming this pawn alone completed it</instruction>
+    <tone>with hard-won relief and quiet satisfaction</tone>
+    <tones>
+      <li>relieved and settled, like a shared debt finally paid</li>
+      <li>tired but proud, satisfaction measured against the colony's cost</li>
+    </tones>
+    <matchDefNames>
+      <li>completed</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>questFailed</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Quest failed</label>
+    <order>760</order>
+    <domain>Quest</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a quest lost by the colony—regret, grief, and the consequences of the failure. Write the weight of what slipped away without assigning blame to this pawn alone</instruction>
+    <tone>with regret and heavy loss</tone>
+    <tones>
+      <li>heavy and regretful, focused on what slipped away from everyone</li>
+      <li>quietly grieving, shared consequence felt more than explained</li>
+    </tones>
+    <matchDefNames>
+      <li>failed</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Ritual domain: Ideology rituals (LordJob_Ritual.ApplyOutcome hook) ===== -->
+  <!-- A finished ritual creates separate solo entries for the ritual author/organizer, target pawn
+       when present, participants, and spectators. The per-pawn instruction comes from Keyed strings
+       because it depends on that pawn's perspective; this group supplies the shared ritual tone. -->
+
+  <!-- Candidate prompt family for installed Ideology conversion. This established classifier key uses
+       the short worker name; the separate conversion policy requires fully-qualified runtime worker
+       identities before any mechanical facts are attached. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualConversion</defName>
+    <frequencyTier>significant</frequencyTier>
+    <colorCue>ideologyBright</colorCue>
+    <label>Conversion rituals</label>
+    <order>759</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Ideology</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a completed conversion ritual; keep the moral guide, convertee, participant, and spectator perspectives distinct, use only supplied event-time belief facts, and never treat ritual quality alone as proof of conversion</instruction>
+    <tone>with public conviction, private doubt, and grounded spiritual consequence</tone>
+    <tones>
+      <li>intimate and doctrinal, centered on the writer's assigned role and the belief facts supplied</li>
+      <li>ceremonial but restrained, never turning quality or atmosphere into an unsupported conversion</li>
+    </tones>
+    <matchOrdinalDefNames>
+      <li>Conversion;RitualBehaviorWorker_Conversion</li>
+    </matchOrdinalDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualRoyal</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Royal rituals</label>
+    <order>760</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a Royalty ritual completed; use any exact royal mutation pawn, faction, before/after title, and cause fields supplied, without explaining mechanics or inventing an effect</instruction>
+    <tone>with formal rank and ritual authority</tone>
+    <tones>
+      <li>courtly and charged with rank, title, witnesses, and public authority</li>
+      <li>psyfocus-hushed and tradition-bound, the ceremony larger than one pawn's body</li>
+    </tones>
+    <colorCue>royalty</colorCue>
+    <matchTokens>
+      <li>ThroneSpeech</li>
+      <li>BestowingCeremony</li>
+      <li>AnimaTreeLinking</li>
+      <li>RitualOutcomeEffectWorker_Bestowing</li>
+      <li>RitualBehaviorWorker_ThroneSpeech</li>
+      <li>RitualBehaviorWorker_AnimaLinking</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualChildbirth</defName>
+    <frequencyTier>essential</frequencyTier>
+    <colorCue>biotechBright</colorCue>
+    <label>Childbirth ritual</label>
+    <order>762</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a childbirth ritual completed—keep the entry medically and emotionally appropriate: pain, care, risk, exhaustion, relief, or fear before mysticism</instruction>
+    <tone>with clinical tenderness and bodily urgency</tone>
+    <tones>
+      <li>medical, intimate, and careful around pain, care, danger, and relief</li>
+      <li>tender but unsentimental, focused on the body, helpers, and immediate outcome</li>
+    </tones>
+    <matchTokens>
+      <li>ChildBirth</li>
+      <li>RitualBehaviorWorker_ChildBirth</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualGravship</defName>
+    <frequencyTier>essential</frequencyTier>
+    <colorCue>odyssey</colorCue>
+    <label>Gravship launch</label>
+    <order>764</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Odyssey</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a gravship departure ceremony completed before destination selection—center preflight checks, countdown, ignition, liftoff anticipation, and crew discipline; do not claim a destination was chosen, travel began, or a landing occurred</instruction>
+    <tone>with technical pressure and launch-day focus</tone>
+    <tones>
+      <li>technical and procedural, centered on checks, systems, countdown, and readiness</li>
+      <li>tense and crew-minded, with launch discipline and restrained anticipation</li>
+    </tones>
+    <matchTokens>
+      <li>GravshipLaunch</li>
+      <li>RitualBehaviorWorker_GravshipLaunch</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Royalty R2 persona lifecycle. Only exact synthetic page identities match. Short weapon swaps,
+       loading/map removal, unknown UnCode, and pawn death remain state/owner evidence and never route
+       through this group. The package gate hides the setting and keeps capture inert without DLC. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>personaWeaponLifecycle</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Persona weapon bonds</label>
+    <order>768</order>
+    <domain>PersonaWeapon</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a persona-weapon bond lifecycle edge; use the exact weapon, previous/new bond state, duration, prior bonded pawn, ending cause, and selected structural trait facts supplied; never invent speech, a combat scene, a weapon motive, or a death</instruction>
+    <tone>with intimate loyalty, friction, and the unsettling presence of a weapon that remembers</tone>
+    <tones>
+      <li>intimate and uncanny, treating the bond as a lived relationship without giving the weapon invented dialogue</li>
+      <li>close and reflective, grounded in loyalty, absence, return, or finality shown by the exact lifecycle facts</li>
+    </tones>
+    <colorCue>royaltyDeep</colorCue>
+    <matchDefNames>
+      <li>PersonaWeaponBondFormed</li>
+      <li>PersonaWeaponBondSeparated</li>
+      <li>PersonaWeaponBondRecovered</li>
+      <li>PersonaWeaponBondEnded</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Royalty R2 dramatic permits. Exact synthetic family identities only: routine resource,
+       labor, trade, aerodrone, and unknown modded permits cannot fall through to this group. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>royalPermitDramatic</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Dramatic royal permits</label>
+    <order>769</order>
+    <domain>RoyalPermit</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a successful dramatic royal-permit use; preserve the exact permit, faction, title, and setting supplied; describe only the pawn calling in the permit, never claiming aid arrived, a shuttle finished its trip, an orbital strike hit, or favor was spent</instruction>
+    <tone>with the weight of authority being turned into immediate action</tone>
+    <tones>
+      <li>decisive and personal, grounded in what it felt like to invoke hard-won authority</li>
+      <li>tense and status-aware, preserving uncertainty about every effect not yet observed</li>
+    </tones>
+    <colorCue>royalty</colorCue>
+    <matchDefNames>
+      <li>RoyalPermitMilitaryAid</li>
+      <li>RoyalPermitTransportShuttle</li>
+      <li>RoyalPermitOrbitalStrike</li>
+      <li>RoyalPermitOrbitalSalvo</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Odyssey O1.4 canonical successful landing. TravelTo and landing start remain state-only;
+       this exact synthetic Def is emitted once after vanilla LandingEnded returns successfully. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>odysseyGravshipLanding</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Gravship landing</label>
+    <order>766</order>
+    <domain>GravshipJourney</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Odyssey</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a gravship has arrived—write the supplied journey reason, duration, POV role, ship, origin, and destination as first-person experience; weave in a supplied landing outcome as the only visible consequence; treat a quest site as an arrival, never quest completion, and invent no hazards</instruction>
+    <tone>with arrival relief, crew focus, and the weight of a mobile home coming down</tone>
+    <tones>
+      <li>grounded and sensory, centered on descent, touchdown, and what this destination means</li>
+      <li>crew-minded and reflective, weighing the completed passage without inventing what follows</li>
+    </tones>
+    <colorCue>odysseyBright</colorCue>
+    <matchDefNames>
+      <li>OdysseyGravshipLanding</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Odyssey O3 exact Cerebrex-core owner. The private vanilla method is fail-soft registered;
+       this row cannot claim the generic Quest completion unless actor, policy, and group gates pass. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>odysseyMechhiveOutcome</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Fate of the Mechhive</label>
+    <order>66</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Odyssey</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>the exact operator committed the visible Mechhive ending; preserve whether the Cerebrex core was destroyed or scavenged, use only the supplied actor and setting, and never invent control of the Mechhive, dialogue, hidden combat participation, motives, or consequences beyond the verified branch</instruction>
+    <tone>with terminal resolve, mechanical enormity, and the weight of a choice made at the core</tone>
+    <tones>
+      <li>final and grounded, centered on the operator&apos;s exact destroy-or-scavenge choice</li>
+      <li>vast but personal, refusing to turn visible machinery into unsupported control or conquest</li>
+    </tones>
+    <colorCue>odysseyDeep</colorCue>
+    <matchDefNames>
+      <li>PawnDiary_OdysseyMechhiveOutcome</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Anomaly A1.1 exact synthetic routes. These rows intentionally reuse the Interaction domain,
+       with orders 61-65 placing them before the broad order-70 Anomaly interaction matcher. Runtime
+       code uses required-match classification, so the ordinary Interaction catch-all cannot authorize
+       a missing/unknown Anomaly source. No live A1 source is registered in this phase. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>anomalyStudyBreakthrough</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Anomaly study breakthroughs</label>
+    <order>61</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a verified Anomaly study milestone reached by the exact researcher; preserve the supplied studied subject, semantic stage, and visible knowledge context, never quote raw progress, undiscovered codex text, hidden abilities, or future consequences</instruction>
+    <tone>with hard-won understanding and the unease of knowledge that changes what feels possible</tone>
+    <tones>
+      <li>curious and unsettled, centered on the exact breakthrough rather than hidden mechanics</li>
+      <li>intellectually absorbed but wary, keeping every unknown consequence genuinely unknown</li>
+    </tones>
+    <colorCue>anomalyBright</colorCue>
+    <matchDefNames>
+      <li>PawnDiary_AnomalyStudyBreakthrough</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>anomalyContainmentBreach</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Anomaly containment breaches</label>
+    <order>62</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a verified involuntary containment breach recorded from the supplied exact writer role; use only the escaped entities and visible setting supplied, never invent neglect, sabotage, a containment roll, hidden powers, blame, or an intentional release actor</instruction>
+    <tone>with immediate alarm and uncertainty about what the escaped entities may do next</tone>
+    <tones>
+      <li>urgent and grounded in what broke free, without assigning cause or fault</li>
+      <li>watchful and bodily tense, holding to the writer&apos;s actual relationship to the breach</li>
+    </tones>
+    <colorCue>anomaly</colorCue>
+    <matchDefNames>
+      <li>PawnDiary_ContainmentBreach</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>anomalyCreepJoinerOutcome</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Visible strange-arrival outcomes</label>
+    <order>63</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a strange arrival reached a visible outcome; describe only the supplied disclosure, rejection, aggression, or departure and the writer&apos;s verified role; in surgical disclosure the surgeon examines the subject; never reveal what was found, a hidden downside, infection, host identity, timer, or motive</instruction>
+    <tone>with shaken recognition and strict uncertainty about everything still concealed</tone>
+    <tones>
+      <li>intimate and unnerved, stopping exactly where visible knowledge ends</li>
+      <li>tense and observant, refusing to turn suspicion into secret certainty</li>
+    </tones>
+    <colorCue>anomalyDeep</colorCue>
+    <matchDefNames>
+      <li>PawnDiary_CreepJoinerOutcome</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>anomalyGhoulTransformation</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Ghoul transformations</label>
+    <order>64</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a verified non-ghoul-to-ghoul transformation completed; keep subject and surgeon perspectives distinct, write the irreversible bodily choice from supplied event-time facts, and never invent procedure mechanics, later abilities, moral judgment, or another transformation</instruction>
+    <tone>with irreversible bodily consequence and a last clear sense of the human life crossing away</tone>
+    <tones>
+      <li>visceral and grave, grounded in the exact subject and surgeon roles</li>
+      <li>intimate and final, without explaining the game mechanics behind the change</li>
+    </tones>
+    <colorCue>anomalyDeep</colorCue>
+    <matchDefNames>
+      <li>PawnDiary_GhoulTransformation</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>anomalyVoidOutcome</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Answer to the void</label>
+    <order>65</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>the exact actor committed the colony&apos;s verified terminal answer to the void; preserve whether the link was embraced or disrupted and the supplied visible consequences, never invent a different branch, hidden mechanics, dialogue, or another pawn&apos;s agency</instruction>
+    <tone>with terminal choice, accumulated dread, and the weight of an answer that cannot be recalled</tone>
+    <tones>
+      <li>final and lucid, centered on the actor&apos;s exact committed choice</li>
+      <li>cosmic but personal, never drifting beyond the visible outcome supplied</li>
+    </tones>
+    <colorCue>anomalyDeep</colorCue>
+    <matchDefNames>
+      <li>PawnDiary_VoidOutcome</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Anomaly A0 exact psychic-ritual families. The saved classifier key is
+       PsychicRitual;<PsychicRitualDef.defName>; exact rows must stay ahead of the order-776 fallback.
+       Package gates hide these settings and keep classification inert when Anomaly is not active. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualAnomalyInvitation</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Anomaly invitations</label>
+    <order>770</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a psychic ritual meant to call something toward the colony completed—center the pawn's captured perspective, deliberate invitation, and uncertainty; do not claim what arrived or what happened afterward</instruction>
+    <tone>with deliberate invitation and uncertain dread</tone>
+    <tones>
+      <li>expectant and uneasy, listening for an answer without deciding what answered</li>
+      <li>ritual-focused and watchful, dwelling on the choice to call rather than an unverified result</li>
+    </tones>
+    <colorCue>anomalyDeep</colorCue>
+    <matchDefNames>
+      <li>PsychicRitual;VoidProvocation</li>
+      <li>PsychicRitual;SummonAnimals</li>
+      <li>PsychicRitual;SummonShamblers</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualAnomalyFleshAndWeather</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Flesh and hostile weather rituals</label>
+    <order>771</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a psychic ritual meant to make the environment bodily or hostile completed—write the pawn's supplied role and the deliberate escalation, but do not claim that a threat arrived, harmed anyone, or persisted</instruction>
+    <tone>with deliberate escalation and bodily environmental dread</tone>
+    <tones>
+      <li>visceral and apprehensive, focused on choosing to make the world less safe</li>
+      <li>heavy with hostile weather or fleshly expectation, without inventing the aftermath</li>
+    </tones>
+    <colorCue>anomalyDeep</colorCue>
+    <matchDefNames>
+      <li>PsychicRitual;SummonPitGate</li>
+      <li>PsychicRitual;SummonFleshbeasts</li>
+      <li>PsychicRitual;SummonFleshbeastsPlayer</li>
+      <li>PsychicRitual;BloodRain</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualAnomalyPredation</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Predatory psychic rituals</label>
+    <order>772</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a psychic ritual meant to take skill, years, or psychic capacity from a target completed—attribute agency, victimhood, and sensation only through the supplied perspective and other-pawn facts; do not invent the exact loss or later condition</instruction>
+    <tone>with intimate predation and controlled psychic harm</tone>
+    <tones>
+      <li>close and predatory, attentive to who acted and who endured without swapping their experiences</li>
+      <li>morally tense and bodily strange, stopping at the facts the captured perspective can know</li>
+    </tones>
+    <colorCue>anomalyDeep</colorCue>
+    <matchDefNames>
+      <li>PsychicRitual;Philophagy</li>
+      <li>PsychicRitual;Chronophagy</li>
+      <li>PsychicRitual;Psychophagy</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualAnomalyMind</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Mind-altering psychic rituals</label>
+    <order>773</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a psychic ritual meant to alter memory, feeling, or behavior completed—keep each pawn inside the supplied invoker, target, participant, or spectator perspective; do not give one role another pawn's inner effects</instruction>
+    <tone>with invasive mental pressure and uncertain interior consequence</tone>
+    <tones>
+      <li>invasive and disorienting, careful about whose mind the supplied facts describe</li>
+      <li>psychically close but epistemically restrained, never inventing inaccessible memories or feelings</li>
+    </tones>
+    <colorCue>anomalyDeep</colorCue>
+    <matchDefNames>
+      <li>PsychicRitual;Brainwipe</li>
+      <li>PsychicRitual;PleasurePulse</li>
+      <li>PsychicRitual;NeurosisPulse</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualAnomalyAbduction</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Skip abduction rituals</label>
+    <order>774</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a psychic ritual meant to pull a person through distance completed—focus on the pawn's supplied role, reach, and danger; name an abductee or outcome only when the captured target facts explicitly supply it</instruction>
+    <tone>with distant reach, sudden danger, and incomplete knowledge</tone>
+    <tones>
+      <li>tense across impossible distance, with identity and outcome left uncertain unless supplied</li>
+      <li>focused on the act of reaching and pulling, not an invented arrival or aftermath</li>
+    </tones>
+    <colorCue>anomalyDeep</colorCue>
+    <matchDefNames>
+      <li>PsychicRitual;SkipAbduction</li>
+      <li>PsychicRitual;SkipAbductionPlayer</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualAnomalyDeathRefusal</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Death-refusal ritual</label>
+    <order>775</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a psychic ritual imbued a target with death refusal—write the choice to establish an unnatural relationship with death from the supplied perspective; do not claim that the target has died or returned</instruction>
+    <tone>with grave intent and an unfinished bargain with death</tone>
+    <tones>
+      <li>solemn and unnatural, treating the ritual as preparation rather than resurrection</li>
+      <li>quietly defiant toward death, while leaving any future death or return unclaimed</li>
+    </tones>
+    <colorCue>anomalyDeep</colorCue>
+    <matchDefNames>
+      <li>PsychicRitual;ImbueDeathRefusal</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualAnomalyPsychic</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Psychic rituals</label>
+    <order>776</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>an unknown or modded Anomaly psychic ritual completed—use the supplied perspective and visible facts, keep any downstream effect uncertain, and do not invent mechanics or consequences</instruction>
+    <tone>with occult uncertainty and restrained psychic dread</tone>
+    <tones>
+      <li>unsettling and watchful, grounded in the role and facts that were actually supplied</li>
+      <li>fragmentary and uncertain, refusing to explain or predict an unknown ritual's consequence</li>
+    </tones>
+    <colorCue>anomalyDeep</colorCue>
+    <matchTokens>
+      <li>PsychicRitual</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualFinished</defName>
+    <frequencyTier>significant</frequencyTier>
+    <colorCue>ideology</colorCue>
+    <label>Rituals</label>
+    <order>780</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a ritual completed—write the ceremony as a social, spiritual, or political moment from the pawn's assigned place in it</instruction>
+    <tone>with ceremonial weight and personal consequence</tone>
+    <tones>
+      <li>ceremonial and embodied, attention fixed on role, title, and consequence</li>
+      <li>formal but personal, the ritual's public meaning pressing into private thought</li>
+    </tones>
+    <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Ability domain: successful pawn Ability.Activate hook ===== -->
+  <!-- Fast-cooldown abilities are sampled at lower odds by C# tuning; these groups only choose
+       prompt flavor once a successful activation wins the weighted roll. -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>abilityPsycast</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Psycasts</label>
+    <order>790</order>
+    <domain>Ability</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a psychic ability used—write the moment as focus, willpower, psychic pressure, and visible consequence without inventing extra effects</instruction>
+    <tone>with psychic focus and charged restraint</tone>
+    <tones>
+      <li>controlled and psychic, focused on effort, pressure, and the ability's visible result</li>
+      <li>hushed and forceful, with the mind doing work the body can barely explain</li>
+    </tones>
+    <colorCue>psychic</colorCue>
+    <matchTokens>
+      <li>Psycast</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>abilityHostile</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Combat abilities</label>
+    <order>792</order>
+    <domain>Ability</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <combat>true</combat>
+    <instruction>a hostile ability used in danger—write the activation as a tactical action under pressure, grounded in the supplied ability and target</instruction>
+    <tone>with tactical pressure and sudden force</tone>
+    <tones>
+      <li>urgent and tactical, centered on the decision to use the power now</li>
+      <li>sharp and violent, but only as far as the supplied ability facts support</li>
+    </tones>
+    <matchTokens>
+      <li>Hostile</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>abilityUsed</defName>
+    <frequencyTier>routine</frequencyTier>
+    <label>Abilities</label>
+    <order>799</order>
+    <domain>Ability</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a pawn used an ability—write the decision, effort, target if supplied, and immediate consequence without adding mechanics or outcomes that were not given</instruction>
+    <tone>with focused exertion and practical consequence</tone>
+    <tones>
+      <li>focused and concrete, about the moment of use rather than a broad summary</li>
+      <li>practical and sensory, grounded in the named ability and where it was aimed</li>
+    </tones>
+    <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Progression domain: synthetic pawn-development signals ===== -->
+
+  <!-- Biotech Phase 8 canonical recursive owner for psychic-bond formation and rupture. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>biotechPsychicBondLifecycle</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Psychic-bond lifecycle</label>
+    <order>796</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Biotech</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a verified psychic bond formed or ruptured between the two supplied pawns; state only that psychic fact, mention a cause only when supplied, and never infer romance, consent, destiny, betrayal, or permanence</instruction>
+    <tone>with intimate psychic consequence and strict factual restraint</tone>
+    <tones>
+      <li>close and unsettled, aware of another mind without defining the relationship</li>
+      <li>plainly consequential, preserving uncertainty about meaning, choice, and what follows</li>
+    </tones>
+    <colorCue>biotech</colorCue>
+    <matchDefNames>
+      <li>BiotechPsychicBondFormed</li>
+      <li>BiotechPsychicBondRuptured</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Biotech Phase 8 first severe interrupted deathrest; completed wakes remain silent. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>biotechDeathrestInterrupted</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Interrupted deathrest</label>
+    <order>797</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Biotech</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a confirmed severe interruption of active deathrest; write the incomplete waking and bodily consequence without inventing who or what caused it, and never describe a routine completed wake as an interruption</instruction>
+    <tone>with abruptly broken stillness and physical unease</tone>
+    <tones>
+      <li>disoriented and bodily, centered on rest ending before recovery</li>
+      <li>quietly alarming, preserving the unknown cause instead of filling it in</li>
+    </tones>
+    <colorCue>biotechDeep</colorCue>
+    <matchDefNames>
+      <li>BiotechDeathrestInterrupted</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Biotech Phase 6 canonical controller POV for mechanitor lifecycle chapters. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionMechanitorLifecycle</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Mechanitor lifecycle</label>
+    <order>798</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Biotech</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a mechanitor lifecycle chapter; write from the human controller&apos;s perspective using only the supplied mech, service, combat, or boss-threat facts, never treating bandwidth as emotion and never inventing who struck a final blow</instruction>
+    <tone>with responsibility for minds made into command and consequence</tone>
+    <tones>
+      <li>intimate and accountable, centered on the controller&apos;s bond with command</li>
+      <li>technological but personal, keeping exact machines and threats grounded in lived consequence</li>
+    </tones>
+    <colorCue>biotech</colorCue>
+    <matchDefNames>
+      <li>BiotechMechlinkInstalled</li>
+      <li>BiotechMechlinkRemoved</li>
+      <li>BiotechFirstControlledMech</li>
+      <li>BiotechFirstControlledMechCombat</li>
+      <li>BiotechSignificantMechLoss</li>
+      <li>BiotechBossCalled</li>
+      <li>BiotechBossDefeated</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Biotech B1 committed growth choice. Phase 1 owns the exact birthday/letter mutation and
+       releases the mature Birthday route whenever canonical capture cannot truthfully complete. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionGrowthMoment</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Growth moment</label>
+    <order>800</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Biotech</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a committed childhood growth choice; center identity, changing interests, names, responsibilities, and the qualitative opportunity supplied, without quoting tiers, counts, work lists, or judging the adults who raised the child</instruction>
+    <tone>with formative self-recognition and an uncertain view of who comes next</tone>
+    <tones>
+      <li>personal and forward-looking, grounded in the trait or interests that actually changed</li>
+      <li>aware that new choices opened without turning opportunity into a score or inventing who caused it</li>
+    </tones>
+    <colorCue>biotechBright</colorCue>
+    <matchDefNames>
+      <li>BiotechGrowthMoment</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionSkillPassion</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Passion skill milestone</label>
+    <order>805</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a passion skill milestone; write pride, effort, frustration, or identity through the named skill and level only</instruction>
+    <tone>with earned self-awareness</tone>
+    <tones>
+      <li>proud but grounded, aware of the labor behind the milestone</li>
+      <li>quietly intense, treating skill as part of who the pawn is becoming</li>
+    </tones>
+    <colorCue>white</colorCue>
+    <matchDefNames>
+      <li>SkillMilestone</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionPsylink</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Psylink gained</label>
+    <order>810</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a psylink level gain; keep the exact level from the event line and the supplied cause, never inventing a previous level, writing the psychic change as lived sensation, responsibility, or unease without inventing powers</instruction>
+    <tone>with strange inner pressure</tone>
+    <tones>
+      <li>awed and uneasy, aware of power settling into the mind</li>
+      <li>focused and intimate, describing the change from inside the body</li>
+    </tones>
+    <colorCue>royaltyBright</colorCue>
+    <matchDefNames>
+      <li>PsylinkLevel</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionXenotype</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Gene identity changed</label>
+    <order>815</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Biotech</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a gene-identity change; write the bodily and identity shift from the pawn's perspective using only the supplied xenotype and selected gene-theme facts</instruction>
+    <tone>with intimate bodily consequence</tone>
+    <tones>
+      <li>changed and watchful, noticing the self becoming unfamiliar</li>
+      <li>visceral and private, focused on what the new body means tonight</li>
+    </tones>
+    <colorCue>biotech</colorCue>
+    <matchDefNames>
+      <li>XenotypeChanged</li>
+      <li>GeneIdentityChanged</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionRoyalTitle</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>Royal rank and succession</label>
+    <order>820</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>an exact faction-aware royal title, succession, or heir-appointment transition; preserve every supplied person, faction, and title, then write status, burden, grief, pride, relief, or loss without explaining mechanics</instruction>
+    <tone>with formal weight and personal cost</tone>
+    <tones>
+      <li>measured and self-conscious, aware that a title changes how others look</li>
+      <li>quietly burdened, treating rank as both honor and obligation</li>
+    </tones>
+    <colorCue>royaltyBright</colorCue>
+    <matchDefNames>
+      <li>RoyalTitleChanged</li>
+      <li>RoyalTitleGained</li>
+      <li>RoyalTitlePromoted</li>
+      <li>RoyalTitleDemoted</li>
+      <li>RoyalTitleLost</li>
+      <li>RoyalSuccession</li>
+      <li>RoyalHeirAppointed</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionTraitGained</defName>
+    <frequencyTier>essential</frequencyTier>
+    <label>New trait</label>
+    <order>825</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <!-- The pawn gained a personality trait. The supplied trait_description is the trait's own
+         character-card prose (no stats or numbers), so the model can voice ANY trait — vanilla or
+         modded — without a hardcoded table. The instruction keeps it experiential and forbids naming
+         the game mechanic. -->
+    <instruction>a lasting turn in who the pawn is; using only the supplied trait name and its description, write the change from the inside — new urges, reactions, fears, or ways of seeing the world settling into them — as something lived, never as a game trait, stat, number, or mechanic</instruction>
+    <tone>with unsettled self-recognition</tone>
+    <tones>
+      <li>quietly startled, noticing the self think or want something new</li>
+      <li>reflective and intimate, tracing where the change shows in ordinary moments</li>
+    </tones>
+    <colorCue>quiet</colorCue>
+    <matchDefNames>
+      <li>TraitGained</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Quality Wave H2. Four independently toggleable anniversary/record rows. All four are
+       Progression-domain synthetic source names (see ProgressionEventData), so the classifier matches
+       them by exact string and a player who disables one row loses only that row. Only the remembered
+       loss is important: a birthday, a colony anniversary, and a personal tally are quiet pages that
+       should never outrank a real event in a reflection. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionBirthday</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Birthday</label>
+    <order>830</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <!-- The ordinary birthday event window (eventWindowBirthday) and Biotech's growth letter own a
+         birthday when either produced a page. This row is what covers the birthdays neither of them
+         claimed, so keep the instruction to the same quiet life-marker register. -->
+    <instruction>another year of age reached; write it as a private life-marker — what the number means to this pawn here, not a celebration — using only the supplied age</instruction>
+    <tone>with quiet awareness of time passing</tone>
+    <tones>
+      <li>reflective and personal, noticing what another year has changed</li>
+      <li>softly wry, aware that time keeps moving even on the rim</li>
+    </tones>
+    <colorCue>white</colorCue>
+    <matchDefNames>
+      <li>PawnBirthday</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionArrivalAnniversary</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Colony anniversary</label>
+    <order>835</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a whole number of years since this pawn joined the colony; write belonging, distance from who they were on arrival, or unease at how long it has been, using only the supplied number of years</instruction>
+    <tone>with the weight of elapsed time</tone>
+    <tones>
+      <li>settled and measuring, comparing now against the day they arrived</li>
+      <li>unsettled and searching, unsure the years went where they meant them to</li>
+    </tones>
+    <colorCue>white</colorCue>
+    <matchDefNames>
+      <li>ArrivalAnniversary</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionDeathAnniversary</defName>
+    <frequencyTier>significant</frequencyTier>
+    <label>Remembered loss</label>
+    <order>840</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <!-- Purposeful later remembrance, NOT a second telling of the death. The original death page
+         remains canonical; this page is the pawn choosing to carry it on the date. -->
+    <instruction>the anniversary of losing someone this pawn was close to; write remembrance on the date — what is still carried and how it has changed — using only the supplied names, relations, and elapsed years, and never retelling the death itself</instruction>
+    <tone>with restrained grief that has had time to settle</tone>
+    <tones>
+      <li>quiet and unsentimental, remembering a person rather than a loss</li>
+      <li>heavy and private, the date arriving before the thought does</li>
+    </tones>
+    <colorCue>white</colorCue>
+    <matchDefNames>
+      <li>BondedDeathAnniversary</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionRecordMilestone</defName>
+    <frequencyTier>routine</frequencyTier>
+    <label>Personal record</label>
+    <order>845</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a personal tally reached a total that means something; write what doing that much of one thing has made of this pawn, using only the supplied tally name and total, and never as a score or achievement</instruction>
+    <tone>with plain recognition of accumulated work</tone>
+    <tones>
+      <li>matter-of-fact and tired, counting the cost rather than the credit</li>
+      <li>quietly proud, aware the number is made of ordinary days</li>
+    </tones>
+    <colorCue>white</colorCue>
+    <matchDefNames>
+      <li>RecordMilestone</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionOther</defName>
+    <frequencyTier>routine</frequencyTier>
+    <label>Progression</label>
+    <order>899</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a pawn changed in a notable way; write the supplied before-and-after fact plainly and personally</instruction>
+    <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== External domain (integration API) =====
+       External-domain groups claim the eventKey strings OTHER MODS submit through the public API
+       (PawnDiary.Integration.PawnDiaryApi.SubmitEvent — see INTEGRATIONS.md). Classification is
+       required-match: an eventKey no group claims records nothing, so adapter mods ship their own
+       External groups (typically gated with <enableWhenPackageIdsLoaded> when they live in this
+       core file). This built-in group claims only the dev-mode test key so the whole API path can
+       be exercised from Debug Actions ("Submit test external event...") without any adapter. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>externalDevTest</defName>
+    <label>External test event</label>
+    <order>950</order>
+    <domain>External</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a test event submitted through the mod integration API; write a short grounded note about an odd but harmless moment</instruction>
+    <tone>matter-of-fact and mildly puzzled</tone>
+    <matchDefNames>
+      <li>pawndiary_dev_test</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+</Defs>

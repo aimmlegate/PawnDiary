@@ -1,0 +1,8 @@
+<Project>
+  <!-- Two runtimes compile the same source tree. Isolate NuGet assets and generated source
+       before SDK imports run, so a 1.7 restore cannot poison the legacy 1.6 build. -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj\**;bin\**</DefaultItemExcludes>
+  </PropertyGroup>
+</Project>

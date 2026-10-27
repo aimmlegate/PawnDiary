@@ -1,0 +1,1067 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Optional prompt enchantments add ONE extra "important context:" line to selected
+  first-person diary prompts. Most text comes from the live hediff's game label, body part,
+  urgency bucket, and strongest impact cues; important-event-only DLC status sources can also add
+  the pawn's royal title or ideoligion role. This XML only controls which sources are eligible and
+  how often they win.
+
+  Tuning fields:
+    chance / frequency  - per-prompt appearance chance after matching, 0..1. frequency is an alias.
+    weight              - relative random weight when several enchantments pass their chance roll.
+    severity            - multiplier for weight; use it to make urgent health states win more often.
+
+  Hediff severity tiers:
+    hediffSeverityTiers may override chance/frequency/weight/severity for visible matching hediffs.
+    Levels are XML-tuned in DiaryTuningDef.xml (defaults: minor >= 0.05, moderate >= 0.25,
+    major >= 0.50, critical >= 0.75). The highest configured level at or below the live severity wins.
+
+  hediffDefNames are plain strings and fail silently when absent, so DLC/modded content can be
+  mentioned without making the whole mod depend on it.
+  visibleOnly defaults true. Set it false for hidden story-state hediffs that should still shape
+  prompts while present.
+-->
+<Defs>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_RoyalTitle</defName>
+    <label>royal title</label>
+    <source>RoyalTitle</source>
+    <chance>0.22</chance>
+    <weight>0.55</weight>
+    <severity>1</severity>
+    <conditionKey>PawnDiary.Prompt.Context.RoyalTitle</conditionKey>
+    <priorityKey>PawnDiary.Prompt.Context.Important</priorityKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Context.Cue.RespectIfRelevant</li>
+    </cueKeys>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_IdeologyRole</defName>
+    <label>ideoligion role</label>
+    <source>IdeologyRole</source>
+    <chance>0.22</chance>
+    <weight>0.55</weight>
+    <severity>1</severity>
+    <conditionKey>PawnDiary.Prompt.Context.IdeologyRole</conditionKey>
+    <priorityKey>PawnDiary.Prompt.Context.Important</priorityKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Context.Cue.RespectIfRelevant</li>
+    </cueKeys>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_ConsciousnessClouded</defName>
+    <label>clouded consciousness</label>
+    <source>Capacity</source>
+    <capacityDefName>Consciousness</capacityDefName>
+    <minCapacity>0.35</minCapacity>
+    <maxCapacity>0.55</maxCapacity>
+    <chance>1</chance>
+    <weight>2.2</weight>
+    <severity>1.2</severity>
+    <conditionKey>PawnDiary.Prompt.Health.ConsciousnessFallback</conditionKey>
+    <intensityKey>PawnDiary.Prompt.Health.Intensity.Moderate</intensityKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.DulledAwareness</li>
+    </cueKeys>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_ConsciousnessFading</defName>
+    <label>fading consciousness</label>
+    <source>Capacity</source>
+    <capacityDefName>Consciousness</capacityDefName>
+    <minCapacity>0.20</minCapacity>
+    <maxCapacity>0.35</maxCapacity>
+    <chance>1</chance>
+    <weight>3.2</weight>
+    <severity>1.5</severity>
+    <conditionKey>PawnDiary.Prompt.Health.ConsciousnessFallback</conditionKey>
+    <intensityKey>PawnDiary.Prompt.Health.Intensity.Major</intensityKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.FoggedAwareness</li>
+      <li>PawnDiary.Prompt.Health.Cue.SluggishThoughts</li>
+    </cueKeys>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_ConsciousnessBarelyAwake</defName>
+    <label>barely conscious</label>
+    <source>Capacity</source>
+    <capacityDefName>Consciousness</capacityDefName>
+    <maxCapacity>0.20</maxCapacity>
+    <chance>1</chance>
+    <weight>5</weight>
+    <severity>2</severity>
+    <conditionKey>PawnDiary.Prompt.Health.ConsciousnessFallback</conditionKey>
+    <intensityKey>PawnDiary.Prompt.Health.Intensity.Critical</intensityKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.NearCollapse</li>
+      <li>PawnDiary.Prompt.Health.Cue.ThoughtsFragmented</li>
+      <li>PawnDiary.Prompt.Health.Cue.BarelyAwake</li>
+    </cueKeys>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_FeverishBody</defName>
+    <label>feverish body</label>
+    <chance>0.65</chance>
+    <weight>1.2</weight>
+    <severity>1.2</severity>
+    <hediffDefNames>
+      <li>Flu</li>
+      <li>Malaria</li>
+      <li>Plague</li>
+      <li>GutWorms</li>
+      <li>MuscleParasites</li>
+      <li>FoodPoisoning</li>
+      <li>ToxicBuildup</li>
+      <li>WoundInfection</li>
+      <li>SleepingSickness</li>
+    </hediffDefNames>
+    <minHediffSeverity>0.05</minHediffSeverity>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.35</chance>
+        <weight>0.9</weight>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.65</chance>
+        <weight>1.2</weight>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>0.85</chance>
+        <weight>1.5</weight>
+        <severity>1.3</severity>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>1.8</weight>
+        <severity>1.6</severity>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_BloodLossUrgency</defName>
+    <label>blood loss urgency</label>
+    <chance>0.75</chance>
+    <weight>1.4</weight>
+    <severity>1.6</severity>
+    <hediffDefNames>
+      <li>BloodLoss</li>
+    </hediffDefNames>
+    <minHediffSeverity>0.05</minHediffSeverity>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.25</chance>
+        <weight>0.8</weight>
+        <severity>1</severity>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.65</chance>
+        <weight>1.2</weight>
+        <severity>1.3</severity>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>0.9</chance>
+        <weight>1.6</weight>
+        <severity>1.7</severity>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>2</weight>
+        <severity>2</severity>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_AlcoholHigh</defName>
+    <label>alcohol intoxication</label>
+    <chance>0.55</chance>
+    <weight>0.9</weight>
+    <severity>1</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.AlcoholHigh</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.AlcoholHigh</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.LoosenedJudgment</li>
+      <li>PawnDiary.Prompt.Health.Cue.ReducedCapacities</li>
+    </cueKeys>
+    <hediffDefNames>
+      <li>AlcoholHigh</li>
+    </hediffDefNames>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.35</chance>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.65</chance>
+        <weight>1.1</weight>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>0.9</chance>
+        <weight>1.3</weight>
+        <severity>1.2</severity>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>1.5</weight>
+        <severity>1.4</severity>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_Hangover</defName>
+    <label>hangover</label>
+    <chance>0.6</chance>
+    <weight>0.9</weight>
+    <severity>1.1</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.Hangover</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.Hangover</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.DulledAwareness</li>
+      <li>PawnDiary.Prompt.Health.Cue.PoundingAftereffects</li>
+    </cueKeys>
+    <hediffDefNames>
+      <li>Hangover</li>
+    </hediffDefNames>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.35</chance>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.65</chance>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>0.9</chance>
+        <weight>1.3</weight>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>1.5</weight>
+        <severity>1.4</severity>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_AmbrosiaHigh</defName>
+    <label>ambrosia warmth</label>
+    <chance>0.45</chance>
+    <weight>0.8</weight>
+    <severity>0.9</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.AmbrosiaHigh</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.AmbrosiaHigh</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.RelaxedEnergy</li>
+      <li>PawnDiary.Prompt.Health.Cue.SoftMoodLift</li>
+    </cueKeys>
+    <hediffDefNames>
+      <li>AmbrosiaHigh</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_GoJuiceHigh</defName>
+    <label>go-juice high</label>
+    <chance>0.65</chance>
+    <weight>1.1</weight>
+    <severity>1.25</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.GoJuiceHigh</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.GoJuiceHigh</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.CombatRush</li>
+      <li>PawnDiary.Prompt.Health.Cue.SharpenedBody</li>
+    </cueKeys>
+    <hediffDefNames>
+      <li>GoJuiceHigh</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_LuciferiumHigh</defName>
+    <label>luciferium high</label>
+    <chance>0.45</chance>
+    <weight>1</weight>
+    <severity>1.2</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.LuciferiumHigh</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.LuciferiumHigh</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.ArtificialClarity</li>
+      <li>PawnDiary.Prompt.Health.Cue.MechaniteDebt</li>
+    </cueKeys>
+    <hediffDefNames>
+      <li>LuciferiumHigh</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_LuciferiumDependency</defName>
+    <label>luciferium dependency</label>
+    <chance>0.75</chance>
+    <weight>1.2</weight>
+    <severity>1.4</severity>
+    <hediffDefNames>
+      <li>LuciferiumAddiction</li>
+    </hediffDefNames>
+    <minHediffSeverity>0.05</minHediffSeverity>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.45</chance>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.75</chance>
+        <weight>1.3</weight>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>0.95</chance>
+        <weight>1.6</weight>
+        <severity>1.6</severity>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>2</weight>
+        <severity>2</severity>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_ChemicalCraving</defName>
+    <label>chemical craving</label>
+    <chance>0.55</chance>
+    <weight>1</weight>
+    <severity>1.2</severity>
+    <hediffDefNames>
+      <li>AlcoholAddiction</li>
+      <li>AlcoholWithdrawal</li>
+      <li>AmbrosiaAddiction</li>
+      <li>AmbrosiaWithdrawal</li>
+      <li>SmokeleafAddiction</li>
+      <li>SmokeleafWithdrawal</li>
+      <li>PsychiteAddiction</li>
+      <li>PsychiteWithdrawal</li>
+      <li>WakeUpAddiction</li>
+      <li>WakeUpWithdrawal</li>
+      <li>GoJuiceAddiction</li>
+      <li>GoJuiceWithdrawal</li>
+    </hediffDefNames>
+    <minHediffSeverity>0.05</minHediffSeverity>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.3</chance>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.6</chance>
+        <weight>1.1</weight>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>0.85</chance>
+        <weight>1.4</weight>
+        <severity>1.3</severity>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>1.7</weight>
+        <severity>1.6</severity>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_FlakeHigh</defName>
+    <label>flake high</label>
+    <chance>0.65</chance>
+    <weight>1</weight>
+    <severity>1.15</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.FlakeHigh</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.FlakeHigh</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.HardPsychiteEuphoria</li>
+      <li>PawnDiary.Prompt.Health.Cue.DebilitatingHigh</li>
+    </cueKeys>
+    <hediffDefNames>
+      <li>FlakeHigh</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_PsychiteTeaHigh</defName>
+    <label>psychite tea high</label>
+    <chance>0.45</chance>
+    <weight>0.8</weight>
+    <severity>0.95</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.PsychiteTeaHigh</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.PsychiteTeaHigh</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.MildPsychiteLift</li>
+      <li>PawnDiary.Prompt.Health.Cue.EasyEnergy</li>
+    </cueKeys>
+    <hediffDefNames>
+      <li>PsychiteTeaHigh</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_YayoHigh</defName>
+    <label>yayo high</label>
+    <chance>0.65</chance>
+    <weight>1</weight>
+    <severity>1.15</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.YayoHigh</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.YayoHigh</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.HardPsychiteEuphoria</li>
+      <li>PawnDiary.Prompt.Health.Cue.RestlessDrive</li>
+    </cueKeys>
+    <hediffDefNames>
+      <li>YayoHigh</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_SmokeleafHigh</defName>
+    <label>smokeleaf high</label>
+    <chance>0.55</chance>
+    <weight>0.8</weight>
+    <severity>1</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.SmokeleafHigh</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.SmokeleafHigh</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.FuzzyWellBeing</li>
+      <li>PawnDiary.Prompt.Health.Cue.SlowedBody</li>
+    </cueKeys>
+    <hediffDefNames>
+      <li>SmokeleafHigh</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_PsychicHangover</defName>
+    <label>psychic hangover</label>
+    <chance>0.7</chance>
+    <weight>1.1</weight>
+    <severity>1.25</severity>
+    <hediffDefNames>
+      <li>PsychicHangover</li>
+    </hediffDefNames>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.4</chance>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.7</chance>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>0.9</chance>
+        <weight>1.4</weight>
+        <severity>1.4</severity>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>1.7</weight>
+        <severity>1.6</severity>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_Blindness</defName>
+    <label>blindness</label>
+    <chance>0.75</chance>
+    <weight>1</weight>
+    <severity>1.2</severity>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.Blindness</descriptionOverrideKey>
+    <cueKeys><li>PawnDiary.Prompt.Health.Cue.WorldWithoutSight</li></cueKeys>
+    <hediffDefNames>
+      <li>Blindness</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_MemoryDecay</defName>
+    <label>memory decay</label>
+    <chance>0.8</chance>
+    <weight>1.2</weight>
+    <severity>1.3</severity>
+    <hediffDefNames>
+      <li>Dementia</li>
+      <li>Alzheimers</li>
+      <li>CrumblingMind</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_TraumaSavant</defName>
+    <label>trauma savant</label>
+    <chance>0.75</chance>
+    <weight>1.1</weight>
+    <severity>1.15</severity>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.TraumaSavant</descriptionOverrideKey>
+    <cueKeys><li>PawnDiary.Prompt.Health.Cue.ThoughtWithoutOrdinaryFeeling</li></cueKeys>
+    <hediffDefNames>
+      <li>TraumaSavant</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_ResurrectionPsychosis</defName>
+    <label>resurrection psychosis</label>
+    <chance>0.85</chance>
+    <weight>1.4</weight>
+    <severity>1.5</severity>
+    <hediffDefNames>
+      <li>ResurrectionPsychosis</li>
+    </hediffDefNames>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.55</chance>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.85</chance>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>1</chance>
+        <weight>1.7</weight>
+        <severity>1.7</severity>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>2</weight>
+        <severity>2</severity>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_Joywire</defName>
+    <label>joywire</label>
+    <chance>0.55</chance>
+    <weight>0.9</weight>
+    <severity>1.1</severity>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.Joywire</descriptionOverrideKey>
+    <cueKeys><li>PawnDiary.Prompt.Health.Cue.ArtificialCheer</li></cueKeys>
+    <hediffDefNames>
+      <li>Joywire</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_ParalyticAbasia</defName>
+    <label>paralytic abasia</label>
+    <chance>0.75</chance>
+    <weight>1.1</weight>
+    <severity>1.2</severity>
+    <hediffDefNames>
+      <li>Abasia</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_Mindscrew</defName>
+    <label>mindscrew</label>
+    <chance>0.65</chance>
+    <weight>1.2</weight>
+    <severity>1.3</severity>
+    <hediffDefNames>
+      <li>Mindscrew</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_Pregnancy</defName>
+    <label>pregnancy</label>
+    <chance>0.45</chance>
+    <weight>0.9</weight>
+    <severity>1</severity>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.Pregnancy</descriptionOverrideKey>
+    <cueKeys><li>PawnDiary.Prompt.Health.Cue.BodyCarryingNewLife</li></cueKeys>
+    <hediffDefNames>
+      <li>Pregnant</li>
+      <li>PregnantHuman</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_HemogenCraving</defName>
+    <label>hemogen craving</label>
+    <chance>0.75</chance>
+    <weight>1.2</weight>
+    <severity>1.35</severity>
+    <hediffDefNames>
+      <li>HemogenCraving</li>
+    </hediffDefNames>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.4</chance>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.75</chance>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>0.95</chance>
+        <weight>1.5</weight>
+        <severity>1.5</severity>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>1.8</weight>
+        <severity>1.8</severity>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_PsychicBondTorn</defName>
+    <label>psychic bond torn</label>
+    <chance>0.8</chance>
+    <weight>1.3</weight>
+    <severity>1.4</severity>
+    <hediffDefNames>
+      <li>PsychicBondTorn</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_BlissLobotomy</defName>
+    <label>bliss lobotomy</label>
+    <chance>0.65</chance>
+    <weight>1</weight>
+    <severity>1.2</severity>
+    <hediffDefNames>
+      <li>BlissLobotomy</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_RevenantHypnosis</defName>
+    <label>revenant hypnosis</label>
+    <chance>0.85</chance>
+    <weight>1.5</weight>
+    <severity>1.6</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.RevenantHypnosis</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.RevenantHypnosis</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.TrancePressure</li>
+      <li>PawnDiary.Prompt.Health.Cue.ThoughtsPulledAway</li>
+    </cueKeys>
+    <hediffDefNames>
+      <li>RevenantHypnosis</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_CubeInterest</defName>
+    <label>cube interest</label>
+    <chance>0.55</chance>
+    <weight>1</weight>
+    <severity>1.1</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.CubeInterest</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.CubeInterest</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.CompulsiveFocus</li>
+      <li>PawnDiary.Prompt.Health.Cue.ObjectFixation</li>
+    </cueKeys>
+    <hediffDefNames>
+      <li>CubeInterest</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_CubeWithdrawal</defName>
+    <label>cube withdrawal</label>
+    <chance>0.85</chance>
+    <weight>1.4</weight>
+    <severity>1.5</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.CubeWithdrawal</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.CubeWithdrawal</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.CompulsiveAbsence</li>
+      <li>PawnDiary.Prompt.Health.Cue.RestlessNeed</li>
+    </cueKeys>
+    <hediffDefNames>
+      <li>CubeWithdrawal</li>
+    </hediffDefNames>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.5</chance>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.85</chance>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>1</chance>
+        <weight>1.7</weight>
+        <severity>1.7</severity>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>2</weight>
+        <severity>2</severity>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_CubeRage</defName>
+    <label>cube rage</label>
+    <chance>1</chance>
+    <weight>1.8</weight>
+    <severity>1.8</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.CubeRage</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.CubeRage</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.CompulsionTurnsViolent</li>
+      <li>PawnDiary.Prompt.Health.Cue.ThoughtsNarrowToAnger</li>
+    </cueKeys>
+    <hediffDefNames>
+      <li>CubeRage</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_VoidShockOrTouched</defName>
+    <label>void shock or touched</label>
+    <chance>0.85</chance>
+    <weight>1.4</weight>
+    <severity>1.5</severity>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.VoidShockOrTouched</descriptionOverrideKey>
+    <cueKeys><li>PawnDiary.Prompt.Health.Cue.VoidAfterimage</li></cueKeys>
+    <hediffDefNames>
+      <li>VoidShock</li>
+      <li>VoidTouched</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_CorpseTorment</defName>
+    <label>corpse torment</label>
+    <chance>0.85</chance>
+    <weight>1.4</weight>
+    <severity>1.5</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.CorpseTorment</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.CorpseTorment</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.DeathHauntedThoughts</li>
+      <li>PawnDiary.Prompt.Health.Cue.UnnaturalGuilt</li>
+    </cueKeys>
+    <hediffDefNames>
+      <li>CorpseTorment</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_Inhumanized</defName>
+    <label>inhumanized</label>
+    <chance>1</chance>
+    <weight>2.2</weight>
+    <severity>2</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.Inhumanized</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.Inhumanized</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.VoidDetachment</li>
+      <li>PawnDiary.Prompt.Health.Cue.HumanWarmthAbsent</li>
+      <li>PawnDiary.Prompt.Health.Cue.DarkVoidVoice</li>
+    </cueKeys>
+    <visibleOnly>false</visibleOnly>
+    <hediffDefNames>
+      <li>Inhumanized</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_FleshMutation</defName>
+    <label>flesh tentacle or whip</label>
+    <chance>0.7</chance>
+    <weight>1.1</weight>
+    <severity>1.2</severity>
+    <hediffDefNames>
+      <li>Tentacle</li>
+      <li>FleshTentacle</li>
+      <li>FleshWhip</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <!-- ===== Event-coverage pass: previously missing common states (see EVENT_COVERAGE_PLAN.md).
+       Rows without keys use the live hediff label/body-part/urgency text automatically, like
+       DiaryEnchant_FeverishBody. All matchers are plain strings; DLC content stays inert when
+       the DLC is absent. -->
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_Malnutrition</defName>
+    <label>malnutrition</label>
+    <chance>0.75</chance>
+    <weight>1.3</weight>
+    <severity>1.4</severity>
+    <hediffDefNames>
+      <li>Malnutrition</li>
+    </hediffDefNames>
+    <minHediffSeverity>0.05</minHediffSeverity>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.35</chance>
+        <weight>0.9</weight>
+        <severity>1</severity>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.7</chance>
+        <weight>1.3</weight>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>0.9</chance>
+        <weight>1.6</weight>
+        <severity>1.6</severity>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>2</weight>
+        <severity>1.9</severity>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_TemperatureInjury</defName>
+    <label>heatstroke or hypothermia</label>
+    <chance>0.75</chance>
+    <weight>1.3</weight>
+    <severity>1.4</severity>
+    <hediffDefNames>
+      <li>Heatstroke</li>
+      <li>Hypothermia</li>
+    </hediffDefNames>
+    <minHediffSeverity>0.05</minHediffSeverity>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.35</chance>
+        <weight>0.9</weight>
+        <severity>1</severity>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.7</chance>
+        <weight>1.3</weight>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>0.9</chance>
+        <weight>1.6</weight>
+        <severity>1.6</severity>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>2</weight>
+        <severity>1.9</severity>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_AnestheticHaze</defName>
+    <label>anesthetic haze</label>
+    <chance>0.6</chance>
+    <weight>1</weight>
+    <severity>1.1</severity>
+    <hediffDefNames>
+      <li>Anesthetic</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_PsychicShock</defName>
+    <label>psychic shock</label>
+    <chance>0.7</chance>
+    <weight>1.1</weight>
+    <severity>1.2</severity>
+    <hediffDefNames>
+      <li>PsychicShock</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_Carcinoma</defName>
+    <label>carcinoma</label>
+    <chance>0.7</chance>
+    <weight>1.2</weight>
+    <severity>1.3</severity>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.Carcinoma</descriptionOverrideKey>
+    <cueKeys><li>PawnDiary.Prompt.Health.Cue.SlowInternalThreat</li></cueKeys>
+    <hediffDefNames>
+      <li>Carcinoma</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_Mechanites</defName>
+    <label>mechanites</label>
+    <chance>0.65</chance>
+    <weight>1.1</weight>
+    <severity>1.2</severity>
+    <hediffDefNames>
+      <li>FibrousMechanites</li>
+      <li>SensoryMechanites</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_WakeUpHigh</defName>
+    <label>wake-up high</label>
+    <chance>0.55</chance>
+    <weight>0.9</weight>
+    <severity>1</severity>
+    <hediffDefNames>
+      <li>WakeUpHigh</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_CryptosleepSickness</defName>
+    <label>cryptosleep sickness</label>
+    <chance>0.6</chance>
+    <weight>1</weight>
+    <severity>1.1</severity>
+    <hediffDefNames>
+      <li>CryptosleepSickness</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <!-- Low-chance elder texture: chronic aging conditions surface occasionally, never dominate.
+       Frail/BadBack/Cataract/HearingLoss are permanent, so a high chance here would put the same
+       context line on most pages an old pawn writes. -->
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_AgingBody</defName>
+    <label>aging body</label>
+    <chance>0.15</chance>
+    <weight>0.5</weight>
+    <severity>0.8</severity>
+    <hediffDefNames>
+      <li>Frail</li>
+      <li>BadBack</li>
+      <li>Cataract</li>
+      <li>HearingLoss</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <!-- Biotech -->
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_Deathrest</defName>
+    <label>deathrest</label>
+    <chance>0.6</chance>
+    <weight>1</weight>
+    <severity>1.1</severity>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.Deathrest</descriptionOverrideKey>
+    <cueKeys><li>PawnDiary.Prompt.Health.Cue.DeathlikeSleep</li></cueKeys>
+    <hediffDefNames>
+      <li>Deathrest</li>
+      <li>DeathrestExhaustion</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_LungRot</defName>
+    <label>lung rot</label>
+    <chance>0.7</chance>
+    <weight>1.1</weight>
+    <severity>1.2</severity>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.LungRot</descriptionOverrideKey>
+    <cueKeys><li>PawnDiary.Prompt.Health.Cue.BreathUnderStrain</li></cueKeys>
+    <hediffDefNames>
+      <li>LungRot</li>
+      <li>LungRotExposure</li>
+    </hediffDefNames>
+    <minHediffSeverity>0.05</minHediffSeverity>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <!-- Anomaly: blood-rain fury (pairs with the moodeventStormDanger group). -->
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_BloodRage</defName>
+    <label>blood rage</label>
+    <chance>0.85</chance>
+    <weight>1.4</weight>
+    <severity>1.5</severity>
+    <hediffDefNames>
+      <li>BloodRage</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <!-- Odyssey: vacuum injuries. Both plausible defName spellings listed; absent ones never match. -->
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_VacuumExposure</defName>
+    <label>vacuum exposure</label>
+    <chance>0.8</chance>
+    <weight>1.3</weight>
+    <severity>1.4</severity>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.VacuumExposure</descriptionOverrideKey>
+    <cueKeys><li>PawnDiary.Prompt.Health.Cue.VacuumBurning</li></cueKeys>
+    <hediffDefNames>
+      <li>VacuumExposure</li>
+      <li>VacuumBurn</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <!-- Odyssey O2: temporary grav nausea can color an already-authorized entry, but never creates
+       one. The matcher is a plain defName string and therefore remains inert without Odyssey. -->
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_GravNausea</defName>
+    <label>grav nausea</label>
+    <chance>0.7</chance>
+    <weight>1.1</weight>
+    <severity>1.2</severity>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.GravNausea</descriptionOverrideKey>
+    <cueKeys><li>PawnDiary.Prompt.Health.Cue.GravityTurningStomach</li></cueKeys>
+    <hediffDefNames>
+      <li>GravNausea</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+</Defs>

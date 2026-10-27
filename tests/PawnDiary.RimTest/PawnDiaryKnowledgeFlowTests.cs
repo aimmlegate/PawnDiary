@@ -2017,7 +2017,10 @@ namespace PawnDiary.RimTests
         {
             if (!condition)
             {
-                throw new AssertionException(message);
+                // The capture adapter has several legitimate refusal boundaries. Include its last
+                // status so runtime failures distinguish policy, migration, identity and capacity.
+                throw new AssertionException(message + " [factual capture: "
+                    + (scope?.Component?.lastFactualCaptureStatusForDev ?? "no_scope") + "]");
             }
         }
     }

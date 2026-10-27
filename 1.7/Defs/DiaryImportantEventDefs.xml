@@ -1,0 +1,770 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The closed important-event allowlist (design/MEMORY_SYSTEM_REDESIGN_PLAN.md §2.1): the ONLY
+  gameplay changes a pawn keeps lifelong memory records of. Everything not listed here is ignored
+  by design - raids, battles without a persistent result, temporary illness, mental breaks,
+  conversations, social fights, quests, rituals, journeys, skills, passions, inspirations, and
+  ability use deliberately have no rows.
+
+  External mods extend the system by shipping more PawnDiary.DiaryImportantEventDef rows; no C#
+  is needed. `signal` picks the capture channel, matchers are plain strings (DLC defNames sit
+  harmlessly inert without the DLC), `owners` picks which POV keeps the record, and
+  `lineTemplate` is the localized canonical fact line ("{other}" = the other pawn's saved name,
+  "{<factKey>}" = that captured fact row). DefInjected translates label + lineTemplate.
+
+  eventKind tokens are SAVED DATA - never rename them. The memoryKind/category/importance/fact/route/
+  consumer fields below are the unified factual-capture and recall contracts activated by M11.
+-->
+<Defs>
+
+  <!-- ===================== Relationships and family ===================== -->
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_LoverGained</defName>
+    <label>new lover</label>
+    <eventKind>relation.lover.gained</eventKind>
+    <topicKey>relationship</topicKey>
+    <signal>event</signal>
+    <order>10</order>
+    <matchDefNames><li>Lover</li></matchDefNames>
+    <owners>both</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>relationships</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>relation.lover.gained</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>pawn</subjectKind><equivalentExtractors><li>counterpart_pawn</li></equivalentExtractors><chapterPhasePolicy>relationship_phase</chapterPhasePolicy><chapterDirective>close_and_start_with_current_event</chapterDirective><chapterClosureReasonToken>lifecycle</chapterClosureReasonToken><fallbackLabelSource>counterpart_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <authoritativeRelationDefNames><li>Lover</li></authoritativeRelationDefNames>
+    <lineTemplate>became lovers with {other}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_Engaged</defName>
+    <label>engagement</label>
+    <eventKind>relation.fiance.gained</eventKind>
+    <topicKey>relationship</topicKey>
+    <signal>event</signal>
+    <order>10</order>
+    <matchDefNames><li>Fiance</li></matchDefNames>
+    <owners>both</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>relationships</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>relation.fiance.gained</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>pawn</subjectKind><equivalentExtractors><li>counterpart_pawn</li></equivalentExtractors><chapterPhasePolicy>relationship_phase</chapterPhasePolicy><chapterDirective>close_and_start_with_current_event</chapterDirective><chapterClosureReasonToken>lifecycle</chapterClosureReasonToken><fallbackLabelSource>counterpart_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <authoritativeRelationDefNames><li>Fiance</li></authoritativeRelationDefNames>
+    <lineTemplate>became engaged to {other}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_Married</defName>
+    <label>marriage</label>
+    <eventKind>relation.spouse.gained</eventKind>
+    <topicKey>relationship</topicKey>
+    <signal>event</signal>
+    <order>10</order>
+    <matchDefNames><li>Spouse</li></matchDefNames>
+    <owners>both</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>relationships</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>relation.spouse.gained</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>pawn</subjectKind><equivalentExtractors><li>counterpart_pawn</li></equivalentExtractors><chapterPhasePolicy>relationship_phase</chapterPhasePolicy><chapterDirective>close_and_start_with_current_event</chapterDirective><chapterClosureReasonToken>lifecycle</chapterClosureReasonToken><fallbackLabelSource>counterpart_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <authoritativeRelationDefNames><li>Spouse</li></authoritativeRelationDefNames>
+    <lineTemplate>married {other}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_Breakup</defName>
+    <label>breakup</label>
+    <eventKind>relation.lover.lost</eventKind>
+    <topicKey>relationship</topicKey>
+    <signal>event</signal>
+    <order>10</order>
+    <matchDefNames><li>ExLover</li></matchDefNames>
+    <owners>both</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>relationships</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>relation.lover.lost</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>pawn</subjectKind><equivalentExtractors><li>counterpart_pawn</li></equivalentExtractors><chapterPhasePolicy>relationship_phase</chapterPhasePolicy><chapterDirective>close_after_current_event</chapterDirective><chapterClosureReasonToken>formal_end</chapterClosureReasonToken><fallbackLabelSource>counterpart_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <authoritativeRelationDefNames><li>ExLover</li></authoritativeRelationDefNames>
+    <lineTemplate>broke up with {other}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_Divorce</defName>
+    <label>divorce</label>
+    <eventKind>relation.spouse.lost</eventKind>
+    <topicKey>relationship</topicKey>
+    <signal>event</signal>
+    <order>10</order>
+    <matchDefNames><li>ExSpouse</li></matchDefNames>
+    <owners>both</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>relationships</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>relation.spouse.lost</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>pawn</subjectKind><equivalentExtractors><li>counterpart_pawn</li></equivalentExtractors><chapterPhasePolicy>relationship_phase</chapterPhasePolicy><chapterDirective>close_after_current_event</chapterDirective><chapterClosureReasonToken>formal_end</chapterClosureReasonToken><fallbackLabelSource>counterpart_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <authoritativeRelationDefNames><li>ExSpouse</li></authoritativeRelationDefNames>
+    <lineTemplate>divorced {other}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_PsychicBondFormed</defName>
+    <label>psychic bond formed</label>
+    <eventKind>bond.psychic.formed</eventKind>
+    <topicKey>relationship</topicKey>
+    <signal>event</signal>
+    <order>20</order>
+    <matchDefNames><li>BiotechPsychicBondFormed</li></matchDefNames>
+    <owners>both</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>relationships</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>bond.psychic.formed</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>pawn</subjectKind><equivalentExtractors><li>counterpart_pawn</li></equivalentExtractors><chapterPhasePolicy>relationship_phase</chapterPhasePolicy><chapterDirective>close_and_start_with_current_event</chapterDirective><chapterClosureReasonToken>lifecycle</chapterClosureReasonToken><fallbackLabelSource>counterpart_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <constantSubjectKeys><li>bond:psychic</li></constantSubjectKeys>
+    <authoritativeRelationDefNames><li>PsychicBond</li></authoritativeRelationDefNames>
+    <lineTemplate>formed a psychic bond with {other}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_PsychicBondRuptured</defName>
+    <label>psychic bond torn</label>
+    <eventKind>bond.psychic.ruptured</eventKind>
+    <topicKey>relationship</topicKey>
+    <signal>event</signal>
+    <order>20</order>
+    <matchDefNames><li>BiotechPsychicBondRuptured</li></matchDefNames>
+    <owners>both</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>relationships</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>bond.psychic.ruptured</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>pawn</subjectKind><equivalentExtractors><li>counterpart_pawn</li></equivalentExtractors><chapterPhasePolicy>relationship_phase</chapterPhasePolicy><chapterDirective>close_after_current_event</chapterDirective><chapterClosureReasonToken>formal_end</chapterClosureReasonToken><fallbackLabelSource>counterpart_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <constantSubjectKeys><li>bond:psychic</li></constantSubjectKeys>
+    <authoritativeRelationDefNames><li>PsychicBond</li></authoritativeRelationDefNames>
+    <lineTemplate>the psychic bond with {other} was torn</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <!-- Birth is remembered by the parents (the two writers of the family birth page). The
+       vanilla tale defNames cover no-Biotech births; BiotechFamilyBirth is the canonical
+       Biotech family page. -->
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_Birth</defName>
+    <label>child born</label>
+    <eventKind>family.birth</eventKind>
+    <topicKey>relationship</topicKey>
+    <signal>event</signal>
+    <order>30</order>
+    <matchDefNames>
+      <li>BiotechFamilyBirth</li>
+      <li>GaveBirth</li>
+      <li>BabyBorn</li>
+    </matchDefNames>
+    <owners>both</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>family</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>family.birth</factKind><contextKey>child_id</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>pawn</subjectKind><equivalentExtractors><li>context:child_id</li></equivalentExtractors><chapterPhasePolicy>family_lifecycle</chapterPhasePolicy><fallbackLabelSource>context:child_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <subjectKeys>
+      <li><contextKey>child_id</contextKey><prefix>pawn</prefix></li>
+    </subjectKeys>
+    <participantKeys>
+      <li><contextKey>child_id</contextKey><nameContextKey>child_name</nameContextKey></li>
+    </participantKeys>
+    <factKeys><li>child_id</li></factKeys>
+    <lineTemplate>welcomed a newborn child</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <!-- Death fan-out (§2.1): the deceased's lover/spouse, parents, children, and siblings each
+       keep a record; ordinary witnesses do not. The capture channel builds one signal per family
+       owner with relation/victim facts already localized. -->
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_DeathFamily</defName>
+    <label>family death</label>
+    <eventKind>death.family</eventKind>
+    <topicKey>relationship</topicKey>
+    <signal>deathFamily</signal>
+    <order>10</order>
+    <matchDefNames><li>PawnDiary_DeathFamily</li></matchDefNames>
+    <owners>provided</owners>
+    <captureSourceToken>deathFamily</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>family</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>death.family</factKind><contextKey>relation</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>pawn</subjectKind><equivalentExtractors><li>extra_participant:victim</li></equivalentExtractors><chapterPhasePolicy>family_lifecycle</chapterPhasePolicy><chapterDirective>close_after_current_event</chapterDirective><chapterClosureReasonToken>lifecycle</chapterClosureReasonToken><fallbackLabelSource>context:victim</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <factKeys>
+      <li>relation</li>
+      <li>victim</li>
+    </factKeys>
+    <lineTemplate>lost {relation} {victim}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <!-- A pawn instigator remembers the kill; ordinary witnesses do not. -->
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_DeathInstigator</defName>
+    <label>killed someone</label>
+    <eventKind>death.killed</eventKind>
+    <topicKey>relationship</topicKey>
+    <signal>deathInstigator</signal>
+    <order>10</order>
+    <matchDefNames><li>PawnDiary_DeathInstigator</li></matchDefNames>
+    <owners>provided</owners>
+    <captureSourceToken>deathInstigator</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>death.killed</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <factKeys>
+      <li>victim</li>
+      <li>weapon</li>
+    </factKeys>
+    <lineTemplate>killed {victim}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <!-- ===================== Persistent body changes ===================== -->
+
+  <!-- Hediff events keep the plain hediff defName, so these rows gate on the structural
+       part_kind context token instead of names — any missing/added part matches without
+       enumerating hediff defNames. part_def is the stable BodyPartDef subject key; body_part
+       the display label. Ordinary scars never carry part_kind, so they are excluded by
+       construction. -->
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_BodyPartLost</defName>
+    <label>body part lost</label>
+    <eventKind>body.part.lost</eventKind>
+    <topicKey>body</topicKey>
+    <signal>event</signal>
+    <order>40</order>
+    <requireContext><li>part_kind=missingpart</li></requireContext>
+    <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>body.part.lost</factKind><contextKey>part_def</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:body_history</li></equivalentExtractors><chapterPhasePolicy>body_state</chapterPhasePolicy><fallbackLabelSource>context:body_part</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <subjectKeys>
+      <li><contextKey>part_def</contextKey><prefix>part</prefix></li>
+    </subjectKeys>
+    <factKeys>
+      <li>body_part</li>
+      <li>part_cause</li>
+    </factKeys>
+    <lineTemplate>lost {body_part}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_BodyPartInstalled</defName>
+    <label>part installed</label>
+    <eventKind>body.part.installed</eventKind>
+    <topicKey>body</topicKey>
+    <signal>event</signal>
+    <order>40</order>
+    <requireContext><li>part_kind=addedpart</li></requireContext>
+    <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>body.part.installed</factKind><contextKey>hediff</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:body_history</li></equivalentExtractors><chapterPhasePolicy>body_state</chapterPhasePolicy><fallbackLabelSource>context:label</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <subjectKeys>
+      <li><contextKey>part_def</contextKey><prefix>part</prefix></li>
+      <li><contextKey>hediff</contextKey><prefix>implant</prefix></li>
+    </subjectKeys>
+    <factKeys>
+      <li>label</li>
+      <li>body_part</li>
+      <li>part_tier</li>
+    </factKeys>
+    <lineTemplate>received {label}: {body_part}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <!-- Organic transplants (hearts, lungs) are installs too; separate row because context gates
+       are AND-combined. Shares the eventKind on purpose. -->
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_BodyPartInstalledOrganic</defName>
+    <label>organ transplanted</label>
+    <eventKind>body.part.installed</eventKind>
+    <topicKey>body</topicKey>
+    <signal>event</signal>
+    <order>41</order>
+    <requireContext><li>part_kind=organicpart</li></requireContext>
+    <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>body.part.installed</factKind><contextKey>hediff</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:body_history</li></equivalentExtractors><chapterPhasePolicy>body_state</chapterPhasePolicy><fallbackLabelSource>context:label</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <subjectKeys>
+      <li><contextKey>part_def</contextKey><prefix>part</prefix></li>
+      <li><contextKey>hediff</contextKey><prefix>implant</prefix></li>
+    </subjectKeys>
+    <factKeys>
+      <li>label</li>
+      <li>body_part</li>
+    </factKeys>
+    <lineTemplate>received {label}: {body_part}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <!-- Implant/prosthetic removal has no diary page of its own; the hediffRemoved channel fires
+       from the health-tracker removal listener with the same "<hediffDef>_addedpart" naming. -->
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_BodyPartRemoved</defName>
+    <label>implant removed</label>
+    <eventKind>body.part.removed</eventKind>
+    <topicKey>body</topicKey>
+    <signal>hediffRemoved</signal>
+    <order>10</order>
+    <matchSuffixes><li>_addedpart</li></matchSuffixes>
+    <owners>provided</owners>
+    <captureSourceToken>hediffRemoved</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>body.part.removed</factKind><contextKey>hediff</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:body_history</li></equivalentExtractors><chapterPhasePolicy>body_state</chapterPhasePolicy><fallbackLabelSource>context:label</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>false</authoritativePageOwned>
+    <subjectKeys>
+      <li><contextKey>part_def</contextKey><prefix>part</prefix></li>
+      <li><contextKey>hediff</contextKey><prefix>implant</prefix></li>
+    </subjectKeys>
+    <factKeys>
+      <li>label</li>
+      <li>body_part</li>
+    </factKeys>
+    <lineTemplate>had {label} removed</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <!-- Other persistent hediffs remembered ONLY when explicitly listed here (§2.1). The quiet
+       channel sees every appeared hediff regardless of diary-page policy. -->
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_PermanentCondition</defName>
+    <label>permanent condition</label>
+    <eventKind>body.condition.permanent</eventKind>
+    <topicKey>body</topicKey>
+    <signal>hediffQuiet</signal>
+    <order>10</order>
+    <matchDefNames>
+      <li>LuciferiumAddiction</li>
+      <li>Sterilized</li>
+    </matchDefNames>
+    <owners>provided</owners>
+    <captureSourceToken>hediffQuiet</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>body.condition.permanent</factKind><contextKey>hediff</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:body_history</li></equivalentExtractors><chapterPhasePolicy>body_state</chapterPhasePolicy><fallbackLabelSource>context:label</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>false</authoritativePageOwned>
+    <subjectKeys>
+      <li><contextKey>hediff</contextKey><prefix>hediff</prefix></li>
+    </subjectKeys>
+    <factKeys><li>label</li></factKeys>
+    <lineTemplate>now lives with {label}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <!-- Brainwipe is a hard autobiography boundary. This factual first memory is attempted even when
+       the ordinary arrival page or Save-new-memories policy is off; capacity may refuse only it. -->
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_BrainwipeCompleted</defName>
+    <label>brainwipe completed</label>
+    <eventKind>brainwipe.completed</eventKind>
+    <topicKey>status</topicKey>
+    <signal>event</signal>
+    <order>51</order>
+    <matchDefNames><li>PawnDiary_BrainwipeArrival</li></matchDefNames>
+    <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>brainwipe.completed</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <factKeys><li>memory_state</li></factKeys>
+    <lineTemplate>awoke after a brainwipe with no memories</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <!-- ===================== Persistent identity and status ===================== -->
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_FactionJoined</defName>
+    <label>joined the colony</label>
+    <eventKind>status.faction.joined</eventKind>
+    <topicKey>status</topicKey>
+    <signal>event</signal>
+    <order>50</order>
+    <matchDefNames><li>PawnDiary_Arrival</li></matchDefNames>
+    <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>status.faction.joined</factKind><contextKey>arrival_source</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:colony_membership</li></equivalentExtractors><chapterPhasePolicy>membership_state</chapterPhasePolicy><fallbackLabelSource>owner</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <constantSubjectKeys><li>faction</li></constantSubjectKeys>
+    <factKeys><li>arrival_source</li></factKeys>
+    <lineTemplate>joined the colony</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_GrowthMoment</defName>
+    <label>growth moment</label>
+    <eventKind>status.growth</eventKind>
+    <topicKey>status</topicKey>
+    <signal>event</signal>
+    <order>50</order>
+    <matchDefNames><li>BiotechGrowthMoment</li></matchDefNames>
+    <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>status.growth</factKind><contextKey>growth_stage</contextKey><aggregationToken>int64_range</aggregationToken><canonicalValueKind>int64</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:growth</li></equivalentExtractors><chapterPhasePolicy>growth_stage</chapterPhasePolicy><fallbackLabelSource>owner</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <factKeys>
+      <li>growth_stage</li>
+      <li>selected_trait</li>
+    </factKeys>
+    <lineTemplate>reached a growth moment</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <!-- Conversion channel: fired from the ideology listener with old/new ideo + culture facts;
+       also the moment the pawn's adopted culture is replaced (§4.1). -->
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_IdeoConversion</defName>
+    <label>conversion</label>
+    <eventKind>status.ideo.converted</eventKind>
+    <topicKey>status</topicKey>
+    <signal>ideoConversion</signal>
+    <order>10</order>
+    <matchDefNames><li>PawnDiary_IdeoConversion</li></matchDefNames>
+    <owners>provided</owners>
+    <captureSourceToken>ideoConversion</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>status.ideo.converted</factKind><contextKey>new_ideo</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:belief</li></equivalentExtractors><chapterPhasePolicy>belief_state</chapterPhasePolicy><fallbackLabelSource>context:new_ideo</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <subjectKeys>
+      <li><contextKey>new_culture</contextKey><prefix>culture</prefix></li>
+    </subjectKeys>
+    <factKeys>
+      <li>previous_ideo</li>
+      <li>new_ideo</li>
+    </factKeys>
+    <lineTemplate>converted to {new_ideo}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_RoleAssigned</defName>
+    <label>role gained</label>
+    <eventKind>status.role.gained</eventKind>
+    <topicKey>status</topicKey>
+    <signal>roleAssigned</signal>
+    <order>10</order>
+    <matchDefNames><li>PawnDiary_RoleAssigned</li></matchDefNames>
+    <owners>provided</owners>
+    <captureSourceToken>roleAssigned</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>status.role.gained</factKind><contextKey>role</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:ideology_role</li></equivalentExtractors><chapterPhasePolicy>role_state</chapterPhasePolicy><fallbackLabelSource>context:role</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <constantSubjectKeys><li>role</li></constantSubjectKeys>
+    <factKeys>
+      <li>role</li>
+      <li>ideo</li>
+    </factKeys>
+    <lineTemplate>was made {role}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_RoleRemoved</defName>
+    <label>role lost</label>
+    <eventKind>status.role.lost</eventKind>
+    <topicKey>status</topicKey>
+    <signal>roleUnassigned</signal>
+    <order>10</order>
+    <matchDefNames><li>PawnDiary_RoleUnassigned</li></matchDefNames>
+    <owners>provided</owners>
+    <captureSourceToken>roleUnassigned</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>status.role.lost</factKind><contextKey>role</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:ideology_role</li></equivalentExtractors><chapterPhasePolicy>role_state</chapterPhasePolicy><fallbackLabelSource>context:role</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <constantSubjectKeys><li>role</li></constantSubjectKeys>
+    <factKeys>
+      <li>role</li>
+      <li>ideo</li>
+    </factKeys>
+    <lineTemplate>is no longer {role}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_TitleAdvanced</defName>
+    <label>title gained</label>
+    <eventKind>status.title.advanced</eventKind>
+    <topicKey>status</topicKey>
+    <signal>event</signal>
+    <order>50</order>
+    <matchDefNames>
+      <li>RoyalTitleGained</li>
+      <li>RoyalTitlePromoted</li>
+    </matchDefNames>
+    <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>status.title.advanced</factKind><contextKey>new_value</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:royal_title</li></equivalentExtractors><chapterPhasePolicy>title_state</chapterPhasePolicy><fallbackLabelSource>context:new_value</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <constantSubjectKeys><li>title</li></constantSubjectKeys>
+    <factKeys>
+      <li>previous_value</li>
+      <li>new_value</li>
+    </factKeys>
+    <lineTemplate>became {new_value}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_TitleLost</defName>
+    <label>title lost</label>
+    <eventKind>status.title.lost</eventKind>
+    <topicKey>status</topicKey>
+    <signal>event</signal>
+    <order>50</order>
+    <matchDefNames>
+      <li>RoyalTitleDemoted</li>
+      <li>RoyalTitleLost</li>
+    </matchDefNames>
+    <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>status.title.lost</factKind><contextKey>previous_value</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:royal_title</li></equivalentExtractors><chapterPhasePolicy>title_state</chapterPhasePolicy><fallbackLabelSource>context:previous_value</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <constantSubjectKeys><li>title</li></constantSubjectKeys>
+    <factKeys>
+      <li>previous_value</li>
+      <li>new_value</li>
+    </factKeys>
+    <lineTemplate>lost the title of {previous_value}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_Psylink</defName>
+    <label>psylink</label>
+    <eventKind>status.psylink</eventKind>
+    <topicKey>status</topicKey>
+    <signal>event</signal>
+    <order>50</order>
+    <matchDefNames><li>PsylinkLevel</li></matchDefNames>
+    <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>status.psylink</factKind><contextKey>new_value</contextKey><aggregationToken>int64_range</aggregationToken><canonicalValueKind>int64</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:psylink</li></equivalentExtractors><chapterPhasePolicy>psylink_state</chapterPhasePolicy><fallbackLabelSource>owner</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <constantSubjectKeys><li>psylink</li></constantSubjectKeys>
+    <factKeys>
+      <li>previous_value</li>
+      <li>new_value</li>
+    </factKeys>
+    <lineTemplate>psylink reached level {new_value}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_XenotypeChanged</defName>
+    <label>xenotype changed</label>
+    <eventKind>body.xenotype</eventKind>
+    <topicKey>body</topicKey>
+    <signal>event</signal>
+    <order>50</order>
+    <matchDefNames><li>XenotypeChanged</li></matchDefNames>
+    <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>body.xenotype</factKind><contextKey>new_value</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:genetic_identity</li></equivalentExtractors><chapterPhasePolicy>genetic_state</chapterPhasePolicy><fallbackLabelSource>context:new_value</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <constantSubjectKeys><li>xenotype</li></constantSubjectKeys>
+    <factKeys>
+      <li>previous_value</li>
+      <li>new_value</li>
+    </factKeys>
+    <lineTemplate>became {new_value}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_GeneRewrite</defName>
+    <label>genes rewritten</label>
+    <eventKind>body.genes</eventKind>
+    <topicKey>body</topicKey>
+    <signal>event</signal>
+    <order>50</order>
+    <matchDefNames><li>GeneIdentityChanged</li></matchDefNames>
+    <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>body.genes</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:genetic_identity</li></equivalentExtractors><chapterPhasePolicy>genetic_state</chapterPhasePolicy><fallbackLabelSource>owner</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <constantSubjectKeys><li>xenotype</li></constantSubjectKeys>
+    <lineTemplate>genes were significantly rewritten</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_MechlinkInstalled</defName>
+    <label>mechlink installed</label>
+    <eventKind>status.mechlink.gained</eventKind>
+    <topicKey>status</topicKey>
+    <signal>event</signal>
+    <order>50</order>
+    <matchDefNames><li>BiotechMechlinkInstalled</li></matchDefNames>
+    <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>status.mechlink.gained</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:mechlink</li></equivalentExtractors><chapterPhasePolicy>mechlink_state</chapterPhasePolicy><fallbackLabelSource>owner</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <constantSubjectKeys><li>mechlink</li></constantSubjectKeys>
+    <lineTemplate>became a mechanitor</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_MechlinkRemoved</defName>
+    <label>mechlink removed</label>
+    <eventKind>status.mechlink.lost</eventKind>
+    <topicKey>status</topicKey>
+    <signal>event</signal>
+    <order>50</order>
+    <matchDefNames><li>BiotechMechlinkRemoved</li></matchDefNames>
+    <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>status.mechlink.lost</factKind><aggregationToken>count_occurrences</aggregationToken><canonicalValueKind>empty</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:mechlink</li></equivalentExtractors><chapterPhasePolicy>mechlink_state</chapterPhasePolicy><fallbackLabelSource>owner</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <constantSubjectKeys><li>mechlink</li></constantSubjectKeys>
+    <lineTemplate>lost the mechlink</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_PersonaBondFormed</defName>
+    <label>persona bond</label>
+    <eventKind>bond.persona.formed</eventKind>
+    <topicKey>status</topicKey>
+    <signal>event</signal>
+    <order>50</order>
+    <matchDefNames><li>PersonaWeaponBondFormed</li></matchDefNames>
+    <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>bond.persona.formed</factKind><contextKey>persona_weapon_id</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:persona_bond</li></equivalentExtractors><chapterPhasePolicy>persona_bond_state</chapterPhasePolicy><fallbackLabelSource>context:persona_weapon_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <constantSubjectKeys><li>bond:persona</li></constantSubjectKeys>
+    <subjectKeys>
+      <li><contextKey>persona_weapon_id</contextKey><prefix>weapon</prefix></li>
+    </subjectKeys>
+    <factKeys><li>persona_weapon_name</li></factKeys>
+    <lineTemplate>bonded with the persona weapon {persona_weapon_name}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_PersonaBondEnded</defName>
+    <label>persona bond ended</label>
+    <eventKind>bond.persona.ended</eventKind>
+    <topicKey>status</topicKey>
+    <signal>event</signal>
+    <order>50</order>
+    <matchDefNames><li>PersonaWeaponBondEnded</li></matchDefNames>
+    <owners>initiator</owners>
+    <captureSourceToken>event</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>personal</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>bond.persona.ended</factKind><contextKey>persona_weapon_id</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>stream</subjectKind><equivalentExtractors><li>constant:persona_bond</li></equivalentExtractors><chapterPhasePolicy>persona_bond_state</chapterPhasePolicy><fallbackLabelSource>context:persona_weapon_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>true</authoritativePageOwned>
+    <constantSubjectKeys><li>bond:persona</li></constantSubjectKeys>
+    <subjectKeys>
+      <li><contextKey>persona_weapon_id</contextKey><prefix>weapon</prefix></li>
+    </subjectKeys>
+    <factKeys><li>persona_weapon_name</li></factKeys>
+    <lineTemplate>the bond with {persona_weapon_name} ended</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <!-- ===================== M7 detached current-truth transitions ===================== -->
+
+  <!-- These rules store facts only. Their adapters settle the M6 baseline/episode first, and they
+       never create a diary page or provider request. Exact IDs are structured context, not labels. -->
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_MemoryOpinionEpisode</defName>
+    <label>opinion milestone</label>
+    <eventKind>relationship.opinion.episode</eventKind>
+    <topicKey>relationship</topicKey>
+    <signal>memoryOpinionEpisode</signal><order>10</order>
+    <matchDefNames><li>memory.opinion.episode</li></matchDefNames><owners>provided</owners>
+    <captureSourceToken>observation.opinion</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>relationships</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>relationship.opinion.episode</factKind><contextKey>episode_value</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>pawn</subjectKind><equivalentExtractors><li>context:subject_pawn_id</li></equivalentExtractors><chapterPhasePolicy>opinion_episode</chapterPhasePolicy><fallbackLabelSource>context:subject_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>false</authoritativePageOwned>
+    <factKeys><li>subject_name</li><li>from_opinion_band</li><li>to_opinion_band</li></factKeys>
+    <lineTemplate>opinion of {subject_name}: {from_opinion_band} → {to_opinion_band}</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_MemoryFormalRelation</defName>
+    <label>formal relationship change</label>
+    <eventKind>relationship.formal.state</eventKind>
+    <topicKey>relationship</topicKey>
+    <signal>memoryFormalRelation</signal><order>10</order>
+    <matchDefNames><li>memory.formal.relation</li></matchDefNames><owners>provided</owners>
+    <captureSourceToken>observation.social</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>relationships</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>relationship.formal.state</factKind><contextKey>relation_value</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>pawn</subjectKind><equivalentExtractors><li>context:subject_pawn_id</li></equivalentExtractors><chapterPhasePolicy>formal_relationship</chapterPhasePolicy><chapterDirective>close_and_start_with_current_event</chapterDirective><chapterClosureReasonToken>lifecycle</chapterClosureReasonToken><fallbackLabelSource>context:subject_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>false</authoritativePageOwned>
+    <factKeys><li>subject_name</li></factKeys>
+    <lineTemplate>the relationship with {subject_name} changed</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_MemoryRelativeState</defName>
+    <label>relative's circumstances changed</label>
+    <eventKind>family.relative.state</eventKind>
+    <topicKey>relationship</topicKey>
+    <signal>memoryRelativeState</signal><order>10</order>
+    <matchDefNames><li>memory.relative.state</li></matchDefNames><owners>provided</owners>
+    <captureSourceToken>observation.relative</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>family</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>family.relative.state</factKind><contextKey>relative_state_value</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>pawn</subjectKind><equivalentExtractors><li>context:subject_pawn_id</li></equivalentExtractors><chapterPhasePolicy>family_lifecycle</chapterPhasePolicy><fallbackLabelSource>context:subject_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>false</authoritativePageOwned>
+    <factKeys><li>subject_name</li></factKeys>
+    <lineTemplate>learned that {subject_name}'s circumstances had changed</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_MemoryFactionDiplomacy</defName>
+    <label>faction relationship changed</label>
+    <eventKind>faction.diplomacy.state</eventKind>
+    <topicKey>faction</topicKey>
+    <signal>memoryFactionDiplomacy</signal><order>10</order>
+    <matchDefNames><li>memory.faction.diplomacy</li></matchDefNames><owners>provided</owners>
+    <captureSourceToken>observation.faction</captureSourceToken>
+    <memoryKind>event</memoryKind><memoryCategory>factions</memoryCategory><baseImportance>medium</baseImportance>
+    <memoryFacts><li><factKind>faction.diplomacy.state</factKind><contextKey>faction_state_value</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>faction</subjectKind><equivalentExtractors><li>context:faction_subject_id</li></equivalentExtractors><chapterPhasePolicy>faction_diplomacy</chapterPhasePolicy><fallbackLabelSource>context:faction_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>true</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>false</authoritativePageOwned>
+    <factKeys><li>faction_name</li></factKeys>
+    <lineTemplate>the relationship with {faction_name} changed</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+  <PawnDiary.DiaryImportantEventDef>
+    <defName>Diary_ImpEvent_MemoryFactionLifecycle</defName>
+    <label>faction's status changed</label>
+    <eventKind>faction.lifecycle.state</eventKind>
+    <topicKey>faction</topicKey>
+    <signal>memoryFactionLifecycle</signal><order>10</order>
+    <matchDefNames><li>memory.faction.lifecycle</li></matchDefNames><owners>provided</owners>
+    <captureSourceToken>observation.faction</captureSourceToken>
+    <memoryKind>landmark</memoryKind><memoryCategory>factions</memoryCategory><baseImportance>high</baseImportance>
+    <memoryFacts><li><factKind>faction.lifecycle.state</factKind><contextKey>faction_lifecycle_value</contextKey><aggregationToken>ordinal_set</aggregationToken><canonicalValueKind>ordinal</canonicalValueKind></li></memoryFacts>
+    <threadRoute><subjectKind>faction</subjectKind><equivalentExtractors><li>context:faction_subject_id</li></equivalentExtractors><chapterPhasePolicy>faction_lifecycle</chapterPhasePolicy><chapterDirective>close_after_current_event</chapterDirective><chapterClosureReasonToken>lifecycle</chapterClosureReasonToken><fallbackLabelSource>context:faction_name</fallbackLabelSource></threadRoute>
+    <consolidationEligible>false</consolidationEligible><promptConsumerIds><li>ordinary_diary</li></promptConsumerIds><authoritativePageOwned>false</authoritativePageOwned>
+    <factKeys><li>faction_name</li></factKeys>
+    <lineTemplate>{faction_name}'s status changed decisively</lineTemplate>
+  </PawnDiary.DiaryImportantEventDef>
+
+</Defs>

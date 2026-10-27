@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Biotech policy. This Def uses our own classes plus plain string matchers, so it is safe to
+       load without Biotech; live adapters remain responsible for ModsConfig.BiotechActive gates. -->
+  <PawnDiary.DiaryBiotechPolicyDef>
+    <defName>Diary_BiotechPolicy</defName>
+    <label>Biotech narrative policy</label>
+
+    <growthPendingExpiryTicks>180000</growthPendingExpiryTicks>
+    <growthFallbackGraceTicks>60000</growthFallbackGraceTicks>
+    <!-- Admission limit for new ownership. Already-claimed rows survive until resolution; only the
+         fixed 2048-row corruption ceiling may truncate malformed/extreme saved state. -->
+    <maximumPendingGrowthRows>256</maximumPendingGrowthRows>
+    <opportunityBands>
+      <li>
+        <minimumTier>0</minimumTier>
+        <maximumTier>2</maximumTier>
+        <token>narrow</token>
+        <description>the child faced a narrow set of opportunities, without assigning blame for why</description>
+      </li>
+      <li>
+        <minimumTier>3</minimumTier>
+        <maximumTier>5</maximumTier>
+        <token>mixed</token>
+        <description>the child had a mixed but meaningful range of paths to choose from</description>
+      </li>
+      <li>
+        <minimumTier>6</minimumTier>
+        <maximumTier>7</maximumTier>
+        <token>broad</token>
+        <description>the child reached this moment with a broad range of possible paths</description>
+      </li>
+      <li>
+        <minimumTier>8</minimumTier>
+        <maximumTier>8</maximumTier>
+        <token>exceptional</token>
+        <description>the child reached this moment with an exceptional breadth of possible paths</description>
+      </li>
+    </opportunityBands>
+    <newInterestDescription>a new interest</newInterestDescription>
+    <deepenedInterestDescription>a deepened interest</deepenedInterestDescription>
+    <familySinceBirthNarrativeFormat>{0}&apos;s exact family continuity has been tracked since birth.</familySinceBirthNarrativeFormat>
+    <familyObservedNarrativeFormat>This growth continues the directly observed childhood story around {0}.</familyObservedNarrativeFormat>
+    <familyBaselineNarrativeFormat>This growth belongs to {0}&apos;s exact known family continuity.</familyBaselineNarrativeFormat>
+    <identityNarrativeFormat>{0}&apos;s current visible xenotype is {1}; treat it as present identity, never as a prediction about genes.</identityNarrativeFormat>
+    <geneIdentityNarrativeFormat>The visible gene-identity change affecting {0} centered on {1}; keep it as one bounded theme, never a gene list.</geneIdentityNarrativeFormat>
+    <psychicBondNarrativeFormat>{0} and {1} have a verified psychic-bond phase: {2}; do not infer romance, consent, destiny, or permanence.</psychicBondNarrativeFormat>
+
+    <familyActivityExactDefNames>
+      <li>BabyPlay</li>
+    </familyActivityExactDefNames>
+    <familyActivityPrefixes>
+      <li>Lesson</li>
+      <li>Teaching</li>
+    </familyActivityPrefixes>
+    <familyLessonAdultThoughtDefNames>
+      <li>GaveLesson</li>
+    </familyLessonAdultThoughtDefNames>
+    <familyLessonChildThoughtDefNames>
+      <li>WasTaught</li>
+    </familyLessonChildThoughtDefNames>
+    <familyActivityPairDedupTicks>2500</familyActivityPairDedupTicks>
+    <familyPregnancyHediffDefNames>
+      <li>PregnantHuman</li>
+      <li>Pregnant</li>
+    </familyPregnancyHediffDefNames>
+    <familyLaborHediffDefNames>
+      <li>PregnancyLabor</li>
+      <li>PregnancyLaborPushing</li>
+    </familyLaborHediffDefNames>
+    <matureBirthDefNames>
+      <li>GaveBirth</li>
+      <li>BabyBorn</li>
+      <li>Stillbirth</li>
+    </matureBirthDefNames>
+    <miscarriageBirtherThoughtDefNames>
+      <li>Miscarried</li>
+    </miscarriageBirtherThoughtDefNames>
+    <miscarriagePartnerThoughtDefNames>
+      <li>PartnerMiscarried</li>
+    </miscarriagePartnerThoughtDefNames>
+
+    <observationBands>
+      <li>
+        <minimumEvidence>1</minimumEvidence>
+        <token>light</token>
+        <description>there are a few exact memories of this adult teaching or playing with the child</description>
+      </li>
+      <li>
+        <minimumEvidence>4</minimumEvidence>
+        <token>steady</token>
+        <description>this adult has been a steady, directly observed presence in the child's learning</description>
+      </li>
+      <li>
+        <minimumEvidence>8</minimumEvidence>
+        <token>deep</token>
+        <description>many directly observed lessons or play moments connect this adult to the child's upbringing</description>
+      </li>
+    </observationBands>
+    <supporterMinimumEvidence>2</supporterMinimumEvidence>
+    <maximumSupporterRows>12</maximumSupporterRows>
+    <familyArcRetentionTicks>3600000</familyArcRetentionTicks>
+    <birthNamingPollTicks>2500</birthNamingPollTicks>
+    <birthNamingGraceTicks>60000</birthNamingGraceTicks>
+    <birthCorrelationExpiryTicks>2500</birthCorrelationExpiryTicks>
+    <maximumBirthWriters>2</maximumBirthWriters>
+    <!-- Admission limit for new ownership; it never evicts an established pending naming owner. -->
+    <maximumPendingBirthRows>256</maximumPendingBirthRows>
+
+    <!-- Phase 5 gene salience. Category tokens and correction lists are plain strings, not DLC
+         Def references. The selector reports at most four themes, never complete gene membership. -->
+    <geneMaximumThemes>4</geneMaximumThemes>
+    <geneDeltaBonus>100</geneDeltaBonus>
+    <geneXenogeneBonus>4</geneXenogeneBonus>
+    <geneEndogeneBonus>2</geneEndogeneBonus>
+    <geneDuplicateCategoryPenalty>30</geneDuplicateCategoryPenalty>
+    <geneForcedDefNameBonus>1000</geneForcedDefNameBonus>
+    <geneLabelCharacterLimit>80</geneLabelCharacterLimit>
+    <geneDescriptionCharacterLimit>240</geneDescriptionCharacterLimit>
+    <geneTotalTextCharacterLimit>640</geneTotalTextCharacterLimit>
+    <geneMaximumObservedDefNames>512</geneMaximumObservedDefNames>
+    <!-- Slow fallback ignores a single membership-only fluctuation. Exact xenogerm hooks still own
+         every verified non-empty mutation, and any stable xenotype Def transition always emits. -->
+    <geneMinimumFallbackChanges>2</geneMinimumFallbackChanges>
+    <geneCategoryWeights>
+      <li><category>ability</category><weight>60</weight></li>
+      <li><category>trait</category><weight>55</weight></li>
+      <li><category>resource</category><weight>50</weight></li>
+      <li><category>need</category><weight>45</weight></li>
+      <li><category>aging</category><weight>40</weight></li>
+      <li><category>environment</category><weight>35</weight></li>
+      <li><category>violence</category><weight>34</weight></li>
+      <li><category>emotion</category><weight>33</weight></li>
+      <li><category>social</category><weight>32</weight></li>
+      <li><category>capacity</category><weight>30</weight></li>
+      <li><category>appearance</category><weight>20</weight></li>
+      <li><category>stat</category><weight>10</weight></li>
+      <li><category>other</category><weight>0</weight></li>
+    </geneCategoryWeights>
+    <geneForceIncludeDefNames />
+    <geneExcludeDefNames />
+    <geneAllowDuplicateCategories />
+
+    <!-- Phase 6 mechanitor salience. Fifteen days makes an unnamed loss narratively significant;
+         explicitly player-named mechs qualify immediately. Tale lists also freeze the exact vanilla
+         pawn role that represents the acting controlled mech. -->
+    <mechanitorLongServiceTicks>900000</mechanitorLongServiceTicks>
+    <mechanitorMaximumObservedMechs>64</mechanitorMaximumObservedMechs>
+    <mechanitorMaximumBossCalls>16</mechanitorMaximumBossCalls>
+    <mechanitorCombatFirstPawnDefNames>
+      <li>KilledLongRange</li>
+      <li>KilledMelee</li>
+      <li>KilledMajorThreat</li>
+      <li>DefeatedHostileFactionLeader</li>
+    </mechanitorCombatFirstPawnDefNames>
+    <mechanitorCombatSecondPawnDefNames>
+      <li>KilledBy</li>
+    </mechanitorCombatSecondPawnDefNames>
+
+    <!-- Phase 8 psychic-bond/deathrest policy. All values are primitives; no Biotech Def is
+         resolved while loading a no-DLC game. -->
+    <deathrestSevereCompletionThreshold>0.5</deathrestSevereCompletionThreshold>
+    <deathrestCooldownTicks>900000</deathrestCooldownTicks>
+    <deathrestLifetimePageLimit>1</deathrestLifetimePageLimit>
+    <psychicBondCorrelationExpiryTicks>2500</psychicBondCorrelationExpiryTicks>
+    <maximumBondObservationRows>16</maximumBondObservationRows>
+  </PawnDiary.DiaryBiotechPolicyDef>
+</Defs>

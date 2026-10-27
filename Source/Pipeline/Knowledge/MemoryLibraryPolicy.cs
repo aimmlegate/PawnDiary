@@ -538,11 +538,16 @@ namespace PawnDiary
 
         public static int ImportanceMask(string importance)
         {
-            if (string.Equals(importance, "Minor", StringComparison.OrdinalIgnoreCase))
+            // Saved facts use low/medium/high; the older detached UI fixtures used the display-family
+            // names. Recognize both, so canonical saved rows retain their TTL and filter membership.
+            if (string.Equals(importance, MemoryContractTokens.ImportanceMinor, StringComparison.Ordinal)
+                || string.Equals(importance, "Minor", StringComparison.OrdinalIgnoreCase))
                 return ImportanceMinor;
-            if (string.Equals(importance, "Regular", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(importance, MemoryContractTokens.ImportanceRegular, StringComparison.Ordinal)
+                || string.Equals(importance, "Regular", StringComparison.OrdinalIgnoreCase))
                 return ImportanceRegular;
-            if (string.Equals(importance, "Important", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(importance, MemoryContractTokens.ImportanceImportant, StringComparison.Ordinal)
+                || string.Equals(importance, "Important", StringComparison.OrdinalIgnoreCase))
                 return ImportanceImportant;
             return 0;
         }

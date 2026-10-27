@@ -425,10 +425,9 @@ namespace PawnDiary
                 headerRight = newEntryIconRect.x - Mathf.Max(0f, WritingStyleIconRightGap);
             }
 
-            // CurrentRelease-only navigation into the selected diary owner's unified memory. The
-            // Library remains absent in LegacyShadow; opening it does not route through settings or
-            // expose any Library implementation detail to the settings surface.
-            if (MemorySystemActivationGate.IsCurrentRelease && component != null
+            // Hide unfinished manager navigation independently of the working memory pipeline.
+            if (UiStyle.memoryLibraryUiEnabled
+                && MemorySystemActivationGate.IsCurrentRelease && component != null
                 && !string.IsNullOrWhiteSpace(subject.PawnId))
             {
                 float iconSize = Mathf.Max(1f, WritingStyleIconSize);

@@ -212,6 +212,9 @@ namespace PawnDiary
         // ---- Unified-memory Library ----
         // Cards use fixed heights so the Library can compute a bounded visible window without
         // measuring every memory in a large colony. Long text lives in the selected detail pane.
+        // Keep the unfinished manager out of player navigation without disabling memory capture,
+        // recall, persistence, or the ordinary memory settings. XML can restore the UI for development.
+        public bool memoryLibraryUiEnabled = false;
         public float memoryLibraryWidth = 1120f;
         public float memoryLibraryHeight = 760f;
         public float memoryLibraryMinWidth = 640f;

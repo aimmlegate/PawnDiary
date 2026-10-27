@@ -18,6 +18,7 @@ namespace MemoryThreadTests
         public static int Run()
         {
             assertions = 0;
+            SavedImportanceTokensDriveRetention();
             OwnerSelectionUsesExactHandles();
             ImportedVisibilityAndFiltersAreExact();
             RailCompositionIsStableAndPinnedRowsAreExact();
@@ -40,6 +41,28 @@ namespace MemoryThreadTests
             ActivationAndNoGameGateFailClosed();
             MemoryLocalizationHasEnglishRussianPlaceholderParity();
             return assertions;
+        }
+
+        private static void SavedImportanceTokensDriveRetention()
+        {
+            Equal("m9.saved-importance.low", MemoryLibraryPolicy.ImportanceMinor,
+                MemoryLibraryPolicy.ImportanceMask(MemoryContractTokens.ImportanceMinor));
+            Equal("m9.saved-importance.medium", MemoryLibraryPolicy.ImportanceRegular,
+                MemoryLibraryPolicy.ImportanceMask(MemoryContractTokens.ImportanceRegular));
+            Equal("m9.saved-importance.high", MemoryLibraryPolicy.ImportanceImportant,
+                MemoryLibraryPolicy.ImportanceMask(MemoryContractTokens.ImportanceImportant));
+            Equal("m9.saved-importance.minor-expires", false,
+                MemoryLibraryPolicy.RetainedAtSnapshot(160000, 100000, false, false,
+                    MemoryLibraryPolicy.ImportanceMask(MemoryContractTokens.ImportanceMinor),
+                    60000, 120000));
+            Equal("m9.saved-importance.regular-retained", true,
+                MemoryLibraryPolicy.RetainedAtSnapshot(160000, 100000, false, false,
+                    MemoryLibraryPolicy.ImportanceMask(MemoryContractTokens.ImportanceRegular),
+                    60000, 120000));
+            Equal("m9.saved-importance.important-protected", true,
+                MemoryLibraryPolicy.RetainedAtSnapshot(long.MaxValue, 0, false, false,
+                    MemoryLibraryPolicy.ImportanceMask(MemoryContractTokens.ImportanceImportant),
+                    60000, 120000));
         }
 
         private static void RepositoryPollingIsBoundedAndResponsive()

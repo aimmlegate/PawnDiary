@@ -168,6 +168,16 @@ namespace PawnDiary
         // the real observation queue.
         private bool memoryLibraryObservationFenceBypassedForTests;
 
+        // A disposable fixture can advance only the detached Library clock. Gameplay ticking and
+        // observation keep reading the real TickManager; no save or colony time is changed.
+        internal long? memoryLibraryTickOverrideForTests;
+
+        private long MemoryLibraryNowTick()
+        {
+            return Math.Max(0L, memoryLibraryTickOverrideForTests
+                ?? Find.TickManager?.TicksGame ?? 0L);
+        }
+
         /// <summary>Clears every loaded-session publication/cache/command identity.</summary>
         private void ResetMemoryLibraryTransient()
         {
@@ -256,7 +266,7 @@ namespace PawnDiary
         /// </summary>
         internal MemoryLibraryUiRepositoryStamp MemoryLibraryRepositoryStampForUi()
         {
-            long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            long now = MemoryLibraryNowTick();
             return new MemoryLibraryUiRepositoryStamp
             {
                 diaryStateRevision = DiaryStateVersion.Current,
@@ -333,7 +343,7 @@ namespace PawnDiary
                     status = MemoryLibraryStatuses.Missing
                 };
             string ownerKey = OwnerIndexKey(query.primaryHandle);
-            long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            long now = MemoryLibraryNowTick();
 
             // The sole no-envelope active-owner form is proven by the current directory revision.
             bool zeroNoEpoch = query.primaryHandle.scopeToken == MemoryLibraryScopes.Active
@@ -357,7 +367,7 @@ namespace PawnDiary
                     MemoryEffectivePolicyProvider.PublicationRevision
                         .ToString(CultureInfo.InvariantCulture),
                     memoryLibraryLanguageDisplayRevision.ToString(CultureInfo.InvariantCulture),
-                    (Math.Max(0, Find.TickManager?.TicksGame ?? 0) / 60000L)
+                    (MemoryLibraryNowTick() / 60000L)
                         .ToString(CultureInfo.InvariantCulture),
                     zeroBoundary.ToString(CultureInfo.InvariantCulture));
                 MemoryLibraryPublication zeroPublication = ResolveCompleteLibraryPublication(
@@ -555,7 +565,7 @@ namespace PawnDiary
                 RequestMemoryLibraryOwnerBuild(ownerKey);
                 return new MemoryThreadDetailResult { status = MemoryLibraryStatuses.Preparing };
             }
-            long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            long now = MemoryLibraryNowTick();
             if (MemoryLibraryPolicy.OwnerSnapshotReachedExpiry(
                     now, owner.ownerEarliestFiniteExpiryTickExclusive))
             {
@@ -589,7 +599,7 @@ namespace PawnDiary
                 MemoryEffectivePolicyProvider.PublicationRevision
                     .ToString(CultureInfo.InvariantCulture),
                 memoryLibraryLanguageDisplayRevision.ToString(CultureInfo.InvariantCulture),
-                (Math.Max(0, Find.TickManager?.TicksGame ?? 0) / 60000L)
+                (MemoryLibraryNowTick() / 60000L)
                     .ToString(CultureInfo.InvariantCulture),
                 candidate.ttlValidUntilTickExclusive.ToString(CultureInfo.InvariantCulture));
             MemoryLibraryPublication publication = ResolveCompleteLibraryPublication(
@@ -663,7 +673,7 @@ namespace PawnDiary
                 return result;
             }
             MemoryPolicySnapshot policy = MemoryEffectivePolicyProvider.Current;
-            long snapshotNow = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            long snapshotNow = MemoryLibraryNowTick();
             if (!ShouldProjectSavedBlock(block, policy, snapshotNow))
             {
                 result.status = MemoryLibraryStatuses.Missing;
@@ -974,7 +984,7 @@ namespace PawnDiary
                 return result;
             }
             MemoryPolicySnapshot policy = MemoryEffectivePolicyProvider.Current;
-            long nowTick = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            long nowTick = MemoryLibraryNowTick();
             if (!ShouldProjectSavedBlock(block, policy, nowTick))
             {
                 // Commands are queued from detached UI state and drain later on the main thread.
@@ -1242,7 +1252,7 @@ namespace PawnDiary
 
         private bool MemoryLibrarySourceTupleChanged()
         {
-            long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            long now = MemoryLibraryNowTick();
             return memoryLibraryObservedDiaryStateVersion != DiaryStateVersion.Current
                 || memoryLibraryObservedObservationPublicationRevision
                     != memoryObservationPublicationRevision
@@ -1264,7 +1274,7 @@ namespace PawnDiary
                 diaryStateVersion = DiaryStateVersion.Current,
                 observationPublicationRevision = memoryObservationPublicationRevision,
                 settingsRevision = MemoryEffectivePolicyProvider.PublicationRevision,
-                ttlDayRevision = Math.Max(0, Find.TickManager?.TicksGame ?? 0) / 60000L,
+                ttlDayRevision = MemoryLibraryNowTick() / 60000L,
                 language = LanguageDatabase.activeLanguage,
                 diaryCount = diaries?.Count ?? 0,
                 unresolvedCount = unresolvedOwnerArchiveRows?.Count ?? 0,
@@ -1388,7 +1398,7 @@ namespace PawnDiary
 
         private bool MemoryLibraryBuildStillCurrent(MemoryLibraryDirectoryBuildJob job)
         {
-            long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            long now = MemoryLibraryNowTick();
             return job != null
                 && MemoryLibraryObservationFenceSatisfied
                 && job.diaryStateVersion == DiaryStateVersion.Current
@@ -2001,7 +2011,7 @@ namespace PawnDiary
 
         private bool MemoryLibraryListBuildStillCurrent(MemoryLibraryListBuildJob job)
         {
-            long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            long now = MemoryLibraryNowTick();
             return job != null
                 && MemoryLibraryObservationFenceSatisfied
                 && job.observationPublicationRevision
@@ -2180,7 +2190,7 @@ namespace PawnDiary
             bool active,
             MemoryLibraryLimits limits)
         {
-            long snapshotNow = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            long snapshotNow = MemoryLibraryNowTick();
             MemoryPolicySnapshot policy = MemoryEffectivePolicyProvider.Current;
             string scope = state.archiveOnly
                 ? MemoryLibraryScopes.ArchiveOnly : MemoryLibraryScopes.Active;
@@ -2624,7 +2634,7 @@ namespace PawnDiary
                     provenance.Add(item.provenanceRefId, item);
             }
             int ordinal = 0;
-            long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            long now = MemoryLibraryNowTick();
             for (int bucketIndex = 0; block.summaryPayload?.factBuckets != null
                 && bucketIndex < block.summaryPayload.factBuckets.Count; bucketIndex++)
             {
@@ -2712,7 +2722,7 @@ namespace PawnDiary
         private long SummaryFutureExpiry(SavedMemoryBlock block, MemoryPolicySnapshot policy)
         {
             if (block == null || policy == null || block.playerEdited) return long.MaxValue;
-            long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            long now = MemoryLibraryNowTick();
             if (block.kind != MemoryContractTokens.KindSummary)
                 return MemoryLibraryPolicy.FutureExpiryTick(
                     block.originalEventTick,
@@ -3290,7 +3300,7 @@ namespace PawnDiary
                 directoryRevision = memoryLibraryDirectoryRevision,
                 committedSettingsRevision = MemoryEffectivePolicyProvider.PublicationRevision,
                 languageDisplayRevision = memoryLibraryLanguageDisplayRevision,
-                ttlDayRevision = Math.Max(0, Find.TickManager?.TicksGame ?? 0) / 60000L,
+                ttlDayRevision = MemoryLibraryNowTick() / 60000L,
                 nextDayBoundary = nextDayBoundary,
                 ttlValidUntilTickExclusive = ttlValidUntilTickExclusive,
                 textContent = textContent ?? string.Empty
@@ -3303,7 +3313,7 @@ namespace PawnDiary
             MemoryLibraryPublication publication)
         {
             if (publication == null) return true;
-            long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            long now = MemoryLibraryNowTick();
             return now >= publication.ttlValidUntilTickExclusive
                 || publication.committedSettingsRevision
                     != MemoryEffectivePolicyProvider.PublicationRevision
@@ -3406,7 +3416,7 @@ namespace PawnDiary
 
         private long NextMemoryLibraryDayBoundary()
         {
-            long now = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            long now = MemoryLibraryNowTick();
             long day = now / 60000L;
             return day >= long.MaxValue / 60000L - 1
                 ? long.MaxValue : (day + 1) * 60000L;

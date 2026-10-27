@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Master Wave 10 / Ideology Phases 1-3. This Def remains DLC-neutral: the exact event strings below
+  are source ownership and mechanical correlation, never a hard Def reference or doctrine inference.
+  Phase 3 tracks passive belief state but deliberately creates no standalone reflection pages.
+-->
+<Defs>
+  <PawnDiary.DiaryBeliefPolicyDef>
+    <defName>Diary_BeliefPolicy</defName>
+    <enabled>true</enabled>
+
+    <!-- Defensive work and output caps. The pure code additionally enforces hard safety ceilings. -->
+    <maximumPreceptCandidates>128</maximumPreceptCandidates>
+    <maximumMemeCandidates>32</maximumMemeCandidates>
+    <maximumDeityCandidates>16</maximumDeityCandidates>
+    <maximumSelectedStances>2</maximumSelectedStances>
+    <defaultSelectedStances>1</defaultSelectedStances>
+    <maximumSupportingMemes>2</maximumSupportingMemes>
+    <maximumRecentSelections>16</maximumRecentSelections>
+    <maximumReflectedBeliefSourceIds>16</maximumReflectedBeliefSourceIds>
+    <beliefScanIntervalTicks>250</beliefScanIntervalTicks>
+    <maximumBeliefPawnsPerScan>4</maximumBeliefPawnsPerScan>
+    <pendingBeliefEvidenceMaxAgeTicks>3600000</pendingBeliefEvidenceMaxAgeTicks>
+    <maximumHistoryCorrelationEntries>256</maximumHistoryCorrelationEntries>
+    <historyCorrelationWindowTicks>120</historyCorrelationWindowTicks>
+    <maximumMutationCorrelationEntries>256</maximumMutationCorrelationEntries>
+    <mutationCorrelationWindowTicks>120</mutationCorrelationWindowTicks>
+    <!-- Dev-only aggregate diagnostics retain no event rows or authored text. -->
+    <maximumAutomaticDiagnosticSamples>4096</maximumAutomaticDiagnosticSamples>
+    <maximumFieldCharacters>320</maximumFieldCharacters>
+    <maximumNormalizedTokensPerField>48</maximumNormalizedTokensPerField>
+    <maximumLexicalFieldsPerDocument>96</maximumLexicalFieldsPerDocument>
+    <maximumLexicalTokensPerDocument>256</maximumLexicalTokensPerDocument>
+    <maximumDescriptionCharacters>240</maximumDescriptionCharacters>
+    <maximumIdentifierCharacters>160</maximumIdentifierCharacters>
+    <maximumTotalCharacters>1800</maximumTotalCharacters>
+    <maximumTotalLines>16</maximumTotalLines>
+
+    <!-- Conservative lexical admission and ambiguity policy. -->
+    <minimumLexicalConfidence>65</minimumLexicalConfidence>
+    <lexicalRunnerUpMargin>18</lexicalRunnerUpMargin>
+    <fuzzyRunnerUpMargin>26</fuzzyRunnerUpMargin>
+    <minimumDistinctiveTokenMatches>2</minimumDistinctiveTokenMatches>
+    <uniqueTokenMinimumCharacters>8</uniqueTokenMinimumCharacters>
+    <fuzzyTokenMinimumCharacters>7</fuzzyTokenMinimumCharacters>
+    <fuzzyMinimumDistinctiveMatches>2</fuzzyMinimumDistinctiveMatches>
+    <fuzzySimilarityMinimum>0.84</fuzzySimilarityMinimum>
+    <commonTokenMinimumDocuments>2</commonTokenMinimumDocuments>
+    <commonTokenDocumentFraction>0.55</commonTokenDocumentFraction>
+    <phraseMatchScore>42</phraseMatchScore>
+    <tokenMatchScore>18</tokenMatchScore>
+    <uniqueTokenBonus>18</uniqueTokenBonus>
+    <fuzzyMatchScore>16</fuzzyMatchScore>
+
+    <!-- Strength affects only already-relevant candidates within their categorical tier. -->
+    <selectionWeightBase>100</selectionWeightBase>
+    <secondSlotMinimumScore>900</secondSlotMinimumScore>
+    <recentSelectionPenalty>450</recentSelectionPenalty>
+    <requiredByMemeBonus>120</requiredByMemeBonus>
+    <proselytizingRoleBonus>100</proselytizingRoleBonus>
+    <meaningfulSalienceBonus>45</meaningfulSalienceBonus>
+    <majorSalienceBonus>90</majorSalienceBonus>
+    <terminalSalienceBonus>120</terminalSalienceBonus>
+    <highImpactBonus>220</highImpactBonus>
+    <mediumImpactBonus>120</mediumImpactBonus>
+    <lowImpactBonus>40</lowImpactBonus>
+
+    <!-- Certainty and future reflection-shell policy. No scheduler consumes these in Phase 0. -->
+    <certaintyMeaningfulDelta>0.05</certaintyMeaningfulDelta>
+    <certaintyMajorDelta>0.15</certaintyMajorDelta>
+    <includeStructure>true</includeStructure>
+    <includeRelatedDeity>true</includeRelatedDeity>
+    <includeKeyDeity>true</includeKeyDeity>
+    <allowDeterministicAlternativeDeity>false</allowDeterministicAlternativeDeity>
+    <quietReflectionChance>0.08</quietReflectionChance>
+    <recentBeliefEventWindowTicks>180000</recentBeliefEventWindowTicks>
+    <beliefReflectionCooldownTicks>900000</beliefReflectionCooldownTicks>
+    <maximumBeliefReflectionsPerQuadrum>2</maximumBeliefReflectionsPerQuadrum>
+    <beliefReflectionMaxTokens>360</beliefReflectionMaxTokens>
+
+    <!-- DefInjected prompt wording. The saved block contains facts only; this guidance is prepended
+         after Full/Balanced/Compact filtering at prompt-build time. -->
+    <promptFieldLabel>belief context</promptFieldLabel>
+    <promptFieldInstruction>Beliefs I held at the time. Let them color my reaction and word choice; do not invent doctrine beyond them or claim they caused what happened.</promptFieldInstruction>
+    <interpretationFactFormat>Within {0}, the view most relevant to this event was {1}: {2}</interpretationFactFormat>
+    <interpretationFactWithoutDescriptionFormat>Within {0}, the view most relevant to this event was {1}.</interpretationFactWithoutDescriptionFormat>
+
+    <!-- Categorical precedence. Lower-tier bonuses can never cross these stages in pure code. -->
+    <tierScores>
+      <li><token>source_precept</token><score>1200</score></li>
+      <li><token>exact_correlation</token><score>1000</score></li>
+      <li><token>direct_identity</token><score>900</score></li>
+      <li><token>correlation_text</token><score>750</score></li>
+      <li><token>issue_text</token><score>650</score></li>
+      <li><token>general_text</token><score>450</score></li>
+      <li><token>association</token><score>300</score></li>
+      <li><token>quiet_fallback</token><score>200</score></li>
+    </tierScores>
+
+    <eventFieldWeights>
+      <li><token>correlation</token><score>3</score></li>
+      <li><token>event_label</token><score>2.5</score></li>
+      <li><token>subject_label</token><score>2.3</score></li>
+      <li><token>object_label</token><score>2.3</score></li>
+      <li><token>ingredient_label</token><score>2.8</score></li>
+      <li><token>body_part_label</token><score>2.8</score></li>
+      <li><token>hediff_label</token><score>2.8</score></li>
+      <li><token>weapon_label</token><score>2.5</score></li>
+      <li><token>ritual_label</token><score>2.5</score></li>
+      <li><token>condition_label</token><score>2.3</score></li>
+      <li><token>semantic_alias</token><score>2.6</score></li>
+      <li><token>def_name</token><score>1.4</score></li>
+      <li><token>group</token><score>0.5</score></li>
+      <li><token>domain</token><score>0.25</score></li>
+    </eventFieldWeights>
+    <beliefFieldWeights>
+      <li><token>correlation</token><score>3</score></li>
+      <li><token>issue</token><score>2.7</score></li>
+      <li><token>precept</token><score>1.8</score></li>
+      <li><token>meme</token><score>1.2</score></li>
+    </beliefFieldWeights>
+
+    <!-- Def text is localizable through DefInjected; C# stores no English certainty prose. -->
+    <certaintyBands>
+      <li><token>fervent</token><minimum>0.85</minimum><phrase>Write with firm conviction, staying inside the supplied facts.</phrase></li>
+      <li><token>confident</token><minimum>0.60</minimum><phrase>Write with quiet assurance; do not escalate into zeal or extremism.</phrase></li>
+      <li><token>uneasy</token><minimum>0.35</minimum><phrase>Let unease and small reservations show; the belief itself still holds.</phrase></li>
+      <li><token>conflicted</token><minimum>0.15</minimum><phrase>Show an active struggle between doctrine and lived experience.</phrase></li>
+      <li><token>doubtful</token><minimum>0</minimum><phrase>Voice open questioning and uncertainty; do not force grief or a conversion.</phrase></li>
+    </certaintyBands>
+
+    <!-- Event vocabulary, not doctrine IDs. Unknown safe topic tokens remain forward-compatible. -->
+    <semanticAliases>
+      <li><topicToken>body_modification</topicToken><aliases><li>body modification</li><li>prosthetic</li><li>augmentation</li><li>artificial body part</li></aliases></li>
+      <li><topicToken>organ_use</topicToken><aliases><li>organ use</li><li>organ harvesting</li><li>organ transplant</li></aliases></li>
+      <li><topicToken>cannibalism</topicToken><aliases><li>cannibalism</li><li>human meat</li></aliases></li>
+      <li><topicToken>meals</topicToken><aliases><li>meal</li><li>food</li><li>ingredient</li></aliases></li>
+      <li><topicToken>raids</topicToken><aliases><li>raid</li><li>raiding</li></aliases></li>
+      <li><topicToken>rituals</topicToken><aliases><li>ritual</li><li>ceremony</li></aliases></li>
+      <li><topicToken>violence</topicToken><aliases><li>violence</li><li>combat</li></aliases></li>
+      <li><topicToken>charity</topicToken><aliases><li>charity</li><li>aid</li><li>refugee</li></aliases></li>
+      <li><topicToken>authority_speech</topicToken><aliases><li>authority leadership</li><li>leader social role</li><li>slavery social structure</li><li>social hierarchy</li><li>ranked authority</li><li>slavery normal part life</li></aliases></li>
+      <li><topicToken>insect_meat</topicToken><aliases><li>insect meat</li><li>insect flesh</li></aliases></li>
+      <li><topicToken>animal_meat</topicToken><aliases><li>animal meat</li><li>meat eating</li><li>carnivore diet</li></aliases></li>
+      <li><topicToken>fungus</topicToken><aliases><li>fungus food</li><li>fungus eating</li><li>dark-grown fungus</li></aliases></li>
+      <li><topicToken>nutrient_paste</topicToken><aliases><li>nutrient paste</li><li>synthetic meal</li><li>efficient healthy paste</li></aliases></li>
+      <li><topicToken>slavery</topicToken><aliases><li>slavery</li><li>enslavement</li><li>forced bondage</li></aliases></li>
+      <li><topicToken>execution</topicToken><aliases><li>prisoner execution</li><li>executing prisoners</li></aliases></li>
+      <li><topicToken>captivity</topicToken><aliases><li>prisoner captivity</li><li>imprisonment</li></aliases></li>
+      <li><topicToken>mining</topicToken><aliases><li>mining</li><li>mining valuable stone</li><li>underground mining</li></aliases></li>
+      <li><topicToken>darkness</topicToken><aliases><li>darkness</li><li>living in darkness</li><li>absence of light</li></aliases></li>
+      <li><topicToken>tree_cutting</topicToken><aliases><li>tree cutting</li><li>cutting down trees</li><li>destroying trees</li></aliases></li>
+    </semanticAliases>
+
+    <!-- Exact adapter groups. A broad raid adds violence, never charity without an aid fact. -->
+    <eventEvidenceRules>
+      <li><key>body_modification</key><sourceDomain>medical</sourceDomain><groupKey>body_modification</groupKey><addTopics><li>body_modification</li></addTopics><addSemanticAliases><li>body_modification</li></addSemanticAliases></li>
+      <li><key>organ_use</key><sourceDomain>medical</sourceDomain><groupKey>organ_use</groupKey><addTopics><li>organ_use</li></addTopics><addSemanticAliases><li>organ_use</li></addSemanticAliases></li>
+      <!-- sourceDomain is intentionally absent: ThoughtSignal stays in the thought domain while the
+           exact food policy sets groupKey=cannibal_meal before this rule expands its topics. -->
+      <li><key>cannibal_meal</key><groupKey>cannibal_meal</groupKey><addTopics><li>cannibalism</li><li>meals</li></addTopics><addSemanticAliases><li>cannibalism</li></addSemanticAliases></li>
+      <li><key>insect_meal</key><groupKey>insect_meal</groupKey><addTopics><li>insect_meat</li><li>meals</li></addTopics><addSemanticAliases><li>insect_meat</li></addSemanticAliases></li>
+      <li><key>animal_meat_meal</key><groupKey>animal_meat_meal</groupKey><addTopics><li>animal_meat</li><li>meals</li></addTopics><addSemanticAliases><li>animal_meat</li></addSemanticAliases></li>
+      <li><key>fungus_meal</key><groupKey>fungus_meal</groupKey><addTopics><li>fungus</li><li>meals</li></addTopics><addSemanticAliases><li>fungus</li></addSemanticAliases></li>
+      <li><key>nutrient_paste_meal</key><groupKey>nutrient_paste_meal</groupKey><addTopics><li>nutrient_paste</li><li>meals</li></addTopics><addSemanticAliases><li>nutrient_paste</li></addSemanticAliases></li>
+      <li><key>known_meal</key><sourceDomain>food</sourceDomain><groupKey>meal</groupKey><addTopics><li>meals</li></addTopics></li>
+      <li><key>raid_visible</key><sourceDomain>combat</sourceDomain><groupKey>raid</groupKey><addTopics><li>raids</li><li>violence</li></addTopics></li>
+      <li><key>aid_visible</key><sourceDomain>social</sourceDomain><groupKey>aid</groupKey><addTopics><li>charity</li></addTopics><addSemanticAliases><li>charity</li></addSemanticAliases></li>
+      <li><key>ritual_visible</key><sourceDomain>ritual</sourceDomain><groupKey>ritual</groupKey><addTopics><li>rituals</li></addTopics><addSemanticAliases><li>rituals</li></addSemanticAliases></li>
+      <li><key>enslave_attempt</key><sourceDomain>interaction</sourceDomain><sourceDefName>EnslaveAttempt</sourceDefName><groupKey>recruit</groupKey><addTopics><li>slavery</li><li>captivity</li></addTopics><addSemanticAliases><li>slavery</li><li>captivity</li></addSemanticAliases></li>
+      <li><key>executed_prisoner_tale</key><sourceDomain>tale</sourceDomain><sourceDefName>ExecutedPrisoner</sourceDefName><addTopics><li>execution</li><li>captivity</li><li>violence</li></addTopics><addSemanticAliases><li>execution</li><li>captivity</li></addSemanticAliases></li>
+      <li><key>sold_prisoner_tale</key><sourceDomain>tale</sourceDomain><sourceDefName>SoldPrisoner</sourceDefName><addTopics><li>slavery</li><li>captivity</li></addTopics><addSemanticAliases><li>slavery</li><li>captivity</li></addSemanticAliases></li>
+      <li><key>mined_valuable_tale</key><sourceDomain>tale</sourceDomain><sourceDefName>MinedValuable</sourceDefName><addTopics><li>mining</li></addTopics><addSemanticAliases><li>mining</li></addSemanticAliases></li>
+      <li><key>struck_mineable_tale</key><sourceDomain>tale</sourceDomain><sourceDefName>StruckMineable</sourceDefName><addTopics><li>mining</li></addTopics><addSemanticAliases><li>mining</li></addSemanticAliases></li>
+      <li><key>mining_work</key><sourceDomain>work</sourceDomain><sourceDefName>Mining</sourceDefName><addTopics><li>mining</li></addTopics><addSemanticAliases><li>mining</li></addSemanticAliases></li>
+      <li><key>rescue_thought</key><sourceDomain>thought</sourceDomain><sourceDefName>RescuedMe</sourceDefName><addTopics><li>charity</li></addTopics><addSemanticAliases><li>charity</li></addSemanticAliases></li>
+      <li><key>offered_rescue_thought</key><sourceDomain>thought</sourceDomain><sourceDefName>RescuedMeByOfferingHelp</sourceDefName><addTopics><li>charity</li></addTopics><addSemanticAliases><li>charity</li></addSemanticAliases></li>
+      <li><key>rescued_relative_thought</key><sourceDomain>thought</sourceDomain><sourceDefName>RescuedRelative</sourceDefName><addTopics><li>charity</li></addTopics><addSemanticAliases><li>charity</li></addSemanticAliases></li>
+      <li><key>rescued_thought</key><sourceDomain>thought</sourceDomain><sourceDefName>Rescued</sourceDefName><addTopics><li>charity</li></addTopics><addSemanticAliases><li>charity</li></addSemanticAliases></li>
+      <li><key>sold_prisoner_thought</key><sourceDomain>thought</sourceDomain><sourceDefName>SoldPrisoner</sourceDefName><addTopics><li>slavery</li><li>captivity</li></addTopics><addSemanticAliases><li>slavery</li><li>captivity</li></addSemanticAliases></li>
+      <li><key>executed_prisoner_thought</key><sourceDomain>thought</sourceDomain><sourceDefName>ExecutedPrisoner</sourceDefName><addTopics><li>execution</li><li>captivity</li></addTopics><addSemanticAliases><li>execution</li><li>captivity</li></addSemanticAliases></li>
+      <li><key>environment_dark_thought</key><sourceDomain>thought</sourceDomain><sourceDefName>EnvironmentDark</sourceDefName><addTopics><li>darkness</li></addTopics><addSemanticAliases><li>darkness</li></addSemanticAliases></li>
+      <li><key>connected_tree_died_thought</key><sourceDomain>thought</sourceDomain><sourceDefName>ConnectedTreeDied</sourceDefName><addTopics><li>tree_cutting</li></addTopics><addSemanticAliases><li>tree_cutting</li></addSemanticAliases></li>
+      <li><key>unnatural_darkness_condition</key><sourceDomain>condition</sourceDomain><sourceDefName>UnnaturalDarknessActive</sourceDefName><groupKey>condition</groupKey><addTopics><li>darkness</li></addTopics><addSemanticAliases><li>darkness</li></addSemanticAliases></li>
+    </eventEvidenceRules>
+
+    <!-- Mechanical ingredient categories only: no required precept, issue, meme, meal, or meat Def IDs. -->
+    <foodEvidenceRules>
+      <li><key>humanlike_meat</key><ingredientKind>humanlike_meat</ingredientKind><groupKey>cannibal_meal</groupKey><matchField>ingredient_label</matchField></li>
+      <li><key>insect_meat</key><ingredientKind>insect_meat</ingredientKind><groupKey>insect_meal</groupKey><matchField>ingredient_label</matchField></li>
+      <li><key>animal_meat</key><ingredientKind>animal_meat</ingredientKind><groupKey>animal_meat_meal</groupKey><matchField>ingredient_label</matchField></li>
+      <li><key>fungus</key><ingredientKind>fungus</ingredientKind><groupKey>fungus_meal</groupKey><matchField>ingredient_label</matchField></li>
+      <li><key>nutrient_paste</key><ingredientKind>nutrient_paste</ingredientKind><groupKey>nutrient_paste_meal</groupKey><matchField>ingredient_label</matchField></li>
+    </foodEvidenceRules>
+
+    <!-- Schema/prompt labels only; language-specific common words are suppressed per live snapshot. -->
+    <lexicalExclusions>
+      <li>event</li><li>pawn</li><li>ideology</li><li>ideoligion</li><li>precept</li><li>belief</li><li>context</li>
+    </lexicalExclusions>
+    <proselytizingPovRoles>
+      <li>converter</li><li>organizer</li><li>moral_guide</li>
+    </proselytizingPovRoles>
+
+    <!-- Suppress a generic source only while its exact downstream settings group is effectively on.
+         ConversionRitual is deliberately absent: vanilla exposes no cancel event, so its generic
+         start page remains the safe owner until a cancel-aware pending/fallback route exists. -->
+    <canonicalEventOwnershipRules>
+      <li><sourceDomain>ability</sourceDomain><sourceDefName>Convert</sourceDefName><downstreamGroupDefName>conversion</downstreamGroupDefName></li>
+      <li><sourceDomain>ability</sourceDomain><sourceDefName>Reassure</sourceDefName><downstreamGroupDefName>heartfelt</downstreamGroupDefName></li>
+      <li><sourceDomain>ability</sourceDomain><sourceDefName>Counsel</sourceDefName><downstreamGroupDefName>counsel</downstreamGroupDefName></li>
+      <li><sourceDomain>thought</sourceDomain><sourceDefName>FailedConvertAbilityInitiator</sourceDefName><downstreamGroupDefName>conversion</downstreamGroupDefName></li>
+      <li><sourceDomain>thought</sourceDomain><sourceDefName>FailedConvertAbilityRecipient</sourceDefName><downstreamGroupDefName>conversion</downstreamGroupDefName></li>
+      <li><sourceDomain>thought</sourceDomain><sourceDefName>Counselled</sourceDefName><downstreamGroupDefName>counsel</downstreamGroupDefName></li>
+      <li><sourceDomain>thought</sourceDomain><sourceDefName>Counselled_MoodBoost</sourceDefName><downstreamGroupDefName>counsel</downstreamGroupDefName></li>
+      <li><sourceDomain>thought</sourceDomain><sourceDefName>CounselFailed</sourceDefName><downstreamGroupDefName>counsel</downstreamGroupDefName></li>
+    </canonicalEventOwnershipRules>
+
+    <!-- Exact context-only outcomes from vanilla's already-authorized Counsel PlayLog rows. These
+         tokens describe mood mechanics only; they do not request doctrine resolution or mutation. -->
+    <counselEventRules>
+      <li>
+        <sourceDefName>Counsel_Success</sourceDefName>
+        <downstreamGroupDefName>counsel</downstreamGroupDefName>
+        <resultToken>success</resultToken>
+        <moodEffectToken>relief_or_boost</moodEffectToken>
+      </li>
+      <li>
+        <sourceDefName>Counsel_Failure</sourceDefName>
+        <downstreamGroupDefName>counsel</downstreamGroupDefName>
+        <resultToken>failure</resultToken>
+        <moodEffectToken>penalty</moodEffectToken>
+      </li>
+    </counselEventRules>
+
+    <!-- Exact already-authorized mutation consumers. Interaction recipients own the four mechanics;
+         the breaking pawn initiates IdeoChange. Shape checks prevent an adjacent same-tick action from
+         lending the wrong success/failure or certainty direction to a page. Counsel remains absent:
+         its separate pure policy carries mood/thought outcome only. The code fallback list is empty. -->
+    <mutationEventRules>
+      <li>
+        <sourceDomain>mental_state</sourceDomain>
+        <sourceDefName>IdeoChange</sourceDefName>
+        <downstreamGroupDefName>beliefCrisis</downstreamGroupDefName>
+        <subjectRole>initiator</subjectRole>
+        <evidenceGroupKey>crisis</evidenceGroupKey>
+        <requiredCauseToken>conversion_attempt</requiredCauseToken>
+        <conversionResult>known</conversionResult>
+        <certaintyDirection>any</certaintyDirection>
+        <ideologyChange>any</ideologyChange>
+        <requireAttemptedIdeology>true</requireAttemptedIdeology>
+      </li>
+      <li>
+        <sourceDomain>interaction</sourceDomain>
+        <sourceDefName>ConvertIdeoAttempt</sourceDefName>
+        <downstreamGroupDefName>conversion</downstreamGroupDefName>
+        <subjectRole>recipient</subjectRole>
+        <evidenceGroupKey>conversion</evidenceGroupKey>
+        <requiredCauseToken>conversion_attempt</requiredCauseToken>
+        <conversionResult>known</conversionResult>
+        <certaintyDirection>any</certaintyDirection>
+        <ideologyChange>any</ideologyChange>
+        <requireAttemptedIdeology>true</requireAttemptedIdeology>
+      </li>
+      <li>
+        <sourceDomain>interaction</sourceDomain>
+        <sourceDefName>Convert_Success</sourceDefName>
+        <downstreamGroupDefName>conversion</downstreamGroupDefName>
+        <subjectRole>recipient</subjectRole>
+        <evidenceGroupKey>conversion</evidenceGroupKey>
+        <requiredCauseToken>conversion_attempt</requiredCauseToken>
+        <conversionResult>success</conversionResult>
+        <certaintyDirection>any</certaintyDirection>
+        <ideologyChange>changed</ideologyChange>
+        <requireAttemptedIdeology>true</requireAttemptedIdeology>
+      </li>
+      <li>
+        <sourceDomain>interaction</sourceDomain>
+        <sourceDefName>Convert_Failure</sourceDefName>
+        <downstreamGroupDefName>conversion</downstreamGroupDefName>
+        <subjectRole>recipient</subjectRole>
+        <evidenceGroupKey>conversion</evidenceGroupKey>
+        <requiredCauseToken>conversion_attempt</requiredCauseToken>
+        <conversionResult>failure</conversionResult>
+        <certaintyDirection>decrease</certaintyDirection>
+        <ideologyChange>unchanged</ideologyChange>
+        <requireAttemptedIdeology>true</requireAttemptedIdeology>
+      </li>
+      <li>
+        <sourceDomain>interaction</sourceDomain>
+        <sourceDefName>Reassure</sourceDefName>
+        <downstreamGroupDefName>heartfelt</downstreamGroupDefName>
+        <subjectRole>recipient</subjectRole>
+        <evidenceGroupKey>reassurance</evidenceGroupKey>
+        <requiredCauseToken>certainty_offset</requiredCauseToken>
+        <conversionResult>none</conversionResult>
+        <certaintyDirection>increase</certaintyDirection>
+        <ideologyChange>unchanged</ideologyChange>
+        <requireAttemptedIdeology>false</requireAttemptedIdeology>
+      </li>
+    </mutationEventRules>
+
+    <!-- Empty by design. Add only a documented, gated, regression-tested metadata failure. -->
+    <correlationOverrides />
+
+    <detailBudgets>
+      <li><detailLevel>full</detailLevel><maximumLines>16</maximumLines><maximumCharacters>1800</maximumCharacters><includeDescriptions>true</includeDescriptions><includeStructure>true</includeStructure><includeMemes>true</includeMemes><includeDeity>true</includeDeity></li>
+      <li><detailLevel>balanced</detailLevel><maximumLines>9</maximumLines><maximumCharacters>1000</maximumCharacters><includeDescriptions>false</includeDescriptions><includeStructure>true</includeStructure><includeMemes>true</includeMemes><includeDeity>true</includeDeity></li>
+      <li><detailLevel>compact</detailLevel><maximumLines>5</maximumLines><maximumCharacters>520</maximumCharacters><includeDescriptions>false</includeDescriptions><includeStructure>false</includeStructure><includeMemes>false</includeMemes><includeDeity>true</includeDeity></li>
+    </detailBudgets>
+  </PawnDiary.DiaryBeliefPolicyDef>
+</Defs>

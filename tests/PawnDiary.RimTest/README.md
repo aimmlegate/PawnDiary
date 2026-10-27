@@ -34,6 +34,20 @@ finds RimTest Redux relative to `RimWorldManaged`; if the framework lives elsewh
 
 ## Run (manual, in-game)
 
+For RimWorld 1.7, build the separate .NET 10 projects instead:
+
+```powershell
+dotnet build Source\PawnDiary.1.7.csproj
+dotnet build tests\PawnDiary.RimTest\PawnDiary.RimTest.1.7.csproj
+```
+
+These write `1.7/Assemblies/PawnDiary.dll` and
+`tests/PawnDiary.RimTest/1.7/Assemblies/PawnDiary.RimTest.dll`. The core build also copies
+the shared XML from `1.6/Defs` and `1.6/Patches` into the 1.7 package. Continue editing XML
+in `1.6`; rebuild 1.7 to refresh its copy. Set `RimWorldManaged` to the directory containing
+`Assembly-CSharp.dll` and `UnityStubs.dll` for a nonstandard 1.7 installation. `LoadFolders.xml`
+selects exactly one runtime DLL and one matching test DLL for each game version.
+
 1. Enable **Harmony**, **RimTest Redux**, and **Pawn Diary** (the `About.xml` load-order hint already
    asks the game to load RimTest Redux first; it is not a player dependency).
 2. Launch RimWorld. Open **Mod Options → RimTest Redux → Open Test Runner**.

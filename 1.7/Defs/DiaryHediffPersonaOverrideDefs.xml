@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Temporary writing-style overrides from active pawn hediffs.
+
+  These rules do not change the pawn's saved DiaryPersonaDef. They only replace the writing-style
+  rule while generating a first-person prompt for a pawn with a matching active hediff.
+
+  String matchers are DLC-safe: if a DLC or modded hediff is absent, the rule simply never matches.
+-->
+<Defs>
+
+  <PawnDiary.DiaryHediffPersonaOverrideDef>
+    <defName>HediffPersonaOverride_Inhumanized</defName>
+    <label>Inhumanized void writing style</label>
+    <priority>100</priority>
+    <personaDefName>DiaryPersona_InhumanizedVoid</personaDefName>
+    <visibleOnly>false</visibleOnly>
+    <hediffDefNames>
+      <li>Inhumanized</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryHediffPersonaOverrideDef>
+
+  <PawnDiary.DiaryHediffPersonaOverrideDef>
+    <defName>HediffPersonaOverride_CrumbledMind</defName>
+    <label>Crumbled mind collapsed writing style</label>
+    <priority>40</priority>
+    <personaDefName>DiaryPersona_CrumbledMindCollapse</personaDefName>
+    <hediffDefNames>
+      <li>CrumbledMind</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryHediffPersonaOverrideDef>
+
+  <PawnDiary.DiaryHediffPersonaOverrideDef>
+    <defName>HediffPersonaOverride_TraumaSavant</defName>
+    <label>Trauma savant silent writing style</label>
+    <priority>110</priority>
+    <personaDefName>DiaryPersona_TraumaSavantSilent</personaDefName>
+    <hediffDefNames>
+      <li>TraumaSavant</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryHediffPersonaOverrideDef>
+
+  <PawnDiary.DiaryHediffPersonaOverrideDef>
+    <defName>HediffPersonaOverride_Joywire</defName>
+    <label>Joywire happiness-haze writing style</label>
+    <priority>20</priority>
+    <personaDefName>DiaryPersona_JoywireHaze</personaDefName>
+    <hediffDefNames>
+      <li>Joywire</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryHediffPersonaOverrideDef>
+
+  <PawnDiary.DiaryHediffPersonaOverrideDef>
+    <defName>HediffPersonaOverride_BlissLobotomy</defName>
+    <label>Bliss lobotomy deep-haze writing style</label>
+    <priority>35</priority>
+    <personaDefName>DiaryPersona_BlissLobotomyHaze</personaDefName>
+    <hediffDefNames>
+      <li>BlissLobotomy</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryHediffPersonaOverrideDef>
+
+  <PawnDiary.DiaryHediffPersonaOverrideDef>
+    <defName>HediffPersonaOverride_Mindscrew</defName>
+    <label>Mindscrew pain-needle writing style</label>
+    <priority>25</priority>
+    <personaDefName>DiaryPersona_MindscrewPain</personaDefName>
+    <hediffDefNames>
+      <li>Mindscrew</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryHediffPersonaOverrideDef>
+
+  <!-- Proper drunkenness (not a light buzz) loosens the writing. AlcoholHigh stages start at:
+       warm 0, tipsy 0.25, drunk 0.4, hammered 0.7, blackout 0.9 — the 0.4 floor starts the voice
+       change at "drunk", so a single beer never triggers it. Lowest current priority: any
+       story/condition override outranks being drunk. -->
+  <PawnDiary.DiaryHediffPersonaOverrideDef>
+    <defName>HediffPersonaOverride_Drunk</defName>
+    <label>Drunk rambling writing style</label>
+    <priority>15</priority>
+    <personaDefName>DiaryPersona_DrunkRambling</personaDefName>
+    <minSeverity>0.4</minSeverity>
+    <hediffDefNames>
+      <li>AlcoholHigh</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryHediffPersonaOverrideDef>
+
+</Defs>

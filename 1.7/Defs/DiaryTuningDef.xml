@@ -1,0 +1,618 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Tuning knobs for Pawn Diary. Edit a value and restart the game to retune behavior WITHOUT
+  recompiling (see DiaryTuningDef.cs for what each field means). Every value here equals the
+  code default, so deleting this file or omitting a field changes nothing.
+-->
+<Defs>
+
+  <PawnDiary.DiaryTuningDef>
+    <defName>Diary_Tuning</defName>
+
+<!-- Deduplication windows (game ticks; 60 ticks ≈ 1 second) -->
+    <socialFightDedupTicks>300</socialFightDedupTicks>
+    <mentalBreakDedupTicks>2500</mentalBreakDedupTicks>
+    <taleDedupTicks>2500</taleDedupTicks>
+    <moodEventDedupTicks>2500</moodEventDedupTicks>
+    <thoughtDedupTicks>2500</thoughtDedupTicks>
+    <romanceDedupTicks>2500</romanceDedupTicks>
+    <raidDedupTicks>2500</raidDedupTicks>
+    <!-- Ordinary raids delay LLM generation so entries can catch the warning/approach phase.
+         Drop-pod raids and infestations bypass this delay. -->
+    <raidGenerationDelayTicks>2500</raidGenerationDelayTicks>
+    <questDedupTicks>2500</questDedupTicks>
+    <ritualDedupTicks>2500</ritualDedupTicks>
+    <abilityDedupTicks>300</abilityDedupTicks>
+    <!-- Integration-API events (same eventKey + pawn/pair), unless the adapter overrides per request. -->
+    <externalEventDedupTicks>2500</externalEventDedupTicks>
+    <!-- Short generic safety net for same event type + pawn, and shared cross-source shapes like death pages. -->
+    <genericEventTypeDedupTicks>60</genericEventTypeDedupTicks>
+
+    <!-- Ability-use sampling. A no/short-cooldown ability uses abilityUseMinChance; longer
+         cooldowns approach abilityUseMaxChance. The reference cooldown is the midpoint of the
+         curve, so 60000 ticks (~1 in-game day) gives roughly halfway between min and max. -->
+    <abilityUseMinChance>0.03</abilityUseMinChance>
+    <abilityUseMaxChance>0.75</abilityUseMaxChance>
+    <abilityUseReferenceCooldownTicks>60000</abilityUseReferenceCooldownTicks>
+
+    <!-- Ordered ritual-quality map. First maxExclusive greater than RimWorld's progress/power
+         value wins. These are saved context labels; prompts should respect the weight without
+         naming the label directly. -->
+    <ritualQualityBands>
+      <li>
+        <maxExclusive>0.25</maxExclusive>
+        <label>terrible</label>
+      </li>
+      <li>
+        <maxExclusive>0.5</maxExclusive>
+        <label>weak</label>
+      </li>
+      <li>
+        <maxExclusive>0.75</maxExclusive>
+        <label>decent</label>
+      </li>
+      <li>
+        <maxExclusive>1</maxExclusive>
+        <label>strong</label>
+      </li>
+      <li>
+        <maxExclusive>9999</maxExclusive>
+        <label>excellent</label>
+      </li>
+    </ritualQualityBands>
+
+    <!-- Surroundings scan -->
+    <!-- nearbyRadius: search radius in cells around pawn for notable objects -->
+    <nearbyRadius>5</nearbyRadius>
+    <!-- maxNearbyThings: candidate cap before weighted random pick -->
+    <maxNearbyThings>6</maxNearbyThings>
+    <coldBelowC>0</coldBelowC>
+    <hotAboveC>32</hotAboveC>
+
+    <!-- Weather mentions. Chance (0..1) an outdoor entry mentions the current weather, per weather.
+         Clear is 0 (never noted); mild weather low, dramatic weather high, so weather stops
+         dominating diary openings. Weathers not listed use the favorability fallbacks below, so
+         DLC/modded weather still scales with severity. Keyed by WeatherDef.defName. -->
+    <weatherMentionChances>
+      <li><weather>Clear</weather><chance>0</chance></li>
+      <li><weather>Overcast</weather><chance>0.2</chance></li>        <!-- Odyssey -->
+      <li><weather>Fog</weather><chance>0.25</chance></li>
+      <li><weather>SnowGentle</weather><chance>0.3</chance></li>
+      <li><weather>Rain</weather><chance>0.35</chance></li>
+      <li><weather>Windy</weather><chance>0.45</chance></li>          <!-- Odyssey -->
+      <li><weather>FoggyRain</weather><chance>0.45</chance></li>
+      <li><weather>BlindFog</weather><chance>0.6</chance></li>        <!-- Odyssey -->
+      <li><weather>SnowHard</weather><chance>0.7</chance></li>
+      <li><weather>ToxRain</weather><chance>0.85</chance></li>        <!-- Odyssey -->
+      <li><weather>TorrentialRain</weather><chance>0.85</chance></li> <!-- Odyssey -->
+      <li><weather>DryThunderstorm</weather><chance>0.9</chance></li>
+      <li><weather>RainyThunderstorm</weather><chance>0.9</chance></li>
+      <li><weather>Sandstorm</weather><chance>0.9</chance></li>       <!-- Odyssey -->
+      <li><weather>Blizzard</weather><chance>0.95</chance></li>       <!-- Odyssey -->
+      <li><weather>BloodRain</weather><chance>1</chance></li>         <!-- Anomaly -->
+      <li><weather>GrayPall</weather><chance>1</chance></li>          <!-- Anomaly -->
+      <li><weather>DeathPall</weather><chance>1</chance></li>         <!-- Anomaly -->
+    </weatherMentionChances>
+    <!-- Fallbacks for weathers not listed above, by WeatherDef.favorability. -->
+    <weatherChanceVeryBad>0.9</weatherChanceVeryBad>
+    <weatherChanceBad>0.5</weatherChanceBad>
+    <weatherChanceNeutral>0.25</weatherChanceNeutral>
+    <weatherChanceDefault>0</weatherChanceDefault>
+
+    <!-- Health -->
+    <painVisibleAbove>0.03</painVisibleAbove>
+    <bleedVisibleAbove>0.01</bleedVisibleAbove>
+    <lowCapacityThreshold>0.80</lowCapacityThreshold>
+
+    <!-- Prompt enchantments: severity bucket thresholds and per-group cue cap for the optional
+         "important context" prompt line. Eligibility and weights stay in DiaryPromptEnchantmentDefs. -->
+    <promptEnchantmentMinorHediffSeverity>0.05</promptEnchantmentMinorHediffSeverity>
+    <promptEnchantmentModerateHediffSeverity>0.25</promptEnchantmentModerateHediffSeverity>
+    <promptEnchantmentMajorHediffSeverity>0.50</promptEnchantmentMajorHediffSeverity>
+    <promptEnchantmentCriticalHediffSeverity>0.75</promptEnchantmentCriticalHediffSeverity>
+    <promptEnchantmentCloudedConsciousnessBelow>0.55</promptEnchantmentCloudedConsciousnessBelow>
+    <promptEnchantmentFadingConsciousnessBelow>0.35</promptEnchantmentFadingConsciousnessBelow>
+    <promptEnchantmentBarelyConsciousBelow>0.20</promptEnchantmentBarelyConsciousBelow>
+    <promptEnchantmentMaxImpactCues>3</promptEnchantmentMaxImpactCues>
+
+    <!-- Consciousness: first-person generation gate. Ordinary pages for pawns below this level are
+         skipped, while permanent body changes can bypass the floor because anesthesia, coma, or the
+         transformation itself must not erase the lasting event. Separate from display staggering. -->
+    <minimumConsciousnessForFirstPersonGeneration>0.11</minimumConsciousnessForFirstPersonGeneration>
+    <generatePermanentBodyChangesWhileIncapacitated>true</generatePermanentBodyChangesWhileIncapacitated>
+    <!-- Exact fallback event defNames; semantic gene/body-part/mechlink/ghoul context is recognized too.
+         Plain strings are DLC-safe: names for absent content simply never occur. -->
+    <permanentBodyChangeDefNames>
+      <li>XenotypeChanged</li>
+      <li>GeneIdentityChanged</li>
+      <li>PsylinkLevel</li>
+      <li>BiotechMechlinkInstalled</li>
+      <li>BiotechMechlinkRemoved</li>
+      <li>PawnDiary_GhoulTransformation</li>
+    </permanentBodyChangeDefNames>
+
+    <!-- Display staggering: low-consciousness handwriting distortion (0..4 intensity). A pawn whose
+         Consciousness level is below a band gets at least that intensity; the first matching band
+         wins (checked 4 -> 1). -->
+    <staggeredConsciousnessIntensity4Below>0.14</staggeredConsciousnessIntensity4Below>
+    <staggeredConsciousnessIntensity3Below>0.20</staggeredConsciousnessIntensity3Below>
+    <staggeredConsciousnessIntensity2Below>0.35</staggeredConsciousnessIntensity2Below>
+    <staggeredConsciousnessIntensity1Below>0.55</staggeredConsciousnessIntensity1Below>
+
+    <!-- Display staggering: intoxication severity distortion (0..4 intensity). Driven by an
+         intoxicating hediff's severity; which hediffs count as intoxicating is owned by the
+         Diary_TextDecorations rules. The first band the severity reaches wins (checked 4 -> 1). -->
+    <intoxicationSeverityIntensity4At>1.05</intoxicationSeverityIntensity4At>
+    <intoxicationSeverityIntensity3At>0.80</intoxicationSeverityIntensity3At>
+    <intoxicationSeverityIntensity2At>0.55</intoxicationSeverityIntensity2At>
+    <intoxicationSeverityIntensity1At>0.30</intoxicationSeverityIntensity1At>
+
+    <!-- Mood-impact condition families. GameCondition defNames that are always positive (or always
+         negative) for affected colonists, used as the name-based fallback when a condition has no
+         measurable mood offset. Matched case-insensitively by exact defName. Plain strings only;
+         a DLC-only entry (e.g. GrayPall) is inert without its DLC. -->
+    <positiveMoodConditionDefNames>
+      <li>Aurora</li>
+      <li>Party</li>
+      <li>PsychicSoothe</li>
+      <li>PsychicEmanation</li>
+    </positiveMoodConditionDefNames>
+    <negativeMoodConditionDefNames>
+      <li>Eclipse</li>
+      <li>ToxicFallout</li>
+      <li>VolcanicWinter</li>
+      <li>Flashstorm</li>
+      <li>GrayPall</li>
+      <li>DeathPall</li>
+    </negativeMoodConditionDefNames>
+
+    <!-- Misc -->
+    <diaryLineMaxChars>160</diaryLineMaxChars>
+    <!-- Previous-entry ending context added to the next first-person prompt so the model can
+         continue from the last page without seeing the full diary history. -->
+    <previousEntryEndingSentenceCount>2</previousEntryEndingSentenceCount>
+    <previousEntryEndingMaxChars>280</previousEntryEndingMaxChars>
+    <!-- Newest diary events (colony-wide) kept "hot" for background catch-up/title/orphan scans and
+         prompt continuity. Older entries remain saved and visible as archive history. This is a
+         global count across all pawns; the per-pawn retention cap lives in mod settings. -->
+    <activeScanEventWindow>1000</activeScanEventWindow>
+    <!-- Fresh full-generation requests queued after the initial request exhausts every API lane.
+         Exhausted pages are skipped with one warning and never become player-facing error cards. -->
+    <automaticGenerationRetryLimit>3</automaticGenerationRetryLimit>
+    <!-- Display-only fallback for archived pending entries that are no longer retried. They show
+         prompt facts instead of an endless writing indicator. -->
+    <archivedFallbackTitleWords>6</archivedFallbackTitleWords>
+    <archivedFallbackTextMaxChars>240</archivedFallbackTextMaxChars>
+    <!-- Public integration API context snapshot. Other mods receive at most this many recent
+         completed page summaries, each capped to one short sentence. -->
+    <integrationContextMaxEntries>8</integrationContextMaxEntries>
+    <integrationContextSummaryMaxChars>220</integrationContextSummaryMaxChars>
+    <!-- Public integration API entry-stats read. GetEntryStats counts matching diary rows; without a
+         cap it would walk a pawn's entire archive. This bounds the archive scan per call (newest-first),
+         so an adapter calling stats on a long-lived colonist stays main-thread cheap. Counts become
+         approximate beyond the cap. -->
+    <integrationStatsMaxArchiveScan>500</integrationStatsMaxArchiveScan>
+    <!-- External event prompt-fragment and prompt-enchantment candidate caps. These bound
+         adapter-authored prompt context before it is stored on the event. -->
+    <integrationPromptFragmentMaxChars>1200</integrationPromptFragmentMaxChars>
+    <integrationPromptEnchantmentMaxCandidates>6</integrationPromptEnchantmentMaxCandidates>
+    <integrationPromptEnchantmentCandidateMaxChars>160</integrationPromptEnchantmentCandidateMaxChars>
+    <integrationPromptEnchantmentCandidateWeight>1.5</integrationPromptEnchantmentCandidateWeight>
+    <!-- External direct-text injection caps. These bound caller-authored saved prose and titles. -->
+    <integrationDirectTextMaxChars>4000</integrationDirectTextMaxChars>
+    <integrationDirectTitleMaxChars>120</integrationDirectTitleMaxChars>
+    <!-- Public integration API token-spend guardrails. The window is game ticks (60 ticks ≈ 1
+         second). Request caps stop accidental loops; token caps use a conservative maxTokens estimate
+         for queued main entries and title requests. Set a cap to 0 to disable that specific cap. -->
+    <integrationPromptBudgetEnabled>true</integrationPromptBudgetEnabled>
+    <integrationPromptBudgetWindowTicks>2500</integrationPromptBudgetWindowTicks>
+    <integrationPromptBudgetMaxRequestsPerSource>10</integrationPromptBudgetMaxRequestsPerSource>
+    <integrationPromptBudgetMaxRequestsGlobal>30</integrationPromptBudgetMaxRequestsGlobal>
+    <integrationPromptBudgetMaxTokensPerSource>20000</integrationPromptBudgetMaxTokensPerSource>
+    <integrationPromptBudgetMaxTokensGlobal>60000</integrationPromptBudgetMaxTokensGlobal>
+    <!-- Hidden-token reserve added to visible output for native model families whose cheapest
+         supported thinking mode remains enabled (Gemini low/minimal and Ollama GPT-OSS). -->
+    <lowThinkingHeadroomTokens>1024</lowThinkingHeadroomTokens>
+    <!-- Diary UI long-history loading budget. Work is sliced across frames so opening a diary with
+         thousands of pages does not freeze the game. -->
+    <uiHistoryScanMaxEventsPerFrame>60</uiHistoryScanMaxEventsPerFrame>
+    <uiHistoryScanFrameBudgetSeconds>0.00075</uiHistoryScanFrameBudgetSeconds>
+    <!-- Minimum biological age for first-person diary ownership/generation. Below this, colonists can
+         still appear as context in someone else's entry, but do not write their own pages. Set to 7 so
+         children keep a diary in the naive child voice/psychotype catalogs; raise back to 13 to disable
+         child diary writing (the child catalogs then only matter for crystallization continuity). -->
+    <minimumFirstPersonAgeYears>7</minimumFirstPersonAgeYears>
+    <!-- Biological age at which both voice layers (writing style + psychotype) re-roll from the child
+         catalogs onto the adult catalogs. 13 is the final vanilla growth moment. -->
+    <psychotypeCrystallizationAgeYears>13</psychotypeCrystallizationAgeYears>
+
+    <!-- Beauty buckets -->
+    <beautyBeautiful>2</beautyBeautiful>
+    <beautyPleasant>0.3</beautyPleasant>
+    <beautyUgly>-2</beautyUgly>
+
+    <!-- Mood buckets (percent) -->
+    <moodHappy>75</moodHappy>
+    <moodStable>50</moodStable>
+    <moodStressed>30</moodStressed>
+
+    <!-- Pain buckets (fraction) -->
+    <painSevere>0.4</painSevere>
+    <painModerate>0.18</painModerate>
+
+    <!-- Opinion buckets (opinion points) -->
+    <opinionDevoted>60</opinionDevoted>
+    <opinionFriendly>25</opinionFriendly>
+    <opinionNeutralAbove>-10</opinionNeutralAbove>
+    <opinionStrainedAbove>-40</opinionStrainedAbove>
+
+    <!-- Thought recording thresholds -->
+    <thoughtMinMoodOffset>5</thoughtMinMoodOffset>
+    <thoughtEatingMinMoodOffset>15</thoughtEatingMinMoodOffset>
+
+    <!-- Thoughts to always ignore (substring match in defName) -->
+    <thoughtIgnoreTokens>
+      <li>Room</li>
+      <li>Environment</li>
+      <li>ObservedCorpse</li>
+    </thoughtIgnoreTokens>
+
+    <!-- Thoughts that bypass magnitude threshold (always recorded if they have duration) -->
+    <thoughtBypassThresholdTokens>
+      <li>Death</li>
+      <li>Died</li>
+      <li>Killed</li>
+      <li>Executed</li>
+      <li>Banished</li>
+      <li>Abandoned</li>
+    </thoughtBypassThresholdTokens>
+
+    <!-- Thoughts classified as eating-related (use higher threshold) -->
+    <thoughtEatingTokens>
+      <li>Ate</li>
+      <li>Food</li>
+      <li>Meal</li>
+      <li>Cannibalism</li>
+      <li>RawFood</li>
+    </thoughtEatingTokens>
+
+    <!-- Temporary thoughts folded into one ambient day note instead of immediate entries -->
+    <thoughtAmbientTokens>
+      <li>Nuzzled</li>
+      <li>KindWordsMood</li>
+      <li>InsultedMood</li>
+      <li>AttendedParty</li>
+      <li>AttendedConcert</li>
+      <li>HeldConcert</li>
+      <li>EncouragingSpeech</li>
+      <li>InspirationalSpeech</li>
+      <li>TerribleSpeech</li>
+      <li>SleptInBarracks</li>
+      <li>ObservedLayingRottingCorpse</li>
+    </thoughtAmbientTokens>
+    <thoughtAmbientWindowTicks>60000</thoughtAmbientWindowTicks>
+    <thoughtAmbientMinEventsToWrite>2</thoughtAmbientMinEventsToWrite>
+    <thoughtAmbientMaxSampleLines>5</thoughtAmbientMaxSampleLines>
+
+    <!-- Situational thought progression scanner. These thoughts are active need/environment
+         stages, not temporary memories, so they are scanned by current stage. Severity is ordered
+         low -> high even when the vanilla stage list is not. -->
+    <thoughtProgressionScanIntervalTicks>250</thoughtProgressionScanIntervalTicks>
+    <thoughtProgressionDedupTicks>2500</thoughtProgressionDedupTicks>
+    <thoughtProgressionRules>
+      <li>
+        <categoryKey>food</categoryKey>
+        <thoughtDefName>NeedFood</thoughtDefName>
+        <stages>
+          <li><stageIndex>2</stageIndex><severity>1</severity></li> <!-- malnourished -->
+          <li><stageIndex>3</stageIndex><severity>2</severity></li> <!-- badly malnourished -->
+          <li><stageIndex>4</stageIndex><severity>3</severity></li> <!-- starving -->
+          <li><stageIndex>5</stageIndex><severity>4</severity></li> <!-- advanced starvation -->
+          <li><stageIndex>6</stageIndex><severity>5</severity></li> <!-- extreme starvation -->
+        </stages>
+      </li>
+      <li>
+        <categoryKey>rest</categoryKey>
+        <thoughtDefName>NeedRest</thoughtDefName>
+        <stages>
+          <li><stageIndex>1</stageIndex><severity>1</severity></li> <!-- tired -->
+          <li><stageIndex>2</stageIndex><severity>2</severity></li> <!-- exhausted -->
+        </stages>
+      </li>
+      <li>
+        <categoryKey>outdoors</categoryKey>
+        <thoughtDefName>NeedOutdoors</thoughtDefName>
+        <stages>
+          <li><stageIndex>1</stageIndex><severity>1</severity></li> <!-- trapped underground -->
+          <li><stageIndex>0</stageIndex><severity>2</severity></li> <!-- entombed underground -->
+        </stages>
+      </li>
+      <li>
+        <categoryKey>chemical</categoryKey>
+        <thoughtDefName>DrugDesireInterest</thoughtDefName>
+        <stages>
+          <li><stageIndex>1</stageIndex><severity>1</severity></li> <!-- chemical hunger -->
+          <li><stageIndex>2</stageIndex><severity>2</severity></li> <!-- chemical starvation -->
+        </stages>
+      </li>
+      <li>
+        <categoryKey>chemical</categoryKey>
+        <thoughtDefName>DrugDesireFascination</thoughtDefName>
+        <stages>
+          <li><stageIndex>1</stageIndex><severity>1</severity></li> <!-- chemical hunger -->
+          <li><stageIndex>2</stageIndex><severity>2</severity></li> <!-- chemical starvation -->
+        </stages>
+      </li>
+    </thoughtProgressionRules>
+
+    <!-- Hediff progression scan. New hediffs are caught by AddHediff; this slow scan only watches
+         matched active hediffs for XML-configured severity-step increases. -->
+    <hediffProgressionScanIntervalTicks>2500</hediffProgressionScanIntervalTicks>
+
+    <!-- Body-part event policy. All entries are plain defName strings, never Def references, so
+         DLC/modded content that is absent from a player's install simply never matches. -->
+    <bodyPartTierOverrideAnomalous>
+      <li>AdrenalHeart</li>        <!-- Anomaly -->
+      <li>CorrosiveHeart</li>      <!-- Anomaly -->
+      <li>MetalbloodHeart</li>     <!-- Anomaly -->
+      <li>RevenantVertebrae</li>   <!-- Anomaly -->
+    </bodyPartTierOverrideAnomalous>
+    <bodyPartTierOverrideCrude />
+    <bodyPartTierOverrideProsthetic />
+    <bodyPartTierOverrideBionic />
+    <bodyPartTierOverrideArchotech />
+    <bodyPartCravesTraitDefNames>
+      <li>Transhumanist</li>
+    </bodyPartCravesTraitDefNames>
+    <bodyPartDespisesTraitDefNames>
+      <li>BodyPurist</li>
+    </bodyPartDespisesTraitDefNames>
+    <bodyPartInhumanizedHediffDefNames>
+      <li>Inhumanized</li>         <!-- Anomaly -->
+    </bodyPartInhumanizedHediffDefNames>
+    <bodyPartCrudeEfficiencyBelow>0.9</bodyPartCrudeEfficiencyBelow>
+    <bodyPartProstheticEfficiencyMax>1.0</bodyPartProstheticEfficiencyMax>
+    <bodyPartBionicEfficiencyMax>1.3</bodyPartBionicEfficiencyMax>
+
+    <!-- Pawn progression scanner. First scan baselines existing saves, then passion skills emit only
+         at configured milestones. Psylink detection matches hediff defNames by string for DLC safety. -->
+    <progressionScanIntervalTicks>2500</progressionScanIntervalTicks>
+    <progressionSkillMilestones>
+      <li>8</li>
+      <li>12</li>
+      <li>16</li>
+      <li>20</li>
+    </progressionSkillMilestones>
+    <psylinkHediffDefNames>
+      <li>PsychicAmplifier</li>
+    </psylinkHediffDefNames>
+
+    <!-- Work diary sampling. Work has no one-shot event hook, so the mod periodically samples
+         current colonist jobs, then applies chance and cooldown gates. -->
+    <workScanIntervalTicks>2500</workScanIntervalTicks>
+    <workBaseChance>0.08</workBaseChance>
+    <workSameTypeCooldownTicks>180000</workSameTypeCooldownTicks>
+    <workRecentDifferentTypeMultiplier>0.5</workRecentDifferentTypeMultiplier>
+    <workPassionChanceMultiplier>1.4</workPassionChanceMultiplier>
+    <workNegativeChanceMultiplier>1.2</workNegativeChanceMultiplier>
+    <workDarkStudyChanceMultiplier>1.5</workDarkStudyChanceMultiplier>
+    <workLowSkillThreshold>4</workLowSkillThreshold>
+
+    <!-- Day reflection (end-of-day summary). Set daySummaryEnabled false to fall back to the
+         old per-source ambient notes. Weights are relative; raise one to make that kind of
+         moment survive selection more often. -->
+    <daySummaryEnabled>true</daySummaryEnabled>
+    <daySummaryMaxHighlights>3</daySummaryMaxHighlights>
+    <!-- Signal kinds that can justify creating a day reflection. Valid tokens:
+         event, opinion, hediff, news, filler. Leave news/filler out to keep colony letters and
+         common batched events as background only; add either to let it generate summaries. -->
+    <daySummaryImportantSignalKinds>
+      <li>event</li>
+      <li>opinion</li>
+      <li>hediff</li>
+    </daySummaryImportantSignalKinds>
+    <daySummaryOpinionDeltaThreshold>15</daySummaryOpinionDeltaThreshold>
+    <daySummaryWeightCriticalEvent>1</daySummaryWeightCriticalEvent>
+    <daySummaryWeightMajorEvent>0.7</daySummaryWeightMajorEvent>
+    <daySummaryWeightHediff>0.8</daySummaryWeightHediff>
+    <daySummaryWeightOpinionShift>0.6</daySummaryWeightOpinionShift>
+    <daySummaryWeightFiller>0.15</daySummaryWeightFiller>
+    <daySummaryWeightNews>0.3</daySummaryWeightNews>
+    <daySummaryWeightDigest>0.25</daySummaryWeightDigest>
+    <!-- Pacing: after this many low-value pages in one day, further ones for that pawn fold into a
+         short digest the evening reflection can mention instead of becoming their own entries.
+         Set to 0 to turn the cap off. Important and combat moments are never paced. -->
+    <lowSalienceDailySoftCap>2</lowSalienceDailySoftCap>
+    <dayDigestMaxLines>4</dayDigestMaxLines>
+
+    <!-- Rare quadrum reflection. Pawns are deterministically spread across the final timing window
+         so a whole colony does not queue long reflections on the same night. maxPromptEvents is the
+         prompt evidence cap; the full qualifying count is still sent as context. -->
+    <quadrumReflectionEnabled>true</quadrumReflectionEnabled>
+    <!-- Adds at most one important page from the matching quadrum one year earlier. -->
+    <onThisDayQuadrumCallbackEnabled>true</onThisDayQuadrumCallbackEnabled>
+    <quadrumReflectionTimingWindowDays>3</quadrumReflectionTimingWindowDays>
+    <quadrumReflectionMinImportantEntries>6</quadrumReflectionMinImportantEntries>
+    <quadrumReflectionMaxPromptEvents>8</quadrumReflectionMaxPromptEvents>
+    <quadrumReflectionMaxTokens>350</quadrumReflectionMaxTokens>
+
+    <!-- Rare yearly pawn arc reflections. Existing diary pages are sampled as memories; this state
+         only controls cadence and repetition, not a separate history database. -->
+    <arcReflectionEnabled>true</arcReflectionEnabled>
+    <arcReflectionMaxEntriesPerYear>2</arcReflectionMaxEntriesPerYear>
+    <arcReflectionAllowSecondMajorEntry>true</arcReflectionAllowSecondMajorEntry>
+    <arcReflectionSecondEntryMinGapDays>30</arcReflectionSecondEntryMinGapDays>
+    <arcReflectionMajorSeverityThreshold>90</arcReflectionMajorSeverityThreshold>
+    <arcReflectionForceAfterYearDay>45</arcReflectionForceAfterYearDay>
+    <arcReflectionMemoryShortfallRetryTicks>60000</arcReflectionMemoryShortfallRetryTicks>
+    <arcReflectionTerminalRetryMaxTicks>3600000</arcReflectionTerminalRetryMaxTicks>
+    <arcReflectionMinMemoriesPreferred>4</arcReflectionMinMemoriesPreferred>
+    <arcReflectionMinMemoriesForced>3</arcReflectionMinMemoriesForced>
+    <arcReflectionMaxMemories>8</arcReflectionMaxMemories>
+    <arcReflectionRecentlyUsedMemoryCap>16</arcReflectionRecentlyUsedMemoryCap>
+    <arcReflectionMemorySnippetMaxChars>220</arcReflectionMemorySnippetMaxChars>
+    <arcReflectionMaxTokens>420</arcReflectionMaxTokens>
+    <arcReflectionMajorXenotypeDefNames>
+      <li>Sanguophage</li>
+    </arcReflectionMajorXenotypeDefNames>
+    <arcReflectionHighStakesDefNameTokens>
+      <li>Void</li>
+      <li>HeartAttack</li>
+      <li>AncientDanger</li>
+      <li>PrisonBreak</li>
+    </arcReflectionHighStakesDefNameTokens>
+
+    <!-- Optional voice cues (historical "humor" names retained for compatibility). Base probability
+         an eligible first-person entry gets one structural cue appended to its prompt. These XML
+         values are available in Advanced tuning; there is no ordinary player-facing toggle. -->
+    <humorChance>0.20</humorChance>
+    <!-- Stable unweighted cue repertoire owned by each identified writer, independently per tier. -->
+    <humorCueRepertoireSize>2</humorCueRepertoireSize>
+    <!-- Flat multiplier on humorChance for a writer with an upbeat temperament (Optimist, Sanguine,
+         or Anomaly's Joyous trait) or a Social skill passion (minor or burning). Not cumulative:
+         matching several qualifiers still applies this multiplier once, never stacked. -->
+    <humorElevatedChanceMultiplier>2</humorElevatedChanceMultiplier>
+    <!-- Flat multiplier on humorChance for a writer with a dour/anxious/unfeeling temperament
+         (Pessimist, Depressive, Nervous, Neurotic, Very neurotic, Psychopath, or Anomaly's Disturbing
+         trait). Below 1 to make humor rarer. Mutually exclusive with the elevated multiplier: a writer
+         who qualifies for both offsets back to the base rate. -->
+    <humorReducedChanceMultiplier>0.5</humorReducedChanceMultiplier>
+    <humorElevatedTraitKeys>
+      <li>NaturalMood:2</li> <!-- sanguine -->
+      <li>NaturalMood:1</li> <!-- optimist -->
+      <li>Joyous</li>        <!-- Anomaly; inert without DLC -->
+    </humorElevatedTraitKeys>
+    <humorReducedTraitKeys>
+      <li>NaturalMood:-1</li> <!-- pessimist -->
+      <li>NaturalMood:-2</li> <!-- depressive -->
+      <li>Nerves:-1</li>      <!-- nervous -->
+      <li>Neurotic:1</li>     <!-- neurotic -->
+      <li>Neurotic:2</li>     <!-- very neurotic -->
+      <li>Psychopath</li>
+      <li>Disturbing</li>     <!-- Anomaly; inert without DLC -->
+    </humorReducedTraitKeys>
+
+    <!-- Quality Wave A5. At most this many other free colonists appear in a pairwise POV's compact
+         relationships fact. One slot is reserved for the strongest named direct relation. -->
+    <identitySummaryMaxRelations>2</identitySummaryMaxRelations>
+
+    <!-- Quality Wave B2. An eligible first-person event includes its event-time mood with the exact
+         product of the global apply chance and the matching inclusive-upper-bound band chance. -->
+    <moodSnapshotApplyChance>0.6</moodSnapshotApplyChance>
+    <moodSnapshotChances>
+      <li><maxPercent>15</maxPercent><chance>0.95</chance></li>
+      <li><maxPercent>35</maxPercent><chance>0.50</chance></li>
+      <li><maxPercent>65</maxPercent><chance>0.12</chance></li>
+      <li><maxPercent>85</maxPercent><chance>0.30</chance></li>
+      <li><maxPercent>101</maxPercent><chance>0.55</chance></li>
+    </moodSnapshotChances>
+
+    <!-- Quality Wave H1. A raid page can quote the strongest moment or two from the POV pawn's own
+         fight. Generation waits battleBeatsQuietTicks after that pawn's last combat-log entry, retries
+         every battleBeatsRetryIntervalTicks while the fight is unresolved, and gives up at
+         battleBeatsMaxAgeTicks so an endless siege still produces a page. Kind tokens below are the
+         stable schema words in BattleBeatsPolicy; transition means a pawn went down or died. -->
+    <battleBeatsEnabled>true</battleBeatsEnabled>
+    <battleBeatsMaxCount>2</battleBeatsMaxCount>
+    <battleBeatsScanBackBattles>8</battleBeatsScanBackBattles>
+    <battleBeatsScanBackEntries>200</battleBeatsScanBackEntries>
+    <battleBeatsRetryIntervalTicks>250</battleBeatsRetryIntervalTicks>
+    <battleBeatsQuietTicks>1200</battleBeatsQuietTicks>
+    <battleBeatsMaxAgeTicks>30000</battleBeatsMaxAgeTicks>
+    <battleBeatsMaxChars>240</battleBeatsMaxChars>
+    <battleBeatsGraceTicks>600</battleBeatsGraceTicks>
+    <battleBeatsScores>
+      <li><kind>transition</kind><score>100</score></li>
+      <li><kind>hit</kind><score>60</score></li>
+      <li><kind>deflected</kind><score>25</score></li>
+      <li><kind>miss</kind><score>10</score></li>
+      <li><kind>other</kind><score>5</score></li>
+    </battleBeatsScores>
+
+    <!-- Quality Wave H6. A sculpture whose art tale is about a colony deed can produce one quiet page.
+         Only one page exists per deed across every artwork that ever depicts it; this chance decides
+         whether a given artwork is the one that claims it. Sampling is deterministic per artwork, so
+         re-initializing the same sculpture never rerolls. Set enabled false to silence the feature. -->
+    <artImmortalizationEnabled>true</artImmortalizationEnabled>
+    <artImmortalizationChance>0.50</artImmortalizationChance>
+
+    <!-- Quality Wave H2. A slow scanner for the dates and totals a colonist would notice themselves.
+         Every pawn's FIRST scan only records where they already are, so loading an old save never
+         produces a burst of missed pages. Turn any sub-feature off through its own settings row
+         (Birthday / Colony anniversary / Remembered loss / Personal record), not from here.
+
+         arrivalAnniversary*: whole years since joining worth a page, then the repeating step used
+         above the highest listed year (10 + 5 = 15, 20, 25…). Years 4 and 6 stay silent on purpose.
+
+         bondedDeath*: which losses are remembered, and how the memory fades. The priority list is
+         CLOSEST BOND FIRST — it decides both who survives the memory cap and whose name leads a
+         combined page. Rows are plain relation defNames, so a relation from content the player does
+         not own simply never matches. The first bondedDeathGuaranteedYears anniversaries are certain;
+         the next year uses bondedDeathFirstDecayChance, and each year after multiplies by
+         bondedDeathDecayMultiplier until it settles on bondedDeathFloorChance, so an old loss becomes
+         rare but never impossible. Sampling is deterministic per pawn/victim/year, so a reload cannot
+         reroll it.
+
+         recordMilestones: personal tallies and the totals worth a page. Record defNames are looked up
+         silently, so a modded or removed record is ignored instead of throwing. Each threshold fires
+         at most once ever, measured against a monotonic high-water mark. -->
+    <anniversaryScanIntervalTicks>15000</anniversaryScanIntervalTicks>
+    <arrivalAnniversaryMilestoneYears>
+      <li>1</li>
+      <li>2</li>
+      <li>3</li>
+      <li>5</li>
+      <li>10</li>
+    </arrivalAnniversaryMilestoneYears>
+    <arrivalAnniversaryRecurringIntervalYears>5</arrivalAnniversaryRecurringIntervalYears>
+    <bondedDeathRelationPriority>
+      <li>Spouse</li>
+      <li>Fiance</li>
+      <li>Lover</li>
+      <li>Child</li>
+      <li>Parent</li>
+      <li>Bond</li>       <!-- bonded animal; inert for a pawn who never bonded with one -->
+      <li>Sibling</li>
+    </bondedDeathRelationPriority>
+    <bondedDeathMemoryCap>16</bondedDeathMemoryCap>
+    <bondedDeathGuaranteedYears>3</bondedDeathGuaranteedYears>
+    <bondedDeathFirstDecayChance>0.60</bondedDeathFirstDecayChance>
+    <bondedDeathDecayMultiplier>0.65</bondedDeathDecayMultiplier>
+    <bondedDeathFloorChance>0.05</bondedDeathFloorChance>
+    <bondedDeathMaxCombinedNames>3</bondedDeathMaxCombinedNames>
+    <recordMilestones>
+      <li>
+        <recordDefName>Kills</recordDefName>
+        <thresholds><li>10</li><li>25</li><li>50</li><li>100</li></thresholds>
+      </li>
+      <li>
+        <recordDefName>MealsCooked</recordDefName>
+        <thresholds><li>100</li><li>500</li><li>1000</li><li>5000</li></thresholds>
+      </li>
+      <li>
+        <recordDefName>ThingsConstructed</recordDefName>
+        <thresholds><li>100</li><li>500</li><li>1000</li><li>5000</li></thresholds>
+      </li>
+    </recordMilestones>
+
+    <!-- Output-language directive. When true, every request's system prompt ends with one localized
+         line naming the active RimWorld language, so the model is told what to write in instead of
+         guessing it from the prompt wording. Set false to restore the old implicit behavior. -->
+    <outputLanguageDirectiveEnabled>true</outputLanguageDirectiveEnabled>
+
+    <!-- Prompt anti-repetition guard (queue-time). When a freshly assembled first-person prompt
+         looks too similar to the pawn's recent stored prompts, its rerollable enhancements
+         (instruction/tone variant, prompt enchantment, humor cue) are re-picked before dispatch.
+         Best-effort: generation is never blocked, even if every reroll still looks similar. -->
+    <promptAntiRepeatEnabled>true</promptAntiRepeatEnabled>
+    <!-- Word-token Jaccard similarity (0..1) at or above which a fresh prompt counts as "too
+         similar". Higher = stricter (the guard triggers less often). 1 effectively disables it
+         unless a prompt is an exact token match. -->
+    <promptAntiRepeatSimilarityThreshold>0.8</promptAntiRepeatSimilarityThreshold>
+    <!-- How many of the pawn's most recent stored prompts the fresh prompt is compared against. -->
+    <promptAntiRepeatRecentPrompts>5</promptAntiRepeatRecentPrompts>
+    <!-- Maximum reroll attempts per queued prompt once it is flagged too similar. -->
+    <promptAntiRepeatMaxRerolls>2</promptAntiRepeatMaxRerolls>
+  </PawnDiary.DiaryTuningDef>
+
+</Defs>

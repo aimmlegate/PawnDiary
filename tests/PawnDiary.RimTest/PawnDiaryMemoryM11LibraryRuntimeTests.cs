@@ -394,14 +394,15 @@ namespace PawnDiary.RimTests
             var policyScope =
                 new PawnDiaryMemoryM11RuntimeFixture.AppliedPolicyScope(scope.Component);
             MemoryPolicySnapshot priorPolicy = policyScope.PriorPolicy;
+            var clockScope = new PawnDiaryMemoryM11RuntimeFixture.LibraryClockScope(scope.Component);
             const string client = "rimtest-memory-library-ttl-command";
             try
             {
-                // A player may intentionally configure immediate Minor expiry. Publish a retained
-                // baseline so this fixture can first enqueue a valid row before crossing its TTL.
+                // The Library sees one elapsed day while gameplay time remains untouched. Retain
+                // the row for two days, then shorten to the supported one-day minimum after enqueue.
                 MemorySettingsPolicyFieldsV1 retainedFields = priorPolicy.ToFields();
                 retainedFields.minorMemoryLifetimeDays = Math.Max(
-                    1, retainedFields.minorMemoryLifetimeDays);
+                    2, retainedFields.minorMemoryLifetimeDays);
                 retainedFields.regularMemoryLifetimeDays = Math.Max(
                     retainedFields.minorMemoryLifetimeDays,
                     retainedFields.regularMemoryLifetimeDays);
@@ -438,8 +439,12 @@ namespace PawnDiary.RimTests
                         MemoryLibraryViews.Standalone);
                 MemoryBlockRow row = standalone.rows
                     .Select(item => item.standalone)
-                    .Single(item => item.projectedHighestImportanceMask
+                    .SingleOrDefault(item => item.projectedHighestImportanceMask
                         == MemoryLibraryPolicy.ImportanceMinor);
+                Require(row != null,
+                    "The retained Minor fixture row was missing before enqueue. Returned importance masks: "
+                        + string.Join(",", standalone.rows.Select(item =>
+                            item.standalone.projectedHighestImportanceMask.ToString())));
                 var draft = new MemoryLibraryUiEditDraft
                 {
                     recordHandle = row.recordHandle,
@@ -460,7 +465,7 @@ namespace PawnDiary.RimTests
                     "The TTL command fixture could not queue its initially valid edit.");
 
                 MemorySettingsPolicyFieldsV1 fields = retainedPolicy.ToFields();
-                fields.minorMemoryLifetimeDays = 0;
+                fields.minorMemoryLifetimeDays = 1;
                 var immediateMinorTtl = new MemoryPolicySnapshot(
                     MemoryPolicyNormalizer.CurrentSettingsSchemaVersion,
                     false,
@@ -484,6 +489,7 @@ namespace PawnDiary.RimTests
             }
             finally
             {
+                clockScope.Dispose();
                 policyScope.Dispose();
                 try
                 {
@@ -853,8 +859,17 @@ namespace PawnDiary.RimTests
             var policyScope =
                 new PawnDiaryMemoryM11RuntimeFixture.AppliedPolicyScope(scope.Component);
             MemoryPolicySnapshot priorPolicy = policyScope.PriorPolicy;
+            var clockScope = new PawnDiaryMemoryM11RuntimeFixture.LibraryClockScope(scope.Component);
             try
             {
+                MemorySettingsPolicyFieldsV1 baselineFields = priorPolicy.ToFields();
+                baselineFields.minorMemoryLifetimeDays = Math.Max(2, baselineFields.minorMemoryLifetimeDays);
+                baselineFields.regularMemoryLifetimeDays = Math.Max(
+                    baselineFields.minorMemoryLifetimeDays, baselineFields.regularMemoryLifetimeDays);
+                policyScope.Publish(new MemoryPolicySnapshot(
+                    MemoryPolicyNormalizer.CurrentSettingsSchemaVersion, false, baselineFields,
+                    "rimtest-rebuild-retained-ttl-" + Guid.NewGuid().ToString("N")),
+                    "The TTL rebuild fixture could not publish its retained baseline policy.");
                 Pawn pawn = scope.CreateAdultColonist();
                 string ownerId = pawn.GetUniqueLoadID();
                 string display = "PawnDiary M11 TTL Rebuild "
@@ -921,8 +936,8 @@ namespace PawnDiary.RimTests
                     MemoryLibraryViews.Standalone);
 
                 MemorySettingsPolicyFieldsV1 fields = priorPolicy.ToFields();
-                fields.minorMemoryLifetimeDays = 0;
-                fields.regularMemoryLifetimeDays = 0;
+                fields.minorMemoryLifetimeDays = 1;
+                fields.regularMemoryLifetimeDays = 1;
                 var immediateTtl = new MemoryPolicySnapshot(
                     MemoryPolicyNormalizer.CurrentSettingsSchemaVersion,
                     false,
@@ -977,6 +992,7 @@ namespace PawnDiary.RimTests
             }
             finally
             {
+                clockScope.Dispose();
                 policyScope.Dispose();
                 PawnDiaryMemoryM11RuntimeFixture.ResetLibraryAndTearDown(scope);
             }

@@ -7,4 +7,9 @@
          load it in an ordinary player setup where that optional development mod is absent. -->
     <li IfModActive="ilyvion.rimtestredux">tests/PawnDiary.RimTest</li>
   </v1.6>
+  <v1.7>
+    <li>/</li>
+    <li>1.7</li>
+    <li IfModActive="ilyvion.rimtestredux">tests/PawnDiary.RimTest/1.7</li>
+  </v1.7>
 </loadFolders>

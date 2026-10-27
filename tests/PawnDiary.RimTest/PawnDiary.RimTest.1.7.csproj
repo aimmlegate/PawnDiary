@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Build the existing integration suites for the user's 1.7 runner; never launch the game. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>PawnDiary.RimTest</AssemblyName>
+    <RootNamespace>PawnDiary.RimTests</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <LangVersion>7.3</LangVersion>
+    <OutputPath>1.7\Assemblies\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj\**;bin\**;1.7\**</DefaultItemExcludes>
+    <RimWorldManaged Condition="'$(RimWorldManaged)'=='' and '$(RIMWORLD_MANAGED)'!=''">$(RIMWORLD_MANAGED)</RimWorldManaged>
+    <RimWorldManaged Condition="'$(RimWorldManaged)'==''">$(MSBuildProjectDirectory)\..\..\..\..</RimWorldManaged>
+    <RimTestReduxAssemblies Condition="'$(RimTestReduxAssemblies)'=='' and '$(RIMTEST_REDUX_ASSEMBLIES)'!=''">$(RIMTEST_REDUX_ASSEMBLIES)</RimTestReduxAssemblies>
+    <RimTestReduxAssemblies Condition="'$(RimTestReduxAssemblies)'==''">$(RimWorldManaged)\..\..\workshop\content\294100\3762405308\1.6\Assemblies</RimTestReduxAssemblies>
+    <NoWarn>$(NoWarn);SYSLIB0050</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Source\PawnDiary.1.7.csproj" Private="false" />
+    <Reference Include="Assembly-CSharp" HintPath="$(RimWorldManaged)\Assembly-CSharp.dll" Private="false" />
+    <Reference Include="UnityStubs" HintPath="$(RimWorldManaged)\UnityStubs.dll" Private="false" />
+    <Reference Include="0Harmony" HintPath="..\..\Source\Libs\0Harmony.dll" Private="false" />
+    <Reference Include="RimTestRedux" HintPath="$(RimTestReduxAssemblies)\RimTestRedux.dll" Private="false" />
+  </ItemGroup>
+</Project>

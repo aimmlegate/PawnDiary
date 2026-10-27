@@ -959,6 +959,11 @@ namespace PawnDiary
 
         // ── Persist drafts ───────────────────────────────────────────────────────────────────────────
 
+        // Optional memory admission normally refuses silently. Keep just the most recent status for
+        // the integration runner, so a failed capture assertion identifies the failing boundary.
+        // This is transient: it never changes a save, adds a retry, or appears in the player UI.
+        internal string lastFactualCaptureStatusForDev = "not_attempted";
+
         /// <summary>
         /// Stores classifier drafts on their owners: deterministic dedup (§2.2), per-pawn cap
         /// enforcement at insert (oldest of that owner drops first).
@@ -1019,13 +1024,19 @@ namespace PawnDiary
         /// </summary>
         private bool PersistFactualDraft(FactualMemoryDraft draft)
         {
+            lastFactualCaptureStatusForDev = "invalid_draft";
             if (draft == null || string.IsNullOrWhiteSpace(draft.ownerPawnId)) return false;
             bool requiredLifecycleLandmark = FactualDraftIsRequiredLifecycleLandmark(draft);
             bool brainwipeCompletionLandmark = FactualDraftIsBrainwipeCompletionLandmark(draft);
             string captureStatus;
             if (!requiredLifecycleLandmark
-                && !MemoryCategoryAllowsCapture(draft.category, out captureStatus)) return false;
+                && !MemoryCategoryAllowsCapture(draft.category, out captureStatus))
+            {
+                lastFactualCaptureStatusForDev = captureStatus;
+                return false;
+            }
 
+            lastFactualCaptureStatusForDev = "missing_diary";
             PawnDiaryRecord diary = FindDiaryByPawnId(draft.ownerPawnId);
             if (diary == null) return false;
 
@@ -1036,14 +1047,18 @@ namespace PawnDiary
             {
                 // Avoid creating even a blank envelope when its immediately required epoch cannot
                 // enter both bounded owner directories.
+                lastFactualCaptureStatusForDev = "owner_capacity_refused";
                 if (!CanAdmitMemoryOwnerEpoch(false)) return false;
                 state = EnsureKnowledgeState(diary);
             }
+            lastFactualCaptureStatusForDev = "migration_pending";
             if (state == null || !state.IsCurrentSchema()) return false;
 
+            lastFactualCaptureStatusForDev = "epoch_enrollment_refused";
             FactualOwnerEpochEnrollment enrollment = BeginFactualOwnerEpochEnrollment(
                 state, brainwipeCompletionLandmark);
             if (enrollment == null) return false;
+            lastFactualCaptureStatusForDev = "invalid_record_identity";
             string recordId;
             if (!MemoryIdentityCodec.TryCreateRecordId(
                     new MemoryRecordIdentity
@@ -1090,6 +1105,7 @@ namespace PawnDiary
                 FactualMemoryFactDraft fact = draft.facts[i];
                 if (fact == null)
                 {
+                    lastFactualCaptureStatusForDev = "invalid_fact";
                     RollBackFactualOwnerEpochEnrollment(enrollment);
                     return false;
                 }
@@ -1136,6 +1152,7 @@ namespace PawnDiary
                 nowTick = block.originalEventTick,
                 block = block
             });
+            lastFactualCaptureStatusForDev = admission.outcome.ToString();
             if (admission.outcome == MemoryStoreMutationOutcome.Admitted)
             {
                 CommitFactualOwnerEpochEnrollment(enrollment);

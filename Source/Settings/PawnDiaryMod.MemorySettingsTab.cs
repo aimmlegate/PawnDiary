@@ -101,7 +101,9 @@ namespace PawnDiary
                             : "PawnDiary.Memory.Settings.Disabled.UseWriting"),
                     childIndent, style);
 
-                DrawMemoryOpenLibrary(ref y, contentWidth, style);
+                // The manager is unfinished; this gate changes navigation only, never saved policy.
+                if (style.memoryLibraryUiEnabled)
+                    DrawMemoryOpenLibrary(ref y, contentWidth, style);
                 DrawMemoryText(
                     ref y,
                     contentWidth,

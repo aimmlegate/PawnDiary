@@ -33,6 +33,10 @@ namespace PureBoundaryContractTests
                     "Loaded-game adapter fixtures intentionally reference RimWorld, Verse, Unity, Harmony, and RimTest."
                 },
                 {
+                    "tests/PawnDiary.RimTest/PawnDiary.RimTest.1.7.csproj",
+                    "The .NET 10 build of the same loaded-game adapter suites intentionally references the 1.7 runtime."
+                },
+                {
                     "tests/LlmProtocolHttpFixtureTests/LlmProtocolHttpFixtureTests.csproj",
                     "Socket-free HTTP fixtures intentionally exercise the compiled impure transport adapters."
                 },
