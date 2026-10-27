@@ -192,6 +192,14 @@ if (Test-Path -LiteralPath (Join-Path $rimWorld17 "UnityStubs.dll")) {
             "-c", "Debug", "-p:RimWorldManaged=$rimWorld17",
             "-p:RimTestReduxAssemblies=$($rimTestPaths.RimTestAssemblies)")
     }
+    $version17Outputs = @("1.7/Assemblies/PawnDiary.dll")
+    if ($rimTestBuilt) { $version17Outputs += "tests/PawnDiary.RimTest/1.7/Assemblies/PawnDiary.RimTest.dll" }
+    foreach ($version17Output in $version17Outputs) {
+        & git diff --quiet -- $version17Output
+        if ($LASTEXITCODE -ne 0) {
+            throw "Build changed committed 1.7 DLL. Stage the rebuilt $version17Output and retry."
+        }
+    }
 }
 # Pawn Diary must not ship Harmony — its runtime comes from the active brrainz.harmony mod. The
 # build-time reference copy (Source/Libs/0Harmony.dll) stays for compilation only and must never

@@ -2,5 +2,8 @@
   <!-- The Mono and .NET 10 runners share source, but must never share restore/compiler state. -->
   <PropertyGroup>
     <BaseIntermediateOutputPath>obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <!-- Match the committed runtime DLL's reproducible-build policy. -->
+    <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
+    <EnableSourceLink>false</EnableSourceLink>
   </PropertyGroup>
 </Project>
